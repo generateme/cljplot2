@@ -32,7 +32,7 @@
 ;; 2.x stages
 
 (deftest stage-order-test
-  (is (= [:split :stats :extents :scale-specs :grid :layout :finalized-scales] pipeline/stage-order)))
+  (is (= [:split :stats :extents :scale-specs :grid :layout :finalized-scales :subplots] pipeline/stage-order)))
 
 (deftest empty-plot-test
   (let [built (pipeline/build {})]

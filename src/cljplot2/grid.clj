@@ -286,6 +286,17 @@
             (some-> (:layout item) (find-item-box id))))
         (:items layout)))
 
+(defn content-items
+  "Items of `grid` (and nested grids, depth-first, in item order) whose content satisfies `pred`, as
+  `{:id :content :box}` with boxes from `layout` (the solved layout of `grid`)."
+  [grid layout pred]
+  (vec (mapcat (fn [item item-layout]
+                 (let [content (:content item)]
+                   (cond
+                     (pred content) [{:id (:id item) :content content :box (:box item-layout)}]
+                     (grid? content) (content-items content (:layout item-layout) pred))))
+               (:items grid) (:items layout))))
+
 (defn find-content-box
   "Box of the first item (depth-first, in item order) of `grid` whose content satisfies `pred`, using `layout`
   (the solved layout of `grid`, items in the same order); `nil` when none."

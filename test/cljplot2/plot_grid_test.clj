@@ -36,8 +36,10 @@
         built (plot/build {:custom-grid custom})]
     (is (= custom (:grid built)) "custom grid replaces generation")
     (is (= custom (:custom-grid (plot/build built))) "kept across rebuilds")
-    (testing "labels can't be combined with a custom grid"
-      (is (= {:key :labels} (error-data #(plot/build {:custom-grid custom :labels all-labels})))))))
+    (testing "only :title can be combined with a custom grid"
+      (is (= :labels (:key (error-data #(plot/build {:custom-grid custom :labels all-labels})))))
+      (is (= {:key :labels :value :x} (error-data #(plot/build {:custom-grid custom :labels {:x "x"}}))))
+      (is (= custom (:grid (plot/build {:custom-grid custom :labels {:title nil}}))) "nil title: grid unchanged"))))
 
 (deftest reserved-axis-tracks-test
   (let [l (layout {:labels all-labels})]

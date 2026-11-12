@@ -25,7 +25,8 @@
 
   `:panel :alternate-fill` - drawn over the fill of facet panels with odd `row + col` (`:none` turns it off).
 
-  `:strip` - `:fill`, `:border-color`, `:border-width` of facet strips; `:facet {:gap px}` between panels.
+  `:strip` - `:fill`, `:border-color`, `:border-width` of facet strips; `:facet {:gap px}` between panels;
+  `:multiplot {:gap px}` between arranged plots.
 
   `:palette` - aesthetic defaults, see [[cljplot2.aesthetic]]: `:color` (palette name or colors, old cljplot
   `:category20`), `:gradient` (colors or palette name; `:k2` reversed), `:shape` (shape sequence), `:size`
@@ -89,6 +90,7 @@
                   :bands {:color 0xb4b4b4 :width 1 :dash [1.0 2.0]}}}
    :strip {:fill [255 255 255 150] :border-color [0 0 0 100] :border-width 1}
    :facet {:gap 5}
+   :multiplot {:gap 10}
    :palette {:color :category20
              :gradient (vec (reverse (c/palette :k2)))
              :shape [\O \s \A \x \+ \V \o \S \^ \v \{ \} \< \>]
@@ -167,6 +169,8 @@
         (invalid "Strip :border-width must be a non-negative number." {:key :border-width :value border-width})))
     (when-not (non-negative? (get-in theme [:facet :gap]))
       (invalid "Facet :gap must be a non-negative number." {:key :gap :value (get-in theme [:facet :gap])}))
+    (when-not (non-negative? (get-in theme [:multiplot :gap]))
+      (invalid "Multiplot :gap must be a non-negative number." {:key :gap :value (get-in theme [:multiplot :gap])}))
     (doseq [k [:x :y]]
       (validate-grid-line! k (get-in theme [:panel :grid k]))
       (validate-axis! k (get-in theme [:axis k])))

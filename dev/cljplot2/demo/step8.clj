@@ -1,6 +1,6 @@
 (ns cljplot2.demo.step8
   "Step 8 demo: statistical charts, saved to `results/step8/`.
-  Fig 1.1 (histogram), Fig 1.2 (density), Fig 1.3 (density by gender), grouped histograms (overlay, dodge, mirror),
+  Fig 1.1 (histogram), Fig 1.2 (density), Fig 1.3 (density grouped by score), densities by score and gender, grouped histograms (overlay, dodge, mirror),
   line and ECDF."
   (:require [clojure.data.json :as json]
             [clojure.java.io :as io]
@@ -27,6 +27,14 @@
    :labels {:x "gcsescore"}})
 
 (def fig-1-3
+  "LMDVR Fig 1.3: one panel, densities grouped by score."
+  {:data chem97
+   :mapping {:x :gcsescore :color :score}
+   :scales {:color {:kind :ordinal}}
+   :charts [(chart/density)]
+   :labels {:x "gcsescore"}})
+
+(def density-score-gender
   {:data chem97
    :mapping {:x :gcsescore :facet :score :color :gender}
    :charts [(chart/density)]
@@ -74,7 +82,8 @@
 (defn -main [& _]
   (doseq [[file-name p options] [["fig-1-1-800x600.png" fig-1-1 {:width 800 :height 600}]
                                  ["fig-1-2-800x600.png" fig-1-2 {:width 800 :height 600}]
-                                 ["fig-1-3-800x600.png" fig-1-3 {:width 800 :height 600}]
+                                 ["fig-1-3-800x400.png" fig-1-3 {:width 800 :height 400}]
+                                 ["density-score-gender-800x600.png" density-score-gender {:width 800 :height 600}]
                                  ["hist-overlay-600x400.png" (grouped :overlay) {:width 600 :height 400}]
                                  ["hist-dodge-600x400.png" (grouped :dodge) {:width 600 :height 400}]
                                  ["hist-mirror-600x400.png" (grouped :mirror) {:width 600 :height 400}]

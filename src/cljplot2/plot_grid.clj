@@ -174,6 +174,24 @@
                 (into (legend-items legends {:from (cond col-labels :col-strip wrap? [:strip 0] :else [:panel 0])
                                                    :to last-row})))}))
 
+(defn titled-custom-grid
+  "`custom-grid` under a title row: rows `:margin-top` (theme `[:plot :margin]`) | `:title` (measured) | `:body`
+  (flexible, holding `custom-grid` nested). Only `:title` may be given in `labels`; other keys throw
+  `ex-info {:key :labels}`."
+  [custom-grid labels theme]
+  (when-not (map? labels)
+    (throw (ex-info "Plot :labels must be a map." {:key :labels :value labels})))
+  (when-let [bad (first (remove #{:title} (keys labels)))]
+    (throw (ex-info "With :custom-grid, :labels may only have :title; put other labels into the custom grid."
+                    {:key :labels :value bad})))
+  (if (nil? (:title labels))
+    custom-grid
+    {:columns [{:id :body :size [:flexible]}]
+     :rows [{:id :margin-top :size [:fixed (get-in theme [:plot :margin])]} {:id :title :size [:measured]}
+            {:id :body :size [:flexible]}]
+     :items (into [{:id :body :column :body :row :body :content (assoc custom-grid :kind :grid)}]
+                  (label-items {:title (:title labels)} {:title {:column :body :row :title}}))}))
+
 (defn plot-grid
   "The generated grid: [[facet-grid]] when the plot is faceted (`[:split :facets :dims]` non-empty), else
   [[single-panel-grid]]."

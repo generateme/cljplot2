@@ -1,7 +1,8 @@
 (ns cljplot2.pipeline
   "Plot pipeline: a plot map passes through fixed stages, each a pure function adding one key.
 
-  Stages, in order: `:split` -> `:stats` -> `:extents` -> `:scale-specs` -> `:grid` -> `:layout` -> `:finalized-scales`.
+  Stages, in order: `:split` -> `:stats` -> `:extents` -> `:scale-specs` -> `:grid` -> `:layout` -> `:finalized-scales`
+  -> `:subplots`.
 
   Plot keys read so far:
 
@@ -14,7 +15,9 @@
   * `:groups` - `{:na bool}`: `nil` aesthetic values form the NA level (default `true`) or are dropped
   * `:labels` - plot titles; charts may suggest axis titles (`:axis-titles` in their stats), `:labels` win
   * `:legend` - `false` hides all legends, see [[cljplot2.legend]]
-  * `:custom-grid` - a hand-written grid (see [[cljplot2.grid]]) used instead of the generated one
+  * `:custom-grid` - a hand-written grid (see [[cljplot2.grid]]) used instead of the generated one; only
+    `:labels {:title t}` may accompany it (a title row above it). Items with `{:kind :plot :plot p}` content hold
+    whole plots (multiplot, see [[cljplot2.subplot]] and [[cljplot2.multiplot/arrange]])
   * `:options` - render options (see [[default-options]]), merged under `build`'s options; stored resolved
   * `:theme` - deep-merged over [[cljplot2.theme/default-theme]]; stored resolved
 
@@ -35,7 +38,8 @@
             [cljplot2.panel]
             [cljplot2.axis]
             [cljplot2.strip]
-            [cljplot2.legend]))
+            [cljplot2.legend]
+            [cljplot2.subplot :as subplot]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -197,13 +201,13 @@
       :else labels)))
 
 (defn- grid-stage
-  "The plot's grid: `:custom-grid` when given, otherwise generated from plot keys (`:labels` over the charts'
-  suggested axis titles). A custom grid can't be combined with `:labels` (they would be ignored)."
-  [{:keys [custom-grid labels stats] :as plot}]
-  (when (and custom-grid labels)
-    (throw (ex-info "Plot :labels can't be combined with :custom-grid; put labels into the custom grid."
-                    {:key :labels})))
-  (assoc plot :grid (or custom-grid (plot-grid/plot-grid (assoc plot :labels (effective-labels labels stats))))))
+  "The plot's grid: `:custom-grid` when given (under a title row when `:labels` has `:title`; other labels throw),
+  otherwise generated from plot keys (`:labels` over the charts' suggested axis titles)."
+  [{:keys [custom-grid labels stats theme] :as plot}]
+  (assoc plot :grid (cond
+                      (and custom-grid labels) (plot-grid/titled-custom-grid custom-grid labels theme)
+                      custom-grid custom-grid
+                      :else (plot-grid/plot-grid (assoc plot :labels (effective-labels labels stats))))))
 
 (def ^:private ^:const provisional-tick-hint 10)
 
@@ -262,9 +266,36 @@
   [plot]
   (assoc plot :finalized-scales (finalize-scales plot (:layout plot))))
 
+(declare build)
+
+(defn- build-subplot
+  "Built sub-plot `p` of item `id` for its `box`; errors re-thrown with `:subplot id` and `:subplot-path` (outer
+  item ids first), the original as cause."
+  [p id {:keys [w h]} hint]
+  (try (build p {:width (long w) :height (long h) :hint hint})
+       (catch clojure.lang.ExceptionInfo e
+         (let [data (ex-data e)]
+           (throw (ex-info (ex-message e)
+                           (assoc data :subplot id :subplot-path (into [id] (:subplot-path data)))
+                           e))))))
+
+(defn- subplots-stage
+  "Every `{:kind :plot}` item of the grid (nested grids included) built at its box size with the plot's hint:
+  `{item-id built-plot}`. Items whose box is smaller than 1x1 px are skipped. Plot item ids must be unique across
+  the grid tree (`ex-info {:key :id}`)."
+  [{:keys [grid layout options] :as plot}]
+  (let [items (grid/content-items grid layout subplot/plot-content?)]
+    (when-let [dup (first (for [[id n] (frequencies (map :id items)) :when (> (long n) 1)] id))]
+      (throw (ex-info "Plot item ids must be unique across nested grids." {:key :id :value dup})))
+    (assoc plot :subplots
+           (into {} (keep (fn [{:keys [id content box]}]
+                            (when (and (>= (long (:w box)) 1) (>= (long (:h box)) 1))
+                              [id (build-subplot (:plot content) id box (:hint options))])))
+                 items))))
+
 (def stage-order
   "Pipeline stages in execution order."
-  [:split :stats :extents :scale-specs :grid :layout :finalized-scales])
+  [:split :stats :extents :scale-specs :grid :layout :finalized-scales :subplots])
 
 (def ^:private stage-fns
   {:split split-stage
@@ -273,7 +304,8 @@
    :scale-specs scale-specs-stage
    :grid grid-stage
    :layout layout-stage
-   :finalized-scales finalized-scales-stage})
+   :finalized-scales finalized-scales-stage
+   :subplots subplots-stage})
 
 ;; build
 
