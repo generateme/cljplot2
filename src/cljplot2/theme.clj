@@ -34,7 +34,8 @@
   `:legend` - `:gap` (pixels between key and label and between legends), `:key-size` (key box side, pixels),
   `:fill`, `:border-color`, `:border-width`; text roles `:legend-title` and `:legend-label`.
 
-  `:chart` - per chart kind defaults, e.g. `:scatter` (validated when a chart of that kind computes).
+  `:chart` - per chart kind defaults: `:scatter`, `:histogram`, `:density`, `:line`, `:ecdf` (old cljplot blue;
+  validated when a chart of that kind computes).
 
   Colors are any clojure2d color or `:none` (draw nothing). `nil` in a theme override means \"not set\"
   and keeps the value underneath, see [[deep-merge]].
@@ -94,7 +95,11 @@
              :size [2 10]
              :na [150 150 150]}
    :legend {:gap 5 :key-size 14 :fill :none :border-color :none :border-width 1}
-   :chart {:scatter {:size 4 :color [49 54 149 180] :stroke-color :none :stroke-width 1 :shape \O}}
+   :chart {:scatter {:size 4 :color [49 54 149 180] :stroke-color :none :stroke-width 1 :shape \O}
+           :histogram {:color [49 54 149] :stroke-width 1 :alpha 0.6}
+           :density {:color [49 54 149] :width 1 :dash :none :fill :none :ref-color [150 150 150]}
+           :line {:color [49 54 149] :width 1 :dash :none}
+           :ecdf {:color [49 54 149] :width 1 :dash :none}}
    :axis {:x {:line-color :black :line-width 1 :tick-color :black :tick-length 6 :tick-width 1
               :label-gap 2 :tick-spacing 80}
           :y {:line-color :black :line-width 1 :tick-color :black :tick-length 6 :tick-width 1

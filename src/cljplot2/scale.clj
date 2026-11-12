@@ -78,6 +78,8 @@
       (invalid "Scale :range is set from the layout, it can't be given." {:key :range :scale k}))
     (when (contains? spec :padding)
       (invalid "Scale :padding is internal; use :expand." {:key :padding :scale k}))
+    (when (contains? spec :tick-format)
+      (invalid "Scale :tick-format is internal (set by charts); use :formatter." {:key :tick-format :scale k}))
     (cond
       (sequential? ticks) (validate-tick-list! k kind domain ticks)
       (not (or (nil? ticks) (and (integer? ticks) (pos? (long ticks)))))
@@ -153,14 +155,21 @@
                        (and (m/valid-double? v) (< (m/abs v) max-integral-label) (== v (m/floor v)))))
                ticks)))
 
-(defn tick-labels
-  "Labels of `ticks` of wadogo `scale` built from `spec` (`:kind`, `:formatter`).
-  Default formatter: whole-number ticks of a numeric continuous scale as integers, otherwise wadogo `format`;
-  a spec `:formatter` always wins (wadogo uses it)."
+(defn- default-tick-labels
   [scale spec ticks]
   (if (and (nil? (:formatter spec)) (not= :datetime (:kind spec)) (not= :bands (:kind spec)) (integral-numbers? ticks))
     (mapv #(str (long (m/round (double %)))) ticks)
     (vec (s/format scale ticks))))
+
+(defn tick-labels
+  "Labels of `ticks` of wadogo `scale` built from `spec` (`:kind`, `:formatter`, `:tick-format`).
+  Default formatter: whole-number ticks of a numeric continuous scale as integers, otherwise wadogo `format`;
+  `:tick-format :absolute` formats the magnitudes of numeric ticks; a spec `:formatter` always wins (wadogo uses it)."
+  [scale spec ticks]
+  (let [ticks (if (and (= :absolute (:tick-format spec)) (nil? (:formatter spec)))
+                (mapv #(if (number? %) (m/abs (double %)) %) ticks)
+                ticks)]
+    (default-tick-labels scale spec ticks)))
 
 (defn ->wadogo
   "wadogo scale of a finalized scale."
@@ -195,7 +204,7 @@
   [spec range tick-hint]
   (let [kind (:kind spec)
         explicit (:ticks spec)
-        base (assoc (dissoc spec :kind :nice :expand :padding) :range range)
+        base (assoc (dissoc spec :kind :nice :expand :padding :tick-format) :range range)
         nice-count (if (integer? explicit) explicit tick-hint)
         niced (nice-domain (s/scale kind (assoc base :ticks nice-count)) kind (:nice spec))
         domain (if-let [padding (:padding spec)]

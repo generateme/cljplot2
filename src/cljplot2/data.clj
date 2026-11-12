@@ -58,6 +58,12 @@
     (or (string? v) (keyword? v) (temporal? v)) true
     :else false))
 
+(defn finite-numbers
+  "Finite numbers among `vs` (as doubles) and the count of other values: `{:values [..] :dropped n}`."
+  [vs]
+  (let [ok (into [] (comp (filter #(and (number? %) (m/valid-double? (double %)))) (map double)) vs)]
+    {:values ok :dropped (- (count vs) (count ok))}))
+
 (defn- value-kind
   [v]
   (cond (number? v) :numeric (temporal? v) :temporal :else :categorical))

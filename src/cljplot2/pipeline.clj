@@ -12,13 +12,15 @@
   * `:charts` - vector of chart values, see [[cljplot2.chart]]
   * `:facets` - `{:columns :rows :order :na-panel}` facet layout options, see [[cljplot2.facet]]
   * `:groups` - `{:na bool}`: `nil` aesthetic values form the NA level (default `true`) or are dropped
+  * `:labels` - plot titles; charts may suggest axis titles (`:axis-titles` in their stats), `:labels` win
   * `:legend` - `false` hides all legends, see [[cljplot2.legend]]
   * `:custom-grid` - a hand-written grid (see [[cljplot2.grid]]) used instead of the generated one
   * `:options` - render options (see [[default-options]]), merged under `build`'s options; stored resolved
   * `:theme` - deep-merged over [[cljplot2.theme/default-theme]]; stored resolved
 
   Facet mapping keys (`:facet`, `:facet-col`, `:facet-row`) split rows into panels, see [[cljplot2.facet]].
-  Aesthetic mapping keys (`:color`, `:shape`, `:size`) style marks, see [[cljplot2.aesthetic]]."
+  Aesthetic mapping keys (`:color`, `:shape`, `:size`) style marks, see [[cljplot2.aesthetic]]; `:group` splits
+  rows into groups for charts drawing one mark per group, see [[cljplot2.group]]."
   (:require [fastmath.core :as m]
             [cljplot2.aesthetic :as aesthetic]
             [cljplot2.data :as data]
@@ -71,10 +73,12 @@
     (throw (ex-info "Plot :legend must be a boolean." {:key :legend :value legend}))))
 
 (defn- validate-aesthetic-mapping!
-  "Mapped aesthetics need an accessor (keyword or function); a scale of an aesthetic needs a chart mapping it."
+  "Mapped aesthetics and `:group` need an accessor (keyword or function); a scale of an aesthetic needs a chart
+  mapping it."
   [inputs scales]
   (doseq [{:keys [mapping]} inputs
-          k (aesthetic/mapped-dims mapping)]
+          k (conj (aesthetic/mapped-dims mapping) :group)
+          :when (some? (get mapping k))]
     (data/row-accessor k (get mapping k)))
   (doseq [k (filter aesthetic/dim? (keys scales))]
     (when-not (some #(some? (get-in % [:mapping k])) inputs)
@@ -135,8 +139,8 @@
 
 (defn- stats-stage
   "Per chart: the data its `:compute` returns from its split groups."
-  [{:keys [charts split theme groups] :as plot}]
-  (let [env {:theme theme :na-level? (get groups :na true)}]
+  [{:keys [charts split theme groups scales] :as plot}]
+  (let [env {:theme theme :na-level? (get groups :na true) :plot-scales scales}]
     (assoc plot :stats (mapv (fn [chart chart-split] ((:compute chart) chart chart-split env)) charts (:charts split)))))
 
 (defn- aesthetic-extents
@@ -167,26 +171,39 @@
 
 (defn- scale-specs-stage
   "Phase-1 specs of the position and aesthetic scales with a plot `:scales` entry or data extents (`:scales` is
-  validated by the `:split` stage, its first reader). Aesthetic specs are final (no layout dependence)."
-  [{:keys [scales extents theme] :as plot}]
-  (let [ks (distinct (concat (filter #(or (position-scales %) (aesthetic/dim? %)) (keys scales)) (keys extents)))]
+  validated by the `:split` stage, its first reader). Aesthetic specs are final (no layout dependence).
+  A tick format suggested by a chart (`:tick-format` in its stats, the first chart's) is added to the position spec."
+  [{:keys [scales extents theme stats] :as plot}]
+  (let [ks (distinct (concat (filter #(or (position-scales %) (aesthetic/dim? %)) (keys scales)) (keys extents)))
+        tick-format (fn [k] (some #(get-in % [:tick-format k]) stats))]
     (assoc plot :scale-specs
            (into {} (keep (fn [k]
                             (let [{:keys [extent padding na?]} (get extents k)
                                   spec (get scales k {})]
                               (if (aesthetic/dim? k)
                                 (some->> (aesthetic/scale-spec k spec extent na? (:palette theme)) (vector k))
-                                [k (scale/data-scale-spec k spec extent padding)]))))
+                                [k (cond-> (scale/data-scale-spec k spec extent padding)
+                                     (tick-format k) (assoc :tick-format (tick-format k)))]))))
                  ks))))
 
+(defn- effective-labels
+  "Plot `labels` over the axis titles suggested by the charts in `stats` (per axis, the first suggestion wins);
+  a `:labels` entry - also `nil` - wins over a suggestion. Non-map `labels` are passed through (rejected later)."
+  [labels stats]
+  (let [suggested (reduce (fn [acc titles] (merge (select-keys titles [:x :y]) acc)) {} (keep :axis-titles stats))]
+    (cond
+      (nil? labels) (not-empty suggested)
+      (map? labels) (merge suggested labels)
+      :else labels)))
+
 (defn- grid-stage
-  "The plot's grid: `:custom-grid` when given, otherwise generated from plot keys.
-  A custom grid can't be combined with `:labels` (they would be ignored)."
-  [{:keys [custom-grid labels] :as plot}]
+  "The plot's grid: `:custom-grid` when given, otherwise generated from plot keys (`:labels` over the charts'
+  suggested axis titles). A custom grid can't be combined with `:labels` (they would be ignored)."
+  [{:keys [custom-grid labels stats] :as plot}]
   (when (and custom-grid labels)
     (throw (ex-info "Plot :labels can't be combined with :custom-grid; put labels into the custom grid."
                     {:key :labels})))
-  (assoc plot :grid (or custom-grid (plot-grid/plot-grid plot))))
+  (assoc plot :grid (or custom-grid (plot-grid/plot-grid (assoc plot :labels (effective-labels labels stats))))))
 
 (def ^:private ^:const provisional-tick-hint 10)
 

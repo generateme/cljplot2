@@ -134,6 +134,17 @@
           (invalid "A :linear aesthetic scale needs numeric data." {:key :kind :scale k}))
         [(double (:min extent)) (double (:max extent))])))
 
+(defn inferred-kind
+  "Scale kind of aesthetic `k` with plot scale `spec` (may be `{}`) for data that is numeric (`data-numeric?`) or not:
+  the spec's `:kind`; else `:linear` for a numeric two-value explicit domain or, without a domain, numeric data
+  (`:color`, `:size`); else `:ordinal`. `:shape` is always ordinal."
+  [k spec data-numeric?]
+  (let [explicit (:domain spec)
+        numeric? (if explicit
+                   (and (sequential? explicit) (= 2 (count explicit)) (every? number? explicit))
+                   data-numeric?)]
+    (or (:kind spec) (if (and numeric? (not= k :shape)) :linear :ordinal))))
+
 (defn scale-spec
   "Scale of aesthetic dimension `k` from the plot's scale `spec` (may be `{}`), the merged data `extent`
   (a [[cljplot2.data/value-extent]], may be `nil`), `na?` (some mapped value is NA) and theme `palette`.
@@ -143,10 +154,7 @@
   (validate-spec! k spec)
   (let [explicit (:domain spec)]
     (when (or explicit extent)
-      (let [numeric? (if explicit
-                       (and (sequential? explicit) (= 2 (count explicit)) (every? number? explicit))
-                       (= :numeric (:kind extent)))
-            kind (or (:kind spec) (if (and numeric? (not= k :shape)) :linear :ordinal))
+      (let [kind (inferred-kind k spec (= :numeric (:kind extent)))
             domain (if (= kind :ordinal) (ordinal-domain k explicit extent) (linear-domain k explicit extent))
             default-range (get palette (if (and (= k :color) (= kind :linear)) :gradient k))]
         (cond-> {:kind kind

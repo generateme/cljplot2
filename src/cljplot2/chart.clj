@@ -4,7 +4,10 @@
 
   * `(compute chart {:groups {panel rows} :mapping mapping} env)` -> data
     `{:extents {panel {dim extent}} :padding {dim [lo hi]} :data {panel computed} :na #{dim} :dropped {dim n}}`
-    (`env` - `{:theme :na-level?}`); stored per chart in the plot's `:stats`. Aesthetic extents (`:color`,
+    and optionally `:axis-titles {:x t :y t}` (suggested axis titles; the first chart's win, plot `:labels` win over
+    all) and `:tick-format {:x f :y f}` (suggested tick label format, `:absolute` - magnitudes; used unless the plot's
+    scale has a `:formatter`) (`env` - `{:theme :na-level? :plot-scales}`, `:plot-scales` - the plot's `:scales`); stored per chart in the
+    plot's `:stats`. Aesthetic extents (`:color`,
     `:shape`, `:size`) are [[cljplot2.data/value-extent]]s; `:na` lists aesthetics with NA (`nil`) values
   * `(draw chart computed canvas panel-box scales env)` - draws one panel's `computed` data; called by the panel
     with isolated graphics clipped to the panel box. Positions come from `cljplot2.scale/forward-fn`, which gives
@@ -15,7 +18,11 @@
 
   Options common to all charts: `:data` (own data, see [[cljplot2.data/rows]]) and `:mapping` (merged over the
   plot's mapping)."
-  (:require [cljplot2.chart.scatter :as scatter]))
+  (:require [cljplot2.chart.density :as density]
+            [cljplot2.chart.ecdf :as ecdf]
+            [cljplot2.chart.histogram :as histogram]
+            [cljplot2.chart.line :as line]
+            [cljplot2.chart.scatter :as scatter]))
 
 (defn- chart-value
   [kind compute draw legend options]
@@ -27,3 +34,23 @@
   "Scatter chart, see [[cljplot2.chart.scatter]]."
   ([] (scatter {}))
   ([options] (chart-value :scatter scatter/compute scatter/draw scatter/legend options)))
+
+(defn histogram
+  "Histogram of `:x`, see [[cljplot2.chart.histogram]]."
+  ([] (histogram {}))
+  ([options] (chart-value :histogram histogram/compute histogram/draw histogram/legend options)))
+
+(defn density
+  "Kernel density estimate of `:x`, see [[cljplot2.chart.density]]."
+  ([] (density {}))
+  ([options] (chart-value :density density/compute density/draw density/legend options)))
+
+(defn line
+  "Line through `(:x, :y)` points, see [[cljplot2.chart.line]]."
+  ([] (line {}))
+  ([options] (chart-value :line line/compute line/draw line/legend options)))
+
+(defn ecdf
+  "Empirical CDF of `:x`, see [[cljplot2.chart.ecdf]]."
+  ([] (ecdf {}))
+  ([options] (chart-value :ecdf ecdf/compute ecdf/draw ecdf/legend options)))
