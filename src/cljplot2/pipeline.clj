@@ -17,7 +17,10 @@
   * `:legend` - `false` hides all legends, see [[cljplot2.legend]]
   * `:custom-grid` - a hand-written grid (see [[cljplot2.grid]]) used instead of the generated one; only
     `:labels {:title t}` may accompany it (a title row above it). Items with `{:kind :plot :plot p}` content hold
-    whole plots (multiplot, see [[cljplot2.subplot]] and [[cljplot2.multiplot/arrange]])
+    whole plots (see [[cljplot2.subplot]])
+  * `:arrange` - `{:plots [p ...] :columns :rows :widths :heights}`: a multiplot, its grid generated from the merged
+    theme (see [[cljplot2.multiplot/arrange]], [[cljplot2.plot-grid/arrange-grid]]); only `:labels {:title t}` may
+    accompany it; can't be combined with `:custom-grid`
   * `:options` - render options (see [[default-options]]), merged under `build`'s options; stored resolved
   * `:theme` - deep-merged over [[cljplot2.theme/default-theme]]; stored resolved
 
@@ -203,8 +206,11 @@
 (defn- grid-stage
   "The plot's grid: `:custom-grid` when given (under a title row when `:labels` has `:title`; other labels throw),
   otherwise generated from plot keys (`:labels` over the charts' suggested axis titles)."
-  [{:keys [custom-grid labels stats theme] :as plot}]
+  [{:keys [custom-grid labels stats theme arrange] :as plot}]
+  (when (and custom-grid arrange)
+    (throw (ex-info "Plot :arrange can't be combined with :custom-grid." {:key :arrange})))
   (assoc plot :grid (cond
+                      arrange (plot-grid/arrange-grid arrange labels theme)
                       (and custom-grid labels) (plot-grid/titled-custom-grid custom-grid labels theme)
                       custom-grid custom-grid
                       :else (plot-grid/plot-grid (assoc plot :labels (effective-labels labels stats))))))
@@ -269,15 +275,17 @@
 (declare build)
 
 (defn- build-subplot
-  "Built sub-plot `p` of item `id` for its `box`; errors re-thrown with `:subplot id` and `:subplot-path` (outer
-  item ids first), the original as cause."
+  "Built sub-plot `p` of item `id` for its `box`. Errors are re-thrown as `ex-info` with `:subplot id` and
+  `:subplot-path` (outer item ids first), the original as cause: an `ex-info` keeps its message and data, any other
+  exception gets `{:key :subplot}`."
   [p id {:keys [w h]} hint]
   (try (build p {:width (long w) :height (long h) :hint hint})
-       (catch clojure.lang.ExceptionInfo e
-         (let [data (ex-data e)]
-           (throw (ex-info (ex-message e)
-                           (assoc data :subplot id :subplot-path (into [id] (:subplot-path data)))
-                           e))))))
+       (catch Exception e
+         (let [data (if (instance? clojure.lang.ExceptionInfo e) (ex-data e) {:key :subplot})
+               message (if (instance? clojure.lang.ExceptionInfo e)
+                         (ex-message e)
+                         (str "Sub-plot failed: " (or (ex-message e) (.getName (class e)))))]
+           (throw (ex-info message (assoc data :subplot id :subplot-path (into [id] (:subplot-path data))) e))))))
 
 (defn- subplots-stage
   "Every `{:kind :plot}` item of the grid (nested grids included) built at its box size with the plot's hint:

@@ -6,6 +6,9 @@
   (:require [fastmath.vector :as v]
             [cljplot2.measure :as measure]))
 
+(set! *warn-on-reflection* true)
+(set! *unchecked-math* :warn-on-boxed)
+
 (defn plot-content?
   "Is `content` plot content?"
   [content]

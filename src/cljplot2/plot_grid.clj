@@ -192,6 +192,68 @@
      :items (into [{:id :body :column :body :row :body :content (assoc custom-grid :kind :grid)}]
                   (label-items {:title (:title labels)} {:title {:column :body :row :title}}))}))
 
+(defn- arrange-invalid [message data] (throw (ex-info message (assoc data :key :arrange))))
+
+(defn- arrange-shape
+  "`[rows cols]` for `n` plots and optional `columns` / `rows` (default one column)."
+  [^long n columns rows]
+  (doseq [[k v] [[:columns columns] [:rows rows]]]
+    (when-not (or (nil? v) (and (integer? v) (pos? (long v))))
+      (arrange-invalid "Arrange :columns / :rows must be positive integers." {:value k})))
+  (let [[^long r ^long c] (cond
+                            (and rows columns) [(long rows) (long columns)]
+                            columns [(long (Math/ceil (/ (double n) (double columns)))) (long columns)]
+                            rows [(long rows) (long (Math/ceil (/ (double n) (double rows))))]
+                            :else [n 1])]
+    (when (< (* r c) n)
+      (arrange-invalid "Arrange layout is too small for the plots." {:plots n :rows r :columns c}))
+    [r c]))
+
+(defn- arrange-weights
+  [k ws ^long n]
+  (cond
+    (nil? ws) (vec (repeat n 1))
+    (and (sequential? ws) (= n (count ws)) (every? #(and (number? %) (pos? (double %))) ws)) (vec ws)
+    :else (arrange-invalid "Arrange :widths / :heights must be positive numbers, one per column / row." {:value k :count n})))
+
+(defn- weighted-tracks
+  "Flexible tracks `[prefix i]` weighted by `ws`, fixed gaps `[gap-prefix i]` between them."
+  [prefix gap-prefix ws gap]
+  (vec (butlast (mapcat (fn [i w] [{:id [prefix i] :size [:flexible w]} {:id [gap-prefix i] :size [:fixed gap]}])
+                        (range) ws))))
+
+(defn arrange-grid
+  "Grid of the plot `:arrange` spec `{:plots [p ...] :columns :rows :widths :heights}` in `theme`: cells `[:plot i]`
+  filled row by row (columns `[:column c]`, rows `[:row r]`) with `[:multiplot :gap]` between them, `[:plot :margin]`
+  around, and an optional title row (`labels` - only `:title`) above the cells, inside the margins.
+  Throws `ex-info {:key :arrange}` for a bad spec, `{:key :labels}` for labels other than `:title`."
+  [{:keys [plots columns rows widths heights] :as arrange} labels theme]
+  (when-not (map? arrange)
+    (arrange-invalid "Plot :arrange must be a map." {:value arrange}))
+  (when-not (and (sequential? plots) (seq plots))
+    (arrange-invalid "Arrange :plots must be a non-empty sequence of plots." {:value :plots}))
+  (when-not (or (nil? labels) (map? labels))
+    (throw (ex-info "Plot :labels must be a map." {:key :labels :value labels})))
+  (when-let [bad (first (remove #{:title} (keys labels)))]
+    (throw (ex-info "With :arrange, :labels may only have :title." {:key :labels :value bad})))
+  (let [plots (vec plots)
+        [^long r ^long c] (arrange-shape (count plots) columns rows)
+        gap (get-in theme [:multiplot :gap])
+        margin (get-in theme [:plot :margin])
+        margin-track (fn [id] {:id id :size [:fixed margin]})]
+    {:columns (-> [(margin-track :margin-left)]
+                  (into (weighted-tracks :column :column-gap (arrange-weights :widths widths c) gap))
+                  (conj (margin-track :margin-right)))
+     :rows (-> [(margin-track :margin-top) {:id :title :size [:measured]}]
+               (into (weighted-tracks :row :row-gap (arrange-weights :heights heights r) gap))
+               (conj (margin-track :margin-bottom)))
+     :items (-> (vec (map-indexed (fn [i p]
+                                    {:id [:plot i] :column [:column (rem (long i) c)] :row [:row (quot (long i) c)]
+                                     :content {:kind :plot :plot p}})
+                                  plots))
+                (into (label-items (select-keys labels [:title])
+                                   {:title {:column {:from [:column 0] :to [:column (dec c)]} :row :title}})))}))
+
 (defn plot-grid
   "The generated grid: [[facet-grid]] when the plot is faceted (`[:split :facets :dims]` non-empty), else
   [[single-panel-grid]]."

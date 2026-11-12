@@ -92,9 +92,9 @@
           c (plot/render mp {:width 700 :height 300})]
       (doseq [id [[:plot 0] [:plot 1]]
               :let [{:keys [x y w h]} (box-of built id)
-                    alone (plot/render (get-in mp [:custom-grid :items (second id) :content :plot]) {:width w :height h})]]
+                    alone (plot/render (get-in mp [:arrange :plots (second id)]) {:width w :height h})]]
         (is (every? (fn [[px py]] (= (argb alone px py) (argb c (+ x px) (+ y py))))
-                    (for [px (range 0 w 3) py (range 0 h 3)] [px py]))
+                    (for [px (range w) py (range h)] [px py]))
             (str id)))))
   (testing "sub-plot ink stays in its box (clipped)"
     (let [wide {:data rows :mapping {:x :x :y :y} :charts [(chart/scatter {:size 60 :color [255 0 0]})]
@@ -122,8 +122,9 @@
       (let [built (b (plot/arrange [p1 p2 p1] {:columns 2}))]
         (is (= (:y (box-of built [:plot 0])) (:y (box-of built [:plot 1]))))
         (is (> (:y (box-of built [:plot 2])) (:y (box-of built [:plot 0])))))
-      (is (= 3 (count (get-in (plot/arrange [p1 p2 p1] {:rows 1}) [:custom-grid :items]))))
-      (are [plots opts] (= :arrange (:key (error-data #(plot/arrange plots opts))))
+      (let [built (b (plot/arrange [p1 p2 p1] {:rows 1}))]
+        (is (= 1 (count (distinct (map #(:y (box-of built [:plot %])) (range 3)))))))
+      (are [plots opts] (= :arrange (:key (error-data #(plot/build (plot/arrange plots opts)))))
         [] {}
         nil {}
         [p1 p2 p1] {:columns 1 :rows 2}
@@ -138,7 +139,18 @@
     (testing "gap from the multiplot theme; validated"
       (let [built (b (plot/arrange [p1 p2] {:theme {:multiplot {:gap 40}}}))]
         (is (= (+ (:y (box-of built [:plot 0])) (:h (box-of built [:plot 0])) 40) (:y (box-of built [:plot 1])))))
-      (is (= :gap (:key (error-data #(plot/arrange [p1] {:theme {:multiplot {:gap -1}}}))))))))
+      (is (= :gap (:key (error-data #(plot/build (plot/arrange [p1] {:theme {:multiplot {:gap -1}}})))))))
+    (testing "the plot's :theme at build time controls gap and margin (not frozen by arrange)"
+      (let [built (b (assoc (plot/arrange [p1 p2]) :theme {:multiplot {:gap 50} :plot {:margin 30}}))
+            a (box-of built [:plot 0]) c (box-of built [:plot 1])]
+        (is (= 50 (- (:y c) (+ (:y a) (:h a)))))
+        (is (= 30 (:x a)))))
+    (testing ":arrange spec shape"
+      (is (= {:arrange {:plots [p1] :columns 1 :widths [1]} :labels {:title "T"} :theme {:x 1}}
+             (plot/arrange [p1] {:columns 1 :widths [1] :title "T" :theme {:x 1} :ignored 2})))
+      (is (= :arrange (:key (error-data #(plot/build {:arrange [p1]})))))
+      (is (= :arrange (:key (error-data #(plot/build (assoc (plot/arrange [p1]) :custom-grid {:columns [{:size [:flexible]}] :rows [{:size [:flexible]}] :items []}))))))
+      (is (= {:key :labels :value :x} (error-data #(plot/build (assoc (plot/arrange [p1]) :labels {:x "x"}))))))))
 
 (deftest overall-title-test
   (let [mp (plot/arrange [p1 p2] {:columns 2 :title "Both" :theme {:plot {:background [255 255 255]}}})
@@ -150,3 +162,23 @@
     (is (= "Both" (some #(when (= :title (:id %)) (get-in % [:content :text])) (get-in built [:grid :items]))))
     (testing "no title: plain custom grid"
       (is (nil? (grid/find-item-box (:layout (plot/build (plot/arrange [p1]))) :title))))))
+
+;; review fixes
+
+(deftest title-inside-margins-test
+  (let [built (plot/build (plot/arrange [p1 p2] {:columns 2 :title "T"}) {:width 600 :height 300})
+        title (grid/find-item-box (:layout built) :title)
+        cell (box-of built [:plot 0])]
+    (is (= 10 (:y title)) "one top margin above the title")
+    (is (= (:x cell) (:x title)) "title within the side margins")
+    (is (= (+ (:y title) (:h title)) (:y cell)) "cells right under the title")))
+
+(deftest non-ex-info-provenance-test
+  (let [boom (assoc p1 :mapping {:x (fn [_] (/ 1 0)) :y :y})]
+    (testing "any exception in a sub-plot is wrapped with its id, cause kept"
+      (let [e (try (plot/build (plot/arrange [p1 boom])) nil (catch clojure.lang.ExceptionInfo e e))]
+        (is (= {:key :subplot :subplot [:plot 1] :subplot-path [[:plot 1]]} (ex-data e)))
+        (is (instance? ArithmeticException (ex-cause e)))))
+    (testing "nested: outer id first, inner kept"
+      (let [data (error-data #(plot/build (plot/arrange [(plot/arrange [p1 boom]) p1])))]
+        (is (= [:subplot [:plot 0] [[:plot 0] [:plot 1]]] ((juxt :key :subplot :subplot-path) data)))))))
