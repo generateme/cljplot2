@@ -6,7 +6,7 @@
             [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
             [cljplot2.grid :as grid]
-            [cljplot2.treemap :as treemap])
+            [cljplot2.treemap-layout :as treemap])
   (:import [java.awt.image BufferedImage]))
 
 (defn- error-data [f]
@@ -92,7 +92,7 @@
       (is (= [0 1 2] (map :top-index (:children t)))))
     (testing "nil / \"\" level: leaf at the parent"
       (is (= {:name "a2" :value 3.0 :color nil} (dissoc (child (child t "A") "a2") :top-index)))
-      (is (= #{"b1" "B"} (set (map :name (:children (child t "B"))))) "\"\" level ends at B: leaf named like its group"))
+      (is (= ["b1" nil] (map :name (:children (child t "B")))) "\"\" level ends at B: an unnamed leaf of B"))
     (testing "identical paths merge"
       (let [t (tree (build (tm {:data (conj rows {:a "C" :b "c1" :c "q" :v 4})})))]
         (is (= 10.0 (:value (child (child (child t "C") "c1") "q"))))))
@@ -165,3 +165,45 @@
       (is (some? (plot/render (tm {:data (for [i (range 200)] {:a (str "g" (mod i 9)) :b (str "l" i) :v (inc (mod i 13))})})
                               {:width 60 :height 40})))
       (is (some? (plot/render (tm {:charts [(chart/treemap {:layout :slice-dice})]}) {:width 20 :height 20}))))))
+
+;; review fixes
+
+(deftest squarify-reference-test
+  (testing "Bruls et al. example: 6 6 4 3 2 2 1 in 6x4"
+    (is (= [[0.0 0.0 3.0 2.0] [0.0 2.0 3.0 2.0] [3.0 0.0 1.71 2.33] [4.71 0.0 1.29 2.33]
+            [3.0 2.33 1.2 1.67] [4.2 2.33 1.2 1.67] [5.4 2.33 0.6 1.67]]
+           (mapv (fn [r] (mapv #(/ (Math/round (* 100.0 (double (% r)))) 100.0) [:x :y :w :h]))
+                 (treemap/squarify [6 6 4 3 2 2 1] {:x 0.0 :y 0.0 :w 6.0 :h 4.0}))))))
+
+(deftest color-identity-test
+  (let [built (build (tm {:data [{:a "A" :b "a1" :v 2 :k "x"} {:a "A" :b "a1" :v 3 :k "y"} {:a "A" :b "a1" :v 1 :k "x"}]
+                          :mapping (assoc mapping :color :k)}))]
+    (testing "same path, different colors: separate leaves; same color: merged"
+      (is (= [["a1" 3.0 "x"] ["a1" 3.0 "y"]] (map (juxt :name :value :color) (:children (child (tree built) "A")))))))
+  (testing "without :color: one merged leaf"
+    (is (= 6.0 (:value (child (child (tree (build (tm {:data [{:a "A" :b "a1" :v 2} {:a "A" :b "a1" :v 4}]}))) "A") "a1"))))))
+
+(defn- dark? [[r g b]] (and (< r 80) (< g 80) (< b 80)))
+
+(deftest leaf-label-fit-test
+  (let [p (tm {:data [{:a "BIG" :v 1000} {:a "tiny" :v 1}] :mapping {:value :v :hierarchy [:a]} :theme plain})
+        built (build p)
+        {px :x py :y pw :w ph :h} (grid/item-box (:layout built) :panel)
+        [big tiny] (treemap/squarify [1000 1] {:x 0.0 :y 0.0 :w (double pw) :h (double ph)})
+        c (plot/render p {:width 600 :height 400})
+        dark-in (fn [{:keys [x y w h]}]
+                  (count (filter dark? (for [ix (range (long x) (long (+ x w))) iy (range (long y) (long (+ y h)))]
+                                         (pixel c (+ px ix) (+ py iy))))))]
+    (is (pos? (dark-in big)) "label drawn in the big leaf")
+    (is (zero? (dark-in tiny)) "no label in the tiny leaf")
+    (is (zero? (count (filter dark? (for [ix (range pw) iy [0 (dec ph)]] (pixel c (+ px ix) (+ py iy))))))
+        "no label ink on the panel's top / bottom edge")))
+
+(deftest header-fit-test
+  (let [top-pixel (fn [group-name]
+                    (let [p (tm {:data [{:a group-name :b "leaf" :v 1}] :theme plain :charts [(chart/treemap {:leaf-labels false})]})
+                          built (build p)
+                          {:keys [x y w]} (grid/item-box (:layout built) :panel)]
+                      (pixel (plot/render p {:width 600 :height 400}) (+ x (quot w 2)) (+ y 3))))]
+    (is (not= [255 0 0] (top-pixel "G")) "header fits: strip reserved")
+    (is (= [255 0 0] (top-pixel (apply str (repeat 120 "W")))) "header too wide: no strip, the leaf reaches the top")))

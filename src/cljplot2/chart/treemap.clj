@@ -4,12 +4,14 @@
   Mapping: `:value` (area, a positive finite number; other rows are dropped and counted) and `:hierarchy` (a
   non-empty vector of accessors, outer level first). A `nil` or `\"\"` level value ends the row's path at its parent;
   rows with an identical path merge (values summed). A row whose path stops at a group that also has deeper rows
-  becomes a leaf of that group, named like it. Optional `:color` aesthetic colors leaves (first row's value of a
-  merged leaf); without it each top-level group takes the next `[:palette :color]` color, its leaves sharing it.
+  becomes an unnamed leaf of that group. Optional `:color` aesthetic colors leaves (rows with the same path but
+  different colors stay separate leaves); without it each top-level group takes the next `[:palette :color]` color,
+  its leaves sharing it.
 
   Options (style defaults from theme `[:chart :treemap]`): `:layout` `:squarify` (default) or `:slice-dice`,
   `:group-labels` / `:leaf-labels` (default true), `:padding` (pixels inside every group), `:border-color`,
-  `:border-width`. Group headers use the `:treemap-group` text role in a strip at the group's top; leaf labels the
+  `:border-width`. Group headers use the `:treemap-group` text role in a strip at the group's top (reserved only when
+  the header fits the group's width); leaf labels the
   `:treemap-leaf` role, centered, drawn only when they fit. The layout is computed when drawing, from the panel box."
   (:require [clojure2d.color :as c]
             [clojure2d.core :as c2d]
@@ -21,7 +23,7 @@
             [cljplot2.draw :as draw]
             [cljplot2.measure :as measure]
             [cljplot2.theme :as theme]
-            [cljplot2.treemap :as treemap])
+            [cljplot2.treemap-layout :as layout])
   (:import [fastmath.vector Vec2]))
 
 (set! *warn-on-reflection* true)
@@ -61,23 +63,40 @@
   [accessors row]
   (vec (take-while #(not (or (nil? %) (= "" %))) (map #(% row) accessors))))
 
-(defn- node
-  "Tree node `name` from `entries` (`{:path rest-of-path :value v :color c}`), children in first-appearance order."
+(defn- leaves
+  "Leaves named `name` from `entries` ending here: one per distinct color value (first-appearance order), values
+  summed - rows differing only in color stay separate rectangles."
+  [name entries]
+  (let [by-color (group-by :color entries)]
+    (mapv (fn [col] {:name name :value (reduce + 0.0 (map :value (by-color col))) :color col})
+          (distinct (map :color entries)))))
+
+(defn- nodes
+  "Nodes named `name` from `entries` (`{:path rest-of-path :value v :color c}`): the leaves of `name` when no entry
+  goes deeper, otherwise one group whose children are the deeper groups (first-appearance order) followed by unnamed
+  leaves for the entries ending at the group."
   [name entries]
   (let [ends (filter #(empty? (:path %)) entries)
-        deeper (remove #(empty? (:path %)) entries)
-        leaf (fn [es] {:name name :value (reduce + 0.0 (map :value es)) :color (:color (first es))})]
+        deeper (remove #(empty? (:path %)) entries)]
     (if (empty? deeper)
-      (leaf entries)
-      (let [order (distinct (map #(first (:path %)) deeper))
-            by-first (group-by #(first (:path %)) deeper)
-            children (mapv (fn [k] (node k (map #(update % :path subvec 1) (by-first k)))) order)
-            children (cond-> children (seq ends) (conj (leaf ends)))]
-        {:name name :value (reduce + 0.0 (map :value children)) :children children}))))
+      (leaves name ends)
+      (let [by-first (group-by #(first (:path %)) deeper)
+            children (-> (into [] (mapcat (fn [k] (nodes k (map #(update % :path subvec 1) (by-first k)))))
+                               (distinct (map #(first (:path %)) deeper)))
+                         (into (leaves nil ends)))]
+        [{:name name :value (reduce + 0.0 (map :value children)) :children children}]))))
+
+(defn- root
+  "Root group of `entries`: its children are the top-level nodes (always a group, also for a single leaf)."
+  [entries]
+  (let [[n & more] (nodes nil entries)]
+    (if (and (:children n) (nil? more))
+      n
+      {:name nil :value (reduce + 0.0 (map :value (cons n more))) :children (vec (cons n more))})))
 
 (defn compute
   "Per panel: `{:tree root :top-count n :style style :options {...} :colored? bool}`, `root` -
-  `{:name nil :value :children}` (a single leaf becomes the root's only child), top-level children with `:top-index`
+  `{:name nil :value :children}` (always a group), top-level children with `:top-index`
   (first-appearance order over all panels, `:top-count` of them), leaves `{:name :value :color}`; aesthetic extents
   only (no x / y), `:na`, `:dropped {:value n :color n}`."
   [{:keys [options]} {:keys [groups mapping]} {:keys [theme na-level? plot-scales] :or {na-level? true}}]
@@ -101,16 +120,14 @@
                            (fn [rows]
                              (let [kept (filter #(and (value-ok? %) (color-ok? %)) rows)]
                                (when (seq kept)
-                                 (node nil (map (fn [r] {:path (path-of accessors r) :value (double (value-of r))
+                                 (root (map (fn [r] {:path (path-of accessors r) :value (double (value-of r))
                                                          :color (when color-of (color-of r))})
                                                 kept))))))
         colors (fn [tree] (when color-of (keep :color (tree-seq :children :children tree))))
         ;; top-level values in first-appearance order over all panels: default colors agree across panels
         top-index (zipmap (distinct (map #(first (path-of accessors %)) (filter #(and (value-ok? %) (color-ok? %)) all-rows)))
                           (range))
-        index-tops (fn [tree]
-                     (let [root (if (:children tree) tree {:name nil :value (:value tree) :children [tree]})]
-                       (update root :children (fn [cs] (mapv #(assoc % :top-index (top-index (:name %) 0)) cs)))))]
+        index-tops (fn [tree] (update tree :children (fn [cs] (mapv #(assoc % :top-index (top-index (:name %) 0)) cs))))]
     {:data (into {} (keep (fn [[panel tree]]
                             (when tree [panel {:tree (index-tops tree) :top-count (count top-index) :style st
                                                :options (merge {:layout :squarify :group-labels true :leaf-labels true}
@@ -154,9 +171,9 @@
 (defn- children-rects
   [children content depth layout]
   (if (= layout :slice-dice)
-    (mapv vector children (treemap/slice-dice (map :value children) content depth))
+    (mapv vector children (layout/slice-dice (map :value children) content depth))
     (let [sorted (vec (sort-by (comp - double :value) children))]
-      (mapv vector sorted (treemap/squarify (map :value sorted) content)))))
+      (mapv vector sorted (layout/squarify (map :value sorted) content)))))
 
 (defn- draw-node!
   "Draw `node` in `rect` at `depth` with fill `color` (`nil` for the root: no fill, no header)."
@@ -167,9 +184,12 @@
     (when (and (or root? (and (>= (long (:w box)) 1) (>= (long (:h box)) 1))))
       (if-let [children (:children node)]
         (let [padding (double (:padding style))
-              header? (and (not root?) (:group-labels options) (some? (:name node)))
-              header-h (if header? (.y (label-size :treemap-group (str (:name node)) env)) 0.0)
               {:keys [x y w h]} rect
+              ^Vec2 header-size (when (and (not root?) (:group-labels options) (some? (:name node)))
+                                  (label-size :treemap-group (str (:name node)) env))
+              ;; the header strip is reserved only when the header text fits the group's width
+              header? (and header-size (<= (.x header-size) (- (double w) (* 2.0 padding))))
+              header-h (if header? (.y header-size) 0.0)
               content {:x (+ (double x) padding) :y (+ (double y) padding header-h)
                        :w (- (double w) (* 2.0 padding)) :h (- (double h) (* 2.0 padding) header-h)}]
           (when-not root?

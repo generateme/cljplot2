@@ -1,4 +1,4 @@
-(ns cljplot2.treemap
+(ns cljplot2.treemap-layout
   "Treemap layouts: rectangles with areas proportional to positive values, filling a rectangle `{:x :y :w :h}`
   (doubles). Both functions return one rectangle per value, in the order of `values`.
 
