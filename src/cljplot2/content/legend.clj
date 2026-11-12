@@ -17,8 +17,9 @@
 
   Content `{:kind :colorbar :title t :scale spec :ticks [v ...] :labels [s ...]}`: title, then a vertical gradient bar
   (top = domain maximum, width theme `[:legend :bar-width]`, default `:key-size`) with tick marks and labels
-  (`:legend-label`). Its length is theme `[:legend :bar-length]` when a number; otherwise it stretches over the height
-  left in its stack column (at least 3 x `:key-size`, else it starts a new column).
+  (`:legend-label`). Its length is theme `[:legend :bar-length]`: `:stretch` (default) - the height left in its stack
+  column (at least 3 x `:key-size`, else it starts a new column); a number - that length, clamped to the height
+  available.
 
   Content `{:kind :legends :legends [legend ...]}`: legends (`:legend` or `:colorbar`) stacked top-down with theme `[:legend :gap]` between them;
   a legend that doesn't fit below the previous one starts a new stack column to the right. [[legend-boxes]] gives
@@ -208,15 +209,17 @@
      :h (+ (* 2.0 border) (.y title-size) label-h length)}))
 
 (defn- colorbar-length
-  "Bar length for `content` with `room` pixels available: theme `[:legend :bar-length]` when a number, otherwise the
-  room minus the bar's fixed parts, at least 3 x `:key-size` (also for unbounded room)."
+  "Bar length for `content` with `room` pixels available: the room minus the bar's fixed parts (title, label room,
+  border), at least 3 x `:key-size` (also for unbounded room), for theme `[:legend :bar-length] :stretch`; a number
+  is used up to that stretched length (never longer than the room allows)."
   ^double [content env ^double room]
   (let [{:keys [bar-length key-size]} (get-in env [:theme :legend])
-        minimum (* 3.0 (double key-size))]
+        minimum (* 3.0 (double key-size))
+        fixed (double (:h (colorbar-geometry content env 0.0)))
+        stretched (if (m/valid-double? room) (m/max minimum (- room fixed)) ##Inf)]
     (if (number? bar-length)
-      (double bar-length)
-      (let [fixed (double (:h (colorbar-geometry content env 0.0)))]
-        (if (m/valid-double? room) (m/max minimum (- room fixed)) minimum)))))
+      (m/min (double bar-length) stretched)
+      (if (m/valid-double? stretched) stretched minimum))))
 
 (defn- stretching? [content env]
   (and (= :colorbar (:kind content)) (not (number? (get-in env [:theme :legend :bar-length])))))

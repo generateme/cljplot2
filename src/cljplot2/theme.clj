@@ -33,8 +33,8 @@
   (`[min max]` pixels), `:na` (color of NA values).
 
   `:legend` - `:gap` (pixels between key and label and between legends), `:key-size` (key box side, pixels),
-  `:fill`, `:border-color`, `:border-width`, color bar `:bar-length` (`nil` - stretch) and `:bar-width` (`nil` -
-  `:key-size`); text roles `:legend-title` and `:legend-label`.
+  `:fill`, `:border-color`, `:border-width`, color bar `:bar-length` (`:stretch` - over the space left, or a number,
+  clamped to it) and `:bar-width` (`nil` - `:key-size`); text roles `:legend-title` and `:legend-label`.
 
   `:chart` - per chart kind defaults: `:scatter`, `:histogram`, `:density`, `:line`, `:ecdf` (old cljplot blue),
   `:treemap` (`:padding`, `:border-color`, `:border-width`); validated when a chart of that kind computes.
@@ -97,7 +97,7 @@
              :shape [\O \s \A \x \+ \V \o \S \^ \v \{ \} \< \>]
              :size [2 10]
              :na [150 150 150]}
-   :legend {:gap 5 :key-size 14 :fill :none :border-color :none :border-width 1 :bar-length nil :bar-width nil}
+   :legend {:gap 5 :key-size 14 :fill :none :border-color :none :border-width 1 :bar-length :stretch :bar-width nil}
    :chart {:scatter {:size 4 :color [49 54 149 180] :stroke-color :none :stroke-width 1 :shape \O}
            :histogram {:color [49 54 149] :stroke-width 1 :alpha 0.6}
            :density {:color [49 54 149] :width 1 :dash :none :fill :none}
@@ -186,10 +186,12 @@
           (invalid "Legend sizes must be non-negative numbers." {:key k :value v})))
       (when (or (nil? fill) (nil? border-color))
         (invalid "Legend colors must be colors or :none." {:key :legend}))
-      (doseq [k [:bar-length :bar-width]
-              :let [v (get-in theme [:legend k])]]
+      (let [v (get-in theme [:legend :bar-length])]
+        (when-not (or (= :stretch v) (and (number? v) (pos? (double v))))
+          (invalid "Legend :bar-length must be :stretch or a positive number." {:key :bar-length :value v})))
+      (let [v (get-in theme [:legend :bar-width])]
         (when-not (or (nil? v) (and (number? v) (pos? (double v))))
-          (invalid "Legend color bar sizes must be positive numbers or nil." {:key k :value v}))))
+          (invalid "Legend :bar-width must be a positive number (nil - :key-size)." {:key :bar-width :value v}))))
     (doseq [[role style] (:text theme)]
       (when-not (map? style)
         (invalid "Text role style must be a map." {:key :role :value role}))

@@ -55,9 +55,9 @@
   "Equal-count overlapping intervals of `values` (`nil` and NaN ignored): `{:count n :overlap f}` (defaults 6 and 0.5,
   `0 <= f < 1`), as [[Interval]]s. Fewer intervals when the data can't support `n` distinct ones; none for no values.
   Throws `ex-info {:key :shingle}` for bad options or non-numeric values."
-  [values {:keys [count overlap] :or {count 6 overlap 0.5}}]
-  (when-not (and (integer? count) (pos? (long count)))
-    (throw (ex-info "Shingle :count must be a positive integer." {:key :shingle :value count})))
+  [values {n :count overlap :overlap :or {n 6 overlap 0.5}}]
+  (when-not (and (integer? n) (pos? (long n)))
+    (throw (ex-info "Shingle :count must be a positive integer." {:key :shingle :value n})))
   (when-not (and (number? overlap) (<= 0.0 (double overlap)) (< (double overlap) 1.0))
     (throw (ex-info "Shingle :overlap must be a number in [0 1)." {:key :shingle :value overlap})))
   (let [present (remove nil? values)]
@@ -66,7 +66,7 @@
     (let [xs (filterv finite-number? present)]
       (if (empty? xs)
         []
-        (mapv (fn [[lo hi]] (->Interval lo hi nil)) (m/co-intervals xs (long count) (double overlap)))))))
+        (mapv (fn [[lo hi]] (->Interval lo hi nil)) (m/co-intervals xs (long n) (double overlap)))))))
 
 (defn shingle
   "Rows of `data` (see [[cljplot2.data.rows/rows]]) repeated once per interval containing the value of `accessor`
@@ -82,6 +82,8 @@
     (throw (ex-info "Shingle :label must be a string, or true with a keyword accessor." {:key :shingle :value label})))
   (let [rs (rows/rows data)
         acc (rows/row-accessor :shingle accessor)
+        _ (when-let [bad (first (remove #(or (nil? %) (number? %)) (map acc rs)))]
+            (throw (ex-info "Shingle values must be numbers." {:key :shingle :value bad})))
         series (cond (string? label) label (true? label) (name accessor))
         ivs (if (some? intervals)
               (do (when-not (and (sequential? intervals) (seq intervals)
@@ -96,6 +98,4 @@
                                    (keep (fn [iv] (when (contains-value? iv v) (assoc row as iv))) ivs)))))
                   rs)
         covered (count (filter (fn [row] (let [v (acc row)] (and (finite-number? v) (some #(contains-value? % v) ivs)))) rs))]
-    (when-let [bad (first (remove #(or (nil? %) (number? %)) (map acc rs)))]
-      (throw (ex-info "Shingle values must be numbers." {:key :shingle :value bad})))
     (with-meta out {:dropped (- (count rs) covered)})))

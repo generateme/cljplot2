@@ -273,46 +273,57 @@
           (recur (inc round) remeasured))))))
 
 (def ^:const max-iso-rounds
-  "Upper bound on refits of iso panel sizes (nice domains may change with the panel size)."
-  4)
+  "Upper bound on refits of iso panel sizes (nice domains and measured tracks may change with the panel size)."
+  6)
 
 (defn- span ^double [finalized] (let [[a b] (:domain finalized)] (m/abs (- (double b) (double a)))))
 
 (defn- iso-spacers
-  "Spacer sizes `[column row]` (each side) giving the panels of `layout` (grid `g`, current spacers `spacers`) equal
-  pixels per unit for `scales`: the panel area available without spacers is fitted by the largest panels with
-  `w / x-span = h / y-span`; the rest goes to the spacers."
-  [g layout scales [column-spacer row-spacer]]
+  "Whole-pixel spacer totals `[column row]` (both sides of an axis together) giving the panels of `layout` (grid `g`,
+  current totals `spacers`) equal pixels per unit for `scales`: the panel area available without spacers is fitted by
+  the largest panels with `w / x-span = h / y-span`; the rest goes to the spacers."
+  [g layout scales [column-total row-total]]
   (let [panels (map :box (grid/content-items g layout panel-content?))
         {:keys [w h]} (first panels)
         columns (count (distinct (map :x panels)))
         rows (count (distinct (map :y panels)))
-        w-avail (+ (double w) (/ (* 2.0 (double column-spacer)) columns))
-        h-avail (+ (double h) (/ (* 2.0 (double row-spacer)) rows))
+        w-avail (+ (double w) (/ (double column-total) columns))
+        h-avail (+ (double h) (/ (double row-total) rows))
         dx (span (:x scales)) dy (span (:y scales))
         k (m/min (/ w-avail dx) (/ h-avail dy))]
-    [(m/max 0.0 (/ (* (- w-avail (* k dx)) columns) 2.0))
-     (m/max 0.0 (/ (* (- h-avail (* k dy)) rows) 2.0))]))
+    [(m/max 0 (m/round (* (- w-avail (* k dx)) columns)))
+     (m/max 0 (m/round (* (- h-avail (* k dy)) rows)))]))
+
+(defn- iso-mismatch
+  "Relative difference of the x and y pixels per unit of `layout`'s first panel for finalized `scales`."
+  ^double [g layout scales]
+  (let [{:keys [w h]} (grid/find-content-box g layout panel-content?)
+        px (/ (double w) (span (:x scales)))
+        py (/ (double h) (span (:y scales)))]
+    (/ (m/abs (- px py)) (m/max px py))))
 
 (defn- iso-layout
   "Iso aspect: starting from the free layout, size the spacer tracks around the (flexible) panel block so the panels
-  get equal pixels per unit on x and y (see [[iso-spacers]], [[cljplot2.layout.plot-grid/iso-grid]]); re-solve until
-  the spacers settle within half a pixel (at most [[max-iso-rounds]] refits). Measured tracks may change between
-  rounds; the flexible panels absorb that, so the grid never overflows."
+  get equal pixels per unit on x and y (see [[iso-spacers]], [[cljplot2.layout.plot-grid/iso-grid]]). Refit until the
+  whole-pixel spacers repeat (settled, or cycling when measured tracks change by a pixel with the panel size), at most
+  [[max-iso-rounds]] times, and keep the round with the smallest mismatch. Flexible panels absorb measured track
+  changes, so the grid never overflows."
   [plot canvas]
-  (let [base-grid (:grid plot)]
+  (let [base-grid (:grid plot)
+        candidate (fn [g layout] (let [scales (finalize-scales (assoc plot :grid g) layout)]
+                                   {:grid g :layout layout :scales scales :mismatch (iso-mismatch g layout scales)}))]
     (loop [round 1
-           spacers [0.0 0.0]
-           g base-grid
-           layout (solve-layout plot canvas)]
-      (let [scales (finalize-scales (assoc plot :grid g) layout)
-            spacers' (iso-spacers g layout scales spacers)
+           seen #{[0 0]}
+           current (candidate base-grid (solve-layout plot canvas))
+           best nil]
+      (let [spacers' (iso-spacers (:grid current) (:layout current) (:scales current)
+                                  (if best (:spacers current) [0 0]))
             g' (plot-grid/iso-grid base-grid (spacers' 0) (spacers' 1))
-            layout' (solve-layout (assoc plot :grid g') canvas)
-            settled? (every? #(< (m/abs (double %)) 0.5) (map - spacers' spacers))]
-        (if (or settled? (>= round max-iso-rounds))
-          (assoc plot :grid g' :layout layout')
-          (recur (inc round) spacers' g' layout'))))))
+            next (assoc (candidate g' (solve-layout (assoc plot :grid g') canvas)) :spacers spacers')
+            best (if (or (nil? best) (< (double (:mismatch next)) (double (:mismatch best)))) next best)]
+        (if (or (contains? seen spacers') (>= round max-iso-rounds))
+          (assoc plot :grid (:grid best) :layout (:layout best))
+          (recur (inc round) (conj seen spacers') next best))))))
 
 (defn- layout-stage
   "The plot's layout (see [[solve-layout]]); with `:aspect :iso` the panels are sized for equal pixels per unit on x

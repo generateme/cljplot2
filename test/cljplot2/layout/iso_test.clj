@@ -17,7 +17,7 @@
 
 (defn- iso? [built]
   (let [[px py m] (px-per-unit built)]
-    (<= (/ (Math/abs (- px py)) (max px py)) (/ 1.5 (double m)))))
+    (<= (/ (Math/abs (- px py)) (max px py)) (/ 1.0 (double m)))))
 
 (def ^:private wide {:data (for [i (range 50)] {:x (* 4 i) :y (mod (* i 7) 50) :g (["a" "b" "c"] (mod i 3))})
                      :mapping {:x :x :y :y} :charts [(chart/scatter)] :aspect :iso})
@@ -28,8 +28,12 @@
   (testing "panel block centred: spacers on both sides"
     (let [built (plot/build wide {:width 600 :height 600})
           tracks (fn [axis] (into {} (map (juxt :id :size)) (get-in built [:grid axis])))]
-      (is (= (tracks :rows) (tracks :rows)))
-      (is (= (get (tracks :rows) :iso-before) (get (tracks :rows) :iso-after))))))
+      (doseq [axis [:rows :columns]
+              :let [t (tracks axis)]]
+        (is (<= 0 (- (long (second (t :iso-after))) (long (second (t :iso-before)))) 1)
+            (str axis " spacers equal up to the odd pixel")))
+      (is (pos? (long (second (get (tracks :rows) :iso-before)))) "wide data in a square canvas: row spacers used")
+      (is (zero? (long (second (get (tracks :columns) :iso-before)))) "no column spacers"))))
 
 (deftest iso-facet-test
   (let [p (assoc wide :mapping {:x :x :y :y :facet :g})]

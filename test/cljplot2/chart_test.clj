@@ -307,9 +307,11 @@
     (is (= [0 255 0] (top-color {} {})) "no :order: data order, last row on top")
     (is (= [255 0 0] (top-color {:order :o} {})) "ascending: highest order on top")
     (is (= [0 0 255] (top-color {:order :o} {:order-direction :descending})) "descending: lowest order on top")
-    (testing "nil order values drawn first; validation"
-      (is (= [nil 1 2] (map :o (let [b (build {:data data :mapping {:x :x :y :y :order :o :color :o} :scales {:color {:kind :ordinal}}
-                                                :charts [(chart/scatter)]})]
-                                   (map #(hash-map :o %) (get-in b [:stats 0 :data :panel :color]))))))
+    (testing "nil order values drawn first, then ascending; stable for ties"
+      (let [rows [{:x 1 :y 1 :o 2} {:x 2 :y 1 :o nil} {:x 3 :y 1 :o 1} {:x 4 :y 1 :o 1}]
+            drawn-x (fn [opts] (get-in (build {:data rows :mapping {:x :x :y :y :order :o} :charts [(chart/scatter opts)]})
+                                       [:stats 0 :data :panel :x]))]
+        (is (= [2 3 4 1] (drawn-x {})) "nil first, ties (x 3, 4) in data order")
+        (is (= [2 1 3 4] (drawn-x {:order-direction :descending})) "nil still first"))
       (is (= :order-direction (:key (error-data #(build {:data data :mapping {:x :x :y :y :order :o} :charts [(chart/scatter {:order-direction :up})]})))))
       (is (= :order (:key (error-data #(build {:data [{:x 1 :y 1 :o 1} {:x 2 :y 2 :o "a"}] :mapping {:x :x :y :y :order :o} :charts [(chart/scatter)]}))))))))

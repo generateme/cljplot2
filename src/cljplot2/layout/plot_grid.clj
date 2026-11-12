@@ -288,12 +288,19 @@
     (-> grid (update :columns insert) (update :rows insert))))
 
 (defn iso-grid
-  "Generated `grid` (with iso spacers) with the column spacers fixed to `column-spacer` and the row spacers to
-  `row-spacer` pixels each; panels stay flexible and take the rest, the panel block centred."
-  [grid column-spacer row-spacer]
-  (let [resize (fn [tracks size]
-                 (mapv (fn [t] (if (iso-spacers (:id t)) (assoc t :size [:fixed size]) t)) tracks))]
-    (-> grid (update :columns resize column-spacer) (update :rows resize row-spacer))))
+  "Generated `grid` (with iso spacers) with `column-total` / `row-total` whole pixels of spacer per axis, split
+  between the two sides (`:iso-before` gets the floor of half); panels stay flexible and take the rest, the panel
+  block centred."
+  [grid column-total row-total]
+  (let [resize (fn [tracks total]
+                 (let [total (long total)
+                       before (quot total 2)]
+                   (mapv (fn [t] (case (:id t)
+                                   :iso-before (assoc t :size [:fixed before])
+                                   :iso-after (assoc t :size [:fixed (- total before)])
+                                   t))
+                         tracks)))]
+    (-> grid (update :columns resize column-total) (update :rows resize row-total))))
 
 (defn plot-grid
   "The generated grid: [[facet-grid]] when the plot is faceted (`[:split :facets :dims]` non-empty), else

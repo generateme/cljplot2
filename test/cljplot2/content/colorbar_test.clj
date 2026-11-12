@@ -67,7 +67,7 @@
   (testing "with another legend: stacked below it, stretching over the rest"
     (let [built (build (cb-plot {:mapping {:x :x :y :y :color :d :shape :g}}))
           [l0 l1] (boxes built)]
-      (is (= [:legend :colorbar] (map :kind (reverse (legends built)))) "shape legend + color bar")
+      (is (= [:colorbar :legend] (map :kind (legends built))) "stack order: color bar (color first), then shape legend")
       (is (some? l1))
       (is (or (> (:y l1) (:y l0)) (> (:x l1) (:x l0))))))
   (testing "too little room left: new stack column"
@@ -78,4 +78,23 @@
     (are [t k] (= k (:key (error-data #(build (cb-plot {:theme t})))))
       {:legend {:bar-length -1}} :bar-length
       {:legend {:bar-width 0}} :bar-width
-      {:legend {:bar-length "x"}} :bar-length)))
+      {:legend {:bar-length "x"}} :bar-length
+      {:legend {:bar-length :long}} :bar-length)))
+
+(deftest colorbar-length-test
+  (let [bar-pixels (fn [theme size]
+                     (let [p (cb-plot {:theme (merge {:plot {:background :white}} theme)})
+                           built (plot/build p size)
+                           [{:keys [x y h]}] (boxes built)
+                           c (plot/render p size)]
+                       (count (filter gradient? (for [py (range y (+ y h))] (pixel c (+ x 4) py))))))]
+    (testing "a fixed length longer than the room is clamped (stays on the canvas)"
+      (let [{:keys [h]} (grid/item-box (:layout (build (cb-plot {}))) :legends)
+            n (bar-pixels {:legend {:bar-length 2000}} {:width 600 :height 400})]
+        (is (< n h))
+        (is (= n (bar-pixels {} {:width 600 :height 400})) "clamped to the stretched length")))
+    (testing ":stretch restores stretching over an earlier fixed length"
+      (is (= (bar-pixels {} {:width 600 :height 400})
+             (bar-pixels {:legend {:bar-length :stretch}} {:width 600 :height 400}))))
+    (testing "a short fixed length is kept"
+      (is (<= 49 (bar-pixels {:legend {:bar-length 50}} {:width 600 :height 400}) 51)))))
