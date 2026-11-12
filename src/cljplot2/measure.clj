@@ -4,7 +4,8 @@
   Text metrics depend on the rendering hint (fractional metrics), not on canvas size,
   so content is measured on a 1x1 scratch canvas created with the target canvas's hint."
   (:require [clojure2d.core :as c2d]
-            [fastmath.vector :as v]))
+            [fastmath.vector :as v]
+            [cljplot2.canvas :as canvas]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -22,9 +23,7 @@
 (defn call-with-scratch-canvas
   "Call `(f canvas)` with a [[scratch-canvas]] in graphics context; the graphics are released even when `f` throws."
   [hint f]
-  (let [canvas (c2d/make-graphics (scratch-canvas hint))]
-    (try (f canvas)
-         (finally (c2d/flush-graphics canvas)))))
+  (canvas/call-with-graphics (scratch-canvas hint) f))
 
 (defmulti natural-size
   "Natural size of item `content` as `Vec2` `[width height]`, dispatched on `(:kind content)`.

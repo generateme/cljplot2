@@ -4,6 +4,7 @@
   Step 1: debug drawing of the solved grid - every item box filled with a distinct color and labelled with its id."
   (:require [clojure2d.core :as c2d]
             [clojure2d.color :as c]
+            [cljplot2.canvas :as canvas]
             [cljplot2.pipeline :as pipeline]))
 
 (set! *warn-on-reflection* true)
@@ -35,7 +36,9 @@
   ([plot options]
    (let [built (pipeline/build plot (dissoc options :until))
          {:keys [width height hint]} (:options built)]
-     (c2d/with-canvas [canvas (c2d/canvas width height hint)]
-       (c2d/set-background canvas :white)
-       (draw-debug-items! canvas (get-in built [:layout :items]) 0)
-       canvas))))
+     (canvas/call-with-graphics
+      (c2d/canvas width height hint)
+      (fn [target]
+        (c2d/set-background target :white)
+        (draw-debug-items! target (get-in built [:layout :items]) 0)
+        target)))))
