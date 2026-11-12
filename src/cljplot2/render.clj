@@ -1,16 +1,16 @@
 (ns cljplot2.render
   "Rendering a built plot onto a clojure2d canvas.
 
-  Item content is drawn by [[cljplot2.draw/draw-content]]; plot items draw their built sub-plot directly on the
+  Item content is drawn by [[cljplot2.graphics.draw/draw-content]]; plot items draw their built sub-plot directly on the
   same canvas (translated, clipped - no intermediate image); option `:debug` first paints every item box with a
   distinct color, its outline and its id."
   (:require [clojure2d.core :as c2d]
             [clojure2d.color :as c]
-            [cljplot2.canvas :as canvas]
-            [cljplot2.draw :as draw]
-            [cljplot2.grid :as grid]
+            [cljplot2.graphics.canvas :as canvas]
+            [cljplot2.graphics.draw :as draw]
+            [cljplot2.layout.grid :as grid]
             [cljplot2.pipeline :as pipeline]
-            [cljplot2.subplot :as subplot]
+            [cljplot2.content.subplot :as subplot]
             [cljplot2.theme :as theme])
   (:import [java.awt Graphics2D Rectangle]))
 
@@ -56,7 +56,7 @@
 (defn- draw-contents!
   "Draw the content of every item of `grid` at its box in `layout`, recursing into nested grids; plot items draw
   their built sub-plot from `env` `:subplots` (skipped when absent, e.g. a cell under 1x1 px).
-  `layout` items are in `grid` `:items` order (see [[cljplot2.grid/solve]])."
+  `layout` items are in `grid` `:items` order (see [[cljplot2.layout.grid/solve]])."
   [canvas grid layout env]
   (doseq [[item {:keys [box] :as item-layout}] (map vector (:items grid) (:items layout))
           :let [content (:content item)]]

@@ -3,12 +3,12 @@
 
   `:text` maps a role (`:title`, `:strip`, ...) to a text style:
 
-  * `:font` - font family name or `java.awt.Font`, see [[cljplot2.font/resolve-font]]
+  * `:font` - font family name or `java.awt.Font`, see [[cljplot2.graphics.font/resolve-font]]
   * `:size` - points
   * `:font-style` - `:plain`, `:bold`, `:italic` or `:bold-italic`
   * `:color` - any clojure2d color
   * `:padding` - pixels added on every side of the text
-  * `:align` - `[h v]` placement of the text in its box (optional, default `[:center :middle]`), see [[cljplot2.label]]
+  * `:align` - `[h v]` placement of the text in its box (optional, default `[:center :middle]`), see [[cljplot2.content.label]]
 
   `:plot` - `:background` (fills the canvas), `:margin` (pixels on every side).
 
@@ -28,7 +28,7 @@
   `:strip` - `:fill`, `:border-color`, `:border-width` of facet strips; `:facet {:gap px}` between panels;
   `:multiplot {:gap px}` between arranged plots.
 
-  `:palette` - aesthetic defaults, see [[cljplot2.aesthetic]]: `:color` (palette name or colors, old cljplot
+  `:palette` - aesthetic defaults, see [[cljplot2.scale.aesthetic]]: `:color` (palette name or colors, old cljplot
   `:category20`), `:gradient` (colors or palette name; `:k2` reversed), `:shape` (shape sequence), `:size`
   (`[min max]` pixels), `:na` (color of NA values).
 
@@ -43,8 +43,8 @@
 
   [[plot-theme]] validates the merged theme, so bad values fail at build time."
   (:require [clojure2d.color :as c]
-            [cljplot2.aesthetic :as aesthetic]
-            [cljplot2.font :as font]))
+            [cljplot2.scale.aesthetic :as aesthetic]
+            [cljplot2.graphics.font :as font]))
 
 (def style-keys
   "Keys of a text style; content may override them inline."

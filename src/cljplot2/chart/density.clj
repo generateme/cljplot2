@@ -9,14 +9,14 @@
   * `:color`, `:width`, `:dash` (line), `:fill` (area under the curve, default `:none`)
   * `:padding {:x [lo hi] :y [lo hi]}` - default `{:x [0.05 0.05] :y [0 0.05]}`
 
-  Groups (see [[cljplot2.group]]) come from ordinal aesthetics (`:color` colors the line) and `:group`; a group with
+  Groups (see [[cljplot2.data.group]]) come from ordinal aesthetics (`:color` colors the line) and `:group`; a group with
   fewer than 2 distinct values has no curve and is counted in `:dropped {:group n}`."
   (:require [fastmath.core :as m]
             [fastmath.kernel :as k]
-            [cljplot2.data :as data]
-            [cljplot2.group :as group]
-            [cljplot2.polyline :as polyline]
-            [cljplot2.scale :as scale]
+            [cljplot2.data.rows :as data]
+            [cljplot2.data.group :as group]
+            [cljplot2.graphics.polyline :as polyline]
+            [cljplot2.scale.position :as scale]
             [cljplot2.theme :as theme]))
 
 (set! *warn-on-reflection* true)

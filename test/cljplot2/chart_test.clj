@@ -4,10 +4,10 @@
             [clojure2d.core :as c2d]
             [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
-            [cljplot2.data :as data]
-            [cljplot2.grid :as grid]
-            [cljplot2.scale :as scale]
-            [cljplot2.shape :as shape])
+            [cljplot2.data.rows :as data]
+            [cljplot2.layout.grid :as grid]
+            [cljplot2.scale.position :as scale]
+            [cljplot2.graphics.shape :as shape])
   (:import [java.awt.image BufferedImage]
            [java.time LocalDate]))
 

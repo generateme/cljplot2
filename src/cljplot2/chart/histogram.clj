@@ -16,15 +16,15 @@
   * `:padding {:x [lo hi] :y [lo hi]}` - default `{:x [0.05 0.05] :y [0 0.05]}` (mirror: y `[0.05 0.05]`); bars
     stand on the panel's bottom edge, x padding keeps end ticks off facet panel joints
 
-  Groups (see [[cljplot2.group]]) come from ordinal aesthetics (`:color` fills the bars) and `:group`.
+  Groups (see [[cljplot2.data.group]]) come from ordinal aesthetics (`:color` fills the bars) and `:group`.
   A single distinct value gets one bin of width 1 centred on it."
   (:require [clojure2d.color :as c]
             [clojure2d.core :as c2d]
             [fastmath.core :as m]
             [fastmath.stats :as stats]
-            [cljplot2.data :as data]
-            [cljplot2.group :as group]
-            [cljplot2.scale :as scale]
+            [cljplot2.data.rows :as data]
+            [cljplot2.data.group :as group]
+            [cljplot2.scale.position :as scale]
             [cljplot2.theme :as theme]))
 
 (set! *warn-on-reflection* true)

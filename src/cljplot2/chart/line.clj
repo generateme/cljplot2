@@ -6,12 +6,12 @@
   between the line and y = 0 - or the nearer panel edge when 0 is outside the y range - default `:none`),
   `:padding {:x [lo hi] :y [lo hi]}` (default 5% each side).
   A row with an invalid x is dropped (counted); an invalid y breaks the line there (counted).
-  Groups (see [[cljplot2.group]]) come from ordinal aesthetics (`:color` colors the line) and `:group`."
+  Groups (see [[cljplot2.data.group]]) come from ordinal aesthetics (`:color` colors the line) and `:group`."
   (:require [fastmath.core :as m]
-            [cljplot2.data :as data]
-            [cljplot2.group :as group]
-            [cljplot2.polyline :as polyline]
-            [cljplot2.scale :as scale]))
+            [cljplot2.data.rows :as data]
+            [cljplot2.data.group :as group]
+            [cljplot2.graphics.polyline :as polyline]
+            [cljplot2.scale.position :as scale]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)

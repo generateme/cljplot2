@@ -4,12 +4,12 @@
   Uses fastmath's `:real-discrete-distribution` `cdf`; the value at the largest data value is exactly 1.0.
   Options (style defaults from theme `[:chart :ecdf]`): `:color`, `:width`, `:dash`,
   `:padding {:x [lo hi] :y [lo hi]}` (default 5% each side).
-  Groups (see [[cljplot2.group]]) come from ordinal aesthetics (`:color` colors the line) and `:group`."
+  Groups (see [[cljplot2.data.group]]) come from ordinal aesthetics (`:color` colors the line) and `:group`."
   (:require [fastmath.random :as r]
-            [cljplot2.data :as data]
-            [cljplot2.group :as group]
-            [cljplot2.polyline :as polyline]
-            [cljplot2.scale :as scale]))
+            [cljplot2.data.rows :as data]
+            [cljplot2.data.group :as group]
+            [cljplot2.graphics.polyline :as polyline]
+            [cljplot2.scale.position :as scale]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)

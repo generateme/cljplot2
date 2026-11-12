@@ -17,13 +17,13 @@
             [clojure2d.core :as c2d]
             [fastmath.core :as m]
             [fastmath.vector :as v]
-            [cljplot2.aesthetic :as aesthetic]
-            [cljplot2.canvas :as canvas]
-            [cljplot2.data :as data]
-            [cljplot2.draw :as draw]
-            [cljplot2.measure :as measure]
+            [cljplot2.scale.aesthetic :as aesthetic]
+            [cljplot2.graphics.canvas :as canvas]
+            [cljplot2.data.rows :as data]
+            [cljplot2.graphics.draw :as draw]
+            [cljplot2.graphics.measure :as measure]
             [cljplot2.theme :as theme]
-            [cljplot2.treemap-layout :as layout])
+            [cljplot2.layout.treemap :as layout])
   (:import [fastmath.vector Vec2]))
 
 (set! *warn-on-reflection* true)

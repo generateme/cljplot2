@@ -4,7 +4,7 @@
             [clojure2d.core :as c2d]
             [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
-            [cljplot2.grid :as grid])
+            [cljplot2.layout.grid :as grid])
   (:import [java.awt.image BufferedImage]))
 
 (defn- error-data [f]

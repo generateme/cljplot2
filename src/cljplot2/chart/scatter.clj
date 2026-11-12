@@ -2,16 +2,16 @@
   "Scatter chart: one shape per row at its mapped (x, y).
 
   Options (defaults from theme `[:chart :scatter]`): `:size` (pixels), `:color`, `:stroke-color`, `:stroke-width`,
-  `:shape` (see [[cljplot2.shape]]); mapped `:color`, `:shape`, `:size` override them per point
-  (see [[cljplot2.aesthetic]]); `:padding {:x [lo hi] :y [lo hi]}` (fractions of the data span),
+  `:shape` (see [[cljplot2.graphics.shape]]); mapped `:color`, `:shape`, `:size` override them per point
+  (see [[cljplot2.scale.aesthetic]]); `:padding {:x [lo hi] :y [lo hi]}` (fractions of the data span),
   plus `:data` and `:mapping` (see [[cljplot2.chart]])."
   (:require [clojure2d.core :as c2d]
             [fastmath.core :as m]
             [fastmath.vector :as v]
-            [cljplot2.aesthetic :as aesthetic]
-            [cljplot2.data :as data]
-            [cljplot2.scale :as scale]
-            [cljplot2.shape :as shape]))
+            [cljplot2.scale.aesthetic :as aesthetic]
+            [cljplot2.data.rows :as data]
+            [cljplot2.scale.position :as scale]
+            [cljplot2.graphics.shape :as shape]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -42,14 +42,14 @@
 
 (defn- kept?
   "Is `v` of dimension `k` kept: valid (for an aesthetic also inside the explicit domain of its plot scale, see
-  [[cljplot2.aesthetic/in-domain?]]), or `nil` (NA) for an aesthetic when `na-level?`."
+  [[cljplot2.scale.aesthetic/in-domain?]]), or `nil` (NA) for an aesthetic when `na-level?`."
   [k na-level? plot-scales v]
   (boolean (if (aesthetic/dim? k)
              (or (and (data/valid-value? v) (aesthetic/in-domain? k (get plot-scales k {}) v)) (and na-level? (nil? v)))
              (data/valid-value? v))))
 
 (defn compute
-  "Per panel: points (rows with valid mapped x and y and kept aesthetic values, see [[cljplot2.aesthetic]]) as
+  "Per panel: points (rows with valid mapped x and y and kept aesthetic values, see [[cljplot2.scale.aesthetic]]) as
   `{:x [..] :y [..] :style style}` plus a vector per mapped aesthetic (`:color`, `:shape`, `:size`; `nil` = NA),
   `style` being the validated options merged over the theme; extents per panel (aesthetics: value extents of
   non-NA values), padding, `:na` (set of aesthetics with NA values) and per-dimension counts of dropped rows (zero

@@ -2,7 +2,7 @@
   (:require [clojure.test :refer [deftest testing is]]
             [clojure2d.core :as c2d]
             [cljplot2.core :as plot]
-            [cljplot2.grid :as grid]
+            [cljplot2.layout.grid :as grid]
             [cljplot2.examples :as examples])
   (:import [java.awt.image BufferedImage]))
 

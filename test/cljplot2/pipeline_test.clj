@@ -2,9 +2,9 @@
   (:require [clojure.test :refer [deftest testing is are]]
             [clojure2d.core :as c2d]
             [fastmath.vector :as v]
-            [cljplot2.grid :as grid]
+            [cljplot2.layout.grid :as grid]
             [cljplot2.pipeline :as pipeline]
-            [cljplot2.measure :as measure]
+            [cljplot2.graphics.measure :as measure]
             [cljplot2.examples :as examples]))
 
 (defn- error-data [f]

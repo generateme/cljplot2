@@ -5,8 +5,8 @@
             [fastmath.core :as m]
             [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
-            [cljplot2.grid :as grid]
-            [cljplot2.treemap-layout :as treemap])
+            [cljplot2.layout.grid :as grid]
+            [cljplot2.layout.treemap :as treemap])
   (:import [java.awt.image BufferedImage]))
 
 (defn- error-data [f]

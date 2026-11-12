@@ -6,52 +6,52 @@
 
   Plot keys read so far:
 
-  * `:labels` - plot titles, see [[cljplot2.plot-grid]]
-  * `:scales` - `{:x spec :y spec}`, position scales, see [[cljplot2.scale/data-scale-spec]]; facet scales, see
-    [[cljplot2.facet]]; aesthetic scales `:color` `:shape` `:size`, see [[cljplot2.aesthetic]]
-  * `:data`, `:mapping` - plot data and mapping, see [[cljplot2.data]]
+  * `:labels` - plot titles, see [[cljplot2.layout.plot-grid]]
+  * `:scales` - `{:x spec :y spec}`, position scales, see [[cljplot2.scale.position/data-scale-spec]]; facet scales, see
+    [[cljplot2.data.facet]]; aesthetic scales `:color` `:shape` `:size`, see [[cljplot2.scale.aesthetic]]
+  * `:data`, `:mapping` - plot data and mapping, see [[cljplot2.data.rows]]
   * `:charts` - vector of chart values, see [[cljplot2.chart]]
-  * `:facets` - `{:columns :rows :order :na-panel}` facet layout options, see [[cljplot2.facet]]
+  * `:facets` - `{:columns :rows :order :na-panel}` facet layout options, see [[cljplot2.data.facet]]
   * `:groups` - `{:na bool}`: `nil` aesthetic values form the NA level (default `true`) or are dropped
   * `:labels` - plot titles; charts may suggest axis titles (`:axis-titles` in their stats), `:labels` win
-  * `:legend` - `false` hides all legends, see [[cljplot2.legend]]
-  * `:custom-grid` - a hand-written grid (see [[cljplot2.grid]]) used instead of the generated one; only
+  * `:legend` - `false` hides all legends, see [[cljplot2.content.legend]]
+  * `:custom-grid` - a hand-written grid (see [[cljplot2.layout.grid]]) used instead of the generated one; only
     `:labels {:title t}` may accompany it (a title row above it). Items with `{:kind :plot :plot p}` content hold
-    whole plots (see [[cljplot2.subplot]])
+    whole plots (see [[cljplot2.content.subplot]])
   * `:arrange` - `{:plots [p ...] :columns :rows :widths :heights}`: a multiplot, its grid generated from the merged
-    theme (see [[cljplot2.multiplot/arrange]], [[cljplot2.plot-grid/arrange-grid]]); only `:labels {:title t}` may
+    theme (see [[cljplot2.multiplot/arrange]], [[cljplot2.layout.plot-grid/arrange-grid]]); only `:labels {:title t}` may
     accompany it; can't be combined with `:custom-grid`; the sub-plots' panels are aligned unless `:align false`
   * `:alignment-padding` - internal: `{:left :top :right :bottom}` pixels added to the generated grid's margins
     (set on sub-plots by multiplot alignment)
   * `:options` - render options (see [[default-options]]), merged under `build`'s options; stored resolved
   * `:theme` - deep-merged over [[cljplot2.theme/default-theme]]; stored resolved
 
-  Facet mapping keys (`:facet`, `:facet-col`, `:facet-row`) split rows into panels, see [[cljplot2.facet]].
-  Aesthetic mapping keys (`:color`, `:shape`, `:size`) style marks, see [[cljplot2.aesthetic]]; `:group` splits
-  rows into groups for charts drawing one mark per group, see [[cljplot2.group]]."
+  Facet mapping keys (`:facet`, `:facet-col`, `:facet-row`) split rows into panels, see [[cljplot2.data.facet]].
+  Aesthetic mapping keys (`:color`, `:shape`, `:size`) style marks, see [[cljplot2.scale.aesthetic]]; `:group` splits
+  rows into groups for charts drawing one mark per group, see [[cljplot2.data.group]]."
   (:require [fastmath.core :as m]
-            [cljplot2.aesthetic :as aesthetic]
-            [cljplot2.data :as data]
-            [cljplot2.facet :as facet]
-            [cljplot2.grid :as grid]
-            [cljplot2.measure :as measure]
-            [cljplot2.multiplot :as multiplot]
-            [cljplot2.plot-grid :as plot-grid]
-            [cljplot2.scale :as scale]
+            [cljplot2.scale.aesthetic :as aesthetic]
+            [cljplot2.data.rows :as data]
+            [cljplot2.data.facet :as facet]
+            [cljplot2.layout.align :as align]
+            [cljplot2.layout.grid :as grid]
+            [cljplot2.graphics.measure :as measure]
+            [cljplot2.layout.plot-grid :as plot-grid]
+            [cljplot2.scale.position :as scale]
             [cljplot2.theme :as theme]
             ;; built-in content kinds (natural-size / draw-content methods)
-            [cljplot2.label]
-            [cljplot2.panel]
-            [cljplot2.axis]
-            [cljplot2.strip]
-            [cljplot2.legend]
-            [cljplot2.subplot :as subplot]))
+            [cljplot2.content.label]
+            [cljplot2.content.panel]
+            [cljplot2.content.axis]
+            [cljplot2.content.strip]
+            [cljplot2.content.legend]
+            [cljplot2.content.subplot :as subplot]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
 (def default-options
-  "`:width`, `:height` - target size in pixels; `:hint` - rendering hint, see [[cljplot2.measure/rendering-hints]]."
+  "`:width`, `:height` - target size in pixels; `:hint` - rendering hint, see [[cljplot2.graphics.measure/rendering-hints]]."
   {:width 600 :height 600 :hint :high})
 
 (def ^:const max-layout-rounds
@@ -124,7 +124,7 @@
 (defn- split-stage
   "Rows of every chart (own non-nil `:data` or the plot's) grouped by facet key, with the chart's mapping (plot
   mapping with the chart's `:mapping` merged over). Stores `{:facets {:dims :levels :dropped {:facet n}}
-  :charts [{:mapping :groups} ...]}`; see [[cljplot2.facet]]."
+  :charts [{:mapping :groups} ...]}`; see [[cljplot2.data.facet]]."
   [{:keys [charts data mapping scales facets] :as plot}]
   (when-not (or (nil? scales) (map? scales))
     (throw (ex-info "Plot :scales must be a map." {:key :scales :value scales})))
@@ -294,7 +294,7 @@
   "Every `{:kind :plot}` item of the grid (nested grids included) built at its box size with the plot's hint:
   `{item-id built-plot}`. Items whose box is smaller than 1x1 px are skipped. Plot item ids must be unique across
   the grid tree (`ex-info {:key :id}`). For `:arrange` (unless `{:align false}`) the sub-plots' panels are aligned
-  in rows and columns (see [[cljplot2.multiplot/align]])."
+  in rows and columns (see [[cljplot2.layout.align/align-panels]])."
   [{:keys [grid layout options] :as plot}]
   (let [items (grid/content-items grid layout subplot/plot-content?)
         hint (:hint options)]
@@ -307,7 +307,7 @@
                            items))]
       (assoc plot :subplots
              (if (and (:arrange plot) (get-in plot [:arrange :align] true))
-               (multiplot/align cells (fn [{:keys [id box] p :plot} padding]
+               (align/align-panels cells (fn [{:keys [id box] p :plot} padding]
                                         (build-subplot (assoc p :alignment-padding padding) id box hint)))
                (into {} (map (juxt :id :built)) cells))))))
 

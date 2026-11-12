@@ -8,15 +8,15 @@
     all) and `:tick-format {:x f :y f}` (suggested tick label format, `:absolute` - magnitudes; used unless the plot's
     scale has a `:formatter`) (`env` - `{:theme :na-level? :plot-scales}`, `:plot-scales` - the plot's `:scales`); stored per chart in the
     plot's `:stats`. Aesthetic extents (`:color`,
-    `:shape`, `:size`) are [[cljplot2.data/value-extent]]s; `:na` lists aesthetics with NA (`nil`) values
+    `:shape`, `:size`) are [[cljplot2.data.rows/value-extent]]s; `:na` lists aesthetics with NA (`nil`) values
   * `(draw chart computed canvas panel-box scales env)` - draws one panel's `computed` data; called by the panel
-    with isolated graphics clipped to the panel box. Positions come from `cljplot2.scale/forward-fn`, which gives
+    with isolated graphics clipped to the panel box. Positions come from `cljplot2.scale.position/forward-fn`, which gives
     `##NaN` for values the scale can't place; such values are skipped.
   * `(legend chart attributes canvas box env)` - optional; draws the chart's key glyph in a legend key `box`,
     `attributes` - the entry's mapped style attributes (`{:color c :shape s :size z}`, NA ones absent except color).
     Every chart mapping a legend's dimension draws into its keys, in chart order.
 
-  Options common to all charts: `:data` (own data, see [[cljplot2.data/rows]]) and `:mapping` (merged over the
+  Options common to all charts: `:data` (own data, see [[cljplot2.data.rows/rows]]) and `:mapping` (merged over the
   plot's mapping)."
   (:require [cljplot2.chart.density :as density]
             [cljplot2.chart.ecdf :as ecdf]

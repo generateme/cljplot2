@@ -2,16 +2,16 @@
   "Step 8: groups within panels, histogram, density, line, ECDF, polylines, suggested axis titles."
   (:require [clojure.test :refer [deftest testing is are]]
             [clojure2d.core :as c2d]
-            [cljplot2.aesthetic :as aesthetic]
+            [cljplot2.scale.aesthetic :as aesthetic]
             [fastmath.core :as m]
             [cljplot2.chart :as chart]
             [cljplot2.chart.ecdf :as ecdf]
             [cljplot2.chart.histogram :as histogram]
             [cljplot2.core :as plot]
-            [cljplot2.grid :as grid]
-            [cljplot2.group :as group]
-            [cljplot2.polyline :as polyline]
-            [cljplot2.scale :as scale])
+            [cljplot2.layout.grid :as grid]
+            [cljplot2.data.group :as group]
+            [cljplot2.graphics.polyline :as polyline]
+            [cljplot2.scale.position :as scale])
   (:import [java.awt.image BufferedImage]))
 
 (defn- error-data [f]
