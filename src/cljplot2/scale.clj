@@ -80,6 +80,55 @@
       (invalid "Scale :ticks must be a positive integer or a sequence of values." {:key :ticks :scale k :value ticks}))
     (assoc spec :kind kind :nice (get spec :nice true))))
 
+(def ^:private ^:const collapse-widening 0.1)
+
+(defn- widen
+  "Numeric `[lo hi]`; a single value `v` widens to `[v - 0.1|v|, v + 0.1|v|]` (`[-1 1]` for 0)."
+  [^double lo ^double hi]
+  (cond
+    (< lo hi) [lo hi]
+    (zero? lo) [-1.0 1.0]
+    :else (let [d (* collapse-widening (m/abs lo))] [(- lo d) (+ lo d)])))
+
+(defn- pad
+  "Extend `[lo hi]` by fractions `[plo phi]` of its span (in log10 space for `:log`)."
+  [kind [^double lo ^double hi] [plo phi]]
+  (let [log? (= kind :log)
+        a (if log? (m/log10 lo) lo)
+        b (if log? (m/log10 hi) hi)
+        span (- b a)
+        a (- a (* (double plo) span))
+        b (+ b (* (double phi) span))]
+    (if log? [(m/pow 10.0 a) (m/pow 10.0 b)] [a b])))
+
+(def ^:private extent-kinds {:numeric :linear :categorical :bands :temporal :datetime})
+
+(defn- validate-expand!
+  [k expand]
+  (when-not (and (vector? expand) (= 2 (count expand)) (every? #(and (number? %) (>= (double %) 0.0)) expand))
+    (invalid "Scale :expand must be [lo hi], non-negative fractions." {:key :expand :scale k :value expand})))
+
+(defn data-scale-spec
+  "Phase-1 spec of plot scale `k` from its `spec` (may be `{}`) and the merged data `extent` (may be `nil`)
+  with the charts' `padding` `[lo hi]`. An explicit `:domain` wins over data. A data domain gets
+  `:kind` from the spec or the extent (numeric -> `:linear`, categorical -> `:bands`, temporal -> `:datetime`);
+  numeric domains are widened when collapsed to one value, then padded by the spec `:expand` or `padding`
+  (temporal and categorical domains aren't padded)."
+  [k spec extent padding]
+  (when-not (map? spec) (invalid "Scale spec must be a map." {:key :scales :scale k}))
+  (when (contains? spec :expand) (validate-expand! k (:expand spec)))
+  (if (or (contains? spec :domain) (nil? extent))
+    (scale-spec k spec)
+    (let [kind (or (:kind spec) (extent-kinds (:kind extent)))
+          domain (case (:kind extent)
+                   :categorical (:values extent)
+                   :temporal [(:min extent) (:max extent)]
+                   :numeric (if (= :bands kind)
+                              (invalid "Numeric data on a bands scale needs an explicit :domain." {:key :domain :scale k})
+                              (pad kind (widen (double (:min extent)) (double (:max extent)))
+                                   (or (:expand spec) padding [0 0]))))]
+      (scale-spec k (assoc spec :kind kind :domain domain)))))
+
 (defn tick-hint
   "Tick count hint for an axis `length` pixels long with `spacing` pixels between ticks (at least 2)."
   ^long [^double length ^double spacing]
@@ -120,7 +169,7 @@
   [spec range tick-hint]
   (let [kind (:kind spec)
         explicit (:ticks spec)
-        base (assoc (dissoc spec :kind :nice) :range range)
+        base (assoc (dissoc spec :kind :nice :expand) :range range)
         nice-count (if (integer? explicit) explicit tick-hint)
         domain (s/domain (cond-> (s/scale kind (assoc base :ticks nice-count))
                            (and (:nice spec) (continuous-kinds kind)) s/nice))

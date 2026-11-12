@@ -6,13 +6,17 @@
   Plot keys read so far:
 
   * `:labels` - plot titles, see [[cljplot2.plot-grid]]
-  * `:scales` - `{:x spec :y spec}`, position scales, see [[cljplot2.scale/scale-spec]]
+  * `:scales` - `{:x spec :y spec}`, position scales, see [[cljplot2.scale/data-scale-spec]]
+  * `:data`, `:mapping` - plot data and mapping, see [[cljplot2.data]]
+  * `:charts` - vector of chart values, see [[cljplot2.chart]]
   * `:custom-grid` - a hand-written grid (see [[cljplot2.grid]]) used instead of the generated one
   * `:options` - render options (see [[default-options]]), merged under `build`'s options; stored resolved
   * `:theme` - deep-merged over [[cljplot2.theme/default-theme]]; stored resolved
 
-  Stages `:split`, `:stats`, `:extents` are still stubs producing an empty value."
-  (:require [cljplot2.grid :as grid]
+  One panel (`:panel`) until facets."
+  (:require [fastmath.core :as m]
+            [cljplot2.data :as data]
+            [cljplot2.grid :as grid]
             [cljplot2.measure :as measure]
             [cljplot2.plot-grid :as plot-grid]
             [cljplot2.scale :as scale]
@@ -35,20 +39,71 @@
 
 ;; stages
 
-(defn- split-stage [plot] (assoc plot :split {}))
-(defn- stats-stage [plot] (assoc plot :stats {}))
-(defn- extents-stage [plot] (assoc plot :extents {}))
 (def ^:private position-scales #{:x :y})
 
+(def ^:private panel-key
+  "Split group key of the single panel (facets come with step 6)."
+  :panel)
+
+(defn- validate-mapping!
+  [mapping]
+  (when-not (or (nil? mapping) (map? mapping))
+    (throw (ex-info ":mapping must be a map." {:key :mapping :value mapping}))))
+
+(defn- validate-charts!
+  [charts]
+  (when-not (or (nil? charts) (vector? charts))
+    (throw (ex-info "Plot :charts must be a vector of charts." {:key :charts})))
+  (doseq [chart charts]
+    (when-not (and (map? chart) (fn? (:compute chart)) (fn? (:draw chart)))
+      (throw (ex-info "Chart must be a chart value (see cljplot2.chart)." {:key :charts})))))
+
+(defn- split-stage
+  "Per chart: its rows (own `:data` or the plot's) grouped by panel, and its mapping (plot mapping with the
+  chart's `:mapping` merged over)."
+  [{:keys [charts data mapping] :as plot}]
+  (validate-charts! charts)
+  (validate-mapping! mapping)
+  (let [plot-rows (delay (data/rows data))]
+    (assoc plot :split (mapv (fn [{:keys [options]}]
+                               (validate-mapping! (:mapping options))
+                               {:mapping (merge mapping (:mapping options))
+                                :groups {panel-key (if (contains? options :data) (data/rows (:data options)) @plot-rows)}})
+                             charts))))
+
+(defn- stats-stage
+  "Per chart: the data its `:compute` returns from its split groups."
+  [{:keys [charts split theme] :as plot}]
+  (assoc plot :stats (mapv (fn [chart chart-split] ((:compute chart) chart chart-split {:theme theme})) charts split)))
+
+(defn- extents-stage
+  "Per position scale: extents merged over charts and panels, padding as the largest per side among the charts
+  with an extent there."
+  [{:keys [stats] :as plot}]
+  (assoc plot :extents
+         (into {} (keep (fn [k]
+                          (let [with-extent (keep (fn [st]
+                                                    (when-let [es (seq (keep #(get % k) (vals (:extents st))))]
+                                                      {:extent (data/merge-extents k es) :padding (get-in st [:padding k] [0 0])}))
+                                                  stats)]
+                            (when (seq with-extent)
+                              [k {:extent (data/merge-extents k (map :extent with-extent))
+                                  :padding (reduce (fn [[a b] [c d]] [(m/max (double a) (double c)) (m/max (double b) (double d))])
+                                                [0.0 0.0] (map :padding with-extent))}]))))
+               position-scales)))
+
 (defn- scale-specs-stage
-  "Phase-1 specs of the plot `:scales` (`{}` when absent)."
-  [{:keys [scales] :as plot}]
+  "Phase-1 specs of the position scales with a plot `:scales` entry or data extents."
+  [{:keys [scales extents] :as plot}]
   (when-not (or (nil? scales) (map? scales))
     (throw (ex-info "Plot :scales must be a map." {:key :scales :value scales})))
   (doseq [k (keys scales)]
     (when-not (position-scales k)
       (throw (ex-info "Unknown plot scale." {:key :scales :value k :allowed position-scales}))))
-  (assoc plot :scale-specs (into {} (map (fn [[k spec]] [k (scale/scale-spec k spec)])) scales)))
+  (assoc plot :scale-specs
+         (into {} (map (fn [k] [k (scale/data-scale-spec k (get scales k {}) (get-in extents [k :extent])
+                                                         (get-in extents [k :padding]))]))
+               (distinct (concat (keys scales) (keys extents))))))
 
 (defn- grid-stage
   "The plot's grid: `:custom-grid` when given, otherwise generated from plot keys.

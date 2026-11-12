@@ -20,6 +20,8 @@
   :tick-spacing}` (pixels; `:tick-spacing` > 0 is the target distance between ticks, a line or tick of width 0
   isn't drawn).
 
+  `:chart` - per chart kind defaults, e.g. `:scatter` (validated when a chart of that kind computes).
+
   Colors are any clojure2d color or `:none` (draw nothing). `nil` in a theme override means \"not set\"
   and keeps the value underneath, see [[deep-merge]].
 
@@ -67,6 +69,7 @@
    :panel {:fill :none :border-color :none :border-width 1
            :grid {:x {:color 0xb4b4b4 :width 0.5 :dash [4.0]}
                   :y {:color 0xb4b4b4 :width 0.5 :dash [4.0]}}}
+   :chart {:scatter {:size 4 :color [49 54 149 180] :stroke-color :none :stroke-width 1 :shape \O}}
    :axis {:x {:line-color :black :line-width 1 :tick-color :black :tick-length 6 :tick-width 1
               :label-gap 2 :tick-spacing 80}
           :y {:line-color :black :line-width 1 :tick-color :black :tick-length 6 :tick-width 1

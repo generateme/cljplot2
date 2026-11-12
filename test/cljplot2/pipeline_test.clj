@@ -38,8 +38,9 @@
   (let [built (pipeline/build {})]
     (testing "every stage adds its key"
       (is (every? #(contains? built %) pipeline/stage-order)))
-    (testing "stubs produce empty values"
-      (is (= {} (:split built) (:stats built) (:extents built) (:scale-specs built) (:finalized-scales built))))
+    (testing "no charts: empty per-chart stages, no scales"
+      (is (= [] (:split built) (:stats built)))
+      (is (= {} (:extents built) (:scale-specs built) (:finalized-scales built))))
     (testing "default grid and options"
       (is (= {:x 10 :y 10 :w 580 :h 580} (grid/item-box (:layout built) :panel)))
       (is (= pipeline/default-options (:options built))))))
