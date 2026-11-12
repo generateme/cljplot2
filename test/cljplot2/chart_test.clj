@@ -293,3 +293,23 @@
     (is (nil? (get-in (build (scatter-plot {:data [{:a 1 :b "u"} {:a 2 :b "v"}]})) [:scale-specs :y :padding]))))
   (testing ":padding is internal"
     (is (= {:key :padding :scale :x} (error-data #(build (scatter-plot {:scales {:x {:padding [0 0]}}})))))))
+
+;; step 11: draw order
+
+(deftest draw-order-test
+  (let [data [{:x 1 :y 1 :c "a" :o 2} {:x 1 :y 1 :c "b" :o 1} {:x 1 :y 1 :c "c" :o nil}]
+        colors {:color {:range [[255 0 0] [0 0 255] [0 255 0]]}}
+        top-color (fn [mapping opts]
+                    (let [p {:data data :mapping (merge {:x :x :y :y :color :c} mapping) :scales colors
+                             :charts [(chart/scatter (merge {:size 20} opts))]}
+                          built (build p)]
+                      (pixel (plot/render p {:width 600 :height 400}) (canvas-pos built :x 1) (canvas-pos built :y 1))))]
+    (is (= [0 255 0] (top-color {} {})) "no :order: data order, last row on top")
+    (is (= [255 0 0] (top-color {:order :o} {})) "ascending: highest order on top")
+    (is (= [0 0 255] (top-color {:order :o} {:order-direction :descending})) "descending: lowest order on top")
+    (testing "nil order values drawn first; validation"
+      (is (= [nil 1 2] (map :o (let [b (build {:data data :mapping {:x :x :y :y :order :o :color :o} :scales {:color {:kind :ordinal}}
+                                                :charts [(chart/scatter)]})]
+                                   (map #(hash-map :o %) (get-in b [:stats 0 :data :panel :color]))))))
+      (is (= :order-direction (:key (error-data #(build {:data data :mapping {:x :x :y :y :order :o} :charts [(chart/scatter {:order-direction :up})]})))))
+      (is (= :order (:key (error-data #(build {:data [{:x 1 :y 1 :o 1} {:x 2 :y 2 :o "a"}] :mapping {:x :x :y :y :order :o} :charts [(chart/scatter)]}))))))))

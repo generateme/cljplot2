@@ -2,7 +2,7 @@
   "Panel alignment of multiplot cells: sub-plots in one row (cells with equal box `y` and `h`) share their panel
   area's top and bottom edges; sub-plots in one column (equal box `x` and `w`) share its left and right edges.
   The panel area of a sub-plot is the bounding box of its `:panel` items; sub-plots without panels (e.g. nested
-  multiplots) take no part. Used by the pipeline's `:subplots` stage for `:arrange` (on unless `:align false`)."
+  multiplots) and iso sub-plots (they centre their panels themselves) take no part. Used by the pipeline's `:subplots` stage for `:arrange` (on unless `:align false`)."
   (:require [cljplot2.layout.grid :as grid]))
 
 (set! *warn-on-reflection* true)
@@ -48,7 +48,7 @@
   added to its margins per side). Repeats until paddings stop changing, at most [[max-alignment-rounds]] times.
   Returns `{id built}` for all `cells`."
   [cells rebuild]
-  (let [panelled (filterv #(panel-insets (:built %)) cells)]
+  (let [panelled (filterv #(and (panel-insets (:built %)) (not= :iso (get-in % [:built :aspect]))) cells)]
     (loop [round 1
            current (mapv #(assoc % :padding {}) panelled)]
       (let [wanted (paddings current)

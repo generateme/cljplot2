@@ -40,4 +40,7 @@
                    :main-opts ["-m" "cljplot2.demo.step9"]}
            :demo10 {:extra-paths ["dev" "dev/resources"]
                     :extra-deps {org.clojure/data.csv {:mvn/version "1.1.0"}}
-                    :main-opts ["-m" "cljplot2.demo.step10"]}}}
+                    :main-opts ["-m" "cljplot2.demo.step10"]}
+           :demo11 {:extra-paths ["dev" "dev/resources"]
+                    :extra-deps {org.clojure/data.json {:mvn/version "2.5.1"}}
+                    :main-opts ["-m" "cljplot2.demo.step11"]}}}

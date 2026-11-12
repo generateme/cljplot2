@@ -1,8 +1,8 @@
 (ns cljplot2.content.legend
   "Legends (D7), derived from the aesthetic scales (see [[cljplot2.scale.aesthetic]]) and drawn as grid content.
 
-  [[legends]]: one legend per aesthetic dimension with entries (ordinal scales, linear size; linear color has no
-  legend yet, `:legend false` on the plot or the scale hides it). Dimensions mapped by every chart with the same
+  [[legends]]: one legend per aesthetic dimension with entries (ordinal scales, linear size) and a color bar for a
+  linear `:color` scale (`:legend false` on the plot or the scale hides them). Dimensions mapped by every chart with the same
   accessor (equal keyword or the same function) and with equal entry labels merge into one legend whose entries
   combine their attributes. Title: the scale's `:title` when given (`nil` - none), else the accessor's name when it
   is a keyword.
@@ -15,13 +15,20 @@
   function, in order (overlay), getting only the attributes of the dimensions `dims` it maps. Theme `:legend`
   `:fill`, `:border-color`, `:border-width` box it (a `:none` border takes no space).
 
-  Content `{:kind :legends :legends [legend ...]}`: legends stacked top-down with theme `[:legend :gap]` between them;
+  Content `{:kind :colorbar :title t :scale spec :ticks [v ...] :labels [s ...]}`: title, then a vertical gradient bar
+  (top = domain maximum, width theme `[:legend :bar-width]`, default `:key-size`) with tick marks and labels
+  (`:legend-label`). Its length is theme `[:legend :bar-length]` when a number; otherwise it stretches over the height
+  left in its stack column (at least 3 x `:key-size`, else it starts a new column).
+
+  Content `{:kind :legends :legends [legend ...]}`: legends (`:legend` or `:colorbar`) stacked top-down with theme `[:legend :gap]` between them;
   a legend that doesn't fit below the previous one starts a new stack column to the right. [[legend-boxes]] gives
   where each legend is drawn."
   (:require [clojure2d.core :as c2d]
             [fastmath.core :as m]
             [fastmath.vector :as v]
+            [wadogo.scale :as s]
             [cljplot2.scale.aesthetic :as aesthetic]
+            [cljplot2.scale.position :as position]
             [cljplot2.graphics.canvas :as canvas]
             [cljplot2.graphics.draw :as draw]
             [cljplot2.graphics.measure :as measure]
@@ -70,6 +77,22 @@
                                     (when (and (:legend chart) (seq mapped)) {:chart i :dims mapped})))
                                 (map vector charts mappings)))}))
 
+(def ^:private ^:const colorbar-ticks 5)
+
+(defn- colorbar-content
+  "Color bar of the linear color scale `spec` mapped with `accessors` (title rule as legends)."
+  [spec accessors]
+  (let [[lo hi] (:domain spec)
+        lo (double lo) hi (double hi)
+        ws (s/scale :linear (cond-> {:domain (if (== lo hi) [lo (inc lo)] [lo hi]) :ticks colorbar-ticks}
+                              (:formatter spec) (assoc :formatter (:formatter spec))))
+        ticks (if (== lo hi) [lo] (filterv #(<= lo (double %) hi) (s/ticks ws)))]
+    {:kind :colorbar
+     :title (title [{:spec spec :accessors accessors}])
+     :scale spec
+     :ticks ticks
+     :labels (position/tick-labels ws {:kind :linear :formatter (:formatter spec)} ticks)}))
+
 (defn legends
   "Legend contents of a plot built up to `:scale-specs`, in aesthetic order (`:color`, `:shape`, `:size`); empty when
   the plot's `:legend` is `false` or nothing with a legend is mapped."
@@ -82,7 +105,9 @@
                                  i (first (keep-indexed (fn [i [gk]] (when (= gk k) i)) acc))]
                              (if i (update-in acc [i 1] conj candidate) (conj acc [k [candidate]]))))
                          [] (keep #(dim-legend % scale-specs mappings) aesthetic/dims))]
-      (mapv (fn [[_ members]] (legend-content members theme charts mappings)) groups))))
+      (cond->> (mapv (fn [[_ members]] (legend-content members theme charts mappings)) groups)
+        (let [spec (:color scale-specs)] (and (= :linear (:kind spec)) (not (false? (:legend spec)))))
+        (into [(colorbar-content (:color scale-specs) (set (keep :color mappings)))])))))
 
 ;; content
 
@@ -97,11 +122,23 @@
 
 (defmethod measure/validate-content :legend [content] (validate-legend! content))
 
+(defn- validate-colorbar!
+  [{:keys [title scale ticks labels]}]
+  (when-not (or (nil? title) (string? title))
+    (throw (ex-info "Color bar :title must be a string or nil." {:key :title :value title})))
+  (when-not (and (map? scale) (= :linear (:kind scale)))
+    (throw (ex-info "Color bar :scale must be a linear color scale." {:key :scale})))
+  (when-not (and (vector? ticks) (vector? labels) (= (count ticks) (count labels)))
+    (throw (ex-info "Color bar :ticks and :labels must be vectors of equal length." {:key :ticks}))))
+
+(defmethod measure/validate-content :colorbar [content] (validate-colorbar! content))
+
 (defmethod measure/validate-content :legends
   [{:keys [legends]}]
   (when-not (vector? legends)
     (throw (ex-info "Legends :legends must be a vector of legend contents." {:key :legends})))
-  (run! validate-legend! legends))
+  (doseq [l legends]
+    (if (= :colorbar (:kind l)) (validate-colorbar! l) (validate-legend! l))))
 
 (defn- title-label [text] {:kind :label :role :legend-title :text text})
 (defn- entry-label [text] {:kind :label :role :legend-label :text text})
@@ -151,6 +188,46 @@
      :w (+ (* 2.0 border) (m/max (.x title-size) entries-w))
      :h (+ (* 2.0 border) (.y title-size) entries-h)}))
 
+(def ^:private ^:const tick-length 3.0)
+
+(defn- colorbar-geometry
+  "Layout of color bar `content` with bar length `length` (pixels), relative to its top-left corner: `:w`, `:h`,
+  `:border`, `:title-h`, `:bar-w`, `:bar-len`, `:labels` (sizes), `:label-h` (room above and below the bar for the
+  end labels, together)."
+  [{:keys [title labels]} env ^double length]
+  (let [{:keys [gap key-size bar-width border-width border-color]} (get-in env [:theme :legend])
+        gap (double gap)
+        bar-w (double (or bar-width key-size))
+        border (if (theme/none? border-color) 0.0 (double (m/round (double border-width))))
+        ^Vec2 title-size (if title (measure/natural-size (title-label title) env) (v/vec2 0.0 0.0))
+        sizes (mapv #(measure/natural-size (entry-label %) env) labels)
+        label-h (double (reduce max 0.0 (map #(.y ^Vec2 %) sizes)))
+        label-w (double (reduce max 0.0 (map #(.x ^Vec2 %) sizes)))]
+    {:border border :title-h (.y title-size) :bar-w bar-w :bar-len length :labels sizes :label-h label-h
+     :w (+ (* 2.0 border) (m/max (.x title-size) (+ bar-w tick-length gap label-w)))
+     :h (+ (* 2.0 border) (.y title-size) label-h length)}))
+
+(defn- colorbar-length
+  "Bar length for `content` with `room` pixels available: theme `[:legend :bar-length]` when a number, otherwise the
+  room minus the bar's fixed parts, at least 3 x `:key-size` (also for unbounded room)."
+  ^double [content env ^double room]
+  (let [{:keys [bar-length key-size]} (get-in env [:theme :legend])
+        minimum (* 3.0 (double key-size))]
+    (if (number? bar-length)
+      (double bar-length)
+      (let [fixed (double (:h (colorbar-geometry content env 0.0)))]
+        (if (m/valid-double? room) (m/max minimum (- room fixed)) minimum)))))
+
+(defn- stretching? [content env]
+  (and (= :colorbar (:kind content)) (not (number? (get-in env [:theme :legend :bar-length])))))
+
+(defn- content-geometry
+  "Geometry of a legend or color bar content, `room` - height available to it."
+  [content env ^double room]
+  (if (= :colorbar (:kind content))
+    (colorbar-geometry content env (colorbar-length content env room))
+    (legend-geometry content env room)))
+
 (defn- available-height
   "Height a legend may take: its item box from the previous layout round, unbounded before the first one."
   ^double [env]
@@ -163,12 +240,20 @@
   (let [gap (double (get-in env [:theme :legend :gap]))
         {:keys [placed ^double col-x ^double col-w ^double h]}
         (reduce (fn [{:keys [placed ^double col-x ^double col-w ^double y ^double h] :as acc} legend]
-                  (let [g (legend-geometry legend env max-h)
+                  (let [stretch? (stretching? legend env)
+                        minimum (* 3.0 (double (get-in env [:theme :legend :key-size])))
+                        fixed (when stretch? (double (:h (colorbar-geometry legend env 0.0))))
+                        ;; a stretching color bar too short below the previous legends starts a new column
+                        new-col? (and (pos? y)
+                                      (if stretch?
+                                        (< (- max-h y (double fixed)) minimum)
+                                        (> (+ y (double (:h (content-geometry legend env max-h)))) max-h)))
+                        y' (if new-col? 0.0 y)
+                        g (content-geometry legend env (- max-h y'))
                         lw (double (:w g)) lh (double (:h g))
-                        new-col? (and (pos? y) (> (+ y lh) max-h))
                         col-x (if new-col? (+ col-x col-w gap) col-x)
                         col-w (if new-col? 0.0 col-w)
-                        y (if new-col? 0.0 y)]
+                        y y']
                     (assoc acc :placed (conj placed {:x col-x :y y :geometry g})
                            :col-x col-x :col-w (m/max col-w lw) :y (+ y lh gap) :h (m/max h (+ y lh)))))
                 {:placed [] :col-x 0.0 :col-w 0.0 :y 0.0 :h 0.0}
@@ -178,6 +263,11 @@
 (defmethod measure/natural-size :legend
   [content env]
   (let [{:keys [w h]} (legend-geometry content env (available-height env))]
+    (v/vec2 w h)))
+
+(defmethod measure/natural-size :colorbar
+  [content env]
+  (let [{:keys [w h]} (colorbar-geometry content env (colorbar-length content env (available-height env)))]
     (v/vec2 w h)))
 
 (defmethod measure/natural-size :legends
@@ -230,6 +320,59 @@
       (label! (entry-label (:label entry))
               {:x (+ kx (double key-w) gap) :y ky :w (.x ^Vec2 (labels i)) :h rh}))))
 
+(defn- draw-colorbar!
+  "Draw color bar `content` with its `geometry` at top-left corner `origin` (`Vec2`)."
+  [{:keys [title scale ticks labels]} geometry c ^Vec2 origin env]
+  (let [x (.x origin)
+        y (.y origin)
+        {:keys [fill border-color border-width gap]} (get-in env [:theme :legend])
+        {:keys [^double w ^double h ^double border ^double title-h ^double bar-w ^double bar-len ^double label-h]
+         sizes :labels} geometry
+        color-of (aesthetic/attribute-fn :color scale (get-in env [:theme :palette :na]))
+        [lo hi] (:domain scale)
+        lo (double lo) hi (double hi)
+        x0 (+ x border)
+        bar-top (+ y border title-h (* 0.5 label-h))
+        bar-x (m/round x0)
+        bar-w-px (m/round bar-w)
+        len (long (m/round bar-len))
+        tick-y (fn ^double [t] (+ bar-top (if (== lo hi) (* 0.5 bar-len) (* (/ (- hi (double t)) (- hi lo)) bar-len))))
+        label-color (get-in env [:theme :text :legend-label :color])]
+    (when-not (theme/none? fill)
+      (c2d/set-color c fill)
+      (c2d/rect c (m/round x) (m/round y) (m/round w) (m/round h)))
+    (draw/inner-border! c {:x (m/round x) :y (m/round y) :w (m/round w) :h (m/round h)} border-color border-width)
+    (when title
+      (canvas/call-with-isolated-graphics
+       c #(draw/draw-content (title-label title) % {:x x0 :y (+ y border) :w (- w (* 2.0 border)) :h title-h} env)))
+    ;; the bar: one pixel row per value, top = domain maximum
+    (dotimes [i len]
+      (let [t (if (== lo hi) 0.5 (- 1.0 (/ (+ (double i) 0.5) (double len))))]
+        (c2d/set-color c (color-of (+ lo (* t (- hi lo)))))
+        (c2d/rect c bar-x (+ (m/round bar-top) i) bar-w-px 1)))
+    (c2d/set-stroke-custom c {:size 1.0 :cap :butt})
+    (doseq [[t text ^Vec2 size] (map vector ticks labels sizes)
+            :let [ty (draw/pixel-center (tick-y t))
+                  bar-right (+ (double bar-x) (double bar-w-px))]]
+      (c2d/set-color c label-color)
+      (c2d/line c bar-right ty (+ bar-right tick-length) ty)
+      (canvas/call-with-isolated-graphics
+       c #(draw/draw-content (entry-label text) %
+                             {:x (+ bar-right tick-length (double gap)) :y (- ty (* 0.5 (.y size))) :w (.x size) :h (.y size)}
+                             env)))))
+
+(defn- draw-content-at!
+  [content geometry c origin env]
+  (if (= :colorbar (:kind content))
+    (draw-colorbar! content geometry c origin env)
+    (draw-legend! content geometry c origin env)))
+
+(defmethod draw/draw-content :colorbar
+  [content c {:keys [x y h]} env]
+  (let [env (assoc env :canvas c)]
+    (draw-colorbar! content (colorbar-geometry content env (colorbar-length content env (double h)))
+                    c (v/vec2 x y) env)))
+
 (defmethod draw/draw-content :legend
   [content c {:keys [x y h]} env]
   (let [env (assoc env :canvas c)]
@@ -239,4 +382,4 @@
   [{:keys [legends]} c {:keys [x y h]} env]
   (let [env (assoc env :canvas c)]
     (doseq [[legend {px :x py :y g :geometry}] (map vector legends (:placed (stack-geometry legends env (double h))))]
-      (draw-legend! legend g c (v/vec2 (+ (double x) (double px)) (+ (double y) (double py))) env))))
+      (draw-content-at! legend g c (v/vec2 (+ (double x) (double px)) (+ (double y) (double py))) env))))

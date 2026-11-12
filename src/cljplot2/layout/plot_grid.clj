@@ -25,6 +25,7 @@
   (measured) after `:x-overhang`, and an item `:legends` spanning the panel rows (from the top strip) with
   `{:kind :legends}` content: the legends stacked top-down, wrapping into further columns when too tall."
   (:require [cljplot2.data.facet :as facet]
+            [cljplot2.data.shingle :as shingle]
             [cljplot2.content.legend :as legend]))
 
 (def ^:private plot-labels
@@ -105,13 +106,23 @@
   [n prefix gap-prefix gap]
   (vec (butlast (mapcat (fn [i] [{:id [prefix i] :size [:flexible]} {:id [gap-prefix i] :size [:fixed gap]}]) (range n)))))
 
+(defn- strip-content
+  "Strip content for facet `level` with `text`; when every one of `levels` is a shingle interval, also
+  `:interval {:lo :hi :min :max}` - the level within the range of all levels (a shaded bar, see
+  [[cljplot2.content.strip]])."
+  [text level levels]
+  (cond-> {:kind :strip :text text}
+    (and (seq levels) (every? shingle/interval? levels))
+    (assoc :interval {:lo (:lo level) :hi (:hi level)
+                      :min (reduce min (map :lo levels)) :max (reduce max (map :hi levels))})))
+
 (defn- facet-panels
   "Panels `{:key :label :row :col}` and `[rows cols]` of the facets in `split-facets`."
   [{:keys [dims levels]} scales {:keys [order] :as facets}]
   (if (= dims [:facet])
     (let [ls (:facet levels)
           [rows cols] (facet/wrap-shape (count ls) facets)]
-      {:rows rows :cols cols :wrap? true
+      {:rows rows :cols cols :wrap? true :levels ls
        :panels (vec (map-indexed (fn [i level]
                                    (let [[r c] (facet/wrap-positions i rows cols (or order :top-down))]
                                      {:key level :label (facet/label (:facet scales) level) :row r :col c}))
@@ -120,6 +131,7 @@
           row-levels (get levels :facet-row [::none])
           key-of (fn [cl rl] (cond (= 2 (count dims)) [cl rl] (some #{:facet-col} dims) cl :else rl))]
       {:rows (count row-levels) :cols (count col-levels) :wrap? false
+       :col-levels col-levels :row-levels row-levels
        :col-labels (when (contains? levels :facet-col) (mapv #(facet/label (:facet-col scales) %) col-levels))
        :row-labels (when (contains? levels :facet-row) (mapv #(facet/label (:facet-row scales) %) row-levels))
        :panels (vec (for [[r rl] (map-indexed vector row-levels) [c cl] (map-indexed vector col-levels)]
@@ -135,7 +147,8 @@
         gap (get-in theme [:facet :gap])
         margin-track (margin-track-fn plot)
         measured (fn [id] {:id id :size [:measured]})
-        {:keys [rows cols wrap? panels col-labels row-labels]} (facet-panels (:facets split) scales facets)
+        {:keys [rows cols wrap? panels col-labels row-labels levels col-levels row-levels]}
+        (facet-panels (:facets split) scales facets)
         rows (long rows) cols (long cols)
         last-col [:panel (dec cols)]
         last-row [:panel (dec rows)]
@@ -166,15 +179,16 @@
                                   {:id [:y-axis r] :column :y-axis :row [:panel r] :content {:kind :axis :scale :y}})
                                 [{:id :y-axis-start :column :y-axis :row :x-axis :content {:kind :axis-overhang :scale :y :end :start}}
                                  {:id :y-axis-end :column :y-axis :row :y-overhang :content {:kind :axis-overhang :scale :y :end :end}}])))
-                (cond-> wrap? (into (map (fn [{:keys [label row col]}]
+                (cond-> wrap? (into (map (fn [{:keys [key label row col]}]
                                            {:id [:strip row col] :column [:panel col] :row [:strip row]
-                                            :content {:kind :strip :text label}})
+                                            :content (strip-content label key levels)})
                                          panels)))
                 (cond-> col-labels (into (map-indexed (fn [c text] {:id [:col-strip c] :column [:panel c] :row :col-strip
-                                                                    :content {:kind :strip :text text}})
+                                                                    :content (strip-content text (col-levels c) col-levels)})
                                                       col-labels)))
                 (cond-> row-labels (into (map-indexed (fn [r text] {:id [:row-strip r] :column :row-strip :row [:panel r]
-                                                                    :content {:kind :strip :text text :rotation 90}})
+                                                                    :content (assoc (strip-content text (row-levels r) row-levels)
+                                                                                    :rotation 90)})
                                                       row-labels)))
                 (into (label-items labels {:x {:column {:from [:panel 0] :to last-col}}
                                            :y {:row {:from [:panel 0] :to last-row}}}))
@@ -263,10 +277,29 @@
                 (into (label-items (select-keys labels [:title])
                                    {:title {:column {:from [:column 0] :to [:column (dec c)]} :row :title}})))}))
 
+(def ^:private iso-spacers #{:iso-before :iso-after})
+
+(defn- with-iso-spacers
+  "`grid` with spacer tracks `:iso-before` / `:iso-after` (fixed 0) inside its outer margin tracks, both axes."
+  [grid]
+  (let [insert (fn [tracks] (-> [(first tracks) {:id :iso-before :size [:fixed 0]}]
+                                (into (butlast (rest tracks)))
+                                (conj {:id :iso-after :size [:fixed 0]} (peek tracks))))]
+    (-> grid (update :columns insert) (update :rows insert))))
+
+(defn iso-grid
+  "Generated `grid` (with iso spacers) with the column spacers fixed to `column-spacer` and the row spacers to
+  `row-spacer` pixels each; panels stay flexible and take the rest, the panel block centred."
+  [grid column-spacer row-spacer]
+  (let [resize (fn [tracks size]
+                 (mapv (fn [t] (if (iso-spacers (:id t)) (assoc t :size [:fixed size]) t)) tracks))]
+    (-> grid (update :columns resize column-spacer) (update :rows resize row-spacer))))
+
 (defn plot-grid
   "The generated grid: [[facet-grid]] when the plot is faceted (`[:split :facets :dims]` non-empty), else
-  [[single-panel-grid]]."
+  [[single-panel-grid]]; plots with `:aspect :iso` get spacer tracks around the panel block (see [[iso-grid]])."
   [plot]
-  (if (seq (get-in plot [:split :facets :dims]))
-    (facet-grid plot)
-    (single-panel-grid plot)))
+  (cond-> (if (seq (get-in plot [:split :facets :dims]))
+            (facet-grid plot)
+            (single-panel-grid plot))
+    (= :iso (:aspect plot)) with-iso-spacers))

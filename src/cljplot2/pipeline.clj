@@ -15,6 +15,8 @@
   * `:groups` - `{:na bool}`: `nil` aesthetic values form the NA level (default `true`) or are dropped
   * `:labels` - plot titles; charts may suggest axis titles (`:axis-titles` in their stats), `:labels` win
   * `:legend` - `false` hides all legends, see [[cljplot2.content.legend]]
+  * `:aspect` - `:iso`: equal pixels per data unit on x and y (linear scales, generated grid); the panel aspect ratio
+    changes, the panel block is centred in the leftover space
   * `:custom-grid` - a hand-written grid (see [[cljplot2.layout.grid]]) used instead of the generated one; only
     `:labels {:title t}` may accompany it (a title row above it). Items with `{:kind :plot :plot p}` content hold
     whole plots (see [[cljplot2.content.subplot]])
@@ -76,9 +78,11 @@
       (throw (ex-info "Chart must be a chart value (see cljplot2.chart)." {:key :charts})))))
 
 (defn- validate-plot-options!
-  [{:keys [groups legend]}]
+  [{:keys [groups legend aspect]}]
   (when-not (or (nil? groups) (and (map? groups) (contains? #{nil true false} (:na groups))))
     (throw (ex-info "Plot :groups must be a map {:na boolean}." {:key :groups :value groups})))
+  (when-not (contains? #{nil :iso} aspect)
+    (throw (ex-info "Plot :aspect must be :iso." {:key :aspect :value aspect})))
   (when-not (contains? #{nil true false} legend)
     (throw (ex-info "Plot :legend must be a boolean." {:key :legend :value legend}))))
 
@@ -209,9 +213,12 @@
 (defn- grid-stage
   "The plot's grid: `:custom-grid` when given (under a title row when `:labels` has `:title`; other labels throw),
   otherwise generated from plot keys (`:labels` over the charts' suggested axis titles)."
-  [{:keys [custom-grid labels stats theme arrange] :as plot}]
+  [{:keys [custom-grid labels stats theme arrange aspect scale-specs] :as plot}]
   (when (and custom-grid arrange)
     (throw (ex-info "Plot :arrange can't be combined with :custom-grid." {:key :arrange})))
+  (when (= :iso aspect)
+    (when (or custom-grid arrange (not= :linear (get-in scale-specs [:x :kind])) (not= :linear (get-in scale-specs [:y :kind])))
+      (throw (ex-info "Plot :aspect :iso needs a generated grid with linear :x and :y scales." {:key :aspect}))))
   (assoc plot :grid (cond
                       arrange (plot-grid/arrange-grid arrange labels theme)
                       (and custom-grid labels) (plot-grid/titled-custom-grid custom-grid labels theme)
@@ -246,29 +253,77 @@
                              (scale/finalize spec [(double h) 0.0] (scale/tick-hint h spacing)))))]))
           specs)))
 
-(defn- layout-stage
-  "Repeat measure -> solve -> finalize scales until item measurements stop changing,
-  at most [[max-layout-rounds]] times. The number of rounds is stored under `:rounds`."
-  [plot]
-  (let [{:keys [width height hint]} (:options plot)
+(defn- solve-layout
+  "Layout of `plot`'s `:grid`: repeat measure -> solve -> finalize scales until item measurements stop changing, at
+  most [[max-layout-rounds]] times (the number of rounds under `:rounds`)."
+  [plot canvas]
+  (let [{:keys [width height]} (:options plot)
         prepared (grid/prepare (:grid plot))
-        box {:x 0 :y 0 :w width :h height}]
-    (measure/call-with-scratch-canvas
-     hint
-     (fn [canvas]
-       (let [measure-for (fn [layout]
-                           (grid/measure-items prepared
-                                               {:canvas canvas
-                                                :theme (:theme plot)
-                                                :scales (finalize-scales plot layout)}
-                                               layout))]
-         (loop [round 1
-                measurements (measure-for nil)]
-           (let [layout (grid/solve prepared box measurements)
-                 remeasured (measure-for layout)]
-             (if (or (= measurements remeasured) (>= round max-layout-rounds))
-               (assoc plot :layout (assoc layout :rounds round))
-               (recur (inc round) remeasured)))))))))
+        box {:x 0 :y 0 :w width :h height}
+        measure-for (fn [layout]
+                      (grid/measure-items prepared
+                                          {:canvas canvas :theme (:theme plot) :scales (finalize-scales plot layout)}
+                                          layout))]
+    (loop [round 1
+           measurements (measure-for nil)]
+      (let [layout (grid/solve prepared box measurements)
+            remeasured (measure-for layout)]
+        (if (or (= measurements remeasured) (>= round max-layout-rounds))
+          (assoc layout :rounds round)
+          (recur (inc round) remeasured))))))
+
+(def ^:const max-iso-rounds
+  "Upper bound on refits of iso panel sizes (nice domains may change with the panel size)."
+  4)
+
+(defn- span ^double [finalized] (let [[a b] (:domain finalized)] (m/abs (- (double b) (double a)))))
+
+(defn- iso-spacers
+  "Spacer sizes `[column row]` (each side) giving the panels of `layout` (grid `g`, current spacers `spacers`) equal
+  pixels per unit for `scales`: the panel area available without spacers is fitted by the largest panels with
+  `w / x-span = h / y-span`; the rest goes to the spacers."
+  [g layout scales [column-spacer row-spacer]]
+  (let [panels (map :box (grid/content-items g layout panel-content?))
+        {:keys [w h]} (first panels)
+        columns (count (distinct (map :x panels)))
+        rows (count (distinct (map :y panels)))
+        w-avail (+ (double w) (/ (* 2.0 (double column-spacer)) columns))
+        h-avail (+ (double h) (/ (* 2.0 (double row-spacer)) rows))
+        dx (span (:x scales)) dy (span (:y scales))
+        k (m/min (/ w-avail dx) (/ h-avail dy))]
+    [(m/max 0.0 (/ (* (- w-avail (* k dx)) columns) 2.0))
+     (m/max 0.0 (/ (* (- h-avail (* k dy)) rows) 2.0))]))
+
+(defn- iso-layout
+  "Iso aspect: starting from the free layout, size the spacer tracks around the (flexible) panel block so the panels
+  get equal pixels per unit on x and y (see [[iso-spacers]], [[cljplot2.layout.plot-grid/iso-grid]]); re-solve until
+  the spacers settle within half a pixel (at most [[max-iso-rounds]] refits). Measured tracks may change between
+  rounds; the flexible panels absorb that, so the grid never overflows."
+  [plot canvas]
+  (let [base-grid (:grid plot)]
+    (loop [round 1
+           spacers [0.0 0.0]
+           g base-grid
+           layout (solve-layout plot canvas)]
+      (let [scales (finalize-scales (assoc plot :grid g) layout)
+            spacers' (iso-spacers g layout scales spacers)
+            g' (plot-grid/iso-grid base-grid (spacers' 0) (spacers' 1))
+            layout' (solve-layout (assoc plot :grid g') canvas)
+            settled? (every? #(< (m/abs (double %)) 0.5) (map - spacers' spacers))]
+        (if (or settled? (>= round max-iso-rounds))
+          (assoc plot :grid g' :layout layout')
+          (recur (inc round) spacers' g' layout'))))))
+
+(defn- layout-stage
+  "The plot's layout (see [[solve-layout]]); with `:aspect :iso` the panels are sized for equal pixels per unit on x
+  and y (see [[iso-layout]]) and the stored `:grid` has the fixed panel tracks."
+  [plot]
+  (measure/call-with-scratch-canvas
+   (get-in plot [:options :hint])
+   (fn [canvas]
+     (if (= :iso (:aspect plot))
+       (iso-layout plot canvas)
+       (assoc plot :layout (solve-layout plot canvas))))))
 
 (defn- finalized-scales-stage
   "Scales finalized for the final layout (stored under `:finalized-scales`; the plot's `:scales` key is user input)."

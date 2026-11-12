@@ -293,10 +293,10 @@
       (is (not= [255 255 255] (pixel c (- key-cx 5) (- key-cy 5))) "square under it"))))
 
 (deftest legend-kinds-test
-  (testing "linear color: no legend, no legend track"
+  (testing "linear color: a color bar (step 11)"
     (let [built (build (plot-of {:color :s}))]
-      (is (nil? (legends built)))
-      (is (not-any? #(= :legend (:id %)) (get-in built [:grid :columns])))))
+      (is (= [:colorbar] (map :kind (legends built))))
+      (is (some #(= :legend (:id %)) (get-in built [:grid :columns])))))
   (testing "linear size: entries at domain ticks, sizes increasing"
     (let [[{:keys [entries]}] (legends (build (plot-of {:size :s} {:scales {:size {:domain [0 100]}}})))]
       (is (= ["0" "20" "40" "60" "80" "100"] (mapv :label entries)))

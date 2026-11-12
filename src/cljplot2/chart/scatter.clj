@@ -4,7 +4,11 @@
   Options (defaults from theme `[:chart :scatter]`): `:size` (pixels), `:color`, `:stroke-color`, `:stroke-width`,
   `:shape` (see [[cljplot2.graphics.shape]]); mapped `:color`, `:shape`, `:size` override them per point
   (see [[cljplot2.scale.aesthetic]]); `:padding {:x [lo hi] :y [lo hi]}` (fractions of the data span),
-  plus `:data` and `:mapping` (see [[cljplot2.chart]])."
+  `:order-direction` (`:ascending` default or `:descending`, see draw order below), plus `:data` and `:mapping`
+  (see [[cljplot2.chart]]).
+
+  Draw order: data order, or - with mapping `:order` (an accessor) - ascending order values within each panel
+  (later points drawn on top; ties keep data order; rows with a `nil` or invalid order value drawn first)."
   (:require [clojure2d.core :as c2d]
             [fastmath.core :as m]
             [fastmath.vector :as v]
@@ -48,6 +52,16 @@
              (or (and (data/valid-value? v) (aesthetic/in-domain? k (get plot-scales k {}) v)) (and na-level? (nil? v)))
              (data/valid-value? v))))
 
+(defn- order-rows
+  "`rows` in draw order for the `:order` accessor `order-of` and `direction`: stable, rows with an invalid order value
+  first. Throws `ex-info {:key :order}` for incomparable order values."
+  [rows order-of direction]
+  (let [cmp (if (= direction :descending) #(compare %2 %1) compare)
+        {valid true invalid false} (group-by #(data/valid-value? (order-of %)) rows)]
+    (try (into (vec invalid) (sort-by order-of cmp valid))
+         (catch ClassCastException _
+           (throw (ex-info "Scatter :order values must be mutually comparable." {:key :order}))))))
+
 (defn compute
   "Per panel: points (rows with valid mapped x and y and kept aesthetic values, see [[cljplot2.scale.aesthetic]]) as
   `{:x [..] :y [..] :style style}` plus a vector per mapped aesthetic (`:color`, `:shape`, `:size`; `nil` = NA),
@@ -63,6 +77,11 @@
         _ (doseq [k position-dims]
             (when-not (contains? mapping k)
               (throw (ex-info "Scatter needs :x and :y in its mapping." {:key :mapping :value k}))))
+        direction (get options :order-direction :ascending)
+        _ (when-not (#{:ascending :descending} direction)
+            (throw (ex-info "Scatter :order-direction must be :ascending or :descending." {:key :order-direction :value direction})))
+        order-of (when (some? (:order mapping)) (data/row-accessor :order (:order mapping)))
+        groups (if order-of (update-vals groups #(order-rows % order-of direction)) groups)
         dims (into position-dims (aesthetic/mapped-dims mapping))
         accessors (mapv #(data/row-accessor % (mapping %)) dims)
         values (update-vals groups (fn [rows] (mapv (fn [row] (mapv #(% row) accessors)) rows)))

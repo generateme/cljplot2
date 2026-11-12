@@ -25,7 +25,7 @@
 
   `:panel :alternate-fill` - drawn over the fill of facet panels with odd `row + col` (`:none` turns it off).
 
-  `:strip` - `:fill`, `:border-color`, `:border-width` of facet strips; `:facet {:gap px}` between panels;
+  `:strip` - `:fill`, `:border-color`, `:border-width` of facet strips, `:shingle-fill` (bar of a shingle level); `:facet {:gap px}` between panels;
   `:multiplot {:gap px}` between arranged plots.
 
   `:palette` - aesthetic defaults, see [[cljplot2.scale.aesthetic]]: `:color` (palette name or colors, old cljplot
@@ -33,7 +33,8 @@
   (`[min max]` pixels), `:na` (color of NA values).
 
   `:legend` - `:gap` (pixels between key and label and between legends), `:key-size` (key box side, pixels),
-  `:fill`, `:border-color`, `:border-width`; text roles `:legend-title` and `:legend-label`.
+  `:fill`, `:border-color`, `:border-width`, color bar `:bar-length` (`nil` - stretch) and `:bar-width` (`nil` -
+  `:key-size`); text roles `:legend-title` and `:legend-label`.
 
   `:chart` - per chart kind defaults: `:scatter`, `:histogram`, `:density`, `:line`, `:ecdf` (old cljplot blue),
   `:treemap` (`:padding`, `:border-color`, `:border-width`); validated when a chart of that kind computes.
@@ -88,7 +89,7 @@
            :grid {:x {:color 0xb4b4b4 :width 0.5 :dash [4.0]}
                   :y {:color 0xb4b4b4 :width 0.5 :dash [4.0]}
                   :bands {:color 0xb4b4b4 :width 1 :dash [1.0 2.0]}}}
-   :strip {:fill [255 255 255 150] :border-color [0 0 0 100] :border-width 1}
+   :strip {:fill [255 255 255 150] :border-color [0 0 0 100] :border-width 1 :shingle-fill [255 165 0 110]}
    :facet {:gap 5}
    :multiplot {:gap 10}
    :palette {:color :category20
@@ -96,7 +97,7 @@
              :shape [\O \s \A \x \+ \V \o \S \^ \v \{ \} \< \>]
              :size [2 10]
              :na [150 150 150]}
-   :legend {:gap 5 :key-size 14 :fill :none :border-color :none :border-width 1}
+   :legend {:gap 5 :key-size 14 :fill :none :border-color :none :border-width 1 :bar-length nil :bar-width nil}
    :chart {:scatter {:size 4 :color [49 54 149 180] :stroke-color :none :stroke-width 1 :shape \O}
            :histogram {:color [49 54 149] :stroke-width 1 :alpha 0.6}
            :density {:color [49 54 149] :width 1 :dash :none :fill :none}
@@ -166,7 +167,7 @@
     (when (nil? (get-in theme [:panel :alternate-fill]))
       (invalid "Panel :alternate-fill must be a color or :none." {:key :alternate-fill}))
     (let [{:keys [fill border-color border-width]} (:strip theme)]
-      (when (or (nil? fill) (nil? border-color))
+      (when (or (nil? fill) (nil? border-color) (nil? (get-in theme [:strip :shingle-fill])))
         (invalid "Strip colors must be colors or :none." {:key :strip}))
       (when-not (non-negative? border-width)
         (invalid "Strip :border-width must be a non-negative number." {:key :border-width :value border-width})))
@@ -184,7 +185,11 @@
         (when-not (non-negative? v)
           (invalid "Legend sizes must be non-negative numbers." {:key k :value v})))
       (when (or (nil? fill) (nil? border-color))
-        (invalid "Legend colors must be colors or :none." {:key :legend})))
+        (invalid "Legend colors must be colors or :none." {:key :legend}))
+      (doseq [k [:bar-length :bar-width]
+              :let [v (get-in theme [:legend k])]]
+        (when-not (or (nil? v) (and (number? v) (pos? (double v))))
+          (invalid "Legend color bar sizes must be positive numbers or nil." {:key k :value v}))))
     (doseq [[role style] (:text theme)]
       (when-not (map? style)
         (invalid "Text role style must be a map." {:key :role :value role}))
