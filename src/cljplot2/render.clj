@@ -8,7 +8,8 @@
             [cljplot2.canvas :as canvas]
             [cljplot2.draw :as draw]
             [cljplot2.grid :as grid]
-            [cljplot2.pipeline :as pipeline]))
+            [cljplot2.pipeline :as pipeline]
+            [cljplot2.theme :as theme]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -53,7 +54,9 @@
      (canvas/call-with-graphics
       (c2d/canvas width height hint)
       (fn [target]
-        (c2d/set-background target (get-in built [:theme :plot :background]))
+        (let [background (get-in built [:theme :plot :background])]
+          (when-not (theme/none? background) ;; canvas is transparent until painted
+            (c2d/set-background target background)))
         (when (:debug options)
           (draw-debug-items! target (get-in built [:layout :items]) 0))
         (draw-contents! target (:grid built) (:layout built) {:theme (:theme built)})

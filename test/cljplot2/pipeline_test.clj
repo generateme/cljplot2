@@ -2,6 +2,7 @@
   (:require [clojure.test :refer [deftest testing is are]]
             [clojure2d.core :as c2d]
             [fastmath.vector :as v]
+            [cljplot2.grid :as grid]
             [cljplot2.pipeline :as pipeline]
             [cljplot2.measure :as measure]
             [cljplot2.examples :as examples]))
@@ -40,7 +41,7 @@
     (testing "stubs produce empty values"
       (is (= {} (:split built) (:stats built) (:extents built) (:scale-specs built) (:scales built))))
     (testing "default grid and options"
-      (is (= {:x 10 :y 10 :w 580 :h 580} (get-in built [:layout :items 0 :box])))
+      (is (= {:x 10 :y 10 :w 580 :h 580} (grid/item-box (:layout built) :panel)))
       (is (= pipeline/default-options (:options built))))))
 
 (deftest until-test
@@ -85,7 +86,7 @@
       {:hint :retina} :hint
       {:hint nil} :hint))
   (testing "1x1 plot"
-    (is (= {:x 0 :y 0 :w 1 :h 1} (get-in (pipeline/build {:theme {:plot {:margin 0}}} {:width 1 :height 1}) [:layout :items 0 :box])))))
+    (is (= {:x 0 :y 0 :w 1 :h 1} (grid/item-box (:layout (pipeline/build {:theme {:plot {:margin 0}}} {:width 1 :height 1})) :panel)))))
 
 ;; 5.x measurement loop
 

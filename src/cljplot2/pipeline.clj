@@ -38,9 +38,13 @@
 (defn- scale-specs-stage [plot] (assoc plot :scale-specs {}))
 
 (defn- grid-stage
-  "The plot's grid: `:custom-grid` when given, otherwise generated from plot keys."
-  [plot]
-  (assoc plot :grid (or (:custom-grid plot) (plot-grid/single-panel-grid plot (:theme plot)))))
+  "The plot's grid: `:custom-grid` when given, otherwise generated from plot keys.
+  A custom grid can't be combined with `:labels` (they would be ignored)."
+  [{:keys [custom-grid labels] :as plot}]
+  (when (and custom-grid labels)
+    (throw (ex-info "Plot :labels can't be combined with :custom-grid; put labels into the custom grid."
+                    {:key :labels})))
+  (assoc plot :grid (or custom-grid (plot-grid/single-panel-grid plot))))
 
 (defn finalize-scales
   "Scales finalized for `layout` (`nil` before the first layout round). Stub: `{}`."

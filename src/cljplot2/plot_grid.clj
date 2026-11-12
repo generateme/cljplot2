@@ -11,42 +11,39 @@
 
   Plot `:labels` - `{:title t :x t :y t}`, `t` a string or a map of label options (`:text`, style overrides,
   `:align`, `:rotation`) merged into the label content; a missing or `nil` label adds no item.
-  `:title` uses the `:title` text role, `:x` and `:y` the `:axis-title` role; `:y` is rotated 270 by default.")
+  `:title` uses the `:title` text role, `:x` and `:y` the `:axis-title` role; `:y` is rotated 270 by default.
+  The label `:kind` can't be overridden. Item ids: `:panel`, `:title`, `:x-title`, `:y-title`.")
 
-(def ^:private label-defaults
-  {:title {:role :title}
-   :x {:role :axis-title}
-   :y {:role :axis-title :rotation 270}})
+(def ^:private plot-labels
+  "Plot label key -> grid item id, content defaults and placement, in item order."
+  [[:title {:id :title :defaults {:role :title} :column {:from :y-title :to :panel} :row :title}]
+   [:x {:id :x-title :defaults {:role :axis-title} :column :panel :row :x-title}]
+   [:y {:id :y-title :defaults {:role :axis-title :rotation 270} :column :y-title :row :panel}]])
 
-(defn- label-content
-  [k label]
-  (when-not (contains? label-defaults k)
-    (throw (ex-info "Unknown plot label." {:key :labels :value k :allowed (set (keys label-defaults))})))
-  (when (some? label)
-    (merge {:kind :label} (label-defaults k) (if (map? label) label {:text label}))))
+(def ^:private label-keys (set (map first plot-labels)))
 
-(def ^:private label-placement
-  "Item placement of each plot label."
-  {:title {:column {:from :y-title :to :panel} :row :title}
-   :x {:column :panel :row :x-title}
-   :y {:column :y-title :row :panel}})
-
-(defn single-panel-grid
-  "Grid of a single-panel plot with its `:labels`, margins from `theme`."
-  [{:keys [labels]} theme]
+(defn- label-items
+  "Grid items of the plot `labels` (fixed order: title, x, y); a `nil` label adds no item."
+  [labels]
   (when-not (or (nil? labels) (map? labels))
     (throw (ex-info "Plot :labels must be a map." {:key :labels :value labels})))
+  (doseq [k (keys labels)]
+    (when-not (label-keys k)
+      (throw (ex-info "Unknown plot label." {:key :labels :value k :allowed label-keys}))))
+  (vec (keep (fn [[k {:keys [id defaults column row]}]]
+               (when-some [label (get labels k)]
+                 {:id id :column column :row row
+                  :content (assoc (merge defaults (if (map? label) label {:text label})) :kind :label)}))
+             plot-labels)))
+
+(defn single-panel-grid
+  "Grid of a single-panel plot: its `:labels` and the margin of its (merged) `:theme`."
+  [{:keys [labels theme]}]
   (let [margin (get-in theme [:plot :margin])
         margin-track (fn [id] {:id id :size [:fixed margin]})
         measured (fn [id] {:id id :size [:measured]})]
-    (when-not (and (number? margin) (>= (double margin) 0.0))
-      (throw (ex-info "Plot :margin must be a non-negative number." {:key :margin :value margin})))
     {:columns [(margin-track :margin-left) (measured :y-title) (measured :y-axis)
                {:id :panel :size [:flexible]} (margin-track :margin-right)]
      :rows [(margin-track :margin-top) (measured :title) {:id :panel :size [:flexible]}
             (measured :x-axis) (measured :x-title) (margin-track :margin-bottom)]
-     :items (into [{:id :panel :column :panel :row :panel :content {:kind :panel}}]
-                  (keep (fn [[k label]]
-                          (when-let [content (label-content k label)]
-                            (merge {:id k :content content} (label-placement k)))))
-                  labels)}))
+     :items (into [{:id :panel :column :panel :row :panel :content {:kind :panel}}] (label-items labels))}))

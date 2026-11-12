@@ -29,8 +29,6 @@
 (set! *unchecked-math* :warn-on-boxed)
 
 (def ^:private rotations #{0 90 270})
-(def ^:private h-aligns #{:left :center :right})
-(def ^:private v-aligns #{:top :middle :bottom})
 
 (defn- lines
   "Lines of the label text; empty text has no lines, empty inner or trailing lines are kept."
@@ -40,30 +38,21 @@
 
 (def ^:private default-align [:center :middle])
 
-(defn- validate-align!
-  [align]
-  (when-not (and (vector? align) (= 2 (count align)) (h-aligns (align 0)) (v-aligns (align 1)))
-    (throw (ex-info "Label :align must be [h v], h in #{:left :center :right}, v in #{:top :middle :bottom}."
-                    {:key :align :value align}))))
-
 (defmethod measure/validate-content :label
   [content]
   (let [rotation (get content :rotation 0)]
     (when-not (rotations rotation)
       (throw (ex-info "Label rotation must be 0, 90 or 270." {:key :rotation :value rotation})))
     (when (contains? content :align)
-      (validate-align! (:align content)))))
+      (theme/validate-align! (:align content)))))
 
 (defn- label-spec
-  "Drawing parameters of validated label `content` in `theme`; validates the resolved style."
+  "Drawing parameters of validated label `content` in `theme`; validates the style with inline overrides."
   [theme content]
   (let [rotation (get content :rotation 0)
-        style (theme/text-style theme content)
+        style (doto (theme/text-style theme content) theme/validate-text-style!)
         align (or (:align style) default-align)
         padding (:padding style)]
-    (validate-align! align)
-    (when-not (and (number? padding) (>= (double padding) 0.0))
-      (throw (ex-info "Text padding must be a non-negative number." {:key :padding :value padding})))
     {:lines (lines (:text content))
      :rotation rotation
      :h-align (align 0)

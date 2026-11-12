@@ -33,9 +33,11 @@
 
 (deftest custom-grid-test
   (let [custom {:columns [{:size [:flexible]}] :rows [{:size [:flexible]}] :items [{:id :only :column 0 :row 0}]}
-        built (plot/build {:custom-grid custom :labels all-labels})]
-    (is (= custom (:grid built)) "custom grid wins over generation")
-    (is (= custom (:custom-grid (plot/build built))) "kept across rebuilds")))
+        built (plot/build {:custom-grid custom})]
+    (is (= custom (:grid built)) "custom grid replaces generation")
+    (is (= custom (:custom-grid (plot/build built))) "kept across rebuilds")
+    (testing "labels can't be combined with a custom grid"
+      (is (= {:key :labels} (error-data #(plot/build {:custom-grid custom :labels all-labels})))))))
 
 (deftest reserved-axis-tracks-test
   (let [l (layout {:labels all-labels})]
@@ -67,6 +69,13 @@
     (let [w-default (track-size (layout {:labels {:y "Percent of Total"}}) :columns :y-title)
           w-flat (track-size (layout {:labels {:y {:text "Percent of Total" :rotation 0}}}) :columns :y-title)]
       (is (< w-default w-flat))))
+  (testing "item ids and fixed item order, independent of the labels map's key order"
+    (let [ids (fn [labels] (mapv :id (:items (:grid (plot/build {:labels labels})))))]
+      (is (= [:panel :title :x-title :y-title] (ids (array-map :y "y" :x "x" :title "t"))))
+      (is (= (layout {:labels (array-map :y "y" :x "x" :title "t")})
+             (layout {:labels (array-map :title "t" :x "x" :y "y")})))))
+  (testing "label :kind can't be overridden"
+    (is (= :label (get-in (plot/build {:labels {:title {:text "t" :kind :panel}}}) [:grid :items 1 :content :kind]))))
   (testing "1 layout round"
     (is (= 1 (:rounds (layout {:labels all-labels})))))
   (testing "invalid labels"
@@ -92,8 +101,15 @@
     (testing "border wider than half the box fills it"
       (let [c (plot/render {:theme {:panel {:border-color :blue :border-width 1000}}} {:width 600 :height 400})]
         (is (= (rgb :blue) (pixel c cx cy)))))
-    (testing "invalid border width"
-      (is (= :border-width (:key (error-data #(plot/render {:theme {:panel {:border-color :blue :border-width -1}}}))))))))
+    (testing "border width rounded to whole pixels"
+      (let [c (plot/render {:theme {:panel {:border-color :blue :border-width 1.6}}} {:width 600 :height 400})]
+        (is (= (rgb :blue) (pixel c (inc x) cy)))
+        (is (= (rgb 0xe8e8f0) (pixel c (+ x 2) cy)))))
+    (testing ":none draws nothing, nil in an override keeps the default"
+      (let [c (plot/render {:theme {:panel {:fill :none :border-color nil}}} {:width 600 :height 400})]
+        (is (= (rgb 0xe8e8f0) (pixel c cx cy) (pixel c x y)))))
+    (testing "invalid border width fails at build time"
+      (is (= :border-width (:key (error-data #(plot/build {:theme {:panel {:border-color :blue :border-width -1}}}))))))))
 
 (deftest plot-theme-test
   (testing "background fills the canvas"
@@ -102,6 +118,16 @@
     (let [l (layout {:theme {:plot {:margin 25}}})]
       (is (= [25 25] [(track-size l :columns :margin-left) (track-size l :rows :margin-bottom)]))
       (is (= {:x 25 :y 25 :w 550 :h 350} (grid/item-box l :panel)))))
+  (testing ":none background leaves the canvas transparent"
+    (let [argb (.getRGB ^BufferedImage (c2d/get-image (plot/render {:theme {:plot {:background :none}}} {:width 50 :height 50})) 0 0)]
+      (is (zero? (bit-and (bit-shift-right argb 24) 0xff)))))
+  (testing "theme validation at build time"
+    (are [t k] (= k (:key (error-data #(plot/build {:theme t}))))
+      {:text {:title {:size 0}}} :size
+      {:text {:strip {:padding -2}}} :padding
+      {:text {:legend-label {:align :left}}} :align
+      {:text {:tick-label {:font "Liberaton Mono"}}} :font
+      {:text {:extra 12}} :role))
   (testing "invalid margin"
     (are [m] (= {:key :margin :value m} (error-data #(plot/build {:theme {:plot {:margin m}}})))
       -1 "10")))
