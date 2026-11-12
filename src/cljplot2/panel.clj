@@ -35,12 +35,15 @@
          ((:draw chart) chart computed c' {:x 0 :y 0 :w w :h h} (:scales env) env)))))
 
 (defn- draw-grid-lines!
-  "Grid lines at the tick positions of the panel-local scales, `w` x `h` panel at the origin; bands scales use the
-  theme `[:panel :grid :bands]` line."
+  "Grid lines at the tick positions of the panel-local scales, `w` x `h` panel at the origin. `[:panel :grid k]`
+  `:none` turns the lines of scale `k` off; otherwise a bands scale draws the `[:panel :grid :bands]` line."
   [c ^long w ^long h env]
   (doseq [k [:x :y]
           :let [finalized (get-in env [:scales k])
-                {:keys [color width dash] :as line} (get-in env [:theme :panel :grid (if (= :bands (:kind finalized)) :bands k)])]
+                axis-line (get-in env [:theme :panel :grid k])
+                {:keys [color width dash] :as line} (if (and (= :bands (:kind finalized)) (not (theme/none? axis-line)))
+                                                      (get-in env [:theme :panel :grid :bands])
+                                                      axis-line)]
           :when (and finalized (not (theme/none? line)) (not (theme/none? color)) (pos? (double width)))]
     (c2d/set-color c color)
     (c2d/set-stroke-custom c (cond-> {:size (double width) :cap :butt} (not (theme/none? dash)) (assoc :dash (vec dash))))

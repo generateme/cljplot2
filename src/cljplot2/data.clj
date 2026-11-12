@@ -12,7 +12,7 @@
   * `{:kind :categorical :values [v ...]}` (strings/keywords, distinct, in order of first appearance)
 
   [[value-extent]] also keeps the distinct values (`:values`) of numeric and temporal data, for scales that
-  need the levels (ordinal colour, shape, size)."
+  need the levels (ordinal colour, shape, size) - at most [[max-levels]] of them."
   (:require [fastmath.core :as m]))
 
 (set! *warn-on-reflection* true)
@@ -77,12 +77,24 @@
                    :max (reduce #(if (pos? (compare %2 %1)) %2 %1) vs)}
         :categorical {:kind :categorical :values (vec (distinct vs))}))))
 
+(def ^:const max-levels
+  "Most distinct numeric / temporal values [[value-extent]] keeps; with more, an ordinal scale needs an explicit domain."
+  100)
+
+(defn- capped-values
+  "Extent `e` with distinct `vs` as `:values`; numeric / temporal extents lose `:values` beyond [[max-levels]]."
+  [e vs]
+  (if (= :categorical (:kind e))
+    e
+    (let [ds (into [] (comp (distinct) (take (inc max-levels))) vs)]
+      (if (> (count ds) max-levels) (dissoc e :values) (assoc e :values ds)))))
+
 (defn value-extent
-  "[[extent]] of `vs` that also keeps the distinct values (`:values`, in order of first appearance) for numeric and
-  temporal data."
+  "[[extent]] of `vs` that also keeps the distinct values (`:values`, in order of first appearance) of numeric and
+  temporal data, when there are at most [[max-levels]] of them."
   [k vs]
   (when-let [e (extent k vs)]
-    (assoc e :values (vec (distinct vs)))))
+    (capped-values e vs)))
 
 (defn sorted-levels
   "Distinct `values` sorted (numbers ascending, strings lexicographic, ...).
@@ -94,8 +106,8 @@
                   {:key error-key :scale k}))))
 
 (defn merge-extents
-  "Merge extents of dimension `k` (`nil`s skipped); `:values` are kept (merged, distinct) when every extent has them.
-  Mixed kinds throw `ex-info {:key :extents}`."
+  "Merge extents of dimension `k` (`nil`s skipped); `:values` are kept (merged, distinct) when every extent has them
+  (numeric / temporal: at most [[max-levels]]). Mixed kinds throw `ex-info {:key :extents}`."
   [k extents]
   (let [es (remove nil? extents)]
     (when (seq es)
@@ -108,4 +120,4 @@
           :temporal {:kind :temporal
                      :min (reduce #(if (neg? (compare %2 %1)) %2 %1) (map :min es))
                      :max (reduce #(if (pos? (compare %2 %1)) %2 %1) (map :max es))})
-          (every? :values es) (assoc :values (vec (distinct (mapcat :values es)))))))))
+          (every? :values es) (capped-values (mapcat :values es)))))))

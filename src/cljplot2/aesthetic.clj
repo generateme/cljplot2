@@ -7,17 +7,19 @@
 
   Scale spec - plot `:scales {dim spec}`:
 
-  * `:kind` - `:ordinal` or `:linear`; default `:linear` for numeric `:color` / `:size` data or domain, otherwise
-    `:ordinal` (`:shape` is always ordinal)
-  * `:domain` - ordinal: distinct levels (default: data levels, sorted); linear: `[lo hi]` (default: data min, max)
+  * `:kind` - `:ordinal` or `:linear`; default `:linear` for numeric `:color` / `:size` data or a numeric explicit
+    domain of two values, otherwise `:ordinal` (`:shape` is always ordinal); numeric data with more than
+    [[cljplot2.data/max-levels]] distinct values can be ordinal only with an explicit `:domain`
+  * `:domain` - ordinal: distinct levels (default: data levels, sorted; numbers equal as doubles, `1931` = `1931.0`);
+    linear: `[lo hi]` (default: data min, max)
   * `:range` - default from theme `:palette` (`:color`, `:gradient`, `:shape`, `:size`):
     ordinal `:color` - palette name or colors (cycled); linear `:color` - palette name, colors (a gradient) or a
     function of `t` in `[0 1]`; `:shape` - shapes (cycled); `:size` - `[min max]` (ordinal levels evenly spread)
   * `:formatter` - legend labels (function); `:title` - legend title (`nil` - no title); `:legend` - `false` hides it
 
   [[scale-spec]] gives plain data (with `:na?` - the scale has an NA level); it is also the finalized scale: no
-  pixel range, `nice` or padding. [[attribute-fn]] maps data values to style attributes: NA (`nil`), values outside
-  an ordinal domain and non-numbers on a linear scale map to the NA attribute; linear scales clamp to the domain."
+  pixel range, `nice` or padding. [[attribute-fn]] maps data values to style attributes: NA (`nil`) to the NA
+  attribute; values outside the domain (not a level, or outside `[lo hi]`) to `nil` - such points are skipped."
   (:require [clojure2d.color :as c]
             [fastmath.core :as m]
             [wadogo.scale :as s]
@@ -101,22 +103,33 @@
   (when-not (contains? #{nil true false} (:legend spec))
     (invalid "Scale :legend must be a boolean." {:key :legend :scale k})))
 
+(defn- level-key
+  "Identity of an ordinal level: numbers compare as doubles (`1931` = `1931.0`), other values as themselves."
+  [v]
+  (if (number? v) (double v) v))
+
 (defn- ordinal-domain
   [k explicit extent]
-  (if explicit
-    (do (when-not (and (sequential? explicit) (seq explicit) (not-any? nil? explicit) (apply distinct? explicit))
-          (invalid "Ordinal :domain must be a non-empty sequence of distinct non-nil values." {:key :domain :scale k}))
-        (vec explicit))
-    (data/sorted-levels k (:values extent) :domain)))
+  (cond
+    explicit (do (when-not (and (sequential? explicit) (seq explicit) (not-any? nil? explicit)
+                                (apply distinct? (map level-key explicit)))
+                   (invalid "Ordinal :domain must be a non-empty sequence of distinct non-nil values." {:key :domain :scale k}))
+                 (vec explicit))
+    (:values extent) (data/sorted-levels k (vals (reduce (fn [acc v] (if (contains? acc (level-key v)) acc (assoc acc (level-key v) v)))
+                                                         {} (:values extent)))
+                                         :domain)
+    :else (invalid (str "Too many distinct values for an ordinal scale (more than " data/max-levels
+                        "); give an explicit :domain.")
+                   {:key :domain :scale k})))
 
 (defn- linear-domain
   [k explicit extent]
   (if explicit
-    (do (when-not (and (vector? explicit) (= 2 (count explicit))
+    (do (when-not (and (sequential? explicit) (= 2 (count explicit))
                        (every? #(and (number? %) (m/valid-double? (double %))) explicit)
-                       (< (double (explicit 0)) (double (explicit 1))))
+                       (< (double (first explicit)) (double (second explicit))))
           (invalid "Linear :domain must be [lo hi], finite numbers, lo < hi." {:key :domain :scale k}))
-        [(double (explicit 0)) (double (explicit 1))])
+        [(double (first explicit)) (double (second explicit))])
     (do (when-not (= :numeric (:kind extent))
           (invalid "A :linear aesthetic scale needs numeric data." {:key :kind :scale k}))
         [(double (:min extent)) (double (:max extent))])))
@@ -130,15 +143,16 @@
   (validate-spec! k spec)
   (let [explicit (:domain spec)]
     (when (or explicit extent)
-      (let [numeric? (if explicit (every? number? explicit) (= :numeric (:kind extent)))
+      (let [numeric? (if explicit
+                       (and (sequential? explicit) (= 2 (count explicit)) (every? number? explicit))
+                       (= :numeric (:kind extent)))
             kind (or (:kind spec) (if (and numeric? (not= k :shape)) :linear :ordinal))
             domain (if (= kind :ordinal) (ordinal-domain k explicit extent) (linear-domain k explicit extent))
-            outside? (and (= kind :ordinal) explicit (some #(not (contains? (set domain) %)) (:values extent)))
             default-range (get palette (if (and (= k :color) (= kind :linear)) :gradient k))]
         (cond-> {:kind kind
                  :domain domain
                  :range (resolve-range k kind (get spec :range default-range))
-                 :na? (boolean (or na? outside?))}
+                 :na? (boolean na?)}
           (contains? spec :formatter) (assoc :formatter (:formatter spec))
           (contains? spec :title) (assoc :title (:title spec))
           (contains? spec :legend) (assoc :legend (:legend spec)))))))
@@ -160,29 +174,34 @@
       (mapv #(nth range (mod (long %) (count range))) (clojure.core/range n)))))
 
 (defn- unit
-  "`v` normalized into `[0 1]` on `[lo hi]` (clamped; 0.5 for a zero span)."
+  "`v` (within `[lo hi]`) normalized into `[0 1]`; 0.5 for a zero span."
   ^double [^double lo ^double hi ^double v]
-  (if (== lo hi) 0.5 (m/constrain (/ (- v lo) (- hi lo)) 0.0 1.0)))
+  (if (== lo hi) 0.5 (/ (- v lo) (- hi lo))))
 
 (defn attribute-fn
-  "Function of a data value of dimension `k` with scale `spec` giving its style attribute (color, shape, size);
-  NA values give `na`."
+  "Function of a data value of dimension `k` with scale `spec` giving its style attribute (color, shape, size):
+  `nil` (NA) gives `na`; a value outside the domain (not a level; not a number within `[lo hi]`) gives `nil` -
+  callers skip it."
   [k spec na]
   (case (:kind spec)
-    :ordinal (let [index (zipmap (:domain spec) (ordinal-attributes k spec))]
-               (fn [v] (get index v na)))
+    :ordinal (let [index (zipmap (map level-key (:domain spec)) (ordinal-attributes k spec))]
+               (fn [v] (if (nil? v) na (get index (level-key v)))))
     :linear (let [[lo hi] (:domain spec)
                   lo (double lo) hi (double hi)
                   range (:range spec)
                   f (if (= k :color)
                       (let [g (if (fn? range) range (c/gradient range))] (fn [^double t] (g t)))
                       (let [a (double (range 0)) b (double (range 1))] (fn [^double t] (+ a (* t (- b a))))))]
-              (fn [v] (if (and (number? v) (m/valid-double? (double v))) (f (unit lo hi (double v))) na)))))
+              (fn [v]
+                (cond
+                  (nil? v) na
+                  (and (number? v) (<= lo (double v) hi)) (f (unit lo hi (double v)))
+                  :else nil)))))
 
 (defn legend-entries
   "Legend entries `[{:label :value}]` of scale `spec` of dimension `k` (`:value nil` - the NA entry, last), or `nil`
   when it has no legend: `:legend false` or linear color (a color bar, not drawn yet).
-  Ordinal: one per level (`(str level)` or `:formatter`); linear size: ticks of the domain."
+  Ordinal: one per level (`(str level)` or `:formatter`); linear size: ticks of the domain (labels as axis ticks)."
   [k spec]
   (when-not (or (false? (:legend spec)) (and (= k :color) (= :linear (:kind spec))))
     (let [fmt (or (:formatter spec) str)
@@ -190,11 +209,9 @@
                     (mapv (fn [level] {:label (str (fmt level)) :value level}) (:domain spec))
                     (let [[lo hi] (:domain spec)
                           lo (double lo) hi (double hi)]
-                      (if (== lo hi)
-                        [{:label (str (fmt lo)) :value lo}]
-                        (let [ws (s/scale :linear (cond-> {:domain [lo hi] :ticks size-legend-ticks}
-                                                    (:formatter spec) (assoc :formatter (:formatter spec))))
-                              ticks (filterv #(<= lo (double %) hi) (s/ticks ws))]
-                          (mapv (fn [t l] {:label l :value t}) ticks
-                                (scale/tick-labels ws {:kind :linear :formatter (:formatter spec)} ticks))))))]
+                      (let [ws (s/scale :linear (cond-> {:domain (if (== lo hi) [lo (inc lo)] [lo hi]) :ticks size-legend-ticks}
+                                                  (:formatter spec) (assoc :formatter (:formatter spec))))
+                            ticks (if (== lo hi) [lo] (filterv #(<= lo (double %) hi) (s/ticks ws)))]
+                        (mapv (fn [t l] {:label l :value t}) ticks
+                              (scale/tick-labels ws {:kind :linear :formatter (:formatter spec)} ticks)))))]
       (cond-> entries (:na? spec) (conj {:label "NA" :value nil})))))

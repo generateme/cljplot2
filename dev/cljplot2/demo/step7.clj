@@ -1,7 +1,7 @@
 (ns cljplot2.demo.step7
   "Step 7 demo: groups and legends, saved to `results/step7/`.
   Fig 2.6 (barley: variety by yield, faceted by site, colour by year), merged colour + shape legend (Chem97),
-  numeric size and continuous colour (faithful)."
+  numeric size and continuous colour (faithful), legend overlay with NA, legend wrapping and bands label thinning."
   (:require [clojure.data.json :as json]
             [clojure.java.io :as io]
             [clojure2d.core :as c2d]
@@ -41,12 +41,19 @@
             (chart/scatter {:size 3 :shape \O})]
    :labels {:title "Overlay: squares + dots mapped, crosses not; NA level" :x "x" :y "y"}})
 
+(def many-levels
+  {:data (for [i (range 240)] {:x (mod (* i 37) 101) :y (format "category-%02d" (mod i 60)) :g (format "level-%02d" (mod i 45))})
+   :mapping {:x :x :y :y :color :g}
+   :charts [(chart/scatter {:size 5})]
+   :labels {:title "45 legend levels wrap; 60 bands, labels thinned" :x "x"}})
+
 (defn -main [& _]
   (doseq [[file-name p options] [["fig-2-6-400x900.png" fig-2-6 {:width 400 :height 900}]
                                  ["fig-2-6-400x900-debug.png" fig-2-6 {:width 400 :height 900 :debug true}]
                                  ["merged-700x500.png" merged {:width 700 :height 500}]
                                  ["size-gradient-700x500.png" size-and-gradient {:width 700 :height 500}]
-                                 ["two-charts-700x500.png" two-charts {:width 700 :height 500}]]
+                                 ["two-charts-700x500.png" two-charts {:width 700 :height 500}]
+                                 ["many-levels-800x400.png" many-levels {:width 800 :height 400}]]
           :let [path (str "results/step7/" file-name)]]
     (c2d/save (plot/render p options) path)
     (println "saved" path)))

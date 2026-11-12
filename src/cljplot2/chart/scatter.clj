@@ -90,8 +90,8 @@
 (defn draw
   "Draw the points of one panel (`computed` - `{:x [..] :y [..] :style}` and aesthetic vectors) on `canvas` with the
   finalized `scales` (aesthetic scales map values to the point's color, shape, size). No points draw nothing
-  (there may be no scales then); points the scales can't place (`##NaN`, e.g. a value outside an explicit bands
-  domain) are skipped."
+  (there may be no scales then); points the scales can't place - a position `##NaN` (e.g. outside an explicit bands
+  domain) or an aesthetic value outside its domain (`nil` attribute) - are skipped."
   [_chart {:keys [x y style] :as computed} canvas _box scales env]
   (when (seq x)
     (let [{:keys [stroke-width]} style
@@ -101,13 +101,15 @@
           mapped (vec (for [k aesthetic/dims :when (contains? computed k)]
                         [k (aesthetic/attribute-fn k (get scales k) (na k)) (computed k)]))
           point-style (if (seq mapped)
-                        (fn [^long i] (reduce (fn [st [k f vs]] (assoc st k (f (nth vs i)))) style mapped))
+                        (fn [^long i] (reduce (fn [st [k f vs]]
+                                                (if-some [a (f (nth vs i))] (assoc st k a) (reduced nil)))
+                                              style mapped))
                         (constantly style))]
       (c2d/set-stroke-custom canvas {:size (double stroke-width)})
       (dorun (map-indexed (fn [^long i vx]
                             (let [px (double (fx vx)) py (double (fy (nth y i)))]
                               (when-not (or (m/nan? px) (m/nan? py))
-                                (let [st (point-style i)]
+                                (when-let [st (point-style i)]
                                   (shape/draw! canvas (:shape st) (v/vec2 px py) st)))))
                           x)))))
 

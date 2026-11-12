@@ -3,11 +3,15 @@
   (:require [clojure.test :refer [deftest testing is are]]
             [clojure2d.color :as c]
             [clojure2d.core :as c2d]
+            [fastmath.vector :as v]
             [cljplot2.aesthetic :as aesthetic]
+            [cljplot2.axis :as axis]
             [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
             [cljplot2.grid :as grid]
+            [cljplot2.legend :as legend]
             [cljplot2.measure :as measure]
+            [cljplot2.scale :as scale]
             [cljplot2.theme :as theme])
   (:import [java.awt.image BufferedImage]))
 
@@ -31,8 +35,9 @@
 (defn- panel-data [built] (get-in built [:stats 0 :data :panel]))
 (defn- spec [built k] (get-in built [:scale-specs k]))
 
-(defn- legends [built]
-  (some->> (:items (:grid built)) (filter #(= :legends (:id %))) first :content :items (mapv :content)))
+(defn- legends-item [built] (first (filter #(= :legends (:id %)) (:items (:grid built)))))
+
+(defn- legends [built] (some-> (legends-item built) :content :legends))
 
 (defn- rgb [col] (vec (take 3 (map long (c/to-color col)))))
 
@@ -43,9 +48,16 @@
 (def ^:private plain {:plot {:background :white} :panel {:grid {:x :none :y :none}}})
 
 (defn- measured
-  "Natural size of `content` with `theme`, measured on a scratch canvas."
-  ^fastmath.vector.Vec2 [content theme]
-  (measure/call-with-scratch-canvas :high #(measure/natural-size content {:canvas % :theme theme})))
+  "Natural size of `content` with `theme`, measured on a scratch canvas (optional item `box`)."
+  (^fastmath.vector.Vec2 [content theme] (measured content theme nil))
+  (^fastmath.vector.Vec2 [content theme box]
+   (measure/call-with-scratch-canvas :high #(measure/natural-size content {:canvas % :theme theme :box box}))))
+
+(defn- legend-boxes
+  "Canvas boxes of the plot's legends (final layout)."
+  [built]
+  (let [box (grid/item-box (:layout built) :legends)]
+    (measure/call-with-scratch-canvas :high #(legend/legend-boxes (:content (legends-item built)) {:canvas % :theme (:theme built)} box))))
 
 ;; 1.x mapping
 
@@ -83,8 +95,8 @@
             fx (get-in built [:finalized-scales :x])
             fy (get-in built [:finalized-scales :y])
             c (plot/render p {:width 600 :height 400})
-            px (+ (long x) (long ((requiring-resolve 'cljplot2.scale/forward) fx 0)))
-            py (+ (long y) (long ((requiring-resolve 'cljplot2.scale/forward) fy 0)))]
+            px (+ (long x) (long (scale/forward fx 0)))
+            py (+ (long y) (long (scale/forward fy 0)))]
         (is (= (rgb (get-in theme/default-theme [:palette :na])) (pixel c px py)))))
     (testing ":groups {:na false} drops and counts"
       (let [built (build (plot-of {:color :g} {:data data :groups {:na false}}))]
@@ -116,15 +128,39 @@
       (is (= [1931 1932] (:domain s)))
       (is (= "#1f77b4" (c/format-hex (f 1931))))
       (is (= "#aec7e8" (c/format-hex (f 1932))))
-      (is (= :na (f 1999)) "unknown value -> NA")
-      (is (= :na (f nil)))))
+      (is (nil? (f 1999)) "value outside the domain -> nil (skipped)")
+      (is (= :na (f nil)) "NA")))
+  (testing "numbers match as doubles: long data, double domain"
+    (let [built (build (plot-of {:color :year} {:scales {:color {:kind :ordinal :domain [1931.0 1932.0]}}}))
+          f (aesthetic/attribute-fn :color (spec built :color) :na)]
+      (is (false? (:na? (spec built :color))))
+      (is (= (category20 0) (f 1931)))
+      (is (= (category20 1) (f 1932.0))))
+    (is (= :domain (:key (error-data #(build (plot-of {:color :year} {:scales {:color {:kind :ordinal :domain [1931 1931.0]}}})))))
+        "1931 and 1931.0 are one level")
+    (is (= [1931 1932] (:domain (spec (build (plot-of {:color :year} {:data (conj rows {:x 9 :y 9 :year 1931.0}) :scales {:color {:kind :ordinal}}})) :color)))))
+  (testing "explicit numeric domain: two values linear, one or three+ levels"
+    (are [domain kind] (= kind (:kind (spec (build (plot-of {:color :year} {:scales {:color {:domain domain}}})) :color)))
+      [1900 2000] :linear
+      [1931] :ordinal
+      [1931 1932 1933] :ordinal
+      '(1900 2000) :linear))
   (testing "strings sorted; explicit domain keeps its order"
     (is (= ["a" "b" "c"] (:domain (spec (build (plot-of {:color :g})) :color))))
     (is (= ["c" "b" "a"] (:domain (spec (build (plot-of {:color :g} {:scales {:color {:domain ["c" "b" "a"]}}})) :color)))))
-  (testing "values outside an explicit domain -> NA level"
-    (let [s (spec (build (plot-of {:color :g} {:scales {:color {:domain ["a" "b"]}}})) :color)]
-      (is (true? (:na? s)))
-      (is (= :na ((aesthetic/attribute-fn :color s :na) "c")))))
+  (testing "values outside an explicit domain: skipped, no NA level"
+    (let [p (plot-of {:color :g} {:scales {:color {:domain ["a" "b"]}} :theme plain
+                                  :data [{:x 0 :y 0 :g "c"} {:x 1 :y 1 :g "a"}] :charts [(chart/scatter {:size 20})]})
+          built (build p)
+          s (spec built :color)
+          {:keys [x y]} (grid/item-box (:layout built) :panel)
+          c (plot/render p {:width 600 :height 400})]
+      (is (false? (:na? s)))
+      (is (nil? ((aesthetic/attribute-fn :color s :na) "c")))
+      (is (= ["a" "b"] (mapv :label (:entries (first (legends built))))))
+      (is (= [255 255 255] (pixel c (+ (long x) (long (scale/forward (get-in built [:finalized-scales :x]) 0)))
+                                  (+ (long y) (long (scale/forward (get-in built [:finalized-scales :y]) 0)))))
+          "point outside the domain not drawn")))
   (testing "one level; more levels than colors cycle"
     (let [one (aesthetic/scale-spec :color {:domain ["x"]} nil false (:palette theme/default-theme))
           many (aesthetic/scale-spec :color {:kind :ordinal :domain (vec (range 25))} nil false (:palette theme/default-theme))
@@ -143,14 +179,15 @@
     (is (= 6.0 ((aesthetic/attribute-fn :size (aesthetic/scale-spec :size {:domain ["x"]} nil false (:palette theme/default-theme)) nil) "x")))))
 
 (deftest linear-test
-  (testing "size: domain ends to [min max], clamped, midpoint for zero span"
+  (testing "size: domain ends to [min max], outside skipped, midpoint for zero span"
     (let [s (spec (build (plot-of {:size :s})) :size)
           f (aesthetic/attribute-fn :size s nil)]
       (is (= :linear (:kind s)))
       (is (= [10.0 40.0] (:domain s)) "data domain, no nice or padding")
       (is (= [2.0 10.0] [(f 10) (f 40)]))
-      (is (= [2.0 10.0] [(f -100) (f 1000)]) "clamped")
-      (is (nil? (f "x")) "non-number -> NA"))
+      (is (= [nil nil] [(f 9.999) (f 40.001)]) "outside [lo hi] -> nil (skipped)")
+      (is (nil? (f "x")) "non-number -> nil")
+      (is (= :na ((aesthetic/attribute-fn :size s :na) nil)) "NA"))
     (let [f (aesthetic/attribute-fn :size (spec (build (plot-of {:size :s} {:data [{:x 1 :y 1 :s 7}]})) :size) nil)]
       (is (= 6.0 (f 7)))))
   (testing "color: gradient (k2 reversed) ends and midpoint"
@@ -164,6 +201,8 @@
   (testing "explicit range"
     (is (= (c/to-color :red) (c/to-color ((aesthetic/attribute-fn :color (spec (build (plot-of {:color :g} {:scales {:color {:range [:red :blue]}}})) :color) nil) "a"))))
     (is (= [1.0 3.0] (mapv (aesthetic/attribute-fn :size (spec (build (plot-of {:size :s} {:scales {:size {:range [1 3]}}})) :size) nil) [10 40])))
+    (is (= [2.0 6.0 10.0] (mapv (aesthetic/attribute-fn :size (spec (build (plot-of {:size :s} {:scales {:size {:domain '(0 100)}}})) :size) nil) [0 50 100]))
+        "linear :domain as any sequence")
     (is (= 0.25 ((aesthetic/attribute-fn :color (spec (build (plot-of {:color :s} {:scales {:color {:range (fn [t] (* 0.5 t))}}})) :color) nil) 25)))))
 
 (deftest merged-domain-test
@@ -189,6 +228,7 @@
     {:color {:title 3}} :title
     {:color {:legend :yes}} :legend
     {:size {:domain [1 1]}} :domain
+    {:size {:domain [2 1]}} :domain
     {:size {:domain [0 ##NaN]}} :domain
     {:color {:domain []}} :domain
     {:color {:domain ["a" "a"]}} :domain
@@ -235,13 +275,17 @@
   (testing "every chart mapping the dimension draws its glyph (overlay), opted-out charts don't"
     (let [built (build {:data rows :mapping {:x :x :y :y :color :g}
                         :charts [(chart/scatter {:shape \s}) (chart/scatter {:mapping {:color nil}}) (chart/scatter {:shape \x})]})]
-      (is (= [0 2] (:charts (first (legends built)))))))
+      (is (= [{:chart 0 :dims [:color]} {:chart 2 :dims [:color]}] (:charts (first (legends built)))))))
+  (testing "merged legend: each chart gets only the dimensions it maps"
+    (let [built (build {:data rows :mapping {:x :x :y :y}
+                        :charts [(chart/scatter {:shape \s :mapping {:color :g}}) (chart/scatter {:mapping {:shape :g}})]})]
+      (is (= [{:chart 0 :dims [:color]} {:chart 1 :dims [:shape]}] (:charts (first (legends built)))))))
   (testing "overlay renders both glyphs into a key"
     (let [p {:data rows :mapping {:x :x :y :y :color :g} :theme plain
              :charts [(chart/scatter {:shape \S :size 14 :color :black}) (chart/scatter {:shape \O :size 4})]}
           built (build p)
           c (plot/render p {:width 600 :height 400})
-          {lx :x ly :y} (grid/find-item-box (:layout built) [:legend 0])
+          {lx :x ly :y} (first (legend-boxes built))
           title-h (long (.y (measured {:kind :label :role :legend-title :text "g"} (:theme built))))
           key-cx (+ (long lx) 7)
           key-cy (+ (long ly) title-h 7)]
@@ -257,8 +301,22 @@
     (let [[{:keys [entries]}] (legends (build (plot-of {:size :s} {:scales {:size {:domain [0 100]}}})))]
       (is (= ["0" "20" "40" "60" "80" "100"] (mapv :label entries)))
       (is (apply < (map #(get-in % [:attributes :size]) entries)))))
-  (testing "single-value size domain: one entry"
-    (is (= 1 (count (:entries (first (legends (build (plot-of {:size :s} {:data [{:x 1 :y 1 :s 5}]}))))))))))
+  (testing "single-value size domain: one entry, integer label"
+    (is (= ["5"] (mapv :label (:entries (first (legends (build (plot-of {:size :s} {:data [{:x 1 :y 1 :s 5}]}))))))))
+    (is (= ["5.5"] (mapv :label (:entries (first (legends (build (plot-of {:size :s} {:data [{:x 1 :y 1 :s 5.5}]})))))))))
+  (testing "more than max-levels distinct numbers"
+    (let [many (mapv (fn [i] {:x i :y i :v i}) (range 101))
+          exact (mapv (fn [i] {:x i :y i :v i}) (range 100))]
+      (is (= {:key :domain :scale :shape} (error-data #(build (plot-of {:shape :v} {:data many})))) "ordinal: explicit domain needed")
+      (is (= 100 (count (:domain (spec (build (plot-of {:shape :v} {:data exact})) :shape)))) "100 levels allowed")
+      (is (= [0 1] (:domain (spec (build (plot-of {:shape :v} {:data many :scales {:shape {:domain [0 1]}}})) :shape)))
+          "explicit domain: rest skipped")
+      (is (= :linear (:kind (spec (build (plot-of {:size :v} {:data many})) :size))) "linear needs no levels")
+      (is (nil? (get-in (build (plot-of {:size :v} {:data many})) [:extents :size :extent :values])) "values not kept")))
+  (testing "merged extents capped across charts"
+    (let [half (fn [from] (chart/scatter {:data (mapv (fn [i] {:x i :y i :v i}) (range from (+ from 60)))}))]
+      (is (= {:key :domain :scale :shape}
+             (error-data #(build {:mapping {:x :x :y :y :shape :v} :charts [(half 0) (half 60)]})))))))
 
 (deftest legend-switch-test
   (is (nil? (legends (build (plot-of {:color :g} {:legend false})))))
@@ -280,30 +338,31 @@
       (is (= (- (h 3) (h 2)) (- (h 4) (h 3))) "height linear in entry count"))))
 
 (deftest legend-placement-test
-  (testing "single panel: legend right of the panel, top-aligned"
+  (testing "single panel: legend right of the panel and the x overhang, top-aligned"
     (let [built (build (plot-of {:color :g}))
           panel (grid/item-box (:layout built) :panel)
-          lg (grid/find-item-box (:layout built) [:legend 0])]
+          lg (first (legend-boxes built))
+          cols (mapv :id (get-in built [:grid :columns]))]
       (is (>= (:x lg) (+ (:x panel) (:w panel))))
-      (is (= (:y lg) (:y panel)))))
+      (is (= (double (:y lg)) (double (:y panel))))
+      (is (= [:x-overhang :legend-gap :legend :margin-right] (subvec cols (- (count cols) 4))))))
   (testing "facets: right of every panel and strip; stacked legends"
     (let [built (build (plot-of {:color :g :shape :year} {:mapping {:x :x :y :y :color :g :shape :year :facet :g}}))
           right (reduce max (keep (fn [{:keys [id box]}]
                                     (when (and (vector? id) (#{:panel :strip} (first id))) (+ (:x box) (:w box))))
                                   (get-in built [:layout :items])))
-          l0 (grid/find-item-box (:layout built) [:legend 0])
-          l1 (grid/find-item-box (:layout built) [:legend 1])
+          [l0 l1] (legend-boxes built)
           top-strip (grid/item-box (:layout built) [:strip 0 0])]
       (is (>= (:x l0) right))
-      (is (= (:y l0) (:y top-strip)))
-      (is (= (:y l1) (+ (:y l0) (:h l0) (get-in built [:theme :legend :gap]))))))
+      (is (= (double (:y l0)) (double (:y top-strip))))
+      (is (= (double (:y l1)) (+ (double (:y l0)) (double (:h l0)) (double (get-in built [:theme :legend :gap])))))))
   (testing "nothing mapped: no legend tracks"
     (is (not-any? #(#{:legend :legend-gap} (:id %)) (get-in (build (plot-of {})) [:grid :columns]))))
   (testing "legend ink right of the panel"
     (let [p (plot-of {:color :g} {:theme plain})
           built (build p)
           c (plot/render p {:width 600 :height 400})
-          {:keys [x y w h]} (grid/find-item-box (:layout built) [:legend 0])]
+          {:keys [x y w h]} (first (legend-boxes built))]
       (is (some (fn [[px py]] (not= [255 255 255] (pixel c px py)))
                 (for [px (range x (+ x w)) py (range y (+ y h))] [px py]))))))
 
@@ -312,7 +371,7 @@
     (let [p (plot-of {:color :g} {:theme (assoc plain :legend {:fill [255 0 0]})})
           built (build p)
           c (plot/render p {:width 600 :height 400})
-          {:keys [x y w h]} (grid/find-item-box (:layout built) [:legend 0])]
+          {:keys [x y w h]} (first (legend-boxes built))]
       (is (= [255 0 0] (pixel c (+ x w -1) (+ y h -1))))))
   (testing "validated at build time"
     (are [t k] (= k (:key (error-data #(build (plot-of {} {:theme t})))))
@@ -342,7 +401,9 @@
   (let [varieties (mapv #(str "v" %) (range 10))
         data (for [v varieties i (range 2)] {:yield (+ 20 i (count v)) :variety v})
         p {:data data :mapping {:x :yield :y :variety} :charts [(chart/scatter)]
-           :theme (assoc-in plain [:panel :grid :bands] {:color [255 0 0] :width 1 :dash :none})}
+           :theme (-> plain
+                      (assoc-in [:panel :grid :y] {:color [0 0 255] :width 1 :dash :none})
+                      (assoc-in [:panel :grid :bands] {:color [255 0 0] :width 1 :dash :none}))}
         built (build p)
         c (plot/render p {:width 600 :height 400})
         {:keys [x y w h]} (grid/item-box (:layout built) :panel)]
@@ -352,3 +413,97 @@
       (is (= 10 (count (filter #(= [255 0 0] (pixel c (+ x 2) %)) (range y (+ y h)))))))
     (testing "numeric x keeps its own grid style (none here)"
       (is (not-any? #(= [255 0 0] (pixel c % (+ y 1))) (range x (+ x w)))))))
+
+;; review fixes
+
+(deftest legend-wrap-test
+  (let [data (fn [n] (mapv (fn [i] {:x i :y i :g (format "level-%02d" i)}) (range n)))]
+    (testing "too many entries for the panel height: wraps into columns, no error"
+      (let [built (build (plot-of {:color :g} {:data (data 60)}) {:width 600 :height 300})
+            [lg] (legend-boxes built)
+            item (grid/item-box (:layout built) :legends)
+            entry-h (.y (measured {:kind :label :role :legend-label :text "level-00"} (:theme built)))]
+        (is (<= (:h lg) (:h item)) "legend fits the available height")
+        (is (> (:w lg) (* 2.0 (.x (measured {:kind :label :role :legend-label :text "level-00"} (:theme built)))))
+            "more than one column")
+        (is (some? (plot/render (plot-of {:color :g} {:data (data 60)}) {:width 600 :height 300})))
+        (is (< entry-h (:h item)))))
+    (testing "entries that fit: one column (width independent of count)"
+      (let [w (fn [n] (:w (first (legend-boxes (build (plot-of {:color :g} {:data (data n)}))))))]
+        (is (= (w 3) (w 5)))))
+    (testing "one entry taller than the space: one row per column, still no error"
+      (is (some? (build (plot-of {:color :g} {:data (data 3)}) {:width 600 :height 60}))))
+    (testing "stacked legends overflowing start a new stack column"
+      (let [built (build (plot-of {:color :g :shape :year} {:data (mapv #(assoc % :year (mod (:x %) 2)) (data 15))
+                                                            :scales {:shape {:kind :ordinal}}})
+                         {:width 600 :height 260})
+            [l0 l1] (legend-boxes built)]
+        (is (> (:x l1) (:x l0)))
+        (is (= (double (:y l1)) (double (:y l0))))))
+    (testing "unbounded measurement (no box): single column"
+      (let [content {:kind :legend :title "t" :charts []
+                     :entries (mapv (fn [i] {:label (str i) :attributes {}}) (range 50))}
+            theme (:theme (build {}))]
+        (is (= (.x (measured content theme)) (.x (measured content theme {:x 0 :y 0 :w 100 :h 1e6}))))
+        (is (< (.x (measured content theme)) (.x (measured content theme {:x 0 :y 0 :w 100 :h 100}))))))))
+
+(deftest legend-key-size-test
+  (let [theme (:theme (build {}))
+        content (fn [sizes] {:kind :legend :title nil :charts []
+                             :entries (mapv (fn [s] {:label "a" :attributes {:size s}}) sizes)})
+        h (fn [sizes] (.y (measured (content sizes) theme)))
+        label-h (.y (measured {:kind :label :role :legend-label :text "a"} theme))
+        key-size (double (get-in theme [:legend :key-size]))
+        row (max key-size label-h)]
+    (is (= (* 2 row) (h [1 2])) "small glyphs: key-size rows")
+    (is (= (+ row 40.0) (h [1 40])) "a large glyph grows only its own row")
+    (is (= (+ key-size 5.0 (.x (measured {:kind :label :role :legend-label :text "a"} theme)))
+           (.x (measured (content [1]) theme))))
+    (is (= (+ 40.0 5.0 (.x (measured {:kind :label :role :legend-label :text "a"} theme)))
+           (.x (measured (content [1 40]) theme))) "key column as wide as the largest glyph")))
+
+(deftest bands-grid-none-test
+  (let [p {:data [{:x 1 :y "a"} {:x 2 :y "b"}] :mapping {:x :x :y :y} :charts [(chart/scatter {:size 0})]
+           :theme {:plot {:background :white} :panel {:grid {:x :none :y :none :bands {:color [255 0 0] :dash :none}}}}}
+        built (build p)
+        c (plot/render p {:width 600 :height 400})
+        {:keys [x y h]} (grid/item-box (:layout built) :panel)]
+    (is (not-any? #(= [255 0 0] (pixel c (+ x 2) %)) (range y (+ y h))) ":none on :y wins over :bands")))
+
+(deftest band-label-thinning-test
+  (let [domain (mapv #(format "category-%02d" %) (range 60))
+        step-of (fn [height]
+                  (let [built (build {:scales {:y {:domain domain}}} {:width 400 :height height})
+                        fy (get-in built [:finalized-scales :y])
+                        sizes (measure/call-with-scratch-canvas
+                               :high (fn [cv] (mapv #(measure/natural-size {:kind :label :role :tick-label :text %}
+                                                                           {:canvas cv :theme (:theme built)})
+                                                    (:tick-labels fy))))]
+                    [(count (:ticks fy)) (axis/label-step :y fy sizes 2)]))]
+    (testing "every band keeps its tick"
+      (is (= 60 (first (step-of 300)))))
+    (testing "crowded labels thinned, roomy ones not"
+      (is (> (long (second (step-of 300))) 1))
+      (is (= 1 (second (step-of 3000)))))
+    (testing "continuous and short axes untouched"
+      (is (= 1 (axis/label-step :x {:kind :linear} [] 2)))
+      (is (= 1 (axis/label-step :y {:kind :bands :ticks ["a"]} [(v/vec2 10 10)] 2))))))
+
+(deftest mapped-draw-timing-test
+  (let [data (vec (for [i (range 10000)] {:a (mod (* i 7919) 1000) :b (mod (* i 104729) 997)
+                                          :g (str "g" (mod i 7)) :s (mod i 50)}))
+        p {:data data :mapping {:x :a :y :b :color :g :shape :g :size :s} :charts [(chart/scatter)]}
+        _ (plot/render p {:width 600 :height 400})
+        t0 (System/nanoTime)
+        _ (plot/render p {:width 600 :height 400})
+        ms (/ (- (System/nanoTime) t0) 1e6)]
+    (is (< ms 1500.0) (str "10k mapped points took " ms " ms"))))
+
+(deftest label-step-threshold-test
+  (let [fy (scale/finalize (scale/scale-spec :y {:domain ["a" "b" "c" "d"]}) [400.0 0.0] 10)
+        spacing (Math/abs (- (scale/forward fy "a") (scale/forward fy "b")))
+        sizes (fn [block] (vec (repeat 4 (v/vec2 30 (+ block 4.0)))))]
+    (is (= 1 (axis/label-step :y fy (sizes spacing) 2)) "text blocks touching: no thinning")
+    (is (= 1 (axis/label-step :y fy (sizes (+ spacing 1.0)) 2)) "1 px overlap tolerated (rounding)")
+    (is (= 2 (axis/label-step :y fy (sizes (+ spacing 1.5)) 2)) "more overlap: every 2nd label")
+    (is (= 4 (axis/label-step :y fy (sizes 10000.0) 2)) "nothing fits: first label only")))

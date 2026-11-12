@@ -22,8 +22,8 @@
   Faceted plots use [[facet-grid]].
 
   Legends ([[cljplot2.legend/legends]]) add columns `:legend-gap` (fixed, theme `[:legend :gap]`) and `:legend`
-  (measured) before `:x-overhang`, and an item `:legends` spanning the panel rows (from the top strip): a nested
-  grid of legends `[:legend i]` stacked top-down with gaps `[:legend-gap i]`."
+  (measured) after `:x-overhang`, and an item `:legends` spanning the panel rows (from the top strip) with
+  `{:kind :legends}` content: the legends stacked top-down, wrapping into further columns when too tall."
   (:require [cljplot2.facet :as facet]
             [cljplot2.legend :as legend]))
 
@@ -66,20 +66,10 @@
     []))
 
 (defn- legend-items
-  "The `:legends` item over rows `row-span`: a nested grid stacking `legends` top-down (none when empty)."
-  [legends theme row-span]
+  "The `:legends` item over rows `row-span` (none when `legends` is empty)."
+  [legends row-span]
   (if (seq legends)
-    (let [gap (get-in theme [:legend :gap])
-          n (count legends)]
-      [{:id :legends :column :legend :row row-span
-        :content {:kind :grid
-                  :columns [{:size [:measured]}]
-                  :rows (-> (vec (butlast (mapcat (fn [i] [{:id [:legend i] :size [:measured]}
-                                                           {:id [:legend-gap i] :size [:fixed gap]}])
-                                                  (range n))))
-                            (conj {:id :rest :size [:flexible]}))
-                  :items (vec (map-indexed (fn [i content] {:id [:legend i] :column 0 :row [:legend i] :content content})
-                                           legends))}}])
+    [{:id :legends :column :legend :row row-span :content {:kind :legends :legends legends}}]
     []))
 
 (defn single-panel-grid
@@ -89,15 +79,16 @@
         margin-track (fn [id] {:id id :size [:fixed margin]})
         measured (fn [id] {:id id :size [:measured]})
         legends (legend/legends plot)]
-    {:columns (-> [(margin-track :margin-left) (measured :y-title) (measured :y-axis) {:id :panel :size [:flexible]}]
+    {:columns (-> [(margin-track :margin-left) (measured :y-title) (measured :y-axis) {:id :panel :size [:flexible]}
+                   (measured :x-overhang)]
                   (into (legend-tracks legends theme))
-                  (into [(measured :x-overhang) (margin-track :margin-right)]))
+                  (conj (margin-track :margin-right)))
      :rows [(margin-track :margin-top) (measured :title) (measured :y-overhang) {:id :panel :size [:flexible]}
             (measured :x-axis) (measured :x-title) (margin-track :margin-bottom)]
      :items (-> [{:id :panel :column :panel :row :panel :content {:kind :panel}}]
                 (into (mapcat #(when (contains? scale-specs %) (axis-items %))) [:x :y])
                 (into (label-items labels {}))
-                (into (legend-items legends theme :panel)))}))
+                (into (legend-items legends :panel)))}))
 
 ;; facets
 
@@ -147,8 +138,9 @@
     {:columns (-> [(margin-track :margin-left) (measured :y-title) (measured :y-axis)]
                   (into (interleave-gaps cols :panel :gap gap))
                   (cond-> row-labels (conj (measured :row-strip)))
+                  (conj (measured :x-overhang))
                   (into (legend-tracks legends theme))
-                  (into [(measured :x-overhang) (margin-track :margin-right)]))
+                  (conj (margin-track :margin-right)))
      :rows (-> [(margin-track :margin-top) (measured :title) (measured :y-overhang)]
                (cond-> col-labels (conj (measured :col-strip)))
                (into row-tracks)
@@ -179,7 +171,7 @@
                                                       row-labels)))
                 (into (label-items labels {:x {:column {:from [:panel 0] :to last-col}}
                                            :y {:row {:from [:panel 0] :to last-row}}}))
-                (into (legend-items legends theme {:from (cond col-labels :col-strip wrap? [:strip 0] :else [:panel 0])
+                (into (legend-items legends {:from (cond col-labels :col-strip wrap? [:strip 0] :else [:panel 0])
                                                    :to last-row})))}))
 
 (defn plot-grid

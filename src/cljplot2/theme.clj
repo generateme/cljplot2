@@ -21,7 +21,7 @@
   isn't drawn).
 
   `:panel :grid :bands` - grid line style used instead of `:x` / `:y` for a bands scale (default dotted, as lattice
-  `dotplot`).
+  `dotplot`); `:x` / `:y` `:none` still turns that scale's lines off.
 
   `:panel :alternate-fill` - drawn over the fill of facet panels with odd `row + col` (`:none` turns it off).
 
