@@ -1,7 +1,7 @@
 (ns cljplot2.demo.step9
   "Step 9 demo: multiplots, saved to `results/step9/`.
   LMDVR Fig 1.4 (Fig 1.1 histogram over the Fig 1.3 grouped density), a 2x2 arrangement with weights and a title,
-  and a nested multiplot."
+  a nested multiplot, and the same mixed plots without and with panel alignment."
   (:require [clojure.data.json :as json]
             [clojure.java.io :as io]
             [clojure2d.core :as c2d]
@@ -37,11 +37,25 @@
   (plot/arrange [quad density-by-score] {:columns 2 :title "Nested multiplot"
                                          :theme {:plot {:background [255 255 255]}}}))
 
+(def mixed
+  [{:data faithful :mapping {:x :eruptions :y #(* 1000 (:waiting %))} :charts [(chart/scatter)]
+    :labels {:title "big y labels" :y "waiting (ms)"}}
+   {:data faithful :mapping {:x :eruptions} :charts [(chart/histogram {:y :count})]}
+   {:data (map #(assoc % :long (if (> (:waiting %) 70) "long" "short")) faithful)
+    :mapping {:x :eruptions :y :waiting :color :long} :charts [(chart/scatter)]}
+   {:data (map #(assoc % :long (if (> (:waiting %) 70) "long" "short")) faithful)
+    :mapping {:x :eruptions :facet :long} :charts [(chart/density)] :labels {:x "eruptions"}}])
+
+(def unaligned (plot/arrange mixed {:columns 2 :title "Not aligned (:align false)" :align false}))
+(def aligned (plot/arrange mixed {:columns 2 :title "Aligned panels (default)"}))
+
 (defn -main [& _]
   (doseq [[file-name p options] [["fig-1-4-800x900.png" fig-1-4 {:width 800 :height 900}]
                                  ["fig-1-4-800x900-debug.png" fig-1-4 {:width 800 :height 900 :debug true}]
                                  ["quad-900x600.png" quad {:width 900 :height 600}]
-                                 ["nested-1200x600.png" nested {:width 1200 :height 600}]]
+                                 ["nested-1200x600.png" nested {:width 1200 :height 600}]
+                                 ["unaligned-900x700.png" unaligned {:width 900 :height 700}]
+                                 ["aligned-900x700.png" aligned {:width 900 :height 700}]]
           :let [path (str "results/step9/" file-name)]]
     (c2d/save (plot/render p options) path)
     (println "saved" path)))

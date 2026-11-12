@@ -20,7 +20,9 @@
     whole plots (see [[cljplot2.subplot]])
   * `:arrange` - `{:plots [p ...] :columns :rows :widths :heights}`: a multiplot, its grid generated from the merged
     theme (see [[cljplot2.multiplot/arrange]], [[cljplot2.plot-grid/arrange-grid]]); only `:labels {:title t}` may
-    accompany it; can't be combined with `:custom-grid`
+    accompany it; can't be combined with `:custom-grid`; the sub-plots' panels are aligned unless `:align false`
+  * `:alignment-padding` - internal: `{:left :top :right :bottom}` pixels added to the generated grid's margins
+    (set on sub-plots by multiplot alignment)
   * `:options` - render options (see [[default-options]]), merged under `build`'s options; stored resolved
   * `:theme` - deep-merged over [[cljplot2.theme/default-theme]]; stored resolved
 
@@ -33,6 +35,7 @@
             [cljplot2.facet :as facet]
             [cljplot2.grid :as grid]
             [cljplot2.measure :as measure]
+            [cljplot2.multiplot :as multiplot]
             [cljplot2.plot-grid :as plot-grid]
             [cljplot2.scale :as scale]
             [cljplot2.theme :as theme]
@@ -290,16 +293,23 @@
 (defn- subplots-stage
   "Every `{:kind :plot}` item of the grid (nested grids included) built at its box size with the plot's hint:
   `{item-id built-plot}`. Items whose box is smaller than 1x1 px are skipped. Plot item ids must be unique across
-  the grid tree (`ex-info {:key :id}`)."
+  the grid tree (`ex-info {:key :id}`). For `:arrange` (unless `{:align false}`) the sub-plots' panels are aligned
+  in rows and columns (see [[cljplot2.multiplot/align]])."
   [{:keys [grid layout options] :as plot}]
-  (let [items (grid/content-items grid layout subplot/plot-content?)]
+  (let [items (grid/content-items grid layout subplot/plot-content?)
+        hint (:hint options)]
     (when-let [dup (first (for [[id n] (frequencies (map :id items)) :when (> (long n) 1)] id))]
       (throw (ex-info "Plot item ids must be unique across nested grids." {:key :id :value dup})))
-    (assoc plot :subplots
-           (into {} (keep (fn [{:keys [id content box]}]
-                            (when (and (>= (long (:w box)) 1) (>= (long (:h box)) 1))
-                              [id (build-subplot (:plot content) id box (:hint options))])))
-                 items))))
+    (let [cells (vec (keep (fn [{:keys [id content box]}]
+                             (when (and (>= (long (:w box)) 1) (>= (long (:h box)) 1))
+                               {:id id :box box :plot (:plot content)
+                                :built (build-subplot (:plot content) id box hint)}))
+                           items))]
+      (assoc plot :subplots
+             (if (and (:arrange plot) (get-in plot [:arrange :align] true))
+               (multiplot/align cells (fn [{:keys [id box] p :plot} padding]
+                                        (build-subplot (assoc p :alignment-padding padding) id box hint)))
+               (into {} (map (juxt :id :built)) cells))))))
 
 (def stage-order
   "Pipeline stages in execution order."

@@ -72,11 +72,19 @@
     [{:id :legends :column :legend :row row-span :content {:kind :legends :legends legends}}]
     []))
 
+(def ^:private margin-sides {:margin-left :left :margin-right :right :margin-top :top :margin-bottom :bottom})
+
+(defn- margin-track-fn
+  "Fixed margin track of `id` (`:margin-left` ...): theme `[:plot :margin]` plus the plot's internal
+  `:alignment-padding` for that side (set by multiplot panel alignment, see [[cljplot2.multiplot]])."
+  [{:keys [theme alignment-padding]}]
+  (let [margin (double (get-in theme [:plot :margin]))]
+    (fn [id] {:id id :size [:fixed (+ margin (double (get alignment-padding (margin-sides id) 0)))]})))
+
 (defn single-panel-grid
   "Grid of a single-panel plot: its `:labels`, axes of its `:scale-specs` and the margin of its (merged) `:theme`."
   [{:keys [labels theme scale-specs] :as plot}]
-  (let [margin (get-in theme [:plot :margin])
-        margin-track (fn [id] {:id id :size [:fixed margin]})
+  (let [margin-track (margin-track-fn plot)
         measured (fn [id] {:id id :size [:measured]})
         legends (legend/legends plot)]
     {:columns (-> [(margin-track :margin-left) (measured :y-title) (measured :y-axis) {:id :panel :size [:flexible]}
@@ -124,9 +132,8 @@
   Panels with odd `r + c` are shaded (`:alternate`). Legends as in the single-panel grid."
   [{:keys [labels theme scale-specs scales facets split] :as plot}]
   (let [legends (legend/legends plot)
-        margin (get-in theme [:plot :margin])
         gap (get-in theme [:facet :gap])
-        margin-track (fn [id] {:id id :size [:fixed margin]})
+        margin-track (margin-track-fn plot)
         measured (fn [id] {:id id :size [:measured]})
         {:keys [rows cols wrap? panels col-labels row-labels]} (facet-panels (:facets split) scales facets)
         rows (long rows) cols (long cols)
@@ -227,9 +234,11 @@
   filled row by row (columns `[:column c]`, rows `[:row r]`) with `[:multiplot :gap]` between them, `[:plot :margin]`
   around, and an optional title row (`labels` - only `:title`) above the cells, inside the margins.
   Throws `ex-info {:key :arrange}` for a bad spec, `{:key :labels}` for labels other than `:title`."
-  [{:keys [plots columns rows widths heights] :as arrange} labels theme]
+  [{:keys [plots columns rows widths heights align] :as arrange} labels theme]
   (when-not (map? arrange)
     (arrange-invalid "Plot :arrange must be a map." {:value arrange}))
+  (when-not (contains? #{nil true false} align)
+    (arrange-invalid "Arrange :align must be a boolean." {:value :align}))
   (when-not (and (sequential? plots) (seq plots))
     (arrange-invalid "Arrange :plots must be a non-empty sequence of plots." {:value :plots}))
   (when-not (or (nil? labels) (map? labels))

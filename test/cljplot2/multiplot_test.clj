@@ -87,7 +87,7 @@
 
 (deftest subplot-pixels-test
   (testing "sub-plot pixels equal the standalone render, offset by the box"
-    (let [mp (plot/arrange [p1 p2] {:columns 2})
+    (let [mp (plot/arrange [p1 p2] {:columns 2 :align false})
           built (plot/build mp {:width 700 :height 300})
           c (plot/render mp {:width 700 :height 300})]
       (doseq [id [[:plot 0] [:plot 1]]
@@ -182,3 +182,59 @@
     (testing "nested: outer id first, inner kept"
       (let [data (error-data #(plot/build (plot/arrange [(plot/arrange [p1 boom]) p1])))]
         (is (= [:subplot [:plot 0] [[:plot 0] [:plot 1]]] ((juxt :key :subplot :subplot-path) data)))))))
+
+;; panel alignment (4.4)
+
+(defn- panel-area
+  "Panel area of sub-plot `id` in outer canvas coordinates `[x0 y0 x1 y1]`."
+  [built id]
+  (let [{ox :x oy :y} (box-of built id)
+        sub (get-in built [:subplots id])
+        boxes (map :box (grid/content-items (:grid sub) (:layout sub) #(= :panel (:kind %))))]
+    [(+ ox (reduce min (map :x boxes))) (+ oy (reduce min (map :y boxes)))
+     (+ ox (reduce max (map #(+ (:x %) (:w %)) boxes))) (+ oy (reduce max (map #(+ (:y %) (:h %)) boxes)))]))
+
+(def ^:private wide-labels
+  {:data (for [i (range 20)] {:x i :y (* 1000000 i)}) :mapping {:x :x :y :y} :charts [(chart/scatter)]
+   :labels {:title "big y labels" :y "a long y axis title" :x "x"}})
+(def ^:private legend-plot
+  {:data rows :mapping {:x :x :y :y :color :g} :charts [(chart/scatter)]})
+(def ^:private faceted
+  {:data rows :mapping {:x :x :y :y :facet :g} :charts [(chart/scatter)] :labels {:x "facet x"}})
+
+(deftest align-test
+  (let [plots [wide-labels p1 legend-plot faceted]
+        built (fn [opts] (plot/build (plot/arrange plots (merge {:columns 2} opts)) {:width 900 :height 700}))
+        areas (fn [b] (mapv #(panel-area b [:plot %]) (range 4)))]
+    (testing "default: aligned"
+      (let [[a0 _ a2 _] (areas (built {}))]
+        (is (= [(a0 0) (a0 2)] [(a2 0) (a2 2)]))))
+    (testing "with :align false the panels differ"
+      (let [[a0 _ a2 a3] (areas (built {:align false}))]
+        (is (not= (a0 0) (a2 0)) "left edges in column 0 differ")
+        (is (not= (a2 1) (a3 1)) "top edges in row 1 differ (no title vs strips)")))
+    (testing ":align - same column: left and right panel edges; same row: top and bottom edges"
+      (let [b (built {:align true})
+            [a0 a1 a2 a3] (areas b)]
+        (is (= [(a0 0) (a0 2)] [(a2 0) (a2 2)]) "column 0")
+        (is (= [(a1 0) (a1 2)] [(a3 0) (a3 2)]) "column 1")
+        (is (= [(a0 1) (a0 3)] [(a1 1) (a1 3)]) "row 0")
+        (is (= [(a2 1) (a2 3)] [(a3 1) (a3 3)]) "row 1")))
+    (testing "aligned sub-plots stay standalone-equivalent apart from margins"
+      (let [b (built {:align true})]
+        (is (some #(get-in b [:subplots [:plot %] :alignment-padding]) [0 1 2 3]) "padding recorded on padded cells")
+        (is (some? (plot/render (plot/arrange plots {:columns 2 :align true}) {:width 900 :height 700})))))
+    (testing "one cell, one row, one column"
+      (is (some? (plot/build (plot/arrange [p1] {:align true}))))
+      (let [b (plot/build (plot/arrange [wide-labels p1] {:align true}) {:width 400 :height 600})
+            [a0 a1] [(panel-area b [:plot 0]) (panel-area b [:plot 1])]]
+        (is (= [(a0 0) (a0 2)] [(a1 0) (a1 2)]) "single column aligned"))
+      (let [b (plot/build (plot/arrange [wide-labels legend-plot] {:rows 1 :align true}) {:width 800 :height 300})
+            [a0 a1] [(panel-area b [:plot 0]) (panel-area b [:plot 1])]]
+        (is (= [(a0 1) (a0 3)] [(a1 1) (a1 3)]) "single row aligned")))
+    (testing "cells without panels (nested multiplots) take no part, no error"
+      (let [b (plot/build (plot/arrange [(plot/arrange [p1 p2]) wide-labels p1] {:columns 2 :align true}) {:width 800 :height 600})]
+        (is (= 3 (count (:subplots b))))
+        (is (nil? (get-in b [:subplots [:plot 0] :alignment-padding])))))
+    (testing "validation"
+      (is (= :arrange (:key (error-data #(plot/build (plot/arrange [p1] {:align 1})))))))))
