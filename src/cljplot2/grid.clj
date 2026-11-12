@@ -9,7 +9,7 @@
 
   Track `:size`:
 
-  * `[:fixed px]` - `px` pixels, `px >= 0`
+  * `[:fixed px]` - `px` pixels, `px >= 0`; a fractional `px` comes out +/-1 px depending on the track's offset
   * `[:fraction f]` - fraction of the grid's own box along the axis, `0 <= f <= 1`
   * `[:measured]` - largest natural size of the items occupying exactly this one track along the axis
   * `[:flexible weight]` - share of the remaining space proportional to `weight > 0` (default `1`)
@@ -19,8 +19,10 @@
   Content with `:kind :grid` is a nested grid (same shape), laid out inside the item's box.
   Other content reports its natural size via [[cljplot2.measure/natural-size]].
 
+  Without flexible tracks along an axis the unused space stays after the last track.
+
   Workflow: [[prepare]] (validate, resolve spans) -> [[measure-items]] -> [[solve]].
-  Coordinates are integer pixels, `y` grows downward."
+  Coordinates are integer pixels, `y` grows downward; track edges (not lengths) are rounded."
   (:require [fastmath.core :as m]
             [fastmath.vector :as v]
             [cljplot2.measure :as measure])
@@ -34,6 +36,13 @@
 (def ^:private axis->item-key {:columns :column :rows :row})
 
 (defn- invalid [message data] (throw (ex-info message data)))
+
+(def ^:private ^:const reported-duplicates 10)
+
+(defn- duplicates
+  "First few values occurring more than once in `xs` (for error data)."
+  [xs]
+  (vec (take reported-duplicates (keep (fn [[x n]] (when (> (long n) 1) x)) (frequencies xs)))))
 
 (defn grid?
   "Is `content` a nested grid?"
@@ -67,7 +76,7 @@
     (dorun (map-indexed (fn [idx track] (validate-track! axis idx track)) tracks))
     (let [ids (keep :id tracks)]
       (when-not (apply distinct? ::sentinel ids)
-        (invalid "Track ids must be unique." {:key axis :ids (vec ids)})))))
+        (invalid "Track ids must be unique." {:key axis :duplicates (duplicates ids)})))))
 
 (defn- track-index
   [tracks axis item-id ref]
@@ -107,7 +116,7 @@
         (invalid "Item must be a map with :id." {:key :items})))
     (let [ids (map :id items)]
       (when-not (apply distinct? ::sentinel ids)
-        (invalid "Item ids must be unique." {:key :items :ids (vec ids)})))
+        (invalid "Item ids must be unique." {:key :items :duplicates (duplicates ids)})))
     (assoc grid :items (mapv (fn [item]
                                (cond-> (assoc item ::span {:columns (resolve-span (:columns grid) :columns item)
                                                            :rows (resolve-span (:rows grid) :rows item)})
@@ -164,6 +173,17 @@
   (v/vec2 (natural-grid-length grid :columns measurements)
           (natural-grid-length grid :rows measurements)))
 
+(defn- checked-natural-size
+  "[[cljplot2.measure/natural-size]] of `item`'s content, checked to be a `Vec2` with finite, non-negative coordinates."
+  [item env]
+  (let [size (measure/natural-size (:content item) env)]
+    (if (and (instance? Vec2 size)
+             (m/valid-double? (.x ^Vec2 size)) (>= (.x ^Vec2 size) 0.0)
+             (m/valid-double? (.y ^Vec2 size)) (>= (.y ^Vec2 size) 0.0))
+      size
+      (invalid "Natural size must be a Vec2 with finite, non-negative coordinates."
+               {:key :content :item (:id item) :kind (:kind (:content item)) :size size}))))
+
 (defn measure-items
   "Natural sizes of the items of prepared `grid`: a vector aligned with `:items`, each `{:size Vec2}`;
   nested grids add `:items` (their own measurements).
@@ -177,7 +197,7 @@
             (if (grid? content)
               (let [children (measure-items content item-env (:layout item-layout))]
                 {:size (natural-grid-size content children) :items children})
-              {:size (measure/natural-size content item-env)})))
+              {:size (checked-natural-size item item-env)})))
         (:items grid)
         (concat (:items layout) (repeat nil))))
 
@@ -221,28 +241,33 @@
   * `:columns`, `:rows` - tracks as `{:index :id :offset :size}`
   * `:items` - in input order, `{:id :box :span}`, plus `:layout` for a nested grid
 
-  Throws `ex-info` with `{:axis :available :required}` when fixed, fraction and measured tracks don't fit."
+  Throws `ex-info` with `{:axis :available :required}` when fixed, fraction and measured tracks don't fit,
+  and with `{:key ...}` when `box` or `measurements` (one per item) are malformed."
   [grid box measurements]
   (let [{:keys [x y w h]} box
-        items (:items grid)
-        xs (axis-edges (:columns grid) :columns (measured-lengths :columns items measurements) [(long x) (long w)])
-        ys (axis-edges (:rows grid) :rows (measured-lengths :rows items measurements) [(long y) (long h)])]
-    {:box box
-     :columns (tracks-layout (:columns grid) xs)
-     :rows (tracks-layout (:rows grid) ys)
-     :items (mapv (fn [item measurement]
-                    (let [span (::span item)
-                          [^long c0 ^long c1] (:columns span)
-                          [^long r0 ^long r1] (:rows span)
-                          left (long (xs c0))
-                          top (long (ys r0))
-                          item-box {:x left :y top
-                                    :w (- (long (xs (inc c1))) left)
-                                    :h (- (long (ys (inc r1))) top)}
-                          content (:content item)]
-                      (cond-> {:id (:id item) :box item-box :span span}
-                        (grid? content) (assoc :layout (solve content item-box (:items measurement))))))
-                  items measurements)}))
+        items (:items grid)]
+    (when-not (and (every? integer? [x y w h]) (>= (long w) 0) (>= (long h) 0))
+      (invalid "Box must have integer :x :y and non-negative integer :w :h." {:key :box :box box}))
+    (when-not (and (or (nil? measurements) (sequential? measurements)) (= (count measurements) (count items)))
+      (invalid "Measurements must align with items." {:key :measurements :items (count items) :measurements (when (or (nil? measurements) (coll? measurements)) (count measurements))}))
+    (let [xs (axis-edges (:columns grid) :columns (measured-lengths :columns items measurements) [(long x) (long w)])
+          ys (axis-edges (:rows grid) :rows (measured-lengths :rows items measurements) [(long y) (long h)])]
+      {:box box
+       :columns (tracks-layout (:columns grid) xs)
+       :rows (tracks-layout (:rows grid) ys)
+       :items (mapv (fn [item measurement]
+                      (let [span (::span item)
+                            [^long c0 ^long c1] (:columns span)
+                            [^long r0 ^long r1] (:rows span)
+                            left (long (xs c0))
+                            top (long (ys r0))
+                            item-box {:x left :y top
+                                      :w (- (long (xs (inc c1))) left)
+                                      :h (- (long (ys (inc r1))) top)}
+                            content (:content item)]
+                        (cond-> {:id (:id item) :box item-box :span span}
+                          (grid? content) (assoc :layout (solve content item-box (:items measurement))))))
+                    items measurements)})))
 
 (defn item-box
   "Box of the top-level item with `id` in `layout`, or `nil`."

@@ -9,8 +9,7 @@
   * `:options` - render options (see [[default-options]]), merged under `build`'s options
 
   Step 1: every stage except `:layout` is a stub producing an empty value."
-  (:require [clojure2d.core :as c2d]
-            [cljplot2.grid :as grid]
+  (:require [cljplot2.grid :as grid]
             [cljplot2.measure :as measure]))
 
 (set! *warn-on-reflection* true)
@@ -49,18 +48,20 @@
   (let [{:keys [width height hint]} (:options plot)
         prepared (grid/prepare (or (:grid plot) default-grid))
         box {:x 0 :y 0 :w width :h height}]
-    (c2d/with-canvas [canvas (measure/scratch-canvas hint)]
-      (let [measure-for (fn [layout]
-                          (grid/measure-items prepared
-                                              {:canvas canvas :scales (finalize-scales plot layout)}
-                                              layout))]
-        (loop [round 1
-               measurements (measure-for nil)]
-          (let [layout (grid/solve prepared box measurements)
-                remeasured (measure-for layout)]
-            (if (or (= measurements remeasured) (>= round max-layout-rounds))
-              (assoc plot :layout (assoc layout :rounds round))
-              (recur (inc round) remeasured))))))))
+    (measure/call-with-scratch-canvas
+     hint
+     (fn [canvas]
+       (let [measure-for (fn [layout]
+                           (grid/measure-items prepared
+                                               {:canvas canvas :scales (finalize-scales plot layout)}
+                                               layout))]
+         (loop [round 1
+                measurements (measure-for nil)]
+           (let [layout (grid/solve prepared box measurements)
+                 remeasured (measure-for layout)]
+             (if (or (= measurements remeasured) (>= round max-layout-rounds))
+               (assoc plot :layout (assoc layout :rounds round))
+               (recur (inc round) remeasured)))))))))
 
 (defn- scales-stage [plot] (assoc plot :scales (finalize-scales plot (:layout plot))))
 
@@ -90,7 +91,8 @@
   "Run `plot` through the pipeline stages and return the plot map with each stage's key added.
 
   `options` (merged over `(:options plot)` and [[default-options]], stored under `:options`):
-  `:width`, `:height`, `:hint`, and `:until` - last stage to run (default: the last one)."
+  `:width`, `:height`, `:hint`, and `:until` - last stage to run (default: the last one).
+  Stage keys already present in `plot` (e.g. from an earlier `build`) are dropped first."
   ([plot] (build plot {}))
   ([plot options]
    (let [until (get options :until (peek stage-order))
@@ -100,5 +102,5 @@
        (throw (ex-info "Unknown stage." {:key :until :value until :allowed stage-order})))
      (validate-options! options)
      (reduce (fn [plot stage] ((stage-fns stage) plot))
-             (assoc plot :options options)
+             (assoc (apply dissoc plot stage-order) :options options)
              (take stage-count stage-order)))))

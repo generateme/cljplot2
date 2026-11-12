@@ -23,10 +23,11 @@
     (let [canvas (plot/render {:grid g} {:width w :height h})
           layout (:layout (plot/build {:grid g} {:width w :height h}))
           leaves (fn leaves [items] (mapcat #(if (:layout %) (leaves (get-in % [:layout :items])) [%]) items))]
+      ;; sample near the top-left corner, inside the outline and away from the centred id label
       (doseq [{:keys [id box]} (leaves (:items layout))
               :let [{:keys [x y w h]} box]
-              :when (and (pos? w) (pos? h))]
-        (is (not= white (pixel canvas (+ x (quot w 2)) (+ y (quot h 2)))) (pr-str id))))))
+              :when (and (>= w 5) (>= h 5))]
+        (is (not= white (pixel canvas (+ x 2) (+ y 2))) (pr-str id))))))
 
 (deftest fig-1-1-panels-test
   (doseq [[w h] [[800 600] [400 300]]]

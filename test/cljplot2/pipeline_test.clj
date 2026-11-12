@@ -53,6 +53,11 @@
     (let [built (pipeline/build {} {:until :scale-specs})]
       (is (contains? built :scale-specs))
       (is (not (contains? built :layout)))))
+  (testing "stage keys from an earlier build are dropped"
+    (let [rebuilt (pipeline/build (pipeline/build {:grid examples/fig-1-1-grid}) {:until :split})]
+      (is (contains? rebuilt :split))
+      (is (not-any? #(contains? rebuilt %) (rest pipeline/stage-order)))
+      (is (= (pipeline/build {:grid examples/fig-1-1-grid}) (pipeline/build (pipeline/build {:grid examples/fig-1-1-grid}))))))
   (testing "unknown stage"
     (is (= {:key :until :value :draw :allowed pipeline/stage-order}
            (error-data #(pipeline/build {} {:until :draw}))))))
@@ -93,6 +98,20 @@
       (is (= 20 (get-in built [:layout :columns 0 :size])))))
   (testing "flip-flopping content stops at the cap"
     (is (= pipeline/max-layout-rounds (get-in (pipeline/build (measured-plot {:kind ::flip-flop})) [:layout :rounds])))))
+
+(deftest scratch-canvas-release-test
+  (let [flush-graphics c2d/flush-graphics
+        released (atom [])
+        received (atom nil)
+        released? (fn [] (some #(identical? @received %) @released))]
+    (with-redefs [c2d/flush-graphics (fn [canvas] (swap! released conj canvas) (flush-graphics canvas))]
+      (testing "graphics of the canvas given to f are released when f throws"
+        (is (thrown? clojure.lang.ExceptionInfo
+                     (measure/call-with-scratch-canvas :high (fn [canvas] (reset! received canvas) (throw (ex-info "boom" {}))))))
+        (is (released?)))
+      (testing "and when f returns"
+        (is (= 42 (measure/call-with-scratch-canvas :high (fn [canvas] (reset! received canvas) 42))))
+        (is (released?))))))
 
 (deftest measuring-canvas-test
   (testing "scratch canvas carries the same Java rendering hints as a target canvas with that hint"

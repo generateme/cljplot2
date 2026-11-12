@@ -15,9 +15,16 @@
 
 (defn scratch-canvas
   "1x1 canvas for measuring, with the given rendering `hint` (one of [[rendering-hints]]).
-  Use within `clojure2d.core/with-canvas`."
+  Draw or measure on it within a graphics context, see [[call-with-scratch-canvas]]."
   [hint]
   (c2d/canvas 1 1 hint))
+
+(defn call-with-scratch-canvas
+  "Call `(f canvas)` with a [[scratch-canvas]] in graphics context; the graphics are released even when `f` throws."
+  [hint f]
+  (let [canvas (c2d/make-graphics (scratch-canvas hint))]
+    (try (f canvas)
+         (finally (c2d/flush-graphics canvas)))))
 
 (defmulti natural-size
   "Natural size of item `content` as `Vec2` `[width height]`, dispatched on `(:kind content)`.
@@ -28,17 +35,16 @@
   * `:box` - the item's box from the previous layout round, `nil` in the first round
   * `:scales` - scales finalized for the previous layout round
 
-  Content without `:kind` (including `nil`) has zero natural size."
-  (fn [content _env] (:kind content)))
+  `nil` content (an empty box) has zero natural size; other content without a known `:kind` is an error."
+  (fn [content _env] (if (nil? content) ::empty (:kind content))))
 
-(defmethod natural-size nil [_ _] (v/vec2 0.0 0.0))
+(defmethod natural-size ::empty [_ _] (v/vec2 0.0 0.0))
 
 (defmethod natural-size :placeholder
   [{:keys [size] :as content} _]
   (let [[w h] size]
-    (when-not (and (number? w) (number? h)
-                   (>= (double w) 0.0) (>= (double h) 0.0))
-      (throw (ex-info "Placeholder :size must be two non-negative numbers." {:size size :content-kind (:kind content)})))
+    (when-not (and (vector? size) (number? w) (number? h))
+      (throw (ex-info "Placeholder :size must be a vector of two numbers." {:size size :kind (:kind content)})))
     (v/vec2 w h)))
 
 (defmethod natural-size :default

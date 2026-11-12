@@ -3,7 +3,9 @@
             [clojure.test.check.clojure-test :refer [defspec]]
             [clojure.test.check.generators :as gen]
             [clojure.test.check.properties :as prop]
-            [cljplot2.grid :as grid]))
+            [fastmath.vector :as v]
+            [cljplot2.grid :as grid]
+            [cljplot2.measure :as measure]))
 
 (defn- placeholder [w h] {:kind :placeholder :size [w h]})
 
@@ -44,7 +46,12 @@
       [:fixed 0] [:fraction 0] [:fraction 1] [:flexible] [:flexible 0.001] [:measured]))
   (testing "track ids"
     (is (= 0 (:id (error-data #(grid/prepare (one-row [{:id 0 :size [:flexible]}]))))))
-    (is (= [:a :a] (:ids (error-data #(grid/prepare (one-row [{:id :a :size [:flexible]} {:id :a :size [:flexible]}])))))))
+    (is (= [:a] (:duplicates (error-data #(grid/prepare (one-row [{:id :a :size [:flexible]} {:id :b :size [:flexible]} {:id :a :size [:flexible]}])))))))
+  (testing "item id duplicates are reported, at most 10"
+    (let [items (vec (for [i (range 30)] {:id (quot i 2) :column 0 :row 0}))
+          data (error-data #(grid/prepare (apply one-row [{:size [:flexible]}] items)))]
+      (is (= :items (:key data)))
+      (is (= 10 (count (:duplicates data))))))
   (testing "spans"
     (let [cols [{:id :a :size [:flexible]} {:id :b :size [:flexible]}]]
       (are [span] (= :column (:key (error-data #(grid/prepare (one-row cols {:id :i :column span :row 0})))))
@@ -80,8 +87,27 @@
   (testing "nil content measures 0"
     (is (= [0 100] (sizes (layout (one-row [{:size [:measured]} {:size [:flexible]}] {:id :a :column 0 :row 0})) :columns))))
   (testing "invalid placeholder"
-    (is (= [-1 1] (:size (error-data #(layout (one-row [{:size [:measured]}] {:id :a :column 0 :row 0 :content (placeholder -1 1)}))))))
-    (is (= :unknown (:kind (error-data #(layout (one-row [{:size [:measured]}] {:id :a :column 0 :row 0 :content {:kind :unknown}}))))))))
+    (are [size] (= size (:size (error-data #(layout (one-row [{:size [:measured]}] {:id :a :column 0 :row 0 :content {:kind :placeholder :size size}})))))
+      nil [1] ["1" 1] '(1 1))
+    (is (= {:key :content :item :a :kind :placeholder}
+           (dissoc (error-data #(layout (one-row [{:size [:measured]}] {:id :a :column 0 :row 0 :content (placeholder -1 1)}))) :size))))
+  (testing "content must have a known kind; only nil content is empty"
+    (are [content] (contains? (error-data #(layout (one-row [{:size [:measured]}] {:id :a :column 0 :row 0 :content content}))) :kind)
+      {:kind :unknown} {:knd :placeholder} {} "text")))
+
+(defmethod measure/natural-size ::fixed-result [{:keys [result]} _] result)
+
+(deftest natural-size-postcondition-test
+  (testing "natural size must be a Vec2 with finite, non-negative coordinates"
+    (are [result] (= {:key :content :item :a :kind ::fixed-result}
+                     (dissoc (error-data #(layout (one-row [{:size [:measured]}] {:id :a :column 0 :row 0
+                                                                                   :content {:kind ::fixed-result :result result}})))
+                             :size))
+      nil [1.0 1.0] (v/vec2 ##NaN 1.0) (v/vec2 1.0 ##Inf) (v/vec2 ##-Inf 1.0) (v/vec2 -0.5 1.0) (v/vec2 1.0 -1.0)))
+  (testing "zero is a valid natural size"
+    (is (= [0 100] (sizes (layout (one-row [{:size [:measured]} {:size [:flexible]}]
+                                           {:id :a :column 0 :row 0 :content {:kind ::fixed-result :result (v/vec2 0.0 0.0)}}))
+                          :columns)))))
 
 (deftest flexible-test
   (testing "weights"
@@ -114,6 +140,8 @@
       (is (= {:x 0 :y 0 :w 100 :h 100} (grid/item-box by-id :i))))
     (testing "single-track span as map"
       (is (= {:x 10 :y 0 :w 5 :h 100} (grid/item-box (layout (one-row cols {:id :i :column {:from :gap :to :gap} :row 0})) :i))))
+    (testing "single-track span as map on rows"
+      (is (= {:x 0 :y 0 :w 10 :h 100} (grid/item-box (layout (one-row cols {:id :i :column :a :row {:from 0 :to 0}})) :i))))
     (testing "vector ids are ids, not spans"
       (is (= {:x 0 :y 0 :w 100 :h 100}
              (grid/item-box (layout (one-row [{:id [:p 0] :size [:flexible]}] {:id :i :column [:p 0] :row 0})) :i))))
@@ -144,6 +172,27 @@
       (is (= [24 76] (sizes l :rows))))
     (testing "and leaves column widths unchanged"
       (is (= [10 0 0 90] (sizes l :columns))))))
+
+;; solve preconditions
+
+(deftest solve-preconditions-test
+  (let [p (grid/prepare (one-row [{:size [:flexible]}] {:id :a :column 0 :row 0} {:id :b :column 0 :row 0}))
+        measurements (grid/measure-items p {} nil)
+        box {:x 0 :y 0 :w 10 :h 10}]
+    (testing "measurements must align with items"
+      (are [ms n] (= {:key :measurements :items 2 :measurements n} (error-data #(grid/solve p box ms)))
+        nil 0
+        [] 0
+        (subvec measurements 0 1) 1
+        (conj measurements (first measurements)) 3
+        {:a 1} 1))
+    (testing "empty grid accepts nil measurements"
+      (is (= [] (:items (grid/solve (grid/prepare (one-row [{:size [:flexible]}])) box nil)))))
+    (testing "box must have integer coordinates and non-negative size"
+      (are [b] (= :box (:key (error-data #(grid/solve p b measurements))))
+        nil {} {:x 0 :y 0 :w 10} {:x 0 :y 0 :w 10.5 :h 10} {:x 0 :y 0 :w -1 :h 10} {:x "0" :y 0 :w 1 :h 1}))
+    (testing "zero-size box is valid"
+      (is (= {:x 3 :y 4 :w 0 :h 0} (grid/item-box (grid/solve p {:x 3 :y 4 :w 0 :h 0} measurements) :a))))))
 
 ;; 4.6 coordinates
 
