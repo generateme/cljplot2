@@ -285,3 +285,14 @@
             (:box item)
             (some-> (:layout item) (find-item-box id))))
         (:items layout)))
+
+(defn find-content-box
+  "Box of the first item (depth-first, in item order) of `grid` whose content satisfies `pred`, using `layout`
+  (the solved layout of `grid`, items in the same order); `nil` when none."
+  [grid layout pred]
+  (some (fn [[item item-layout]]
+          (let [content (:content item)]
+            (cond
+              (pred content) (:box item-layout)
+              (grid? content) (find-content-box content (:layout item-layout) pred))))
+        (map vector (:items grid) (:items layout))))

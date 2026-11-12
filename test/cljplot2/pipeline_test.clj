@@ -39,7 +39,8 @@
     (testing "every stage adds its key"
       (is (every? #(contains? built %) pipeline/stage-order)))
     (testing "no charts: empty per-chart stages, no scales"
-      (is (= [] (:split built) (:stats built)))
+      (is (= {:facets {:dims [] :levels {} :dropped {:facet 0}} :charts []} (:split built)))
+      (is (= [] (:stats built)))
       (is (= {} (:extents built) (:scale-specs built) (:finalized-scales built))))
     (testing "default grid and options"
       (is (= {:x 10 :y 10 :w 580 :h 580} (grid/item-box (:layout built) :panel)))

@@ -20,6 +20,12 @@
   ([plot] (plot/build plot {:width 600 :height 400}))
   ([plot opts] (plot/build plot (merge {:width 600 :height 400} opts))))
 
+(defn- canvas-pos
+  "Canvas pixel of value `v` on scale `k`: panel-local scale position plus the :panel box offset."
+  [built k v]
+  (let [{:keys [x y]} (grid/item-box (:layout built) :panel)]
+    (+ (if (= k :x) x y) (scale/forward (get-in built [:finalized-scales k]) v))))
+
 (defn- scatter-plot [extra] (merge {:data rows :mapping {:x :a :y :b} :charts [(chart/scatter)]} extra))
 
 ;; 1.x data and mapping
@@ -113,11 +119,19 @@
 
 (defn- spec-domain [plot k] (get-in (build plot) [:scale-specs k :domain]))
 
+(defn- final-domain [plot k] (get-in (build plot) [:finalized-scales k :domain]))
+
 (deftest data-domain-test
-  (testing "padding 5% each end by default"
-    (is (= [-5.0 105.0] (spec-domain (scatter-plot {:data [{:a 0 :b 0} {:a 100 :b 1}]}) :x))))
+  (testing "data domain in the spec, padding applied after nice (5% each end by default)"
+    (is (= [0.0 100.0] (spec-domain (scatter-plot {:data [{:a 0 :b 0} {:a 100 :b 1}]}) :x)))
+    (is (= [0.05 0.05] (get-in (build (scatter-plot {:data [{:a 0 :b 0} {:a 100 :b 1}]})) [:scale-specs :x :data-padding])))
+    (is (= [-5.0 105.0] (final-domain (scatter-plot {:data [{:a 0 :b 0} {:a 100 :b 1}]}) :x))))
+  (testing "outermost ticks sit inside the padded domain"
+    (let [fx (get-in (build (scatter-plot {:data [{:a 0 :b 0} {:a 100 :b 1}]})) [:finalized-scales :x])]
+      (is (< (first (:domain fx)) (first (:ticks fx))))
+      (is (> (second (:domain fx)) (peek (:ticks fx))))))
   (testing ":expand wins, data only"
-    (is (= [0.0 100.0] (spec-domain (scatter-plot {:data [{:a 0 :b 0} {:a 100 :b 1}] :scales {:x {:expand [0 0]}}}) :x)))
+    (is (= [0.0 100.0] (final-domain (scatter-plot {:data [{:a 0 :b 0} {:a 100 :b 1}] :scales {:x {:expand [0 0]}}}) :x)))
     (is (= [0 10] (spec-domain (scatter-plot {:scales {:x {:domain [0 10] :expand [0.5 0.5]}}}) :x))))
   (testing "explicit domain wins over data"
     (is (= [-100 100] (spec-domain (scatter-plot {:scales {:x {:domain [-100 100]}}}) :x))))
@@ -135,8 +149,8 @@
   (testing "single point lands in the panel center"
     (let [built (build (scatter-plot {:data [{:a 5 :b 7}]}))
           {:keys [x y w h]} (grid/item-box (:layout built) :panel)]
-      (is (< (abs (- (+ x (/ w 2.0)) (scale/forward (get-in built [:finalized-scales :x]) 5))) 1.0))
-      (is (< (abs (- (+ y (/ h 2.0)) (scale/forward (get-in built [:finalized-scales :y]) 7))) 1.0)))))
+      (is (< (abs (- (+ x (/ w 2.0)) (canvas-pos built :x 5))) 1.0))
+      (is (< (abs (- (+ y (/ h 2.0)) (canvas-pos built :y 7))) 1.0)))))
 
 (deftest scale-kinds-from-data-test
   (is (= :bands (get-in (build (scatter-plot {:data [{:a 1 :b "u"} {:a 2 :b "v"}]})) [:scale-specs :y :kind])))
@@ -146,7 +160,7 @@
   (testing "numeric data on bands needs a domain"
     (is (= {:key :domain :scale :x} (error-data #(build (scatter-plot {:scales {:x {:kind :bands}}}))))))
   (testing "log scale: padding in log space stays positive; non-positive data fails"
-    (let [d (spec-domain (scatter-plot {:data [{:a 1 :b 1} {:a 1000 :b 2}] :scales {:x {:kind :log}}}) :x)]
+    (let [d (final-domain (scatter-plot {:data [{:a 1 :b 1} {:a 1000 :b 2}] :scales {:x {:kind :log}}}) :x)]
       (is (< 0 (first d) 1)))
     (is (= {:key :domain :scale :x} (error-data #(build (scatter-plot {:data [{:a 0 :b 1} {:a 10 :b 2}] :scales {:x {:kind :log}}})))))))
 
@@ -170,8 +184,8 @@
   (let [p {:data [{:a 5 :b 5}] :mapping {:x :a :y :b} :charts [(chart/scatter options)] :theme plain
            :scales {:x {:domain [0 10]} :y {:domain [0 10]}}}
         built (build p)
-        cx (scale/forward (get-in built [:finalized-scales :x]) 5)
-        cy (scale/forward (get-in built [:finalized-scales :y]) 5)]
+        cx (canvas-pos built :x 5)
+        cy (canvas-pos built :y 5)]
     [(plot/render p {:width 600 :height 400}) (long cx) (long cy)]))
 
 (deftest point-position-test
@@ -218,15 +232,15 @@
            :scales {:x {:domain [0 10]} :y {:domain [0 10]}}
            :charts [(chart/scatter {:size 20 :color :red}) (chart/scatter {:size 20 :color :blue})]}
         built (build p)
-        cx (long (scale/forward (get-in built [:finalized-scales :x]) 5))
-        cy (long (scale/forward (get-in built [:finalized-scales :y]) 5))]
+        cx (long (canvas-pos built :x 5))
+        cy (long (canvas-pos built :y 5))]
     (is (= [0 0 255] (pixel (plot/render p {:width 600 :height 400}) cx cy)))))
 
 (deftest bands-points-test
   (let [p {:data [{:a 1 :b "u"} {:a 2 :b "v"}] :mapping {:x :a :y :b} :theme plain :charts [(chart/scatter {:size 9 :color :black})]}
         built (build p)
-        cy (long (scale/forward (get-in built [:finalized-scales :y]) "v"))
-        cx (long (scale/forward (get-in built [:finalized-scales :x]) 2))]
+        cy (long (canvas-pos built :y "v"))
+        cx (long (canvas-pos built :x 2))]
     (is (= [0 0 0] (pixel (plot/render p {:width 600 :height 400}) cx cy)))))
 
 (deftest performance-test
@@ -246,8 +260,8 @@
              :theme plain :scales {:y {:domain ["a" "b"]}}}
           built (build p)
           c (plot/render p {:width 600 :height 400})
-          cx (long (scale/forward (get-in built [:finalized-scales :x]) 1))
-          cy (long (scale/forward (get-in built [:finalized-scales :y]) "a"))]
+          cx (long (canvas-pos built :x 1))
+          cy (long (canvas-pos built :y "a"))]
       (is (= [0 0 0] (pixel c cx cy)) "the in-domain point is drawn")))
   (testing "forward-fn gives NaN for values the scale can't place"
     (let [f (scale/forward-fn (get-in (build {:scales {:y {:domain ["a" "b"]}}}) [:finalized-scales :y]))]

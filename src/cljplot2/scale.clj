@@ -63,6 +63,8 @@
 
 (defn scale-spec
   "Validated phase-1 spec of the plot scale `k` from its attributes `spec` (a map of wadogo attributes and `:nice`).
+  `:nice` (default `true`): extend continuous domains to nice values by at most 10% of the range; a number sets
+  that limit (fraction); falsy turns it off.
   Throws `ex-info` naming the offending key."
   [k spec]
   (when-not (map? spec) (invalid "Scale spec must be a map." {:key :scales :scale k}))
@@ -78,6 +80,8 @@
       (sequential? ticks) (validate-tick-list! k kind domain ticks)
       (not (or (nil? ticks) (and (integer? ticks) (pos? (long ticks)))))
       (invalid "Scale :ticks must be a positive integer or a sequence of values." {:key :ticks :scale k :value ticks}))
+    (when (and (number? (:nice spec)) (not (and (m/valid-double? (double (:nice spec))) (>= (double (:nice spec)) 0.0))))
+      (invalid "Scale :nice must be a boolean or a non-negative fraction." {:key :nice :scale k :value (:nice spec)}))
     (assoc spec :kind kind :nice (get spec :nice true))))
 
 (def ^:private ^:const collapse-widening 0.1)
@@ -112,7 +116,8 @@
   "Phase-1 spec of plot scale `k` from its `spec` (may be `{}`) and the merged data `extent` (may be `nil`)
   with the charts' `padding` `[lo hi]`. An explicit `:domain` wins over data. A data domain gets
   `:kind` from the spec or the extent (numeric -> `:linear`, categorical -> `:bands`, temporal -> `:datetime`);
-  numeric domains are widened when collapsed to one value, then padded by the spec `:expand` or `padding`
+  numeric domains are widened when collapsed to one value and get `:data-padding` - the spec `:expand` or
+  `padding` - applied by [[finalize]] after `nice`, so the outermost ticks sit inside the panel
   (temporal and categorical domains aren't padded)."
   [k spec extent padding]
   (when-not (map? spec) (invalid "Scale spec must be a map." {:key :scales :scale k}))
@@ -125,9 +130,9 @@
                    :temporal [(:min extent) (:max extent)]
                    :numeric (if (= :bands kind)
                               (invalid "Numeric data on a bands scale needs an explicit :domain." {:key :domain :scale k})
-                              (pad kind (widen (double (:min extent)) (double (:max extent)))
-                                   (or (:expand spec) padding [0 0]))))]
-      (scale-spec k (assoc spec :kind kind :domain domain)))))
+                              (widen (double (:min extent)) (double (:max extent)))))]
+      (cond-> (scale-spec k (assoc spec :kind kind :domain domain))
+        (= :numeric (:kind extent)) (assoc :data-padding (vec (or (:expand spec) padding [0 0])))))))
 
 (defn tick-hint
   "Tick count hint for an axis `length` pixels long with `spacing` pixels between ticks (at least 2)."
@@ -163,16 +168,32 @@
   (let [a (double a) b (double b)]
     (<= (- (m/min a b) range-tolerance) p (+ (m/max a b) range-tolerance))))
 
+(def ^:private ^:const default-nice-max-extension
+  "Largest total extension of the domain by `nice`, as a fraction of the range span."
+  0.1)
+
+(defn- nice-domain
+  "Domain of `scale` extended by `nice` (wadogo, limited extension): `nice-option` `true` -> default limit,
+  a number -> that limit, falsy -> unchanged."
+  [scale kind nice-option]
+  (if (and nice-option (continuous-kinds kind))
+    (s/domain (s/nice scale {:max-extension (if (number? nice-option) nice-option default-nice-max-extension)}))
+    (s/domain scale)))
+
 (defn finalize
   "Finalized scale of phase-1 `spec` for the pixel `range` (`[start end]`) and `tick-hint` (the count used unless
-  the spec has `:ticks`)."
+  the spec has `:ticks`). Steps: the domain is extended by `nice` (limited, see `:nice` in [[scale-spec]]) with
+  the explicit tick count or the hint, then padded by `:data-padding` (data domains, see [[data-scale-spec]]);
+  ticks outside the final domain are dropped."
   [spec range tick-hint]
   (let [kind (:kind spec)
         explicit (:ticks spec)
-        base (assoc (dissoc spec :kind :nice :expand) :range range)
+        base (assoc (dissoc spec :kind :nice :expand :data-padding) :range range)
         nice-count (if (integer? explicit) explicit tick-hint)
-        domain (s/domain (cond-> (s/scale kind (assoc base :ticks nice-count))
-                           (and (:nice spec) (continuous-kinds kind)) s/nice))
+        niced (nice-domain (s/scale kind (assoc base :ticks nice-count)) kind (:nice spec))
+        domain (if-let [padding (:data-padding spec)]
+                 (pad kind [(double (first niced)) (double (last niced))] padding)
+                 niced)
         attributes (assoc base :domain domain :ticks (or explicit tick-hint))
         scale (s/scale kind attributes)
         ticks (if (continuous-kinds kind)

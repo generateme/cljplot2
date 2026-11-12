@@ -1,6 +1,7 @@
 (ns cljplot2.axis
   "Axis content `{:kind :axis :scale :x|:y}`: line on the panel edge, outward ticks and tick labels
-  (`:tick-label` text role) of the finalized scale in `env` `:scales`. Styled by theme `[:axis :x|:y]`.
+  (`:tick-label` text role) of the panel-local finalized scale in `env` `:scales` (the axis box spans its panel
+  column for x, its panel row for y, so positions are offset by the box's x / y). Styled by theme `[:axis :x|:y]`.
 
   The x axis sits below the panel (line in its box's top pixel row), the y axis left of it (line in its box's
   rightmost pixel column). Natural size: x - height = tick length + label gap + tallest label; y - width = tick
@@ -85,7 +86,10 @@
           x (double x) y (double y) w (double w) h (double h)
           tick-length (double tick-length)
           label-gap (double label-gap)
-          positions (mapv (scale/forward-fn finalized) (:ticks finalized))
+          ;; panel-local positions; the axis box spans its panel column (x) / row (y)
+          offset (if (= k :x) x y)
+          forward (scale/forward-fn finalized)
+          positions (mapv #(+ offset (double (forward %))) (:ticks finalized))
           line-x (draw/pixel-center (dec (+ x w))) ;; y axis: rightmost column of its box
           line-y (draw/pixel-center y)              ;; x axis: top row of its box
           sizes (label-sizes finalized (assoc env :canvas c)) ;; target canvas: same rendering hint as layout

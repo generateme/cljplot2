@@ -72,12 +72,15 @@
         {:keys [x y w h]} (grid/item-box (:layout built) :panel)
         fx (get-in built [:finalized-scales :x])
         fy (get-in built [:finalized-scales :y])]
-    (is (= [(double x) (double (+ x w))] (:range fx)))
-    (is (= [(double (+ y h)) (double y)] (:range fy)) "y grows upward")
-    (is (== x (scale/forward fx 0)))
-    (is (== (+ x w) (scale/forward fx 10)))
-    (is (== (+ y h) (scale/forward fy 0)))
-    (is (== y (scale/forward fy 10))))
+    (testing "panel-local ranges"
+      (is (= [0.0 (double w)] (:range fx)))
+      (is (= [(double h) 0.0] (:range fy)) "y grows upward"))
+    (is (== 0 (scale/forward fx 0)))
+    (is (== w (scale/forward fx 10)))
+    (is (== h (scale/forward fy 0)))
+    (is (== 0 (scale/forward fy 10)))
+    (is (some? x))
+    (is (some? y)))
   (testing "reversed domain maps its first value to the range start"
     (let [fx (finalized {:x {:domain [10 0]}} :x)]
       (is (== (first (:range fx)) (scale/forward fx 10))))))
@@ -105,10 +108,22 @@
     (is (= [0.0 5.0 10.0] (mapv double (:ticks (finalized {:x {:domain [0 10] :ticks [0 5 10]}} :x)))))
     (is (= [] (:ticks (finalized {:x {:domain [0 10] :ticks []}} :x))))))
 
+(defn- extension [[lo hi] [a b]] (/ (+ (- lo a) (- b hi)) (- hi lo)))
+
 (deftest nice-test
-  (let [fx (finalized {:x {:domain [0.13 7.31]}} :x)]
-    (is (== (first (:ticks fx)) (first (:domain fx))))
-    (is (== (peek (:ticks fx)) (second (:domain fx)))))
+  (testing "limited nice: covers the domain, extends it by at most 10%"
+    (let [fx (finalized {:x {:domain [0.13 7.31]}} :x)]
+      (is (<= (first (:domain fx)) 0.13))
+      (is (>= (second (:domain fx)) 7.31))
+      (is (<= (extension [0.13 7.31] (:domain fx)) 0.1))))
+  (testing "narrow panel (few ticks) doesn't blow the domain up"
+    (let [fx (scale/finalize (scale/scale-spec :x {:domain [-0.4 8.4]}) [0.0 190.0] 2)]
+      (is (= [-0.5 8.5] (:domain fx)))))
+  (testing "numeric :nice is the limit"
+    (is (= [-0.4 8.4] (:domain (scale/finalize (scale/scale-spec :x {:domain [-0.4 8.4] :nice 0}) [0.0 190.0] 2))))
+    (is (= [-10.0 10.0] (:domain (scale/finalize (scale/scale-spec :x {:domain [-0.4 8.4] :nice 2.0}) [0.0 190.0] 2))))
+    (are [v] (= :nice (:key (error-data #(scale/scale-spec :x {:domain [0 1] :nice v}))))
+      -0.1 ##NaN ##Inf))
   (is (= [0.13 7.31] (:domain (finalized {:x {:domain [0.13 7.31] :nice false}} :x))))
   (testing "bands are never niced"
     (is (= ["a" "b" "c"] (:domain (finalized {:y {:domain ["a" "b" "c"]}} :y))))))
@@ -210,20 +225,20 @@
         fx (get-in built [:finalized-scales :x])
         fy (get-in built [:finalized-scales :y])]
     (testing "x ticks below the panel at forward(tick) +/-1 px"
-      (doseq [t [0 5 10] :let [px (long (scale/forward fx t))]]
+      (doseq [t [0 5 10] :let [px (long (+ x (scale/forward fx t)))]]
         (is (some #(dark? (pixel c % (+ y h 3))) (range (dec px) (+ px 2))) (str "x tick " t))))
     (testing "y ticks left of the panel"
-      (doseq [t [0 5 10] :let [py (long (scale/forward fy t))]]
+      (doseq [t [0 5 10] :let [py (long (+ y (scale/forward fy t)))]]
         (is (some #(dark? (pixel c (- x 3) %)) (range (dec py) (+ py 2))) (str "y tick " t))))
     (testing "no tick ink between ticks"
-      (is (not (dark? (pixel c (long (scale/forward fx 2.5)) (+ y h 3))))))
+      (is (not (dark? (pixel c (long (+ x (scale/forward fx 2.5))) (+ y h 3))))))
     (testing "axis lines on the panel edges"
       (is (dark? (pixel c (+ x (quot w 3)) (+ y h))))
       (is (dark? (pixel c (dec x) (+ y (quot h 3))))))
     (testing ":none colors draw no line or ticks"
       (let [c2 (render scales (assoc plain :axis {:x {:line-color :none :tick-color :none}}))]
         (is (not (dark? (pixel c2 (+ x (quot w 3)) (+ y h)))))
-        (is (not (dark? (pixel c2 (long (scale/forward fx 5)) (+ y h 3)))))))))
+        (is (not (dark? (pixel c2 (long (+ x (scale/forward fx 5))) (+ y h 3)))))))))
 
 (deftest grid-lines-test
   (let [scales {:x {:domain [0 10] :ticks [0 5 10]} :y {:domain [0 10] :ticks [0 5 10]}}
@@ -231,8 +246,8 @@
                                                               :y {:color :blue :width 1 :dash :none}}}}
         built (plot/build {:scales scales :theme grid-theme} {:width 600 :height 400})
         {:keys [x y w h]} (grid/item-box (:layout built) :panel)
-        px (long (scale/forward (get-in built [:finalized-scales :x]) 5))
-        py (long (scale/forward (get-in built [:finalized-scales :y]) 5))
+        px (long (+ x (scale/forward (get-in built [:finalized-scales :x]) 5)))
+        py (long (+ y (scale/forward (get-in built [:finalized-scales :y]) 5)))
         ;; antialiased 1 px lines at fractional positions: dominance, not pure color
         reddish? (fn [[r g b]] (and (> r (+ g 60)) (> r (+ b 60))))
         bluish? (fn [[r g b]] (and (> b (+ r 60)) (> b (+ g 60))))]
@@ -255,7 +270,8 @@
         {:keys [y h]} (grid/item-box (:layout built) :panel)
         points (map #(scale/forward fy %) ["a" "b" "c"])]
     (is (= ["a" "b" "c"] (:ticks fy)))
-    (is (every? #(< y % (+ y h)) points) "band centers inside the panel")
+    (is (every? #(< 0 % h) points) "band centers inside the panel (panel-local)")
+    (is (some? y))
     (is (apply > points) "first band at the bottom (y grows upward)"))
   (testing "single band"
     (let [fy (finalized {:y {:domain ["only"]}} :y)]
@@ -299,11 +315,14 @@
 (deftest nice-with-explicit-list-test
   (let [fx (finalized {:x {:domain [0.13 7.31] :ticks [1 2 3]}} :x)]
     (is (not= [0.13 7.31] (:domain fx)) "nice applied with a tick list")
+    (is (<= (extension [0.13 7.31] (:domain fx)) 0.1))
     (is (<= (first (:domain fx)) 0.13))
     (is (>= (second (:domain fx)) 7.31))
     (is (= [1 2 3] (:ticks fx)) "the explicit ticks are kept"))
-  (testing "explicit count drives nice"
-    (is (= [0.0 8.0] (:domain (finalized {:x {:domain [0.13 7.31] :ticks 3}} :x)))))
+  (testing "explicit count drives nice (limited)"
+    (let [d (:domain (finalized {:x {:domain [0.13 7.31] :ticks 3}} :x))]
+      (is (<= (extension [0.13 7.31] d) 0.1))
+      (is (= [0.0 8.0] (:domain (finalized {:x {:domain [0.13 7.31] :ticks 3 :nice 0.2}} :x))) "with a larger limit")))
   (testing ":nice false keeps the domain with a tick list"
     (is (= [0.13 7.31] (:domain (finalized {:x {:domain [0.13 7.31] :ticks [1 2 3] :nice false}} :x))))))
 
@@ -327,7 +346,7 @@
                          :content {:kind :grid :columns [{:size [:fixed 20]} {:size [:flexible]}] :rows [{:size [:flexible]}]
                                    :items [{:id :panel :column 1 :row 0 :content {:kind :panel}}]}}]}
         built (plot/build {:scales {:x {:domain [0 1]}} :custom-grid nested} {:width 300 :height 200})]
-    (is (= [20.0 300.0] (get-in built [:finalized-scales :x :range])) "custom grid: no margins, 20 px column before the panel")))
+    (is (= [0.0 280.0] (get-in built [:finalized-scales :x :range])) "panel-local: the nested panel is 280 px wide")))
 
 (deftest overhang-test
   (testing "end tick labels stay inside the canvas with zero margin"

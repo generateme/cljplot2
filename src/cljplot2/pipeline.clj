@@ -9,13 +9,15 @@
   * `:scales` - `{:x spec :y spec}`, position scales, see [[cljplot2.scale/data-scale-spec]]
   * `:data`, `:mapping` - plot data and mapping, see [[cljplot2.data]]
   * `:charts` - vector of chart values, see [[cljplot2.chart]]
+  * `:facets` - `{:columns :rows :order :na-panel}` facet layout options, see [[cljplot2.facet]]
   * `:custom-grid` - a hand-written grid (see [[cljplot2.grid]]) used instead of the generated one
   * `:options` - render options (see [[default-options]]), merged under `build`'s options; stored resolved
   * `:theme` - deep-merged over [[cljplot2.theme/default-theme]]; stored resolved
 
-  One panel (`:panel`) until facets."
+  Facet mapping keys (`:facet`, `:facet-col`, `:facet-row`) split rows into panels, see [[cljplot2.facet]]."
   (:require [fastmath.core :as m]
             [cljplot2.data :as data]
+            [cljplot2.facet :as facet]
             [cljplot2.grid :as grid]
             [cljplot2.measure :as measure]
             [cljplot2.plot-grid :as plot-grid]
@@ -24,7 +26,8 @@
             ;; built-in content kinds (natural-size / draw-content methods)
             [cljplot2.label]
             [cljplot2.panel]
-            [cljplot2.axis]))
+            [cljplot2.axis]
+            [cljplot2.strip]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -41,10 +44,6 @@
 
 (def ^:private position-scales #{:x :y})
 
-(def ^:private panel-key
-  "Split group key of the single panel (facets come with step 6)."
-  :panel)
-
 (defn- validate-mapping!
   [mapping]
   (when-not (or (nil? mapping) (map? mapping))
@@ -58,23 +57,51 @@
     (when-not (and (map? chart) (fn? (:compute chart)) (fn? (:draw chart)))
       (throw (ex-info "Chart must be a chart value (see cljplot2.chart)." {:key :charts})))))
 
+(defn- facet-split
+  "Facet dimensions, levels and per-chart groups for charts `chart-inputs` (`{:rows :mapping}`)."
+  [chart-inputs scales na-panel?]
+  (let [dim-sets (distinct (remove empty? (map (comp facet/facet-dims :mapping) chart-inputs)))
+        _ (when (> (count dim-sets) 1)
+            (throw (ex-info "Charts use different facet mappings." {:key :mapping :value (vec dim-sets)})))
+        dims (vec (first dim-sets))
+        faceted (filter #(seq (facet/facet-dims (:mapping %))) chart-inputs)
+        accessors (fn [mapping] (into {} (map (fn [d] [d (data/row-accessor d (mapping d))])) dims))
+        levels (into {} (map (fn [d]
+                               (let [values (mapcat (fn [{:keys [rows mapping]}] (map (get (accessors mapping) d) rows)) faceted)]
+                                 [d (facet/levels d values (get scales d) na-panel?)])))
+                     dims)
+        active? (and (seq dims) (every? seq (vals levels)))]
+    {:facets {:dims (if active? dims []) :levels (if active? levels {})}
+     :charts (mapv (fn [{:keys [rows mapping]}]
+                     (cond
+                       (not active?) {:mapping mapping :groups {facet/single-panel rows} :dropped 0}
+                       (empty? (facet/facet-dims mapping)) {:mapping mapping :groups {facet/all-panels rows} :dropped 0}
+                       :else (let [{:keys [groups dropped]} (facet/group-rows rows dims (accessors mapping) levels)]
+                               {:mapping mapping :groups groups :dropped dropped})))
+                   chart-inputs)}))
+
 (defn- split-stage
-  "Per chart: its rows (own non-nil `:data` or the plot's; `:data nil` counts as absent) grouped by panel, and its
-  mapping (plot mapping with the chart's `:mapping` merged over)."
-  [{:keys [charts data mapping] :as plot}]
+  "Rows of every chart (own non-nil `:data` or the plot's) grouped by facet key, with the chart's mapping (plot
+  mapping with the chart's `:mapping` merged over). Stores `{:facets {:dims :levels :dropped {:facet n}}
+  :charts [{:mapping :groups} ...]}`; see [[cljplot2.facet]]."
+  [{:keys [charts data mapping scales facets] :as plot}]
   (validate-charts! charts)
   (validate-mapping! mapping)
-  (let [plot-rows (delay (data/rows data))]
-    (assoc plot :split (mapv (fn [{:keys [options]}]
-                               (validate-mapping! (:mapping options))
-                               {:mapping (merge mapping (:mapping options))
-                                :groups {panel-key (if (some? (:data options)) (data/rows (:data options)) @plot-rows)}})
-                             charts))))
+  (facet/validate-options! facets)
+  (let [plot-rows (delay (data/rows data))
+        inputs (mapv (fn [{:keys [options]}]
+                       (validate-mapping! (:mapping options))
+                       {:mapping (merge mapping (:mapping options))
+                        :rows (if (some? (:data options)) (data/rows (:data options)) @plot-rows)})
+                     charts)
+        {split-facets :facets chart-splits :charts} (facet-split inputs scales (get facets :na-panel true))]
+    (assoc plot :split {:facets (assoc split-facets :dropped {:facet (reduce + (map :dropped chart-splits))})
+                        :charts (mapv #(dissoc % :dropped) chart-splits)})))
 
 (defn- stats-stage
   "Per chart: the data its `:compute` returns from its split groups."
   [{:keys [charts split theme] :as plot}]
-  (assoc plot :stats (mapv (fn [chart chart-split] ((:compute chart) chart chart-split {:theme theme})) charts split)))
+  (assoc plot :stats (mapv (fn [chart chart-split] ((:compute chart) chart chart-split {:theme theme})) charts (:charts split))))
 
 (defn- extents-stage
   "Per position scale: extents merged over charts and panels, padding as the largest per side among the charts
@@ -98,12 +125,12 @@
   (when-not (or (nil? scales) (map? scales))
     (throw (ex-info "Plot :scales must be a map." {:key :scales :value scales})))
   (doseq [k (keys scales)]
-    (when-not (position-scales k)
-      (throw (ex-info "Unknown plot scale." {:key :scales :value k :allowed position-scales}))))
+    (when-not (or (position-scales k) (facet/facet-keys k))
+      (throw (ex-info "Unknown plot scale." {:key :scales :value k :allowed (into position-scales facet/facet-keys)}))))
   (assoc plot :scale-specs
          (into {} (map (fn [k] [k (scale/data-scale-spec k (get scales k {}) (get-in extents [k :extent])
                                                          (get-in extents [k :padding]))]))
-               (distinct (concat (keys scales) (keys extents))))))
+               (distinct (concat (filter position-scales (keys scales)) (keys extents))))))
 
 (defn- grid-stage
   "The plot's grid: `:custom-grid` when given, otherwise generated from plot keys.
@@ -112,30 +139,32 @@
   (when (and custom-grid labels)
     (throw (ex-info "Plot :labels can't be combined with :custom-grid; put labels into the custom grid."
                     {:key :labels})))
-  (assoc plot :grid (or custom-grid (plot-grid/single-panel-grid plot))))
+  (assoc plot :grid (or custom-grid (plot-grid/plot-grid plot))))
 
 (def ^:private ^:const provisional-tick-hint 10)
 
+(defn- panel-content? [content] (= :panel (:kind content)))
+
 (defn finalize-scales
-  "Scales of `:scale-specs` finalized for the `:panel` box of `layout`: x range `[left right]`, y range
-  `[bottom top]`, tick hint from the axis length and theme `[:axis k :tick-spacing]`.
+  "Scales of `:scale-specs` finalized in panel-local coordinates for the reference panel of `layout` - the first
+  `:panel` content of the grid (depth-first): x range `[0 w]`, y range `[h 0]`, tick hint from the panel size
+  and theme `[:axis k :tick-spacing]`. All panels share these scales (they differ by at most 1 px in size).
   Before the first layout round (`layout` is `nil`) a provisional finalization is used: range `[0 1]`, 10 ticks.
-  The `:panel` item may sit in a nested grid (first found depth-first).
-  Throws `ex-info` with `{:key :scales}` when the layout has no `:panel` item."
+  Throws `ex-info` with `{:key :scales}` when the grid has no `:panel` content."
   [plot layout]
   (let [specs (:scale-specs plot)
         panel (when (and layout (seq specs))
-                (or (grid/find-item-box layout :panel)
+                (or (grid/find-content-box (:grid plot) layout panel-content?)
                     (throw (ex-info "Plot :scales need a :panel item in the grid." {:key :scales}))))]
     (into {} (map (fn [[k spec]]
                     [k (if-not panel
                          (scale/finalize spec [0.0 1.0] provisional-tick-hint)
-                         (let [{:keys [x y w h]} panel
-                               x (long x) y (long y) w (long w) h (long h)
+                         (let [{:keys [w h]} panel
+                               w (long w) h (long h)
                                spacing (double (get-in plot [:theme :axis k :tick-spacing]))]
                            (if (= k :x)
-                             (scale/finalize spec [(double x) (double (+ x w))] (scale/tick-hint w spacing))
-                             (scale/finalize spec [(double (+ y h)) (double y)] (scale/tick-hint h spacing)))))]))
+                             (scale/finalize spec [0.0 (double w)] (scale/tick-hint w spacing))
+                             (scale/finalize spec [(double h) 0.0] (scale/tick-hint h spacing)))))]))
           specs)))
 
 (defn- layout-stage

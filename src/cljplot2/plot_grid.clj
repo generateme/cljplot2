@@ -17,7 +17,10 @@
   An axis item (`:x-axis` below the panel, `:y-axis` left of it) is added for each scale in `:scale-specs`, with
   overhang items reserving room for its end tick labels: x end in `:x-overhang`, y end in `:y-overhang`, both
   start ends in the corner cell (`:y-axis` column, `:x-axis` row).
-  Item order: `:panel`, axes and their overhangs (x, then y), `:title`, `:x-title`, `:y-title` (absent ones skipped).")
+  Item order: `:panel`, axes and their overhangs (x, then y), `:title`, `:x-title`, `:y-title` (absent ones skipped).
+
+  Faceted plots use [[facet-grid]]."
+  (:require [cljplot2.facet :as facet]))
 
 (def ^:private plot-labels
   "Plot label key -> grid item id, content defaults and placement, in item order."
@@ -28,8 +31,9 @@
 (def ^:private label-keys (set (map first plot-labels)))
 
 (defn- label-items
-  "Grid items of the plot `labels` (fixed order: title, x, y); a `nil` label adds no item."
-  [labels]
+  "Grid items of the plot `labels` (fixed order: title, x, y); a `nil` label adds no item.
+  `spans` (label key -> `{:column :row}`) overrides the single-panel placement."
+  [labels spans]
   (when-not (or (nil? labels) (map? labels))
     (throw (ex-info "Plot :labels must be a map." {:key :labels :value labels})))
   (doseq [k (keys labels)]
@@ -37,7 +41,7 @@
       (throw (ex-info "Unknown plot label." {:key :labels :value k :allowed label-keys}))))
   (vec (keep (fn [[k {:keys [id defaults column row]}]]
                (when-some [label (get labels k)]
-                 {:id id :column column :row row
+                 {:id id :column (get-in spans [k :column] column) :row (get-in spans [k :row] row)
                   :content (assoc (merge defaults (if (map? label) label {:text label})) :kind :label)}))
              plot-labels)))
 
@@ -61,4 +65,91 @@
             (measured :x-axis) (measured :x-title) (margin-track :margin-bottom)]
      :items (-> [{:id :panel :column :panel :row :panel :content {:kind :panel}}]
                 (into (mapcat #(when (contains? scale-specs %) (axis-items %))) [:x :y])
-                (into (label-items labels)))}))
+                (into (label-items labels {})))}))
+
+;; facets
+
+(defn- interleave-gaps
+  "Tracks `[t0 gap t1 gap ...]` for `n` flexible tracks `[prefix i]` with fixed gaps `[gap-prefix i]`."
+  [n prefix gap-prefix gap]
+  (vec (butlast (mapcat (fn [i] [{:id [prefix i] :size [:flexible]} {:id [gap-prefix i] :size [:fixed gap]}]) (range n)))))
+
+(defn- facet-panels
+  "Panels `{:key :label :row :col}` and `[rows cols]` of the facets in `split-facets`."
+  [{:keys [dims levels]} scales {:keys [order] :as facets}]
+  (if (= dims [:facet])
+    (let [ls (:facet levels)
+          [rows cols] (facet/wrap-shape (count ls) facets)]
+      {:rows rows :cols cols :wrap? true
+       :panels (vec (map-indexed (fn [i level]
+                                   (let [[r c] (facet/wrap-positions i rows cols (or order :top-down))]
+                                     {:key level :label (facet/label (:facet scales) level) :row r :col c}))
+                                 ls))})
+    (let [col-levels (get levels :facet-col [::none])
+          row-levels (get levels :facet-row [::none])
+          key-of (fn [cl rl] (cond (= 2 (count dims)) [cl rl] (some #{:facet-col} dims) cl :else rl))]
+      {:rows (count row-levels) :cols (count col-levels) :wrap? false
+       :col-labels (when (contains? levels :facet-col) (mapv #(facet/label (:facet-col scales) %) col-levels))
+       :row-labels (when (contains? levels :facet-row) (mapv #(facet/label (:facet-row scales) %) row-levels))
+       :panels (vec (for [[r rl] (map-indexed vector row-levels) [c cl] (map-indexed vector col-levels)]
+                      {:key (key-of cl rl) :row r :col c}))})))
+
+(defn facet-grid
+  "Grid of a faceted plot (see [[cljplot2.facet]]): panels `[:panel r c]` in a `rows` x `cols` layout with gaps
+  (theme `[:facet :gap]`), strips (wrap: above each panel; grid: column strips above the top row, row strips on
+  the right), an x axis under every panel column and a y axis beside every panel row, overhangs at the outer ends.
+  Panels with odd `r + c` are shaded (`:alternate`)."
+  [{:keys [labels theme scale-specs scales facets split]}]
+  (let [margin (get-in theme [:plot :margin])
+        gap (get-in theme [:facet :gap])
+        margin-track (fn [id] {:id id :size [:fixed margin]})
+        measured (fn [id] {:id id :size [:measured]})
+        {:keys [rows cols wrap? panels col-labels row-labels]} (facet-panels (:facets split) scales facets)
+        rows (long rows) cols (long cols)
+        last-col [:panel (dec cols)]
+        last-row [:panel (dec rows)]
+        row-tracks (vec (butlast (mapcat (fn [r] (cond-> [] wrap? (conj (measured [:strip r]))
+                                                     true (conj {:id [:panel r] :size [:flexible]} {:id [:gap r] :size [:fixed gap]})))
+                                         (range rows))))]
+    {:columns (-> [(margin-track :margin-left) (measured :y-title) (measured :y-axis)]
+                  (into (interleave-gaps cols :panel :gap gap))
+                  (cond-> row-labels (conj (measured :row-strip)))
+                  (into [(measured :x-overhang) (margin-track :margin-right)]))
+     :rows (-> [(margin-track :margin-top) (measured :title) (measured :y-overhang)]
+               (cond-> col-labels (conj (measured :col-strip)))
+               (into row-tracks)
+               (into [(measured :x-axis) (measured :x-title) (margin-track :margin-bottom)]))
+     :items (-> (mapv (fn [{:keys [key row col]}]
+                        {:id [:panel row col] :column [:panel col] :row [:panel row]
+                         :content {:kind :panel :panel key :alternate (odd? (+ (long row) (long col)))}})
+                      panels)
+                (cond-> (contains? scale-specs :x)
+                  (into (concat (for [c (range cols)]
+                                  {:id [:x-axis c] :column [:panel c] :row :x-axis :content {:kind :axis :scale :x}})
+                                [{:id :x-axis-start :column :y-axis :row :x-axis :content {:kind :axis-overhang :scale :x :end :start}}
+                                 {:id :x-axis-end :column :x-overhang :row :x-axis :content {:kind :axis-overhang :scale :x :end :end}}])))
+                (cond-> (contains? scale-specs :y)
+                  (into (concat (for [r (range rows)]
+                                  {:id [:y-axis r] :column :y-axis :row [:panel r] :content {:kind :axis :scale :y}})
+                                [{:id :y-axis-start :column :y-axis :row :x-axis :content {:kind :axis-overhang :scale :y :end :start}}
+                                 {:id :y-axis-end :column :y-axis :row :y-overhang :content {:kind :axis-overhang :scale :y :end :end}}])))
+                (cond-> wrap? (into (map (fn [{:keys [label row col]}]
+                                           {:id [:strip row col] :column [:panel col] :row [:strip row]
+                                            :content {:kind :strip :text label}})
+                                         panels)))
+                (cond-> col-labels (into (map-indexed (fn [c text] {:id [:col-strip c] :column [:panel c] :row :col-strip
+                                                                    :content {:kind :strip :text text}})
+                                                      col-labels)))
+                (cond-> row-labels (into (map-indexed (fn [r text] {:id [:row-strip r] :column :row-strip :row [:panel r]
+                                                                    :content {:kind :strip :text text :rotation 90}})
+                                                      row-labels)))
+                (into (label-items labels {:x {:column {:from [:panel 0] :to last-col}}
+                                           :y {:row {:from [:panel 0] :to last-row}}})))}))
+
+(defn plot-grid
+  "The generated grid: [[facet-grid]] when the plot is faceted (`[:split :facets :dims]` non-empty), else
+  [[single-panel-grid]]."
+  [plot]
+  (if (seq (get-in plot [:split :facets :dims]))
+    (facet-grid plot)
+    (single-panel-grid plot)))

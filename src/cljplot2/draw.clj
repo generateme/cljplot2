@@ -1,6 +1,7 @@
 (ns cljplot2.draw
   "Drawing grid item content - the counterpart of [[cljplot2.measure/natural-size]]."
-  (:require [fastmath.core :as m]
+  (:require [clojure2d.core :as c2d]
+            [fastmath.core :as m]
             [cljplot2.measure :as measure]))
 
 (set! *warn-on-reflection* true)
@@ -25,3 +26,16 @@
   (fn [content _canvas _box _env] (measure/content-kind content)))
 
 (defmethod draw-content :default [_ _ _ _] nil)
+
+(defn inner-border!
+  "Draw a border of `width` (rounded, at most half the box) and `color` inside box `{:x :y :w :h}` as four filled
+  bands - exact pixels, nothing outside the box. `:none` color or width 0 draws nothing."
+  [canvas {:keys [x y w h]} color width]
+  (let [x (long x) y (long y) w (long w) h (long h)
+        bw (m/min (m/round (double width)) (quot w 2) (quot h 2))]
+    (when (and (not= :none color) (pos? bw))
+      (c2d/set-color canvas color)
+      (c2d/rect canvas x y w bw)
+      (c2d/rect canvas x (- (+ y h) bw) w bw)
+      (c2d/rect canvas x y bw h)
+      (c2d/rect canvas (- (+ x w) bw) y bw h))))

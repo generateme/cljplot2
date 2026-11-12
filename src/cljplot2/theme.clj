@@ -20,6 +20,10 @@
   :tick-spacing}` (pixels; `:tick-spacing` > 0 is the target distance between ticks, a line or tick of width 0
   isn't drawn).
 
+  `:panel :alternate-fill` - drawn over the fill of facet panels with odd `row + col` (`:none` turns it off).
+
+  `:strip` - `:fill`, `:border-color`, `:border-width` of facet strips; `:facet {:gap px}` between panels.
+
   `:chart` - per chart kind defaults, e.g. `:scatter` (validated when a chart of that kind computes).
 
   Colors are any clojure2d color or `:none` (draw nothing). `nil` in a theme override means \"not set\"
@@ -66,9 +70,11 @@
 (def default-theme
   "Defaults in old cljplot style: light lavender-gray background, 10 px margin, panels without fill and border."
   {:plot {:background 0xe8e8f0 :margin 10}
-   :panel {:fill :none :border-color :none :border-width 1
+   :panel {:fill :none :alternate-fill [0 0 0 20] :border-color :none :border-width 1
            :grid {:x {:color 0xb4b4b4 :width 0.5 :dash [4.0]}
                   :y {:color 0xb4b4b4 :width 0.5 :dash [4.0]}}}
+   :strip {:fill [255 255 255 150] :border-color [0 0 0 100] :border-width 1}
+   :facet {:gap 5}
    :chart {:scatter {:size 4 :color [49 54 149 180] :stroke-color :none :stroke-width 1 :shape \O}}
    :axis {:x {:line-color :black :line-width 1 :tick-color :black :tick-length 6 :tick-width 1
               :label-gap 2 :tick-spacing 80}
@@ -128,6 +134,15 @@
       (invalid "Plot :background must be a color or :none." {:key :background :value background}))
     (when-not (non-negative? border-width)
       (invalid "Panel :border-width must be a non-negative number." {:key :border-width :value border-width}))
+    (when (nil? (get-in theme [:panel :alternate-fill]))
+      (invalid "Panel :alternate-fill must be a color or :none." {:key :alternate-fill}))
+    (let [{:keys [fill border-color border-width]} (:strip theme)]
+      (when (or (nil? fill) (nil? border-color))
+        (invalid "Strip colors must be colors or :none." {:key :strip}))
+      (when-not (non-negative? border-width)
+        (invalid "Strip :border-width must be a non-negative number." {:key :border-width :value border-width})))
+    (when-not (non-negative? (get-in theme [:facet :gap]))
+      (invalid "Facet :gap must be a non-negative number." {:key :gap :value (get-in theme [:facet :gap])}))
     (doseq [k [:x :y]]
       (validate-grid-line! k (get-in theme [:panel :grid k]))
       (validate-axis! k (get-in theme [:axis k])))
