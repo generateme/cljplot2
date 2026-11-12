@@ -1,0 +1,14 @@
+{:paths ["src"]
+ :deps {org.clojure/clojure {:mvn/version "1.12.0"}
+        clojure2d/clojure2d {:mvn/version "1.5.0-alpha3-SNAPSHOT"}
+        generateme/fastmath {:mvn/version "3.0.0-alpha10-SNAPSHOT"}
+        org.scicloj/wadogo {:local/root "../wadogo"}}
+ :aliases {:test {:extra-paths ["test" "dev"]
+                  :extra-deps {org.clojure/test.check {:mvn/version "1.1.1"}
+                               io.github.cognitect-labs/test-runner {:git/sha "dfb30dd6605cb6c0efc275e1df1736f6e90d4d73"}}
+                  :main-opts ["-m" "cognitect.test-runner"]
+                  :exec-fn cognitect.test-runner.api/test}
+           :check {:extra-paths ["dev"]
+                   :main-opts ["-m" "cljplot2.check"]}
+           :demo {:extra-paths ["dev"]
+                  :main-opts ["-m" "cljplot2.demo.step1"]}}}
