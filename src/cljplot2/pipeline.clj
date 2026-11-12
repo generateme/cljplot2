@@ -64,6 +64,10 @@
         _ (when (> (count dim-sets) 1)
             (throw (ex-info "Charts use different facet mappings." {:key :mapping :value (vec dim-sets)})))
         dims (vec (first dim-sets))
+        _ (doseq [k (filter facet/facet-keys (keys scales))]
+            (when-not (some #{k} dims)
+              (throw (ex-info "Facet scale without a facet mapping of that key." {:key :scales :scale k})))
+            (facet/validate-spec! k (get scales k)))
         faceted (filter #(seq (facet/facet-dims (:mapping %))) chart-inputs)
         accessors (fn [mapping] (into {} (map (fn [d] [d (data/row-accessor d (mapping d))])) dims))
         levels (into {} (map (fn [d]
@@ -85,6 +89,11 @@
   mapping with the chart's `:mapping` merged over). Stores `{:facets {:dims :levels :dropped {:facet n}}
   :charts [{:mapping :groups} ...]}`; see [[cljplot2.facet]]."
   [{:keys [charts data mapping scales facets] :as plot}]
+  (when-not (or (nil? scales) (map? scales))
+    (throw (ex-info "Plot :scales must be a map." {:key :scales :value scales})))
+  (doseq [k (keys scales)]
+    (when-not (or (position-scales k) (facet/facet-keys k))
+      (throw (ex-info "Unknown plot scale." {:key :scales :value k :allowed (into position-scales facet/facet-keys)}))))
   (validate-charts! charts)
   (validate-mapping! mapping)
   (facet/validate-options! facets)
@@ -120,13 +129,9 @@
                position-scales)))
 
 (defn- scale-specs-stage
-  "Phase-1 specs of the position scales with a plot `:scales` entry or data extents."
+  "Phase-1 specs of the position scales with a plot `:scales` entry or data extents (`:scales` is validated by
+  the `:split` stage, its first reader)."
   [{:keys [scales extents] :as plot}]
-  (when-not (or (nil? scales) (map? scales))
-    (throw (ex-info "Plot :scales must be a map." {:key :scales :value scales})))
-  (doseq [k (keys scales)]
-    (when-not (or (position-scales k) (facet/facet-keys k))
-      (throw (ex-info "Unknown plot scale." {:key :scales :value k :allowed (into position-scales facet/facet-keys)}))))
   (assoc plot :scale-specs
          (into {} (map (fn [k] [k (scale/data-scale-spec k (get scales k {}) (get-in extents [k :extent])
                                                          (get-in extents [k :padding]))]))

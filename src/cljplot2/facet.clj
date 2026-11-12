@@ -6,7 +6,7 @@
 
   Levels (facet values in panel order) come from an explicit `:scales {k {:domain [...]}}` or from the data,
   sorted. `nil` values go to an NA level placed last (`:facets {:na-panel false}` drops them instead). Values
-  outside an explicit domain are dropped. Strip text is `(str value)` (`\"NA\"` for the NA level) unless the
+  outside an explicit domain, NaN and infinite numbers are dropped (and counted). Strip text is `(str value)` (`\"NA\"` for the NA level) unless the
   facet scale has a `:formatter`.
 
   Group keys: the level for wrap, `[col-level row-level]` for grid. Charts whose mapping has no facet key get
@@ -41,6 +41,11 @@
       (invalid "Mapping can't combine :facet with :facet-col / :facet-row." {:key :mapping :value ks}))
     ks))
 
+(defn valid-facet-value?
+  "Can `v` be a facet level: anything except NaN or infinite numbers (`nil` is the NA level)."
+  [v]
+  (or (not (number? v)) (data/valid-value? v)))
+
 (defn- sorted-levels
   [k values]
   (try (vec (sort (distinct values)))
@@ -57,8 +62,20 @@
                (do (when-not (and (sequential? explicit) (seq explicit) (apply distinct? explicit))
                      (invalid "Facet :domain must be a non-empty sequence of distinct values." {:key :domain :scale k}))
                    (vec explicit))
-               (sorted-levels k (remove nil? values)))]
+               (sorted-levels k (filter #(and (some? %) (valid-facet-value? %)) values)))]
     (if (and na-panel? (some nil? values)) (conj base na-level) base)))
+
+(def ^:private facet-spec-keys #{:domain :formatter})
+
+(defn validate-spec!
+  "Check the facet scale `spec` of dimension `k`: a map with `:domain` and/or `:formatter` (a function)."
+  [k spec]
+  (when-not (map? spec)
+    (invalid "Facet scale spec must be a map." {:key :scales :scale k}))
+  (when-let [bad (first (remove facet-spec-keys (keys spec)))]
+    (invalid "Unknown facet scale attribute." {:key :scales :scale k :value bad :allowed facet-spec-keys}))
+  (when (and (contains? spec :formatter) (not (fn? (:formatter spec))))
+    (invalid "Facet scale :formatter must be a function." {:key :formatter :scale k})))
 
 (defn label
   "Strip text of `level` of facet dimension `k` with facet scale `spec`."
@@ -82,14 +99,18 @@
      :dropped (count (filter nil? keyed))}))
 
 (defn most-squared-shape
-  "`[rows cols]` with `rows * cols >= n` closest to a square, `rows <= cols` (old cljplot rule)."
+  "`[rows cols]` with `rows * cols >= n` closest to a square, `rows <= cols` (old cljplot rule: minimal
+  `2 (x y - n) + (sqrt n - x)^2 + (sqrt n - y)^2`, ties by smaller x then y). For each x only y from
+  `ceil(n / x)` up to `max(ceil(n / x), ceil(sqrt n) + 1)` can be minimal, so the search is `O(n)`."
   [^long n]
   (if (<= n 1)
     [1 1]
     (let [s (m/sqrt n)
-          [_ ^long x ^long y] (first (sort (for [x (range 1 (inc n)) y (range 1 (inc n))
-                                                 :let [x (long x) y (long y) d1 (- (* x y) n)]
-                                                 :when (>= d1 0)]
+          top (inc (long (m/ceil s)))
+          [_ ^long x ^long y] (first (sort (for [x (range 1 (inc n))
+                                                 :let [x (long x) y0 (long (m/ceil (/ (double n) (double x))))]
+                                                 y (range y0 (inc (m/max y0 top)))
+                                                 :let [y (long y) d1 (- (* x y) n)]]
                                              [(+ (* 2.0 d1) (m/sq (- s x)) (m/sq (- s y))) x y])))]
       [(m/min x y) (m/max x y)])))
 
@@ -125,8 +146,3 @@
     (invalid "Plot :facets must be a map." {:key :facets}))
   (when-not (contains? #{nil :top-down :bottom-up} (:order facets))
     (invalid "Facet :order must be :top-down or :bottom-up." {:key :facets :value (:order facets)})))
-
-(defn valid-facet-value?
-  "Facet values may be anything comparable or `nil` (NA); this only rejects invalid numbers."
-  [v]
-  (or (not (number? v)) (data/valid-value? v)))

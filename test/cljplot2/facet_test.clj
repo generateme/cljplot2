@@ -73,11 +73,13 @@
       (is (= [0 2] (get-in built [:split :facets :levels :facet])))
       (is (= {:facet 8} (get-in built [:split :facets :dropped]))))))
 
+(deftest facet-opt-out-test
+  (testing "a chart mapping the plot's facet key to nil opts out: drawn in all panels"
+    (let [built (build {:data rows :mapping {:x :x :y :y :facet :g}
+                        :charts [(chart/scatter) (chart/scatter {:data [{:x 100 :y 100}] :mapping {:facet nil}})]})]
+      (is (= [facet/all-panels] (keys (get-in built [:stats 1 :data])))))))
+
 (deftest all-panels-test
-  (let [built (build {:data rows :mapping {:x :x :y :y :facet :g}
-                      :charts [(chart/scatter) (chart/scatter {:data [{:x 100 :y 100}] :mapping {:facet nil}})]})]
-    (testing "a chart mapping a facet key to nil opts out: drawn in all panels"
-      (is (= [facet/all-panels] (keys (get-in built [:stats 1 :data]))))))
   (let [built (build {:data rows
                       :charts [(chart/scatter {:mapping {:x :x :y :y :facet :g}})
                                (chart/scatter {:data [{:x 100 :y 100}] :mapping {:x :x :y :y}})]})]
@@ -239,3 +241,36 @@
     {:facet {:gap -1}} :gap
     {:strip {:border-width -1}} :border-width
     {:panel {:alternate-fill nil}} nil))
+
+;; review fixes
+
+(deftest invalid-facet-values-test
+  (let [built (build (facet-plot {:data (conj rows {:x 1 :y 1 :g ##NaN} {:x 1 :y 1 :g ##Inf})}))]
+    (is (= [0 2 4 6 8 10] (get-in built [:split :facets :levels :facet])) "no NaN / Inf panel")
+    (is (= {:facet 2} (get-in built [:split :facets :dropped])))))
+
+(deftest facet-spec-validation-test
+  (are [scales k] (= k (:key (error-data #(build (facet-plot {:scales scales})))))
+    {:facet [0 2]} :scales
+    {:facet {:domian [0 2]}} :scales
+    {:facet {:formatter "x"}} :formatter
+    {:facet-col {:domain ["a"]}} :scales)
+  (is (= :scales (:key (error-data #(build (facet-plot {:scales [0 1]})))))))
+
+(defn- exhaustive-shape
+  "Old cljplot search over all pairs (reference for the bounded one)."
+  [n]
+  (if (<= n 1)
+    [1 1]
+    (let [s (Math/sqrt n)
+          [_ x y] (first (sort (for [x (range 1 (inc n)) y (range 1 (inc n))
+                                     :let [d1 (- (* x y) n)] :when (>= d1 0)]
+                                 [(+ (* 2.0 d1) (Math/pow (- s x) 2) (Math/pow (- s y) 2)) x y])))]
+      [(min x y) (max x y)])))
+
+(deftest bounded-shape-test
+  (doseq [n (range 0 120)]
+    (is (= (exhaustive-shape n) (facet/most-squared-shape n)) (str n)))
+  (let [t0 (System/nanoTime)]
+    (facet/most-squared-shape 2000)
+    (is (< (/ (- (System/nanoTime) t0) 1e6) 500.0) "2000 panels: fast")))

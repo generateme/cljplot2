@@ -124,7 +124,7 @@
 (deftest data-domain-test
   (testing "data domain in the spec, padding applied after nice (5% each end by default)"
     (is (= [0.0 100.0] (spec-domain (scatter-plot {:data [{:a 0 :b 0} {:a 100 :b 1}]}) :x)))
-    (is (= [0.05 0.05] (get-in (build (scatter-plot {:data [{:a 0 :b 0} {:a 100 :b 1}]})) [:scale-specs :x :data-padding])))
+    (is (= [0.05 0.05] (get-in (build (scatter-plot {:data [{:a 0 :b 0} {:a 100 :b 1}]})) [:scale-specs :x :padding])))
     (is (= [-5.0 105.0] (final-domain (scatter-plot {:data [{:a 0 :b 0} {:a 100 :b 1}]}) :x))))
   (testing "outermost ticks sit inside the padded domain"
     (let [fx (get-in (build (scatter-plot {:data [{:a 0 :b 0} {:a 100 :b 1}]})) [:finalized-scales :x])]
@@ -276,3 +276,20 @@
 (deftest numeric-extents-are-doubles-test
   (is (= {:kind :numeric :min 1.0 :max 3.0} (data/extent :x [1 2 3])))
   (is (= {:kind :numeric :min 1.0 :max 2.5} (data/extent :x [1 2.5]))))
+
+(deftest explicit-domain-inset-test
+  (testing "explicit domain with charts gets the charts' padding after nice: ticks inside"
+    (let [fx (get-in (build (scatter-plot {:scales {:x {:domain [0 10]}}})) [:finalized-scales :x])]
+      (is (= [-0.5 10.5] (:domain fx)))
+      (is (< (first (:domain fx)) (first (:ticks fx))))
+      (is (> (second (:domain fx)) (peek (:ticks fx))))))
+  (testing ":expand applies to explicit domains"
+    (is (= [-1.0 11.0] (:domain (get-in (build (scatter-plot {:scales {:x {:domain [0 10] :expand [0.1 0.1]}}})) [:finalized-scales :x])))))
+  (testing "explicit domain without charts (axes only) isn't padded"
+    (is (= [0.0 10.0] (mapv double (:domain (get-in (build {:scales {:x {:domain [0 10]}}}) [:finalized-scales :x]))))))
+  (testing "temporal and bands domains aren't padded"
+    (is (nil? (get-in (build (scatter-plot {:data [{:a (LocalDate/of 2020 1 1) :b 1} {:a (LocalDate/of 2020 6 1) :b 2}]}))
+                      [:scale-specs :x :padding])))
+    (is (nil? (get-in (build (scatter-plot {:data [{:a 1 :b "u"} {:a 2 :b "v"}]})) [:scale-specs :y :padding]))))
+  (testing ":padding is internal"
+    (is (= {:key :padding :scale :x} (error-data #(build (scatter-plot {:scales {:x {:padding [0 0]}}})))))))
