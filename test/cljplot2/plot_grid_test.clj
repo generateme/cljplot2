@@ -25,8 +25,8 @@
 
 (deftest generated-grid-test
   (let [g (:grid (plot/build {}))]
-    (is (= [:margin-left :y-title :y-axis :panel :margin-right] (track-ids g :columns)))
-    (is (= [:margin-top :title :panel :x-axis :x-title :margin-bottom] (track-ids g :rows))))
+    (is (= [:margin-left :y-title :y-axis :panel :x-overhang :margin-right] (track-ids g :columns)))
+    (is (= [:margin-top :title :y-overhang :panel :x-axis :x-title :margin-bottom] (track-ids g :rows))))
   (testing "the :grid stage produces the grid"
     (is (not (contains? (plot/build {} {:until :scale-specs}) :grid)))
     (is (contains? (plot/build {} {:until :grid}) :grid))))

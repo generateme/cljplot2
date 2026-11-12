@@ -6,8 +6,11 @@
 
   Phase 2, [[finalize]]: after layout, the spec with a pixel `:range` and a tick count hint becomes a finalized
   scale - plain data `{:kind :domain :range :ticks :tick-labels :attributes}`. Continuous kinds are extended to
-  nice tick values with that count (unless `:nice false`). [[->wadogo]] rebuilds the wadogo scale, [[forward]]
-  maps a value to a pixel."
+  nice tick values (unless `:nice false`) with the explicit tick count, or with the pixel-based hint when the spec
+  has no count (also when it lists its ticks). Ticks outside the final domain are dropped.
+
+  [[->wadogo]] rebuilds the wadogo scale; [[forward-fn]] returns a value -> pixel function (build it once and reuse
+  it); [[forward]] maps a single value."
   (:require [fastmath.core :as m]
             [wadogo.scale :as s]))
 
@@ -48,6 +51,16 @@
           (when (and (= kind :log) (not (every? #(pos? (double %)) domain)))
             (error "Log scale :domain must be positive."))))))
 
+(defn- validate-tick-list!
+  [k kind domain ticks]
+  (let [valid? (case kind
+                 :bands (set domain)
+                 :datetime temporal?
+                 #(and (number? %) (m/valid-double? (double %))))]
+    (when-let [bad (first (remove valid? ticks))]
+      (invalid (if (= kind :bands) "Bands :ticks must be domain values." "Scale :ticks contain an invalid value.")
+               {:key :ticks :scale k :value bad}))))
+
 (defn scale-spec
   "Validated phase-1 spec of the plot scale `k` from its attributes `spec` (a map of wadogo attributes and `:nice`).
   Throws `ex-info` naming the offending key."
@@ -59,7 +72,11 @@
     (when-not (position-kinds kind)
       (invalid "Unsupported position scale kind." {:key :kind :scale k :value kind :allowed position-kinds}))
     (validate-domain! k kind domain)
-    (when-not (or (nil? ticks) (sequential? ticks) (and (integer? ticks) (pos? (long ticks))))
+    (when (contains? spec :range)
+      (invalid "Scale :range is set from the layout, it can't be given." {:key :range :scale k}))
+    (cond
+      (sequential? ticks) (validate-tick-list! k kind domain ticks)
+      (not (or (nil? ticks) (and (integer? ticks) (pos? (long ticks)))))
       (invalid "Scale :ticks must be a positive integer or a sequence of values." {:key :ticks :scale k :value ticks}))
     (assoc spec :kind kind :nice (get spec :nice true))))
 
@@ -89,25 +106,44 @@
   [finalized]
   (s/scale (:kind finalized) (:attributes finalized)))
 
+(def ^:private ^:const range-tolerance 1.0e-6)
+
+(defn- inside-range?
+  "Does pixel `p` lie within `range` (either orientation), up to a small tolerance?"
+  [[a b] ^double p]
+  (let [a (double a) b (double b)]
+    (<= (- (m/min a b) range-tolerance) p (+ (m/max a b) range-tolerance))))
+
 (defn finalize
-  "Finalized scale of phase-1 `spec` for the pixel `range` (`[start end]`) and `tick-hint` (used unless the spec
-  has `:ticks`)."
+  "Finalized scale of phase-1 `spec` for the pixel `range` (`[start end]`) and `tick-hint` (the count used unless
+  the spec has `:ticks`)."
   [spec range tick-hint]
   (let [kind (:kind spec)
-        attributes (-> (dissoc spec :kind :nice)
-                       (assoc :range range :ticks (or (:ticks spec) tick-hint)))
-        scale (cond-> (s/scale kind attributes)
-                (and (:nice spec) (continuous-kinds kind)) s/nice)
-        attributes (assoc attributes :domain (s/domain scale))
-        ticks (vec (s/ticks scale))]
+        explicit (:ticks spec)
+        base (assoc (dissoc spec :kind :nice) :range range)
+        nice-count (if (integer? explicit) explicit tick-hint)
+        domain (s/domain (cond-> (s/scale kind (assoc base :ticks nice-count))
+                           (and (:nice spec) (continuous-kinds kind)) s/nice))
+        attributes (assoc base :domain domain :ticks (or explicit tick-hint))
+        scale (s/scale kind attributes)
+        ticks (if (continuous-kinds kind)
+                (filterv #(inside-range? range (double (scale %))) (s/ticks scale))
+                (vec (s/ticks scale)))]
     {:kind kind
-     :domain (s/domain scale)
+     :domain domain
      :range range
      :ticks ticks
      :tick-labels (tick-labels scale spec ticks)
      :attributes attributes}))
 
+(defn forward-fn
+  "Function mapping a value to its pixel position in the finalized scale (band center for `:bands`).
+  Builds the wadogo scale once; reuse the function for many values."
+  [finalized]
+  (let [scale (->wadogo finalized)]
+    (fn ^double [value] (double (scale value)))))
+
 (defn forward
-  "Pixel position of `value` in a finalized scale (band center for `:bands`)."
+  "Pixel position of a single `value` in a finalized scale; for many values use [[forward-fn]]."
   ^double [finalized value]
-  (double ((->wadogo finalized) value)))
+  ((forward-fn finalized) value))

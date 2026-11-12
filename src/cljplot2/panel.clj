@@ -30,11 +30,12 @@
             :when (and finalized (not (theme/none? line)) (not (theme/none? color)) (pos? (double width)))]
       (c2d/set-color canvas color)
       (c2d/set-stroke-custom canvas (cond-> {:size (double width) :cap :butt} (not (theme/none? dash)) (assoc :dash (vec dash))))
-      (doseq [tick (:ticks finalized)
-              :let [p (scale/forward finalized tick)]]
-        (if (= k :x)
-          (c2d/line canvas p y p (+ y h))
-          (c2d/line canvas x p (+ x w) p))))
+      (let [forward (scale/forward-fn finalized)]
+        (doseq [tick (:ticks finalized)
+                :let [p (draw/pixel-center (forward tick))]]
+          (if (= k :x)
+            (c2d/line canvas p y p (+ y h))
+            (c2d/line canvas x p (+ x w) p)))))
     (when-not (theme/none? border-color)
       ;; four filled bands inside the box: exact pixels, nothing outside the box
       (let [bw (m/min (m/round (double border-width)) (quot w 2) (quot h 2))]

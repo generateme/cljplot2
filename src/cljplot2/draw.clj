@@ -1,6 +1,15 @@
 (ns cljplot2.draw
   "Drawing grid item content - the counterpart of [[cljplot2.measure/natural-size]]."
-  (:require [cljplot2.measure :as measure]))
+  (:require [fastmath.core :as m]
+            [cljplot2.measure :as measure]))
+
+(set! *warn-on-reflection* true)
+(set! *unchecked-math* :warn-on-boxed)
+
+(defn pixel-center
+  "Center of the pixel containing coordinate `p`; thin lines drawn there cover whole pixels (no antialiasing smear)."
+  ^double [^double p]
+  (+ (m/floor p) 0.5))
 
 (defmulti draw-content
   "Draw item `content` onto `canvas` (in graphics context) inside `box` (`{:x :y :w :h}`),

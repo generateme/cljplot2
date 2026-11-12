@@ -2,6 +2,7 @@
   (:require [clojure.test :refer [deftest testing is are]]
             [clojure2d.core :as c2d]
             [wadogo.scale :as s]
+            [fastmath.core :as m]
             [cljplot2.core :as plot]
             [cljplot2.grid :as grid]
             [cljplot2.measure :as measure]
@@ -152,10 +153,12 @@
     (let [built (plot/build {} {:width 600 :height 400})]
       (is (= 0 (track-size built :columns :y-axis)))
       (is (= 0 (track-size built :rows :x-axis)))))
-  (testing "only x: only the x axis track"
-    (let [built (build {:x {:domain [0 1]}})]
+  (testing "only x: no y axis item; the y-axis column holds only the x axis start overhang"
+    (let [built (build {:x {:domain [0 1]}})
+          first-label-w (first (tick-label-size (first (get-in built [:finalized-scales :x :tick-labels]))))]
       (is (pos? (track-size built :rows :x-axis)))
-      (is (= 0 (track-size built :columns :y-axis)))))
+      (is (nil? (grid/item-box (:layout built) :y-axis)))
+      (is (= (long (m/ceil (* 0.5 first-label-w))) (track-size built :columns :y-axis)))))
   (testing "oracle: y axis width = tick length + gap + widest label"
     (let [built (build {:y {:domain [0 1e6]}})
           labels (get-in built [:finalized-scales :y :tick-labels])
@@ -216,7 +219,7 @@
       (is (not (dark? (pixel c (long (scale/forward fx 2.5)) (+ y h 3))))))
     (testing "axis lines on the panel edges"
       (is (dark? (pixel c (+ x (quot w 3)) (+ y h))))
-      (is (dark? (pixel c x (+ y (quot h 3))))))
+      (is (dark? (pixel c (dec x) (+ y (quot h 3))))))
     (testing ":none colors draw no line or ticks"
       (let [c2 (render scales (assoc plain :axis {:x {:line-color :none :tick-color :none}}))]
         (is (not (dark? (pixel c2 (+ x (quot w 3)) (+ y h)))))
@@ -257,3 +260,97 @@
   (testing "single band"
     (let [fy (finalized {:y {:domain ["only"]}} :y)]
       (is (= ["only"] (:tick-labels fy))))))
+
+;; review fixes
+
+(deftest explicit-ticks-validation-test
+  (are [spec v] (= {:key :ticks :scale :x :value v} (error-data #(scale/scale-spec :x spec)))
+    {:domain ["a" "b"] :ticks ["a" "z"]} "z"
+    {:domain ["a" "b"] :ticks [0]} 0
+    {:domain [0 10] :ticks [0 "5"]} "5"
+    {:domain [(LocalDate/of 2020 1 1) (LocalDate/of 2021 1 1)] :ticks [5]} 5)
+  (testing "NaN tick"
+    (let [data (error-data #(scale/scale-spec :x {:domain [0 10] :ticks [0 ##NaN]}))]
+      (is (= :ticks (:key data)))
+      (is (m/nan? (:value data)))))
+  (testing "bands with valid explicit ticks render"
+    (is (some? (plot/render {:scales {:y {:domain ["a" "b" "c"] :ticks ["a" "c"]}}} {:width 300 :height 200})))
+    (is (= ["a" "c"] (:tick-labels (finalized {:y {:domain ["a" "b" "c"] :ticks ["a" "c"]}} :y))))))
+
+(deftest out-of-domain-ticks-test
+  (let [fx (finalized {:x {:domain [0 10] :ticks [-5 0 5 10 20] :nice false}} :x)]
+    (is (= [0 5 10] (:ticks fx)))
+    (is (= ["0" "5" "10"] (:tick-labels fx))))
+  (testing "no grid line outside the panel"
+    (let [scales {:x {:domain [0 10] :ticks [0 20] :nice false}}
+          th {:plot {:background :white} :panel {:grid {:x {:color :red :width 1 :dash :none}}}}
+          built (plot/build {:scales scales :theme th} {:width 600 :height 400})
+          {:keys [x y w h]} (grid/item-box (:layout built) :panel)
+          c (plot/render {:scales scales :theme th} {:width 600 :height 400})
+          red-cols (filter #(let [[r g b] (pixel c % (+ y (quot h 2)))] (> r (+ g 60))) (range 600))]
+      (is (every? #(<= x % (+ x w)) red-cols)))))
+
+(deftest forward-fn-test
+  (let [fx (finalized {:x {:domain [0 10]}} :x)
+        f (scale/forward-fn fx)]
+    (is (every? #(== (f %) (scale/forward fx %)) [0 2.5 10]))
+    (is (= (f 5) (f 5)) "reusable")))
+
+(deftest nice-with-explicit-list-test
+  (let [fx (finalized {:x {:domain [0.13 7.31] :ticks [1 2 3]}} :x)]
+    (is (not= [0.13 7.31] (:domain fx)) "nice applied with a tick list")
+    (is (<= (first (:domain fx)) 0.13))
+    (is (>= (second (:domain fx)) 7.31))
+    (is (= [1 2 3] (:ticks fx)) "the explicit ticks are kept"))
+  (testing "explicit count drives nice"
+    (is (= [0.0 8.0] (:domain (finalized {:x {:domain [0.13 7.31] :ticks 3}} :x)))))
+  (testing ":nice false keeps the domain with a tick list"
+    (is (= [0.13 7.31] (:domain (finalized {:x {:domain [0.13 7.31] :ticks [1 2 3] :nice false}} :x))))))
+
+(deftest range-rejected-test
+  (is (= {:key :range :scale :x} (error-data #(scale/scale-spec :x {:domain [0 1] :range [0 100]})))))
+
+(deftest crisp-lines-test
+  (let [scales {:x {:domain [0 10]} :y {:domain [0 10]}}
+        built (plot/build {:scales scales :theme plain} {:width 600 :height 400})
+        {:keys [x y w h]} (grid/item-box (:layout built) :panel)
+        c (render scales plain)]
+    (testing "axis lines are full-intensity single pixel rows/columns"
+      (is (= [0 0 0] (pixel c (+ x (quot w 3)) (+ y h))))
+      (is (= [255 255 255] (pixel c (+ x (quot w 3)) (+ y h 1)) (pixel c (+ x (quot w 3)) (dec (+ y h)))))
+      (is (= [0 0 0] (pixel c (dec x) (+ y (quot h 3)))))
+      (is (= [255 255 255] (pixel c x (+ y (quot h 3))))))))
+
+(deftest nested-panel-test
+  (let [nested {:columns [{:size [:flexible]}] :rows [{:size [:flexible]}]
+                :items [{:id :outer :column 0 :row 0
+                         :content {:kind :grid :columns [{:size [:fixed 20]} {:size [:flexible]}] :rows [{:size [:flexible]}]
+                                   :items [{:id :panel :column 1 :row 0 :content {:kind :panel}}]}}]}
+        built (plot/build {:scales {:x {:domain [0 1]}} :custom-grid nested} {:width 300 :height 200})]
+    (is (= [20.0 300.0] (get-in built [:finalized-scales :x :range])) "custom grid: no margins, 20 px column before the panel")))
+
+(deftest overhang-test
+  (testing "end tick labels stay inside the canvas with zero margin"
+    (let [scales {:x {:domain [0 1e6]} :y {:domain [0 1e6]}}
+          th (assoc plain :plot {:background :white :margin 0})
+          c (plot/render {:scales scales :theme th} {:width 600 :height 400})
+          img ^BufferedImage (c2d/get-image c)
+          ink-at? (fn [px py] (dark? (pixel c px py)))]
+      (testing "something is drawn near every canvas edge is impossible to cut: last column/row stay free"
+        (is (not-any? #(ink-at? 599 %) (range 400)))
+        (is (not-any? #(ink-at? % 0) (range 600))))))
+  (testing "overhang tracks sized from end labels"
+    (let [built (build {:x {:domain [0 1e6]} :y {:domain [0 1e6]}})
+          fx (get-in built [:finalized-scales :x])
+          fy (get-in built [:finalized-scales :y])]
+      (is (= (long (m/ceil (* 0.5 (first (tick-label-size (peek (:tick-labels fx)))))))
+             (track-size built :columns :x-overhang)))
+      (is (= (long (m/ceil (* 0.5 (second (tick-label-size (peek (:tick-labels fy)))))))
+             (track-size built :rows :y-overhang)))))
+  (testing "no scales: overhang tracks empty"
+    (let [built (plot/build {} {:width 600 :height 400})]
+      (is (= 0 (track-size built :columns :x-overhang)))
+      (is (= 0 (track-size built :rows :y-overhang)))))
+  (testing "no overhang when the end tick is far from the range end"
+    (let [built (build {:x {:domain [0 10] :ticks [5] :nice false}})]
+      (is (= 0 (track-size built :columns :x-overhang))))))

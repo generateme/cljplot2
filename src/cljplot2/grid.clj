@@ -276,3 +276,12 @@
   "Box of the top-level item with `id` in `layout`, or `nil`."
   [layout id]
   (some (fn [item] (when (= id (:id item)) (:box item))) (:items layout)))
+
+(defn find-item-box
+  "Box of the first item with `id` in `layout` or its nested layouts (depth-first, in item order), or `nil`."
+  [layout id]
+  (some (fn [item]
+          (if (= id (:id item))
+            (:box item)
+            (some-> (:layout item) (find-item-box id))))
+        (:items layout)))

@@ -65,11 +65,12 @@
   "Scales of `:scale-specs` finalized for the `:panel` box of `layout`: x range `[left right]`, y range
   `[bottom top]`, tick hint from the axis length and theme `[:axis k :tick-spacing]`.
   Before the first layout round (`layout` is `nil`) a provisional finalization is used: range `[0 1]`, 10 ticks.
+  The `:panel` item may sit in a nested grid (first found depth-first).
   Throws `ex-info` with `{:key :scales}` when the layout has no `:panel` item."
   [plot layout]
   (let [specs (:scale-specs plot)
         panel (when (and layout (seq specs))
-                (or (grid/item-box layout :panel)
+                (or (grid/find-item-box layout :panel)
                     (throw (ex-info "Plot :scales need a :panel item in the grid." {:key :scales}))))]
     (into {} (map (fn [[k spec]]
                     [k (if-not panel
