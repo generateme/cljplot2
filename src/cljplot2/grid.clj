@@ -17,7 +17,8 @@
   Span: a track reference (integer index or track id) or `{:from ref :to ref}` (inclusive).
 
   Content with `:kind :grid` is a nested grid (same shape), laid out inside the item's box.
-  Other content reports its natural size via [[cljplot2.measure/natural-size]].
+  Other content is checked by [[cljplot2.measure/validate-content]] in [[prepare]] and reports its natural size
+  via [[cljplot2.measure/natural-size]].
 
   Without flexible tracks along an axis the unused space stays after the last track.
 
@@ -113,7 +114,9 @@
     (when-not (vector? items) (invalid "Grid :items must be a vector." {:key :items}))
     (doseq [item items]
       (when-not (and (map? item) (contains? item :id))
-        (invalid "Item must be a map with :id." {:key :items})))
+        (invalid "Item must be a map with :id." {:key :items}))
+      (when-not (grid? (:content item))
+        (measure/validate-content (:content item))))
     (let [ids (map :id items)]
       (when-not (apply distinct? ::sentinel ids)
         (invalid "Item ids must be unique." {:key :items :duplicates (duplicates ids)})))

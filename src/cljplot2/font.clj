@@ -21,24 +21,40 @@
                       :italic "fonts/LiberationMono-Italic.ttf"
                       :bold-italic "fonts/LiberationMono-BoldItalic.ttf"}})
 
-(def ^:private loaded-fonts
-  "Classpath resource -> loaded `Font` (size 1); every file is loaded at most once per JVM."
-  (atom {}))
+(defn- bundled-font-delays
+  "Classpath resource -> delay of its loaded `Font` (size 1)."
+  []
+  (into {} (for [styles (vals bundled-fonts)
+                 resource (vals styles)]
+             [resource (delay (c2d/load-font (or (io/resource resource)
+                                                 (throw (ex-info "Bundled font file not found."
+                                                                 {:key :font :resource resource})))))])))
 
-(defn- load-bundled
-  ^Font [resource]
-  (or (@loaded-fonts resource)
-      (let [url (or (io/resource resource)
-                    (throw (ex-info "Bundled font file not found." {:key :font :resource resource})))
-            font (c2d/load-font url)]
-        (swap! loaded-fonts assoc resource font)
-        font)))
+(def ^:private bundled-font-files
+  "Delays of the bundled font files; every file is loaded at most once per JVM, also under concurrent first use."
+  (bundled-font-delays))
+
+(def ^:private logical-fonts #{"dialog" "dialoginput" "serif" "sansserif" "monospaced"})
+
+(def ^:private installed-families
+  "Lower-cased installed font family names; `nil` when the platform can't list them."
+  (delay (try (set (map #(.toLowerCase ^String %)
+                        (.getAvailableFontFamilyNames (java.awt.GraphicsEnvironment/getLocalGraphicsEnvironment))))
+              (catch Exception _ nil))))
+
+(defn- known-family?
+  [^String family]
+  (let [family (.toLowerCase family)]
+    (or (logical-fonts family)
+        (nil? @installed-families)
+        (contains? @installed-families family))))
 
 (defn resolve-font
   "`java.awt.Font` of `size` points for `font` and `font-style` (a key of [[font-styles]]).
 
-  `font` is a bundled family name (see [[bundled-fonts]]), another font name (`java.awt.Font/decode`,
-  falls back to a logical font when unknown) or a `java.awt.Font` (only its size and style are changed)."
+  `font` is a bundled family name (see [[bundled-fonts]]), an installed or logical (`\"SansSerif\"`, ...) font
+  family name (case-insensitive; an unknown name throws `ex-info` with `{:key :font}` unless the platform
+  can't list its fonts) or a `java.awt.Font` (its size and style are replaced by `size` and `font-style`)."
   ^Font [font font-style size]
   (let [style (font-styles font-style)]
     (when-not style
@@ -48,6 +64,7 @@
     (let [size (float size)]
       (cond
         (instance? Font font) (.deriveFont ^Font font (int style) size)
-        (contains? bundled-fonts font) (.deriveFont (load-bundled (get-in bundled-fonts [font font-style])) size)
-        (string? font) (.deriveFont (Font/decode ^String font) (int style) size)
+        (contains? bundled-fonts font) (.deriveFont ^Font @(bundled-font-files (get-in bundled-fonts [font font-style])) size)
+        (and (string? font) (known-family? font)) (.deriveFont (Font. ^String font (int style) (int 1)) size)
+        (string? font) (throw (ex-info "Unknown font family." {:key :font :value font}))
         :else (throw (ex-info "Font must be a font name or java.awt.Font." {:key :font :value font}))))))

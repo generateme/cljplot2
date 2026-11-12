@@ -22,16 +22,18 @@
           :legend-label {:font "Liberation Mono" :size 10 :font-style :plain :color :black :padding 2}}})
 
 (defn deep-merge
-  "Merge maps recursively; a non-map value replaces the value it's merged over."
+  "Merge maps recursively; a non-map value replaces the value it's merged over, `nil` is ignored
+  (it can't remove a default)."
   [a b]
-  (if (and (map? a) (map? b))
-    (merge-with deep-merge a b)
-    b))
+  (cond
+    (nil? b) a
+    (and (map? a) (map? b)) (merge-with deep-merge a b)
+    :else b))
 
 (defn plot-theme
-  "Plot theme: `theme` deep-merged over [[default-theme]]; `nil` means the default theme."
+  "Plot theme: `theme` deep-merged over [[default-theme]] (`nil` means the default theme)."
   [theme]
-  (if (nil? theme) default-theme (deep-merge default-theme theme)))
+  (deep-merge default-theme theme))
 
 (defn text-style
   "Text style of `content`: the style of its `:role` in `theme` with inline style keys of `content` merged over.

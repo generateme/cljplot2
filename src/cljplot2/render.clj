@@ -40,7 +40,7 @@
           :let [content (:content item)]]
     (if (grid/grid? content)
       (draw-contents! canvas content (:layout item-layout) env)
-      (draw/draw-content content canvas box env))))
+      (canvas/call-with-isolated-graphics canvas #(draw/draw-content content % box env)))))
 
 (defn render
   "Build `plot` (see [[cljplot2.pipeline/build]], `:until` is ignored) and draw it.

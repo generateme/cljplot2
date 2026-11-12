@@ -30,6 +30,14 @@
   [content]
   (if (nil? content) ::empty (:kind content)))
 
+(defmulti validate-content
+  "Check item `content` once, before layout; throw `ex-info` naming the offending key.
+  Dispatched on [[content-kind]]; kinds without a method aren't checked here.
+  [[natural-size]] and [[cljplot2.draw/draw-content]] may assume validated content."
+  content-kind)
+
+(defmethod validate-content :default [_] nil)
+
 (defmulti natural-size
   "Natural size of item `content` as `Vec2` `[width height]`, dispatched on [[content-kind]].
 

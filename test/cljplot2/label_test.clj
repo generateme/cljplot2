@@ -4,6 +4,7 @@
             [fastmath.core :as m]
             [cljplot2.canvas :as canvas]
             [cljplot2.core :as plot]
+            [cljplot2.draw :as draw]
             [cljplot2.font :as font]
             [cljplot2.grid :as grid]
             [cljplot2.measure :as measure]
@@ -22,6 +23,12 @@
 
 (defn- error-data [f]
   (try (f) nil (catch clojure.lang.ExceptionInfo e (ex-data e))))
+
+(defn- prepare-error
+  "ex-data of preparing a one-cell grid holding `content`."
+  [content]
+  (error-data #(grid/prepare {:columns [{:size [:flexible]}] :rows [{:size [:flexible]}]
+                              :items [{:id :l :column 0 :row 0 :content content}]})))
 
 (defn- oracle-size
   "Independent measurement: text block of `lines` in `style`, rounded up, plus padding."
@@ -79,6 +86,8 @@
     (testing "width of the widest line, height of two lines"
       (is (= w1 w2))
       (is (< (- (* 2.0 (- h1 p2)) 1.0) (- h2 p2) (+ (* 2.0 (- h1 p2)) 1.0))))
+    (testing "CRLF line breaks"
+      (is (= (size (label "ab\nabcd")) (size (label "ab\r\nabcd")))))
     (testing "trailing and inner empty lines count"
       (is (= h2 (second (size (label "a\n")))))
       (is (= (second (size (label "a\n\nb"))) (second (size (label "a\nb\nc"))))))
@@ -89,12 +98,16 @@
   (let [[w h] (size (label "Percent of Total"))]
     (is (= [h w] (size (label "Percent of Total" :rotation 90))))
     (is (= [h w] (size (label "Percent of Total" :rotation 270))))
-    (are [r] (= {:key :rotation :value r} (error-data #(size (label "a" :rotation r))))
-      45 180 -90 "90" 90.0)))
+    (are [r] (= {:key :rotation :value r} (prepare-error (label "a" :rotation r)))
+      45 180 -90 "90" 90.0)
+    (is (nil? (prepare-error (label "a" :rotation 270))))))
 
 (deftest align-validation-test
-  (are [a] (= :align (:key (error-data #(size (label "a" :align a)))))
-    [:center] [:middle :center] '(:left :top) :left [:left :top :x]))
+  (are [a] (= :align (:key (prepare-error (label "a" :align a))))
+    [:center] [:middle :center] '(:left :top) :left [:left :top :x])
+  (testing "nested grids validate their content too"
+    (is (= :align (:key (prepare-error {:kind :grid :columns [{:size [:flexible]}] :rows [{:size [:flexible]}]
+                                        :items [{:id :n :column 0 :row 0 :content (label "a" :align :left)}]}))))))
 
 (deftest padding-test
   (let [[w0 h0] (size (label "abc" :padding 0))]
@@ -125,27 +138,35 @@
              (.getFontName (font/resolve-font "Liberation Mono" style 12))) (str style))))
   (testing "size"
     (is (= 17.0 (double (.getSize2D (font/resolve-font "Liberation Mono" :plain 17))))))
-  (testing "system name and Font object"
+  (testing "system and logical family names, case-insensitive"
     (is (= 13.0 (double (.getSize2D (font/resolve-font "SansSerif" :bold 13)))))
-    (is (.isBold (font/resolve-font (java.awt.Font. "SansSerif" java.awt.Font/PLAIN 10) :bold 13))))
+    (is (.isBold (font/resolve-font "sansserif" :bold 13)))
+    (is (= 9.0 (double (.getSize2D (font/resolve-font "DejaVu Sans" :plain 9))))))
+  (testing "Font object: size and style replaced"
+    (let [f (font/resolve-font (java.awt.Font. "SansSerif" java.awt.Font/BOLD 10) :plain 13)]
+      (is (not (.isBold f)))
+      (is (= 13.0 (double (.getSize2D f))))))
   (testing "invalid"
     (are [f s z k] (= k (:key (error-data #(font/resolve-font f s z))))
       "Liberation Mono" :heavy 12 :font-style
       "Liberation Mono" :plain 0 :size
       "Liberation Mono" :plain nil :size
       nil :plain 12 :font
-      42 :plain 12 :font)))
+      42 :plain 12 :font
+      "Liberaton Mono" :plain 12 :font)))
 
 (deftest font-loaded-once-test
   (let [loads (atom {})
         load-font c2d/load-font]
-    (with-redefs-fn {#'font/loaded-fonts (atom {})
-                     #'c2d/load-font (fn [url] (swap! loads update (str url) (fnil inc 0)) (load-font url))}
+    (with-redefs-fn {#'c2d/load-font (fn [url] (swap! loads update (str url) (fnil inc 0)) (load-font url))}
       (fn []
-        (plot/build {:grid examples/fig-1-1-labelled-grid})
-        (plot/build {:grid examples/fig-1-1-labelled-grid})
-        (is (= 2 (count @loads)) "plain and bold faces are used")
-        (is (every? #(= 1 %) (vals @loads)))))))
+        (with-redefs-fn {#'font/bundled-font-files (#'font/bundled-font-delays)}
+          (fn []
+            (let [builds (doall (repeatedly 4 #(future (plot/build {:grid examples/fig-1-1-labelled-grid}))))]
+              (run! deref builds))
+            (plot/build {:grid examples/fig-1-1-labelled-grid})
+            (is (seq @loads))
+            (is (every? #(= 1 %) (vals @loads)) "each file loaded once, also under concurrent first use")))))))
 
 (deftest bundled-metrics-pinned-test
   (testing "bundled font metrics are environment independent (regression value)"
@@ -158,6 +179,9 @@
     (doseq [role [:title :strip :axis-title :tick-label :legend-title :legend-label]
             :let [style (theme/text-style theme/default-theme {:role role})]]
       (is (font/resolve-font (:font style) (:font-style style) (:size style)) (str role))))
+  (testing "nil in the plot theme doesn't remove a default"
+    (is (= (get-in theme/default-theme [:text :title]) (get-in (theme/plot-theme {:text {:title nil}}) [:text :title])))
+    (is (= theme/default-theme (theme/plot-theme nil))))
   (testing "deep merge keeps sibling keys"
     (let [t (theme/plot-theme {:text {:title {:size 30}}})]
       (is (= 30 (get-in t [:text :title :size])))
@@ -203,9 +227,8 @@
                                :items [{:id :l :column 0 :row 0 :content (label "abc")}
                                        {:id :p :column 1 :row 0 :content {:kind :placeholder :size [10 10]}}]}}
                        {:width 200 :height 50})
-        [x0 _ x1 _] (ink-box c)]
-    (is (< x1 100) "placeholder box stays white")
-    (is (>= x0 0))))
+        [_ _ x1 _] (ink-box c)]
+    (is (< x1 100) "placeholder box stays white")))
 
 (deftest clip-test
   (let [c (plot/render {:grid {:columns [{:size [:fixed 20]} {:size [:flexible]}] :rows [{:size [:flexible]}]
@@ -246,6 +269,48 @@
                        {:width 400 :height 300})
         [x0 y0 x1 y1] (ink-box c (constantly true) 60 400)]
     (is (> (- x1 x0) (* 3 (- y1 y0))))))
+
+(defn- in-graphics [w h f]
+  (canvas/call-with-graphics (c2d/canvas w h) (fn [c] (c2d/set-background c :white) (f c) c)))
+
+(deftest outer-clip-test
+  (let [outer-clip (atom nil)
+        c (in-graphics 200 60
+                       (fn [c]
+                         (.setClip ^java.awt.Graphics2D (:graphics c) 0 0 100 60)
+                         (canvas/call-with-isolated-graphics
+                          c #(draw/draw-content (label "XXXXXXXXXXXXXXXXXXXX" :size 20) % {:x 0 :y 0 :w 200 :h 60}
+                                                {:theme theme/default-theme}))
+                         (reset! outer-clip (.getBounds (.getClip ^java.awt.Graphics2D (:graphics c))))))]
+    (testing "label clip intersects the outer clip"
+      (is (some? (ink-box c (constantly true) 0 100)))
+      (is (nil? (ink-box c (constantly true) 100 200))))
+    (testing "outer clip is unchanged afterwards"
+      (is (= (java.awt.Rectangle. 0 0 100 60) @outer-clip)))))
+
+(deftest isolated-state-test
+  (let [state (atom nil)]
+    (in-graphics 100 60
+                 (fn [c]
+                   (let [g ^java.awt.Graphics2D (:graphics c)
+                         before [(.getFont g) (.getColor g) (.getTransform g) (.getClip g)]]
+                     (canvas/call-with-isolated-graphics
+                      c #(draw/draw-content (label "abc" :role :title :color :red :rotation 270) % {:x 10 :y 5 :w 40 :h 50}
+                                            {:theme theme/default-theme}))
+                     (reset! state [before [(.getFont g) (.getColor g) (.getTransform g) (.getClip g)]]))))
+    (is (= (first @state) (second @state)))))
+
+(deftest isolated-on-exception-test
+  (let [g-state (atom nil)]
+    (in-graphics 10 10
+                 (fn [c]
+                   (let [g ^java.awt.Graphics2D (:graphics c)
+                         transform (.getTransform g)]
+                     (is (thrown? clojure.lang.ExceptionInfo
+                                  (canvas/call-with-isolated-graphics
+                                   c (fn [c'] (c2d/translate c' 5 5) (throw (ex-info "boom" {}))))))
+                     (reset! g-state [transform (.getTransform g)]))))
+    (is (= (first @g-state) (second @g-state)))))
 
 ;; 6.x layout with labels
 

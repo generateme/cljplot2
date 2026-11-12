@@ -8,9 +8,13 @@
     relative to the unrotated text (default `[:center :middle]`); `h` also aligns lines
   * style keys overriding the role's theme style, see [[cljplot2.theme/style-keys]]
 
-  `:text` is converted with `str` and split into lines on `\\n`; `nil` or `\"\"` is empty (zero size).
+  `:text` is converted with `str` and split into lines; `nil` or `\"\"` is empty (zero size).
   Natural size is the text block rounded up plus padding on every side; rotation `90`/`270` swaps width and height.
-  Drawing clips the text to the item box."
+  Drawing clips the text to the item box (intersected with any outer clip).
+  `:rotation` and `:align` are validated by [[cljplot2.measure/validate-content]] (called from `grid/prepare`);
+  style keys when the style is resolved.
+
+  `:text` line breaks: `\\n` or `\\r\\n`."
   (:require [clojure.string :as str]
             [clojure2d.core :as c2d]
             [fastmath.core :as m]
@@ -19,7 +23,7 @@
             [cljplot2.font :as font]
             [cljplot2.measure :as measure]
             [cljplot2.theme :as theme])
-  (:import [fastmath.vector Vec2]))
+  (:import [java.awt Graphics2D Rectangle]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -32,20 +36,27 @@
   "Lines of the label text; empty text has no lines, empty inner or trailing lines are kept."
   [text]
   (let [s (str text)]
-    (if (= "" s) [] (str/split s #"\n" -1))))
+    (if (= "" s) [] (str/split s #"\r?\n" -1))))
 
-(defn- label-spec
-  "Validated drawing parameters of label `content` in `theme`."
-  [theme content]
+(def ^:private default-align [:center :middle])
+
+(defmethod measure/validate-content :label
+  [content]
   (let [rotation (get content :rotation 0)
-        align (get content :align [:center :middle])
-        style (theme/text-style theme content)
-        padding (:padding style)]
+        align (get content :align default-align)]
     (when-not (rotations rotation)
       (throw (ex-info "Label rotation must be 0, 90 or 270." {:key :rotation :value rotation})))
     (when-not (and (vector? align) (= 2 (count align)) (h-aligns (align 0)) (v-aligns (align 1)))
       (throw (ex-info "Label :align must be [h v], h in #{:left :center :right}, v in #{:top :middle :bottom}."
-                      {:key :align :value align})))
+                      {:key :align :value align})))))
+
+(defn- label-spec
+  "Drawing parameters of validated label `content` in `theme`; validates the resolved style."
+  [theme content]
+  (let [rotation (get content :rotation 0)
+        align (get content :align default-align)
+        style (theme/text-style theme content)
+        padding (:padding style)]
     (when-not (and (number? padding) (>= (double padding) 0.0))
       (throw (ex-info "Text padding must be a non-negative number." {:key :padding :value padding})))
     {:lines (lines (:text content))
@@ -104,18 +115,14 @@
             [frame-w frame-h] (if (zero? rotation) [(double w) (double h)] [(double h) (double w)])
             block-x (+ padding (align-offset (:h-align spec) (- ^double frame-w (* 2.0 padding)) block-width))
             block-y (+ padding (align-offset (:v-align spec) (- ^double frame-h (* 2.0 padding)) block-height))]
-        (c2d/clip canvas x y w h)
-        (c2d/push-matrix canvas)
-        (try
-          (c2d/translate canvas (+ x (* 0.5 w)) (+ y (* 0.5 h)))
-          (c2d/rotate canvas (m/radians rotation))
-          (c2d/translate canvas (* -0.5 ^double frame-w) (* -0.5 ^double frame-h))
-          (c2d/set-color canvas (:color spec))
-          (dorun (map-indexed (fn [^long idx ^double line-width]
-                                (c2d/text canvas (nth (:lines spec) idx)
-                                          (+ block-x (align-offset (:h-align spec) block-width line-width))
-                                          (+ block-y (* idx line-height) ascent)))
-                              widths))
-          (finally
-            (c2d/pop-matrix canvas)
-            (c2d/reset-clip canvas)))))))
+        ;; graphics state is not restored here: callers isolate draw-content calls
+        (.clip ^Graphics2D (:graphics canvas) (Rectangle. x y w h))
+        (c2d/translate canvas (+ x (* 0.5 w)) (+ y (* 0.5 h)))
+        (c2d/rotate canvas (m/radians rotation))
+        (c2d/translate canvas (* -0.5 ^double frame-w) (* -0.5 ^double frame-h))
+        (c2d/set-color canvas (:color spec))
+        (dorun (map-indexed (fn [^long idx ^double line-width]
+                              (c2d/text canvas (nth (:lines spec) idx)
+                                        (+ block-x (align-offset (:h-align spec) block-width line-width))
+                                        (+ block-y (* idx line-height) ascent)))
+                            widths))))))
