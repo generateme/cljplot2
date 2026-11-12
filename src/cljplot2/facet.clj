@@ -46,13 +46,6 @@
   [v]
   (or (not (number? v)) (data/valid-value? v)))
 
-(defn- sorted-levels
-  [k values]
-  (try (vec (sort (distinct values)))
-       (catch ClassCastException _
-         (invalid "Facet values must be mutually comparable to be sorted (or give an explicit :domain)."
-                  {:key :facet :scale k}))))
-
 (defn levels
   "Panel-ordered levels of facet dimension `k` from the facet values `values` (`nil` allowed) and the facet scale
   `spec` (`:domain`), with NA handling per `na-panel?`."
@@ -62,7 +55,7 @@
                (do (when-not (and (sequential? explicit) (seq explicit) (apply distinct? explicit))
                      (invalid "Facet :domain must be a non-empty sequence of distinct values." {:key :domain :scale k}))
                    (vec explicit))
-               (sorted-levels k (filter #(and (some? %) (valid-facet-value? %)) values)))]
+               (data/sorted-levels k (filter #(and (some? %) (valid-facet-value? %)) values) :facet))]
     (if (and na-panel? (some nil? values)) (conj base na-level) base)))
 
 (def ^:private facet-spec-keys #{:domain :formatter})

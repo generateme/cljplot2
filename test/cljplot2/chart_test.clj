@@ -102,7 +102,7 @@
         fns (atom 0)]
     (walk/postwalk #(do (when (fn? %) (swap! fns inc)) %) stats)
     (is (zero? @fns))
-    (is (= [:data :dropped :extents :padding] (sort (keys (first stats)))))))
+    (is (= [:data :dropped :extents :na :padding] (sort (keys (first stats)))))))
 
 (deftest extents-test
   (let [built (build {:mapping {:x :a :y :b}

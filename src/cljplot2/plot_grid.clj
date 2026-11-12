@@ -19,8 +19,13 @@
   start ends in the corner cell (`:y-axis` column, `:x-axis` row).
   Item order: `:panel`, axes and their overhangs (x, then y), `:title`, `:x-title`, `:y-title` (absent ones skipped).
 
-  Faceted plots use [[facet-grid]]."
-  (:require [cljplot2.facet :as facet]))
+  Faceted plots use [[facet-grid]].
+
+  Legends ([[cljplot2.legend/legends]]) add columns `:legend-gap` (fixed, theme `[:legend :gap]`) and `:legend`
+  (measured) before `:x-overhang`, and an item `:legends` spanning the panel rows (from the top strip): a nested
+  grid of legends `[:legend i]` stacked top-down with gaps `[:legend-gap i]`."
+  (:require [cljplot2.facet :as facet]
+            [cljplot2.legend :as legend]))
 
 (def ^:private plot-labels
   "Plot label key -> grid item id, content defaults and placement, in item order."
@@ -53,19 +58,46 @@
        {:id :y-axis-start :column :y-axis :row :x-axis :content {:kind :axis-overhang :scale :y :end :start}}
        {:id :y-axis-end :column :y-axis :row :y-overhang :content {:kind :axis-overhang :scale :y :end :end}}]})
 
+(defn- legend-tracks
+  "Columns added for `legends` (none when empty)."
+  [legends theme]
+  (if (seq legends)
+    [{:id :legend-gap :size [:fixed (get-in theme [:legend :gap])]} {:id :legend :size [:measured]}]
+    []))
+
+(defn- legend-items
+  "The `:legends` item over rows `row-span`: a nested grid stacking `legends` top-down (none when empty)."
+  [legends theme row-span]
+  (if (seq legends)
+    (let [gap (get-in theme [:legend :gap])
+          n (count legends)]
+      [{:id :legends :column :legend :row row-span
+        :content {:kind :grid
+                  :columns [{:size [:measured]}]
+                  :rows (-> (vec (butlast (mapcat (fn [i] [{:id [:legend i] :size [:measured]}
+                                                           {:id [:legend-gap i] :size [:fixed gap]}])
+                                                  (range n))))
+                            (conj {:id :rest :size [:flexible]}))
+                  :items (vec (map-indexed (fn [i content] {:id [:legend i] :column 0 :row [:legend i] :content content})
+                                           legends))}}])
+    []))
+
 (defn single-panel-grid
   "Grid of a single-panel plot: its `:labels`, axes of its `:scale-specs` and the margin of its (merged) `:theme`."
-  [{:keys [labels theme scale-specs]}]
+  [{:keys [labels theme scale-specs] :as plot}]
   (let [margin (get-in theme [:plot :margin])
         margin-track (fn [id] {:id id :size [:fixed margin]})
-        measured (fn [id] {:id id :size [:measured]})]
-    {:columns [(margin-track :margin-left) (measured :y-title) (measured :y-axis)
-               {:id :panel :size [:flexible]} (measured :x-overhang) (margin-track :margin-right)]
+        measured (fn [id] {:id id :size [:measured]})
+        legends (legend/legends plot)]
+    {:columns (-> [(margin-track :margin-left) (measured :y-title) (measured :y-axis) {:id :panel :size [:flexible]}]
+                  (into (legend-tracks legends theme))
+                  (into [(measured :x-overhang) (margin-track :margin-right)]))
      :rows [(margin-track :margin-top) (measured :title) (measured :y-overhang) {:id :panel :size [:flexible]}
             (measured :x-axis) (measured :x-title) (margin-track :margin-bottom)]
      :items (-> [{:id :panel :column :panel :row :panel :content {:kind :panel}}]
                 (into (mapcat #(when (contains? scale-specs %) (axis-items %))) [:x :y])
-                (into (label-items labels {})))}))
+                (into (label-items labels {}))
+                (into (legend-items legends theme :panel)))}))
 
 ;; facets
 
@@ -98,9 +130,10 @@
   "Grid of a faceted plot (see [[cljplot2.facet]]): panels `[:panel r c]` in a `rows` x `cols` layout with gaps
   (theme `[:facet :gap]`), strips (wrap: above each panel; grid: column strips above the top row, row strips on
   the right), an x axis under every panel column and a y axis beside every panel row, overhangs at the outer ends.
-  Panels with odd `r + c` are shaded (`:alternate`)."
-  [{:keys [labels theme scale-specs scales facets split]}]
-  (let [margin (get-in theme [:plot :margin])
+  Panels with odd `r + c` are shaded (`:alternate`). Legends as in the single-panel grid."
+  [{:keys [labels theme scale-specs scales facets split] :as plot}]
+  (let [legends (legend/legends plot)
+        margin (get-in theme [:plot :margin])
         gap (get-in theme [:facet :gap])
         margin-track (fn [id] {:id id :size [:fixed margin]})
         measured (fn [id] {:id id :size [:measured]})
@@ -114,6 +147,7 @@
     {:columns (-> [(margin-track :margin-left) (measured :y-title) (measured :y-axis)]
                   (into (interleave-gaps cols :panel :gap gap))
                   (cond-> row-labels (conj (measured :row-strip)))
+                  (into (legend-tracks legends theme))
                   (into [(measured :x-overhang) (margin-track :margin-right)]))
      :rows (-> [(margin-track :margin-top) (measured :title) (measured :y-overhang)]
                (cond-> col-labels (conj (measured :col-strip)))
@@ -144,7 +178,9 @@
                                                                     :content {:kind :strip :text text :rotation 90}})
                                                       row-labels)))
                 (into (label-items labels {:x {:column {:from [:panel 0] :to last-col}}
-                                           :y {:row {:from [:panel 0] :to last-row}}})))}))
+                                           :y {:row {:from [:panel 0] :to last-row}}}))
+                (into (legend-items legends theme {:from (cond col-labels :col-strip wrap? [:strip 0] :else [:panel 0])
+                                                   :to last-row})))}))
 
 (defn plot-grid
   "The generated grid: [[facet-grid]] when the plot is faceted (`[:split :facets :dims]` non-empty), else

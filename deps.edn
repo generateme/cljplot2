@@ -23,4 +23,7 @@
                    :main-opts ["-m" "cljplot2.demo.step5"]}
            :demo6 {:extra-paths ["dev" "dev/resources"]
                    :extra-deps {org.clojure/data.json {:mvn/version "2.5.1"}}
-                   :main-opts ["-m" "cljplot2.demo.step6"]}}}
+                   :main-opts ["-m" "cljplot2.demo.step6"]}
+           :demo7 {:extra-paths ["dev" "dev/resources"]
+                   :extra-deps {org.clojure/data.json {:mvn/version "2.5.1"}}
+                   :main-opts ["-m" "cljplot2.demo.step7"]}}}

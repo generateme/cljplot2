@@ -4,7 +4,7 @@
   inside the box; `:none` colors draw nothing, `:border-width` is rounded to whole pixels.
   `{:kind :panel :alternate true}` also draws theme `[:panel :alternate-fill]` over the fill (facet shading).
   Finalized scales in `env` `:scales` are panel-local (range `[0 w]` / `[h 0]`): grid lines (theme
-  `[:panel :grid]`) and charts (`env` `:charts`, `:stats`) are drawn translated to the panel's top-left corner,
+  `[:panel :grid]`, `:bands` for bands scales) and charts (`env` `:charts`, `:stats`) are drawn translated to the panel's top-left corner,
   between the fill and the border; each chart with isolated graphics clipped to the panel. `{:kind :panel
   :panel k}` draws the charts' data of split group `k` (default `:panel`) and of charts drawn in all panels;
   several panel items with the same key draw the same data."
@@ -35,11 +35,12 @@
          ((:draw chart) chart computed c' {:x 0 :y 0 :w w :h h} (:scales env) env)))))
 
 (defn- draw-grid-lines!
-  "Grid lines at the tick positions of the panel-local scales, `w` x `h` panel at the origin."
+  "Grid lines at the tick positions of the panel-local scales, `w` x `h` panel at the origin; bands scales use the
+  theme `[:panel :grid :bands]` line."
   [c ^long w ^long h env]
   (doseq [k [:x :y]
           :let [finalized (get-in env [:scales k])
-                {:keys [color width dash] :as line} (get-in env [:theme :panel :grid k])]
+                {:keys [color width dash] :as line} (get-in env [:theme :panel :grid (if (= :bands (:kind finalized)) :bands k)])]
           :when (and finalized (not (theme/none? line)) (not (theme/none? color)) (pos? (double width)))]
     (c2d/set-color c color)
     (c2d/set-stroke-custom c (cond-> {:size (double width) :cap :butt} (not (theme/none? dash)) (assoc :dash (vec dash))))

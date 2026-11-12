@@ -153,8 +153,9 @@
                        (and (m/valid-double? v) (< (m/abs v) max-integral-label) (== v (m/floor v)))))
                ticks)))
 
-(defn- tick-labels
-  "Default formatter: whole-number ticks of a numeric continuous scale as integers, otherwise wadogo `format`;
+(defn tick-labels
+  "Labels of `ticks` of wadogo `scale` built from `spec` (`:kind`, `:formatter`).
+  Default formatter: whole-number ticks of a numeric continuous scale as integers, otherwise wadogo `format`;
   a spec `:formatter` always wins (wadogo uses it)."
   [scale spec ticks]
   (if (and (nil? (:formatter spec)) (not= :datetime (:kind spec)) (not= :bands (:kind spec)) (integral-numbers? ticks))
@@ -190,7 +191,7 @@
   "Finalized scale of phase-1 `spec` for the pixel `range` (`[start end]`) and `tick-hint` (the count used unless
   the spec has `:ticks`). Steps: the domain is extended by `nice` (limited, see `:nice` in [[scale-spec]]) with
   the explicit tick count or the hint, then padded by `:padding` (see [[data-scale-spec]]);
-  ticks outside the final domain are dropped."
+  ticks outside the final domain are dropped. A bands scale without `:ticks` has a tick at every band."
   [spec range tick-hint]
   (let [kind (:kind spec)
         explicit (:ticks spec)
@@ -200,7 +201,7 @@
         domain (if-let [padding (:padding spec)]
                  (pad kind [(double (first niced)) (double (last niced))] padding)
                  niced)
-        attributes (assoc base :domain domain :ticks (or explicit tick-hint))
+        attributes (assoc base :domain domain :ticks (or explicit (if (= kind :bands) (vec domain) tick-hint)))
         scale (s/scale kind attributes)
         ticks (if (continuous-kinds kind)
                 (filterv #(inside-range? range (double (scale %))) (s/ticks scale))

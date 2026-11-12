@@ -20,9 +20,19 @@
   :tick-spacing}` (pixels; `:tick-spacing` > 0 is the target distance between ticks, a line or tick of width 0
   isn't drawn).
 
+  `:panel :grid :bands` - grid line style used instead of `:x` / `:y` for a bands scale (default dotted, as lattice
+  `dotplot`).
+
   `:panel :alternate-fill` - drawn over the fill of facet panels with odd `row + col` (`:none` turns it off).
 
   `:strip` - `:fill`, `:border-color`, `:border-width` of facet strips; `:facet {:gap px}` between panels.
+
+  `:palette` - aesthetic defaults, see [[cljplot2.aesthetic]]: `:color` (palette name or colors, old cljplot
+  `:category20`), `:gradient` (colors or palette name; `:k2` reversed), `:shape` (shape sequence), `:size`
+  (`[min max]` pixels), `:na` (color of NA values).
+
+  `:legend` - `:gap` (pixels between key and label and between legends), `:key-size` (key box side, pixels),
+  `:fill`, `:border-color`, `:border-width`; text roles `:legend-title` and `:legend-label`.
 
   `:chart` - per chart kind defaults, e.g. `:scatter` (validated when a chart of that kind computes).
 
@@ -30,7 +40,9 @@
   and keeps the value underneath, see [[deep-merge]].
 
   [[plot-theme]] validates the merged theme, so bad values fail at build time."
-  (:require [cljplot2.font :as font]))
+  (:require [clojure2d.color :as c]
+            [cljplot2.aesthetic :as aesthetic]
+            [cljplot2.font :as font]))
 
 (def style-keys
   "Keys of a text style; content may override them inline."
@@ -72,9 +84,16 @@
   {:plot {:background 0xe8e8f0 :margin 10}
    :panel {:fill :none :alternate-fill [0 0 0 20] :border-color :none :border-width 1
            :grid {:x {:color 0xb4b4b4 :width 0.5 :dash [4.0]}
-                  :y {:color 0xb4b4b4 :width 0.5 :dash [4.0]}}}
+                  :y {:color 0xb4b4b4 :width 0.5 :dash [4.0]}
+                  :bands {:color 0xb4b4b4 :width 1 :dash [1.0 2.0]}}}
    :strip {:fill [255 255 255 150] :border-color [0 0 0 100] :border-width 1}
    :facet {:gap 5}
+   :palette {:color :category20
+             :gradient (vec (reverse (c/palette :k2)))
+             :shape [\O \s \A \x \+ \V \o \S \^ \v \{ \} \< \>]
+             :size [2 10]
+             :na [150 150 150]}
+   :legend {:gap 5 :key-size 14 :fill :none :border-color :none :border-width 1}
    :chart {:scatter {:size 4 :color [49 54 149 180] :stroke-color :none :stroke-width 1 :shape \O}}
    :axis {:x {:line-color :black :line-width 1 :tick-color :black :tick-length 6 :tick-width 1
               :label-gap 2 :tick-spacing 80}
@@ -84,8 +103,8 @@
           :strip {:font "Liberation Mono" :size 11 :font-style :plain :color :black :padding 2 :align centered}
           :axis-title {:font "Liberation Mono" :size 12 :font-style :plain :color :black :padding 4 :align centered}
           :tick-label {:font "Liberation Mono" :size 10 :font-style :plain :color :black :padding 2 :align centered}
-          :legend-title {:font "Liberation Mono" :size 11 :font-style :bold :color :black :padding 2 :align centered}
-          :legend-label {:font "Liberation Mono" :size 10 :font-style :plain :color :black :padding 2 :align centered}}})
+          :legend-title {:font "Liberation Mono" :size 11 :font-style :bold :color :black :padding 2 :align [:left :middle]}
+          :legend-label {:font "Liberation Mono" :size 10 :font-style :plain :color :black :padding 2 :align [:left :middle]}}})
 
 (defn deep-merge
   "Merge maps recursively; a non-map value replaces the value it's merged over, `nil` is ignored
@@ -146,6 +165,14 @@
     (doseq [k [:x :y]]
       (validate-grid-line! k (get-in theme [:panel :grid k]))
       (validate-axis! k (get-in theme [:axis k])))
+    (validate-grid-line! :bands (get-in theme [:panel :grid :bands]))
+    (aesthetic/validate-palette! (:palette theme))
+    (let [{:keys [gap key-size fill border-color border-width]} (:legend theme)]
+      (doseq [[k v] [[:gap gap] [:key-size key-size] [:border-width border-width]]]
+        (when-not (non-negative? v)
+          (invalid "Legend sizes must be non-negative numbers." {:key k :value v})))
+      (when (or (nil? fill) (nil? border-color))
+        (invalid "Legend colors must be colors or :none." {:key :legend})))
     (doseq [[role style] (:text theme)]
       (when-not (map? style)
         (invalid "Text role style must be a map." {:key :role :value role}))

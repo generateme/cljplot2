@@ -9,7 +9,10 @@
 
   * `{:kind :numeric :min a :max b}` (doubles)
   * `{:kind :temporal :min a :max b}` (`java.time` values)
-  * `{:kind :categorical :values [v ...]}` (strings/keywords, distinct, in order of first appearance)"
+  * `{:kind :categorical :values [v ...]}` (strings/keywords, distinct, in order of first appearance)
+
+  [[value-extent]] also keeps the distinct values (`:values`) of numeric and temporal data, for scales that
+  need the levels (ordinal colour, shape, size)."
   (:require [fastmath.core :as m]))
 
 (set! *warn-on-reflection* true)
@@ -74,17 +77,35 @@
                    :max (reduce #(if (pos? (compare %2 %1)) %2 %1) vs)}
         :categorical {:kind :categorical :values (vec (distinct vs))}))))
 
+(defn value-extent
+  "[[extent]] of `vs` that also keeps the distinct values (`:values`, in order of first appearance) for numeric and
+  temporal data."
+  [k vs]
+  (when-let [e (extent k vs)]
+    (assoc e :values (vec (distinct vs)))))
+
+(defn sorted-levels
+  "Distinct `values` sorted (numbers ascending, strings lexicographic, ...).
+  Throws `ex-info {:key error-key :scale k}` when they aren't mutually comparable."
+  [k values error-key]
+  (try (vec (sort (distinct values)))
+       (catch ClassCastException _
+         (invalid "Values must be mutually comparable to be sorted (or give an explicit :domain)."
+                  {:key error-key :scale k}))))
+
 (defn merge-extents
-  "Merge extents of dimension `k` (`nil`s skipped). Mixed kinds throw `ex-info {:key :extents}`."
+  "Merge extents of dimension `k` (`nil`s skipped); `:values` are kept (merged, distinct) when every extent has them.
+  Mixed kinds throw `ex-info {:key :extents}`."
   [k extents]
   (let [es (remove nil? extents)]
     (when (seq es)
       (let [kinds (set (map :kind es))]
         (when (> (count kinds) 1)
           (invalid "Charts map different kinds of values to one scale." {:key :extents :scale k :kinds kinds}))
-        (case (first kinds)
+        (cond-> (case (first kinds)
           :categorical {:kind :categorical :values (vec (distinct (mapcat :values es)))}
           :numeric {:kind :numeric :min (reduce min (map :min es)) :max (reduce max (map :max es))}
           :temporal {:kind :temporal
                      :min (reduce #(if (neg? (compare %2 %1)) %2 %1) (map :min es))
-                     :max (reduce #(if (pos? (compare %2 %1)) %2 %1) (map :max es))})))))
+                     :max (reduce #(if (pos? (compare %2 %1)) %2 %1) (map :max es))})
+          (every? :values es) (assoc :values (vec (distinct (mapcat :values es)))))))))

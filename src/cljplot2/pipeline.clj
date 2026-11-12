@@ -6,16 +6,21 @@
   Plot keys read so far:
 
   * `:labels` - plot titles, see [[cljplot2.plot-grid]]
-  * `:scales` - `{:x spec :y spec}`, position scales, see [[cljplot2.scale/data-scale-spec]]
+  * `:scales` - `{:x spec :y spec}`, position scales, see [[cljplot2.scale/data-scale-spec]]; facet scales, see
+    [[cljplot2.facet]]; aesthetic scales `:color` `:shape` `:size`, see [[cljplot2.aesthetic]]
   * `:data`, `:mapping` - plot data and mapping, see [[cljplot2.data]]
   * `:charts` - vector of chart values, see [[cljplot2.chart]]
   * `:facets` - `{:columns :rows :order :na-panel}` facet layout options, see [[cljplot2.facet]]
+  * `:groups` - `{:na bool}`: `nil` aesthetic values form the NA level (default `true`) or are dropped
+  * `:legend` - `false` hides all legends, see [[cljplot2.legend]]
   * `:custom-grid` - a hand-written grid (see [[cljplot2.grid]]) used instead of the generated one
   * `:options` - render options (see [[default-options]]), merged under `build`'s options; stored resolved
   * `:theme` - deep-merged over [[cljplot2.theme/default-theme]]; stored resolved
 
-  Facet mapping keys (`:facet`, `:facet-col`, `:facet-row`) split rows into panels, see [[cljplot2.facet]]."
+  Facet mapping keys (`:facet`, `:facet-col`, `:facet-row`) split rows into panels, see [[cljplot2.facet]].
+  Aesthetic mapping keys (`:color`, `:shape`, `:size`) style marks, see [[cljplot2.aesthetic]]."
   (:require [fastmath.core :as m]
+            [cljplot2.aesthetic :as aesthetic]
             [cljplot2.data :as data]
             [cljplot2.facet :as facet]
             [cljplot2.grid :as grid]
@@ -27,7 +32,8 @@
             [cljplot2.label]
             [cljplot2.panel]
             [cljplot2.axis]
-            [cljplot2.strip]))
+            [cljplot2.strip]
+            [cljplot2.legend]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -54,8 +60,25 @@
   (when-not (or (nil? charts) (vector? charts))
     (throw (ex-info "Plot :charts must be a vector of charts." {:key :charts})))
   (doseq [chart charts]
-    (when-not (and (map? chart) (fn? (:compute chart)) (fn? (:draw chart)))
+    (when-not (and (map? chart) (fn? (:compute chart)) (fn? (:draw chart)) (or (nil? (:legend chart)) (fn? (:legend chart))))
       (throw (ex-info "Chart must be a chart value (see cljplot2.chart)." {:key :charts})))))
+
+(defn- validate-plot-options!
+  [{:keys [groups legend]}]
+  (when-not (or (nil? groups) (and (map? groups) (contains? #{nil true false} (:na groups))))
+    (throw (ex-info "Plot :groups must be a map {:na boolean}." {:key :groups :value groups})))
+  (when-not (contains? #{nil true false} legend)
+    (throw (ex-info "Plot :legend must be a boolean." {:key :legend :value legend}))))
+
+(defn- validate-aesthetic-mapping!
+  "Mapped aesthetics need an accessor (keyword or function); a scale of an aesthetic needs a chart mapping it."
+  [inputs scales]
+  (doseq [{:keys [mapping]} inputs
+          k (aesthetic/mapped-dims mapping)]
+    (data/row-accessor k (get mapping k)))
+  (doseq [k (filter aesthetic/dim? (keys scales))]
+    (when-not (some #(some? (get-in % [:mapping k])) inputs)
+      (throw (ex-info "Aesthetic scale without a mapping of that key." {:key :scales :scale k})))))
 
 (defn- facet-split
   "Facet dimensions, levels and per-chart groups for charts `chart-inputs` (`{:rows :mapping}`)."
@@ -92,9 +115,11 @@
   (when-not (or (nil? scales) (map? scales))
     (throw (ex-info "Plot :scales must be a map." {:key :scales :value scales})))
   (doseq [k (keys scales)]
-    (when-not (or (position-scales k) (facet/facet-keys k))
-      (throw (ex-info "Unknown plot scale." {:key :scales :value k :allowed (into position-scales facet/facet-keys)}))))
+    (when-not (or (position-scales k) (facet/facet-keys k) (aesthetic/dim? k))
+      (throw (ex-info "Unknown plot scale." {:key :scales :value k
+                                             :allowed (into (into position-scales facet/facet-keys) aesthetic/dims)}))))
   (validate-charts! charts)
+  (validate-plot-options! plot)
   (validate-mapping! mapping)
   (facet/validate-options! facets)
   (let [plot-rows (delay (data/rows data))
@@ -103,21 +128,33 @@
                        {:mapping (merge mapping (:mapping options))
                         :rows (if (some? (:data options)) (data/rows (:data options)) @plot-rows)})
                      charts)
+        _ (validate-aesthetic-mapping! inputs scales)
         {split-facets :facets chart-splits :charts} (facet-split inputs scales (get facets :na-panel true))]
     (assoc plot :split {:facets (assoc split-facets :dropped {:facet (reduce + (map :dropped chart-splits))})
                         :charts (mapv #(dissoc % :dropped) chart-splits)})))
 
 (defn- stats-stage
   "Per chart: the data its `:compute` returns from its split groups."
-  [{:keys [charts split theme] :as plot}]
-  (assoc plot :stats (mapv (fn [chart chart-split] ((:compute chart) chart chart-split {:theme theme})) charts (:charts split))))
+  [{:keys [charts split theme groups] :as plot}]
+  (let [env {:theme theme :na-level? (get groups :na true)}]
+    (assoc plot :stats (mapv (fn [chart chart-split] ((:compute chart) chart chart-split env)) charts (:charts split)))))
+
+(defn- aesthetic-extents
+  "Per aesthetic with data: extent merged over charts and panels, `:na?` - some chart has NA values of it."
+  [stats]
+  (into {} (keep (fn [k]
+                   (let [extent (data/merge-extents k (mapcat #(keep (fn [e] (get e k)) (vals (:extents %))) stats))
+                         na? (boolean (some #(contains? (:na %) k) stats))]
+                     (when (or extent na?) [k {:extent extent :na? na?}]))))
+        aesthetic/dims))
 
 (defn- extents-stage
   "Per position scale: extents merged over charts and panels, padding as the largest per side among the charts
-  with an extent there."
+  with an extent there. Per aesthetic: merged extent and `:na?`."
   [{:keys [stats] :as plot}]
   (assoc plot :extents
-         (into {} (keep (fn [k]
+         (into (aesthetic-extents stats)
+               (keep (fn [k]
                           (let [with-extent (keep (fn [st]
                                                     (when-let [es (seq (keep #(get % k) (vals (:extents st))))]
                                                       {:extent (data/merge-extents k es) :padding (get-in st [:padding k] [0 0])}))
@@ -129,13 +166,18 @@
                position-scales)))
 
 (defn- scale-specs-stage
-  "Phase-1 specs of the position scales with a plot `:scales` entry or data extents (`:scales` is validated by
-  the `:split` stage, its first reader)."
-  [{:keys [scales extents] :as plot}]
-  (assoc plot :scale-specs
-         (into {} (map (fn [k] [k (scale/data-scale-spec k (get scales k {}) (get-in extents [k :extent])
-                                                         (get-in extents [k :padding]))]))
-               (distinct (concat (filter position-scales (keys scales)) (keys extents))))))
+  "Phase-1 specs of the position and aesthetic scales with a plot `:scales` entry or data extents (`:scales` is
+  validated by the `:split` stage, its first reader). Aesthetic specs are final (no layout dependence)."
+  [{:keys [scales extents theme] :as plot}]
+  (let [ks (distinct (concat (filter #(or (position-scales %) (aesthetic/dim? %)) (keys scales)) (keys extents)))]
+    (assoc plot :scale-specs
+           (into {} (keep (fn [k]
+                            (let [{:keys [extent padding na?]} (get extents k)
+                                  spec (get scales k {})]
+                              (if (aesthetic/dim? k)
+                                (some->> (aesthetic/scale-spec k spec extent na? (:palette theme)) (vector k))
+                                [k (scale/data-scale-spec k spec extent padding)]))))
+                 ks))))
 
 (defn- grid-stage
   "The plot's grid: `:custom-grid` when given, otherwise generated from plot keys.
@@ -155,13 +197,15 @@
   `:panel` content of the grid (depth-first): x range `[0 w]`, y range `[h 0]`, tick hint from the panel size
   and theme `[:axis k :tick-spacing]`. All panels share these scales (they differ by at most 1 px in size).
   Before the first layout round (`layout` is `nil`) a provisional finalization is used: range `[0 1]`, 10 ticks.
+  Aesthetic scales are passed through unchanged (no pixel range).
   Throws `ex-info` with `{:key :scales}` when the grid has no `:panel` content."
   [plot layout]
-  (let [specs (:scale-specs plot)
+  (let [specs (into {} (filter (comp position-scales key)) (:scale-specs plot))
         panel (when (and layout (seq specs))
                 (or (grid/find-content-box (:grid plot) layout panel-content?)
                     (throw (ex-info "Plot :scales need a :panel item in the grid." {:key :scales}))))]
-    (into {} (map (fn [[k spec]]
+    (into (into {} (filter (comp aesthetic/dim? key)) (:scale-specs plot))
+          (map (fn [[k spec]]
                     [k (if-not panel
                          (scale/finalize spec [0.0 1.0] provisional-tick-hint)
                          (let [{:keys [w h]} panel
