@@ -6,7 +6,7 @@
   "Draw item `content` onto `canvas` (in graphics context) inside `box` (`{:x :y :w :h}`),
   dispatched like [[cljplot2.measure/natural-size]].
 
-  `env` keys: `:theme` - the plot theme.
+  `env` keys: `:theme` - the plot theme, `:scales` - finalized scales (see [[cljplot2.scale/finalize]]).
 
   A method may change any graphics state (clip, transform, font, color, ...) without restoring it;
   callers isolate each call (see [[cljplot2.canvas/call-with-isolated-graphics]]). To restrict drawing

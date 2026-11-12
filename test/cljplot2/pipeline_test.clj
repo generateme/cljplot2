@@ -32,14 +32,14 @@
 ;; 2.x stages
 
 (deftest stage-order-test
-  (is (= [:split :stats :extents :scale-specs :grid :layout :scales] pipeline/stage-order)))
+  (is (= [:split :stats :extents :scale-specs :grid :layout :finalized-scales] pipeline/stage-order)))
 
 (deftest empty-plot-test
   (let [built (pipeline/build {})]
     (testing "every stage adds its key"
       (is (every? #(contains? built %) pipeline/stage-order)))
     (testing "stubs produce empty values"
-      (is (= {} (:split built) (:stats built) (:extents built) (:scale-specs built) (:scales built))))
+      (is (= {} (:split built) (:stats built) (:extents built) (:scale-specs built) (:finalized-scales built))))
     (testing "default grid and options"
       (is (= {:x 10 :y 10 :w 580 :h 580} (grid/item-box (:layout built) :panel)))
       (is (= pipeline/default-options (:options built))))))

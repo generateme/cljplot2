@@ -12,7 +12,13 @@
 
   `:plot` - `:background` (fills the canvas), `:margin` (pixels on every side).
 
-  `:panel` - `:fill`, `:border-color`, `:border-width` (pixels, rounded, drawn inside the panel box).
+  `:panel` - `:fill`, `:border-color`, `:border-width` (pixels, rounded, drawn inside the panel box),
+  `:grid {:x line :y line}` - grid lines at tick positions, `line` is `{:color :width :dash}` or `:none`
+  (`:dash` - a sequence of positive dash lengths, or `:none` for a solid line).
+
+  `:axis {:x axis :y axis}` - `axis` is `{:line-color :line-width :tick-color :tick-length :tick-width :label-gap
+  :tick-spacing}` (pixels; `:tick-spacing` > 0 is the target distance between ticks, a line or tick of width 0
+  isn't drawn).
 
   Colors are any clojure2d color or `:none` (draw nothing). `nil` in a theme override means \"not set\"
   and keeps the value underneath, see [[deep-merge]].
@@ -58,7 +64,13 @@
 (def default-theme
   "Defaults in old cljplot style: light lavender-gray background, 10 px margin, panels without fill and border."
   {:plot {:background 0xe8e8f0 :margin 10}
-   :panel {:fill :none :border-color :none :border-width 1}
+   :panel {:fill :none :border-color :none :border-width 1
+           :grid {:x {:color 0xb4b4b4 :width 0.5 :dash [4.0]}
+                  :y {:color 0xb4b4b4 :width 0.5 :dash [4.0]}}}
+   :axis {:x {:line-color :black :line-width 1 :tick-color :black :tick-length 6 :tick-width 1
+              :label-gap 2 :tick-spacing 80}
+          :y {:line-color :black :line-width 1 :tick-color :black :tick-length 6 :tick-width 1
+              :label-gap 2 :tick-spacing 50}}
    :text {:title {:font "Liberation Mono" :size 14 :font-style :bold :color :black :padding 4 :align centered}
           :strip {:font "Liberation Mono" :size 11 :font-style :plain :color :black :padding 2 :align centered}
           :axis-title {:font "Liberation Mono" :size 12 :font-style :plain :color :black :padding 4 :align centered}
@@ -75,6 +87,34 @@
     (and (map? a) (map? b)) (merge-with deep-merge a b)
     :else b))
 
+(defn- validate-grid-line!
+  [k line]
+  (when-not (none? line)
+    (let [{:keys [color width dash]} line]
+      (when-not (map? line)
+        (invalid "Panel grid line must be a map or :none." {:key :grid :scale k :value line}))
+      (when (nil? color)
+        (invalid "Panel grid line :color must be a color or :none." {:key :color :scale k}))
+      (when-not (non-negative? width)
+        (invalid "Panel grid line :width must be a non-negative number." {:key :width :scale k :value width}))
+      (when-not (or (none? dash) (and (sequential? dash) (seq dash) (every? #(and (number? %) (pos? (double %))) dash)))
+        (invalid "Panel grid line :dash must be :none or a sequence of positive numbers." {:key :dash :scale k :value dash})))))
+
+(defn- validate-axis!
+  [k axis]
+  (when-not (map? axis)
+    (invalid "Axis style must be a map." {:key :axis :scale k :value axis}))
+  (doseq [color-key [:line-color :tick-color]]
+    (when (nil? (get axis color-key))
+      (invalid "Axis color must be a color or :none." {:key color-key :scale k})))
+  (doseq [size-key [:line-width :tick-length :tick-width :label-gap]
+          :let [v (get axis size-key)]]
+    (when-not (non-negative? v)
+      (invalid "Axis size must be a non-negative number." {:key size-key :scale k :value v})))
+  (let [spacing (:tick-spacing axis)]
+    (when-not (and (number? spacing) (pos? (double spacing)))
+      (invalid "Axis :tick-spacing must be a positive number." {:key :tick-spacing :scale k :value spacing}))))
+
 (defn- validate-theme!
   [theme]
   (let [{:keys [margin background]} (:plot theme)
@@ -85,6 +125,9 @@
       (invalid "Plot :background must be a color or :none." {:key :background :value background}))
     (when-not (non-negative? border-width)
       (invalid "Panel :border-width must be a non-negative number." {:key :border-width :value border-width}))
+    (doseq [k [:x :y]]
+      (validate-grid-line! k (get-in theme [:panel :grid k]))
+      (validate-axis! k (get-in theme [:axis k])))
     (doseq [[role style] (:text theme)]
       (when-not (map? style)
         (invalid "Text role style must be a map." {:key :role :value role}))

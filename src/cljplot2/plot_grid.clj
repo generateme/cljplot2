@@ -12,7 +12,10 @@
   Plot `:labels` - `{:title t :x t :y t}`, `t` a string or a map of label options (`:text`, style overrides,
   `:align`, `:rotation`) merged into the label content; a missing or `nil` label adds no item.
   `:title` uses the `:title` text role, `:x` and `:y` the `:axis-title` role; `:y` is rotated 270 by default.
-  The label `:kind` can't be overridden. Item ids: `:panel`, `:title`, `:x-title`, `:y-title`.")
+  The label `:kind` can't be overridden.
+
+  An axis item (`:x-axis` below the panel, `:y-axis` left of it) is added for each scale in `:scale-specs`.
+  Item order: `:panel`, `:x-axis`, `:y-axis`, `:title`, `:x-title`, `:y-title` (absent ones skipped).")
 
 (def ^:private plot-labels
   "Plot label key -> grid item id, content defaults and placement, in item order."
@@ -36,9 +39,13 @@
                   :content (assoc (merge defaults (if (map? label) label {:text label})) :kind :label)}))
              plot-labels)))
 
+(def ^:private axis-items
+  [{:id :x-axis :column :panel :row :x-axis :content {:kind :axis :scale :x}}
+   {:id :y-axis :column :y-axis :row :panel :content {:kind :axis :scale :y}}])
+
 (defn single-panel-grid
-  "Grid of a single-panel plot: its `:labels` and the margin of its (merged) `:theme`."
-  [{:keys [labels theme]}]
+  "Grid of a single-panel plot: its `:labels`, axes of its `:scale-specs` and the margin of its (merged) `:theme`."
+  [{:keys [labels theme scale-specs]}]
   (let [margin (get-in theme [:plot :margin])
         margin-track (fn [id] {:id id :size [:fixed margin]})
         measured (fn [id] {:id id :size [:measured]})]
@@ -46,4 +53,6 @@
                {:id :panel :size [:flexible]} (margin-track :margin-right)]
      :rows [(margin-track :margin-top) (measured :title) {:id :panel :size [:flexible]}
             (measured :x-axis) (measured :x-title) (margin-track :margin-bottom)]
-     :items (into [{:id :panel :column :panel :row :panel :content {:kind :panel}}] (label-items labels))}))
+     :items (-> [{:id :panel :column :panel :row :panel :content {:kind :panel}}]
+                (into (filter #(contains? scale-specs (get-in % [:content :scale]))) axis-items)
+                (into (label-items labels)))}))

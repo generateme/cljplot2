@@ -59,5 +59,5 @@
             (c2d/set-background target background)))
         (when (:debug options)
           (draw-debug-items! target (get-in built [:layout :items]) 0))
-        (draw-contents! target (:grid built) (:layout built) {:theme (:theme built)})
+        (draw-contents! target (:grid built) (:layout built) {:theme (:theme built) :scales (:finalized-scales built)})
         target)))))
