@@ -41,19 +41,23 @@
                       {:key :padding :scale k :value p})))))
 
 (defn- kept?
-  "Is `v` of dimension `k` kept: valid, or `nil` (NA) for an aesthetic when `na-level?`."
-  [k na-level? v]
-  (boolean (or (data/valid-value? v) (and na-level? (nil? v) (aesthetic/dim? k)))))
+  "Is `v` of dimension `k` kept: valid (for an aesthetic also inside the explicit domain of its plot scale, see
+  [[cljplot2.aesthetic/in-domain?]]), or `nil` (NA) for an aesthetic when `na-level?`."
+  [k na-level? plot-scales v]
+  (boolean (if (aesthetic/dim? k)
+             (or (and (data/valid-value? v) (aesthetic/in-domain? k (get plot-scales k {}) v)) (and na-level? (nil? v)))
+             (data/valid-value? v))))
 
 (defn compute
   "Per panel: points (rows with valid mapped x and y and kept aesthetic values, see [[cljplot2.aesthetic]]) as
   `{:x [..] :y [..] :style style}` plus a vector per mapped aesthetic (`:color`, `:shape`, `:size`; `nil` = NA),
   `style` being the validated options merged over the theme; extents per panel (aesthetics: value extents of
   non-NA values), padding, `:na` (set of aesthetics with NA values) and per-dimension counts of dropped rows (zero
-  when nothing is dropped). `env` `:na-level?` (default true) keeps `nil` aesthetic values as NA.
+  when nothing is dropped; aesthetic values outside an explicit plot scale domain count as dropped).
+  `env` `:na-level?` (default true) keeps `nil` aesthetic values as NA; `:plot-scales` - the plot's `:scales`.
   Throws `ex-info` with `{:key :mapping}` when a mapped dimension has no valid value in a non-empty data set
   (usually a misspelt mapping)."
-  [{:keys [options]} {:keys [groups mapping]} {:keys [theme na-level?] :or {na-level? true}}]
+  [{:keys [options]} {:keys [groups mapping]} {:keys [theme na-level? plot-scales] :or {na-level? true}}]
   (let [st (style options theme)
         padding (merge {:x [0.05 0.05] :y [0.05 0.05]} (:padding options))
         _ (doseq [k position-dims]
@@ -64,8 +68,8 @@
         values (update-vals groups (fn [rows] (mapv (fn [row] (mapv #(% row) accessors)) rows)))
         all-values (apply concat (vals values))
         row-count (count all-values)
-        dropped (into {} (map-indexed (fn [i k] [k (count (remove #(kept? k na-level? (% i)) all-values))]) dims))
-        keep-row? (fn [vs] (every? true? (map-indexed (fn [i k] (kept? k na-level? (vs i))) dims)))
+        dropped (into {} (map-indexed (fn [i k] [k (count (remove #(kept? k na-level? plot-scales (% i)) all-values))]) dims))
+        keep-row? (fn [vs] (every? true? (map-indexed (fn [i k] (kept? k na-level? plot-scales (vs i))) dims)))
         points (update-vals values (fn [vs] (let [kept (filterv keep-row? vs)]
                                               (into {:style st}
                                                     (map-indexed (fn [i k] [k (mapv #(% i) kept)]))

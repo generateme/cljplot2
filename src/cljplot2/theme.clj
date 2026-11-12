@@ -97,8 +97,8 @@
    :legend {:gap 5 :key-size 14 :fill :none :border-color :none :border-width 1}
    :chart {:scatter {:size 4 :color [49 54 149 180] :stroke-color :none :stroke-width 1 :shape \O}
            :histogram {:color [49 54 149] :stroke-width 1 :alpha 0.6}
-           :density {:color [49 54 149] :width 1 :dash :none :fill :none :ref-color [150 150 150]}
-           :line {:color [49 54 149] :width 1 :dash :none}
+           :density {:color [49 54 149] :width 1 :dash :none :fill :none}
+           :line {:color [49 54 149] :width 1 :dash :none :fill :none}
            :ecdf {:color [49 54 149] :width 1 :dash :none}}
    :axis {:x {:line-color :black :line-width 1 :tick-color :black :tick-length 6 :tick-width 1
               :label-gap 2 :tick-spacing 80}

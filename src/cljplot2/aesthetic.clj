@@ -19,7 +19,9 @@
 
   [[scale-spec]] gives plain data (with `:na?` - the scale has an NA level); it is also the finalized scale: no
   pixel range, `nice` or padding. [[attribute-fn]] maps data values to style attributes: NA (`nil`) to the NA
-  attribute; values outside the domain (not a level, or outside `[lo hi]`) to `nil` - such points are skipped."
+  attribute; values outside the domain (not a level, or outside `[lo hi]`) to `nil` - such points are skipped.
+  Charts drop values outside an explicit domain already at compute ([[in-domain?]]), counted in `:dropped`, so
+  extents only cover what is drawn."
   (:require [clojure2d.color :as c]
             [fastmath.core :as m]
             [wadogo.scale :as s]
@@ -144,6 +146,22 @@
                    (and (sequential? explicit) (= 2 (count explicit)) (every? number? explicit))
                    data-numeric?)]
     (or (:kind spec) (if (and numeric? (not= k :shape)) :linear :ordinal))))
+
+(defn in-domain?
+  "Is data value `v` of aesthetic `k` inside the explicit `:domain` of the plot's scale `spec` (may be `{}`)?
+  True without an explicit domain (a data domain holds all data), for `nil` (NA is handled separately) and for a
+  malformed domain (rejected later by [[scale-spec]]). Ordinal: one of the levels (numbers equal as doubles);
+  linear: a number within `[lo hi]`."
+  [k spec v]
+  (let [domain (:domain spec)]
+    (if (or (nil? v) (not (sequential? domain)) (empty? domain))
+      true
+      (case (inferred-kind k spec (number? v))
+        :ordinal (boolean (some #(= (level-key %) (level-key v)) domain))
+        :linear (let [[lo hi] domain]
+                  (if (and (= 2 (count domain)) (number? lo) (number? hi))
+                    (and (number? v) (<= (double lo) (double v) (double hi)))
+                    true))))))
 
 (defn scale-spec
   "Scale of aesthetic dimension `k` from the plot's scale `spec` (may be `{}`), the merged data `extent`

@@ -158,9 +158,9 @@
       (is (false? (:na? s)))
       (is (nil? ((aesthetic/attribute-fn :color s :na) "c")))
       (is (= ["a" "b"] (mapv :label (:entries (first (legends built))))))
-      (is (= [255 255 255] (pixel c (+ (long x) (long (scale/forward (get-in built [:finalized-scales :x]) 0)))
-                                  (+ (long y) (long (scale/forward (get-in built [:finalized-scales :y]) 0)))))
-          "point outside the domain not drawn")))
+      (is (= 1 (get-in built [:stats 0 :dropped :color])) "point outside the domain dropped and counted")
+      (is (= {:kind :numeric :min 1.0 :max 1.0} (get-in built [:extents :x :extent])) "extents only cover kept points")
+      (is (some? c))))
   (testing "one level; more levels than colors cycle"
     (let [one (aesthetic/scale-spec :color {:domain ["x"]} nil false (:palette theme/default-theme))
           many (aesthetic/scale-spec :color {:kind :ordinal :domain (vec (range 25))} nil false (:palette theme/default-theme))

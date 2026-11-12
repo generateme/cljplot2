@@ -2,11 +2,13 @@
   "Line: points `(x, y)` joined per panel and group.
 
   Options (style defaults from theme `[:chart :line]`): `:sort` (default true - points ordered by numeric or temporal
-  x, ties in data order; `false` keeps data order), `:color`, `:width`, `:dash`, `:padding {:x [lo hi] :y [lo hi]}`
-  (default 5% each side).
+  x, ties in data order; `false` keeps data order), `:color`, `:width`, `:dash`, `:fill` (area chart: the area
+  between the line and y = 0 - or the nearer panel edge when 0 is outside the y range - default `:none`),
+  `:padding {:x [lo hi] :y [lo hi]}` (default 5% each side).
   A row with an invalid x is dropped (counted); an invalid y breaks the line there (counted).
   Groups (see [[cljplot2.group]]) come from ordinal aesthetics (`:color` colors the line) and `:group`."
-  (:require [cljplot2.data :as data]
+  (:require [fastmath.core :as m]
+            [cljplot2.data :as data]
             [cljplot2.group :as group]
             [cljplot2.polyline :as polyline]
             [cljplot2.scale :as scale]))
@@ -18,8 +20,10 @@
 
 (defn- style
   [options theme]
-  (doto (merge (get-in theme [:chart :line]) (select-keys options [:color :width :dash]))
-    (->> (polyline/validate-style! :line))))
+  (let [st (merge (get-in theme [:chart :line]) (select-keys options [:color :width :dash :fill]))]
+    (polyline/validate-style! :line st)
+    (when (nil? (:fill st)) (invalid "Line :fill must be a color or :none." {:key :fill}))
+    st))
 
 (defn- validate-options!
   [{:keys [padding] :as options}]
@@ -75,15 +79,21 @@
                      :y (count (remove #(data/valid-value? (y-of %)) rows)))}))
 
 (defn draw
-  "Draw the lines of one panel; `nil` y values and values the scales can't place break a line."
-  [_chart {:keys [lines style]} canvas _box scales env]
+  "Draw the lines of one panel (area fill first, if any); `nil` y values and values the scales can't place break a
+  line. The fill baseline is y = 0 clamped into the panel (`box` height)."
+  [_chart {:keys [lines style]} canvas {:keys [h]} scales env]
   (when (seq lines)
     (let [fx (scale/forward-fn (:x scales))
-          fy (scale/forward-fn (:y scales))]
+          fy (scale/forward-fn (:y scales))
+          zero (double (fy 0.0))
+          baseline (if (m/nan? zero) (double h) (m/constrain zero 0.0 (double h)))]
       (doseq [{:keys [x y aesthetics]} lines
               :let [st (group/style style aesthetics scales (:theme env))]
               :when st]
-        (polyline/draw! canvas (mapv fx x) (mapv #(if (nil? %) ##NaN (fy %)) y) st)))))
+        (let [px (mapv fx x)
+              py (mapv #(if (nil? %) ##NaN (fy %)) y)]
+          (polyline/fill-under! canvas px py baseline (:fill st))
+          (polyline/draw! canvas px py st))))))
 
 (defn legend
   "Key glyph: a horizontal line through the middle of `box`."

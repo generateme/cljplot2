@@ -46,18 +46,18 @@
   (let [st (style options theme)
         {:keys [panels dropped]} (group/split groups mapping env)
         x-of (data/row-accessor :x (:x mapping))
-        x-dropped (atom 0)
-        row-count (long (reduce + 0 (map count (vals groups))))
-        data (update-vals panels
-                          (fn [gs]
-                            {:steps (vec (keep (fn [g]
-                                                 (let [{:keys [values] d :dropped} (data/finite-numbers (map x-of (:rows g)))]
-                                                   (swap! x-dropped + (long d))
-                                                   (when (seq values)
-                                                     (assoc (steps values) :aesthetics (:aesthetics g)))))
-                                               gs))
-                             :style st}))]
-    (when (and (pos? row-count) (= row-count @x-dropped))
+        ;; per group: valid x values and the count of invalid ones
+        xs (update-vals panels (fn [gs] (mapv #(data/finite-numbers (map x-of (:rows %))) gs)))
+        row-count (long (reduce + 0 (map count (mapcat #(map :rows %) (vals panels)))))
+        x-dropped (long (reduce + 0 (map :dropped (mapcat identity (vals xs)))))
+        data (into {} (map (fn [[panel gs]]
+                             [panel {:steps (vec (keep (fn [[g {:keys [values]}]]
+                                                         (when (seq values)
+                                                           (assoc (steps values) :aesthetics (:aesthetics g))))
+                                                       (map vector gs (xs panel))))
+                                     :style st}]))
+                   panels)]
+    (when (and (pos? row-count) (= row-count x-dropped))
       (invalid "No valid values for a mapped dimension - check the mapping." {:key :mapping :value :x :rows row-count}))
     {:data data
      :extents (merge-with merge (group/aesthetic-extents panels)
@@ -68,7 +68,7 @@
                                 data))
      :padding (merge {:x [0.05 0.05] :y [0.05 0.05]} (:padding options))
      :na (group/na-dims panels)
-     :dropped (assoc dropped :x @x-dropped)
+     :dropped (assoc dropped :x x-dropped)
      :axis-titles {:y "Empirical CDF"}}))
 
 (defn draw

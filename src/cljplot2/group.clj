@@ -8,8 +8,9 @@
 
   A group is `{:key [v ...] :aesthetics {dim v} :rows [row ...]}`: `:key` - values of the grouping dimensions in
   [[group-dims]] order, `:aesthetics` - the aesthetic values (`nil` = NA). `nil` values form the NA group (dropped
-  and counted when the plot's `:groups {:na false}`); other invalid values (NaN, infinite, ...) are dropped and
-  counted. Groups are ordered by [[ordered-keys]]."
+  and counted when the plot's `:groups {:na false}`); other invalid values (NaN, infinite, ...) and aesthetic values
+  outside an explicit plot scale domain ([[cljplot2.aesthetic/in-domain?]]) are dropped and counted. Groups are
+  ordered by [[ordered-keys]]."
   (:require [cljplot2.aesthetic :as aesthetic]
             [cljplot2.data :as data]))
 
@@ -32,8 +33,10 @@
                         {:key :mapping :value k}))))))
 
 (defn- kept-value?
-  [na-level? v]
-  (or (data/valid-value? v) (and na-level? (nil? v))))
+  "Is grouping value `v` of dimension `k` kept: valid and (aesthetics) inside the explicit plot scale domain, or NA."
+  [k na-level? plot-scales v]
+  (or (and (data/valid-value? v) (or (not (aesthetic/dim? k)) (aesthetic/in-domain? k (get plot-scales k {}) v)))
+      (and na-level? (nil? v))))
 
 (defn- level-rank
   "Sort rank of `v` in dimension `k`: its index in an explicit ordinal domain (else `v`), NA last."
@@ -72,7 +75,7 @@
         (throw (ex-info "No valid values for a mapped dimension - check the mapping." {:key :mapping :value k :rows row-count})))
       (check-groupable! k (filter data/valid-value? vs) plot-scales))
     (let [key-of (fn [row] (mapv #(% row) accessors))
-          kept? (fn [key] (every? #(kept-value? na-level? %) key))
+          kept? (fn [key] (every? true? (map #(boolean (kept-value? %1 na-level? plot-scales %2)) dims key)))
           panels (update-vals groups
                               (fn [rows]
                                 (let [by-key (group-by key-of (filter (comp kept? key-of) rows))]
@@ -83,7 +86,7 @@
                                         (ordered-keys (keys by-key) dims plot-scales)))))]
       {:panels panels
        :dims dims
-       :dropped (into {} (map (fn [k vs] [k (count (remove #(kept-value? na-level? %) vs))]) dims columns))})))
+       :dropped (into {} (map (fn [k vs] [k (count (remove #(kept-value? k na-level? plot-scales %) vs))]) dims columns))})))
 
 (defn aesthetic-extents
   "Per panel of split `panels`: value extents of the non-NA aesthetic values of its groups."

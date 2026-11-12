@@ -2,6 +2,7 @@
   "Step 8: groups within panels, histogram, density, line, ECDF, polylines, suggested axis titles."
   (:require [clojure.test :refer [deftest testing is are]]
             [clojure2d.core :as c2d]
+            [cljplot2.aesthetic :as aesthetic]
             [fastmath.core :as m]
             [cljplot2.chart :as chart]
             [cljplot2.chart.ecdf :as ecdf]
@@ -173,7 +174,6 @@
     (are [opts k] (= k (:key (error-data #(build {:data rows :mapping {:x :v} :charts [(chart/density opts)]}))))
       {:n 1} :n
       {:cut -1} :cut
-      {:ref "yes"} :ref
       {:width -1} :width
       {:dash [0]} :dash
       {:fill nil} :fill))
@@ -181,13 +181,8 @@
     (let [built (build {:data (conj rows {:v 5.0 :g "c"} {:v 5.0 :g "c"}) :mapping {:x :v :color :g} :charts [(chart/density)]})]
       (is (= 2 (count (:curves (panel built)))))
       (is (= 1 (get-in built [:stats 0 :dropped :group])))))
-  (testing "reference line at 0"
-    (let [p {:data rows :mapping {:x :v} :theme plain :charts [(chart/density {:ref true :padding {:y [0.2 0.05]} :color [0 0 255]})]}
-          built (build p)
-          {:keys [x y]} (grid/item-box (:layout built) :panel)
-          zero (+ y (long (scale/forward (get-in built [:finalized-scales :y]) 0.0)))
-          c (plot/render p {:width 600 :height 400})]
-      (is (= [150 150 150] (pixel c (+ x 2) zero))))))
+  (testing "no :ref option or theme key any more"
+    (is (not (contains? (get-in (build {:data rows :mapping {:x :v} :charts [(chart/density)]}) [:theme :chart :density]) :ref-color)))))
 
 ;; 4.x line, polylines
 
@@ -263,7 +258,10 @@
                            box (grid/item-box (:layout built) :legends)
                            c (plot/render p {:width 600 :height 400})]
                        (set (for [px (range (:x box) (+ (:x box) 14)) py (range (:y box) (+ (:y box) (:h box)))] (pixel c px py)))))]
-    (is (contains? (render-key (chart/histogram {:stroke-width 0})) [255 0 0]) "histogram: filled key")
+    (is (contains? (render-key (chart/histogram {:stroke-width 0 :position :dodge})) [255 0 0]) "histogram: filled key")
+    (let [overlay (render-key (chart/histogram {:stroke-width 0 :alpha 0.6}))]
+      (is (not (contains? overlay [255 0 0])) "overlay key translucent like the bars")
+      (is (contains? overlay [255 102 102]) "red at alpha 0.6 over white"))
     (is (contains? (render-key (chart/density {:width 3})) [255 0 0]) "density: line key")
     (is (contains? (render-key (chart/line {:width 3})) [255 0 0]))
     (is (contains? (render-key (chart/ecdf {:width 3})) [255 0 0]))))
@@ -313,3 +311,74 @@
     (testing ":symmetric ignored outside mirror; validated"
       (is (= 0.0 (:min (get-in (build {:data uneven :mapping {:x :v} :charts [(chart/histogram {:symmetric true})]}) [:extents :y :extent]))))
       (is (= :symmetric (:key (error-data #(mirror {:symmetric 1} {}))))))))
+
+;; review fixes: explicit domains at compute, counting after the split, area fill
+
+(deftest in-domain-test
+  (are [k spec v ok] (= ok (aesthetic/in-domain? k spec v))
+    :color {} "z" true
+    :color {:domain ["a" "b"]} "a" true
+    :color {:domain ["a" "b"]} "z" false
+    :color {:domain ["a" "b"]} nil true
+    :color {:domain [1931.0 1932.0] :kind :ordinal} 1931 true
+    :color {:domain [1931 1932 1933]} 1934 false
+    :size {:domain [0 10]} 10 true
+    :size {:domain [0 10]} 0 true
+    :size {:domain [0 10]} 10.001 false
+    :size {:domain [0 10]} -1 false
+    :size {:domain [0 10]} "x" false
+    :color {:domain "bad"} "x" true
+    :color {:domain []} "x" true
+    :shape {:domain [1 2]} 2 true
+    :shape {:domain [1 2]} 3 false))
+
+(deftest explicit-domain-at-compute-test
+  (let [data (concat (repeat 10 {:x 1 :g "a"}) (repeat 90 {:x 2 :g "b"}))]
+    (testing "stat charts: groups outside the domain dropped, counted, not in extents"
+      (let [built (build {:data data :mapping {:x :x :color :g} :scales {:color {:domain ["a"]}} :charts [(chart/histogram {:y :count})]})]
+        (is (= 90 (get-in built [:stats 0 :dropped :color])))
+        (is (= 10.0 (:max (get-in built [:extents :y :extent]))))
+        (is (= [{:color "a"}] (distinct (map :aesthetics (:bars (panel built))))))))
+    (testing "scatter: points outside the domain dropped, counted, not in extents"
+      (let [built (build {:data (map #(assoc % :y (:x %)) data) :mapping {:x :x :y :y :color :g}
+                          :scales {:color {:domain ["a"]}} :charts [(chart/scatter)]})]
+        (is (= 90 (get-in built [:stats 0 :dropped :color])))
+        (is (= 1.0 (:max (get-in built [:extents :x :extent]))))))
+    (testing "linear explicit domain: outside values dropped (boundaries kept)"
+      (let [built (build {:data (for [s [0 5 10 11]] {:x s :y s :s s}) :mapping {:x :x :y :y :size :s}
+                          :scales {:size {:domain [0 10]}} :charts [(chart/scatter)]})]
+        (is (= 1 (get-in built [:stats 0 :dropped :size])))
+        (is (= [0 5 10] (:x (panel built))))))
+    (testing "everything outside: empty, no error"
+      (is (= {:panel []} (update-vals (data-of (build {:data data :mapping {:x :x :color :g} :scales {:color {:domain ["z"]}}
+                                               :charts [(chart/density)]}))
+                             :curves)
+             )))))
+
+(deftest no-valid-x-after-split-test
+  (let [data [{:x "bad" :g nil} {:x "worse" :g "a"} {:x "nope" :g "a"}]]
+    (doseq [c [(chart/density) (chart/ecdf) (chart/histogram)]]
+      (is (= {:key :mapping :value :x :rows 2}
+             (error-data #(build {:data data :mapping {:x :x :color :g} :groups {:na false} :charts [c]})))
+          (str (:kind c))))))
+
+(deftest line-area-test
+  (let [area-plot (fn [ys] {:data (map-indexed (fn [i y] {:x i :y y}) ys) :mapping {:x :x :y :y} :theme plain
+                            :charts [(chart/line {:fill [255 0 0] :color :none})]})
+        probe (fn [ys py-of]
+                (let [p (area-plot ys)
+                      built (build p)
+                      {:keys [x y w h]} (grid/item-box (:layout built) :panel)
+                      c (plot/render p {:width 600 :height 400})]
+                  (pixel c (+ x (quot w 2)) (py-of built y h))))
+        fy (fn [built v] (scale/forward (get-in built [:finalized-scales :y]) v))]
+    (testing "fill between the line and y = 0"
+      (is (= [255 0 0] (probe [-5 5 5 -5] (fn [b y _] (+ y (long (fy b 2.5)))))))
+      (is (= [255 255 255] (probe [1 5 5 1] (fn [_ y _] (+ y 1)))) "nothing above the line"))
+    (testing "0 below the y range: fill down to the panel's bottom edge"
+      (is (= [255 0 0] (probe [10 20 20 10] (fn [_ y h] (+ y h -2))))))
+    (testing "0 above the y range: fill up to the top edge"
+      (is (= [255 0 0] (probe [-10 -20 -20 -10] (fn [_ y _] (+ y 1))))))
+    (testing "default :none; nil rejected"
+      (is (= :none (get-in (build (area-plot [1 2])) [:theme :chart :line :fill])))
+      (is (= :fill (:key (error-data #(build {:data [{:x 1 :y 1}] :mapping {:x :x :y :y} :charts [(chart/line {:fill nil})]}))))))))

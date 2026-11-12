@@ -23,13 +23,13 @@
 (def fig-1-2
   {:data chem97
    :mapping {:x :gcsescore :facet :score}
-   :charts [(chart/density {:ref true})]
+   :charts [(chart/density)]
    :labels {:x "gcsescore"}})
 
 (def fig-1-3
   {:data chem97
    :mapping {:x :gcsescore :facet :score :color :gender}
-   :charts [(chart/density {:ref true})]
+   :charts [(chart/density)]
    :labels {:x "gcsescore"}})
 
 (def two-groups
@@ -54,9 +54,22 @@
 
 (def ecdf
   {:data faithful
-   :mapping {:x :eruptions :group #(if (> (:waiting %) 70) "long wait" "short wait") :color #(if (> (:waiting %) 70) "long wait" "short wait")}
+   :mapping {:x :eruptions :color #(if (> (:waiting %) 70) "long wait" "short wait")}
    :charts [(chart/ecdf {:width 1.5})]
    :labels {:title "ECDF of eruptions by waiting" :x "eruptions"}})
+
+(def group-vs-color
+  {:data (for [id (range 6) x (range 15)]
+           {:x x :y (+ (* x (if (even? id) 1.0 -0.5)) (* 3 id) (mod (* x (inc id)) 4)) :id id :kind (if (even? id) "rising" "falling")})
+   :mapping {:x :x :y :y :group :id :color :kind}
+   :charts [(chart/line {:width 1.5})]
+   :labels {:title ":group splits series, :color styles them" :x "x" :y "y"}})
+
+(def area
+  {:data (for [x (range 40)] {:x x :y (* 10 (Math/sin (/ x 6.0)))})
+   :mapping {:x :x :y :y}
+   :charts [(chart/line {:fill [49 54 149 90] :width 1.5})]
+   :labels {:title "Area: line with :fill (down to y = 0)" :x "x" :y "y"}})
 
 (defn -main [& _]
   (doseq [[file-name p options] [["fig-1-1-800x600.png" fig-1-1 {:width 800 :height 600}]
@@ -68,7 +81,9 @@
                                  ["hist-mirror-count-600x400.png" (grouped :mirror {:y :count :uneven true}) {:width 600 :height 400}]
                                  ["hist-mirror-symmetric-600x400.png" (grouped :mirror {:y :count :uneven true :symmetric true}) {:width 600 :height 400}]
                                  ["lines-600x400.png" lines {:width 600 :height 400}]
-                                 ["ecdf-600x400.png" ecdf {:width 600 :height 400}]]
+                                 ["ecdf-600x400.png" ecdf {:width 600 :height 400}]
+                                 ["group-vs-color-600x400.png" group-vs-color {:width 600 :height 400}]
+                                 ["area-600x400.png" area {:width 600 :height 400}]]
           :let [path (str "results/step8/" file-name)]]
     (c2d/save (plot/render p options) path)
     (println "saved" path)))

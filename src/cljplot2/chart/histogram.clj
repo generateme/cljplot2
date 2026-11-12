@@ -140,13 +140,15 @@
         n-groups (count group-keys)
         _ (when (and (= position :mirror) (not= 2 n-groups) (seq all-values))
             (invalid "Histogram :position :mirror needs exactly two groups." {:key :position :groups n-groups}))
-        outside (atom 0)
+        outside (if brks
+                  (let [lo (double (first brks)) hi (double (peek brks))]
+                    (count (remove #(<= lo (double %) hi) all-values)))
+                  0)
         bars-of (fn [g {:keys [values]}]
-                  (let [{:keys [counts] out :outside} (bin-counts brks values)
+                  (let [{:keys [counts]} (bin-counts brks values)
                         hs (heights y brks counts)
                         i (long (slot (:key g)))
                         down? (and (= position :mirror) (= i 1))]
-                    (swap! outside + (long out))
                     (mapv (fn [[^double a ^double b] ^double h]
                             (let [[a b] (if (= position :dodge)
                                           (let [w (/ (- b a) n-groups)] [(+ a (* i w)) (+ a (* (inc i) w))])
@@ -174,7 +176,7 @@
      :extents (merge-with merge aesthetic-extents (into {} (filter val) bar-extents))
      :padding (merge {:x [0.05 0.05] :y (if (= position :mirror) [0.05 0.05] [0.0 0.05])} (:padding options))
      :na (group/na-dims panels)
-     :dropped (assoc dropped :x (+ (long (reduce + 0 (map :dropped (mapcat identity (vals xs))))) (long @outside)))
+     :dropped (assoc dropped :x (+ (long (reduce + 0 (map :dropped (mapcat identity (vals xs))))) (long outside)))
      :axis-titles {:y (measures y)}
      :tick-format (when (= position :mirror) {:y :absolute})}))
 
@@ -205,13 +207,15 @@
             (c2d/rect canvas left top w h true)))))))
 
 (defn legend
-  "Key glyph: a filled square (darkened stroke) inset in `box`."
+  "Key glyph: a filled square (darkened stroke) inset in `box`; with a mapped `:color` and `:overlay` position (the
+  groups' bars are translucent) the fill gets `:alpha` too."
   [{:keys [options]} attributes canvas {:keys [x y w h]} env]
   (let [st (merge (style options (:theme env)) (select-keys attributes [:color]))
+        translucent? (and (contains? attributes :color) (= :overlay (get options :position :overlay)))
         side (* 0.7 (m/min (double w) (double h)))
         cx (+ (double x) (* 0.5 (double w)))
         cy (+ (double y) (* 0.5 (double h)))]
-    (c2d/set-color canvas (:color st))
+    (c2d/set-color canvas (if translucent? (c/set-alpha (:color st) (* 255.0 (double (:alpha st)))) (:color st)))
     (c2d/crect canvas cx cy side side)
     (when (pos? (double (:stroke-width st)))
       (c2d/set-stroke-custom canvas {:size (double (:stroke-width st))})
