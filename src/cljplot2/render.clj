@@ -53,7 +53,7 @@
      (canvas/call-with-graphics
       (c2d/canvas width height hint)
       (fn [target]
-        (c2d/set-background target :white)
+        (c2d/set-background target (get-in built [:theme :plot :background]))
         (when (:debug options)
           (draw-debug-items! target (get-in built [:layout :items]) 0))
         (draw-contents! target (:grid built) (:layout built) {:theme (:theme built)})

@@ -19,5 +19,5 @@
         (is (released?)))
       (testing "render releases the target canvas"
         (reset! released [])
-        (let [result (plot/render {} {:width 5 :height 5})]
+        (let [result (plot/render {:theme {:plot {:margin 0}}} {:width 5 :height 5})]
           (is (some #(identical? result %) @released)))))))

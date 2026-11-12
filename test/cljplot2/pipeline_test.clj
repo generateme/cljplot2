@@ -24,14 +24,14 @@
   (v/vec2 (c2d/text-width canvas text) (c2d/font-height canvas)))
 
 (defn- measured-plot [content]
-  {:grid {:columns [{:size [:measured]} {:size [:flexible]}]
+  {:custom-grid {:columns [{:size [:measured]} {:size [:flexible]}]
           :rows [{:size [:flexible]}]
           :items [{:id :m :column 0 :row 0 :content content}]}})
 
 ;; 2.x stages
 
 (deftest stage-order-test
-  (is (= [:split :stats :extents :scale-specs :layout :scales] pipeline/stage-order)))
+  (is (= [:split :stats :extents :scale-specs :grid :layout :scales] pipeline/stage-order)))
 
 (deftest empty-plot-test
   (let [built (pipeline/build {})]
@@ -40,7 +40,7 @@
     (testing "stubs produce empty values"
       (is (= {} (:split built) (:stats built) (:extents built) (:scale-specs built) (:scales built))))
     (testing "default grid and options"
-      (is (= {:x 0 :y 0 :w 600 :h 600} (get-in built [:layout :items 0 :box])))
+      (is (= {:x 10 :y 10 :w 580 :h 580} (get-in built [:layout :items 0 :box])))
       (is (= pipeline/default-options (:options built))))))
 
 (deftest until-test
@@ -54,10 +54,10 @@
       (is (contains? built :scale-specs))
       (is (not (contains? built :layout)))))
   (testing "stage keys from an earlier build are dropped"
-    (let [rebuilt (pipeline/build (pipeline/build {:grid examples/fig-1-1-grid}) {:until :split})]
+    (let [rebuilt (pipeline/build (pipeline/build {:custom-grid examples/fig-1-1-grid}) {:until :split})]
       (is (contains? rebuilt :split))
       (is (not-any? #(contains? rebuilt %) (rest pipeline/stage-order)))
-      (is (= (pipeline/build {:grid examples/fig-1-1-grid}) (pipeline/build (pipeline/build {:grid examples/fig-1-1-grid}))))))
+      (is (= (pipeline/build {:custom-grid examples/fig-1-1-grid}) (pipeline/build (pipeline/build {:custom-grid examples/fig-1-1-grid}))))))
   (testing "unknown stage"
     (is (= {:key :until :value :draw :allowed pipeline/stage-order}
            (error-data #(pipeline/build {} {:until :draw}))))))
@@ -65,16 +65,16 @@
 (deftest purity-test
   (testing "each stage is repeatable: running up to it twice gives = results"
     (doseq [stage pipeline/stage-order]
-      (is (= (pipeline/build {:grid examples/fig-1-1-grid} {:until stage})
-             (pipeline/build {:grid examples/fig-1-1-grid} {:until stage}))
+      (is (= (pipeline/build {:custom-grid examples/fig-1-1-grid} {:until stage})
+             (pipeline/build {:custom-grid examples/fig-1-1-grid} {:until stage}))
           (str stage))))
   (testing "result is printable data"
-    (is (string? (pr-str (pipeline/build {:grid examples/nested-grid}))))))
+    (is (string? (pr-str (pipeline/build {:custom-grid examples/nested-grid}))))))
 
 (deftest options-test
   (testing "plot options under build options"
     (is (= {:width 10 :height 20 :hint :low}
-           (:options (pipeline/build {:options {:width 10 :height 5 :hint :low}} {:height 20})))))
+           (:options (pipeline/build {:options {:width 10 :height 5 :hint :low} :theme {:plot {:margin 0}}} {:height 20})))))
   (testing "invalid options"
     (are [opts k] (= k (:key (error-data #(pipeline/build {} opts))))
       {:width 0} :width
@@ -85,13 +85,13 @@
       {:hint :retina} :hint
       {:hint nil} :hint))
   (testing "1x1 plot"
-    (is (= {:x 0 :y 0 :w 1 :h 1} (get-in (pipeline/build {} {:width 1 :height 1}) [:layout :items 0 :box])))))
+    (is (= {:x 0 :y 0 :w 1 :h 1} (get-in (pipeline/build {:theme {:plot {:margin 0}}} {:width 1 :height 1}) [:layout :items 0 :box])))))
 
 ;; 5.x measurement loop
 
 (deftest rounds-test
   (testing "static content stops after one round"
-    (is (= 1 (get-in (pipeline/build {:grid examples/fig-1-1-grid}) [:layout :rounds]))))
+    (is (= 1 (get-in (pipeline/build {:custom-grid examples/fig-1-1-grid}) [:layout :rounds]))))
   (testing "content settling in the second round"
     (let [built (pipeline/build (measured-plot {:kind ::settling}))]
       (is (= 2 (get-in built [:layout :rounds])))

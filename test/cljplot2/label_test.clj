@@ -21,6 +21,10 @@
    (measure/call-with-scratch-canvas
     hint (fn [c] (let [s (measure/natural-size content {:canvas c :theme theme/default-theme})] [(.x s) (.y s)])))))
 
+(def ^:private white-background
+  "Ink tests treat white as empty."
+  {:plot {:background :white}})
+
 (defn- error-data [f]
   (try (f) nil (catch clojure.lang.ExceptionInfo e (ex-data e))))
 
@@ -48,7 +52,7 @@
 
 (defn- render-label
   [content w h & {:as options}]
-  (plot/render {:grid {:columns [{:size [:flexible]}] :rows [{:size [:flexible]}]
+  (plot/render {:theme white-background :custom-grid {:columns [{:size [:flexible]}] :rows [{:size [:flexible]}]
                        :items [{:id :l :column 0 :row 0 :content content}]}}
                (merge {:width w :height h} options)))
 
@@ -162,9 +166,9 @@
       (fn []
         (with-redefs-fn {#'font/bundled-font-files (#'font/bundled-font-delays)}
           (fn []
-            (let [builds (doall (repeatedly 4 #(future (plot/build {:grid examples/fig-1-1-labelled-grid}))))]
+            (let [builds (doall (repeatedly 4 #(future (plot/build {:custom-grid examples/fig-1-1-labelled-grid}))))]
               (run! deref builds))
-            (plot/build {:grid examples/fig-1-1-labelled-grid})
+            (plot/build {:custom-grid examples/fig-1-1-labelled-grid})
             (is (seq @loads))
             (is (every? #(= 1 %) (vals @loads)) "each file loaded once, also under concurrent first use")))))))
 
@@ -214,7 +218,7 @@
                     (let [s (measure/natural-size b {:canvas c :theme theme/default-theme})] [(.x s) (.y s)])))))))
 
 (deftest theme-reaches-measurement-test
-  (let [track (fn [t] (get-in (plot/build {:theme t :grid {:columns [{:size [:measured]} {:size [:flexible]}]
+  (let [track (fn [t] (get-in (plot/build {:theme t :custom-grid {:columns [{:size [:measured]} {:size [:flexible]}]
                                                            :rows [{:size [:flexible]}]
                                                            :items [{:id :l :column 0 :row 0 :content (label "abc")}]}})
                               [:layout :columns 0 :size]))]
@@ -223,7 +227,7 @@
 ;; 5.x drawing
 
 (deftest no-debug-draws-only-content-test
-  (let [c (plot/render {:grid {:columns [{:size [:flexible]} {:size [:flexible]}] :rows [{:size [:flexible]}]
+  (let [c (plot/render {:theme white-background :custom-grid {:columns [{:size [:flexible]} {:size [:flexible]}] :rows [{:size [:flexible]}]
                                :items [{:id :l :column 0 :row 0 :content (label "abc")}
                                        {:id :p :column 1 :row 0 :content {:kind :placeholder :size [10 10]}}]}}
                        {:width 200 :height 50})
@@ -231,7 +235,7 @@
     (is (< x1 100) "placeholder box stays white")))
 
 (deftest clip-test
-  (let [c (plot/render {:grid {:columns [{:size [:fixed 20]} {:size [:flexible]}] :rows [{:size [:flexible]}]
+  (let [c (plot/render {:theme white-background :custom-grid {:columns [{:size [:fixed 20]} {:size [:flexible]}] :rows [{:size [:flexible]}]
                                :items [{:id :l :column 0 :row 0 :content (label "a very long text" :align [:left :middle])}
                                        {:id :m :column 1 :row 0 :content (label "x" :align [:right :middle])}]}}
                        {:width 200 :height 40})
@@ -263,7 +267,7 @@
     (is (> (- y1 y0) (* 3 (- x1 x0))))))
 
 (deftest transforms-restored-test
-  (let [c (plot/render {:grid {:columns [{:size [:fixed 60]} {:size [:flexible]}] :rows [{:size [:flexible]}]
+  (let [c (plot/render {:theme white-background :custom-grid {:columns [{:size [:fixed 60]} {:size [:flexible]}] :rows [{:size [:flexible]}]
                                :items [{:id :r :column 0 :row 0 :content (label "Percent of Total" :rotation 270)}
                                        {:id :h :column 1 :row 0 :content (label "Percent of Total")}]}}
                        {:width 400 :height 300})
@@ -315,7 +319,7 @@
 ;; 6.x layout with labels
 
 (deftest fig-1-1-labelled-layout-test
-  (let [built (plot/build {:grid examples/fig-1-1-labelled-grid} {:width 800 :height 600})
+  (let [built (plot/build {:custom-grid examples/fig-1-1-labelled-grid} {:width 800 :height 600})
         layout (:layout built)
         row-size (fn [id] (:size (first (filter #(= id (:id %)) (:rows layout)))))
         col-size (fn [id] (:size (first (filter #(= id (:id %)) (:columns layout)))))

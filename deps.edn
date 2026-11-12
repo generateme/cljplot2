@@ -13,4 +13,6 @@
            :demo {:extra-paths ["dev"]
                   :main-opts ["-m" "cljplot2.demo.step1"]}
            :demo2 {:extra-paths ["dev"]
-                   :main-opts ["-m" "cljplot2.demo.step2"]}}}
+                   :main-opts ["-m" "cljplot2.demo.step2"]}
+           :demo3 {:extra-paths ["dev"]
+                   :main-opts ["-m" "cljplot2.demo.step3"]}}}

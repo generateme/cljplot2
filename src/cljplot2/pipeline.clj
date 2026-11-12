@@ -1,20 +1,23 @@
 (ns cljplot2.pipeline
   "Plot pipeline: a plot map passes through fixed stages, each a pure function adding one key.
 
-  Stages, in order: `:split` -> `:stats` -> `:extents` -> `:scale-specs` -> `:layout` -> `:scales`.
+  Stages, in order: `:split` -> `:stats` -> `:extents` -> `:scale-specs` -> `:grid` -> `:layout` -> `:scales`.
 
-  Plot keys read so far (`build` stores their resolved values back):
+  Plot keys read so far:
 
-  * `:grid` - layout grid (see [[cljplot2.grid]]); [[default-grid]] when absent
-  * `:options` - render options (see [[default-options]]), merged under `build`'s options
-  * `:theme` - deep-merged over [[cljplot2.theme/default-theme]]
+  * `:labels` - plot titles, see [[cljplot2.plot-grid]]
+  * `:custom-grid` - a hand-written grid (see [[cljplot2.grid]]) used instead of the generated one
+  * `:options` - render options (see [[default-options]]), merged under `build`'s options; stored resolved
+  * `:theme` - deep-merged over [[cljplot2.theme/default-theme]]; stored resolved
 
-  Every stage except `:layout` is still a stub producing an empty value."
+  Stages `:split` ... `:scale-specs` and `:scales` are still stubs producing an empty value."
   (:require [cljplot2.grid :as grid]
             [cljplot2.measure :as measure]
+            [cljplot2.plot-grid :as plot-grid]
             [cljplot2.theme :as theme]
             ;; built-in content kinds (natural-size / draw-content methods)
-            [cljplot2.label]))
+            [cljplot2.label]
+            [cljplot2.panel]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -27,18 +30,17 @@
   "Upper bound on measure -> solve -> finalize-scales rounds."
   3)
 
-(def default-grid
-  "Grid used when a plot has no `:grid`: one flexible cell with item `:panel`."
-  {:columns [{:id :panel :size [:flexible]}]
-   :rows [{:id :panel :size [:flexible]}]
-   :items [{:id :panel :column :panel :row :panel}]})
-
 ;; stages
 
 (defn- split-stage [plot] (assoc plot :split {}))
 (defn- stats-stage [plot] (assoc plot :stats {}))
 (defn- extents-stage [plot] (assoc plot :extents {}))
 (defn- scale-specs-stage [plot] (assoc plot :scale-specs {}))
+
+(defn- grid-stage
+  "The plot's grid: `:custom-grid` when given, otherwise generated from plot keys."
+  [plot]
+  (assoc plot :grid (or (:custom-grid plot) (plot-grid/single-panel-grid plot (:theme plot)))))
 
 (defn finalize-scales
   "Scales finalized for `layout` (`nil` before the first layout round). Stub: `{}`."
@@ -73,13 +75,14 @@
 
 (def stage-order
   "Pipeline stages in execution order."
-  [:split :stats :extents :scale-specs :layout :scales])
+  [:split :stats :extents :scale-specs :grid :layout :scales])
 
 (def ^:private stage-fns
   {:split split-stage
    :stats stats-stage
    :extents extents-stage
    :scale-specs scale-specs-stage
+   :grid grid-stage
    :layout layout-stage
    :scales scales-stage})
 
@@ -98,7 +101,7 @@
 
   `options` (merged over `(:options plot)` and [[default-options]], stored under `:options`):
   `:width`, `:height`, `:hint`, and `:until` - last stage to run (default: the last one).
-  `:grid` and `:theme` are stored resolved (default grid, merged theme).
+  `:theme` is stored merged with the default theme.
   Stage keys already present in `plot` (e.g. from an earlier `build`) are dropped first."
   ([plot] (build plot {}))
   ([plot options]
@@ -111,6 +114,5 @@
      (reduce (fn [plot stage] ((stage-fns stage) plot))
              (-> (apply dissoc plot stage-order)
                  (assoc :options options)
-                 (update :grid #(or % default-grid))
                  (update :theme theme/plot-theme))
              (take stage-count stage-order)))))

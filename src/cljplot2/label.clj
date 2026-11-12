@@ -5,7 +5,7 @@
 
   * `:rotation` - clockwise degrees: `0` (default), `90` or `270` (reads bottom-to-top)
   * `:align` - `[h v]`, `h` one of `:left :center :right`, `v` one of `:top :middle :bottom`,
-    relative to the unrotated text (default `[:center :middle]`); `h` also aligns lines
+    relative to the unrotated text (default: the role's theme `:align`, else `[:center :middle]`); `h` also aligns lines
   * style keys overriding the role's theme style, see [[cljplot2.theme/style-keys]]
 
   `:text` is converted with `str` and split into lines; `nil` or `\"\"` is empty (zero size).
@@ -40,23 +40,28 @@
 
 (def ^:private default-align [:center :middle])
 
+(defn- validate-align!
+  [align]
+  (when-not (and (vector? align) (= 2 (count align)) (h-aligns (align 0)) (v-aligns (align 1)))
+    (throw (ex-info "Label :align must be [h v], h in #{:left :center :right}, v in #{:top :middle :bottom}."
+                    {:key :align :value align}))))
+
 (defmethod measure/validate-content :label
   [content]
-  (let [rotation (get content :rotation 0)
-        align (get content :align default-align)]
+  (let [rotation (get content :rotation 0)]
     (when-not (rotations rotation)
       (throw (ex-info "Label rotation must be 0, 90 or 270." {:key :rotation :value rotation})))
-    (when-not (and (vector? align) (= 2 (count align)) (h-aligns (align 0)) (v-aligns (align 1)))
-      (throw (ex-info "Label :align must be [h v], h in #{:left :center :right}, v in #{:top :middle :bottom}."
-                      {:key :align :value align})))))
+    (when (contains? content :align)
+      (validate-align! (:align content)))))
 
 (defn- label-spec
   "Drawing parameters of validated label `content` in `theme`; validates the resolved style."
   [theme content]
   (let [rotation (get content :rotation 0)
-        align (get content :align default-align)
         style (theme/text-style theme content)
+        align (or (:align style) default-align)
         padding (:padding style)]
+    (validate-align! align)
     (when-not (and (number? padding) (>= (double padding) 0.0))
       (throw (ex-info "Text padding must be a non-negative number." {:key :padding :value padding})))
     {:lines (lines (:text content))
