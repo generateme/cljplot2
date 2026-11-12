@@ -186,11 +186,12 @@
      :attributes attributes}))
 
 (defn forward-fn
-  "Function mapping a value to its pixel position in the finalized scale (band center for `:bands`).
+  "Function mapping a value to its pixel position in the finalized scale (band center for `:bands`); `##NaN` for a
+  value the scale can't place (e.g. not in a bands domain) - callers skip such values.
   Builds the wadogo scale once; reuse the function for many values."
   [finalized]
   (let [scale (->wadogo finalized)]
-    (fn ^double [value] (double (scale value)))))
+    (fn ^double [value] (let [p (scale value)] (if (nil? p) ##NaN (double p))))))
 
 (defn forward
   "Pixel position of a single `value` in a finalized scale; for many values use [[forward-fn]]."

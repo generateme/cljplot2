@@ -1,12 +1,13 @@
 (ns cljplot2.data
   "Plot data: normalization to rows, mapping accessors, valid values and extents.
 
-  `:data` is a sequence of maps (rows) or a map of equal-length sequences (columns); both become a vector of rows.
+  `:data` is a finite sequence of maps (rows) or a map of equal-length finite sequences (columns); both become a
+  vector of rows.
   A mapping accessor is a keyword or a function of a row.
 
   An extent describes the values of one mapped dimension:
 
-  * `{:kind :numeric :min a :max b}`
+  * `{:kind :numeric :min a :max b}` (doubles)
   * `{:kind :temporal :min a :max b}` (`java.time` values)
   * `{:kind :categorical :values [v ...]}` (strings/keywords, distinct, in order of first appearance)"
   (:require [fastmath.core :as m]))
@@ -67,7 +68,7 @@
         (invalid "Mapped values must be all numbers, all strings/keywords or all java.time values."
                  {:key :extents :scale k :kinds kinds}))
       (case (first kinds)
-        :numeric {:kind :numeric :min (reduce min vs) :max (reduce max vs)}
+        :numeric {:kind :numeric :min (double (reduce min vs)) :max (double (reduce max vs))}
         :temporal {:kind :temporal
                    :min (reduce #(if (neg? (compare %2 %1)) %2 %1) vs)
                    :max (reduce #(if (pos? (compare %2 %1)) %2 %1) vs)}

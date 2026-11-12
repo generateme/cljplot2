@@ -55,7 +55,9 @@
   (testing "chart mapping overrides the plot's, chart data replaces the plot's"
     (let [built (build {:data rows :mapping {:x :a :y :b}
                         :charts [(chart/scatter {:mapping {:y :c} :data [{:a 5 :c 7}]})]})]
-      (is (= {:x [5] :y [7]} (get-in built [:stats 0 :data :panel]))))))
+      (is (= {:x [5] :y [7]} (select-keys (get-in built [:stats 0 :data :panel]) [:x :y])))))
+  (testing "chart :data nil counts as absent: the plot's data is used"
+    (is (= [1 2 3] (get-in (build (scatter-plot {:charts [(chart/scatter {:data nil})]})) [:stats 0 :data :panel :x])))))
 
 (deftest dropped-test
   (let [data (concat rows [{:a nil :b 1} {:a ##NaN :b 1} {:a 1 :b ##Inf} {:a 2} {:b 3}])
@@ -70,8 +72,10 @@
     (let [built (build (scatter-plot {:data []}))]
       (is (= {} (:extents built) (:scale-specs built)))
       (is (some? (plot/render (scatter-plot {:data []}) {:width 100 :height 100})))))
-  (testing "all rows dropped"
-    (is (= {} (:extents (build (scatter-plot {:data [{:a nil :b nil}]}))))))
+  (testing "a mapped dimension without any valid value raises (usually a misspelt mapping)"
+    (is (= {:key :mapping :value :x :rows 1} (error-data #(build (scatter-plot {:data [{:a nil :b 1}]})))))
+    (is (= {:key :mapping :value :x :rows 3} (error-data #(build (scatter-plot {:mapping {:x :aa :y :b}})))))
+    (is (= {:key :mapping :value :y :rows 3} (error-data #(build (scatter-plot {:mapping {:x :a :y :bb}}))))))
   (testing "explicit domain without data"
     (is (= [0.0 10.0] (mapv double (:domain (get-in (build (scatter-plot {:data [] :scales {:x {:domain [0 10]}}}))
                                                     [:finalized-scales :x]))))))
@@ -98,7 +102,7 @@
   (let [built (build {:mapping {:x :a :y :b}
                       :charts [(chart/scatter {:data [{:a 0 :b 1} {:a 5 :b 2}]})
                                (chart/scatter {:data [{:a 3 :b 1} {:a 10 :b 2}] :padding {:x [0.2 0.0]}})]})]
-    (is (= {:kind :numeric :min 0 :max 10} (get-in built [:extents :x :extent])))
+    (is (= {:kind :numeric :min 0.0 :max 10.0} (get-in built [:extents :x :extent])))
     (is (= [0.2 0.05] (get-in built [:extents :x :padding])) "largest padding per side"))
   (testing "different kinds across charts"
     (is (= :extents (:key (error-data #(build {:mapping {:x :a :y :b}
@@ -233,3 +237,28 @@
         _ (plot/render p {:width 600 :height 400})
         ms (/ (- (System/nanoTime) t0) 1.0e6)]
     (is (< ms 1000.0) (str "10k points took " ms " ms"))))
+
+;; review fixes
+
+(deftest outside-bands-domain-test
+  (testing "values outside an explicit bands domain are skipped, not a crash"
+    (let [p {:data [{:a 1 :b "a"} {:a 2 :b "c"}] :mapping {:x :a :y :b} :charts [(chart/scatter {:size 9 :color :black})]
+             :theme plain :scales {:y {:domain ["a" "b"]}}}
+          built (build p)
+          c (plot/render p {:width 600 :height 400})
+          cx (long (scale/forward (get-in built [:finalized-scales :x]) 1))
+          cy (long (scale/forward (get-in built [:finalized-scales :y]) "a"))]
+      (is (= [0 0 0] (pixel c cx cy)) "the in-domain point is drawn")))
+  (testing "forward-fn gives NaN for values the scale can't place"
+    (let [f (scale/forward-fn (get-in (build {:scales {:y {:domain ["a" "b"]}}}) [:finalized-scales :y]))]
+      (is (Double/isNaN (f "zzz")))
+      (is (not (Double/isNaN (f "a")))))))
+
+(deftest style-in-stats-test
+  (let [st (get-in (build (scatter-plot {:charts [(chart/scatter {:size 7})]})) [:stats 0 :data :panel :style])]
+    (is (= 7 (:size st)))
+    (is (= \O (:shape st)) "theme default merged")))
+
+(deftest numeric-extents-are-doubles-test
+  (is (= {:kind :numeric :min 1.0 :max 3.0} (data/extent :x [1 2 3])))
+  (is (= {:kind :numeric :min 1.0 :max 2.5} (data/extent :x [1 2.5]))))

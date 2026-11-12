@@ -6,7 +6,8 @@
     `{:extents {panel {dim extent}} :padding {dim [lo hi]} :data {panel computed} :dropped {dim n}}`
     (`env` - `{:theme}`); stored per chart in the plot's `:stats`
   * `(draw chart computed canvas panel-box scales env)` - draws one panel's `computed` data; called by the panel
-    with isolated graphics clipped to the panel box
+    with isolated graphics clipped to the panel box. Positions come from `cljplot2.scale/forward-fn`, which gives
+    `##NaN` for values the scale can't place; such values are skipped.
 
   Options common to all charts: `:data` (own data, see [[cljplot2.data/rows]]) and `:mapping` (merged over the
   plot's mapping)."

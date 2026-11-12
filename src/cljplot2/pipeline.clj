@@ -59,8 +59,8 @@
       (throw (ex-info "Chart must be a chart value (see cljplot2.chart)." {:key :charts})))))
 
 (defn- split-stage
-  "Per chart: its rows (own `:data` or the plot's) grouped by panel, and its mapping (plot mapping with the
-  chart's `:mapping` merged over)."
+  "Per chart: its rows (own non-nil `:data` or the plot's; `:data nil` counts as absent) grouped by panel, and its
+  mapping (plot mapping with the chart's `:mapping` merged over)."
   [{:keys [charts data mapping] :as plot}]
   (validate-charts! charts)
   (validate-mapping! mapping)
@@ -68,7 +68,7 @@
     (assoc plot :split (mapv (fn [{:keys [options]}]
                                (validate-mapping! (:mapping options))
                                {:mapping (merge mapping (:mapping options))
-                                :groups {panel-key (if (contains? options :data) (data/rows (:data options)) @plot-rows)}})
+                                :groups {panel-key (if (some? (:data options)) (data/rows (:data options)) @plot-rows)}})
                              charts))))
 
 (defn- stats-stage

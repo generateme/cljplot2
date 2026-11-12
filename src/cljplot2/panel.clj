@@ -5,7 +5,7 @@
   Grid lines (theme `[:panel :grid]`) are drawn at the tick positions of the finalized scales in `env` `:scales`,
   between the fill and the border; charts (`env` `:charts`, `:stats`) are drawn after the grid lines, each with
   isolated graphics clipped to the panel box. `{:kind :panel :panel k}` draws the charts' data of split group `k`
-  (default `:panel`)."
+  (default `:panel`); several panel items with the same key draw the same data."
   (:require [clojure2d.core :as c2d]
             [fastmath.core :as m]
             [fastmath.vector :as v]
