@@ -9,5 +9,5 @@
                                          ["fig-1-1-400x300.png" examples/fig-1-1-grid 400 300]
                                          ["nested-1000x600.png" examples/nested-grid 1000 600]]
           :let [path (str "results/step1/" file-name)]]
-    (c2d/save (plot/render {:grid grid} {:width width :height height}) path)
+    (c2d/save (plot/render {:grid grid} {:width width :height height :debug true}) path)
     (println "saved" path)))

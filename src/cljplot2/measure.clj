@@ -25,17 +25,23 @@
   [hint f]
   (canvas/call-with-graphics (scratch-canvas hint) f))
 
+(defn content-kind
+  "Dispatch value of item content: `::empty` for `nil` (an empty box), otherwise its `:kind`."
+  [content]
+  (if (nil? content) ::empty (:kind content)))
+
 (defmulti natural-size
-  "Natural size of item `content` as `Vec2` `[width height]`, dispatched on `(:kind content)`.
+  "Natural size of item `content` as `Vec2` `[width height]`, dispatched on [[content-kind]].
 
   `env` keys:
 
   * `:canvas` - scratch canvas in graphics context (absent when measuring without one)
   * `:box` - the item's box from the previous layout round, `nil` in the first round
   * `:scales` - scales finalized for the previous layout round
+  * `:theme` - the plot theme, see [[cljplot2.theme]]
 
   `nil` content (an empty box) has zero natural size; other content without a known `:kind` is an error."
-  (fn [content _env] (if (nil? content) ::empty (:kind content))))
+  (fn [content _env] (content-kind content)))
 
 (defmethod natural-size ::empty [_ _] (v/vec2 0.0 0.0))
 

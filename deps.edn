@@ -1,4 +1,4 @@
-{:paths ["src"]
+{:paths ["src" "resources"]
  :deps {org.clojure/clojure {:mvn/version "1.12.0"}
         clojure2d/clojure2d {:mvn/version "1.5.0-alpha3-SNAPSHOT"}
         generateme/fastmath {:mvn/version "3.0.0-alpha10-SNAPSHOT"}
@@ -11,4 +11,6 @@
            :check {:extra-paths ["dev"]
                    :main-opts ["-m" "cljplot2.check"]}
            :demo {:extra-paths ["dev"]
-                  :main-opts ["-m" "cljplot2.demo.step1"]}}}
+                  :main-opts ["-m" "cljplot2.demo.step1"]}
+           :demo2 {:extra-paths ["dev"]
+                   :main-opts ["-m" "cljplot2.demo.step2"]}}}

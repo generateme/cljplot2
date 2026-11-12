@@ -3,14 +3,18 @@
 
   Stages, in order: `:split` -> `:stats` -> `:extents` -> `:scale-specs` -> `:layout` -> `:scales`.
 
-  Plot keys read so far:
+  Plot keys read so far (`build` stores their resolved values back):
 
-  * `:grid` - layout grid (see [[cljplot2.grid]]); a single flexible `:panel` cell when absent
+  * `:grid` - layout grid (see [[cljplot2.grid]]); [[default-grid]] when absent
   * `:options` - render options (see [[default-options]]), merged under `build`'s options
+  * `:theme` - deep-merged over [[cljplot2.theme/default-theme]]
 
-  Step 1: every stage except `:layout` is a stub producing an empty value."
+  Every stage except `:layout` is still a stub producing an empty value."
   (:require [cljplot2.grid :as grid]
-            [cljplot2.measure :as measure]))
+            [cljplot2.measure :as measure]
+            [cljplot2.theme :as theme]
+            ;; built-in content kinds (natural-size / draw-content methods)
+            [cljplot2.label]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -46,14 +50,16 @@
   at most [[max-layout-rounds]] times. The number of rounds is stored under `:rounds`."
   [plot]
   (let [{:keys [width height hint]} (:options plot)
-        prepared (grid/prepare (or (:grid plot) default-grid))
+        prepared (grid/prepare (:grid plot))
         box {:x 0 :y 0 :w width :h height}]
     (measure/call-with-scratch-canvas
      hint
      (fn [canvas]
        (let [measure-for (fn [layout]
                            (grid/measure-items prepared
-                                               {:canvas canvas :scales (finalize-scales plot layout)}
+                                               {:canvas canvas
+                                                :theme (:theme plot)
+                                                :scales (finalize-scales plot layout)}
                                                layout))]
          (loop [round 1
                 measurements (measure-for nil)]
@@ -92,6 +98,7 @@
 
   `options` (merged over `(:options plot)` and [[default-options]], stored under `:options`):
   `:width`, `:height`, `:hint`, and `:until` - last stage to run (default: the last one).
+  `:grid` and `:theme` are stored resolved (default grid, merged theme).
   Stage keys already present in `plot` (e.g. from an earlier `build`) are dropped first."
   ([plot] (build plot {}))
   ([plot options]
@@ -102,5 +109,8 @@
        (throw (ex-info "Unknown stage." {:key :until :value until :allowed stage-order})))
      (validate-options! options)
      (reduce (fn [plot stage] ((stage-fns stage) plot))
-             (assoc (apply dissoc plot stage-order) :options options)
+             (-> (apply dissoc plot stage-order)
+                 (assoc :options options)
+                 (update :grid #(or % default-grid))
+                 (update :theme theme/plot-theme))
              (take stage-count stage-order)))))

@@ -20,7 +20,7 @@
 
 (deftest item-boxes-painted-test
   (doseq [[g w h] [[examples/fig-1-1-grid 800 600] [examples/fig-1-1-grid 400 300] [examples/nested-grid 1000 600]]]
-    (let [canvas (plot/render {:grid g} {:width w :height h})
+    (let [canvas (plot/render {:grid g} {:width w :height h :debug true})
           layout (:layout (plot/build {:grid g} {:width w :height h}))
           leaves (fn leaves [items] (mapcat #(if (:layout %) (leaves (get-in % [:layout :items])) [%]) items))]
       ;; sample near the top-left corner, inside the outline and away from the centred id label
