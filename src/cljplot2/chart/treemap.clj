@@ -1,0 +1,216 @@
+(ns cljplot2.chart.treemap
+  "Treemap: nested rectangles from a hierarchy of columns, areas from a numeric value (a panel without axes).
+
+  Mapping: `:value` (area, a positive finite number; other rows are dropped and counted) and `:hierarchy` (a
+  non-empty vector of accessors, outer level first). A `nil` or `\"\"` level value ends the row's path at its parent;
+  rows with an identical path merge (values summed). A row whose path stops at a group that also has deeper rows
+  becomes a leaf of that group, named like it. Optional `:color` aesthetic colors leaves (first row's value of a
+  merged leaf); without it each top-level group takes the next `[:palette :color]` color, its leaves sharing it.
+
+  Options (style defaults from theme `[:chart :treemap]`): `:layout` `:squarify` (default) or `:slice-dice`,
+  `:group-labels` / `:leaf-labels` (default true), `:padding` (pixels inside every group), `:border-color`,
+  `:border-width`. Group headers use the `:treemap-group` text role in a strip at the group's top; leaf labels the
+  `:treemap-leaf` role, centered, drawn only when they fit. The layout is computed when drawing, from the panel box."
+  (:require [clojure2d.color :as c]
+            [clojure2d.core :as c2d]
+            [fastmath.core :as m]
+            [fastmath.vector :as v]
+            [cljplot2.aesthetic :as aesthetic]
+            [cljplot2.canvas :as canvas]
+            [cljplot2.data :as data]
+            [cljplot2.draw :as draw]
+            [cljplot2.measure :as measure]
+            [cljplot2.theme :as theme]
+            [cljplot2.treemap :as treemap])
+  (:import [fastmath.vector Vec2]))
+
+(set! *warn-on-reflection* true)
+(set! *unchecked-math* :warn-on-boxed)
+
+(def ^:private layouts #{:squarify :slice-dice})
+
+(defn- invalid [message data] (throw (ex-info message data)))
+
+(defn- style
+  [options theme]
+  (let [{:keys [padding border-color border-width] :as st}
+        (merge (get-in theme [:chart :treemap]) (select-keys options [:padding :border-color :border-width]))]
+    (doseq [[k v] [[:padding padding] [:border-width border-width]]]
+      (when-not (and (number? v) (>= (double v) 0.0))
+        (invalid "Treemap sizes must be non-negative numbers." {:key k :value v})))
+    (when (nil? border-color)
+      (invalid "Treemap :border-color must be a color or :none." {:key :border-color}))
+    st))
+
+(defn- validate-options!
+  [options]
+  (when-not (layouts (get options :layout :squarify))
+    (invalid "Treemap :layout must be :squarify or :slice-dice." {:key :layout :value (:layout options)}))
+  (doseq [k [:group-labels :leaf-labels]]
+    (when-not (contains? #{nil true false} (get options k))
+      (invalid "Treemap label switches must be booleans." {:key k :value (get options k)}))))
+
+(defn- hierarchy-accessors
+  [hierarchy]
+  (when-not (and (vector? hierarchy) (seq hierarchy))
+    (invalid "Treemap :hierarchy must be a non-empty vector of accessors." {:key :mapping :value :hierarchy}))
+  (mapv #(data/row-accessor :hierarchy %) hierarchy))
+
+(defn- path-of
+  "Level values of `row` up to the first `nil` / `\"\"`."
+  [accessors row]
+  (vec (take-while #(not (or (nil? %) (= "" %))) (map #(% row) accessors))))
+
+(defn- node
+  "Tree node `name` from `entries` (`{:path rest-of-path :value v :color c}`), children in first-appearance order."
+  [name entries]
+  (let [ends (filter #(empty? (:path %)) entries)
+        deeper (remove #(empty? (:path %)) entries)
+        leaf (fn [es] {:name name :value (reduce + 0.0 (map :value es)) :color (:color (first es))})]
+    (if (empty? deeper)
+      (leaf entries)
+      (let [order (distinct (map #(first (:path %)) deeper))
+            by-first (group-by #(first (:path %)) deeper)
+            children (mapv (fn [k] (node k (map #(update % :path subvec 1) (by-first k)))) order)
+            children (cond-> children (seq ends) (conj (leaf ends)))]
+        {:name name :value (reduce + 0.0 (map :value children)) :children children}))))
+
+(defn compute
+  "Per panel: `{:tree root :top-count n :style style :options {...} :colored? bool}`, `root` -
+  `{:name nil :value :children}` (a single leaf becomes the root's only child), top-level children with `:top-index`
+  (first-appearance order over all panels, `:top-count` of them), leaves `{:name :value :color}`; aesthetic extents
+  only (no x / y), `:na`, `:dropped {:value n :color n}`."
+  [{:keys [options]} {:keys [groups mapping]} {:keys [theme na-level? plot-scales] :or {na-level? true}}]
+  (validate-options! options)
+  (doseq [k [:value :hierarchy]]
+    (when-not (some? (get mapping k))
+      (invalid "Treemap needs :value and :hierarchy in its mapping." {:key :mapping :value k})))
+  (let [st (style options theme)
+        value-of (data/row-accessor :value (:value mapping))
+        accessors (hierarchy-accessors (:hierarchy mapping))
+        color-of (when (some? (:color mapping)) (data/row-accessor :color (:color mapping)))
+        color-spec (get plot-scales :color {})
+        value-ok? #(let [v (value-of %)] (and (number? v) (m/valid-double? (double v)) (pos? (double v))))
+        color-ok? (fn [row] (or (nil? color-of)
+                                (let [cv (color-of row)]
+                                  (if (nil? cv)
+                                    na-level?
+                                    (and (data/valid-value? cv) (aesthetic/in-domain? :color color-spec cv))))))
+        all-rows (mapcat val groups)
+        trees (update-vals groups
+                           (fn [rows]
+                             (let [kept (filter #(and (value-ok? %) (color-ok? %)) rows)]
+                               (when (seq kept)
+                                 (node nil (map (fn [r] {:path (path-of accessors r) :value (double (value-of r))
+                                                         :color (when color-of (color-of r))})
+                                                kept))))))
+        colors (fn [tree] (when color-of (keep :color (tree-seq :children :children tree))))
+        ;; top-level values in first-appearance order over all panels: default colors agree across panels
+        top-index (zipmap (distinct (map #(first (path-of accessors %)) (filter #(and (value-ok? %) (color-ok? %)) all-rows)))
+                          (range))
+        index-tops (fn [tree]
+                     (let [root (if (:children tree) tree {:name nil :value (:value tree) :children [tree]})]
+                       (update root :children (fn [cs] (mapv #(assoc % :top-index (top-index (:name %) 0)) cs)))))]
+    {:data (into {} (keep (fn [[panel tree]]
+                            (when tree [panel {:tree (index-tops tree) :top-count (count top-index) :style st
+                                               :options (merge {:layout :squarify :group-labels true :leaf-labels true}
+                                                               (select-keys options [:layout :group-labels :leaf-labels]))
+                                               :colored? (some? color-of)}])))
+                 trees)
+     :extents (into {} (keep (fn [[panel tree]]
+                               (when-let [e (some->> tree colors seq (data/value-extent :color))]
+                                 [panel {:color e}])))
+                    trees)
+     :na (if (and color-of (some (fn [[_ tree]] (some #(and (contains? % :color) (nil? (:color %)) (not (:children %)))
+                                                       (tree-seq :children :children tree)))
+                                 (filter val trees)))
+           #{:color} #{})
+     :dropped (cond-> {:value (count (remove value-ok? all-rows))}
+                color-of (assoc :color (count (remove color-ok? (filter value-ok? all-rows)))))}))
+
+;; drawing
+
+(defn- pixel-box
+  "Integer box of `rect` (rounded edges)."
+  [{:keys [x y w h]}]
+  (let [x0 (m/round (double x)) y0 (m/round (double y))
+        x1 (m/round (+ (double x) (double w))) y1 (m/round (+ (double y) (double h)))]
+    {:x x0 :y y0 :w (- x1 x0) :h (- y1 y0)}))
+
+(defn- label-size
+  ^Vec2 [role text env]
+  (measure/natural-size {:kind :label :role role :text text} env))
+
+(defn- draw-label!
+  [c role text box env]
+  (canvas/call-with-isolated-graphics c #(draw/draw-content {:kind :label :role role :text text} % box env)))
+
+(defn- fill-box!
+  [c color {:keys [x y w h] :as box} {:keys [border-color border-width]}]
+  (c2d/set-color c color)
+  (c2d/rect c (long x) (long y) (long w) (long h))
+  (draw/inner-border! c box border-color border-width))
+
+(defn- children-rects
+  [children content depth layout]
+  (if (= layout :slice-dice)
+    (mapv vector children (treemap/slice-dice (map :value children) content depth))
+    (let [sorted (vec (sort-by (comp - double :value) children))]
+      (mapv vector sorted (treemap/squarify (map :value sorted) content)))))
+
+(defn- draw-node!
+  "Draw `node` in `rect` at `depth` with fill `color` (`nil` for the root: no fill, no header)."
+  [c node rect depth color {:keys [style options leaf-color top-color] :as ctx} env]
+  (let [box (pixel-box rect)
+        depth (long depth)
+        root? (zero? depth)]
+    (when (and (or root? (and (>= (long (:w box)) 1) (>= (long (:h box)) 1))))
+      (if-let [children (:children node)]
+        (let [padding (double (:padding style))
+              header? (and (not root?) (:group-labels options) (some? (:name node)))
+              header-h (if header? (.y (label-size :treemap-group (str (:name node)) env)) 0.0)
+              {:keys [x y w h]} rect
+              content {:x (+ (double x) padding) :y (+ (double y) padding header-h)
+                       :w (- (double w) (* 2.0 padding)) :h (- (double h) (* 2.0 padding) header-h)}]
+          (when-not root?
+            (fill-box! c (c/brighten color) box style))
+          (when header?
+            (draw-label! c :treemap-group (str (:name node))
+                         {:x (+ (long (:x box)) (long (m/round padding))) :y (+ (long (:y box)) (long (m/round padding)))
+                          :w (m/max 0 (- (long (:w box)) (* 2 (long (m/round padding))))) :h (long (m/ceil header-h))}
+                         env))
+          (when (and (pos? (double (:w content))) (pos? (double (:h content))))
+            (doseq [[child child-rect] (children-rects children content depth (:layout options))]
+              (draw-node! c child child-rect (inc depth)
+                          (if root? (top-color child) color)
+                          ctx env))))
+        (let [fill (or (leaf-color node) color)]
+          (when-not root?
+            (fill-box! c fill box style))
+          (when (and (:leaf-labels options) (some? (:name node)))
+            (let [^Vec2 size (label-size :treemap-leaf (str (:name node)) env)]
+              (when (and (<= (.x size) (double (:w box))) (<= (.y size) (double (:h box))))
+                (draw-label! c :treemap-leaf (str (:name node)) box env)))))))))
+
+(defn draw
+  "Lay out and draw one panel's treemap in the panel `box`."
+  [_chart {:keys [tree top-count style options colored?]} canvas {:keys [w h]} scales env]
+  (when tree
+    (let [env (assoc env :canvas canvas)
+          theme (:theme env)
+          na (get-in theme [:palette :na])
+          color-fn (when colored? (aesthetic/attribute-fn :color (:color scales) na))
+          palette-fn (aesthetic/attribute-fn :color (aesthetic/scale-spec :color {:kind :ordinal :domain (vec (range (max 1 (long top-count))))}
+                                                                          nil false (:palette theme))
+                                             na)
+          ctx {:style style :options options
+               :leaf-color (fn [leaf] (when color-fn (color-fn (:color leaf))))
+               :top-color (fn [child] (if colored? na (palette-fn (:top-index child))))}]
+      (draw-node! canvas tree {:x 0.0 :y 0.0 :w (double w) :h (double h)} 0 nil ctx env))))
+
+(defn legend
+  "Key glyph: a filled square inset in `box`."
+  [_chart attributes canvas {:keys [x y w h]} _env]
+  (let [side (* 0.7 (m/min (double w) (double h)))]
+    (c2d/set-color canvas (:color attributes))
+    (c2d/crect canvas (+ (double x) (* 0.5 (double w))) (+ (double y) (* 0.5 (double h))) side side)))

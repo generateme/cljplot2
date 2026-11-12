@@ -22,7 +22,8 @@
             [cljplot2.chart.ecdf :as ecdf]
             [cljplot2.chart.histogram :as histogram]
             [cljplot2.chart.line :as line]
-            [cljplot2.chart.scatter :as scatter]))
+            [cljplot2.chart.scatter :as scatter]
+            [cljplot2.chart.treemap :as treemap]))
 
 (defn- chart-value
   [kind compute draw legend options]
@@ -49,6 +50,11 @@
   "Line through `(:x, :y)` points, see [[cljplot2.chart.line]]."
   ([] (line {}))
   ([options] (chart-value :line line/compute line/draw line/legend options)))
+
+(defn treemap
+  "Treemap of `:value` over the `:hierarchy` levels, see [[cljplot2.chart.treemap]]."
+  ([] (treemap {}))
+  ([options] (chart-value :treemap treemap/compute treemap/draw treemap/legend options)))
 
 (defn ecdf
   "Empirical CDF of `:x`, see [[cljplot2.chart.ecdf]]."
