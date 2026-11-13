@@ -62,8 +62,8 @@
   "Facet scale spec (plot `:scales` of a facet key): `:domain` - distinct levels in panel order, `:formatter` - strip
   text of a level."
   [:map {:closed true}
-   (schema/nilable :domain [:and [:sequential {:min 1} any?]
-                            (schema/rule #(when-not (apply distinct? %) "facet domain values should be distinct"))])
+   (schema/nilable :domain (schema/with-rules [:sequential {:min 1} any?]
+                             [#(when-not (apply distinct? %) "facet domain values should be distinct")]))
    (schema/optional :formatter schema/function)])
 
 (def Options

@@ -39,8 +39,8 @@
    (schema/optional :alpha schema/fraction)])
 
 (def ^:private breaks-schema
-  [:and [:vector {:min 2} schema/finite]
-   (schema/rule #(when-not (apply < %) "breaks should be increasing"))])
+  (schema/with-rules [:vector {:min 2} schema/finite]
+    [#(when-not (apply < %) "breaks should be increasing")]))
 
 (def Schema
   "Schemas of the histogram: `:style` (theme `[:chart :histogram]`), `:options`, `:mapping` (merged)."

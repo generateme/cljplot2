@@ -56,10 +56,10 @@
 (def ScaleSpec
   "Plot scale spec of `:x` / `:y`: wadogo attributes plus `:nice` and `:expand`, see [[scale-spec]] and
   [[data-scale-spec]]."
-  [:and
+  (schema/with-rules
    (into [:map {:closed true}
           (schema/optional :kind (into [:enum] (sort position-kinds)))
-          (schema/optional :domain [:sequential {:min 1} any?])
+          (schema/nilable :domain [:sequential {:min 1} any?])
           (schema/nilable :ticks [:multi {:dispatch sequential?} [true [:sequential any?]] [false schema/pos-int]])
           (schema/nilable :nice [:multi {:dispatch boolean?} [true :boolean] [false [:and schema/finite schema/non-neg]]])
           (schema/optional :expand schema/padding)
@@ -69,7 +69,7 @@
           (schema/optional :tick-format (schema/forbidden "is internal (set by charts); use :formatter"))]
          (map #(schema/optional % any?))
          wadogo-attributes)
-   (schema/rule domain-problem [:domain])])
+   [domain-problem [:domain]]))
 
 (defn- validate-tick-list!
   [k kind domain ticks]
@@ -123,14 +123,14 @@
 
 (defn data-scale-spec
   "Phase-1 spec of plot scale `k` from its `spec` (may be `{}`) and the merged data `extent` (may be `nil`)
-  with the charts' `padding` `[lo hi]`. An explicit `:domain` wins over data. A data domain gets
+  with the charts' `padding` `[lo hi]`. An explicit `:domain` wins over data (`nil` - not set). A data domain gets
   `:kind` from the spec or the extent (numeric -> `:linear`, categorical -> `:bands`, temporal -> `:datetime`);
   numeric data domains are widened when collapsed to one value.
   Numeric continuous domains - data or explicit - get `:padding`: the spec `:expand`, else the charts' `padding`
   (only when there is data); [[finalize]] applies it after `nice`, so the outermost ticks sit inside the panel.
   Temporal and categorical domains aren't padded."
   [k spec extent padding]
-  (let [built (if (or (contains? spec :domain) (nil? extent))
+  (let [built (if (or (some? (:domain spec)) (nil? extent))
                 (scale-spec k spec)
                 (let [kind (or (:kind spec) (extent-kinds (:kind extent)))
                       domain (case (:kind extent)

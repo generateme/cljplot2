@@ -101,7 +101,7 @@
 (defn ScaleSpec
   "Schema of the plot scale spec of aesthetic `k`."
   [k]
-  [:and
+  (schema/with-rules
    [:map {:closed true}
     (schema/optional :kind (into [:enum] (sort kinds)))
     (schema/nilable :domain [:sequential any?])
@@ -111,8 +111,8 @@
     (schema/optional :formatter schema/function)
     (schema/nilable :title string?)
     (schema/nilable :legend schema/bool)]
-   (schema/rule #(when (and (= k :shape) (= :linear (:kind %))) "shape scale can't be :linear") [:kind])
-   (schema/rule #(domain-problem k %) [:domain])])
+   [#(when (and (= k :shape) (= :linear (:kind %))) "shape scale can't be :linear") [:kind]]
+   [#(domain-problem k %) [:domain]]))
 
 (defn- resolve-range
   "Concrete range of dimension `k` and `kind` from the (validated) range value `r`; a function needs a linear color

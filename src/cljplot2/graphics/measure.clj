@@ -54,12 +54,12 @@
 
 (defmethod natural-size ::empty [_ _] (v/vec2 0.0 0.0))
 
+(def ^:private Placeholder [:map [:size [:tuple number? number?]]])
+
 (defmethod natural-size :placeholder
   [{:keys [size] :as content} _]
-  (let [[w h] size]
-    (when-not (and (vector? size) (number? w) (number? h))
-      (schema/fail! "Placeholder :size must be a vector of two numbers." {:key :size :value size :kind (:kind content)}))
-    (v/vec2 w h)))
+  (schema/explain! [[Placeholder content [:content]]])
+  (v/vec2 (size 0) (size 1)))
 
 (defmethod natural-size :default
   [content _]

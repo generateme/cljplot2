@@ -163,9 +163,8 @@
   otherwise generated from plot keys (`:labels` over the charts' suggested axis titles)."
   [{:keys [custom-grid labels stats theme arrange aspect scale-specs] :as plot}]
   (when (and (= :iso aspect)
-             (or custom-grid arrange (not= :linear (get-in scale-specs [:x :kind])) (not= :linear (get-in scale-specs [:y :kind]))))
-    (schema/fail! "Plot :aspect :iso needs a generated grid with linear :x and :y scales."
-                  {:key :aspect :in [:aspect] :value aspect}))
+             (or (not= :linear (get-in scale-specs [:x :kind])) (not= :linear (get-in scale-specs [:y :kind]))))
+    (schema/fail! "Plot :aspect :iso needs linear :x and :y scales." {:key :aspect :in [:aspect] :value aspect}))
   (assoc plot :grid (cond
                       arrange (plot-grid/arrange-grid arrange labels theme)
                       (and custom-grid labels) (plot-grid/titled-custom-grid custom-grid labels theme)
@@ -347,8 +346,8 @@
    (schema/optional :mapping schema/malli-schema)])
 
 (def Chart
-  "A chart value, see [[cljplot2.chart]]."
-  [:map {:closed true}
+  "A chart value, see [[cljplot2.chart]]; open (a chart value may carry the user's own keys)."
+  [:map
    (schema/nilable :kind keyword?)
    (schema/nilable :options :map)
    [:compute schema/function]
@@ -367,7 +366,7 @@
   "A plot map (keys in the namespace doc); `:theme` and `:options` are checked merged ([[cljplot2.theme/Theme]],
   [[Options]])."
   [:map {:closed true}
-   (schema/optional :data any?)
+   (schema/nilable :data data/Data)
    (schema/nilable :mapping data/Mapping)
    (schema/nilable :charts [:vector Chart])
    (schema/nilable :scales Scales)
@@ -383,11 +382,13 @@
    (schema/optional :theme any?)])
 
 (def Options
-  "Merged render options of `build` (see [[default-options]]) and `:until`."
+  "Merged render options of `build` (see [[default-options]]), `:debug` (used by `cljplot2.render/render`) and
+  `:until`."
   [:map {:closed true}
    [:width schema/pos-int]
    [:height schema/pos-int]
    [:hint (into [:enum] (sort measure/rendering-hints))]
+   (schema/nilable :debug schema/bool)
    (schema/optional :until (into [:enum] stage-order))])
 
 (defn- merged-mappings
@@ -397,8 +398,8 @@
 
 (defn- rule-errors
   "Errors of the rules across plot keys (for a plot whose keys are valid): facet mappings, scales without a mapping,
-  `:custom-grid` / `:arrange` combinations."
-  [{:keys [scales labels custom-grid arrange] :as plot}]
+  `:custom-grid` / `:arrange` combinations (with labels or `:aspect :iso`)."
+  [{:keys [scales labels custom-grid arrange aspect] :as plot}]
   (let [mappings (merged-mappings plot)
         dim-sets (distinct (remove empty? (map facet/facet-dims mappings)))
         error (fn [in value message] {:in in :value value :message message})]
@@ -416,6 +417,8 @@
        (error [:scales k] (get scales k) "facet scale needs a facet mapping of its key"))
      (when (and custom-grid arrange)
        [(error [:arrange] arrange "can't be combined with :custom-grid")])
+     (when (and (= :iso aspect) (or custom-grid arrange))
+       [(error [:aspect] aspect "iso needs the generated grid, not :custom-grid or :arrange")])
      (when (or custom-grid arrange)
        (for [k (keys labels) :when (not= k :title)]
          (error [:labels k] (get labels k) "only :title is allowed with :custom-grid or :arrange"))))))
@@ -445,7 +448,7 @@
   (let [plot-errors (schema/errors Plot plot [])
         errors (concat (schema/errors Options options [:options])
                        plot-errors
-                       (schema/errors theme/Theme theme [:theme])
+                       (theme/errors theme)
                        (when (empty? plot-errors)
                          (mapcat (fn [[s v in]] (schema/errors s v in)) (chart-checks plot theme))))]
     (schema/throw-errors! (if (seq errors) errors (rule-errors plot)))))

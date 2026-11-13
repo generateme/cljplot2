@@ -7,8 +7,9 @@
 
   Error data (`ex-data`): `{:key k :in path :value v :errors [{:in :value :message} ...]}` - `:in` is the path of the
   first error in the input (e.g. `[:theme :legend :gap]`), `:key` its last keyword, `:value` the offending value;
-  `:errors` lists every error. Maps are closed: unknown keys are errors (\"disallowed key\"), with a spelling suggestion
-  when a known key is close."
+  `:errors` lists every error (`:in` `nil` - location unknown, for some checks done by hand).
+  Input maps are closed - unknown keys are errors (\"disallowed key\"), with a spelling suggestion when a known key is
+  close - except those that carry user extensions: mappings, chart values, theme `:chart`, custom grids, `:data`."
   (:refer-clojure :exclude [accessor])
   (:require [clojure.string :as str]
             [clojure2d.color :as c]
@@ -90,16 +91,19 @@
   [k schema]
   [k {:optional true} [:maybe schema]])
 
-(defn rule
-  "Schema of a rule over a whole value: `problem` returns `nil` for a valid value, else the error message. `path` is
-  appended to the error's `:in`.
-  malli explains every schema of an `:and`, so `problem` also sees values failing the others: an exception it throws
-  counts as no problem (the failing schemas report the value)."
-  ([problem] (rule problem nil))
-  ([problem path]
-   (let [safe (fn [v] (try (problem v) (catch Exception _ nil)))]
-     [:fn (cond-> {:error/fn (fn [{:keys [value]} _] (safe value))} path (assoc :error/path path))
-      #(nil? (safe %))])))
+(defn with-rules
+  "`schema` with rules over the whole value. Each rule is `[problem path]`: `problem` returns `nil` for a valid value,
+  else the error message; `path` (may be `nil`) is appended to the error's `:in`.
+  A rule sees only values valid for `schema` (others get `schema`'s errors), so it may rely on their shape; an
+  exception it throws is a bug and propagates."
+  [schema & rules]
+  (let [valid? (malli/validator schema)]
+    (into [:and schema]
+          (map (fn [[problem path]]
+                 (let [check (fn [v] (when (valid? v) (problem v)))]
+                   [:fn (cond-> {:error/fn (fn [{:keys [value]} _] (check value))} path (assoc :error/path path))
+                    #(nil? (check %))])))
+          rules)))
 
 (defn forbidden
   "Schema rejecting any value of its map entry with `message` (keys reserved for internal use)."
@@ -155,8 +159,18 @@
                 (or (me/error-message error) "is invalid"))}))
 
 (defn- error-line
-  [{:keys [in value message]}]
-  (str (pr-str in) " " message (when-not (= "missing required key" message) (str ", got " (value-str value)))))
+  "`in message, got value`; no path when `in` is unknown (`nil`), no value when the entry has none (or the key is
+  missing)."
+  [{:keys [in value message] :as entry}]
+  (str (when in (str (pr-str in) " "))
+       (str/replace message #"\.$" "")
+       (when (and (contains? entry :value) (not= "missing required key" message))
+         (str ", got " (value-str value)))))
+
+(defn- message-of
+  [errors]
+  (let [n (count errors)]
+    (str "Invalid input" (if (= 1 n) ": " (str " (" n " errors):\n  ")) (str/join "\n  " (map error-line errors)))))
 
 (defn- key-of
   [in]
@@ -167,11 +181,8 @@
   are none."
   [errors]
   (when (seq errors)
-    (let [{:keys [in value]} (first errors)
-          n (count errors)]
-      (throw (ex-info (str "Invalid input" (if (= 1 n) ": " (str " (" n " errors):\n  "))
-                           (str/join "\n  " (map error-line errors)))
-                      {:key (key-of in) :in in :value value :errors (vec errors)})))))
+    (let [{:keys [in value]} (first errors)]
+      (throw (ex-info (message-of errors) {:key (key-of in) :in in :value value :errors (vec errors)})))))
 
 (defn errors
   "Errors (`{:in :value :message}`) of `value` against `schema`, paths prefixed by `in`; empty when valid."
@@ -187,7 +198,8 @@
   (throw-errors! (into [] (mapcat (fn [[schema value in]] (errors schema value in))) checks)))
 
 (defn fail!
-  "Throw the error of a check done by hand, shaped as [[explain!]]'s: `data` has `:key`, optionally `:in` and `:value`
-  (and anything else useful); `:errors` is added."
+  "Throw the error of a check done by hand, shaped and worded as [[explain!]]'s: `data` has `:key`, optionally `:in`
+  and `:value` (and anything else useful); `:errors` gets its one entry (`:in` `nil` when unknown)."
   [message data]
-  (throw (ex-info message (assoc data :errors [(assoc (select-keys data [:in :value]) :message message)]))))
+  (let [entry (assoc (select-keys data [:value]) :in (:in data) :message message)]
+    (throw (ex-info (message-of [entry]) (assoc data :errors [entry])))))

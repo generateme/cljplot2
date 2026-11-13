@@ -30,9 +30,15 @@
       (into (map #(schema/nilable % schema/accessor)) mapping-keys)
       (conj (schema/nilable :hierarchy [:vector {:min 1} schema/accessor]))))
 
+(def Data
+  "Plot or chart `:data`: a sequence of rows (maps) or a map of columns (sequences); rows and columns are checked by
+  [[rows]]."
+  (schema/named-type ::data #(or (sequential? %) (map? %))
+                     "should be a sequence of rows (maps) or a map of columns (sequences)"))
+
 (def common-options
   "Map entries of the options every chart takes: own `:data` (see [[rows]]) and `:mapping` (over the plot's)."
-  [(schema/optional :data any?)
+  [(schema/nilable :data Data)
    (schema/optional :mapping Mapping)])
 
 (def position-padding

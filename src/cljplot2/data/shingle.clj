@@ -30,8 +30,8 @@
 
 (def ^:private bounds
   "`[lo hi]`, finite numbers, `lo <= hi`."
-  [:and [:tuple schema/finite schema/finite]
-   (schema/rule (fn [[lo hi]] (when (> (double lo) (double hi)) "should be [lo hi] with lo <= hi")))])
+  (schema/with-rules [:tuple schema/finite schema/finite]
+    [(fn [[lo hi]] (when (> (double lo) (double hi)) "should be [lo hi] with lo <= hi"))]))
 
 (def IntervalArgs
   "Arguments of [[interval]]: `{:bounds [lo hi] :label label}`."
@@ -76,12 +76,12 @@
    (schema/nilable :label [:or string? boolean?])])
 
 (def ^:private ShingleArgs
-  [:and
+  (schema/with-rules
    [:map [:accessor schema/accessor] [:options Options]]
-   (schema/rule (fn [{:keys [accessor options]}]
-                  (when (and (true? (:label options)) (not (keyword? accessor)))
-                    "label true needs a keyword accessor (its name is the label)"))
-                [:options :label])])
+   [(fn [{:keys [accessor options]}]
+      (when (and (true? (:label options)) (not (keyword? accessor)))
+        "label true needs a keyword accessor (its name is the label)"))
+    [:options :label]]))
 
 (defn- non-numeric-value!
   [values]

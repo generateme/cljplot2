@@ -113,34 +113,32 @@
 
 ;; content
 
-(defn- validate-legend!
-  [{:keys [title entries charts]}]
-  (when-not (or (nil? title) (string? title))
-    (schema/fail! "Legend :title must be a string or nil." {:key :title :value title}))
-  (when-not (and (vector? entries) (every? #(and (map? %) (string? (:label %)) (map? (:attributes %))) entries))
-    (schema/fail! "Legend :entries must be a vector of {:label string :attributes map}." {:key :entries}))
-  (when-not (and (vector? charts) (every? #(and (nat-int? (:chart %)) (vector? (:dims %))) charts))
-    (schema/fail! "Legend :charts must be a vector of {:chart index :dims [dim]}." {:key :charts})))
+(def Legend
+  "`{:kind :legend}` content: `:title`, `:entries` `[{:label :attributes}]`, `:charts` `[{:chart index :dims [dim]}]`."
+  [:map
+   (schema/nilable :title string?)
+   [:entries [:vector [:map [:label string?] [:attributes :map]]]]
+   [:charts [:vector [:map [:chart nat-int?] [:dims vector?]]]]])
 
-(defmethod measure/validate-content :legend [content] (validate-legend! content))
+(def Colorbar
+  "`{:kind :colorbar}` content: `:title`, a linear `:scale`, `:ticks` and one label per tick in `:labels`."
+  (schema/with-rules
+   [:map
+    (schema/nilable :title string?)
+    [:scale [:map [:kind [:= :linear]]]]
+    [:ticks vector?]
+    [:labels vector?]]
+   [#(when-not (= (count (:ticks %)) (count (:labels %))) "should have one label per tick") [:labels]]))
 
-(defn- validate-colorbar!
-  [{:keys [title scale ticks labels]}]
-  (when-not (or (nil? title) (string? title))
-    (schema/fail! "Color bar :title must be a string or nil." {:key :title :value title}))
-  (when-not (and (map? scale) (= :linear (:kind scale)))
-    (schema/fail! "Color bar :scale must be a linear color scale." {:key :scale}))
-  (when-not (and (vector? ticks) (vector? labels) (= (count ticks) (count labels)))
-    (schema/fail! "Color bar :ticks and :labels must be vectors of equal length." {:key :ticks})))
+(def Legends
+  "`{:kind :legends}` content: `:legends`, a vector of [[Legend]] and [[Colorbar]] contents."
+  [:map [:legends [:vector [:multi {:dispatch #(if (= :colorbar (:kind %)) :colorbar :legend)}
+                            [:colorbar Colorbar]
+                            [:legend Legend]]]]])
 
-(defmethod measure/validate-content :colorbar [content] (validate-colorbar! content))
-
-(defmethod measure/validate-content :legends
-  [{:keys [legends]}]
-  (when-not (vector? legends)
-    (schema/fail! "Legends :legends must be a vector of legend contents." {:key :legends}))
-  (doseq [l legends]
-    (if (= :colorbar (:kind l)) (validate-colorbar! l) (validate-legend! l))))
+(defmethod measure/validate-content :legend [content] (schema/explain! [[Legend content [:content]]]))
+(defmethod measure/validate-content :colorbar [content] (schema/explain! [[Colorbar content [:content]]]))
+(defmethod measure/validate-content :legends [content] (schema/explain! [[Legends content [:content]]]))
 
 (defn- title-label [text] {:kind :label :role :legend-title :text text})
 (defn- entry-label [text] {:kind :label :role :legend-label :text text})

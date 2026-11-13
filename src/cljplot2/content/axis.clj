@@ -27,19 +27,16 @@
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
-(def ^:private axis-scales #{:x :y})
+(def Axis
+  "`{:kind :axis}` content: `:scale` `:x` or `:y`."
+  [:map [:scale [:enum :x :y]]])
 
-(defmethod measure/validate-content :axis
-  [{k :scale}]
-  (when-not (axis-scales k)
-    (schema/fail! "Axis :scale must be :x or :y." {:key :scale :value k})))
+(def Overhang
+  "`{:kind :axis-overhang}` content: `:scale` `:x` or `:y`, `:end` `:start` or `:end`."
+  [:map [:scale [:enum :x :y]] [:end [:enum :start :end]]])
 
-(defmethod measure/validate-content :axis-overhang
-  [{k :scale end :end}]
-  (when-not (axis-scales k)
-    (schema/fail! "Axis overhang :scale must be :x or :y." {:key :scale :value k}))
-  (when-not (#{:start :end} end)
-    (schema/fail! "Axis overhang :end must be :start or :end." {:key :end :value end})))
+(defmethod measure/validate-content :axis [content] (schema/explain! [[Axis content [:content]]]))
+(defmethod measure/validate-content :axis-overhang [content] (schema/explain! [[Overhang content [:content]]]))
 
 (defn- tick-label [text] {:kind :label :role :tick-label :text text})
 

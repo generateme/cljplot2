@@ -85,7 +85,7 @@
   (testing "nil content measures 0"
     (is (= [0 100] (sizes (layout (one-row [{:size [:measured]} {:size [:flexible]}] {:id :a :column 0 :row 0})) :columns))))
   (testing "invalid placeholder"
-    (are [size] (= {:key :size :value size} (select-keys (error #(layout (one-row [{:size [:measured]}] {:id :a :column 0 :row 0 :content {:kind :placeholder :size size}}))) [:key :value]))
+    (are [size] (= [:content :size] (take 2 (:in (error #(layout (one-row [{:size [:measured]}] {:id :a :column 0 :row 0 :content {:kind :placeholder :size size}}))))))
       nil [1] ["1" 1] '(1 1))
     (is (= {:key :content :item :a :kind :placeholder}
            (dissoc (error #(layout (one-row [{:size [:measured]}] {:id :a :column 0 :row 0 :content (placeholder -1 1)}))) :size))))

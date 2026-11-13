@@ -155,6 +155,22 @@
   [theme]
   (deep-merge default-theme theme))
 
+(def ^:private last-validated
+  "`[theme errors]` of the last [[errors]] call."
+  (atom nil))
+
+(defn errors
+  "Errors of the merged `theme` against [[Theme]] (paths under `[:theme]`, see [[cljplot2.schema/errors]]). Checking
+  resolves every color and font, so the result for the last theme is reused for an equal one (plots built in a row
+  usually share it)."
+  [theme]
+  (let [[validated errs] @last-validated]
+    (if (and validated (= validated theme))
+      errs
+      (let [errs (schema/errors Theme theme [:theme])]
+        (reset! last-validated [theme errs])
+        errs))))
+
 (defn text-style
   "Text style of `content`: the style of its `:role` in `theme` with inline style keys of `content` merged over.
   Throws `ex-info` with `{:key :role}` when the role has no style map."

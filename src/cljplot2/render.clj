@@ -77,11 +77,12 @@
 
 (defn render
   "Build `plot` (see [[cljplot2.pipeline/build]], `:until` is ignored) and draw it.
-  Option `:debug` (truthy) paints item boxes and ids under the content, also inside sub-plots.
+  Option `:debug` (boolean; here or in the plot's `:options`) paints item boxes and ids under the content, also inside
+  sub-plots.
   Returns a clojure2d canvas of exactly `:width` x `:height`."
   ([plot] (render plot {}))
   ([plot options]
-   (let [built (pipeline/build plot (dissoc options :until :debug))
+   (let [built (pipeline/build plot (dissoc options :until))
          {:keys [width height hint]} (:options built)]
      (canvas/call-with-graphics
       (c2d/canvas width height hint)
@@ -89,5 +90,5 @@
         (let [background (get-in built [:theme :plot :background])]
           (when-not (theme/none? background) ;; canvas is transparent until painted
             (c2d/set-background target background)))
-        (draw-built! target built (boolean (:debug options)))
+        (draw-built! target built (boolean (get-in built [:options :debug])))
         target)))))

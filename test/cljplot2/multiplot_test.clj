@@ -65,7 +65,7 @@
                                     (assoc item :column 1)]}}]
       (is (= {:key :id :value :same} (error #(plot/build mp))))))
   (testing ":plot must be a map"
-    (is (= {:key :plot} (error #(plot/build {:custom-grid {:columns [{:size [:flexible]}] :rows [{:size [:flexible]}]
+    (is (= {:key :plot :in [:content :plot] :value [1]} (error #(plot/build {:custom-grid {:columns [{:size [:flexible]}] :rows [{:size [:flexible]}]
                                                                 :items [{:id :p :column 0 :row 0 :content {:kind :plot :plot [1]}}]}})))))
   (testing "errors carry the sub-plot id and path"
     (let [bad (assoc p1 :mapping {:x :x :y :nope})

@@ -42,10 +42,14 @@
 (deftest spec-validation-test
   (testing "domain"
     (are [domain] (= [:scales :x :domain] (spec-error-in {:domain domain}))
-      nil [] "abc" [1 "a"] [5 5] [3] [0 ##NaN] [0 ##Inf] ["a" "a"] [1 (LocalDate/of 2020 1 1)])
+      [] "abc" [1 "a"] [5 5] [3] [0 ##NaN] [0 ##Inf] ["a" "a"] [1 (LocalDate/of 2020 1 1)])
     (is (= [:scales :x :domain] (spec-error-in {:kind :log :domain [0 10]})))
     (is (= [:scales :x :domain] (spec-error-in {:kind :log :domain [-1 10]})))
     (is (= [:scales :x :domain] (spec-error-in {:domain [(LocalDate/of 2020 1 1) (LocalDate/of 2020 1 1)]}))))
+  (testing "nil domain: not set"
+    (is (= [-1.0 1.0] (:domain (scale/data-scale-spec :x {:domain nil} {:kind :numeric :min 0.0 :max 0.0} [0 0])))
+        "the data domain")
+    (is (= {:key :domain :in [:scales :x :domain]} (error #(build {:x {:domain nil}}))) "no data: required"))
   (testing "a domain is required without data"
     (is (= {:key :domain :in [:scales :x :domain]} (error #(build {:x {:kind :log}})))))
   (testing "kind"
@@ -200,7 +204,7 @@
     (is (= 8 (track-size (build {:y {:domain [0 10] :ticks []}}) :columns :y-axis)))))
 
 (deftest axis-validation-test
-  (is (= {:key :scale :value :z} (error #(plot/build {:custom-grid {:columns [{:size [:flexible]}] :rows [{:size [:flexible]}]
+  (is (= {:key :scale :in [:content :scale] :value :z} (error #(plot/build {:custom-grid {:columns [{:size [:flexible]}] :rows [{:size [:flexible]}]
                                                                          :items [{:id :a :column 0 :row 0 :content {:kind :axis :scale :z}}]}}))))
   (are [t k] (= k (:key (error #(plot/build {:theme t}))))
     {:axis {:x {:tick-length -1}}} :tick-length

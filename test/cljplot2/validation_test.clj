@@ -25,8 +25,12 @@
       (is (= {:key :legend :in [:legend] :value :yes
               :errors [{:in [:legend] :value :yes :message "should be true or false"}]}
              data))
-      (is (= "Invalid input: [:legend] should be true or false, got :yes"
-             (message #(plot/build (assoc scatter-plot :legend :yes)))))))
+      (is (re-matches #"Invalid input: \[:legend\] .+, got :yes" (message #(plot/build (assoc scatter-plot :legend :yes)))))))
+  (testing "checks done by hand are worded the same way"
+    (is (= "Invalid input: [:a] Bad thing, got 1" (message #(schema/fail! "Bad thing." {:key :k :in [:a] :value 1}))))
+    (is (= "Invalid input: Bad thing" (message #(schema/fail! "Bad thing." {:key :k}))))
+    (is (= [{:in nil :message "Bad thing."}] (:errors (error-data #(schema/fail! "Bad thing." {:key :k}))))
+        "unknown location: :in nil"))
   (testing "not a map at all"
     (is (= [] (:in (error #(plot/build 5)))))
     (is (= :input (:key (error #(plot/build 5)))))
@@ -81,7 +85,33 @@
   (testing "a non-map chart theme"
     (is (= [:theme :chart :scatter] (:in (error #(plot/build (assoc scatter-plot :theme {:chart {:scatter 5}}))))))))
 
+(deftest data-test
+  (testing ":data type checked at the boundary, located"
+    (is (= {:key :data :in [:data] :value 5} (error #(plot/build (assoc scatter-plot :data 5)))))
+    (is (= [:charts 0 :options :data] (:in (error #(plot/build (assoc scatter-plot :charts [(chart/scatter {:data "x"})])))))))
+  (testing "rows inside are checked when read"
+    (is (= :data (:key (error #(plot/build (assoc scatter-plot :data [1 2]))))))))
+
+(deftest open-values-test
+  (testing "chart values may carry the user's keys"
+    (is (map? (plot/build (update scatter-plot :charts (fn [cs] (mapv #(assoc % :id 1 :note "mine") cs)))))))
+  (testing ":debug is a render option, also in the plot's :options"
+    (is (true? (get-in (plot/build (assoc scatter-plot :options {:debug true})) [:options :debug])))
+    (is (= [:options :debug] (:in (error #(plot/build scatter-plot {:debug 1})))))))
+
+(deftest theme-cache-test
+  (testing "an equal theme reuses the result, a different one is checked"
+    (is (map? (plot/build scatter-plot)))
+    (is (map? (plot/build scatter-plot)))
+    (is (= [:theme :legend :gap] (:in (error #(plot/build (assoc scatter-plot :theme {:legend {:gap -1}}))))))
+    (is (= [:theme :legend :gap] (:in (error #(plot/build (assoc scatter-plot :theme {:legend {:gap -1}}))))))
+    (is (map? (plot/build scatter-plot)))))
+
 (deftest rules-test
+  (testing "iso with a custom grid or arrange: found before any stage runs"
+    (is (= {:key :aspect :in [:aspect] :value :iso}
+           (error #(plot/build {:custom-grid {:columns [{:size [:flexible]}] :rows [{:size [:flexible]}] :items []}
+                                :aspect :iso})))))
   (testing "rules across keys run once the shapes hold"
     (is (= #{[:legend]}
            (error-ins #(plot/build (assoc scatter-plot :legend 1 :scales {:color {:domain ["a"]}}))))))
@@ -98,9 +128,13 @@
   (testing "fail! gives the same shape"
     (is (= {:key :k :in [:a :k] :value 1 :errors [{:in [:a :k] :value 1 :message "bad"}]}
            (error-data #(schema/fail! "bad" {:key :k :in [:a :k] :value 1})))))
-  (testing "explain! is nil for valid values, rules see bad values safely"
+  (testing "explain! is nil for valid values; rules see only values valid for their schema"
     (is (nil? (schema/explain! [[[:map [:a schema/pos]] {:a 1} []]])))
-    (is (= [[:a]] (map :in (schema/errors [:and [:map [:a [:vector int?]]] (schema/rule #(when (apply < (:a %)) "x"))]
-                                          {:a "zz"} [])))))
+    (let [s (schema/with-rules [:map [:a [:vector int?]]] [#(when-not (apply < (:a %)) "should increase") [:a]])]
+      (is (= [[:a]] (map :in (schema/errors s {:a "zz"} []))) "shape error only")
+      (is (= [{:in [:a] :value [2 1] :message "should increase"}] (schema/errors s {:a [2 1]} [])))))
+  (testing "a rule's own exception propagates"
+    (is (thrown? ArithmeticException
+                 (schema/errors (schema/with-rules :int [(fn [_] (/ 1 0))]) 1 []))))
   (testing "many distinct schemas (made per call) still work"
     (is (every? nil? (for [i (range 300)] (schema/explain! [[[:map [:a [:= i]]] {:a i} []]]))))))

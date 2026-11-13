@@ -103,8 +103,10 @@
       (let [idx (track-index tracks axis item-id span)] [idx idx]))))
 
 (defn prepare
-  "Validate `grid` and resolve item spans to track indices (stored under `::span`), recursively for nested grids.
-  Throws `ex-info` naming the offending key."
+  "Validate `grid` and resolve item spans to track indices (stored under `::span`), recursively for nested grids;
+  content is validated by [[cljplot2.graphics.measure/validate-content]].
+  Throws `ex-info` (see [[cljplot2.schema]]): `:key` is the grid part at fault - `:columns` / `:rows` for tracks,
+  `:column` / `:row` for item spans, `:items`, `:grid` - with `:index`, `:item` or `:duplicates` locating it."
   [grid]
   (when-not (map? grid) (schema/fail! "Grid must be a map." {:key :grid}))
   (validate-axis! grid :columns)

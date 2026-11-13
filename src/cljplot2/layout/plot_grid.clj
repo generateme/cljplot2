@@ -233,7 +233,7 @@
 
 (def Arrange
   "Plot `:arrange`, see [[cljplot2.multiplot/arrange]]; the plots are validated when built as sub-plots."
-  [:and
+  (schema/with-rules
    [:map {:closed true}
     [:plots [:sequential {:min 1} :map]]
     (schema/nilable :columns schema/pos-int)
@@ -241,7 +241,7 @@
     (schema/nilable :widths [:sequential schema/pos])
     (schema/nilable :heights [:sequential schema/pos])
     (schema/nilable :align schema/bool)]
-   (schema/rule arrange-problem)])
+   [arrange-problem]))
 
 (defn- arrange-weights
   [ws ^long n]
