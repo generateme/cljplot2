@@ -129,6 +129,7 @@
                                                        [(m/min (double lo) (double (or center lo)))
                                                         (m/max (double hi) (double (or center hi)))])))
      :padding (strip/padding place options)
+     :padding-px (strip/n-label-room options items env)
      :na (group/na-dims panels)
      :dropped dropped}))
 
@@ -137,8 +138,10 @@
 (defn draw
   "Draw the intervals of one panel: the line, end caps (half the item's cross range) and the centre mark."
   [_chart {:keys [items style place options]} canvas box scales env]
-  (let [{:keys [point]} (strip/placement box scales options place)
+  (let [{:keys [point] :as pl} (strip/placement box scales options place)
         center? (not= :none (get options :center :method))]
+    (strip/draw-n-labels! canvas pl items (fn [{:keys [hi center]}] (max (double hi) (double (or center hi))))
+                          options scales env)
     (doseq [{:keys [level slot lo hi center aesthetics]} items
             :let [st (group/style style aesthetics scales (:theme env))
                   c0 (strip/in-slot slot 0.0)

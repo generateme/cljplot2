@@ -120,6 +120,23 @@
         b (+ b (* (double phi) span))]
     (if log? [(m/pow 10.0 a) (m/pow 10.0 b)] [a b])))
 
+(defn- pad-pixels
+  "Extend `[lo hi]` so that `[plo phi]` pixels of a `length` pixels long range lie beyond it (in log10 space for
+  `:log`); unchanged when the room would take more than half the range."
+  [kind [^double lo ^double hi] [plo phi] ^double length]
+  (let [plo (double plo) phi (double phi)
+        room (+ plo phi)]
+    (if (or (<= room 0.0) (> room (* 0.5 length)))
+      [lo hi]
+      (let [log? (= kind :log)
+            a (if log? (m/log10 lo) lo)
+            b (if log? (m/log10 hi) hi)
+            ;; data per pixel of the extended domain: (b - a) / (length - room)
+            per-px (/ (- b a) (- length room))
+            a (- a (* plo per-px))
+            b (+ b (* phi per-px))]
+        (if log? [(m/pow 10.0 a) (m/pow 10.0 b)] [a b])))))
+
 (def ^:private extent-kinds {:numeric :linear :categorical :bands :temporal :datetime})
 
 (defn data-scale-spec
@@ -207,17 +224,23 @@
 (defn finalize
   "Finalized scale of phase-1 `spec` for the pixel `range` (`[start end]`) and `tick-hint` (the count used unless
   the spec has `:ticks`). Steps: the domain is extended by `nice` (limited, see `:nice` in [[scale-spec]]) with
-  the explicit tick count or the hint, then padded by `:padding` (see [[data-scale-spec]]);
+  the explicit tick count or the hint, then padded by `:padding` (see [[data-scale-spec]]), then by the pixel room
+  `:padding-px` `[lo hi]` (charts' labels past the data; `:linear` and `:log` only, skipped when over half the
+  range);
   ticks outside the final domain are dropped. A bands scale without `:ticks` has a tick at every band."
   [spec range tick-hint]
   (let [kind (:kind spec)
         explicit (:ticks spec)
-        base (assoc (dissoc spec :kind :nice :expand :padding :tick-format) :range range)
+        base (assoc (dissoc spec :kind :nice :expand :padding :padding-px :tick-format) :range range)
         nice-count (if (integer? explicit) explicit tick-hint)
         niced (nice-domain (s/scale kind (assoc base :ticks nice-count)) kind (:nice spec))
         domain (if-let [padding (:padding spec)]
                  (pad kind [(double (first niced)) (double (last niced))] padding)
                  niced)
+        domain (if-let [padding-px (when (#{:linear :log} kind) (:padding-px spec))]
+                 (pad-pixels kind [(double (first domain)) (double (last domain))] padding-px
+                             (m/abs (- (double (second range)) (double (first range)))))
+                 domain)
         attributes (assoc base :domain domain :ticks (or explicit (if (= kind :bands) (vec domain) tick-hint)))
         scale (s/scale kind attributes)
         ticks (if (continuous-kinds kind)

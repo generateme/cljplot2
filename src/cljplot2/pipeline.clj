@@ -90,14 +90,21 @@
                                {:mapping mapping :groups groups :dropped dropped})))
                    chart-inputs)}))
 
+(defn- chart-mapping
+  "Mapping of `chart`: the plot `mapping` - only its facet keys for a chart with `:inherit-mapping :facets`
+  (annotations) - with the chart's own `:mapping` merged over."
+  [mapping {:keys [options inherit-mapping]}]
+  (merge (if (= :facets inherit-mapping) (select-keys mapping [:facet :facet-col :facet-row]) mapping)
+         (:mapping options)))
+
 (defn- split-stage
-  "Rows of every chart (own non-nil `:data` or the plot's) grouped by facet key, with the chart's mapping (plot
-  mapping with the chart's `:mapping` merged over). Stores `{:facets {:dims :levels :dropped {:facet n}}
+  "Rows of every chart (own non-nil `:data` or the plot's) grouped by facet key, with the chart's mapping (see
+  [[chart-mapping]]). Stores `{:facets {:dims :levels :dropped {:facet n}}
   :charts [{:mapping :groups} ...]}`; see [[cljplot2.data.facet]]."
   [{:keys [charts data mapping scales facets] :as plot}]
   (let [plot-rows (delay (data/rows data))
-        inputs (mapv (fn [{:keys [options]}]
-                       {:mapping (merge mapping (:mapping options))
+        inputs (mapv (fn [{:keys [options] :as chart}]
+                       {:mapping (chart-mapping mapping chart)
                         :rows (if (some? (:data options)) (data/rows (:data options)) @plot-rows)})
                      charts)
         {split-facets :facets chart-splits :charts} (facet-split inputs scales (get facets :na-panel true))]
@@ -107,7 +114,8 @@
 (defn- stats-stage
   "Per chart: the data its `:compute` returns from its split groups."
   [{:keys [charts split theme groups scales flip] :as plot}]
-  (let [env {:theme theme :na-level? (get groups :na true) :plot-scales scales :flip? (boolean flip)}]
+  (let [env {:theme theme :na-level? (get groups :na true) :plot-scales scales :flip? (boolean flip)
+             :hint (get-in plot [:options :hint] :high)}]
     (assoc plot :stats (mapv (fn [chart chart-split] ((:compute chart) chart chart-split env)) charts (:charts split)))))
 
 (defn- aesthetic-extents
@@ -119,9 +127,13 @@
                      (when (or extent na?) [k {:extent extent :na? na?}]))))
         aesthetic/dims))
 
+(defn- per-side-max
+  [[a b] [c d]]
+  [(m/max (double a) (double c)) (m/max (double b) (double d))])
+
 (defn- extents-stage
-  "Per position scale: extents merged over charts and panels, padding as the largest per side among the charts
-  with an extent there. A chart whose extents of a dimension are all companions (`:companion? true`) joins only a
+  "Per position scale: extents merged over charts and panels, padding (and pixel room `:padding-px`) as the largest
+  per side among the charts with an extent there. A chart whose extents of a dimension are all companions (`:companion? true`) joins only a
   dimension another chart has extents of; companions alone give no extent (and no data scale). Per aesthetic: merged
   extent and `:na?`."
   [{:keys [stats] :as plot}]
@@ -131,18 +143,20 @@
                           (let [with-extent (keep (fn [st]
                                                     (when-let [es (seq (keep #(get % k) (vals (:extents st))))]
                                                       {:extent (data/merge-extents k es) :padding (get-in st [:padding k] [0 0])
+                                                       :padding-px (get-in st [:padding-px k] [0 0])
                                                        :companion? (every? :companion? es)}))
                                                   stats)]
                             (when (some (complement :companion?) with-extent)
                               [k {:extent (data/merge-extents k (map :extent with-extent))
-                                  :padding (reduce (fn [[a b] [c d]] [(m/max (double a) (double c)) (m/max (double b) (double d))])
-                                                [0.0 0.0] (map :padding with-extent))}]))))
+                                  :padding (reduce per-side-max [0.0 0.0] (map :padding with-extent))
+                                  :padding-px (reduce per-side-max [0.0 0.0] (map :padding-px with-extent))}]))))
                position-scales)))
 
 (defn- scale-specs-stage
   "Phase-1 specs of the position and aesthetic scales with a plot `:scales` entry or data extents. Aesthetic specs are final (no layout dependence).
   A tick format suggested by a chart (`:tick-format` in its stats, the first chart's) is added to the position spec;
-  scale attributes suggested by a chart (`:scale-defaults {dim attributes}`, the first chart's) are used as a whole
+  pixel room asked by charts (`:padding-px`) is added to continuous position specs (see
+  [[cljplot2.scale.position/finalize]]); scale attributes suggested by a chart (`:scale-defaults {dim attributes}`, the first chart's) are used as a whole
   unless the plot's own spec sets any of them (attributes like bands `:padding-out` / `:align-outer` only make
   sense together)."
   [{:keys [scales extents theme stats] :as plot}]
@@ -153,12 +167,13 @@
                           (if (some #(contains? spec %) (keys defaults)) spec (merge defaults spec))))]
     (assoc plot :scale-specs
            (into {} (keep (fn [k]
-                            (let [{:keys [extent padding na?]} (get extents k)
+                            (let [{:keys [extent padding padding-px na?]} (get extents k)
                                   spec (with-defaults k (get scales k {}))]
                               (if (aesthetic/dim? k)
                                 (some->> (aesthetic/scale-spec k spec extent na? (:palette theme)) (vector k))
                                 [k (cond-> (scale/data-scale-spec k spec extent padding)
-                                     (tick-format k) (assoc :tick-format (tick-format k)))]))))
+                                     (tick-format k) (assoc :tick-format (tick-format k))
+                                     (some pos? padding-px) (assoc :padding-px padding-px))]))))
                  ks))))
 
 (defn- effective-labels
@@ -373,6 +388,7 @@
    [:compute schema/function]
    [:draw schema/function]
    (schema/nilable :legend schema/function)
+   (schema/optional :inherit-mapping [:enum :all :facets])
    (schema/nilable :schema chart-schemas)])
 
 (def Scales
@@ -413,9 +429,9 @@
    (schema/optional :until (into [:enum] stage-order))])
 
 (defn- merged-mappings
-  "Per chart: the plot mapping with the chart's `:mapping` merged over."
+  "Per chart: its mapping, see [[chart-mapping]]."
   [{:keys [mapping charts]}]
-  (mapv #(merge mapping (get-in % [:options :mapping])) charts))
+  (mapv #(chart-mapping mapping %) charts))
 
 (defn- rule-errors
   "Errors of the rules across plot keys (for a plot whose keys are valid): facet mappings, scales without a mapping,

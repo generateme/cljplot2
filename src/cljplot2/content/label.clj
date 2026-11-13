@@ -21,6 +21,7 @@
             [clojure2d.core :as c2d]
             [fastmath.core :as m]
             [fastmath.vector :as v]
+            [cljplot2.graphics.canvas :as canvas]
             [cljplot2.graphics.draw :as draw]
             [cljplot2.graphics.font :as font]
             [cljplot2.graphics.measure :as measure]
@@ -155,3 +156,18 @@
                                         (+ block-x (align-offset (:h-align spec) block-width line-width))
                                         (+ block-y (* idx line-height) ascent)))
                             widths))))))
+
+(def ^:private anchor-fraction
+  {:left 0.0 :center 0.5 :right 1.0 :top 0.0 :middle 0.5 :bottom 1.0})
+
+(defn draw-at!
+  "Draw label `content` on canvas `c` with the `anchor` point of its box (`[h v]`, `h` one of `:left :center :right`,
+  `v` one of `:top :middle :bottom`; the box is the natural size - for rotated text the rotated frame's bounding box)
+  at pixel `x`, `y`; the box starts at whole pixels. `env` - `:theme`. Isolates the canvas state."
+  [c content [h v] x y env]
+  (let [x (double x) y (double y)
+        ^fastmath.vector.Vec2 size (measure/natural-size content {:canvas c :theme (:theme env)})
+        left (m/round (- x (* (double (anchor-fraction h)) (.x size))))
+        top (m/round (- y (* (double (anchor-fraction v)) (.y size))))]
+    (canvas/call-with-isolated-graphics
+     c #(draw/draw-content content % {:x left :y top :w (.x size) :h (.y size)} env))))

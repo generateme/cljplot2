@@ -89,6 +89,7 @@
      :extents (merge-with merge (group/aesthetic-extents panels)
                           (strip/extents place items (fn [{:keys [xs]}] [(first xs) (peek xs)])))
      :padding (strip/padding place options)
+     :padding-px (strip/n-label-room options items env)
      :na (group/na-dims panels)
      :dropped (assoc dropped :group no-violin)}))
 
@@ -110,7 +111,7 @@
 (defn draw
   "Draw the violins of one panel: the outline polygon (filled), then the inner marks."
   [_chart {:keys [items style place options mirror?]} canvas box scales env]
-  (let [{:keys [point]} (strip/placement box scales options place)
+  (let [{:keys [point] :as pl} (strip/placement box scales options place)
         inner (get options :inner :box)]
     (doseq [{:keys [level slot xs widths q1 median q3 lav uav values aesthetics]} items
             :let [st (group/style style aesthetics scales (:theme env))]
@@ -156,7 +157,8 @@
                          (line! canvas (p v base) (p v (+ base t)))
                          (line! canvas (p v (- base t)) (p v (+ base t))))))
             :points (doseq [v values :let [^Vec2 q (p v base)]] (c2d/ellipse canvas (.x q) (.y q) 3 3))
-            :none nil))))))
+            :none nil))))
+    (strip/draw-n-labels! canvas pl items (fn [{:keys [xs]}] (peek xs)) options scales env)))
 
 (defn legend
   "Key glyph: a filled lens (the violin's outline colours) centred in `box`."

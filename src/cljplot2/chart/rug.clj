@@ -41,13 +41,15 @@
      :extents (merge-with merge (group/aesthetic-extents panels)
                           (strip/extents place items (fn [{:keys [values]}] [(reduce min values) (reduce max values)])))
      :padding (strip/padding place options)
+     :padding-px (strip/n-label-room options items env)
      :na (group/na-dims panels)
      :dropped dropped}))
 
 (defn draw
   "Draw the rug lines of one panel."
   [_chart {:keys [items style place options]} canvas box scales env]
-  (let [{:keys [point]} (strip/placement box scales options place)]
+  (let [{:keys [point] :as pl} (strip/placement box scales options place)]
+    (strip/draw-n-labels! canvas pl items (fn [{:keys [values]}] (reduce max values)) options scales env)
     (doseq [{:keys [level slot values aesthetics]} items
             :let [st (group/style style aesthetics scales (:theme env))]
             :when (and st (pos? (double (:line-width st))))]

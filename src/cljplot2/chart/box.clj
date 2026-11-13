@@ -80,6 +80,7 @@
     {:data (update-vals items (fn [its] {:items its :style (style options theme) :place place :options options}))
      :extents (merge-with merge (group/aesthetic-extents panels) (strip/extents place items x-range))
      :padding (strip/padding place options)
+     :padding-px (strip/n-label-room options items env)
      :na (group/na-dims panels)
      :dropped dropped}))
 
@@ -95,7 +96,7 @@
 (defn draw
   "Draw the boxes of one panel."
   [_chart {:keys [items style place options]} canvas box scales env]
-  (let [{:keys [point]} (strip/placement box scales options place)
+  (let [{:keys [point] :as pl} (strip/placement box scales options place)
         outliers? (data/option options :outliers true)]
     (doseq [{:keys [level slot q1 median q3 lav uav outliers mean width-factor aesthetics]} items
             :let [st (group/style style aesthetics scales (:theme env))]
@@ -128,7 +129,10 @@
             (when (:mean options)
               (shape/draw! canvas \O (p mean c0) {:size (m/max 3.0 (* 0.5 (double (:size st))))
                                                    :color (contrast-color fill) :stroke-color stroke
-                                                   :stroke-width sw}))))))))
+                                                   :stroke-width sw}))))))
+    (strip/draw-n-labels! canvas pl items
+                          (fn [{:keys [uav outliers]}] (if (and outliers? (seq outliers)) (reduce max uav outliers) uav))
+                          options scales env)))
 
 (defn legend
   "Key glyph: a small box with a median line, centred in `box`."

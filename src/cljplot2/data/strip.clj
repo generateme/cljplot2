@@ -32,11 +32,17 @@
   Ridgelines (histogram and density with a categorical or bands `:y`, see [[ridges?]]): one-sided profiles growing
   from the band centre toward the next level, the tallest `:overlap` (default 0.9) band steps high.
 
-  Every strip chart throws `ex-info {:key :mapping}` when its rows have no finite `:x` value."
+  Every strip chart throws `ex-info {:key :mapping}` when its rows have no finite `:x` value.
+
+  n labels (every strip chart): `:n-label true` draws each item's count, formatted by `:n-format` (default
+  `\"n=%d\"`), just past its largest drawn value (see [[draw-n-labels!]]); the chart asks for value-axis room for
+  them (`:padding-px`, see [[n-label-room]])."
   (:require [fastmath.core :as m]
+            [cljplot2.content.label :as label]
             [cljplot2.data.group :as group]
             [cljplot2.data.position :as position]
             [cljplot2.data.rows :as data]
+            [cljplot2.graphics.measure :as measure]
             [cljplot2.scale.position :as scale]
             [cljplot2.schema :as schema])
   (:import [fastmath.vector Vec2]))
@@ -56,7 +62,9 @@
    (schema/optional :thickness schema/non-neg)
    (schema/optional :position (into [:enum] (sort positions)))
    (schema/optional :dodge-gap schema/fraction)
-   (schema/optional :bottom-share schema/fraction)])
+   (schema/optional :bottom-share schema/fraction)
+   (schema/nilable :n-label schema/bool)
+   (schema/optional :n-format :string)])
 
 (def ridge-options
   "Map entries of the ridgeline options (histogram and density with a categorical `:y`)."
@@ -106,9 +114,15 @@
   groups (ordinal aesthetics, `:group`) and `:y` levels, `:values` - the finite `:x` numbers.
   Returns `{:place p :position pos :items {panel [item ...]} :group-keys [..] :panels split-panels :dropped {dim n}}`;
   items carry `:level` (`nil` without bands), `:key`, `:aesthetics`, `:values`, `:slot`. `default-place` - the
-  chart's placement without `:y`. Throws `ex-info {:key :mapping}` when there are rows but no finite `:x` value."
+  chart's placement without `:y`. Throws `ex-info {:key :mapping}` when there are rows but no finite `:x` value,
+  `ex-info {:key :n-format}` for an `:n-format` that can't format a count."
   [{:keys [groups mapping]} options default-place env]
-  (let [place (place-of options mapping default-place)
+  (let [_ (when-let [fmt (:n-format options)]
+            (try (format fmt 1)
+                 (catch Exception e
+                   (schema/fail! "Strip :n-format should format a count (e.g. \"n=%d\")."
+                                 {:key :n-format :value fmt :cause (ex-message e)}))))
+        place (place-of options mapping default-place)
         {:keys [panels dims dropped]} (group/split groups (dissoc mapping :y) env)
         x-of (data/row-accessor :x (:x mapping))
         y-of (when (= :band place) (data/row-accessor :y (:y mapping)))
@@ -234,6 +248,52 @@
      :centre (fn ^double [level] (double (first (centre-and-span level))))
      :sign sign
      :step (some-> geometry :step double)}))
+
+(def ^:private ^:const n-label-gap
+  "Pixels between an item's largest drawn value and its n label."
+  3.0)
+
+(defn- n-label-text [options item] (format (get options :n-format "n=%d") (count (:values item))))
+
+(defn n-label-room
+  "`:padding-px` of a strip chart (`items` - `{panel [item ...]}`) with `:n-label`: `{:x [0 px]}`, `px` - the largest
+  label's size along the value axis (its height when the plot is flipped, env `:flip?`) plus the gap, measured with
+  the `:annotation` role (env `:theme`, `:hint`), so the labels past the largest values fit; `nil` without n labels
+  or items."
+  [options items {:keys [theme flip? hint]}]
+  (let [texts (when (data/option options :n-label false)
+                (distinct (map #(n-label-text options %) (mapcat val items))))]
+    (when (seq texts)
+      (measure/call-with-scratch-canvas
+       (or hint :high)
+       (fn [c]
+         (let [along (reduce max (map (fn [t] (let [^Vec2 size (measure/natural-size {:kind :label :role :annotation :text t}
+                                                                                       {:canvas c :theme theme})]
+                                                (if flip? (.y size) (.x size))))
+                                      texts))]
+           {:x [0.0 (+ (double along) n-label-gap)]}))))))
+
+(defn draw-n-labels!
+  "With option `:n-label`, draw each item's count of values (`:n-format`, default `\"n=%d\"`; text role
+  `:annotation`) just past `(top-value item)` - its largest drawn value - along the value axis, centred on its slot.
+  `pl` - the chart's [[placement]]; [[n-label-room]] keeps room for them past the data."
+  [canvas {:keys [point]} items top-value options scales env]
+  (when (data/option options :n-label false)
+    (let [x-scale (:x scales)
+          [r0 r1] (:range x-scale)
+          ;; pixel direction of increasing values
+          up (if (< (double r1) (double r0)) -1.0 1.0)
+          horizontal? (scale/horizontal? :x x-scale)
+          pad n-label-gap
+          anchor (if horizontal?
+                   (if (pos? up) [:left :middle] [:right :middle])
+                   (if (pos? up) [:center :top] [:center :bottom]))]
+      (doseq [{:keys [level slot] :as item} items
+              :let [^Vec2 p (point (top-value item) level (in-slot slot 0.0))
+                    x (if horizontal? (+ (.x p) (* up pad)) (.x p))
+                    y (if horizontal? (.y p) (+ (.y p) (* up pad)))]
+              :when (and (m/valid-double? x) (m/valid-double? y))]
+        (label/draw-at! canvas {:kind :label :role :annotation :text (n-label-text options item)} anchor x y env)))))
 
 (defn ridges?
   "Does a histogram / density of `chart-split` (`{:groups {panel rows} :mapping m}`) draw ridgelines: `:y` mapped

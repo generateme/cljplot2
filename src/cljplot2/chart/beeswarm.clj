@@ -101,6 +101,7 @@
      :extents (merge-with merge (group/aesthetic-extents panels)
                           (strip/extents place items (fn [{:keys [values]}] [(reduce min values) (reduce max values)])))
      :padding (strip/padding place options)
+     :padding-px (strip/n-label-room options items env)
      :na (group/na-dims panels)
      :dropped dropped}))
 
@@ -108,8 +109,9 @@
   "Draw the points of one panel, each item swarmed by [[swarm-offsets]] around its centre line (one-sided: from 0
   outward), fitted into its slot with `:fit`."
   [_chart {:keys [items style place options one-sided?]} canvas box scales env]
-  (let [{:keys [point span value-pixel]} (strip/placement box scales options place)
+  (let [{:keys [point span value-pixel] :as pl} (strip/placement box scales options place)
         fit? (data/option options :fit true)]
+    (strip/draw-n-labels! canvas pl items (fn [{:keys [values]}] (reduce max values)) options scales env)
     (doseq [{:keys [level slot values aesthetics]} items
             :let [st (group/style style aesthetics scales (:theme env))
                   s (double (span level))]

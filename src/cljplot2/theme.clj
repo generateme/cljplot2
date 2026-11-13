@@ -1,7 +1,7 @@
 (ns cljplot2.theme
   "Plot theme: a nested map of defaults, deep-merged with the plot's `:theme`.
 
-  `:text` maps a role (`:title`, `:strip`, ...) to a text style:
+  `:text` maps a role (`:title`, `:strip`, ..., `:annotation` - text charts and strip n labels) to a text style:
 
   * `:font` - font family name or `java.awt.Font`, see [[cljplot2.graphics.font/resolve-font]]
   * `:size` - points
@@ -43,7 +43,7 @@
   `:chart` - per chart kind defaults: `:scatter`, `:histogram`, `:density`, `:line`, `:ecdf` (old cljplot blue
   `[69 117 180]` - clojure2d `(last (palette :rdylbu-9))` - with cljplot's alphas: scatter 180, stripplot 100, rug 100),
   `:treemap` (`:padding`, `:border-color`, `:border-width`), strip charts `:box`, `:violin`, `:stripplot`, `:beeswarm`, `:rug`,
-  `:extent`; each checked against its chart's style schema.
+  `:extent`, annotations `:rule`, `:rect`; each checked against its chart's style schema.
 
   Colors are any clojure2d color or `:none` (draw nothing). `nil` in a theme override means \"not set\"
   and keeps the value underneath, see [[deep-merge]].
@@ -97,7 +97,9 @@
            :stripplot {:size 10 :color [69 117 180 100] :stroke-color :none :stroke-width 1 :shape \O}
            :beeswarm {:size 6 :color [69 117 180 180] :stroke-color :none :stroke-width 1 :shape \O}
            :rug {:color [69 117 180 100] :line-width 1}
-           :extent {:color [69 117 180] :line-width 2 :shape \O :size 7}}
+           :extent {:color [69 117 180] :line-width 2 :shape \O :size 7}
+           :rule {:color [60 60 60] :width 1 :dash :none}
+           :rect {:fill [0 0 0 30] :stroke-color :none :stroke-width 1}}
    :axis {:x {:line-color :black :line-width 1 :tick-color :black :tick-length 6 :tick-width 1
               :label-gap 2 :tick-spacing 80 :label-rotation 0}
           :y {:line-color :black :line-width 1 :tick-color :black :tick-length 6 :tick-width 1
@@ -109,7 +111,8 @@
           :legend-title {:font "Liberation Mono" :size 11 :font-style :bold :color :black :padding 2 :align [:left :middle]}
           :legend-label {:font "Liberation Mono" :size 10 :font-style :plain :color :black :padding 2 :align [:left :middle]}
           :treemap-group {:font "Liberation Mono" :size 10 :font-style :bold :color :black :padding 2 :align [:left :middle]}
-          :treemap-leaf {:font "Liberation Mono" :size 9 :font-style :plain :color :black :padding 2 :align centered}}})
+          :treemap-leaf {:font "Liberation Mono" :size 9 :font-style :plain :color :black :padding 2 :align centered}
+          :annotation {:font "Liberation Mono" :size 10 :font-style :plain :color :black :padding 2 :align centered}}})
 
 (defn deep-merge
   "Merge maps recursively; a non-map value replaces the value it's merged over, `nil` is ignored

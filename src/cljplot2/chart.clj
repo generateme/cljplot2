@@ -13,9 +13,10 @@
     and optionally `:axis-titles {:x t :y t}` (suggested axis titles; the first chart's win, plot `:labels` win over
     all) and `:tick-format {:x f :y f}` (suggested tick label format, `:absolute` - magnitudes; used unless the plot's
     scale has a `:formatter`) and `:scale-defaults {:x attrs :y attrs}` (suggested position scale attributes, e.g.
-    bands `:padding-out`; dropped when the plot's own `:scales` entry sets any of them)
-    (`env` - `{:theme :na-level? :plot-scales :flip?}`, `:plot-scales` - the plot's `:scales`, `:flip?` - the plot's
-    `:flip`); stored per chart in the
+    bands `:padding-out`; dropped when the plot's own `:scales` entry sets any of them) and `:padding-px {dim [lo hi]}`
+    (pixels kept free beyond the data on each side of a continuous position scale, e.g. for labels past the data)
+    (`env` - `{:theme :na-level? :plot-scales :flip? :hint}`, `:plot-scales` - the plot's `:scales`, `:flip?` - the
+    plot's `:flip`, `:hint` - the rendering hint, for measuring text); stored per chart in the
     plot's `:stats`. Aesthetic extents (`:color`,
     `:shape`, `:size`) are [[cljplot2.data.rows/value-extent]]s; `:na` lists aesthetics with NA (`nil`) values
   * `(draw chart computed canvas panel-box scales env)` - draws one panel's `computed` data; called by the panel
@@ -29,7 +30,8 @@
     Every chart mapping a legend's dimension draws into its keys, in chart order.
 
   Options common to all charts: `:data` (own data, see [[cljplot2.data.rows/rows]]) and `:mapping` (merged over the
-  plot's mapping)."
+  plot's mapping; a chart value with `:inherit-mapping :facets` - the annotation charts - takes only the plot
+  mapping's facet keys)."
   (:require [cljplot2.chart.beeswarm :as beeswarm]
             [cljplot2.chart.box :as box]
             [cljplot2.chart.density :as density]
@@ -37,9 +39,12 @@
             [cljplot2.chart.extent :as extent]
             [cljplot2.chart.histogram :as histogram]
             [cljplot2.chart.line :as line]
+            [cljplot2.chart.rect :as rect]
             [cljplot2.chart.rug :as rug]
+            [cljplot2.chart.rule :as rule]
             [cljplot2.chart.scatter :as scatter]
             [cljplot2.chart.stripplot :as stripplot]
+            [cljplot2.chart.text :as text]
             [cljplot2.chart.treemap :as treemap]
             [cljplot2.chart.violin :as violin]))
 
@@ -63,7 +68,14 @@
    :stripplot (:style stripplot/Schema)
    :beeswarm (:style beeswarm/Schema)
    :rug (:style rug/Schema)
-   :extent (:style extent/Schema)})
+   :extent (:style extent/Schema)
+   :rule (:style rule/Schema)
+   :rect (:style rect/Schema)})
+
+(defn- annotation-value
+  "Chart value of an annotation chart: it inherits only the facet keys of the plot mapping."
+  [kind compute draw legend schema options]
+  (assoc (chart-value kind compute draw legend schema options) :inherit-mapping :facets))
 
 (defn scatter
   "Scatter chart, see [[cljplot2.chart.scatter]]."
@@ -126,3 +138,19 @@
   [[cljplot2.data.strip]]."
   ([] (extent {}))
   ([options] (chart-value :extent extent/compute extent/draw extent/legend extent/Schema options)))
+
+(defn rule
+  "Reference lines (`:x`, `:y`, `:slope` / `:intercept`), see [[cljplot2.chart.rule]] and
+  [[cljplot2.data.annotation]]."
+  ([] (rule {}))
+  ([options] (annotation-value :rule rule/compute rule/draw rule/legend rule/Schema options)))
+
+(defn rect
+  "Rectangles and bands (`:x [a b]`, `:y [a b]`), see [[cljplot2.chart.rect]] and [[cljplot2.data.annotation]]."
+  ([] (rect {}))
+  ([options] (annotation-value :rect rect/compute rect/draw nil rect/Schema options)))
+
+(defn text
+  "Text labels at positions, see [[cljplot2.chart.text]] and [[cljplot2.data.annotation]]."
+  ([] (text {}))
+  ([options] (annotation-value :text text/compute text/draw text/legend text/Schema options)))
