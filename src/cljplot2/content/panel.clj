@@ -3,7 +3,7 @@
   Drawn from the theme's `:panel` section (validated against [[cljplot2.theme/Theme]] by `build`): fill, then a border
   inside the box; `:none` colors draw nothing, `:border-width` is rounded to whole pixels.
   `{:kind :panel :alternate true}` also draws theme `[:panel :alternate-fill]` over the fill (facet shading).
-  Finalized scales in `env` `:scales` are panel-local (range `[0 w]` / `[h 0]`): grid lines (theme
+  Finalized scales in `env` `:scales` are panel-local (range `[0 w]` horizontal / `[h 0]` vertical): grid lines (theme
   `[:panel :grid]`, `:bands` for bands scales) and charts (`env` `:charts`, `:stats`) are drawn translated to the panel's top-left corner,
   between the fill and the border; each chart with isolated graphics clipped to the panel. `{:kind :panel
   :panel k}` draws the charts' data of split group `k` (default `:panel`) and of charts drawn in all panels;
@@ -35,7 +35,8 @@
          ((:draw chart) chart computed c' {:x 0 :y 0 :w w :h h} (:scales env) env)))))
 
 (defn- draw-grid-lines!
-  "Grid lines at the tick positions of the panel-local scales, `w` x `h` panel at the origin. `[:panel :grid k]`
+  "Grid lines at the tick positions of the panel-local scales, `w` x `h` panel at the origin: a horizontal scale
+  (by its direction) draws vertical lines, a vertical one horizontal lines. `[:panel :grid k]` (by scale key)
   `:none` turns the lines of scale `k` off; otherwise a bands scale draws the `[:panel :grid :bands]` line."
   [c ^long w ^long h env]
   (doseq [k [:x :y]
@@ -47,10 +48,11 @@
           :when (and finalized (not (theme/none? line)) (not (theme/none? color)) (pos? (double width)))]
     (c2d/set-color c color)
     (c2d/set-stroke-custom c (cond-> {:size (double width) :cap :butt} (not (theme/none? dash)) (assoc :dash (vec dash))))
-    (let [forward (scale/forward-fn finalized)]
+    (let [forward (scale/forward-fn finalized)
+          horizontal? (scale/horizontal? k finalized)]
       (doseq [tick (:ticks finalized)
               :let [p (draw/pixel-center (forward tick))]]
-        (if (= k :x)
+        (if horizontal?
           (c2d/line c p 0 p h)
           (c2d/line c 0 p w p))))))
 

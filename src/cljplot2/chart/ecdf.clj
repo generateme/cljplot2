@@ -10,7 +10,8 @@
             [cljplot2.data.group :as group]
             [cljplot2.graphics.polyline :as polyline]
             [cljplot2.scale.position :as scale]
-            [cljplot2.schema :as schema]))
+            [cljplot2.schema :as schema])
+  (:import [fastmath.vector Vec2]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -77,12 +78,12 @@
   "Draw the step lines of one panel."
   [_chart {:keys [steps style]} canvas _box scales env]
   (when (seq steps)
-    (let [fx (scale/forward-fn (:x scales))
-          fy (scale/forward-fn (:y scales))]
+    (let [projection (scale/projection scales)]
       (doseq [{:keys [x y aesthetics]} steps
               :let [st (group/style style aesthetics scales (:theme env))]
               :when st]
-        (polyline/draw! canvas (mapv fx x) (mapv fy y) st)))))
+        (let [points (mapv projection x y)]
+          (polyline/draw! canvas (mapv #(.x ^Vec2 %) points) (mapv #(.y ^Vec2 %) points) st))))))
 
 (defn legend
   "Key glyph: a horizontal line through the middle of `box`."

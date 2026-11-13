@@ -1,6 +1,6 @@
 (ns cljplot2.demo
-  "Demo runner: renders the `images` of the step demos (`cljplot2.demo.stepN`) to `results/stepN/<file-name>`,
-  all in one JVM.
+  "Demo runner: renders the `images` of the demos (`cljplot2.demo.<name>`, see [[steps]]) to
+  `results/<name>/<file-name>`, all in one JVM.
 
   CLI: `clojure -M:demo` (every step), `clojure -M:demo step8 step11` (chosen steps),
   `clojure -M:demo step11/fig-5-6-800x700.png` (one image). REPL: `(render!)`, `(render! \"step8\" ...)`."
@@ -9,8 +9,8 @@
             [cljplot2.core :as plot]))
 
 (def steps
-  "Step demo names, in run order."
-  (mapv #(str "step" %) (range 1 12)))
+  "Demo names (namespaces `cljplot2.demo.<name>`), in run order: build steps, then capability demos."
+  (into (mapv #(str "step" %) (range 1 12)) ["flip" "positions"]))
 
 (defn- step-images
   "`images` of the step demo `step` (its namespace is loaded on first use)."

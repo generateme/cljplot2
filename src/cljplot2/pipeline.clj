@@ -17,6 +17,10 @@
   * `:legend` - `false` hides all legends, see [[cljplot2.content.legend]]
   * `:aspect` - `:iso`: equal pixels per data unit on x and y (linear scales, generated grid); the panel aspect ratio
     changes, the panel block is centred in the leftover space
+  * `:flip` - `true` draws the `:x` scale vertically and `:y` horizontally (generated grid only). Scales, extents,
+    labels, tick formats and theme `[:axis k]` keep their keys; only the finalized scales' `:direction` changes, and
+    axes, grid lines, axis titles and charts follow it (charts draw through
+    [[cljplot2.scale.position/projection]])
   * `:custom-grid` - a hand-written grid (see [[cljplot2.layout.grid]]) used instead of the generated one; only
     `:labels {:title t}` may accompany it (a title row above it). Items with `{:kind :plot :plot p}` content hold
     whole plots (see [[cljplot2.content.subplot]])
@@ -177,26 +181,30 @@
 
 (defn finalize-scales
   "Scales of `:scale-specs` finalized in panel-local coordinates for the reference panel of `layout` - the first
-  `:panel` content of the grid (depth-first): x range `[0 w]`, y range `[h 0]`, tick hint from the panel size
-  and theme `[:axis k :tick-spacing]`. All panels share these scales (they differ by at most 1 px in size).
+  `:panel` content of the grid (depth-first): the horizontal scale (`:x`, or `:y` when the plot has `:flip true`)
+  range `[0 w]`, the vertical one `[h 0]`, each with `:direction` (`:horizontal` / `:vertical`); tick hint from the
+  panel size along it and theme `[:axis k :tick-spacing]` (by scale key). All panels share these scales (they differ by at most 1 px in size).
   Before the first layout round (`layout` is `nil`) a provisional finalization is used: range `[0 1]`, 10 ticks.
   Aesthetic scales are passed through unchanged (no pixel range).
   Throws `ex-info` with `{:key :scales}` when the grid has no `:panel` content."
   [plot layout]
   (let [specs (into {} (filter (comp position-scales key)) (:scale-specs plot))
+        horizontal (scale/horizontal-key (:flip plot))
         panel (when (and layout (seq specs))
                 (or (grid/find-content-box (:grid plot) layout panel-content?)
                     (schema/fail! "Plot :scales need a :panel item in the grid." {:key :scales :in [:scales]})))]
     (into (into {} (filter (comp aesthetic/dim? key)) (:scale-specs plot))
           (map (fn [[k spec]]
-                    [k (if-not panel
-                         (scale/finalize spec [0.0 1.0] provisional-tick-hint)
-                         (let [{:keys [w h]} panel
-                               w (long w) h (long h)
-                               spacing (double (get-in plot [:theme :axis k :tick-spacing]))]
-                           (if (= k :x)
-                             (scale/finalize spec [0.0 (double w)] (scale/tick-hint w spacing))
-                             (scale/finalize spec [(double h) 0.0] (scale/tick-hint h spacing)))))]))
+                    (let [horizontal? (= k horizontal)]
+                      [k (assoc (if-not panel
+                                  (scale/finalize spec [0.0 1.0] provisional-tick-hint)
+                                  (let [{:keys [w h]} panel
+                                        w (long w) h (long h)
+                                        spacing (double (get-in plot [:theme :axis k :tick-spacing]))]
+                                    (if horizontal?
+                                      (scale/finalize spec [0.0 (double w)] (scale/tick-hint w spacing))
+                                      (scale/finalize spec [(double h) 0.0] (scale/tick-hint h spacing)))))
+                                :direction (if horizontal? :horizontal :vertical))])))
           specs)))
 
 (defn- solve-layout
@@ -235,17 +243,20 @@
         rows (count (distinct (map :y panels)))
         w-avail (+ (double w) (/ (double column-total) columns))
         h-avail (+ (double h) (/ (double row-total) rows))
-        dx (span (:x scales)) dy (span (:y scales))
+        horizontal (if (scale/flipped? scales) :y :x)
+        dx (span (get scales horizontal)) dy (span (get scales (if (= horizontal :x) :y :x)))
         k (m/min (/ w-avail dx) (/ h-avail dy))]
     [(m/max 0 (m/round (* (- w-avail (* k dx)) columns)))
      (m/max 0 (m/round (* (- h-avail (* k dy)) rows)))]))
 
 (defn- iso-mismatch
-  "Relative difference of the x and y pixels per unit of `layout`'s first panel for finalized `scales`."
+  "Relative difference of the horizontal and vertical pixels per unit of `layout`'s first panel for finalized
+  `scales`."
   ^double [g layout scales]
   (let [{:keys [w h]} (grid/find-content-box g layout panel-content?)
-        px (/ (double w) (span (:x scales)))
-        py (/ (double h) (span (:y scales)))]
+        horizontal (if (scale/flipped? scales) :y :x)
+        px (/ (double w) (span (get scales horizontal)))
+        py (/ (double h) (span (get scales (if (= horizontal :x) :y :x))))]
     (/ (m/abs (- px py)) (m/max px py))))
 
 (defn- iso-layout
@@ -374,6 +385,7 @@
    (schema/nilable :groups [:map {:closed true} (schema/nilable :na schema/bool)])
    (schema/nilable :legend schema/bool)
    (schema/nilable :aspect [:enum :iso])
+   (schema/nilable :flip schema/bool)
    (schema/nilable :labels plot-grid/Labels)
    (schema/nilable :custom-grid :map)
    (schema/nilable :arrange plot-grid/Arrange)
@@ -398,8 +410,8 @@
 
 (defn- rule-errors
   "Errors of the rules across plot keys (for a plot whose keys are valid): facet mappings, scales without a mapping,
-  `:custom-grid` / `:arrange` combinations (with labels or `:aspect :iso`)."
-  [{:keys [scales labels custom-grid arrange aspect] :as plot}]
+  `:custom-grid` / `:arrange` combinations (with labels, `:aspect :iso` or `:flip`)."
+  [{:keys [scales labels custom-grid arrange aspect flip] :as plot}]
   (let [mappings (merged-mappings plot)
         dim-sets (distinct (remove empty? (map facet/facet-dims mappings)))
         error (fn [in value message] {:in in :value value :message message})]
@@ -419,6 +431,8 @@
        [(error [:arrange] arrange "can't be combined with :custom-grid")])
      (when (and (= :iso aspect) (or custom-grid arrange))
        [(error [:aspect] aspect "iso needs the generated grid, not :custom-grid or :arrange")])
+     (when (and flip (or custom-grid arrange))
+       [(error [:flip] flip "flip needs the generated grid, not :custom-grid or :arrange")])
      (when (or custom-grid arrange)
        (for [k (keys labels) :when (not= k :title)]
          (error [:labels k] (get labels k) "only :title is allowed with :custom-grid or :arrange"))))))

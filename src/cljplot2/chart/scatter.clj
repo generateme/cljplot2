@@ -16,7 +16,8 @@
             [cljplot2.data.rows :as data]
             [cljplot2.scale.position :as scale]
             [cljplot2.graphics.shape :as shape]
-            [cljplot2.schema :as schema]))
+            [cljplot2.schema :as schema])
+  (:import [fastmath.vector Vec2]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -113,8 +114,7 @@
   [_chart {:keys [x y style] :as computed} canvas _box scales env]
   (when (seq x)
     (let [{:keys [stroke-width]} style
-          fx (scale/forward-fn (:x scales))
-          fy (scale/forward-fn (:y scales))
+          projection (scale/projection scales)
           na (na-attributes style (:theme env))
           mapped (vec (for [k aesthetic/dims :when (contains? computed k)]
                         [k (aesthetic/attribute-fn k (get scales k) (na k)) (computed k)]))
@@ -125,10 +125,10 @@
                         (constantly style))]
       (c2d/set-stroke-custom canvas {:size (double stroke-width)})
       (dorun (map-indexed (fn [^long i vx]
-                            (let [px (double (fx vx)) py (double (fy (nth y i)))]
-                              (when-not (or (m/nan? px) (m/nan? py))
+                            (let [^Vec2 p (projection vx (nth y i))]
+                              (when-not (or (m/nan? (.x p)) (m/nan? (.y p)))
                                 (when-let [st (point-style i)]
-                                  (shape/draw! canvas (:shape st) (v/vec2 px py) st)))))
+                                  (shape/draw! canvas (:shape st) p st)))))
                           x)))))
 
 (defn legend

@@ -146,7 +146,7 @@
       (is (= {:key :mapping :value :x :rows 2} (error #(build {:data [{:x "a"} {:x "b"}] :mapping {:x :x} :charts [(chart/histogram)]}))))
       (are [opts k] (= k (:key (error #(build {:data rows :mapping {:x :v} :charts [(chart/histogram opts)]}))))
         {:y :freq} :y
-        {:position :stack} :position
+        {:position :spiral} :position
         {:alpha 1.5} :alpha
         {:stroke-width -1} :stroke-width
         {:color :none} :color

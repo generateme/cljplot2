@@ -16,7 +16,9 @@
 
   An axis item (`:x-axis` below the panel, `:y-axis` left of it) is added for each scale in `:scale-specs`, with
   overhang items reserving room for its end tick labels: x end in `:x-overhang`, y end in `:y-overhang`, both
-  start ends in the corner cell (`:y-axis` column, `:x-axis` row).
+  start ends in the corner cell (`:y-axis` column, `:x-axis` row). Track and item names are by side (`x` - under
+  the panel, `y` - left of it): with `:flip true` the `:y` scale's axis and `:labels :y` title go under the panel,
+  the `:x` scale's axis and `:labels :x` title left of it.
   Item order: `:panel`, axes and their overhangs (x, then y), `:title`, `:x-title`, `:y-title` (absent ones skipped).
 
   Faceted plots use [[facet-grid]].
@@ -28,7 +30,9 @@
             [cljplot2.data.shingle :as shingle]
             [cljplot2.content.label :as label]
             [cljplot2.content.legend :as legend]
-            [cljplot2.schema :as schema]))
+            [cljplot2.scale.position :as scale]
+            [cljplot2.schema :as schema]
+            [clojure.set :as set]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -55,13 +59,33 @@
                   :content (assoc (merge defaults (if (map? label) label {:text label})) :kind :label)}))
              plot-labels)))
 
-(def ^:private axis-items
-  {:x [{:id :x-axis :column :panel :row :x-axis :content {:kind :axis :scale :x}}
-       {:id :x-axis-start :column :y-axis :row :x-axis :content {:kind :axis-overhang :scale :x :end :start}}
-       {:id :x-axis-end :column :x-overhang :row :x-axis :content {:kind :axis-overhang :scale :x :end :end}}]
-   :y [{:id :y-axis :column :y-axis :row :panel :content {:kind :axis :scale :y}}
-       {:id :y-axis-start :column :y-axis :row :x-axis :content {:kind :axis-overhang :scale :y :end :start}}
-       {:id :y-axis-end :column :y-axis :row :y-overhang :content {:kind :axis-overhang :scale :y :end :end}}]})
+(defn- axis-items
+  "Items of the axis of scale `k` drawn on `side`: `:bottom` (horizontal scale; axis under the panel, end overhang
+  in the `:x-overhang` column) or `:left` (vertical scale; axis left of the panel, end overhang in the `:y-overhang`
+  row); both start overhangs in the corner cell (`:y-axis` column, `:x-axis` row)."
+  [side k]
+  (case side
+    :bottom [{:id :x-axis :column :panel :row :x-axis :content {:kind :axis :scale k}}
+             {:id :x-axis-start :column :y-axis :row :x-axis :content {:kind :axis-overhang :scale k :end :start}}
+             {:id :x-axis-end :column :x-overhang :row :x-axis :content {:kind :axis-overhang :scale k :end :end}}]
+    :left [{:id :y-axis :column :y-axis :row :panel :content {:kind :axis :scale k}}
+           {:id :y-axis-start :column :y-axis :row :x-axis :content {:kind :axis-overhang :scale k :end :start}}
+           {:id :y-axis-end :column :y-axis :row :y-overhang :content {:kind :axis-overhang :scale k :end :end}}]))
+
+(defn- side-scales
+  "`[[side k] ...]` - the scale key drawn on each axis side (`:bottom` horizontal, `:left` vertical) of a plot with
+  `flip?` (`:flip` swaps them)."
+  [flip?]
+  (let [horizontal (scale/horizontal-key flip?)]
+    [[:bottom horizontal] [:left (if (= horizontal :x) :y :x)]]))
+
+(defn- side-labels
+  "Plot `labels` keyed by axis side slot: `:x` - the title under the panel, `:y` - left of it. A flipped plot's
+  `:x` title goes left (the `:x` scale is vertical) and its `:y` title under the panel."
+  [labels flip?]
+  (if (and flip? (map? labels))
+    (set/rename-keys labels {:x :y :y :x})
+    labels))
 
 (defn- legend-tracks
   "Columns added for `legends` (none when empty)."
@@ -88,7 +112,7 @@
 
 (defn single-panel-grid
   "Grid of a single-panel plot: its `:labels`, axes of its `:scale-specs` and the margin of its (merged) `:theme`."
-  [{:keys [labels theme scale-specs] :as plot}]
+  [{:keys [labels theme scale-specs flip] :as plot}]
   (let [margin-track (margin-track-fn plot)
         measured (fn [id] {:id id :size [:measured]})
         legends (legend/legends plot)]
@@ -99,8 +123,8 @@
      :rows [(margin-track :margin-top) (measured :title) (measured :y-overhang) {:id :panel :size [:flexible]}
             (measured :x-axis) (measured :x-title) (margin-track :margin-bottom)]
      :items (-> [{:id :panel :column :panel :row :panel :content {:kind :panel}}]
-                (into (mapcat #(when (contains? scale-specs %) (axis-items %))) [:x :y])
-                (into (label-items labels {}))
+                (into (mapcat (fn [[side k]] (when (contains? scale-specs k) (axis-items side k)))) (side-scales flip))
+                (into (label-items (side-labels labels flip) {}))
                 (into (legend-items legends :panel)))}))
 
 ;; facets
@@ -146,8 +170,9 @@
   (theme `[:facet :gap]`), strips (wrap: above each panel; grid: column strips above the top row, row strips on
   the right), an x axis under every panel column and a y axis beside every panel row, overhangs at the outer ends.
   Panels with odd `r + c` are shaded (`:alternate`). Legends as in the single-panel grid."
-  [{:keys [labels theme scale-specs scales facets split] :as plot}]
+  [{:keys [labels theme scale-specs scales facets split flip] :as plot}]
   (let [legends (legend/legends plot)
+        [[_ h-key] [_ v-key]] (side-scales flip)
         gap (get-in theme [:facet :gap])
         margin-track (margin-track-fn plot)
         measured (fn [id] {:id id :size [:measured]})
@@ -173,16 +198,14 @@
                         {:id [:panel row col] :column [:panel col] :row [:panel row]
                          :content {:kind :panel :panel key :alternate (odd? (+ (long row) (long col)))}})
                       panels)
-                (cond-> (contains? scale-specs :x)
+                (cond-> (contains? scale-specs h-key)
                   (into (concat (for [c (range cols)]
-                                  {:id [:x-axis c] :column [:panel c] :row :x-axis :content {:kind :axis :scale :x}})
-                                [{:id :x-axis-start :column :y-axis :row :x-axis :content {:kind :axis-overhang :scale :x :end :start}}
-                                 {:id :x-axis-end :column :x-overhang :row :x-axis :content {:kind :axis-overhang :scale :x :end :end}}])))
-                (cond-> (contains? scale-specs :y)
+                                  {:id [:x-axis c] :column [:panel c] :row :x-axis :content {:kind :axis :scale h-key}})
+                                (rest (axis-items :bottom h-key)))))
+                (cond-> (contains? scale-specs v-key)
                   (into (concat (for [r (range rows)]
-                                  {:id [:y-axis r] :column :y-axis :row [:panel r] :content {:kind :axis :scale :y}})
-                                [{:id :y-axis-start :column :y-axis :row :x-axis :content {:kind :axis-overhang :scale :y :end :start}}
-                                 {:id :y-axis-end :column :y-axis :row :y-overhang :content {:kind :axis-overhang :scale :y :end :end}}])))
+                                  {:id [:y-axis r] :column :y-axis :row [:panel r] :content {:kind :axis :scale v-key}})
+                                (rest (axis-items :left v-key)))))
                 (cond-> wrap? (into (map (fn [{:keys [key label row col]}]
                                            {:id [:strip row col] :column [:panel col] :row [:strip row]
                                             :content (strip-content label key levels)})
@@ -194,7 +217,7 @@
                                                                     :content (assoc (strip-content text (row-levels r) row-levels)
                                                                                     :rotation 90)})
                                                       row-labels)))
-                (into (label-items labels {:x {:column {:from [:panel 0] :to last-col}}
+                (into (label-items (side-labels labels flip) {:x {:column {:from [:panel 0] :to last-col}}
                                            :y {:row {:from [:panel 0] :to last-row}}}))
                 (into (legend-items legends {:from (cond col-labels :col-strip wrap? [:strip 0] :else [:panel 0])
                                                    :to last-row})))}))

@@ -12,7 +12,8 @@
             [cljplot2.data.group :as group]
             [cljplot2.graphics.polyline :as polyline]
             [cljplot2.scale.position :as scale]
-            [cljplot2.schema :as schema]))
+            [cljplot2.schema :as schema])
+  (:import [fastmath.vector Vec2]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -77,19 +78,27 @@
 
 (defn draw
   "Draw the lines of one panel (area fill first, if any); `nil` y values and values the scales can't place break a
-  line. The fill baseline is y = 0 clamped into the panel (`box` height)."
-  [_chart {:keys [lines style]} canvas {:keys [h]} scales env]
+  line. The fill baseline is y = 0 clamped into the panel (`box`) along the y scale's direction."
+  [_chart {:keys [lines style]} canvas {:keys [w h]} scales env]
   (when (seq lines)
-    (let [fx (scale/forward-fn (:x scales))
-          fy (scale/forward-fn (:y scales))
-          zero (double (fy 0.0))
-          baseline (if (m/nan? zero) (double h) (m/constrain zero 0.0 (double h)))]
+    (let [projection (scale/projection scales)
+          y-scale (:y scales)
+          y-horizontal? (scale/horizontal? :y y-scale)
+          zero (scale/forward y-scale 0.0)
+          ;; y = 0 clamped into the panel along the y scale's direction; a scale without 0 - its range start
+          baseline (if (m/nan? zero)
+                     (double (first (:range y-scale)))
+                     (m/constrain zero 0.0 (double (if y-horizontal? w h))))]
       (doseq [{:keys [x y aesthetics]} lines
               :let [st (group/style style aesthetics scales (:theme env))]
               :when st]
-        (let [px (mapv fx x)
-              py (mapv #(if (nil? %) ##NaN (fy %)) y)]
-          (polyline/fill-under! canvas px py baseline (:fill st))
+        (let [points (mapv (fn [vx vy] (if (nil? vy) (Vec2. ##NaN ##NaN) (projection vx vy))) x y)
+              px (mapv #(.x ^Vec2 %) points)
+              py (mapv #(.y ^Vec2 %) points)]
+          (polyline/fill-under! canvas px py
+                                (if y-horizontal? (vec (repeat (count px) baseline)) px)
+                                (if y-horizontal? py (vec (repeat (count py) baseline)))
+                                (:fill st))
           (polyline/draw! canvas px py st))))))
 
 (defn legend

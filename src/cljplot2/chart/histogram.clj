@@ -8,8 +8,10 @@
     vector of at least 2 increasing breaks (values outside are dropped and counted)
   * `:y` - bar height: `:percent` (default, of the panel's total, or the group's when grouped), `:count`, `:pmf`
     (share of the total, sums to 1), `:density` (count / (n * width), area 1)
-  * `:position` - grouped bars: `:overlay` (default; full-width, fill alpha `:alpha`), `:dodge` (bins split among the
-    groups), `:mirror` (exactly two groups, the second drawn downward; y tick labels show magnitudes)
+  * `:position` - grouped bars (see [[cljplot2.data.position]]): `:overlay` (default; full-width, fill alpha
+    `:alpha`), `:dodge` (bins split among the groups), `:stack` (groups on top of each other), `:fill` (stacked, each
+    bin summing to 1; y title \"Proportion\"), `:mirror` (exactly two groups, the second drawn downward; y tick labels
+    show magnitudes)
   * `:symmetric` - mirror only: `true` ties both halves to one y range `[-M M]`, `M` the tallest bar of either group
     over all panels, so the halves compare visually (default false)
   * `:color` (fill; the stroke is the darkened fill), `:stroke-width`, `:alpha` (overlay fill opacity, 0..1)
@@ -24,6 +26,8 @@
             [fastmath.stats :as stats]
             [cljplot2.data.rows :as data]
             [cljplot2.data.group :as group]
+            [cljplot2.data.position :as position]
+            [cljplot2.graphics.draw :as draw]
             [cljplot2.scale.position :as scale]
             [cljplot2.schema :as schema]))
 
@@ -31,7 +35,6 @@
 (set! *unchecked-math* :warn-on-boxed)
 
 (def ^:private measures {:percent "Percent of Total" :count "Count" :pmf "Probability" :density "Density"})
-(def ^:private positions #{:overlay :dodge :mirror})
 
 (def ^:private style-entries
   [(schema/optional :color schema/solid-color)
@@ -51,7 +54,7 @@
                 (conj (schema/optional :bins [:multi {:dispatch #(cond (keyword? %) :method (vector? %) :breaks :else :count)}
                                               [:method keyword?] [:breaks breaks-schema] [:count schema/pos-int]])
                       (schema/optional :y (into [:enum] (keys measures)))
-                      (schema/optional :position (into [:enum] (sort positions)))
+                      (schema/optional :position (into [:enum] (sort position/positions)))
                       (schema/nilable :symmetric schema/bool)
                       (schema/optional :padding data/position-padding)))
    :mapping [:map [:x schema/accessor]]})
@@ -114,8 +117,9 @@
 
 (defn compute
   "Per panel: `{:bars [{:x0 :x1 :y0 :y1 :aesthetics}] :style style :translucent? bool}` in data units (bars in group
-  order; `:translucent?` - grouped overlay, fill drawn with `:alpha`); `:tick-format {:y :absolute}` for mirror; extents
-  (x - outer breaks, y - from 0, or `[-max2 max1]` for mirror), padding, `:na`, `:dropped`, `:axis-titles`."
+  order, `:y0`/`:y1` placed by [[cljplot2.data.position/stack-values]]; `:translucent?` - grouped overlay, fill drawn
+  with `:alpha`); `:tick-format {:y :absolute}` for mirror; extents (x - outer breaks, y - over 0 and every bar's ends,
+  or `[-M M]` for `:symmetric` mirror), padding, `:na`, `:dropped`, `:axis-titles`."
   [{:keys [options]} {:keys [groups mapping]} {:keys [theme] :as env}]
   (let [st (style options theme)
         y (get options :y :percent)
@@ -129,7 +133,6 @@
             (schema/fail! "No valid values for a mapped dimension - check the mapping." {:key :mapping :value :x :rows all-count}))
         brks (breaks all-values (get options :bins :sturges))
         group-keys (group/ordered-keys (mapcat #(map :key %) (vals panels)) dims (:plot-scales env))
-        slot (zipmap group-keys (range))
         n-groups (count group-keys)
         _ (when (and (= position :mirror) (not= 2 n-groups) (seq all-values))
             (schema/fail! "Histogram :position :mirror needs exactly two groups." {:key :position :groups n-groups}))
@@ -137,32 +140,36 @@
                   (let [lo (double (first brks)) hi (double (peek brks))]
                     (count (remove #(<= lo (double %) hi) all-values)))
                   0)
-        bars-of (fn [g {:keys [values]}]
-                  (let [{:keys [counts]} (bin-counts brks values)
-                        hs (heights y brks counts)
-                        i (long (slot (:key g)))
-                        down? (and (= position :mirror) (= i 1))]
-                    (mapv (fn [[^double a ^double b] ^double h]
-                            (let [[a b] (if (= position :dodge)
-                                          (let [w (/ (- b a) n-groups)] [(+ a (* i w)) (+ a (* (inc i) w))])
-                                          [a b])]
-                              {:x0 a :x1 b :y0 0.0 :y1 (if down? (- h) h) :aesthetics (:aesthetics g)}))
-                          (partition 2 1 brks) hs)))
+        ;; per panel: heights of every group (all of them, absent ones 0, so slots and mirror halves stay global)
+        panel-bars (fn [gs group-values]
+                     (let [present (zipmap (map :key gs) (map vector gs group-values))
+                           group-heights (mapv (fn [k] (if-let [[_ {:keys [values]}] (present k)]
+                                                         (heights y brks (:counts (bin-counts brks values)))
+                                                         (vec (repeat (dec (count brks)) 0.0))))
+                                               group-keys)
+                           ys (position/stack-values position group-heights)]
+                       (vec (for [[i k] (map-indexed vector group-keys)
+                                  :let [[g] (present k)]
+                                  :when g
+                                  [[a b] [y0 y1]] (map vector (partition 2 1 brks) (ys i))]
+                              (let [[a b] (if (= position :dodge) (position/dodge-interval [a b] i n-groups) [a b])]
+                                {:x0 a :x1 b :y0 y0 :y1 y1 :aesthetics (:aesthetics g)})))))
         data (if brks
                (into {} (map (fn [[panel gs]]
-                               [panel {:bars (vec (mapcat bars-of gs (xs panel))) :style st
+                               [panel {:bars (panel-bars gs (xs panel)) :style st
                                        :translucent? (and (> n-groups 1) (= position :overlay))}]))
                      panels)
                {})
+        bar-ys (fn [bars] (mapcat (juxt :y0 :y1) bars))
         bar-extents (update-vals data (fn [{:keys [bars]}]
                                         (when (seq bars)
                                           {:x {:kind :numeric :min (first brks) :max (peek brks)}
                                            :y {:kind :numeric
-                                               :min (reduce min 0.0 (map :y1 bars))
-                                               :max (reduce max 0.0 (map :y1 bars))}})))
-        tallest (double (reduce max 0.0 (map #(m/abs (double (:y1 %))) (mapcat :bars (vals data)))))
+                                               :min (reduce min 0.0 (bar-ys bars))
+                                               :max (reduce max 0.0 (bar-ys bars))}})))
+        [lo hi] (position/symmetric-extent (bar-ys (mapcat :bars (vals data))))
         bar-extents (if (and (= position :mirror) (:symmetric options))
-                      (update-vals bar-extents #(some-> % (assoc :y {:kind :numeric :min (- tallest) :max tallest})))
+                      (update-vals bar-extents #(some-> % (assoc :y {:kind :numeric :min lo :max hi})))
                       bar-extents)
         aesthetic-extents (group/aesthetic-extents panels)]
     {:data data
@@ -170,7 +177,7 @@
      :padding (merge {:x [0.05 0.05] :y (if (= position :mirror) [0.05 0.05] [0.0 0.05])} (:padding options))
      :na (group/na-dims panels)
      :dropped (assoc dropped :x (+ (long (reduce + 0 (map :dropped (mapcat identity (vals xs))))) (long outside)))
-     :axis-titles {:y (measures y)}
+     :axis-titles {:y (if (= position :fill) "Proportion" (measures y))}
      :tick-format (when (= position :mirror) {:y :absolute})}))
 
 (defn draw
@@ -178,18 +185,14 @@
   an aesthetic domain are skipped."
   [_chart {:keys [bars style translucent?]} canvas _box scales env]
   (when (seq bars)
-    (let [fx (scale/forward-fn (:x scales))
-          fy (scale/forward-fn (:y scales))
+    (let [projection (scale/projection scales)
           stroke-width (double (:stroke-width style))]
       (c2d/set-stroke-custom canvas {:size stroke-width :join :miter})
       (doseq [{:keys [x0 x1 y0 y1 aesthetics]} bars
               :when (not (== (double y0) (double y1)))
               :let [st (group/style style aesthetics scales (:theme env))]
               :when st]
-        (let [px0 (m/round (fx x0)) px1 (m/round (fx x1))
-              py0 (m/round (fy y0)) py1 (m/round (fy y1))
-              left (m/min px0 px1) top (m/min py0 py1)
-              w (m/abs (- px1 px0)) h (m/abs (- py1 py0))
+        (let [{left :x top :y w :w h :h} (draw/rect-of projection x0 y0 x1 y1)
               fill (:color st)]
           (c2d/set-color canvas (if translucent?
                                   (c/set-alpha fill (* 255.0 (double (:alpha style))))

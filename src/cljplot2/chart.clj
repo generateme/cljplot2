@@ -15,8 +15,10 @@
     plot's `:stats`. Aesthetic extents (`:color`,
     `:shape`, `:size`) are [[cljplot2.data.rows/value-extent]]s; `:na` lists aesthetics with NA (`nil`) values
   * `(draw chart computed canvas panel-box scales env)` - draws one panel's `computed` data; called by the panel
-    with isolated graphics clipped to the panel box. Positions come from `cljplot2.scale.position/forward-fn`, which gives
-    `##NaN` for values the scale can't place; such values are skipped.
+    with isolated graphics clipped to the panel box. Pixel positions come only from
+    `cljplot2.scale.position/projection` (data `x`, `y` -> pixel point; `:x` is vertical in a plot with `:flip true`),
+    never from assuming `:x` is horizontal; it gives `##NaN` for values the scale can't place, and such values are
+    skipped. Charts compute in their own frame (`:x`, `:y`); flip is a drawing concern only.
   * `(legend chart attributes canvas box env)` - optional; draws the chart's key glyph in a legend key `box`,
     `attributes` - the entry's mapped style attributes (`{:color c :shape s :size z}`, NA ones absent except color).
     Every chart mapping a legend's dimension draws into its keys, in chart order.

@@ -2,7 +2,8 @@
   "Drawing grid item content - the counterpart of [[cljplot2.graphics.measure/natural-size]]."
   (:require [clojure2d.core :as c2d]
             [fastmath.core :as m]
-            [cljplot2.graphics.measure :as measure]))
+            [cljplot2.graphics.measure :as measure])
+  (:import [fastmath.vector Vec2]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -39,3 +40,14 @@
       (c2d/rect canvas x (- (+ y h) bw) w bw)
       (c2d/rect canvas x y bw h)
       (c2d/rect canvas (- (+ x w) bw) y bw h))))
+
+(defn rect-of
+  "Pixel rectangle `{:x :y :w :h}` (whole pixels) spanned by the data corners `[x0 y0]` and `[x1 y1]` placed with
+  `projection` (see [[cljplot2.scale.position/projection]]): both corners rounded, then normalized (non-negative
+  width and height), so it works for flipped scales too."
+  [projection x0 y0 x1 y1]
+  (let [^Vec2 a (projection x0 y0)
+        ^Vec2 b (projection x1 y1)
+        ax (m/round (.x a)) ay (m/round (.y a))
+        bx (m/round (.x b)) by (m/round (.y b))]
+    {:x (m/min ax bx) :y (m/min ay by) :w (m/abs (- bx ax)) :h (m/abs (- by ay))}))

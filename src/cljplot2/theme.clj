@@ -17,8 +17,9 @@
   (`:dash` - a sequence of positive dash lengths, or `:none` for a solid line).
 
   `:axis {:x axis :y axis}` - `axis` is `{:line-color :line-width :tick-color :tick-length :tick-width :label-gap
-  :tick-spacing}` (pixels; `:tick-spacing` > 0 is the target distance between ticks, a line or tick of width 0
-  isn't drawn).
+  :tick-spacing :label-rotation}` (pixels; `:tick-spacing` > 0 is the target distance between ticks, a line or tick of
+  width 0 isn't drawn; `:label-rotation` - tick labels rotated clockwise by -90..90 degrees, see
+  [[cljplot2.content.axis]]). Keyed by scale, also when a flipped plot draws `:x` vertically.
 
   `:panel :grid :bands` - grid line style used instead of `:x` / `:y` for a bands scale (default dotted, as lattice
   `dotplot`); `:x` / `:y` `:none` still turns that scale's lines off.
@@ -80,14 +81,14 @@
    :legend {:gap 5 :key-size 14 :fill :none :border-color :none :border-width 1 :bar-length :stretch :bar-width nil}
    :chart {:scatter {:size 4 :color [49 54 149 180] :stroke-color :none :stroke-width 1 :shape \O}
            :histogram {:color [49 54 149] :stroke-width 1 :alpha 0.6}
-           :density {:color [49 54 149] :width 1 :dash :none :fill :none}
+           :density {:color [49 54 149] :width 1 :dash :none :fill :none :zero-line-color :black :zero-line-width 1}
            :line {:color [49 54 149] :width 1 :dash :none :fill :none}
            :ecdf {:color [49 54 149] :width 1 :dash :none}
            :treemap {:padding 3 :border-color :white :border-width 1}}
    :axis {:x {:line-color :black :line-width 1 :tick-color :black :tick-length 6 :tick-width 1
-              :label-gap 2 :tick-spacing 80}
+              :label-gap 2 :tick-spacing 80 :label-rotation 0}
           :y {:line-color :black :line-width 1 :tick-color :black :tick-length 6 :tick-width 1
-              :label-gap 2 :tick-spacing 50}}
+              :label-gap 2 :tick-spacing 50 :label-rotation 0}}
    :text {:title {:font "Liberation Mono" :size 14 :font-style :bold :color :black :padding 4 :align centered}
           :strip {:font "Liberation Mono" :size 11 :font-style :plain :color :black :padding 2 :align centered}
           :axis-title {:font "Liberation Mono" :size 12 :font-style :plain :color :black :padding 4 :align centered}
@@ -126,7 +127,8 @@
 (def ^:private axis-style
   [:map {:closed true}
    [:line-color schema/color] [:line-width schema/non-neg] [:tick-color schema/color] [:tick-length schema/non-neg]
-   [:tick-width schema/non-neg] [:label-gap schema/non-neg] [:tick-spacing schema/pos]])
+   [:tick-width schema/non-neg] [:label-gap schema/non-neg] [:tick-spacing schema/pos]
+   [:label-rotation [:and number? [:>= -90] [:<= 90]]]])
 
 (def Theme
   "The merged theme (see [[default-theme]]). `:chart` subtrees are checked against the charts' style schemas by

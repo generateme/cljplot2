@@ -13,7 +13,8 @@
   it); [[forward]] maps a single value."
   (:require [fastmath.core :as m]
             [wadogo.scale :as s]
-            [cljplot2.schema :as schema]))
+            [cljplot2.schema :as schema])
+  (:import [fastmath.vector Vec2]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -237,3 +238,45 @@
   "Pixel position of a single `value` in a finalized scale; for many values use [[forward-fn]]."
   ^double [finalized value]
   ((forward-fn finalized) value))
+
+;; directions (plot `:flip`)
+
+(defn horizontal-key
+  "Position scale key drawn horizontally: `:y` when the plot is flipped (`flip?`), else `:x`."
+  [flip?]
+  (if flip? :y :x))
+
+(defn direction
+  "Direction of the finalized position scale `finalized` of key `k`: its `:direction` (`:horizontal` / `:vertical`,
+  set by the pipeline), else by key (`:x` horizontal, `:y` vertical)."
+  [k finalized]
+  (or (:direction finalized) (if (= k :x) :horizontal :vertical)))
+
+(defn horizontal?
+  "Is the finalized scale `finalized` of key `k` drawn horizontally (see [[direction]])?"
+  [k finalized]
+  (= :horizontal (direction k finalized)))
+
+(defn flipped?
+  "Do the finalized position `scales` (`{:x .. :y ..}`, either may be missing) draw `:x` vertically?"
+  [scales]
+  (cond
+    (:x scales) (not (horizontal? :x (:x scales)))
+    (:y scales) (horizontal? :y (:y scales))
+    :else false))
+
+(defn- forward-or-nan
+  [finalized]
+  (if finalized (forward-fn finalized) (fn ^double [_] ##NaN)))
+
+(defn projection
+  "Function of data `x`, `y` to the pixel point (`Vec2`) of the finalized position `scales`: the horizontal scale's
+  position gives the point's x, the vertical scale's its y (`:x` horizontal unless [[flipped?]]). A value the scale
+  can't place, or a missing scale, gives `##NaN` in that coordinate. Charts place marks only through it.
+  Builds the wadogo scales once; reuse the function for many points."
+  [scales]
+  (let [fx (forward-or-nan (:x scales))
+        fy (forward-or-nan (:y scales))]
+    (if (flipped? scales)
+      (fn ^Vec2 [x y] (Vec2. (double (fy y)) (double (fx x))))
+      (fn ^Vec2 [x y] (Vec2. (double (fx x)) (double (fy y)))))))

@@ -10,6 +10,8 @@
 
   `:text` is converted with `str` and split into lines; `nil` or `\"\"` is empty (zero size).
   Natural size is the text block rounded up plus padding on every side; rotation `90`/`270` swaps width and height.
+  Internally (axis tick labels, theme `[:axis k :label-rotation]`) any angle is drawn: the natural size is then the
+  rounded-up bounding box of the rotated text frame, the text rotated about the box centre.
   Drawing clips the text to the item box (intersected with any outer clip).
   Content is validated against [[Options]] by [[cljplot2.graphics.measure/validate-content]] (called from
   `grid/prepare`).
@@ -80,6 +82,24 @@
      :block-width (double (reduce max 0.0 widths))
      :block-height (* line-height (count lines))}))
 
+(defn quarter-turn
+  "`rotation` (degrees) normalized to `0`, `90`, `180` or `270` when it is a multiple of 90, else `nil`."
+  [rotation]
+  (let [r (double rotation)
+        r (- r (* 360.0 (m/floor (/ r 360.0))))]
+    (when (== r (* 90.0 (m/floor (/ r 90.0)))) (long r))))
+
+(defn text-frame
+  "Unrotated size `[w h]` of the text frame of label `content` (text block rounded up plus padding), measured on
+  `canvas` with `theme` - the label before rotation."
+  [content canvas theme]
+  (let [spec (label-spec theme content)]
+    (if (empty? (:lines spec))
+      [0.0 0.0]
+      (let [{:keys [^double block-width ^double block-height]} (text-metrics canvas spec)
+            padding2 (* 2.0 (double (:padding spec)))]
+        [(+ (m/ceil block-width) padding2) (+ (m/ceil block-height) padding2)]))))
+
 (defmethod measure/natural-size :label
   [content {:keys [canvas theme]}]
   (when-not canvas
@@ -91,7 +111,13 @@
             padding2 (* 2.0 (double (:padding spec)))
             w (+ (m/ceil block-width) padding2)
             h (+ (m/ceil block-height) padding2)]
-        (if (= 0 (:rotation spec)) (v/vec2 w h) (v/vec2 h w))))))
+        (condp contains? (quarter-turn (:rotation spec))
+          #{0 180} (v/vec2 w h)
+          #{90 270} (v/vec2 h w)
+          ;; any other angle: the rounded-up bounding box of the rotated text frame
+          (let [a (m/radians (double (:rotation spec)))
+                c (m/abs (m/cos a)) s (m/abs (m/sin a))]
+            (v/vec2 (m/ceil (+ (* w c) (* h s))) (m/ceil (+ (* w s) (* h c))))))))))
 
 (defn- align-offset
   "Offset of a `size` long block inside `available` space for alignment `align` (start/center/end)."
@@ -108,10 +134,14 @@
       (let [x (long x) y (long y) w (long w) h (long h)
             {:keys [widths ^double line-height ^double ascent ^double block-width ^double block-height]}
             (text-metrics canvas spec)
-            rotation (long (:rotation spec))
+            rotation (double (:rotation spec))
             padding (double (:padding spec))
-            ;; text frame: the box as seen by unrotated text, origin at its top-left corner
-            [frame-w frame-h] (if (zero? rotation) [(double w) (double h)] [(double h) (double w)])
+            ;; text frame: the box as seen by unrotated text, origin at its top-left corner; for an angle that isn't a
+            ;; multiple of 90 the box is the rotated frame's bounding box, the frame its unrotated size
+            [frame-w frame-h] (condp contains? (quarter-turn rotation)
+                                #{0 180} [(double w) (double h)]
+                                #{90 270} [(double h) (double w)]
+                                [(+ (m/ceil block-width) (* 2.0 padding)) (+ (m/ceil block-height) (* 2.0 padding))])
             block-x (+ padding (align-offset (:h-align spec) (- ^double frame-w (* 2.0 padding)) block-width))
             block-y (+ padding (align-offset (:v-align spec) (- ^double frame-h (* 2.0 padding)) block-height))]
         ;; graphics state is not restored here: callers isolate draw-content calls
