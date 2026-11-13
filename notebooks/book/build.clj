@@ -1,9 +1,10 @@
-(ns dev
+(ns book.build
   "Builds the cljplot2 notebook book (Clay + Quarto) from `notebooks/` into `docs/` (wiped first).
   Settings live in `clay.edn`, the chapter order in `notebooks/chapters.edn`.
 
-  CLI: `clojure -M:clay` (build), `clojure -M:clay serve [port]` (build, then Clay serves `docs/` until stopped,
-  default http://localhost:1971/). REPL (`:clay` alias): `(make-book!)`, `(make-book! {:show true})`."
+  CLI: `clojure -M:notebooks:clay` (build), `clojure -M:notebooks:clay serve [port]` (build, then Clay serves `docs/`
+  until stopped, default http://localhost:1971/). REPL (with the `:notebooks` alias): `(make-book!)`,
+  `(make-book! {:show true})`."
   (:require [clojure.edn :as edn]
             [scicloj.clay.v2.api :as clay]))
 
@@ -26,6 +27,7 @@
   ([options]
    (clay/make! (merge {:source-path (chapters)
                        :book {:title "cljplot2"}
+                       :first-as-index true ;; the first chapter (book.index) is the book's index.html
                        :show false
                        :browse false}
                       options))))
@@ -40,7 +42,7 @@
   "`{:serve? :port}` of the CLI `args`: none (build only), `serve` or `serve <port>` (build, then serve with Clay;
   `:port` nil - Clay picks the first free port from 1971). Throws `ex-info` for anything else."
   [args]
-  (let [usage "Usage: clojure -M:clay [serve [port]]"
+  (let [usage "Usage: clojure -M:notebooks:clay [serve [port]]"
         [command port & more] args
         port-number (when port (parse-long port))]
     (cond
@@ -66,7 +68,8 @@
             (exit! 1 (str "Port " port " is in use.")))
         chapters (chapters)
         {:keys [info]} (make-book! (if serve? (cond-> {:show true} port (assoc :port port)) {}))
-        ;; Clay reports a failing notebook of a multi-chapter book only by printing it; its result is then nil
+        ;; Clay (checked with 2.0.24) reports a failing notebook of a multi-chapter book only by printing it: `:info`
+        ;; starts with one entry per chapter, nil for a failed one (a single-chapter book rethrows instead)
         failed (count (filter nil? (take (chapter-count chapters) info)))]
     (cond
       (pos? failed) (exit! 1 (str failed " notebook(s) failed, see the Clay output above."))

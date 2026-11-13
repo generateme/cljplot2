@@ -18,7 +18,13 @@
                                            :xml {:file "faithful.json" :format :xml}})]
       (is (= {:key :file :value "gone.json" :dataset :gone} (error-data #(nu/dataset :gone))))
       (is (= {:key :file :value nil :dataset :no-file} (error-data #(nu/dataset :no-file))))
-      (is (= {:key :format :value :xml :dataset :xml} (error-data #(nu/dataset :xml)))))))
+      (is (= {:key :format :value :xml :dataset :xml} (error-data #(nu/dataset :xml))))))
+  (testing "a CSV entry's :strings reach parse-csv"
+    (let [seen (atom nil)]
+      (with-redefs [nu/datasets (constantly {:ids {:file "faithful.json" :format :csv :strings #{:id}}})
+                    nu/parse-csv (fn [_ options] (reset! seen options) [])]
+        (nu/dataset :ids)
+        (is (= {:strings #{:id}} @seen))))))
 
 (deftest parse-csv-test
   (testing "empty input and header only"
@@ -33,8 +39,15 @@
     (is (= [nil nil] (map :b (nu/parse-csv "a,b\n1,\n2,\n")))))
   (testing "integral values beyond long range become doubles"
     (is (= [1.0E20 1.0] (map :a (nu/parse-csv "a\n100000000000000000000\n1.0\n")))))
-  (testing "quoted values and blank lines"
-    (is (= [{:name "a, b" :v 1} {:name "c" :v 2}] (nu/parse-csv "name,v\n\"a, b\",1\n\nc,2\n"))))
+  (testing "quoted values and blank lines (leading, inner, trailing)"
+    (is (= [{:name "a, b" :v 1} {:name "c" :v 2}] (nu/parse-csv "\nname,v\n\"a, b\",1\n\nc,2\n\n"))))
+  (testing "single column: inner blank lines are missing values, trailing ones are dropped"
+    (is (= [{:a 1} {:a nil} {:a 3}] (nu/parse-csv "a\n1\n\n3\n\n\n")))
+    (is (= [] (nu/parse-csv "a\n\n\n"))))
+  (testing ":strings keeps id columns as strings"
+    (is (= [{:id "02134" :v 1} {:id "00501" :v 2}] (nu/parse-csv "id,v\n02134,1\n00501,2\n" {:strings #{:id}})))
+    (is (= [2134 501] (map :id (nu/parse-csv "id,v\n02134,1\n00501,2\n"))))
+    (is (= [{:a "1"}] (nu/parse-csv "a\n1\n" {:strings [:a :unknown]}))))
   (testing "a row of the wrong length throws"
     (is (= {:key :csv :row 2 :value ["1" "2" "3"]} (error-data #(nu/parse-csv "a,b\n1,2\n1,2,3\n"))))
     (is (= {:key :csv :row 1 :value ["1"]} (error-data #(nu/parse-csv "a,b\n1\n"))))))
@@ -45,9 +58,11 @@
       (let [note (nu/source-note {:source "R Graph Gallery - Histogram" :dataset :faithful})]
         (is (= :kind/md (:kindly/kind (meta note))))
         (is (true? (:kindly/hide-code (meta note))))
-        (is (= (str "Source: R Graph Gallery - Histogram. Data: Old Faithful geyser eruptions "
-                    "(Part of R (GPL-2 | GPL-3); via cljplot2 dev/resources).")
-               (text note)))))
+        (is (= (str "Source: R Graph Gallery - Histogram. Data: Old Faithful geyser eruptions, "
+                    "R datasets package `faithful` (Härdle 1991; Azzalini & Bowman 1990); "
+                    "licence: Part of R (GPL-2 | GPL-3).")
+               (text note)))
+        (is (not (re-find #"via|dev/resources" (text note))))))
     (testing "source or dataset alone"
       (is (= "Source: Lattice Fig 1.1." (text (nu/source-note {:source "Lattice Fig 1.1"}))))
       (is (re-matches #"Data: Old Faithful.*" (text (nu/source-note {:dataset :faithful})))))

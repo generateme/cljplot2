@@ -4,8 +4,9 @@
  :format [:quarto :html]
  ;; datasets downloadable from the book (docs/notebooks/data/); replaces Clay's default ["src" "notebooks"]
  :subdirs-to-sync ["notebooks/data"]
- :quarto {:format {:html {:toc true
-                          :toc-location :right
-                          :toc-depth 4
-                          :theme :cosmo}}
+ ;; ^:replace drops Clay's default formats (its :revealjs makes Quarto book projects warn)
+ :quarto {:format ^:replace {:html {:toc true
+                                    :toc-location :right
+                                    :toc-depth 4
+                                    :theme :cosmo}}
           :code-block-background true}}

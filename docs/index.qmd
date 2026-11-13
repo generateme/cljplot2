@@ -1,6 +1,6 @@
 ---
 format:
-  html: {toc: true, toc-depth: 4, theme: cosmo, toc-location: right}
+  html: {toc: true, toc-location: right, toc-depth: 4, theme: cosmo}
 code-block-background: true
 
 ---
@@ -26,7 +26,7 @@ ordinary Clojure. Statistics come from [fastmath](https://github.com/generateme/
 
 ::: {.sourceClojure}
 ```clojure
-(ns index
+(ns book.index
   (:require [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
             [notebook-utils :as nu]))
@@ -65,7 +65,7 @@ shows) and `cljplot2.chart` as `chart`. Data is read with `nu/dataset`.
 Waiting time between eruptions against eruption duration (left) and the distribution of eruption durations
 (right). Two plots sharing one dataset, arranged side by side.
 
-Source: R Graph Gallery - Scatter, Density. Data: Old Faithful geyser eruptions (Part of R (GPL-2 | GPL-3); via cljplot2 dev/resources).
+Source: R Graph Gallery - Scatter, Density. Data: Old Faithful geyser eruptions, R datasets package `faithful` (Härdle 1991; Azzalini & Bowman 1990); licence: Part of R (GPL-2 | GPL-3).
 
 
 ::: {.sourceClojure}
@@ -106,5 +106,5 @@ Source: R Graph Gallery - Scatter, Density. Data: Old Faithful geyser eruptions 
 
 
 ```{=html}
-<div><pre><small><small>source: notebooks/index.clj</small></small></pre></div>
+<div><pre><small><small>source: notebooks/book/index.clj</small></small></pre></div>
 ```

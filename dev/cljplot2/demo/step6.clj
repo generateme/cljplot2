@@ -22,7 +22,7 @@
    :labels {:title "Grid facets with an NA row" :x "x" :y "y"}})
 
 (def images
-  "Images of this step: `[file-name plot options]`, saved to `results/step6/` by [[cljplot2.demo/run!]]."
+  "Images of this step: `[file-name plot options]`, saved to `results/step6/` by [[cljplot2.demo/render!]]."
   [["fig-1-1-800x600.png" fig-1-1 {:width 800 :height 600}]
    ["fig-1-1-800x600-debug.png" fig-1-1 {:width 800 :height 600 :debug true}]
    ["grid-700x500.png" grid-plot {:width 700 :height 500}]])

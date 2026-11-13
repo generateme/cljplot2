@@ -13,6 +13,6 @@
    :labels {:title "Old Faithful" :x "eruptions [min]" :y "waiting [min]"}})
 
 (def images
-  "Images of this step: `[file-name plot options]`, saved to `results/step5/` by [[cljplot2.demo/run!]]."
+  "Images of this step: `[file-name plot options]`, saved to `results/step5/` by [[cljplot2.demo/render!]]."
   [["faithful-600x400.png" plot {:width 600 :height 400}]
    ["faithful-600x400-debug.png" plot {:width 600 :height 400 :debug true}]])

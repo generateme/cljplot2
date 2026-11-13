@@ -18,7 +18,7 @@
 (def fig-5-6-free (dissoc fig-5-6 :aspect))
 
 (def images
-  "Images of this step: `[file-name plot options]`, saved to `results/step11/` by [[cljplot2.demo/run!]]."
+  "Images of this step: `[file-name plot options]`, saved to `results/step11/` by [[cljplot2.demo/render!]]."
   [["fig-5-6-800x700.png" fig-5-6 {:width 800 :height 700}]
    ["fig-5-6-800x700-debug.png" fig-5-6 {:width 800 :height 700 :debug true}]
    ["fig-5-6-no-iso-800x700.png" fig-5-6-free {:width 800 :height 700}]])

@@ -8,7 +8,7 @@
                   :scales {:x {:domain [-5 5]} :y {:domain [0 1e6]}}}})
 
 (def images
-  "Images of this step: `[file-name plot options]`, saved to `results/step4/` by [[cljplot2.demo/run!]]."
+  "Images of this step: `[file-name plot options]`, saved to `results/step4/` by [[cljplot2.demo/render!]]."
   (for [[nm plot] plots
         [suffix options] [["" {:width 600 :height 400}] ["-debug" {:width 600 :height 400 :debug true}]]]
     [(str nm "-600x400" suffix ".png") plot options]))

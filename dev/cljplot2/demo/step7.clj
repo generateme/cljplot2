@@ -46,7 +46,7 @@
    :labels {:title "45 legend levels wrap; 60 bands, labels thinned" :x "x"}})
 
 (def images
-  "Images of this step: `[file-name plot options]`, saved to `results/step7/` by [[cljplot2.demo/run!]]."
+  "Images of this step: `[file-name plot options]`, saved to `results/step7/` by [[cljplot2.demo/render!]]."
   [["fig-2-6-400x900.png" fig-2-6 {:width 400 :height 900}]
    ["fig-2-6-400x900-debug.png" fig-2-6 {:width 400 :height 900 :debug true}]
    ["merged-700x500.png" merged {:width 700 :height 500}]

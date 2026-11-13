@@ -26,7 +26,7 @@
    :labels {:title "Portfolio faceted by type"}})
 
 (def images
-  "Images of this step: `[file-name plot options]`, saved to `results/step10/` by [[cljplot2.demo/run!]]."
+  "Images of this step: `[file-name plot options]`, saved to `results/step10/` by [[cljplot2.demo/render!]]."
   [["squarified-900x600.png" squarified {:width 900 :height 600}]
    ["slice-dice-900x600.png" slice-dice {:width 900 :height 600}]
    ["by-currency-900x600.png" by-currency {:width 900 :height 600}]

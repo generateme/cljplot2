@@ -1,6 +1,8 @@
-;; Datasets used by the notebooks: key -> {:file :format :title :source :licence :via :notes?}
+;; Datasets used by the notebooks: key -> {:file :format :title :source :licence :via :strings? :notes?}
 ;; `:file` is relative to this folder, `:format` is :json (array of objects) or :csv (header row).
-;; `:via` says where this copy comes from; `:source` and `:licence` describe the original data.
+;; `:source` and `:licence` describe the original data and are shown in each example's attribution line;
+;; `:via` says where this copy comes from (not shown).
+;; `:strings` (CSV only, optional) - column keywords kept as strings (e.g. ids with leading zeros).
 {:faithful {:file "faithful.json"
             :format :json
             :title "Old Faithful geyser eruptions"

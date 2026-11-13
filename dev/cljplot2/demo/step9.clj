@@ -49,7 +49,7 @@
 (def aligned (plot/arrange mixed {:columns 2 :title "Aligned panels (default)"}))
 
 (def images
-  "Images of this step: `[file-name plot options]`, saved to `results/step9/` by [[cljplot2.demo/run!]]."
+  "Images of this step: `[file-name plot options]`, saved to `results/step9/` by [[cljplot2.demo/render!]]."
   [["fig-1-4-800x900.png" fig-1-4 {:width 800 :height 900}]
    ["fig-1-4-800x900-debug.png" fig-1-4 {:width 800 :height 900 :debug true}]
    ["quad-900x600.png" quad {:width 900 :height 600}]

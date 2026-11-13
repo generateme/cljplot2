@@ -3,8 +3,7 @@
   all in one JVM.
 
   CLI: `clojure -M:demo` (every step), `clojure -M:demo step8 step11` (chosen steps),
-  `clojure -M:demo step11/fig-5-6-800x700.png` (one image). REPL: `(run!)`, `(run! \"step8\" ...)`."
-  (:refer-clojure :exclude [run!])
+  `clojure -M:demo step11/fig-5-6-800x700.png` (one image). REPL: `(render!)`, `(render! \"step8\" ...)`."
   (:require [clojure.string :as str]
             [clojure2d.core :as c2d]
             [cljplot2.core :as plot]))
@@ -47,7 +46,7 @@
                :when (chosen? step file-name)]
            [(str "results/" step "/" file-name) p options]))))
 
-(defn run!
+(defn render!
   "Render and save the images selected by `names` (see [[images]]); returns the saved paths."
   [& names]
   (let [start (System/nanoTime)
@@ -60,7 +59,7 @@
     paths))
 
 (defn -main [& args]
-  (try (apply run! args)
+  (try (apply render! args)
        (shutdown-agents)
        (catch clojure.lang.ExceptionInfo e
          (binding [*out* *err*] (println (ex-message e)))

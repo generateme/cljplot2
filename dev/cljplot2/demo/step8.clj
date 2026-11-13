@@ -78,7 +78,7 @@
    :labels {:title "Area: line with :fill (down to y = 0)" :x "x" :y "y"}})
 
 (def images
-  "Images of this step: `[file-name plot options]`, saved to `results/step8/` by [[cljplot2.demo/run!]]."
+  "Images of this step: `[file-name plot options]`, saved to `results/step8/` by [[cljplot2.demo/render!]]."
   [["fig-1-1-800x600.png" fig-1-1 {:width 800 :height 600}]
    ["fig-1-2-800x600.png" fig-1-2 {:width 800 :height 600}]
    ["fig-1-3-800x400.png" fig-1-3 {:width 800 :height 400}]

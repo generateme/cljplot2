@@ -206,7 +206,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h1 class="unnumbered">cljplot2</h1>
 <p>cljplot2 is a Clojure plotting library rendering static images with <a href="https://github.com/Clojure2D/clojure2d">clojure2d</a>. A plot is a plain map: data (a sequence of maps), a mapping from data to dimensions, a vector of charts, labels, scales and a theme. There is no DSL and no grammar of graphics: you build and transform the map with ordinary Clojure. Statistics come from <a href="https://github.com/generateme/fastmath">fastmath</a>, scales from <a href="https://github.com/scicloj/wadogo">wadogo</a>.</p>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">ns</span> <span class="kw">index</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">ns</span> book.<span class="kw">index</span></span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  (<span class="at">:require</span> [cljplot2.chart <span class="at">:as</span> chart]</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>            [cljplot2.core <span class="at">:as</span> plot]</span>
 <span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>            [notebook-utils <span class="at">:as</span> nu]))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -226,7 +226,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="a-first-example-old-faithful" class="level2">
 <h2 class="anchored" data-anchor-id="a-first-example-old-faithful">A first example: Old Faithful</h2>
 <p>Waiting time between eruptions against eruption duration (left) and the distribution of eruption durations (right). Two plots sharing one dataset, arranged side by side.</p>
-<p>Source: R Graph Gallery - Scatter, Density. Data: Old Faithful geyser eruptions (Part of R (GPL-2 | GPL-3); via cljplot2 dev/resources).</p>
+<p>Source: R Graph Gallery - Scatter, Density. Data: Old Faithful geyser eruptions, R datasets package <code>faithful</code> (Härdle 1991; Azzalini &amp; Bowman 1990); licence: Part of R (GPL-2 | GPL-3).</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> faithful </span>(nu/dataset <span class="at">:faithful</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
@@ -247,7 +247,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><img src="index_files/image0.png" class="img-fluid"></p>
 </div>
 <div style="background-color:grey;height:2px;width:100%;"></div>
-<div><pre><small><small>source: notebooks/index.clj</small></small></pre></div>
+<div><pre><small><small>source: notebooks/book/index.clj</small></small></pre></div>
 
 
 </section>

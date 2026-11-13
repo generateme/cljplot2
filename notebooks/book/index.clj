@@ -7,7 +7,7 @@
 ;; ordinary Clojure. Statistics come from [fastmath](https://github.com/generateme/fastmath), scales from
 ;; [wadogo](https://github.com/scicloj/wadogo).
 
-(ns index
+(ns book.index
   (:require [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
             [notebook-utils :as nu]))
