@@ -21,10 +21,10 @@
   Groups (see [[cljplot2.data.group]]) come from ordinal aesthetics (`:color` fills the bars) and `:group`.
   A single distinct value gets one bin of width 1 centred on it.
 
-  Ridgelines - `:y` mapped to categorical levels or on a `:bands` scale (see [[cljplot2.data.strip/ridges?]]; a numeric `:y` otherwise is ignored): one histogram per level and group (the
-  common breaks, `:y` measure per item), bars growing from the band's centre toward the next level, all on one
-  height scale - the tallest bar is `:overlap` (default 0.9) band steps high; the y scale leaves room for the outer
-  ridges. Drawn from the farthest level on; `:position` `:overlay` (default; with groups translucent, `:alpha`) or
+  Ridgelines - `:y` mapped to categorical levels or on a `:bands` scale (see [[cljplot2.data.strip/ridges?]]; a
+  numeric `:y` otherwise is ignored): one histogram per level and group (the common breaks, `:y` measure per item),
+  bars growing from the band's centre toward the next level, all on one height scale - the tallest bar is `:overlap`
+  (default 0.9) band steps high; the y scale leaves room for the outer ridges. Drawn from the farthest level on; `:position` `:overlay` (default; with groups translucent, `:alpha`) or
   `:mirror` (two groups, the second growing away from the next level)."
   (:require [clojure2d.color :as c]
             [clojure2d.core :as c2d]
@@ -125,7 +125,7 @@
           counts (partition 2 1 brks))))
 
 (defn- ridge-compute
-  "Ridgeline stats (`:y` mapped): per panel `{:ridges [item ...] :top h :overlap o :style st :translucent? b}`, items
+  "Ridgeline stats (categorical or bands `:y`): per panel `{:ridges [item ...] :top h :overlap o :style st :translucent? b}`, items
   (see [[cljplot2.data.strip/ridge-split]]) with `:bars [[x0 x1 height] ...]`; one `:top` over all panels."
   [options chart-split {:keys [theme] :as env}]
   (let [y (get options :y :percent)
@@ -146,6 +146,7 @@
         overlap (double (get options :overlap 0.9))]
     {:data (update-vals items (fn [its] {:ridges its :top top :overlap overlap :style (style options theme)
                                          :translucent? (and (> (count group-keys) 1) (= :overlay position))}))
+     :ridges? true
      :extents (merge-with merge (group/aesthetic-extents panels)
                           (strip/extents :band items (fn [_] [(first brks) (peek brks)])))
      :padding (merge {:x [0.05 0.05]} (:padding options))
@@ -157,8 +158,8 @@
   "Per panel: `{:bars [{:x0 :x1 :y0 :y1 :aesthetics}] :style style :translucent? bool}` in data units (bars in group
   order, `:y0`/`:y1` placed by [[cljplot2.data.position/stack-values]]; `:translucent?` - grouped overlay, fill drawn
   with `:alpha`); `:tick-format {:y :absolute}` for mirror; extents (x - outer breaks, y - over 0 and every bar's ends,
-  or `[-M M]` for `:symmetric` mirror), padding, `:na`, `:dropped`, `:axis-titles`. With `:y` mapped - ridgelines,
-  see [[ridge-compute]]."
+  or `[-M M]` for `:symmetric` mirror), padding, `:na`, `:dropped`, `:axis-titles`. With a categorical or bands
+  `:y` - ridgelines, see [[ridge-compute]]."
   [{:keys [options]} {:keys [groups mapping] :as chart-split} {:keys [theme] :as env}]
   (if (strip/ridges? chart-split env)
     (ridge-compute options chart-split env)
@@ -246,7 +247,7 @@
       (doseq [{:keys [level slot bars aesthetics]} (strip/ridge-order pl ridges)
               :let [st (group/style style aesthetics scales (:theme env))]
               :when st
-              :let [side (strip/ridge-side slot)
+              :let [side (strip/slot-side slot)
                     fill (if translucent? (c/set-alpha (:color st) (* 255.0 (double (:alpha style)))) (:color st))]
               [x0 x1 h] bars
               :when (pos? (double h))

@@ -121,16 +121,19 @@
 
 (defn- extents-stage
   "Per position scale: extents merged over charts and panels, padding as the largest per side among the charts
-  with an extent there. Per aesthetic: merged extent and `:na?`."
+  with an extent there. A chart whose extents of a dimension are all companions (`:companion? true`) joins only a
+  dimension another chart has extents of; companions alone give no extent (and no data scale). Per aesthetic: merged
+  extent and `:na?`."
   [{:keys [stats] :as plot}]
   (assoc plot :extents
          (into (aesthetic-extents stats)
                (keep (fn [k]
                           (let [with-extent (keep (fn [st]
                                                     (when-let [es (seq (keep #(get % k) (vals (:extents st))))]
-                                                      {:extent (data/merge-extents k es) :padding (get-in st [:padding k] [0 0])}))
+                                                      {:extent (data/merge-extents k es) :padding (get-in st [:padding k] [0 0])
+                                                       :companion? (every? :companion? es)}))
                                                   stats)]
-                            (when (seq with-extent)
+                            (when (some (complement :companion?) with-extent)
                               [k {:extent (data/merge-extents k (map :extent with-extent))
                                   :padding (reduce (fn [[a b] [c d]] [(m/max (double a) (double c)) (m/max (double b) (double d))])
                                                 [0.0 0.0] (map :padding with-extent))}]))))
@@ -139,16 +142,19 @@
 (defn- scale-specs-stage
   "Phase-1 specs of the position and aesthetic scales with a plot `:scales` entry or data extents. Aesthetic specs are final (no layout dependence).
   A tick format suggested by a chart (`:tick-format` in its stats, the first chart's) is added to the position spec;
-  scale attributes suggested by a chart (`:scale-defaults {dim attributes}`, the first chart's) go under the plot's
-  own spec."
+  scale attributes suggested by a chart (`:scale-defaults {dim attributes}`, the first chart's) are used as a whole
+  unless the plot's own spec sets any of them (attributes like bands `:padding-out` / `:align-outer` only make
+  sense together)."
   [{:keys [scales extents theme stats] :as plot}]
   (let [ks (distinct (concat (filter #(or (position-scales %) (aesthetic/dim? %)) (keys scales)) (keys extents)))
         tick-format (fn [k] (some #(get-in % [:tick-format k]) stats))
-        scale-defaults (fn [k] (some #(get-in % [:scale-defaults k]) stats))]
+        with-defaults (fn [k spec]
+                        (let [defaults (when (position-scales k) (some #(get-in % [:scale-defaults k]) stats))]
+                          (if (some #(contains? spec %) (keys defaults)) spec (merge defaults spec))))]
     (assoc plot :scale-specs
            (into {} (keep (fn [k]
                             (let [{:keys [extent padding na?]} (get extents k)
-                                  spec (merge (when (position-scales k) (scale-defaults k)) (get scales k {}))]
+                                  spec (with-defaults k (get scales k {}))]
                               (if (aesthetic/dim? k)
                                 (some->> (aesthetic/scale-spec k spec extent na? (:palette theme)) (vector k))
                                 [k (cond-> (scale/data-scale-spec k spec extent padding)

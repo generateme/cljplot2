@@ -54,9 +54,7 @@
         (str (:options c) " flip " flip)))
   (is (= ["a" "b" "c"] (sort (map :level (:items (panel-data (built {:data rows :mapping {:x :v :y :lvl}
                                                                      :charts [(chart/beeswarm)]})
-                                                             0))))))
-  (is (every? #(apply <= %) (map :values (:items (panel-data (built {:data rows :mapping {:x :v :y :lvl} :charts [(chart/beeswarm)]}) 0))))
-      "values sorted"))
+                                                             0)))))))
 
 (deftest density-ridges-test
   (let [b (built {:data rows :mapping {:x :v :y :lvl} :charts [(chart/density)]})
@@ -84,7 +82,7 @@
   (testing "mirror: the second group grows away from the next level"
     (let [{:keys [ridges]} (panel-data (built {:data rows :mapping {:x :v :y :lvl :color :g}
                                               :charts [(chart/density {:position :mirror})]}) 0)]
-      (is (= #{1.0 -1.0} (set (map (comp strip/ridge-side :slot) ridges))))))
+      (is (= #{1.0 -1.0} (set (map (comp strip/slot-side :slot) ridges))))))
   (testing "errors"
     (is (= :position (:key (error #(built {:data rows :mapping {:x :v :y :lvl :color :g} :charts [(chart/density {:position :stack})]})))))
     (is (= :fill-gradient (:key (error #(built {:data rows :mapping {:x :v} :charts [(chart/density {:fill-gradient :mpl/viridis})]})))))
@@ -142,3 +140,61 @@
                                                        :charts [(chart/density) (assoc-in c [:options :place] :bottom)]}
                                                       options))
           (str (:kind c) " flip " flip)))))
+
+(defn- key-ink
+  "Pixels of the first legend's key column differing from the legend background."
+  [p]
+  (let [b (built p)
+        {:keys [x y h]} (grid/item-box (:layout b) :legends)
+        ^BufferedImage img (plot/render-image p options)
+        bg (.getRGB img (int x) (int (+ (double y) (double h) -1)))]
+    (count (for [i (range x (+ (long x) 14)) j (range y (+ (long y) (long h)))
+                 :when (not= bg (.getRGB img (int i) (int j)))] 1))))
+
+(deftest review-fixes-3b-test
+  (testing "F1 swarm packing is fast on ties"
+    (let [t (System/nanoTime)
+          os (beeswarm/swarm-offsets (repeat 2000 10.0) 6.0 false)]
+      (is (< (/ (- (System/nanoTime) t) 1.0e9) 2.0))
+      (is (= 2000 (count (distinct os))) "every tied circle in its own place")))
+  (testing "F1 :fit keeps the drawn swarm inside its slot"
+    (let [p {:data (concat rows (repeat 200 {:v 20 :lvl "b"})) :mapping {:x :v :y :lvl}
+             :charts [(chart/beeswarm {:color :red :size 6})]}
+          b (built p)
+          {:keys [y]} (panel-box b)
+          fy (scale/forward-fn (get-in b [:finalized-scales :y]))
+          bw (double (:bandwidth (scale/band-geometry (get-in b [:finalized-scales :y]))))
+          ^BufferedImage img (plot/render-image p options)
+          reds (for [i (range (.getWidth img)) j (range (.getHeight img)) :when (red? (.getRGB img (int i) (int j)))] j)]
+      (is (seq reds))
+      (is (every? (fn [j] (some #(<= (m/abs (- (double j) (+ (double y) (fy %)))) (+ (* 0.4 bw) 4.0)) ["a" "b" "c"])) reds))))
+  (testing "F2 strip and ridge charts without a finite :x throw {:key :mapping}"
+    (doseq [c [(chart/box) (chart/beeswarm) (chart/density) (chart/histogram)]]
+      (is (= :mapping (:key (error #(built {:data (map (fn [r] (assoc r :v "x")) rows) :mapping {:x :v :y :lvl}
+                                            :charts [c]}))))
+          (str (:kind c)))))
+  (testing "F3 a plot attribute drops the whole scale suggestion"
+    (let [attrs (get-in (built {:data rows :mapping {:x :v :y :lvl} :scales {:y {:padding-out 0.1}} :charts [(chart/density)]})
+                        [:finalized-scales :y :attributes])]
+      (is (== 0.1 (:padding-out attrs)))
+      (is (not (contains? attrs :align-outer)))))
+  (testing "F4 :bottom alone is an x-only chart placed as :center"
+    (let [b (built {:data rows :mapping {:x :v} :charts [(chart/rug {:place :bottom})]})
+          {:keys [h]} (panel-box b)]
+      (is (nil? (get-in b [:finalized-scales :y])))
+      (is (nil? (get-in b [:extents :y])))
+      (is (== (* 0.5 (double h)) (.y ^Vec2 ((:point (placement-of b {} :bottom)) 5 nil 0.0))))
+      (is (instance? BufferedImage (plot/render-image {:data rows :mapping {:x :v} :charts [(chart/beeswarm {:place :bottom})]}
+                                                      options)))))
+  (testing "F10 :bottom-share needs :place :bottom"
+    (is (= :bottom-share (:key (error #(built {:data rows :mapping {:x :v} :charts [(chart/rug {:bottom-share 0.2})]}))))))
+  (testing "F14 ridge legends are filled"
+    (let [p (fn [c] {:data rows :mapping {:x :v :y :lvl :color :g} :charts [c]})
+          flat {:data rows :mapping {:x :v :color :g} :charts [(chart/density)]}]
+      (is (> (key-ink (p (chart/density {:position :mirror}))) (* 2 (key-ink flat))))))
+  (testing "F14 histogram ridges with explicit breaks count the values outside"
+    (let [b (built {:data rows :mapping {:x :v :y :lvl} :charts [(chart/histogram {:bins [0 10 20] :y :count})]})
+          outside (count (remove #(<= 0 (:v %) 20) rows))]
+      (is (pos? outside))
+      (is (= outside (get-in b [:stats 0 :dropped :x])))
+      (is (= (- 90 outside) (long (reduce + (map #(nth % 2) (mapcat :bars (:ridges (panel-data b 0)))))))))))

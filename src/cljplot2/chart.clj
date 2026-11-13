@@ -9,10 +9,12 @@
 
   * `(compute chart {:groups {panel rows} :mapping mapping} env)` -> data
     `{:extents {panel {dim extent}} :padding {dim [lo hi]} :data {panel computed} :na #{dim} :dropped {dim n}}`
+    (an extent with `:companion? true` counts only when another chart has extents of its dimension)
     and optionally `:axis-titles {:x t :y t}` (suggested axis titles; the first chart's win, plot `:labels` win over
     all) and `:tick-format {:x f :y f}` (suggested tick label format, `:absolute` - magnitudes; used unless the plot's
     scale has a `:formatter`) and `:scale-defaults {:x attrs :y attrs}` (suggested position scale attributes, e.g.
-    bands `:padding-out`; under the plot's own `:scales` entry) (`env` - `{:theme :na-level? :plot-scales :flip?}`, `:plot-scales` - the plot's `:scales`, `:flip?` - the plot's
+    bands `:padding-out`; dropped when the plot's own `:scales` entry sets any of them)
+    (`env` - `{:theme :na-level? :plot-scales :flip?}`, `:plot-scales` - the plot's `:scales`, `:flip?` - the plot's
     `:flip`); stored per chart in the
     plot's `:stats`. Aesthetic extents (`:color`,
     `:shape`, `:size`) are [[cljplot2.data.rows/value-extent]]s; `:na` lists aesthetics with NA (`nil`) values

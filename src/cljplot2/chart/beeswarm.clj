@@ -45,35 +45,44 @@
 
 (def ^:private ^:const eps 1.0e-9)
 
+(defn- nearest-free
+  "The offset nearest 0 (`one-sided?` - non-negative) outside every open interval of `intervals` (`[lo hi]` pairs,
+  sorted by `lo`); ties prefer the positive side. Overlapping intervals are merged; the ends of a merged interval
+  lie in no interval."
+  ^double [intervals one-sided?]
+  (let [merged (reduce (fn [acc [lo hi]]
+                         (let [[plo phi] (peek acc)]
+                           (if (and plo (< (double lo) (- (double phi) eps)))
+                             (conj (pop acc) [plo (m/max (double phi) (double hi))])
+                             (conj acc [lo hi]))))
+                       [] intervals)
+        [lo hi] (first (filter (fn [[lo hi]] (< (+ (double lo) eps) 0.0 (- (double hi) eps))) merged))]
+    (cond
+      (nil? lo) 0.0
+      one-sided? (double hi)
+      (< (- (double lo)) (- (double hi) eps)) (double lo)
+      :else (double hi))))
+
 (defn swarm-offsets
   "Cross offsets (pixels) packing circles of `diameter` at the pixel `positions` along the value axis (increasing):
   each at the smallest absolute offset (`one-sided?` - smallest non-negative) where it is at least `diameter` from
-  every circle placed before it. Ties prefer the positive side."
+  every circle placed before it; ties prefer the positive side. Each earlier circle within a diameter along the
+  axis forbids an open offset interval; the answer is the free offset nearest 0 - `O(k log k)` for `k` such circles."
   [positions ^double diameter one-sided?]
   (let [d2 (* diameter diameter)]
     (loop [ps (seq positions) placed [] offsets (transient [])]
       (if-not ps
         (persistent! offsets)
         (let [p (double (first ps))
-              ;; circles placed before within one diameter along the value axis (positions are increasing)
-              near (loop [i (dec (count placed)) acc []]
-                     (if (and (>= i 0) (< (- p (double (first (placed i)))) diameter))
-                       (recur (dec i) (conj acc (placed i)))
-                       acc))
-              free? (fn [^double o] (every? (fn [[q c]] (let [dp (- p (double q)) dc (- o (double c))]
-                                                          (>= (+ (* dp dp) (* dc dc)) (- d2 eps))))
-                                            near))
-              candidates (cons 0.0 (mapcat (fn [[q c]] (let [dp (- p (double q))
-                                                             h (m/sqrt (m/max 0.0 (- d2 (* dp dp))))]
-                                                         [(+ (double c) h) (- (double c) h)]))
-                                           near))
-              o (->> candidates
-                     (filter #(or (not one-sided?) (>= (double %) (- eps))))
-                     (filter free?)
-                     (reduce (fn [^double best ^double o]
-                               (let [ab (m/abs best) ao (m/abs o)]
-                                 (if (or (< ao (- ab eps)) (and (< (m/abs (- ao ab)) eps) (> o best))) o best)))
-                             ##Inf))]
+              ;; forbidden intervals of the circles placed before within one diameter (positions are increasing)
+              intervals (loop [i (dec (count placed)) acc []]
+                          (let [[q c] (when (>= i 0) (placed i))]
+                            (if (and q (< (- p (double q)) diameter))
+                              (let [dp (- p (double q))
+                                    h (m/sqrt (m/max 0.0 (- d2 (* dp dp))))]
+                                (recur (dec i) (if (> h eps) (conj acc [(- (double c) h) (+ (double c) h)]) acc)))
+                              acc)))
+              o (nearest-free (sort-by first intervals) one-sided?)]
           (recur (next ps) (conj placed [p o]) (conj! offsets o)))))))
 
 (defn fit-offsets
@@ -83,15 +92,14 @@
     (if (> widest room) (mapv #(* (double %) (/ room widest)) offsets) (vec offsets))))
 
 (defn compute
-  "Per panel: `{:items [..] :style st :place p :options o :one-sided? b}`, item values sorted; extents (x - the
-  values), padding, `:na`, `:dropped`."
+  "Per panel: `{:items [..] :style st :place p :options o :one-sided? b}`; extents (x - the values), padding, `:na`,
+  `:dropped`."
   [{:keys [options]} chart-split {:keys [theme] :as env}]
-  (let [{:keys [place position items panels dropped]} (strip/split chart-split options :center env)
-        items (update-vals items (fn [its] (mapv #(update % :values (comp vec sort)) its)))]
+  (let [{:keys [place position items panels dropped]} (strip/split chart-split options :center env)]
     {:data (update-vals items (fn [its] {:items its :style (style options theme) :place place :options options
                                          :one-sided? (= :mirror position)}))
      :extents (merge-with merge (group/aesthetic-extents panels)
-                          (strip/extents place items (fn [{:keys [values]}] [(first values) (peek values)])))
+                          (strip/extents place items (fn [{:keys [values]}] [(reduce min values) (reduce max values)])))
      :padding (strip/padding place options)
      :na (group/na-dims panels)
      :dropped dropped}))
@@ -100,21 +108,18 @@
   "Draw the points of one panel, each item swarmed by [[swarm-offsets]] around its centre line (one-sided: from 0
   outward), fitted into its slot with `:fit`."
   [_chart {:keys [items style place options one-sided?]} canvas box scales env]
-  (let [{:keys [point span]} (strip/placement box scales options place)
+  (let [{:keys [point span value-pixel]} (strip/placement box scales options place)
         fit? (data/option options :fit true)]
     (doseq [{:keys [level slot values aesthetics]} items
             :let [st (group/style style aesthetics scales (:theme env))
                   s (double (span level))]
             :when (and st (pos? s))]
       (let [[lo hi] slot
-            side (strip/ridge-side slot)
+            side (strip/slot-side slot)
             base (if one-sided? 0.0 (strip/in-slot slot 0.0))
             room (* s (if one-sided? (m/abs (+ (double lo) (double hi))) (strip/slot-half slot)))
-            ;; pixel position along the value axis: the moving coordinate between two cross offsets
-            along (fn [v] (let [^Vec2 a (point v level base) ^Vec2 b (point v level (+ base 0.25))]
-                            (if (== (.x a) (.x b)) (.x a) (.y a))))
             ;; [value pixel] pairs in increasing pixel order (a reversed value axis reverses the values)
-            kept (sort-by second (filter #(m/valid-double? (double (second %))) (map (juxt identity along) values)))
+            kept (sort-by second (filter #(m/valid-double? (double (second %))) (map (juxt identity value-pixel) values)))
             offsets (cond-> (swarm-offsets (map second kept) (double (:size st)) one-sided?)
                       fit? (fit-offsets room))]
         (doseq [[[v] o] (map vector kept offsets)
