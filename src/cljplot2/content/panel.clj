@@ -1,6 +1,6 @@
 (ns cljplot2.content.panel
   "Panel content `{:kind :panel}`: the box charts are drawn in. Natural size 0x0 (it takes what its tracks give).
-  Drawn from the theme's `:panel` section (validated against [[cljplot2.theme/Theme]] by `build`): fill, then a border
+  Drawn from the theme's `:panel` section (validated against [[cljplot2.theme/theme-schema]] by `build`): fill, then a border
   inside the box; `:none` colors draw nothing, `:border-width` is rounded to whole pixels.
   `{:kind :panel :alternate true}` also draws theme `[:panel :alternate-fill]` over the fill (facet shading).
   Finalized scales in `env` `:scales` are panel-local (range `[0 w]` horizontal / `[h 0]` vertical): grid lines (theme

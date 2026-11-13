@@ -59,7 +59,7 @@
                (data/sorted-levels k (filter #(and (some? %) (valid-facet-value? %)) values) :facet))]
     (if (and na-panel? (some nil? values)) (conj base na-level) base)))
 
-(def ScaleSpec
+(def scale-spec-schema
   "Facet scale spec (plot `:scales` of a facet key): `:domain` - distinct levels in panel order, `:formatter` - strip
   text of a level."
   [:map {:closed true}
@@ -67,7 +67,7 @@
                              [#(when-not (apply distinct? %) "facet domain values should be distinct")]))
    (schema/optional :formatter schema/function)])
 
-(def Options
+(def facet-options
   "Plot `:facets`: `:columns` / `:rows` (wrap layout shape), `:order` (`:top-down` default or `:bottom-up`), `:na-panel`
   (default true - `nil` facet values get a panel)."
   [:map {:closed true}

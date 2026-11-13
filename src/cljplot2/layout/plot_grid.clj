@@ -43,10 +43,10 @@
    [:x {:id :x-title :defaults {:role :axis-title} :column :panel :row :x-title}]
    [:y {:id :y-title :defaults {:role :axis-title :rotation 270} :column :y-title :row :panel}]])
 
-(def Labels
-  "Plot `:labels`: `{:title :x :y}`, each a text or a map of [[cljplot2.content.label/Options]]; `nil` - no label."
+(def labels-schema
+  "Plot `:labels`: `{:title :x :y}`, each a text or a map of [[cljplot2.content.label/label-options]]; `nil` - no label."
   (into [:map {:closed true}]
-        (map (fn [[k]] (schema/nilable k [:multi {:dispatch map?} [true label/Options] [false any?]])))
+        (map (fn [[k]] (schema/nilable k [:multi {:dispatch map?} [true label/label-options] [false any?]])))
         plot-labels))
 
 (defn- label-items
@@ -256,7 +256,7 @@
       (and widths (not= c (count widths))) (str ":widths should have one weight per column (" c ")")
       (and heights (not= r (count heights))) (str ":heights should have one weight per row (" r ")"))))
 
-(def Arrange
+(def arrange-schema
   "Plot `:arrange`, see [[cljplot2.multiplot/arrange]]; the plots are validated when built as sub-plots."
   (schema/with-rules
    [:map {:closed true}
@@ -282,7 +282,7 @@
   "Grid of the plot `:arrange` spec `{:plots [p ...] :columns :rows :widths :heights}` in `theme`: cells `[:plot i]`
   filled row by row (columns `[:column c]`, rows `[:row r]`) with `[:multiplot :gap]` between them, `[:plot :margin]`
   around, and an optional title row (`labels` - only `:title`) above the cells, inside the margins.
-  `arrange` is valid by [[Arrange]]."
+  `arrange` is valid by [[arrange-schema]]."
   [{:keys [plots columns rows widths heights]} labels theme]
   (let [plots (vec plots)
         [^long r ^long c] (arrange-shape (count plots) columns rows)

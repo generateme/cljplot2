@@ -23,14 +23,14 @@
   "Mapping keys of the built-in dimensions (accessors); `:hierarchy` (treemap) holds a vector of accessors."
   [:x :y :color :shape :size :group :facet :facet-col :facet-row :order :value])
 
-(def Mapping
+(def mapping-schema
   "A plot or chart `:mapping`: accessors (keyword or function; `nil` - not mapped) of the built-in keys, `:hierarchy`
   a non-empty vector of accessors. Open: user charts may read other keys."
   (-> [:map]
       (into (map #(schema/nilable % schema/accessor)) mapping-keys)
       (conj (schema/nilable :hierarchy [:vector {:min 1} schema/accessor]))))
 
-(def Data
+(def data-schema
   "Plot or chart `:data`: a sequence of rows (maps) or a map of columns (sequences); rows and columns are checked by
   [[rows]]."
   (schema/named-type ::data #(or (sequential? %) (map? %))
@@ -38,8 +38,8 @@
 
 (def common-options
   "Map entries of the options every chart takes: own `:data` (see [[rows]]) and `:mapping` (over the plot's)."
-  [(schema/nilable :data Data)
-   (schema/optional :mapping Mapping)])
+  [(schema/nilable :data data-schema)
+   (schema/optional :mapping mapping-schema)])
 
 (def position-padding
   "Chart option `:padding`: `{:x [lo hi] :y [lo hi]}`, fractions of the data span."
@@ -80,13 +80,20 @@
 
 (defn temporal? [v] (instance? java.time.temporal.Temporal v))
 
+(defn- ordered-level?
+  "Is categorical value `v` a level with a natural order (a `Comparable` other than strings, keywords and booleans,
+  e.g. shingle / bin intervals)? Such levels are sorted instead of kept in first-appearance order."
+  [v]
+  (and (instance? Comparable v) (not (string? v)) (not (keyword? v)) (not (boolean? v))))
+
 (defn valid-value?
-  "Can `v` be plotted: a finite number, a string, a keyword or a `java.time` value."
+  "Can `v` be plotted: a finite number, a string, a keyword, a `java.time` value or a level with a natural order
+  ([[ordered-level?]], e.g. an interval)."
   [v]
   (cond
     (number? v) (m/valid-double? (double v))
     (or (string? v) (keyword? v) (temporal? v)) true
-    :else false))
+    :else (ordered-level? v)))
 
 (defn finite-numbers
   "Finite numbers among `vs` (as doubles) and the count of other values: `{:values [..] :dropped n}`."
@@ -98,8 +105,19 @@
   [v]
   (cond (number? v) :numeric (temporal? v) :temporal :else :categorical))
 
+(defn- categorical-levels
+  "Distinct categorical `vs`: sorted ascending when every one is an [[ordered-level?]] (and they compare), else in
+  first-appearance order."
+  [vs]
+  (let [ds (vec (distinct vs))]
+    (if (every? ordered-level? ds)
+      (try (vec (sort ds)) (catch ClassCastException _ ds))
+      ds)))
+
 (defn extent
-  "Extent of valid values `vs` of dimension `k` (`nil` when empty). Mixed kinds throw `ex-info {:key :extents}`."
+  "Extent of valid values `vs` of dimension `k` (`nil` when empty): categorical values distinct, in first-appearance
+  order - sorted when they have a natural order (intervals, see [[categorical-levels]]). Mixed kinds throw
+  `ex-info {:key :extents}`."
   [k vs]
   (when (seq vs)
     (let [kinds (set (map value-kind vs))]
@@ -111,7 +129,7 @@
         :temporal {:kind :temporal
                    :min (reduce #(if (neg? (compare %2 %1)) %2 %1) vs)
                    :max (reduce #(if (pos? (compare %2 %1)) %2 %1) vs)}
-        :categorical {:kind :categorical :values (vec (distinct vs))}))))
+        :categorical {:kind :categorical :values (categorical-levels vs)}))))
 
 (def ^:const max-levels
   "Most distinct numeric / temporal values [[value-extent]] keeps; with more, an ordinal scale needs an explicit domain."
@@ -151,7 +169,7 @@
         (when (> (count kinds) 1)
           (schema/fail! "Charts map different kinds of values to one scale." {:key :extents :in [:mapping k] :kinds kinds}))
         (cond-> (case (first kinds)
-          :categorical {:kind :categorical :values (vec (distinct (mapcat :values es)))}
+          :categorical {:kind :categorical :values (categorical-levels (mapcat :values es))}
           :numeric {:kind :numeric :min (reduce min (map :min es)) :max (reduce max (map :max es))}
           :temporal {:kind :temporal
                      :min (reduce #(if (neg? (compare %2 %1)) %2 %1) (map :min es))

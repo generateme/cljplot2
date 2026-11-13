@@ -36,17 +36,17 @@
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
-(def Axis
+(def axis-schema
   "`{:kind :axis}` content: `:scale` `:x` or `:y`; optional `:next-panel-gap` - pixels to the next panel's identical
   axis along a horizontal axis (facet columns): labels overlapping that axis's labels aren't drawn."
   [:map [:scale [:enum :x :y]] (schema/optional :next-panel-gap schema/non-neg)])
 
-(def Overhang
+(def overhang-schema
   "`{:kind :axis-overhang}` content: `:scale` `:x` or `:y`, `:end` `:start` or `:end`."
   [:map [:scale [:enum :x :y]] [:end [:enum :start :end]]])
 
-(defmethod measure/validate-content :axis [content] (schema/explain! [[Axis content [:content]]]))
-(defmethod measure/validate-content :axis-overhang [content] (schema/explain! [[Overhang content [:content]]]))
+(defmethod measure/validate-content :axis [content] (schema/explain! [[axis-schema content [:content]]]))
+(defmethod measure/validate-content :axis-overhang [content] (schema/explain! [[overhang-schema content [:content]]]))
 
 (defn- tick-label
   ([text] (tick-label text 0))

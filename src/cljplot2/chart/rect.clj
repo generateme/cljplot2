@@ -30,10 +30,10 @@
    (schema/optional :stroke-color schema/color)
    (schema/optional :stroke-width schema/non-neg)])
 
-(def ^:private end-schema [:maybe annotation/Position])
+(def ^:private end-schema [:maybe annotation/position])
 (def ^:private interval-schema [:tuple end-schema end-schema])
 
-(def Schema
+(def schemas
   "Schemas of the rect chart: `:style` (theme `[:chart :rect]`), `:options`, `:mapping` (merged)."
   {:style (into [:map {:closed true}] style-entries)
    :options (-> [:map {:closed true}]

@@ -48,7 +48,7 @@
   Colors are any clojure2d color or `:none` (draw nothing). `nil` in a theme override means \"not set\"
   and keeps the value underneath, see [[deep-merge]].
 
-  `build` validates the merged theme against [[Theme]] (closed maps: unknown keys are errors), so bad values fail
+  `build` validates the merged theme against [[theme-schema]] (closed maps: unknown keys are errors), so bad values fail
   before any stage runs."
   (:require [clojure2d.color :as c]
             [cljplot2.scale.aesthetic :as aesthetic]
@@ -86,14 +86,14 @@
              :na [150 150 150]}
    :legend {:gap 5 :key-size 14 :fill :none :border-color :none :border-width 1 :bar-length :stretch :bar-width nil}
    :chart {:scatter {:size 4 :color [69 117 180 180] :stroke-color :none :stroke-width 1 :shape \O}
-           :histogram {:color [69 117 180] :stroke-width 1 :alpha 0.6}
+           :histogram {:color [69 117 180] :stroke-color :darker :stroke-width 1 :alpha 0.6}
            :density {:color [69 117 180] :width 1 :dash :none :fill :none :alpha 0.6 :zero-line-color :black
                      :zero-line-width 1}
            :line {:color [69 117 180] :width 1 :dash :none :fill :none}
            :ecdf {:color [69 117 180] :width 1 :dash :none}
            :treemap {:padding 3 :border-color :white :border-width 1}
-           :box {:color [69 117 180] :stroke-width 1 :shape \O :size 5}
-           :violin {:color [69 117 180] :stroke-width 1 :inner-color :none}
+           :box {:color [69 117 180] :stroke-color :darker :stroke-width 1 :shape \O :size 5}
+           :violin {:color [69 117 180] :stroke-color :darker :stroke-width 1 :inner-color :none}
            :stripplot {:size 10 :color [69 117 180 100] :stroke-color :none :stroke-width 1 :shape \O}
            :beeswarm {:size 6 :color [69 117 180 180] :stroke-color :none :stroke-width 1 :shape \O}
            :rug {:color [69 117 180 100] :line-width 1}
@@ -129,7 +129,7 @@
   [[:font schema/font] [:size schema/pos] [:font-style schema/font-style] [:color schema/solid-color]
    [:padding schema/non-neg]])
 
-(def TextStyle
+(def text-style-schema
   "A text role's style."
   (-> [:map {:closed true}] (into text-style-entries) (conj (schema/optional :align schema/align))))
 
@@ -146,7 +146,7 @@
    [:tick-width schema/non-neg] [:label-gap schema/non-neg] [:tick-spacing schema/pos]
    [:label-rotation [:and number? [:>= -90] [:<= 90]]]])
 
-(def Theme
+(def theme-schema
   "The merged theme (see [[default-theme]]). `:chart` subtrees are checked against the charts' style schemas by
   `build`, see [[cljplot2.pipeline/build]]."
   [:map {:closed true}
@@ -158,7 +158,7 @@
             [:fill schema/color] [:border-color schema/color] [:border-width schema/non-neg] [:shingle-fill schema/color]]]
    [:facet [:map {:closed true} [:gap schema/non-neg]]]
    [:multiplot [:map {:closed true} [:gap schema/non-neg]]]
-   [:palette aesthetic/Palette]
+   [:palette aesthetic/palette-schema]
    [:legend [:map {:closed true}
              [:gap schema/non-neg] [:key-size schema/non-neg] [:fill schema/color] [:border-color schema/color]
              [:border-width schema/non-neg] [:bar-length (schema/keyword-or :stretch schema/pos)]
@@ -166,11 +166,11 @@
    [:chart [:and [:map-of keyword? :map]
             [:map (schema/optional :text (schema/forbidden "isn't used: text charts take the text role [:text :annotation]"))]]]
    [:axis [:map {:closed true} [:x axis-style] [:y axis-style]]]
-   [:text [:map-of keyword? TextStyle]]])
+   [:text [:map-of keyword? text-style-schema]]])
 
 (defn plot-theme
   "Plot theme: `theme` deep-merged over [[default-theme]] (`nil` means the default theme); validated against
-  [[Theme]] by `build`."
+  [[theme-schema]] by `build`."
   [theme]
   (deep-merge default-theme theme))
 
@@ -179,14 +179,14 @@
   (atom nil))
 
 (defn errors
-  "Errors of the merged `theme` against [[Theme]] (paths under `[:theme]`, see [[cljplot2.schema/errors]]). Checking
+  "Errors of the merged `theme` against [[theme-schema]] (paths under `[:theme]`, see [[cljplot2.schema/errors]]). Checking
   resolves every color and font, so the result for the last theme is reused for an equal one (plots built in a row
   usually share it)."
   [theme]
   (let [[validated errs] @last-validated]
     (if (and validated (= validated theme))
       errs
-      (let [errs (schema/errors Theme theme [:theme])]
+      (let [errs (schema/errors theme-schema theme [:theme])]
         (reset! last-validated [theme errs])
         errs))))
 

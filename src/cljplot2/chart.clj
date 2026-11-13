@@ -57,20 +57,20 @@
 
 (def builtin-styles
   "Style schema of every built-in chart kind: `build` checks theme `[:chart kind]` against it."
-  {:scatter (:style scatter/Schema)
-   :histogram (:style histogram/Schema)
-   :density (:style density/Schema)
-   :line (:style line/Schema)
-   :treemap (:style treemap/Schema)
-   :ecdf (:style ecdf/Schema)
-   :box (:style box/Schema)
-   :violin (:style violin/Schema)
-   :stripplot (:style stripplot/Schema)
-   :beeswarm (:style beeswarm/Schema)
-   :rug (:style rug/Schema)
-   :extent (:style extent/Schema)
-   :rule (:style rule/Schema)
-   :rect (:style rect/Schema)})
+  {:scatter (:style scatter/schemas)
+   :histogram (:style histogram/schemas)
+   :density (:style density/schemas)
+   :line (:style line/schemas)
+   :treemap (:style treemap/schemas)
+   :ecdf (:style ecdf/schemas)
+   :box (:style box/schemas)
+   :violin (:style violin/schemas)
+   :stripplot (:style stripplot/schemas)
+   :beeswarm (:style beeswarm/schemas)
+   :rug (:style rug/schemas)
+   :extent (:style extent/schemas)
+   :rule (:style rule/schemas)
+   :rect (:style rect/schemas)})
 
 (defn- annotation-value
   "Chart value of an annotation chart: it inherits only the facet keys of the plot mapping."
@@ -80,77 +80,77 @@
 (defn scatter
   "Scatter chart, see [[cljplot2.chart.scatter]]."
   ([] (scatter {}))
-  ([options] (chart-value :scatter scatter/compute scatter/draw scatter/legend scatter/Schema options)))
+  ([options] (chart-value :scatter scatter/compute scatter/draw scatter/legend scatter/schemas options)))
 
 (defn histogram
   "Histogram of `:x`, see [[cljplot2.chart.histogram]]."
   ([] (histogram {}))
-  ([options] (chart-value :histogram histogram/compute histogram/draw histogram/legend histogram/Schema options)))
+  ([options] (chart-value :histogram histogram/compute histogram/draw histogram/legend histogram/schemas options)))
 
 (defn density
   "Kernel density estimate of `:x`, see [[cljplot2.chart.density]]."
   ([] (density {}))
-  ([options] (chart-value :density density/compute density/draw density/legend density/Schema options)))
+  ([options] (chart-value :density density/compute density/draw density/legend density/schemas options)))
 
 (defn line
   "Line through `(:x, :y)` points, see [[cljplot2.chart.line]]."
   ([] (line {}))
-  ([options] (chart-value :line line/compute line/draw line/legend line/Schema options)))
+  ([options] (chart-value :line line/compute line/draw line/legend line/schemas options)))
 
 (defn treemap
   "Treemap of `:value` over the `:hierarchy` levels, see [[cljplot2.chart.treemap]]."
   ([] (treemap {}))
-  ([options] (chart-value :treemap treemap/compute treemap/draw treemap/legend treemap/Schema options)))
+  ([options] (chart-value :treemap treemap/compute treemap/draw treemap/legend treemap/schemas options)))
 
 (defn ecdf
   "Empirical CDF of `:x`, see [[cljplot2.chart.ecdf]]."
   ([] (ecdf {}))
-  ([options] (chart-value :ecdf ecdf/compute ecdf/draw ecdf/legend ecdf/Schema options)))
+  ([options] (chart-value :ecdf ecdf/compute ecdf/draw ecdf/legend ecdf/schemas options)))
 
 (defn box
   "Box plot of `:x` per `:y` level and group, see [[cljplot2.chart.box]] and [[cljplot2.data.strip]]."
   ([] (box {}))
-  ([options] (chart-value :box box/compute box/draw box/legend box/Schema options)))
+  ([options] (chart-value :box box/compute box/draw box/legend box/schemas options)))
 
 (defn violin
   "Violin plot of `:x` per `:y` level and group, see [[cljplot2.chart.violin]] and [[cljplot2.data.strip]]."
   ([] (violin {}))
-  ([options] (chart-value :violin violin/compute violin/draw violin/legend violin/Schema options)))
+  ([options] (chart-value :violin violin/compute violin/draw violin/legend violin/schemas options)))
 
 (defn stripplot
   "Jittered strip plot of `:x` per `:y` level and group, see [[cljplot2.chart.stripplot]] and [[cljplot2.data.strip]]."
   ([] (stripplot {}))
-  ([options] (chart-value :stripplot stripplot/compute stripplot/draw stripplot/legend stripplot/Schema options)))
+  ([options] (chart-value :stripplot stripplot/compute stripplot/draw stripplot/legend stripplot/schemas options)))
 
 (defn beeswarm
   "Beeswarm of `:x` per `:y` level and group (points packed without overlap), see [[cljplot2.chart.beeswarm]] and
   [[cljplot2.data.strip]]."
   ([] (beeswarm {}))
-  ([options] (chart-value :beeswarm beeswarm/compute beeswarm/draw beeswarm/legend beeswarm/Schema options)))
+  ([options] (chart-value :beeswarm beeswarm/compute beeswarm/draw beeswarm/legend beeswarm/schemas options)))
 
 (defn rug
   "Rug of `:x` values, see [[cljplot2.chart.rug]] and [[cljplot2.data.strip]]."
   ([] (rug {}))
-  ([options] (chart-value :rug rug/compute rug/draw rug/legend rug/Schema options)))
+  ([options] (chart-value :rug rug/compute rug/draw rug/legend rug/schemas options)))
 
 (defn extent
   "Interval of `:x` per `:y` level and group (fastmath.stats extents), see [[cljplot2.chart.extent]] and
   [[cljplot2.data.strip]]."
   ([] (extent {}))
-  ([options] (chart-value :extent extent/compute extent/draw extent/legend extent/Schema options)))
+  ([options] (chart-value :extent extent/compute extent/draw extent/legend extent/schemas options)))
 
 (defn rule
   "Reference lines (`:x`, `:y`, `:slope` / `:intercept`), see [[cljplot2.chart.rule]] and
   [[cljplot2.data.annotation]]."
   ([] (rule {}))
-  ([options] (annotation-value :rule rule/compute rule/draw rule/legend rule/Schema options)))
+  ([options] (annotation-value :rule rule/compute rule/draw rule/legend rule/schemas options)))
 
 (defn rect
   "Rectangles and bands (`:x [a b]`, `:y [a b]`), see [[cljplot2.chart.rect]] and [[cljplot2.data.annotation]]."
   ([] (rect {}))
-  ([options] (annotation-value :rect rect/compute rect/draw nil rect/Schema options)))
+  ([options] (annotation-value :rect rect/compute rect/draw nil rect/schemas options)))
 
 (defn text
   "Text labels at positions, see [[cljplot2.chart.text]] and [[cljplot2.data.annotation]]."
   ([] (text {}))
-  ([options] (annotation-value :text text/compute text/draw text/legend text/Schema options)))
+  ([options] (annotation-value :text text/compute text/draw text/legend text/schemas options)))

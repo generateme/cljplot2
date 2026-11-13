@@ -28,7 +28,7 @@
    (schema/optional :stroke-width schema/non-neg)
    (schema/optional :shape schema/shape)])
 
-(def Schema
+(def schemas
   "Schemas of the beeswarm chart: `:style` (theme `[:chart :beeswarm]`), `:options`, `:mapping` (merged)."
   {:style (into [:map {:closed true}] style-entries)
    :options (-> [:map {:closed true}]

@@ -1,12 +1,23 @@
 (ns cljplot2.graphics.draw
   "Drawing grid item content - the counterpart of [[cljplot2.graphics.measure/natural-size]]."
-  (:require [clojure2d.core :as c2d]
+  (:require [clojure2d.color :as c]
+            [clojure2d.core :as c2d]
             [fastmath.core :as m]
-            [cljplot2.graphics.measure :as measure])
+            [cljplot2.graphics.measure :as measure]
+            [cljplot2.schema :as schema])
   (:import [fastmath.vector Vec2]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
+
+(def stroke-color
+  "Schema of a filled mark's `:stroke-color`: a color, `:none` (no outline) or `:darker` (the darkened fill)."
+  [:or [:= :darker] schema/color])
+
+(defn outline-color
+  "Outline color of a mark filled with `fill` for `:stroke-color` `stroke` (see [[stroke-color]]); `:none` stays `:none`."
+  [stroke fill]
+  (if (= :darker stroke) (c/darken fill) stroke))
 
 (defn pixel-center
   "Center of the pixel containing coordinate `p`; thin lines drawn there cover whole pixels (no antialiasing smear)."

@@ -7,7 +7,7 @@
             [fastmath.core :as m]
             [cljplot2.chart :as chart]
             [cljplot2.chart.ecdf :as ecdf]
-            [cljplot2.chart.histogram :as histogram]
+            [cljplot2.data.levels :as levels]
             [cljplot2.core :as plot]
             [cljplot2.layout.grid :as grid]
             [cljplot2.data.group :as group]
@@ -73,13 +73,13 @@
 ;; 2.x histogram
 
 (deftest breaks-test
-  (are [values bins brks] (= brks (histogram/breaks values bins))
+  (are [values bins brks] (= brks (levels/breaks values bins))
     [0.0 10.0] 2 [0.0 5.0 10.0]
     [0.0 10.0] 1 [0.0 10.0]
     [3.0 3.0] :sturges [2.5 3.5]
     [] :sturges nil
     [0.0 10.0] [0 1 4] [0.0 1.0 4.0])
-  (is (= 5 (dec (count (histogram/breaks (mapv double (range 1 11)) :sturges)))) "sturges on 10 values")
+  (is (= 5 (dec (count (levels/breaks (mapv double (range 1 11)) :sturges)))) "sturges on 10 values")
   (are [bins] (= [:charts 0 :options :bins]
                  (take 4 (:in (error #(build {:data [{:x 0.0} {:x 1.0}] :mapping {:x :x} :charts [(chart/histogram {:bins bins})]})))))
     0 -2 "x" [1] [2 1] [1 1] [0 ##NaN] [0 1.5 1.5])

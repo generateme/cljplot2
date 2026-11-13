@@ -21,7 +21,7 @@
 (def ^:private style-entries
   (conj polyline/style-entries (schema/optional :fill schema/color)))
 
-(def Schema
+(def schemas
   "Schemas of the line chart: `:style` (theme `[:chart :line]`), `:options`, `:mapping` (merged)."
   {:style (into [:map {:closed true}] style-entries)
    :options (-> [:map {:closed true}]

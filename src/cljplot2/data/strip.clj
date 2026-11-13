@@ -10,7 +10,8 @@
 
   Placement - option `:place`:
 
-  * `:band` (default when `:y` is mapped): `:y` levels on a `:bands` scale (categorical values, or numbers with
+  * `:band` (default when `:y` is mapped): `:y` levels on a `:bands` scale (strings, keywords, intervals - e.g.
+    [[cljplot2.data.levels/bin]] - or numbers with
     `:scales {:y {:kind :bands}}`); an item's cross range spans `:width` (default 0.8) of the level's band
   * `{:at v}` (`:y` not mapped): centred on `y = v` of a numeric `:y` scale (from other charts; the chart's y extent
     includes `v`), `:thickness` pixels (default 20)
@@ -42,6 +43,7 @@
             [cljplot2.data.group :as group]
             [cljplot2.data.position :as position]
             [cljplot2.data.rows :as data]
+            [cljplot2.data.shingle :as shingle]
             [cljplot2.graphics.measure :as measure]
             [cljplot2.scale.position :as scale]
             [cljplot2.schema :as schema])
@@ -85,14 +87,19 @@
                                                  {:key :place :value place})
       :else place)))
 
+(defn- categorical-level?
+  "Is `v` a categorical `:y` level: a string, keyword or interval (shingle / bin)?"
+  [v]
+  (or (string? v) (keyword? v) (shingle/interval? v)))
+
 (defn- check-levels!
-  "Throw `ex-info {:key :place}` unless the `:y` `levels` can be bands: strings / keywords, or numbers with an explicit
-  `:bands` plot scale."
+  "Throw `ex-info {:key :place}` unless the `:y` `levels` can be bands: strings / keywords / intervals, or numbers
+  with an explicit `:bands` plot scale."
   [levels plot-scales]
   (let [bands? (= :bands (get-in plot-scales [:y :kind]))]
-    (when-not (every? #(or (string? %) (keyword? %) (and bands? (number? %))) levels)
-      (schema/fail! "Strip :y levels must be categorical (strings / keywords), or numbers with :scales {:y {:kind :bands}}."
-                    {:key :place :value (first (remove #(or (string? %) (keyword? %)) levels))}))))
+    (when-not (every? #(or (categorical-level? %) (and bands? (number? %))) levels)
+      (schema/fail! "Strip :y levels must be categorical (strings / keywords / intervals), or numbers with :scales {:y {:kind :bands}}."
+                    {:key :place :value (first (remove categorical-level? levels))}))))
 
 (defn- slots
   "Cross sub-range per group key for `position` over the ordered `group-keys`; dodged sub-ranges lose `gap` (a
@@ -114,7 +121,8 @@
   groups (ordinal aesthetics, `:group`) and `:y` levels, `:values` - the finite `:x` numbers.
   Returns `{:place p :position pos :items {panel [item ...]} :group-keys [..] :panels split-panels :dropped {dim n}}`;
   items carry `:level` (`nil` without bands), `:key`, `:aesthetics`, `:values`, `:slot`. `default-place` - the
-  chart's placement without `:y`. Throws `ex-info {:key :mapping}` when there are rows but no finite `:x` value,
+  chart's placement without `:y`. Throws `ex-info {:key :mapping}` when there are rows but no finite `:x` value (or,
+  placed in bands, no valid `:y` value),
   `ex-info {:key :n-format}` for an `:n-format` that can't format a count."
   [{:keys [groups mapping]} options default-place env]
   (let [_ (when-let [fmt (:n-format options)]
@@ -127,7 +135,11 @@
         x-of (data/row-accessor :x (:x mapping))
         y-of (when (= :band place) (data/row-accessor :y (:y mapping)))
         all-rows (mapcat :rows (mapcat val panels))
-        _ (when y-of (check-levels! (filter data/valid-value? (map y-of all-rows)) (:plot-scales env)))
+        y-levels (when y-of (filter data/valid-value? (map y-of all-rows)))
+        _ (when (and y-of (seq all-rows) (empty? y-levels))
+            (schema/fail! "No valid values for a mapped dimension - check the mapping."
+                          {:key :mapping :value :y :rows (count all-rows)}))
+        _ (when y-of (check-levels! y-levels (:plot-scales env)))
         group-keys (group/ordered-keys (mapcat #(map :key %) (vals panels)) dims (:plot-scales env))
         position (get options :position (if (> (count group-keys) 1) :dodge :overlay))
         slot-of (if (seq group-keys) (slots position group-keys (double (get options :dodge-gap 0.1))) {})
@@ -297,13 +309,13 @@
 
 (defn ridges?
   "Does a histogram / density of `chart-split` (`{:groups {panel rows} :mapping m}`) draw ridgelines: `:y` mapped
-  with some categorical (string / keyword) value, or on an explicit `:bands` plot scale? A numeric `:y` otherwise is
+  with some categorical (string / keyword / interval) value, or on an explicit `:bands` plot scale? A numeric `:y` otherwise is
   ignored, as before ridgelines (a plot mapping shared with xy charts)."
   [{:keys [groups mapping]} env]
   (when-let [acc (:y mapping)]
     (or (= :bands (get-in env [:plot-scales :y :kind]))
         (let [y-of (data/row-accessor :y acc)]
-          (boolean (some #(let [v (y-of %)] (or (string? v) (keyword? v))) (mapcat val groups)))))))
+          (boolean (some #(categorical-level? (y-of %)) (mapcat val groups)))))))
 
 (defn ridge-split
   "Items of a ridgeline chart (histogram / density, see [[ridges?]] and [[split]]): placed in bands, groups

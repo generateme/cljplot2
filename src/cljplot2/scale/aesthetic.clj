@@ -67,7 +67,7 @@
 
 (def ^:private gradient [:multi {:dispatch fn?} [true schema/function] [false palette]])
 
-(def Palette
+(def palette-schema
   "Theme `:palette` (aesthetic defaults)."
   [:map {:closed true}
    [:color palette]
@@ -98,7 +98,7 @@
                              (< (double (first domain)) (double (second domain))))
                 "linear domain should be [lo hi], finite numbers, lo < hi"))))
 
-(defn ScaleSpec
+(defn scale-spec-schema
   "Schema of the plot scale spec of aesthetic `k`."
   [k]
   (schema/with-rules

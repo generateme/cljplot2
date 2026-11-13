@@ -13,7 +13,7 @@
   Internally (axis tick labels, theme `[:axis k :label-rotation]`) any angle is drawn: the natural size is then the
   rounded-up bounding box of the rotated text frame, the text rotated about the box centre.
   Drawing clips the text to the item box (intersected with any outer clip).
-  Content is validated against [[Options]] by [[cljplot2.graphics.measure/validate-content]] (called from
+  Content is validated against [[label-options]] by [[cljplot2.graphics.measure/validate-content]] (called from
   `grid/prepare`).
 
   `:text` line breaks: `\\n` or `\\r\\n`."
@@ -32,7 +32,7 @@
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
-(def Options
+(def label-options
   "Label options given by users (plot `:labels` maps, label content in custom grids): `:text`, `:role`, `:rotation`,
   `:align` and the style overrides of [[cljplot2.theme/style-keys]]."
   (-> [:map {:closed true}
@@ -52,7 +52,7 @@
 
 (defmethod measure/validate-content :label
   [content]
-  (schema/explain! [[Options content [:content]]]))
+  (schema/explain! [[label-options content [:content]]]))
 
 (defn- label-spec
   "Drawing parameters of validated label `content` in `theme`; validates the style with inline overrides."

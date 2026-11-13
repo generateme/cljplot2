@@ -28,7 +28,7 @@
   [v]
   (or (and (number? v) (m/valid-double? (double v))) (string? v) (keyword? v)))
 
-(def Position
+(def position
   "A position: a finite number or a level (string / keyword)."
   (schema/named-type ::position position? "should be a finite number or a level (string / keyword)"))
 

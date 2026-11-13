@@ -19,7 +19,7 @@
   [(schema/optional :color schema/color)
    (schema/optional :line-width schema/non-neg)])
 
-(def Schema
+(def schemas
   "Schemas of the rug chart: `:style` (theme `[:chart :rug]`), `:options`, `:mapping` (merged)."
   {:style (into [:map {:closed true}] style-entries)
    :options (-> [:map {:closed true}]

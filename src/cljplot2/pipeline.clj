@@ -4,7 +4,7 @@
   Stages, in order: `:split` -> `:stats` -> `:extents` -> `:scale-specs` -> `:grid` -> `:layout` -> `:finalized-scales`
   -> `:subplots`.
 
-  Plot keys (schema: [[Plot]]; `build` validates them before any stage runs, see [[cljplot2.schema]]):
+  Plot keys (schema: [[plot-schema]]; `build` validates them before any stage runs, see [[cljplot2.schema]]):
 
   * `:labels` - plot titles, see [[cljplot2.layout.plot-grid]]
   * `:scales` - `{:x spec :y spec}`, position scales, see [[cljplot2.scale.position/data-scale-spec]]; facet scales, see
@@ -391,7 +391,7 @@
    (schema/optional :style schema/malli-schema)
    (schema/optional :mapping schema/malli-schema)])
 
-(def Chart
+(def chart-schema
   "A chart value, see [[cljplot2.chart]]; open (a chart value may carry the user's own keys)."
   [:map
    (schema/nilable :kind keyword?)
@@ -402,34 +402,34 @@
    (schema/optional :inherit-mapping [:enum :all :facets])
    (schema/nilable :schema chart-schemas)])
 
-(def Scales
+(def scales-schema
   "Plot `:scales`: position (`:x`, `:y`), facet and aesthetic scale specs."
   (-> [:map {:closed true}]
-      (into (map #(schema/optional % scale/ScaleSpec)) [:x :y])
-      (into (map #(schema/optional % facet/ScaleSpec)) [:facet :facet-col :facet-row])
-      (into (map #(schema/optional % (aesthetic/ScaleSpec %))) aesthetic/dims)))
+      (into (map #(schema/optional % scale/scale-spec-schema)) [:x :y])
+      (into (map #(schema/optional % facet/scale-spec-schema)) [:facet :facet-col :facet-row])
+      (into (map #(schema/optional % (aesthetic/scale-spec-schema %))) aesthetic/dims)))
 
-(def Plot
-  "A plot map (keys in the namespace doc); `:theme` and `:options` are checked merged ([[cljplot2.theme/Theme]],
-  [[Options]])."
+(def plot-schema
+  "A plot map (keys in the namespace doc); `:theme` and `:options` are checked merged ([[cljplot2.theme/theme-schema]],
+  [[options-schema]])."
   [:map {:closed true}
-   (schema/nilable :data data/Data)
-   (schema/nilable :mapping data/Mapping)
-   (schema/nilable :charts [:vector Chart])
-   (schema/nilable :scales Scales)
-   (schema/nilable :facets facet/Options)
+   (schema/nilable :data data/data-schema)
+   (schema/nilable :mapping data/mapping-schema)
+   (schema/nilable :charts [:vector chart-schema])
+   (schema/nilable :scales scales-schema)
+   (schema/nilable :facets facet/facet-options)
    (schema/nilable :groups [:map {:closed true} (schema/nilable :na schema/bool)])
    (schema/nilable :legend schema/bool)
    (schema/nilable :aspect [:enum :iso])
    (schema/nilable :flip schema/bool)
-   (schema/nilable :labels plot-grid/Labels)
+   (schema/nilable :labels plot-grid/labels-schema)
    (schema/nilable :custom-grid :map)
-   (schema/nilable :arrange plot-grid/Arrange)
+   (schema/nilable :arrange plot-grid/arrange-schema)
    (schema/optional :alignment-padding [:map-of keyword? number?])
    (schema/nilable :options :map)
    (schema/optional :theme any?)])
 
-(def Options
+(def options-schema
   "Merged render options of `build` (see [[default-options]]), `:debug` (used by `cljplot2.render/render`) and
   `:until`."
   [:map {:closed true}
@@ -495,8 +495,8 @@
   "Check `plot` (stage keys removed), its merged `theme` and `options` against their schemas, then - when those hold -
   the rules across plot keys; throws one `ex-info` with all errors (see [[cljplot2.schema]])."
   [plot theme options]
-  (let [plot-errors (schema/errors Plot plot [])
-        errors (concat (schema/errors Options options [:options])
+  (let [plot-errors (schema/errors plot-schema plot [])
+        errors (concat (schema/errors options-schema options [:options])
                        plot-errors
                        (theme/errors theme)
                        (when (empty? plot-errors)

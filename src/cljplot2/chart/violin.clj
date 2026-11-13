@@ -3,7 +3,8 @@
   mirrored around the item's centre line - a strip chart (see [[cljplot2.data.strip]]: placement `:place`, `:width`,
   `:thickness`, groups `:position`; `:mirror` with two groups draws a split violin, one half per group).
 
-  Options (style defaults from theme `[:chart :violin]`): `:color` (fill), `:stroke-width` (outline, darker fill),
+  Options (style defaults from theme `[:chart :violin]`): `:color` (fill), `:stroke-color` (outline: a color, `:none`
+  or `:darker` - the darkened fill, default), `:stroke-width`,
   `:inner-color` (inner marks; `:none` - black or white, whichever reads better on the fill);
   `:kernel`, `:bandwidth`, `:cut` (default 0: the violin spans the data range), `:n` (evaluation points, default 100);
   `:scale` - widths: `:width` (default; every violin as wide as its slot), `:area` (equal areas: densities on one
@@ -12,14 +13,14 @@
   median across the violin), `:rug` (a tick per value), `:points` (values on the centre line), `:none`;
   `:padding {:x [lo hi]}` (default `[0.05 0.05]`). Items with fewer than 2 distinct values have no violin and are
   counted in `:dropped {:group n}`."
-  (:require [clojure2d.color :as c]
-            [clojure2d.core :as c2d]
+  (:require [clojure2d.core :as c2d]
             [fastmath.core :as m]
             [cljplot2.chart.box :as box]
             [cljplot2.data.group :as group]
             [cljplot2.data.kde :as kde]
             [cljplot2.data.rows :as data]
             [cljplot2.data.strip :as strip]
+            [cljplot2.graphics.draw :as draw]
             [cljplot2.schema :as schema]
             [cljplot2.theme :as theme])
   (:import [fastmath.vector Vec2]))
@@ -29,10 +30,11 @@
 
 (def ^:private style-entries
   [(schema/optional :color schema/solid-color)
+   (schema/optional :stroke-color draw/stroke-color)
    (schema/optional :stroke-width schema/non-neg)
    (schema/optional :inner-color schema/color)])
 
-(def Schema
+(def schemas
   "Schemas of the violin chart: `:style` (theme `[:chart :violin]`), `:options`, `:mapping` (merged)."
   {:style (into [:map {:closed true}] style-entries)
    :options (-> [:map {:closed true}]
@@ -51,7 +53,7 @@
 
 (defn- style
   [options theme]
-  (merge (get-in theme [:chart :violin]) (select-keys options [:color :stroke-width :inner-color])))
+  (merge (get-in theme [:chart :violin]) (select-keys options [:color :stroke-color :stroke-width :inner-color])))
 
 (defn- profile
   "`{:xs [..] :ds [..] :n}` - the KDE of `values` on its grid (raw densities)."
@@ -126,7 +128,7 @@
             lower (if mirror-half? (mapv #(point % level base) xs) (outline -1.0))
             polygon (into upper (rseq lower))
             fill (:color st)
-            stroke (c/darken fill)
+            stroke (draw/outline-color (:stroke-color st) fill)
             inner-color (if (theme/none? (:inner-color st)) (box/contrast-color fill) (:inner-color st))
             sw (double (:stroke-width st))
             p (fn [v cross] (point v level cross))
@@ -135,9 +137,10 @@
         (when (every? #(and (m/valid-double? (.x ^Vec2 %)) (m/valid-double? (.y ^Vec2 %))) polygon)
           (c2d/set-color canvas fill)
           (c2d/path canvas (mapv (fn [^Vec2 v] [(.x v) (.y v)]) polygon) true false)
-          (c2d/set-stroke-custom canvas {:size sw :join :round})
-          (c2d/set-color canvas stroke)
-          (c2d/path canvas (mapv (fn [^Vec2 v] [(.x v) (.y v)]) polygon) true true)
+          (when-not (theme/none? stroke)
+            (c2d/set-stroke-custom canvas {:size sw :join :round})
+            (c2d/set-color canvas stroke)
+            (c2d/path canvas (mapv (fn [^Vec2 v] [(.x v) (.y v)]) polygon) true true))
           (c2d/set-color canvas inner-color)
           (case inner
             :box (do (c2d/set-stroke-custom canvas {:size (m/max 1.0 sw) :cap :butt})
@@ -168,6 +171,8 @@
         rw (* 0.8 (double w)) rh (* 0.5 (double h))]
     (c2d/set-color canvas (:color st))
     (c2d/ellipse canvas cx cy rw rh)
-    (c2d/set-stroke-custom canvas {:size (double (:stroke-width st))})
-    (c2d/set-color canvas (c/darken (:color st)))
-    (c2d/ellipse canvas cx cy rw rh true)))
+    (let [stroke (draw/outline-color (:stroke-color st) (:color st))]
+      (when-not (theme/none? stroke)
+        (c2d/set-stroke-custom canvas {:size (double (:stroke-width st))})
+        (c2d/set-color canvas stroke)
+        (c2d/ellipse canvas cx cy rw rh true)))))

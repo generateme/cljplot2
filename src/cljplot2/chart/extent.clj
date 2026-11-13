@@ -62,7 +62,7 @@
    (schema/optional :shape schema/shape)
    (schema/optional :size schema/non-neg)])
 
-(def Schema
+(def schemas
   "Schemas of the extent chart: `:style` (theme `[:chart :extent]`), `:options`, `:mapping` (merged)."
   {:style (into [:map {:closed true}] style-entries)
    :options (-> [:map {:closed true}]
@@ -73,7 +73,7 @@
                                                  schema/function])
                       (schema/nilable :statistic schema/function)
                       (schema/nilable :method-args [:sequential any?])
-                      (schema/nilable :rng stripplot/RNG)
+                      (schema/nilable :rng stripplot/rng)
                       (schema/optional :center [:enum :method :none])
                       (schema/optional :padding data/position-padding)))
    :mapping [:map [:x schema/accessor]]})

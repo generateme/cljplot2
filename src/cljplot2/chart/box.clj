@@ -4,10 +4,13 @@
 
   Per item: quartiles Q1, median, Q3 (fastmath `percentiles`, legacy estimation), whiskers to the adjacent values
   (the most extreme values within 1.5 IQR of the box, fastmath `adjacent-values`), outliers beyond them.
-  Drawn as the old cljplot box: the IQR rectangle filled with `:color` and stroked darker, the median line black or
-  white by the fill's luma, whiskers with caps, outliers as `:shape` points of `:size`.
+  Drawn as the old cljplot box: the IQR rectangle filled with `:color` and outlined with `:stroke-color` (a color,
+  `:none`, or `:darker` - the darkened fill, default; whiskers and outlier outlines use it too, whiskers the
+  darkened fill under `:none`), the median line black or white by the fill's luma, whiskers with caps, outliers as
+  `:shape` points of `:size`.
 
-  Options (style defaults from theme `[:chart :box]`): `:color`, `:stroke-width`, `:shape`, `:size` (outliers);
+  Options (style defaults from theme `[:chart :box]`): `:color`, `:stroke-color`, `:stroke-width`, `:shape`, `:size`
+  (outliers);
   `:outliers` (default true), `:mean` (a mean marker, default false), `:varwidth` (box width proportional to the
   square root of its count, relative to the largest, default false), `:padding {:x [lo hi]}` (default
   `[0.05 0.05]`), plus the strip options and `:data` / `:mapping` (`:x` values, optional `:y` levels)."
@@ -18,8 +21,10 @@
             [cljplot2.data.group :as group]
             [cljplot2.data.rows :as data]
             [cljplot2.data.strip :as strip]
+            [cljplot2.graphics.draw :as draw]
             [cljplot2.graphics.shape :as shape]
-            [cljplot2.schema :as schema])
+            [cljplot2.schema :as schema]
+            [cljplot2.theme :as theme])
   (:import [fastmath.vector Vec2]))
 
 (set! *warn-on-reflection* true)
@@ -27,11 +32,12 @@
 
 (def ^:private style-entries
   [(schema/optional :color schema/solid-color)
+   (schema/optional :stroke-color draw/stroke-color)
    (schema/optional :stroke-width schema/non-neg)
    (schema/optional :shape schema/shape)
    (schema/optional :size schema/non-neg)])
 
-(def Schema
+(def schemas
   "Schemas of the box chart: `:style` (theme `[:chart :box]`), `:options`, `:mapping` (merged)."
   {:style (into [:map {:closed true}] style-entries)
    :options (-> [:map {:closed true}]
@@ -46,7 +52,7 @@
 
 (defn- style
   [options theme]
-  (merge (get-in theme [:chart :box]) (select-keys options [:color :stroke-width :shape :size])))
+  (merge (get-in theme [:chart :box]) (select-keys options [:color :stroke-color :stroke-width :shape :size])))
 
 (defn box-stats
   "Tukey box statistics of `values` (non-empty): `{:q1 :median :q3 :lav :uav :outliers [..] :mean :n}`."
@@ -107,10 +113,12 @@
             a (p q1 (- c0 hw)) b (p q3 (+ c0 hw))]
         (when (and (finite? a) (finite? b))
           (let [fill (:color st)
-                stroke (c/darken fill)
+                stroke (draw/outline-color (:stroke-color st) fill)
+                ;; whiskers stay visible without an outline: the darkened fill
+                whisker (if (theme/none? stroke) (c/darken fill) stroke)
                 sw (double (:stroke-width st))]
             (c2d/set-stroke-custom canvas {:size sw :cap :butt})
-            (c2d/set-color canvas stroke)
+            (c2d/set-color canvas whisker)
             (line! canvas (p lav c0) (p q1 c0))
             (line! canvas (p q3 c0) (p uav c0))
             (line! canvas (p lav (- c0 (* 0.5 hw))) (p lav (+ c0 (* 0.5 hw))))
@@ -119,8 +127,9 @@
                   w (m/abs (- (.x ^Vec2 b) (.x ^Vec2 a))) h (m/abs (- (.y ^Vec2 b) (.y ^Vec2 a)))]
               (c2d/set-color canvas fill)
               (c2d/rect canvas x y w h)
-              (c2d/set-color canvas stroke)
-              (c2d/rect canvas x y w h true))
+              (when-not (theme/none? stroke)
+                (c2d/set-color canvas stroke)
+                (c2d/rect canvas x y w h true)))
             (c2d/set-color canvas (contrast-color fill))
             (line! canvas (p median (- c0 hw)) (p median (+ c0 hw)))
             (when outliers?
@@ -143,7 +152,9 @@
     (c2d/set-stroke-custom canvas {:size (double (:stroke-width st))})
     (c2d/set-color canvas (:color st))
     (c2d/rect canvas bx by bw bh)
-    (c2d/set-color canvas (c/darken (:color st)))
-    (c2d/rect canvas bx by bw bh true)
+    (let [stroke (draw/outline-color (:stroke-color st) (:color st))]
+      (when-not (theme/none? stroke)
+        (c2d/set-color canvas stroke)
+        (c2d/rect canvas bx by bw bh true)))
     (c2d/set-color canvas (contrast-color (:color st)))
     (c2d/line canvas (+ bx (* 0.5 bw)) by (+ bx (* 0.5 bw)) (+ by bh))))

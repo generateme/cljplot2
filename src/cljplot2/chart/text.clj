@@ -27,21 +27,21 @@
 
 (defn- panel-position? [p] (and (vector? p) (= 2 (count p)) (= :panel (first p))))
 
-(def ^:private PanelPosition
+(def ^:private panel-position
   (schema/named-type ::panel-position #(and (panel-position? %) (number? (second %)) (<= 0.0 (double (second %)) 1.0))
                      "should be [:panel f], f in [0 1]"))
 
-(def ^:private text-position [:or annotation/Position PanelPosition])
+(def ^:private text-position [:or annotation/position panel-position])
 
 (def ^:private text-positions
   ;; a vector starting with :panel is always a panel position, never a vector of positions
   [:multi {:dispatch #(and (vector? %) (= :panel (first %)))}
-   [true PanelPosition]
+   [true panel-position]
    [false (annotation/positions-schema text-position)]])
 
 (def ^:private style-keys [:font :size :font-style :color])
 
-(def Schema
+(def schemas
   "Schemas of the text chart: `:options`, `:mapping` (merged); the style is the text role `[:text :annotation]`."
   {:options (-> [:map {:closed true}]
                 (into (filter #(contains? (set style-keys) (first %)) theme/text-style-overrides))

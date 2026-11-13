@@ -54,11 +54,11 @@
 
 (defmethod natural-size ::empty [_ _] (v/vec2 0.0 0.0))
 
-(def ^:private Placeholder [:map [:size [:tuple number? number?]]])
+(def ^:private placeholder-schema [:map [:size [:tuple number? number?]]])
 
 (defmethod natural-size :placeholder
   [{:keys [size] :as content} _]
-  (schema/explain! [[Placeholder content [:content]]])
+  (schema/explain! [[placeholder-schema content [:content]]])
   (v/vec2 (size 0) (size 1)))
 
 (defmethod natural-size :default

@@ -31,7 +31,7 @@
    (schema/optional :stroke-width schema/non-neg)
    (schema/optional :shape schema/shape)])
 
-(def Schema
+(def schemas
   "Schemas of the scatter chart: `:style` (theme `[:chart :scatter]`), `:options`, `:mapping` (merged)."
   {:style (into [:map {:closed true}] style-entries)
    :options (-> [:map {:closed true}]

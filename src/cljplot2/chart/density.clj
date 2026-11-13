@@ -56,7 +56,7 @@
 
 (def ^:private positions (disj position/positions :dodge))
 
-(def Schema
+(def schemas
   "Schemas of the density chart: `:style` (theme `[:chart :density]`), `:options`, `:mapping` (merged)."
   {:style (into [:map {:closed true}] style-entries)
    :options (-> [:map {:closed true}]

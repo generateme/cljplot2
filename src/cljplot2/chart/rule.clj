@@ -29,15 +29,15 @@
 
 (def ^:private position-keys [:x :y :slope :intercept])
 
-(def Schema
+(def schemas
   "Schemas of the rule chart: `:style` (theme `[:chart :rule]`), `:options`, `:mapping` (merged)."
   {:style (into [:map {:closed true}] polyline/style-entries)
    :options (-> [:map {:closed true}]
                 (into polyline/style-entries)
                 (into data/common-options)
                 (into annotation/options)
-                (conj (schema/nilable :x (annotation/positions-schema annotation/Position))
-                      (schema/nilable :y (annotation/positions-schema annotation/Position))
+                (conj (schema/nilable :x (annotation/positions-schema annotation/position))
+                      (schema/nilable :y (annotation/positions-schema annotation/position))
                       (schema/nilable :slope (annotation/positions-schema schema/finite))
                       (schema/nilable :intercept (annotation/positions-schema schema/finite))))
    :mapping [:map]})

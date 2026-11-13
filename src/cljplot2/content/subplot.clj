@@ -15,10 +15,10 @@
   [content]
   (= :plot (:kind content)))
 
-(def Content
+(def content-schema
   "`{:kind :plot}` content: `:plot`, a plot map (validated when the sub-plot is built)."
   [:map [:plot :map]])
 
-(defmethod measure/validate-content :plot [content] (schema/explain! [[Content content [:content]]]))
+(defmethod measure/validate-content :plot [content] (schema/explain! [[content-schema content [:content]]]))
 
 (defmethod measure/natural-size :plot [_ _] (v/vec2 0.0 0.0))

@@ -35,7 +35,7 @@
    (schema/optional :border-color schema/color)
    (schema/optional :border-width schema/non-neg)])
 
-(def Schema
+(def schemas
   "Schemas of the treemap: `:style` (theme `[:chart :treemap]`), `:options`, `:mapping` (merged)."
   {:style (into [:map {:closed true}] style-entries)
    :options (-> [:map {:closed true}]

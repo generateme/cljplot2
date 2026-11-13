@@ -54,7 +54,7 @@
   "wadogo scale attributes passed through to the scale (see wadogo's kinds)."
   [:clamp :unknown :round :base :exponent :padding-in :padding-out :align-outer :align])
 
-(def ScaleSpec
+(def scale-spec-schema
   "Plot scale spec of `:x` / `:y`: wadogo attributes plus `:nice` and `:expand`, see [[scale-spec]] and
   [[data-scale-spec]]."
   (schema/with-rules
@@ -84,7 +84,7 @@
 
 (defn scale-spec
   "Phase-1 spec of the plot scale `k` from its attributes `spec` (a map of wadogo attributes and `:nice`, valid by
-  [[ScaleSpec]]): `:kind` inferred from the domain when missing; no `:domain`, or a data domain not suiting the
+  [[scale-spec-schema]]): `:kind` inferred from the domain when missing; no `:domain`, or a data domain not suiting the
   kind (e.g. `:log` with 0) throws `ex-info {:key :domain}`.
   `:nice` (default `true`): extend continuous domains to nice values by at most 10% of the range; a number sets
   that limit (fraction); falsy turns it off.

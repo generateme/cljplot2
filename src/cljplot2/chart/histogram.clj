@@ -14,7 +14,8 @@
     show magnitudes)
   * `:symmetric` - mirror only: `true` ties both halves to one y range `[-M M]`, `M` the tallest bar of either group
     over all panels, so the halves compare visually (default false)
-  * `:color` (fill; the stroke is the darkened fill), `:stroke-width`, `:alpha` (overlay fill opacity, 0..1)
+  * `:color` (fill), `:stroke-color` (bar outline: a color, `:none` or `:darker` - the darkened fill, default),
+    `:stroke-width`, `:alpha` (overlay fill opacity, 0..1)
   * `:padding {:x [lo hi] :y [lo hi]}` - default `{:x [0.05 0.05] :y [0 0.05]}` (mirror: y `[0.05 0.05]`); bars
     stand on the panel's bottom edge, x padding keeps end ticks off facet panel joints
 
@@ -32,11 +33,13 @@
             [fastmath.stats :as stats]
             [cljplot2.data.rows :as data]
             [cljplot2.data.group :as group]
+            [cljplot2.data.levels :as levels]
             [cljplot2.data.position :as position]
             [cljplot2.data.strip :as strip]
             [cljplot2.graphics.draw :as draw]
             [cljplot2.scale.position :as scale]
-            [cljplot2.schema :as schema])
+            [cljplot2.schema :as schema]
+            [cljplot2.theme :as theme])
   (:import [fastmath.vector Vec2]))
 
 (set! *warn-on-reflection* true)
@@ -46,21 +49,17 @@
 
 (def ^:private style-entries
   [(schema/optional :color schema/solid-color)
+   (schema/optional :stroke-color draw/stroke-color)
    (schema/optional :stroke-width schema/non-neg)
    (schema/optional :alpha schema/fraction)])
 
-(def ^:private breaks-schema
-  (schema/with-rules [:vector {:min 2} schema/finite]
-    [#(when-not (apply < %) "breaks should be increasing")]))
-
-(def Schema
+(def schemas
   "Schemas of the histogram: `:style` (theme `[:chart :histogram]`), `:options`, `:mapping` (merged)."
   {:style (into [:map {:closed true}] style-entries)
    :options (-> [:map {:closed true}]
                 (into style-entries)
                 (into data/common-options)
-                (conj (schema/optional :bins [:multi {:dispatch #(cond (keyword? %) :method (vector? %) :breaks :else :count)}
-                                              [:method keyword?] [:breaks breaks-schema] [:count schema/pos-int]])
+                (conj (schema/optional :bins levels/bins)
                       (schema/optional :y (into [:enum] (keys measures)))
                       (schema/optional :position (into [:enum] (sort position/positions)))
                       (schema/nilable :symmetric schema/bool)
@@ -70,44 +69,17 @@
 
 (defn- style
   [options theme]
-  (merge (get-in theme [:chart :histogram]) (select-keys options [:color :stroke-width :alpha])))
-
-(defn- equal-breaks
-  [^double lo ^double hi ^long n]
-  (let [step (/ (- hi lo) n)]
-    (conj (mapv #(+ lo (* step (double %))) (range n)) hi)))
-
-(defn breaks
-  "Bin breaks for all `values` (doubles) and the `:bins` option; `nil` for no values."
-  [values bins]
-  (cond
-    (vector? bins) (mapv double bins)
-    (empty? values) nil
-    :else (let [lo (double (reduce min values))
-                hi (double (reduce max values))]
-            (if (== lo hi)
-              [(- lo 0.5) (+ lo 0.5)]
-              (let [n (long (if (keyword? bins)
-                              (try (long (stats/estimate-bins values bins))
-                                   (catch IllegalArgumentException _
-                                     (schema/fail! "Unknown histogram :bins method." {:key :bins :value bins})))
-                              (long bins)))]
-                (equal-breaks lo hi (m/max 1 n)))))))
+  (merge (get-in theme [:chart :histogram]) (select-keys options [:color :stroke-color :stroke-width :alpha])))
 
 (defn- bin-counts
   "Counts of `values` per bin of `brks` (last bin closed) and the number outside."
   [brks values]
   (let [arr (double-array brks)
-        n (dec (alength arr))
-        lo (aget arr 0)
-        hi (aget arr n)
-        counts (long-array n)]
+        counts (long-array (dec (alength arr)))]
     (doseq [v values
-            :let [v (double v)]]
-      (when (<= lo v hi)
-        (let [i (java.util.Arrays/binarySearch arr v)
-              bin (if (neg? i) (- (- i) 2) (m/min i (dec n)))]
-          (aset counts bin (inc (aget counts bin))))))
+            :let [bin (levels/bin-index arr (double v))]
+            :when (not (neg? bin))]
+      (aset counts bin (inc (aget counts bin))))
     {:counts (vec counts) :outside (- (count values) (long (reduce + 0 (vec counts))))}))
 
 (defn- heights
@@ -131,7 +103,7 @@
   (let [y (get options :y :percent)
         {:keys [position items panels dropped group-keys]} (strip/ridge-split chart-split options env)
         all-values (into [] (comp (mapcat val) (mapcat :values)) items)
-        brks (breaks all-values (get options :bins :sturges))
+        brks (levels/breaks all-values (get options :bins :sturges))
         items (if brks
                 (update-vals items (fn [its] (mapv (fn [it] (assoc it :bars (mapv (fn [[a b] h] [a b h])
                                                                                   (partition 2 1 brks)
@@ -173,7 +145,7 @@
           all-count (long (reduce + 0 (map count (mapcat #(map :rows %) (vals panels)))))
           _ (when (and (pos? all-count) (empty? all-values))
               (schema/fail! "No valid values for a mapped dimension - check the mapping." {:key :mapping :value :x :rows all-count}))
-          brks (breaks all-values (get options :bins :sturges))
+          brks (levels/breaks all-values (get options :bins :sturges))
           group-keys (group/ordered-keys (mapcat #(map :key %) (vals panels)) dims (:plot-scales env))
           n-groups (count group-keys)
           _ (when (and (= position :mirror) (not= 2 n-groups) (seq all-values))
@@ -223,15 +195,16 @@
        :tick-format (when (= position :mirror) {:y :absolute})})))
 
 (defn- bar!
-  "Fill (and with `stroke-width` stroke, darkened) the rectangle with corners `a` and `b` (`Vec2`)."
-  [canvas ^Vec2 a ^Vec2 b fill stroke-width]
+  "Fill the rectangle with corners `a` and `b` (`Vec2`) with `fill`, outline it with `stroke` (a color or `:none`)
+  when `stroke-width` is positive."
+  [canvas ^Vec2 a ^Vec2 b fill stroke stroke-width]
   (let [stroke-width (double stroke-width)
         x (m/min (.x a) (.x b)) y (m/min (.y a) (.y b))
         w (m/abs (- (.x b) (.x a))) h (m/abs (- (.y b) (.y a)))]
     (c2d/set-color canvas fill)
     (c2d/rect canvas x y w h)
-    (when (pos? stroke-width)
-      (c2d/set-color canvas (c/darken fill))
+    (when (and (pos? stroke-width) (not (theme/none? stroke)))
+      (c2d/set-color canvas stroke)
       (c2d/rect canvas x y w h true))))
 
 (defn- draw-ridges!
@@ -253,7 +226,7 @@
               :when (pos? (double h))
               :let [a (point x0 level side 0.0) b (point x1 level side (/ (double h) top))]
               :when (and (ok? a) (ok? b))]
-        (bar! canvas a b fill stroke-width)))))
+        (bar! canvas a b fill (draw/outline-color (:stroke-color st) fill) stroke-width)))))
 
 (defn draw
   "Draw the bars of one panel; grouped overlay bars get fill alpha `:alpha`; empty bins and bars of groups outside
@@ -270,17 +243,18 @@
                 :let [st (group/style style aesthetics scales (:theme env))]
                 :when st]
           (let [{left :x top :y w :w h :h} (draw/rect-of projection x0 y0 x1 y1)
-                fill (:color st)]
+                fill (:color st)
+                stroke (draw/outline-color (:stroke-color st) fill)]
             (c2d/set-color canvas (if translucent?
                                     (c/set-alpha fill (* 255.0 (double (:alpha style))))
                                     fill))
             (c2d/rect canvas left top w h)
-            (when (pos? stroke-width)
-              (c2d/set-color canvas (c/darken fill))
+            (when (and (pos? stroke-width) (not (theme/none? stroke)))
+              (c2d/set-color canvas stroke)
               (c2d/rect canvas left top w h true))))))))
 
 (defn legend
-  "Key glyph: a filled square (darkened stroke) inset in `box`; with a mapped `:color` and `:overlay` position (the
+  "Key glyph: a filled square (outlined by `:stroke-color`) inset in `box`; with a mapped `:color` and `:overlay` position (the
   groups' bars are translucent) the fill gets `:alpha` too."
   [{:keys [options]} attributes canvas {:keys [x y w h]} env]
   (let [st (merge (style options (:theme env)) (select-keys attributes [:color]))
@@ -290,7 +264,8 @@
         cy (+ (double y) (* 0.5 (double h)))]
     (c2d/set-color canvas (if translucent? (c/set-alpha (:color st) (* 255.0 (double (:alpha st)))) (:color st)))
     (c2d/crect canvas cx cy side side)
-    (when (pos? (double (:stroke-width st)))
-      (c2d/set-stroke-custom canvas {:size (double (:stroke-width st))})
-      (c2d/set-color canvas (c/darken (:color st)))
-      (c2d/crect canvas cx cy side side true))))
+    (let [stroke (draw/outline-color (:stroke-color st) (:color st))]
+      (when (and (pos? (double (:stroke-width st))) (not (theme/none? stroke)))
+        (c2d/set-stroke-custom canvas {:size (double (:stroke-width st))})
+        (c2d/set-color canvas stroke)
+        (c2d/crect canvas cx cy side side true)))))

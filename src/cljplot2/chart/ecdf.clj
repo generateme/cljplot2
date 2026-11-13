@@ -16,7 +16,7 @@
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
-(def Schema
+(def schemas
   "Schemas of the ECDF chart: `:style` (theme `[:chart :ecdf]`), `:options`, `:mapping` (merged)."
   {:style (into [:map {:closed true}] polyline/style-entries)
    :options (-> [:map {:closed true}]

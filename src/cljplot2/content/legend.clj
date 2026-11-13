@@ -113,14 +113,14 @@
 
 ;; content
 
-(def Legend
+(def legend-schema
   "`{:kind :legend}` content: `:title`, `:entries` `[{:label :attributes}]`, `:charts` `[{:chart index :dims [dim]}]`."
   [:map
    (schema/nilable :title string?)
    [:entries [:vector [:map [:label string?] [:attributes :map]]]]
    [:charts [:vector [:map [:chart nat-int?] [:dims vector?]]]]])
 
-(def Colorbar
+(def colorbar-schema
   "`{:kind :colorbar}` content: `:title`, a linear `:scale`, `:ticks` and one label per tick in `:labels`."
   (schema/with-rules
    [:map
@@ -130,15 +130,15 @@
     [:labels vector?]]
    [#(when-not (= (count (:ticks %)) (count (:labels %))) "should have one label per tick") [:labels]]))
 
-(def Legends
-  "`{:kind :legends}` content: `:legends`, a vector of [[Legend]] and [[Colorbar]] contents."
+(def legends-schema
+  "`{:kind :legends}` content: `:legends`, a vector of [[legend-schema]] and [[colorbar-schema]] contents."
   [:map [:legends [:vector [:multi {:dispatch #(if (= :colorbar (:kind %)) :colorbar :legend)}
-                            [:colorbar Colorbar]
-                            [:legend Legend]]]]])
+                            [:colorbar colorbar-schema]
+                            [:legend legend-schema]]]]])
 
-(defmethod measure/validate-content :legend [content] (schema/explain! [[Legend content [:content]]]))
-(defmethod measure/validate-content :colorbar [content] (schema/explain! [[Colorbar content [:content]]]))
-(defmethod measure/validate-content :legends [content] (schema/explain! [[Legends content [:content]]]))
+(defmethod measure/validate-content :legend [content] (schema/explain! [[legend-schema content [:content]]]))
+(defmethod measure/validate-content :colorbar [content] (schema/explain! [[colorbar-schema content [:content]]]))
+(defmethod measure/validate-content :legends [content] (schema/explain! [[legends-schema content [:content]]]))
 
 (defn- title-label [text] {:kind :label :role :legend-title :text text})
 (defn- entry-label [text] {:kind :label :role :legend-label :text text})

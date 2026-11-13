@@ -28,11 +28,11 @@
    (schema/optional :stroke-width schema/non-neg)
    (schema/optional :shape schema/shape)])
 
-(def RNG
+(def rng
   "A fastmath random generator (see `fastmath.random/rng`)."
   (schema/named-type ::rng #(satisfies? fastmath.protocols/RNGProto %) "should be a fastmath random generator"))
 
-(def Schema
+(def schemas
   "Schemas of the stripplot chart: `:style` (theme `[:chart :stripplot]`), `:options`, `:mapping` (merged)."
   {:style (into [:map {:closed true}] style-entries)
    :options (-> [:map {:closed true}]
@@ -40,7 +40,7 @@
                 (into data/common-options)
                 (into strip/options)
                 (conj (schema/optional :jitter schema/fraction)
-                      (schema/nilable :rng RNG)
+                      (schema/nilable :rng rng)
                       (schema/optional :padding data/position-padding)))
    :mapping [:map [:x schema/accessor]]})
 
