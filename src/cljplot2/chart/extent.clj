@@ -5,11 +5,17 @@
   Options (style defaults from theme `[:chart :extent]`): `:color`, `:line-width` (`:width` is the strip option), `:shape`, `:size` (centre
   mark); `:method` - a keyword of [[extent-methods]] or a function of the values returning `[lo hi]` or `[lo hi centre]`
   (default `:min-max`); `:method-args` - extra arguments passed after the values (e.g. `[10.0 90.0]` for
-  `:percentile`, `[0.01]` for `:ci`; default none); `:center` - `:method` (the method's centre, default) or `:none`;
+  `:percentile`, `[0.01]` for `:ci`, `[alpha samples]` for the bootstrap methods; default none); bootstrap methods
+  (`:bootstrap-normal`, `-basic`, `-percentile`, `-mad-median`, `-bc`, `-bca`, `-studentized`, `-t`, see
+  [[bootstrap-intervals]]) - the interval of `:statistic` (a function of the values, default fastmath `mean`)
+  resampled with `:rng` (a fastmath random generator; without it every build creates a fresh one); `:center` - `:method` (the method's centre, default) or `:none`;
   `:padding {:x [lo hi]}` (default `[0.05 0.05]`), plus the strip options and `:data` / `:mapping`."
   (:require [clojure2d.core :as c2d]
             [fastmath.core :as m]
+            [fastmath.random :as r]
             [fastmath.stats :as stats]
+            [fastmath.stats.bootstrap :as boot]
+            [cljplot2.chart.stripplot :as stripplot]
             [cljplot2.data.group :as group]
             [cljplot2.data.rows :as data]
             [cljplot2.data.strip :as strip]
@@ -20,9 +26,21 @@
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
+(def bootstrap-intervals
+  "Bootstrap interval methods: keyword -> fastmath.stats.bootstrap interval of bootstrap results and `alpha`
+  (`:bootstrap-mad-median` ignores `alpha`), each `[lo hi centre]`."
+  {:bootstrap-normal boot/ci-normal
+   :bootstrap-basic boot/ci-basic
+   :bootstrap-percentile boot/ci-percentile
+   :bootstrap-mad-median (fn [boot-data _alpha] (boot/ci-mad-median boot-data))
+   :bootstrap-bc boot/ci-bc
+   :bootstrap-bca boot/ci-bca
+   :bootstrap-studentized boot/ci-studentized
+   :bootstrap-t boot/ci-t})
+
 (def extent-methods
   "Extent methods: keyword -> fastmath.stats function of the values (and `:method-args`) returning
-  `[lo hi centre]`."
+  `[lo hi centre]`, plus the [[bootstrap-intervals]] (see [[bootstrap-interval]])."
   {:min-max stats/extent
    :stddev stats/stddev-extent
    :mad stats/mad-extent
@@ -35,7 +53,6 @@
    :inner-fence stats/inner-fence-extent
    :outer-fence stats/outer-fence-extent
    :ci stats/ci
-   :bootstrap-ci stats/bootstrap-ci
    :percentile-bc stats/percentile-bc-extent
    :percentile-bca stats/percentile-bca-extent})
 
@@ -52,8 +69,11 @@
                 (into style-entries)
                 (into data/common-options)
                 (into strip/options)
-                (conj (schema/optional :method [:or (into [:enum] (sort (keys extent-methods))) schema/function])
+                (conj (schema/optional :method [:or (into [:enum] (sort (concat (keys extent-methods) (keys bootstrap-intervals))))
+                                                 schema/function])
+                      (schema/nilable :statistic schema/function)
                       (schema/nilable :method-args [:sequential any?])
+                      (schema/nilable :rng stripplot/RNG)
                       (schema/optional :center [:enum :method :none])
                       (schema/optional :padding data/position-padding)))
    :mapping [:map [:x schema/accessor]]})
@@ -62,12 +82,34 @@
   [options theme]
   (merge (get-in theme [:chart :extent]) (select-keys options [:color :line-width :shape :size])))
 
+(defn bootstrap-interval
+  "Bootstrap interval `ci` (a key of [[bootstrap-intervals]]) of `statistic` (default fastmath `mean`) of `values`,
+  resampled with `rng` (fastmath.stats.bootstrap `bootstrap`): `[lo hi centre]`; `alpha` (default 0.05) and
+  `samples` (default 500)."
+  ([ci rng statistic values] (bootstrap-interval ci rng statistic values 0.05))
+  ([ci rng statistic values alpha] (bootstrap-interval ci rng statistic values alpha 500))
+  ([ci rng statistic values alpha samples]
+   ((bootstrap-intervals ci) (boot/bootstrap values (or statistic stats/mean) {:samples samples :rng rng}) alpha)))
+
 (defn interval
-  "`{:lo :hi :center}` of `values` by `method` (keyword of [[extent-methods]] or a function) with `method-args`; `:center`
-  `nil` when the method gives none. Throws `ex-info {:key :method}` for a result that isn't 2 or 3 numbers."
-  [values method method-args]
-  (let [f (if (keyword? method) (extent-methods method) method)
-        [lo hi c :as result] (apply f values method-args)]
+  "`{:lo :hi :center}` of `values` by `method` (keyword of [[extent-methods]] or [[bootstrap-intervals]], or a
+  function) with `method-args`; bootstrap methods resample with `rng` and use `statistic`. `:center` `nil` when the
+  method gives none. Throws `ex-info {:key :method-args}` when the method rejects the arguments and
+  `{:key :method}` for a result that isn't 2 or 3 numbers."
+  [values method {:keys [method-args rng statistic]}]
+  (let [f (cond
+            (contains? bootstrap-intervals method) (partial bootstrap-interval method rng statistic)
+            (keyword? method) (extent-methods method)
+            :else method)
+        [lo hi c :as result] (try (apply f values method-args)
+                                  (catch clojure.lang.ArityException e
+                                    (schema/fail! (str "Extent :method " (pr-str method) " doesn't take :method-args "
+                                                       (pr-str method-args) ".")
+                                                  {:key :method-args :value method-args :cause (ex-message e)}))
+                                  (catch ClassCastException e
+                                    (schema/fail! (str "Extent :method " (pr-str method) " can't use :method-args "
+                                                       (pr-str method-args) ".")
+                                                  {:key :method-args :value method-args :cause (ex-message e)})))]
     (when-not (and (sequential? result) (<= 2 (count result) 3) (every? number? result))
       (schema/fail! "Extent :method should return [lo hi] or [lo hi centre]." {:key :method :value result}))
     {:lo (double lo) :hi (double hi) :center (some-> c double)}))
@@ -78,7 +120,9 @@
   [{:keys [options]} chart-split {:keys [theme] :as env}]
   (let [{:keys [place items panels dropped]} (strip/split chart-split options :center env)
         method (get options :method :min-max)
-        items (update-vals items (fn [its] (mapv #(merge % (interval (:values %) method (:method-args options))) its)))]
+        rng (or (:rng options) (r/rng :mersenne))
+        items (update-vals items (fn [its] (mapv #(merge % (interval (:values %) method {:method-args (:method-args options) :rng rng
+                                                                                :statistic (:statistic options)})) its)))]
     {:data (update-vals items (fn [its] {:items its :style (style options theme) :place place :options options}))
      :extents (merge-with merge (group/aesthetic-extents panels)
                           (strip/extents place items (fn [{:keys [lo hi center]}]

@@ -10,16 +10,19 @@
 
 (defn estimate
   "`{:kde f :lo :hi}` of the KDE of `values` (at least 2 distinct; options `:kernel` (default `:gaussian`),
-  `:bandwidth` (number or fastmath selector, default `:nrd0`), `:cut` (default 3)): the curve spans
+  `:bandwidth` (number or fastmath selector, default `:nrd0`), `:cut` (default 3); `nil` - the default): the curve spans
   `[min - cut*h, max + cut*h]`. Throws `ex-info {:key :density}` when fastmath can't estimate."
-  [values {:keys [kernel bandwidth cut] :or {kernel :gaussian bandwidth :nrd0 cut 3}}]
-  (let [{:keys [kde h]} (try (k/kernel-density kernel values {:bandwidth bandwidth} true)
+  [values {:keys [kernel bandwidth cut]}]
+  (let [kernel (or kernel :gaussian)
+        bandwidth (or bandwidth :nrd0)
+        cut (if (nil? cut) 3.0 (double cut))
+        {:keys [kde h]} (try (k/kernel-density kernel values {:bandwidth bandwidth} true)
                              (catch clojure.lang.ExceptionInfo e
                                (schema/fail! (str "Density estimation failed: " (ex-message e)) {:key :density :cause (ex-data e)})))
         h (double h)]
     {:kde kde
-     :lo (- (double (reduce min values)) (* (double cut) h))
-     :hi (+ (double (reduce max values)) (* (double cut) h))}))
+     :lo (- (double (reduce min values)) (* cut h))
+     :hi (+ (double (reduce max values)) (* cut h))}))
 
 (defn grid-points
   "`n` (at least 2) equally spaced points from `lo` to `hi`."

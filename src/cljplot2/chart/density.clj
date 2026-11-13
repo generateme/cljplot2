@@ -117,7 +117,7 @@
             (schema/fail! "Density :position :mirror needs exactly two groups." {:key :position :groups (count group-keys)}))
         data (into {} (map (fn [[panel gs]]
                              [panel {:curves (panel-curves gs (xs panel) group-keys position options) :style st
-                                     :zero-line? (and (= position :mirror) (get options :zero-line true))}]))
+                                     :zero-line? (and (= position :mirror) (data/option options :zero-line true))}]))
                    panels)
         curve-ys (fn [curves] (concat (mapcat :y curves) (mapcat :y0 curves)))
         [lo hi] (position/symmetric-extent (curve-ys (mapcat :curves (vals data))))]

@@ -1,5 +1,5 @@
 (ns cljplot2.data.strip
-  "1d strips: charts drawing the distribution of `:x` values (box, violin, strip, rug, extent) placed across the
+  "1d strips: charts drawing the distribution of `:x` values (box, violin, stripplot, rug, extent) placed across the
   `:y` dimension (value on `:x`, horizontal by default; `:flip true` makes strips vertical).
 
   Contract: a strip chart computes, per panel, **items** - one per `:y` level and group -
@@ -158,7 +158,8 @@
   `place`): `{:point (fn [value level cross] -> Vec2) :span (fn [level] -> px)}`. `:point` places `value` along the
   `:x` scale and the cross coordinate (placement range `[-0.5 0.5]`, positive toward higher `:y`) across it;
   `:span` - the pixel length of the whole cross range. A level or value the scales can't place gives `##NaN`
-  coordinates. Flip-aware: the cross axis is the `:y` direction (horizontal when flipped)."
+  coordinates. Flip-aware: the cross axis is the `:y` direction (horizontal when flipped).
+  Throws `ex-info {:key :place}` for `:band` without a `:bands` `:y` scale and `{:at v}` on a `:bands` one."
   [{:keys [w h]} scales options place]
   (let [fx (scale/forward-fn (:x scales))
         y-scale (:y scales)
@@ -171,7 +172,12 @@
                (if cross-horizontal? 1.0 -1.0))
         width (double (get options :width 0.8))
         thickness (double (get options :thickness (if (= :edge place) 8.0 20.0)))
-        bandwidth (when (= :band place) (double (:bandwidth (scale/band-geometry y-scale))))
+        bandwidth (when (= :band place)
+                    (if-let [geometry (scale/band-geometry y-scale)]
+                      (double (:bandwidth geometry))
+                      (schema/fail! "Strip :place :band needs a :bands :y scale." {:key :place :value (:kind y-scale)})))
+        _ (when (and (map? place) (= :bands (:kind y-scale)))
+            (schema/fail! "Strip :place {:at v} needs a numeric :y scale, not bands." {:key :place :value place}))
         centre-and-span (cond
                           (= :band place) (fn [level] [(if fy (fy level) ##NaN) (* width (double bandwidth))])
                           (map? place) (let [c (if fy (fy (:at place)) ##NaN)] (constantly [c thickness]))

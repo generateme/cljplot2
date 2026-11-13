@@ -1,5 +1,5 @@
 (ns cljplot2.demo.strips
-  "1d strips demo (cycle 3a): box, violin (inner marks, split), strip, rug, extent; groups dodged, flipped vertical
+  "1d strips demo (cycle 3a): box, violin (inner marks, split), stripplot, rug, extent; groups dodged, flipped vertical
   strips, overlays."
   (:require [clojure.data.json :as json]
             [clojure.java.io :as io]
@@ -61,15 +61,15 @@
 (def box-strip
   {:data barley
    :mapping {:x :yield :y :variety}
-   :charts [(chart/box {:outliers false :color [200 200 220]}) (chart/strip {:rng (r/rng :mersenne 1) :jitter 0.6})]
+   :charts [(chart/box {:outliers false :color [200 200 220]}) (chart/stripplot {:rng (r/rng :mersenne 1) :jitter 0.6})]
    :labels {:title "Box with jittered points" :x "yield"}})
 
 (def strip-grouped
   {:data barley
    :mapping {:x :yield :y :variety :color :year}
    :scales {:color {:kind :ordinal}}
-   :charts [(chart/strip {:rng (r/rng :mersenne 1) :size 6})]
-   :labels {:title "Strip: dodged by year" :x "yield"}})
+   :charts [(chart/stripplot {:rng (r/rng :mersenne 1) :size 6})]
+   :labels {:title "Stripplot: dodged by year" :x "yield"}})
 
 (def density-rug
   {:data faithful

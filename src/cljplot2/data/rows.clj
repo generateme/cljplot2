@@ -65,6 +65,11 @@
                          rs)
     :else (schema/fail! ":data must be a sequence of maps or a map of sequences." {:key :data :value (type data)})))
 
+(defn option
+  "Option `k` of chart `options`, `default` when missing or `nil` (a `nil` option means \"not set\")."
+  [options k default]
+  (let [v (get options k)] (if (nil? v) default v)))
+
 (defn row-accessor
   "Function of a row for mapping accessor `acc` (keyword or function) of dimension `k`."
   [k acc]

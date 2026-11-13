@@ -73,7 +73,7 @@
         items (update-vals items (fn [its] (mapv #(merge % (box-stats (:values %))) its)))
         factor (width-factors (mapcat val items) (:varwidth options))
         items (update-vals items (fn [its] (mapv #(assoc % :width-factor (factor %)) its)))
-        outliers? (get options :outliers true)
+        outliers? (data/option options :outliers true)
         x-range (fn [{:keys [lav uav outliers]}]
                   (let [vs (cond-> [lav uav] outliers? (into outliers))]
                     [(reduce min vs) (reduce max vs)]))]
@@ -96,7 +96,7 @@
   "Draw the boxes of one panel."
   [_chart {:keys [items style place options]} canvas box scales env]
   (let [{:keys [point]} (strip/placement box scales options place)
-        outliers? (get options :outliers true)]
+        outliers? (data/option options :outliers true)]
     (doseq [{:keys [level slot q1 median q3 lav uav outliers mean width-factor aesthetics]} items
             :let [st (group/style style aesthetics scales (:theme env))]
             :when st]

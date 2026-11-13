@@ -56,7 +56,7 @@
 (defn- profile
   "`{:xs [..] :ds [..] :n}` - the KDE of `values` on its grid (raw densities)."
   [values options]
-  (let [e (kde/estimate values (merge {:cut 0} (select-keys options [:kernel :bandwidth :cut])))
+  (let [e (kde/estimate values (assoc (select-keys options [:kernel :bandwidth]) :cut (data/option options :cut 0.0)))
         {:keys [x y]} (kde/curve e (kde/grid-points (:lo e) (:hi e) (long (or (:n options) 100))))]
     {:xs x :ds y}))
 
@@ -131,7 +131,7 @@
             p (fn [v cross] (point v level cross))
             across (fn [v] (let [w (* extent (width-at xs widths (double v)))]
                              (if mirror-half? [(p v base) (p v (+ base w))] [(p v (- base w)) (p v (+ base w))])))]
-        (when (every? #(m/valid-double? (.y ^Vec2 %)) polygon)
+        (when (every? #(and (m/valid-double? (.x ^Vec2 %)) (m/valid-double? (.y ^Vec2 %))) polygon)
           (c2d/set-color canvas fill)
           (c2d/path canvas (mapv (fn [^Vec2 v] [(.x v) (.y v)]) polygon) true false)
           (c2d/set-stroke-custom canvas {:size sw :join :round})

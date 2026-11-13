@@ -41,8 +41,8 @@
   clamped to it) and `:bar-width` (`nil` - `:key-size`); text roles `:legend-title` and `:legend-label`.
 
   `:chart` - per chart kind defaults: `:scatter`, `:histogram`, `:density`, `:line`, `:ecdf` (old cljplot blue
-  `[69 117 180]` - clojure2d `(last (palette :rdylbu-9))` - with cljplot's alphas: scatter 180, strip 50, rug 100),
-  `:treemap` (`:padding`, `:border-color`, `:border-width`), strip charts `:box`, `:violin`, `:strip`, `:rug`,
+  `[69 117 180]` - clojure2d `(last (palette :rdylbu-9))` - with cljplot's alphas: scatter 180, stripplot 100, rug 100),
+  `:treemap` (`:padding`, `:border-color`, `:border-width`), strip charts `:box`, `:violin`, `:stripplot`, `:rug`,
   `:extent`; each checked against its chart's style schema.
 
   Colors are any clojure2d color or `:none` (draw nothing). `nil` in a theme override means \"not set\"
@@ -94,7 +94,7 @@
            :treemap {:padding 3 :border-color :white :border-width 1}
            :box {:color [69 117 180] :stroke-width 1 :shape \O :size 5}
            :violin {:color [69 117 180] :stroke-width 1 :inner-color :none}
-           :strip {:size 5 :color [69 117 180 50] :stroke-color :none :stroke-width 1 :shape \O}
+           :stripplot {:size 10 :color [69 117 180 100] :stroke-color :none :stroke-width 1 :shape \O}
            :rug {:color [69 117 180 100] :line-width 1}
            :extent {:color [69 117 180] :line-width 2 :shape \O :size 7}}
    :axis {:x {:line-color :black :line-width 1 :tick-color :black :tick-length 6 :tick-width 1

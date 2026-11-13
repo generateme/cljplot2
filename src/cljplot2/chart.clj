@@ -33,7 +33,7 @@
             [cljplot2.chart.line :as line]
             [cljplot2.chart.rug :as rug]
             [cljplot2.chart.scatter :as scatter]
-            [cljplot2.chart.strip :as strip]
+            [cljplot2.chart.stripplot :as stripplot]
             [cljplot2.chart.treemap :as treemap]
             [cljplot2.chart.violin :as violin]))
 
@@ -54,7 +54,7 @@
    :ecdf (:style ecdf/Schema)
    :box (:style box/Schema)
    :violin (:style violin/Schema)
-   :strip (:style strip/Schema)
+   :stripplot (:style stripplot/Schema)
    :rug (:style rug/Schema)
    :extent (:style extent/Schema)})
 
@@ -98,10 +98,10 @@
   ([] (violin {}))
   ([options] (chart-value :violin violin/compute violin/draw violin/legend violin/Schema options)))
 
-(defn strip
-  "Jittered strip plot of `:x` per `:y` level and group, see [[cljplot2.chart.strip]] and [[cljplot2.data.strip]]."
-  ([] (strip {}))
-  ([options] (chart-value :strip strip/compute strip/draw strip/legend strip/Schema options)))
+(defn stripplot
+  "Jittered strip plot of `:x` per `:y` level and group, see [[cljplot2.chart.stripplot]] and [[cljplot2.data.strip]]."
+  ([] (stripplot {}))
+  ([options] (chart-value :stripplot stripplot/compute stripplot/draw stripplot/legend stripplot/Schema options)))
 
 (defn rug
   "Rug of `:x` values, see [[cljplot2.chart.rug]] and [[cljplot2.data.strip]]."

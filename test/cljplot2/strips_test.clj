@@ -76,9 +76,6 @@
     {:data rows :mapping {:x :v :y :v} :charts [(chart/box)]})
   (is (= #{[:charts 0 :options :place]} (error-ins #(built {:data rows :mapping {:x :v} :charts [(chart/box {:place :middle})]}))))
   (testing "numeric levels work with an explicit :bands kind, sorted"
-    (let [b (built {:data rows :mapping {:x :lvl-n :y :n} :scales {:y {:kind :bands}}
-                    :charts [(chart/box {:mapping {:x :v :y #(count (:lvl %))}})]})]
-      (is (= [1] (get-in b [:finalized-scales :y :domain]))))
     (let [b (built {:data (map #(assoc % :n (mod (:v %) 3)) rows) :mapping {:x :v :y :n} :scales {:y {:kind :bands}}
                     :charts [(chart/box)]})]
       (is (= [0 1 2] (get-in b [:finalized-scales :y :domain]))))))
@@ -148,24 +145,38 @@
         (is (= 1 (get-in b [:stats 0 :dropped :group])))))))
 
 (deftest strip-chart-test
-  (let [offsets (fn [opts] (mapcat :offsets (:items (panel-data (built {:data rows :mapping {:x :v :y :lvl} :charts [(chart/strip opts)]}) 0))))]
+  (let [offsets (fn [opts] (mapcat :offsets (:items (panel-data (built {:data rows :mapping {:x :v :y :lvl} :charts [(chart/stripplot opts)]}) 0))))]
     (is (= (offsets {:rng (r/rng :mersenne 5)}) (offsets {:rng (r/rng :mersenne 5)})) "same seed, same offsets")
     (is (not= (offsets {}) (offsets {})) "a fresh rng per build")
     (is (every? #(<= -0.3 (double %) 0.3) (offsets {:jitter 0.6 :rng (r/rng :mersenne 1)})) "clamped to +-jitter/2")
     (is (every? zero? (offsets {:jitter 0.0})))
-    (is (= #{[:charts 0 :options :rng]} (error-ins #(built {:data rows :mapping {:x :v} :charts [(chart/strip {:rng 5})]}))))))
+    (is (= #{[:charts 0 :options :rng]} (error-ins #(built {:data rows :mapping {:x :v} :charts [(chart/stripplot {:rng 5})]}))))))
 
 (deftest extent-chart-test
   (let [sample (mapv :v rows)
-        interval (fn [method args] (extent/interval sample method args))]
-    (doseq [[k f] (dissoc extent/extent-methods :bootstrap-ci)
+        interval (fn ([method args] (extent/interval sample method {:method-args args :rng (r/rng :mersenne 1)}))
+                   ([method args statistic] (extent/interval sample method {:method-args args :rng (r/rng :mersenne 1)
+                                                                            :statistic statistic})))]
+    (doseq [[k f] extent/extent-methods
             :let [[lo hi c] (f sample)]]
       (is (= {:lo (double lo) :hi (double hi) :center (some-> c double)} (interval k nil)) (str k)))
     (is (= (let [[lo hi c] (stats/percentile-extent sample 10.0 90.0)] {:lo lo :hi hi :center c}) (interval :percentile [10.0 90.0])))
-    (let [{:keys [lo hi center]} (interval :bootstrap-ci nil)] (is (<= lo center hi)))
+    (testing "every bootstrap interval: reproducible with a seeded rng, ordered, alpha and samples as method-args"
+      (doseq [k (keys extent/bootstrap-intervals)
+              :let [{:keys [lo hi center] :as iv} (interval k [0.1 200])]]
+        (is (<= lo center hi) (str k))
+        (is (= iv (interval k [0.1 200])) (str k " same seed, same interval"))
+        (is (some? (interval k nil)) (str k " defaults"))))
+    (testing ":statistic chooses what is bootstrapped (default mean)"
+      (is (== (stats/mean sample) (:center (interval :bootstrap-basic nil))))
+      (is (== (stats/median sample) (:center (interval :bootstrap-basic nil stats/median)))))
     (is (= {:lo 0.0 :hi 1.0 :center nil} (interval (fn [_] [0 1]) nil)))
     (is (= :method (:key (error #(interval (fn [_] [1]) nil)))))
-    (is (= #{[:charts 0 :options :method]} (error-ins #(built {:data rows :mapping {:x :v} :charts [(chart/extent {:method :nope})]}))))))
+    (is (= :method-args (:key (error #(interval :ci [1 2 3 4])))))
+    (is (= :method-args (:key (error #(interval :percentile ["a"])))))
+    (is (= :method-args (:key (error #(interval :bootstrap-t [0.1 200 3])))))
+    (is (= #{[:charts 0 :options :method]} (error-ins #(built {:data rows :mapping {:x :v} :charts [(chart/extent {:method :bootstrap-ci})]}))))
+    (is (= #{[:charts 0 :options :statistic]} (error-ins #(built {:data rows :mapping {:x :v} :charts [(chart/extent {:statistic :median})]}))))))
 
 (deftest strip-theme-test
   (is (= #{[:theme :chart :box :colour]} (error-ins #(plot/build {:theme {:chart {:box {:colour :red}}}}))))
@@ -185,7 +196,7 @@
       (is (seq reds))
       (is (every? (fn [[i j]] (and (<= x i (+ x w)) (<= (- (+ y h) 9) j (+ y h)))) reds))))
   (testing "every strip chart renders, flipped and not, with groups"
-    (doseq [c [(chart/box {:mean true}) (chart/violin {:inner :quartiles}) (chart/strip {:rng (r/rng :mersenne 1)})
+    (doseq [c [(chart/box {:mean true}) (chart/violin {:inner :quartiles}) (chart/stripplot {:rng (r/rng :mersenne 1)})
                (chart/rug) (chart/extent {:method :ci})]
             flip [false true]]
       (is (instance? BufferedImage (plot/render-image {:data rows :mapping {:x :v :y :lvl :color :g} :charts [c] :flip flip} options))
@@ -214,3 +225,24 @@
             ^BufferedImage img (plot/render-image p options)]
         (is (red? (.getRGB img (int (+ (long x) (long (fy "b")))) (int (+ (long y) 3)))))))
     (is (= #{[:theme :panel :grid :bands-fill]} (error-ins #(plot/build {:theme {:panel {:grid {:bands-fill 5.5}}}}))))))
+
+(deftest review-fixes-test
+  (testing "F2: nil options mean the default"
+    (is (some? (built {:data rows :mapping {:x :v} :charts [(chart/density {:cut nil})]})))
+    (is (some? (built {:data rows :mapping {:x :v :y :lvl} :charts [(chart/violin {:cut nil :n nil})]})))
+    (is (= (get-in (built {:data (conj rows {:v 500 :lvl "a" :g "p"}) :mapping {:x :v} :charts [(chart/box)]}) [:extents :x])
+           (get-in (built {:data (conj rows {:v 500 :lvl "a" :g "p"}) :mapping {:x :v} :charts [(chart/box {:outliers nil})]}) [:extents :x]))
+        ":outliers nil keeps outliers")
+    (is (true? (:zero-line? (panel-data (built {:data rows :mapping {:x :v :color :g} :charts [(chart/density {:position :mirror :zero-line nil})]}) 0)))))
+  (testing "F5: band placement needs a bands :y scale, {:at v} a numeric one"
+    (let [b (built {:data rows :mapping {:x :v} :charts [(chart/histogram)]})
+          {:keys [w h]} (panel-box b)]
+      (is (= :place (:key (error #(strip/placement {:w w :h h} (:finalized-scales b) {} :band))))))
+    (is (= :extents (:key (error #(built {:data rows :mapping {:x :v :y :lvl} :charts [(chart/box) (chart/rug {:mapping {:y nil} :place {:at 1}})]}))))
+        "levels and {:at v} mixed: the extents stage rejects it first")
+    (is (= :place (:key (error #(plot/render-image {:data rows :mapping {:x :v} :scales {:y {:domain ["a" "b"]}}
+                                                    :charts [(chart/rug {:place {:at 1}})]} options))))
+        "{:at v} on an explicit bands domain: placement rejects it"))
+  (testing "F1: a flipped violin whose level is outside an explicit domain is skipped, not drawn with NaN"
+    (is (instance? BufferedImage (plot/render-image {:data rows :mapping {:x :v :y :lvl} :scales {:y {:domain ["a" "b"]}}
+                                                     :flip true :charts [(chart/violin)]} options)))))

@@ -1,12 +1,12 @@
-(ns cljplot2.chart.strip
-  "Strip plot: one point per `:x` value, jittered across its strip - a strip chart (see [[cljplot2.data.strip]]).
+(ns cljplot2.chart.stripplot
+  "Strip plot (lattice `stripplot`): one point per `:x` value, jittered across its strip - a strip chart (see [[cljplot2.data.strip]]).
 
   Jitter: Gaussian offsets (fastmath `grandom` on the option `:rng`, a fastmath random generator; without it every
   build creates a fresh one, so builds differ - pass `:rng` for reproducible plots) with standard deviation
   `:jitter` / 4 of the item's cross range, clamped to ±`:jitter` / 2 (`:jitter` default 0.8; 0 - all points on the
   centre line). Offsets are drawn at compute and kept in the stats.
 
-  Options (style defaults from theme `[:chart :strip]`): `:size`, `:color`, `:stroke-color`, `:stroke-width`,
+  Options (style defaults from theme `[:chart :stripplot]`): `:size`, `:color`, `:stroke-color`, `:stroke-width`,
   `:shape` (as scatter, see [[cljplot2.graphics.shape]]); `:jitter`, `:rng`, `:padding {:x [lo hi]}` (default
   `[0.05 0.05]`), plus the strip options and `:data` / `:mapping`."
   (:require [fastmath.core :as m]
@@ -33,7 +33,7 @@
   (schema/named-type ::rng #(satisfies? fastmath.protocols/RNGProto %) "should be a fastmath random generator"))
 
 (def Schema
-  "Schemas of the strip chart: `:style` (theme `[:chart :strip]`), `:options`, `:mapping` (merged)."
+  "Schemas of the stripplot chart: `:style` (theme `[:chart :stripplot]`), `:options`, `:mapping` (merged)."
   {:style (into [:map {:closed true}] style-entries)
    :options (-> [:map {:closed true}]
                 (into style-entries)
@@ -46,7 +46,7 @@
 
 (defn- style
   [options theme]
-  (merge (get-in theme [:chart :strip]) (select-keys options [:size :color :stroke-color :stroke-width :shape])))
+  (merge (get-in theme [:chart :stripplot]) (select-keys options [:size :color :stroke-color :stroke-width :shape])))
 
 (defn jitter-offsets
   "`n` jitter offsets (two-sided cross units) from `rng`: Gaussian, sd `jitter` / 4, clamped to ±`jitter` / 2."

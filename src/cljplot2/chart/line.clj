@@ -45,7 +45,7 @@
         {:keys [panels dropped]} (group/split groups mapping env)
         x-of (data/row-accessor :x (:x mapping))
         y-of (data/row-accessor :y (:y mapping))
-        sort? (get options :sort true)
+        sort? (data/option options :sort true)
         rows (mapcat (fn [gs] (mapcat :rows gs)) (vals panels))
         row-count (count rows)
         _ (doseq [[k f] [[:x x-of] [:y y-of]]]

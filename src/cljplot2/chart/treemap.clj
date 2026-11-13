@@ -123,7 +123,8 @@
     {:data (into {} (keep (fn [[panel tree]]
                             (when tree [panel {:tree (index-tops tree) :top-count (count top-index) :style st
                                                :options (merge {:layout :squarify :group-labels true :leaf-labels true}
-                                                               (select-keys options [:layout :group-labels :leaf-labels]))
+                                                               (into {} (remove (comp nil? val))
+                                                                     (select-keys options [:layout :group-labels :leaf-labels])))
                                                :colored? (some? color-of)}])))
                  trees)
      :extents (into {} (keep (fn [[panel tree]]
