@@ -21,6 +21,9 @@
   width 0 isn't drawn; `:label-rotation` - tick labels rotated clockwise by -90..90 degrees, see
   [[cljplot2.content.axis]]). Keyed by scale, also when a flipped plot draws `:x` vertically.
 
+  `:panel :grid :bands-fill` - fill of every second band of a bands scale (from the second level), behind the
+  charts, so levels with dodged groups read apart (default a light shade; `:none` turns it off).
+
   `:panel :grid :bands` - grid line style used instead of `:x` / `:y` for a bands scale (default dotted, as lattice
   `dotplot`); `:x` / `:y` `:none` still turns that scale's lines off.
 
@@ -37,8 +40,10 @@
   `:fill`, `:border-color`, `:border-width`, color bar `:bar-length` (`:stretch` - over the space left, or a number,
   clamped to it) and `:bar-width` (`nil` - `:key-size`); text roles `:legend-title` and `:legend-label`.
 
-  `:chart` - per chart kind defaults: `:scatter`, `:histogram`, `:density`, `:line`, `:ecdf` (old cljplot blue),
-  `:treemap` (`:padding`, `:border-color`, `:border-width`); each checked against its chart's style schema.
+  `:chart` - per chart kind defaults: `:scatter`, `:histogram`, `:density`, `:line`, `:ecdf` (old cljplot blue
+  `[69 117 180]` - clojure2d `(last (palette :rdylbu-9))` - with cljplot's alphas: scatter 180, strip 50, rug 100),
+  `:treemap` (`:padding`, `:border-color`, `:border-width`), strip charts `:box`, `:violin`, `:strip`, `:rug`,
+  `:extent`; each checked against its chart's style schema.
 
   Colors are any clojure2d color or `:none` (draw nothing). `nil` in a theme override means \"not set\"
   and keeps the value underneath, see [[deep-merge]].
@@ -69,7 +74,8 @@
    :panel {:fill :none :alternate-fill [0 0 0 20] :border-color :none :border-width 1
            :grid {:x {:color 0xb4b4b4 :width 0.5 :dash [4.0]}
                   :y {:color 0xb4b4b4 :width 0.5 :dash [4.0]}
-                  :bands {:color 0xb4b4b4 :width 1 :dash [1.0 2.0]}}}
+                  :bands {:color 0xb4b4b4 :width 1 :dash [1.0 2.0]}
+                  :bands-fill [0 0 0 12]}}
    :strip {:fill [255 255 255 150] :border-color [0 0 0 100] :border-width 1 :shingle-fill [255 165 0 110]}
    :facet {:gap 5}
    :multiplot {:gap 10}
@@ -79,13 +85,18 @@
              :size [2 10]
              :na [150 150 150]}
    :legend {:gap 5 :key-size 14 :fill :none :border-color :none :border-width 1 :bar-length :stretch :bar-width nil}
-   :chart {:scatter {:size 4 :color [49 54 149 180] :stroke-color :none :stroke-width 1 :shape \O}
-           :histogram {:color [49 54 149] :stroke-width 1 :alpha 0.6}
-           :density {:color [49 54 149] :width 1 :dash :none :fill :none :alpha 0.6 :zero-line-color :black
+   :chart {:scatter {:size 4 :color [69 117 180 180] :stroke-color :none :stroke-width 1 :shape \O}
+           :histogram {:color [69 117 180] :stroke-width 1 :alpha 0.6}
+           :density {:color [69 117 180] :width 1 :dash :none :fill :none :alpha 0.6 :zero-line-color :black
                      :zero-line-width 1}
-           :line {:color [49 54 149] :width 1 :dash :none :fill :none}
-           :ecdf {:color [49 54 149] :width 1 :dash :none}
-           :treemap {:padding 3 :border-color :white :border-width 1}}
+           :line {:color [69 117 180] :width 1 :dash :none :fill :none}
+           :ecdf {:color [69 117 180] :width 1 :dash :none}
+           :treemap {:padding 3 :border-color :white :border-width 1}
+           :box {:color [69 117 180] :stroke-width 1 :shape \O :size 5}
+           :violin {:color [69 117 180] :stroke-width 1 :inner-color :none}
+           :strip {:size 5 :color [69 117 180 50] :stroke-color :none :stroke-width 1 :shape \O}
+           :rug {:color [69 117 180 100] :line-width 1}
+           :extent {:color [69 117 180] :line-width 2 :shape \O :size 7}}
    :axis {:x {:line-color :black :line-width 1 :tick-color :black :tick-length 6 :tick-width 1
               :label-gap 2 :tick-spacing 80 :label-rotation 0}
           :y {:line-color :black :line-width 1 :tick-color :black :tick-length 6 :tick-width 1
@@ -138,7 +149,7 @@
    [:plot [:map {:closed true} [:background schema/color] [:margin schema/non-neg]]]
    [:panel [:map {:closed true}
             [:fill schema/color] [:alternate-fill schema/color] [:border-color schema/color] [:border-width schema/non-neg]
-            [:grid [:map {:closed true} [:x grid-line] [:y grid-line] [:bands grid-line]]]]]
+            [:grid [:map {:closed true} [:x grid-line] [:y grid-line] [:bands grid-line] [:bands-fill schema/color]]]]]
    [:strip [:map {:closed true}
             [:fill schema/color] [:border-color schema/color] [:border-width schema/non-neg] [:shingle-fill schema/color]]]
    [:facet [:map {:closed true} [:gap schema/non-neg]]]

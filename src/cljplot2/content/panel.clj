@@ -9,6 +9,7 @@
   :panel k}` draws the charts' data of split group `k` (default `:panel`) and of charts drawn in all panels;
   several panel items with the same key draw the same data."
   (:require [clojure2d.core :as c2d]
+            [fastmath.core :as m]
             [fastmath.vector :as v]
             [cljplot2.graphics.canvas :as canvas]
             [cljplot2.graphics.draw :as draw]
@@ -33,6 +34,29 @@
      c (fn [c']
          (.clip ^Graphics2D (:graphics c') (Rectangle. 0 0 (int w) (int h)))
          ((:draw chart) chart computed c' {:x 0 :y 0 :w w :h h} (:scales env) env)))))
+
+(defn- draw-band-fills!
+  "Every second band (from the second level) of each bands scale filled with theme `[:panel :grid :bands-fill]`
+  across the `w` x `h` panel at the origin: a band spans its step (band plus padding, so shaded bands touch their
+  neighbours), whole pixels, along the scale's direction. `:none` draws nothing."
+  [c ^long w ^long h env]
+  (let [fill (get-in env [:theme :panel :grid :bands-fill])]
+    (when-not (or (nil? fill) (theme/none? fill))
+      (doseq [k [:x :y]
+              :let [finalized (get-in env [:scales k])]
+              :when (= :bands (:kind finalized))
+              :let [forward (scale/forward-fn finalized)
+                    half (* 0.5 (double (:step (scale/band-geometry finalized))))
+                    horizontal? (scale/horizontal? k finalized)]
+              [i level] (map-indexed vector (:domain finalized))
+              :when (odd? (long i))
+              :let [centre (double (forward level))
+                    a (m/round (- centre half)) b (m/round (+ centre half))
+                    lo (m/min a b) len (m/abs (- b a))]]
+        (c2d/set-color c fill)
+        (if horizontal?
+          (c2d/rect c lo 0 len h)
+          (c2d/rect c 0 lo w len))))))
 
 (defn- draw-grid-lines!
   "Grid lines at the tick positions of the panel-local scales, `w` x `h` panel at the origin: a horizontal scale
@@ -70,6 +94,7 @@
     (canvas/call-with-isolated-graphics
      canvas (fn [c']
               (c2d/translate c' x y)
+              (draw-band-fills! c' w h env)
               (draw-grid-lines! c' w h env)
               (draw-charts! c' (get content :panel facet/single-panel) w h env)))
     (draw/inner-border! canvas {:x x :y y :w w :h h} border-color border-width)))

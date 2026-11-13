@@ -20,9 +20,9 @@
   (:require [clojure2d.color :as c]
             [clojure2d.core :as c2d]
             [fastmath.core :as m]
-            [fastmath.kernel :as k]
             [cljplot2.data.rows :as data]
             [cljplot2.data.group :as group]
+            [cljplot2.data.kde :as kde]
             [cljplot2.data.position :as position]
             [cljplot2.graphics.draw :as draw]
             [cljplot2.graphics.polyline :as polyline]
@@ -71,28 +71,6 @@
     (c/set-alpha (:color st) (* 255.0 (double (:alpha st))))
     (:fill st)))
 
-(defn- estimate
-  "`{:kde f :lo :hi}` of the KDE of `values` (at least 2 distinct): the curve spans `[min - cut*h, max + cut*h]`."
-  [values {:keys [kernel bandwidth cut] :or {kernel :gaussian bandwidth :nrd0 cut 3}}]
-  (let [{:keys [kde h]} (try (k/kernel-density kernel values {:bandwidth bandwidth} true)
-                             (catch clojure.lang.ExceptionInfo e
-                               (schema/fail! (str "Density estimation failed: " (ex-message e)) {:key :density :cause (ex-data e)})))
-        h (double h)]
-    {:kde kde
-     :lo (- (double (reduce min values)) (* (double cut) h))
-     :hi (+ (double (reduce max values)) (* (double cut) h))}))
-
-(defn- grid-points
-  "`n` equally spaced points from `lo` to `hi`."
-  [^double lo ^double hi ^long n]
-  (let [step (/ (- hi lo) (dec n))]
-    (mapv #(+ lo (* step (double %))) (range n))))
-
-(defn- curve
-  "`{:x [..] :y [..]}` of the KDE estimate `e` evaluated at `xs`."
-  [{:keys [kde]} xs]
-  {:x xs :y (mapv #(double (kde %)) xs)})
-
 (defn- panel-curves
   "Curves of a panel's groups `gs` (with their `group-values`) for `position`; `group-keys` - all groups in order.
   Overlay and mirror: each group on its own range (mirror: the second group of `group-keys` negated). Stack and fill:
@@ -102,19 +80,19 @@
   (let [n (long (or (:n options) 512))
         estimates (vec (keep (fn [[g {:keys [values]}]]
                                (when (>= (count (distinct values)) 2)
-                                 (assoc (estimate values options) :group g)))
+                                 (assoc (kde/estimate values options) :group g)))
                              (map vector gs group-values)))]
     (case position
       (:stack :normalize) (if (empty? estimates)
                        []
-                       (let [xs (grid-points (reduce min (map :lo estimates)) (reduce max (map :hi estimates)) n)
-                             curves (mapv #(curve % xs) estimates)
+                       (let [xs (kde/grid-points (reduce min (map :lo estimates)) (reduce max (map :hi estimates)) n)
+                             curves (mapv #(kde/curve % xs) estimates)
                              ys (position/stack-values position (mapv :y curves))]
                          (mapv (fn [{:keys [group]} c y01]
                                  (assoc c :y0 (mapv first y01) :y (mapv second y01) :aesthetics (:aesthetics group)))
                                estimates curves ys)))
       (mapv (fn [{:keys [group lo hi] :as e}]
-              (let [c (curve e (grid-points lo hi n))
+              (let [c (kde/curve e (kde/grid-points lo hi n))
                     down? (and (= position :mirror) (= (:key group) (second group-keys)))]
                 (cond-> (assoc c :aesthetics (:aesthetics group))
                   down? (update :y #(mapv - %)))))

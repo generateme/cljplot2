@@ -25,12 +25,17 @@
 
   Options common to all charts: `:data` (own data, see [[cljplot2.data.rows/rows]]) and `:mapping` (merged over the
   plot's mapping)."
-  (:require [cljplot2.chart.density :as density]
+  (:require [cljplot2.chart.box :as box]
+            [cljplot2.chart.density :as density]
             [cljplot2.chart.ecdf :as ecdf]
+            [cljplot2.chart.extent :as extent]
             [cljplot2.chart.histogram :as histogram]
             [cljplot2.chart.line :as line]
+            [cljplot2.chart.rug :as rug]
             [cljplot2.chart.scatter :as scatter]
-            [cljplot2.chart.treemap :as treemap]))
+            [cljplot2.chart.strip :as strip]
+            [cljplot2.chart.treemap :as treemap]
+            [cljplot2.chart.violin :as violin]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -46,7 +51,12 @@
    :density (:style density/Schema)
    :line (:style line/Schema)
    :treemap (:style treemap/Schema)
-   :ecdf (:style ecdf/Schema)})
+   :ecdf (:style ecdf/Schema)
+   :box (:style box/Schema)
+   :violin (:style violin/Schema)
+   :strip (:style strip/Schema)
+   :rug (:style rug/Schema)
+   :extent (:style extent/Schema)})
 
 (defn scatter
   "Scatter chart, see [[cljplot2.chart.scatter]]."
@@ -77,3 +87,29 @@
   "Empirical CDF of `:x`, see [[cljplot2.chart.ecdf]]."
   ([] (ecdf {}))
   ([options] (chart-value :ecdf ecdf/compute ecdf/draw ecdf/legend ecdf/Schema options)))
+
+(defn box
+  "Box plot of `:x` per `:y` level and group, see [[cljplot2.chart.box]] and [[cljplot2.data.strip]]."
+  ([] (box {}))
+  ([options] (chart-value :box box/compute box/draw box/legend box/Schema options)))
+
+(defn violin
+  "Violin plot of `:x` per `:y` level and group, see [[cljplot2.chart.violin]] and [[cljplot2.data.strip]]."
+  ([] (violin {}))
+  ([options] (chart-value :violin violin/compute violin/draw violin/legend violin/Schema options)))
+
+(defn strip
+  "Jittered strip plot of `:x` per `:y` level and group, see [[cljplot2.chart.strip]] and [[cljplot2.data.strip]]."
+  ([] (strip {}))
+  ([options] (chart-value :strip strip/compute strip/draw strip/legend strip/Schema options)))
+
+(defn rug
+  "Rug of `:x` values, see [[cljplot2.chart.rug]] and [[cljplot2.data.strip]]."
+  ([] (rug {}))
+  ([options] (chart-value :rug rug/compute rug/draw rug/legend rug/Schema options)))
+
+(defn extent
+  "Interval of `:x` per `:y` level and group (fastmath.stats extents), see [[cljplot2.chart.extent]] and
+  [[cljplot2.data.strip]]."
+  ([] (extent {}))
+  ([options] (chart-value :extent extent/compute extent/draw extent/legend extent/Schema options)))

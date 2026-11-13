@@ -125,7 +125,8 @@
 (defn data-scale-spec
   "Phase-1 spec of plot scale `k` from its `spec` (may be `{}`) and the merged data `extent` (may be `nil`)
   with the charts' `padding` `[lo hi]`. An explicit `:domain` wins over data (`nil` - not set). A data domain gets
-  `:kind` from the spec or the extent (numeric -> `:linear`, categorical -> `:bands`, temporal -> `:datetime`);
+  `:kind` from the spec or the extent (numeric -> `:linear`, categorical -> `:bands`, temporal -> `:datetime`); a
+  numeric extent on a `:bands` scale needs an explicit `:domain` unless it carries its levels (`:values`, sorted);
   numeric data domains are widened when collapsed to one value.
   Numeric continuous domains - data or explicit - get `:padding`: the spec `:expand`, else the charts' `padding`
   (only when there is data); [[finalize]] applies it after `nice`, so the outermost ticks sit inside the panel.
@@ -137,9 +138,12 @@
                       domain (case (:kind extent)
                                :categorical (:values extent)
                                :temporal [(:min extent) (:max extent)]
-                               :numeric (if (= :bands kind)
-                                          (schema/fail! "Numeric data on a bands scale needs an explicit :domain." {:key :domain :in [:scales k :domain]})
-                                          (widen (double (:min extent)) (double (:max extent)))))]
+                               :numeric (cond
+                                          (not= :bands kind) (widen (double (:min extent)) (double (:max extent)))
+                                          ;; levels reported by the charts (strip charts' numeric :y levels)
+                                          (:values extent) (vec (sort (:values extent)))
+                                          :else (schema/fail! "Numeric data on a bands scale needs an explicit :domain."
+                                                              {:key :domain :in [:scales k :domain]})))]
                   (scale-spec k (assoc spec :kind kind :domain domain))))
         padding (or (:expand spec) (when extent padding))]
     (cond-> built
@@ -238,6 +242,13 @@
   "Pixel position of a single `value` in a finalized scale; for many values use [[forward-fn]]."
   ^double [finalized value]
   ((forward-fn finalized) value))
+
+(defn band-geometry
+  "`{:bandwidth px :step px}` of a finalized `:bands` scale (wadogo's band width and the distance between band
+  starts), `nil` for other scales."
+  [finalized]
+  (when (= :bands (:kind finalized))
+    (select-keys (s/data (->wadogo finalized)) [:bandwidth :step])))
 
 ;; directions (plot `:flip`)
 
