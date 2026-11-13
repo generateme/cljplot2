@@ -11,8 +11,8 @@
   `:text` is converted with `str` and split into lines; `nil` or `\"\"` is empty (zero size).
   Natural size is the text block rounded up plus padding on every side; rotation `90`/`270` swaps width and height.
   Drawing clips the text to the item box (intersected with any outer clip).
-  `:rotation` and `:align` are validated by [[cljplot2.graphics.measure/validate-content]] (called from `grid/prepare`);
-  style keys when the style is resolved.
+  Content is validated against [[Options]] by [[cljplot2.graphics.measure/validate-content]] (called from
+  `grid/prepare`).
 
   `:text` line breaks: `\\n` or `\\r\\n`."
   (:require [clojure.string :as str]
@@ -22,13 +22,22 @@
             [cljplot2.graphics.draw :as draw]
             [cljplot2.graphics.font :as font]
             [cljplot2.graphics.measure :as measure]
+            [cljplot2.schema :as schema]
             [cljplot2.theme :as theme])
   (:import [java.awt Graphics2D Rectangle]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
-(def ^:private rotations #{0 90 270})
+(def Options
+  "Label options given by users (plot `:labels` maps, label content in custom grids): `:text`, `:role`, `:rotation`,
+  `:align` and the style overrides of [[cljplot2.theme/style-keys]]."
+  (-> [:map {:closed true}
+       (schema/optional :kind [:= :label])
+       (schema/optional :text any?)
+       (schema/optional :role keyword?)
+       (schema/optional :rotation [:enum 0 90 270])]
+      (into theme/text-style-overrides)))
 
 (defn- lines
   "Lines of the label text; empty text has no lines, empty inner or trailing lines are kept."
@@ -40,17 +49,13 @@
 
 (defmethod measure/validate-content :label
   [content]
-  (let [rotation (get content :rotation 0)]
-    (when-not (rotations rotation)
-      (throw (ex-info "Label rotation must be 0, 90 or 270." {:key :rotation :value rotation})))
-    (when (contains? content :align)
-      (theme/validate-align! (:align content)))))
+  (schema/explain! [[Options content [:content]]]))
 
 (defn- label-spec
   "Drawing parameters of validated label `content` in `theme`; validates the style with inline overrides."
   [theme content]
   (let [rotation (get content :rotation 0)
-        style (doto (theme/text-style theme content) theme/validate-text-style!)
+        style (theme/text-style theme content)
         align (or (:align style) default-align)
         padding (:padding style)]
     {:lines (lines (:text content))
@@ -78,7 +83,7 @@
 (defmethod measure/natural-size :label
   [content {:keys [canvas theme]}]
   (when-not canvas
-    (throw (ex-info "Measuring a label needs a canvas." {:key :canvas})))
+    (schema/fail! "Measuring a label needs a canvas." {:key :canvas}))
   (let [spec (label-spec theme content)]
     (if (empty? (:lines spec))
       (v/vec2 0.0 0.0)

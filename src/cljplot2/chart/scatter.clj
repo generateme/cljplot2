@@ -15,34 +15,35 @@
             [cljplot2.scale.aesthetic :as aesthetic]
             [cljplot2.data.rows :as data]
             [cljplot2.scale.position :as scale]
-            [cljplot2.graphics.shape :as shape]))
+            [cljplot2.graphics.shape :as shape]
+            [cljplot2.schema :as schema]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
 (def ^:private position-dims [:x :y])
 
-(defn- style
-  "Chart options merged over the theme defaults, validated."
-  [options theme]
-  (let [{:keys [size shape stroke-width color stroke-color] :as merged}
-        (merge (get-in theme [:chart :scatter]) (select-keys options [:size :color :stroke-color :stroke-width :shape]))]
-    (when-not (and (number? size) (>= (double size) 0.0))
-      (throw (ex-info "Scatter :size must be a non-negative number." {:key :size :value size})))
-    (when-not (and (number? stroke-width) (>= (double stroke-width) 0.0))
-      (throw (ex-info "Scatter :stroke-width must be a non-negative number." {:key :stroke-width :value stroke-width})))
-    (when-not (shape/shapes shape)
-      (throw (ex-info "Unknown scatter :shape." {:key :shape :value shape})))
-    (when (or (nil? color) (nil? stroke-color))
-      (throw (ex-info "Scatter colors must be colors or :none." {:key :color})))
-    merged))
+(def ^:private style-entries
+  [(schema/optional :size schema/non-neg)
+   (schema/optional :color schema/color)
+   (schema/optional :stroke-color schema/color)
+   (schema/optional :stroke-width schema/non-neg)
+   (schema/optional :shape schema/shape)])
 
-(defn- validate-padding!
-  [padding]
-  (doseq [[k p] padding]
-    (when-not (and (vector? p) (= 2 (count p)) (every? #(and (number? %) (>= (double %) 0.0)) p))
-      (throw (ex-info "Scatter :padding must map dimensions to [lo hi] non-negative fractions."
-                      {:key :padding :scale k :value p})))))
+(def Schema
+  "Schemas of the scatter chart: `:style` (theme `[:chart :scatter]`), `:options`, `:mapping` (merged)."
+  {:style (into [:map {:closed true}] style-entries)
+   :options (-> [:map {:closed true}]
+                (into style-entries)
+                (into data/common-options)
+                (conj (schema/optional :padding data/position-padding)
+                      (schema/optional :order-direction [:enum :ascending :descending])))
+   :mapping [:map [:x schema/accessor] [:y schema/accessor]]})
+
+(defn- style
+  "Chart options merged over the theme defaults."
+  [options theme]
+  (merge (get-in theme [:chart :scatter]) (select-keys options [:size :color :stroke-color :stroke-width :shape])))
 
 (defn- kept?
   "Is `v` of dimension `k` kept: valid (for an aesthetic also inside the explicit domain of its plot scale, see
@@ -60,7 +61,7 @@
         {valid true invalid false} (group-by #(data/valid-value? (order-of %)) rows)]
     (try (into (vec invalid) (sort-by order-of cmp valid))
          (catch ClassCastException _
-           (throw (ex-info "Scatter :order values must be mutually comparable." {:key :order}))))))
+           (schema/fail! "Scatter :order values must be mutually comparable." {:key :order})))))
 
 (defn compute
   "Per panel: points (rows with valid mapped x and y and kept aesthetic values, see [[cljplot2.scale.aesthetic]]) as
@@ -74,12 +75,7 @@
   [{:keys [options]} {:keys [groups mapping]} {:keys [theme na-level? plot-scales] :or {na-level? true}}]
   (let [st (style options theme)
         padding (merge {:x [0.05 0.05] :y [0.05 0.05]} (:padding options))
-        _ (doseq [k position-dims]
-            (when-not (contains? mapping k)
-              (throw (ex-info "Scatter needs :x and :y in its mapping." {:key :mapping :value k}))))
         direction (get options :order-direction :ascending)
-        _ (when-not (#{:ascending :descending} direction)
-            (throw (ex-info "Scatter :order-direction must be :ascending or :descending." {:key :order-direction :value direction})))
         order-of (when (some? (:order mapping)) (data/row-accessor :order (:order mapping)))
         groups (if order-of (update-vals groups #(order-rows % order-of direction)) groups)
         dims (into position-dims (aesthetic/mapped-dims mapping))
@@ -93,10 +89,9 @@
                                               (into {:style st}
                                                     (map-indexed (fn [i k] [k (mapv #(% i) kept)]))
                                                     dims))))]
-    (validate-padding! padding)
     (doseq [[i k] (map-indexed vector dims)]
       (when (and (pos? row-count) (not-any? #(data/valid-value? (% i)) all-values))
-        (throw (ex-info "No valid values for a mapped dimension - check the mapping." {:key :mapping :value k :rows row-count}))))
+        (schema/fail! "No valid values for a mapped dimension - check the mapping." {:key :mapping :value k :rows row-count})))
     {:data points
      :extents (update-vals points (fn [p] (into {:x (data/extent :x (:x p)) :y (data/extent :y (:y p))}
                                                 (map (fn [k] [k (data/value-extent k (remove nil? (p k)))]))

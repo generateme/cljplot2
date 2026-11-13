@@ -1,5 +1,6 @@
 (ns cljplot2.chart-test
   (:require [clojure.test :refer [deftest testing is are]]
+            [cljplot2.test-util :refer [error-data error error-ins]]
             [clojure.walk :as walk]
             [clojure2d.core :as c2d]
             [cljplot2.chart :as chart]
@@ -10,9 +11,6 @@
             [cljplot2.graphics.shape :as shape])
   (:import [java.awt.image BufferedImage]
            [java.time LocalDate]))
-
-(defn- error-data [f]
-  (try (f) nil (catch clojure.lang.ExceptionInfo e (ex-data e))))
 
 (def ^:private rows [{:a 1 :b 10} {:a 2 :b 20} {:a 3 :b 30}])
 
@@ -38,7 +36,7 @@
     '({:a 1}) [{:a 1}]
     {:a [1 2] :b [3 4]} [{:a 1 :b 3} {:a 2 :b 4}]
     {:a [] :b []} [])
-  (are [d] (= :data (:key (error-data #(data/rows d))))
+  (are [d] (= :data (:key (error #(data/rows d))))
     {:a [1 2] :b [3]}
     {:a 1}
     [{:a 1} 2]
@@ -48,16 +46,16 @@
 (deftest data-forms-test
   (is (= (:stats (build (scatter-plot {})))
          (:stats (build (scatter-plot {:data {:a [1 2 3] :b [10 20 30]}})))))
-  (is (= :data (:key (error-data #(build (scatter-plot {:data {:a [1 2] :b [1]}})))))))
+  (is (= :data (:key (error #(build (scatter-plot {:data {:a [1 2] :b [1]}})))))))
 
 (deftest mapping-test
   (testing "keyword and function accessors"
     (is (= (:stats (build (scatter-plot {})))
            (:stats (build (scatter-plot {:mapping {:x #(:a %) :y #(:b %)}}))))))
   (testing "missing or invalid accessors"
-    (is (= {:key :mapping :value :y} (error-data #(build (scatter-plot {:mapping {:x :a}})))))
-    (is (= {:key :mapping :value :x} (error-data #(build (scatter-plot {:mapping {:x "a" :y :b}})))))
-    (is (= :mapping (:key (error-data #(build (scatter-plot {:mapping [:a :b]})))))))
+    (is (= {:key :y :in [:charts 0 :options :mapping :y] :value nil} (error #(build (scatter-plot {:mapping {:x :a}})))))
+    (is (= {:key :x :in [:mapping :x] :value "a"} (error #(build (scatter-plot {:mapping {:x "a" :y :b}})))))
+    (is (= :mapping (:key (error #(build (scatter-plot {:mapping [:a :b]})))))))
   (testing "chart mapping overrides the plot's, chart data replaces the plot's"
     (let [built (build {:data rows :mapping {:x :a :y :b}
                         :charts [(chart/scatter {:mapping {:y :c} :data [{:a 5 :c 7}]})]})]
@@ -71,7 +69,7 @@
     (is (= 3 (count (get-in st [:data :panel :x]))))
     (is (= {:x 3 :y 2} (:dropped st))))
   (testing "mixed kinds in one dimension"
-    (is (= :extents (:key (error-data #(build (scatter-plot {:data (conj rows {:a "x" :b 1})}))))))))
+    (is (= :extents (:key (error #(build (scatter-plot {:data (conj rows {:a "x" :b 1})}))))))))
 
 (deftest empty-data-test
   (testing "no rows: no extents, no scales, no error"
@@ -79,23 +77,33 @@
       (is (= {} (:extents built) (:scale-specs built)))
       (is (some? (plot/render (scatter-plot {:data []}) {:width 100 :height 100})))))
   (testing "a mapped dimension without any valid value raises (usually a misspelt mapping)"
-    (is (= {:key :mapping :value :x :rows 1} (error-data #(build (scatter-plot {:data [{:a nil :b 1}]})))))
-    (is (= {:key :mapping :value :x :rows 3} (error-data #(build (scatter-plot {:mapping {:x :aa :y :b}})))))
-    (is (= {:key :mapping :value :y :rows 3} (error-data #(build (scatter-plot {:mapping {:x :a :y :bb}}))))))
+    (is (= {:key :mapping :value :x :rows 1} (error #(build (scatter-plot {:data [{:a nil :b 1}]})))))
+    (is (= {:key :mapping :value :x :rows 3} (error #(build (scatter-plot {:mapping {:x :aa :y :b}})))))
+    (is (= {:key :mapping :value :y :rows 3} (error #(build (scatter-plot {:mapping {:x :a :y :bb}}))))))
   (testing "explicit domain without data"
     (is (= [0.0 10.0] (mapv double (:domain (get-in (build (scatter-plot {:data [] :scales {:x {:domain [0 10]}}}))
                                                     [:finalized-scales :x]))))))
   (testing "scale entry with neither domain nor data"
-    (is (= {:key :domain :scale :x} (error-data #(build (scatter-plot {:data [] :scales {:x {}}})))))))
+    (is (= {:key :domain :in [:scales :x :domain]} (error #(build (scatter-plot {:data [] :scales {:x {}}})))))))
 
 ;; 2.x chart contract
 
 (deftest chart-value-test
   (is (= (chart/scatter {:size 3}) (chart/scatter {:size 3})))
   (is (= (build (scatter-plot {})) (build (scatter-plot {}))) "independent builds are =")
-  (is (= :options (:key (error-data #(chart/scatter [1])))))
-  (is (= :charts (:key (error-data #(build {:charts (list (chart/scatter))})))))
-  (is (= :charts (:key (error-data #(build {:charts [{:kind :fake}]}))))))
+  (is (= [:charts 0 :options] (:in (error #(build {:charts [(chart/scatter [1])]})))))
+  (is (= [:charts] (:in (error #(build {:charts (list (chart/scatter))})))))
+  (is (= #{[:charts 0 :compute] [:charts 0 :draw]} (error-ins #(build {:charts [{:kind :fake}]}))))
+  (testing "user charts: :schema optional, checked when given"
+    (let [user (fn [schema options] (cond-> {:kind :mine :options options :compute (constantly {}) :draw (constantly nil)}
+                                      schema (assoc :schema schema)))]
+      (is (map? (build {:charts [(user nil {:anything 1})]})) "no schema: options unchecked")
+      (is (= [:charts 0 :options :n] (:in (error #(build {:charts [(user {:options [:map [:n :int]]} {:n "x"})]})))))
+      (is (= [:charts 0 :schema :options] (:in (error #(build {:charts [(user {:options [:no-such-schema]} {})]})))))
+      (is (= [:theme :chart :mine :w] (:in (error #(build {:theme {:chart {:mine {:w -1}}}
+                                                          :charts [(user {:style [:map [:w pos?]]} {})]}))))
+          "user style checked when the kind is present")
+      (is (map? (build {:theme {:chart {:mine {:w -1}}} :charts []})) "absent user kinds aren't checked"))))
 
 (deftest stats-are-data-test
   (let [stats (:stats (build (scatter-plot {})))
@@ -111,7 +119,7 @@
     (is (= {:kind :numeric :min 0.0 :max 10.0} (get-in built [:extents :x :extent])))
     (is (= [0.2 0.05] (get-in built [:extents :x :padding])) "largest padding per side"))
   (testing "different kinds across charts"
-    (is (= :extents (:key (error-data #(build {:mapping {:x :a :y :b}
+    (is (= :extents (:key (error #(build {:mapping {:x :a :y :b}
                                                :charts [(chart/scatter {:data [{:a 1 :b 1}]})
                                                         (chart/scatter {:data [{:a "x" :b 1}]})]})))))))
 
@@ -136,10 +144,10 @@
   (testing "explicit domain wins over data"
     (is (= [-100 100] (spec-domain (scatter-plot {:scales {:x {:domain [-100 100]}}}) :x))))
   (testing "invalid :expand"
-    (are [e] (= :expand (:key (error-data #(build (scatter-plot {:scales {:x {:expand e}}})))))
+    (are [e] (= :expand (:key (error #(build (scatter-plot {:scales {:x {:expand e}}})))))
       [0.1] [-0.1 0] "0" nil [0 0 0]))
   (testing "invalid chart padding"
-    (is (= :padding (:key (error-data #(build (scatter-plot {:charts [(chart/scatter {:padding {:x [-1 0]}})]}))))))))
+    (is (= [:charts 0 :options :padding :x] (:in (error #(build (scatter-plot {:charts [(chart/scatter {:padding {:x [-1 0]}})]}))))))))
 
 (deftest single-value-test
   (are [v domain] (= domain (spec-domain (scatter-plot {:data [{:a v :b 1} {:a v :b 2}] :scales {:x {:expand [0 0]}}}) :x))
@@ -158,11 +166,12 @@
   (is (= :datetime (get-in (build (scatter-plot {:data [{:a (LocalDate/of 2020 1 1) :b 1} {:a (LocalDate/of 2020 6 1) :b 2}]}))
                            [:scale-specs :x :kind])))
   (testing "numeric data on bands needs a domain"
-    (is (= {:key :domain :scale :x} (error-data #(build (scatter-plot {:scales {:x {:kind :bands}}}))))))
+    (is (= {:key :domain :in [:scales :x :domain]} (error #(build (scatter-plot {:scales {:x {:kind :bands}}}))))))
   (testing "log scale: padding in log space stays positive; non-positive data fails"
     (let [d (final-domain (scatter-plot {:data [{:a 1 :b 1} {:a 1000 :b 2}] :scales {:x {:kind :log}}}) :x)]
       (is (< 0 (first d) 1)))
-    (is (= {:key :domain :scale :x} (error-data #(build (scatter-plot {:data [{:a 0 :b 1} {:a 10 :b 2}] :scales {:x {:kind :log}}})))))))
+    (is (= {:key :domain :in [:scales :x :domain] :value [0.0 10.0]}
+           (error #(build (scatter-plot {:data [{:a 0 :b 1} {:a 10 :b 2}] :scales {:x {:kind :log}}})))))))
 
 ;; 4.x scatter drawing
 
@@ -202,7 +211,7 @@
   (testing "size 0 draws nothing"
     (let [[c cx cy] (one-point {:size 0 :color :black})]
       (is (nil? (ink-box c (- cx 5) (- cy 5) (+ cx 5) (+ cy 5))))))
-  (is (= :size (:key (error-data #(build (scatter-plot {:charts [(chart/scatter {:size -1})]})))))))
+  (is (= :size (:key (error #(build (scatter-plot {:charts [(chart/scatter {:size -1})]})))))))
 
 (deftest shapes-test
   (doseq [s shape/shapes]
@@ -212,7 +221,7 @@
     (let [center (fn [s] (let [[c cx cy] (one-point {:size 15 :color :black :shape s})] (pixel c cx cy)))]
       (is (= [0 0 0] (center \O) (center \S)))
       (is (= [255 255 255] (center \o) (center \s)))))
-  (is (= {:key :shape :value \Q} (error-data #(build (scatter-plot {:charts [(chart/scatter {:shape \Q})]}))))))
+  (is (= {:key :shape :in [:charts 0 :options :shape] :value \Q} (error #(build (scatter-plot {:charts [(chart/scatter {:shape \Q})]}))))))
 
 (deftest clip-test
   (let [p {:data [{:a 0 :b 0} {:a 10 :b 10}] :mapping {:x :a :y :b} :theme (assoc plain :axis {:x {:line-color :none :tick-color :none}
@@ -292,7 +301,7 @@
                       [:scale-specs :x :padding])))
     (is (nil? (get-in (build (scatter-plot {:data [{:a 1 :b "u"} {:a 2 :b "v"}]})) [:scale-specs :y :padding]))))
   (testing ":padding is internal"
-    (is (= {:key :padding :scale :x} (error-data #(build (scatter-plot {:scales {:x {:padding [0 0]}}})))))))
+    (is (= {:key :padding :in [:scales :x :padding] :value [0 0]} (error #(build (scatter-plot {:scales {:x {:padding [0 0]}}})))))))
 
 ;; step 11: draw order
 
@@ -313,5 +322,5 @@
                                        [:stats 0 :data :panel :x]))]
         (is (= [2 3 4 1] (drawn-x {})) "nil first, ties (x 3, 4) in data order")
         (is (= [2 1 3 4] (drawn-x {:order-direction :descending})) "nil still first"))
-      (is (= :order-direction (:key (error-data #(build {:data data :mapping {:x :x :y :y :order :o} :charts [(chart/scatter {:order-direction :up})]})))))
-      (is (= :order (:key (error-data #(build {:data [{:x 1 :y 1 :o 1} {:x 2 :y 2 :o "a"}] :mapping {:x :x :y :y :order :o} :charts [(chart/scatter)]}))))))))
+      (is (= :order-direction (:key (error #(build {:data data :mapping {:x :x :y :y :order :o} :charts [(chart/scatter {:order-direction :up})]})))))
+      (is (= :order (:key (error #(build {:data [{:x 1 :y 1 :o 1} {:x 2 :y 2 :o "a"}] :mapping {:x :x :y :y :order :o} :charts [(chart/scatter)]}))))))))

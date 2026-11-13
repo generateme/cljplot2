@@ -24,7 +24,8 @@
   Content `{:kind :legends :legends [legend ...]}`: legends (`:legend` or `:colorbar`) stacked top-down with theme `[:legend :gap]` between them;
   a legend that doesn't fit below the previous one starts a new stack column to the right. [[legend-boxes]] gives
   where each legend is drawn."
-  (:require [clojure2d.core :as c2d]
+  (:require [cljplot2.schema :as schema]
+            [clojure2d.core :as c2d]
             [fastmath.core :as m]
             [fastmath.vector :as v]
             [wadogo.scale :as s]
@@ -115,29 +116,29 @@
 (defn- validate-legend!
   [{:keys [title entries charts]}]
   (when-not (or (nil? title) (string? title))
-    (throw (ex-info "Legend :title must be a string or nil." {:key :title :value title})))
+    (schema/fail! "Legend :title must be a string or nil." {:key :title :value title}))
   (when-not (and (vector? entries) (every? #(and (map? %) (string? (:label %)) (map? (:attributes %))) entries))
-    (throw (ex-info "Legend :entries must be a vector of {:label string :attributes map}." {:key :entries})))
+    (schema/fail! "Legend :entries must be a vector of {:label string :attributes map}." {:key :entries}))
   (when-not (and (vector? charts) (every? #(and (nat-int? (:chart %)) (vector? (:dims %))) charts))
-    (throw (ex-info "Legend :charts must be a vector of {:chart index :dims [dim]}." {:key :charts}))))
+    (schema/fail! "Legend :charts must be a vector of {:chart index :dims [dim]}." {:key :charts})))
 
 (defmethod measure/validate-content :legend [content] (validate-legend! content))
 
 (defn- validate-colorbar!
   [{:keys [title scale ticks labels]}]
   (when-not (or (nil? title) (string? title))
-    (throw (ex-info "Color bar :title must be a string or nil." {:key :title :value title})))
+    (schema/fail! "Color bar :title must be a string or nil." {:key :title :value title}))
   (when-not (and (map? scale) (= :linear (:kind scale)))
-    (throw (ex-info "Color bar :scale must be a linear color scale." {:key :scale})))
+    (schema/fail! "Color bar :scale must be a linear color scale." {:key :scale}))
   (when-not (and (vector? ticks) (vector? labels) (= (count ticks) (count labels)))
-    (throw (ex-info "Color bar :ticks and :labels must be vectors of equal length." {:key :ticks}))))
+    (schema/fail! "Color bar :ticks and :labels must be vectors of equal length." {:key :ticks})))
 
 (defmethod measure/validate-content :colorbar [content] (validate-colorbar! content))
 
 (defmethod measure/validate-content :legends
   [{:keys [legends]}]
   (when-not (vector? legends)
-    (throw (ex-info "Legends :legends must be a vector of legend contents." {:key :legends})))
+    (schema/fail! "Legends :legends must be a vector of legend contents." {:key :legends}))
   (doseq [l legends]
     (if (= :colorbar (:kind l)) (validate-colorbar! l) (validate-legend! l))))
 

@@ -1,6 +1,11 @@
 (ns cljplot2.chart
-  "Charts. A chart value is a plain map `{:kind :options :compute :draw :legend}` made by a constructor; `:compute` and
-  `:draw` are top-level functions, so chart values print and compare as data.
+  "Charts. A chart value is a plain map `{:kind :options :compute :draw :legend :schema}` made by a constructor;
+  `:compute` and `:draw` are top-level functions, so chart values print and compare as data.
+
+  `:schema` (optional for user charts) - `{:options s :style s :mapping s}` malli schemas, checked by `build` before
+  any stage runs: `:options` against the chart's options, `:mapping` against the plot mapping merged with the chart's,
+  `:style` against theme `[:chart kind]` (built-in kinds: [[builtin-styles]], always). Charts don't validate their
+  input themselves.
 
   * `(compute chart {:groups {panel rows} :mapping mapping} env)` -> data
     `{:extents {panel {dim extent}} :padding {dim [lo hi]} :data {panel computed} :na #{dim} :dropped {dim n}}`
@@ -25,38 +30,48 @@
             [cljplot2.chart.scatter :as scatter]
             [cljplot2.chart.treemap :as treemap]))
 
+(set! *warn-on-reflection* true)
+(set! *unchecked-math* :warn-on-boxed)
+
 (defn- chart-value
-  [kind compute draw legend options]
-  (when-not (or (nil? options) (map? options))
-    (throw (ex-info "Chart options must be a map." {:key :options :kind kind})))
-  {:kind kind :options (or options {}) :compute compute :draw draw :legend legend})
+  [kind compute draw legend schema options]
+  {:kind kind :options (if (nil? options) {} options) :compute compute :draw draw :legend legend :schema schema})
+
+(def builtin-styles
+  "Style schema of every built-in chart kind: `build` checks theme `[:chart kind]` against it."
+  {:scatter (:style scatter/Schema)
+   :histogram (:style histogram/Schema)
+   :density (:style density/Schema)
+   :line (:style line/Schema)
+   :treemap (:style treemap/Schema)
+   :ecdf (:style ecdf/Schema)})
 
 (defn scatter
   "Scatter chart, see [[cljplot2.chart.scatter]]."
   ([] (scatter {}))
-  ([options] (chart-value :scatter scatter/compute scatter/draw scatter/legend options)))
+  ([options] (chart-value :scatter scatter/compute scatter/draw scatter/legend scatter/Schema options)))
 
 (defn histogram
   "Histogram of `:x`, see [[cljplot2.chart.histogram]]."
   ([] (histogram {}))
-  ([options] (chart-value :histogram histogram/compute histogram/draw histogram/legend options)))
+  ([options] (chart-value :histogram histogram/compute histogram/draw histogram/legend histogram/Schema options)))
 
 (defn density
   "Kernel density estimate of `:x`, see [[cljplot2.chart.density]]."
   ([] (density {}))
-  ([options] (chart-value :density density/compute density/draw density/legend options)))
+  ([options] (chart-value :density density/compute density/draw density/legend density/Schema options)))
 
 (defn line
   "Line through `(:x, :y)` points, see [[cljplot2.chart.line]]."
   ([] (line {}))
-  ([options] (chart-value :line line/compute line/draw line/legend options)))
+  ([options] (chart-value :line line/compute line/draw line/legend line/Schema options)))
 
 (defn treemap
   "Treemap of `:value` over the `:hierarchy` levels, see [[cljplot2.chart.treemap]]."
   ([] (treemap {}))
-  ([options] (chart-value :treemap treemap/compute treemap/draw treemap/legend options)))
+  ([options] (chart-value :treemap treemap/compute treemap/draw treemap/legend treemap/Schema options)))
 
 (defn ecdf
   "Empirical CDF of `:x`, see [[cljplot2.chart.ecdf]]."
   ([] (ecdf {}))
-  ([options] (chart-value :ecdf ecdf/compute ecdf/draw ecdf/legend options)))
+  ([options] (chart-value :ecdf ecdf/compute ecdf/draw ecdf/legend ecdf/Schema options)))

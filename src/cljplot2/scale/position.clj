@@ -12,7 +12,8 @@
   [[->wadogo]] rebuilds the wadogo scale; [[forward-fn]] returns a value -> pixel function (build it once and reuse
   it); [[forward]] maps a single value."
   (:require [fastmath.core :as m]
-            [wadogo.scale :as s]))
+            [wadogo.scale :as s]
+            [cljplot2.schema :as schema]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -22,70 +23,79 @@
 
 (def ^:private ^:const max-integral-label 1.0e15)
 
-(defn- invalid [message data] (throw (ex-info message data)))
-
 (defn- temporal? [v] (instance? java.time.temporal.Temporal v))
 
-(defn- infer-kind
-  [k domain]
+(defn- domain-kind
+  "Scale kind of an explicit `domain`: `:linear` (numbers), `:bands` (strings / keywords), `:datetime` (java.time
+  values), or `nil` for mixed values."
+  [domain]
   (cond
     (every? number? domain) :linear
     (every? #(or (string? %) (keyword? %)) domain) :bands
-    (every? temporal? domain) :datetime
-    :else (invalid "Scale domain values must be all numbers, all strings/keywords or all java.time values."
-                   {:key :domain :scale k})))
+    (every? temporal? domain) :datetime))
 
-(defn- validate-domain!
-  [k kind domain]
-  (let [error (fn [message] (invalid message {:key :domain :scale k}))]
-    (when-not (and (sequential? domain) (seq domain))
-      (error "Scale :domain must be a non-empty sequence."))
-    (case kind
-      :bands (when-not (apply distinct? domain) (error "Bands :domain values must be distinct."))
-      :datetime (when-not (and (every? temporal? domain) (not= (first domain) (last domain)))
-                  (error "Datetime :domain must be two different java.time values."))
-      (do (when-not (every? #(and (number? %) (m/valid-double? (double %))) domain)
-            (error "Scale :domain must contain finite numbers."))
-          (when (== (double (reduce min domain)) (double (reduce max domain)))
-            (error "Scale :domain must not be a single value."))
-          (when (and (= kind :log) (not (every? #(pos? (double %)) domain)))
-            (error "Log scale :domain must be positive."))))))
+(defn- domain-problem
+  "Why the explicit `:domain` of `spec` is invalid for the spec's kind (given or inferred), or `nil`."
+  [{:keys [domain] :as spec}]
+  (when (some? domain)
+    (let [kind (or (:kind spec) (domain-kind domain))]
+      (case kind
+        nil "domain values should be all numbers, all strings / keywords or all java.time values"
+        :bands (when-not (apply distinct? domain) "bands domain values should be distinct")
+        :datetime (when-not (and (every? temporal? domain) (not= (first domain) (last domain)))
+                    "datetime domain should be two different java.time values")
+        (cond
+          (not-every? schema/finite? domain) "domain should contain finite numbers"
+          (== (double (reduce min domain)) (double (reduce max domain))) "domain should not be a single value"
+          (and (= kind :log) (not (every? #(pos? (double %)) domain))) "log domain should be positive")))))
+
+(def ^:private wadogo-attributes
+  "wadogo scale attributes passed through to the scale (see wadogo's kinds)."
+  [:clamp :unknown :round :base :exponent :padding-in :padding-out :align-outer :align])
+
+(def ScaleSpec
+  "Plot scale spec of `:x` / `:y`: wadogo attributes plus `:nice` and `:expand`, see [[scale-spec]] and
+  [[data-scale-spec]]."
+  [:and
+   (into [:map {:closed true}
+          (schema/optional :kind (into [:enum] (sort position-kinds)))
+          (schema/optional :domain [:sequential {:min 1} any?])
+          (schema/nilable :ticks [:multi {:dispatch sequential?} [true [:sequential any?]] [false schema/pos-int]])
+          (schema/nilable :nice [:multi {:dispatch boolean?} [true :boolean] [false [:and schema/finite schema/non-neg]]])
+          (schema/optional :expand schema/padding)
+          (schema/optional :formatter schema/function)
+          (schema/optional :range (schema/forbidden "is set from the layout, it can't be given"))
+          (schema/optional :padding (schema/forbidden "is internal; use :expand"))
+          (schema/optional :tick-format (schema/forbidden "is internal (set by charts); use :formatter"))]
+         (map #(schema/optional % any?))
+         wadogo-attributes)
+   (schema/rule domain-problem [:domain])])
 
 (defn- validate-tick-list!
   [k kind domain ticks]
   (let [valid? (case kind
                  :bands (set domain)
                  :datetime temporal?
-                 #(and (number? %) (m/valid-double? (double %))))]
+                 schema/finite?)]
     (when-let [bad (first (remove valid? ticks))]
-      (invalid (if (= kind :bands) "Bands :ticks must be domain values." "Scale :ticks contain an invalid value.")
-               {:key :ticks :scale k :value bad}))))
+      (schema/fail! (if (= kind :bands) "Bands :ticks must be domain values." "Scale :ticks contain an invalid value.")
+                    {:key :ticks :in [:scales k :ticks] :value bad}))))
 
 (defn scale-spec
-  "Validated phase-1 spec of the plot scale `k` from its attributes `spec` (a map of wadogo attributes and `:nice`).
+  "Phase-1 spec of the plot scale `k` from its attributes `spec` (a map of wadogo attributes and `:nice`, valid by
+  [[ScaleSpec]]): `:kind` inferred from the domain when missing; no `:domain`, or a data domain not suiting the
+  kind (e.g. `:log` with 0) throws `ex-info {:key :domain}`.
   `:nice` (default `true`): extend continuous domains to nice values by at most 10% of the range; a number sets
   that limit (fraction); falsy turns it off.
-  Throws `ex-info` naming the offending key."
+  A tick list is checked against the kind and domain (`ex-info {:key :ticks}`)."
   [k spec]
-  (when-not (map? spec) (invalid "Scale spec must be a map." {:key :scales :scale k}))
   (let [{:keys [domain ticks]} spec
-        _ (when (nil? domain) (invalid "Scale :domain is required." {:key :domain :scale k}))
-        kind (or (:kind spec) (infer-kind k domain))]
-    (when-not (position-kinds kind)
-      (invalid "Unsupported position scale kind." {:key :kind :scale k :value kind :allowed position-kinds}))
-    (validate-domain! k kind domain)
-    (when (contains? spec :range)
-      (invalid "Scale :range is set from the layout, it can't be given." {:key :range :scale k}))
-    (when (contains? spec :padding)
-      (invalid "Scale :padding is internal; use :expand." {:key :padding :scale k}))
-    (when (contains? spec :tick-format)
-      (invalid "Scale :tick-format is internal (set by charts); use :formatter." {:key :tick-format :scale k}))
-    (cond
-      (sequential? ticks) (validate-tick-list! k kind domain ticks)
-      (not (or (nil? ticks) (and (integer? ticks) (pos? (long ticks)))))
-      (invalid "Scale :ticks must be a positive integer or a sequence of values." {:key :ticks :scale k :value ticks}))
-    (when (and (number? (:nice spec)) (not (and (m/valid-double? (double (:nice spec))) (>= (double (:nice spec)) 0.0))))
-      (invalid "Scale :nice must be a boolean or a non-negative fraction." {:key :nice :scale k :value (:nice spec)}))
+        _ (when (nil? domain)
+            (schema/fail! "Scale :domain is required when there is no data." {:key :domain :in [:scales k :domain]}))
+        kind (or (:kind spec) (domain-kind domain))]
+    (when-let [problem (domain-problem spec)] ;; a data domain may not suit the spec's kind (e.g. log)
+      (schema/fail! (str "Scale " problem ".") {:key :domain :in [:scales k :domain] :value domain}))
+    (when (sequential? ticks) (validate-tick-list! k kind domain ticks))
     (assoc spec :kind kind :nice (get spec :nice true))))
 
 (def ^:private ^:const collapse-widening 0.1)
@@ -111,11 +121,6 @@
 
 (def ^:private extent-kinds {:numeric :linear :categorical :bands :temporal :datetime})
 
-(defn- validate-expand!
-  [k expand]
-  (when-not (and (vector? expand) (= 2 (count expand)) (every? #(and (number? %) (>= (double %) 0.0)) expand))
-    (invalid "Scale :expand must be [lo hi], non-negative fractions." {:key :expand :scale k :value expand})))
-
 (defn data-scale-spec
   "Phase-1 spec of plot scale `k` from its `spec` (may be `{}`) and the merged data `extent` (may be `nil`)
   with the charts' `padding` `[lo hi]`. An explicit `:domain` wins over data. A data domain gets
@@ -125,8 +130,6 @@
   (only when there is data); [[finalize]] applies it after `nice`, so the outermost ticks sit inside the panel.
   Temporal and categorical domains aren't padded."
   [k spec extent padding]
-  (when-not (map? spec) (invalid "Scale spec must be a map." {:key :scales :scale k}))
-  (when (contains? spec :expand) (validate-expand! k (:expand spec)))
   (let [built (if (or (contains? spec :domain) (nil? extent))
                 (scale-spec k spec)
                 (let [kind (or (:kind spec) (extent-kinds (:kind extent)))
@@ -134,7 +137,7 @@
                                :categorical (:values extent)
                                :temporal [(:min extent) (:max extent)]
                                :numeric (if (= :bands kind)
-                                          (invalid "Numeric data on a bands scale needs an explicit :domain." {:key :domain :scale k})
+                                          (schema/fail! "Numeric data on a bands scale needs an explicit :domain." {:key :domain :in [:scales k :domain]})
                                           (widen (double (:min extent)) (double (:max extent)))))]
                   (scale-spec k (assoc spec :kind kind :domain domain))))
         padding (or (:expand spec) (when extent padding))]

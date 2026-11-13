@@ -1,15 +1,13 @@
 (ns cljplot2.data.shingle-test
   "Step 11: shingles (equal-count intervals, Interval values, row repetition) and shingle strips."
   (:require [clojure.test :refer [deftest testing is are]]
+            [cljplot2.test-util :refer [error-data error error-ins]]
             [clojure2d.core :as c2d]
             [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
             [cljplot2.data.shingle :as shingle]
             [cljplot2.layout.grid :as grid])
   (:import [java.awt.image BufferedImage]))
-
-(defn- error-data [f]
-  (try (f) nil (catch clojure.lang.ExceptionInfo e (ex-data e))))
 
 (def ^:private quake-mags
   "`mag` column of dev/resources/quakes.json (R datasets::quakes)."
@@ -33,12 +31,13 @@
     (is (= [] (shingle/equal-count [nil ##NaN] {:count 3})))
     (is (close? [[0.5 3.5] [2.5 5.5]] (bounds (shingle/equal-count [1 nil 2 ##NaN 3 4 5] {:count 2})))))
   (testing "errors"
-    (are [vs opts] (= :shingle (:key (error-data #(shingle/equal-count vs opts))))
+    (are [vs opts] (= :options (first (:in (error #(shingle/equal-count vs opts)))))
       [1 2] {:count 0}
       [1 2] {:count 1.5}
       [1 2] {:overlap 1}
       [1 2] {:overlap -0.1}
-      [1 "x"] {:count 1})))
+      [1 2] {:as :b})
+    (is (= {:key :shingle :value "x"} (error #(shingle/equal-count [1 "x"] {:count 1}))) "non-numeric value")))
 
 (deftest interval-test
   (let [a (shingle/interval 1 2) b (shingle/interval 1 3) c (shingle/interval 0.5 9)]
@@ -51,7 +50,7 @@
     (is (shingle/contains-value? a 1))
     (is (shingle/contains-value? a 2) "closed")
     (is (not (shingle/contains-value? a 2.0001)))
-    (are [lo hi] (= :shingle (:key (error-data #(shingle/interval lo hi))))
+    (are [lo hi] (= [:interval :bounds] (take 2 (:in (error #(shingle/interval lo hi)))))
       2 1 ##NaN 1 1 ##Inf "a" 2)))
 
 (deftest shingle-test
@@ -69,13 +68,15 @@
       (is (= [] (shingle/shingle [] :v {:count 2 :as :b})))
       (is (= 2 (count (shingle/shingle {:v [1 2]} #(:v %) {:intervals [[0 5]] :as :b})))))
     (testing "errors"
-      (are [opts] (= :shingle (:key (error-data #(shingle/shingle data :v opts))))
-        {:intervals [[0 3]]}
-        {:intervals [] :as :b}
-        {:intervals [[3 0]] :as :b}
-        {:intervals [[0 1 2]] :as :b}
-        {:count 0 :as :b})
-      (is (= :shingle (:key (error-data #(shingle/shingle [{:v "x"}] :v {:intervals [[0 1]] :as :b}))))))))
+      (are [opts in] (= in (:in (error #(shingle/shingle data :v opts))))
+        {:intervals [[0 3]]} [:options :as]
+        {:intervals [] :as :b} [:options :intervals]
+        {:intervals [[3 0]] :as :b} [:options :intervals 0]
+        {:intervals [[0 1 2]] :as :b} [:options :intervals 0]
+        {:count 0 :as :b} [:options :count]
+        {:as :b :lable "x"} [:options :lable])
+      (is (= [:accessor] (:in (error #(shingle/shingle data "v" {:as :b})))))
+      (is (= :shingle (:key (error #(shingle/shingle [{:v "x"}] :v {:intervals [[0 1]] :as :b}))))))))
 
 (defn- pixel [canvas x y]
   (let [v (.getRGB ^BufferedImage (c2d/get-image canvas) (int x) (int y))]
@@ -118,6 +119,6 @@
         (is (= (sort-by :lo ivs) (sort ivs)))
         (is (every? #(.startsWith ^String (str %) "mag: [") ivs))))
     (testing "errors: :label true with a function accessor, non-string label"
-      (is (= :shingle (:key (error-data #(shingle/shingle data (fn [r] (:mag r)) {:intervals [[3 6]] :as :m :label true})))))
-      (is (= :shingle (:key (error-data #(shingle/shingle data :mag {:intervals [[3 6]] :as :m :label 3})))))
-      (is (= :shingle (:key (error-data #(shingle/interval 1 2 :x))))))))
+      (is (= [:options :label] (:in (error #(shingle/shingle data (fn [r] (:mag r)) {:intervals [[3 6]] :as :m :label true})))))
+      (is (= [:options :label] (:in (error #(shingle/shingle data :mag {:intervals [[3 6]] :as :m :label 3})))))
+      (is (= [:interval :label] (:in (error #(shingle/interval 1 2 :x))))))))

@@ -26,7 +26,12 @@
   `{:kind :legends}` content: the legends stacked top-down, wrapping into further columns when too tall."
   (:require [cljplot2.data.facet :as facet]
             [cljplot2.data.shingle :as shingle]
-            [cljplot2.content.legend :as legend]))
+            [cljplot2.content.label :as label]
+            [cljplot2.content.legend :as legend]
+            [cljplot2.schema :as schema]))
+
+(set! *warn-on-reflection* true)
+(set! *unchecked-math* :warn-on-boxed)
 
 (def ^:private plot-labels
   "Plot label key -> grid item id, content defaults and placement, in item order."
@@ -34,17 +39,16 @@
    [:x {:id :x-title :defaults {:role :axis-title} :column :panel :row :x-title}]
    [:y {:id :y-title :defaults {:role :axis-title :rotation 270} :column :y-title :row :panel}]])
 
-(def ^:private label-keys (set (map first plot-labels)))
+(def Labels
+  "Plot `:labels`: `{:title :x :y}`, each a text or a map of [[cljplot2.content.label/Options]]; `nil` - no label."
+  (into [:map {:closed true}]
+        (map (fn [[k]] (schema/nilable k [:multi {:dispatch map?} [true label/Options] [false any?]])))
+        plot-labels))
 
 (defn- label-items
   "Grid items of the plot `labels` (fixed order: title, x, y); a `nil` label adds no item.
   `spans` (label key -> `{:column :row}`) overrides the single-panel placement."
   [labels spans]
-  (when-not (or (nil? labels) (map? labels))
-    (throw (ex-info "Plot :labels must be a map." {:key :labels :value labels})))
-  (doseq [k (keys labels)]
-    (when-not (label-keys k)
-      (throw (ex-info "Unknown plot label." {:key :labels :value k :allowed label-keys}))))
   (vec (keep (fn [[k {:keys [id defaults column row]}]]
                (when-some [label (get labels k)]
                  {:id id :column (get-in spans [k :column] column) :row (get-in spans [k :row] row)
@@ -197,14 +201,8 @@
 
 (defn titled-custom-grid
   "`custom-grid` under a title row: rows `:margin-top` (theme `[:plot :margin]`) | `:title` (measured) | `:body`
-  (flexible, holding `custom-grid` nested). Only `:title` may be given in `labels`; other keys throw
-  `ex-info {:key :labels}`."
+  (flexible, holding `custom-grid` nested). Only `:title` of `labels` is used (the plot schema allows no other)."
   [custom-grid labels theme]
-  (when-not (map? labels)
-    (throw (ex-info "Plot :labels must be a map." {:key :labels :value labels})))
-  (when-let [bad (first (remove #{:title} (keys labels)))]
-    (throw (ex-info "With :custom-grid, :labels may only have :title; put other labels into the custom grid."
-                    {:key :labels :value bad})))
   (if (nil? (:title labels))
     custom-grid
     {:columns [{:id :body :size [:flexible]}]
@@ -213,29 +211,41 @@
      :items (into [{:id :body :column :body :row :body :content (assoc custom-grid :kind :grid)}]
                   (label-items {:title (:title labels)} {:title {:column :body :row :title}}))}))
 
-(defn- arrange-invalid [message data] (throw (ex-info message (assoc data :key :arrange))))
-
 (defn- arrange-shape
   "`[rows cols]` for `n` plots and optional `columns` / `rows` (default one column)."
   [^long n columns rows]
-  (doseq [[k v] [[:columns columns] [:rows rows]]]
-    (when-not (or (nil? v) (and (integer? v) (pos? (long v))))
-      (arrange-invalid "Arrange :columns / :rows must be positive integers." {:value k})))
-  (let [[^long r ^long c] (cond
-                            (and rows columns) [(long rows) (long columns)]
-                            columns [(long (Math/ceil (/ (double n) (double columns)))) (long columns)]
-                            rows [(long rows) (long (Math/ceil (/ (double n) (double rows))))]
-                            :else [n 1])]
-    (when (< (* r c) n)
-      (arrange-invalid "Arrange layout is too small for the plots." {:plots n :rows r :columns c}))
-    [r c]))
+  (cond
+    (and rows columns) [(long rows) (long columns)]
+    columns [(long (Math/ceil (/ (double n) (double columns)))) (long columns)]
+    rows [(long rows) (long (Math/ceil (/ (double n) (double rows))))]
+    :else [n 1]))
+
+(defn- arrange-problem
+  "Why the `:arrange` spec (valid entries) can't be laid out, or `nil`: too few cells, or `:widths` / `:heights` not
+  one per column / row."
+  [{:keys [plots columns rows widths heights]}]
+  (let [n (count plots)
+        [^long r ^long c] (arrange-shape n columns rows)]
+    (cond
+      (< (* r c) n) (str "layout " r "x" c " is too small for " n " plots")
+      (and widths (not= c (count widths))) (str ":widths should have one weight per column (" c ")")
+      (and heights (not= r (count heights))) (str ":heights should have one weight per row (" r ")"))))
+
+(def Arrange
+  "Plot `:arrange`, see [[cljplot2.multiplot/arrange]]; the plots are validated when built as sub-plots."
+  [:and
+   [:map {:closed true}
+    [:plots [:sequential {:min 1} :map]]
+    (schema/nilable :columns schema/pos-int)
+    (schema/nilable :rows schema/pos-int)
+    (schema/nilable :widths [:sequential schema/pos])
+    (schema/nilable :heights [:sequential schema/pos])
+    (schema/nilable :align schema/bool)]
+   (schema/rule arrange-problem)])
 
 (defn- arrange-weights
-  [k ws ^long n]
-  (cond
-    (nil? ws) (vec (repeat n 1))
-    (and (sequential? ws) (= n (count ws)) (every? #(and (number? %) (pos? (double %))) ws)) (vec ws)
-    :else (arrange-invalid "Arrange :widths / :heights must be positive numbers, one per column / row." {:value k :count n})))
+  [ws ^long n]
+  (if (nil? ws) (vec (repeat n 1)) (vec ws)))
 
 (defn- weighted-tracks
   "Flexible tracks `[prefix i]` weighted by `ws`, fixed gaps `[gap-prefix i]` between them."
@@ -247,28 +257,18 @@
   "Grid of the plot `:arrange` spec `{:plots [p ...] :columns :rows :widths :heights}` in `theme`: cells `[:plot i]`
   filled row by row (columns `[:column c]`, rows `[:row r]`) with `[:multiplot :gap]` between them, `[:plot :margin]`
   around, and an optional title row (`labels` - only `:title`) above the cells, inside the margins.
-  Throws `ex-info {:key :arrange}` for a bad spec, `{:key :labels}` for labels other than `:title`."
-  [{:keys [plots columns rows widths heights align] :as arrange} labels theme]
-  (when-not (map? arrange)
-    (arrange-invalid "Plot :arrange must be a map." {:value arrange}))
-  (when-not (contains? #{nil true false} align)
-    (arrange-invalid "Arrange :align must be a boolean." {:value :align}))
-  (when-not (and (sequential? plots) (seq plots))
-    (arrange-invalid "Arrange :plots must be a non-empty sequence of plots." {:value :plots}))
-  (when-not (or (nil? labels) (map? labels))
-    (throw (ex-info "Plot :labels must be a map." {:key :labels :value labels})))
-  (when-let [bad (first (remove #{:title} (keys labels)))]
-    (throw (ex-info "With :arrange, :labels may only have :title." {:key :labels :value bad})))
+  `arrange` is valid by [[Arrange]]."
+  [{:keys [plots columns rows widths heights]} labels theme]
   (let [plots (vec plots)
         [^long r ^long c] (arrange-shape (count plots) columns rows)
         gap (get-in theme [:multiplot :gap])
         margin (get-in theme [:plot :margin])
         margin-track (fn [id] {:id id :size [:fixed margin]})]
     {:columns (-> [(margin-track :margin-left)]
-                  (into (weighted-tracks :column :column-gap (arrange-weights :widths widths c) gap))
+                  (into (weighted-tracks :column :column-gap (arrange-weights widths c) gap))
                   (conj (margin-track :margin-right)))
      :rows (-> [(margin-track :margin-top) {:id :title :size [:measured]}]
-               (into (weighted-tracks :row :row-gap (arrange-weights :heights heights r) gap))
+               (into (weighted-tracks :row :row-gap (arrange-weights heights r) gap))
                (conj (margin-track :margin-bottom)))
      :items (-> (vec (map-indexed (fn [i p]
                                     {:id [:plot i] :column [:column (rem (long i) c)] :row [:row (quot (long i) c)]

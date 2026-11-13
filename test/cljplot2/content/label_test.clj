@@ -1,5 +1,6 @@
 (ns cljplot2.content.label-test
   (:require [clojure.test :refer [deftest testing is are]]
+            [cljplot2.test-util :refer [error-data error error-ins]]
             [clojure2d.core :as c2d]
             [fastmath.core :as m]
             [cljplot2.graphics.canvas :as canvas]
@@ -25,13 +26,10 @@
   "Ink tests treat white as empty."
   {:plot {:background :white}})
 
-(defn- error-data [f]
-  (try (f) nil (catch clojure.lang.ExceptionInfo e (ex-data e))))
-
 (defn- prepare-error
   "ex-data of preparing a one-cell grid holding `content`."
   [content]
-  (error-data #(grid/prepare {:columns [{:size [:flexible]}] :rows [{:size [:flexible]}]
+  (error #(grid/prepare {:columns [{:size [:flexible]}] :rows [{:size [:flexible]}]
                               :items [{:id :l :column 0 :row 0 :content content}]})))
 
 (defn- oracle-size
@@ -102,7 +100,7 @@
   (let [[w h] (size (label "Percent of Total"))]
     (is (= [h w] (size (label "Percent of Total" :rotation 90))))
     (is (= [h w] (size (label "Percent of Total" :rotation 270))))
-    (are [r] (= {:key :rotation :value r} (prepare-error (label "a" :rotation r)))
+    (are [r] (= {:key :rotation :in [:content :rotation] :value r} (prepare-error (label "a" :rotation r)))
       45 180 -90 "90" 90.0)
     (is (nil? (prepare-error (label "a" :rotation 270))))))
 
@@ -116,16 +114,16 @@
 (deftest padding-test
   (let [[w0 h0] (size (label "abc" :padding 0))]
     (is (= [(+ w0 10.0) (+ h0 10.0)] (size (label "abc" :padding 5))))
-    (is (= :padding (:key (error-data #(size (label "abc" :padding -1))))))))
+    (is (= :padding (:key (prepare-error (label "abc" :padding -1)))))))
 
 (deftest style-override-test
   (is (> (second (size (label "abc" :role :title :size 20))) (second (size (label "abc" :role :title))))))
 
 (deftest role-test
-  (are [role] (= {:key :role :value role} (error-data #(size (label "a" :role role))))
+  (are [role] (= {:key :role :value role} (error #(size (label "a" :role role))))
     nil :unknown)
   (is (= {:key :role :value :broken}
-         (error-data #(measure/call-with-scratch-canvas
+         (error #(measure/call-with-scratch-canvas
                        :high (fn [c] (measure/natural-size (label "a" :role :broken)
                                                            {:canvas c :theme (theme/plot-theme {:text {:broken 12}})})))))))
 
@@ -151,7 +149,7 @@
       (is (not (.isBold f)))
       (is (= 13.0 (double (.getSize2D f))))))
   (testing "invalid"
-    (are [f s z k] (= k (:key (error-data #(font/resolve-font f s z))))
+    (are [f s z k] (= k (:key (error #(font/resolve-font f s z))))
       "Liberation Mono" :heavy 12 :font-style
       "Liberation Mono" :plain 0 :size
       "Liberation Mono" :plain nil :size
@@ -204,7 +202,7 @@
   (is (= (second (size (label "a"))) (second (size (label "g"))))))
 
 (deftest no-canvas-test
-  (is (= {:key :canvas} (error-data #(grid/measure-items
+  (is (= {:key :canvas} (error #(grid/measure-items
                                       (grid/prepare {:columns [{:size [:measured]}] :rows [{:size [:measured]}]
                                                      :items [{:id :l :column 0 :row 0 :content (label "a")}]})
                                       {:theme theme/default-theme} nil)))))

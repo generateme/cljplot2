@@ -1,6 +1,7 @@
 (ns cljplot2.content.colorbar-test
   "Step 11: color bar legend for linear color scales."
   (:require [clojure.test :refer [deftest testing is are]]
+            [cljplot2.test-util :refer [error-data error error-ins]]
             [clojure2d.core :as c2d]
             [cljplot2.chart :as chart]
             [cljplot2.content.legend :as legend]
@@ -8,9 +9,6 @@
             [cljplot2.graphics.measure :as measure]
             [cljplot2.layout.grid :as grid])
   (:import [java.awt.image BufferedImage]))
-
-(defn- error-data [f]
-  (try (f) nil (catch clojure.lang.ExceptionInfo e (ex-data e))))
 
 (defn- pixel [canvas x y]
   (let [v (.getRGB ^BufferedImage (c2d/get-image canvas) (int x) (int y))]
@@ -75,7 +73,7 @@
           [l0 l1] (boxes built)]
       (is (> (:x l1) (:x l0)))))
   (testing "theme validation"
-    (are [t k] (= k (:key (error-data #(build (cb-plot {:theme t})))))
+    (are [t k] (= k (:key (error #(build (cb-plot {:theme t})))))
       {:legend {:bar-length -1}} :bar-length
       {:legend {:bar-width 0}} :bar-width
       {:legend {:bar-length "x"}} :bar-length

@@ -37,15 +37,19 @@
   clamped to it) and `:bar-width` (`nil` - `:key-size`); text roles `:legend-title` and `:legend-label`.
 
   `:chart` - per chart kind defaults: `:scatter`, `:histogram`, `:density`, `:line`, `:ecdf` (old cljplot blue),
-  `:treemap` (`:padding`, `:border-color`, `:border-width`); validated when a chart of that kind computes.
+  `:treemap` (`:padding`, `:border-color`, `:border-width`); each checked against its chart's style schema.
 
   Colors are any clojure2d color or `:none` (draw nothing). `nil` in a theme override means \"not set\"
   and keeps the value underneath, see [[deep-merge]].
 
-  [[plot-theme]] validates the merged theme, so bad values fail at build time."
+  `build` validates the merged theme against [[Theme]] (closed maps: unknown keys are errors), so bad values fail
+  before any stage runs."
   (:require [clojure2d.color :as c]
             [cljplot2.scale.aesthetic :as aesthetic]
-            [cljplot2.graphics.font :as font]))
+            [cljplot2.schema :as schema]))
+
+(set! *warn-on-reflection* true)
+(set! *unchecked-math* :warn-on-boxed)
 
 (def style-keys
   "Keys of a text style; content may override them inline."
@@ -53,34 +57,10 @@
 
 (def ^:private centered [:center :middle])
 
-(def ^:private h-aligns #{:left :center :right})
-(def ^:private v-aligns #{:top :middle :bottom})
-
 (defn none?
   "Is `color` the \"draw nothing\" value `:none`?"
   [color]
   (= :none color))
-
-(defn- invalid [message data] (throw (ex-info message data)))
-
-(defn- non-negative? [v] (and (number? v) (>= (double v) 0.0)))
-
-(defn validate-align!
-  "Throw `ex-info` with `{:key :align}` unless `align` is `[h v]`, `h` in `#{:left :center :right}`,
-  `v` in `#{:top :middle :bottom}`."
-  [align]
-  (when-not (and (vector? align) (= 2 (count align)) (h-aligns (align 0)) (v-aligns (align 1)))
-    (invalid "Text :align must be [h v], h in #{:left :center :right}, v in #{:top :middle :bottom}."
-             {:key :align :value align})))
-
-(defn validate-text-style!
-  "Throw `ex-info` naming the offending key unless `style` is a valid text style (font resolvable,
-  positive size, non-negative padding, valid optional align)."
-  [{:keys [font font-style size padding align]}]
-  (font/resolve-font font font-style size)
-  (when-not (non-negative? padding)
-    (invalid "Text :padding must be a non-negative number." {:key :padding :value padding}))
-  (when (some? align) (validate-align! align)))
 
 (def default-theme
   "Defaults in old cljplot style: light lavender-gray background, 10 px margin, panels without fill and border."
@@ -126,82 +106,54 @@
     (and (map? a) (map? b)) (merge-with deep-merge a b)
     :else b))
 
-(defn- validate-grid-line!
-  [k line]
-  (when-not (none? line)
-    (let [{:keys [color width dash]} line]
-      (when-not (map? line)
-        (invalid "Panel grid line must be a map or :none." {:key :grid :scale k :value line}))
-      (when (nil? color)
-        (invalid "Panel grid line :color must be a color or :none." {:key :color :scale k}))
-      (when-not (non-negative? width)
-        (invalid "Panel grid line :width must be a non-negative number." {:key :width :scale k :value width}))
-      (when-not (or (none? dash) (and (sequential? dash) (seq dash) (every? #(and (number? %) (pos? (double %))) dash)))
-        (invalid "Panel grid line :dash must be :none or a sequence of positive numbers." {:key :dash :scale k :value dash})))))
+;; schema
 
-(defn- validate-axis!
-  [k axis]
-  (when-not (map? axis)
-    (invalid "Axis style must be a map." {:key :axis :scale k :value axis}))
-  (doseq [color-key [:line-color :tick-color]]
-    (when (nil? (get axis color-key))
-      (invalid "Axis color must be a color or :none." {:key color-key :scale k})))
-  (doseq [size-key [:line-width :tick-length :tick-width :label-gap]
-          :let [v (get axis size-key)]]
-    (when-not (non-negative? v)
-      (invalid "Axis size must be a non-negative number." {:key size-key :scale k :value v})))
-  (let [spacing (:tick-spacing axis)]
-    (when-not (and (number? spacing) (pos? (double spacing)))
-      (invalid "Axis :tick-spacing must be a positive number." {:key :tick-spacing :scale k :value spacing}))))
+(def ^:private text-style-entries
+  [[:font schema/font] [:size schema/pos] [:font-style schema/font-style] [:color schema/solid-color]
+   [:padding schema/non-neg]])
 
-(defn- validate-theme!
-  [theme]
-  (let [{:keys [margin background]} (:plot theme)
-        {:keys [border-width]} (:panel theme)]
-    (when-not (non-negative? margin)
-      (invalid "Plot :margin must be a non-negative number." {:key :margin :value margin}))
-    (when (nil? background)
-      (invalid "Plot :background must be a color or :none." {:key :background :value background}))
-    (when-not (non-negative? border-width)
-      (invalid "Panel :border-width must be a non-negative number." {:key :border-width :value border-width}))
-    (when (nil? (get-in theme [:panel :alternate-fill]))
-      (invalid "Panel :alternate-fill must be a color or :none." {:key :alternate-fill}))
-    (let [{:keys [fill border-color border-width]} (:strip theme)]
-      (when (or (nil? fill) (nil? border-color) (nil? (get-in theme [:strip :shingle-fill])))
-        (invalid "Strip colors must be colors or :none." {:key :strip}))
-      (when-not (non-negative? border-width)
-        (invalid "Strip :border-width must be a non-negative number." {:key :border-width :value border-width})))
-    (when-not (non-negative? (get-in theme [:facet :gap]))
-      (invalid "Facet :gap must be a non-negative number." {:key :gap :value (get-in theme [:facet :gap])}))
-    (when-not (non-negative? (get-in theme [:multiplot :gap]))
-      (invalid "Multiplot :gap must be a non-negative number." {:key :gap :value (get-in theme [:multiplot :gap])}))
-    (doseq [k [:x :y]]
-      (validate-grid-line! k (get-in theme [:panel :grid k]))
-      (validate-axis! k (get-in theme [:axis k])))
-    (validate-grid-line! :bands (get-in theme [:panel :grid :bands]))
-    (aesthetic/validate-palette! (:palette theme))
-    (let [{:keys [gap key-size fill border-color border-width]} (:legend theme)]
-      (doseq [[k v] [[:gap gap] [:key-size key-size] [:border-width border-width]]]
-        (when-not (non-negative? v)
-          (invalid "Legend sizes must be non-negative numbers." {:key k :value v})))
-      (when (or (nil? fill) (nil? border-color))
-        (invalid "Legend colors must be colors or :none." {:key :legend}))
-      (let [v (get-in theme [:legend :bar-length])]
-        (when-not (or (= :stretch v) (and (number? v) (pos? (double v))))
-          (invalid "Legend :bar-length must be :stretch or a positive number." {:key :bar-length :value v})))
-      (let [v (get-in theme [:legend :bar-width])]
-        (when-not (or (nil? v) (and (number? v) (pos? (double v))))
-          (invalid "Legend :bar-width must be a positive number (nil - :key-size)." {:key :bar-width :value v}))))
-    (doseq [[role style] (:text theme)]
-      (when-not (map? style)
-        (invalid "Text role style must be a map." {:key :role :value role}))
-      (validate-text-style! style))))
+(def TextStyle
+  "A text role's style."
+  (-> [:map {:closed true}] (into text-style-entries) (conj (schema/optional :align schema/align))))
+
+(def text-style-overrides
+  "Map entries of the style keys content may override (all optional), see [[style-keys]]."
+  (mapv (fn [[k s]] (schema/optional k s)) (conj text-style-entries [:align schema/align])))
+
+(def ^:private grid-line
+  (schema/keyword-or :none [:map {:closed true} [:color schema/color] [:width schema/non-neg] [:dash schema/dash]]))
+
+(def ^:private axis-style
+  [:map {:closed true}
+   [:line-color schema/color] [:line-width schema/non-neg] [:tick-color schema/color] [:tick-length schema/non-neg]
+   [:tick-width schema/non-neg] [:label-gap schema/non-neg] [:tick-spacing schema/pos]])
+
+(def Theme
+  "The merged theme (see [[default-theme]]). `:chart` subtrees are checked against the charts' style schemas by
+  `build`, see [[cljplot2.pipeline/build]]."
+  [:map {:closed true}
+   [:plot [:map {:closed true} [:background schema/color] [:margin schema/non-neg]]]
+   [:panel [:map {:closed true}
+            [:fill schema/color] [:alternate-fill schema/color] [:border-color schema/color] [:border-width schema/non-neg]
+            [:grid [:map {:closed true} [:x grid-line] [:y grid-line] [:bands grid-line]]]]]
+   [:strip [:map {:closed true}
+            [:fill schema/color] [:border-color schema/color] [:border-width schema/non-neg] [:shingle-fill schema/color]]]
+   [:facet [:map {:closed true} [:gap schema/non-neg]]]
+   [:multiplot [:map {:closed true} [:gap schema/non-neg]]]
+   [:palette aesthetic/Palette]
+   [:legend [:map {:closed true}
+             [:gap schema/non-neg] [:key-size schema/non-neg] [:fill schema/color] [:border-color schema/color]
+             [:border-width schema/non-neg] [:bar-length (schema/keyword-or :stretch schema/pos)]
+             [:bar-width [:maybe schema/pos]]]]
+   [:chart [:map-of keyword? :map]]
+   [:axis [:map {:closed true} [:x axis-style] [:y axis-style]]]
+   [:text [:map-of keyword? TextStyle]]])
 
 (defn plot-theme
-  "Plot theme: `theme` deep-merged over [[default-theme]] (`nil` means the default theme), validated.
-  Throws `ex-info` naming the offending key."
+  "Plot theme: `theme` deep-merged over [[default-theme]] (`nil` means the default theme); validated against
+  [[Theme]] by `build`."
   [theme]
-  (doto (deep-merge default-theme theme) validate-theme!))
+  (deep-merge default-theme theme))
 
 (defn text-style
   "Text style of `content`: the style of its `:role` in `theme` with inline style keys of `content` merged over.
@@ -210,5 +162,5 @@
   (let [role (:role content)
         style (get-in theme [:text role])]
     (when-not (map? style)
-      (throw (ex-info "Unknown text role." {:key :role :value role})))
+      (schema/fail! "Unknown text role." {:key :role :value role}))
     (merge style (select-keys content style-keys))))

@@ -11,27 +11,28 @@
             [cljplot2.data.rows :as data]
             [cljplot2.data.group :as group]
             [cljplot2.graphics.polyline :as polyline]
-            [cljplot2.scale.position :as scale]))
+            [cljplot2.scale.position :as scale]
+            [cljplot2.schema :as schema]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
-(defn- invalid [message data] (throw (ex-info message data)))
+(def ^:private style-entries
+  (conj polyline/style-entries (schema/optional :fill schema/color)))
+
+(def Schema
+  "Schemas of the line chart: `:style` (theme `[:chart :line]`), `:options`, `:mapping` (merged)."
+  {:style (into [:map {:closed true}] style-entries)
+   :options (-> [:map {:closed true}]
+                (into style-entries)
+                (into data/common-options)
+                (conj (schema/nilable :sort schema/bool)
+                      (schema/optional :padding data/position-padding)))
+   :mapping [:map [:x schema/accessor] [:y schema/accessor]]})
 
 (defn- style
   [options theme]
-  (let [st (merge (get-in theme [:chart :line]) (select-keys options [:color :width :dash :fill]))]
-    (polyline/validate-style! :line st)
-    (when (nil? (:fill st)) (invalid "Line :fill must be a color or :none." {:key :fill}))
-    st))
-
-(defn- validate-options!
-  [{:keys [padding] :as options}]
-  (when-not (contains? #{nil true false} (:sort options))
-    (invalid "Line :sort must be a boolean." {:key :sort :value (:sort options)}))
-  (doseq [[d p] padding]
-    (when-not (and (vector? p) (= 2 (count p)) (every? #(and (number? %) (>= (double %) 0.0)) p))
-      (invalid "Line :padding must map dimensions to [lo hi] non-negative fractions." {:key :padding :scale d :value p}))))
+  (merge (get-in theme [:chart :line]) (select-keys options [:color :width :dash :fill])))
 
 (defn- sortable? [xs] (or (every? number? xs) (every? data/temporal? xs)))
 
@@ -39,10 +40,6 @@
   "Per panel: `{:lines [{:x [..] :y [..] :aesthetics}] :style style}` (`y` `nil` where the line breaks); extents,
   padding, `:na`, `:dropped`."
   [{:keys [options]} {:keys [groups mapping]} {:keys [theme] :as env}]
-  (validate-options! options)
-  (doseq [k [:x :y]]
-    (when-not (contains? mapping k)
-      (invalid "Line needs :x and :y in its mapping." {:key :mapping :value k})))
   (let [st (style options theme)
         {:keys [panels dropped]} (group/split groups mapping env)
         x-of (data/row-accessor :x (:x mapping))
@@ -52,7 +49,7 @@
         row-count (count rows)
         _ (doseq [[k f] [[:x x-of] [:y y-of]]]
             (when (and (pos? row-count) (not-any? #(data/valid-value? (f %)) rows))
-              (invalid "No valid values for a mapped dimension - check the mapping." {:key :mapping :value k :rows row-count})))
+              (schema/fail! "No valid values for a mapped dimension - check the mapping." {:key :mapping :value k :rows row-count})))
         data (update-vals panels
                           (fn [gs]
                             {:lines (mapv (fn [g]

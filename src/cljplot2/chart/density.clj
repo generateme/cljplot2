@@ -17,36 +17,37 @@
             [cljplot2.data.group :as group]
             [cljplot2.graphics.polyline :as polyline]
             [cljplot2.scale.position :as scale]
-            [cljplot2.theme :as theme]))
+            [cljplot2.schema :as schema]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
-(defn- invalid [message data] (throw (ex-info message data)))
+(def ^:private style-entries
+  (conj polyline/style-entries (schema/optional :fill schema/color)))
+
+(def Schema
+  "Schemas of the density chart: `:style` (theme `[:chart :density]`), `:options`, `:mapping` (merged)."
+  {:style (into [:map {:closed true}] style-entries)
+   :options (-> [:map {:closed true}]
+                (into style-entries)
+                (into data/common-options)
+                (conj (schema/optional :kernel keyword?)
+                      (schema/optional :bandwidth [:or schema/pos keyword?])
+                      (schema/nilable :n [:and :int [:>= 2]])
+                      (schema/nilable :cut schema/non-neg)
+                      (schema/optional :padding data/position-padding)))
+   :mapping [:map [:x schema/accessor]]})
 
 (defn- style
   [options theme]
-  (let [st (merge (get-in theme [:chart :density]) (select-keys options [:color :width :dash :fill]))]
-    (polyline/validate-style! :density st)
-    (when (nil? (:fill st)) (invalid "Density :fill must be a color or :none." {:key :fill}))
-    st))
-
-(defn- validate-options!
-  [{:keys [n cut padding] :as options}]
-  (when-not (or (nil? n) (and (integer? n) (>= (long n) 2)))
-    (invalid "Density :n must be an integer >= 2." {:key :n :value n}))
-  (when-not (or (nil? cut) (and (number? cut) (>= (double cut) 0.0)))
-    (invalid "Density :cut must be a non-negative number." {:key :cut :value cut}))
-  (doseq [[d p] padding]
-    (when-not (and (vector? p) (= 2 (count p)) (every? #(and (number? %) (>= (double %) 0.0)) p))
-      (invalid "Density :padding must map dimensions to [lo hi] non-negative fractions." {:key :padding :scale d :value p}))))
+  (merge (get-in theme [:chart :density]) (select-keys options [:color :width :dash :fill])))
 
 (defn- curve
   "`{:x [..] :y [..]}` of the KDE of `values` (at least 2 distinct)."
   [values {:keys [kernel bandwidth n cut] :or {kernel :gaussian bandwidth :nrd0 n 512 cut 3}}]
   (let [{:keys [kde h]} (try (k/kernel-density kernel values {:bandwidth bandwidth} true)
                              (catch clojure.lang.ExceptionInfo e
-                               (invalid (str "Density estimation failed: " (ex-message e)) {:key :density :cause (ex-data e)})))
+                               (schema/fail! (str "Density estimation failed: " (ex-message e)) {:key :density :cause (ex-data e)})))
         h (double h)
         lo (- (double (reduce min values)) (* (double cut) h))
         hi (+ (double (reduce max values)) (* (double cut) h))
@@ -58,9 +59,6 @@
   "Per panel: `{:curves [{:x [..] :y [..] :aesthetics}] :style style}`; extents, padding, `:na`, `:dropped`
   (`:x` invalid values, `:group` groups without a curve), `:axis-titles`."
   [{:keys [options]} {:keys [groups mapping]} {:keys [theme] :as env}]
-  (validate-options! options)
-  (when-not (contains? mapping :x)
-    (invalid "Density needs :x in its mapping." {:key :mapping :value :x}))
   (let [st (style options theme)
         {:keys [panels dropped]} (group/split groups mapping env)
         x-of (data/row-accessor :x (:x mapping))
@@ -78,7 +76,7 @@
                                      :style st}]))
                    panels)]
     (when (and (pos? row-count) (= row-count x-dropped))
-      (invalid "No valid values for a mapped dimension - check the mapping." {:key :mapping :value :x :rows row-count}))
+      (schema/fail! "No valid values for a mapped dimension - check the mapping." {:key :mapping :value :x :rows row-count}))
     {:data data
      :extents (merge-with merge (group/aesthetic-extents panels)
                           (into {} (keep (fn [[panel {:keys [curves]}]]

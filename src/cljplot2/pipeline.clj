@@ -4,7 +4,7 @@
   Stages, in order: `:split` -> `:stats` -> `:extents` -> `:scale-specs` -> `:grid` -> `:layout` -> `:finalized-scales`
   -> `:subplots`.
 
-  Plot keys read so far:
+  Plot keys (schema: [[Plot]]; `build` validates them before any stage runs, see [[cljplot2.schema]]):
 
   * `:labels` - plot titles, see [[cljplot2.layout.plot-grid]]
   * `:scales` - `{:x spec :y spec}`, position scales, see [[cljplot2.scale.position/data-scale-spec]]; facet scales, see
@@ -32,6 +32,8 @@
   Aesthetic mapping keys (`:color`, `:shape`, `:size`) style marks, see [[cljplot2.scale.aesthetic]]; `:group` splits
   rows into groups for charts drawing one mark per group, see [[cljplot2.data.group]]."
   (:require [fastmath.core :as m]
+            [cljplot2.chart :as chart]
+            [cljplot2.schema :as schema]
             [cljplot2.scale.aesthetic :as aesthetic]
             [cljplot2.data.rows :as data]
             [cljplot2.data.facet :as facet]
@@ -64,51 +66,10 @@
 
 (def ^:private position-scales #{:x :y})
 
-(defn- validate-mapping!
-  [mapping]
-  (when-not (or (nil? mapping) (map? mapping))
-    (throw (ex-info ":mapping must be a map." {:key :mapping :value mapping}))))
-
-(defn- validate-charts!
-  [charts]
-  (when-not (or (nil? charts) (vector? charts))
-    (throw (ex-info "Plot :charts must be a vector of charts." {:key :charts})))
-  (doseq [chart charts]
-    (when-not (and (map? chart) (fn? (:compute chart)) (fn? (:draw chart)) (or (nil? (:legend chart)) (fn? (:legend chart))))
-      (throw (ex-info "Chart must be a chart value (see cljplot2.chart)." {:key :charts})))))
-
-(defn- validate-plot-options!
-  [{:keys [groups legend aspect]}]
-  (when-not (or (nil? groups) (and (map? groups) (contains? #{nil true false} (:na groups))))
-    (throw (ex-info "Plot :groups must be a map {:na boolean}." {:key :groups :value groups})))
-  (when-not (contains? #{nil :iso} aspect)
-    (throw (ex-info "Plot :aspect must be :iso." {:key :aspect :value aspect})))
-  (when-not (contains? #{nil true false} legend)
-    (throw (ex-info "Plot :legend must be a boolean." {:key :legend :value legend}))))
-
-(defn- validate-aesthetic-mapping!
-  "Mapped aesthetics and `:group` need an accessor (keyword or function); a scale of an aesthetic needs a chart
-  mapping it."
-  [inputs scales]
-  (doseq [{:keys [mapping]} inputs
-          k (conj (aesthetic/mapped-dims mapping) :group)
-          :when (some? (get mapping k))]
-    (data/row-accessor k (get mapping k)))
-  (doseq [k (filter aesthetic/dim? (keys scales))]
-    (when-not (some #(some? (get-in % [:mapping k])) inputs)
-      (throw (ex-info "Aesthetic scale without a mapping of that key." {:key :scales :scale k})))))
-
 (defn- facet-split
   "Facet dimensions, levels and per-chart groups for charts `chart-inputs` (`{:rows :mapping}`)."
   [chart-inputs scales na-panel?]
-  (let [dim-sets (distinct (remove empty? (map (comp facet/facet-dims :mapping) chart-inputs)))
-        _ (when (> (count dim-sets) 1)
-            (throw (ex-info "Charts use different facet mappings." {:key :mapping :value (vec dim-sets)})))
-        dims (vec (first dim-sets))
-        _ (doseq [k (filter facet/facet-keys (keys scales))]
-            (when-not (some #{k} dims)
-              (throw (ex-info "Facet scale without a facet mapping of that key." {:key :scales :scale k})))
-            (facet/validate-spec! k (get scales k)))
+  (let [dims (vec (first (distinct (remove empty? (map (comp facet/facet-dims :mapping) chart-inputs)))))
         faceted (filter #(seq (facet/facet-dims (:mapping %))) chart-inputs)
         accessors (fn [mapping] (into {} (map (fn [d] [d (data/row-accessor d (mapping d))])) dims))
         levels (into {} (map (fn [d]
@@ -130,23 +91,11 @@
   mapping with the chart's `:mapping` merged over). Stores `{:facets {:dims :levels :dropped {:facet n}}
   :charts [{:mapping :groups} ...]}`; see [[cljplot2.data.facet]]."
   [{:keys [charts data mapping scales facets] :as plot}]
-  (when-not (or (nil? scales) (map? scales))
-    (throw (ex-info "Plot :scales must be a map." {:key :scales :value scales})))
-  (doseq [k (keys scales)]
-    (when-not (or (position-scales k) (facet/facet-keys k) (aesthetic/dim? k))
-      (throw (ex-info "Unknown plot scale." {:key :scales :value k
-                                             :allowed (into (into position-scales facet/facet-keys) aesthetic/dims)}))))
-  (validate-charts! charts)
-  (validate-plot-options! plot)
-  (validate-mapping! mapping)
-  (facet/validate-options! facets)
   (let [plot-rows (delay (data/rows data))
         inputs (mapv (fn [{:keys [options]}]
-                       (validate-mapping! (:mapping options))
                        {:mapping (merge mapping (:mapping options))
                         :rows (if (some? (:data options)) (data/rows (:data options)) @plot-rows)})
                      charts)
-        _ (validate-aesthetic-mapping! inputs scales)
         {split-facets :facets chart-splits :charts} (facet-split inputs scales (get facets :na-panel true))]
     (assoc plot :split {:facets (assoc split-facets :dropped {:facet (reduce + (map :dropped chart-splits))})
                         :charts (mapv #(dissoc % :dropped) chart-splits)})))
@@ -184,8 +133,7 @@
                position-scales)))
 
 (defn- scale-specs-stage
-  "Phase-1 specs of the position and aesthetic scales with a plot `:scales` entry or data extents (`:scales` is
-  validated by the `:split` stage, its first reader). Aesthetic specs are final (no layout dependence).
+  "Phase-1 specs of the position and aesthetic scales with a plot `:scales` entry or data extents. Aesthetic specs are final (no layout dependence).
   A tick format suggested by a chart (`:tick-format` in its stats, the first chart's) is added to the position spec."
   [{:keys [scales extents theme stats] :as plot}]
   (let [ks (distinct (concat (filter #(or (position-scales %) (aesthetic/dim? %)) (keys scales)) (keys extents)))
@@ -214,11 +162,10 @@
   "The plot's grid: `:custom-grid` when given (under a title row when `:labels` has `:title`; other labels throw),
   otherwise generated from plot keys (`:labels` over the charts' suggested axis titles)."
   [{:keys [custom-grid labels stats theme arrange aspect scale-specs] :as plot}]
-  (when (and custom-grid arrange)
-    (throw (ex-info "Plot :arrange can't be combined with :custom-grid." {:key :arrange})))
-  (when (= :iso aspect)
-    (when (or custom-grid arrange (not= :linear (get-in scale-specs [:x :kind])) (not= :linear (get-in scale-specs [:y :kind])))
-      (throw (ex-info "Plot :aspect :iso needs a generated grid with linear :x and :y scales." {:key :aspect}))))
+  (when (and (= :iso aspect)
+             (or custom-grid arrange (not= :linear (get-in scale-specs [:x :kind])) (not= :linear (get-in scale-specs [:y :kind]))))
+    (schema/fail! "Plot :aspect :iso needs a generated grid with linear :x and :y scales."
+                  {:key :aspect :in [:aspect] :value aspect}))
   (assoc plot :grid (cond
                       arrange (plot-grid/arrange-grid arrange labels theme)
                       (and custom-grid labels) (plot-grid/titled-custom-grid custom-grid labels theme)
@@ -240,7 +187,7 @@
   (let [specs (into {} (filter (comp position-scales key)) (:scale-specs plot))
         panel (when (and layout (seq specs))
                 (or (grid/find-content-box (:grid plot) layout panel-content?)
-                    (throw (ex-info "Plot :scales need a :panel item in the grid." {:key :scales}))))]
+                    (schema/fail! "Plot :scales need a :panel item in the grid." {:key :scales :in [:scales]})))]
     (into (into {} (filter (comp aesthetic/dim? key)) (:scale-specs plot))
           (map (fn [[k spec]]
                     [k (if-not panel
@@ -365,7 +312,7 @@
   (let [items (grid/content-items grid layout subplot/plot-content?)
         hint (:hint options)]
     (when-let [dup (first (for [[id n] (frequencies (map :id items)) :when (> (long n) 1)] id))]
-      (throw (ex-info "Plot item ids must be unique across nested grids." {:key :id :value dup})))
+      (schema/fail! "Plot item ids must be unique across nested grids." {:key :id :value dup}))
     (let [cells (vec (keep (fn [{:keys [id content box]}]
                              (when (and (>= (long (:w box)) 1) (>= (long (:h box)) 1))
                                {:id id :box box :plot (:plot content)
@@ -391,15 +338,119 @@
    :finalized-scales finalized-scales-stage
    :subplots subplots-stage})
 
-;; build
+;; validation
 
-(defn- validate-options!
-  [{:keys [width height hint]}]
-  (doseq [[k value] [[:width width] [:height height]]]
-    (when-not (and (integer? value) (pos? (long value)))
-      (throw (ex-info "Plot size must be a positive integer." {:key k :value value}))))
-  (when-not (measure/rendering-hints hint)
-    (throw (ex-info "Unknown rendering hint." {:key :hint :value hint :allowed measure/rendering-hints}))))
+(def ^:private chart-schemas
+  [:map {:closed true}
+   (schema/optional :options schema/malli-schema)
+   (schema/optional :style schema/malli-schema)
+   (schema/optional :mapping schema/malli-schema)])
+
+(def Chart
+  "A chart value, see [[cljplot2.chart]]."
+  [:map {:closed true}
+   (schema/nilable :kind keyword?)
+   (schema/nilable :options :map)
+   [:compute schema/function]
+   [:draw schema/function]
+   (schema/nilable :legend schema/function)
+   (schema/nilable :schema chart-schemas)])
+
+(def Scales
+  "Plot `:scales`: position (`:x`, `:y`), facet and aesthetic scale specs."
+  (-> [:map {:closed true}]
+      (into (map #(schema/optional % scale/ScaleSpec)) [:x :y])
+      (into (map #(schema/optional % facet/ScaleSpec)) [:facet :facet-col :facet-row])
+      (into (map #(schema/optional % (aesthetic/ScaleSpec %))) aesthetic/dims)))
+
+(def Plot
+  "A plot map (keys in the namespace doc); `:theme` and `:options` are checked merged ([[cljplot2.theme/Theme]],
+  [[Options]])."
+  [:map {:closed true}
+   (schema/optional :data any?)
+   (schema/nilable :mapping data/Mapping)
+   (schema/nilable :charts [:vector Chart])
+   (schema/nilable :scales Scales)
+   (schema/nilable :facets facet/Options)
+   (schema/nilable :groups [:map {:closed true} (schema/nilable :na schema/bool)])
+   (schema/nilable :legend schema/bool)
+   (schema/nilable :aspect [:enum :iso])
+   (schema/nilable :labels plot-grid/Labels)
+   (schema/nilable :custom-grid :map)
+   (schema/nilable :arrange plot-grid/Arrange)
+   (schema/optional :alignment-padding [:map-of keyword? number?])
+   (schema/nilable :options :map)
+   (schema/optional :theme any?)])
+
+(def Options
+  "Merged render options of `build` (see [[default-options]]) and `:until`."
+  [:map {:closed true}
+   [:width schema/pos-int]
+   [:height schema/pos-int]
+   [:hint (into [:enum] (sort measure/rendering-hints))]
+   (schema/optional :until (into [:enum] stage-order))])
+
+(defn- merged-mappings
+  "Per chart: the plot mapping with the chart's `:mapping` merged over."
+  [{:keys [mapping charts]}]
+  (mapv #(merge mapping (get-in % [:options :mapping])) charts))
+
+(defn- rule-errors
+  "Errors of the rules across plot keys (for a plot whose keys are valid): facet mappings, scales without a mapping,
+  `:custom-grid` / `:arrange` combinations."
+  [{:keys [scales labels custom-grid arrange] :as plot}]
+  (let [mappings (merged-mappings plot)
+        dim-sets (distinct (remove empty? (map facet/facet-dims mappings)))
+        error (fn [in value message] {:in in :value value :message message})]
+    (concat
+     (keep-indexed (fn [i m] (when-let [problem (facet/mapping-problem m)]
+                               (error [:charts i :options :mapping] (facet/facet-dims m) problem)))
+                   mappings)
+     (when (> (count dim-sets) 1)
+       [(error [:charts] (vec dim-sets) "charts should use the same facet mapping")])
+     (for [k (keys scales)
+           :when (and (aesthetic/dim? k) (not-any? #(some? (get % k)) mappings))]
+       (error [:scales k] (get scales k) "aesthetic scale needs a chart mapping its key"))
+     (for [k (keys scales)
+           :when (and (facet/facet-keys k) (not (some #{k} (first dim-sets))))]
+       (error [:scales k] (get scales k) "facet scale needs a facet mapping of its key"))
+     (when (and custom-grid arrange)
+       [(error [:arrange] arrange "can't be combined with :custom-grid")])
+     (when (or custom-grid arrange)
+       (for [k (keys labels) :when (not= k :title)]
+         (error [:labels k] (get labels k) "only :title is allowed with :custom-grid or :arrange"))))))
+
+(defn- chart-checks
+  "`[schema value in]` checks of the charts' schemas: theme style of every built-in kind (and of user kinds present in
+  `theme` and in the plot), each chart's options and merged mapping."
+  [{:keys [charts] :as plot} theme]
+  (let [chart-theme (when (map? theme) (:chart theme))]
+    (distinct
+     (concat
+      (when (map? chart-theme)
+        (for [[k style] chart/builtin-styles] [style (get chart-theme k) [:theme :chart k]]))
+      (mapcat (fn [i {:keys [kind] :as c} m]
+                (let [{:keys [options style mapping]} (:schema c)]
+                  (cond-> []
+                    options (conj [options (:options c) [:charts i :options]])
+                    mapping (conj [mapping m [:charts i :options :mapping]])
+                    (and style (map? chart-theme) (not (contains? chart/builtin-styles kind)) (contains? chart-theme kind))
+                    (conj [style (get chart-theme kind) [:theme :chart kind]]))))
+              (range) charts (merged-mappings plot))))))
+
+(defn- validate!
+  "Check `plot` (stage keys removed), its merged `theme` and `options` against their schemas, then - when those hold -
+  the rules across plot keys; throws one `ex-info` with all errors (see [[cljplot2.schema]])."
+  [plot theme options]
+  (let [plot-errors (schema/errors Plot plot [])
+        errors (concat (schema/errors Options options [:options])
+                       plot-errors
+                       (schema/errors theme/Theme theme [:theme])
+                       (when (empty? plot-errors)
+                         (mapcat (fn [[s v in]] (schema/errors s v in)) (chart-checks plot theme))))]
+    (schema/throw-errors! (if (seq errors) errors (rule-errors plot)))))
+
+;; build
 
 (defn build
   "Run `plot` through the pipeline stages and return the plot map with each stage's key added.
@@ -407,17 +458,16 @@
   `options` (merged over `(:options plot)` and [[default-options]], stored under `:options`):
   `:width`, `:height`, `:hint`, and `:until` - last stage to run (default: the last one).
   `:theme` is stored merged with the default theme.
-  Stage keys already present in `plot` (e.g. from an earlier `build`) are dropped first."
+  Stage keys already present in `plot` (e.g. from an earlier `build`) are dropped first.
+  Before any stage runs, the plot, its merged theme and options and its charts' schemas are validated (see
+  [[validate!]]): one `ex-info` lists every error, see [[cljplot2.schema]]."
   ([plot] (build plot {}))
   ([plot options]
-   (let [until (get options :until (peek stage-order))
-         stage-count (inc (.indexOf ^java.util.List stage-order until))
-         options (merge default-options (:options plot) (dissoc options :until))]
-     (when (zero? stage-count)
-       (throw (ex-info "Unknown stage." {:key :until :value until :allowed stage-order})))
-     (validate-options! options)
+   (let [plot (if (map? plot) (apply dissoc plot stage-order) plot)
+         plot-options (when (map? plot) (:options plot))
+         render-options (merge default-options (when (map? plot-options) plot-options) (dissoc options :until))
+         theme (theme/plot-theme (when (map? plot) (:theme plot)))]
+     (validate! plot theme (cond-> render-options (contains? options :until) (assoc :until (:until options))))
      (reduce (fn [plot stage] ((stage-fns stage) plot))
-             (-> (apply dissoc plot stage-order)
-                 (assoc :options options)
-                 (update :theme theme/plot-theme))
-             (take stage-count stage-order)))))
+             (assoc plot :options render-options :theme theme)
+             (take (inc (.indexOf ^java.util.List stage-order (get options :until (peek stage-order)))) stage-order)))))

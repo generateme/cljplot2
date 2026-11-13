@@ -1,5 +1,6 @@
 (ns cljplot2.data.facet-test
   (:require [clojure.test :refer [deftest testing is are]]
+            [cljplot2.test-util :refer [error-data error error-ins]]
             [clojure2d.core :as c2d]
             [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
@@ -7,9 +8,6 @@
             [cljplot2.layout.grid :as grid]
             [cljplot2.scale.position :as scale])
   (:import [java.awt.image BufferedImage]))
-
-(defn- error-data [f]
-  (try (f) nil (catch clojure.lang.ExceptionInfo e (ex-data e))))
 
 (def ^:private rows
   (vec (for [i (range 12)] {:x i :y (* 2 i) :g (nth [0 2 4 6 8 10] (mod i 6)) :c (["a" "b"] (mod i 2)) :r ([:lo :hi :mid] (mod i 3))})))
@@ -29,11 +27,12 @@
   (is (= [:facet-col :facet-row] (get-in (build (facet-plot {:mapping {:x :x :y :y :facet-col :c :facet-row :r}})) [:split :facets :dims])))
   (is (= [:facet-col] (get-in (build (facet-plot {:mapping {:x :x :y :y :facet-col :c}})) [:split :facets :dims])))
   (is (= [:facet-row] (get-in (build (facet-plot {:mapping {:x :x :y :y :facet-row :r}})) [:split :facets :dims])))
-  (is (= :mapping (:key (error-data #(build (facet-plot {:mapping {:x :x :y :y :facet :g :facet-col :c}}))))))
+  (is (= :mapping (:key (error #(build (facet-plot {:mapping {:x :x :y :y :facet :g :facet-col :c}}))))))
   (testing "charts with different facet mappings"
-    (is (= :mapping (:key (error-data #(build {:data rows :mapping {:x :x :y :y}
-                                               :charts [(chart/scatter {:mapping {:facet :g}})
-                                                        (chart/scatter {:mapping {:facet-col :c}})]})))))))
+    (is (= {:key :charts :in [:charts] :value [[:facet] [:facet-col]]}
+           (error #(build {:data rows :mapping {:x :x :y :y}
+                           :charts [(chart/scatter {:mapping {:facet :g}})
+                                    (chart/scatter {:mapping {:facet-col :c}})]}))))))
 
 (deftest levels-test
   (testing "sorted by default"
@@ -47,9 +46,9 @@
     (is (= [1 2 nil] (facet/levels :facet [2 nil 1] nil true)))
     (is (= [1 2] (facet/levels :facet [2 nil 1] nil false))))
   (testing "incomparable values"
-    (is (= {:key :facet :scale :facet} (error-data #(facet/levels :facet [1 "a"] nil true)))))
+    (is (= {:key :facet :in [:mapping :facet]} (error #(facet/levels :facet [1 "a"] nil true)))))
   (testing "invalid explicit domain"
-    (are [d] (= :domain (:key (error-data #(facet/levels :facet [1] {:domain d} true))))
+    (are [d] (= [:scales :facet :domain] (:in (error #(build (facet-plot {:scales {:facet {:domain d}}})))))
       [] [1 1] "ab")))
 
 (deftest panel-order-test
@@ -128,18 +127,20 @@
     6 {:rows 1} [1 6]
     6 {:columns 4} [2 4]
     6 {:columns 3 :rows 2} [2 3])
-  (are [n opts] (= :facets (:key (error-data #(facet/wrap-shape n opts))))
-    6 {:columns 2 :rows 2}
-    6 {:columns 0}
-    6 {:rows -1}
-    6 {:columns 1.5}))
+  (is (= {:key :facets :in [:facets] :panels 6 :rows 2 :columns 2} (error #(facet/wrap-shape 6 {:columns 2 :rows 2}))))
+  (are [opts in] (= in (:in (error #(build (facet-plot {:facets opts})))))
+    {:columns 0} [:facets :columns]
+    {:rows -1} [:facets :rows]
+    {:columns 1.5} [:facets :columns]
+    {:na-panel 1} [:facets :na-panel]
+    {:colums 2} [:facets :colums]))
 
 (deftest wrap-order-test
   (is (= [[0 0] [0 1] [0 2] [1 0]] (mapv #(facet/wrap-positions % 2 3 :top-down) [0 1 2 3])))
   (is (= [[1 0] [1 1] [1 2] [0 0]] (mapv #(facet/wrap-positions % 2 3 :bottom-up) [0 1 2 3])))
   (let [built (build (facet-plot {:facets {:order :bottom-up}}))]
     (is (= 0 (get-in (first (filter #(= [:panel 1 0] (:id %)) (:items (:grid built)))) [:content :panel])) "first value bottom-left"))
-  (is (= :facets (:key (error-data #(build (facet-plot {:facets {:order :sideways}})))))))
+  (is (= [:facets :order] (:in (error #(build (facet-plot {:facets {:order :sideways}})))))))
 
 (deftest tracks-test
   (let [wrap (build (facet-plot {}))]
@@ -237,7 +238,7 @@
     (is (= [255 255 255] (at [:panel 0 0] 9 9)) "b's point not in a's panel")))
 
 (deftest theme-validation-test
-  (are [t k] (= k (:key (error-data #(build (facet-plot {:theme t})))))
+  (are [t k] (= k (:key (error #(build (facet-plot {:theme t})))))
     {:facet {:gap -1}} :gap
     {:strip {:border-width -1}} :border-width
     {:panel {:alternate-fill nil}} nil))
@@ -250,12 +251,12 @@
     (is (= {:facet 2} (get-in built [:split :facets :dropped])))))
 
 (deftest facet-spec-validation-test
-  (are [scales k] (= k (:key (error-data #(build (facet-plot {:scales scales})))))
-    {:facet [0 2]} :scales
-    {:facet {:domian [0 2]}} :scales
-    {:facet {:formatter "x"}} :formatter
-    {:facet-col {:domain ["a"]}} :scales)
-  (is (= :scales (:key (error-data #(build (facet-plot {:scales [0 1]})))))))
+  (are [scales in] (= in (:in (error #(build (facet-plot {:scales scales})))))
+    {:facet [0 2]} [:scales :facet]
+    {:facet {:domian [0 2]}} [:scales :facet :domian]
+    {:facet {:formatter "x"}} [:scales :facet :formatter]
+    {:facet-col {:domain ["a"]}} [:scales :facet-col])
+  (is (= [:scales] (:in (error #(build (facet-plot {:scales [0 1]})))))))
 
 (defn- exhaustive-shape
   "Old cljplot search over all pairs (reference for the bounded one)."

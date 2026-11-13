@@ -1,6 +1,7 @@
 (ns cljplot2.scale.aesthetic-test
   "Step 7: aesthetics (color, shape, size), their scales, legends, bands grid lines."
   (:require [clojure.test :refer [deftest testing is are]]
+            [cljplot2.test-util :refer [error-data error error-ins]]
             [clojure2d.color :as c]
             [clojure2d.core :as c2d]
             [fastmath.vector :as v]
@@ -14,9 +15,6 @@
             [cljplot2.scale.position :as scale]
             [cljplot2.theme :as theme])
   (:import [java.awt.image BufferedImage]))
-
-(defn- error-data [f]
-  (try (f) nil (catch clojure.lang.ExceptionInfo e (ex-data e))))
 
 (defn- build
   ([p] (plot/build p {:width 600 :height 400}))
@@ -68,8 +66,8 @@
       (is (= ["b" "a" "b" "c"] (:shape d)))
       (is (= (count (:x d)) (count (:color d)) (count (:size d)) (count (:shape d))))))
   (testing "constant in the mapping raises"
-    (is (= {:key :mapping :value :color} (error-data #(build (plot-of {:color [255 0 0]})))))
-    (is (= {:key :mapping :value :size} (error-data #(build (plot-of {:size 5}))))))
+    (is (= {:key :color :in [:mapping :color] :value [255 0 0]} (error #(build (plot-of {:color [255 0 0]})))))
+    (is (= {:key :size :in [:mapping :size] :value 5} (error #(build (plot-of {:size 5}))))))
   (testing "nil accessor = not mapped"
     (let [built (build (plot-of {:color nil}))]
       (is (not (contains? (panel-data built) :color)))
@@ -108,14 +106,17 @@
         (is (= 2 (get-in built [:stats 0 :dropped :size])))
         (is (= [10 20 30 40] (:size (panel-data built))))))
     (testing "all values NA -> misspelt mapping error"
-      (is (= {:key :mapping :value :color :rows 4} (error-data #(build (plot-of {:color :yaer}))))))
+      (is (= {:key :mapping :value :color :rows 4} (error #(build (plot-of {:color :yaer}))))))
     (testing "empty data: no error, no scale, no legend"
       (let [built (build (plot-of {:color :g} {:data []}))]
         (is (nil? (spec built :color)))
         (is (nil? (legends built)))))
     (testing "invalid :groups"
-      (are [g] (= :groups (:key (error-data #(build (plot-of {:color :g} {:groups g})))))
-        {:na 1} [:na] true))))
+      (are [g in] (= in (:in (error #(build (plot-of {:color :g} {:groups g})))))
+        {:na 1} [:groups :na]
+        [:na] [:groups]
+        true [:groups]
+        {:na true :drop 1} [:groups :drop]))))
 
 ;; 2.x scales
 
@@ -136,7 +137,7 @@
       (is (false? (:na? (spec built :color))))
       (is (= (category20 0) (f 1931)))
       (is (= (category20 1) (f 1932.0))))
-    (is (= :domain (:key (error-data #(build (plot-of {:color :year} {:scales {:color {:kind :ordinal :domain [1931 1931.0]}}})))))
+    (is (= :domain (:key (error #(build (plot-of {:color :year} {:scales {:color {:kind :ordinal :domain [1931 1931.0]}}})))))
         "1931 and 1931.0 are one level")
     (is (= [1931 1932] (:domain (spec (build (plot-of {:color :year} {:data (conj rows {:x 9 :y 9 :year 1931.0}) :scales {:color {:kind :ordinal}}})) :color)))))
   (testing "explicit numeric domain: two values linear, one or three+ levels"
@@ -212,18 +213,19 @@
     (is (= ["a" "b" "c"] (:domain (spec built :color))))))
 
 (deftest scale-validation-test
-  (are [scales k] (= k (:key (error-data #(build (plot-of {:color :g :shape :g :size :s} {:scales scales})))))
-    {:shape {:range [\O \?]}} :shape
-    {:shape {:range []}} :shape
-    {:size {:range [:a 3]}} :size
-    {:size {:range [5 1]}} :size
-    {:size {:range [-1 3]}} :size
+  (are [scales k] (= k (:key (error #(build (plot-of {:color :g :shape :g :size :s} {:scales scales})))))
+    {:shape {:range [\O \?]}} :range
+    {:shape {:range []}} :range
+    {:size {:range [:a 3]}} :range
+    {:size {:range [5 1]}} :range
+    {:size {:range [-1 3]}} :range
     {:color {:range []}} :range
     {:color {:range :no-such-palette}} :range
     {:shape {:kind :linear}} :kind
     {:color {:kind :nominal}} :kind
     {:color {:kind :linear}} :kind
-    {:color {:zoom 2}} :scales
+    {:color {:zoom 2}} :zoom
+    {:color {:range (fn [t] t)}} :range
     {:color {:formatter "x"}} :formatter
     {:color {:title 3}} :title
     {:color {:legend :yes}} :legend
@@ -233,11 +235,12 @@
     {:color {:domain []}} :domain
     {:color {:domain ["a" "a"]}} :domain
     {:color {:domain ["a" nil]}} :domain
-    {:color [1 2]} :scales)
+    {:color [1 2]} :color)
   (testing "aesthetic scale without a mapping"
-    (is (= {:key :scales :scale :color} (error-data #(build (plot-of {} {:scales {:color {:domain ["a"]}}}))))))
+    (is (= {:key :color :in [:scales :color] :value {:domain ["a"]}}
+           (error #(build (plot-of {} {:scales {:color {:domain ["a"]}}}))))))
   (testing "incomparable levels"
-    (is (= :domain (:key (error-data #(build (plot-of {:color :g} {:data [{:x 1 :y 1 :g "a"} {:x 2 :y 2 :g :b}]}))))))))
+    (is (= :domain (:key (error #(build (plot-of {:color :g} {:data [{:x 1 :y 1 :g "a"} {:x 2 :y 2 :g :b}]}))))))))
 
 (deftest finalized-test
   (let [built (build (plot-of {:color :g :size :s}))]
@@ -307,7 +310,8 @@
   (testing "more than max-levels distinct numbers"
     (let [many (mapv (fn [i] {:x i :y i :v i}) (range 101))
           exact (mapv (fn [i] {:x i :y i :v i}) (range 100))]
-      (is (= {:key :domain :scale :shape} (error-data #(build (plot-of {:shape :v} {:data many})))) "ordinal: explicit domain needed")
+      (is (= {:key :domain :in [:scales :shape :domain]} (error #(build (plot-of {:shape :v} {:data many}))))
+          "ordinal: explicit domain needed")
       (is (= 100 (count (:domain (spec (build (plot-of {:shape :v} {:data exact})) :shape)))) "100 levels allowed")
       (is (= [0 1] (:domain (spec (build (plot-of {:shape :v} {:data many :scales {:shape {:domain [0 1]}}})) :shape)))
           "explicit domain: rest skipped")
@@ -315,14 +319,14 @@
       (is (nil? (get-in (build (plot-of {:size :v} {:data many})) [:extents :size :extent :values])) "values not kept")))
   (testing "merged extents capped across charts"
     (let [half (fn [from] (chart/scatter {:data (mapv (fn [i] {:x i :y i :v i}) (range from (+ from 60)))}))]
-      (is (= {:key :domain :scale :shape}
-             (error-data #(build {:mapping {:x :x :y :y :shape :v} :charts [(half 0) (half 60)]})))))))
+      (is (= {:key :domain :in [:scales :shape :domain]}
+             (error #(build {:mapping {:x :x :y :y :shape :v} :charts [(half 0) (half 60)]})))))))
 
 (deftest legend-switch-test
   (is (nil? (legends (build (plot-of {:color :g} {:legend false})))))
   (is (nil? (legends (build (plot-of {:color :g} {:scales {:color {:legend false}}})))))
   (is (= 1 (count (legends (build (plot-of {:color :g :shape :year} {:scales {:shape {:legend false}}}))))))
-  (is (= :legend (:key (error-data #(build (plot-of {:color :g} {:legend :no})))))))
+  (is (= :legend (:key (error #(build (plot-of {:color :g} {:legend :no})))))))
 
 (deftest legend-geometry-test
   (let [size-of (fn [mapping extra]
@@ -374,12 +378,12 @@
           {:keys [x y w h]} (first (legend-boxes built))]
       (is (= [255 0 0] (pixel c (+ x w -1) (+ y h -1))))))
   (testing "validated at build time"
-    (are [t k] (= k (:key (error-data #(build (plot-of {} {:theme t})))))
+    (are [t k] (= k (:key (error #(build (plot-of {} {:theme t})))))
       {:legend {:gap -1}} :gap
       {:legend {:key-size "x"}} :key-size
       {:legend {:border-width -2}} :border-width
-      {:palette {:color :no-such-palette}} :palette
-      {:palette {:gradient []}} :palette
+      {:palette {:color :no-such-palette}} :color
+      {:palette {:gradient []}} :gradient
       {:palette {:shape [\?]}} :shape
       {:palette {:size [3 1]}} :size
       {:palette {:na :not-a-color}} :na

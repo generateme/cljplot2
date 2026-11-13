@@ -1,5 +1,6 @@
 (ns cljplot2.scale.position-test
   (:require [clojure.test :refer [deftest testing is are]]
+            [cljplot2.test-util :refer [error-data error error-ins]]
             [clojure2d.core :as c2d]
             [wadogo.scale :as s]
             [fastmath.core :as m]
@@ -10,9 +11,6 @@
             [cljplot2.theme :as theme])
   (:import [java.awt.image BufferedImage]
            [java.time LocalDate]))
-
-(defn- error-data [f]
-  (try (f) nil (catch clojure.lang.ExceptionInfo e (ex-data e))))
 
 (defn- build
   ([scales] (build scales {}))
@@ -36,26 +34,36 @@
     (is (true? (:nice (scale/scale-spec :x {:domain [0 1]}))))
     (is (false? (:nice (scale/scale-spec :x {:domain [0 1] :nice false}))))))
 
+(defn- spec-error-in
+  "`:in` of the error of a plot with x scale `spec`."
+  [spec]
+  (:in (error #(build {:x spec}))))
+
 (deftest spec-validation-test
   (testing "domain"
-    (are [domain] (= {:key :domain :scale :x} (error-data #(scale/scale-spec :x {:domain domain})))
+    (are [domain] (= [:scales :x :domain] (spec-error-in {:domain domain}))
       nil [] "abc" [1 "a"] [5 5] [3] [0 ##NaN] [0 ##Inf] ["a" "a"] [1 (LocalDate/of 2020 1 1)])
-    (is (= {:key :domain :scale :x} (error-data #(scale/scale-spec :x {:kind :log :domain [0 10]}))))
-    (is (= {:key :domain :scale :x} (error-data #(scale/scale-spec :x {:kind :log :domain [-1 10]}))))
-    (is (= {:key :domain :scale :x}
-           (error-data #(scale/scale-spec :x {:domain [(LocalDate/of 2020 1 1) (LocalDate/of 2020 1 1)]})))))
+    (is (= [:scales :x :domain] (spec-error-in {:kind :log :domain [0 10]})))
+    (is (= [:scales :x :domain] (spec-error-in {:kind :log :domain [-1 10]})))
+    (is (= [:scales :x :domain] (spec-error-in {:domain [(LocalDate/of 2020 1 1) (LocalDate/of 2020 1 1)]}))))
+  (testing "a domain is required without data"
+    (is (= {:key :domain :in [:scales :x :domain]} (error #(build {:x {:kind :log}})))))
   (testing "kind"
-    (are [kind] (= :kind (:key (error-data #(scale/scale-spec :x {:kind kind :domain [0 1]}))))
+    (are [kind] (= [:scales :x :kind] (spec-error-in {:kind kind :domain [0 1]}))
       :ordinal :quantile :unknown))
   (testing "ticks"
-    (are [ticks] (= :ticks (:key (error-data #(scale/scale-spec :x {:domain [0 1] :ticks ticks}))))
+    (are [ticks] (= [:scales :x :ticks] (spec-error-in {:domain [0 1] :ticks ticks}))
       0 -1 2.5 "5")
-    (are [ticks] (scale/scale-spec :x {:domain [0 1] :ticks ticks})
+    (are [ticks] (map? (build {:x {:domain [0 1] :ticks ticks}}))
       1 5 [0 0.5 1] []))
+  (testing "wadogo attributes pass, other keys don't"
+    (is (map? (build {:x {:domain [1 100] :kind :log :base 2 :clamp true}})))
+    (is (= {:key :domian :in [:scales :x :domian] :value [0 1]} (error #(build {:x {:domian [0 1]}}))))
+    (is (re-find #"should be spelled :domain" (ex-message (try (build {:x {:domian [0 1]}}) (catch Exception e e))))))
   (testing "spec shape and plot keys"
-    (is (= {:key :scales :scale :x} (error-data #(scale/scale-spec :x [0 1]))))
-    (is (= :scales (:key (error-data #(build {:z {:domain [0 1]}})))))
-    (is (= :scales (:key (error-data #(plot/build {:scales [0 1]})))))
+    (is (= [:scales :x] (spec-error-in [0 1])))
+    (is (= [:scales :z] (:in (error #(build {:z {:domain [0 1]}})))))
+    (is (= [:scales] (:in (error #(plot/build {:scales [0 1]})))))
     (is (= {} (:scale-specs (plot/build {}))))
     (is (= {} (:scale-specs (plot/build {:scales {}}))))))
 
@@ -122,8 +130,8 @@
   (testing "numeric :nice is the limit"
     (is (= [-0.4 8.4] (:domain (scale/finalize (scale/scale-spec :x {:domain [-0.4 8.4] :nice 0}) [0.0 190.0] 2))))
     (is (= [-10.0 10.0] (:domain (scale/finalize (scale/scale-spec :x {:domain [-0.4 8.4] :nice 2.0}) [0.0 190.0] 2))))
-    (are [v] (= :nice (:key (error-data #(scale/scale-spec :x {:domain [0 1] :nice v}))))
-      -0.1 ##NaN ##Inf))
+    (are [v] (= [:scales :x :nice] (spec-error-in {:domain [0 1] :nice v}))
+      -0.1 ##NaN ##Inf "yes"))
   (is (= [0.13 7.31] (:domain (finalized {:x {:domain [0.13 7.31] :nice false}} :x))))
   (testing "bands are never niced"
     (is (= ["a" "b" "c"] (:domain (finalized {:y {:domain ["a" "b" "c"]}} :y))))))
@@ -150,7 +158,7 @@
 
 (deftest custom-grid-scales-test
   (testing "scales need a :panel item"
-    (is (= {:key :scales} (error-data #(plot/build {:scales {:x {:domain [0 1]}}
+    (is (= {:key :scales :in [:scales]} (error #(plot/build {:scales {:x {:domain [0 1]}}
                                                     :custom-grid {:columns [{:size [:flexible]}] :rows [{:size [:flexible]}]
                                                                   :items [{:id :p :column 0 :row 0}]}}))))))
 
@@ -192,18 +200,20 @@
     (is (= 8 (track-size (build {:y {:domain [0 10] :ticks []}}) :columns :y-axis)))))
 
 (deftest axis-validation-test
-  (is (= {:key :scale :value :z} (error-data #(plot/build {:custom-grid {:columns [{:size [:flexible]}] :rows [{:size [:flexible]}]
+  (is (= {:key :scale :value :z} (error #(plot/build {:custom-grid {:columns [{:size [:flexible]}] :rows [{:size [:flexible]}]
                                                                          :items [{:id :a :column 0 :row 0 :content {:kind :axis :scale :z}}]}}))))
-  (are [t k] (= k (:key (error-data #(plot/build {:theme t}))))
+  (are [t k] (= k (:key (error #(plot/build {:theme t}))))
     {:axis {:x {:tick-length -1}}} :tick-length
     {:axis {:y {:label-gap "2"}}} :label-gap
     {:axis {:x {:tick-spacing 0}}} :tick-spacing
-    {:axis {:x :none}} :axis
+    {:axis {:x :none}} :x
     {:panel {:grid {:x {:width -1}}}} :width
     {:panel {:grid {:y {:dash [0]}}}} :dash
     {:panel {:grid {:y {:dash []}}}} :dash
     {:panel {:grid {:y {:dash nil}}}} nil
-    {:panel {:grid {:x [1 2]}}} :grid))
+    {:panel {:grid {:x [1 2]}}} :x
+    {:panel {:grid {:x {:color nil}}}} nil
+    {:panel {:grid {:x {:color :no-such-color}}}} :color))
 
 ;; 3.x / 4.x drawing
 
@@ -280,13 +290,13 @@
 ;; review fixes
 
 (deftest explicit-ticks-validation-test
-  (are [spec v] (= {:key :ticks :scale :x :value v} (error-data #(scale/scale-spec :x spec)))
+  (are [spec v] (= {:key :ticks :in [:scales :x :ticks] :value v} (error #(build {:x spec})))
     {:domain ["a" "b"] :ticks ["a" "z"]} "z"
     {:domain ["a" "b"] :ticks [0]} 0
     {:domain [0 10] :ticks [0 "5"]} "5"
     {:domain [(LocalDate/of 2020 1 1) (LocalDate/of 2021 1 1)] :ticks [5]} 5)
   (testing "NaN tick"
-    (let [data (error-data #(scale/scale-spec :x {:domain [0 10] :ticks [0 ##NaN]}))]
+    (let [data (error #(build {:x {:domain [0 10] :ticks [0 ##NaN]}}))]
       (is (= :ticks (:key data)))
       (is (m/nan? (:value data)))))
   (testing "bands with valid explicit ticks render"
@@ -327,7 +337,8 @@
     (is (= [0.13 7.31] (:domain (finalized {:x {:domain [0.13 7.31] :ticks [1 2 3] :nice false}} :x))))))
 
 (deftest range-rejected-test
-  (is (= {:key :range :scale :x} (error-data #(scale/scale-spec :x {:domain [0 1] :range [0 100]})))))
+  (is (= [:scales :x :range] (spec-error-in {:domain [0 1] :range [0 100]})))
+  (is (re-find #"set from the layout" (ex-message (try (build {:x {:domain [0 1] :range [0 100]}}) (catch Exception e e))))))
 
 (deftest crisp-lines-test
   (let [scales {:x {:domain [0 10]} :y {:domain [0 10]}}

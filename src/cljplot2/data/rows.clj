@@ -13,12 +13,31 @@
 
   [[value-extent]] also keeps the distinct values (`:values`) of numeric and temporal data, for scales that
   need the levels (ordinal colour, shape, size) - at most [[max-levels]] of them."
-  (:require [fastmath.core :as m]))
+  (:require [fastmath.core :as m]
+            [cljplot2.schema :as schema]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
-(defn- invalid [message data] (throw (ex-info message data)))
+(def mapping-keys
+  "Mapping keys of the built-in dimensions (accessors); `:hierarchy` (treemap) holds a vector of accessors."
+  [:x :y :color :shape :size :group :facet :facet-col :facet-row :order :value])
+
+(def Mapping
+  "A plot or chart `:mapping`: accessors (keyword or function; `nil` - not mapped) of the built-in keys, `:hierarchy`
+  a non-empty vector of accessors. Open: user charts may read other keys."
+  (-> [:map]
+      (into (map #(schema/nilable % schema/accessor)) mapping-keys)
+      (conj (schema/nilable :hierarchy [:vector {:min 1} schema/accessor]))))
+
+(def common-options
+  "Map entries of the options every chart takes: own `:data` (see [[rows]]) and `:mapping` (over the plot's)."
+  [(schema/optional :data any?)
+   (schema/optional :mapping Mapping)])
+
+(def position-padding
+  "Chart option `:padding`: `{:x [lo hi] :y [lo hi]}`, fractions of the data span."
+  [:map-of [:enum :x :y] schema/padding])
 
 (defn rows
   "Vector of rows of plot `data` (`nil` -> `[]`).
@@ -29,16 +48,16 @@
     (map? data) (let [ks (keys data)
                       cols (map #(get data %) ks)]
                   (when-not (every? sequential? cols)
-                    (invalid "Columnar :data values must be sequences." {:key :data}))
+                    (schema/fail! "Columnar :data values must be sequences." {:key :data}))
                   (let [counts (set (map count cols))]
                     (when (> (count counts) 1)
-                      (invalid "Columnar :data sequences must have equal length." {:key :data :lengths counts})))
+                      (schema/fail! "Columnar :data sequences must have equal length." {:key :data :lengths counts})))
                   (if (empty? ks) [] (apply mapv (fn [& vs] (zipmap ks vs)) cols)))
     (sequential? data) (let [rs (vec data)]
                          (when-let [bad (first (remove map? rs))]
-                           (invalid "Row :data must contain only maps." {:key :data :value (type bad)}))
+                           (schema/fail! "Row :data must contain only maps." {:key :data :value (type bad)}))
                          rs)
-    :else (invalid ":data must be a sequence of maps or a map of sequences." {:key :data :value (type data)})))
+    :else (schema/fail! ":data must be a sequence of maps or a map of sequences." {:key :data :value (type data)})))
 
 (defn row-accessor
   "Function of a row for mapping accessor `acc` (keyword or function) of dimension `k`."
@@ -46,7 +65,7 @@
   (cond
     (keyword? acc) acc
     (fn? acc) acc
-    :else (invalid "Mapping accessor must be a keyword or a function." {:key :mapping :value k})))
+    :else (schema/fail! "Mapping accessor must be a keyword or a function." {:key :mapping :value k})))
 
 (defn temporal? [v] (instance? java.time.temporal.Temporal v))
 
@@ -74,8 +93,8 @@
   (when (seq vs)
     (let [kinds (set (map value-kind vs))]
       (when (> (count kinds) 1)
-        (invalid "Mapped values must be all numbers, all strings/keywords or all java.time values."
-                 {:key :extents :scale k :kinds kinds}))
+        (schema/fail! "Mapped values must be all numbers, all strings/keywords or all java.time values."
+                 {:key :extents :in [:mapping k] :kinds kinds}))
       (case (first kinds)
         :numeric {:kind :numeric :min (double (reduce min vs)) :max (double (reduce max vs))}
         :temporal {:kind :temporal
@@ -104,12 +123,12 @@
 
 (defn sorted-levels
   "Distinct `values` sorted (numbers ascending, strings lexicographic, ...).
-  Throws `ex-info {:key error-key :scale k}` when they aren't mutually comparable."
+  Throws `ex-info {:key error-key :in [:mapping k]}` when they aren't mutually comparable."
   [k values error-key]
   (try (vec (sort (distinct values)))
        (catch ClassCastException _
-         (invalid "Values must be mutually comparable to be sorted (or give an explicit :domain)."
-                  {:key error-key :scale k}))))
+         (schema/fail! "Values must be mutually comparable to be sorted (or give an explicit :domain)."
+                  {:key error-key :in [:mapping k]}))))
 
 (defn merge-extents
   "Merge extents of dimension `k` (`nil`s skipped); `:values` are kept (merged, distinct) when every extent has them
@@ -119,7 +138,7 @@
     (when (seq es)
       (let [kinds (set (map :kind es))]
         (when (> (count kinds) 1)
-          (invalid "Charts map different kinds of values to one scale." {:key :extents :scale k :kinds kinds}))
+          (schema/fail! "Charts map different kinds of values to one scale." {:key :extents :in [:mapping k] :kinds kinds}))
         (cond-> (case (first kinds)
           :categorical {:kind :categorical :values (vec (distinct (mapcat :values es)))}
           :numeric {:kind :numeric :min (reduce min (map :min es)) :max (reduce max (map :max es))}

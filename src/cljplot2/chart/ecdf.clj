@@ -9,17 +9,24 @@
             [cljplot2.data.rows :as data]
             [cljplot2.data.group :as group]
             [cljplot2.graphics.polyline :as polyline]
-            [cljplot2.scale.position :as scale]))
+            [cljplot2.scale.position :as scale]
+            [cljplot2.schema :as schema]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
-(defn- invalid [message data] (throw (ex-info message data)))
+(def Schema
+  "Schemas of the ECDF chart: `:style` (theme `[:chart :ecdf]`), `:options`, `:mapping` (merged)."
+  {:style (into [:map {:closed true}] polyline/style-entries)
+   :options (-> [:map {:closed true}]
+                (into polyline/style-entries)
+                (into data/common-options)
+                (conj (schema/optional :padding data/position-padding)))
+   :mapping [:map [:x schema/accessor]]})
 
 (defn- style
   [options theme]
-  (doto (merge (get-in theme [:chart :ecdf]) (select-keys options [:color :width :dash]))
-    (->> (polyline/validate-style! :ecdf))))
+  (merge (get-in theme [:chart :ecdf]) (select-keys options [:color :width :dash])))
 
 (defn steps
   "Step-line vertices of the ECDF of `values` (finite doubles, not empty): starting at `(min, 0)`, rising at every
@@ -38,11 +45,6 @@
   "Per panel: `{:steps [{:x [..] :y [..] :aesthetics}] :style style}`; extents (y `[0 1]`), padding, `:na`, `:dropped`,
   `:axis-titles`."
   [{:keys [options]} {:keys [groups mapping]} {:keys [theme] :as env}]
-  (when-not (contains? mapping :x)
-    (invalid "ECDF needs :x in its mapping." {:key :mapping :value :x}))
-  (doseq [[d p] (:padding options)]
-    (when-not (and (vector? p) (= 2 (count p)) (every? #(and (number? %) (>= (double %) 0.0)) p))
-      (invalid "ECDF :padding must map dimensions to [lo hi] non-negative fractions." {:key :padding :scale d :value p})))
   (let [st (style options theme)
         {:keys [panels dropped]} (group/split groups mapping env)
         x-of (data/row-accessor :x (:x mapping))
@@ -58,7 +60,7 @@
                                      :style st}]))
                    panels)]
     (when (and (pos? row-count) (= row-count x-dropped))
-      (invalid "No valid values for a mapped dimension - check the mapping." {:key :mapping :value :x :rows row-count}))
+      (schema/fail! "No valid values for a mapped dimension - check the mapping." {:key :mapping :value :x :rows row-count}))
     {:data data
      :extents (merge-with merge (group/aesthetic-extents panels)
                           (into {} (keep (fn [[panel {:keys [steps]}]]

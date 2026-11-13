@@ -4,6 +4,9 @@
             [cljplot2.multiplot :as multiplot]
             [cljplot2.render :as render]))
 
+(set! *warn-on-reflection* true)
+(set! *unchecked-math* :warn-on-boxed)
+
 (defn build
   "Run `plot` through the pipeline, see [[cljplot2.pipeline/build]]."
   ([plot] (pipeline/build plot))

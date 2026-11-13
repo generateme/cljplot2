@@ -23,39 +23,35 @@
             [cljplot2.graphics.draw :as draw]
             [cljplot2.graphics.measure :as measure]
             [cljplot2.theme :as theme]
-            [cljplot2.layout.treemap :as layout])
+            [cljplot2.layout.treemap :as layout]
+            [cljplot2.schema :as schema])
   (:import [fastmath.vector Vec2]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
-(def ^:private layouts #{:squarify :slice-dice})
+(def ^:private style-entries
+  [(schema/optional :padding schema/non-neg)
+   (schema/optional :border-color schema/color)
+   (schema/optional :border-width schema/non-neg)])
 
-(defn- invalid [message data] (throw (ex-info message data)))
+(def Schema
+  "Schemas of the treemap: `:style` (theme `[:chart :treemap]`), `:options`, `:mapping` (merged)."
+  {:style (into [:map {:closed true}] style-entries)
+   :options (-> [:map {:closed true}]
+                (into style-entries)
+                (into data/common-options)
+                (conj (schema/optional :layout [:enum :squarify :slice-dice])
+                      (schema/nilable :group-labels schema/bool)
+                      (schema/nilable :leaf-labels schema/bool)))
+   :mapping [:map [:value schema/accessor] [:hierarchy [:vector {:min 1} schema/accessor]]]})
 
 (defn- style
   [options theme]
-  (let [{:keys [padding border-color border-width] :as st}
-        (merge (get-in theme [:chart :treemap]) (select-keys options [:padding :border-color :border-width]))]
-    (doseq [[k v] [[:padding padding] [:border-width border-width]]]
-      (when-not (and (number? v) (>= (double v) 0.0))
-        (invalid "Treemap sizes must be non-negative numbers." {:key k :value v})))
-    (when (nil? border-color)
-      (invalid "Treemap :border-color must be a color or :none." {:key :border-color}))
-    st))
-
-(defn- validate-options!
-  [options]
-  (when-not (layouts (get options :layout :squarify))
-    (invalid "Treemap :layout must be :squarify or :slice-dice." {:key :layout :value (:layout options)}))
-  (doseq [k [:group-labels :leaf-labels]]
-    (when-not (contains? #{nil true false} (get options k))
-      (invalid "Treemap label switches must be booleans." {:key k :value (get options k)}))))
+  (merge (get-in theme [:chart :treemap]) (select-keys options [:padding :border-color :border-width])))
 
 (defn- hierarchy-accessors
   [hierarchy]
-  (when-not (and (vector? hierarchy) (seq hierarchy))
-    (invalid "Treemap :hierarchy must be a non-empty vector of accessors." {:key :mapping :value :hierarchy}))
   (mapv #(data/row-accessor :hierarchy %) hierarchy))
 
 (defn- path-of
@@ -100,10 +96,6 @@
   (first-appearance order over all panels, `:top-count` of them), leaves `{:name :value :color}`; aesthetic extents
   only (no x / y), `:na`, `:dropped {:value n :color n}`."
   [{:keys [options]} {:keys [groups mapping]} {:keys [theme na-level? plot-scales] :or {na-level? true}}]
-  (validate-options! options)
-  (doseq [k [:value :hierarchy]]
-    (when-not (some? (get mapping k))
-      (invalid "Treemap needs :value and :hierarchy in its mapping." {:key :mapping :value k})))
   (let [st (style options theme)
         value-of (data/row-accessor :value (:value mapping))
         accessors (hierarchy-accessors (:hierarchy mapping))

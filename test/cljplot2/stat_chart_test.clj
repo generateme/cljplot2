@@ -1,6 +1,7 @@
 (ns cljplot2.stat-chart-test
   "Step 8: groups within panels, histogram, density, line, ECDF, polylines, suggested axis titles."
   (:require [clojure.test :refer [deftest testing is are]]
+            [cljplot2.test-util :refer [error-data error error-ins]]
             [clojure2d.core :as c2d]
             [cljplot2.scale.aesthetic :as aesthetic]
             [fastmath.core :as m]
@@ -13,9 +14,6 @@
             [cljplot2.graphics.polyline :as polyline]
             [cljplot2.scale.position :as scale])
   (:import [java.awt.image BufferedImage]))
-
-(defn- error-data [f]
-  (try (f) nil (catch clojure.lang.ExceptionInfo e (ex-data e))))
 
 (defn- build
   ([p] (plot/build p {:width 600 :height 400}))
@@ -42,7 +40,7 @@
       (is (= {"p" 2 "q" 2} (update-vals (data-of built) (comp count :curves))))
       (is (= [{:color "a"} {:color "b"}] (map :aesthetics (:curves (get (data-of built) "p")))))))
   (testing "numeric aesthetic on a linear scale can't group; ordinal can"
-    (is (= {:key :mapping :value :color} (error-data #(build {:data rows :mapping {:x :v :color :n} :charts [(chart/density)]}))))
+    (is (= {:key :mapping :value :color} (error #(build {:data rows :mapping {:x :v :color :n} :charts [(chart/density)]}))))
     (is (= 3 (count (:curves (panel (build {:data rows :mapping {:x :v :color :n} :scales {:color {:kind :ordinal}}
                                            :charts [(chart/density)]}))))))
     (is (= 3 (count (:curves (panel (build {:data rows :mapping {:x :v :color :n} :scales {:color {:domain [0 1 2]}}
@@ -54,8 +52,8 @@
       (is (every? #(= {} (:aesthetics %)) (:lines (panel built))))
       (is (nil? (get-in built [:scale-specs :group])))))
   (testing ":group accessor validated; :group has no scale"
-    (is (= {:key :mapping :value :group} (error-data #(build {:data rows :mapping {:x :v :y :v :group 3} :charts [(chart/line)]}))))
-    (is (= :scales (:key (error-data #(build {:data rows :mapping {:x :v :y :v :group :n} :scales {:group {}} :charts [(chart/line)]}))))))
+    (is (= {:key :group :in [:mapping :group] :value 3} (error #(build {:data rows :mapping {:x :v :y :v :group 3} :charts [(chart/line)]}))))
+    (is (= [:scales :group] (:in (error #(build {:data rows :mapping {:x :v :y :v :group :n} :scales {:group {}} :charts [(chart/line)]}))))))
   (testing "NA group and :groups {:na false}"
     (let [data (conj rows {:v 1.0 :g nil} {:v 2.0 :g nil})
           built (build {:data data :mapping {:x :v :color :g} :charts [(chart/density)]})]
@@ -70,7 +68,7 @@
       (is (nil? (group/style {:color :red} {:color "b"} (:finalized-scales built) (:theme built))))
       (is (some? (group/style {:color :red} {:color "a"} (:finalized-scales built) (:theme built))))))
   (testing "all-NA aesthetic: misspelt mapping"
-    (is (= {:key :mapping :value :color :rows 40} (error-data #(build {:data rows :mapping {:x :v :color :nope} :charts [(chart/density)]}))))))
+    (is (= {:key :mapping :value :color :rows 40} (error #(build {:data rows :mapping {:x :v :color :nope} :charts [(chart/density)]}))))))
 
 ;; 2.x histogram
 
@@ -82,8 +80,12 @@
     [] :sturges nil
     [0.0 10.0] [0 1 4] [0.0 1.0 4.0])
   (is (= 5 (dec (count (histogram/breaks (mapv double (range 1 11)) :sturges)))) "sturges on 10 values")
-  (are [bins] (= :bins (:key (error-data #(histogram/breaks [0.0 1.0] bins))))
-    0 -2 :nope "x" [1] [2 1] [1 1] [0 ##NaN]))
+  (are [bins] (= [:charts 0 :options :bins]
+                 (take 4 (:in (error #(build {:data [{:x 0.0} {:x 1.0}] :mapping {:x :x} :charts [(chart/histogram {:bins bins})]})))))
+    0 -2 "x" [1] [2 1] [1 1] [0 ##NaN] [0 1.5 1.5])
+  (is (= {:key :bins :value :nope}
+         (error #(build {:data [{:x 0.0} {:x 1.0}] :mapping {:x :x} :charts [(chart/histogram {:bins :nope})]})))
+      "unknown fastmath method, found when estimating"))
 
 (deftest histogram-test
   (let [chem (vec (for [i (range 300)] {:x (double (mod (* i 37) 100)) :s (mod i 3)}))]
@@ -122,9 +124,9 @@
         (is (neg? (double (first (get-in (build {:data rows :mapping {:x :v :color :g} :charts [(chart/histogram {:position :mirror})]})
                                          [:scale-specs :y :domain])))))
         (is (= {:key :position :groups 3}
-               (error-data #(build {:data rows :mapping {:x :v :color :n} :scales {:color {:kind :ordinal}}
+               (error #(build {:data rows :mapping {:x :v :color :n} :scales {:color {:kind :ordinal}}
                                     :charts [(chart/histogram {:position :mirror})]}))))
-        (is (= {:key :position :groups 1} (error-data #(build {:data rows :mapping {:x :v} :charts [(chart/histogram {:position :mirror})]}))))
+        (is (= {:key :position :groups 1} (error #(build {:data rows :mapping {:x :v} :charts [(chart/histogram {:position :mirror})]}))))
         (is (true? (:translucent? (panel (build {:data rows :mapping {:x :v :color :g} :charts [(chart/histogram)]})))))
         (is (false? (:translucent? (panel (build {:data rows :mapping {:x :v} :charts [(chart/histogram)]})))) "single group opaque")))
     (testing "overlay blends group colours"
@@ -141,14 +143,16 @@
       (let [built (build {:data [{:x 1} {:x ##NaN} {:x ##Inf} {:x 3} {:x 50}] :mapping {:x :x} :charts [(chart/histogram {:bins [0 10]})]})]
         (is (= 3 (get-in built [:stats 0 :dropped :x])) "NaN, Inf and outside explicit breaks")
         (is (= 100.0 (reduce + (map :y1 (:bars (panel built)))))))
-      (is (= {:key :mapping :value :x :rows 2} (error-data #(build {:data [{:x "a"} {:x "b"}] :mapping {:x :x} :charts [(chart/histogram)]}))))
-      (are [opts k] (= k (:key (error-data #(build {:data rows :mapping {:x :v} :charts [(chart/histogram opts)]}))))
+      (is (= {:key :mapping :value :x :rows 2} (error #(build {:data [{:x "a"} {:x "b"}] :mapping {:x :x} :charts [(chart/histogram)]}))))
+      (are [opts k] (= k (:key (error #(build {:data rows :mapping {:x :v} :charts [(chart/histogram opts)]}))))
         {:y :freq} :y
         {:position :stack} :position
         {:alpha 1.5} :alpha
         {:stroke-width -1} :stroke-width
         {:color :none} :color
-        {:padding {:y [-1 0]}} :padding))))
+        {:padding {:y [-1 0]}} :y
+        {:padding {:z [0 0]}} :z
+        {:bins 10 :typo 1} :typo))))
 
 ;; 3.x density
 
@@ -170,8 +174,8 @@
     (let [default (first (:curves (panel (build {:data rows :mapping {:x :v} :charts [(chart/density {:cut 0})]}))))
           custom (first (:curves (panel (build {:data rows :mapping {:x :v} :charts [(chart/density {:cut 0 :bandwidth 0.5 :kernel :epanechnikov})]}))))]
       (is (not= (:y default) (:y custom)) "kernel and bandwidth used"))
-    (is (= :density (:key (error-data #(build {:data rows :mapping {:x :v} :charts [(chart/density {:kernel :no-such-kernel})]})))))
-    (are [opts k] (= k (:key (error-data #(build {:data rows :mapping {:x :v} :charts [(chart/density opts)]}))))
+    (is (= :density (:key (error #(build {:data rows :mapping {:x :v} :charts [(chart/density {:kernel :no-such-kernel})]})))))
+    (are [opts k] (= k (:key (error #(build {:data rows :mapping {:x :v} :charts [(chart/density opts)]}))))
       {:n 1} :n
       {:cut -1} :cut
       {:width -1} :width
@@ -212,8 +216,12 @@
     (testing "padding 5%"
       (is (= [0.05 0.05] (get-in (build {:data data :mapping {:x :x :y :y} :charts [(chart/line)]}) [:stats 0 :padding :x]))))
     (testing "validation"
-      (is (= :sort (:key (error-data #(build {:data data :mapping {:x :x :y :y} :charts [(chart/line {:sort 1})]})))))
-      (is (= {:key :mapping :value :y} (error-data #(build {:data data :mapping {:x :x} :charts [(chart/line)]})))))))
+      (is (= :sort (:key (error #(build {:data data :mapping {:x :x :y :y} :charts [(chart/line {:sort 1})]})))))
+      (is (= {:key :y :in [:charts 0 :options :mapping :y] :value nil}
+             (error #(build {:data data :mapping {:x :x} :charts [(chart/line)]}))))
+      (is (= {:key :y :in [:charts 0 :options :mapping :y] :value nil}
+             (error #(build {:data data :mapping {:x :x :y :y} :charts [(chart/line {:mapping {:y nil}})]})))
+          "a chart can't unmap a required key"))))
 
 ;; 5.x ECDF
 
@@ -269,7 +277,7 @@
 ;; 7.x theme
 
 (deftest theme-validation-test
-  (are [t k] (= k (:key (error-data #(build {:data rows :mapping {:x :v} :theme t
+  (are [t k] (= k (:key (error #(build {:data rows :mapping {:x :v} :theme t
                                               :charts [(chart/histogram) (chart/density) (chart/ecdf)]}))))
     {:chart {:histogram {:alpha 2}}} :alpha
     {:chart {:density {:width -1}}} :width
@@ -293,7 +301,7 @@
       (is (some #(re-find #"-" %) (:tick-labels (fy (mirror {} {:scales {:y {:formatter str}}}))))))
     (testing "other positions keep signed default labels; :tick-format is internal"
       (is (nil? (get-in (build {:data uneven :mapping {:x :v :color :g} :charts [(chart/histogram)]}) [:scale-specs :y :tick-format])))
-      (is (= :tick-format (:key (error-data #(build {:data uneven :mapping {:x :v} :scales {:y {:tick-format :absolute}}
+      (is (= :tick-format (:key (error #(build {:data uneven :mapping {:x :v} :scales {:y {:tick-format :absolute}}
                                                      :charts [(chart/histogram)]}))))))
     (testing "not symmetric by default: halves sized by their own tallest bar"
       (let [ext (get-in (mirror {} {}) [:extents :y :extent])]
@@ -310,7 +318,7 @@
         (is (= [-6.0 6.0] ((juxt :min :max) (get-in built [:extents :y :extent]))))))
     (testing ":symmetric ignored outside mirror; validated"
       (is (= 0.0 (:min (get-in (build {:data uneven :mapping {:x :v} :charts [(chart/histogram {:symmetric true})]}) [:extents :y :extent]))))
-      (is (= :symmetric (:key (error-data #(mirror {:symmetric 1} {}))))))))
+      (is (= :symmetric (:key (error #(mirror {:symmetric 1} {}))))))))
 
 ;; review fixes: explicit domains at compute, counting after the split, area fill
 
@@ -359,7 +367,7 @@
   (let [data [{:x "bad" :g nil} {:x "worse" :g "a"} {:x "nope" :g "a"}]]
     (doseq [c [(chart/density) (chart/ecdf) (chart/histogram)]]
       (is (= {:key :mapping :value :x :rows 2}
-             (error-data #(build {:data data :mapping {:x :x :color :g} :groups {:na false} :charts [c]})))
+             (error #(build {:data data :mapping {:x :x :color :g} :groups {:na false} :charts [c]})))
           (str (:kind c))))))
 
 (deftest line-area-test
@@ -381,4 +389,4 @@
       (is (= [255 0 0] (probe [-10 -20 -20 -10] (fn [_ y _] (+ y 1))))))
     (testing "default :none; nil rejected"
       (is (= :none (get-in (build (area-plot [1 2])) [:theme :chart :line :fill])))
-      (is (= :fill (:key (error-data #(build {:data [{:x 1 :y 1}] :mapping {:x :x :y :y} :charts [(chart/line {:fill nil})]}))))))))
+      (is (= :fill (:key (error #(build {:data [{:x 1 :y 1}] :mapping {:x :x :y :y} :charts [(chart/line {:fill nil})]}))))))))

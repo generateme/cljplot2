@@ -1,13 +1,11 @@
 (ns cljplot2.layout.plot-grid-test
   (:require [clojure.test :refer [deftest testing is are]]
+            [cljplot2.test-util :refer [error-data error error-ins]]
             [clojure2d.core :as c2d]
             [clojure2d.color :as c]
             [cljplot2.core :as plot]
             [cljplot2.layout.grid :as grid])
   (:import [java.awt.image BufferedImage]))
-
-(defn- error-data [f]
-  (try (f) nil (catch clojure.lang.ExceptionInfo e (ex-data e))))
 
 (defn- layout [plot] (:layout (plot/build plot {:width 600 :height 400})))
 (defn- track-ids [g axis] (mapv :id (get g axis)))
@@ -37,8 +35,8 @@
     (is (= custom (:grid built)) "custom grid replaces generation")
     (is (= custom (:custom-grid (plot/build built))) "kept across rebuilds")
     (testing "only :title can be combined with a custom grid"
-      (is (= :labels (:key (error-data #(plot/build {:custom-grid custom :labels all-labels})))))
-      (is (= {:key :labels :value :x} (error-data #(plot/build {:custom-grid custom :labels {:x "x"}}))))
+      (is (= #{[:labels :x] [:labels :y]} (error-ins #(plot/build {:custom-grid custom :labels all-labels}))))
+      (is (= {:key :x :in [:labels :x] :value "x"} (error #(plot/build {:custom-grid custom :labels {:x "x"}}))))
       (is (= custom (:grid (plot/build {:custom-grid custom :labels {:title nil}}))) "nil title: grid unchanged"))))
 
 (deftest reserved-axis-tracks-test
@@ -77,13 +75,15 @@
       (is (= (layout {:labels (array-map :y "y" :x "x" :title "t")})
              (layout {:labels (array-map :title "t" :x "x" :y "y")})))))
   (testing "label :kind can't be overridden"
-    (is (= :label (get-in (plot/build {:labels {:title {:text "t" :kind :panel}}}) [:grid :items 1 :content :kind]))))
+    (is (= [:labels :title :kind] (:in (error #(plot/build {:labels {:title {:text "t" :kind :panel}}})))))
+    (is (= :label (get-in (plot/build {:labels {:title {:text "t" :kind :label}}}) [:grid :items 1 :content :kind]))))
   (testing "1 layout round"
     (is (= 1 (:rounds (layout {:labels all-labels})))))
   (testing "invalid labels"
-    (is (= {:key :labels :value :xlab :allowed #{:title :x :y}}
-           (error-data #(plot/build {:labels {:xlab "x"}}))))
-    (is (= :labels (:key (error-data #(plot/build {:labels "title"})))))))
+    (is (= {:key :xlab :in [:labels :xlab] :value "x"}
+           (error #(plot/build {:labels {:xlab "x"}}))))
+    (is (= [:labels :title :rotation] (:in (error #(plot/build {:labels {:title {:text "t" :rotation 45}}})))))
+    (is (= :labels (:key (error #(plot/build {:labels "title"})))))))
 
 ;; 3.x panel, 4.x theme
 
@@ -111,7 +111,7 @@
       (let [c (plot/render {:theme {:panel {:fill :none :border-color nil}}} {:width 600 :height 400})]
         (is (= (rgb 0xe8e8f0) (pixel c cx cy) (pixel c x y)))))
     (testing "invalid border width fails at build time"
-      (is (= :border-width (:key (error-data #(plot/build {:theme {:panel {:border-color :blue :border-width -1}}}))))))))
+      (is (= :border-width (:key (error #(plot/build {:theme {:panel {:border-color :blue :border-width -1}}}))))))))
 
 (deftest plot-theme-test
   (testing "background fills the canvas"
@@ -124,14 +124,18 @@
     (let [argb (.getRGB ^BufferedImage (c2d/get-image (plot/render {:theme {:plot {:background :none}}} {:width 50 :height 50})) 0 0)]
       (is (zero? (bit-and (bit-shift-right argb 24) 0xff)))))
   (testing "theme validation at build time"
-    (are [t k] (= k (:key (error-data #(plot/build {:theme t}))))
+    (are [t k] (= k (:key (error #(plot/build {:theme t}))))
       {:text {:title {:size 0}}} :size
       {:text {:strip {:padding -2}}} :padding
       {:text {:legend-label {:align :left}}} :align
       {:text {:tick-label {:font "Liberaton Mono"}}} :font
-      {:text {:extra 12}} :role))
+      {:text {:extra 12}} :extra
+      {:text {:title {:color :no-such-color}}} :color
+      {:panel {:fill nil}} nil
+      {:panel {:fill :no-such-color}} :fill
+      {:panel {:border-color "zzz"}} :border-color))
   (testing "invalid margin"
-    (are [m] (= {:key :margin :value m} (error-data #(plot/build {:theme {:plot {:margin m}}})))
+    (are [m] (= {:key :margin :in [:theme :plot :margin] :value m} (error #(plot/build {:theme {:plot {:margin m}}})))
       -1 "10")))
 
 (defn- title-ink-center-x
@@ -154,4 +158,4 @@
                                 :theme {:text {:title {:align [:left :middle]}}}})
            400)))
   (testing "invalid theme alignment"
-    (is (= :align (:key (error-data #(plot/build {:labels {:title "abc"} :theme {:text {:title {:align :left}}}})))))))
+    (is (= :align (:key (error #(plot/build {:labels {:title "abc"} :theme {:text {:title {:align :left}}}})))))))

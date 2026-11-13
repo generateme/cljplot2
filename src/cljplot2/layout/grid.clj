@@ -24,7 +24,8 @@
 
   Workflow: [[prepare]] (validate, resolve spans) -> [[measure-items]] -> [[solve]].
   Coordinates are integer pixels, `y` grows downward; track edges (not lengths) are rounded."
-  (:require [fastmath.core :as m]
+  (:require [cljplot2.schema :as schema]
+            [fastmath.core :as m]
             [fastmath.vector :as v]
             [cljplot2.graphics.measure :as measure])
   (:import [fastmath.vector Vec2]))
@@ -35,8 +36,6 @@
 (def ^:private ^:const overflow-tolerance 1.0e-9)
 
 (def ^:private axis->item-key {:columns :column :rows :row})
-
-(defn- invalid [message data] (throw (ex-info message data)))
 
 (def ^:private ^:const reported-duplicates 10)
 
@@ -54,42 +53,42 @@
 
 (defn- validate-track!
   [axis ^long idx track]
-  (when-not (map? track) (invalid "Track must be a map." {:key axis :index idx}))
+  (when-not (map? track) (schema/fail! "Track must be a map." {:key axis :index idx}))
   (let [{:keys [id size]} track
         [kind value] (when (vector? size) size)
         error-data {:key axis :index idx :size size}]
-    (when (integer? id) (invalid "Track id can't be an integer." {:key axis :index idx :id id}))
+    (when (integer? id) (schema/fail! "Track id can't be an integer." {:key axis :index idx :id id}))
     (case kind
       :fixed (when-not (and (number? value) (>= (double value) 0.0))
-               (invalid "Fixed track size must be a non-negative number." error-data))
+               (schema/fail! "Fixed track size must be a non-negative number." error-data))
       :fraction (when-not (and (number? value) (>= (double value) 0.0) (<= (double value) 1.0))
-                  (invalid "Fraction track size must be a number in [0,1]." error-data))
+                  (schema/fail! "Fraction track size must be a number in [0,1]." error-data))
       :measured nil
       :flexible (when-not (or (nil? value) (and (number? value) (pos? (double value))))
-                  (invalid "Flexible track weight must be a positive number." error-data))
-      (invalid "Unknown track size." error-data))))
+                  (schema/fail! "Flexible track weight must be a positive number." error-data))
+      (schema/fail! "Unknown track size." error-data))))
 
 (defn- validate-axis!
   [grid axis]
   (let [tracks (get grid axis)]
     (when-not (and (vector? tracks) (seq tracks))
-      (invalid "Grid axis must be a non-empty vector of tracks." {:key axis}))
+      (schema/fail! "Grid axis must be a non-empty vector of tracks." {:key axis}))
     (dorun (map-indexed (fn [idx track] (validate-track! axis idx track)) tracks))
     (let [ids (keep :id tracks)]
       (when-not (apply distinct? ::sentinel ids)
-        (invalid "Track ids must be unique." {:key axis :duplicates (duplicates ids)})))))
+        (schema/fail! "Track ids must be unique." {:key axis :duplicates (duplicates ids)})))))
 
 (defn- track-index
   [tracks axis item-id ref]
   (let [error-data {:key (axis->item-key axis) :item item-id :ref ref}]
     (cond
-      (nil? ref) (invalid "Item span is missing." error-data)
+      (nil? ref) (schema/fail! "Item span is missing." error-data)
       (integer? ref) (let [idx (long ref)]
                        (if (and (>= idx 0) (< idx (count tracks)))
                          idx
-                         (invalid "Track index out of range." (assoc error-data :count (count tracks)))))
+                         (schema/fail! "Track index out of range." (assoc error-data :count (count tracks)))))
       :else (or (first (keep-indexed (fn [idx track] (when (= ref (:id track)) idx)) tracks))
-                (invalid "No track with this id." error-data)))))
+                (schema/fail! "No track with this id." error-data)))))
 
 (defn- resolve-span
   "Inclusive `[from to]` track indices of the item's span along `axis`."
@@ -99,7 +98,7 @@
     (if (map? span)
       (let [from (long (track-index tracks axis item-id (:from span)))
             to (long (track-index tracks axis item-id (:to span)))]
-        (when (> from to) (invalid "Span :from is after :to." {:key (axis->item-key axis) :item item-id :span span}))
+        (when (> from to) (schema/fail! "Span :from is after :to." {:key (axis->item-key axis) :item item-id :span span}))
         [from to])
       (let [idx (track-index tracks axis item-id span)] [idx idx]))))
 
@@ -107,19 +106,19 @@
   "Validate `grid` and resolve item spans to track indices (stored under `::span`), recursively for nested grids.
   Throws `ex-info` naming the offending key."
   [grid]
-  (when-not (map? grid) (invalid "Grid must be a map." {:key :grid}))
+  (when-not (map? grid) (schema/fail! "Grid must be a map." {:key :grid}))
   (validate-axis! grid :columns)
   (validate-axis! grid :rows)
   (let [items (or (:items grid) [])]
-    (when-not (vector? items) (invalid "Grid :items must be a vector." {:key :items}))
+    (when-not (vector? items) (schema/fail! "Grid :items must be a vector." {:key :items}))
     (doseq [item items]
       (when-not (and (map? item) (contains? item :id))
-        (invalid "Item must be a map with :id." {:key :items}))
+        (schema/fail! "Item must be a map with :id." {:key :items}))
       (when-not (grid? (:content item))
         (measure/validate-content (:content item))))
     (let [ids (map :id items)]
       (when-not (apply distinct? ::sentinel ids)
-        (invalid "Item ids must be unique." {:key :items :duplicates (duplicates ids)})))
+        (schema/fail! "Item ids must be unique." {:key :items :duplicates (duplicates ids)})))
     (assoc grid :items (mapv (fn [item]
                                (cond-> (assoc item ::span {:columns (resolve-span (:columns grid) :columns item)
                                                            :rows (resolve-span (:rows grid) :rows item)})
@@ -184,7 +183,7 @@
              (m/valid-double? (.x ^Vec2 size)) (>= (.x ^Vec2 size) 0.0)
              (m/valid-double? (.y ^Vec2 size)) (>= (.y ^Vec2 size) 0.0))
       size
-      (invalid "Natural size must be a Vec2 with finite, non-negative coordinates."
+      (schema/fail! "Natural size must be a Vec2 with finite, non-negative coordinates."
                {:key :content :item (:id item) :kind (:kind (:content item)) :size size}))))
 
 (defn measure-items
@@ -215,7 +214,7 @@
   (let [base (base-lengths tracks measured length)
         used (double (reduce + base))]
     (when (> (- used length) overflow-tolerance)
-      (invalid "Not enough space for tracks." {:axis axis :available length :required used}))
+      (schema/fail! "Not enough space for tracks." {:key axis :axis axis :available length :required used}))
     (let [weights (mapv flexible-weight tracks)
           total-weight (double (reduce + weights))
           free (- length used)
@@ -250,9 +249,9 @@
   (let [{:keys [x y w h]} box
         items (:items grid)]
     (when-not (and (every? integer? [x y w h]) (>= (long w) 0) (>= (long h) 0))
-      (invalid "Box must have integer :x :y and non-negative integer :w :h." {:key :box :box box}))
+      (schema/fail! "Box must have integer :x :y and non-negative integer :w :h." {:key :box :box box}))
     (when-not (and (or (nil? measurements) (sequential? measurements)) (= (count measurements) (count items)))
-      (invalid "Measurements must align with items." {:key :measurements :items (count items) :measurements (when (or (nil? measurements) (coll? measurements)) (count measurements))}))
+      (schema/fail! "Measurements must align with items." {:key :measurements :items (count items) :measurements (when (or (nil? measurements) (coll? measurements)) (count measurements))}))
     (let [xs (axis-edges (:columns grid) :columns (measured-lengths :columns items measurements) [(long x) (long w)])
           ys (axis-edges (:rows grid) :rows (measured-lengths :rows items measurements) [(long y) (long h)])]
       {:box box

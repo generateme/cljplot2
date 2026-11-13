@@ -5,20 +5,17 @@
   nothing), `:dash` `:none` / absent or a sequence of positive dash lengths."
   (:require [clojure2d.core :as c2d]
             [fastmath.core :as m]
+            [cljplot2.schema :as schema]
             [cljplot2.theme :as theme]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
-(defn validate-style!
-  "Check line `style` of chart `kind`; throws `ex-info` naming the offending key."
-  [kind {:keys [color width dash]}]
-  (when (nil? color)
-    (throw (ex-info "Line :color must be a color or :none." {:key :color :kind kind})))
-  (when-not (and (number? width) (>= (double width) 0.0))
-    (throw (ex-info "Line :width must be a non-negative number." {:key :width :kind kind :value width})))
-  (when-not (or (nil? dash) (theme/none? dash) (and (sequential? dash) (seq dash) (every? #(and (number? %) (pos? (double %))) dash)))
-    (throw (ex-info "Line :dash must be :none or a sequence of positive numbers." {:key :dash :kind kind :value dash}))))
+(def style-entries
+  "Map entries of a line style (all optional; defaults from the theme)."
+  [(schema/optional :color schema/color)
+   (schema/optional :width schema/non-neg)
+   (schema/nilable :dash schema/dash)])
 
 (defn runs
   "Runs of consecutive points `[x y]` (from `xs`, `ys`) with finite coordinates; a non-finite coordinate ends a run."

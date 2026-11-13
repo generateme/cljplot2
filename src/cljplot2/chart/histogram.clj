@@ -25,7 +25,7 @@
             [cljplot2.data.rows :as data]
             [cljplot2.data.group :as group]
             [cljplot2.scale.position :as scale]
-            [cljplot2.theme :as theme]))
+            [cljplot2.schema :as schema]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -33,19 +33,32 @@
 (def ^:private measures {:percent "Percent of Total" :count "Count" :pmf "Probability" :density "Density"})
 (def ^:private positions #{:overlay :dodge :mirror})
 
-(defn- invalid [message data] (throw (ex-info message data)))
+(def ^:private style-entries
+  [(schema/optional :color schema/solid-color)
+   (schema/optional :stroke-width schema/non-neg)
+   (schema/optional :alpha schema/fraction)])
+
+(def ^:private breaks-schema
+  [:and [:vector {:min 2} schema/finite]
+   (schema/rule #(when-not (apply < %) "breaks should be increasing"))])
+
+(def Schema
+  "Schemas of the histogram: `:style` (theme `[:chart :histogram]`), `:options`, `:mapping` (merged)."
+  {:style (into [:map {:closed true}] style-entries)
+   :options (-> [:map {:closed true}]
+                (into style-entries)
+                (into data/common-options)
+                (conj (schema/optional :bins [:multi {:dispatch #(cond (keyword? %) :method (vector? %) :breaks :else :count)}
+                                              [:method keyword?] [:breaks breaks-schema] [:count schema/pos-int]])
+                      (schema/optional :y (into [:enum] (keys measures)))
+                      (schema/optional :position (into [:enum] (sort positions)))
+                      (schema/nilable :symmetric schema/bool)
+                      (schema/optional :padding data/position-padding)))
+   :mapping [:map [:x schema/accessor]]})
 
 (defn- style
   [options theme]
-  (let [{:keys [color stroke-width alpha] :as st}
-        (merge (get-in theme [:chart :histogram]) (select-keys options [:color :stroke-width :alpha]))]
-    (when (or (nil? color) (theme/none? color))
-      (invalid "Histogram :color must be a color." {:key :color :kind :histogram}))
-    (when-not (and (number? stroke-width) (>= (double stroke-width) 0.0))
-      (invalid "Histogram :stroke-width must be a non-negative number." {:key :stroke-width :value stroke-width}))
-    (when-not (and (number? alpha) (<= 0.0 (double alpha) 1.0))
-      (invalid "Histogram :alpha must be a number in [0 1]." {:key :alpha :value alpha}))
-    st))
+  (merge (get-in theme [:chart :histogram]) (select-keys options [:color :stroke-width :alpha])))
 
 (defn- equal-breaks
   [^double lo ^double hi ^long n]
@@ -56,22 +69,17 @@
   "Bin breaks for all `values` (doubles) and the `:bins` option; `nil` for no values."
   [values bins]
   (cond
-    (and (vector? bins) (>= (count bins) 2)
-         (every? #(and (number? %) (m/valid-double? (double %))) bins)
-         (apply < bins)) (mapv double bins)
-    (vector? bins) (invalid "Histogram :bins breaks must be at least 2 increasing finite numbers." {:key :bins :value bins})
+    (vector? bins) (mapv double bins)
     (empty? values) nil
     :else (let [lo (double (reduce min values))
                 hi (double (reduce max values))]
             (if (== lo hi)
               [(- lo 0.5) (+ lo 0.5)]
-              (let [n (long (cond
-                        (and (integer? bins) (pos? (long bins))) (long bins)
-                        (keyword? bins) (try (long (stats/estimate-bins values bins))
-                                             (catch IllegalArgumentException _
-                                               (invalid "Unknown histogram :bins method." {:key :bins :value bins})))
-                        :else (invalid "Histogram :bins must be a method keyword, a positive integer or a vector of breaks."
-                                       {:key :bins :value bins})))]
+              (let [n (long (if (keyword? bins)
+                              (try (long (stats/estimate-bins values bins))
+                                   (catch IllegalArgumentException _
+                                     (schema/fail! "Unknown histogram :bins method." {:key :bins :value bins})))
+                              (long bins)))]
                 (equal-breaks lo hi (m/max 1 n)))))))
 
 (defn- bin-counts
@@ -104,26 +112,11 @@
                 :density (/ cnt (* total (- b a))))))
           counts (partition 2 1 brks))))
 
-(defn- validate-options!
-  [{:keys [y position padding] :as options}]
-  (when-not (contains? measures (get options :y :percent))
-    (invalid "Histogram :y must be :percent, :count, :pmf or :density." {:key :y :value y}))
-  (when-not (positions (get options :position :overlay))
-    (invalid "Histogram :position must be :overlay, :dodge or :mirror." {:key :position :value position}))
-  (when-not (contains? #{nil true false} (:symmetric options))
-    (invalid "Histogram :symmetric must be a boolean." {:key :symmetric :value (:symmetric options)}))
-  (doseq [[k p] padding]
-    (when-not (and (vector? p) (= 2 (count p)) (every? #(and (number? %) (>= (double %) 0.0)) p))
-      (invalid "Histogram :padding must map dimensions to [lo hi] non-negative fractions." {:key :padding :scale k :value p}))))
-
 (defn compute
   "Per panel: `{:bars [{:x0 :x1 :y0 :y1 :aesthetics}] :style style :translucent? bool}` in data units (bars in group
   order; `:translucent?` - grouped overlay, fill drawn with `:alpha`); `:tick-format {:y :absolute}` for mirror; extents
   (x - outer breaks, y - from 0, or `[-max2 max1]` for mirror), padding, `:na`, `:dropped`, `:axis-titles`."
   [{:keys [options]} {:keys [groups mapping]} {:keys [theme] :as env}]
-  (validate-options! options)
-  (when-not (contains? mapping :x)
-    (invalid "Histogram needs :x in its mapping." {:key :mapping :value :x}))
   (let [st (style options theme)
         y (get options :y :percent)
         position (get options :position :overlay)
@@ -133,13 +126,13 @@
         all-values (into [] (comp (mapcat identity) (mapcat :values)) (vals xs))
         all-count (long (reduce + 0 (map count (mapcat #(map :rows %) (vals panels)))))
         _ (when (and (pos? all-count) (empty? all-values))
-            (invalid "No valid values for a mapped dimension - check the mapping." {:key :mapping :value :x :rows all-count}))
+            (schema/fail! "No valid values for a mapped dimension - check the mapping." {:key :mapping :value :x :rows all-count}))
         brks (breaks all-values (get options :bins :sturges))
         group-keys (group/ordered-keys (mapcat #(map :key %) (vals panels)) dims (:plot-scales env))
         slot (zipmap group-keys (range))
         n-groups (count group-keys)
         _ (when (and (= position :mirror) (not= 2 n-groups) (seq all-values))
-            (invalid "Histogram :position :mirror needs exactly two groups." {:key :position :groups n-groups}))
+            (schema/fail! "Histogram :position :mirror needs exactly two groups." {:key :position :groups n-groups}))
         outside (if brks
                   (let [lo (double (first brks)) hi (double (peek brks))]
                     (count (remove #(<= lo (double %) hi) all-values)))

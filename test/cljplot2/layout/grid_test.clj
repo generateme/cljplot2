@@ -1,5 +1,6 @@
 (ns cljplot2.layout.grid-test
   (:require [clojure.test :refer [deftest testing is are]]
+            [cljplot2.test-util :refer [error-data error error-ins]]
             [clojure.test.check.clojure-test :refer [defspec]]
             [clojure.test.check.generators :as gen]
             [clojure.test.check.properties :as prop]
@@ -20,14 +21,11 @@
 (defn- one-row [columns & items]
   {:columns columns :rows [{:size [:flexible]}] :items (vec items)})
 
-(defn- error-data [f]
-  (try (f) nil (catch clojure.lang.ExceptionInfo e (ex-data e))))
-
 ;; 3.1 validation
 
 (deftest validation-test
   (testing "malformed grid names the offending key"
-    (are [g k] (= k (:key (error-data #(grid/prepare g))))
+    (are [g k] (= k (:key (error #(grid/prepare g))))
       nil :grid
       {:rows [{:size [:flexible]}]} :columns
       {:columns [] :rows [{:size [:flexible]}]} :columns
@@ -38,26 +36,26 @@
       {:columns [{:size [:flexible]}] :rows [{:size [:flexible]}] :items [{:id :a :column 0 :row 0}
                                                                          {:id :a :column 0 :row 0}]} :items))
   (testing "invalid track sizes"
-    (are [size] (= :columns (:key (error-data #(grid/prepare (one-row [{:size size}])))))
+    (are [size] (= :columns (:key (error #(grid/prepare (one-row [{:size size}])))))
       nil [:unknown 1] [:fixed -1] [:fixed "1"] [:fraction -0.1] [:fraction 1.01]
       [:flexible 0] [:flexible -1] {:fixed 1}))
   (testing "boundary track sizes are valid"
     (are [size] (grid/prepare (one-row [{:size size}]))
       [:fixed 0] [:fraction 0] [:fraction 1] [:flexible] [:flexible 0.001] [:measured]))
   (testing "track ids"
-    (is (= 0 (:id (error-data #(grid/prepare (one-row [{:id 0 :size [:flexible]}]))))))
-    (is (= [:a] (:duplicates (error-data #(grid/prepare (one-row [{:id :a :size [:flexible]} {:id :b :size [:flexible]} {:id :a :size [:flexible]}])))))))
+    (is (= 0 (:id (error #(grid/prepare (one-row [{:id 0 :size [:flexible]}]))))))
+    (is (= [:a] (:duplicates (error #(grid/prepare (one-row [{:id :a :size [:flexible]} {:id :b :size [:flexible]} {:id :a :size [:flexible]}])))))))
   (testing "item id duplicates are reported, at most 10"
     (let [items (vec (for [i (range 30)] {:id (quot i 2) :column 0 :row 0}))
-          data (error-data #(grid/prepare (apply one-row [{:size [:flexible]}] items)))]
+          data (error #(grid/prepare (apply one-row [{:size [:flexible]}] items)))]
       (is (= :items (:key data)))
       (is (= 10 (count (:duplicates data))))))
   (testing "spans"
     (let [cols [{:id :a :size [:flexible]} {:id :b :size [:flexible]}]]
-      (are [span] (= :column (:key (error-data #(grid/prepare (one-row cols {:id :i :column span :row 0})))))
+      (are [span] (= :column (:key (error #(grid/prepare (one-row cols {:id :i :column span :row 0})))))
         nil -1 2 :missing {:from :b :to :a} {:from :a} {:to :b} {:from 0 :to 2})
-      (is (= :row (:key (error-data #(grid/prepare (one-row cols {:id :i :column 0}))))))
-      (is (= 2 (:count (error-data #(grid/prepare (one-row cols {:id :i :column 2 :row 0})))))))))
+      (is (= :row (:key (error #(grid/prepare (one-row cols {:id :i :column 0}))))))
+      (is (= 2 (:count (error #(grid/prepare (one-row cols {:id :i :column 2 :row 0})))))))))
 
 ;; 3.2 track kinds
 
@@ -87,12 +85,12 @@
   (testing "nil content measures 0"
     (is (= [0 100] (sizes (layout (one-row [{:size [:measured]} {:size [:flexible]}] {:id :a :column 0 :row 0})) :columns))))
   (testing "invalid placeholder"
-    (are [size] (= size (:size (error-data #(layout (one-row [{:size [:measured]}] {:id :a :column 0 :row 0 :content {:kind :placeholder :size size}})))))
+    (are [size] (= {:key :size :value size} (select-keys (error #(layout (one-row [{:size [:measured]}] {:id :a :column 0 :row 0 :content {:kind :placeholder :size size}}))) [:key :value]))
       nil [1] ["1" 1] '(1 1))
     (is (= {:key :content :item :a :kind :placeholder}
-           (dissoc (error-data #(layout (one-row [{:size [:measured]}] {:id :a :column 0 :row 0 :content (placeholder -1 1)}))) :size))))
+           (dissoc (error #(layout (one-row [{:size [:measured]}] {:id :a :column 0 :row 0 :content (placeholder -1 1)}))) :size))))
   (testing "content must have a known kind; only nil content is empty"
-    (are [content] (contains? (error-data #(layout (one-row [{:size [:measured]}] {:id :a :column 0 :row 0 :content content}))) :kind)
+    (are [content] (= :kind (:key (error #(layout (one-row [{:size [:measured]}] {:id :a :column 0 :row 0 :content content})))))
       {:kind :unknown} {:knd :placeholder} {} "text")))
 
 (defmethod measure/natural-size ::fixed-result [{:keys [result]} _] result)
@@ -100,7 +98,7 @@
 (deftest natural-size-postcondition-test
   (testing "natural size must be a Vec2 with finite, non-negative coordinates"
     (are [result] (= {:key :content :item :a :kind ::fixed-result}
-                     (dissoc (error-data #(layout (one-row [{:size [:measured]}] {:id :a :column 0 :row 0
+                     (dissoc (error #(layout (one-row [{:size [:measured]}] {:id :a :column 0 :row 0
                                                                                    :content {:kind ::fixed-result :result result}})))
                              :size))
       nil [1.0 1.0] (v/vec2 ##NaN 1.0) (v/vec2 1.0 ##Inf) (v/vec2 ##-Inf 1.0) (v/vec2 -0.5 1.0) (v/vec2 1.0 -1.0)))
@@ -154,10 +152,10 @@
   (testing "exactly fitting doesn't throw"
     (is (layout (one-row [{:size [:fixed 60]} {:size [:fraction 0.4]}]))))
   (testing "one pixel too much"
-    (is (= {:axis :columns :available 100 :required 101.0}
-           (error-data #(layout (one-row [{:size [:fixed 61]} {:size [:fraction 0.4]}]))))))
+    (is (= {:key :columns :axis :columns :available 100 :required 101.0}
+           (error #(layout (one-row [{:size [:fixed 61]} {:size [:fraction 0.4]}]))))))
   (testing "measured content overflowing on rows"
-    (is (= :rows (:axis (error-data #(layout {:columns [{:size [:flexible]}] :rows [{:size [:measured]}]
+    (is (= :rows (:axis (error #(layout {:columns [{:size [:flexible]}] :rows [{:size [:measured]}]
                                               :items [{:id :a :column 0 :row 0 :content (placeholder 1 101)}]})))))))
 
 ;; 4.5 measured contributions
@@ -180,7 +178,7 @@
         measurements (grid/measure-items p {} nil)
         box {:x 0 :y 0 :w 10 :h 10}]
     (testing "measurements must align with items"
-      (are [ms n] (= {:key :measurements :items 2 :measurements n} (error-data #(grid/solve p box ms)))
+      (are [ms n] (= {:key :measurements :items 2 :measurements n} (error #(grid/solve p box ms)))
         nil 0
         [] 0
         (subvec measurements 0 1) 1
@@ -189,7 +187,7 @@
     (testing "empty grid accepts nil measurements"
       (is (= [] (:items (grid/solve (grid/prepare (one-row [{:size [:flexible]}])) box nil)))))
     (testing "box must have integer coordinates and non-negative size"
-      (are [b] (= :box (:key (error-data #(grid/solve p b measurements))))
+      (are [b] (= :box (:key (error #(grid/solve p b measurements))))
         nil {} {:x 0 :y 0 :w 10} {:x 0 :y 0 :w 10.5 :h 10} {:x 0 :y 0 :w -1 :h 10} {:x "0" :y 0 :w 1 :h 1}))
     (testing "zero-size box is valid"
       (is (= {:x 3 :y 4 :w 0 :h 0} (grid/item-box (grid/solve p {:x 3 :y 4 :w 0 :h 0} measurements) :a))))))
@@ -235,12 +233,12 @@
       (is (= [84 16] (sizes l :columns)))
       (is (= [30 12 0 42] (sizes (:layout (first (:items l))) :columns)))))
   (testing "nested grid with fractions summing to 1 can't fit a measured track"
-    (is (= :columns (:axis (error-data #(layout (one-row [{:size [:measured]}]
+    (is (= :columns (:axis (error #(layout (one-row [{:size [:measured]}]
                                                          {:id :cell :column 0 :row 0
                                                           :content {:kind :grid :columns [{:size [:fixed 1]} {:size [:fraction 1]}]
                                                                     :rows [{:size [:flexible]}]}})))))))
   (testing "nested overflow is reported"
-    (is (= :columns (:axis (error-data #(layout (one-row [{:size [:fixed 10]}]
+    (is (= :columns (:axis (error #(layout (one-row [{:size [:fixed 10]}]
                                                          {:id :cell :column 0 :row 0
                                                           :content {:kind :grid :columns [{:size [:fixed 11]}] :rows [{:size [:flexible]}]}}))))))))
 

@@ -1,14 +1,12 @@
 (ns cljplot2.multiplot-test
   "Step 9: plot content, :subplots stage, sub-plot rendering, arrange, overall title."
   (:require [clojure.test :refer [deftest testing is are]]
+            [cljplot2.test-util :refer [error-data error error-ins]]
             [clojure2d.core :as c2d]
             [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
             [cljplot2.layout.grid :as grid])
   (:import [java.awt.image BufferedImage]))
-
-(defn- error-data [f]
-  (try (f) nil (catch clojure.lang.ExceptionInfo e (ex-data e))))
 
 (defn- argb [canvas x y] (.getRGB ^BufferedImage (c2d/get-image canvas) (int x) (int y)))
 
@@ -65,16 +63,16 @@
                             :items [{:id :wrap :column 0 :row 0
                                      :content {:kind :grid :columns [{:size [:flexible]}] :rows [{:size [:flexible]}] :items [item]}}
                                     (assoc item :column 1)]}}]
-      (is (= {:key :id :value :same} (error-data #(plot/build mp))))))
+      (is (= {:key :id :value :same} (error #(plot/build mp))))))
   (testing ":plot must be a map"
-    (is (= {:key :plot} (error-data #(plot/build {:custom-grid {:columns [{:size [:flexible]}] :rows [{:size [:flexible]}]
+    (is (= {:key :plot} (error #(plot/build {:custom-grid {:columns [{:size [:flexible]}] :rows [{:size [:flexible]}]
                                                                 :items [{:id :p :column 0 :row 0 :content {:kind :plot :plot [1]}}]}})))))
   (testing "errors carry the sub-plot id and path"
     (let [bad (assoc p1 :mapping {:x :x :y :nope})
-          data (error-data #(plot/build (plot/arrange [p1 bad])))]
+          data (error #(plot/build (plot/arrange [p1 bad])))]
       (is (= [:mapping :y [:plot 1] [[:plot 1]]] ((juxt :key :value :subplot :subplot-path) data))))
     (let [bad (assoc p1 :mapping {:x :x :y :nope})
-          data (error-data #(plot/build (plot/arrange [p1 (plot/arrange [bad p1])])))]
+          data (error #(plot/build (plot/arrange [p1 (plot/arrange [bad p1])])))]
       (is (= [[:plot 1] [[:plot 1] [:plot 0]]] ((juxt :subplot :subplot-path) data)) "outer id first")))
   (testing "a cell under 1x1 px: no sub-plot, no error"
     (let [mp {:custom-grid {:columns [{:id :zero :size [:fixed 0]} {:size [:flexible]}] :rows [{:size [:flexible]}]
@@ -124,7 +122,7 @@
         (is (> (:y (box-of built [:plot 2])) (:y (box-of built [:plot 0])))))
       (let [built (b (plot/arrange [p1 p2 p1] {:rows 1}))]
         (is (= 1 (count (distinct (map #(:y (box-of built [:plot %])) (range 3)))))))
-      (are [plots opts] (= :arrange (:key (error-data #(plot/build (plot/arrange plots opts)))))
+      (are [plots opts] (= :arrange (first (:in (error #(plot/build (plot/arrange plots opts))))))
         [] {}
         nil {}
         [p1 p2 p1] {:columns 1 :rows 2}
@@ -139,7 +137,7 @@
     (testing "gap from the multiplot theme; validated"
       (let [built (b (plot/arrange [p1 p2] {:theme {:multiplot {:gap 40}}}))]
         (is (= (+ (:y (box-of built [:plot 0])) (:h (box-of built [:plot 0])) 40) (:y (box-of built [:plot 1])))))
-      (is (= :gap (:key (error-data #(plot/build (plot/arrange [p1] {:theme {:multiplot {:gap -1}}})))))))
+      (is (= :gap (:key (error #(plot/build (plot/arrange [p1] {:theme {:multiplot {:gap -1}}})))))))
     (testing "the plot's :theme at build time controls gap and margin (not frozen by arrange)"
       (let [built (b (assoc (plot/arrange [p1 p2]) :theme {:multiplot {:gap 50} :plot {:margin 30}}))
             a (box-of built [:plot 0]) c (box-of built [:plot 1])]
@@ -148,9 +146,9 @@
     (testing ":arrange spec shape"
       (is (= {:arrange {:plots [p1] :columns 1 :widths [1]} :labels {:title "T"} :theme {:x 1}}
              (plot/arrange [p1] {:columns 1 :widths [1] :title "T" :theme {:x 1} :ignored 2})))
-      (is (= :arrange (:key (error-data #(plot/build {:arrange [p1]})))))
-      (is (= :arrange (:key (error-data #(plot/build (assoc (plot/arrange [p1]) :custom-grid {:columns [{:size [:flexible]}] :rows [{:size [:flexible]}] :items []}))))))
-      (is (= {:key :labels :value :x} (error-data #(plot/build (assoc (plot/arrange [p1]) :labels {:x "x"}))))))))
+      (is (= :arrange (:key (error #(plot/build {:arrange [p1]})))))
+      (is (= :arrange (:key (error #(plot/build (assoc (plot/arrange [p1]) :custom-grid {:columns [{:size [:flexible]}] :rows [{:size [:flexible]}] :items []}))))))
+      (is (= {:key :x :in [:labels :x] :value "x"} (error #(plot/build (assoc (plot/arrange [p1]) :labels {:x "x"}))))))))
 
 (deftest overall-title-test
   (let [mp (plot/arrange [p1 p2] {:columns 2 :title "Both" :theme {:plot {:background [255 255 255]}}})
@@ -180,7 +178,7 @@
         (is (= {:key :subplot :subplot [:plot 1] :subplot-path [[:plot 1]]} (ex-data e)))
         (is (instance? ArithmeticException (ex-cause e)))))
     (testing "nested: outer id first, inner kept"
-      (let [data (error-data #(plot/build (plot/arrange [(plot/arrange [p1 boom]) p1])))]
+      (let [data (error #(plot/build (plot/arrange [(plot/arrange [p1 boom]) p1])))]
         (is (= [:subplot [:plot 0] [[:plot 0] [:plot 1]]] ((juxt :key :subplot :subplot-path) data)))))))
 
 ;; panel alignment (4.4)
@@ -237,4 +235,4 @@
         (is (= 3 (count (:subplots b))))
         (is (nil? (get-in b [:subplots [:plot 0] :alignment-padding])))))
     (testing "validation"
-      (is (= :arrange (:key (error-data #(plot/build (plot/arrange [p1] {:align 1})))))))))
+      (is (= [:arrange :align] (:in (error #(plot/build (plot/arrange [p1] {:align 1})))))))))

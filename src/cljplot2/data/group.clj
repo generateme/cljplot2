@@ -11,7 +11,8 @@
   and counted when the plot's `:groups {:na false}`); other invalid values (NaN, infinite, ...) and aesthetic values
   outside an explicit plot scale domain ([[cljplot2.scale.aesthetic/in-domain?]]) are dropped and counted. Groups are
   ordered by [[ordered-keys]]."
-  (:require [cljplot2.scale.aesthetic :as aesthetic]
+  (:require [cljplot2.schema :as schema]
+            [cljplot2.scale.aesthetic :as aesthetic]
             [cljplot2.data.rows :as data]))
 
 (set! *warn-on-reflection* true)
@@ -29,8 +30,8 @@
     (let [present (remove nil? values)
           numeric? (and (seq present) (every? number? present))]
       (when (= :linear (aesthetic/inferred-kind k (get plot-scales k {}) numeric?))
-        (throw (ex-info "This chart groups by aesthetics; numeric values need an ordinal scale ({:scales {k {:kind :ordinal}}})."
-                        {:key :mapping :value k}))))))
+        (schema/fail! "This chart groups by aesthetics; numeric values need an ordinal scale ({:scales {k {:kind :ordinal}}})."
+                        {:key :mapping :value k})))))
 
 (defn- kept-value?
   "Is grouping value `v` of dimension `k` kept: valid and (aesthetics) inside the explicit plot scale domain, or NA."
@@ -72,7 +73,7 @@
         columns (mapv (fn [acc] (mapv acc all-rows)) accessors)]
     (doseq [[k vs] (map vector dims columns)]
       (when (and (pos? row-count) (not-any? data/valid-value? vs) (aesthetic/dim? k))
-        (throw (ex-info "No valid values for a mapped dimension - check the mapping." {:key :mapping :value k :rows row-count})))
+        (schema/fail! "No valid values for a mapped dimension - check the mapping." {:key :mapping :value k :rows row-count}))
       (check-groupable! k (filter data/valid-value? vs) plot-scales))
     (let [key-of (fn [row] (mapv #(% row) accessors))
           kept? (fn [key] (every? true? (map #(boolean (kept-value? %1 na-level? plot-scales %2)) dims key)))

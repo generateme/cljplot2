@@ -49,6 +49,14 @@
         (nil? @installed-families)
         (contains? @installed-families family))))
 
+(defn known-font?
+  "Can [[resolve-font]] resolve `font`: a `java.awt.Font`, a bundled family name or an installed or logical family
+  name (any name when the platform can't list its fonts)?"
+  [font]
+  (or (instance? Font font)
+      (contains? bundled-fonts font)
+      (and (string? font) (boolean (known-family? font)))))
+
 (defn resolve-font
   "`java.awt.Font` of `size` points for `font` and `font-style` (a key of [[font-styles]]).
 

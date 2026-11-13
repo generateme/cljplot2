@@ -23,11 +23,10 @@
   Charts drop values outside an explicit domain already at compute ([[in-domain?]]), counted in `:dropped`, so
   extents only cover what is drawn."
   (:require [clojure2d.color :as c]
-            [fastmath.core :as m]
             [wadogo.scale :as s]
             [cljplot2.data.rows :as data]
             [cljplot2.scale.position :as scale]
-            [cljplot2.graphics.shape :as shape]))
+            [cljplot2.schema :as schema]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -40,112 +39,119 @@
 
 (def kinds #{:ordinal :linear})
 
-(def ^:private spec-keys #{:kind :domain :range :formatter :title :legend})
-
 (def ^:private ^:const size-legend-ticks 5)
-
-(defn- invalid [message data] (throw (ex-info message data)))
 
 (defn mapped-dims
   "Aesthetic dimensions with a non-nil accessor in `mapping`."
   [mapping]
   (filterv #(some? (get mapping %)) dims))
 
-(defn- valid-color? [col] (and (some? col) (try (c/to-color col) true (catch Exception _ false))))
-
 (defn- palette-colors
-  "Colors of palette `p` (a palette name or a non-empty sequence of colors); errors carry `{:key error-key :scale k}`."
-  [k p error-key]
+  "Colors of palette `p` (a palette name or a non-empty sequence of colors), `nil` when it isn't one."
+  [p]
   (let [colors (cond
                  (keyword? p) (try (vec (c/palette p)) (catch Exception _ nil))
                  (sequential? p) (vec p))]
-    (when-not (and (seq colors) (every? valid-color? colors))
-      (invalid "Colors must be a palette name or a non-empty sequence of colors." {:key error-key :scale k :value p}))
-    colors))
+    (when (and (seq colors) (every? schema/solid-color? colors))
+      colors)))
 
-(defn validate-palette!
-  "Check theme `:palette` `{:color :gradient :shape :size :na}`; throws `ex-info` naming the offending key."
-  [{:keys [color gradient shape size na]}]
-  (palette-colors :color color :palette)
-  (when-not (fn? gradient) (palette-colors :gradient gradient :palette))
-  (when-not (and (sequential? shape) (seq shape) (every? shape/shapes shape))
-    (invalid "Palette :shape must be a non-empty sequence of shapes." {:key :shape :value shape}))
-  (when-not (and (vector? size) (= 2 (count size)) (every? #(and (number? %) (>= (double %) 0.0)) size)
-                 (<= (double (size 0)) (double (size 1))))
-    (invalid "Palette :size must be [min max], non-negative numbers." {:key :size :value size}))
-  (when-not (valid-color? na)
-    (invalid "Palette :na must be a color." {:key :na :value na})))
+(def ^:private palette
+  (schema/named-type ::palette (comp some? palette-colors) "should be a palette name or a non-empty sequence of colors"))
 
-(defn- resolve-range
-  "Concrete range of dimension `k` and `kind` from range value `r`."
-  [k kind r]
-  (case k
-    :color (if (and (= kind :linear) (fn? r)) r (palette-colors k r :range))
-    :shape (do (when-not (and (sequential? r) (seq r) (every? shape/shapes r))
-                 (invalid "Shape :range must be a non-empty sequence of shapes." {:key :shape :scale k :value r}))
-               (vec r))
-    :size (do (when-not (and (vector? r) (= 2 (count r)) (every? #(and (number? %) (>= (double %) 0.0)) r)
-                             (<= (double (r 0)) (double (r 1))))
-                (invalid "Size :range must be [min max], non-negative numbers." {:key :size :scale k :value r}))
-              r)))
+(def ^:private size-range
+  (schema/named-type ::size-range #(and (vector? %) (= 2 (count %)) (every? (fn [v] (and (number? v) (>= (double v) 0.0))) %)
+                                        (<= (double (% 0)) (double (% 1))))
+                     "should be [min max], non-negative numbers, min <= max"))
 
-(defn- validate-spec!
-  [k spec]
-  (when-not (map? spec) (invalid "Scale spec must be a map." {:key :scales :scale k}))
-  (when-let [bad (first (remove spec-keys (keys spec)))]
-    (invalid "Unknown aesthetic scale attribute." {:key :scales :scale k :value bad :allowed spec-keys}))
-  (when (and (contains? spec :kind) (not (kinds (:kind spec))))
-    (invalid "Aesthetic scale :kind must be :ordinal or :linear." {:key :kind :scale k :value (:kind spec)}))
-  (when (and (= k :shape) (= :linear (:kind spec)))
-    (invalid "Shape scale can't be :linear." {:key :kind :scale k}))
-  (when (and (contains? spec :formatter) (not (fn? (:formatter spec))))
-    (invalid "Scale :formatter must be a function." {:key :formatter :scale k}))
-  (when-not (or (nil? (:title spec)) (string? (:title spec)))
-    (invalid "Scale :title must be a string or nil." {:key :title :scale k}))
-  (when-not (contains? #{nil true false} (:legend spec))
-    (invalid "Scale :legend must be a boolean." {:key :legend :scale k})))
+(def ^:private shapes [:sequential {:min 1} schema/shape])
+
+(def ^:private gradient [:multi {:dispatch fn?} [true schema/function] [false palette]])
+
+(def Palette
+  "Theme `:palette` (aesthetic defaults)."
+  [:map {:closed true}
+   [:color palette]
+   [:gradient gradient]
+   [:shape shapes]
+   [:size size-range]
+   [:na schema/solid-color]])
 
 (defn- level-key
   "Identity of an ordinal level: numbers compare as doubles (`1931` = `1931.0`), other values as themselves."
   [v]
   (if (number? v) (double v) v))
 
+(defn- explicit-kind
+  "Kind of aesthetic `k` with an explicit domain in `spec`: the spec's `:kind`, else `:linear` for two numbers (not
+  `:shape`), else `:ordinal`."
+  [k {:keys [kind domain]}]
+  (or kind (if (and (not= k :shape) (= 2 (count domain)) (every? number? domain)) :linear :ordinal)))
+
+(defn- domain-problem
+  "Why the explicit `:domain` of aesthetic scale `spec` of `k` is invalid, or `nil`."
+  [k {:keys [domain] :as spec}]
+  (when (some? domain)
+    (case (explicit-kind k spec)
+      :ordinal (when-not (and (seq domain) (not-any? nil? domain) (apply distinct? (map level-key domain)))
+                 "ordinal domain should be a non-empty sequence of distinct non-nil values")
+      :linear (when-not (and (= 2 (count domain)) (every? schema/finite? domain)
+                             (< (double (first domain)) (double (second domain))))
+                "linear domain should be [lo hi], finite numbers, lo < hi"))))
+
+(defn ScaleSpec
+  "Schema of the plot scale spec of aesthetic `k`."
+  [k]
+  [:and
+   [:map {:closed true}
+    (schema/optional :kind (into [:enum] (sort kinds)))
+    (schema/nilable :domain [:sequential any?])
+    (schema/optional :range (case k :color [:multi {:dispatch fn?} [true schema/function] [false palette]]
+                                  :shape shapes
+                                  :size size-range))
+    (schema/optional :formatter schema/function)
+    (schema/nilable :title string?)
+    (schema/nilable :legend schema/bool)]
+   (schema/rule #(when (and (= k :shape) (= :linear (:kind %))) "shape scale can't be :linear") [:kind])
+   (schema/rule #(domain-problem k %) [:domain])])
+
+(defn- resolve-range
+  "Concrete range of dimension `k` and `kind` from the (validated) range value `r`; a function needs a linear color
+  scale."
+  [k kind r]
+  (case k
+    :color (cond
+             (not (fn? r)) (palette-colors r)
+             (= kind :linear) r
+             :else (schema/fail! "A color :range function needs a linear scale." {:key :range :in [:scales k :range]}))
+    :shape (vec r)
+    :size r))
+
 (defn- ordinal-domain
   [k explicit extent]
   (cond
-    explicit (do (when-not (and (sequential? explicit) (seq explicit) (not-any? nil? explicit)
-                                (apply distinct? (map level-key explicit)))
-                   (invalid "Ordinal :domain must be a non-empty sequence of distinct non-nil values." {:key :domain :scale k}))
-                 (vec explicit))
+    explicit (vec explicit)
     (:values extent) (data/sorted-levels k (vals (reduce (fn [acc v] (if (contains? acc (level-key v)) acc (assoc acc (level-key v) v)))
                                                          {} (:values extent)))
                                          :domain)
-    :else (invalid (str "Too many distinct values for an ordinal scale (more than " data/max-levels
-                        "); give an explicit :domain.")
-                   {:key :domain :scale k})))
+    :else (schema/fail! (str "Too many distinct values for an ordinal scale (more than " data/max-levels
+                             "); give an explicit :domain.")
+                        {:key :domain :in [:scales k :domain]})))
 
 (defn- linear-domain
   [k explicit extent]
-  (if explicit
-    (do (when-not (and (sequential? explicit) (= 2 (count explicit))
-                       (every? #(and (number? %) (m/valid-double? (double %))) explicit)
-                       (< (double (first explicit)) (double (second explicit))))
-          (invalid "Linear :domain must be [lo hi], finite numbers, lo < hi." {:key :domain :scale k}))
-        [(double (first explicit)) (double (second explicit))])
-    (do (when-not (= :numeric (:kind extent))
-          (invalid "A :linear aesthetic scale needs numeric data." {:key :kind :scale k}))
-        [(double (:min extent)) (double (:max extent))])))
+  (cond
+    explicit [(double (first explicit)) (double (second explicit))]
+    (= :numeric (:kind extent)) [(double (:min extent)) (double (:max extent))]
+    :else (schema/fail! "A :linear aesthetic scale needs numeric data." {:key :kind :in [:scales k :kind]})))
 
 (defn inferred-kind
   "Scale kind of aesthetic `k` with plot scale `spec` (may be `{}`) for data that is numeric (`data-numeric?`) or not:
   the spec's `:kind`; else `:linear` for a numeric two-value explicit domain or, without a domain, numeric data
   (`:color`, `:size`); else `:ordinal`. `:shape` is always ordinal."
   [k spec data-numeric?]
-  (let [explicit (:domain spec)
-        numeric? (if explicit
-                   (and (sequential? explicit) (= 2 (count explicit)) (every? number? explicit))
-                   data-numeric?)]
-    (or (:kind spec) (if (and numeric? (not= k :shape)) :linear :ordinal))))
+  (if (sequential? (:domain spec))
+    (explicit-kind k spec)
+    (or (:kind spec) (if (and data-numeric? (not= k :shape)) :linear :ordinal))))
 
 (defn in-domain?
   "Is data value `v` of aesthetic `k` inside the explicit `:domain` of the plot's scale `spec` (may be `{}`)?
@@ -169,7 +175,6 @@
   `nil` when there is neither an explicit domain nor data.
   Returns `{:kind :domain :range :na?}` plus the spec's `:formatter`, `:title`, `:legend` when given."
   [k spec extent na? palette]
-  (validate-spec! k spec)
   (let [explicit (:domain spec)]
     (when (or explicit extent)
       (let [kind (inferred-kind k spec (= :numeric (:kind extent)))

@@ -13,7 +13,8 @@
 
   Bands axes tick every band; when tick labels would overlap, only every `s`-th label is drawn (`s` the smallest step
   without overlap, starting at the first band) - see [[label-step]]."
-  (:require [clojure2d.core :as c2d]
+  (:require [cljplot2.schema :as schema]
+            [clojure2d.core :as c2d]
             [fastmath.core :as m]
             [fastmath.vector :as v]
             [cljplot2.graphics.canvas :as canvas]
@@ -31,14 +32,14 @@
 (defmethod measure/validate-content :axis
   [{k :scale}]
   (when-not (axis-scales k)
-    (throw (ex-info "Axis :scale must be :x or :y." {:key :scale :value k}))))
+    (schema/fail! "Axis :scale must be :x or :y." {:key :scale :value k})))
 
 (defmethod measure/validate-content :axis-overhang
   [{k :scale end :end}]
   (when-not (axis-scales k)
-    (throw (ex-info "Axis overhang :scale must be :x or :y." {:key :scale :value k})))
+    (schema/fail! "Axis overhang :scale must be :x or :y." {:key :scale :value k}))
   (when-not (#{:start :end} end)
-    (throw (ex-info "Axis overhang :end must be :start or :end." {:key :end :value end}))))
+    (schema/fail! "Axis overhang :end must be :start or :end." {:key :end :value end})))
 
 (defn- tick-label [text] {:kind :label :role :tick-label :text text})
 

@@ -12,7 +12,8 @@
   Group keys: the level for wrap, `[col-level row-level]` for grid. Charts whose mapping has no facet key get
   the group key [[all-panels]] and are drawn in every panel."
   (:require [fastmath.core :as m]
-            [cljplot2.data.rows :as data]))
+            [cljplot2.data.rows :as data]
+            [cljplot2.schema :as schema]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -29,17 +30,18 @@
   "The NA level: rows with a `nil` facet value."
   nil)
 
-(defn- invalid [message data] (throw (ex-info message data)))
-
 (defn facet-dims
   "Facet keys with a non-nil accessor in `mapping`: `[:facet]`, `[:facet-col :facet-row]` (or one of them) or `[]`.
-  A `nil` accessor counts as absent (a chart can opt out of the plot's faceting with `{:facet nil}`).
-  `:facet` with a grid key throws `ex-info {:key :mapping}`."
+  A `nil` accessor counts as absent (a chart can opt out of the plot's faceting with `{:facet nil}`)."
   [mapping]
-  (let [ks (filterv #(some? (get mapping %)) [:facet :facet-col :facet-row])]
+  (filterv #(some? (get mapping %)) [:facet :facet-col :facet-row]))
+
+(defn mapping-problem
+  "Why the facet keys of a (merged) `mapping` can't be used together, or `nil`: `:facet` with a grid key."
+  [mapping]
+  (let [ks (facet-dims mapping)]
     (when (and (some #{:facet} ks) (> (count ks) 1))
-      (invalid "Mapping can't combine :facet with :facet-col / :facet-row." {:key :mapping :value ks}))
-    ks))
+      "mapping can't combine :facet with :facet-col / :facet-row")))
 
 (defn valid-facet-value?
   "Can `v` be a facet level: anything except NaN or infinite numbers (`nil` is the NA level)."
@@ -52,23 +54,26 @@
   [k values spec na-panel?]
   (let [explicit (:domain spec)
         base (if explicit
-               (do (when-not (and (sequential? explicit) (seq explicit) (apply distinct? explicit))
-                     (invalid "Facet :domain must be a non-empty sequence of distinct values." {:key :domain :scale k}))
-                   (vec explicit))
+               (vec explicit)
                (data/sorted-levels k (filter #(and (some? %) (valid-facet-value? %)) values) :facet))]
     (if (and na-panel? (some nil? values)) (conj base na-level) base)))
 
-(def ^:private facet-spec-keys #{:domain :formatter})
+(def ScaleSpec
+  "Facet scale spec (plot `:scales` of a facet key): `:domain` - distinct levels in panel order, `:formatter` - strip
+  text of a level."
+  [:map {:closed true}
+   (schema/nilable :domain [:and [:sequential {:min 1} any?]
+                            (schema/rule #(when-not (apply distinct? %) "facet domain values should be distinct"))])
+   (schema/optional :formatter schema/function)])
 
-(defn validate-spec!
-  "Check the facet scale `spec` of dimension `k`: a map with `:domain` and/or `:formatter` (a function)."
-  [k spec]
-  (when-not (map? spec)
-    (invalid "Facet scale spec must be a map." {:key :scales :scale k}))
-  (when-let [bad (first (remove facet-spec-keys (keys spec)))]
-    (invalid "Unknown facet scale attribute." {:key :scales :scale k :value bad :allowed facet-spec-keys}))
-  (when (and (contains? spec :formatter) (not (fn? (:formatter spec))))
-    (invalid "Facet scale :formatter must be a function." {:key :formatter :scale k})))
+(def Options
+  "Plot `:facets`: `:columns` / `:rows` (wrap layout shape), `:order` (`:top-down` default or `:bottom-up`), `:na-panel`
+  (default true - `nil` facet values get a panel)."
+  [:map {:closed true}
+   (schema/nilable :columns schema/pos-int)
+   (schema/nilable :rows schema/pos-int)
+   (schema/nilable :order [:enum :top-down :bottom-up])
+   (schema/nilable :na-panel schema/bool)])
 
 (defn label
   "Strip text of `level` of facet dimension `k` with facet scale `spec`."
@@ -110,9 +115,6 @@
 (defn wrap-shape
   "`[rows cols]` for `n` wrapped panels with optional `columns` / `rows` from plot `:facets`."
   [^long n {:keys [columns rows]}]
-  (doseq [[k v] [[:columns columns] [:rows rows]]]
-    (when-not (or (nil? v) (and (integer? v) (pos? (long v))))
-      (invalid "Facet :columns / :rows must be positive integers." {:key :facets :value k})))
   (let [shape (cond
                 (and rows columns) [(long rows) (long columns)]
                 rows [(long rows) (long (m/ceil (/ (double n) (double rows))))]
@@ -120,7 +122,7 @@
                 :else (most-squared-shape n))
         [^long r ^long c] shape]
     (when (< (* r c) n)
-      (invalid "Facet layout is too small for the panels." {:key :facets :panels n :rows r :columns c}))
+      (schema/fail! "Facet layout is too small for the panels." {:key :facets :in [:facets] :panels n :rows r :columns c}))
     shape))
 
 (defn wrap-positions
@@ -131,11 +133,3 @@
     (case order
       :top-down [r c]
       :bottom-up [(- rows 1 r) c])))
-
-(defn validate-options!
-  "Check plot `:facets` options."
-  [facets]
-  (when-not (or (nil? facets) (map? facets))
-    (invalid "Plot :facets must be a map." {:key :facets}))
-  (when-not (contains? #{nil :top-down :bottom-up} (:order facets))
-    (invalid "Facet :order must be :top-down or :bottom-up." {:key :facets :value (:order facets)})))

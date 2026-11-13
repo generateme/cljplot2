@@ -1,14 +1,12 @@
 (ns cljplot2.pipeline-test
   (:require [clojure.test :refer [deftest testing is are]]
+            [cljplot2.test-util :refer [error-data error error-ins]]
             [clojure2d.core :as c2d]
             [fastmath.vector :as v]
             [cljplot2.layout.grid :as grid]
             [cljplot2.pipeline :as pipeline]
             [cljplot2.graphics.measure :as measure]
             [cljplot2.examples :as examples]))
-
-(defn- error-data [f]
-  (try (f) nil (catch clojure.lang.ExceptionInfo e (ex-data e))))
 
 ;; test content kinds
 
@@ -62,8 +60,8 @@
       (is (not-any? #(contains? rebuilt %) (rest pipeline/stage-order)))
       (is (= (pipeline/build {:custom-grid examples/fig-1-1-grid}) (pipeline/build (pipeline/build {:custom-grid examples/fig-1-1-grid}))))))
   (testing "unknown stage"
-    (is (= {:key :until :value :draw :allowed pipeline/stage-order}
-           (error-data #(pipeline/build {} {:until :draw}))))))
+    (is (= {:key :until :in [:options :until] :value :draw}
+           (error #(pipeline/build {} {:until :draw}))))))
 
 (deftest purity-test
   (testing "each stage is repeatable: running up to it twice gives = results"
@@ -79,7 +77,7 @@
     (is (= {:width 10 :height 20 :hint :low}
            (:options (pipeline/build {:options {:width 10 :height 5 :hint :low} :theme {:plot {:margin 0}}} {:height 20})))))
   (testing "invalid options"
-    (are [opts k] (= k (:key (error-data #(pipeline/build {} opts))))
+    (are [opts k] (= k (:key (error #(pipeline/build {} opts))))
       {:width 0} :width
       {:width -1} :width
       {:width 1.5} :width

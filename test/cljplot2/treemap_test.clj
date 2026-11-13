@@ -1,6 +1,7 @@
 (ns cljplot2.treemap-test
   "Step 10: treemap layouts and the treemap chart."
   (:require [clojure.test :refer [deftest testing is are]]
+            [cljplot2.test-util :refer [error-data error error-ins]]
             [clojure2d.core :as c2d]
             [fastmath.core :as m]
             [cljplot2.chart :as chart]
@@ -8,9 +9,6 @@
             [cljplot2.layout.grid :as grid]
             [cljplot2.layout.treemap :as treemap])
   (:import [java.awt.image BufferedImage]))
-
-(defn- error-data [f]
-  (try (f) nil (catch clojure.lang.ExceptionInfo e (ex-data e))))
 
 (defn- pixel [canvas x y]
   (let [v (.getRGB ^BufferedImage (c2d/get-image canvas) (int x) (int y))]
@@ -109,14 +107,14 @@
     (is (= {} (get-in (build (tm {:data []})) [:stats 0 :data])))
     (is (some? (plot/render (tm {:data []})))))
   (testing "mapping errors"
-    (are [m] (= :mapping (:key (error-data #(build (tm {:mapping m})))))
-      {:hierarchy [:a]}
-      {:value :v}
-      {:value :v :hierarchy :a}
-      {:value :v :hierarchy []}
-      {:value :v :hierarchy [:a 3]}))
+    (are [m in] (= in (:in (error #(build (tm {:mapping m})))))
+      {:hierarchy [:a]} [:charts 0 :options :mapping :value]
+      {:value :v} [:charts 0 :options :mapping :hierarchy]
+      {:value :v :hierarchy :a} [:mapping :hierarchy]
+      {:value :v :hierarchy []} [:mapping :hierarchy]
+      {:value :v :hierarchy [:a 3]} [:mapping :hierarchy 1]))
   (testing "options and theme validated"
-    (are [opts k] (= k (:key (error-data #(build (tm {:charts [(chart/treemap opts)]})))))
+    (are [opts k] (= k (:key (error #(build (tm {:charts [(chart/treemap opts)]})))))
       {:layout :pie} :layout
       {:group-labels 1} :group-labels
       {:padding -1} :padding

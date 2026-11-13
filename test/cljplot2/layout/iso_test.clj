@@ -1,12 +1,10 @@
 (ns cljplot2.layout.iso-test
   "Step 11: :aspect :iso - equal pixels per data unit on x and y."
   (:require [clojure.test :refer [deftest testing is are]]
+            [cljplot2.test-util :refer [error-data error error-ins]]
             [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
             [cljplot2.layout.grid :as grid]))
-
-(defn- error-data [f]
-  (try (f) nil (catch clojure.lang.ExceptionInfo e (ex-data e))))
 
 (defn- px-per-unit
   "`[x y]` pixels per data unit of the built plot's first panel."
@@ -44,9 +42,9 @@
         (is (<= (- (apply max (map :w panels)) (apply min (map :w panels))) 1) "equal panel widths")))))
 
 (deftest iso-validation-test
-  (is (= :aspect (:key (error-data #(plot/build (assoc wide :aspect :bogus))))))
-  (is (= :aspect (:key (error-data #(plot/build {:data [{:x "a" :y 1}] :mapping {:x :x :y :y} :charts [(chart/scatter)] :aspect :iso})))))
-  (is (= :aspect (:key (error-data #(plot/build {:custom-grid {:columns [{:size [:flexible]}] :rows [{:size [:flexible]}] :items []}
+  (is (= :aspect (:key (error #(plot/build (assoc wide :aspect :bogus))))))
+  (is (= :aspect (:key (error #(plot/build {:data [{:x "a" :y 1}] :mapping {:x :x :y :y} :charts [(chart/scatter)] :aspect :iso})))))
+  (is (= :aspect (:key (error #(plot/build {:custom-grid {:columns [{:size [:flexible]}] :rows [{:size [:flexible]}] :items []}
                                                  :aspect :iso})))))
   (testing "without :aspect nothing changes"
     (is (not-any? #(#{:iso-before :iso-after} (:id %)) (get-in (plot/build (dissoc wide :aspect)) [:grid :columns])))))
