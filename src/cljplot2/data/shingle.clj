@@ -10,7 +10,8 @@
   Equal-count intervals come from `fastmath.core/co-intervals` (R `co.intervals`)."
   (:require [fastmath.core :as m]
             [cljplot2.data.rows :as rows]
-            [cljplot2.schema :as schema]))
+            [cljplot2.schema :as schema])
+  (:import [cljplot2.data.rows OrderedLevel]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -20,8 +21,8 @@
   (let [d (double v)]
     (if (and (m/valid-double? d) (== d (m/floor d)) (< (m/abs d) 1.0e15)) (str (long d)) (str v))))
 
-(defn- rounded-str
-  "`v` rounded to `digits` significant digits, plain notation, trailing zeros dropped."
+(defn rounded-str
+  "`v` rounded to `digits` significant digits, plain notation, trailing zeros dropped (bin bounds)."
   [v ^long digits]
   (-> (java.math.BigDecimal. (double v))
       (.round (java.math.MathContext. (int digits)))
@@ -31,6 +32,7 @@
 (defrecord Interval [lo hi label closed digits]
   ;; closed: nil / :both - [lo, hi] (shingles); :left - [lo, hi) (bins, see cljplot2.data.levels/bin)
   ;; digits: nil - exact bounds (shingles); n - bounds printed with n significant digits (bins)
+  OrderedLevel
   Comparable
   (compareTo [_ other]
     (let [^Interval o other

@@ -80,11 +80,15 @@
 
 (defn temporal? [v] (instance? java.time.temporal.Temporal v))
 
-(defn- ordered-level?
-  "Is categorical value `v` a level with a natural order (a `Comparable` other than strings, keywords and booleans,
-  e.g. shingle / bin intervals)? Such levels are sorted instead of kept in first-appearance order."
+(definterface OrderedLevel)
+;; Marker of categorical level types with a natural order (they also implement `Comparable`), e.g. shingle / bin
+;; intervals: valid plot values, sorted ascending wherever they are levels.
+
+(defn ordered-level?
+  "Is `v` a categorical level with a natural order - an instance of the marker [[OrderedLevel]] (shingle / bin
+  intervals)? Such levels are valid values and sorted instead of kept in first-appearance order."
   [v]
-  (and (instance? Comparable v) (not (string? v)) (not (keyword? v)) (not (boolean? v))))
+  (instance? OrderedLevel v))
 
 (defn valid-value?
   "Can `v` be plotted: a finite number, a string, a keyword, a `java.time` value or a level with a natural order
@@ -122,7 +126,7 @@
   (when (seq vs)
     (let [kinds (set (map value-kind vs))]
       (when (> (count kinds) 1)
-        (schema/fail! "Mapped values must be all numbers, all strings/keywords or all java.time values."
+        (schema/fail! "Mapped values must be all numbers, all strings/keywords/intervals or all java.time values."
                  {:key :extents :in [:mapping k] :kinds kinds}))
       (case (first kinds)
         :numeric {:kind :numeric :min (double (reduce min vs)) :max (double (reduce max vs))}

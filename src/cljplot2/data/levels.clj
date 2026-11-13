@@ -84,9 +84,10 @@
   "Rows of `data` (see [[cljplot2.data.rows/rows]]) with the bin of `value` (keyword or function) under `(:as opts)`:
   a [[cljplot2.data.shingle/Interval]] `[lo, hi)` (`:closed :left`), the last bin `[lo, hi]`. Breaks from `:bins`
   (see [[breaks]]; computed on the finite values). A `nil`, non-numeric or non-finite value, or one outside explicit
-  breaks, gets a `nil` bin (NA); every row is kept. Bounds print with `:digits` significant digits (default 3, as
-  R `cut`; the bins keep their exact bounds). `:label` names the series in every bin: a string, or `true` for
-  the accessor's name (keyword accessors only).
+  breaks, gets a `nil` bin (NA); every row is kept, the result's metadata holds `{:na n}` - the count of `nil` bins.
+  Bounds print with at least `:digits` significant digits (default 3, as R `cut`), more when needed to keep the
+  printed breaks distinct; the bins keep their exact bounds. `:label` names the series in every bin: a string, or
+  `true` for the accessor's name (keyword accessors only).
   Throws `ex-info` for bad options ([[bin-options]], see [[cljplot2.schema]])."
   [data value {:keys [as label] :as opts}]
   (schema/explain! [[bin-args {:accessor value :options opts} []]])
@@ -97,14 +98,22 @@
         series (cond (string? label) label (true? label) (name value))
         arr (when brks (double-array brks))
         last-bin (- (count brks) 2)
-        digits (long (get opts :digits 3))
+        ;; the fewest digits (at least :digits) printing every break differently
+        digits (let [ds (distinct brks)
+                     at-least (long (get opts :digits 3))]
+                 (if (< (count ds) 2)
+                   at-least
+                   (or (first (filter (fn [^long d] (apply distinct? (map #(shingle/rounded-str % d) ds)))
+                                      (range at-least 18)))
+                       17)))
         intervals (vec (map-indexed (fn [i [a b]] (shingle/->Interval a b series (when (< (long i) last-bin) :left) digits))
                                     (partition 2 1 brks)))]
-    (mapv (fn [row]
-            (let [v (acc row)
-                  i (if (and arr (finite v)) (bin-index arr (double v)) -1)]
-              (assoc row as (when-not (neg? i) (intervals i)))))
-          rs)))
+    (let [out (mapv (fn [row]
+                      (let [v (acc row)
+                            i (if (and arr (finite v)) (bin-index arr (double v)) -1)]
+                        (assoc row as (when-not (neg? i) (intervals i)))))
+                    rs)]
+      (with-meta out {:na (count (remove as out))}))))
 
 ;; order
 
@@ -112,8 +121,9 @@
   "Levels of `level` (keyword or function) in the rows of `data` ordered by `(stat values)` - `values` the finite
   numbers of `value` in that level's rows; for a scale `:domain`. `stat`: a function of a non-empty sequence of
   numbers to a number (`fastmath.stats/median`, `stats/mode`, `count`, ...).
-  `opts`: `:descending` (default false). Ties keep first-appearance order; levels without a finite value follow the
-  ordered ones (natural order), as do levels whose statistic isn't a finite number; the `nil` level is last."
+  `opts`: `:descending` (default false). Ties keep first-appearance order (ascending and descending); levels without a
+  finite value follow the ordered ones (natural order), as do levels whose statistic isn't a finite number. The `nil`
+  (NA) level is left out: a domain lists values, the NA level is placed by the scale."
   ([data level value stat] (order-levels data level value stat {}))
   ([data level value stat {:keys [descending]}]
    (let [rs (rows/rows data)
@@ -128,5 +138,4 @@
          scored (keep (fn [l] (when (some? l) (when-let [s (score l)] [l s]))) levels)
          ordered (map first (sort-by second (if descending #(compare %2 %1) compare) scored))
          unscored (remove (set (map first scored)) (remove nil? levels))]
-     (cond-> (into (vec ordered) (try (sort unscored) (catch ClassCastException _ unscored)))
-       (some nil? levels) (conj nil)))))
+     (into (vec ordered) (try (sort unscored) (catch ClassCastException _ unscored))))))

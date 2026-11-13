@@ -28,8 +28,8 @@
       (is (= ["x" "y" "z"] (levels/order-levels [{:l "x" :v 1} {:l "y" :v 1} {:l "z" :v 1}] :l :v stats/mean)))
       (is (= ["x" "y" "z"] (levels/order-levels [{:l "x" :v 1} {:l "y" :v 1} {:l "z" :v 1}] :l :v stats/mean
                                                 {:descending true}))))
-    (testing "levels without finite values after the ordered ones (natural order), nil last"
-      (is (= ["b" "a" "q" "z" nil]
+    (testing "levels without finite values after the ordered ones (natural order), no nil level"
+      (is (= ["b" "a" "q" "z"]
              (levels/order-levels [{:l "z" :v nil} {:l "a" :v 2} {:l nil :v 0} {:l "b" :v 1} {:l "q" :v ##NaN}]
                                   :l :v stats/mean))))
     (testing "a statistic without a finite value leaves the level unordered"
@@ -170,3 +170,51 @@
              (error-ins #(plot/build {:data rs :mapping {:x :v} :charts [(chart/histogram {:stroke-color :darkest})]}))))
       (is (= #{[:theme :chart :box :stroke-color]}
              (error-ins #(plot/build {:theme {:chart {:box {:stroke-color 12.5}}}})))))))
+
+(deftest review-fixes-5-test
+  (let [rs (levels/bin (for [i (range 40)] {:w (mod (* i 13) 40) :x (mod i 7)}) :w {:as :b :bins [0 10 20 30 40]})]
+    (testing "F1 an explicit interval domain: bands in the given order, an extra (empty) bin kept"
+      (let [dom (vec (reverse (sort (distinct (map :b rs)))))
+            extra (shingle/->Interval 40 50 nil nil 3)
+            y (get-in (plot/build {:data rs :mapping {:x :x :y :b} :scales {:y {:domain (conj dom extra)}} :charts [(chart/box)]}
+                                  options)
+                      [:finalized-scales :y])]
+        (is (= :bands (:kind y)))
+        (is (= (conj dom extra) (:domain y)))
+        (is (= :domain (:key (error #(plot/build {:data rs :mapping {:x :x :y :b} :scales {:y {:domain [(first dom) "a"]}}
+                                                  :charts [(chart/box)]} options))))
+            "mixed intervals and strings")))
+    (testing "F2 order-levels over data with a nil level is a valid domain"
+      (let [data [{:l "a" :v 1} {:l nil :v 2} {:l "b" :v 3}]
+            d (levels/order-levels data :l :v stats/mean)]
+        (is (= ["a" "b"] d))
+        (is (= ["a" "b"] (get-in (plot/build {:data data :mapping {:x :v :y :l} :scales {:y {:domain d}} :charts [(chart/box)]}
+                                             options)
+                                 [:finalized-scales :y :domain])))))
+    (testing "F2 order-levels over bins gives an interval domain"
+      (let [d (levels/order-levels rs :b :x stats/mean)]
+        (is (every? shingle/interval? d))
+        (is (= d (get-in (plot/build {:data rs :mapping {:x :x :y :b} :scales {:y {:domain d}} :charts [(chart/box)]} options)
+                         [:finalized-scales :y :domain])))))
+    (testing "F3 only marked ordered levels are valid: vectors, symbols, dates aren't"
+      (is (rows/valid-value? (:b (first rs))))
+      (is (rows/ordered-level? (:b (first rs))))
+      (are [v] (not (rows/valid-value? v))
+        [1 2] 'a (java.util.Date.) true {:a 1})
+      (is (= ["b" "a"] (:values (rows/extent :y ["b" "a"])))))
+    (testing "F4 close breaks print distinct bounds (more digits when needed)"
+      (let [bs (mapv (comp str :b) (levels/bin [{:v 1000.1} {:v 1000.12} {:v 1000.18} {:v 1000.2}] :v {:as :b :bins 2}))]
+        (is (= ["[1000.1, 1000.15)" "[1000.1, 1000.15)" "[1000.15, 1000.2]" "[1000.15, 1000.2]"] bs)))
+      (is (= "[0, 5)" (str (:b (first (levels/bin [{:v 1}] :v {:as :b :bins [0 5 10]}))))) "round breaks stay short"))
+    (testing "F5 the count of nil bins in metadata"
+      (is (= {:na 2} (meta (levels/bin [{:v nil} {:v 1} {:v 11}] :v {:as :b :bins [0 5 10]}))))
+      (is (= {:na 0} (meta (levels/bin [] :v {:as :b})))))
+    (testing "F7 bins as facet levels get the shingle shading bar"
+      (let [b (plot/build {:data rs :mapping {:x :x :facet :b} :charts [(chart/histogram)]} options)
+            strips (filter #(= :strip (get-in % [:content :kind])) (tree-seq #(or (map? %) (sequential? %)) #(if (map? %) (vals %) %) (:grid b)))]
+        (is (= 4 (count strips)))
+        (is (every? #(get-in % [:content :interval]) strips))))
+    (testing "F7 histogram ridges use :stroke-color"
+      (is (pos? (get (colors {:data rs :mapping {:x :x :y :b} :theme plain
+                              :charts [(chart/histogram {:color fill :stroke-color :red :stroke-width 2})]})
+                     0xff0000 0))))))

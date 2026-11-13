@@ -13,6 +13,7 @@
   it); [[forward]] maps a single value."
   (:require [fastmath.core :as m]
             [wadogo.scale :as s]
+            [cljplot2.data.rows :as rows]
             [cljplot2.schema :as schema])
   (:import [fastmath.vector Vec2]))
 
@@ -27,12 +28,13 @@
 (defn- temporal? [v] (instance? java.time.temporal.Temporal v))
 
 (defn- domain-kind
-  "Scale kind of an explicit `domain`: `:linear` (numbers), `:bands` (strings / keywords), `:datetime` (java.time
-  values), or `nil` for mixed values."
+  "Scale kind of an explicit `domain`: `:linear` (numbers), `:bands` (strings / keywords, or ordered levels such as
+  intervals - see [[cljplot2.data.rows/ordered-level?]]), `:datetime` (java.time values), or `nil` for mixed values."
   [domain]
   (cond
     (every? number? domain) :linear
     (every? #(or (string? %) (keyword? %)) domain) :bands
+    (every? rows/ordered-level? domain) :bands
     (every? temporal? domain) :datetime))
 
 (defn- domain-problem
@@ -41,7 +43,7 @@
   (when (some? domain)
     (let [kind (or (:kind spec) (domain-kind domain))]
       (case kind
-        nil "domain values should be all numbers, all strings / keywords or all java.time values"
+        nil "domain values should be all numbers, all strings / keywords, all intervals or all java.time values"
         :bands (when-not (apply distinct? domain) "bands domain values should be distinct")
         :datetime (when-not (and (every? temporal? domain) (not= (first domain) (last domain)))
                     "datetime domain should be two different java.time values")
