@@ -80,14 +80,17 @@
 
 (defn data-stats
   "Stats of a data annotation from `chart-split`: per panel `(panel-fn groups)` (groups of [[group/split]] by the
-  chart's aesthetics), extents of `(dims-fn groups)` - `{dim [v ..]}` - plus the aesthetic extents."
-  [chart-split options env panel-fn dims-fn]
-  (let [{:keys [panels dropped]} (group/split (:groups chart-split) (:mapping chart-split) env)]
-    {:data (update-vals panels panel-fn)
+  chart's aesthetics) -> `[computed positions]`, `computed` - the panel's draw data, `positions` - `{dim [v ..]}` for
+  its extents (see [[extents]]); plus the aesthetic extents."
+  [chart-split options env panel-fn]
+  (let [{:keys [panels dropped]} (group/split (:groups chart-split) (:mapping chart-split) env)
+        per-panel (update-vals panels panel-fn)]
+    {:data (update-vals per-panel first)
      :extents (merge-with merge
                           (group/aesthetic-extents panels)
-                          (into {} (keep (fn [[panel gs]] (let [e (extents options (dims-fn gs))] (when (seq e) [panel e]))))
-                                panels))
+                          (into {} (keep (fn [[panel [_ positions]]]
+                                           (let [e (extents options positions)] (when (seq e) [panel e]))))
+                                per-panel))
      :na (group/na-dims panels)
      :dropped dropped}))
 
@@ -102,40 +105,41 @@
 
 ;; pixels
 
-(defn- step
-  ^double [finalized]
-  (double (or (:step (scale/band-geometry finalized)) 0.0)))
+(defn pixel-fn
+  "`(fn [v] -> px)` of positions on the finalized scale (a level - its band centre); `##NaN` when the scale can't
+  place `v` or is missing. Builds the scale once."
+  [finalized]
+  (if finalized (scale/forward-fn finalized) (fn ^double [_] ##NaN)))
 
-(defn pixel
-  "Pixel of position `v` on the finalized scale (a level - its band centre); `##NaN` when the scale can't place it
-  or is missing."
-  ^double [finalized v]
-  (if finalized (scale/forward finalized v) ##NaN))
+(defn interval-fn
+  "`(fn [a b] -> [lo hi])` (lo <= hi): the pixel interval covering positions `a` and `b` on the finalized scale - a
+  level covers its band step, `nil` is the scale's range end on that side (`a` - the low-value end, `b` - the
+  high-value end); `nil` when an end can't be placed or the scale is missing. Builds the scale once."
+  [finalized]
+  (if-not finalized
+    (constantly nil)
+    (let [[r0 r1] (:range finalized)
+          half (* 0.5 (double (or (:step (scale/band-geometry finalized)) 0.0)))
+          pixel (pixel-fn finalized)
+          ends (fn [v range-end]
+                 (cond
+                   (nil? v) [(double range-end) (double range-end)]
+                   (number? v) (let [p (pixel v)] [p p])
+                   :else (let [p (double (pixel v))] [(- p half) (+ p half)])))]
+      (fn [a b]
+        (let [ps (concat (ends a r0) (ends b r1))]
+          (when (every? #(m/valid-double? (double %)) ps)
+            [(double (reduce min ps)) (double (reduce max ps))]))))))
 
-(defn interval-pixels
-  "Pixel interval `[lo hi]` (lo <= hi) covering positions `a` and `b` on the finalized scale: a level covers its band
-  step; `nil` - the scale's range end on that side (`a` - the low-value end, `b` - the high-value end). `nil` when
-  an end can't be placed or the scale is missing."
-  [finalized a b]
-  (when finalized
-   (let [[r0 r1] (:range finalized)
-        half (* 0.5 (step finalized))
-        ends (fn [v range-end]
-               (cond
-                 (nil? v) [(double range-end) (double range-end)]
-                 (number? v) (let [p (pixel finalized v)] [p p])
-                 :else (let [p (pixel finalized v)] [(- p half) (+ p half)])))
-        ps (concat (ends a r0) (ends b r1))]
-    (when (every? #(m/valid-double? (double %)) ps)
-      [(double (reduce min ps)) (double (reduce max ps))]))))
-
-(defn axis-pixel
-  "Pixel along `finalized`'s axis of a text position: `[:panel f]` - fraction `f` of the range from its low-value
-  end, else [[pixel]]; `##NaN` without a scale."
-  ^double [finalized v]
-  (cond
-    (nil? finalized) ##NaN
-    (and (vector? v) (= :panel (first v)))
-    (let [[r0 r1] (:range finalized)]
-      (+ (double r0) (* (double (second v)) (- (double r1) (double r0)))))
-    :else (pixel finalized v)))
+(defn axis-pixel-fn
+  "`(fn [v] -> px)` of text positions along the finalized scale's axis: `[:panel f]` - fraction `f` of the range from
+  its low-value end, else as [[pixel-fn]]; `##NaN` without a scale. Builds the scale once."
+  [finalized]
+  (if-not finalized
+    (fn ^double [_] ##NaN)
+    (let [[r0 r1] (:range finalized)
+          pixel (pixel-fn finalized)]
+      (fn ^double [v]
+        (if (and (vector? v) (= :panel (first v)))
+          (+ (double r0) (* (double (second v)) (- (double r1) (double r0))))
+          (double (pixel v)))))))

@@ -70,11 +70,21 @@
 
 (def ^:private position-scales #{:x :y})
 
+(defn- without-facet-values?
+  "Does a chart with its own data (`own-data?`) have no value (all `nil`) for every facet key of its `mapping`? Such
+  a chart (e.g. an annotation's summary rows) is drawn in every panel, as one without facet keys."
+  [{:keys [rows mapping own-data?]}]
+  (and own-data?
+       (not-any? (fn [d] (let [acc (data/row-accessor d (mapping d))] (some #(some? (acc %)) rows)))
+                 (facet/facet-dims mapping))))
+
 (defn- facet-split
-  "Facet dimensions, levels and per-chart groups for charts `chart-inputs` (`{:rows :mapping}`)."
+  "Facet dimensions, levels and per-chart groups for charts `chart-inputs` (`{:rows :mapping :own-data?}`); a chart
+  without facet keys, or whose own data has no facet values, is drawn in every panel."
   [chart-inputs scales na-panel?]
-  (let [dims (vec (first (distinct (remove empty? (map (comp facet/facet-dims :mapping) chart-inputs)))))
-        faceted (filter #(seq (facet/facet-dims (:mapping %))) chart-inputs)
+  (let [in-every-panel? (fn [input] (or (empty? (facet/facet-dims (:mapping input))) (without-facet-values? input)))
+        faceted (remove in-every-panel? chart-inputs)
+        dims (vec (first (distinct (map (comp facet/facet-dims :mapping) faceted))))
         accessors (fn [mapping] (into {} (map (fn [d] [d (data/row-accessor d (mapping d))])) dims))
         levels (into {} (map (fn [d]
                                (let [values (mapcat (fn [{:keys [rows mapping]}] (map (get (accessors mapping) d) rows)) faceted)]
@@ -82,10 +92,10 @@
                      dims)
         active? (and (seq dims) (every? seq (vals levels)))]
     {:facets {:dims (if active? dims []) :levels (if active? levels {})}
-     :charts (mapv (fn [{:keys [rows mapping]}]
+     :charts (mapv (fn [{:keys [rows mapping] :as input}]
                      (cond
                        (not active?) {:mapping mapping :groups {facet/single-panel rows} :dropped 0}
-                       (empty? (facet/facet-dims mapping)) {:mapping mapping :groups {facet/all-panels rows} :dropped 0}
+                       (in-every-panel? input) {:mapping mapping :groups {facet/all-panels rows} :dropped 0}
                        :else (let [{:keys [groups dropped]} (facet/group-rows rows dims (accessors mapping) levels)]
                                {:mapping mapping :groups groups :dropped dropped})))
                    chart-inputs)}))
@@ -105,7 +115,8 @@
   (let [plot-rows (delay (data/rows data))
         inputs (mapv (fn [{:keys [options] :as chart}]
                        {:mapping (chart-mapping mapping chart)
-                        :rows (if (some? (:data options)) (data/rows (:data options)) @plot-rows)})
+                        :rows (if (some? (:data options)) (data/rows (:data options)) @plot-rows)
+                        :own-data? (some? (:data options))})
                      charts)
         {split-facets :facets chart-splits :charts} (facet-split inputs scales (get facets :na-panel true))]
     (assoc plot :split {:facets (assoc split-facets :dropped {:facet (reduce + (map :dropped chart-splits))})
@@ -115,7 +126,7 @@
   "Per chart: the data its `:compute` returns from its split groups."
   [{:keys [charts split theme groups scales flip] :as plot}]
   (let [env {:theme theme :na-level? (get groups :na true) :plot-scales scales :flip? (boolean flip)
-             :hint (get-in plot [:options :hint] :high)}]
+             :hint (get-in plot [:options :hint])}]
     (assoc plot :stats (mapv (fn [chart chart-split] ((:compute chart) chart chart-split env)) charts (:charts split)))))
 
 (defn- aesthetic-extents

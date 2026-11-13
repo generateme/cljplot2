@@ -89,9 +89,9 @@
         y (get-in b [:finalized-scales :y])
         c (scale/forward y "b")
         half (* 0.5 (double (:step (scale/band-geometry y))))]
-    (is (= [(- c half) (+ c half)] (annotation/interval-pixels y "b" "b")))
-    (is (= (scale/forward y "c") (annotation/pixel y "c")))
-    (is (m/nan? (annotation/pixel y "zzz")) "unknown level unplaceable")))
+    (is (= [(- c half) (+ c half)] ((annotation/interval-fn y) "b" "b")))
+    (is (= (scale/forward y "c") ((annotation/pixel-fn y) "c")))
+    (is (m/nan? ((annotation/pixel-fn y) "zzz")) "unknown level unplaceable")))
 
 (deftest color-legend-test
   (let [means [{:g "p" :m 5} {:g "q" :m 10}]
@@ -145,10 +145,10 @@
   (let [b (built {:data rows :mapping {:x :v :y :w} :charts [(chart/scatter)]})
         xs (get-in b [:finalized-scales :x])
         [r0 r1] (:range xs)]
-    (is (= [(scale/forward xs 5) (double r1)] (annotation/interval-pixels xs 5 nil)) "nil high end - panel edge")
-    (is (= [(double r0) (scale/forward xs 5)] (annotation/interval-pixels xs nil 5)) "nil low end")
-    (is (= [(scale/forward xs 2) (scale/forward xs 8)] (annotation/interval-pixels xs 8 2)) "reversed ends")
-    (is (nil? (annotation/interval-pixels nil 1 2))))
+    (is (= [(scale/forward xs 5) (double r1)] ((annotation/interval-fn xs) 5 nil)) "nil high end - panel edge")
+    (is (= [(double r0) (scale/forward xs 5)] ((annotation/interval-fn xs) nil 5)) "nil low end")
+    (is (= [(scale/forward xs 2) (scale/forward xs 8)] ((annotation/interval-fn xs) 8 2)) "reversed ends")
+    (is (nil? ((annotation/interval-fn nil) 1 2))))
   (testing "pairs: 1 or n"
     (let [rect-stats #(get-in (built {:data rows :mapping {:x :v :y :w} :charts [(chart/scatter) %]})
                               [:stats 1 :data facet/all-panels :rects])]
@@ -183,8 +183,8 @@
         (is (< (- (double (reduce min (map first ps))) px) 6.0) "close to the anchor")))
     (testing "[:panel f]"
       (let [ys (get-in b [:finalized-scales :y])]
-        (is (m/delta-eq (* 0.05 (double h)) (annotation/axis-pixel ys [:panel 0.95]) 1.0e-9))
-        (is (m/nan? (annotation/axis-pixel nil 1)))))
+        (is (m/delta-eq (* 0.05 (double h)) ((annotation/axis-pixel-fn ys) [:panel 0.95]) 1.0e-9))
+        (is (m/nan? ((annotation/axis-pixel-fn nil) 1)))))
     (testing "vectors paired, 1 broadcast"
       (is (= [{:x 1 :y 2 :text "a"} {:x 3 :y 2 :text "b"}]
              (get-in (built (update p :charts conj (chart/text {:x [1 3] :y 2 :text ["a" "b"]})))
@@ -268,3 +268,50 @@
       (is (= [0.0 10.0] (domain {:padding-px [0 20]} 1))))
     (testing "bands scales ignore it"
       (is (= ["a" "b"] (:domain (scale/finalize {:kind :bands :domain ["a" "b"] :padding-px [0 50]} [0.0 500.0] 2)))))))
+
+(deftest review-fixes-4-test
+  (testing "F1 a rect pair mapped by halves throws {:key :mapping}"
+    (are [m] (= :mapping (:key (error #(built {:data rows :mapping {:x :v :y :w}
+                                               :charts [(chart/scatter) (chart/rect {:data [{:a 1 :b 2 :c 3}] :mapping m})]}))))
+      {:x0 :a :x1 :b :y0 :c}
+      {:x0 :a :y0 :b :y1 :c}
+      {:x1 :a}))
+  (testing "F2 own data without facet values: drawn in every panel, no NA panel"
+    (let [b (built {:data rows :mapping {:x :v :facet :lvl}
+                    :charts [(chart/density) (chart/rule {:data [{:m 5}] :mapping {:x :m}})
+                             (chart/rect {:data [{:a 1 :b 2}] :mapping {:x0 :a :x1 :b}})
+                             (chart/text {:data [{:p 3 :t "x"}] :mapping {:x :p :y :p :label :t}})]})]
+      (doseq [i [1 2 3]] (is (= [facet/all-panels] (keys (get-in b [:stats i :data]))) (str "chart " i)))
+      (is (= ["a" "b" "c"] (get-in b [:split :facets :levels :facet])))))
+  (testing "F2 own data with some facet values stays faceted"
+    (let [b (built {:data rows :mapping {:x :v :facet :lvl}
+                    :charts [(chart/density) (chart/rule {:data [{:m 5 :lvl "a"} {:m 6 :lvl nil}] :mapping {:x :m}})]})]
+      (is (contains? (set (keys (get-in b [:stats 1 :data]))) "a"))
+      (is (not (contains? (set (keys (get-in b [:stats 1 :data]))) facet/all-panels)))))
+  (testing "F7 a [:chart :text] theme entry is rejected"
+    (is (= #{[:theme :chart :text]} (error-ins #(plot/build {:theme {:chart {:text {:color :red}}}})))))
+  (testing "F9 flipped ab line through (5, 5) and (15, 10)"
+    (let [p {:data rows :mapping {:x :v :y :w} :flip true :charts [(chart/scatter {:color :black})]}
+          b (built p)
+          {:keys [x y]} (panel-box b)
+          fx (scale/forward-fn (get-in b [:finalized-scales :x]))
+          fy (scale/forward-fn (get-in b [:finalized-scales :y]))
+          ps (reds (update p :charts conj (chart/rule {:slope 0.5 :intercept 2.5 :color :red})))]
+      (doseq [[dx dy] [[5 5] [15 10]]]
+        (is (some (fn [[i j]] (and (<= (m/abs (- (double i) (+ (double x) (fy dy)))) 1.5)
+                                   (<= (m/abs (- (double j) (+ (double y) (fx dx)))) 1.5)))
+                  ps)))))
+  (testing "F9 data-mode rect and text follow facets"
+    (let [b (built {:data rows :mapping {:x :v :facet :lvl}
+                    :charts [(chart/density)
+                             (chart/rect {:data [{:lvl "a" :p 1 :q 2} {:lvl "b" :p 3 :q 4}] :mapping {:x0 :p :x1 :q}})
+                             (chart/text {:data [{:lvl "c" :p 1 :t "c!"}] :mapping {:x :p :y :p :label :t}})]})]
+      (is (= {"a" [{:x [1 2]}] "b" [{:x [3 4]}]} (update-vals (get-in b [:stats 1 :data]) :rects)))
+      (is (= ["c"] (keys (get-in b [:stats 2 :data]))))))
+  (testing "F9 :extent false for rect and text"
+    (let [x-max (fn [c] (second (get-in (built {:data rows :mapping {:x :v} :charts [(chart/density) c]})
+                                        [:finalized-scales :x :domain])))]
+      (is (>= (double (x-max (chart/rect {:x [90 100]}))) 100.0))
+      (is (< (double (x-max (chart/rect {:x [90 100] :extent false}))) 50.0))
+      (is (>= (double (x-max (chart/text {:x 100 :y [:panel 0.5] :text "t"}))) 100.0))
+      (is (< (double (x-max (chart/text {:x 100 :y [:panel 0.5] :text "t" :extent false}))) 50.0)))))

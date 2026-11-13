@@ -9,7 +9,8 @@
   Literal: an interval `[a b]` or a vector of them; with both `:x` and `:y`, vectors of 1 or n intervals are paired.
   An end is a position (a level covers its band step) or `nil` - the panel edge on that side (`[5 nil]` - from 5 to
   the high end). Data: `:x0 :x1 :y0 :y1` in the chart's own `:mapping` (an `x` pair, a `y` pair or both), one rect
-  per row; a `nil` value is the panel edge, other invalid values skip the row. Aesthetic mappings are not used.
+  per row (each pair mapped whole, else `ex-info {:key :mapping}`); a `nil` value is the panel edge, other invalid
+  values skip the row. Aesthetic mappings are not used.
 
   Options (style defaults from theme `[:chart :rect]`): `:fill`, `:stroke-color`, `:stroke-width`, `:extent`, plus
   `:data` / `:mapping`."
@@ -64,6 +65,10 @@
                     :else (mapv (fn [[x y]] {:x x :y y}) (annotation/broadcast [:x :y] [xs ys])))]
         (annotation/literal-stats {:rects rects :style st} options (extents-of rects)))
       (let [_ (annotation/require-mapping! "Rect" mapping [[:x0 :x1] [:y0 :y1]])
+            _ (doseq [[a b] [[:x0 :x1] [:y0 :y1]]
+                      :when (not= (some? (get mapping a)) (some? (get mapping b)))]
+                (schema/fail! (str "Rect maps " a " and " b " together (a pair), got only one of them.")
+                              {:key :mapping :value (select-keys mapping [a b])}))
             acc (fn [k] (when-let [a (get mapping k)] (data/row-accessor k a)))
             [x0 x1 y0 y1] (map acc [:x0 :x1 :y0 :y1])
             end-ok? (fn [v] (or (nil? v) (annotation/position? v)))
@@ -86,10 +91,11 @@
         stroke (:stroke-color style)
         sw (double (:stroke-width style))
         x-horizontal? (scale/horizontal? :x (:x scales))
+        interval-of {:x (annotation/interval-fn (:x scales)) :y (annotation/interval-fn (:y scales))}
         panel-side (fn [horizontal?] [0.0 (double (if horizontal? w h))])
         side (fn [k horizontal? interval]
                (if interval
-                 (annotation/interval-pixels (get scales k) (first interval) (second interval))
+                 ((interval-of k) (first interval) (second interval))
                  (panel-side horizontal?)))]
     (doseq [{:keys [x y]} rects
             :let [px (side :x x-horizontal? x)

@@ -9,8 +9,9 @@
   outside an explicit domain, NaN and infinite numbers are dropped (and counted). Strip text is `(str value)` (`\"NA\"` for the NA level) unless the
   facet scale has a `:formatter`.
 
-  Group keys: the level for wrap, `[col-level row-level]` for grid. Charts whose mapping has no facet key get
-  the group key [[all-panels]] and are drawn in every panel."
+  Group keys: the level for wrap, `[col-level row-level]` for grid. Charts whose mapping has no facet key, and
+  charts whose own `:data` has no value for any of their facet keys (e.g. annotation rows), get the group key
+  [[all-panels]] and are drawn in every panel."
   (:require [fastmath.core :as m]
             [cljplot2.data.rows :as data]
             [cljplot2.schema :as schema]))

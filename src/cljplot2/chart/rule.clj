@@ -84,8 +84,9 @@
                       (assoc (lines (column :x rows) (column :y rows) [] []) :ablines (abline-rows rows)
                              :aesthetics aesthetics))]
         (annotation/data-stats chart-split options env
-                               (fn [gs] {:rules (mapv rule-of gs) :style st})
-                               (fn [gs] {:x (mapcat #(column :x (:rows %)) gs) :y (mapcat #(column :y (:rows %)) gs)}))))))
+                               (fn [gs]
+                                 (let [rules (mapv rule-of gs)]
+                                   [{:rules rules :style st} {:x (mapcat :xs rules) :y (mapcat :ys rules)}])))))))
 
 (defn- linear!
   "Throw `ex-info {:key :slope}` unless scale `k` is linear."
@@ -97,7 +98,9 @@
   "Draw the rules of one panel: `:x` / `:y` lines across the panel (whole-pixel centred), ab lines between the x
   domain ends; unplaceable positions are skipped."
   [_chart {:keys [rules style]} canvas {:keys [w h]} scales env]
-  (let [x-horizontal? (scale/horizontal? :x (:x scales))
+  (let [x-pixel (annotation/pixel-fn (:x scales))
+        y-pixel (annotation/pixel-fn (:y scales))
+        x-horizontal? (scale/horizontal? :x (:x scales))
         y-horizontal? (scale/horizontal? :y (:y scales))
         across! (fn [horizontal-axis? p]
                   (when (m/valid-double? p)
@@ -109,8 +112,8 @@
     (doseq [{:keys [xs ys ablines aesthetics]} rules
             :let [st (group/style style aesthetics scales (:theme env))]
             :when (and st (polyline/set-style! canvas st))]
-      (doseq [x xs] (across! x-horizontal? (annotation/pixel (:x scales) x)))
-      (doseq [y ys] (across! y-horizontal? (annotation/pixel (:y scales) y)))
+      (doseq [x xs] (across! x-horizontal? (x-pixel x)))
+      (doseq [y ys] (across! y-horizontal? (y-pixel y)))
       (when (seq ablines)
         (linear! :x (:x scales))
         (linear! :y (:y scales))

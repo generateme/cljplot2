@@ -265,7 +265,7 @@
                 (distinct (map #(n-label-text options %) (mapcat val items))))]
     (when (seq texts)
       (measure/call-with-scratch-canvas
-       (or hint :high)
+       hint
        (fn [c]
          (let [along (reduce max (map (fn [t] (let [^Vec2 size (measure/natural-size {:kind :label :role :annotation :text t}
                                                                                        {:canvas c :theme theme})]

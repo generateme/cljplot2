@@ -163,7 +163,8 @@
              [:gap schema/non-neg] [:key-size schema/non-neg] [:fill schema/color] [:border-color schema/color]
              [:border-width schema/non-neg] [:bar-length (schema/keyword-or :stretch schema/pos)]
              [:bar-width [:maybe schema/pos]]]]
-   [:chart [:map-of keyword? :map]]
+   [:chart [:and [:map-of keyword? :map]
+            [:map (schema/optional :text (schema/forbidden "isn't used: text charts take the text role [:text :annotation]"))]]]
    [:axis [:map {:closed true} [:x axis-style] [:y axis-style]]]
    [:text [:map-of keyword? TextStyle]]])
 

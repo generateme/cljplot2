@@ -49,7 +49,6 @@
   "Draw the rug lines of one panel."
   [_chart {:keys [items style place options]} canvas box scales env]
   (let [{:keys [point] :as pl} (strip/placement box scales options place)]
-    (strip/draw-n-labels! canvas pl items (fn [{:keys [values]}] (reduce max values)) options scales env)
     (doseq [{:keys [level slot values aesthetics]} items
             :let [st (group/style style aesthetics scales (:theme env))]
             :when (and st (pos? (double (:line-width st))))]
@@ -60,7 +59,8 @@
                     ^Vec2 a (point v level (double lo))
                     ^Vec2 b (point v level (double hi))]
               :when (and (m/valid-double? (.x a)) (m/valid-double? (.y a)) (m/valid-double? (.y b)))]
-        (c2d/line canvas (.x a) (.y a) (.x b) (.y b))))))
+        (c2d/line canvas (.x a) (.y a) (.x b) (.y b))))
+    (strip/draw-n-labels! canvas pl items (fn [{:keys [values]}] (reduce max values)) options scales env)))
 
 (defn legend
   "Key glyph: a short vertical line in the middle of `box`."

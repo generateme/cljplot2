@@ -10,7 +10,8 @@
   Options: `:anchor` - the point of the text box placed at the position, `[h v]` (`h` one of `:left :center :right`,
   `v` one of `:top :middle :bottom`; default `[:center :middle]`); `:offset [dx dy]` - pixels, `dy` up (default
   `[0 0]`); `:rotation` - degrees, clockwise (default 0; the anchor applies to the rotated text's bounding box);
-  `:font`, `:size`, `:font-style`, `:color` - over the text role `[:text :annotation]`; `:extent`, `:data` /
+  `:font`, `:size`, `:font-style`, `:color` - over the text role `[:text :annotation]` (the text chart's theme style;
+  a theme `[:chart :text]` entry is rejected); `:extent`, `:data` /
   `:mapping`. Text stays upright when the plot is flipped; only the anchor position enters the extents."
   (:require [fastmath.core :as m]
             [cljplot2.content.label :as label]
@@ -80,9 +81,10 @@
                                           :when (and (annotation/position? x) (annotation/position? y))]
                                       {:x x :y y :text (t-of r)})))]
       (annotation/data-stats chart-split options env
-                             (fn [gs] {:groups (mapv (fn [g] {:labels (labels-of (:rows g)) :aesthetics (:aesthetics g)}) gs)
-                                       :options options})
-                             (fn [gs] (let [ls (mapcat (comp labels-of :rows) gs)] {:x (map :x ls) :y (map :y ls)}))))))
+                             (fn [gs]
+                               (let [groups (mapv (fn [g] {:labels (labels-of (:rows g)) :aesthetics (:aesthetics g)}) gs)
+                                     ls (mapcat :labels groups)]
+                                 [{:groups groups :options options} {:x (map :x ls) :y (map :y ls)}]))))))
 
 (defn- base-style
   "Text style keys of `options` over the theme role's colour (the base for the group's `:color`)."
@@ -95,14 +97,16 @@
   (let [anchor (get options :anchor [:center :middle])
         [dx dy] (get options :offset [0 0])
         rotation (get options :rotation 0)
-        [hk vk] (if (scale/flipped? scales) [:y :x] [:x :y])]
+        [hk vk] (if (scale/flipped? scales) [:y :x] [:x :y])
+        h-pixel (annotation/axis-pixel-fn (get scales hk))
+        v-pixel (annotation/axis-pixel-fn (get scales vk))]
     (doseq [{:keys [labels aesthetics]} groups
             :let [st (group/style (base-style options (:theme env)) aesthetics scales (:theme env))]
             :when st
             {:keys [x y text]} labels
             :let [pos {:x x :y y}
-                  px (+ (annotation/axis-pixel (get scales hk) (pos hk)) (double dx))
-                  py (- (annotation/axis-pixel (get scales vk) (pos vk)) (double dy))]
+                  px (+ (double (h-pixel (pos hk))) (double dx))
+                  py (- (double (v-pixel (pos vk))) (double dy))]
             :when (and (m/valid-double? px) (m/valid-double? py))]
       (label/draw-at! canvas (merge {:kind :label :role :annotation :text (str text) :rotation rotation} st)
                       anchor px py env))))

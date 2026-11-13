@@ -111,7 +111,6 @@
   [_chart {:keys [items style place options one-sided?]} canvas box scales env]
   (let [{:keys [point span value-pixel] :as pl} (strip/placement box scales options place)
         fit? (data/option options :fit true)]
-    (strip/draw-n-labels! canvas pl items (fn [{:keys [values]}] (reduce max values)) options scales env)
     (doseq [{:keys [level slot values aesthetics]} items
             :let [st (group/style style aesthetics scales (:theme env))
                   s (double (span level))]
@@ -127,7 +126,8 @@
         (doseq [[[v] o] (map vector kept offsets)
                 :let [^Vec2 p (point v level (+ base (/ (* (if one-sided? side 1.0) (double o)) s)))]
                 :when (and (m/valid-double? (.x p)) (m/valid-double? (.y p)))]
-          (shape/draw! canvas (:shape st) p st))))))
+          (shape/draw! canvas (:shape st) p st))))
+    (strip/draw-n-labels! canvas pl items (fn [{:keys [values]}] (reduce max values)) options scales env)))
 
 (defn legend
   "Key glyph: the chart's shape centred in `box`."

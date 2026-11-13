@@ -74,14 +74,14 @@
   "Draw the points of one panel."
   [_chart {:keys [items style place options]} canvas box scales env]
   (let [{:keys [point] :as pl} (strip/placement box scales options place)]
-    (strip/draw-n-labels! canvas pl items (fn [{:keys [values]}] (reduce max values)) options scales env)
     (doseq [{:keys [level slot values offsets aesthetics]} items
             :let [st (group/style style aesthetics scales (:theme env))]
             :when st
             [v off] (map vector values offsets)
             :let [^Vec2 p (point v level (strip/in-slot slot (double off)))]
             :when (and (m/valid-double? (.x p)) (m/valid-double? (.y p)))]
-      (shape/draw! canvas (:shape st) p st))))
+      (shape/draw! canvas (:shape st) p st))
+    (strip/draw-n-labels! canvas pl items (fn [{:keys [values]}] (reduce max values)) options scales env)))
 
 (defn legend
   "Key glyph: the chart's shape centred in `box`."
