@@ -6,12 +6,13 @@
   * `:kernel` - fastmath KDE kernel keyword (default `:gaussian`)
   * `:bandwidth` - a number or a fastmath selector keyword (default `:nrd0`, as R)
   * `:n` - evaluation points (default 512), `:cut` - the curve spans `[min - cut*h, max + cut*h]` (default 3, as R)
-  * `:position` - grouped curves (see [[cljplot2.data.position]]): `:overlay` (default), `:stack` and `:fill` (every
-    group on one common range, stacked; fill - summing to 1, y title \"Proportion\"; areas filled with `:fill` or the
-    group colour, translucent), `:mirror` (exactly two groups, the second drawn downward; y tick labels show
+  * `:position` - grouped curves (see [[cljplot2.data.position]]): `:overlay` (default), `:stack` and `:normalize` (every
+    group on one common range, stacked; normalize - summing to 1, y title \"Proportion\"; areas filled with `:fill` or
+    the group colour with opacity `:alpha`), `:mirror` (exactly two groups, the second drawn downward; y tick labels show
     magnitudes); `:symmetric` - mirror only: both halves on one y range `[-M M]`; `:zero-line` - mirror only: draw
     the y = 0 line (default true; `:zero-line-color`, `:zero-line-width`)
-  * `:color`, `:width`, `:dash` (line), `:fill` (area under the curve, default `:none`)
+  * `:color`, `:width`, `:dash` (line), `:fill` (area under the curve, default `:none`), `:alpha` (opacity of stacked
+    areas without `:fill`, 0..1, default 0.6)
   * `:padding {:x [lo hi] :y [lo hi]}` - default `{:x [0.05 0.05] :y [0 0.05]}`
 
   Groups (see [[cljplot2.data.group]]) come from ordinal aesthetics (`:color` colors the line) and `:group`; a group with
@@ -36,14 +37,11 @@
 (def ^:private style-entries
   (conj polyline/style-entries
         (schema/optional :fill schema/color)
+        (schema/optional :alpha schema/fraction)
         (schema/optional :zero-line-color schema/color)
         (schema/optional :zero-line-width schema/non-neg)))
 
 (def ^:private positions (disj position/positions :dodge))
-
-(def ^:private ^:const stacked-alpha
-  "Fill opacity (0-255) of stacked areas without a `:fill` option: the group colour, translucent."
-  160)
 
 (def Schema
   "Schemas of the density chart: `:style` (theme `[:chart :density]`), `:options`, `:mapping` (merged)."
@@ -63,14 +61,14 @@
 
 (defn- style
   [options theme]
-  (merge (get-in theme [:chart :density]) (select-keys options [:color :width :dash :fill :zero-line-color :zero-line-width])))
+  (merge (get-in theme [:chart :density]) (select-keys options [:color :width :dash :fill :alpha :zero-line-color :zero-line-width])))
 
 (defn- area-color
   "Fill of a group's area with style `st` (group attributes merged): `:fill`, or for stacked curves (`stacked?`) without
-  one the group colour, translucent; `:none` - no area."
+  one the group colour with opacity `:alpha` (0..1); `:none` - no area."
   [st stacked?]
   (if (and stacked? (theme/none? (:fill st)))
-    (c/set-alpha (:color st) stacked-alpha)
+    (c/set-alpha (:color st) (* 255.0 (double (:alpha st))))
     (:fill st)))
 
 (defn- estimate
@@ -107,7 +105,7 @@
                                  (assoc (estimate values options) :group g)))
                              (map vector gs group-values)))]
     (case position
-      (:stack :fill) (if (empty? estimates)
+      (:stack :normalize) (if (empty? estimates)
                        []
                        (let [xs (grid-points (reduce min (map :lo estimates)) (reduce max (map :hi estimates)) n)
                              curves (mapv #(curve % xs) estimates)
@@ -161,7 +159,7 @@
      :padding (merge {:x [0.05 0.05] :y (if (= position :mirror) [0.05 0.05] [0.0 0.05])} (:padding options))
      :na (group/na-dims panels)
      :dropped (assoc dropped :x x-dropped :group no-curve)
-     :axis-titles {:y (if (= position :fill) "Proportion" "Density")}
+     :axis-titles {:y (if (= position :normalize) "Proportion" "Density")}
      :tick-format (when (= position :mirror) {:y :absolute})}))
 
 (defn- draw-zero-line!
@@ -180,31 +178,36 @@
           (c2d/line canvas 0 p w p))))))
 
 (defn draw
-  "Draw the curves of one panel: fill (under the curve to y = 0; stacked curves - between `:y0` and `:y`, `:fill` or
-  the group colour, translucent), then the line; mirror (with `:zero-line`, default on) - then the y = 0 line."
+  "Draw the curves of one panel: every group's area (under the curve to y = 0, `:fill`; stacked curves - between
+  `:y0` and `:y`, `:fill` or the group colour with `:alpha`), then - mirror with `:zero-line` (default on) - the
+  y = 0 line, then every curve's line (lines are never covered by areas or the zero line)."
   [_chart {:keys [curves style zero-line?]} canvas box scales env]
   (when (seq curves)
-    (let [projection (scale/projection scales)]
-      (doseq [{:keys [x y y0 aesthetics]} curves
-              :let [st (group/style style aesthetics scales (:theme env))]
-              :when st]
-        (let [points (mapv projection x y)
-              bases (mapv projection x (or y0 (repeat 0.0)))
-              px (mapv #(.x ^Vec2 %) points) py (mapv #(.y ^Vec2 %) points)
-              bx (mapv #(.x ^Vec2 %) bases) by (mapv #(.y ^Vec2 %) bases)]
-          (if y0
-            (polyline/fill-between! canvas px py bx by (area-color st true))
-            (polyline/fill-under! canvas px py bx by (:fill st)))
-          (polyline/draw! canvas px py st)))
+    (let [projection (scale/projection scales)
+          coords (fn [points] [(mapv #(.x ^Vec2 %) points) (mapv #(.y ^Vec2 %) points)])
+          drawn (vec (keep (fn [{:keys [x y y0 aesthetics]}]
+                             (when-let [st (group/style style aesthetics scales (:theme env))]
+                               {:st st :y0? (some? y0)
+                                :curve (coords (mapv projection x y))
+                                :base (coords (mapv projection x (or y0 (repeat 0.0))))}))
+                           curves))]
+      (doseq [{:keys [st y0? curve base]} drawn
+              :let [[px py] curve [bx by] base]]
+        (if y0?
+          (polyline/fill-between! canvas px py bx by (area-color st true))
+          (polyline/fill-under! canvas px py bx by (:fill st))))
       (when zero-line?
-        (draw-zero-line! canvas box scales style)))))
+        (draw-zero-line! canvas box scales style))
+      (doseq [{:keys [st curve]} drawn
+              :let [[px py] curve]]
+        (polyline/draw! canvas px py st)))))
 
 (defn legend
   "Key glyph: a horizontal line through the middle of `box`; when the chart fills areas (`:fill`, or `:stack` /
-  `:fill` positions) a filled square (the area colour) outlined in the line colour."
+  `:normalize` positions) a filled square (the area colour) outlined in the line colour."
   [{:keys [options]} attributes canvas {:keys [x y w h]} env]
   (let [st (merge (style options (:theme env)) (select-keys attributes [:color]))
-        area (area-color st (contains? #{:stack :fill} (:position options)))]
+        area (area-color st (contains? #{:stack :normalize} (:position options)))]
     (if (theme/none? area)
       (let [cy (+ (double y) (* 0.5 (double h)))]
         (polyline/draw! canvas [(double x) (+ (double x) (double w))] [cy cy] st))

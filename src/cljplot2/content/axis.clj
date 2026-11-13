@@ -18,8 +18,9 @@
 
   Tick labels rotate by theme `[:axis k :label-rotation]` (clockwise degrees, -90..90; e.g. -90 or -45 for long
   bands labels): a horizontal axis puts the end of each rotated text nearest the axis at its tick (see
-  [[label-offsets]]), a vertical axis keeps labels centred on their ticks; natural sizes, thinning and overhangs use
-  the rotated label boxes."
+  [[label-offset-fn]]), a vertical axis keeps labels centred on their ticks; natural sizes, thinning and overhangs use
+  the rotated label boxes. A horizontal axis followed by another panel's axis (`:next-panel-gap`, set by the facet
+  grid for every column but the last) skips its labels that would overlap the next panel's labels."
   (:require [cljplot2.schema :as schema]
             [clojure2d.core :as c2d]
             [fastmath.core :as m]
@@ -36,8 +37,9 @@
 (set! *unchecked-math* :warn-on-boxed)
 
 (def Axis
-  "`{:kind :axis}` content: `:scale` `:x` or `:y`."
-  [:map [:scale [:enum :x :y]]])
+  "`{:kind :axis}` content: `:scale` `:x` or `:y`; optional `:next-panel-gap` - pixels to the next panel's identical
+  axis along a horizontal axis (facet columns): labels overlapping that axis's labels aren't drawn."
+  [:map [:scale [:enum :x :y]] (schema/optional :next-panel-gap schema/non-neg)])
 
 (def Overhang
   "`{:kind :axis-overhang}` content: `:scale` `:x` or `:y`, `:end` `:start` or `:end`."
@@ -61,20 +63,24 @@
   (let [rotation (label-rotation k env)]
     (mapv #(measure/natural-size (tick-label % rotation) env) (:tick-labels finalized))))
 
-(defn- label-offsets
-  "Per tick label of the axis of scale `k`: offset of its box centre from the tick along the axis. Labels of a
-  horizontal axis rotated by `r` (not 0) put the end of the text nearest the axis at the tick: the centre moves by
-  `sign(r) * w/2 * cos(r)` (`w` - the unrotated text frame width); vertical axes keep labels centred on the tick."
+(defn- label-offset-fn
+  "Function of a tick label text to the offset of its box centre from the tick along the axis of scale `k`. Labels
+  of a horizontal axis rotated by `r` (not 0) put the end of the text nearest the axis at the tick: the centre
+  moves by `sign(r) * w/2 * cos(r)` (`w` - the unrotated text frame width); vertical axes keep labels centred."
   [k finalized env]
   (let [rotation (double (label-rotation k env))]
     (if (or (zero? rotation) (not (scale/horizontal? k finalized)))
-      (vec (repeat (count (:tick-labels finalized)) 0.0))
-      (let [a (m/radians rotation)
-            factor (* 0.5 (m/signum rotation) (m/cos a))]
-        (mapv (fn [text] (* factor (double (first (label/text-frame (tick-label text) (:canvas env) (:theme env))))))
-              (:tick-labels finalized))))))
+      (constantly 0.0)
+      (let [factor (* 0.5 (m/signum rotation) (m/cos (m/radians rotation)))]
+        (fn [text] (* factor (double (first (label/text-frame (tick-label text) (:canvas env) (:theme env))))))))))
 
-(defn- label-spans
+(defn- label-offsets
+  "Per tick label of the axis of scale `k`: offset of its box centre from the tick along the axis, see
+  [[label-offset-fn]]."
+  [k finalized env]
+  (mapv (label-offset-fn k finalized env) (:tick-labels finalized)))
+
+(defn label-spans
   "Per tick label of the axis of scale `k` with label `sizes`: the length along the axis a label needs so it doesn't
   overlap its neighbour, or `nil` when unrotated (the size along the axis). Rotated labels are parallel, so a label
   needs the smaller of its box length along the axis and its text frame height over the sine of the angle between
@@ -96,31 +102,49 @@
   [env]
   (:padding (theme/text-style (:theme env) (tick-label nil))))
 
+(defn- label-intervals
+  "`[centres extents]` of the tick labels of the axis of scale `k` along the axis: centre - the tick position moved
+  by its offset (`offsets`, see [[label-offsets]]), extent - the label's text block (natural `sizes` (`Vec2`) along
+  the axis, or `spans` (see [[label-spans]]) when given, without the label `padding` on both sides)."
+  [k finalized sizes padding offsets spans]
+  (let [forward (scale/forward-fn finalized)
+        inset (* 2.0 (double padding))
+        horizontal? (scale/horizontal? k finalized)]
+    [(mapv (fn [tick off] (+ (double (forward tick)) (double off))) (:ticks finalized) (or offsets (repeat 0.0)))
+     (if spans
+       (mapv #(- (double %) inset) spans)
+       (mapv (fn [^Vec2 size] (- (if horizontal? (.x size) (.y size)) inset)) sizes))]))
+
+(defn- overlap?
+  "Do labels with centres `ci`, `cj` and extents `ei`, `ej` overlap by more than 1 px (natural sizes are rounded up)?"
+  [^double ci ^double ei ^double cj ^double ej]
+  (< (m/abs (- cj ci)) (- (* 0.5 (+ ei ej)) 1.0)))
+
 (defn label-step
   "Step `s` between drawn tick labels of the axis of scale `k`: 1 unless `finalized` is a bands scale whose labels would overlap;
   then the smallest `s` such that labels `0, s, 2s, ...` don't overlap along the axis (at most the label count).
-  Labels overlap when their text blocks - natural `sizes` (`Vec2`) without the label `padding` on both sides - at
-  their tick positions (moved by `offsets` along the axis, see [[label-offsets]]) overlap by more than 1 px
-  (natural sizes are rounded up); `spans` (see [[label-spans]]) replace the sizes along the axis when given."
+  Labels overlap when their text blocks overlap by more than 1 px, see [[label-intervals]] (`sizes`, `padding`,
+  `offsets`, `spans`)."
   ([k finalized sizes padding] (label-step k finalized sizes padding nil nil))
   ([k finalized sizes padding offsets spans]
-  (let [n (count sizes)]
-    (if (or (not= :bands (:kind finalized)) (< n 2))
-      1
-      (let [forward (scale/forward-fn finalized)
-            positions (mapv (fn [tick off] (+ (double (forward tick)) (double off)))
-                            (:ticks finalized) (or offsets (repeat 0.0)))
-            inset (* 2.0 (double padding))
-            horizontal? (scale/horizontal? k finalized)
-            extents (if spans
-                      (mapv #(- (double %) inset) spans)
-                      (mapv (fn [^Vec2 size] (- (if horizontal? (.x size) (.y size)) inset)) sizes))
-            fits? (fn [^long step]
-                    (every? (fn [i] (let [i (long i) j (+ i step)]
-                                      (>= (m/abs (- (double (positions j)) (double (positions i))))
-                                          (- (* 0.5 (+ (double (extents i)) (double (extents j)))) 1.0))))
-                            (range 0 (- n step) step)))]
-        (or (first (filter fits? (range 1 n))) n))))))
+   (let [n (count sizes)]
+     (if (or (not= :bands (:kind finalized)) (< n 2))
+       1
+       (let [[centres extents] (label-intervals k finalized sizes padding offsets spans)
+             fits? (fn [^long step]
+                     (every? (fn [i] (let [i (long i) j (+ i step)]
+                                       (not (overlap? (centres i) (extents i) (centres j) (extents j)))))
+                             (range 0 (- n step) step)))]
+         (or (first (filter fits? (range 1 n))) n))))))
+
+(defn crossing-labels
+  "Indices of the `drawn` labels (with `[centres extents]` along the axis) that overlap a drawn label of the next
+  panel's identical axis, `shift` further along (panel length plus gap); these are skipped so labels never cross
+  into a neighbouring facet panel's labels (the next panel keeps its own)."
+  [[centres extents] drawn ^double shift]
+  (set (filter (fn [i]
+                 (some (fn [j] (overlap? (centres i) (extents i) (+ shift (double (centres j))) (extents j))) drawn))
+               drawn)))
 
 (defn- drawn?
   "Is label `i` drawn with label step `step`?"
@@ -158,7 +182,7 @@
             ^Vec2 size (measure/natural-size (tick-label ((:tick-labels finalized) i) (label-rotation k env)) env)
             horizontal? (scale/horizontal? k finalized)
             half (* 0.5 (if horizontal? (.x size) (.y size)))
-            label-offset (double ((label-offsets k finalized env) i))
+            label-offset (double ((label-offset-fn k finalized env) ((:tick-labels finalized) i)))
             p (double (forward nearest))
             ;; rounded up like label sizes, so integer track edges never clip the label
             overhang (m/ceil (m/max 0.0 (if (zero? label-offset)
@@ -179,7 +203,7 @@
 (defn- draws? [color width] (and (not (theme/none? color)) (pos? (double width))))
 
 (defmethod draw/draw-content :axis
-  [{k :scale} c {:keys [x y w h]} env]
+  [{k :scale :as content} c {:keys [x y w h]} env]
   (when-let [finalized (get-in env [:scales k])]
     (let [{:keys [line-color line-width tick-color tick-length tick-width label-gap]} (get-in env [:theme :axis k])
           x (double x) y (double y) w (double w) h (double h)
@@ -196,7 +220,14 @@
           rotation (label-rotation k env)
           sizes (label-sizes k finalized env)
           offsets (label-offsets k finalized env)
-          step (label-step k finalized sizes (label-padding env) offsets (label-spans k finalized env sizes))
+          spans (label-spans k finalized env sizes)
+          step (label-step k finalized sizes (label-padding env) offsets spans)
+          drawn (filterv #(drawn? step %) (range (count sizes)))
+          next-gap (:next-panel-gap content)
+          skipped (if (and horizontal? next-gap)
+                    (crossing-labels (label-intervals k finalized sizes (label-padding env) offsets spans) drawn
+                                     (+ w (double next-gap)))
+                    #{})
           draw-label! (fn [text box] (canvas/call-with-isolated-graphics c #(draw/draw-content (tick-label text rotation) % box env)))]
       (when (draws? line-color line-width)
         (set-line-style! c line-color line-width)
@@ -211,7 +242,7 @@
             (c2d/line c p y p (+ y tick-length))
             (c2d/line c (+ x w) p (- (+ x w) tick-length) p))))
       (doseq [[i ^double p text ^Vec2 size ^double off] (map vector (range) positions (:tick-labels finalized) sizes offsets)
-              :when (drawn? step i)
+              :when (and (drawn? step i) (not (skipped i)))
               :let [lw (.x size) lh (.y size)]]
         (if horizontal?
           (draw-label! text {:x (- (+ p off) (* 0.5 lw)) :y (+ y tick-length label-gap) :w lw :h lh})

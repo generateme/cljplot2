@@ -18,13 +18,19 @@
    (schema/optional :width schema/non-neg)
    (schema/nilable :dash schema/dash)])
 
+(defn- finite-runs
+  "Runs of consecutive indices of `xs` / `ys` whose coordinates are finite; a non-finite coordinate ends a run."
+  [xs ys]
+  (let [finite? (fn [i] (and (m/valid-double? (double (nth xs i))) (m/valid-double? (double (nth ys i)))))]
+    (->> (range (count xs))
+         (partition-by finite?)
+         (filter (comp finite? first))
+         (mapv vec))))
+
 (defn runs
   "Runs of consecutive points `[x y]` (from `xs`, `ys`) with finite coordinates; a non-finite coordinate ends a run."
   [xs ys]
-  (->> (map vector xs ys)
-       (partition-by (fn [[x y]] (and (m/valid-double? (double x)) (m/valid-double? (double y)))))
-       (filter (fn [[[x y]]] (and (m/valid-double? (double x)) (m/valid-double? (double y)))))
-       (mapv vec)))
+  (mapv (fn [run] (mapv (fn [i] [(nth xs i) (nth ys i)]) run)) (finite-runs xs ys)))
 
 (defn set-style!
   "Set the canvas color and stroke of line `style`; false when the style draws nothing."
@@ -35,21 +41,14 @@
                                     (and dash (not (theme/none? dash))) (assoc :dash (vec dash))))
     true))
 
+
+
 (defn draw!
   "Stroke the runs of `xs` / `ys` (pixels) with line `style`; a single-point run draws nothing."
   [canvas xs ys style]
   (when (set-style! canvas style)
     (doseq [run (runs xs ys) :when (> (count run) 1)]
       (c2d/path canvas run false true))))
-
-(defn- finite-runs
-  "Runs of consecutive indices of `xs` / `ys` whose coordinates are finite; a non-finite coordinate ends a run."
-  [xs ys]
-  (let [finite? (fn [i] (and (m/valid-double? (double (nth xs i))) (m/valid-double? (double (nth ys i)))))]
-    (->> (range (count xs))
-         (partition-by finite?)
-         (filter (comp finite? first))
-         (mapv vec))))
 
 (defn fill-under!
   "Fill the area between each run of `xs` / `ys` (pixels) and its baseline: the polygon from the base point of the

@@ -81,7 +81,8 @@
    :legend {:gap 5 :key-size 14 :fill :none :border-color :none :border-width 1 :bar-length :stretch :bar-width nil}
    :chart {:scatter {:size 4 :color [49 54 149 180] :stroke-color :none :stroke-width 1 :shape \O}
            :histogram {:color [49 54 149] :stroke-width 1 :alpha 0.6}
-           :density {:color [49 54 149] :width 1 :dash :none :fill :none :zero-line-color :black :zero-line-width 1}
+           :density {:color [49 54 149] :width 1 :dash :none :fill :none :alpha 0.6 :zero-line-color :black
+                     :zero-line-width 1}
            :line {:color [49 54 149] :width 1 :dash :none :fill :none}
            :ecdf {:color [49 54 149] :width 1 :dash :none}
            :treemap {:padding 3 :border-color :white :border-width 1}}

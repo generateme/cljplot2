@@ -7,7 +7,7 @@
   * `:overlay` - every group from 0 (marks drawn over each other)
   * `:dodge` - side by side: the shared interval split among the groups ([[dodge-interval]]), heights from 0
   * `:stack` - groups on top of each other, in group order
-  * `:fill` - stacked and normalized: per index the groups sum to 1 (an index summing to 0 stays at 0)
+  * `:normalize` - stacked and normalized: per index the groups sum to 1 (an index summing to 0 stays at 0)
   * `:mirror` - exactly two groups, the second drawn downward (`[-h 0]`)"
   (:require [fastmath.core :as m]
             [cljplot2.schema :as schema]))
@@ -17,7 +17,7 @@
 
 (def positions
   "Every group position."
-  #{:overlay :dodge :stack :fill :mirror})
+  #{:overlay :dodge :stack :normalize :mirror})
 
 (defn- cumulative
   "Per group (in order) the running sums of `heights` before it: `[[0 ...] [h0 ...] [h0+h1 ...] ...]`."
@@ -41,11 +41,11 @@
                              (schema/fail! "Position :mirror needs exactly two groups." {:key :position :groups (count heights)}))
       (= :stack position) (mapv (fn [hs below] (mapv (fn [^double h ^double b] [b (+ b h)]) hs below))
                                 heights (cumulative heights n))
-      (= :fill position) (let [totals (apply mapv + heights)
-                               scale (mapv (fn [^double t] (if (pos? t) (/ 1.0 t) 0.0)) totals)
-                               scaled (mapv #(mapv * % scale) heights)]
-                           (mapv (fn [hs below] (mapv (fn [^double h ^double b] [b (+ b h)]) hs below))
-                                 scaled (cumulative scaled n)))
+      (= :normalize position) (let [totals (apply mapv + heights)
+                                    scale (mapv (fn [^double t] (if (pos? t) (/ 1.0 t) 0.0)) totals)
+                                    scaled (mapv #(mapv * % scale) heights)]
+                                (mapv (fn [hs below] (mapv (fn [^double h ^double b] [b (+ b h)]) hs below))
+                                      scaled (cumulative scaled n)))
       :else (throw (ex-info (str "Unknown position " (pr-str position) ".") {:key :position :value position})))))
 
 (defn dodge-interval

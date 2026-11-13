@@ -11,8 +11,8 @@
       :overlay [[[0.0 1.0] [0.0 2.0] [0.0 0.0]]]
       :dodge [[[0.0 1.0] [0.0 2.0] [0.0 0.0]]]
       :stack [[[0.0 1.0] [0.0 2.0] [0.0 0.0]]]
-      :fill [[[0.0 1.0] [0.0 1.0] [0.0 0.0]]]))
-  (testing "three groups: stack is cumulative in group order, fill sums to 1, a zero total stays 0"
+      :normalize [[[0.0 1.0] [0.0 1.0] [0.0 0.0]]]))
+  (testing "three groups: stack is cumulative in group order, normalize sums to 1, a zero total stays 0"
     (let [hs [[1 0 2] [2 0 2] [1 0 4]]]
       (is (= [[[0.0 1.0] [0.0 0.0] [0.0 2.0]]
               [[1.0 3.0] [0.0 0.0] [2.0 4.0]]
@@ -21,7 +21,7 @@
       (is (= [[[0.0 0.25] [0.0 0.0] [0.0 0.25]]
               [[0.25 0.75] [0.0 0.0] [0.25 0.5]]
               [[0.75 1.0] [0.0 0.0] [0.5 1.0]]]
-             (position/stack-values :fill hs)))))
+             (position/stack-values :normalize hs)))))
   (testing "mirror: exactly two groups, the second downward"
     (is (= [[[0.0 1.0] [0.0 3.0]] [[-2.0 0.0] [-0.0 0.0]]] (position/stack-values :mirror [[1 3] [2 0]])))
     (is (= :position (:key (error #(position/stack-values :mirror [[1]])))))

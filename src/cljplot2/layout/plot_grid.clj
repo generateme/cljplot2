@@ -200,7 +200,9 @@
                       panels)
                 (cond-> (contains? scale-specs h-key)
                   (into (concat (for [c (range cols)]
-                                  {:id [:x-axis c] :column [:panel c] :row :x-axis :content {:kind :axis :scale h-key}})
+                                  {:id [:x-axis c] :column [:panel c] :row :x-axis
+                                   :content (cond-> {:kind :axis :scale h-key}
+                                              (< (long c) (dec cols)) (assoc :next-panel-gap gap))})
                                 (rest (axis-items :bottom h-key)))))
                 (cond-> (contains? scale-specs v-key)
                   (into (concat (for [r (range rows)]

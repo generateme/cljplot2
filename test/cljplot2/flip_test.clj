@@ -154,3 +154,24 @@
     (is (pos? (:left plain)) (str kind " draws"))
     (is (> (:left plain) (:right plain)) (str kind " unflipped: low x on the left"))
     (is (> (:bottom flipped) (:top flipped)) (str kind " flipped: low x at the bottom"))))
+
+(deftest flipped-line-fill-test
+  (let [p {:data (for [i (range 21)] {:x i :y (- i 10)})
+           :mapping {:x :x :y :y}
+           :charts [(chart/line {:color :red :fill :red})]
+           :flip true}]
+    (testing "fill on both sides of the vertical y = 0 line"
+      (let [{:keys [left right]} (red-halves p)]
+        (is (pos? left))
+        (is (pos? right))))
+    (testing "0 outside the y domain: the baseline is clamped to the panel, nothing is filled outside it"
+      (let [p (assoc p :data (for [i (range 21)] {:x i :y (+ 5 (mod i 4))}) :scales {:y {:domain [4 10]}})
+            options {:width 400 :height 400}
+            b (plot/build p options)
+            {:keys [x y w h]} (panel-box b)
+            ^BufferedImage img (plot/render-image p options)
+            outside (for [i (range 0 (long x)) j (range (long y) (+ (long y) (long h)))
+                          :when (red? (.getRGB img (int i) (int j)))]
+                      [i j])]
+        (is (empty? outside))
+        (is (pos? (:left (red-halves p))) "filled from the panel's left edge")))))

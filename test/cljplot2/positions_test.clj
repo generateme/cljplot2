@@ -31,8 +31,8 @@
       (is (= 300.0 (reduce + (map total (vals by-bin)))) "every value counted once")
       (is (== (reduce max (map :y1 bars)) (double (get-in b [:extents :y :extent :max]))))
       (is (not (:translucent? (panel-data b))))))
-  (testing ":fill - every non-empty bin tops at 1; y title Proportion"
-    (let [b (built groups3 (chart/histogram {:position :fill :bins 6}))
+  (testing ":normalize - every non-empty bin tops at 1; y title Proportion"
+    (let [b (built groups3 (chart/histogram {:position :normalize :bins 6}))
           tops (map (fn [[_ bs]] (reduce max (map :y1 bs))) (group-by :x0 (:bars (panel-data b))))]
       (is (every? #(< (Math/abs (- 1.0 (double %))) 1e-12) tops))
       (is (= "Proportion" (get-in b [:stats 0 :axis-titles :y])))))
@@ -51,8 +51,8 @@
       (is (= 64 (count (:x (first curves)))))
       (is (every? zero? (:y0 (first curves))))
       (doseq [[a z] (partition 2 1 curves)] (is (= (:y a) (:y0 z))))))
-  (testing ":fill - the last curve tops at 1 where any density is positive; y title Proportion"
-    (let [b (built groups3 (chart/density {:position :fill :n 64}))
+  (testing ":normalize - the last curve tops at 1 where any density is positive; y title Proportion"
+    (let [b (built groups3 (chart/density {:position :normalize :n 64}))
           last-curve (last (:curves (panel-data b)))]
       (is (every? #(< (Math/abs (- 1.0 (double %))) 1e-9) (:y last-curve)))
       (is (= "Proportion" (get-in b [:stats 0 :axis-titles :y])))))
@@ -104,6 +104,19 @@
 (deftest density-legend-glyph-test
   (testing "line glyph without areas: the pixel above the middle line is empty"
     (is (zero? (alpha (glyph-pixel (chart/density))))))
-  (testing "filled glyph for stacked areas and for :fill"
-    (doseq [c [(chart/density {:position :stack}) (chart/density {:position :fill}) (chart/density {:fill :blue})]]
+  (testing "filled glyph for stacked and normalized areas and for a :fill colour"
+    (doseq [c [(chart/density {:position :stack}) (chart/density {:position :normalize}) (chart/density {:fill :blue})]]
       (is (pos? (alpha (glyph-pixel c))) (pr-str (:options c))))))
+
+(deftest density-alpha-test
+  (testing "stacked areas use the style :alpha (theme or option) for the group colour"
+    (let [area-alpha (fn [c] (let [canvas (c2d/canvas 20 20)]
+                               (c2d/with-canvas-> canvas
+                                 ((fn [cv] ((:legend c) c {:color :red} cv {:x 0 :y 0 :w 20 :h 20} {:theme theme/default-theme}) cv)))
+                               (alpha (.getRGB ^java.awt.image.BufferedImage (c2d/get-image canvas) 10 10))))]
+      (is (= 153 (area-alpha (chart/density {:position :stack}))) "default 0.6")
+      (is (= 255 (area-alpha (chart/density {:position :stack :alpha 1.0}))))
+      (is (= #{[:charts 0 :options :alpha]} (error-ins #(built groups3 (chart/density {:position :stack :alpha 2})))))))
+  (testing ":fill is no longer a position"
+    (is (= #{[:charts 0 :options :position]} (error-ins #(built groups3 (chart/density {:position :fill})))))
+    (is (= #{[:charts 0 :options :position]} (error-ins #(built groups3 (chart/histogram {:position :fill})))))))

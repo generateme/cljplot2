@@ -71,7 +71,7 @@
                                                   (:tick-labels finalized))]
                                   (axis/label-step :x finalized sizes 2.0
                                                    (vec (repeat (count sizes) 0.0))
-                                                   (#'axis/label-spans :x finalized env sizes)))))))]
+                                                   (axis/label-spans :x finalized env sizes)))))))]
     (is (> (step 0) (step -45)) "parallel rotated labels need less room than their boxes")
     (is (>= (step -45) (step -90)))
     (is (= 1 (step -90)) "vertical text: every band label fits")))
@@ -80,3 +80,17 @@
   (is (= #{[:theme :axis :x :label-rotation]} (error-ins #(plot/build {:theme {:axis {:x {:label-rotation 91}}}}))))
   (is (= #{[:theme :axis :y :label-rotation]} (error-ins #(plot/build {:theme {:axis {:y {:label-rotation "45"}}}}))))
   (is (some? (plot/build {:theme {:axis {:x {:label-rotation -90} :y {:label-rotation 90}}}}))))
+
+(deftest crossing-labels-test
+  (testing "labels overlapping the next panel's identical labels are skipped; the next panel keeps its own"
+    (is (= #{2} (axis/crossing-labels [[0.0 10.0 20.0] [8.0 8.0 8.0]] [0 1 2] 25.0)))
+    (is (= #{} (axis/crossing-labels [[0.0 10.0 20.0] [8.0 8.0 8.0]] [0 1 2] 40.0)))
+    (is (= #{} (axis/crossing-labels [[0.0 10.0 20.0] [8.0 8.0 8.0]] [0 1] 25.0)) "only drawn labels count")
+    (is (= #{1 2} (axis/crossing-labels [[0.0 10.0 20.0] [30.0 30.0 30.0]] [0 1 2] 35.0))))
+  (testing "the facet grid gives every horizontal axis but the last column :next-panel-gap"
+    (let [p {:data (for [i (range 40)] {:x (str "a long band label " (mod i 5)) :y i :f (mod i 3)})
+             :mapping {:x :x :y :y :facet :f} :facets {:rows 1} :charts [(chart/scatter)]}
+          items (:items (:grid (built p)))
+          gaps (into {} (keep (fn [{:keys [id content]}] (when (and (vector? id) (= :x-axis (first id))) [(second id) (:next-panel-gap content)])) items))]
+      (let [gap (get-in theme/default-theme [:facet :gap])] (is (= {0 gap 1 gap 2 nil} gaps)))
+      (is (some? (plot/render p {:width 600 :height 400}))))))

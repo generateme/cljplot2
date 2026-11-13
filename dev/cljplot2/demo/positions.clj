@@ -1,5 +1,5 @@
 (ns cljplot2.demo.positions
-  "Group positions demo (`cljplot2.data.position`): histogram stack / fill / mirror, density stack / fill / mirror,
+  "Group positions demo (`cljplot2.data.position`): histogram stack / normalize / mirror, density stack / normalize / mirror,
   flipped variants."
   (:require [fastmath.random :as r]
             [cljplot2.chart :as chart]))
@@ -30,10 +30,10 @@
 (def images
   "Images of this demo: `[file-name plot options]`, saved to `results/positions/` by [[cljplot2.demo/render!]]."
   [["hist-stack-600x400.png" (histogram three-groups :stack {}) {:width 600 :height 400}]
-   ["hist-fill-600x400.png" (histogram three-groups :fill {}) {:width 600 :height 400}]
+   ["hist-normalize-600x400.png" (histogram three-groups :normalize {}) {:width 600 :height 400}]
    ["hist-stack-flip-500x500.png" (assoc (histogram three-groups :stack {}) :flip true) {:width 500 :height 500}]
    ["density-stack-600x400.png" (density three-groups :stack {}) {:width 600 :height 400}]
-   ["density-fill-600x400.png" (density three-groups :fill {}) {:width 600 :height 400}]
+   ["density-normalize-600x400.png" (density three-groups :normalize {}) {:width 600 :height 400}]
    ["density-mirror-600x400.png" (density two-groups :mirror {:fill [0 0 0 30]}) {:width 600 :height 400}]
    ["density-mirror-symmetric-600x400.png" (density two-groups :mirror {:symmetric true}) {:width 600 :height 400}]
    ["density-mirror-flip-500x500.png" (assoc (density two-groups :mirror {}) :flip true) {:width 500 :height 500}]])

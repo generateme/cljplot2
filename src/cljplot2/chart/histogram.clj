@@ -9,7 +9,7 @@
   * `:y` - bar height: `:percent` (default, of the panel's total, or the group's when grouped), `:count`, `:pmf`
     (share of the total, sums to 1), `:density` (count / (n * width), area 1)
   * `:position` - grouped bars (see [[cljplot2.data.position]]): `:overlay` (default; full-width, fill alpha
-    `:alpha`), `:dodge` (bins split among the groups), `:stack` (groups on top of each other), `:fill` (stacked, each
+    `:alpha`), `:dodge` (bins split among the groups), `:stack` (groups on top of each other), `:normalize` (stacked, each
     bin summing to 1; y title \"Proportion\"), `:mirror` (exactly two groups, the second drawn downward; y tick labels
     show magnitudes)
   * `:symmetric` - mirror only: `true` ties both halves to one y range `[-M M]`, `M` the tallest bar of either group
@@ -177,7 +177,7 @@
      :padding (merge {:x [0.05 0.05] :y (if (= position :mirror) [0.05 0.05] [0.0 0.05])} (:padding options))
      :na (group/na-dims panels)
      :dropped (assoc dropped :x (+ (long (reduce + 0 (map :dropped (mapcat identity (vals xs))))) (long outside)))
-     :axis-titles {:y (if (= position :fill) "Proportion" (measures y))}
+     :axis-titles {:y (if (= position :normalize) "Proportion" (measures y))}
      :tick-format (when (= position :mirror) {:y :absolute})}))
 
 (defn draw
