@@ -1,11 +1,9 @@
 (ns cljplot2.demo.step6
-  "Step 6 demo: facets, saved to `results/step6/`.
+  "Step 6 demo: facets.
   Fig 1.1 layout (Chem97, faceted by `score`, 3x2) and grid facets with an NA row."
   (:require [clojure.data.json :as json]
             [clojure.java.io :as io]
-            [clojure2d.core :as c2d]
-            [cljplot2.chart :as chart]
-            [cljplot2.core :as plot]))
+            [cljplot2.chart :as chart]))
 
 (def chem97 (json/read-str (slurp (io/resource "chem97.json")) :key-fn keyword))
 
@@ -23,10 +21,8 @@
    :charts [(chart/scatter)]
    :labels {:title "Grid facets with an NA row" :x "x" :y "y"}})
 
-(defn -main [& _]
-  (doseq [[file-name p options] [["fig-1-1-800x600.png" fig-1-1 {:width 800 :height 600}]
-                                 ["fig-1-1-800x600-debug.png" fig-1-1 {:width 800 :height 600 :debug true}]
-                                 ["grid-700x500.png" grid-plot {:width 700 :height 500}]]
-          :let [path (str "results/step6/" file-name)]]
-    (c2d/save (plot/render p options) path)
-    (println "saved" path)))
+(def images
+  "Images of this step: `[file-name plot options]`, saved to `results/step6/` by [[cljplot2.demo/run!]]."
+  [["fig-1-1-800x600.png" fig-1-1 {:width 800 :height 600}]
+   ["fig-1-1-800x600-debug.png" fig-1-1 {:width 800 :height 600 :debug true}]
+   ["grid-700x500.png" grid-plot {:width 700 :height 500}]])

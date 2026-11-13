@@ -1,0 +1,5 @@
+;; Book chapters in reading order (paths relative to notebooks/). Use case sections follow the R Graph Gallery
+;; site order; galleries: cljplot extras, lattice, vega. Parts without chapters are left out of the book.
+["index.clj"
+ {:part "Use cases" :chapters []}
+ {:part "Galleries" :chapters []}]

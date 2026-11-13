@@ -1,0 +1,11 @@
+{:base-source-path "notebooks"
+ :base-target-path "docs"
+ :clean-up-target-dir true
+ :format [:quarto :html]
+ ;; datasets downloadable from the book (docs/notebooks/data/); replaces Clay's default ["src" "notebooks"]
+ :subdirs-to-sync ["notebooks/data"]
+ :quarto {:format {:html {:toc true
+                          :toc-location :right
+                          :toc-depth 4
+                          :theme :cosmo}}
+          :code-block-background true}}

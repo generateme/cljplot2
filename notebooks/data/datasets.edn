@@ -1,0 +1,10 @@
+;; Datasets used by the notebooks: key -> {:file :format :title :source :licence :via :notes?}
+;; `:file` is relative to this folder, `:format` is :json (array of objects) or :csv (header row).
+;; `:via` says where this copy comes from; `:source` and `:licence` describe the original data.
+{:faithful {:file "faithful.json"
+            :format :json
+            :title "Old Faithful geyser eruptions"
+            :source "R datasets package `faithful` (Härdle 1991; Azzalini & Bowman 1990)"
+            :licence "Part of R (GPL-2 | GPL-3)"
+            :via "cljplot2 dev/resources"
+            :notes "272 rows: `eruptions` (eruption time, min), `waiting` (time to next eruption, min)."}}

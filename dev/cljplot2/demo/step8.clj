@@ -1,13 +1,11 @@
 (ns cljplot2.demo.step8
-  "Step 8 demo: statistical charts, saved to `results/step8/`.
+  "Step 8 demo: statistical charts.
   Fig 1.1 (histogram), Fig 1.2 (density), Fig 1.3 (density grouped by score), densities by score and gender, grouped histograms (overlay, dodge, mirror),
   line and ECDF."
   (:require [clojure.data.json :as json]
             [clojure.java.io :as io]
-            [clojure2d.core :as c2d]
             [fastmath.random :as r]
-            [cljplot2.chart :as chart]
-            [cljplot2.core :as plot]))
+            [cljplot2.chart :as chart]))
 
 (defn- read-json [file] (json/read-str (slurp (io/resource file)) :key-fn keyword))
 
@@ -79,20 +77,18 @@
    :charts [(chart/line {:fill [49 54 149 90] :width 1.5})]
    :labels {:title "Area: line with :fill (down to y = 0)" :x "x" :y "y"}})
 
-(defn -main [& _]
-  (doseq [[file-name p options] [["fig-1-1-800x600.png" fig-1-1 {:width 800 :height 600}]
-                                 ["fig-1-2-800x600.png" fig-1-2 {:width 800 :height 600}]
-                                 ["fig-1-3-800x400.png" fig-1-3 {:width 800 :height 400}]
-                                 ["density-score-gender-800x600.png" density-score-gender {:width 800 :height 600}]
-                                 ["hist-overlay-600x400.png" (grouped :overlay) {:width 600 :height 400}]
-                                 ["hist-dodge-600x400.png" (grouped :dodge) {:width 600 :height 400}]
-                                 ["hist-mirror-600x400.png" (grouped :mirror) {:width 600 :height 400}]
-                                 ["hist-mirror-count-600x400.png" (grouped :mirror {:y :count :uneven true}) {:width 600 :height 400}]
-                                 ["hist-mirror-symmetric-600x400.png" (grouped :mirror {:y :count :uneven true :symmetric true}) {:width 600 :height 400}]
-                                 ["lines-600x400.png" lines {:width 600 :height 400}]
-                                 ["ecdf-600x400.png" ecdf {:width 600 :height 400}]
-                                 ["group-vs-color-600x400.png" group-vs-color {:width 600 :height 400}]
-                                 ["area-600x400.png" area {:width 600 :height 400}]]
-          :let [path (str "results/step8/" file-name)]]
-    (c2d/save (plot/render p options) path)
-    (println "saved" path)))
+(def images
+  "Images of this step: `[file-name plot options]`, saved to `results/step8/` by [[cljplot2.demo/run!]]."
+  [["fig-1-1-800x600.png" fig-1-1 {:width 800 :height 600}]
+   ["fig-1-2-800x600.png" fig-1-2 {:width 800 :height 600}]
+   ["fig-1-3-800x400.png" fig-1-3 {:width 800 :height 400}]
+   ["density-score-gender-800x600.png" density-score-gender {:width 800 :height 600}]
+   ["hist-overlay-600x400.png" (grouped :overlay) {:width 600 :height 400}]
+   ["hist-dodge-600x400.png" (grouped :dodge) {:width 600 :height 400}]
+   ["hist-mirror-600x400.png" (grouped :mirror) {:width 600 :height 400}]
+   ["hist-mirror-count-600x400.png" (grouped :mirror {:y :count :uneven true}) {:width 600 :height 400}]
+   ["hist-mirror-symmetric-600x400.png" (grouped :mirror {:y :count :uneven true :symmetric true}) {:width 600 :height 400}]
+   ["lines-600x400.png" lines {:width 600 :height 400}]
+   ["ecdf-600x400.png" ecdf {:width 600 :height 400}]
+   ["group-vs-color-600x400.png" group-vs-color {:width 600 :height 400}]
+   ["area-600x400.png" area {:width 600 :height 400}]])

@@ -1,10 +1,9 @@
 (ns cljplot2.demo.step9
-  "Step 9 demo: multiplots, saved to `results/step9/`.
+  "Step 9 demo: multiplots.
   LMDVR Fig 1.4 (Fig 1.1 histogram over the Fig 1.3 grouped density), a 2x2 arrangement with weights and a title,
   a nested multiplot, and the same mixed plots without and with panel alignment."
   (:require [clojure.data.json :as json]
             [clojure.java.io :as io]
-            [clojure2d.core :as c2d]
             [cljplot2.chart :as chart]
             [cljplot2.core :as plot]))
 
@@ -49,13 +48,11 @@
 (def unaligned (plot/arrange mixed {:columns 2 :title "Not aligned (:align false)" :align false}))
 (def aligned (plot/arrange mixed {:columns 2 :title "Aligned panels (default)"}))
 
-(defn -main [& _]
-  (doseq [[file-name p options] [["fig-1-4-800x900.png" fig-1-4 {:width 800 :height 900}]
-                                 ["fig-1-4-800x900-debug.png" fig-1-4 {:width 800 :height 900 :debug true}]
-                                 ["quad-900x600.png" quad {:width 900 :height 600}]
-                                 ["nested-1200x600.png" nested {:width 1200 :height 600}]
-                                 ["unaligned-900x700.png" unaligned {:width 900 :height 700}]
-                                 ["aligned-900x700.png" aligned {:width 900 :height 700}]]
-          :let [path (str "results/step9/" file-name)]]
-    (c2d/save (plot/render p options) path)
-    (println "saved" path)))
+(def images
+  "Images of this step: `[file-name plot options]`, saved to `results/step9/` by [[cljplot2.demo/run!]]."
+  [["fig-1-4-800x900.png" fig-1-4 {:width 800 :height 900}]
+   ["fig-1-4-800x900-debug.png" fig-1-4 {:width 800 :height 900 :debug true}]
+   ["quad-900x600.png" quad {:width 900 :height 600}]
+   ["nested-1200x600.png" nested {:width 1200 :height 600}]
+   ["unaligned-900x700.png" unaligned {:width 900 :height 700}]
+   ["aligned-900x700.png" aligned {:width 900 :height 700}]])

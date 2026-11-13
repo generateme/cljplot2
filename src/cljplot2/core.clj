@@ -21,3 +21,8 @@
   "Build and draw `plot`, returning a clojure2d canvas, see [[cljplot2.render/render]]."
   ([plot] (render/render plot))
   ([plot options] (render/render plot options)))
+
+(defn render-image
+  "Build and draw `plot`, returning a `java.awt.image.BufferedImage`, see [[cljplot2.render/render-image]]."
+  ([plot] (render/render-image plot))
+  ([plot options] (render/render-image plot options)))

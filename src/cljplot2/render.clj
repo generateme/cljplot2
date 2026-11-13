@@ -92,3 +92,9 @@
             (c2d/set-background target background)))
         (draw-built! target built (boolean (get-in built [:options :debug])))
         target)))))
+
+(defn render-image
+  "[[render]] `plot` and return the drawing as a `java.awt.image.BufferedImage` of exactly `:width` x `:height`
+  (same arguments, options and errors as [[render]]), e.g. for notebooks or Swing."
+  (^java.awt.image.BufferedImage [plot] (render-image plot {}))
+  (^java.awt.image.BufferedImage [plot options] (c2d/get-image (render plot options))))

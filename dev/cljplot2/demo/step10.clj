@@ -1,11 +1,9 @@
 (ns cljplot2.demo.step10
-  "Step 10 demo: rectangular treemaps of `portfolio.csv` (R data.tree), saved to `results/step10/`.
+  "Step 10 demo: rectangular treemaps of `portfolio.csv` (R data.tree).
   Squarified (default top-level colours), slice-and-dice, and coloured by currency (legend)."
   (:require [clojure.data.csv :as csv]
             [clojure.java.io :as io]
-            [clojure2d.core :as c2d]
-            [cljplot2.chart :as chart]
-            [cljplot2.core :as plot]))
+            [cljplot2.chart :as chart]))
 
 (def portfolio
   (let [[header & rows] (csv/read-csv (slurp (io/resource "portfolio.csv")))
@@ -27,11 +25,9 @@
   {:data portfolio :mapping (assoc mapping :facet :Type) :charts [(chart/treemap {:leaf-labels false})]
    :labels {:title "Portfolio faceted by type"}})
 
-(defn -main [& _]
-  (doseq [[file-name p options] [["squarified-900x600.png" squarified {:width 900 :height 600}]
-                                 ["slice-dice-900x600.png" slice-dice {:width 900 :height 600}]
-                                 ["by-currency-900x600.png" by-currency {:width 900 :height 600}]
-                                 ["by-type-900x450.png" by-type {:width 900 :height 450}]]
-          :let [path (str "results/step10/" file-name)]]
-    (c2d/save (plot/render p options) path)
-    (println "saved" path)))
+(def images
+  "Images of this step: `[file-name plot options]`, saved to `results/step10/` by [[cljplot2.demo/run!]]."
+  [["squarified-900x600.png" squarified {:width 900 :height 600}]
+   ["slice-dice-900x600.png" slice-dice {:width 900 :height 600}]
+   ["by-currency-900x600.png" by-currency {:width 900 :height 600}]
+   ["by-type-900x450.png" by-type {:width 900 :height 450}]])

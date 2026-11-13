@@ -9,39 +9,25 @@
                  :extra-deps {org.clojure/data.json {:mvn/version "2.5.1"}
                               org.clojure/data.csv {:mvn/version "1.1.0"}
                               org.clojure/test.check {:mvn/version "1.1.1"}}}
-           :test {:extra-paths ["test" "dev"]
+           :test {:extra-paths ["test" "dev" "notebooks"]
                   :extra-deps {org.clojure/test.check {:mvn/version "1.1.1"}
+                               ;; notebook helpers (`notebook-utils`) and their data readers
+                               org.scicloj/kindly {:mvn/version "4-beta25"}
+                               org.clojure/data.json {:mvn/version "2.5.1"}
+                               org.clojure/data.csv {:mvn/version "1.1.0"}
                                io.github.cognitect-labs/test-runner {:git/sha "dfb30dd6605cb6c0efc275e1df1736f6e90d4d73"}}
                   :main-opts ["-m" "cognitect.test-runner"]
                   :exec-fn cognitect.test-runner.api/test}
            :check {:extra-paths ["dev"]
                    :main-opts ["-m" "cljplot2.check"]}
-           :demo {:extra-paths ["dev"]
-                  :main-opts ["-m" "cljplot2.demo.step1"]}
-           :demo2 {:extra-paths ["dev"]
-                   :main-opts ["-m" "cljplot2.demo.step2"]}
-           :demo3 {:extra-paths ["dev"]
-                   :main-opts ["-m" "cljplot2.demo.step3"]}
-           :demo4 {:extra-paths ["dev"]
-                   :main-opts ["-m" "cljplot2.demo.step4"]}
-           :demo5 {:extra-paths ["dev" "dev/resources"]
-                   :extra-deps {org.clojure/data.json {:mvn/version "2.5.1"}}
-                   :main-opts ["-m" "cljplot2.demo.step5"]}
-           :demo6 {:extra-paths ["dev" "dev/resources"]
-                   :extra-deps {org.clojure/data.json {:mvn/version "2.5.1"}}
-                   :main-opts ["-m" "cljplot2.demo.step6"]}
-           :demo7 {:extra-paths ["dev" "dev/resources"]
-                   :extra-deps {org.clojure/data.json {:mvn/version "2.5.1"}}
-                   :main-opts ["-m" "cljplot2.demo.step7"]}
-           :demo8 {:extra-paths ["dev" "dev/resources"]
-                   :extra-deps {org.clojure/data.json {:mvn/version "2.5.1"}}
-                   :main-opts ["-m" "cljplot2.demo.step8"]}
-           :demo9 {:extra-paths ["dev" "dev/resources"]
-                   :extra-deps {org.clojure/data.json {:mvn/version "2.5.1"}}
-                   :main-opts ["-m" "cljplot2.demo.step9"]}
-           :demo10 {:extra-paths ["dev" "dev/resources"]
-                    :extra-deps {org.clojure/data.csv {:mvn/version "1.1.0"}}
-                    :main-opts ["-m" "cljplot2.demo.step10"]}
-           :demo11 {:extra-paths ["dev" "dev/resources"]
-                    :extra-deps {org.clojure/data.json {:mvn/version "2.5.1"}}
-                    :main-opts ["-m" "cljplot2.demo.step11"]}}}
+           ;; every step demo in one JVM: `clojure -M:demo [stepN | stepN/<file-name>]...`, see `cljplot2.demo`
+           :demo {:extra-paths ["dev" "dev/resources"]
+                  :extra-deps {org.clojure/data.json {:mvn/version "2.5.1"}
+                               org.clojure/data.csv {:mvn/version "1.1.0"}}
+                  :main-opts ["-m" "cljplot2.demo"]}
+           ;; notebook book (Clay + Quarto): `clojure -M:clay` renders `notebooks/` to `docs/`
+           :clay {:extra-paths ["notebooks"]
+                  :extra-deps {org.scicloj/clay {:mvn/version "2.0.24"}
+                               org.clojure/data.json {:mvn/version "2.5.1"}
+                               org.clojure/data.csv {:mvn/version "1.1.0"}}
+                  :main-opts ["-m" "dev"]}}}

@@ -1,0 +1,42 @@
+[
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "cljplot2",
+    "section": "",
+    "text": "cljplot2\ncljplot2 is a Clojure plotting library rendering static images with clojure2d. A plot is a plain map: data (a sequence of maps), a mapping from data to dimensions, a vector of charts, labels, scales and a theme. There is no DSL and no grammar of graphics: you build and transform the map with ordinary Clojure. Statistics come from fastmath, scales from wadogo.",
+    "crumbs": [
+      "cljplot2"
+    ]
+  },
+  {
+    "objectID": "index.html#how-this-book-is-organised",
+    "href": "index.html#how-this-book-is-organised",
+    "title": "cljplot2",
+    "section": "How this book is organised",
+    "text": "How this book is organised\n\nUse cases - one chapter per family of the R Graph Gallery merged with From Data to Viz: distribution, correlation, ranking, part of a whole, evolution, flow, and colours. Each use case has one canonical example here.\nGalleries - figures replicated from other sources: cljplot extras, the lattice book, Vega-Lite and Vega galleries. Figures are reproduced by content (same data, same idea), not pixel by pixel, and link to the use case they illustrate.\n\nEvery example names its source and its dataset with the dataset’s licence. All code is Clojure written for cljplot2; no code of the original sources is copied. The datasets are in notebooks/data/ (listed in datasets.edn), not in the library.",
+    "crumbs": [
+      "cljplot2"
+    ]
+  },
+  {
+    "objectID": "index.html#how-to-read-an-example",
+    "href": "index.html#how-to-read-an-example",
+    "title": "cljplot2",
+    "section": "How to read an example",
+    "text": "How to read an example\nEach example is the code followed by the image it renders. Examples use these aliases: cljplot2.core as plot (plot/render-image returns a java.awt.image.BufferedImage, which the notebook shows) and cljplot2.chart as chart. Data is read with nu/dataset.",
+    "crumbs": [
+      "cljplot2"
+    ]
+  },
+  {
+    "objectID": "index.html#a-first-example-old-faithful",
+    "href": "index.html#a-first-example-old-faithful",
+    "title": "cljplot2",
+    "section": "A first example: Old Faithful",
+    "text": "A first example: Old Faithful\nWaiting time between eruptions against eruption duration (left) and the distribution of eruption durations (right). Two plots sharing one dataset, arranged side by side.\nSource: R Graph Gallery - Scatter, Density. Data: Old Faithful geyser eruptions (Part of R (GPL-2 | GPL-3); via cljplot2 dev/resources).\n\n(def faithful (nu/dataset :faithful))\n\n\n(plot/render-image\n (plot/arrange [{:data faithful\n                 :mapping {:x :eruptions :y :waiting}\n                 :charts [(chart/scatter)]\n                 :labels {:x \"eruptions [min]\" :y \"waiting [min]\"}}\n                {:data faithful\n                 :mapping {:x :eruptions}\n                 :charts [(chart/density)]\n                 :labels {:x \"eruptions [min]\"}}]\n               {:columns 2 :title \"Old Faithful geyser\"})\n {:width 800 :height 400})\n\n\n\n\n\nsource: notebooks/index.clj",
+    "crumbs": [
+      "cljplot2"
+    ]
+  }
+]
