@@ -16,7 +16,15 @@
   * `:padding {:x [lo hi] :y [lo hi]}` - default `{:x [0.05 0.05] :y [0 0.05]}`
 
   Groups (see [[cljplot2.data.group]]) come from ordinal aesthetics (`:color` colors the line) and `:group`; a group with
-  fewer than 2 distinct values has no curve and is counted in `:dropped {:group n}`."
+  fewer than 2 distinct values has no curve and is counted in `:dropped {:group n}`.
+
+  Ridgelines - `:y` mapped to categorical levels or on a `:bands` scale (see [[cljplot2.data.strip/ridges?]]; a numeric `:y` otherwise is ignored): one curve per level and group, drawn
+  from its band's centre toward the next level, all on one height scale - the tallest curve is `:overlap` (default 0.9)
+  band steps high; the y scale leaves room for the outer ridges (bands `:padding-out` / `:align-outer` unless the
+  plot sets them). Areas are filled (`:fill`, else the group colour with `:alpha`) and drawn from the farthest level
+  on, so nearer ridges cover farther ones. `:position` `:overlay` (default) or `:mirror` (two groups, the second
+  growing away from the next level); `:fill-gradient` (ridges only) - fill colour along `:x`: a clojure2d gradient
+  (keyword preset, colour list or function of `t` in `[0 1]` over the x scale's domain)."
   (:require [clojure2d.color :as c]
             [clojure2d.core :as c2d]
             [fastmath.core :as m]
@@ -24,6 +32,7 @@
             [cljplot2.data.group :as group]
             [cljplot2.data.kde :as kde]
             [cljplot2.data.position :as position]
+            [cljplot2.data.strip :as strip]
             [cljplot2.graphics.draw :as draw]
             [cljplot2.graphics.polyline :as polyline]
             [cljplot2.scale.position :as scale]
@@ -41,6 +50,10 @@
         (schema/optional :zero-line-color schema/color)
         (schema/optional :zero-line-width schema/non-neg)))
 
+(def ^:private gradient-schema
+  (schema/named-type ::gradient #(or (keyword? %) (sequential? %) (fn? %))
+                     "should be a clojure2d gradient: a preset keyword, a colour list or a function"))
+
 (def ^:private positions (disj position/positions :dodge))
 
 (def Schema
@@ -56,7 +69,9 @@
                       (schema/optional :position (into [:enum] (sort positions)))
                       (schema/nilable :symmetric schema/bool)
                       (schema/nilable :zero-line schema/bool)
-                      (schema/optional :padding data/position-padding)))
+                      (schema/optional :fill-gradient gradient-schema)
+                      (schema/optional :padding data/position-padding))
+                (into strip/ridge-options))
    :mapping [:map [:x schema/accessor]]})
 
 (defn- style
@@ -98,9 +113,44 @@
                   down? (update :y #(mapv - %)))))
             estimates))))
 
-(defn compute
-  "Per panel: `{:curves [{:x [..] :y [..] :aesthetics}] :style style}`; extents, padding, `:na`, `:dropped`
-  (`:x` invalid values, `:group` groups without a curve), `:axis-titles`."
+(defn- gradient-fn
+  "clojure2d gradient of the `:fill-gradient` option `g` (a function is taken as is); throws `ex-info
+  {:key :fill-gradient}` for an unknown one."
+  [g]
+  (if (fn? g)
+    g
+    (try (c/gradient g)
+         (catch Exception e
+           (schema/fail! "Unknown :fill-gradient." {:key :fill-gradient :value g :cause (ex-message e)})))))
+
+(defn- ridge-compute
+  "Ridgeline stats (`:y` mapped): per panel `{:ridges [item ...] :top max-density :overlap o :style st :gradient g}`,
+  items (see [[cljplot2.data.strip/ridge-split]]) with `:xs` / `:ds` - the curve; one `:top` over all panels."
+  [options chart-split {:keys [theme] :as env}]
+  (let [{:keys [position items panels dropped]} (strip/ridge-split chart-split options env)
+        n (long (or (:n options) 512))
+        curve? #(>= (count (distinct (:values %))) 2)
+        no-curve (count (remove curve? (mapcat val items)))
+        items (update-vals items (fn [its]
+                                   (mapv (fn [it] (let [e (kde/estimate (:values it) options)
+                                                        {:keys [x y]} (kde/curve e (kde/grid-points (:lo e) (:hi e) n))]
+                                                    (assoc it :xs x :ds y)))
+                                         (filter curve? its))))
+        top (double (reduce max 0.0 (mapcat :ds (mapcat val items))))
+        overlap (double (get options :overlap 0.9))
+        gradient (some-> (:fill-gradient options) gradient-fn)]
+    {:data (update-vals items (fn [its] {:ridges its :top top :overlap overlap :style (style options theme)
+                                         :gradient gradient}))
+     :ridges? true
+     :extents (merge-with merge (group/aesthetic-extents panels)
+                          (strip/extents :band items (fn [{:keys [xs]}] [(first xs) (peek xs)])))
+     :padding (merge {:x [0.05 0.05]} (:padding options))
+     :scale-defaults (strip/ridge-scale-defaults overlap (= :mirror position) (:flip? env) (get-in env [:plot-scales :y]))
+     :na (group/na-dims panels)
+     :dropped (assoc dropped :group no-curve)}))
+
+(defn- flat-compute
+  "Density stats without a `:y` mapping (see [[compute]])."
   [{:keys [options]} {:keys [groups mapping]} {:keys [theme] :as env}]
   (let [st (style options theme)
         position (get options :position :overlay)
@@ -140,6 +190,17 @@
      :axis-titles {:y (if (= position :normalize) "Proportion" "Density")}
      :tick-format (when (= position :mirror) {:y :absolute})}))
 
+(defn compute
+  "Per panel: `{:curves [{:x [..] :y [..] :aesthetics}] :style style}`; extents, padding, `:na`, `:dropped`
+  (`:x` invalid values, `:group` groups without a curve), `:axis-titles`. With `:y` mapped - ridgelines, see
+  [[ridge-compute]]."
+  [{:keys [options] :as chart} {:keys [groups mapping] :as chart-split} env]
+  (cond
+    (strip/ridges? chart-split env) (ridge-compute options chart-split env)
+    (:fill-gradient options) (schema/fail! "Density :fill-gradient is for ridgelines (a :y mapping)."
+                                           {:key :fill-gradient :value (:fill-gradient options)})
+    :else (flat-compute chart chart-split env)))
+
 (defn- draw-zero-line!
   "The y = 0 line across the panel `box` (along the x scale's direction), style `:zero-line-color` /
   `:zero-line-width`; nothing when 0 isn't in the y scale or the line draws nothing."
@@ -155,12 +216,51 @@
           (c2d/line canvas p 0 p h)
           (c2d/line canvas 0 p w p))))))
 
+(defn- fill-gradient!
+  "Fill under the curve `points` down to `base` (`Vec2`s, pairwise) quad by quad, each coloured by `gradient` at its
+  middle `x` (`xs`) relative to `[d0 d1]`; quads with a non-finite corner are skipped."
+  [canvas points base xs gradient [d0 d1]]
+  (let [d0 (double d0) span (- (double d1) d0)
+        ok? (fn [^Vec2 p] (and (m/valid-double? (.x p)) (m/valid-double? (.y p))))]
+    (c2d/set-stroke-custom canvas {:size 1.0 :join :miter})
+    (doseq [^long i (range (dec (count points)))
+            :let [^Vec2 a (points i) ^Vec2 b (points (inc i)) ^Vec2 c (base (inc i)) ^Vec2 d (base i)]
+            :when (and (ok? a) (ok? b) (ok? c) (ok? d))]
+      (let [t (if (pos? span) (/ (- (* 0.5 (+ (double (xs i)) (double (xs (inc i))))) d0) span) 0.5)
+            quad [[(.x a) (.y a)] [(.x b) (.y b)] [(.x c) (.y c)] [(.x d) (.y d)]]]
+        (c2d/set-color canvas (gradient (m/constrain t 0.0 1.0)))
+        (c2d/path canvas quad true false)
+        (c2d/path canvas quad true true)))))
+
+(defn- draw-ridges!
+  "Draw ridgelines of one panel, farthest level first: area (gradient, `:fill` or the colour with `:alpha`), line."
+  [{:keys [ridges top overlap style gradient]} canvas box scales env]
+  (let [pl (strip/placement box scales {} :band)
+        point (strip/ridge-point pl (double overlap))
+        top (double top)
+        coords (fn [points] [(mapv #(.x ^Vec2 %) points) (mapv #(.y ^Vec2 %) points)])]
+    (when (pos? top)
+      (doseq [{:keys [level slot xs ds aesthetics]} (strip/ridge-order pl ridges)
+              :let [st (group/style style aesthetics scales (:theme env))]
+              :when st]
+        (let [side (strip/ridge-side slot)
+              curve (mapv (fn [x d] (point x level side (/ (double d) top))) xs ds)
+              base (mapv (fn [x] (point x level side 0.0)) xs)
+              [px py] (coords curve)
+              [bx by] (coords base)]
+          (if gradient
+            (fill-gradient! canvas curve base xs gradient (:domain (:x scales)))
+            (polyline/fill-under! canvas px py bx by (area-color st true)))
+          (polyline/draw! canvas px py st))))))
+
 (defn draw
   "Draw the curves of one panel: every group's area (under the curve to y = 0, `:fill`; stacked curves - between
   `:y0` and `:y`, `:fill` or the group colour with `:alpha`), then - mirror with `:zero-line` (default on) - the
   y = 0 line, then every curve's line (lines are never covered by areas or the zero line)."
-  [_chart {:keys [curves style zero-line?]} canvas box scales env]
-  (when (seq curves)
+  [_chart {:keys [curves style zero-line? ridges] :as computed} canvas box scales env]
+  (if ridges
+    (draw-ridges! computed canvas box scales env)
+    (when (seq curves)
     (let [projection (scale/projection scales)
           coords (fn [points] [(mapv #(.x ^Vec2 %) points) (mapv #(.y ^Vec2 %) points)])
           drawn (vec (keep (fn [{:keys [x y y0 aesthetics]}]
@@ -178,14 +278,14 @@
         (draw-zero-line! canvas box scales style))
       (doseq [{:keys [st curve]} drawn
               :let [[px py] curve]]
-        (polyline/draw! canvas px py st)))))
+        (polyline/draw! canvas px py st))))))
 
 (defn legend
   "Key glyph: a horizontal line through the middle of `box`; when the chart fills areas (`:fill`, or `:stack` /
-  `:normalize` positions) a filled square (the area colour) outlined in the line colour."
+  `:normalize` positions, ridgelines) a filled square (the area colour) outlined in the line colour."
   [{:keys [options]} attributes canvas {:keys [x y w h]} env]
   (let [st (merge (style options (:theme env)) (select-keys attributes [:color]))
-        area (area-color st (contains? #{:stack :normalize} (:position options)))]
+        area (area-color st (or (contains? #{:stack :normalize} (:position options)) (:ridges? (:chart-stats env))))]
     (if (theme/none? area)
       (let [cy (+ (double y) (* 0.5 (double h)))]
         (polyline/draw! canvas [(double x) (+ (double x) (double w))] [cy cy] st))

@@ -128,7 +128,7 @@
                           (strip/extents place items (fn [{:keys [lo hi center]}]
                                                        [(m/min (double lo) (double (or center lo)))
                                                         (m/max (double hi) (double (or center hi)))])))
-     :padding (merge {:x [0.05 0.05]} (:padding options))
+     :padding (strip/padding place options)
      :na (group/na-dims panels)
      :dropped dropped}))
 

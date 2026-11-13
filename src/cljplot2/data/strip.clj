@@ -18,11 +18,17 @@
     flipped)
   * `:edge` (the rug's default without `:y`): a `:thickness` pixels (default 8) strip along the panel's low y edge,
     inside the panel
+  * `:bottom` (`:y` not mapped; lattice's layer under a density): between the panel's low y edge and `y = 0` of a
+    numeric `:y` scale (from other charts), `:width` of that gap; the chart's y extent includes 0 and it asks for y
+    padding `:bottom-share` (fraction of the y data span, default 0.15) below, so the gap exists
 
   Groups (ordinal aesthetics and `:group`, see [[cljplot2.data.group]]) inside a placement - option `:position`:
   `:dodge` (default with two or more groups; the cross range split equally in group order, each part narrowed by
   `:dodge-gap` - a fraction of it, default 0.1 - so groups don't touch), `:overlay` (the whole
-  range) or `:mirror` (exactly two groups: the first gets `[0 0.5]`, the second `[-0.5 0]`; split violins)."
+  range) or `:mirror` (exactly two groups: the first gets `[0 0.5]`, the second `[-0.5 0]`; split violins).
+
+  Ridgelines (histogram and density with a categorical `:y`, see [[ridge-split]]): one-sided profiles growing from
+  the band centre toward the next level, the tallest `:overlap` (default 0.9) band steps high."
   (:require [fastmath.core :as m]
             [cljplot2.data.group :as group]
             [cljplot2.data.position :as position]
@@ -34,7 +40,7 @@
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
-(def ^:private named-places #{:band :center :edge})
+(def ^:private named-places #{:band :center :edge :bottom})
 (def ^:private positions #{:dodge :overlay :mirror})
 
 (def options
@@ -45,7 +51,12 @@
    (schema/optional :width schema/non-neg)
    (schema/optional :thickness schema/non-neg)
    (schema/optional :position (into [:enum] (sort positions)))
-   (schema/optional :dodge-gap schema/fraction)])
+   (schema/optional :dodge-gap schema/fraction)
+   (schema/optional :bottom-share schema/fraction)])
+
+(def ridge-options
+  "Map entries of the ridgeline options (histogram and density with a categorical `:y`)."
+  [(schema/optional :overlap schema/non-neg)])
 
 (defn- place-of
   "The placement of a chart: explicit `:place` or the default (`:band` with a `:y` mapping, else `default-place`).
@@ -127,7 +138,16 @@
                       ;; numeric levels (on an explicit :bands scale) travel as the extent's :values
                       (cond-> e (= :numeric (:kind e)) (assoc :values (vec levels))))
     (map? place) {:kind :numeric :min (double (:at place)) :max (double (:at place))}
+    (= :bottom place) {:kind :numeric :min 0.0 :max 0.0}
     :else nil))
+
+(defn padding
+  "Position padding of a strip chart for `place`: x `[0.05 0.05]`, `:bottom` - y `[:bottom-share 0]` (default
+  0.15), overridden by the `:padding` option."
+  [place options]
+  (merge {:x [0.05 0.05]}
+         (when (= :bottom place) {:y [(double (get options :bottom-share 0.15)) 0.0]})
+         (:padding options)))
 
 (defn extents
   "Per panel extents of `items` (see [[split]]): `:x` from `x-range` (item -> `[lo hi]` in data units, `nil` -
@@ -157,11 +177,14 @@
   "Pixel geometry of a strip chart's placement in a panel (`box` - `{:w :h}`, finalized `scales`, chart `options`,
   `place`): `{:point (fn [value level cross] -> Vec2) :span (fn [level] -> px)}`. `:point` places `value` along the
   `:x` scale and the cross coordinate (placement range `[-0.5 0.5]`, positive toward higher `:y`) across it;
-  `:span` - the pixel length of the whole cross range. A level or value the scales can't place gives `##NaN`
+  `:span` - the pixel length of the whole cross range; `:step` - the band step in pixels (`:band`, else `nil`). A level or value the scales can't place gives `##NaN`
   coordinates. Flip-aware: the cross axis is the `:y` direction (horizontal when flipped).
-  Throws `ex-info {:key :place}` for `:band` without a `:bands` `:y` scale and `{:at v}` on a `:bands` one."
+  Throws `ex-info {:key :place}` for `:band` without a `:bands` `:y` scale, `{:at v}` on a `:bands` one and `:bottom`
+  without a numeric one."
   [{:keys [w h]} scales options place]
-  (let [fx (scale/forward-fn (:x scales))
+  (let [_ (when (and (= :bottom place) (or (nil? (:y scales)) (= :bands (:kind (:y scales)))))
+            (schema/fail! "Strip :place :bottom needs a numeric :y scale." {:key :place :value place}))
+        fx (scale/forward-fn (:x scales))
         y-scale (:y scales)
         fy (when y-scale (scale/forward-fn y-scale))
         cross-horizontal? (scale/flipped? scales)
@@ -172,10 +195,10 @@
                (if cross-horizontal? 1.0 -1.0))
         width (double (get options :width 0.8))
         thickness (double (get options :thickness (if (= :edge place) 8.0 20.0)))
-        bandwidth (when (= :band place)
-                    (if-let [geometry (scale/band-geometry y-scale)]
-                      (double (:bandwidth geometry))
-                      (schema/fail! "Strip :place :band needs a :bands :y scale." {:key :place :value (:kind y-scale)})))
+        geometry (when (= :band place)
+                   (or (scale/band-geometry y-scale)
+                       (schema/fail! "Strip :place :band needs a :bands :y scale." {:key :place :value (:kind y-scale)})))
+        bandwidth (some-> geometry :bandwidth double)
         _ (when (and (map? place) (= :bands (:kind y-scale)))
             (schema/fail! "Strip :place {:at v} needs a numeric :y scale, not bands." {:key :place :value place}))
         centre-and-span (cond
@@ -183,10 +206,68 @@
                           (map? place) (let [c (if fy (fy (:at place)) ##NaN)] (constantly [c thickness]))
                           (= :center place) (constantly [(* 0.5 length) (* width length)])
                           (= :edge place) (let [low (if (pos? sign) 0.0 length)]
-                                            (constantly [(+ low (* sign 0.5 thickness)) thickness])))]
+                                            (constantly [(+ low (* sign 0.5 thickness)) thickness]))
+                          (= :bottom place) (let [low (if (pos? sign) 0.0 length)
+                                                  zero (double (fy 0.0))]
+                                              (constantly [(* 0.5 (+ low zero)) (* width (m/abs (- zero low)))])))]
     {:point (fn ^Vec2 [value level ^double cross]
               (let [[c span] (centre-and-span level)
                     p (+ (double c) (* sign cross (double span)))
                     v (double (fx value))]
                 (if cross-horizontal? (Vec2. p v) (Vec2. v p))))
-     :span (fn ^double [level] (double (second (centre-and-span level))))}))
+     :span (fn ^double [level] (double (second (centre-and-span level))))
+     :centre (fn ^double [level] (double (first (centre-and-span level))))
+     :sign sign
+     :step (some-> geometry :step double)}))
+
+(defn ridges?
+  "Does a histogram / density of `chart-split` (`{:groups {panel rows} :mapping m}`) draw ridgelines: `:y` mapped
+  with some categorical (string / keyword) value, or on an explicit `:bands` plot scale? A numeric `:y` otherwise is
+  ignored, as before ridgelines (a plot mapping shared with xy charts)."
+  [{:keys [groups mapping]} env]
+  (when-let [acc (:y mapping)]
+    (or (= :bands (get-in env [:plot-scales :y :kind]))
+        (let [y-of (data/row-accessor :y acc)]
+          (boolean (some #(let [v (y-of %)] (or (string? v) (keyword? v))) (mapcat val groups)))))))
+
+(defn ridge-split
+  "Items of a ridgeline chart (histogram / density with `:y` mapped, see [[split]]): placed in bands, groups
+  `:overlay` (default) or `:mirror` (a double ridgeline: the first group grows toward higher `:y`, the second away
+  from it). Throws `ex-info {:key :position}` for other positions."
+  [chart-split options env]
+  (let [position (get options :position :overlay)]
+    (when-not (#{:overlay :mirror} position)
+      (schema/fail! "Ridgelines (a :y mapping) take :position :overlay or :mirror." {:key :position :value position}))
+    (split chart-split {:position position} :band env)))
+
+(defn ridge-side
+  "Growth direction of a ridge in `slot`: `1.0` toward higher `:y`, `-1.0` (the second group of a mirror) away."
+  ^double [[lo hi]]
+  (if (neg? (+ (double lo) (double hi))) -1.0 1.0))
+
+(defn ridge-scale-defaults
+  "`:y` scale attributes (under the plot's own `y-spec`) leaving room for the ridges of the outer levels: the tallest
+  profile is `overlap` band steps (plus 5%) from its band centre - outer padding all after the last band, or on both
+  sides for `mirror?`. wadogo's `:align-outer` is in pixel order: unflipped the `:y` range runs from the bottom up
+  (higher levels at lower pixels), `flipped?` from the left."
+  [^double overlap mirror? flipped? y-spec]
+  (let [padding-in (double (or (:padding-in y-spec) 0.0))
+        need (m/max 0.0 (- (* 1.05 overlap) (* 0.5 (- 1.0 padding-in))))]
+    {:y (if mirror?
+          {:padding-out need :align-outer 0.5}
+          {:padding-out (* 0.5 need) :align-outer (if flipped? 0.0 1.0)})}))
+
+(defn ridge-point
+  "`(fn [value level side height] -> Vec2)` of ridge profiles for a `:band` placement `pl` (see [[placement]]):
+  `height` - a fraction of the tallest profile, drawn up to `overlap` band steps from the level's centre in direction
+  `side` (see [[ridge-side]])."
+  [{:keys [point span step]} ^double overlap]
+  (let [step (double step)]
+    (fn ^Vec2 [value level ^double side ^double height]
+      (let [s (double (span level))]
+        (point value level (if (pos? s) (/ (* side height overlap step) s) ##NaN))))))
+
+(defn ridge-order
+  "`items` in drawing order for placement `pl`: levels farthest toward higher `:y` first, so nearer ridges cover them."
+  [{:keys [centre sign]} items]
+  (sort-by #(- (* (double sign) (double (centre (:level %))))) items))

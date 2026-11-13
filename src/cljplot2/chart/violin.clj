@@ -88,7 +88,7 @@
                                          :mirror? (= :mirror position)}))
      :extents (merge-with merge (group/aesthetic-extents panels)
                           (strip/extents place items (fn [{:keys [xs]}] [(first xs) (peek xs)])))
-     :padding (merge {:x [0.05 0.05]} (:padding options))
+     :padding (strip/padding place options)
      :na (group/na-dims panels)
      :dropped (assoc dropped :group no-violin)}))
 

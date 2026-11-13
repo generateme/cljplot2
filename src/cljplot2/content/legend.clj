@@ -287,14 +287,14 @@
 
 (defn- draw-key!
   "Overlay the glyphs of the legend's charts in key `box`, each isolated, clipped to the box and given the entry's
-  attributes of the dimensions it maps."
+  attributes of the dimensions it maps; the glyph's `env` carries the chart's computed stats (`:chart-stats`)."
   [c attributes {:keys [x y w h] :as box} chart-keys env]
   (doseq [{i :chart dims :dims} chart-keys
           :let [chart (get-in env [:charts i])]]
     (canvas/call-with-isolated-graphics
      c (fn [c']
          (.clip ^Graphics2D (:graphics c') (Rectangle. (int x) (int y) (int (m/ceil w)) (int (m/ceil h))))
-         ((:legend chart) chart (select-keys attributes dims) c' box env)))))
+         ((:legend chart) chart (select-keys attributes dims) c' box (assoc env :chart-stats (get-in env [:stats i])))))))
 
 (defn- draw-legend!
   "Draw legend `content` with its `geometry` at top-left corner `origin` (`Vec2`)."

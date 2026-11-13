@@ -79,7 +79,7 @@
                     [(reduce min vs) (reduce max vs)]))]
     {:data (update-vals items (fn [its] {:items its :style (style options theme) :place place :options options}))
      :extents (merge-with merge (group/aesthetic-extents panels) (strip/extents place items x-range))
-     :padding (merge {:x [0.05 0.05]} (:padding options))
+     :padding (strip/padding place options)
      :na (group/na-dims panels)
      :dropped dropped}))
 

@@ -11,7 +11,9 @@
     `{:extents {panel {dim extent}} :padding {dim [lo hi]} :data {panel computed} :na #{dim} :dropped {dim n}}`
     and optionally `:axis-titles {:x t :y t}` (suggested axis titles; the first chart's win, plot `:labels` win over
     all) and `:tick-format {:x f :y f}` (suggested tick label format, `:absolute` - magnitudes; used unless the plot's
-    scale has a `:formatter`) (`env` - `{:theme :na-level? :plot-scales}`, `:plot-scales` - the plot's `:scales`); stored per chart in the
+    scale has a `:formatter`) and `:scale-defaults {:x attrs :y attrs}` (suggested position scale attributes, e.g.
+    bands `:padding-out`; under the plot's own `:scales` entry) (`env` - `{:theme :na-level? :plot-scales :flip?}`, `:plot-scales` - the plot's `:scales`, `:flip?` - the plot's
+    `:flip`); stored per chart in the
     plot's `:stats`. Aesthetic extents (`:color`,
     `:shape`, `:size`) are [[cljplot2.data.rows/value-extent]]s; `:na` lists aesthetics with NA (`nil`) values
   * `(draw chart computed canvas panel-box scales env)` - draws one panel's `computed` data; called by the panel
@@ -20,12 +22,14 @@
     never from assuming `:x` is horizontal; it gives `##NaN` for values the scale can't place, and such values are
     skipped. Charts compute in their own frame (`:x`, `:y`); flip is a drawing concern only.
   * `(legend chart attributes canvas box env)` - optional; draws the chart's key glyph in a legend key `box`,
-    `attributes` - the entry's mapped style attributes (`{:color c :shape s :size z}`, NA ones absent except color).
+    `attributes` - the entry's mapped style attributes (`{:color c :shape s :size z}`, NA ones absent except color);
+    `env` also has the chart's computed data (`:chart-stats`, see compute).
     Every chart mapping a legend's dimension draws into its keys, in chart order.
 
   Options common to all charts: `:data` (own data, see [[cljplot2.data.rows/rows]]) and `:mapping` (merged over the
   plot's mapping)."
-  (:require [cljplot2.chart.box :as box]
+  (:require [cljplot2.chart.beeswarm :as beeswarm]
+            [cljplot2.chart.box :as box]
             [cljplot2.chart.density :as density]
             [cljplot2.chart.ecdf :as ecdf]
             [cljplot2.chart.extent :as extent]
@@ -55,6 +59,7 @@
    :box (:style box/Schema)
    :violin (:style violin/Schema)
    :stripplot (:style stripplot/Schema)
+   :beeswarm (:style beeswarm/Schema)
    :rug (:style rug/Schema)
    :extent (:style extent/Schema)})
 
@@ -102,6 +107,12 @@
   "Jittered strip plot of `:x` per `:y` level and group, see [[cljplot2.chart.stripplot]] and [[cljplot2.data.strip]]."
   ([] (stripplot {}))
   ([options] (chart-value :stripplot stripplot/compute stripplot/draw stripplot/legend stripplot/Schema options)))
+
+(defn beeswarm
+  "Beeswarm of `:x` per `:y` level and group (points packed without overlap), see [[cljplot2.chart.beeswarm]] and
+  [[cljplot2.data.strip]]."
+  ([] (beeswarm {}))
+  ([options] (chart-value :beeswarm beeswarm/compute beeswarm/draw beeswarm/legend beeswarm/Schema options)))
 
 (defn rug
   "Rug of `:x` values, see [[cljplot2.chart.rug]] and [[cljplot2.data.strip]]."

@@ -1,6 +1,6 @@
 (ns cljplot2.demo.strips
-  "1d strips demo (cycle 3a): box, violin (inner marks, split), stripplot, rug, extent; groups dodged, flipped vertical
-  strips, overlays."
+  "1d strips demo (cycle 3): box, violin (inner marks, split), stripplot, rug, extent; groups dodged, flipped vertical
+  strips, overlays (3a); beeswarm, histogram and density ridgelines, `:bottom` placement (3b)."
   (:require [clojure.data.json :as json]
             [clojure.java.io :as io]
             [fastmath.random :as r]
@@ -98,6 +98,54 @@
    :charts [(chart/violin {:color [200 200 220]}) (chart/box {:width 0.15})]
    :labels {:title "No :y - centred violin with a narrow box" :x "waiting"}})
 
+(def beeswarm-chem
+  {:data chem97
+   :mapping {:x :gcsescore :y :score :color :gender}
+   :scales {:y {:kind :bands}}
+   :charts [(chart/beeswarm {:size 4})]
+   :labels {:title "Beeswarm: dodged by gender (:fit)" :x "gcsescore" :y "score"}})
+
+(def beeswarm-barley
+  {:data barley
+   :mapping {:x :yield :y :site}
+   :flip true
+   :charts [(chart/box {:outliers false :color [220 220 230]}) (chart/beeswarm {:size 8 :fit false})]
+   :labels {:title "Beeswarm over boxes, vertical, :fit false" :x "yield"}})
+
+(def ridges-density
+  {:data chem97
+   :mapping {:x :gcsescore :y :score}
+   :scales {:y {:kind :bands}}
+   :charts [(chart/density {:fill-gradient :mpl/viridis})]
+   :labels {:title "Density ridgelines, :fill-gradient" :x "gcsescore" :y "score"}})
+
+(def ridges-histogram
+  {:data chem97
+   :mapping {:x :gcsescore :y :score}
+   :scales {:y {:kind :bands}}
+   :charts [(chart/histogram {:bins 25 :overlap 1.5})]
+   :labels {:title "Histogram ridgelines, :overlap 1.5" :x "gcsescore" :y "score"}})
+
+(def ridges-mirror
+  {:data chem97
+   :mapping {:x :gcsescore :y :score :color :gender}
+   :scales {:y {:kind :bands}}
+   :charts [(chart/density {:position :mirror :overlap 0.45})]
+   :labels {:title "Double ridgeline by gender (:position :mirror)" :x "gcsescore" :y "score"}})
+
+(def density-bottom
+  {:data faithful
+   :mapping {:x :eruptions}
+   :charts [(chart/density) (chart/stripplot {:place :bottom :rng (r/rng :mersenne 2) :size 6})]
+   :labels {:title "Density with jittered points below (:place :bottom)" :x "eruptions"}})
+
+(def density-bottom-rug
+  {:data faithful
+   :mapping {:x :eruptions}
+   :flip true
+   :charts [(chart/density {:fill [69 117 180 60]}) (chart/rug {:place :bottom :bottom-share 0.08 :width 1.0})]
+   :labels {:title "Density with a :bottom rug, vertical" :x "eruptions"}})
+
 (def images
   "Images of this demo: `[file-name plot options]`, saved to `results/strips/` by [[cljplot2.demo/render!]]."
   [["box-barley-700x500.png" box-barley {:width 700 :height 500}]
@@ -111,4 +159,11 @@
    ["density-rug-600x400.png" density-rug {:width 600 :height 400}]
    ["histogram-box-600x400.png" histogram-box {:width 600 :height 400}]
    ["extents-900x600.png" extents {:width 900 :height 600}]
-   ["single-box-600x300.png" single-box {:width 600 :height 300}]])
+   ["single-box-600x300.png" single-box {:width 600 :height 300}]
+   ["beeswarm-chem-800x600.png" beeswarm-chem {:width 800 :height 600}]
+   ["beeswarm-barley-700x500.png" beeswarm-barley {:width 700 :height 500}]
+   ["ridges-density-700x600.png" ridges-density {:width 700 :height 600}]
+   ["ridges-histogram-700x600.png" ridges-histogram {:width 700 :height 600}]
+   ["ridges-mirror-700x600.png" ridges-mirror {:width 700 :height 600}]
+   ["density-bottom-600x400.png" density-bottom {:width 600 :height 400}]
+   ["density-bottom-rug-400x500.png" density-bottom-rug {:width 400 :height 500}]])

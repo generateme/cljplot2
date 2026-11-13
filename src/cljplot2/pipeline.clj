@@ -106,8 +106,8 @@
 
 (defn- stats-stage
   "Per chart: the data its `:compute` returns from its split groups."
-  [{:keys [charts split theme groups scales] :as plot}]
-  (let [env {:theme theme :na-level? (get groups :na true) :plot-scales scales}]
+  [{:keys [charts split theme groups scales flip] :as plot}]
+  (let [env {:theme theme :na-level? (get groups :na true) :plot-scales scales :flip? (boolean flip)}]
     (assoc plot :stats (mapv (fn [chart chart-split] ((:compute chart) chart chart-split env)) charts (:charts split)))))
 
 (defn- aesthetic-extents
@@ -138,14 +138,17 @@
 
 (defn- scale-specs-stage
   "Phase-1 specs of the position and aesthetic scales with a plot `:scales` entry or data extents. Aesthetic specs are final (no layout dependence).
-  A tick format suggested by a chart (`:tick-format` in its stats, the first chart's) is added to the position spec."
+  A tick format suggested by a chart (`:tick-format` in its stats, the first chart's) is added to the position spec;
+  scale attributes suggested by a chart (`:scale-defaults {dim attributes}`, the first chart's) go under the plot's
+  own spec."
   [{:keys [scales extents theme stats] :as plot}]
   (let [ks (distinct (concat (filter #(or (position-scales %) (aesthetic/dim? %)) (keys scales)) (keys extents)))
-        tick-format (fn [k] (some #(get-in % [:tick-format k]) stats))]
+        tick-format (fn [k] (some #(get-in % [:tick-format k]) stats))
+        scale-defaults (fn [k] (some #(get-in % [:scale-defaults k]) stats))]
     (assoc plot :scale-specs
            (into {} (keep (fn [k]
                             (let [{:keys [extent padding na?]} (get extents k)
-                                  spec (get scales k {})]
+                                  spec (merge (when (position-scales k) (scale-defaults k)) (get scales k {}))]
                               (if (aesthetic/dim? k)
                                 (some->> (aesthetic/scale-spec k spec extent na? (:palette theme)) (vector k))
                                 [k (cond-> (scale/data-scale-spec k spec extent padding)
