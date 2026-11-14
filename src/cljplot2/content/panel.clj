@@ -63,7 +63,8 @@
 (defn- draw-grid-lines!
   "Grid lines at the tick positions of the panel-local scales, `w` x `h` panel at the origin: a horizontal scale
   (by its direction) draws vertical lines, a vertical one horizontal lines. `[:panel :grid k]` (by scale key)
-  `:none` turns the lines of scale `k` off; otherwise a bands scale draws the `[:panel :grid :bands]` line."
+  `:none` turns the lines of scale `k` off, as does the scale's `:axis false`; otherwise a bands scale draws the
+  `[:panel :grid :bands]` line."
   [c ^long w ^long h env]
   (doseq [k [:x :y]
           :let [finalized (get-in env [:scales k])
@@ -71,7 +72,8 @@
                 {:keys [color width dash] :as line} (if (and (= :bands (:kind finalized)) (not (theme/none? axis-line)))
                                                       (get-in env [:theme :panel :grid :bands])
                                                       axis-line)]
-          :when (and finalized (not (theme/none? line)) (not (theme/none? color)) (pos? (double width)))]
+          :when (and finalized (not (false? (:axis finalized)))
+                     (not (theme/none? line)) (not (theme/none? color)) (pos? (double width)))]
     (c2d/set-color c color)
     (c2d/set-stroke-custom c (cond-> {:size (double width) :cap :butt} (not (theme/none? dash)) (assoc :dash (vec dash))))
     (let [forward (scale/forward-fn finalized)

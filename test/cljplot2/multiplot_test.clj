@@ -145,7 +145,7 @@
         (is (= 30 (:x a)))))
     (testing ":arrange spec shape"
       (is (= {:arrange {:plots [p1] :columns 1 :widths [1]} :labels {:title "T"} :theme {:x 1}}
-             (plot/arrange [p1] {:columns 1 :widths [1] :title "T" :theme {:x 1} :ignored 2})))
+             (plot/arrange [p1] {:columns 1 :widths [1] :title "T" :theme {:x 1}})))
       (is (= :arrange (:key (error #(plot/build {:arrange [p1]})))))
       (is (= :arrange (:key (error #(plot/build (assoc (plot/arrange [p1]) :custom-grid {:columns [{:size [:flexible]}] :rows [{:size [:flexible]}] :items []}))))))
       (is (= {:key :x :in [:labels :x] :value "x"} (error #(plot/build (assoc (plot/arrange [p1]) :labels {:x "x"}))))))))

@@ -14,7 +14,8 @@
   `:title` uses the `:title` text role, `:x` and `:y` the `:axis-title` role; `:y` is rotated 270 by default.
   The label `:kind` can't be overridden.
 
-  An axis item (`:x-axis` below the panel, `:y-axis` left of it) is added for each scale in `:scale-specs`, with
+  An axis item (`:x-axis` below the panel, `:y-axis` left of it) is added for each scale in `:scale-specs` (not for
+  one with `:axis false`), with
   overhang items reserving room for its end tick labels: x end in `:x-overhang`, y end in `:y-overhang`, both
   start ends in the corner cell (`:y-axis` column, `:x-axis` row). Track and item names are by side (`x` - under
   the panel, `y` - left of it): with `:flip true` the `:y` scale's axis and `:labels :y` title go under the panel,
@@ -58,6 +59,11 @@
                  {:id id :column (get-in spans [k :column] column) :row (get-in spans [k :row] row)
                   :content (assoc (merge defaults (if (map? label) label {:text label})) :kind :label)}))
              plot-labels)))
+
+(defn- axis-shown?
+  "Does position scale `k` have a spec in `scale-specs` without `:axis false` (an axis is drawn for it)?"
+  [scale-specs k]
+  (and (contains? scale-specs k) (not (false? (get-in scale-specs [k :axis])))))
 
 (defn- axis-items
   "Items of the axis of scale `k` drawn on `side`: `:bottom` (horizontal scale; axis under the panel, end overhang
@@ -161,7 +167,7 @@
                (into [(measured :y-overhang) {:id :panel :size [:flexible]}
                       (measured :x-axis) (measured :x-title) (margin-track :margin-bottom)]))
      :items (-> [{:id :panel :column :panel :row :panel :content {:kind :panel}}]
-                (into (mapcat (fn [[side k]] (when (contains? scale-specs k) (axis-items side k)))) (side-scales flip))
+                (into (mapcat (fn [[side k]] (when (axis-shown? scale-specs k) (axis-items side k)))) (side-scales flip))
                 (into (label-items (side-labels labels flip) {}))
                 (into (legend-items legends :panel))
                 (into (plot-margin-items margin-stats)))}))
@@ -237,13 +243,13 @@
                         {:id [:panel row col] :column [:panel col] :row [:panel row]
                          :content {:kind :panel :panel key :alternate (odd? (+ (long row) (long col)))}})
                       panels)
-                (cond-> (contains? scale-specs h-key)
+                (cond-> (axis-shown? scale-specs h-key)
                   (into (concat (for [c (range cols)]
                                   {:id [:x-axis c] :column [:panel c] :row :x-axis
                                    :content (cond-> {:kind :axis :scale h-key}
                                               (< (long c) (dec cols)) (assoc :next-panel-gap gap))})
                                 (rest (axis-items :bottom h-key)))))
-                (cond-> (contains? scale-specs v-key)
+                (cond-> (axis-shown? scale-specs v-key)
                   (into (concat (for [r (range rows)]
                                   {:id [:y-axis r] :column :y-axis :row [:panel r] :content {:kind :axis :scale v-key}})
                                 (rest (axis-items :left v-key)))))

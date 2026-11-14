@@ -17,7 +17,9 @@
     palette name, colors (a gradient), a clojure2d gradient name or a function of `t` in `[0 1]`; `:shape` - shapes (cycled); `:size` - `[min max]` (ordinal levels evenly spread)
     or a level map `{level attribute}` (ordinal scales; every level needs an entry, extra keys are ignored)
   * `:kind :binned` (`:color` only, never inferred) - numeric values coloured by bin: `:bins` - a count of equal bins
-    over the domain (default 5) or a breaks vector (its ends are the domain); bins `[a b)`, the last `[a b]`; bin
+    over the domain (default 5), a breaks vector (its ends are the domain), a bin method (`:sturges`, ...) or quantile
+    bins `{:quantiles q :estimation e}` computed from the data values (see [[cljplot2.data.levels/bins]]; with an
+    explicit `:domain` its ends are the outer breaks); bins `[a b)`, the last `[a b]`; bin
     colors - the range resampled to one color per bin (clojure2d `resample`: a palette of exactly that many colors
     gives its colors); legend - a stepped color bar
   * `:kind :identity` (never inferred) - the values are the attributes (colors, shapes, sizes); no domain, range or
@@ -109,15 +111,6 @@
         attribute (case k :color schema/solid-color :shape schema/shape :size schema/non-neg)]
     [:multi {:dispatch map?} [true (level-map attribute)] [false plain]]))
 
-(def ^:private bins-schema
-  (schema/with-rules
-   [:multi {:dispatch #(cond (vector? %) :breaks (keyword? %) :method :else :count)}
-    [:breaks [:vector {:min 2} schema/finite]]
-    [:method [:fn {:error/message "should be a bin count or a breaks vector (bin methods aren't supported by binned scales)"}
-              (constantly false)]]
-    [:count schema/pos-int]]
-   [#(when (and (vector? %) (not (apply < %))) "breaks should be increasing") nil]))
-
 (def palette-schema
   "Theme `:palette` (aesthetic defaults)."
   [:map {:closed true}
@@ -202,7 +195,7 @@
           (schema/optional :spread schema/bool)
           (schema/optional :midpoint schema/finite)
           (schema/optional :reverse schema/bool)
-          (schema/optional :bins bins-schema)
+          (schema/optional :bins levels/bins)
           (schema/optional :formatter schema/function)
           (schema/nilable :title string?)
           (schema/nilable :legend schema/bool)]
@@ -291,14 +284,22 @@
   [k spec v]
   (if (identity-scale? spec) (valid-attribute? k v) (data/valid-value? v)))
 
+(defn- sampled-bins?
+  "Does scale `spec` bin by the data values themselves: `:kind :binned` with a method keyword or quantile `:bins`?"
+  [spec]
+  (and (= :binned (:kind spec)) (let [bins (:bins spec)] (or (keyword? bins) (map? bins)))))
+
 (defn value-extent
   "Extent of the non-NA values `vs` of aesthetic `k` under the plot's scale `spec` (may be `nil`), `nil` when empty:
   an identity scale needs no domain, so its values aren't inspected (`{:kind :categorical :values []}` - colors of
-  any form may mix); otherwise [[cljplot2.data.rows/value-extent]]."
+  any form may mix); otherwise [[cljplot2.data.rows/value-extent]], with every finite value as `:sample` when the
+  scale's bins come from the data (method or quantile `:bins`, see [[cljplot2.data.levels/bins]])."
   [k spec vs]
-  (if (identity-scale? spec)
-    (when (seq vs) {:kind :categorical :values []})
-    (data/value-extent k vs)))
+  (cond
+    (identity-scale? spec) (when (seq vs) {:kind :categorical :values []})
+    (sampled-bins? spec) (some-> (data/value-extent k vs)
+                                 (assoc :sample (into [] (comp (filter schema/finite?) (map double)) vs)))
+    :else (data/value-extent k vs)))
 
 (defn kept-value?
   "Is the non-`nil` data value `v` of aesthetic `k` drawn under the plot's scale `spec` (may be `{}`): with an identity
@@ -319,11 +320,20 @@
                    (in-domain? k spec v)))))
 
 (defn- binned-breaks
-  "Breaks of a binned scale over the domain `[lo hi]`: a `:bins` vector as given, else a count of equal bins."
-  [bins [lo hi]]
+  "Breaks of binned scale `spec` of `k` (explicit `:domain` `explicit`, data `extent`): a `:bins` vector as given; a
+  count of equal bins over the domain (default 5); a method or quantile `:bins` from the extent's `:sample` - with an
+  explicit domain its ends are the outer breaks (one bin over it without data)."
+  [k {:keys [bins]} explicit extent]
   (if (vector? bins)
     (mapv double bins)
-    (levels/breaks [(double lo) (double hi)] (or bins default-bins))))
+    (let [[lo hi] (linear-domain k explicit extent)]
+      (if (or (keyword? bins) (map? bins))
+        (let [brks (levels/breaks (:sample extent) bins)]
+          (cond
+            (nil? brks) [lo hi]
+            explicit (vec (distinct (concat [lo] (filter #(< (double lo) (double %) (double hi)) brks) [hi])))
+            :else brks))
+        (levels/breaks [lo hi] (or bins default-bins))))))
 
 (defn scale-spec
   "Scale of aesthetic dimension `k` from the plot's scale `spec` (may be `{}`), the merged data `extent`
@@ -339,7 +349,7 @@
             _ (when-let [[key message] (first (option-problems k kind spec))]
                 (schema/fail! (str message ".") {:key key :in [:scales k key] :value (get spec key)}))
             breaks (when (= kind :binned)
-                     (binned-breaks (:bins spec) (if (vector? (:bins spec)) nil (linear-domain k explicit extent))))
+                     (binned-breaks k spec explicit extent))
             domain (case kind
                      :ordinal (ordinal-domain k explicit extent)
                      :linear (linear-domain k explicit extent)

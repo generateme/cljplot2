@@ -252,7 +252,7 @@
     (is (= :bins (key-of {:color :v} {:color {:kind :linear :bins 3}})))
     (is (= :type (key-of {:color :v} {:color {:kind :binned :type :categorical}})))
     (is (some? (build (plot-of {:color :v} {:color {:kind :binned :type :numeric}}))) ":type :numeric allowed")
-    (is (= :bins (key-of {:color :v} {:color {:kind :binned :bins :sturges}})) "6.10 methods not supported")
+    (is (= :bins (key-of {:color :v} {:color {:kind :binned :bins :no-such-method}})) "unknown method (methods supported since cycle 3)")
     (is (= :bins (key-of {:color :v} {:color {:kind :binned :bins [0 10 5]}})))
     (is (= :bins (key-of {:color :v} {:color {:kind :binned :bins [0]}})))
     (is (= :bins (key-of {:color :v} {:color {:kind :binned :bins 0}})))))

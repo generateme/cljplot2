@@ -149,12 +149,24 @@
   (let [s (binding [*print-length* 5 *print-level* 3] (pr-str v))]
     (if (> (count s) 60) (str (subs s 0 57) "...") s)))
 
+(defn- abbreviated-key
+  "The only key among `known` whose name starts with the first three characters of `unknown`'s name (an
+  abbreviation such as `:cols` for `:columns`), or `nil`."
+  [unknown known]
+  (let [n (str (if (keyword? unknown) (name unknown) unknown))]
+    (when (>= (count n) 3)
+      (let [matches (filter #(and (keyword? %) (str/starts-with? (name %) (subs n 0 3)) (not= % unknown)) known)]
+        (when (= 1 (count matches)) (first matches))))))
+
 (defn- spelling-suggestion
-  "For an unknown-key `error`: the closest key of its (closed) map schema, or `nil`. Present keys count too, as
-  merged inputs (the theme) always hold every known key."
+  "For an unknown-key `error`: the closest key of its (closed) map schema, else the only key it abbreviates (see
+  [[abbreviated-key]]), or `nil`. Present keys count too, as merged inputs (the theme) always hold every known key."
   [error]
   (when (= ::malli/extra-key (:type error))
-    (first (me/-most-similar-to #{} (peek (:in error)) (set (map first (malli/entries (:schema error))))))))
+    (let [unknown (peek (:in error))
+          known (set (map first (malli/entries (:schema error))))]
+      (or (first (me/-most-similar-to #{} unknown known))
+          (abbreviated-key unknown known)))))
 
 (defn- error-entry
   "`{:in :value :message}` of a malli `error` under `prefix`; a rule's `:error/path` extends the path, its value is

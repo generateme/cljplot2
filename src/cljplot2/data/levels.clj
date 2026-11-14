@@ -8,6 +8,7 @@
   * [[breaks]] - the bin breaks shared with the histogram's `:bins`
   * [[categorical]] - a mapping marker declaring a dimension categorical"
   (:require [fastmath.core :as m]
+            [malli.core :as malli]
             [fastmath.stats :as stats]
             [cljplot2.data.accessor :as accessor]
             [cljplot2.data.rows :as rows]
@@ -23,12 +24,41 @@
   (schema/with-rules [:vector {:min 2} schema/finite]
     [#(when-not (apply < %) "breaks should be increasing")]))
 
+(def ^:private estimation-strategies (set (keys stats/estimation-strategies-list)))
+
+(def ^:private probabilities-schema
+  (schema/with-rules [:vector {:min 1} [:and schema/finite [:fn {:error/message "should be strictly between 0 and 1"}
+                                                             #(< 0.0 (double %) 1.0)]]]
+    [#(when-not (apply < %) "probabilities should be increasing")]))
+
+(def ^:private quantiles-schema
+  [:map {:closed true}
+   [:quantiles [:multi {:dispatch vector?} [true probabilities-schema] [false schema/pos-int]]]
+   (schema/optional :estimation (into [:enum] (sort estimation-strategies)))])
+
+(def ^:private quantile-bins
+  ;; one error at the :bins key (not inside the map)
+  (schema/named-type ::quantile-bins (malli/validator quantiles-schema)
+                     (str "should be quantile bins {:quantiles q :estimation e}: q a positive count or a vector of "
+                          "increasing probabilities strictly between 0 and 1, e one of " (vec (sort estimation-strategies)))))
+
 (def bins
   "Schema of `:bins`: a fastmath bin-estimation method keyword (`:sturges`, `:sqrt`, `:rice`, `:doane`, `:scott`,
-  `:freedman-diaconis`), a positive integer (equal-width bins over the data range) or a vector of at least 2
-  increasing breaks."
-  [:multi {:dispatch #(cond (keyword? %) :method (vector? %) :breaks :else :count)}
-   [:method keyword?] [:breaks breaks-schema] [:count schema/pos-int]])
+  `:freedman-diaconis`), a positive integer (equal-width bins over the data range), a vector of at least 2
+  increasing breaks, or quantile bins `{:quantiles q :estimation e}` - `q` a count of equal-probability bins or a
+  vector of increasing inner probabilities (strictly between 0 and 1), `e` a fastmath quantile estimation strategy
+  (`:legacy` - default, `:r1` ... `:r9`)."
+  [:multi {:dispatch #(cond (keyword? %) :method (vector? %) :breaks (map? %) :quantiles :else :count)}
+   [:method keyword?] [:breaks breaks-schema] [:quantiles quantile-bins] [:count schema/pos-int]])
+
+(defn- quantile-breaks
+  "Breaks at the quantiles of `values` (doubles, at least one) for quantile bins `{:quantiles q :estimation e}`:
+  probabilities `0, 1/n, ..., 1` for a count `n`, else `0, p..., 1`; tied breaks merged (fewer bins)."
+  [values {:keys [quantiles estimation]}]
+  (let [ps (if (vector? quantiles)
+             (vec (concat [0.0] (map double quantiles) [1.0]))
+             (let [n (long quantiles)] (mapv #(/ (double %) (double n)) (range (inc n)))))]
+    (vec (distinct (stats/quantiles values ps (or estimation :legacy))))))
 
 (defn- equal-breaks
   [^double lo ^double hi ^long n]
@@ -37,16 +67,19 @@
 
 (defn breaks
   "Bin breaks for finite `values` (doubles) and `bins` (see [[bins]]); `nil` for no values (explicit breaks are
-  returned as they are). A single distinct value gets one bin of width 1 centred on it. Throws `ex-info {:key :bins}`
-  for an unknown method."
+  returned as they are). A single distinct value gets one bin of width 1 centred on it; quantile bins merge tied
+  breaks (fewer bins). Throws `ex-info {:key :bins}` for an unknown method or invalid quantile bins."
   [values bins]
+  (when (map? bins) (schema/explain! [[quantile-bins bins [:bins]]]))
   (cond
     (vector? bins) (mapv double bins)
     (empty? values) nil
     :else (let [lo (double (reduce min values))
                 hi (double (reduce max values))]
-            (if (== lo hi)
-              [(- lo 0.5) (+ lo 0.5)]
+            (cond
+              (== lo hi) [(- lo 0.5) (+ lo 0.5)]
+              (map? bins) (quantile-breaks values bins)
+              :else
               (let [n (long (if (keyword? bins)
                               (try (long (stats/estimate-bins values bins))
                                    (catch IllegalArgumentException _

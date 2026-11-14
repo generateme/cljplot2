@@ -289,17 +289,18 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>A colour is a clojure2d colour: a name keyword, a hex string, an RGB vector, or RGBA with alpha in 0-255.</p>
 <section id="calling-a-colour" class="level3" data-number="2.1.1">
 <h3 data-number="2.1.1" class="anchored" data-anchor-id="calling-a-colour"><span class="header-section-number">2.1.1</span> Calling a colour</h3>
-<p>Literal rects take a vector of fills, one per interval; the labels are a text chart.</p>
+<p>Literal rects take a vector of fills, one per interval; the labels are a text chart. <code>:axis false</code> on both scales leaves out axes and grid lines that would mean nothing here.</p>
 <p>Source: R Graph Gallery - Dealing with color in base R; colour names (<a href="https://r-graph-gallery.com/colors.html">1</a>, <a href="https://r-graph-gallery.com/42-colors-names.html">2</a>).</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">let</span> [colors [<span class="at">:steelblue</span> <span class="at">:tomato</span> <span class="st">"#2ca25f"</span> <span class="st">"#fdae6b"</span> [<span class="dv">102</span> <span class="dv">51</span> <span class="dv">153</span>] [<span class="dv">255</span> <span class="dv">0</span> <span class="dv">0</span> <span class="dv">90</span>]]</span>
 <span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>      labels [<span class="st">":steelblue"</span> <span class="st">":tomato"</span> <span class="st">"</span><span class="sc">\"</span><span class="st">#2ca25f</span><span class="sc">\"</span><span class="st">"</span> <span class="st">"</span><span class="sc">\"</span><span class="st">#fdae6b</span><span class="sc">\"</span><span class="st">"</span> <span class="st">"[102 51 153]"</span> <span class="st">"[255 0 0 90]"</span>]</span>
 <span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>      xs (<span class="kw">mapv</span> (<span class="kw">fn</span> [i] [i (<span class="kw">+</span> i <span class="fl">0.9</span>)]) (<span class="kw">range</span> (<span class="kw">count</span> colors)))]</span>
 <span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>  (plot/render-image</span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>   {<span class="at">:charts</span> [(chart/rect {<span class="at">:x</span> xs <span class="at">:y</span> [<span class="dv">0</span> <span class="dv">1</span>] <span class="at">:fill</span> colors})</span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>             (chart/text {<span class="at">:x</span> (<span class="kw">mapv</span> #(<span class="kw">+</span> <span class="va">%</span> <span class="fl">0.45</span>) (<span class="kw">range</span> (<span class="kw">count</span> colors))) <span class="at">:y</span> -<span class="fl">0.15</span> <span class="at">:text</span> labels <span class="at">:size</span> <span class="dv">11</span>})]</span>
-<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"Names, hex strings, RGB and RGBA vectors"</span> <span class="at">:x</span> <span class="va">nil</span> <span class="at">:y</span> <span class="va">nil</span>}}</span>
-<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>   {<span class="at">:width</span> <span class="dv">900</span> <span class="at">:height</span> <span class="dv">300</span>}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>   {<span class="at">:scales</span> {<span class="at">:x</span> {<span class="at">:axis</span> <span class="va">false</span>} <span class="at">:y</span> {<span class="at">:axis</span> <span class="va">false</span>}}</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">:charts</span> [(chart/rect {<span class="at">:x</span> xs <span class="at">:y</span> [<span class="dv">0</span> <span class="dv">1</span>] <span class="at">:fill</span> colors})</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>             (chart/text {<span class="at">:x</span> (<span class="kw">mapv</span> #(<span class="kw">+</span> <span class="va">%</span> <span class="fl">0.45</span>) (<span class="kw">range</span> (<span class="kw">count</span> colors))) <span class="at">:y</span> -<span class="fl">0.15</span> <span class="at">:text</span> labels <span class="at">:size</span> <span class="dv">11</span>})]</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"Names, hex strings, RGB and RGBA vectors"</span> <span class="at">:x</span> <span class="va">nil</span> <span class="at">:y</span> <span class="va">nil</span>}}</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>   {<span class="at">:width</span> <span class="dv">900</span> <span class="at">:height</span> <span class="dv">300</span>}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="clay-image">
 <p><img src="use_cases.colors_files/image0.png" class="img-fluid"></p>
@@ -311,7 +312,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Palettes are named lists of colours (<code>c/palette</code>, <code>c/find-palette</code>); gradients are functions of <code>t</code> in <code>[0 1]</code> (<code>c/gradient</code>). A scale’s <code>:range</code> takes either name.</p>
 <section id="palette-types" class="level3" data-number="2.2.1">
 <h3 data-number="2.2.1" class="anchored" data-anchor-id="palette-types"><span class="header-section-number">2.2.1</span> Palette types</h3>
-<p>Qualitative palettes for categories, sequential for ordered values, diverging around a meaningful middle (here the mean mpg, <code>:midpoint</code>).</p>
+<p>Qualitative palettes for categories, sequential for ordered values, diverging around a meaningful middle (here the mean mpg, <code>:midpoint</code>). The lightest end of a sequential palette is almost white and nearly disappears against the grey panel - a property of the palette worth knowing when choosing one.</p>
 <p>Source: <a href="https://r-graph-gallery.com/ggplot2-color.html">R Graph Gallery - Dealing with color in ggplot2</a>. Data: Edgar Anderson’s iris measurements, R datasets package <code>iris</code> (Anderson 1935; Fisher 1936); licence: Part of R (GPL-2 | GPL-3).</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">let</span> [mean-mpg (stats/mean (<span class="kw">map</span> <span class="at">:mpg</span> mtcars))]</span>
@@ -367,7 +368,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>             {<span class="at">:x0</span> i <span class="at">:x1</span> (<span class="kw">+</span> i <span class="fl">0.92</span>) <span class="at">:y0</span> (<span class="kw">-</span> row) <span class="at">:y1</span> (<span class="kw">-</span> <span class="fl">0.85</span> row) <span class="at">:c</span> col})</span>
 <span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>      names (<span class="kw">for</span> [[row [label]] (map-indexed <span class="kw">vector</span> palettes)] {<span class="at">:x</span> -<span class="fl">0.2</span> <span class="at">:y</span> (<span class="kw">-</span> <span class="fl">0.42</span> row) <span class="at">:label</span> label})]</span>
 <span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>  (plot/render-image</span>
-<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>   {<span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:kind</span> <span class="at">:identity</span>} <span class="at">:x</span> {<span class="at">:domain</span> [-<span class="fl">3.6</span> <span class="dv">9</span>]}}</span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>   {<span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:kind</span> <span class="at">:identity</span>} <span class="at">:x</span> {<span class="at">:domain</span> [-<span class="fl">3.6</span> <span class="dv">9</span>] <span class="at">:axis</span> <span class="va">false</span>} <span class="at">:y</span> {<span class="at">:axis</span> <span class="va">false</span>}}</span>
 <span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">:charts</span> [(chart/rect {<span class="at">:data</span> rows <span class="at">:mapping</span> {<span class="at">:x0</span> <span class="at">:x0</span> <span class="at">:x1</span> <span class="at">:x1</span> <span class="at">:y0</span> <span class="at">:y0</span> <span class="at">:y1</span> <span class="at">:y1</span> <span class="at">:color</span> <span class="at">:c</span>}})</span>
 <span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>             (chart/text {<span class="at">:data</span> names <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:y</span> <span class="at">:label</span> <span class="at">:label</span>} <span class="at">:anchor</span> [<span class="at">:right</span> <span class="at">:middle</span>] <span class="at">:size</span> <span class="dv">11</span>})]</span>
 <span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"Seven palettes and gradients, nine colours each"</span> <span class="at">:x</span> <span class="va">nil</span> <span class="at">:y</span> <span class="va">nil</span>}}</span>
@@ -415,7 +416,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="sequential-palettes-on-categories" class="level3" data-number="2.3.3">
 <h3 data-number="2.3.3" class="anchored" data-anchor-id="sequential-palettes-on-categories"><span class="header-section-number">2.3.3</span> Sequential palettes on categories</h3>
-<p>A sequential palette has more colours than there are levels: by default the levels take its first colours (all light here); <code>:spread true</code> resamples it across its whole range.</p>
+<p>A sequential palette has more colours than there are levels: by default the levels take its first colours (all light here, the first nearly invisible on the grey panel); <code>:spread true</code> resamples it across its whole range.</p>
 <p>Source: <a href="https://r-graph-gallery.com/38-rcolorbrewers-palettes.html">R Graph Gallery - RColorBrewer palettes</a>. Data: Barley yields, Minnesota 1931-1932, R lattice package <code>barley</code> (Immer et al.&nbsp;1934; Fisher 1971; Cleveland 1993); licence: GPL (&gt;= 2) (lattice).</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
@@ -460,7 +461,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="diverging-gradient-with-a-midpoint" class="level3" data-number="2.4.2">
 <h3 data-number="2.4.2" class="anchored" data-anchor-id="diverging-gradient-with-a-midpoint"><span class="header-section-number">2.4.2</span> Diverging gradient with a midpoint</h3>
-<p><code>:midpoint</code> puts a value at the middle of the gradient and scales both sides by the larger distance to it; the colour bar ticks the midpoint.</p>
+<p><code>:midpoint</code> puts a value at the middle of the gradient and scales both sides by the larger distance to it; the colour bar ticks the midpoint. <code>:reverse true</code> turns RdBu around, so high horse power is red.</p>
 <p>Source: <a href="https://r-graph-gallery.com/ggplot2-color.html">R Graph Gallery - Dealing with color in ggplot2</a>. Data: Motor Trend car road tests (1974), R datasets package <code>mtcars</code> (Henderson &amp; Velleman 1981); licence: Part of R (GPL-2 | GPL-3).</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">let</span> [mean-hp (stats/mean (<span class="kw">map</span> <span class="at">:hp</span> mtcars))]</span>
@@ -499,7 +500,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="binned-colours" class="level3" data-number="2.4.4">
 <h3 data-number="2.4.4" class="anchored" data-anchor-id="binned-colours"><span class="header-section-number">2.4.4</span> Binned colours</h3>
-<p><code>:kind :binned</code> colours values by bin: a count of equal bins or a breaks vector; the colour bar has one block per bin. For a discrete legend of intervals, bin the data with <code>levels/bin</code> instead.</p>
+<p><code>:kind :binned</code> colours values by bin: a count of equal bins, a breaks vector, or quantile bins (<code>{:quantiles 5}</code>: five bins of about equal counts, an <code>:estimation</code> strategy optional); the colour bar has one block per bin. For a discrete legend of intervals, bin the data with <code>levels/bin</code>, which takes the same <code>:bins</code>.</p>
 <p>Source: <a href="https://r-graph-gallery.com/ggplot2-color.html">R Graph Gallery - Dealing with color in ggplot2</a>. Data: Prices and attributes of round cut diamonds, R ggplot2 package <code>diamonds</code> (Wickham et al.); licence: MIT (ggplot2).</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> diamonds-sample</span></span>
@@ -509,13 +510,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
 <span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a> (plot/arrange</span>
-<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>  (<span class="kw">for</span> [[title bins] [[<span class="st">"5 equal bins"</span> <span class="dv">5</span>] [<span class="st">"breaks [0 1000 2500 5000 10000 20000]"</span> [<span class="dv">0</span> <span class="dv">1000</span> <span class="dv">2500</span> <span class="dv">5000</span> <span class="dv">10000</span> <span class="dv">20000</span>]]]]</span>
-<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>    {<span class="at">:data</span> diamonds-sample <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:carat</span> <span class="at">:y</span> <span class="at">:price</span> <span class="at">:color</span> <span class="at">:price</span>}</span>
-<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>     <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:kind</span> <span class="at">:binned</span> <span class="at">:bins</span> bins <span class="at">:range</span> <span class="at">:viridis</span>}}</span>
-<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>     <span class="at">:charts</span> [(chart/scatter {<span class="at">:size</span> <span class="dv">4</span>})]</span>
-<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>     <span class="at">:labels</span> {<span class="at">:title</span> title <span class="at">:x</span> <span class="st">"carat"</span> <span class="at">:y</span> <span class="st">"price"</span>}})</span>
-<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>  {<span class="at">:columns</span> <span class="dv">2</span>})</span>
-<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a> {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">450</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>  (<span class="kw">for</span> [[title bins] [[<span class="st">"5 equal bins"</span> <span class="dv">5</span>] [<span class="st">"breaks vector"</span> [<span class="dv">0</span> <span class="dv">1000</span> <span class="dv">2500</span> <span class="dv">5000</span> <span class="dv">10000</span> <span class="dv">20000</span>]]</span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>                      [<span class="st">"{:quantiles 5}"</span> {<span class="at">:quantiles</span> <span class="dv">5</span>}]]]</span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>    {<span class="at">:data</span> diamonds-sample <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:carat</span> <span class="at">:y</span> <span class="at">:price</span> <span class="at">:color</span> <span class="at">:price</span>}</span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>     <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:kind</span> <span class="at">:binned</span> <span class="at">:bins</span> bins <span class="at">:range</span> <span class="at">:viridis</span>}}</span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>     <span class="at">:charts</span> [(chart/scatter {<span class="at">:size</span> <span class="dv">4</span>})]</span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>     <span class="at">:labels</span> {<span class="at">:title</span> title <span class="at">:x</span> <span class="st">"carat"</span> <span class="at">:y</span> <span class="st">"price"</span>}})</span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a>  {<span class="at">:columns</span> <span class="dv">3</span>})</span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a> {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">400</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="clay-image">
 <p><img src="use_cases.colors_files/image10.png" class="img-fluid"></p>
@@ -602,15 +604,52 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb25"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">let</span> [image (plot/render-image {<span class="at">:data</span> iris <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:sepal-length</span> <span class="at">:y</span> <span class="at">:sepal-width</span> <span class="at">:color</span> <span class="at">:species</span>}</span>
 <span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>                                <span class="at">:charts</span> [(chart/scatter {<span class="at">:size</span> <span class="dv">7</span>})]</span>
 <span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>                                <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"default palette"</span> <span class="at">:x</span> <span class="st">"sepal length"</span> <span class="at">:y</span> <span class="st">"sepal width"</span>}}</span>
-<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a>                               {<span class="at">:width</span> <span class="dv">480</span> <span class="at">:height</span> <span class="dv">340</span>})]</span>
-<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a>  (kind/hiccup</span>
-<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a>   [<span class="at">:div</span> {<span class="at">:style</span> {<span class="at">:display</span> <span class="st">"flex"</span> <span class="at">:flex-wrap</span> <span class="st">"wrap"</span> <span class="at">:gap</span> <span class="st">"8px"</span>}}</span>
-<span id="cb25-7"><a href="#cb25-7" aria-hidden="true" tabindex="-1"></a>    image</span>
-<span id="cb25-8"><a href="#cb25-8" aria-hidden="true" tabindex="-1"></a>    (plot/cvd-image image <span class="at">:deuteranopia</span>)</span>
-<span id="cb25-9"><a href="#cb25-9" aria-hidden="true" tabindex="-1"></a>    (plot/cvd-image image <span class="at">:protanopia</span>)</span>
-<span id="cb25-10"><a href="#cb25-10" aria-hidden="true" tabindex="-1"></a>    (plot/cvd-image image <span class="at">:tritanopia</span>)]))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a>                               {<span class="at">:width</span> <span class="dv">480</span> <span class="at">:height</span> <span class="dv">340</span>})</span>
+<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a>      cell (<span class="kw">fn</span> [caption img] (kind/hiccup [<span class="at">:div</span> [<span class="at">:p</span> [<span class="at">:b</span> caption]] img]))]</span>
+<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a>  (kind/table</span>
+<span id="cb25-7"><a href="#cb25-7" aria-hidden="true" tabindex="-1"></a>   {<span class="at">:row-vectors</span> [[(cell <span class="st">"as most people see it"</span> image) (cell <span class="st">"deuteranopia"</span> (plot/cvd-image image <span class="at">:deuteranopia</span>))]</span>
+<span id="cb25-8"><a href="#cb25-8" aria-hidden="true" tabindex="-1"></a>                  [(cell <span class="st">"protanopia"</span> (plot/cvd-image image <span class="at">:protanopia</span>)) (cell <span class="st">"tritanopia"</span> (plot/cvd-image image <span class="at">:tritanopia</span>))]]}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<div style="display:flex;flex-wrap:wrap;gap:8px;"><div class="clay-image"><p><img alt="" src="use_cases.colors_files/image14.png"></p></div><div class="clay-image"><p><img alt="" src="use_cases.colors_files/image15.png"></p></div><div class="clay-image"><p><img alt="" src="use_cases.colors_files/image16.png"></p></div><div class="clay-image"><p><img alt="" src="use_cases.colors_files/image17.png"></p></div></div>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
+<tbody>
+<tr class="odd">
+<td><div>
+<p><strong>as most people see it</strong></p>
+<div class="clay-image">
+<p><img src="use_cases.colors_files/image14.png" class="img-fluid"></p>
+</div>
+</div></td>
+<td><div>
+<p><strong>deuteranopia</strong></p>
+<div class="clay-image">
+<p><img src="use_cases.colors_files/image15.png" class="img-fluid"></p>
+</div>
+</div></td>
+</tr>
+<tr class="even">
+<td><div>
+<p><strong>protanopia</strong></p>
+<div class="clay-image">
+<p><img src="use_cases.colors_files/image16.png" class="img-fluid"></p>
+</div>
+</div></td>
+<td><div>
+<p><strong>tritanopia</strong></p>
+<div class="clay-image">
+<p><img src="use_cases.colors_files/image17.png" class="img-fluid"></p>
+</div>
+</div></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 </section>
 <section id="colour-caveats" class="level3" data-number="2.6.2">
 <h3 data-number="2.6.2" class="anchored" data-anchor-id="colour-caveats"><span class="header-section-number">2.6.2</span> Colour caveats</h3>

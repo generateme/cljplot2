@@ -29,7 +29,8 @@
 
 ;; ### Calling a colour
 
-;; Literal rects take a vector of fills, one per interval; the labels are a text chart.
+;; Literal rects take a vector of fills, one per interval; the labels are a text chart. `:axis false` on both
+;; scales leaves out axes and grid lines that would mean nothing here.
 
 (nu/source-note {:source "R Graph Gallery - Dealing with color in base R; colour names"
                  :url ["https://r-graph-gallery.com/colors.html" "https://r-graph-gallery.com/42-colors-names.html"]})
@@ -38,7 +39,8 @@
       labels [":steelblue" ":tomato" "\"#2ca25f\"" "\"#fdae6b\"" "[102 51 153]" "[255 0 0 90]"]
       xs (mapv (fn [i] [i (+ i 0.9)]) (range (count colors)))]
   (plot/render-image
-   {:charts [(chart/rect {:x xs :y [0 1] :fill colors})
+   {:scales {:x {:axis false} :y {:axis false}}
+    :charts [(chart/rect {:x xs :y [0 1] :fill colors})
              (chart/text {:x (mapv #(+ % 0.45) (range (count colors))) :y -0.15 :text labels :size 11})]
     :labels {:title "Names, hex strings, RGB and RGBA vectors" :x nil :y nil}}
    {:width 900 :height 300}))
@@ -51,7 +53,8 @@
 ;; ### Palette types
 
 ;; Qualitative palettes for categories, sequential for ordered values, diverging around a meaningful middle (here
-;; the mean mpg, `:midpoint`).
+;; the mean mpg, `:midpoint`). The lightest end of a sequential palette is almost white and nearly disappears
+;; against the grey panel - a property of the palette worth knowing when choosing one.
 
 (nu/source-note {:source "R Graph Gallery - Dealing with color in ggplot2"
                  :url "https://r-graph-gallery.com/ggplot2-color.html"
@@ -113,7 +116,7 @@
              {:x0 i :x1 (+ i 0.92) :y0 (- row) :y1 (- 0.85 row) :c col})
       names (for [[row [label]] (map-indexed vector palettes)] {:x -0.2 :y (- 0.42 row) :label label})]
   (plot/render-image
-   {:scales {:color {:kind :identity} :x {:domain [-3.6 9]}}
+   {:scales {:color {:kind :identity} :x {:domain [-3.6 9] :axis false} :y {:axis false}}
     :charts [(chart/rect {:data rows :mapping {:x0 :x0 :x1 :x1 :y0 :y0 :y1 :y1 :color :c}})
              (chart/text {:data names :mapping {:x :x :y :y :label :label} :anchor [:right :middle] :size 11})]
     :labels {:title "Seven palettes and gradients, nine colours each" :x nil :y nil}}
@@ -157,7 +160,8 @@
 ;; ### Sequential palettes on categories
 
 ;; A sequential palette has more colours than there are levels: by default the levels take its first colours
-;; (all light here); `:spread true` resamples it across its whole range.
+;; (all light here, the first nearly invisible on the grey panel); `:spread true` resamples it across its whole
+;; range.
 
 (nu/source-note {:source "R Graph Gallery - RColorBrewer palettes"
                  :url "https://r-graph-gallery.com/38-rcolorbrewers-palettes.html"
@@ -201,7 +205,7 @@
 ;; ### Diverging gradient with a midpoint
 
 ;; `:midpoint` puts a value at the middle of the gradient and scales both sides by the larger distance to it; the
-;; colour bar ticks the midpoint.
+;; colour bar ticks the midpoint. `:reverse true` turns RdBu around, so high horse power is red.
 
 (nu/source-note {:source "R Graph Gallery - Dealing with color in ggplot2"
                  :url "https://r-graph-gallery.com/ggplot2-color.html"
@@ -239,8 +243,9 @@
 
 ;; ### Binned colours
 
-;; `:kind :binned` colours values by bin: a count of equal bins or a breaks vector; the colour bar has one block per
-;; bin. For a discrete legend of intervals, bin the data with `levels/bin` instead.
+;; `:kind :binned` colours values by bin: a count of equal bins, a breaks vector, or quantile bins (`{:quantiles 5}`:
+;; five bins of about equal counts, an `:estimation` strategy optional); the colour bar has one block per bin. For a
+;; discrete legend of intervals, bin the data with `levels/bin`, which takes the same `:bins`.
 
 (nu/source-note {:source "R Graph Gallery - Dealing with color in ggplot2"
                  :url "https://r-graph-gallery.com/ggplot2-color.html"
@@ -252,13 +257,14 @@
 
 (plot/render-image
  (plot/arrange
-  (for [[title bins] [["5 equal bins" 5] ["breaks [0 1000 2500 5000 10000 20000]" [0 1000 2500 5000 10000 20000]]]]
+  (for [[title bins] [["5 equal bins" 5] ["breaks vector" [0 1000 2500 5000 10000 20000]]
+                      ["{:quantiles 5}" {:quantiles 5}]]]
     {:data diamonds-sample :mapping {:x :carat :y :price :color :price}
      :scales {:color {:kind :binned :bins bins :range :viridis}}
      :charts [(chart/scatter {:size 4})]
      :labels {:title title :x "carat" :y "price"}})
-  {:columns 2})
- {:width 1000 :height 450})
+  {:columns 3})
+ {:width 1000 :height 400})
 
 ;; ## Colour in practice
 
@@ -341,13 +347,11 @@
 (let [image (plot/render-image {:data iris :mapping {:x :sepal-length :y :sepal-width :color :species}
                                 :charts [(chart/scatter {:size 7})]
                                 :labels {:title "default palette" :x "sepal length" :y "sepal width"}}
-                               {:width 480 :height 340})]
-  (kind/hiccup
-   [:div {:style {:display "flex" :flex-wrap "wrap" :gap "8px"}}
-    image
-    (plot/cvd-image image :deuteranopia)
-    (plot/cvd-image image :protanopia)
-    (plot/cvd-image image :tritanopia)]))
+                               {:width 480 :height 340})
+      cell (fn [caption img] (kind/hiccup [:div [:p [:b caption]] img]))]
+  (kind/table
+   {:row-vectors [[(cell "as most people see it" image) (cell "deuteranopia" (plot/cvd-image image :deuteranopia))]
+                  [(cell "protanopia" (plot/cvd-image image :protanopia)) (cell "tritanopia" (plot/cvd-image image :tritanopia))]]}))
 
 ;; ### Colour caveats
 

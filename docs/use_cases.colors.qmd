@@ -94,7 +94,8 @@ A colour is a clojure2d colour: a name keyword, a hex string, an RGB vector, or 
 
 ### Calling a colour
 
-Literal rects take a vector of fills, one per interval; the labels are a text chart.
+Literal rects take a vector of fills, one per interval; the labels are a text chart. `:axis false` on both
+scales leaves out axes and grid lines that would mean nothing here.
 
 Source: R Graph Gallery - Dealing with color in base R; colour names ([1](https://r-graph-gallery.com/colors.html), [2](https://r-graph-gallery.com/42-colors-names.html)).
 
@@ -105,7 +106,8 @@ Source: R Graph Gallery - Dealing with color in base R; colour names ([1](https:
       labels [":steelblue" ":tomato" "\"#2ca25f\"" "\"#fdae6b\"" "[102 51 153]" "[255 0 0 90]"]
       xs (mapv (fn [i] [i (+ i 0.9)]) (range (count colors)))]
   (plot/render-image
-   {:charts [(chart/rect {:x xs :y [0 1] :fill colors})
+   {:scales {:x {:axis false} :y {:axis false}}
+    :charts [(chart/rect {:x xs :y [0 1] :fill colors})
              (chart/text {:x (mapv #(+ % 0.45) (range (count colors))) :y -0.15 :text labels :size 11})]
     :labels {:title "Names, hex strings, RGB and RGBA vectors" :x nil :y nil}}
    {:width 900 :height 300}))
@@ -128,7 +130,8 @@ Palettes are named lists of colours (`c/palette`, `c/find-palette`); gradients a
 ### Palette types
 
 Qualitative palettes for categories, sequential for ordered values, diverging around a meaningful middle (here
-the mean mpg, `:midpoint`).
+the mean mpg, `:midpoint`). The lightest end of a sequential palette is almost white and nearly disappears
+against the grey panel - a property of the palette worth knowing when choosing one.
 
 Source: [R Graph Gallery - Dealing with color in ggplot2](https://r-graph-gallery.com/ggplot2-color.html). Data: Edgar Anderson's iris measurements, R datasets package `iris` (Anderson 1935; Fisher 1936); licence: Part of R (GPL-2 | GPL-3).
 
@@ -210,7 +213,7 @@ Source: [R Graph Gallery - Color palette finder](https://r-graph-gallery.com/col
              {:x0 i :x1 (+ i 0.92) :y0 (- row) :y1 (- 0.85 row) :c col})
       names (for [[row [label]] (map-indexed vector palettes)] {:x -0.2 :y (- 0.42 row) :label label})]
   (plot/render-image
-   {:scales {:color {:kind :identity} :x {:domain [-3.6 9]}}
+   {:scales {:color {:kind :identity} :x {:domain [-3.6 9] :axis false} :y {:axis false}}
     :charts [(chart/rect {:data rows :mapping {:x0 :x0 :x1 :x1 :y0 :y0 :y1 :y1 :color :c}})
              (chart/text {:data names :mapping {:x :x :y :y :label :label} :anchor [:right :middle] :size 11})]
     :labels {:title "Seven palettes and gradients, nine colours each" :x nil :y nil}}
@@ -283,7 +286,8 @@ Source: data-to-viz - The spaghetti plot; don't use color if it communicates not
 ### Sequential palettes on categories
 
 A sequential palette has more colours than there are levels: by default the levels take its first colours
-(all light here); `:spread true` resamples it across its whole range.
+(all light here, the first nearly invisible on the grey panel); `:spread true` resamples it across its whole
+range.
 
 Source: [R Graph Gallery - RColorBrewer palettes](https://r-graph-gallery.com/38-rcolorbrewers-palettes.html). Data: Barley yields, Minnesota 1931-1932, R lattice package `barley` (Immer et al. 1934; Fisher 1971; Cleveland 1993); licence: GPL (>= 2) (lattice).
 
@@ -348,7 +352,7 @@ Source: R Graph Gallery - Dealing with color in ggplot2; viridis ([1](https://r-
 ### Diverging gradient with a midpoint
 
 `:midpoint` puts a value at the middle of the gradient and scales both sides by the larger distance to it; the
-colour bar ticks the midpoint.
+colour bar ticks the midpoint. `:reverse true` turns RdBu around, so high horse power is red.
 
 Source: [R Graph Gallery - Dealing with color in ggplot2](https://r-graph-gallery.com/ggplot2-color.html). Data: Motor Trend car road tests (1974), R datasets package `mtcars` (Henderson & Velleman 1981); licence: Part of R (GPL-2 | GPL-3).
 
@@ -406,8 +410,9 @@ Source: [R Graph Gallery - Dealing with color in ggplot2](https://r-graph-galler
 
 ### Binned colours
 
-`:kind :binned` colours values by bin: a count of equal bins or a breaks vector; the colour bar has one block per
-bin. For a discrete legend of intervals, bin the data with `levels/bin` instead.
+`:kind :binned` colours values by bin: a count of equal bins, a breaks vector, or quantile bins (`{:quantiles 5}`:
+five bins of about equal counts, an `:estimation` strategy optional); the colour bar has one block per bin. For a
+discrete legend of intervals, bin the data with `levels/bin`, which takes the same `:bins`.
 
 Source: [R Graph Gallery - Dealing with color in ggplot2](https://r-graph-gallery.com/ggplot2-color.html). Data: Prices and attributes of round cut diamonds, R ggplot2 package `diamonds` (Wickham et al.); licence: MIT (ggplot2).
 
@@ -426,13 +431,14 @@ Source: [R Graph Gallery - Dealing with color in ggplot2](https://r-graph-galler
 ```clojure
 (plot/render-image
  (plot/arrange
-  (for [[title bins] [["5 equal bins" 5] ["breaks [0 1000 2500 5000 10000 20000]" [0 1000 2500 5000 10000 20000]]]]
+  (for [[title bins] [["5 equal bins" 5] ["breaks vector" [0 1000 2500 5000 10000 20000]]
+                      ["{:quantiles 5}" {:quantiles 5}]]]
     {:data diamonds-sample :mapping {:x :carat :y :price :color :price}
      :scales {:color {:kind :binned :bins bins :range :viridis}}
      :charts [(chart/scatter {:size 4})]
      :labels {:title title :x "carat" :y "price"}})
-  {:columns 2})
- {:width 1000 :height 450})
+  {:columns 3})
+ {:width 1000 :height 400})
 ```
 :::
 
@@ -569,21 +575,22 @@ Source: [R Graph Gallery - viridis (colour-blind friendly maps)](https://r-graph
 (let [image (plot/render-image {:data iris :mapping {:x :sepal-length :y :sepal-width :color :species}
                                 :charts [(chart/scatter {:size 7})]
                                 :labels {:title "default palette" :x "sepal length" :y "sepal width"}}
-                               {:width 480 :height 340})]
-  (kind/hiccup
-   [:div {:style {:display "flex" :flex-wrap "wrap" :gap "8px"}}
-    image
-    (plot/cvd-image image :deuteranopia)
-    (plot/cvd-image image :protanopia)
-    (plot/cvd-image image :tritanopia)]))
+                               {:width 480 :height 340})
+      cell (fn [caption img] (kind/hiccup [:div [:p [:b caption]] img]))]
+  (kind/table
+   {:row-vectors [[(cell "as most people see it" image) (cell "deuteranopia" (plot/cvd-image image :deuteranopia))]
+                  [(cell "protanopia" (plot/cvd-image image :protanopia)) (cell "tritanopia" (plot/cvd-image image :tritanopia))]]}))
 ```
 :::
 
 
+::: {.clay-table}
 
 ```{=html}
-<div style="display:flex;flex-wrap:wrap;gap:8px;"><div class="clay-image"><p><img alt="" src="use_cases.colors_files/image14.png" /></p></div><div class="clay-image"><p><img alt="" src="use_cases.colors_files/image15.png" /></p></div><div class="clay-image"><p><img alt="" src="use_cases.colors_files/image16.png" /></p></div><div class="clay-image"><p><img alt="" src="use_cases.colors_files/image17.png" /></p></div></div>
+<table class="table table-hover table-responsive clay-table"><tbody><tr><td><div><p><b>as most people see it</b></p><div class="clay-image"><p><img alt="" src="use_cases.colors_files/image14.png" /></p></div></div></td><td><div><p><b>deuteranopia</b></p><div class="clay-image"><p><img alt="" src="use_cases.colors_files/image15.png" /></p></div></div></td></tr><tr><td><div><p><b>protanopia</b></p><div class="clay-image"><p><img alt="" src="use_cases.colors_files/image16.png" /></p></div></div></td><td><div><p><b>tritanopia</b></p><div class="clay-image"><p><img alt="" src="use_cases.colors_files/image17.png" /></p></div></div></td></tr></tbody></table>
 ```
+
+:::
 
 
 

@@ -58,7 +58,8 @@
 
 (def scale-spec-schema
   "Plot scale spec of `:x` / `:y`: wadogo attributes plus `:nice` and `:expand`, see [[scale-spec]] and
-  [[data-scale-spec]]."
+  [[data-scale-spec]]; `:axis false` hides the scale's axis and its grid lines in every panel (default true; axis
+  titles are separate, `:labels`)."
   (schema/with-rules
    (into [:map {:closed true}
           (schema/optional :kind (into [:enum] (sort position-kinds)))
@@ -68,6 +69,7 @@
           (schema/nilable :nice [:multi {:dispatch boolean?} [true :boolean] [false [:and schema/finite schema/non-neg]]])
           (schema/optional :expand schema/padding)
           (schema/optional :formatter schema/function)
+          (schema/optional :axis schema/bool)
           (schema/optional :range (schema/forbidden "is set from the layout, it can't be given"))
           (schema/optional :padding (schema/forbidden "is internal; use :expand"))
           (schema/optional :tick-format (schema/forbidden "is internal (set by charts); use :formatter"))]
@@ -230,11 +232,12 @@
   the explicit tick count or the hint, then padded by `:padding` (see [[data-scale-spec]]), then by the pixel room
   `:padding-px` `[lo hi]` (charts' labels past the data; `:linear` and `:log` only, skipped when over half the
   range);
-  ticks outside the final domain are dropped. A bands scale without `:ticks` has a tick at every band."
+  ticks outside the final domain are dropped. A bands scale without `:ticks` has a tick at every band. A spec with
+  `:axis false` gives a finalized scale with `:axis false` (no axis, no grid lines)."
   [spec range tick-hint]
   (let [kind (:kind spec)
         explicit (:ticks spec)
-        base (assoc (dissoc spec :kind :nice :expand :padding :padding-px :tick-format) :range range)
+        base (assoc (dissoc spec :kind :nice :expand :padding :padding-px :tick-format :axis) :range range)
         nice-count (if (integer? explicit) explicit tick-hint)
         niced (nice-domain (s/scale kind (assoc base :ticks nice-count)) kind (:nice spec))
         domain (if-let [padding (:padding spec)]
@@ -249,12 +252,13 @@
         ticks (if (continuous-kinds kind)
                 (filterv #(inside-range? range (double (scale %))) (s/ticks scale))
                 (vec (s/ticks scale)))]
-    {:kind kind
-     :domain domain
-     :range range
-     :ticks ticks
-     :tick-labels (tick-labels scale spec ticks)
-     :attributes attributes}))
+    (cond-> {:kind kind
+             :domain domain
+             :range range
+             :ticks ticks
+             :tick-labels (tick-labels scale spec ticks)
+             :attributes attributes}
+      (false? (:axis spec)) (assoc :axis false))))
 
 (defn forward-fn
   "Function mapping a value to its pixel position in the finalized scale (band center for `:bands`); `##NaN` for a

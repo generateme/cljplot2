@@ -63,7 +63,7 @@
    :options (-> [:map {:closed true}]
                 (into style-entries)
                 (into data/common-options)
-                (conj (schema/optional :bins levels/bins)
+                (conj (schema/optional :bins [:and levels/bins [:fn {:error/message "quantile bins aren't supported by histograms (give a breaks vector)"} (complement map?)]])
                       (schema/optional :y (into [:enum] (keys measures)))
                       (schema/optional :position (into [:enum] (sort position/positions)))
                       (schema/nilable :symmetric schema/bool)
