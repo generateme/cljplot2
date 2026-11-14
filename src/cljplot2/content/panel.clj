@@ -40,13 +40,14 @@
 (defn- draw-band-fills!
   "Every second band (from the second level) of each bands scale filled with theme `[:panel :grid :bands-fill]`
   across the `w` x `h` panel at the origin: a band spans its step (band plus padding, so shaded bands touch their
-  neighbours), whole pixels, along the scale's direction. `:none` draws nothing."
+  neighbours), whole pixels, along the scale's direction. `:none` draws nothing; a scale with `:axis false` has no
+  fills (they belong to its grid)."
   [c ^long w ^long h env]
   (let [fill (get-in env [:theme :panel :grid :bands-fill])]
     (when-not (or (nil? fill) (theme/none? fill))
       (doseq [k [:x :y]
               :let [finalized (get-in env [:scales k])]
-              :when (= :bands (:kind finalized))
+              :when (and (= :bands (:kind finalized)) (not (false? (:axis finalized))))
               :let [forward (scale/forward-fn finalized)
                     half (* 0.5 (double (:step (scale/band-geometry finalized))))
                     horizontal? (scale/horizontal? k finalized)]

@@ -135,3 +135,34 @@
     (is (= {:arrange {:plots [p] :columns 2 :rows 1 :widths [1 2] :heights [1] :align false}}
            (plot/arrange [p] {:columns 2 :rows 1 :widths [1 2] :heights [1] :align false}))
         "every known key accepted")))
+
+;; review fixes
+
+(deftest review-fixes-test
+  (testing "F1 margin charts inherit only grouping aesthetics"
+    (let [rows (mapv (fn [i] {:x i :y (mod i 7) :p i :g (if (even? i) "a" "b")}) (range 40))
+          margin-mapping (fn [b] (get-in b [:margin-stats :top :mappings 0]))]
+      (doseq [scale [{:kind :binned :bins {:quantiles 3}} {}]]
+        (let [b (build {:data rows :mapping {:x :x :y :y :color :p} :scales {:color scale}
+                        :margins {:top (chart/density)} :charts [(chart/scatter)]})]
+          (is (not (contains? (margin-mapping b) :color)) (str "continuous colour not inherited " scale))))
+      (let [b (build {:data rows :mapping {:x :x :y :y :color :g} :margins {:top (chart/density)} :charts [(chart/scatter)]})]
+        (is (= :g (:color (margin-mapping b))) "ordinal colour inherited"))
+      (let [b (build {:data rows :mapping {:x :x :y :y :color :p} :scales {:color {:type :categorical :domain (vec (range 40))}}
+                      :margins {:top (chart/density)} :charts [(chart/scatter)]})]
+        (is (= :p (:color (margin-mapping b))) "numbers declared categorical are inherited"))
+      (let [b (build {:data rows :mapping {:x :x :y :y :size :p :color :g} :margins {:top (chart/density)} :charts [(chart/scatter)]})]
+        (is (not (contains? (margin-mapping b) :size)) "linear size not inherited")
+        (is (= :g (:color (margin-mapping b)))))))
+  (testing "F2 a hidden bands axis hides the alternating band fills"
+    (let [p (fn [scales] {:data [{:x 1 :y "a"} {:x 2 :y "b"} {:x 3 :y "c"}] :mapping {:x :x :y :y} :scales scales
+                          :theme {:panel {:grid {:bands-fill [255 0 0]}}} :charts [(chart/scatter {:size 0})]})
+          red? (fn [scales] (let [img ^BufferedImage (plot/render-image (p scales) size)
+                                  {:keys [x y w h]} (grid/item-box (:layout (build (p scales))) :panel)]
+                              (boolean (some #(= (unchecked-int 0xffff0000) (.getRGB img (int (+ (long x) (quot (long w) 2))) (int %)))
+                                             (range (long y) (+ (long y) (long h)))))))]
+      (is (red? {}) "default: band fills drawn")
+      (is (not (red? {:y {:axis false}})))))
+  (testing "F3 facet scales reject :axis"
+    (is (= :axis (:key (error #(build {:data corners :mapping {:x :x :y :y :facet-col :g} :scales {:facet-col {:axis false}}
+                                       :charts [(chart/scatter)]})))))))

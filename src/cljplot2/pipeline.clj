@@ -159,9 +159,21 @@
   [plot]
   (into {} (keep (fn [side] (when-some [m (get-in plot [:margins side])] [side (margin-spec m)]))) margin-sides))
 
+(defn- groupable-aesthetics
+  "Aesthetic keys of plot `mapping` whose scale groups rows - ordinal or identity, resolved as the plot scale will be
+  from `plot-scales` and the values in `rows`; a linear or binned aesthetic describes single rows (margin charts
+  don't inherit it)."
+  [mapping plot-scales rows]
+  (filterv (fn [k]
+             (when-let [acc (get mapping k)]
+               (let [present (keep (data/row-accessor k acc) rows)
+                     numeric? (and (seq present) (every? number? present))]
+                 (#{:ordinal :identity} (aesthetic/inferred-kind k (get plot-scales k {}) numeric?)))))
+           aesthetic/dims))
+
 (defn- margin-stats
   "Computed margin charts per side: `{side (spec + :stats [..])}`. A margin chart reads the plot's data (or its own)
-  with the plot's aesthetic and `:group` mapping, `:x` mapped to the plot's accessor of the shared dimension - the
+  with the plot's grouping aesthetics (see [[groupable-aesthetics]]) and `:group` mapping, `:x` mapped to the plot's accessor of the shared dimension - the
   horizontal one for `:top`, the vertical one for `:right` - its own `:mapping` merged over (annotation charts:
   their own mapping only); the mappings are kept under `:mappings`; one panel; the right
   margin computes as flipped (its values run vertically). Throws `ex-info {:key :margins}` when the plot doesn't map
@@ -176,7 +188,8 @@
                      _ (when (nil? shared)
                          (schema/fail! (str "Plot :margins " side " needs the plot :mapping of " shared-key ".")
                                        {:key :margins :in [:margins side] :value shared-key}))
-                     inherited (assoc (select-keys mapping (conj (vec aesthetic/dims) :group)) :x shared)
+                     inherited (assoc (select-keys mapping (conj (groupable-aesthetics mapping (:plot-scales env) @plot-rows) :group))
+                                      :x shared)
                      side-env (assoc env :flip? (= side :right))
                      ;; annotation charts (:inherit-mapping :facets) take only their own mapping, as in the panel
                      mappings (mapv (fn [{:keys [options inherit-mapping]}]
