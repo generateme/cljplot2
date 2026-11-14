@@ -1,0 +1,1064 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.37">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>2&nbsp; Colors – cljplot2</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./use_cases.distribution.html" rel="prev">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-7f8f88aac4f3542376d5c11b86a4c14d.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-0d7f492f10755a5ae24b960b9550d083.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+
+</head>
+
+<body class="nav-sidebar floating quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./use_cases.distribution.html">Use cases</a></li><li class="breadcrumb-item"><a href="./use_cases.colors.html"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Colors</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="./">cljplot2</a> 
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">cljplot2</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text">Use cases</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./use_cases.distribution.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">Distribution</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./use_cases.colors.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Colors</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#specifying-colours" id="toc-specifying-colours" class="nav-link active" data-scroll-target="#specifying-colours"><span class="header-section-number">2.1</span> Specifying colours</a>
+  <ul>
+  <li><a href="#calling-a-colour" id="toc-calling-a-colour" class="nav-link" data-scroll-target="#calling-a-colour"><span class="header-section-number">2.1.1</span> Calling a colour</a></li>
+  </ul></li>
+  <li><a href="#palettes" id="toc-palettes" class="nav-link" data-scroll-target="#palettes"><span class="header-section-number">2.2</span> Palettes</a>
+  <ul>
+  <li><a href="#palette-types" id="toc-palette-types" class="nav-link" data-scroll-target="#palette-types"><span class="header-section-number">2.2.1</span> Palette types</a></li>
+  <li><a href="#palette-families" id="toc-palette-families" class="nav-link" data-scroll-target="#palette-families"><span class="header-section-number">2.2.2</span> Palette families</a></li>
+  <li><a href="#palette-swatches" id="toc-palette-swatches" class="nav-link" data-scroll-target="#palette-swatches"><span class="header-section-number">2.2.3</span> Palette swatches</a></li>
+  </ul></li>
+  <li><a href="#discrete-colour-scales" id="toc-discrete-colour-scales" class="nav-link" data-scroll-target="#discrete-colour-scales"><span class="header-section-number">2.3</span> Discrete colour scales</a>
+  <ul>
+  <li><a href="#manual-colours" id="toc-manual-colours" class="nav-link" data-scroll-target="#manual-colours"><span class="header-section-number">2.3.1</span> Manual colours</a></li>
+  <li><a href="#highlighting-a-group" id="toc-highlighting-a-group" class="nav-link" data-scroll-target="#highlighting-a-group"><span class="header-section-number">2.3.2</span> Highlighting a group</a></li>
+  <li><a href="#sequential-palettes-on-categories" id="toc-sequential-palettes-on-categories" class="nav-link" data-scroll-target="#sequential-palettes-on-categories"><span class="header-section-number">2.3.3</span> Sequential palettes on categories</a></li>
+  </ul></li>
+  <li><a href="#continuous-colour-scales" id="toc-continuous-colour-scales" class="nav-link" data-scroll-target="#continuous-colour-scales"><span class="header-section-number">2.4</span> Continuous colour scales</a>
+  <ul>
+  <li><a href="#gradients" id="toc-gradients" class="nav-link" data-scroll-target="#gradients"><span class="header-section-number">2.4.1</span> Gradients</a></li>
+  <li><a href="#diverging-gradient-with-a-midpoint" id="toc-diverging-gradient-with-a-midpoint" class="nav-link" data-scroll-target="#diverging-gradient-with-a-midpoint"><span class="header-section-number">2.4.2</span> Diverging gradient with a midpoint</a></li>
+  <li><a href="#reversing" id="toc-reversing" class="nav-link" data-scroll-target="#reversing"><span class="header-section-number">2.4.3</span> Reversing</a></li>
+  <li><a href="#binned-colours" id="toc-binned-colours" class="nav-link" data-scroll-target="#binned-colours"><span class="header-section-number">2.4.4</span> Binned colours</a></li>
+  </ul></li>
+  <li><a href="#colour-in-practice" id="toc-colour-in-practice" class="nav-link" data-scroll-target="#colour-in-practice"><span class="header-section-number">2.5</span> Colour in practice</a>
+  <ul>
+  <li><a href="#missing-values-and-the-theme-palette" id="toc-missing-values-and-the-theme-palette" class="nav-link" data-scroll-target="#missing-values-and-the-theme-palette"><span class="header-section-number">2.5.1</span> Missing values and the theme palette</a></li>
+  <li><a href="#transparency-against-overplotting" id="toc-transparency-against-overplotting" class="nav-link" data-scroll-target="#transparency-against-overplotting"><span class="header-section-number">2.5.2</span> Transparency against overplotting</a></li>
+  <li><a href="#a-line-coloured-by-a-variable" id="toc-a-line-coloured-by-a-variable" class="nav-link" data-scroll-target="#a-line-coloured-by-a-variable"><span class="header-section-number">2.5.3</span> A line coloured by a variable</a></li>
+  </ul></li>
+  <li><a href="#accessibility" id="toc-accessibility" class="nav-link" data-scroll-target="#accessibility"><span class="header-section-number">2.6</span> Accessibility</a>
+  <ul>
+  <li><a href="#colour-blind-preview" id="toc-colour-blind-preview" class="nav-link" data-scroll-target="#colour-blind-preview"><span class="header-section-number">2.6.1</span> Colour-blind preview</a></li>
+  <li><a href="#colour-caveats" id="toc-colour-caveats" class="nav-link" data-scroll-target="#colour-caveats"><span class="header-section-number">2.6.2</span> Colour caveats</a></li>
+  </ul></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./use_cases.distribution.html">Use cases</a></li><li class="breadcrumb-item"><a href="./use_cases.colors.html"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Colors</span></a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Colors</span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<style></style>
+<style>.printedClojure .sourceCode {
+  background-color: transparent;
+  border-style: none;
+}
+</style>
+<style>.clay-limit-image-width .clay-image {max-width: 100%}
+.clay-side-by-side .sourceCode {margin: 0}
+.clay-side-by-side {margin: 1em 0}
+</style>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js" type="text/javascript"></script>
+<script src="https://code.jquery.com/ui/1.13.1/jquery-ui.min.js" type="text/javascript"></script>
+<p>How cljplot2 picks colours: specifying a colour, palettes, discrete and continuous colour scales, colour in practice and accessibility (the <a href="https://r-graph-gallery.com/ggplot2-color.html">R Graph Gallery</a> colour pages and the <a href="https://www.data-to-viz.com/caveats.html">data-to-viz</a> colour caveats).</p>
+<p>Colours come from <a href="https://github.com/Clojure2D/clojure2d">clojure2d</a>: any colour name, hex string or RGB(A) vector, about 7,300 named palettes and 5,000 gradients.</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">ns</span> use-cases.colors</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  (<span class="at">:require</span> [clojure2d.color <span class="at">:as</span> c]</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>            [fastmath.random <span class="at">:as</span> r]</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>            [fastmath.stats <span class="at">:as</span> stats]</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>            [scicloj.kindly.v4.kind <span class="at">:as</span> kind]</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>            [cljplot2.chart <span class="at">:as</span> chart]</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>            [cljplot2.core <span class="at">:as</span> plot]</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>            [notebook-utils <span class="at">:as</span> nu]))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> iris </span>(nu/dataset <span class="at">:iris</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> mtcars </span>(nu/dataset <span class="at">:mtcars</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> barley </span>(nu/dataset <span class="at">:barley</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> quakes </span>(nu/dataset <span class="at">:quakes</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> diamonds </span>(nu/dataset <span class="at">:diamonds</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> lincoln </span>(nu/dataset <span class="at">:lincoln-weather</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<section id="specifying-colours" class="level2" data-number="2.1">
+<h2 data-number="2.1" class="anchored" data-anchor-id="specifying-colours"><span class="header-section-number">2.1</span> Specifying colours</h2>
+<p>A colour is a clojure2d colour: a name keyword, a hex string, an RGB vector, or RGBA with alpha in 0-255.</p>
+<section id="calling-a-colour" class="level3" data-number="2.1.1">
+<h3 data-number="2.1.1" class="anchored" data-anchor-id="calling-a-colour"><span class="header-section-number">2.1.1</span> Calling a colour</h3>
+<p>Literal rects take a vector of fills, one per interval; the labels are a text chart.</p>
+<p>Source: R Graph Gallery - Dealing with color in base R; colour names (<a href="https://r-graph-gallery.com/colors.html">1</a>, <a href="https://r-graph-gallery.com/42-colors-names.html">2</a>).</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">let</span> [colors [<span class="at">:steelblue</span> <span class="at">:tomato</span> <span class="st">"#2ca25f"</span> <span class="st">"#fdae6b"</span> [<span class="dv">102</span> <span class="dv">51</span> <span class="dv">153</span>] [<span class="dv">255</span> <span class="dv">0</span> <span class="dv">0</span> <span class="dv">90</span>]]</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>      labels [<span class="st">":steelblue"</span> <span class="st">":tomato"</span> <span class="st">"</span><span class="sc">\"</span><span class="st">#2ca25f</span><span class="sc">\"</span><span class="st">"</span> <span class="st">"</span><span class="sc">\"</span><span class="st">#fdae6b</span><span class="sc">\"</span><span class="st">"</span> <span class="st">"[102 51 153]"</span> <span class="st">"[255 0 0 90]"</span>]</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>      xs (<span class="kw">mapv</span> (<span class="kw">fn</span> [i] [i (<span class="kw">+</span> i <span class="fl">0.9</span>)]) (<span class="kw">range</span> (<span class="kw">count</span> colors)))]</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>  (plot/render-image</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>   {<span class="at">:charts</span> [(chart/rect {<span class="at">:x</span> xs <span class="at">:y</span> [<span class="dv">0</span> <span class="dv">1</span>] <span class="at">:fill</span> colors})</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>             (chart/text {<span class="at">:x</span> (<span class="kw">mapv</span> #(<span class="kw">+</span> <span class="va">%</span> <span class="fl">0.45</span>) (<span class="kw">range</span> (<span class="kw">count</span> colors))) <span class="at">:y</span> -<span class="fl">0.15</span> <span class="at">:text</span> labels <span class="at">:size</span> <span class="dv">11</span>})]</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"Names, hex strings, RGB and RGBA vectors"</span> <span class="at">:x</span> <span class="va">nil</span> <span class="at">:y</span> <span class="va">nil</span>}}</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>   {<span class="at">:width</span> <span class="dv">900</span> <span class="at">:height</span> <span class="dv">300</span>}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="use_cases.colors_files/image0.png" class="img-fluid"></p>
+</div>
+</section>
+</section>
+<section id="palettes" class="level2" data-number="2.2">
+<h2 data-number="2.2" class="anchored" data-anchor-id="palettes"><span class="header-section-number">2.2</span> Palettes</h2>
+<p>Palettes are named lists of colours (<code>c/palette</code>, <code>c/find-palette</code>); gradients are functions of <code>t</code> in <code>[0 1]</code> (<code>c/gradient</code>). A scale’s <code>:range</code> takes either name.</p>
+<section id="palette-types" class="level3" data-number="2.2.1">
+<h3 data-number="2.2.1" class="anchored" data-anchor-id="palette-types"><span class="header-section-number">2.2.1</span> Palette types</h3>
+<p>Qualitative palettes for categories, sequential for ordered values, diverging around a meaningful middle (here the mean mpg, <code>:midpoint</code>).</p>
+<p>Source: <a href="https://r-graph-gallery.com/ggplot2-color.html">R Graph Gallery - Dealing with color in ggplot2</a>. Data: Edgar Anderson’s iris measurements, R datasets package <code>iris</code> (Anderson 1935; Fisher 1936); licence: Part of R (GPL-2 | GPL-3).</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">let</span> [mean-mpg (stats/mean (<span class="kw">map</span> <span class="at">:mpg</span> mtcars))]</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  (plot/render-image</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>   (plot/arrange</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>    [{<span class="at">:data</span> iris <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:sepal-length</span> <span class="at">:y</span> <span class="at">:sepal-width</span> <span class="at">:color</span> <span class="at">:species</span>}</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>      <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:range</span> <span class="at">:RColorBrewer/Set2</span>}}</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>      <span class="at">:charts</span> [(chart/scatter {<span class="at">:size</span> <span class="dv">7</span>})] <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"qualitative"</span> <span class="at">:x</span> <span class="st">"sepal length"</span> <span class="at">:y</span> <span class="st">"sepal width"</span>}}</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>     {<span class="at">:data</span> iris <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:sepal-length</span> <span class="at">:y</span> <span class="at">:sepal-width</span> <span class="at">:color</span> <span class="at">:petal-length</span>}</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>      <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:range</span> <span class="at">:blues-9</span>}}</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>      <span class="at">:charts</span> [(chart/scatter {<span class="at">:size</span> <span class="dv">7</span>})] <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"sequential"</span> <span class="at">:x</span> <span class="st">"sepal length"</span> <span class="at">:y</span> <span class="st">"sepal width"</span>}}</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>     {<span class="at">:data</span> mtcars <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:wt</span> <span class="at">:y</span> <span class="at">:hp</span> <span class="at">:color</span> #(<span class="kw">-</span> (<span class="at">:mpg</span> <span class="va">%</span>) mean-mpg)}</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>      <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:range</span> <span class="at">:RColorBrewer/RdBu</span> <span class="at">:midpoint</span> <span class="dv">0</span> <span class="at">:title</span> <span class="st">"mpg - mean"</span>}}</span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>      <span class="at">:charts</span> [(chart/scatter {<span class="at">:size</span> <span class="dv">8</span>})] <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"diverging"</span> <span class="at">:x</span> <span class="st">"weight"</span> <span class="at">:y</span> <span class="st">"horse power"</span>}}]</span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>    {<span class="at">:columns</span> <span class="dv">3</span>})</span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">360</span>}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="use_cases.colors_files/image1.png" class="img-fluid"></p>
+</div>
+</section>
+<section id="palette-families" class="level3" data-number="2.2.2">
+<h3 data-number="2.2.2" class="anchored" data-anchor-id="palette-families"><span class="header-section-number">2.2.2</span> Palette families</h3>
+<p>The same scatter with a ColorBrewer, viridis, MetBrewer and Tableau palette. <code>(c/find-palette #"(?i)tableau")</code> lists palettes by name.</p>
+<p>Source: R Graph Gallery - paletteer, viridis, RColorBrewer (<a href="https://r-graph-gallery.com/package/paletteer.html">1</a>, <a href="https://r-graph-gallery.com/package/viridis.html">2</a>, <a href="https://r-graph-gallery.com/38-rcolorbrewers-palettes.html">3</a>). Data: Edgar Anderson’s iris measurements, R datasets package <code>iris</code> (Anderson 1935; Fisher 1936); licence: Part of R (GPL-2 | GPL-3).</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a> (plot/arrange</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>  (<span class="kw">for</span> [[title palette] [[<span class="st">"RColorBrewer Dark2"</span> <span class="at">:RColorBrewer/Dark2</span>] [<span class="st">"viridis"</span> <span class="at">:viridis</span>]</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>                         [<span class="st">"MetBrewer Klimt"</span> <span class="at">:MetBrewer/Klimt</span>] [<span class="st">"Tableau 10"</span> <span class="at">:tableau-10</span>]]]</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>    {<span class="at">:data</span> iris <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:petal-length</span> <span class="at">:y</span> <span class="at">:petal-width</span> <span class="at">:color</span> <span class="at">:species</span>}</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>     <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:range</span> palette <span class="at">:spread</span> (<span class="kw">=</span> palette <span class="at">:viridis</span>)}}</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>     <span class="at">:charts</span> [(chart/scatter {<span class="at">:size</span> <span class="dv">7</span>})]</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>     <span class="at">:labels</span> {<span class="at">:title</span> title <span class="at">:x</span> <span class="st">"petal length"</span> <span class="at">:y</span> <span class="st">"petal width"</span>}})</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>  {<span class="at">:columns</span> <span class="dv">2</span>})</span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a> {<span class="at">:width</span> <span class="dv">900</span> <span class="at">:height</span> <span class="dv">650</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="use_cases.colors_files/image2.png" class="img-fluid"></p>
+</div>
+<p><code>:viridis</code> has 256 colours, so its scale uses <code>:spread true</code> - three colours across the whole palette instead of its first three.</p>
+</section>
+<section id="palette-swatches" class="level3" data-number="2.2.3">
+<h3 data-number="2.2.3" class="anchored" data-anchor-id="palette-swatches"><span class="header-section-number">2.2.3</span> Palette swatches</h3>
+<p>A palette shown as colours: rects with an identity colour scale (the data values are the colours). Every row is resampled to nine colours with <code>c/resample</code>, which also samples a gradient (given as <code>(c/gradient name)</code>).</p>
+<p>Source: <a href="https://r-graph-gallery.com/color-palette-finder">R Graph Gallery - Color palette finder</a>.</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">let</span> [palettes [[<span class="st">":RColorBrewer/Set2"</span> <span class="at">:RColorBrewer/Set2</span>] [<span class="st">":tableau-10"</span> <span class="at">:tableau-10</span>]</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>                [<span class="st">":MetBrewer/Hiroshige"</span> <span class="at">:MetBrewer/Hiroshige</span>] [<span class="st">":blues-9"</span> <span class="at">:blues-9</span>] [<span class="st">":viridis"</span> <span class="at">:viridis</span>]</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>                [<span class="st">"gradient :viridis/magma"</span> (c/gradient <span class="at">:viridis/magma</span>)] [<span class="st">":RColorBrewer/RdBu"</span> <span class="at">:RColorBrewer/RdBu</span>]]</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>      rows (<span class="kw">for</span> [[row [_ p]] (map-indexed <span class="kw">vector</span> palettes)</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>                 [i col] (map-indexed <span class="kw">vector</span> (c/resample p <span class="dv">9</span>))]</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>             {<span class="at">:x0</span> i <span class="at">:x1</span> (<span class="kw">+</span> i <span class="fl">0.92</span>) <span class="at">:y0</span> (<span class="kw">-</span> row) <span class="at">:y1</span> (<span class="kw">-</span> <span class="fl">0.85</span> row) <span class="at">:c</span> col})</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>      names (<span class="kw">for</span> [[row [label]] (map-indexed <span class="kw">vector</span> palettes)] {<span class="at">:x</span> -<span class="fl">0.2</span> <span class="at">:y</span> (<span class="kw">-</span> <span class="fl">0.42</span> row) <span class="at">:label</span> label})]</span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>  (plot/render-image</span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>   {<span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:kind</span> <span class="at">:identity</span>} <span class="at">:x</span> {<span class="at">:domain</span> [-<span class="fl">3.6</span> <span class="dv">9</span>]}}</span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">:charts</span> [(chart/rect {<span class="at">:data</span> rows <span class="at">:mapping</span> {<span class="at">:x0</span> <span class="at">:x0</span> <span class="at">:x1</span> <span class="at">:x1</span> <span class="at">:y0</span> <span class="at">:y0</span> <span class="at">:y1</span> <span class="at">:y1</span> <span class="at">:color</span> <span class="at">:c</span>}})</span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>             (chart/text {<span class="at">:data</span> names <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:y</span> <span class="at">:label</span> <span class="at">:label</span>} <span class="at">:anchor</span> [<span class="at">:right</span> <span class="at">:middle</span>] <span class="at">:size</span> <span class="dv">11</span>})]</span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"Seven palettes and gradients, nine colours each"</span> <span class="at">:x</span> <span class="va">nil</span> <span class="at">:y</span> <span class="va">nil</span>}}</span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a>   {<span class="at">:width</span> <span class="dv">900</span> <span class="at">:height</span> <span class="dv">500</span>}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="use_cases.colors_files/image3.png" class="img-fluid"></p>
+</div>
+</section>
+</section>
+<section id="discrete-colour-scales" class="level2" data-number="2.3">
+<h2 data-number="2.3" class="anchored" data-anchor-id="discrete-colour-scales"><span class="header-section-number">2.3</span> Discrete colour scales</h2>
+<p>Categories take palette colours in level order, unless a scale says otherwise.</p>
+<section id="manual-colours" class="level3" data-number="2.3.1">
+<h3 data-number="2.3.1" class="anchored" data-anchor-id="manual-colours"><span class="header-section-number">2.3.1</span> Manual colours</h3>
+<p>A level map as <code>:range</code> gives every level its own colour; a level without one is an error.</p>
+<p>Source: <a href="https://r-graph-gallery.com/ggplot2-color.html">R Graph Gallery - Dealing with color in ggplot2</a>. Data: Edgar Anderson’s iris measurements, R datasets package <code>iris</code> (Anderson 1935; Fisher 1936); licence: Part of R (GPL-2 | GPL-3).</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a> {<span class="at">:data</span> iris <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:sepal-length</span> <span class="at">:y</span> <span class="at">:sepal-width</span> <span class="at">:color</span> <span class="at">:species</span>}</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:range</span> {<span class="st">"setosa"</span> <span class="at">:darkorange</span> <span class="st">"versicolor"</span> <span class="at">:purple</span> <span class="st">"virginica"</span> <span class="at">:teal</span>}}}</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">:charts</span> [(chart/scatter {<span class="at">:size</span> <span class="dv">8</span>})]</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"Manual colours per species"</span> <span class="at">:x</span> <span class="st">"sepal length"</span> <span class="at">:y</span> <span class="st">"sepal width"</span>}}</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a> {<span class="at">:width</span> <span class="dv">800</span> <span class="at">:height</span> <span class="dv">500</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="use_cases.colors_files/image4.png" class="img-fluid"></p>
+</div>
+</section>
+<section id="highlighting-a-group" class="level3" data-number="2.3.2">
+<h3 data-number="2.3.2" class="anchored" data-anchor-id="highlighting-a-group"><span class="header-section-number">2.3.2</span> Highlighting a group</h3>
+<p>One group in colour, the others grey. Cylinder counts are numbers, so the scale is declared categorical.</p>
+<p>Source: data-to-viz - The spaghetti plot; don’t use color if it communicates nothing (<a href="https://www.data-to-viz.com/caveat/spaghetti.html">1</a>, <a href="https://www.data-to-viz.com/caveat/color_com_nothing.html">2</a>). Data: Motor Trend car road tests (1974), R datasets package <code>mtcars</code> (Henderson &amp; Velleman 1981); licence: Part of R (GPL-2 | GPL-3).</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a> {<span class="at">:data</span> mtcars <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:hp</span> <span class="at">:y</span> <span class="at">:mpg</span> <span class="at">:color</span> <span class="at">:cyl</span>}</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:type</span> <span class="at">:categorical</span> <span class="at">:range</span> {<span class="dv">4</span> <span class="at">:lightgrey</span> <span class="dv">6</span> <span class="at">:firebrick</span> <span class="dv">8</span> <span class="at">:lightgrey</span>} <span class="at">:title</span> <span class="st">"cylinders"</span>}}</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">:charts</span> [(chart/scatter {<span class="at">:size</span> <span class="dv">9</span>})]</span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"Six-cylinder cars"</span> <span class="at">:x</span> <span class="st">"horse power"</span> <span class="at">:y</span> <span class="st">"miles per gallon"</span>}}</span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a> {<span class="at">:width</span> <span class="dv">800</span> <span class="at">:height</span> <span class="dv">500</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="use_cases.colors_files/image5.png" class="img-fluid"></p>
+</div>
+</section>
+<section id="sequential-palettes-on-categories" class="level3" data-number="2.3.3">
+<h3 data-number="2.3.3" class="anchored" data-anchor-id="sequential-palettes-on-categories"><span class="header-section-number">2.3.3</span> Sequential palettes on categories</h3>
+<p>A sequential palette has more colours than there are levels: by default the levels take its first colours (all light here); <code>:spread true</code> resamples it across its whole range.</p>
+<p>Source: <a href="https://r-graph-gallery.com/38-rcolorbrewers-palettes.html">R Graph Gallery - RColorBrewer palettes</a>. Data: Barley yields, Minnesota 1931-1932, R lattice package <code>barley</code> (Immer et al.&nbsp;1934; Fisher 1971; Cleveland 1993); licence: GPL (&gt;= 2) (lattice).</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a> (plot/arrange</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>  (<span class="kw">for</span> [spread [<span class="va">false</span> <span class="va">true</span>]]</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>    {<span class="at">:data</span> barley <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:yield</span> <span class="at">:y</span> <span class="at">:variety</span> <span class="at">:color</span> <span class="at">:site</span>}</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>     <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:range</span> <span class="at">:blues-9</span> <span class="at">:spread</span> spread}}</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>     <span class="at">:charts</span> [(chart/scatter {<span class="at">:size</span> <span class="dv">8</span>})]</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>     <span class="at">:labels</span> {<span class="at">:title</span> (<span class="kw">if</span> spread <span class="st">":spread true"</span> <span class="st">"first colours (default)"</span>) <span class="at">:x</span> <span class="st">"yield"</span> <span class="at">:y</span> <span class="va">nil</span>}})</span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>  {<span class="at">:columns</span> <span class="dv">2</span>})</span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a> {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">450</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="use_cases.colors_files/image6.png" class="img-fluid"></p>
+</div>
+</section>
+</section>
+<section id="continuous-colour-scales" class="level2" data-number="2.4">
+<h2 data-number="2.4" class="anchored" data-anchor-id="continuous-colour-scales"><span class="header-section-number">2.4</span> Continuous colour scales</h2>
+<p>Numbers on <code>:color</code> get a gradient and a colour bar.</p>
+<section id="gradients" class="level3" data-number="2.4.1">
+<h3 data-number="2.4.1" class="anchored" data-anchor-id="gradients"><span class="header-section-number">2.4.1</span> Gradients</h3>
+<p><code>:range</code> takes two colours, several colours, a gradient name or any function of <code>t</code> in <code>[0 1]</code>.</p>
+<p>Source: R Graph Gallery - Dealing with color in ggplot2; viridis (<a href="https://r-graph-gallery.com/ggplot2-color.html">1</a>, <a href="https://r-graph-gallery.com/package/viridis.html">2</a>). Data: Earthquakes off Fiji since 1964, R datasets package <code>quakes</code> (Harvard PRIM-H project); licence: Part of R (GPL-2 | GPL-3).</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a> (plot/arrange</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>  (<span class="kw">for</span> [[title color-range] [[<span class="st">"two colours"</span> [<span class="at">:lightyellow</span> <span class="at">:darkred</span>]]</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>                             [<span class="st">"four colours"</span> [<span class="at">:lightyellow</span> <span class="at">:orange</span> <span class="at">:red</span> <span class="at">:darkred</span>]]</span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>                             [<span class="st">"gradient name :viridis/magma"</span> <span class="at">:viridis/magma</span>]</span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>                             [<span class="st">"a function: lerp navy to gold"</span> (<span class="kw">fn</span> [t] (c/lerp <span class="at">:navy</span> <span class="at">:gold</span> t))]]]</span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>    {<span class="at">:data</span> quakes <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:long</span> <span class="at">:y</span> <span class="at">:lat</span> <span class="at">:color</span> <span class="at">:depth</span>}</span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>     <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:range</span> color-range}}</span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>     <span class="at">:charts</span> [(chart/scatter {<span class="at">:size</span> <span class="dv">5</span>})]</span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a>     <span class="at">:labels</span> {<span class="at">:title</span> title <span class="at">:x</span> <span class="st">"longitude"</span> <span class="at">:y</span> <span class="st">"latitude"</span>}})</span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a>  {<span class="at">:columns</span> <span class="dv">2</span>})</span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a> {<span class="at">:width</span> <span class="dv">900</span> <span class="at">:height</span> <span class="dv">700</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="use_cases.colors_files/image7.png" class="img-fluid"></p>
+</div>
+</section>
+<section id="diverging-gradient-with-a-midpoint" class="level3" data-number="2.4.2">
+<h3 data-number="2.4.2" class="anchored" data-anchor-id="diverging-gradient-with-a-midpoint"><span class="header-section-number">2.4.2</span> Diverging gradient with a midpoint</h3>
+<p><code>:midpoint</code> puts a value at the middle of the gradient and scales both sides by the larger distance to it; the colour bar ticks the midpoint.</p>
+<p>Source: <a href="https://r-graph-gallery.com/ggplot2-color.html">R Graph Gallery - Dealing with color in ggplot2</a>. Data: Motor Trend car road tests (1974), R datasets package <code>mtcars</code> (Henderson &amp; Velleman 1981); licence: Part of R (GPL-2 | GPL-3).</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">let</span> [mean-hp (stats/mean (<span class="kw">map</span> <span class="at">:hp</span> mtcars))]</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>  (plot/render-image</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>   {<span class="at">:data</span> mtcars <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:wt</span> <span class="at">:y</span> <span class="at">:mpg</span> <span class="at">:color</span> <span class="at">:hp</span>}</span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:range</span> <span class="at">:RColorBrewer/RdBu</span> <span class="at">:midpoint</span> mean-hp <span class="at">:reverse</span> <span class="va">true</span>}}</span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">:charts</span> [(chart/scatter {<span class="at">:size</span> <span class="dv">10</span>})]</span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">:labels</span> {<span class="at">:title</span> (<span class="kw">format</span> <span class="st">"Horse power around its mean (%.1f)"</span> mean-hp) <span class="at">:x</span> <span class="st">"weight"</span> <span class="at">:y</span> <span class="st">"miles per gallon"</span>}}</span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>   {<span class="at">:width</span> <span class="dv">800</span> <span class="at">:height</span> <span class="dv">500</span>}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="use_cases.colors_files/image8.png" class="img-fluid"></p>
+</div>
+</section>
+<section id="reversing" class="level3" data-number="2.4.3">
+<h3 data-number="2.4.3" class="anchored" data-anchor-id="reversing"><span class="header-section-number">2.4.3</span> Reversing</h3>
+<p><code>:reverse true</code> turns the colours around: categories keep their order with the colours reversed, a gradient runs the other way.</p>
+<p>Source: <a href="https://r-graph-gallery.com/ggplot2-color.html">R Graph Gallery - Dealing with color in ggplot2</a>. Data: Edgar Anderson’s iris measurements, R datasets package <code>iris</code> (Anderson 1935; Fisher 1936); licence: Part of R (GPL-2 | GPL-3).</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a> (plot/arrange</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>  (<span class="kw">for</span> [[title color scale] [[<span class="st">"categories"</span> <span class="at">:species</span> {<span class="at">:range</span> <span class="at">:RColorBrewer/Set1</span>}]</span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>                             [<span class="st">"categories, reversed"</span> <span class="at">:species</span> {<span class="at">:range</span> <span class="at">:RColorBrewer/Set1</span> <span class="at">:reverse</span> <span class="va">true</span>}]</span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>                             [<span class="st">"gradient"</span> <span class="at">:petal-length</span> {<span class="at">:range</span> <span class="at">:viridis/viridis</span>}]</span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>                             [<span class="st">"gradient, reversed"</span> <span class="at">:petal-length</span> {<span class="at">:range</span> <span class="at">:viridis/viridis</span> <span class="at">:reverse</span> <span class="va">true</span>}]]]</span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>    {<span class="at">:data</span> iris <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:sepal-length</span> <span class="at">:y</span> <span class="at">:sepal-width</span> <span class="at">:color</span> color}</span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>     <span class="at">:scales</span> {<span class="at">:color</span> scale}</span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>     <span class="at">:charts</span> [(chart/scatter {<span class="at">:size</span> <span class="dv">7</span>})]</span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a>     <span class="at">:labels</span> {<span class="at">:title</span> title <span class="at">:x</span> <span class="st">"sepal length"</span> <span class="at">:y</span> <span class="st">"sepal width"</span>}})</span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a>  {<span class="at">:columns</span> <span class="dv">2</span>})</span>
+<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a> {<span class="at">:width</span> <span class="dv">900</span> <span class="at">:height</span> <span class="dv">650</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="use_cases.colors_files/image9.png" class="img-fluid"></p>
+</div>
+</section>
+<section id="binned-colours" class="level3" data-number="2.4.4">
+<h3 data-number="2.4.4" class="anchored" data-anchor-id="binned-colours"><span class="header-section-number">2.4.4</span> Binned colours</h3>
+<p><code>:kind :binned</code> colours values by bin: a count of equal bins or a breaks vector; the colour bar has one block per bin. For a discrete legend of intervals, bin the data with <code>levels/bin</code> instead.</p>
+<p>Source: <a href="https://r-graph-gallery.com/ggplot2-color.html">R Graph Gallery - Dealing with color in ggplot2</a>. Data: Prices and attributes of round cut diamonds, R ggplot2 package <code>diamonds</code> (Wickham et al.); licence: MIT (ggplot2).</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> diamonds-sample</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>  <span class="st">"A fixed 5% sample of diamonds (the full data has 53,940 rows)."</span></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>  (<span class="kw">let</span> [rng (r/rng <span class="at">:mersenne</span> <span class="dv">7</span>)] (<span class="kw">filterv</span> (<span class="kw">fn</span> [_] (<span class="kw">&lt;</span> (r/drandom rng) <span class="fl">0.05</span>)) diamonds)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a> (plot/arrange</span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>  (<span class="kw">for</span> [[title bins] [[<span class="st">"5 equal bins"</span> <span class="dv">5</span>] [<span class="st">"breaks [0 1000 2500 5000 10000 20000]"</span> [<span class="dv">0</span> <span class="dv">1000</span> <span class="dv">2500</span> <span class="dv">5000</span> <span class="dv">10000</span> <span class="dv">20000</span>]]]]</span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>    {<span class="at">:data</span> diamonds-sample <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:carat</span> <span class="at">:y</span> <span class="at">:price</span> <span class="at">:color</span> <span class="at">:price</span>}</span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>     <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:kind</span> <span class="at">:binned</span> <span class="at">:bins</span> bins <span class="at">:range</span> <span class="at">:viridis</span>}}</span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>     <span class="at">:charts</span> [(chart/scatter {<span class="at">:size</span> <span class="dv">4</span>})]</span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>     <span class="at">:labels</span> {<span class="at">:title</span> title <span class="at">:x</span> <span class="st">"carat"</span> <span class="at">:y</span> <span class="st">"price"</span>}})</span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>  {<span class="at">:columns</span> <span class="dv">2</span>})</span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a> {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">450</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="use_cases.colors_files/image10.png" class="img-fluid"></p>
+</div>
+</section>
+</section>
+<section id="colour-in-practice" class="level2" data-number="2.5">
+<h2 data-number="2.5" class="anchored" data-anchor-id="colour-in-practice"><span class="header-section-number">2.5</span> Colour in practice</h2>
+<section id="missing-values-and-the-theme-palette" class="level3" data-number="2.5.1">
+<h3 data-number="2.5.1" class="anchored" data-anchor-id="missing-values-and-the-theme-palette"><span class="header-section-number">2.5.1</span> Missing values and the theme palette</h3>
+<p>A missing value gets the theme’s NA colour and the last legend entry; the theme <code>:palette</code> sets the default colours of every plot (here a MetBrewer palette and a magenta NA).</p>
+<p>Source: <a href="https://r-graph-gallery.com/ggplot2-color.html">R Graph Gallery - Dealing with color in ggplot2</a>. Data: Edgar Anderson’s iris measurements, R datasets package <code>iris</code> (Anderson 1935; Fisher 1936); licence: Part of R (GPL-2 | GPL-3).</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> iris-with-na</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Iris with every seventh species missing."</span></span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>  (map-indexed (<span class="kw">fn</span> [i row] (<span class="kw">if</span> (<span class="kw">zero?</span> (<span class="kw">mod</span> i <span class="dv">7</span>)) (<span class="kw">assoc</span> row <span class="at">:species</span> <span class="va">nil</span>) row)) iris))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb21"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a> (plot/arrange</span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>  [{<span class="at">:data</span> iris-with-na <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:sepal-length</span> <span class="at">:y</span> <span class="at">:sepal-width</span> <span class="at">:color</span> <span class="at">:species</span>}</span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">:charts</span> [(chart/scatter {<span class="at">:size</span> <span class="dv">7</span>})] <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"default theme"</span> <span class="at">:x</span> <span class="st">"sepal length"</span> <span class="at">:y</span> <span class="st">"sepal width"</span>}}</span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>   {<span class="at">:data</span> iris-with-na <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:sepal-length</span> <span class="at">:y</span> <span class="at">:sepal-width</span> <span class="at">:color</span> <span class="at">:species</span>}</span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">:theme</span> {<span class="at">:palette</span> {<span class="at">:color</span> <span class="at">:MetBrewer/Egypt</span> <span class="at">:na</span> [<span class="dv">230</span> <span class="dv">0</span> <span class="dv">230</span>]}}</span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">:charts</span> [(chart/scatter {<span class="at">:size</span> <span class="dv">7</span>})] <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"theme :palette"</span> <span class="at">:x</span> <span class="st">"sepal length"</span> <span class="at">:y</span> <span class="st">"sepal width"</span>}}]</span>
+<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a>  {<span class="at">:columns</span> <span class="dv">2</span>})</span>
+<span id="cb21-9"><a href="#cb21-9" aria-hidden="true" tabindex="-1"></a> {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">420</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="use_cases.colors_files/image11.png" class="img-fluid"></p>
+</div>
+</section>
+<section id="transparency-against-overplotting" class="level3" data-number="2.5.2">
+<h3 data-number="2.5.2" class="anchored" data-anchor-id="transparency-against-overplotting"><span class="header-section-number">2.5.2</span> Transparency against overplotting</h3>
+<p>With 53,940 diamonds the opaque points hide where most of them are; a colour with a low alpha shows the density.</p>
+<p>Source: <a href="https://www.data-to-viz.com/caveat/overplotting.html">data-to-viz - Overplotting</a>. Data: Prices and attributes of round cut diamonds, R ggplot2 package <code>diamonds</code> (Wickham et al.); licence: MIT (ggplot2).</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a> (plot/arrange</span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>  (<span class="kw">for</span> [[title color] [[<span class="st">"opaque"</span> [<span class="dv">69</span> <span class="dv">117</span> <span class="dv">180</span>]] [<span class="st">"alpha 12 of 255"</span> [<span class="dv">69</span> <span class="dv">117</span> <span class="dv">180</span> <span class="dv">12</span>]]]]</span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>    {<span class="at">:data</span> diamonds <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:carat</span> <span class="at">:y</span> <span class="at">:price</span>}</span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a>     <span class="at">:charts</span> [(chart/scatter {<span class="at">:size</span> <span class="dv">4</span> <span class="at">:color</span> color})]</span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a>     <span class="at">:labels</span> {<span class="at">:title</span> title <span class="at">:x</span> <span class="st">"carat"</span> <span class="at">:y</span> <span class="st">"price"</span>}})</span>
+<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a>  {<span class="at">:columns</span> <span class="dv">2</span>})</span>
+<span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a> {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">450</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="use_cases.colors_files/image12.png" class="img-fluid"></p>
+</div>
+</section>
+<section id="a-line-coloured-by-a-variable" class="level3" data-number="2.5.3">
+<h3 data-number="2.5.3" class="anchored" data-anchor-id="a-line-coloured-by-a-variable"><span class="header-section-number">2.5.3</span> A line coloured by a variable</h3>
+<p>A linear or binned colour on a line colours it along its length: each segment takes the colour of the mean of its two ends.</p>
+<p>Source: <a href="https://r-graph-gallery.com/ggplot2-color.html">R Graph Gallery - Dealing with color in ggplot2</a>. Data: Weather in Lincoln, Nebraska, 2016, R ggridges package <code>lincoln_weather</code> (Weather Underground, via Wilke); licence: GPL-2 (ggridges).</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb23"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> lincoln-days</span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Lincoln weather with the day of the year."</span></span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>  (map-indexed (<span class="kw">fn</span> [i row] (<span class="kw">assoc</span> row <span class="at">:day</span> (<span class="kw">inc</span> i))) lincoln))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb24"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a> (plot/arrange</span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>  (<span class="kw">for</span> [[title scale] [[<span class="st">"gradient"</span> {<span class="at">:range</span> <span class="at">:viridis/inferno</span>}]</span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>                       [<span class="st">"4 bins"</span> {<span class="at">:kind</span> <span class="at">:binned</span> <span class="at">:bins</span> <span class="dv">4</span> <span class="at">:range</span> <span class="at">:RColorBrewer/RdBu</span> <span class="at">:reverse</span> <span class="va">true</span>}]]]</span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a>    {<span class="at">:data</span> lincoln-days <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:day</span> <span class="at">:y</span> <span class="at">:mean-temp</span> <span class="at">:color</span> <span class="at">:mean-temp</span>}</span>
+<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a>     <span class="at">:scales</span> {<span class="at">:color</span> (<span class="kw">assoc</span> scale <span class="at">:title</span> <span class="st">"°F"</span>)}</span>
+<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a>     <span class="at">:charts</span> [(chart/line {<span class="at">:width</span> <span class="dv">2</span>})]</span>
+<span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a>     <span class="at">:labels</span> {<span class="at">:title</span> title <span class="at">:x</span> <span class="st">"day of 2016"</span> <span class="at">:y</span> <span class="st">"mean temperature [°F]"</span>}})</span>
+<span id="cb24-9"><a href="#cb24-9" aria-hidden="true" tabindex="-1"></a>  {<span class="at">:columns</span> <span class="dv">1</span>})</span>
+<span id="cb24-10"><a href="#cb24-10" aria-hidden="true" tabindex="-1"></a> {<span class="at">:width</span> <span class="dv">900</span> <span class="at">:height</span> <span class="dv">650</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="use_cases.colors_files/image13.png" class="img-fluid"></p>
+</div>
+</section>
+</section>
+<section id="accessibility" class="level2" data-number="2.6">
+<h2 data-number="2.6" class="anchored" data-anchor-id="accessibility"><span class="header-section-number">2.6</span> Accessibility</h2>
+<section id="colour-blind-preview" class="level3" data-number="2.6.1">
+<h3 data-number="2.6.1" class="anchored" data-anchor-id="colour-blind-preview"><span class="header-section-number">2.6.1</span> Colour-blind preview</h3>
+<p><code>plot/cvd-image</code> shows an image as seen with a colour vision deficiency (the render option <code>:cvd</code> does the same for a whole plot). The default palette as most people see it, then with deuteranopia, protanopia and tritanopia.</p>
+<p>Source: <a href="https://r-graph-gallery.com/package/viridis.html">R Graph Gallery - viridis (colour-blind friendly maps)</a>. Data: Edgar Anderson’s iris measurements, R datasets package <code>iris</code> (Anderson 1935; Fisher 1936); licence: Part of R (GPL-2 | GPL-3).</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb25"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">let</span> [image (plot/render-image {<span class="at">:data</span> iris <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:sepal-length</span> <span class="at">:y</span> <span class="at">:sepal-width</span> <span class="at">:color</span> <span class="at">:species</span>}</span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>                                <span class="at">:charts</span> [(chart/scatter {<span class="at">:size</span> <span class="dv">7</span>})]</span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>                                <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"default palette"</span> <span class="at">:x</span> <span class="st">"sepal length"</span> <span class="at">:y</span> <span class="st">"sepal width"</span>}}</span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a>                               {<span class="at">:width</span> <span class="dv">480</span> <span class="at">:height</span> <span class="dv">340</span>})]</span>
+<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a>  (kind/hiccup</span>
+<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a>   [<span class="at">:div</span> {<span class="at">:style</span> {<span class="at">:display</span> <span class="st">"flex"</span> <span class="at">:flex-wrap</span> <span class="st">"wrap"</span> <span class="at">:gap</span> <span class="st">"8px"</span>}}</span>
+<span id="cb25-7"><a href="#cb25-7" aria-hidden="true" tabindex="-1"></a>    image</span>
+<span id="cb25-8"><a href="#cb25-8" aria-hidden="true" tabindex="-1"></a>    (plot/cvd-image image <span class="at">:deuteranopia</span>)</span>
+<span id="cb25-9"><a href="#cb25-9" aria-hidden="true" tabindex="-1"></a>    (plot/cvd-image image <span class="at">:protanopia</span>)</span>
+<span id="cb25-10"><a href="#cb25-10" aria-hidden="true" tabindex="-1"></a>    (plot/cvd-image image <span class="at">:tritanopia</span>)]))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div style="display:flex;flex-wrap:wrap;gap:8px;"><div class="clay-image"><p><img alt="" src="use_cases.colors_files/image14.png"></p></div><div class="clay-image"><p><img alt="" src="use_cases.colors_files/image15.png"></p></div><div class="clay-image"><p><img alt="" src="use_cases.colors_files/image16.png"></p></div><div class="clay-image"><p><img alt="" src="use_cases.colors_files/image17.png"></p></div></div>
+</section>
+<section id="colour-caveats" class="level3" data-number="2.6.2">
+<h3 data-number="2.6.2" class="anchored" data-anchor-id="colour-caveats"><span class="header-section-number">2.6.2</span> Colour caveats</h3>
+<p>A rainbow gradient has bright bands that look like edges in the data; viridis changes evenly. Red against green separates categories for most readers but not for deuteranopes: the last panel draws the same colours as a deuteranope sees them (mapped through <code>c/cvd-filter</code>).</p>
+<p>Source: data-to-viz - pitfalls; R Graph Gallery - viridis (<a href="https://www.data-to-viz.com/caveats.html">1</a>, <a href="https://r-graph-gallery.com/package/viridis.html">2</a>). Data: Edgar Anderson’s iris measurements, R datasets package <code>iris</code> (Anderson 1935; Fisher 1936); licence: Part of R (GPL-2 | GPL-3).</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb26"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">let</span> [red-green {<span class="st">"setosa"</span> <span class="at">:red</span> <span class="st">"versicolor"</span> <span class="at">:green</span> <span class="st">"virginica"</span> <span class="at">:blue</span>}</span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>      deutan (c/cvd-filter <span class="at">:deuteranopia</span>)]</span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a>  (plot/render-image</span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a>   (plot/arrange</span>
+<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a>    [{<span class="at">:data</span> iris <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:sepal-length</span> <span class="at">:y</span> <span class="at">:sepal-width</span> <span class="at">:color</span> <span class="at">:petal-length</span>}</span>
+<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a>      <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:range</span> <span class="at">:rainbow</span>}}</span>
+<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a>      <span class="at">:charts</span> [(chart/scatter {<span class="at">:size</span> <span class="dv">7</span>})] <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"rainbow"</span> <span class="at">:x</span> <span class="st">"sepal length"</span> <span class="at">:y</span> <span class="st">"sepal width"</span>}}</span>
+<span id="cb26-8"><a href="#cb26-8" aria-hidden="true" tabindex="-1"></a>     {<span class="at">:data</span> iris <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:sepal-length</span> <span class="at">:y</span> <span class="at">:sepal-width</span> <span class="at">:color</span> <span class="at">:petal-length</span>}</span>
+<span id="cb26-9"><a href="#cb26-9" aria-hidden="true" tabindex="-1"></a>      <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:range</span> <span class="at">:viridis/viridis</span>}}</span>
+<span id="cb26-10"><a href="#cb26-10" aria-hidden="true" tabindex="-1"></a>      <span class="at">:charts</span> [(chart/scatter {<span class="at">:size</span> <span class="dv">7</span>})] <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"viridis"</span> <span class="at">:x</span> <span class="st">"sepal length"</span> <span class="at">:y</span> <span class="st">"sepal width"</span>}}</span>
+<span id="cb26-11"><a href="#cb26-11" aria-hidden="true" tabindex="-1"></a>     {<span class="at">:data</span> iris <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:sepal-length</span> <span class="at">:y</span> <span class="at">:sepal-width</span> <span class="at">:color</span> <span class="at">:species</span>}</span>
+<span id="cb26-12"><a href="#cb26-12" aria-hidden="true" tabindex="-1"></a>      <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:range</span> red-green}}</span>
+<span id="cb26-13"><a href="#cb26-13" aria-hidden="true" tabindex="-1"></a>      <span class="at">:charts</span> [(chart/scatter {<span class="at">:size</span> <span class="dv">7</span>})] <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"red / green"</span> <span class="at">:x</span> <span class="st">"sepal length"</span> <span class="at">:y</span> <span class="st">"sepal width"</span>}}</span>
+<span id="cb26-14"><a href="#cb26-14" aria-hidden="true" tabindex="-1"></a>     {<span class="at">:data</span> iris <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:sepal-length</span> <span class="at">:y</span> <span class="at">:sepal-width</span> <span class="at">:color</span> <span class="at">:species</span>}</span>
+<span id="cb26-15"><a href="#cb26-15" aria-hidden="true" tabindex="-1"></a>      <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:range</span> (update-vals red-green deutan)}}</span>
+<span id="cb26-16"><a href="#cb26-16" aria-hidden="true" tabindex="-1"></a>      <span class="at">:charts</span> [(chart/scatter {<span class="at">:size</span> <span class="dv">7</span>})] <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"red / green with deuteranopia"</span> <span class="at">:x</span> <span class="st">"sepal length"</span> <span class="at">:y</span> <span class="st">"sepal width"</span>}}]</span>
+<span id="cb26-17"><a href="#cb26-17" aria-hidden="true" tabindex="-1"></a>    {<span class="at">:columns</span> <span class="dv">2</span>})</span>
+<span id="cb26-18"><a href="#cb26-18" aria-hidden="true" tabindex="-1"></a>   {<span class="at">:width</span> <span class="dv">900</span> <span class="at">:height</span> <span class="dv">650</span>}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="use_cases.colors_files/image18.png" class="img-fluid"></p>
+</div>
+<div style="background-color:grey;height:2px;width:100%;"></div>
+<div><pre><small><small>source: notebooks/use_cases/colors.clj</small></small></pre></div>
+
+
+</section>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="./use_cases.distribution.html" class="pagination-link" aria-label="Distribution">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">Distribution</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

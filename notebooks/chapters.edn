@@ -2,5 +2,5 @@
 ;; Use case sections follow the R Graph Gallery site order; galleries: cljplot extras, lattice, vega.
 ;; Parts without chapters are left out of the book.
 ["book/index.clj"
- {:part "Use cases" :chapters ["use_cases/distribution.clj"]}
+ {:part "Use cases" :chapters ["use_cases/distribution.clj" "use_cases/colors.clj"]}
  {:part "Galleries" :chapters []}]

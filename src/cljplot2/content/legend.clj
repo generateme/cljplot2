@@ -83,35 +83,48 @@
 (def ^:private ^:const colorbar-ticks 5)
 
 (defn- with-midpoint-tick
-  "`ticks` (ascending) with a linear scale's `midpoint` added when it lies in `[lo hi]`; ticks closer to it than half
-  the tick step are dropped (their labels would collide)."
-  [ticks midpoint ^double lo ^double hi]
-  (if (and (some? midpoint) (<= lo (double midpoint) hi) (not-any? #(== (double %) (double midpoint)) ticks))
+  "Tick `[value label]` pairs (ascending) with a linear scale's `midpoint` added as `[midpoint midpoint-label]` when it
+  lies in `[lo hi]` and isn't a tick; ticks closer to it than half the tick step are dropped (their labels would
+  collide). The other labels stay as they were."
+  [ticks midpoint midpoint-label lo hi]
+  (if (and (some? midpoint) (<= (double lo) (double midpoint) (double hi)) (not-any? #(== (double (first %)) (double midpoint)) ticks))
     (let [mid (double midpoint)
-          step (if (> (count ticks) 1) (- (double (second ticks)) (double (first ticks))) (- hi lo))]
-      (vec (sort (conj (filterv #(>= (m/abs (- (double %) mid)) (* 0.5 step)) ticks) mid))))
+          step (if (> (count ticks) 1) (- (double (first (second ticks))) (double (first (first ticks)))) (- (double hi) (double lo)))]
+      (vec (sort-by first (conj (filterv #(>= (m/abs (- (double (first %)) mid)) (* 0.5 step)) ticks)
+                                [mid midpoint-label]))))
     ticks))
 
 (defn- colorbar-content
   "Color bar of the linear or binned color scale `spec` mapped with `accessors` (title rule as legends). Ticks:
-  linear - nice ticks of the domain (and the `:midpoint`, see [[with-midpoint-tick]]); binned - the inner breaks, labelled by `:formatter` or
-  [[cljplot2.data.levels/break-labels]]."
+  linear - nice ticks of the domain, labelled as axis ticks, and the `:midpoint` (see [[with-midpoint-tick]];
+  labelled by `:formatter` or [[cljplot2.data.levels/break-labels]]); binned - the inner breaks, labelled by
+  `:formatter` or [[cljplot2.data.levels/break-labels]]."
   [spec accessors]
   (let [[lo hi] (:domain spec)
         lo (double lo) hi (double hi)
+        formatter (:formatter spec)
         ws (s/scale :linear (cond-> {:domain (if (== lo hi) [lo (inc lo)] [lo hi]) :ticks colorbar-ticks}
-                              (:formatter spec) (assoc :formatter (:formatter spec))))
-        ticks (cond
-                (= :binned (:kind spec)) (let [breaks (:breaks spec)] (subvec breaks 1 (dec (count breaks))))
-                (== lo hi) [lo]
-                :else (with-midpoint-tick (filterv #(<= lo (double %) hi) (s/ticks ws)) (:midpoint spec) lo hi))]
+                              formatter (assoc :formatter formatter)))
+        axis-labels (fn [ts] (position/tick-labels ws {:kind :linear :formatter formatter} ts))
+        pairs (cond
+                (= :binned (:kind spec))
+                (let [breaks (:breaks spec)
+                      inner (subvec breaks 1 (dec (count breaks)))
+                      labels (if formatter
+                               (axis-labels inner)
+                               (let [ls (levels/break-labels breaks)] (subvec ls 1 (dec (count ls)))))]
+                  (mapv vector inner labels))
+                (== lo hi) (mapv vector [lo] (axis-labels [lo]))
+                :else (let [nice (filterv #(<= lo (double %) hi) (s/ticks ws))
+                            mid (:midpoint spec)]
+                        (with-midpoint-tick (mapv vector nice (axis-labels nice)) mid
+                          (when (some? mid) (if formatter (str (formatter mid)) (first (levels/break-labels [mid]))))
+                          lo hi)))]
     {:kind :colorbar
      :title (title [{:spec spec :accessors accessors}])
      :scale spec
-     :ticks ticks
-     :labels (if (and (= :binned (:kind spec)) (nil? (:formatter spec)))
-               (let [labels (levels/break-labels (:breaks spec))] (subvec labels 1 (dec (count labels))))
-               (position/tick-labels ws {:kind :linear :formatter (:formatter spec)} ticks))}))
+     :ticks (mapv first pairs)
+     :labels (mapv second pairs)}))
 
 (defn legend-charts
   "Charts whose glyphs the legends draw, in key index order: the plot's charts, then its margin charts (`:top`, then

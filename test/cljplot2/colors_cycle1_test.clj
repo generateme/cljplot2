@@ -363,3 +363,12 @@
       (is (not-any? #(== 0.0 %) (ticks {:color {:midpoint 0.5}})) "a colliding nice tick dropped")
       (is (= (ticks {:color {}}) (ticks {:color {:midpoint 20}})) "outside the domain: no tick")
       (is (= (ticks {:color {}}) (ticks {:color {:midpoint 0}})) "already a tick"))))
+
+(deftest midpoint-label-test
+  (testing "notebook cycle: a midpoint tick is labelled compactly and leaves the other labels as they were"
+    (let [data [{:x 0 :y 0 :v 52} {:x 1 :y 1 :v 335}]
+          labels (fn [scale] (:labels (first (legends (build (plot-of data {:color :v} {:color scale}))))))]
+      (is (= ["100" "147" "200" "250" "300"] (labels {:midpoint 146.6875})))
+      (is (= (labels {}) ["100" "150" "200" "250" "300"]) "without a midpoint")
+      (is (some #{"<146.6875>"} (labels {:midpoint 146.6875 :formatter #(str "<" % ">")})) "a :formatter labels it")
+      (is (= ["100" "150" "200" "250" "300"] (labels {:midpoint 150})) "a midpoint on a tick adds nothing"))))
