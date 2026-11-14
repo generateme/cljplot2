@@ -669,15 +669,17 @@
   "Scale spec `spec` of dimension `k` with the declared `type` (`:categorical` / `:numeric`) resolved to a kind and
   `:type` removed: categorical - `:bands` for `:x` / `:y`, `:ordinal` for aesthetics, nothing for facets; numeric -
   `:linear` for aesthetics, nothing for `:x` / `:y` (numbers are continuous there by default). Throws `ex-info
-  {:key :type}` when an explicit `:kind` contradicts it."
+  {:key :type}` when an explicit `:kind` contradicts it (an aesthetic `:binned` kind is numeric; `:identity` takes no
+  `:type`)."
   [k type spec]
   (let [wanted (cond
                  (position-scales k) (case type :categorical :bands :numeric nil)
                  (aesthetic/dim? k) (case type :categorical :ordinal :numeric :linear)
                  :else nil)
+        allowed (if (and (aesthetic/dim? k) (= :numeric type)) #{:linear :binned} #{wanted})
         given (:kind spec)
         contradiction? (cond
-                         (and given wanted) (not= given wanted)
+                         (and given wanted) (not (contains? allowed given))
                          (and given (position-scales k) (= :numeric type)) (= :bands given)
                          :else false)]
     (when contradiction?

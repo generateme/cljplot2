@@ -24,19 +24,20 @@
   (cond-> (aesthetic/mapped-dims mapping) (some? (:group mapping)) (conj :group)))
 
 (defn- check-groupable!
-  "Throw when aesthetic `k` would get a linear scale (numeric values without an ordinal spec)."
+  "Throw when aesthetic `k` would get a linear or binned scale (numeric values without an ordinal spec)."
   [k values plot-scales]
   (when (aesthetic/dim? k)
     (let [present (remove nil? values)
           numeric? (and (seq present) (every? number? present))]
-      (when (= :linear (aesthetic/inferred-kind k (get plot-scales k {}) numeric?))
+      (when (#{:linear :binned} (aesthetic/inferred-kind k (get plot-scales k {}) numeric?))
         (schema/fail! "This chart groups by aesthetics; numeric values must be declared categorical ({:scales {k {:type :categorical}}} or {:mapping {k (levels/categorical acc)}})."
                         {:key :mapping :value k})))))
 
 (defn- kept-value?
-  "Is grouping value `v` of dimension `k` kept: valid and (aesthetics) inside the explicit plot scale domain, or NA."
+  "Is grouping value `v` of dimension `k` kept: valid (aesthetics: kept by the plot scale, see
+  [[cljplot2.scale.aesthetic/kept-value?]]), or NA."
   [k na-level? plot-scales v]
-  (or (and (data/valid-value? v) (or (not (aesthetic/dim? k)) (aesthetic/in-domain? k (get plot-scales k {}) v)))
+  (or (if (aesthetic/dim? k) (aesthetic/kept-value? k (get plot-scales k {}) v) (data/valid-value? v))
       (and na-level? (nil? v))))
 
 (defn- level-rank
@@ -48,15 +49,21 @@
     :else [1 v]))
 
 (defn ordered-keys
-  "Distinct group `keys` (vectors over `dims`) ordered dimension by dimension: explicit ordinal `:domain` order from
-  `plot-scales`, otherwise natural order; NA (`nil`) last. Incomparable values keep first-appearance order."
+  "Distinct group `keys` (vectors over `dims`, in first-appearance order) ordered dimension by dimension: explicit
+  ordinal `:domain` order from `plot-scales`, identity scales in first-appearance order, otherwise natural order;
+  NA (`nil`) last. Incomparable values keep first-appearance order."
   [keys dims plot-scales]
-  (let [indices (mapv (fn [k]
-                        (let [domain (get-in plot-scales [k :domain])]
-                          (when (and (sequential? domain) (aesthetic/dim? k))
-                            (zipmap (map #(if (number? %) (double %) %) domain) (range)))))
-                      dims)
-        ks (vec (distinct keys))]
+  (let [ks (vec (distinct keys))
+        indices (vec (map-indexed (fn [i k]
+                                    (let [spec (get plot-scales k)
+                                          domain (:domain spec)
+                                          level-key #(if (number? %) (double %) %)]
+                                      (cond
+                                        (and (aesthetic/dim? k) (aesthetic/identity-scale? spec))
+                                        (zipmap (distinct (keep #(some-> (nth % i) level-key) ks)) (range))
+                                        (and (sequential? domain) (aesthetic/dim? k))
+                                        (zipmap (map level-key domain) (range)))))
+                                  dims))]
     (try (vec (sort-by (fn [key] (mapv level-rank indices key)) ks))
          (catch ClassCastException _ ks))))
 
@@ -72,7 +79,7 @@
         row-count (count all-rows)
         columns (mapv (fn [acc] (mapv acc all-rows)) accessors)]
     (doseq [[k vs] (map vector dims columns)]
-      (when (and (pos? row-count) (not-any? data/valid-value? vs) (aesthetic/dim? k))
+      (when (and (pos? row-count) (aesthetic/dim? k) (not-any? #(aesthetic/valid-value? k (get plot-scales k) %) vs))
         (schema/fail! "No valid values for a mapped dimension - check the mapping." {:key :mapping :value k :rows row-count}))
       (check-groupable! k (filter data/valid-value? vs) plot-scales))
     (let [key-of (fn [row] (mapv #(% row) accessors))
@@ -84,7 +91,8 @@
                                                    :aesthetics (into {} (keep (fn [[k v]] (when (aesthetic/dim? k) [k v])))
                                                                      (map vector dims key))
                                                    :rows (by-key key)})
-                                        (ordered-keys (keys by-key) dims plot-scales)))))]
+                                        (ordered-keys (distinct (map key-of (filter (comp kept? key-of) rows)))
+                                                      dims plot-scales)))))]
       {:panels panels
        :dims dims
        :dropped (into {} (map (fn [k vs] [k (count (remove #(kept-value? k na-level? plot-scales %) vs))]) dims columns))})))

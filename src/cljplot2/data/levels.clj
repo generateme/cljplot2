@@ -63,6 +63,25 @@
         (if (neg? i) (- (- i) 2) (m/min i (dec n))))
       -1)))
 
+(defn distinct-digits
+  "The fewest significant digits, at least `at-least` (17 at most), printing every one of `values` differently with
+  [[cljplot2.data.shingle/rounded-str]]."
+  ^long [values ^long at-least]
+  (let [ds (distinct values)]
+    (if (< (count ds) 2)
+      at-least
+      (or (first (filter (fn [^long d] (apply distinct? (map #(shingle/rounded-str % d) ds))) (range at-least 18)))
+          17))))
+
+(defn break-labels
+  "Labels of numeric `breaks`: whole numbers printed as integers, otherwise every break with the
+  [[distinct-digits]] (at least 3) significant digits."
+  [breaks]
+  (if (every? #(== (double %) (Math/rint (double %))) breaks)
+    (mapv #(str (long (double %))) breaks)
+    (let [digits (distinct-digits breaks 3)]
+      (mapv #(shingle/rounded-str % digits) breaks))))
+
 ;; bin
 
 (def bin-options
@@ -100,14 +119,7 @@
         series (cond (string? label) label (true? label) (name value))
         arr (when brks (double-array brks))
         last-bin (- (count brks) 2)
-        ;; the fewest digits (at least :digits) printing every break differently
-        digits (let [ds (distinct brks)
-                     at-least (long (get opts :digits 3))]
-                 (if (< (count ds) 2)
-                   at-least
-                   (or (first (filter (fn [^long d] (apply distinct? (map #(shingle/rounded-str % d) ds)))
-                                      (range at-least 18)))
-                       17)))
+        digits (distinct-digits brks (long (get opts :digits 3)))
         intervals (vec (map-indexed (fn [i [a b]] (shingle/->Interval a b series (when (< (long i) last-bin) :left) digits))
                                     (partition 2 1 brks)))]
     (let [out (mapv (fn [row]

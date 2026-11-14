@@ -2,7 +2,7 @@
   "Legends (D7), derived from the aesthetic scales (see [[cljplot2.scale.aesthetic]]) and drawn as grid content.
 
   [[legends]]: one legend per aesthetic dimension with entries (ordinal scales, linear size) and a color bar for a
-  linear `:color` scale (`:legend false` on the plot or the scale hides them). Dimensions mapped by every chart with the same
+  linear or binned `:color` scale (`:legend false` on the plot or the scale hides them; identity scales have none). Dimensions mapped by every chart with the same
   accessor (equal keyword or the same function) and with equal entry labels merge into one legend whose entries
   combine their attributes. Title: the scale's `:title` when given (`nil` - none), else the accessor's name when it
   is a keyword.
@@ -17,7 +17,7 @@
 
   Content `{:kind :colorbar :title t :scale spec :ticks [v ...] :labels [s ...]}`: title, then a vertical gradient bar
   (top = domain maximum, width theme `[:legend :bar-width]`, default `:key-size`) with tick marks and labels
-  (`:legend-label`). Its length is theme `[:legend :bar-length]`: `:stretch` (default) - the height left in its stack
+  (`:legend-label`); a binned scale's bar is one equal block per bin, ticked at the inner breaks. Its length is theme `[:legend :bar-length]`: `:stretch` (default) - the height left in its stack
   column (at least 3 x `:key-size`, else it starts a new column); a number - that length, clamped to the height
   available.
 
@@ -29,6 +29,7 @@
             [fastmath.core :as m]
             [fastmath.vector :as v]
             [wadogo.scale :as s]
+            [cljplot2.data.levels :as levels]
             [cljplot2.scale.aesthetic :as aesthetic]
             [cljplot2.scale.position :as position]
             [cljplot2.graphics.canvas :as canvas]
@@ -82,18 +83,25 @@
 (def ^:private ^:const colorbar-ticks 5)
 
 (defn- colorbar-content
-  "Color bar of the linear color scale `spec` mapped with `accessors` (title rule as legends)."
+  "Color bar of the linear or binned color scale `spec` mapped with `accessors` (title rule as legends). Ticks:
+  linear - nice ticks of the domain; binned - the inner breaks, labelled by `:formatter` or
+  [[cljplot2.data.levels/break-labels]]."
   [spec accessors]
   (let [[lo hi] (:domain spec)
         lo (double lo) hi (double hi)
         ws (s/scale :linear (cond-> {:domain (if (== lo hi) [lo (inc lo)] [lo hi]) :ticks colorbar-ticks}
                               (:formatter spec) (assoc :formatter (:formatter spec))))
-        ticks (if (== lo hi) [lo] (filterv #(<= lo (double %) hi) (s/ticks ws)))]
+        ticks (cond
+                (= :binned (:kind spec)) (let [breaks (:breaks spec)] (subvec breaks 1 (dec (count breaks))))
+                (== lo hi) [lo]
+                :else (filterv #(<= lo (double %) hi) (s/ticks ws)))]
     {:kind :colorbar
      :title (title [{:spec spec :accessors accessors}])
      :scale spec
      :ticks ticks
-     :labels (position/tick-labels ws {:kind :linear :formatter (:formatter spec)} ticks)}))
+     :labels (if (and (= :binned (:kind spec)) (nil? (:formatter spec)))
+               (let [labels (levels/break-labels (:breaks spec))] (subvec labels 1 (dec (count labels))))
+               (position/tick-labels ws {:kind :linear :formatter (:formatter spec)} ticks))}))
 
 (defn legend-charts
   "Charts whose glyphs the legends draw, in key index order: the plot's charts, then its margin charts (`:top`, then
@@ -118,7 +126,7 @@
                              (if i (update-in acc [i 1] conj candidate) (conj acc [k [candidate]]))))
                          [] (keep #(dim-legend % scale-specs mappings) aesthetic/dims))]
       (cond->> (mapv (fn [[_ members]] (legend-content members theme charts mappings)) groups)
-        (let [spec (:color scale-specs)] (and (= :linear (:kind spec)) (not (false? (:legend spec)))))
+        (let [spec (:color scale-specs)] (and (#{:linear :binned} (:kind spec)) (not (false? (:legend spec)))))
         (into [(colorbar-content (:color scale-specs) (set (keep :color mappings)))])))))
 
 ;; content
@@ -131,11 +139,11 @@
    [:charts [:vector [:map [:chart nat-int?] [:dims vector?]]]]])
 
 (def colorbar-schema
-  "`{:kind :colorbar}` content: `:title`, a linear `:scale`, `:ticks` and one label per tick in `:labels`."
+  "`{:kind :colorbar}` content: `:title`, a linear or binned `:scale`, `:ticks` and one label per tick in `:labels`."
   (schema/with-rules
    [:map
     (schema/nilable :title string?)
-    [:scale [:map [:kind [:= :linear]]]]
+    [:scale [:map [:kind [:enum :linear :binned]]]]
     [:ticks vector?]
     [:labels vector?]]
    [#(when-not (= (count (:ticks %)) (count (:labels %))) "should have one label per tick") [:labels]]))
@@ -332,6 +340,38 @@
       (label! (entry-label (:label entry))
               {:x (+ kx (double key-w) gap) :y ky :w (.x ^Vec2 (labels i)) :h rh}))))
 
+(defn- bar-value-fn
+  "Function of a position `t` along the color bar of scale `spec` (0 - bottom, 1 - top) giving the value drawn there:
+  linear - proportional over the domain; binned - every bin an equal block, proportional within it."
+  [{:keys [kind domain breaks]}]
+  (let [[lo hi] domain
+        lo (double lo) hi (double hi)]
+    (if (= :binned kind)
+      (let [n (dec (count breaks))]
+        (fn [^double t]
+          (let [x (* t n)
+                i (long (m/constrain (m/floor x) 0 (dec n)))
+                a (double (breaks i))
+                b (double (breaks (inc i)))]
+            (+ a (* (- x i) (- b a))))))
+      (fn [^double t] (+ lo (* t (- hi lo)))))))
+
+(defn- bar-position-fn
+  "Inverse of [[bar-value-fn]]: function of a value within the domain giving its position along the bar."
+  [{:keys [kind domain breaks]}]
+  (let [[lo hi] domain
+        lo (double lo) hi (double hi)]
+    (if (= :binned kind)
+      (let [n (dec (count breaks))
+            arr (double-array breaks)]
+        (fn [v]
+          (let [v (double v)
+                i (long (m/constrain (levels/bin-index arr v) 0 (dec n)))
+                a (aget arr i)
+                b (aget arr (inc i))]
+            (/ (+ i (/ (- v a) (- b a))) n))))
+      (fn [v] (if (== lo hi) 0.5 (/ (- (double v) lo) (- hi lo)))))))
+
 (defn- draw-colorbar!
   "Draw color bar `content` with its `geometry` at top-left corner `origin` (`Vec2`)."
   [{:keys [title scale ticks labels]} geometry c ^Vec2 origin env]
@@ -343,12 +383,14 @@
         color-of (aesthetic/attribute-fn :color scale (get-in env [:theme :palette :na]))
         [lo hi] (:domain scale)
         lo (double lo) hi (double hi)
+        value-at (bar-value-fn scale)
+        position-of (bar-position-fn scale)
         x0 (+ x border)
         bar-top (+ y border title-h (* 0.5 label-h))
         bar-x (m/round x0)
         bar-w-px (m/round bar-w)
         len (long (m/round bar-len))
-        tick-y (fn ^double [t] (+ bar-top (if (== lo hi) (* 0.5 bar-len) (* (/ (- hi (double t)) (- hi lo)) bar-len))))
+        tick-y (fn ^double [t] (+ bar-top (if (== lo hi) (* 0.5 bar-len) (* (- 1.0 (double (position-of t))) bar-len))))
         label-color (get-in env [:theme :text :legend-label :color])]
     (when-not (theme/none? fill)
       (c2d/set-color c fill)
@@ -360,7 +402,7 @@
     ;; the bar: one pixel row per value, top = domain maximum
     (dotimes [i len]
       (let [t (if (== lo hi) 0.5 (- 1.0 (/ (+ (double i) 0.5) (double len))))]
-        (c2d/set-color c (color-of (+ lo (* t (- hi lo)))))
+        (c2d/set-color c (color-of (value-at t)))
         (c2d/rect c bar-x (+ (m/round bar-top) i) bar-w-px 1)))
     (c2d/set-stroke-custom c {:size 1.0 :cap :butt})
     (doseq [[t text ^Vec2 size] (map vector ticks labels sizes)

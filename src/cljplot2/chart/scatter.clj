@@ -47,11 +47,11 @@
   (merge (get-in theme [:chart :scatter]) (select-keys options [:size :color :stroke-color :stroke-width :shape])))
 
 (defn- kept?
-  "Is `v` of dimension `k` kept: valid (for an aesthetic also inside the explicit domain of its plot scale, see
-  [[cljplot2.scale.aesthetic/in-domain?]]), or `nil` (NA) for an aesthetic when `na-level?`."
+  "Is `v` of dimension `k` kept: valid (for an aesthetic: kept by its plot scale, see
+  [[cljplot2.scale.aesthetic/kept-value?]]), or `nil` (NA) for an aesthetic when `na-level?`."
   [k na-level? plot-scales v]
   (boolean (if (aesthetic/dim? k)
-             (or (and (data/valid-value? v) (aesthetic/in-domain? k (get plot-scales k {}) v)) (and na-level? (nil? v)))
+             (or (aesthetic/kept-value? k (get plot-scales k {}) v) (and na-level? (nil? v)))
              (data/valid-value? v))))
 
 (defn- order-rows
@@ -91,7 +91,7 @@
                                                     (map-indexed (fn [i k] [k (mapv #(% i) kept)]))
                                                     dims))))]
     (doseq [[i k] (map-indexed vector dims)]
-      (when (and (pos? row-count) (not-any? #(data/valid-value? (% i)) all-values))
+      (when (and (pos? row-count) (not-any? #(aesthetic/valid-value? k (get plot-scales k) (% i)) all-values))
         (schema/fail! "No valid values for a mapped dimension - check the mapping." {:key :mapping :value k :rows row-count})))
     {:data points
      :extents (update-vals points (fn [p] (into {:x (data/extent :x (:x p)) :y (data/extent :y (:y p))}
