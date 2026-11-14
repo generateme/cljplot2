@@ -162,7 +162,8 @@
 (defn- margin-stats
   "Computed margin charts per side: `{side (spec + :stats [..])}`. A margin chart reads the plot's data (or its own)
   with the plot's aesthetic and `:group` mapping, `:x` mapped to the plot's accessor of the shared dimension - the
-  horizontal one for `:top`, the vertical one for `:right` - its own `:mapping` merged over; one panel; the right
+  horizontal one for `:top`, the vertical one for `:right` - its own `:mapping` merged over (annotation charts:
+  their own mapping only); the mappings are kept under `:mappings`; one panel; the right
   margin computes as flipped (its values run vertically). Throws `ex-info {:key :margins}` when the plot doesn't map
   the shared dimension."
   [{:keys [data mapping flip] :as plot} env]
@@ -176,14 +177,18 @@
                          (schema/fail! (str "Plot :margins " side " needs the plot :mapping of " shared-key ".")
                                        {:key :margins :in [:margins side] :value shared-key}))
                      inherited (assoc (select-keys mapping (conj (vec aesthetic/dims) :group)) :x shared)
-                     side-env (assoc env :flip? (= side :right))]
-                 [side (assoc spec :stats
-                              (mapv (fn [{:keys [options] :as chart}]
-                                      (let [rows (if (some? (:data options)) (data/rows (:data options)) @plot-rows)
-                                            chart-mapping (merge inherited (:mapping options))]
-                                        ((:compute chart) chart {:mapping chart-mapping :groups {facet/single-panel rows}}
-                                         side-env)))
-                                    charts))])))))
+                     side-env (assoc env :flip? (= side :right))
+                     ;; annotation charts (:inherit-mapping :facets) take only their own mapping, as in the panel
+                     mappings (mapv (fn [{:keys [options inherit-mapping]}]
+                                      (merge (if (= :facets inherit-mapping) {} inherited) (:mapping options)))
+                                    charts)]
+                 [side (assoc spec
+                              :mappings mappings
+                              :stats (mapv (fn [{:keys [options] :as chart} chart-mapping]
+                                             (let [rows (if (some? (:data options)) (data/rows (:data options)) @plot-rows)]
+                                               ((:compute chart) chart {:mapping chart-mapping :groups {facet/single-panel rows}}
+                                                side-env)))
+                                           charts mappings))])))))
 
 (defn- margin-env
   "Per margin side `{:charts :stats :scales}` for drawing and measuring with `layout` (`nil` - provisional) and the
@@ -258,10 +263,23 @@
   dimension another chart has extents of; companions alone give no extent (and no data scale). Per aesthetic: merged
   extent and `:na?`."
   [{:keys [stats] :as plot}]
+  ;; aesthetic extents also over margin charts: margins share (and may extend) the plot's aesthetic scales
   (assoc plot :extents
-         (into (aesthetic-extents stats)
+         (into (aesthetic-extents (into (vec stats) (mapcat :stats (vals (:margin-stats plot)))))
                (keep (fn [k] (some->> (position-extent stats k) (vector k))))
                position-scales)))
+
+(defn- position-spec
+  "Phase-1 spec of position dimension `k` from the plot's `spec` (may be `{}`), the merged `{:extent :padding
+  :padding-px}` and the charts' `stats`: chart suggestions - `:scale-defaults` (the first chart's, used as a whole
+  unless `spec` sets any of them), `:tick-format` (the first chart's) and the pixel room `:padding-px` - applied."
+  [stats k spec {:keys [extent padding padding-px]}]
+  (let [defaults (some #(get-in % [:scale-defaults k]) stats)
+        spec (if (some #(contains? spec %) (keys defaults)) spec (merge defaults spec))
+        tick-format (some #(get-in % [:tick-format k]) stats)]
+    (cond-> (scale/data-scale-spec k spec extent padding)
+      tick-format (assoc :tick-format tick-format)
+      (some pos? padding-px) (assoc :padding-px padding-px))))
 
 (defn- scale-specs-stage
   "Phase-1 specs of the position and aesthetic scales with a plot `:scales` entry or data extents. Aesthetic specs are final (no layout dependence).
@@ -271,26 +289,21 @@
   unless the plot's own spec sets any of them (attributes like bands `:padding-out` / `:align-outer` only make
   sense together)."
   [{:keys [scales extents theme stats] :as plot}]
-  (let [ks (distinct (concat (filter #(or (position-scales %) (aesthetic/dim? %)) (keys scales)) (keys extents)))
-        tick-format (fn [k] (some #(get-in % [:tick-format k]) stats))
-        with-defaults (fn [k spec]
-                        (let [defaults (when (position-scales k) (some #(get-in % [:scale-defaults k]) stats))]
-                          (if (some #(contains? spec %) (keys defaults)) spec (merge defaults spec))))]
+  (let [ks (distinct (concat (filter #(or (position-scales %) (aesthetic/dim? %)) (keys scales)) (keys extents)))]
     (assoc plot
+           ;; a margin's magnitude scale: built as a position spec from the margin charts' stats
            :margin-stats (update-vals (:margin-stats plot)
                                       (fn [{:keys [stats] :as m}]
-                                        (if-let [{:keys [extent padding]} (position-extent stats :y)]
-                                          (assoc m :spec (scale/data-scale-spec :y {} extent padding))
+                                        (if-let [e (position-extent stats :y)]
+                                          (assoc m :spec (position-spec stats :y {} e))
                                           m)))
            :scale-specs
            (into {} (keep (fn [k]
-                            (let [{:keys [extent padding padding-px na?]} (get extents k)
-                                  spec (with-defaults k (get scales k {}))]
+                            (let [{:keys [extent na?] :as e} (get extents k)
+                                  spec (get scales k {})]
                               (if (aesthetic/dim? k)
                                 (some->> (aesthetic/scale-spec k spec extent na? (:palette theme)) (vector k))
-                                [k (cond-> (scale/data-scale-spec k spec extent padding)
-                                     (tick-format k) (assoc :tick-format (tick-format k))
-                                     (some pos? padding-px) (assoc :padding-px padding-px))]))))
+                                [k (position-spec stats k spec e)]))))
                  ks))))
 
 (defn- effective-labels
@@ -483,9 +496,10 @@
   "Pipeline stages in execution order."
   [:split :stats :extents :scale-specs :grid :layout :finalized-scales :subplots])
 
-(def ^:private derived-keys
-  "Keys stages add besides their own (plot margins), dropped with the stage keys before a rebuild."
-  [:margin-stats :margin-env])
+(def ^:private stage-extra-keys
+  "Per stage, the plot keys it adds besides its own (each stage stores its result under its name): dropped with the
+  stage keys before a rebuild, so a stage adding a key lists it here."
+  {:stats [:margin-stats] :finalized-scales [:margin-env]})
 
 (def ^:private stage-fns
   {:split split-stage
@@ -585,9 +599,11 @@
                    mappings)
      (when (> (count dim-sets) 1)
        [(error [:charts] (vec dim-sets) "charts should use the same facet mapping")])
-     (for [k (keys scales)
-           :when (and (aesthetic/dim? k) (not-any? #(some? (get % k)) mappings))]
-       (error [:scales k] (get scales k) "aesthetic scale needs a chart mapping its key"))
+     (let [margin-mappings (when (empty? (schema/errors margins-schema (:margins plot) [:margins]))
+                             (for [[_ {:keys [charts]}] (plot-margins plot) c charts] (get-in c [:options :mapping])))]
+       (for [k (keys scales)
+             :when (and (aesthetic/dim? k) (not-any? #(some? (get % k)) (concat mappings margin-mappings)))]
+         (error [:scales k] (get scales k) "aesthetic scale needs a chart mapping its key")))
      (for [k (keys scales)
            :when (and (facet/facet-keys k) (not (some #{k} (first dim-sets))))]
        (error [:scales k] (get scales k) "facet scale needs a facet mapping of its key"))
@@ -700,7 +716,7 @@
   [[validate!]]): one `ex-info` lists every error, see [[cljplot2.schema]]."
   ([plot] (build plot {}))
   ([plot options]
-   (let [plot (if (map? plot) (apply dissoc plot (concat stage-order derived-keys)) plot)
+   (let [plot (if (map? plot) (apply dissoc plot (concat stage-order (mapcat val stage-extra-keys))) plot)
          plot-options (when (map? plot) (:options plot))
          render-options (merge default-options (when (map? plot-options) plot-options) (dissoc options :until))
          theme (theme/plot-theme (when (map? plot) (:theme plot)))]

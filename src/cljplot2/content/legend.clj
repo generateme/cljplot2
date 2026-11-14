@@ -95,13 +95,23 @@
      :ticks ticks
      :labels (position/tick-labels ws {:kind :linear :formatter (:formatter spec)} ticks)}))
 
+(defn legend-charts
+  "Charts whose glyphs the legends draw, in key index order: the plot's charts, then its margin charts (`:top`, then
+  `:right`; see `cljplot2.pipeline`) - `{:charts [..] :mappings [..] :stats [..]}`."
+  [{:keys [charts split stats margin-stats]}]
+  (let [sides (keep margin-stats [:top :right])]
+    {:charts (into (vec charts) (mapcat :charts sides))
+     :mappings (into (mapv :mapping (:charts split)) (mapcat :mappings sides))
+     :stats (into (vec stats) (mapcat :stats sides))}))
+
 (defn legends
   "Legend contents of a plot built up to `:scale-specs`, in aesthetic order (`:color`, `:shape`, `:size`); empty when
-  the plot's `:legend` is `false` or nothing with a legend is mapped."
-  [{:keys [scale-specs split charts theme legend]}]
+  the plot's `:legend` is `false` or nothing with a legend is mapped. Keys draw the glyphs of [[legend-charts]] (margin
+  charts included)."
+  [{:keys [scale-specs theme legend] :as plot}]
   (if (false? legend)
     []
-    (let [mappings (mapv :mapping (:charts split))
+    (let [{:keys [charts mappings]} (legend-charts plot)
           groups (reduce (fn [acc candidate]
                            (let [k (merge-key candidate)
                                  i (first (keep-indexed (fn [i [gk]] (when (= gk k) i)) acc))]
@@ -290,11 +300,11 @@
   attributes of the dimensions it maps; the glyph's `env` carries the chart's computed stats (`:chart-stats`)."
   [c attributes {:keys [x y w h] :as box} chart-keys env]
   (doseq [{i :chart dims :dims} chart-keys
-          :let [chart (get-in env [:charts i])]]
+          :let [chart (get-in env [:legend-charts i])]]
     (canvas/call-with-isolated-graphics
      c (fn [c']
          (.clip ^Graphics2D (:graphics c') (Rectangle. (int x) (int y) (int (m/ceil w)) (int (m/ceil h))))
-         ((:legend chart) chart (select-keys attributes dims) c' box (assoc env :chart-stats (get-in env [:stats i])))))))
+         ((:legend chart) chart (select-keys attributes dims) c' box (assoc env :chart-stats (get-in env [:legend-stats i])))))))
 
 (defn- draw-legend!
   "Draw legend `content` with its `geometry` at top-left corner `origin` (`Vec2`)."

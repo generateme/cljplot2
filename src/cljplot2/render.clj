@@ -10,6 +10,7 @@
             [cljplot2.graphics.draw :as draw]
             [cljplot2.layout.grid :as grid]
             [cljplot2.pipeline :as pipeline]
+            [cljplot2.content.legend :as legend]
             [cljplot2.content.subplot :as subplot]
             [cljplot2.theme :as theme])
   (:import [java.awt Graphics2D Rectangle]))
@@ -73,6 +74,8 @@
     (draw-debug-items! canvas (get-in built [:layout :items]) 0))
   (draw-contents! canvas (:grid built) (:layout built) {:theme (:theme built) :scales (:finalized-scales built)
                                                       :margins (:margin-env built)
+                                                      :legend-charts (:charts (legend/legend-charts built))
+                                                      :legend-stats (:stats (legend/legend-charts built))
                                                       :charts (:charts built) :stats (:stats built)
                                                       :subplots (:subplots built) :debug? debug?}))
 

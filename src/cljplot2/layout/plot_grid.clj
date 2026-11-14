@@ -112,18 +112,20 @@
 
 (defn- plot-margin-tracks
   "Tracks of the plot margin of `side` (`:top` - rows above the panel, `:right` - columns right of it): the margin
-  panel's fixed `size` and a gap (theme `[:facet :gap]`) next to the main panel; none without that margin."
+  panel's fixed `size`, a gap (theme `[:facet :gap]`) next to the main panel and, with `:axis`, a measured track on
+  the far side holding the room the magnitude axis's end tick label sticks out; none without that margin."
   [margins side theme]
-  (if-let [{:keys [size]} (get margins side)]
+  (if-let [{:keys [size axis]} (get margins side)]
     (let [gap {:id (keyword (str (name side) "-margin-gap")) :size [:fixed (get-in theme [:facet :gap])]}
-          track {:id (keyword (str (name side) "-margin")) :size [:fixed size]}]
-      (if (= side :top) [track gap] [gap track]))
+          track {:id (keyword (str (name side) "-margin")) :size [:fixed size]}
+          overhang (when axis {:id (keyword (str (name side) "-margin-overhang")) :size [:measured]})]
+      (vec (remove nil? (if (= side :top) [overhang track gap] [gap track overhang]))))
     []))
 
 (defn- plot-margin-items
   "Items of the plot `margins`: a margin panel `{:kind :panel :margin side}` beside the main panel and, with `:axis`,
   its magnitude axis `{:kind :axis :scale :y :margin side}` - the top margin's in the y-axis column, the right
-  margin's in the x-axis row."
+  margin's in the x-axis row - with an overhang item for its end tick label."
   [margins]
   (vec (mapcat (fn [[side {:keys [axis]}]]
                  (let [panel-id (keyword (str (name side) "-margin"))
@@ -132,7 +134,13 @@
                                                            [panel-id :panel panel-id :x-axis])]
                    (cond-> [{:id panel-id :column column :row row :content {:kind :panel :margin side}}]
                      axis (conj {:id (keyword (str (name side) "-margin-axis")) :column axis-column :row axis-row
-                                 :content {:kind :axis :scale :y :margin side}}))))
+                                 :content {:kind :axis :scale :y :margin side}}
+                                ;; room for the end tick label: above the top margin, right of the right margin
+                                (let [overhang-id (keyword (str (name side) "-margin-overhang"))]
+                                  {:id (keyword (str (name side) "-margin-axis-end"))
+                                   :column (if (= side :top) :y-axis overhang-id)
+                                   :row (if (= side :top) overhang-id :x-axis)
+                                   :content {:kind :axis-overhang :scale :y :end :end :margin side}})))))
                margins)))
 
 (defn single-panel-grid

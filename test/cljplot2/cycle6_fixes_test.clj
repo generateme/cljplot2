@@ -262,3 +262,74 @@
     (is (seq (error-ins #(built {:data xy :mapping {:x :a :y :b} :charts [(chart/scatter)] :margins {:left (chart/density)}}))) "unknown side")
     (is (= #{[:margins :top :charts 0 :options :bins]}
            (error-ins #(built {:data xy :mapping {:x :a :y :b} :charts [(chart/scatter)] :margins {:top (chart/histogram {:bins -1})}}))))))
+
+;; review of the fixes
+
+(deftest margin-review-test
+  (testing "F1 an aesthetic mapped only by a margin chart gets a scale and a legend"
+    (let [p {:data xy :mapping {:x :a :y :b} :charts [(chart/scatter)] :margins {:top (chart/density {:mapping {:color :s}})}}
+          b (built p)]
+      (is (= ["p" "q" "r"] (get-in b [:scale-specs :color :domain])))
+      (is (some? (get-in b [:margin-env :top :scales :color])))
+      (is (some #(= :legends (:id %)) (:items (:grid b))))
+      (is (instance? BufferedImage (plot/render-image p options)))))
+  (testing "F1 margin data extends the plot's levels"
+    (let [b (built {:data xy :mapping {:x :a :y :b :color :s} :charts [(chart/scatter)]
+                    :margins {:top (chart/rug {:data (conj xy {:a 3.0 :b 4.0 :s "z"})})}})]
+      (is (= ["p" "q" "r" "z"] (get-in b [:scale-specs :color :domain])))))
+  (testing "F1 a :scales entry for a margin-only aesthetic is accepted"
+    (is (instance? BufferedImage
+                   (plot/render-image {:data xy :mapping {:x :a :y :b} :charts [(chart/scatter)]
+                                       :scales {:color {:range [[255 0 0] [0 0 255] [0 160 0]]}}
+                                       :margins {:top (chart/density {:mapping {:color :s}})}} options))))
+  (testing "F2 margin magnitude specs take chart suggestions (mirror: absolute tick labels)"
+    (let [b (built {:data xy :mapping {:x :a :y :b :color (cljplot2.data.levels/categorical #(if (< (:a %) 7) "lo" "hi"))}
+                    :charts [(chart/scatter)]
+                    :margins {:top {:charts (chart/density {:position :mirror}) :axis true :size 200}}})]
+      (is (= :absolute (get-in b [:margin-stats :top :spec :tick-format])))
+      (is (every? #(not (re-find #"^-" %)) (get-in b [:margin-env :top :scales :y :tick-labels])))))
+  (testing "F3 annotation charts in margins keep their own mapping (literal rule stays literal)"
+    (let [b (built {:data xy :mapping {:x :a :y :b :color :s} :charts [(chart/scatter)]
+                    :margins {:top [(chart/density) (chart/rule {:x 5})]}})]
+      (is (= [{} {:x :a :color :s}] (reverse (get-in b [:margin-stats :top :mappings])))
+          "density inherits, the rule has an empty mapping")
+      (is (= [5] (get-in b [:margin-env :top :stats 1 :data facet/all-panels :rules 0 :xs])))))
+  (testing "F4 margin axes get end-label overhang tracks"
+    (let [b (built {:data xy :mapping {:x :a :y :b} :charts [(chart/scatter)]
+                    :margins {:top {:charts (chart/histogram) :axis true} :right {:charts (chart/density) :axis true}}})
+          rows (set (map :id (:rows (:grid b))))
+          cols (set (map :id (:columns (:grid b))))]
+      (is (contains? rows :top-margin-overhang))
+      (is (contains? cols :right-margin-overhang))
+      (is (= #{:top-margin-axis-end :right-margin-axis-end}
+             (set (keep #(#{:top-margin-axis-end :right-margin-axis-end} (:id %)) (:items (:grid b))))))
+      (is (>= (double (:h (grid/item-box (:layout b) :top-margin-axis-end))) 0.0)
+          "measured: the end label's stick-out (0 when the end tick is inside the range)"))
+    (is (not (contains? (set (map :id (:rows (:grid (built {:data xy :mapping {:x :a :y :b} :charts [(chart/scatter)]
+                                                             :margins {:top (chart/histogram)}})))))
+                        :top-margin-overhang))
+        "no overhang track without :axis"))
+  (testing "F6 margins with :aspect :iso"
+    (let [b (built {:data xy :mapping {:x :a :y :b} :aspect :iso :charts [(chart/scatter)]
+                    :margins {:top (chart/density) :right (chart/density)}})
+          panel (main-panel b)
+          fx (get-in b [:finalized-scales :x]) fy (get-in b [:finalized-scales :y])
+          per (fn [s len] (/ (double len) (- (double (second (:domain s))) (double (first (:domain s))))))]
+      (is (< (Math/abs (- (per fx (:w panel)) (per fy (:h panel)))) 0.05) "equal pixels per unit")
+      (is (= [(:x panel) (:w panel)] [(:x (margin-panel b :top)) (:w (margin-panel b :top))])))))
+
+(deftest marker-coverage-test
+  (let [marker cljplot2.data.levels/categorical]
+    (testing "F9 non-scale keys: :group, text :label"
+      (is (= 2 (count (get-in (built {:data xy :mapping {:x :a :group (marker #(if (< (:a %) 7) 1 2))} :charts [(chart/density)]})
+                              [:stats 0 :data facet/single-panel :curves]))))
+      (is (instance? BufferedImage (plot/render-image {:data (take 5 xy) :mapping {:x :a :y :b} :charts [(chart/scatter)
+                                                                                                 (chart/text {:mapping {:x :a :y :b :label (marker :s)}})]}
+                                                      options))))
+    (testing "F9 margin charts"
+      (let [b (built {:data xy :mapping {:x :a :y :b} :charts [(chart/scatter)]
+                      :margins {:top (chart/box {:mapping {:y (marker :s)}})}})]
+        (is (= :linear (get-in b [:margin-env :top :scales :x :kind])) "the shared scale stays the plot's")
+        (is (= :bands (get-in b [:margin-env :top :scales :y :kind])) "the box's categorical levels band the margin"))
+      (is (instance? BufferedImage (plot/render-image {:data xy :mapping {:x :a :y :b} :charts [(chart/scatter)]
+                                                       :margins {:top (chart/box {:mapping {:y (marker :s)}})}} options))))))

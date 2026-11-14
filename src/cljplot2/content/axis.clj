@@ -51,7 +51,7 @@
 
 (def overhang-schema
   "`{:kind :axis-overhang}` content: `:scale` `:x` or `:y`, `:end` `:start` or `:end`."
-  [:map [:scale [:enum :x :y]] [:end [:enum :start :end]]])
+  [:map [:scale [:enum :x :y]] [:end [:enum :start :end]] (schema/optional :margin [:enum :top :right])])
 
 (defmethod measure/validate-content :axis [content] (schema/explain! [[axis-schema content [:content]]]))
 (defmethod measure/validate-content :axis-overhang [content] (schema/explain! [[overhang-schema content [:content]]]))
@@ -177,8 +177,8 @@
       :else (v/vec2 (+ (double tick-length) (double label-gap) widest) 0.0))))
 
 (defmethod measure/natural-size :axis-overhang
-  [{k :scale end :end} env]
-  (let [finalized (get-in env [:scales k])
+  [{k :scale end :end :as content} env]
+  (let [finalized (axis-scale content env)
         ticks (:ticks finalized)]
     (if (empty? ticks)
       (v/vec2 0.0 0.0)
