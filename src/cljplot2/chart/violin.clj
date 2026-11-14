@@ -163,16 +163,22 @@
             :none nil))))
     (strip/draw-n-labels! canvas pl items (fn [{:keys [xs]}] (peek xs)) options scales env)))
 
+(def ^:private ^:const glyph-points 24)
+
 (defn legend
-  "Key glyph: a filled lens (the violin's outline colours) centred in `box`."
+  "Key glyph: a small horizontal violin silhouette - a symmetric lens with pointed ends, half-width `(1 - t^2)` along
+  `t` in `[-1 1]` - filled with `:color` and outlined with `:stroke-color`, centred in `box`."
   [{:keys [options]} attributes canvas {:keys [x y w h]} env]
   (let [st (merge (style options (:theme env)) (select-keys attributes [:color]))
         cx (+ (double x) (* 0.5 (double w))) cy (+ (double y) (* 0.5 (double h)))
-        rw (* 0.8 (double w)) rh (* 0.5 (double h))]
+        half-length (* 0.42 (double w)) half-width (* 0.3 (double h))
+        ts (map #(- (* 2.0 (/ (double %) glyph-points)) 1.0) (range (inc glyph-points)))
+        side (fn [^double sign] (mapv (fn [^double t] [(+ cx (* t half-length)) (+ cy (* sign half-width (- 1.0 (* t t))))]) ts))
+        outline (into (side 1.0) (rseq (side -1.0)))
+        stroke (draw/outline-color (:stroke-color st) (:color st))]
     (c2d/set-color canvas (:color st))
-    (c2d/ellipse canvas cx cy rw rh)
-    (let [stroke (draw/outline-color (:stroke-color st) (:color st))]
-      (when-not (theme/none? stroke)
-        (c2d/set-stroke-custom canvas {:size (double (:stroke-width st))})
-        (c2d/set-color canvas stroke)
-        (c2d/ellipse canvas cx cy rw rh true)))))
+    (c2d/path canvas outline true false)
+    (when-not (theme/none? stroke)
+      (c2d/set-stroke-custom canvas {:size (double (:stroke-width st)) :join :round})
+      (c2d/set-color canvas stroke)
+      (c2d/path canvas outline true true))))

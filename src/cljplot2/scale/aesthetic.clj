@@ -104,6 +104,7 @@
   (schema/with-rules
    [:map {:closed true}
     (schema/optional :kind (into [:enum] (sort kinds)))
+    (schema/optional :type [:enum :categorical :numeric])
     (schema/nilable :domain [:sequential any?])
     (schema/optional :range (case k :color [:multi {:dispatch fn?} [true schema/function] [false palette]]
                                   :shape shapes

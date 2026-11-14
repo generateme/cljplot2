@@ -16,6 +16,7 @@
             [fastmath.core :as m]
             [malli.core :as malli]
             [malli.error :as me]
+            [cljplot2.data.accessor :as accessor]
             [cljplot2.graphics.font :as font]
             [cljplot2.graphics.shape :as shape])
   (:import [java.util IdentityHashMap]))
@@ -58,7 +59,9 @@
 (def malli-schema
   (named-type ::malli-schema #(try (some? (malli/schema %)) (catch Exception _ false)) "should be a malli schema"))
 (def function (named-type ::function fn? "should be a function"))
-(def accessor (named-type ::accessor #(or (keyword? %) (fn? %)) "should be a keyword or a function"))
+(def accessor (named-type ::accessor #(or (keyword? %) (fn? %)
+                                         (and (accessor/categorical? %) (let [a (accessor/unwrap %)] (or (keyword? a) (fn? a)))))
+                          "should be a keyword, a function or a categorical marker of one"))
 
 (def padding
   (named-type ::padding #(and (vector? %) (= 2 (count %)) (every? non-neg-number? %))

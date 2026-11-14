@@ -201,21 +201,6 @@
                                            {:key :fill-gradient :value (:fill-gradient options)})
     :else (flat-compute chart chart-split env)))
 
-(defn- draw-zero-line!
-  "The y = 0 line across the panel `box` (along the x scale's direction), style `:zero-line-color` /
-  `:zero-line-width`; nothing when 0 isn't in the y scale or the line draws nothing."
-  [canvas {:keys [w h]} scales style]
-  (let [p (scale/forward (:y scales) 0.0)
-        color (:zero-line-color style)
-        width (double (:zero-line-width style))]
-    (when (and (not (m/nan? p)) (not (theme/none? color)) (pos? width))
-      (let [p (draw/pixel-center p)]
-        (c2d/set-color canvas color)
-        (c2d/set-stroke-custom canvas {:size width :cap :butt})
-        (if (scale/horizontal? :y (:y scales))
-          (c2d/line canvas p 0 p h)
-          (c2d/line canvas 0 p w p))))))
-
 (defn- fill-gradient!
   "Fill under the curve `points` down to `base` (`Vec2`s, pairwise) quad by quad, each coloured by `gradient` at its
   middle `x` (`xs`) relative to `[d0 d1]`; quads with a non-finite corner are skipped."
@@ -255,8 +240,8 @@
 
 (defn draw
   "Draw the curves of one panel: every group's area (under the curve to y = 0, `:fill`; stacked curves - between
-  `:y0` and `:y`, `:fill` or the group colour with `:alpha`), then - mirror with `:zero-line` (default on) - the
-  y = 0 line, then every curve's line (lines are never covered by areas or the zero line)."
+  `:y0` and `:y`, `:fill` or the group colour with `:alpha`), then every curve's line, then - mirror with
+  `:zero-line` (default on) - the y = 0 line on top (curve tails running along y = 0 don't hide it)."
   [_chart {:keys [curves style zero-line? ridges] :as computed} canvas box scales env]
   (if ridges
     (draw-ridges! computed canvas box scales env)
@@ -274,11 +259,11 @@
           (if y0?
             (polyline/fill-between! canvas px py bx by (area-color st true))
             (polyline/fill-under! canvas px py bx by (area-color st false))))
-        (when zero-line?
-          (draw-zero-line! canvas box scales style))
         (doseq [{:keys [st curve]} drawn
                 :let [[px py] curve]]
-          (polyline/draw! canvas px py st))))))
+          (polyline/draw! canvas px py st))
+        (when zero-line?
+          (draw/zero-line! canvas box scales style))))))
 
 (defn legend
   "Key glyph: a horizontal line through the middle of `box`; when the chart fills areas (`:fill`, or `:stack` /

@@ -86,7 +86,8 @@
              :na [150 150 150]}
    :legend {:gap 5 :key-size 14 :fill :none :border-color :none :border-width 1 :bar-length :stretch :bar-width nil}
    :chart {:scatter {:size 4 :color [69 117 180 180] :stroke-color :none :stroke-width 1 :shape \O}
-           :histogram {:color [69 117 180] :stroke-color :darker :stroke-width 1 :alpha 0.6}
+           :histogram {:color [69 117 180] :stroke-color :darker :stroke-width 1 :alpha 0.6 :zero-line-color :black
+                       :zero-line-width 1}
            :density {:color [69 117 180] :width 1 :dash :none :fill :none :alpha 0.6 :zero-line-color :black
                      :zero-line-width 1}
            :line {:color [69 117 180] :width 1 :dash :none :fill :none}

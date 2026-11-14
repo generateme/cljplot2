@@ -110,22 +110,53 @@
   (let [margin (double (get-in theme [:plot :margin]))]
     (fn [id] {:id id :size [:fixed (+ margin (double (get alignment-padding (margin-sides id) 0)))]})))
 
+(defn- plot-margin-tracks
+  "Tracks of the plot margin of `side` (`:top` - rows above the panel, `:right` - columns right of it): the margin
+  panel's fixed `size` and a gap (theme `[:facet :gap]`) next to the main panel; none without that margin."
+  [margins side theme]
+  (if-let [{:keys [size]} (get margins side)]
+    (let [gap {:id (keyword (str (name side) "-margin-gap")) :size [:fixed (get-in theme [:facet :gap])]}
+          track {:id (keyword (str (name side) "-margin")) :size [:fixed size]}]
+      (if (= side :top) [track gap] [gap track]))
+    []))
+
+(defn- plot-margin-items
+  "Items of the plot `margins`: a margin panel `{:kind :panel :margin side}` beside the main panel and, with `:axis`,
+  its magnitude axis `{:kind :axis :scale :y :margin side}` - the top margin's in the y-axis column, the right
+  margin's in the x-axis row."
+  [margins]
+  (vec (mapcat (fn [[side {:keys [axis]}]]
+                 (let [panel-id (keyword (str (name side) "-margin"))
+                       [column row axis-column axis-row] (if (= side :top)
+                                                           [:panel panel-id :y-axis panel-id]
+                                                           [panel-id :panel panel-id :x-axis])]
+                   (cond-> [{:id panel-id :column column :row row :content {:kind :panel :margin side}}]
+                     axis (conj {:id (keyword (str (name side) "-margin-axis")) :column axis-column :row axis-row
+                                 :content {:kind :axis :scale :y :margin side}}))))
+               margins)))
+
 (defn single-panel-grid
-  "Grid of a single-panel plot: its `:labels`, axes of its `:scale-specs` and the margin of its (merged) `:theme`."
-  [{:keys [labels theme scale-specs flip] :as plot}]
+  "Grid of a single-panel plot: its `:labels`, axes of its `:scale-specs`, its plot margins (`:margin-stats`, see
+  [[cljplot2.pipeline]]: a `:top-margin` row above the panel, a `:right-margin` column right of it - before the
+  legend - each next to a gap) and the margin of its (merged) `:theme`."
+  [{:keys [labels theme scale-specs flip margin-stats] :as plot}]
   (let [margin-track (margin-track-fn plot)
         measured (fn [id] {:id id :size [:measured]})
         legends (legend/legends plot)]
     {:columns (-> [(margin-track :margin-left) (measured :y-title) (measured :y-axis) {:id :panel :size [:flexible]}
                    (measured :x-overhang)]
+                  (into (plot-margin-tracks margin-stats :right theme))
                   (into (legend-tracks legends theme))
                   (conj (margin-track :margin-right)))
-     :rows [(margin-track :margin-top) (measured :title) (measured :y-overhang) {:id :panel :size [:flexible]}
-            (measured :x-axis) (measured :x-title) (margin-track :margin-bottom)]
+     :rows (-> [(margin-track :margin-top) (measured :title)]
+               (into (plot-margin-tracks margin-stats :top theme))
+               (into [(measured :y-overhang) {:id :panel :size [:flexible]}
+                      (measured :x-axis) (measured :x-title) (margin-track :margin-bottom)]))
      :items (-> [{:id :panel :column :panel :row :panel :content {:kind :panel}}]
                 (into (mapcat (fn [[side k]] (when (contains? scale-specs k) (axis-items side k)))) (side-scales flip))
                 (into (label-items (side-labels labels flip) {}))
-                (into (legend-items legends :panel)))}))
+                (into (legend-items legends :panel))
+                (into (plot-margin-items margin-stats)))}))
 
 ;; facets
 

@@ -26,9 +26,10 @@
     chart is an x-only chart placed as `:center`
 
   Groups (ordinal aesthetics and `:group`, see [[cljplot2.data.group]]) inside a placement - option `:position`:
-  `:dodge` (default with two or more groups; the cross range split equally in group order, each part narrowed by
-  `:dodge-gap` - a fraction of it, default 0.1 - so groups don't touch), `:overlay` (the whole
-  range) or `:mirror` (exactly two groups: the first gets `[0 0.5]`, the second `[-0.5 0]`; split violins).
+  `:dodge` (default with two or more groups; the cross range split equally, each part narrowed by `:dodge-gap` - a
+  fraction of it, default 0.1 - so groups don't touch), `:overlay` (the whole range) or `:mirror` (exactly two
+  groups, one half each; split violins). Dodged and mirrored groups follow reading order, as the legend: the first
+  group on top of horizontal strips, on the left of vertical (`:flip`) ones.
 
   Ridgelines (histogram and density with a categorical or bands `:y`, see [[ridges?]]): one-sided profiles growing
   from the band centre toward the next level, the tallest `:overlap` (default 0.9) band steps high.
@@ -98,22 +99,24 @@
   [levels plot-scales]
   (let [bands? (= :bands (get-in plot-scales [:y :kind]))]
     (when-not (every? #(or (categorical-level? %) (and bands? (number? %))) levels)
-      (schema/fail! "Strip :y levels must be categorical (strings / keywords / intervals), or numbers with :scales {:y {:kind :bands}}."
+      (schema/fail! "Strip :y levels must be categorical (strings / keywords / intervals), or numbers declared categorical (:scales {:y {:type :categorical}} or :mapping {:y (levels/categorical k)})."
                     {:key :place :value (first (remove categorical-level? levels))}))))
 
 (defn- slots
   "Cross sub-range per group key for `position` over the ordered `group-keys`; dodged sub-ranges lose `gap` (a
-  fraction of each) split between their ends."
-  [position group-keys gap]
+  fraction of each) split between their ends. `first-high?` - the first group takes the high end of the cross range
+  (toward higher `:y`), the following ones step down; else the low end first."
+  [position group-keys gap first-high?]
   (let [n (count group-keys)]
     (case position
       :overlay (zipmap group-keys (repeat [-0.5 0.5]))
-      :dodge (zipmap group-keys (map (fn [i] (let [[a b] (position/dodge-interval [-0.5 0.5] i n)
-                                                    inset (* 0.5 (double gap) (- (double b) (double a)))]
-                                                [(+ (double a) inset) (- (double b) inset)]))
+      :dodge (zipmap group-keys (map (fn [^long i]
+                                       (let [[a b] (position/dodge-interval [-0.5 0.5] (if first-high? (- n 1 i) i) n)
+                                             inset (* 0.5 (double gap) (- (double b) (double a)))]
+                                         [(+ (double a) inset) (- (double b) inset)]))
                                      (range n)))
       :mirror (if (= 2 n)
-                (zipmap group-keys [[0.0 0.5] [-0.5 0.0]])
+                (zipmap group-keys (if first-high? [[0.0 0.5] [-0.5 0.0]] [[-0.5 0.0] [0.0 0.5]]))
                 (schema/fail! "Strip :position :mirror needs exactly two groups." {:key :position :groups n})))))
 
 (defn split
@@ -142,7 +145,10 @@
         _ (when y-of (check-levels! y-levels (:plot-scales env)))
         group-keys (group/ordered-keys (mapcat #(map :key %) (vals panels)) dims (:plot-scales env))
         position (get options :position (if (> (count group-keys) 1) :dodge :overlay))
-        slot-of (if (seq group-keys) (slots position group-keys (double (get options :dodge-gap 0.1))) {})
+        ;; reading order: the first group on top of horizontal strips (the high cross end), on the left of vertical
+        ;; (flipped) ones (the low end); ridgelines grow the first group toward the next level (the high end)
+        first-high? (or (::ridge options) (not (:flip? env)))
+        slot-of (if (seq group-keys) (slots position group-keys (double (get options :dodge-gap 0.1)) first-high?) {})
         items (update-vals panels
                            (fn [gs]
                              (vec (for [g gs
@@ -326,7 +332,7 @@
     (when-not (#{:overlay :mirror} position)
       (schema/fail! "Ridgelines (a categorical or bands :y) take :position :overlay or :mirror."
                     {:key :position :value position}))
-    (split chart-split {:position position} :band env)))
+    (split chart-split {:position position ::ridge true} :band env)))
 
 (defn slot-side
   "Side of the cross centre `slot` lies on: `1.0` toward higher `:y` (also a slot around the centre), `-1.0` away

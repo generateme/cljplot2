@@ -62,6 +62,7 @@
   (schema/with-rules
    (into [:map {:closed true}
           (schema/optional :kind (into [:enum] (sort position-kinds)))
+          (schema/optional :type [:enum :categorical :numeric])
           (schema/nilable :domain [:sequential {:min 1} any?])
           (schema/nilable :ticks [:multi {:dispatch sequential?} [true [:sequential any?]] [false schema/pos-int]])
           (schema/nilable :nice [:multi {:dispatch boolean?} [true :boolean] [false [:and schema/finite schema/non-neg]]])
@@ -161,7 +162,7 @@
                                           (not= :bands kind) (widen (double (:min extent)) (double (:max extent)))
                                           ;; levels reported by the charts (strip charts' numeric :y levels)
                                           (:values extent) (vec (sort (:values extent)))
-                                          :else (schema/fail! "Numeric data on a bands scale needs an explicit :domain."
+                                          :else (schema/fail! "Numeric data declared categorical (or on a bands scale) needs an explicit :domain unless its charts give the levels (strip charts do)."
                                                               {:key :domain :in [:scales k :domain]})))]
                   (scale-spec k (assoc spec :kind kind :domain domain))))
         padding (or (:expand spec) (when extent padding))]

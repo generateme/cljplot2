@@ -65,7 +65,9 @@
   [:map {:closed true}
    (schema/nilable :domain (schema/with-rules [:sequential {:min 1} any?]
                              [#(when-not (apply distinct? %) "facet domain values should be distinct")]))
-   (schema/optional :formatter schema/function)])
+   (schema/optional :formatter schema/function)
+   ;; facets are always categorical; accepted for symmetry with the other scales
+   (schema/optional :type [:= :categorical])])
 
 (def facet-options
   "Plot `:facets`: `:columns` / `:rows` (wrap layout shape), `:order` (`:top-down` default or `:bottom-up`), `:na-panel`

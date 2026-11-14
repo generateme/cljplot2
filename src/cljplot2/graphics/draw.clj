@@ -4,7 +4,9 @@
             [clojure2d.core :as c2d]
             [fastmath.core :as m]
             [cljplot2.graphics.measure :as measure]
-            [cljplot2.schema :as schema])
+            [cljplot2.scale.position :as scale]
+            [cljplot2.schema :as schema]
+            [cljplot2.theme :as theme])
   (:import [fastmath.vector Vec2]))
 
 (set! *warn-on-reflection* true)
@@ -18,6 +20,23 @@
   "Outline color of a mark filled with `fill` for `:stroke-color` `stroke` (see [[stroke-color]]); `:none` stays `:none`."
   [stroke fill]
   (if (= :darker stroke) (c/darken fill) stroke))
+
+(declare pixel-center)
+
+(defn zero-line!
+  "The y = 0 line across the panel `box` (`{:w :h}`; along the x scale's direction, flip-aware) in style
+  `:zero-line-color` / `:zero-line-width` (mirror densities and histograms); nothing when 0 isn't in the y scale or
+  the line draws nothing."
+  [canvas {:keys [w h]} scales {:keys [zero-line-color zero-line-width]}]
+  (let [p (if (:y scales) (scale/forward (:y scales) 0.0) ##NaN)
+        width (double zero-line-width)]
+    (when (and (not (m/nan? p)) (not (theme/none? zero-line-color)) (pos? width))
+      (let [p (pixel-center p)]
+        (c2d/set-color canvas zero-line-color)
+        (c2d/set-stroke-custom canvas {:size width :cap :butt})
+        (if (scale/horizontal? :y (:y scales))
+          (c2d/line canvas p 0 p h)
+          (c2d/line canvas 0 p w p))))))
 
 (defn pixel-center
   "Center of the pixel containing coordinate `p`; thin lines drawn there cover whole pixels (no antialiasing smear)."

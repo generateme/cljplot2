@@ -14,6 +14,7 @@
   [[value-extent]] also keeps the distinct values (`:values`) of numeric and temporal data, for scales that
   need the levels (ordinal colour, shape, size) - at most [[max-levels]] of them."
   (:require [fastmath.core :as m]
+            [cljplot2.data.accessor :as accessor]
             [cljplot2.schema :as schema]))
 
 (set! *warn-on-reflection* true)
@@ -25,10 +26,13 @@
 
 (def mapping-schema
   "A plot or chart `:mapping`: accessors (keyword or function; `nil` - not mapped) of the built-in keys, `:hierarchy`
-  a non-empty vector of accessors. Open: user charts may read other keys."
+  a non-empty vector of accessors; `:fill` is rejected (not an aesthetic, see the density / histogram `:fill`
+  options). Open: user charts may read other keys."
   (-> [:map]
       (into (map #(schema/nilable % schema/accessor)) mapping-keys)
-      (conj (schema/nilable :hierarchy [:vector {:min 1} schema/accessor]))))
+      (conj (schema/nilable :hierarchy [:vector {:min 1} schema/accessor])
+            ;; no :fill aesthetic: a mapped :fill would be silently ignored
+            (schema/nilable :fill (schema/forbidden "isn't an aesthetic - fill areas by group with the chart option :fill :color")))))
 
 (def data-schema
   "Plot or chart `:data`: a sequence of rows (maps) or a map of columns (sequences); rows and columns are checked by
@@ -71,11 +75,13 @@
   (let [v (get options k)] (if (nil? v) default v)))
 
 (defn row-accessor
-  "Function of a row for mapping accessor `acc` (keyword or function) of dimension `k`."
+  "Function of a row for mapping accessor `acc` (keyword or function, or a categorical marker of one - see
+  [[cljplot2.data.accessor]]) of dimension `k`."
   [k acc]
   (cond
     (keyword? acc) acc
     (fn? acc) acc
+    (accessor/categorical? acc) (row-accessor k (accessor/unwrap acc))
     :else (schema/fail! "Mapping accessor must be a keyword or a function." {:key :mapping :value k})))
 
 (defn temporal? [v] (instance? java.time.temporal.Temporal v))

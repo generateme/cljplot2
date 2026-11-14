@@ -72,6 +72,7 @@
   (when debug?
     (draw-debug-items! canvas (get-in built [:layout :items]) 0))
   (draw-contents! canvas (:grid built) (:layout built) {:theme (:theme built) :scales (:finalized-scales built)
+                                                      :margins (:margin-env built)
                                                       :charts (:charts built) :stats (:stats built)
                                                       :subplots (:subplots built) :debug? debug?}))
 

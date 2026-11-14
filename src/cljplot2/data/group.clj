@@ -30,7 +30,7 @@
     (let [present (remove nil? values)
           numeric? (and (seq present) (every? number? present))]
       (when (= :linear (aesthetic/inferred-kind k (get plot-scales k {}) numeric?))
-        (schema/fail! "This chart groups by aesthetics; numeric values need an ordinal scale ({:scales {k {:kind :ordinal}}})."
+        (schema/fail! "This chart groups by aesthetics; numeric values must be declared categorical ({:scales {k {:type :categorical}}} or {:mapping {k (levels/categorical acc)}})."
                         {:key :mapping :value k})))))
 
 (defn- kept-value?

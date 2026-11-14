@@ -96,16 +96,33 @@
       (throw (ex-info (str "Dataset " (pr-str k) " has an unknown :format " (pr-str format) ", known: :json, :csv.")
                       {:key :format :value format :dataset k})))))
 
+(defn- source-text
+  "Markdown of the source part: `source` linked to its single URL, or followed by numbered links to several; URLs
+  alone are linked as they are."
+  [source urls]
+  (cond
+    (empty? urls) (str "Source: " source ".")
+    (nil? source) (str "Source: " (str/join ", " (map #(str "[" % "](" % ")") urls)) ".")
+    (= 1 (count urls)) (str "Source: [" source "](" (first urls) ").")
+    :else (str "Source: " source " (" (str/join ", " (map-indexed (fn [i u] (str "[" (inc i) "](" u ")")) urls)) ").")))
+
 (defn source-note
   "Attribution line of an example (Markdown, its own code hidden on the page):
   `:source` - where the use case or figure comes from (e.g. \"R Graph Gallery - Histogram\", \"Lattice Fig 1.1\"),
+  `:url` - the original example's page: a URL string or a non-empty vector of them (linked from the source text),
   `:dataset` - manifest key of the data (its title, original source and licence are read from the manifest).
-  At least one of them is required; an unknown dataset throws like [[dataset]]."
-  [{:keys [source dataset]}]
-  (when-not (or source dataset)
-    (throw (ex-info "source-note needs :source or :dataset." {:key :source-note})))
-  (let [data-text (when dataset
+  `:source`, `:url` or `:dataset` is required; an unknown dataset throws like [[dataset]], a `:url` that isn't a
+  string or a non-empty vector of strings throws `ex-info {:key :url}`."
+  [{:keys [source url dataset]}]
+  (when-not (or source url dataset)
+    (throw (ex-info "source-note needs :source, :url or :dataset." {:key :source-note})))
+  (let [urls (cond (nil? url) []
+                   (string? url) [url]
+                   (and (vector? url) (seq url) (every? string? url)) url
+                   :else (throw (ex-info "source-note :url should be a URL string or a non-empty vector of them."
+                                         {:key :url :value url})))
+        data-text (when dataset
                     (let [{:keys [title licence] data-source :source} (manifest-entry dataset)]
                       (str "Data: " title ", " data-source "; licence: " licence ".")))]
     (kindly/hide-code
-     (kind/md (str/join " " (remove nil? [(when source (str "Source: " source ".")) data-text]))))))
+     (kind/md (str/join " " (remove nil? [(when (or source (seq urls)) (source-text source urls)) data-text]))))))

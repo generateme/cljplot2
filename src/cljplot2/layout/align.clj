@@ -1,7 +1,8 @@
 (ns cljplot2.layout.align
   "Panel alignment of multiplot cells: sub-plots in one row (cells with equal box `y` and `h`) share their panel
   area's top and bottom edges; sub-plots in one column (equal box `x` and `w`) share its left and right edges.
-  The panel area of a sub-plot is the bounding box of its `:panel` items; sub-plots without panels (e.g. nested
+  The panel area of a sub-plot is the bounding box of its main `:panel` items (plot margin panels left out, so plots
+  with and without margins align on their main panels); sub-plots without panels (e.g. nested
   multiplots) and iso sub-plots (they centre their panels themselves) take no part. Used by the pipeline's `:subplots` stage for `:arrange` (on unless `:align false`)."
   (:require [cljplot2.layout.grid :as grid]))
 
@@ -18,7 +19,9 @@
   "Distances `{:left :top :right :bottom}` from the edges of built plot `built` to its panel area, or `nil` without
   `:panel` items."
   [built]
-  (when-let [boxes (seq (map :box (grid/content-items (:grid built) (:layout built) #(= :panel (:kind %)))))]
+  ;; main panels only: plot margins sit outside the aligned panel area
+  (when-let [boxes (seq (map :box (grid/content-items (:grid built) (:layout built)
+                                                      #(and (= :panel (:kind %)) (nil? (:margin %))))))]
     (let [{:keys [width height]} (:options built)
           x0 (reduce min (map :x boxes)) y0 (reduce min (map :y boxes))
           x1 (reduce max (map #(+ (long (:x %)) (long (:w %))) boxes))

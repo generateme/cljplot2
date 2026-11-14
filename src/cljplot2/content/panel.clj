@@ -7,7 +7,9 @@
   `[:panel :grid]`, `:bands` for bands scales) and charts (`env` `:charts`, `:stats`) are drawn translated to the panel's top-left corner,
   between the fill and the border; each chart with isolated graphics clipped to the panel. `{:kind :panel
   :panel k}` draws the charts' data of split group `k` (default `:panel`) and of charts drawn in all panels;
-  several panel items with the same key draw the same data."
+  several panel items with the same key draw the same data.
+  `{:kind :panel :margin side}` - a plot margin's panel: its charts, stats and scales come from `env`
+  `[:margins side]` (the shared axis scale and the margin's magnitude scale); only the shared axis draws grid lines."
   (:require [clojure2d.core :as c2d]
             [fastmath.core :as m]
             [fastmath.vector :as v]
@@ -80,7 +82,14 @@
           (c2d/line c p 0 p h)
           (c2d/line c 0 p w p))))))
 
-(defmethod draw/draw-content :panel
+(defn- margin-env
+  "`env` for the panel of plot margin `side`: the margin's charts, stats and scales, no grid lines across the shared
+  axis (the magnitude scale `:y`)."
+  [env side]
+  (-> (merge env (get-in env [:margins side]))
+      (assoc-in [:theme :panel :grid :y] :none)))
+
+(defn- draw-panel!
   [content canvas {:keys [x y w h]} env]
   (let [{:keys [fill alternate-fill border-color border-width]} (:panel (:theme env))
         x (long x) y (long y) w (long w) h (long h)]
@@ -98,3 +107,8 @@
               (draw-grid-lines! c' w h env)
               (draw-charts! c' (get content :panel facet/single-panel) w h env)))
     (draw/inner-border! canvas {:x x :y y :w w :h h} border-color border-width)))
+
+(defmethod draw/draw-content :panel
+  [content canvas box env]
+  (let [env (if-let [side (:margin content)] (margin-env env side) env)]
+    (draw-panel! content canvas box env)))

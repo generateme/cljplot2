@@ -5,9 +5,11 @@
     (`:scales {:y {:domain (order-levels barley :variety :yield stats/median)}}`)
   * [[bin]] - a continuous column cut into bins: half-open intervals (see [[cljplot2.data.shingle/Interval]]),
     levels for strips, colours or facets (sorted ascending wherever they are levels)
-  * [[breaks]] - the bin breaks shared with the histogram's `:bins`"
+  * [[breaks]] - the bin breaks shared with the histogram's `:bins`
+  * [[categorical]] - a mapping marker declaring a dimension categorical"
   (:require [fastmath.core :as m]
             [fastmath.stats :as stats]
+            [cljplot2.data.accessor :as accessor]
             [cljplot2.data.rows :as rows]
             [cljplot2.data.shingle :as shingle]
             [cljplot2.schema :as schema]))
@@ -114,6 +116,15 @@
                         (assoc row as (when-not (neg? i) (intervals i)))))
                     rs)]
       (with-meta out {:na (count (remove as out))}))))
+
+;; categorical
+
+(defn categorical
+  "Mapping marker: `accessor` (keyword or function) read as usual, its dimension declared categorical - the scale is
+  resolved as with `:type :categorical` (bands for `:x` / `:y`, ordinal for aesthetics), e.g.
+  `:mapping {:y (categorical :cyl)}` puts numeric cylinder counts in bands. See [[cljplot2.data.accessor]]."
+  [accessor]
+  (accessor/->CategoricalAccessor accessor))
 
 ;; order
 

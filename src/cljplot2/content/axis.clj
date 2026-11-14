@@ -6,6 +6,7 @@
 
   Geometry follows the scale's direction ([[cljplot2.scale.position/direction]]): a horizontal axis sits below the
   panel (line in its box's top pixel row), a vertical one left of it (line in its box's rightmost pixel column).
+  `{:kind :axis ... :margin side}` - the magnitude axis of a plot margin: its scale from `env` `[:margins side :scales]`.
   Natural size: horizontal - height = tick length + label gap + tallest label; vertical - width = tick length +
   label gap + widest label. Without a finalized scale in `env` the axis is empty.
 
@@ -39,7 +40,14 @@
 (def axis-schema
   "`{:kind :axis}` content: `:scale` `:x` or `:y`; optional `:next-panel-gap` - pixels to the next panel's identical
   axis along a horizontal axis (facet columns): labels overlapping that axis's labels aren't drawn."
-  [:map [:scale [:enum :x :y]] (schema/optional :next-panel-gap schema/non-neg)])
+  [:map [:scale [:enum :x :y]] (schema/optional :next-panel-gap schema/non-neg)
+   (schema/optional :margin [:enum :top :right])])
+
+(defn- axis-scale
+  "Finalized scale of axis `content`: `:scale` of `env` `:scales`, or of the plot margin's scales (`env`
+  `[:margins side :scales]`) for an axis with `:margin side`."
+  [{k :scale margin :margin} env]
+  (if margin (get-in env [:margins margin :scales k]) (get-in env [:scales k])))
 
 (def overhang-schema
   "`{:kind :axis-overhang}` content: `:scale` `:x` or `:y`, `:end` `:start` or `:end`."
@@ -152,8 +160,8 @@
   (zero? (rem (long i) step)))
 
 (defmethod measure/natural-size :axis
-  [{k :scale} env]
-  (let [finalized (get-in env [:scales k])
+  [{k :scale :as content} env]
+  (let [finalized (axis-scale content env)
         {:keys [tick-length label-gap]} (get-in env [:theme :axis k])
         all-sizes (when finalized (label-sizes k finalized env))
         step (if finalized
@@ -204,7 +212,7 @@
 
 (defmethod draw/draw-content :axis
   [{k :scale :as content} c {:keys [x y w h]} env]
-  (when-let [finalized (get-in env [:scales k])]
+  (when-let [finalized (axis-scale content env)]
     (let [{:keys [line-color line-width tick-color tick-length tick-width label-gap]} (get-in env [:theme :axis k])
           x (double x) y (double y) w (double w) h (double h)
           tick-length (double tick-length)

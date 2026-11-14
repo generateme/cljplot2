@@ -12,6 +12,8 @@
     `:alpha`), `:dodge` (bins split among the groups), `:stack` (groups on top of each other), `:normalize` (stacked, each
     bin summing to 1; y title \"Proportion\"), `:mirror` (exactly two groups, the second drawn downward; y tick labels
     show magnitudes)
+  * `:zero-line` - mirror only: draw the y = 0 line on top of the bars (default true; `:zero-line-color`,
+    `:zero-line-width`)
   * `:symmetric` - mirror only: `true` ties both halves to one y range `[-M M]`, `M` the tallest bar of either group
     over all panels, so the halves compare visually (default false)
   * `:color` (fill), `:stroke-color` (bar outline: a color, `:none` or `:darker` - the darkened fill, default),
@@ -51,7 +53,9 @@
   [(schema/optional :color schema/solid-color)
    (schema/optional :stroke-color draw/stroke-color)
    (schema/optional :stroke-width schema/non-neg)
-   (schema/optional :alpha schema/fraction)])
+   (schema/optional :alpha schema/fraction)
+   (schema/optional :zero-line-color schema/color)
+   (schema/optional :zero-line-width schema/non-neg)])
 
 (def schemas
   "Schemas of the histogram: `:style` (theme `[:chart :histogram]`), `:options`, `:mapping` (merged)."
@@ -63,13 +67,14 @@
                       (schema/optional :y (into [:enum] (keys measures)))
                       (schema/optional :position (into [:enum] (sort position/positions)))
                       (schema/nilable :symmetric schema/bool)
+                      (schema/nilable :zero-line schema/bool)
                       (schema/optional :padding data/position-padding))
                 (into strip/ridge-options))
    :mapping [:map [:x schema/accessor]]})
 
 (defn- style
   [options theme]
-  (merge (get-in theme [:chart :histogram]) (select-keys options [:color :stroke-color :stroke-width :alpha])))
+  (merge (get-in theme [:chart :histogram]) (select-keys options [:color :stroke-color :stroke-width :alpha :zero-line-color :zero-line-width])))
 
 (defn- bin-counts
   "Counts of `values` per bin of `brks` (last bin closed) and the number outside."
@@ -171,7 +176,8 @@
           data (if brks
                  (into {} (map (fn [[panel gs]]
                                  [panel {:bars (panel-bars gs (xs panel)) :style st
-                                         :translucent? (and (> n-groups 1) (= position :overlay))}]))
+                                         :translucent? (and (> n-groups 1) (= position :overlay))
+                                         :zero-line? (and (= position :mirror) (data/option options :zero-line true))}]))
                        panels)
                  {})
           bar-ys (fn [bars] (mapcat (juxt :y0 :y1) bars))
@@ -194,6 +200,15 @@
        :axis-titles {:y (if (= position :normalize) "Proportion" (measures y))}
        :tick-format (when (= position :mirror) {:y :absolute})})))
 
+(def ^:private ^:const min-bar-pixels
+  "Bars thinner than this (pixels, along the bar's height) aren't drawn: sub-pixel slivers only smear y = 0."
+  0.5)
+
+(defn- visible-bar?
+  "Is a bar `w` x `h` pixels (the height along the value axis, whichever way it points) drawn?"
+  [^double w ^double h]
+  (and (>= w min-bar-pixels) (>= h min-bar-pixels)))
+
 (defn- bar!
   "Fill the rectangle with corners `a` and `b` (`Vec2`) with `fill`, outline it with `stroke` (a color or `:none`)
   when `stroke-width` is positive."
@@ -201,11 +216,12 @@
   (let [stroke-width (double stroke-width)
         x (m/min (.x a) (.x b)) y (m/min (.y a) (.y b))
         w (m/abs (- (.x b) (.x a))) h (m/abs (- (.y b) (.y a)))]
-    (c2d/set-color canvas fill)
-    (c2d/rect canvas x y w h)
-    (when (and (pos? stroke-width) (not (theme/none? stroke)))
-      (c2d/set-color canvas stroke)
-      (c2d/rect canvas x y w h true))))
+    (when (visible-bar? w h)
+      (c2d/set-color canvas fill)
+      (c2d/rect canvas x y w h)
+      (when (and (pos? stroke-width) (not (theme/none? stroke)))
+        (c2d/set-color canvas stroke)
+        (c2d/rect canvas x y w h true)))))
 
 (defn- draw-ridges!
   "Draw ridgeline histograms of one panel, farthest level first; empty bins skipped."
@@ -229,9 +245,10 @@
         (bar! canvas a b fill (draw/outline-color (:stroke-color st) fill) stroke-width)))))
 
 (defn draw
-  "Draw the bars of one panel; grouped overlay bars get fill alpha `:alpha`; empty bins and bars of groups outside
-  an aesthetic domain are skipped."
-  [_chart {:keys [bars style translucent? ridges] :as computed} canvas box scales env]
+  "Draw the bars of one panel; grouped overlay bars get fill alpha `:alpha`; empty bins, bars under half a pixel and
+  bars of groups outside an aesthetic domain are skipped; mirror with `:zero-line` (default on) - the y = 0 line on
+  top."
+  [_chart {:keys [bars style translucent? ridges zero-line?] :as computed} canvas box scales env]
   (if ridges
     (draw-ridges! computed canvas box scales env)
     (when (seq bars)
@@ -245,13 +262,16 @@
           (let [{left :x top :y w :w h :h} (draw/rect-of projection x0 y0 x1 y1)
                 fill (:color st)
                 stroke (draw/outline-color (:stroke-color st) fill)]
-            (c2d/set-color canvas (if translucent?
-                                    (c/set-alpha fill (* 255.0 (double (:alpha style))))
-                                    fill))
-            (c2d/rect canvas left top w h)
-            (when (and (pos? stroke-width) (not (theme/none? stroke)))
-              (c2d/set-color canvas stroke)
-              (c2d/rect canvas left top w h true))))))))
+            (when (visible-bar? (double w) (double h))
+              (c2d/set-color canvas (if translucent?
+                                      (c/set-alpha fill (* 255.0 (double (:alpha style))))
+                                      fill))
+              (c2d/rect canvas left top w h)
+              (when (and (pos? stroke-width) (not (theme/none? stroke)))
+                (c2d/set-color canvas stroke)
+                (c2d/rect canvas left top w h true)))))
+        (when zero-line?
+          (draw/zero-line! canvas box scales style))))))
 
 (defn legend
   "Key glyph: a filled square (outlined by `:stroke-color`) inset in `box`; with a mapped `:color` and `:overlay` position (the

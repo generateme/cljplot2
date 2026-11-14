@@ -27,6 +27,11 @@
   * `:arrange` - `{:plots [p ...] :columns :rows :widths :heights}`: a multiplot, its grid generated from the merged
     theme (see [[cljplot2.multiplot/arrange]], [[cljplot2.layout.plot-grid/arrange-grid]]); only `:labels {:title t}` may
     accompany it; can't be combined with `:custom-grid`; the sub-plots' panels are aligned unless `:align false`
+  * `:margins` - `{:top m :right m}`: charts beside the panel sharing its horizontal (top) / vertical (right) scale,
+    `m` a chart, a vector of charts or `{:charts c :size px :axis bool}` (thickness, default 80; `:axis` - the
+    magnitude axis of histogram / density margins); margin charts read the plot's data and aesthetic mapping with
+    `:x` mapped to the shared dimension (their own `:mapping` wins), no axes of their own; single-panel generated
+    grids only (not with facets, `:arrange` or `:custom-grid` - put margins on the sub-plots), see [[margin-stats]]
   * `:alignment-padding` - internal: `{:left :top :right :bottom}` pixels added to the generated grid's margins
     (set on sub-plots by multiplot alignment)
   * `:options` - render options (see [[default-options]]), merged under `build`'s options; stored resolved
@@ -40,6 +45,7 @@
             [cljplot2.schema :as schema]
             [cljplot2.scale.aesthetic :as aesthetic]
             [cljplot2.data.rows :as data]
+            [cljplot2.data.accessor :as accessor]
             [cljplot2.data.facet :as facet]
             [cljplot2.layout.align :as align]
             [cljplot2.layout.grid :as grid]
@@ -122,12 +128,100 @@
     (assoc plot :split {:facets (assoc split-facets :dropped {:facet (reduce + (map :dropped chart-splits))})
                         :charts (mapv #(dissoc % :dropped) chart-splits)})))
 
+;; margins
+
+(def ^:private ^:const provisional-tick-hint 10)
+
+(def ^:private margin-sides
+  "Plot margin sides, in grid order."
+  [:top :right])
+
+(def ^:private magnitude-chart-kinds
+  "Chart kinds with a magnitude dimension (counts, densities) a margin axis can show."
+  #{:histogram :density})
+
+(def ^:private ^:const default-margin-size 80)
+
+(defn- chart-value? [v] (and (map? v) (contains? v :compute)))
+
+(defn- margin-spec
+  "Margin `m` of plot `:margins` normalized: `{:charts [chart ...] :size px :axis bool}` (a chart, a vector of charts
+  or a spec map; default size 80, no axis)."
+  [m]
+  (merge {:size default-margin-size :axis false}
+         (cond
+           (chart-value? m) {:charts [m]}
+           (map? m) (update m :charts #(if (chart-value? %) [%] (vec %)))
+           :else {:charts (vec m)})))
+
+(defn plot-margins
+  "The plot's `:margins` normalized ([[margin-spec]]): `{side spec}` in [[margin-sides]] order."
+  [plot]
+  (into {} (keep (fn [side] (when-some [m (get-in plot [:margins side])] [side (margin-spec m)]))) margin-sides))
+
+(defn- margin-stats
+  "Computed margin charts per side: `{side (spec + :stats [..])}`. A margin chart reads the plot's data (or its own)
+  with the plot's aesthetic and `:group` mapping, `:x` mapped to the plot's accessor of the shared dimension - the
+  horizontal one for `:top`, the vertical one for `:right` - its own `:mapping` merged over; one panel; the right
+  margin computes as flipped (its values run vertically). Throws `ex-info {:key :margins}` when the plot doesn't map
+  the shared dimension."
+  [{:keys [data mapping flip] :as plot} env]
+  (let [horizontal (scale/horizontal-key flip)
+        vertical (if (= horizontal :x) :y :x)
+        plot-rows (delay (data/rows data))]
+    (into {} (for [[side {:keys [charts] :as spec}] (plot-margins plot)]
+               (let [shared-key (if (= side :top) horizontal vertical)
+                     shared (get mapping shared-key)
+                     _ (when (nil? shared)
+                         (schema/fail! (str "Plot :margins " side " needs the plot :mapping of " shared-key ".")
+                                       {:key :margins :in [:margins side] :value shared-key}))
+                     inherited (assoc (select-keys mapping (conj (vec aesthetic/dims) :group)) :x shared)
+                     side-env (assoc env :flip? (= side :right))]
+                 [side (assoc spec :stats
+                              (mapv (fn [{:keys [options] :as chart}]
+                                      (let [rows (if (some? (:data options)) (data/rows (:data options)) @plot-rows)
+                                            chart-mapping (merge inherited (:mapping options))]
+                                        ((:compute chart) chart {:mapping chart-mapping :groups {facet/single-panel rows}}
+                                         side-env)))
+                                    charts))])))))
+
+(defn- margin-env
+  "Per margin side `{:charts :stats :scales}` for drawing and measuring with `layout` (`nil` - provisional) and the
+  main finalized `scales`: the plot's aesthetic scales, `:x` - the main scale of the shared dimension (its direction
+  kept), `:y` - the margin's
+  magnitude scale (counts, densities) finalized for the margin panel's size, across the shared one (`nil` when the
+  margin charts give none, e.g. strips only)."
+  [plot layout scales]
+  (let [horizontal (scale/horizontal-key (:flip plot))
+        vertical (if (= horizontal :x) :y :x)]
+    (into {} (for [[side {:keys [charts stats spec]}] (:margin-stats plot)]
+               (let [top? (= side :top)
+                     shared (get scales (if top? horizontal vertical))
+                     box (when layout (grid/find-content-box (:grid plot) layout #(= side (:margin %))))
+                     spacing (double (get-in plot [:theme :axis :y :tick-spacing]))
+                     magnitude (when spec
+                                 (if-not box
+                                   (scale/finalize spec [0.0 1.0] provisional-tick-hint)
+                                   (let [w (long (:w box)) h (long (:h box))]
+                                     (if top?
+                                       (scale/finalize spec [(double h) 0.0] (scale/tick-hint h spacing))
+                                       (scale/finalize spec [0.0 (double w)] (scale/tick-hint w spacing))))))]
+                 [side {:charts charts
+                        :stats stats
+                        ;; aesthetic scales shared with the plot: margins colour their groups as the panel does
+                        :scales (cond-> (into {} (filter (comp aesthetic/dim? key)) scales)
+                                  shared (assoc :x shared)
+                                  magnitude (assoc :y (assoc magnitude :direction (if top? :vertical :horizontal))))}])))))
+
 (defn- stats-stage
-  "Per chart: the data its `:compute` returns from its split groups."
+  "Per chart: the data its `:compute` returns from its split groups; margin charts too (`:margin-stats`, see
+  [[margin-stats]])."
   [{:keys [charts split theme groups scales flip] :as plot}]
   (let [env {:theme theme :na-level? (get groups :na true) :plot-scales scales :flip? (boolean flip)
              :hint (get-in plot [:options :hint])}]
-    (assoc plot :stats (mapv (fn [chart chart-split] ((:compute chart) chart chart-split env)) charts (:charts split)))))
+    (assoc plot
+           :stats (mapv (fn [chart chart-split] ((:compute chart) chart chart-split env)) charts (:charts split))
+           :margin-stats (margin-stats plot env))))
 
 (defn- aesthetic-extents
   "Per aesthetic with data: extent merged over charts and panels, `:na?` - some chart has NA values of it."
@@ -142,6 +236,22 @@
   [[a b] [c d]]
   [(m/max (double a) (double c)) (m/max (double b) (double d))])
 
+(defn- position-extent
+  "Position dimension `k` over charts' `stats`: `{:extent :padding :padding-px}` - extents merged over charts and
+  panels, padding (and pixel room) the largest per side among the charts with an extent there; `nil` without one. A
+  chart whose extents of `k` are all companions (`:companion? true`) joins only when another chart has extents of it."
+  [stats k]
+  (let [with-extent (keep (fn [st]
+                            (when-let [es (seq (keep #(get % k) (vals (:extents st))))]
+                              {:extent (data/merge-extents k es) :padding (get-in st [:padding k] [0 0])
+                               :padding-px (get-in st [:padding-px k] [0 0])
+                               :companion? (every? :companion? es)}))
+                          stats)]
+    (when (some (complement :companion?) with-extent)
+      {:extent (data/merge-extents k (map :extent with-extent))
+       :padding (reduce per-side-max [0.0 0.0] (map :padding with-extent))
+       :padding-px (reduce per-side-max [0.0 0.0] (map :padding-px with-extent))})))
+
 (defn- extents-stage
   "Per position scale: extents merged over charts and panels, padding (and pixel room `:padding-px`) as the largest
   per side among the charts with an extent there. A chart whose extents of a dimension are all companions (`:companion? true`) joins only a
@@ -150,17 +260,7 @@
   [{:keys [stats] :as plot}]
   (assoc plot :extents
          (into (aesthetic-extents stats)
-               (keep (fn [k]
-                          (let [with-extent (keep (fn [st]
-                                                    (when-let [es (seq (keep #(get % k) (vals (:extents st))))]
-                                                      {:extent (data/merge-extents k es) :padding (get-in st [:padding k] [0 0])
-                                                       :padding-px (get-in st [:padding-px k] [0 0])
-                                                       :companion? (every? :companion? es)}))
-                                                  stats)]
-                            (when (some (complement :companion?) with-extent)
-                              [k {:extent (data/merge-extents k (map :extent with-extent))
-                                  :padding (reduce per-side-max [0.0 0.0] (map :padding with-extent))
-                                  :padding-px (reduce per-side-max [0.0 0.0] (map :padding-px with-extent))}]))))
+               (keep (fn [k] (some->> (position-extent stats k) (vector k))))
                position-scales)))
 
 (defn- scale-specs-stage
@@ -176,7 +276,13 @@
         with-defaults (fn [k spec]
                         (let [defaults (when (position-scales k) (some #(get-in % [:scale-defaults k]) stats))]
                           (if (some #(contains? spec %) (keys defaults)) spec (merge defaults spec))))]
-    (assoc plot :scale-specs
+    (assoc plot
+           :margin-stats (update-vals (:margin-stats plot)
+                                      (fn [{:keys [stats] :as m}]
+                                        (if-let [{:keys [extent padding]} (position-extent stats :y)]
+                                          (assoc m :spec (scale/data-scale-spec :y {} extent padding))
+                                          m)))
+           :scale-specs
            (into {} (keep (fn [k]
                             (let [{:keys [extent padding padding-px na?]} (get extents k)
                                   spec (with-defaults k (get scales k {}))]
@@ -210,9 +316,10 @@
                       custom-grid custom-grid
                       :else (plot-grid/plot-grid (assoc plot :labels (effective-labels labels stats))))))
 
-(def ^:private ^:const provisional-tick-hint 10)
-
-(defn- panel-content? [content] (= :panel (:kind content)))
+(defn- panel-content?
+  "Is `content` a main panel (`:panel` content that isn't a plot margin's)?"
+  [content]
+  (and (= :panel (:kind content)) (nil? (:margin content))))
 
 (defn finalize-scales
   "Scales of `:scale-specs` finalized in panel-local coordinates for the reference panel of `layout` - the first
@@ -251,7 +358,9 @@
         box {:x 0 :y 0 :w width :h height}
         measure-for (fn [layout]
                       (grid/measure-items prepared
-                                          {:canvas canvas :theme (:theme plot) :scales (finalize-scales plot layout)}
+                                          (let [scales (finalize-scales plot layout)]
+                                            {:canvas canvas :theme (:theme plot) :scales scales
+                                             :margins (margin-env plot layout scales)})
                                           layout))]
     (loop [round 1
            measurements (measure-for nil)]
@@ -331,7 +440,8 @@
 (defn- finalized-scales-stage
   "Scales finalized for the final layout (stored under `:finalized-scales`; the plot's `:scales` key is user input)."
   [plot]
-  (assoc plot :finalized-scales (finalize-scales plot (:layout plot))))
+  (let [scales (finalize-scales plot (:layout plot))]
+    (assoc plot :finalized-scales scales :margin-env (margin-env plot (:layout plot) scales))))
 
 (declare build)
 
@@ -373,6 +483,10 @@
   "Pipeline stages in execution order."
   [:split :stats :extents :scale-specs :grid :layout :finalized-scales :subplots])
 
+(def ^:private derived-keys
+  "Keys stages add besides their own (plot margins), dropped with the stage keys before a rebuild."
+  [:margin-stats :margin-env])
+
 (def ^:private stage-fns
   {:split split-stage
    :stats stats-stage
@@ -409,6 +523,19 @@
       (into (map #(schema/optional % facet/scale-spec-schema)) [:facet :facet-col :facet-row])
       (into (map #(schema/optional % (aesthetic/scale-spec-schema %))) aesthetic/dims)))
 
+(def ^:private margin-schema
+  [:multi {:dispatch #(cond (chart-value? %) :chart (map? %) :spec :else :charts)}
+   [:chart chart-schema]
+   [:charts [:vector {:min 1} chart-schema]]
+   [:spec [:map {:closed true}
+           [:charts [:multi {:dispatch chart-value?} [true chart-schema] [false [:vector {:min 1} chart-schema]]]]
+           (schema/optional :size schema/pos)
+           (schema/optional :axis schema/bool)]]])
+
+(def margins-schema
+  "Plot `:margins`: `{:top m :right m}`, `m` - a chart, a vector of charts or `{:charts c :size px :axis bool}`."
+  [:map {:closed true} (schema/optional :top margin-schema) (schema/optional :right margin-schema)])
+
 (def plot-schema
   "A plot map (keys in the namespace doc); `:theme` and `:options` are checked merged ([[cljplot2.theme/theme-schema]],
   [[options-schema]])."
@@ -425,6 +552,7 @@
    (schema/nilable :labels plot-grid/labels-schema)
    (schema/nilable :custom-grid :map)
    (schema/nilable :arrange plot-grid/arrange-schema)
+   (schema/nilable :margins margins-schema)
    (schema/optional :alignment-padding [:map-of keyword? number?])
    (schema/nilable :options :map)
    (schema/optional :theme any?)])
@@ -471,7 +599,16 @@
        [(error [:flip] flip "flip needs the generated grid, not :custom-grid or :arrange")])
      (when (or custom-grid arrange)
        (for [k (keys labels) :when (not= k :title)]
-         (error [:labels k] (get labels k) "only :title is allowed with :custom-grid or :arrange"))))))
+         (error [:labels k] (get labels k) "only :title is allowed with :custom-grid or :arrange")))
+     (when (seq (:margins plot))
+       (concat
+        (when (seq dim-sets)
+          [(error [:margins] (:margins plot) "margins can't be combined with facets (yet)")])
+        (when (or custom-grid arrange)
+          [(error [:margins] (:margins plot) "margins belong on the plots inside :arrange / :custom-grid")])
+        (for [[side {:keys [axis charts]}] (plot-margins plot)
+              :when (and axis (not-any? (comp magnitude-chart-kinds :kind) charts))]
+          (error [:margins side :axis] axis "a margin axis needs a histogram or density chart (strips have no magnitude)")))))))
 
 (defn- chart-checks
   "`[schema value in]` checks of the charts' schemas: theme style of every built-in kind (and of user kinds present in
@@ -489,7 +626,14 @@
                     mapping (conj [mapping m [:charts i :options :mapping]])
                     (and style (map? chart-theme) (not (contains? chart/builtin-styles kind)) (contains? chart-theme kind))
                     (conj [style (get chart-theme kind) [:theme :chart kind]]))))
-              (range) charts (merged-mappings plot))))))
+              (range) charts (merged-mappings plot))
+      ;; margin charts: their options (mappings are built from the plot's at compute)
+      (for [[side {:keys [charts]}] (when (empty? (schema/errors margins-schema (:margins plot) [:margins]))
+                                      (plot-margins plot))
+            [i c] (map-indexed vector charts)
+            :let [options-schema (get-in c [:schema :options])]
+            :when options-schema]
+        [options-schema (:options c) [:margins side :charts i :options]])))))
 
 (defn- validate!
   "Check `plot` (stage keys removed), its merged `theme` and `options` against their schemas, then - when those hold -
@@ -505,22 +649,63 @@
 
 ;; build
 
+(defn- type-kind
+  "Scale spec `spec` of dimension `k` with the declared `type` (`:categorical` / `:numeric`) resolved to a kind and
+  `:type` removed: categorical - `:bands` for `:x` / `:y`, `:ordinal` for aesthetics, nothing for facets; numeric -
+  `:linear` for aesthetics, nothing for `:x` / `:y` (numbers are continuous there by default). Throws `ex-info
+  {:key :type}` when an explicit `:kind` contradicts it."
+  [k type spec]
+  (let [wanted (cond
+                 (position-scales k) (case type :categorical :bands :numeric nil)
+                 (aesthetic/dim? k) (case type :categorical :ordinal :numeric :linear)
+                 :else nil)
+        given (:kind spec)
+        contradiction? (cond
+                         (and given wanted) (not= given wanted)
+                         (and given (position-scales k) (= :numeric type)) (= :bands given)
+                         :else false)]
+    (when contradiction?
+      (schema/fail! (str "Scale :type " type " contradicts :kind " given ".") {:key :type :in [:scales k :type] :value type}))
+    (cond-> (dissoc spec :type)
+      (and wanted (nil? given)) (assoc :kind wanted))))
+
+(defn- resolve-scale-types
+  "Plot `scales` with every declared `:type` resolved to a kind (see [[type-kind]]); a categorical mapping marker
+  (`cljplot2.data.levels/categorical`) in any of the charts' `mappings` declares its dimension's scale categorical.
+  Throws `ex-info {:key :type}` for a marker on a dimension declared `:type :numeric`."
+  [scales mappings]
+  (let [scale-dim? #(or (position-scales %) (aesthetic/dim? %) (contains? facet/facet-keys %))
+        marked (set (for [m mappings [k acc] m :when (and (scale-dim? k) (accessor/categorical? acc))] k))]
+    (reduce (fn [acc k]
+              (let [spec (get scales k {})
+                    declared (:type spec)]
+                (when (and (marked k) (= :numeric declared))
+                  (schema/fail! "A categorical mapping marker contradicts the scale's :type :numeric."
+                                {:key :type :in [:scales k :type] :value declared}))
+                (if-let [type (if (marked k) :categorical declared)]
+                  (assoc acc k (type-kind k type spec))
+                  acc)))
+            scales
+            (distinct (concat (filter scale-dim? (keys scales)) marked)))))
+
 (defn build
   "Run `plot` through the pipeline stages and return the plot map with each stage's key added.
 
   `options` (merged over `(:options plot)` and [[default-options]], stored under `:options`):
   `:width`, `:height`, `:hint`, and `:until` - last stage to run (default: the last one).
   `:theme` is stored merged with the default theme.
-  Stage keys already present in `plot` (e.g. from an earlier `build`) are dropped first.
+  Stage keys (and the margin keys stages derive) already present in `plot` (e.g. from an earlier `build`) are dropped
+  first.
   Before any stage runs, the plot, its merged theme and options and its charts' schemas are validated (see
   [[validate!]]): one `ex-info` lists every error, see [[cljplot2.schema]]."
   ([plot] (build plot {}))
   ([plot options]
-   (let [plot (if (map? plot) (apply dissoc plot stage-order) plot)
+   (let [plot (if (map? plot) (apply dissoc plot (concat stage-order derived-keys)) plot)
          plot-options (when (map? plot) (:options plot))
          render-options (merge default-options (when (map? plot-options) plot-options) (dissoc options :until))
          theme (theme/plot-theme (when (map? plot) (:theme plot)))]
      (validate! plot theme (cond-> render-options (contains? options :until) (assoc :until (:until options))))
      (reduce (fn [plot stage] ((stage-fns stage) plot))
-             (assoc plot :options render-options :theme theme)
+             (assoc plot :options render-options :theme theme
+                    :scales (resolve-scale-types (:scales plot) (merged-mappings plot)))
              (take (inc (.indexOf ^java.util.List stage-order (get options :until (peek stage-order)))) stage-order)))))

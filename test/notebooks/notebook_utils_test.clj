@@ -1,5 +1,7 @@
 (ns notebooks.notebook-utils-test
-  (:require [clojure.test :refer [deftest testing is]]
+  (:require [clojure.java.io :as io]
+            [clojure.string :as str]
+            [clojure.test :refer [deftest testing is]]
             [notebook-utils :as nu]
             [cljplot2.test-util :refer [error-data]]))
 
@@ -26,15 +28,27 @@
         (nu/dataset :ids)
         (is (= {:strings #{:id}} @seen))))))
 
+(def ^:private full-load-limit
+  "Datasets up to this many bytes are loaded in full by [[manifest-test]]; bigger ones only checked by file and header."
+  100000)
+
 (deftest manifest-test
-  (testing "every manifest entry loads: rows of maps, with source, licence and via"
-    (doseq [[k {:keys [source licence via title]}] (nu/datasets)
-            :let [rows (nu/dataset k)]]
-      (is (seq rows) (str k))
-      (is (every? map? rows) (str k))
-      (is (every? string? [source licence via title]) (str k))))
-  (testing "CSV :strings columns stay strings (ids)"
-    (is (every? string? (map :student (take 100 (nu/dataset :chem97)))))
+  (testing "every manifest entry: a readable file with source, licence and via; small ones load as rows of maps,
+            big CSV ones have a header row"
+    (doseq [[k {:keys [file format source licence via title]}] (nu/datasets)
+            :let [resource (io/resource (str "data/" file))]]
+      (is (some? resource) (str k))
+      (is (every? string? [source licence via title]) (str k))
+      (if (<= (.length (io/file resource)) full-load-limit)
+        (let [rows (nu/dataset k)]
+          (is (seq rows) (str k))
+          (is (every? map? rows) (str k)))
+        (with-open [r (io/reader resource)]
+          (let [first-line (first (line-seq r))]
+            (if (= :csv format)
+              (is (< 1 (count (str/split first-line #","))) (str k " header"))
+              (is (str/starts-with? first-line "[") (str k " JSON array"))))))))
+  (testing "CSV :strings columns stay strings (ids, dates)"
     (is (every? string? (map :date (nu/dataset :lincoln-weather))))))
 
 (deftest parse-csv-test
@@ -77,6 +91,17 @@
     (testing "source or dataset alone"
       (is (= "Source: Lattice Fig 1.1." (text (nu/source-note {:source "Lattice Fig 1.1"}))))
       (is (re-matches #"Data: Old Faithful.*" (text (nu/source-note {:dataset :faithful})))))
+    (testing "links: one URL links the source, several are numbered, a URL alone links itself"
+      (is (= "Source: [RGG - Violin](https://r-graph-gallery.com/violin.html)."
+             (text (nu/source-note {:source "RGG - Violin" :url "https://r-graph-gallery.com/violin.html"}))))
+      (is (= "Source: RGG ([1](https://a.org/x), [2](https://b.org/y))."
+             (text (nu/source-note {:source "RGG" :url ["https://a.org/x" "https://b.org/y"]}))))
+      (is (= "Source: [https://a.org/x](https://a.org/x)." (text (nu/source-note {:url "https://a.org/x"}))))
+      (is (re-matches #"Source: \[RGG\]\(https://a.org/x\)\. Data: Old Faithful.*"
+                      (text (nu/source-note {:source "RGG" :url ["https://a.org/x"] :dataset :faithful})))))
+    (testing "a bad :url throws"
+      (doseq [bad [[] 12 ["ok" 3] '("https://a.org")]]
+        (is (= :url (:key (error-data #(nu/source-note {:source "x" :url bad})))) (pr-str bad))))
     (testing "neither, or an unknown dataset, throws"
       (is (= {:key :source-note} (error-data #(nu/source-note {}))))
       (is (= :dataset (:key (error-data #(nu/source-note {:source "x" :dataset :nope}))))))))

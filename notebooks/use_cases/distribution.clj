@@ -30,7 +30,9 @@
 
 ;; ### Basic violin
 
-(nu/source-note {:source "R Graph Gallery - Violin plot" :dataset :iris})
+(nu/source-note {:source "R Graph Gallery - Violin plot"
+                 :url "https://r-graph-gallery.com/95-violin-plot-with-ggplot2.html"
+                 :dataset :iris})
 
 (plot/render-image
  {:data iris
@@ -43,7 +45,9 @@
 
 ;; `levels/order-levels` orders the levels by any statistic of a value; the result is the scale's `:domain`.
 
-(nu/source-note {:source "R Graph Gallery - Violin plot (reorder)" :dataset :iris})
+(nu/source-note {:source "R Graph Gallery - Violin plot (reorder)"
+                 :url "https://r-graph-gallery.com/267-reorder-a-variable-in-ggplot2.html"
+                 :dataset :iris})
 
 (plot/render-image
  {:data iris
@@ -58,7 +62,9 @@
 ;; The R Graph Gallery draws violins and boxplots vertically; here that is `:flip true` on the same plot - values
 ;; stay on `:x`, which is now drawn vertically.
 
-(nu/source-note {:source "R Graph Gallery - Horizontal violin plot" :dataset :iris})
+(nu/source-note {:source "R Graph Gallery - Horizontal violin plot"
+                 :url "https://r-graph-gallery.com/violin_horizontal_ggplot2.html"
+                 :dataset :iris})
 
 (let [p {:data iris
          :mapping {:x :sepal-width :y :species}
@@ -75,7 +81,9 @@
 ;; Two strip charts share the bands: a violin without inner marks and a narrow box. `:n-label` writes each
 ;; group's count past its largest value.
 
-(nu/source-note {:source "R Graph Gallery - Violin with boxplot and sample size" :dataset :barley})
+(nu/source-note {:source "R Graph Gallery - Violin with boxplot and sample size"
+                 :url "https://r-graph-gallery.com/violin_and_boxplot_ggplot2.html"
+                 :dataset :barley})
 
 (plot/render-image
  {:data barley
@@ -87,14 +95,17 @@
 
 ;; ### Grouped violins
 
-;; A second grouping (here the year, coloured) dodges the violins inside each band; with exactly two groups
-;; `:position :mirror` draws split violins, one half per group.
+;; A second grouping (here the year, coloured) dodges the violins inside each band, in legend order; with exactly
+;; two groups `:position :mirror` draws split violins, one half per group. The year is a number, so
+;; `:scales {:color {:type :categorical}}` declares it categorical: one colour per year instead of a gradient.
 
-(nu/source-note {:source "R Graph Gallery - Grouped violin plot" :dataset :barley})
+(nu/source-note {:source "R Graph Gallery - Grouped violin plot"
+                 :url "https://r-graph-gallery.com/violin_grouped_ggplot2.html"
+                 :dataset :barley})
 
 (let [p {:data barley
          :mapping {:x :yield :y :site :color :year}
-         :scales {:color {:kind :ordinal}}
+         :scales {:color {:type :categorical}}
          :labels {:x "yield [bushels/acre]" :y nil}}]
   (plot/render-image
    (plot/arrange [(assoc p :charts [(chart/violin {:inner :none})] :labels {:title "dodged" :x "yield" :y nil})
@@ -105,9 +116,12 @@
 
 ;; ### Inner marks
 
-;; `:inner` chooses what a violin shows inside: a box (default), quartile lines, a rug or the points.
+;; `:inner` chooses what a violin shows inside: a box (default), quartile lines, a rug or the points. The data is a
+;; fixed 5% sample of chem97 (31022 rows), so the rug and the points stay readable.
 
-(nu/source-note {:source "R Graph Gallery - Violin plot; seaborn violinplot" :dataset :chem97})
+(nu/source-note {:source "R Graph Gallery - Violin plot; seaborn violinplot"
+                 :url ["https://r-graph-gallery.com/violin.html" "https://seaborn.pydata.org/generated/seaborn.violinplot.html"]
+                 :dataset :chem97})
 
 (def chem97-sample
   "A fixed 5% sample of chem97 (the full data has 31022 rows)."
@@ -117,7 +131,7 @@
  (plot/arrange (for [inner [:box :quartiles :rug :points]]
                  {:data chem97-sample
                   :mapping {:x :gcsescore :y :score}
-                  :scales {:y {:kind :bands}}
+                  :scales {:y {:type :categorical}}
                   :charts [(chart/violin {:inner inner})]
                   :labels {:title (str ":inner " inner) :x "GCSE score"}})
                {:columns 2})
@@ -131,7 +145,9 @@
 
 ;; `:bandwidth` is a number or a fastmath rule (`:nrd0` by default, as R); `:kernel` any fastmath kernel.
 
-(nu/source-note {:source "R Graph Gallery - Density plot" :dataset :faithful})
+(nu/source-note {:source "R Graph Gallery - Density plot"
+                 :url "https://r-graph-gallery.com/21-distribution-plot-using-ggplot2.html"
+                 :dataset :faithful})
 
 (plot/render-image
  (plot/arrange (for [[title opts] [["default (:nrd0)" {}]
@@ -150,12 +166,14 @@
 ;; Two groups, the second drawn downward, with the y = 0 line (`:zero-line`, on by default). `:symmetric` puts
 ;; both halves on one range so they compare by height.
 
-(nu/source-note {:source "R Graph Gallery - Mirror density chart" :dataset :chem97})
+(nu/source-note {:source "R Graph Gallery - Mirror density chart"
+                 :url "https://r-graph-gallery.com/density_mirror_ggplot2.html"
+                 :dataset :chem97})
 
 (plot/render-image
  (plot/arrange [{:data chem97
                  :mapping {:x :gcsescore :color :gender}
-                 :charts [(chart/density {:position :mirror :fill [0 0 0 25]})]
+                 :charts [(chart/density {:position :mirror :fill :color})]
                  :labels {:title "GCSE score: F up, M down" :x "GCSE score"}}
                 {:data chem97
                  :mapping {:x :age :color :gender}
@@ -169,7 +187,9 @@
 ;; Groups from a colour mapping, overlaid. The line takes the group colour; `:fill :color` fills each area with
 ;; its group colour at opacity `:alpha`, a fixed `:fill` colour fills every area alike.
 
-(nu/source-note {:source "R Graph Gallery - Density with multiple groups" :dataset :iris})
+(nu/source-note {:source "R Graph Gallery - Density with multiple groups"
+                 :url "https://r-graph-gallery.com/density-plot.html"
+                 :dataset :iris})
 
 (plot/render-image
  (plot/arrange [{:data iris
@@ -192,7 +212,9 @@
 ;; Annotation charts take literal positions: a rule at the mean, a text label and a band (`chart/rect`) over the
 ;; central 50% of the values.
 
-(nu/source-note {:source "R Graph Gallery - Density chart with annotation" :dataset :faithful})
+(nu/source-note {:source "R Graph Gallery - Density chart with annotation"
+                 :url "https://r-graph-gallery.com/density-plot.html"
+                 :dataset :faithful})
 
 (let [xs (map :eruptions faithful)
       mean (stats/mean xs)
@@ -213,7 +235,9 @@
 
 ;; A facet mapping gives one panel per level; the colour still groups inside each panel.
 
-(nu/source-note {:source "R Graph Gallery - Density small multiples" :dataset :chem97})
+(nu/source-note {:source "R Graph Gallery - Density small multiples"
+                 :url "https://r-graph-gallery.com/density-plot.html"
+                 :dataset :chem97})
 
 (plot/render-image
  {:data chem97
@@ -226,7 +250,9 @@
 
 ;; `:position :stack` piles the group densities on one common grid; `:normalize` shows each group's share.
 
-(nu/source-note {:source "R Graph Gallery - Stacked density chart" :dataset :diamonds})
+(nu/source-note {:source "R Graph Gallery - Stacked density chart"
+                 :url "https://r-graph-gallery.com/135-stacked-density-graph.html"
+                 :dataset :diamonds})
 
 (let [p {:data diamonds
          :mapping {:x :price :color :cut}
@@ -239,25 +265,22 @@
 
 ;; ### Marginal density
 
-;; Three plots arranged with weights; aligned panels and one explicit domain per axis keep the margins in line
-;; with the scatter. The corner cell holds the title.
+;; `:margins` adds charts beside the panel: the top margin shares the horizontal axis, the right margin the
+;; vertical one. Margin charts read the plot's data and colour mapping, with `:x` mapped to the shared dimension
+;; for them; they have no axes of their own, so the scatter keeps the only x and y axes.
 
-(nu/source-note {:source "R Graph Gallery - Marginal distribution" :dataset :iris})
+(nu/source-note {:source "R Graph Gallery - Marginal distribution"
+                 :url "https://r-graph-gallery.com/277-marginal-histogram-for-ggplot2.html"
+                 :dataset :iris})
 
-(defn marginal
-  "Scatter of `x` / `y` with `margin-chart` (a constructor) on the top (x) and right (y) margins."
-  [data x y margin-chart title]
-  (let [domain (fn [k] (let [vs (map k data)] [(reduce min vs) (reduce max vs)]))
-        xs {:x {:domain (domain x)}}
-        ys {:x {:domain (domain y)}}]
-    (plot/arrange [{:data data :mapping {:x x} :scales xs :charts [(margin-chart)] :labels {:x nil :y nil}}
-                   {:charts [] :labels {:title title}}
-                   {:data data :mapping {:x x :y y :color :species} :scales (assoc xs :y (:x ys))
-                    :charts [(chart/scatter)] :labels {:x (name x) :y (name y)}}
-                   {:data data :mapping {:x y} :scales ys :flip true :charts [(margin-chart)] :labels {:x nil :y nil}}]
-                  {:columns 2 :widths [4 1] :heights [1 4]})))
-
-(plot/render-image (marginal iris :sepal-length :sepal-width chart/density "iris") {:width 750 :height 700})
+(plot/render-image
+ {:data iris
+  :mapping {:x :sepal-length :y :sepal-width :color :species}
+  :charts [(chart/scatter)]
+  :margins {:top (chart/density {:fill :color :alpha 0.4})
+            :right (chart/density {:fill :color :alpha 0.4})}
+  :labels {:title "Iris sepals with marginal densities" :x "sepal length [cm]" :y "sepal width [cm]"}}
+ {:width 750 :height 650})
 
 ;; ## Histogram
 
@@ -267,7 +290,9 @@
 
 ;; `:y` chooses the bar height: percent of the total (default), count, density (area 1) or probability.
 
-(nu/source-note {:source "R Graph Gallery - Histogram" :dataset :faithful})
+(nu/source-note {:source "R Graph Gallery - Histogram"
+                 :url "https://r-graph-gallery.com/220-basic-ggplot2-histogram.html"
+                 :dataset :faithful})
 
 (plot/render-image
  (plot/arrange (for [y [:percent :count :density :pmf]]
@@ -282,7 +307,9 @@
 
 ;; `:bins` takes a fastmath estimation rule, a number of equal bins or explicit breaks.
 
-(nu/source-note {:source "R Graph Gallery - Histogram bin size" :dataset :faithful})
+(nu/source-note {:source "R Graph Gallery - Histogram bin size"
+                 :url "https://r-graph-gallery.com/220-basic-ggplot2-histogram.html"
+                 :dataset :faithful})
 
 (plot/render-image
  (plot/arrange (for [bins [:sturges 5 40 [1.5 2.5 3.5 4 4.5 5.5]]]
@@ -298,7 +325,9 @@
 ;; Two groups back to back. Bars are filled by the group colour and outlined by `:stroke-color` - a colour,
 ;; `:none` or `:darker` (the darkened fill, default); `:symmetric` gives both halves one range.
 
-(nu/source-note {:source "R Graph Gallery - Mirror histogram" :dataset :chem97})
+(nu/source-note {:source "R Graph Gallery - Mirror histogram"
+                 :url "https://r-graph-gallery.com/190-mirrored-histogram.html"
+                 :dataset :chem97})
 
 (plot/render-image
  (plot/arrange [{:data chem97 :mapping {:x :gcsescore :color :gender}
@@ -314,7 +343,9 @@
 
 ;; `:position` places the groups' bars: over each other (translucent), side by side, stacked or normalized.
 
-(nu/source-note {:source "R Graph Gallery - Histogram with several groups" :dataset :iris})
+(nu/source-note {:source "R Graph Gallery - Histogram with several groups"
+                 :url "https://r-graph-gallery.com/histogram_several_group.html"
+                 :dataset :iris})
 
 (plot/render-image
  (plot/arrange (for [position [:overlay :dodge :stack :normalize]]
@@ -327,7 +358,9 @@
 
 ;; ### Small multiples
 
-(nu/source-note {:source "R Graph Gallery - Histogram small multiples" :dataset :diamonds})
+(nu/source-note {:source "R Graph Gallery - Histogram small multiples"
+                 :url "https://r-graph-gallery.com/histogram.html"
+                 :dataset :diamonds})
 
 (plot/render-image
  {:data diamonds
@@ -339,16 +372,31 @@
 
 ;; ### Marginal histogram
 
-(nu/source-note {:source "R Graph Gallery - Marginal histogram" :dataset :iris})
+;; A margin may hold several charts, `:size` sets its thickness in pixels and `:axis true` shows the magnitude
+;; (count, density) of a histogram or density margin; strips (boxes, rugs, ...) work in margins too.
 
-(plot/render-image (marginal iris :petal-length :petal-width chart/histogram "iris") {:width 750 :height 700})
+(nu/source-note {:source "R Graph Gallery - Marginal histogram"
+                 :url "https://r-graph-gallery.com/277-marginal-histogram-for-ggplot2.html"
+                 :dataset :iris})
+
+(plot/render-image
+ {:data iris
+  :mapping {:x :petal-length :y :petal-width :color :species}
+  :charts [(chart/scatter)]
+  :margins {:top {:charts (chart/histogram {:bins 25 :position :stack :y :count}) :axis true}
+            :right {:charts [(chart/box {:outliers false}) (chart/rug)] :size 70}}
+  :labels {:title "Iris petals: stacked histogram on top, boxes and a rug on the right"
+           :x "petal length [cm]" :y "petal width [cm]"}}
+ {:width 750 :height 650})
 
 ;; ### Strips on a histogram
 
 ;; Any strip chart (box, violin, rug, stripplot, beeswarm, extent) layers on a histogram or density:
 ;; `{:at v}` centres it on y = v; `:place :bottom` draws it below y = 0 in room the chart asks for.
 
-(nu/source-note {:source "R Graph Gallery - Histogram with boxplot on top; lattice Fig 3.1" :dataset :faithful})
+(nu/source-note {:source "R Graph Gallery - Histogram with boxplot on top; lattice Fig 3.1"
+                 :url ["https://r-graph-gallery.com/82-boxplot-on-top-of-histogram.html" "http://lmdvr.r-forge.r-project.org/figures/figures.html"]
+                 :dataset :faithful})
 
 (plot/render-image
  (plot/arrange [{:data faithful :mapping {:x :eruptions}
@@ -372,35 +420,41 @@
 
 ;; ### Basic boxplot
 
-(nu/source-note {:source "R Graph Gallery - Boxplot" :dataset :mtcars})
+(nu/source-note {:source "R Graph Gallery - Boxplot"
+                 :url "https://r-graph-gallery.com/262-basic-boxplot-with-ggplot2.html"
+                 :dataset :mtcars})
 
 (plot/render-image
  {:data mtcars
   :mapping {:x :mpg :y :cyl}
-  :scales {:y {:kind :bands}}
+  :scales {:y {:type :categorical}}
   :charts [(chart/box)]
   :labels {:title "Fuel economy by number of cylinders" :x "miles per gallon" :y "cylinders"}}
  {:width 800 :height 400})
 
-;; Numeric groups (here the cylinder count) need `:scales {:y {:kind :bands}}`; strings and keywords are bands
-;; by themselves.
+;; The cylinder count is a number, so it is declared categorical - one band per value instead of a numeric axis -
+;; with `:scales {:y {:type :categorical}}`; strings and keywords are categorical by themselves.
 
 ;; ### Boxplot with jittered points
 
-(nu/source-note {:source "R Graph Gallery - Boxplot with jitter" :dataset :mtcars})
+(nu/source-note {:source "R Graph Gallery - Boxplot with jitter"
+                 :url "https://r-graph-gallery.com/96-boxplot-with-jitter.html"
+                 :dataset :mtcars})
 
 (plot/render-image
  {:data mtcars
   :mapping {:x :mpg :y :cyl}
-  :scales {:y {:kind :bands}}
+  :scales {:y {:type :categorical}}
   :charts [(chart/box {:outliers false :color [210 210 225]})
-           (chart/stripplot {:rng (r/rng :mersenne 7) :jitter 0.5 :size 8 :color [215 48 39 160]})]
+           (chart/stripplot {:rng (r/rng :mersenne 7) :jitter 0.2 :size 8 :color [215 48 39 160]})]
   :labels {:title "Box with every car" :x "miles per gallon" :y "cylinders"}}
  {:width 800 :height 400})
 
 ;; ### Group order
 
-(nu/source-note {:source "R Graph Gallery - Reorder boxplot" :dataset :barley})
+(nu/source-note {:source "R Graph Gallery - Reorder boxplot"
+                 :url "https://r-graph-gallery.com/267-reorder-a-variable-in-ggplot2.html"
+                 :dataset :barley})
 
 (plot/render-image
  (plot/arrange [{:data barley :mapping {:x :yield :y :variety}
@@ -416,14 +470,18 @@
 
 ;; ### Highlight a group
 
-;; A derived column and an explicit colour scale: grey for the rest, red for the group in focus.
+;; A derived column and an explicit colour scale: grey for the rest, red for the group in focus. A colour mapping
+;; makes groups, and groups inside a band dodge by default; `:position :overlay` keeps every box on its band's
+;; centre line (each band holds one group anyway).
 
-(nu/source-note {:source "R Graph Gallery - Highlight a group in boxplot" :dataset :mtcars})
+(nu/source-note {:source "R Graph Gallery - Highlight a group in boxplot"
+                 :url "https://r-graph-gallery.com/23-add-colors-to-specific-groups-of-a-boxplot.html"
+                 :dataset :mtcars})
 
 (plot/render-image
  {:data (map #(assoc % :focus (if (= 6 (:cyl %)) "6 cylinders" "other")) mtcars)
   :mapping {:x :hp :y :cyl :color :focus}
-  :scales {:y {:kind :bands}
+  :scales {:y {:type :categorical}
            :color {:domain ["other" "6 cylinders"] :range [[190 190 190] [215 48 39]]}}
   :charts [(chart/box {:position :overlay})]
   :labels {:title "Horse power, 6 cylinders highlighted" :x "horse power" :y "cylinders"}}
@@ -431,24 +489,28 @@
 
 ;; ### Grouped boxplot
 
-(nu/source-note {:source "R Graph Gallery - Grouped boxplot" :dataset :barley})
+(nu/source-note {:source "R Graph Gallery - Grouped boxplot"
+                 :url "https://r-graph-gallery.com/265-grouped-boxplot-with-ggplot2.html"
+                 :dataset :barley})
 
 (plot/render-image
  {:data barley
   :mapping {:x :yield :y :site :color :year}
-  :scales {:color {:kind :ordinal}}
+  :scales {:color {:type :categorical}}
   :charts [(chart/box)]
   :labels {:title "Barley yield by site and year" :x "yield [bushels/acre]" :y nil}}
  {:width 800 :height 500})
 
 ;; ### Faceted boxplot
 
-(nu/source-note {:source "R Graph Gallery - Boxplot small multiples" :dataset :barley})
+(nu/source-note {:source "R Graph Gallery - Boxplot small multiples"
+                 :url "https://r-graph-gallery.com/boxplot.html"
+                 :dataset :barley})
 
 (plot/render-image
  {:data barley
   :mapping {:x :yield :y :year :facet :site}
-  :scales {:y {:kind :bands}}
+  :scales {:y {:type :categorical}}
   :charts [(chart/box)]
   :labels {:title "Yield by year, one panel per site" :x "yield" :y nil}}
  {:width 900 :height 500})
@@ -457,12 +519,14 @@
 
 ;; `:varwidth` makes each box's width proportional to the square root of its count.
 
-(nu/source-note {:source "R Graph Gallery - Boxplot with variable width" :dataset :chem97})
+(nu/source-note {:source "R Graph Gallery - Boxplot with variable width"
+                 :url "https://r-graph-gallery.com/266-ggplot2-boxplot-with-variable-width.html"
+                 :dataset :chem97})
 
 (plot/render-image
  {:data chem97
   :mapping {:x :gcsescore :y :score}
-  :scales {:y {:kind :bands}}
+  :scales {:y {:type :categorical}}
   :charts [(chart/box {:varwidth true :n-label true})]
   :labels {:title "GCSE score by A-level score" :x "GCSE score" :y "A-level score"}}
  {:width 800 :height 550})
@@ -471,7 +535,9 @@
 
 ;; `levels/bin` cuts a numeric column into half-open interval bins; the bins are ordered levels for the boxes.
 
-(nu/source-note {:source "R Graph Gallery - Boxplot from continuous variable" :dataset :diamonds})
+(nu/source-note {:source "R Graph Gallery - Boxplot from continuous variable"
+                 :url "https://r-graph-gallery.com/268-ggplot2-boxplot-from-continuous-variable.html"
+                 :dataset :diamonds})
 
 (plot/render-image
  {:data (levels/bin diamonds :carat {:as :carat-bin :bins [0 0.5 1 1.5 2 2.5 5.01]})
@@ -482,12 +548,16 @@
 
 ;; ### Mean marker
 
-(nu/source-note {:source "R Graph Gallery - Boxplot with mean" :dataset :mtcars})
+;; The categorical declaration can also sit on the mapping: `(levels/categorical :gear)` reads `:gear` as usual
+;; and makes its dimension categorical, here instead of a `:scales` entry.
+
+(nu/source-note {:source "R Graph Gallery - Boxplot with mean"
+                 :url "https://r-graph-gallery.com/269-ggplot2-boxplot-with-average-value.html"
+                 :dataset :mtcars})
 
 (plot/render-image
  {:data mtcars
-  :mapping {:x :qsec :y :gear}
-  :scales {:y {:kind :bands}}
+  :mapping {:x :qsec :y (levels/categorical :gear)}
   :charts [(chart/box {:mean true})]
   :labels {:title "Quarter mile time by gears, mean marked" :x "quarter mile [s]" :y "gears"}}
  {:width 800 :height 400})
@@ -496,21 +566,25 @@
 
 ;; `:n-label` with `:n-format` (a format string for the count).
 
-(nu/source-note {:source "R Graph Gallery - Boxplot with sample size" :dataset :barley})
+(nu/source-note {:source "R Graph Gallery - Boxplot with sample size"
+                 :url "https://r-graph-gallery.com/26-add-text-over-a-boxplot.html"
+                 :dataset :barley})
 
 (plot/render-image
  {:data barley
   :mapping {:x :yield :y :variety :color :year}
-  :scales {:color {:kind :ordinal}}
+  :scales {:color {:type :categorical}}
   :charts [(chart/box {:n-label true :n-format "%d obs"})]
   :labels {:title "Yield by variety and year" :x "yield" :y nil}}
  {:width 900 :height 650})
 
 ;; ### Horizontal and vertical
 
-(nu/source-note {:source "R Graph Gallery - Horizontal boxplot" :dataset :mtcars})
+(nu/source-note {:source "R Graph Gallery - Horizontal boxplot"
+                 :url "https://r-graph-gallery.com/boxplot.html"
+                 :dataset :mtcars})
 
-(let [p {:data mtcars :mapping {:x :wt :y :am} :scales {:y {:kind :bands}} :charts [(chart/box)]
+(let [p {:data mtcars :mapping {:x :wt :y :am} :scales {:y {:type :categorical}} :charts [(chart/box)]
          :labels {:x "weight [1000 lbs]" :y "manual transmission"}}]
   (plot/render-image
    (plot/arrange [(assoc-in p [:labels :title] "horizontal")
@@ -523,7 +597,9 @@
 ;; `chart/extent` draws an interval per group from fastmath.stats: here the 95% confidence interval of the mean,
 ;; mean ± standard deviation and a bootstrap percentile interval.
 
-(nu/source-note {:source "cljplot extents" :dataset :barley})
+(nu/source-note {:source "cljplot extents"
+                 :url "https://seaborn.pydata.org/generated/seaborn.pointplot.html"
+                 :dataset :barley})
 
 (plot/render-image
  (plot/arrange (for [[title opts] [[":ci" {:method :ci}]
@@ -545,7 +621,9 @@
 (def months ["January" "February" "March" "April" "May" "June" "July" "August" "September" "October" "November"
              "December"])
 
-(nu/source-note {:source "R Graph Gallery - Ridgeline chart" :dataset :lincoln-weather})
+(nu/source-note {:source "R Graph Gallery - Ridgeline chart"
+                 :url "https://r-graph-gallery.com/294-basic-ridgeline-plot.html"
+                 :dataset :lincoln-weather})
 
 (plot/render-image
  {:data lincoln
@@ -559,7 +637,9 @@
 
 ;; Histograms make ridgelines too; any strip chart can share the bands.
 
-(nu/source-note {:source "R Graph Gallery - Ridgeline chart" :dataset :diamonds})
+(nu/source-note {:source "R Graph Gallery - Ridgeline chart"
+                 :url "https://r-graph-gallery.com/294-basic-ridgeline-plot.html"
+                 :dataset :diamonds})
 
 (let [p {:data diamonds
          :mapping {:x :price :y :cut}
@@ -576,7 +656,9 @@
 
 ;; `:fill-gradient` colours the area along `:x` with a clojure2d gradient.
 
-(nu/source-note {:source "R Graph Gallery - Ridgeline with gradient" :dataset :lincoln-weather})
+(nu/source-note {:source "R Graph Gallery - Ridgeline with gradient"
+                 :url "https://r-graph-gallery.com/294-basic-ridgeline-plot.html"
+                 :dataset :lincoln-weather})
 
 (plot/render-image
  {:data lincoln
@@ -590,12 +672,14 @@
 
 ;; With two groups, `:position :mirror` grows the second group away from the next level.
 
-(nu/source-note {:source "R Graph Gallery - Ridgeline (two groups)" :dataset :chem97})
+(nu/source-note {:source "R Graph Gallery - Ridgeline (two groups)"
+                 :url "https://r-graph-gallery.com/web-double-ridgeline-plot.html"
+                 :dataset :chem97})
 
 (plot/render-image
  {:data chem97
   :mapping {:x :gcsescore :y :score :color :gender}
-  :scales {:y {:kind :bands}}
+  :scales {:y {:type :categorical}}
   :charts [(chart/density {:position :mirror :overlap 0.45})]
   :labels {:title "GCSE score: F up, M down, by A-level score" :x "GCSE score" :y "A-level score"}}
  {:width 800 :height 650})
@@ -607,7 +691,9 @@
 ;; `:position :overlay` (each species is alone in its band anyway), and the box opts out of the colour with
 ;; `:mapping {:color nil}`.
 
-(nu/source-note {:source "R Graph Gallery - Beeswarm" :dataset :iris})
+(nu/source-note {:source "R Graph Gallery - Beeswarm"
+                 :url ["https://r-graph-gallery.com/370-basic-beeswarm-plot.html" "https://r-graph-gallery.com/371-custom-dots-beeswarm.html" "https://r-graph-gallery.com/372-grouped-beeswarm.html"]
+                 :dataset :iris})
 
 (plot/render-image
  (plot/arrange [{:data iris :mapping {:x :sepal-length :y :species}
@@ -616,7 +702,7 @@
                 {:data iris :mapping {:x :sepal-length :y :species} :flip true
                  :charts [(chart/beeswarm {:size 6})]
                  :labels {:title "vertical (:flip)" :x "sepal length" :y nil}}
-                {:data mtcars :mapping {:x :mpg :y :cyl} :scales {:y {:kind :bands}}
+                {:data mtcars :mapping {:x :mpg :y :cyl} :scales {:y {:type :categorical}}
                  :charts [(chart/beeswarm {:size 12 :shape \A :color [215 48 39 200]})]
                  :labels {:title "dot style (:shape, :size)" :x "mpg" :y "cylinders"}}
                 {:data iris :mapping {:x :petal-length :y :species :color :species}
@@ -632,13 +718,15 @@
 
 ;; Jittered points; `:rng` makes the jitter reproducible.
 
-(nu/source-note {:source "lattice stripplot; cljplot strips" :dataset :barley})
+(nu/source-note {:source "lattice stripplot; cljplot strips"
+                 :url ["http://lmdvr.r-forge.r-project.org/figures/figures.html" "https://seaborn.pydata.org/generated/seaborn.stripplot.html"]
+                 :dataset :barley})
 
 (plot/render-image
  {:data barley
   :mapping {:x :yield :y :variety :color :year}
-  :scales {:color {:kind :ordinal}}
-  :charts [(chart/stripplot {:rng (r/rng :mersenne 1) :size 8 :jitter 0.6})]
+  :scales {:color {:type :categorical}}
+  :charts [(chart/stripplot {:rng (r/rng :mersenne 1) :size 8 :jitter 0.1})]
   :labels {:title "Barley yield by variety, dodged by year" :x "yield" :y nil}}
  {:width 800 :height 550})
 
@@ -646,7 +734,9 @@
 
 ;; One line per value along the panel edge (`:edge`, the default without `:y`) or below y = 0 (`:bottom`).
 
-(nu/source-note {:source "cljplot rug; lattice densityplot" :dataset :faithful})
+(nu/source-note {:source "cljplot rug; lattice densityplot"
+                 :url ["https://seaborn.pydata.org/generated/seaborn.rugplot.html" "http://lmdvr.r-forge.r-project.org/figures/figures.html"]
+                 :dataset :faithful})
 
 (plot/render-image
  (plot/arrange [{:data faithful :mapping {:x :waiting} :charts [(chart/density) (chart/rug)]
@@ -656,9 +746,35 @@
                {:columns 2})
  {:width 900 :height 400})
 
+;; ## 1d strips
+
+;; Every strip chart also works on one variable alone: without `:y` it is placed in the middle of the panel and
+;; the plot has no y axis.
+
+(nu/source-note {:source "seaborn 1d plots; cljplot strips"
+                 :url ["https://seaborn.pydata.org/generated/seaborn.boxplot.html"
+                       "https://seaborn.pydata.org/generated/seaborn.swarmplot.html"]
+                 :dataset :faithful})
+
+(plot/render-image
+ (plot/arrange (for [[title c] [["box" (chart/box)]
+                                ["violin" (chart/violin)]
+                                ["stripplot" (chart/stripplot {:rng (r/rng :mersenne 5) :jitter 0.3 :size 6})]
+                                ["beeswarm" (chart/beeswarm {:size 5})]
+                                ["rug" (chart/rug {:place :center :width 0.6})]
+                                ["extent :stddev" (chart/extent {:method :stddev})]]]
+                 {:data faithful
+                  :mapping {:x :waiting}
+                  :charts [c]
+                  :labels {:title title :x "waiting [min]"}})
+               {:columns 2})
+ {:width 900 :height 650})
+
 ;; ## Empirical cumulative distribution
 
-(nu/source-note {:source "lattice ecdfplot" :dataset :iris})
+(nu/source-note {:source "lattice ecdfplot"
+                 :url ["http://lmdvr.r-forge.r-project.org/figures/figures.html" "https://seaborn.pydata.org/generated/seaborn.ecdfplot.html"]
+                 :dataset :iris})
 
 (plot/render-image
  {:data iris
