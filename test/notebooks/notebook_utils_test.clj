@@ -10,7 +10,7 @@
       (is (= #{:eruptions :waiting} (set (keys (first rows)))))
       (is (every? number? (map :waiting rows)))))
   (testing "unknown key names the known ones"
-    (is (= {:key :dataset :value :nope :known #{:faithful}} (error-data #(nu/dataset :nope))))
+    (is (= {:key :dataset :value :nope :known (set (keys (nu/datasets)))} (error-data #(nu/dataset :nope))))
     (is (= :dataset (:key (error-data #(nu/dataset nil))))))
   (testing "manifest entries without a readable file or with an unknown format"
     (with-redefs [nu/datasets (constantly {:gone {:file "gone.json" :format :json}
@@ -25,6 +25,17 @@
                     nu/parse-csv (fn [_ options] (reset! seen options) [])]
         (nu/dataset :ids)
         (is (= {:strings #{:id}} @seen))))))
+
+(deftest manifest-test
+  (testing "every manifest entry loads: rows of maps, with source, licence and via"
+    (doseq [[k {:keys [source licence via title]}] (nu/datasets)
+            :let [rows (nu/dataset k)]]
+      (is (seq rows) (str k))
+      (is (every? map? rows) (str k))
+      (is (every? string? [source licence via title]) (str k))))
+  (testing "CSV :strings columns stay strings (ids)"
+    (is (every? string? (map :student (take 100 (nu/dataset :chem97)))))
+    (is (every? string? (map :date (nu/dataset :lincoln-weather))))))
 
 (deftest parse-csv-test
   (testing "empty input and header only"

@@ -390,3 +390,25 @@
     (testing "default :none; nil rejected"
       (is (= :none (get-in (build (area-plot [1 2])) [:theme :chart :line :fill])))
       (is (= :fill (:key (error #(build {:data [{:x 1 :y 1}] :mapping {:x :x :y :y} :charts [(chart/line {:fill nil})]}))))))))
+
+(deftest density-group-fill-test
+  (let [p (fn [c] {:data rows :mapping {:x :v :color :g} :theme (assoc-in plain [:panel :grid :bands-fill] :none)
+                   :scales {:color {:range [[255 0 0] [0 0 255]]}} :charts [c]})
+        colors (fn [c] (let [canvas (plot/render (p c) {:width 400 :height 300})]
+                         (frequencies (for [x (range 400) y (range 300)] (pixel canvas x y)))))]
+    (testing ":fill :color with :alpha 1 - areas in the group colours"
+      (let [cs (colors (chart/density {:fill :color :alpha 1.0}))]
+        (is (> (get cs [255 0 0] 0) 500))
+        (is (> (get cs [0 0 255] 0) 500))))
+    (testing ":alpha 0.6 (default) - translucent group areas over white"
+      (let [cs (colors (chart/density {:fill :color}))]
+        (is (> (get cs [255 102 102] 0) 100))
+        (is (< (get cs [255 0 0] 0) 500) "only the lines are pure red")))
+    (testing "a fixed :fill colour and :none unchanged"
+      (is (zero? (get (colors (chart/density {:fill :none})) [255 102 102] 0)))
+      (is (> (get (colors (chart/density {:fill [0 200 0]})) [0 200 0] 0) 500)))
+    (testing "mirror and ridgelines take :fill :color too; legend keys are filled"
+      (is (> (get (colors (chart/density {:fill :color :alpha 1.0 :position :mirror})) [0 0 255] 0) 500))
+      (is (> (get (colors (assoc-in (chart/density {:fill :color :alpha 1.0}) [:options :mapping] {:y :g})) [255 0 0] 0) 500)))
+    (testing "schema"
+      (is (= #{[:charts 0 :options :fill]} (error-ins #(build (p (chart/density {:fill :colour})))))))))

@@ -11,8 +11,8 @@
     the group colour with opacity `:alpha`), `:mirror` (exactly two groups, the second drawn downward; y tick labels show
     magnitudes); `:symmetric` - mirror only: both halves on one y range `[-M M]`; `:zero-line` - mirror only: draw
     the y = 0 line (default true; `:zero-line-color`, `:zero-line-width`)
-  * `:color`, `:width`, `:dash` (line), `:fill` (area under the curve, default `:none`), `:alpha` (opacity of stacked
-    areas without `:fill`, 0..1, default 0.6)
+  * `:color`, `:width`, `:dash` (line), `:fill` (area under the curve: a colour, `:color` - the curve's (group) colour
+    with opacity `:alpha`, or `:none`, default), `:alpha` (0..1, default 0.6; also stacked areas without `:fill`)
   * `:padding {:x [lo hi] :y [lo hi]}` - default `{:x [0.05 0.05] :y [0 0.05]}`
 
   Groups (see [[cljplot2.data.group]]) come from ordinal aesthetics (`:color` colors the line) and `:group`; a group with
@@ -45,7 +45,7 @@
 
 (def ^:private style-entries
   (conj polyline/style-entries
-        (schema/optional :fill schema/color)
+        (schema/optional :fill [:or [:= :color] schema/color])
         (schema/optional :alpha schema/fraction)
         (schema/optional :zero-line-color schema/color)
         (schema/optional :zero-line-width schema/non-neg)))
@@ -79,10 +79,10 @@
   (merge (get-in theme [:chart :density]) (select-keys options [:color :width :dash :fill :alpha :zero-line-color :zero-line-width])))
 
 (defn- area-color
-  "Fill of a group's area with style `st` (group attributes merged): `:fill`, or for stacked curves (`stacked?`) without
-  one the group colour with opacity `:alpha` (0..1); `:none` - no area."
+  "Fill of a group's area with style `st` (group attributes merged): the group colour with opacity `:alpha` (0..1) for
+  `:fill :color` or for stacked curves (`stacked?`) without a fill, else `:fill` (`:none` - no area)."
   [st stacked?]
-  (if (and stacked? (theme/none? (:fill st)))
+  (if (or (= :color (:fill st)) (and stacked? (theme/none? (:fill st))))
     (c/set-alpha (:color st) (* 255.0 (double (:alpha st))))
     (:fill st)))
 
@@ -273,7 +273,7 @@
                 :let [[px py] curve [bx by] base]]
           (if y0?
             (polyline/fill-between! canvas px py bx by (area-color st true))
-            (polyline/fill-under! canvas px py bx by (:fill st))))
+            (polyline/fill-under! canvas px py bx by (area-color st false))))
         (when zero-line?
           (draw-zero-line! canvas box scales style))
         (doseq [{:keys [st curve]} drawn

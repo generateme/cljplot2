@@ -30,5 +30,10 @@
                        :extra-deps {org.scicloj/clay {:mvn/version "2.0.24"}
                                     org.clojure/data.json {:mvn/version "2.5.1"}
                                     org.clojure/data.csv {:mvn/version "1.1.0"}}}
-           ;; book build (Clay + Quarto) into `docs/`: `clojure -M:notebooks:clay [serve [port]]`, see `book.build`
-           :clay {:main-opts ["-m" "book.build"]}}}
+           ;; book build (Clay + Quarto) into `docs/`: `clojure -M:clay [serve [port]]`, see `book.build`; standalone
+           ;; (own paths and deps), so `:notebooks` stays free of main-opts for REPL jack-in
+           :clay {:extra-paths ["notebooks"]
+                  :extra-deps {org.scicloj/clay {:mvn/version "2.0.24"}
+                               org.clojure/data.json {:mvn/version "2.5.1"}
+                               org.clojure/data.csv {:mvn/version "1.1.0"}}
+                  :main-opts ["-m" "book.build"]}}}

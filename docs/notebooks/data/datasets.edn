@@ -9,4 +9,55 @@
             :source "R datasets package `faithful` (Härdle 1991; Azzalini & Bowman 1990)"
             :licence "Part of R (GPL-2 | GPL-3)"
             :via "cljplot2 dev/resources"
-            :notes "272 rows: `eruptions` (eruption time, min), `waiting` (time to next eruption, min)."}}
+            :notes "272 rows: `eruptions` (eruption time, min), `waiting` (time to next eruption, min)."}
+ :iris {:file "iris.csv"
+        :format :csv
+        :title "Edgar Anderson's iris measurements"
+        :source "R datasets package `iris` (Anderson 1935; Fisher 1936)"
+        :licence "Part of R (GPL-2 | GPL-3)"
+        :via "Rscript: datasets::iris, columns renamed to kebab-case, write.csv"
+        :notes "150 rows: `sepal-length`, `sepal-width`, `petal-length`, `petal-width` (cm), `species`."}
+ :mtcars {:file "mtcars.csv"
+          :format :csv
+          :title "Motor Trend car road tests (1974)"
+          :source "R datasets package `mtcars` (Henderson & Velleman 1981)"
+          :licence "Part of R (GPL-2 | GPL-3)"
+          :via "Rscript: datasets::mtcars, row names as column `model`, write.csv"
+          :notes "32 rows: `model`, `mpg`, `cyl`, `disp`, `hp`, `drat`, `wt`, `qsec`, `vs`, `am`, `gear`, `carb`."}
+ :diamonds {:file "diamonds.csv"
+            :format :csv
+            :title "Prices and attributes of round cut diamonds"
+            :source "R ggplot2 package `diamonds` (Wickham et al.)"
+            :licence "MIT (ggplot2)"
+            :via "Rscript: ggplot2::diamonds, write.csv"
+            :notes "53940 rows: `carat`, `cut`, `color`, `clarity`, `depth`, `table`, `price` (USD), `x`, `y`, `z` (mm)."}
+ :lincoln-weather {:file "lincoln-weather.csv"
+                   :format :csv
+                   :title "Weather in Lincoln, Nebraska, 2016"
+                   :source "R ggridges package `lincoln_weather` (Weather Underground, via Wilke)"
+                   :licence "GPL-2 (ggridges)"
+                   :via "Rscript: ggridges::lincoln_weather, columns CST, Month and the mean / max / min temperatures, write.csv"
+                   :strings [:date]
+                   :notes "366 rows: `date`, `month` (name), `mean-temp`, `max-temp`, `min-temp` (degrees F)."}
+ :chem97 {:file "chem97.csv"
+          :format :csv
+          :title "A-level chemistry scores, England 1997"
+          :source "R mlmRev package `Chem97` (Yang et al. 2002)"
+          :licence "GPL (>= 2) (mlmRev)"
+          :via "Rscript: mlmRev::Chem97, write.csv"
+          :strings [:lea :school :student]
+          :notes "31022 rows: `lea`, `school`, `student` (ids), `score` (A-level points 0-10), `gender`, `age` (months, centred), `gcsescore`, `gcsecnt` (centred)."}
+ :barley {:file "barley.json"
+          :format :json
+          :title "Barley yields, Minnesota 1931-1932"
+          :source "R lattice package `barley` (Immer et al. 1934; Fisher 1971; Cleveland 1993)"
+          :licence "GPL (>= 2) (lattice)"
+          :via "cljplot2 dev/resources"
+          :notes "120 rows: `yield` (bushels/acre), `variety`, `year`, `site`."}
+ :quakes {:file "quakes.json"
+          :format :json
+          :title "Earthquakes off Fiji since 1964"
+          :source "R datasets package `quakes` (Harvard PRIM-H project)"
+          :licence "Part of R (GPL-2 | GPL-3)"
+          :via "cljplot2 dev/resources"
+          :notes "1000 rows: `lat`, `long`, `depth` (km), `mag` (Richter), `stations`."}}
