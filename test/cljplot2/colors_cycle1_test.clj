@@ -241,9 +241,9 @@
   (testing "4.1 binned reversed"
     (let [b (build (plot-of {:color :v} {:color {:kind :binned :bins 3 :range [:red :green :blue] :reverse true}}))]
       (is (= (rgb :blue) (rgb (attr b :color -2))))))
-  (testing "6.7 binned aesthetics don't group"
-    (is (= :mapping (:key (error #(build {:data iris-like :mapping {:x :x :y :y :color :v}
-                                          :scales {:color {:kind :binned}} :charts [(chart/line)]}))))))
+  (testing "6.7 binned aesthetics don't group (a line colors along its length instead, cycle 2)"
+    (is (= :mapping (:key (error #(build {:data iris-like :mapping {:x :x :color :v}
+                                          :scales {:color {:kind :binned}} :charts [(chart/density)]}))))))
   (testing "6.8 misuse"
     (is (= :kind (key-of {:shape :sp} {:shape {:kind :binned}})))
     (is (= :kind (key-of {:size :v} {:size {:kind :binned}})))

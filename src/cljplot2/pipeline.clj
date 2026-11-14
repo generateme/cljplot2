@@ -42,6 +42,7 @@
   rows into groups for charts drawing one mark per group, see [[cljplot2.data.group]]."
   (:require [fastmath.core :as m]
             [cljplot2.chart :as chart]
+            [cljplot2.graphics.draw :as draw]
             [cljplot2.schema :as schema]
             [cljplot2.scale.aesthetic :as aesthetic]
             [cljplot2.data.rows :as data]
@@ -571,14 +572,21 @@
    (schema/nilable :options :map)
    (schema/optional :theme any?)])
 
+(def ^:private cvd-schema
+  (schema/named-type ::cvd
+                     (fn [v] (and (or (keyword? v) (and (vector? v) (= 2 (count v)) (keyword? (first v))))
+                                  (try (some? (draw/cvd-filter-fn v)) (catch Exception _ false))))
+                     "should be a clojure2d color vision deficiency: a keyword (:protanopia, :deuteranopia, :tritanopia, :achromatopsia) or [keyword severity] (:protanomaly, :deuteranomaly, :tritanomaly, :achromatomaly; severity in [0 1])"))
+
 (def options-schema
-  "Merged render options of `build` (see [[default-options]]), `:debug` (used by `cljplot2.render/render`) and
-  `:until`."
+  "Merged render options of `build` (see [[default-options]]), `:debug` and `:cvd` (used by
+  `cljplot2.render/render`) and `:until`."
   [:map {:closed true}
    [:width schema/pos-int]
    [:height schema/pos-int]
    [:hint (into [:enum] (sort measure/rendering-hints))]
    (schema/nilable :debug schema/bool)
+   (schema/nilable :cvd cvd-schema)
    (schema/optional :until (into [:enum] stage-order))])
 
 (defn- merged-mappings

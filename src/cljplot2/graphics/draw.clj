@@ -81,3 +81,11 @@
         ax (m/round (.x a)) ay (m/round (.y a))
         bx (m/round (.x b)) by (m/round (.y b))]
     {:x (m/min ax bx) :y (m/min ay by) :w (m/abs (- bx ax)) :h (m/abs (- by ay))}))
+
+(defn cvd-filter-fn
+  "Color function simulating the color vision deficiency `deficiency` - a clojure2d `cvd-filter` keyword
+  (`:protanopia`, `:deuteranopia`, `:tritanopia`, `:achromatopsia`) or `[keyword severity]` (`:protanomaly`,
+  `:deuteranomaly`, `:tritanomaly`, `:achromatomaly`; severity in `[0 1]`). Throws `ex-info` (clojure2d's) for an
+  unknown deficiency or severity."
+  [deficiency]
+  (if (vector? deficiency) (apply c/cvd-filter deficiency) (c/cvd-filter deficiency)))

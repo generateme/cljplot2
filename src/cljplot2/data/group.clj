@@ -97,6 +97,34 @@
        :dims dims
        :dropped (into {} (map (fn [k vs] [k (count (remove #(kept-value? k na-level? plot-scales %) vs))]) dims columns))})))
 
+(defn continuous-color
+  "A linear or binned `:color` of chart `mapping` - colored per row, not grouped - resolved as the plot scale will
+  resolve it (from the plot's scale spec in `env` `:plot-scales` and the values in `groups`, `{panel rows}`);
+  `nil` when `:color` is unmapped or groups. Returns `{:groups :mapping :color-of :dropped}`: `groups` without the
+  rows outside the color scale's explicit domain (and NA rows when `env` `:na-level?` is false), `mapping` without
+  `:color` (to split by the other dimensions), the row accessor of the color and the count of rows dropped."
+  [groups mapping {:keys [plot-scales na-level?] :or {na-level? true}}]
+  (when-let [acc (:color mapping)]
+    (let [color-of (data/row-accessor :color acc)
+          spec (get plot-scales :color {})
+          present (keep color-of (mapcat val groups))
+          numeric? (and (seq present) (every? number? present))]
+      (when (#{:linear :binned} (aesthetic/inferred-kind :color spec numeric?))
+        (let [kept? (fn [row] (let [v (color-of row)] (if (nil? v) na-level? (aesthetic/kept-value? :color spec v))))]
+          {:groups (update-vals groups #(filterv kept? %))
+           :mapping (dissoc mapping :color)
+           :color-of color-of
+           :dropped (count (remove kept? (mapcat val groups)))})))))
+
+(defn color-value-extents
+  "Per panel of `panel-values` (`{panel [color value ...]}`, NA as `nil`): `{:color extent}` of the non-NA values under
+  the plot's color scale spec in `plot-scales`; panels without one left out."
+  [panel-values plot-scales]
+  (into {} (keep (fn [[panel vs]]
+                   (when-let [e (aesthetic/value-extent :color (get plot-scales :color) (remove nil? vs))]
+                     [panel {:color e}])))
+        panel-values))
+
 (defn aesthetic-extents
   "Per panel of split `panels`: value extents of the non-NA aesthetic values of its groups, under the plot's
   `plot-scales` (see [[cljplot2.scale.aesthetic/value-extent]])."

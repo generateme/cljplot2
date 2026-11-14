@@ -6,6 +6,7 @@
   distinct color, its outline and its id."
   (:require [clojure2d.core :as c2d]
             [clojure2d.color :as c]
+            [clojure2d.pixels :as p]
             [cljplot2.graphics.canvas :as canvas]
             [cljplot2.graphics.draw :as draw]
             [cljplot2.layout.grid :as grid]
@@ -79,23 +80,38 @@
                                                       :charts (:charts built) :stats (:stats built)
                                                       :subplots (:subplots built) :debug? debug?}))
 
+(defn- cvd-pixels
+  "`pixels` with every color passed through the `deficiency` simulation (new pixels)."
+  [pixels deficiency]
+  (p/filter-colors (draw/cvd-filter-fn deficiency) pixels))
+
+(defn cvd-image
+  "A new `java.awt.image.BufferedImage`: `image` as seen with the color vision deficiency `deficiency` (see
+  [[cljplot2.graphics.draw/cvd-filter-fn]]); alpha kept, `image` unchanged."
+  ^java.awt.image.BufferedImage [image deficiency]
+  (c2d/get-image (cvd-pixels (p/to-pixels image) deficiency)))
+
 (defn render
   "Build `plot` (see [[cljplot2.pipeline/build]], `:until` is ignored) and draw it.
   Option `:debug` (boolean; here or in the plot's `:options`) paints item boxes and ids under the content, also inside
-  sub-plots.
+  sub-plots. Option `:cvd` (a deficiency, see [[cljplot2.graphics.draw/cvd-filter-fn]]) passes the finished drawing, sub-plots included,
+  through the color vision deficiency simulation (as [[cvd-image]]).
   Returns a clojure2d canvas of exactly `:width` x `:height`."
   ([plot] (render plot {}))
   ([plot options]
    (let [built (pipeline/build plot (dissoc options :until))
-         {:keys [width height hint]} (:options built)]
-     (canvas/call-with-graphics
-      (c2d/canvas width height hint)
-      (fn [target]
-        (let [background (get-in built [:theme :plot :background])]
-          (when-not (theme/none? background) ;; canvas is transparent until painted
-            (c2d/set-background target background)))
-        (draw-built! target built (boolean (get-in built [:options :debug])))
-        target)))))
+         {:keys [width height hint]} (:options built)
+         drawn (canvas/call-with-graphics
+                (c2d/canvas width height hint)
+                (fn [target]
+                  (let [background (get-in built [:theme :plot :background])]
+                    (when-not (theme/none? background) ;; canvas is transparent until painted
+                      (c2d/set-background target background)))
+                  (draw-built! target built (boolean (get-in built [:options :debug])))
+                  target))]
+     (if-let [deficiency (get-in built [:options :cvd])]
+       (p/set-canvas-pixels! drawn (cvd-pixels (p/to-pixels drawn) deficiency))
+       drawn))))
 
 (defn render-image
   "[[render]] `plot` and return the drawing as a `java.awt.image.BufferedImage` of exactly `:width` x `:height`

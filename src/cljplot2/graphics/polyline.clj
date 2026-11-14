@@ -50,6 +50,21 @@
     (doseq [run (runs xs ys) :when (> (count run) 1)]
       (c2d/path canvas run false true))))
 
+(defn draw-segments!
+  "Stroke every segment of `xs` / `ys` (pixels) between consecutive finite points - segment `i` from point `i` to
+  `i + 1` - in color `(segment-colors i)` (`nil` or `:none` skips it), with the `:width` and `:dash` of line `style`
+  (each segment restarts the dash) and round caps, so corners show no gaps."
+  [canvas xs ys segment-colors {:keys [width dash]}]
+  (when (pos? (double width))
+    (c2d/set-stroke-custom canvas (cond-> {:size (double width) :cap :round :join :round}
+                                    (and dash (not (theme/none? dash))) (assoc :dash (vec dash))))
+    (doseq [run (finite-runs xs ys)
+            [i j] (partition 2 1 run)
+            :let [color (segment-colors i)]
+            :when (and (some? color) (not (theme/none? color)))]
+      (c2d/set-color canvas color)
+      (c2d/line canvas (double (nth xs i)) (double (nth ys i)) (double (nth xs j)) (double (nth ys j))))))
+
 (defn fill-under!
   "Fill the area between each run of `xs` / `ys` (pixels) and its baseline: the polygon from the base point of the
   run's first point through the run to the base point of its last one (`bxs` / `bys` - the base point of every

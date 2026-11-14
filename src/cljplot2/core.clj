@@ -26,3 +26,9 @@
   "Build and draw `plot`, returning a `java.awt.image.BufferedImage`, see [[cljplot2.render/render-image]]."
   ([plot] (render/render-image plot))
   ([plot options] (render/render-image plot options)))
+
+(defn cvd-image
+  "`image` (a `java.awt.image.BufferedImage`) as seen with a color vision deficiency, a new image, see
+  [[cljplot2.render/cvd-image]]."
+  ^java.awt.image.BufferedImage [image deficiency]
+  (render/cvd-image image deficiency))

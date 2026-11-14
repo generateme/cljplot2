@@ -148,7 +148,7 @@
 (defn rect
   "Rectangles and bands (`:x [a b]`, `:y [a b]`), see [[cljplot2.chart.rect]] and [[cljplot2.data.annotation]]."
   ([] (rect {}))
-  ([options] (annotation-value :rect rect/compute rect/draw nil rect/schemas options)))
+  ([options] (annotation-value :rect rect/compute rect/draw rect/legend rect/schemas options)))
 
 (defn text
   "Text labels at positions, see [[cljplot2.chart.text]] and [[cljplot2.data.annotation]]."
