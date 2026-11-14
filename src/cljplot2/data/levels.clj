@@ -78,7 +78,7 @@
   [[distinct-digits]] (at least 3) significant digits."
   [breaks]
   (if (every? #(== (double %) (Math/rint (double %))) breaks)
-    (mapv #(str (long (double %))) breaks)
+    (mapv #(.toPlainString (.setScale (java.math.BigDecimal. (double %)) 0)) breaks)
     (let [digits (distinct-digits breaks 3)]
       (mapv #(shingle/rounded-str % digits) breaks))))
 

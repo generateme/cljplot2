@@ -180,7 +180,8 @@
           split (group/split {:p rows} {:color :c} {:plot-scales {:color {:kind :identity}}})]
       (is (= [[:red] [:blue] [:green]] (mapv :key (get-in split [:panels :p])))))
     (let [b (build {:data colored :mapping {:x :x :y :y :color :c} :scales {:color {:kind :identity}} :charts [(chart/line)]})]
-      (is (some? b) "line chart groups by identity colors")))
+      (is (= [:red "#00ff00" [0 0 255] nil] (mapv #(get-in % [:aesthetics :color]) (get-in b [:stats 0 :data :panel :lines])))
+          "line chart: one line per color, data order, NA last")))
   (testing "5.6 contradictions"
     (are [extra k] (= k (key-of {:color :c} {:color (merge {:kind :identity} extra)}))
       {:domain [:red]} :domain
@@ -310,3 +311,55 @@
   (is (= ["1" "1.0001" "1.0002"] (levels/break-labels [1 1.0001 1.0002])) "more digits to stay distinct")
   (is (= ["2.5" "3.5"] (levels/break-labels [2.5 3.5])))
   (is (= 3 (levels/distinct-digits [7.0] 3)) "one value"))
+
+;; review fixes
+
+(deftest review-fixes-test
+  (testing "F1 non-numeric data on a declared linear / binned scale throws :kind"
+    (is (= :kind (key-of {:color :sp} {:color {:kind :binned :bins [0 1 2]}})) "breaks vector")
+    (is (= :kind (key-of {:color :sp} {:color {:kind :binned :domain [0 2]}})))
+    (is (= :kind (key-of {:color :sp} {:color {:domain [0 2]}})) "two-number domain = linear")
+    (is (= :kind (key-of {:size :sp} {:size {:kind :linear :domain [0 2]}})))
+    (is (= 1 (get-in (build (plot-of {:color :v} {:color {:domain [0 10]}})) [:stats 0 :dropped :color]))
+        "numbers outside the domain are still dropped"))
+  (testing "F2 treemap follows the aesthetic value rules"
+    (let [p (fn [cs scale] {:data [{:g "a" :v 1 :c (cs 0)} {:g "b" :v 2 :c (cs 1)}]
+                            :mapping {:value :v :color :c :hierarchy [:g]} :scales {:color scale} :charts [(chart/treemap)]})]
+      (is (= 0 (get-in (build (p [[255 0 0] [0 0 255]] {:kind :identity})) [:stats 0 :dropped :color])) "vector colors kept")
+      (is (= :mapping (:key (error #(build (p [:red :no-such-color] {:kind :identity}))))))
+      (is (= :kind (:key (error #(build (p ["x" "y"] {:kind :binned :bins [0 1 2]}))))))))
+  (testing "F3 identity colors of mixed forms (integer, keyword, vector)"
+    (let [b (build (plot-of [{:x 1 :y 1 :c 0xff0000} {:x 2 :y 2 :c :blue} {:x 3 :y 3 :c [0 255 0]}] {:color :c} {:color {:kind :identity}}))]
+      (is (= 3 (count (get-in b [:stats 0 :data :panel :x]))))
+      (is (= 0xff0000 (attr b :color 0xff0000))))
+    (let [rows [{:x 1 :y 1 :c 0xff0000} {:x 2 :y 2 :c :blue}]]
+      (is (some? (build {:data rows :mapping {:x :x :y :y :color :c} :scales {:color {:kind :identity}} :charts [(chart/line)]})))))
+  (testing "F4 level map on numbers hints at :type :categorical"
+    (let [e (error-data #(build (plot-of {:color :n} {:color {:range {1931 :red 1932 :blue}}})))]
+      (is (= :range (:key e)))
+      (is (str/includes? (:message (first (:errors e))) ":type :categorical"))))
+  (testing "F5 gradient names"
+    (let [g (c/gradient :viridis/viridis)
+          b (build (plot-of {:color :v} {:color {:range :viridis/viridis}}))]
+      (is (= (rgb (g 0.0)) (rgb (attr b :color -2))))
+      (is (= (rgb (g 1.0)) (rgb (attr b :color 8)))))
+    (let [b (build (plot-of {:color :v} {:color {:kind :binned :bins 2 :range :viridis/viridis}}))]
+      (is (= (rgb ((c/gradient :viridis/viridis) 1.0)) (rgb (attr b :color 8)))))
+    (let [b (build (plot-of {:color :sp} {:color {:range :viridis/viridis :spread true}}))]
+      (is (= (mapv rgb (c/resample (c/gradient :viridis/viridis) 3)) (mapv #(rgb (attr b :color %)) ["setosa" "versicolor" "virginica"])))
+      "ordinal with :spread")
+    (let [b (build (plot-of {:color :sp} {:color {:range t-range :spread true}}))]
+      (is (some? (attr b :color "setosa")) "a function range with :spread"))
+    (is (= :range (key-of {:color :sp} {:color {:range :viridis/viridis}})) "ordinal without :spread")
+    (is (= :range (key-of {:color :v} {:color {:range :no-such-gradient}})))
+    (is (= :range (key-of {:shape :sp} {:shape {:range :viridis/viridis}}))))
+  (testing "F6c shape can't be linear (rule now in option-problems)"
+    (is (= :kind (key-of {:shape :sp} {:shape {:kind :linear}}))))
+  (testing "F6e huge whole breaks"
+    (is (= ["0" "100000000000000000000"] (levels/break-labels [0 1e20]))))
+  (testing "F6f midpoint tick on the color bar"
+    (let [ticks (fn [scales] (:ticks (first (legends (build (plot-of {:color :v} scales))))))]
+      (is (some #(== 0.5 %) (ticks {:color {:midpoint 0.5}})))
+      (is (not-any? #(== 0.0 %) (ticks {:color {:midpoint 0.5}})) "a colliding nice tick dropped")
+      (is (= (ticks {:color {}}) (ticks {:color {:midpoint 20}})) "outside the domain: no tick")
+      (is (= (ticks {:color {}}) (ticks {:color {:midpoint 0}})) "already a tick"))))

@@ -124,7 +124,7 @@
     {:data (update-vals items (fn [its] {:ridges its :top top :overlap overlap :style (style options theme)
                                          :translucent? (and (> (count group-keys) 1) (= :overlay position))}))
      :ridges? true
-     :extents (merge-with merge (group/aesthetic-extents panels)
+     :extents (merge-with merge (group/aesthetic-extents panels (:plot-scales env))
                           (strip/extents :band items (fn [_] [(first brks) (peek brks)])))
      :padding (merge {:x [0.05 0.05]} (:padding options))
      :scale-defaults (strip/ridge-scale-defaults overlap (= :mirror position) (:flip? env) (get-in env [:plot-scales :y]))
@@ -191,7 +191,7 @@
           bar-extents (if (and (= position :mirror) (:symmetric options))
                         (update-vals bar-extents #(some-> % (assoc :y {:kind :numeric :min lo :max hi})))
                         bar-extents)
-          aesthetic-extents (group/aesthetic-extents panels)]
+          aesthetic-extents (group/aesthetic-extents panels (:plot-scales env))]
       {:data data
        :extents (merge-with merge aesthetic-extents (into {} (filter val) bar-extents))
        :padding (merge {:x [0.05 0.05] :y (if (= position :mirror) [0.05 0.05] [0.0 0.05])} (:padding options))

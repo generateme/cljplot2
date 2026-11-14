@@ -13,8 +13,8 @@
   * `:domain` - ordinal: distinct levels (default: data levels, sorted; numbers equal as doubles, `1931` = `1931.0`);
     linear: `[lo hi]` (default: data min, max)
   * `:range` - default from theme `:palette` (`:color`, `:gradient`, `:shape`, `:size`):
-    ordinal `:color` - palette name or colors (cycled); linear `:color` - palette name, colors (a gradient) or a
-    function of `t` in `[0 1]`; `:shape` - shapes (cycled); `:size` - `[min max]` (ordinal levels evenly spread)
+    ordinal `:color` - palette name or colors (cycled; with `:spread` also a gradient); linear / binned `:color` -
+    palette name, colors (a gradient), a clojure2d gradient name or a function of `t` in `[0 1]`; `:shape` - shapes (cycled); `:size` - `[min max]` (ordinal levels evenly spread)
     or a level map `{level attribute}` (ordinal scales; every level needs an entry, extra keys are ignored)
   * `:kind :binned` (`:color` only, never inferred) - numeric values coloured by bin: `:bins` - a count of equal bins
     over the domain (default 5) or a breaks vector (its ends are the domain); bins `[a b)`, the last `[a b]`; bin
@@ -83,6 +83,17 @@
 
 (def ^:private gradient [:multi {:dispatch fn?} [true schema/function] [false palette]])
 
+(defn- gradient-name?
+  "Is `p` a clojure2d gradient name (a keyword that names a gradient, not a palette)?"
+  [p]
+  (and (keyword? p) (nil? (palette-colors p)) (try (fn? (c/gradient p)) (catch Exception _ false))))
+
+(def ^:private color-range
+  [:multi {:dispatch fn?}
+   [true schema/function]
+   [false (schema/named-type ::color-range #(or (some? (palette-colors %)) (gradient-name? %))
+                             "should be a palette or gradient name, or a non-empty sequence of colors")]])
+
 (defn- level-map
   "Schema of a level map `:range` - `{level attribute}`, attributes valid by `attribute-schema`."
   [attribute-schema]
@@ -92,7 +103,7 @@
   "Schema of the scale `:range` of aesthetic `k`: a level map (ordinal scales) or the dimension's plain range."
   [k]
   (let [plain (case k
-                :color gradient
+                :color color-range
                 :shape shapes
                 :size size-range)
         attribute (case k :color schema/solid-color :shape schema/shape :size schema/non-neg)]
@@ -146,12 +157,14 @@
   (let [level-map? (map? range)
         bins-domain (when (and (vector? bins) (>= (count bins) 2)) [(double (first bins)) (double (peek bins))])]
     (cond-> []
+      (and (= kind :linear) (= k :shape)) (conj [:kind "shape scale can't be :linear"])
       (and (= kind :binned) (not= k :color)) (conj [:kind "only a :color scale can be :binned"])
       (and (= kind :identity) (some? domain)) (conj [:domain "an identity scale takes no :domain"])
       (and (= kind :identity) (contains? spec :range)) (conj [:range "an identity scale takes no :range"])
-      (and level-map? (not= kind :ordinal) (not= kind :identity)) (conj [:range "a level map :range needs an ordinal scale"])
-      (and (fn? range) (not (#{:linear :binned} kind)) (not= kind :identity))
-      (conj [:range "a color :range function needs a linear or binned scale"])
+      (and level-map? (not= kind :ordinal) (not= kind :identity))
+      (conj [:range "a level map :range needs an ordinal scale (declare numbers categorical: {:type :categorical})"])
+      (and (or (fn? range) (gradient-name? range)) (= kind :ordinal) (not spread))
+      (conj [:range "a color :range function or gradient name needs a linear or binned scale, or :spread"])
       (and spread (or (not= k :color) (not= kind :ordinal))) (conj [:spread ":spread needs an ordinal :color scale"])
       (and spread level-map?) (conj [:spread ":spread can't be combined with a level map :range"])
       (and (some? midpoint) (or (not= k :color) (not (#{:linear :binned} kind))))
@@ -193,16 +206,16 @@
           (schema/optional :formatter schema/function)
           (schema/nilable :title string?)
           (schema/nilable :legend schema/bool)]
-         [#(when (and (= k :shape) (= :linear (:kind %))) "shape scale can't be :linear") [:kind]]
          [#(domain-problem k %) [:domain]]
          (map #(option-rule k %) [:kind :domain :range :spread :midpoint :reverse :bins])))
 
 (defn- resolve-range
-  "Concrete range of dimension `k` from the (validated) range value `r`: a level map or a function as given, colors
-  of a palette name or sequence."
+  "Concrete range of dimension `k` from the (validated) range value `r`: a level map or a function as given, the
+  gradient (function) of a gradient name, colors of a palette name or sequence."
   [k r]
   (cond
     (or (map? r) (fn? r)) r
+    (and (= k :color) (gradient-name? r)) (c/gradient r)
     (= k :color) (palette-colors r)
     (= k :shape) (vec r)
     :else r))
@@ -245,15 +258,14 @@
 
 (defn in-domain?
   "Is data value `v` of aesthetic `k` inside the explicit domain of the plot's scale `spec` (may be `{}`)?
-  True without an explicit domain (a data domain holds all data), for `nil` (NA is handled separately), for an
-  identity scale and for a malformed domain (rejected later by [[scale-spec]]). Ordinal: one of the levels (numbers
+  True without an explicit domain (a data domain holds all data; identity scales have none), for `nil` (NA is
+  handled separately) and for a malformed domain (rejected later by [[scale-spec]]). Ordinal: one of the levels (numbers
   equal as doubles); linear / binned: a number within `[lo hi]` (binned: also the ends of a `:bins` breaks vector)."
   [k spec v]
   (let [domain (spec-domain spec)]
     (if (or (nil? v) (nil? domain))
       true
       (case (inferred-kind k spec (number? v))
-        :identity true
         :ordinal (boolean (some #(= (level-key %) (level-key v)) domain))
         (:linear :binned) (let [[lo hi] domain]
                             (if (and (= 2 (count domain)) (number? lo) (number? hi))
@@ -279,18 +291,32 @@
   [k spec v]
   (if (identity-scale? spec) (valid-attribute? k v) (data/valid-value? v)))
 
+(defn value-extent
+  "Extent of the non-NA values `vs` of aesthetic `k` under the plot's scale `spec` (may be `nil`), `nil` when empty:
+  an identity scale needs no domain, so its values aren't inspected (`{:kind :categorical :values []}` - colors of
+  any form may mix); otherwise [[cljplot2.data.rows/value-extent]]."
+  [k spec vs]
+  (if (identity-scale? spec)
+    (when (seq vs) {:kind :categorical :values []})
+    (data/value-extent k vs)))
+
 (defn kept-value?
   "Is the non-`nil` data value `v` of aesthetic `k` drawn under the plot's scale `spec` (may be `{}`): with an identity
   scale a valid attribute ([[valid-attribute?]]) - any other value throws `ex-info {:key :mapping}`; otherwise a
-  valid value ([[cljplot2.data.rows/valid-value?]]) inside the explicit domain ([[in-domain?]]). `nil` gives false
-  (callers decide about NA)."
+  valid value ([[cljplot2.data.rows/valid-value?]]) inside the explicit domain ([[in-domain?]]) - a non-number on a
+  scale declared linear or binned (its `:kind`, or a two-number domain) throws `ex-info {:key :kind}`. `nil` gives
+  false (callers decide about NA)."
   [k spec v]
   (cond
     (nil? v) false
     (identity-scale? spec) (or (valid-attribute? k v)
                                (schema/fail! (str "An identity " (name k) " scale needs " (name k) " values.")
                                              {:key :mapping :in [:mapping k] :value v}))
-    :else (and (data/valid-value? v) (in-domain? k spec v))))
+    :else (and (data/valid-value? v)
+               (do (when (and (not (number? v)) (#{:linear :binned} (inferred-kind k spec false)))
+                     (schema/fail! (str "A " (inferred-kind k spec false) " aesthetic scale needs numeric data.")
+                                   {:key :kind :in [:scales k :kind] :value v}))
+                   (in-domain? k spec v)))))
 
 (defn- binned-breaks
   "Breaks of a binned scale over the domain `[lo hi]`: a `:bins` vector as given, else a count of equal bins."

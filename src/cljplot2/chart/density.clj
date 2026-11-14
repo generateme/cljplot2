@@ -142,7 +142,7 @@
     {:data (update-vals items (fn [its] {:ridges its :top top :overlap overlap :style (style options theme)
                                          :gradient gradient}))
      :ridges? true
-     :extents (merge-with merge (group/aesthetic-extents panels)
+     :extents (merge-with merge (group/aesthetic-extents panels (:plot-scales env))
                           (strip/extents :band items (fn [{:keys [xs]}] [(first xs) (peek xs)])))
      :padding (merge {:x [0.05 0.05]} (:padding options))
      :scale-defaults (strip/ridge-scale-defaults overlap (= :mirror position) (:flip? env) (get-in env [:plot-scales :y]))
@@ -174,7 +174,7 @@
     (when (and (pos? row-count) (= row-count x-dropped))
       (schema/fail! "No valid values for a mapped dimension - check the mapping." {:key :mapping :value :x :rows row-count}))
     {:data data
-     :extents (merge-with merge (group/aesthetic-extents panels)
+     :extents (merge-with merge (group/aesthetic-extents panels (:plot-scales env))
                           (into {} (keep (fn [[panel {:keys [curves]}]]
                                            (when (seq curves)
                                              [panel {:x (data/extent :x (mapcat :x curves))

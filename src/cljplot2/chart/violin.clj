@@ -88,7 +88,7 @@
         items (update-vals items (fn [its] (mapv #(-> % (assoc :widths (widths %)) (dissoc :ds)) its)))]
     {:data (update-vals items (fn [its] {:items its :style (style options theme) :place place :options options
                                          :mirror? (= :mirror position)}))
-     :extents (merge-with merge (group/aesthetic-extents panels)
+     :extents (merge-with merge (group/aesthetic-extents panels (:plot-scales env))
                           (strip/extents place items (fn [{:keys [xs]}] [(first xs) (peek xs)])))
      :padding (strip/padding place options)
      :padding-px (strip/n-label-room options items env)

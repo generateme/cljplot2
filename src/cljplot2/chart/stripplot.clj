@@ -63,7 +63,7 @@
         jitter (double (get options :jitter 0.8))
         items (update-vals items (fn [its] (mapv #(assoc % :offsets (jitter-offsets rng (count (:values %)) jitter)) its)))]
     {:data (update-vals items (fn [its] {:items its :style (style options theme) :place place :options options}))
-     :extents (merge-with merge (group/aesthetic-extents panels)
+     :extents (merge-with merge (group/aesthetic-extents panels (:plot-scales env))
                           (strip/extents place items (fn [{:keys [values]}] [(reduce min values) (reduce max values)])))
      :padding (strip/padding place options)
      :padding-px (strip/n-label-room options items env)

@@ -95,7 +95,7 @@
         (schema/fail! "No valid values for a mapped dimension - check the mapping." {:key :mapping :value k :rows row-count})))
     {:data points
      :extents (update-vals points (fn [p] (into {:x (data/extent :x (:x p)) :y (data/extent :y (:y p))}
-                                                (map (fn [k] [k (data/value-extent k (remove nil? (p k)))]))
+                                                (map (fn [k] [k (aesthetic/value-extent k (get plot-scales k) (remove nil? (p k)))]))
                                                 (drop 2 dims))))
      :padding padding
      :na (set (filter (fn [k] (some #(some nil? (% k)) (vals points))) (drop 2 dims)))

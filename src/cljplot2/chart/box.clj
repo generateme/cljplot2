@@ -84,7 +84,7 @@
                   (let [vs (cond-> [lav uav] outliers? (into outliers))]
                     [(reduce min vs) (reduce max vs)]))]
     {:data (update-vals items (fn [its] {:items its :style (style options theme) :place place :options options}))
-     :extents (merge-with merge (group/aesthetic-extents panels) (strip/extents place items x-range))
+     :extents (merge-with merge (group/aesthetic-extents panels (:plot-scales env)) (strip/extents place items x-range))
      :padding (strip/padding place options)
      :padding-px (strip/n-label-room options items env)
      :na (group/na-dims panels)

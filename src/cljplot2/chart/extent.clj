@@ -124,7 +124,7 @@
         items (update-vals items (fn [its] (mapv #(merge % (interval (:values %) method {:method-args (:method-args options) :rng rng
                                                                                 :statistic (:statistic options)})) its)))]
     {:data (update-vals items (fn [its] {:items its :style (style options theme) :place place :options options}))
-     :extents (merge-with merge (group/aesthetic-extents panels)
+     :extents (merge-with merge (group/aesthetic-extents panels (:plot-scales env))
                           (strip/extents place items (fn [{:keys [lo hi center]}]
                                                        [(m/min (double lo) (double (or center lo)))
                                                         (m/max (double hi) (double (or center hi)))])))

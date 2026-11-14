@@ -64,7 +64,7 @@
                                           gs)
                              :style st}))]
     {:data data
-     :extents (merge-with merge (group/aesthetic-extents panels)
+     :extents (merge-with merge (group/aesthetic-extents panels (:plot-scales env))
                           (into {} (keep (fn [[panel {:keys [lines]}]]
                                            (let [xs (mapcat :x lines) ys (remove nil? (mapcat :y lines))]
                                              (when (seq ys)

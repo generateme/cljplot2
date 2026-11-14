@@ -86,24 +86,26 @@
           kept? (fn [key] (every? true? (map #(boolean (kept-value? %1 na-level? plot-scales %2)) dims key)))
           panels (update-vals groups
                               (fn [rows]
-                                (let [by-key (group-by key-of (filter (comp kept? key-of) rows))]
+                                (let [keyed (keep (fn [row] (let [key (key-of row)] (when (kept? key) [key row]))) rows)
+                                      by-key (reduce (fn [acc [key row]] (update acc key (fnil conj []) row)) {} keyed)]
                                   (mapv (fn [key] {:key key
                                                    :aesthetics (into {} (keep (fn [[k v]] (when (aesthetic/dim? k) [k v])))
                                                                      (map vector dims key))
                                                    :rows (by-key key)})
-                                        (ordered-keys (distinct (map key-of (filter (comp kept? key-of) rows)))
-                                                      dims plot-scales)))))]
+                                        (ordered-keys (distinct (map first keyed)) dims plot-scales)))))]
       {:panels panels
        :dims dims
        :dropped (into {} (map (fn [k vs] [k (count (remove #(kept-value? k na-level? plot-scales %) vs))]) dims columns))})))
 
 (defn aesthetic-extents
-  "Per panel of split `panels`: value extents of the non-NA aesthetic values of its groups."
-  [panels]
+  "Per panel of split `panels`: value extents of the non-NA aesthetic values of its groups, under the plot's
+  `plot-scales` (see [[cljplot2.scale.aesthetic/value-extent]])."
+  [panels plot-scales]
   (update-vals panels
                (fn [gs]
                  (into {} (keep (fn [k]
-                                  (when-let [e (data/value-extent k (keep #(get-in % [:aesthetics k]) gs))]
+                                  (when-let [e (aesthetic/value-extent k (get plot-scales k)
+                                                                       (keep #(get-in % [:aesthetics k]) gs))]
                                     [k e])))
                        aesthetic/dims))))
 

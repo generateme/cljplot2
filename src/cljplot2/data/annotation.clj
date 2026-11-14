@@ -87,7 +87,7 @@
         per-panel (update-vals panels panel-fn)]
     {:data (update-vals per-panel first)
      :extents (merge-with merge
-                          (group/aesthetic-extents panels)
+                          (group/aesthetic-extents panels (:plot-scales env))
                           (into {} (keep (fn [[panel [_ positions]]]
                                            (let [e (extents options positions)] (when (seq e) [panel e]))))
                                 per-panel))

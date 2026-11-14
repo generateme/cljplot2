@@ -82,9 +82,19 @@
 
 (def ^:private ^:const colorbar-ticks 5)
 
+(defn- with-midpoint-tick
+  "`ticks` (ascending) with a linear scale's `midpoint` added when it lies in `[lo hi]`; ticks closer to it than half
+  the tick step are dropped (their labels would collide)."
+  [ticks midpoint ^double lo ^double hi]
+  (if (and (some? midpoint) (<= lo (double midpoint) hi) (not-any? #(== (double %) (double midpoint)) ticks))
+    (let [mid (double midpoint)
+          step (if (> (count ticks) 1) (- (double (second ticks)) (double (first ticks))) (- hi lo))]
+      (vec (sort (conj (filterv #(>= (m/abs (- (double %) mid)) (* 0.5 step)) ticks) mid))))
+    ticks))
+
 (defn- colorbar-content
   "Color bar of the linear or binned color scale `spec` mapped with `accessors` (title rule as legends). Ticks:
-  linear - nice ticks of the domain; binned - the inner breaks, labelled by `:formatter` or
+  linear - nice ticks of the domain (and the `:midpoint`, see [[with-midpoint-tick]]); binned - the inner breaks, labelled by `:formatter` or
   [[cljplot2.data.levels/break-labels]]."
   [spec accessors]
   (let [[lo hi] (:domain spec)
@@ -94,7 +104,7 @@
         ticks (cond
                 (= :binned (:kind spec)) (let [breaks (:breaks spec)] (subvec breaks 1 (dec (count breaks))))
                 (== lo hi) [lo]
-                :else (filterv #(<= lo (double %) hi) (s/ticks ws)))]
+                :else (with-midpoint-tick (filterv #(<= lo (double %) hi) (s/ticks ws)) (:midpoint spec) lo hi))]
     {:kind :colorbar
      :title (title [{:spec spec :accessors accessors}])
      :scale spec

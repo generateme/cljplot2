@@ -63,7 +63,7 @@
     (when (and (pos? row-count) (= row-count x-dropped))
       (schema/fail! "No valid values for a mapped dimension - check the mapping." {:key :mapping :value :x :rows row-count}))
     {:data data
-     :extents (merge-with merge (group/aesthetic-extents panels)
+     :extents (merge-with merge (group/aesthetic-extents panels (:plot-scales env))
                           (into {} (keep (fn [[panel {:keys [steps]}]]
                                            (when (seq steps)
                                              [panel {:x (data/extent :x (mapcat :x steps))

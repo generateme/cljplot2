@@ -106,7 +106,7 @@
                                 (let [cv (color-of row)]
                                   (if (nil? cv)
                                     na-level?
-                                    (and (data/valid-value? cv) (aesthetic/in-domain? :color color-spec cv))))))
+                                    (aesthetic/kept-value? :color color-spec cv)))))
         all-rows (mapcat val groups)
         trees (update-vals groups
                            (fn [rows]
@@ -128,7 +128,7 @@
                                                :colored? (some? color-of)}])))
                  trees)
      :extents (into {} (keep (fn [[panel tree]]
-                               (when-let [e (some->> tree colors seq (data/value-extent :color))]
+                               (when-let [e (some->> tree colors seq (aesthetic/value-extent :color color-spec))]
                                  [panel {:color e}])))
                     trees)
      :na (if (and color-of (some (fn [[_ tree]] (some #(and (contains? % :color) (nil? (:color %)) (not (:children %)))
