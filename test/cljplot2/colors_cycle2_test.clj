@@ -205,3 +205,28 @@
         (is (= :cvd (:key (error #(plot/render-image p (assoc size :cvd bad))))) (pr-str bad))))
     (testing "3.5 :cvd nil: unchanged"
       (is (= (.getRGB (plot/render-image p size) 200 150) (.getRGB (plot/render-image p (assoc size :cvd nil)) 200 150))))))
+
+;; review fixes
+
+(deftest review-fixes-test
+  (testing "F1 a :fill vector in data mode throws; a single fill is fine"
+    (is (= :fill (:key (error #(build {:data bands :charts [(chart/rect {:mapping {:y0 :y0 :y1 :y1} :fill [:red :blue]})]})))))
+    (is (some? (build {:data bands :charts [(chart/rect {:mapping {:y0 :y0 :y1 :y1} :fill [255 0 0]})]})) "a color vector is one fill"))
+  (testing "F2 :cvd on a sub-plot throws :cvd (top level still works)"
+    (let [p {:data [{:x 1 :y 1}] :mapping {:x :x :y :y} :charts [(chart/scatter)]}
+          e (error #(plot/render-image (plot/arrange [p (assoc p :options {:cvd :deuteranopia})]) size))]
+      (is (= :cvd (:key e)))
+      (is (some? (:subplot e)))
+      (is (some? (plot/render-image (assoc (plot/arrange [p p]) :options {:cvd :deuteranopia}) size)))))
+  (testing "F3 per-row color stats shared by line and rect (NA, dropped, extents)"
+    (let [b (build {:data [{:y0 0 :y1 1 :v 0} {:y0 1 :y1 2 :v nil} {:y0 2 :y1 3 :v 99}] :scales {:color {:domain [0 10]}}
+                    :charts [(chart/rect {:mapping {:y0 :y0 :y1 :y1 :color :v}})]})]
+      (is (contains? (get-in b [:stats 0 :na]) :color))
+      (is (= 1 (get-in b [:stats 0 :dropped :color])))
+      (is (= [0.0 10.0] (get-in b [:scale-specs :color :domain])))))
+  (testing "F4a rows with an unplaceable end are skipped before grouping: their colors count nowhere"
+    (let [b (build {:data [{:y0 0 :y1 1 :v 0} {:y0 1 :y1 2 :v 10} {:y0 "x" :y1 ##NaN :v nil}]
+                    :charts [(chart/rect {:mapping {:y0 :y0 :y1 :y1 :color :v}})]})]
+      (is (= 1 (get-in b [:stats 0 :dropped :position])))
+      (is (not (contains? (get-in b [:stats 0 :na]) :color)))
+      (is (= 0 (get-in b [:stats 0 :dropped :color]))))))

@@ -116,14 +116,18 @@
            :color-of color-of
            :dropped (count (remove kept? (mapcat val groups)))})))))
 
-(defn color-value-extents
-  "Per panel of `panel-values` (`{panel [color value ...]}`, NA as `nil`): `{:color extent}` of the non-NA values under
-  the plot's color scale spec in `plot-scales`; panels without one left out."
-  [panel-values plot-scales]
-  (into {} (keep (fn [[panel vs]]
-                   (when-let [e (aesthetic/value-extent :color (get plot-scales :color) (remove nil? vs))]
-                     [panel {:color e}])))
-        panel-values))
+(defn continuous-color-stats
+  "Stats of a chart's per-row colors (see [[continuous-color]]) from `panel-values` - `{panel [color value ...]}`
+  (NA as `nil`) of what the chart draws: `:extents` `{panel {:color extent}}` of the non-NA values under the plot's
+  color scale spec in `plot-scales` (panels without one left out), `:dropped` - the rows `continuous` dropped,
+  `:na?` - some value is NA."
+  [continuous panel-values plot-scales]
+  {:extents (into {} (keep (fn [[panel vs]]
+                             (when-let [e (aesthetic/value-extent :color (get plot-scales :color) (remove nil? vs))]
+                               [panel {:color e}])))
+                  panel-values)
+   :dropped (:dropped continuous)
+   :na? (boolean (some nil? (mapcat val panel-values)))})
 
 (defn aesthetic-extents
   "Per panel of split `panels`: value extents of the non-NA aesthetic values of its groups, under the plot's

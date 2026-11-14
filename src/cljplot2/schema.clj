@@ -79,6 +79,13 @@
                "should be [h v], h one of :left :center :right, v one of :top :middle :bottom"))
 
 (def color (named-type ::color color? "should be a clojure2d color or :none"))
+
+(def cvd-deficiency
+  "A clojure2d color vision deficiency (`clojure2d.color/cvd-filter` arguments): a keyword or `[keyword severity]`."
+  (named-type ::cvd-deficiency
+              (fn [v] (and (or (keyword? v) (and (vector? v) (= 2 (count v)) (keyword? (first v))))
+                           (try (some? (if (vector? v) (apply c/cvd-filter v) (c/cvd-filter v))) (catch Exception _ false))))
+              "should be a clojure2d color vision deficiency: a keyword (:protanopia, :deuteranopia, :tritanopia, :achromatopsia) or [keyword severity] (:protanomaly, :deuteranomaly, :tritanomaly, :achromatomaly; severity in [0 1])"))
 (def solid-color (named-type ::solid-color solid-color? "should be a clojure2d color"))
 (def shape (named-type ::shape #(contains? shape/shapes %) (str "should be a shape, one of " (apply str (sort shape/shapes)))))
 (def font (named-type ::font font/known-font? "should be a bundled, installed or logical font name, or a java.awt.Font"))

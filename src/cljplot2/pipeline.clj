@@ -42,7 +42,6 @@
   rows into groups for charts drawing one mark per group, see [[cljplot2.data.group]]."
   (:require [fastmath.core :as m]
             [cljplot2.chart :as chart]
-            [cljplot2.graphics.draw :as draw]
             [cljplot2.schema :as schema]
             [cljplot2.scale.aesthetic :as aesthetic]
             [cljplot2.data.rows :as data]
@@ -460,11 +459,15 @@
 (declare build)
 
 (defn- build-subplot
-  "Built sub-plot `p` of item `id` for its `box`. Errors are re-thrown as `ex-info` with `:subplot id` and
+  "Built sub-plot `p` of item `id` for its `box` (`:cvd` in its `:options` throws `{:key :cvd}`: it applies to the
+  whole rendering). Errors are re-thrown as `ex-info` with `:subplot id` and
   `:subplot-path` (outer item ids first), the original as cause: an `ex-info` keeps its message and data, any other
   exception gets `{:key :subplot}`."
   [p id {:keys [w h]} hint]
-  (try (build p {:width (long w) :height (long h) :hint hint})
+  (try (when (some? (get-in p [:options :cvd]))
+         (schema/fail! "Option :cvd applies to the whole rendering, not to a sub-plot; give it to the outer plot."
+                       {:key :cvd :in [:options :cvd] :value (get-in p [:options :cvd])}))
+       (build p {:width (long w) :height (long h) :hint hint})
        (catch Exception e
          (let [data (if (instance? clojure.lang.ExceptionInfo e) (ex-data e) {:key :subplot})
                message (if (instance? clojure.lang.ExceptionInfo e)
@@ -572,12 +575,6 @@
    (schema/nilable :options :map)
    (schema/optional :theme any?)])
 
-(def ^:private cvd-schema
-  (schema/named-type ::cvd
-                     (fn [v] (and (or (keyword? v) (and (vector? v) (= 2 (count v)) (keyword? (first v))))
-                                  (try (some? (draw/cvd-filter-fn v)) (catch Exception _ false))))
-                     "should be a clojure2d color vision deficiency: a keyword (:protanopia, :deuteranopia, :tritanopia, :achromatopsia) or [keyword severity] (:protanomaly, :deuteranomaly, :tritanomaly, :achromatomaly; severity in [0 1])"))
-
 (def options-schema
   "Merged render options of `build` (see [[default-options]]), `:debug` and `:cvd` (used by
   `cljplot2.render/render`) and `:until`."
@@ -586,7 +583,7 @@
    [:height schema/pos-int]
    [:hint (into [:enum] (sort measure/rendering-hints))]
    (schema/nilable :debug schema/bool)
-   (schema/nilable :cvd cvd-schema)
+   (schema/nilable :cvd schema/cvd-deficiency)
    (schema/optional :until (into [:enum] stage-order))])
 
 (defn- merged-mappings

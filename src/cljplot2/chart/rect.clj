@@ -84,7 +84,7 @@
   side, `:fill` only for a vector of fills); extents of the interval ends. Data: per panel the rects of its rows,
   each with its group's `:aesthetics` when the chart maps any, and its `:color-value` when the color is linear or
   binned (see [[cljplot2.data.group/continuous-color]]: per rect, not grouped); `:dropped :position` - rows with an
-  invalid end."
+  invalid end (skipped before grouping). A `:fill` vector in data mode throws `ex-info {:key :fill}`."
   [{:keys [options]} {:keys [mapping] :as chart-split} {:keys [theme] :as env}]
   (let [st (style options theme)
         extents-of (fn [rects] {:x (mapcat :x rects) :y (mapcat :y rects)})]
@@ -104,33 +104,35 @@
                             y (when y0 [(y0 row) (y1 row)])]
                         (when (every? end-ok? (concat x y))
                           (cond-> {} x (assoc :x x) y (assoc :y y)))))
-            continuous (group/continuous-color (:groups chart-split) mapping env)
+            _ (when (and (some? (:fill options)) (not (schema/color? (:fill options))))
+                (schema/fail! "A rect :fill vector pairs with literal :x / :y intervals, not with data rows (map :color instead)."
+                              {:key :fill :value (:fill options)}))
+            all-rows (mapcat val (:groups chart-split))
+            ;; rows with an unplaceable end are skipped before grouping
+            placed (update-vals (:groups chart-split) #(filterv rect-of %))
+            skipped (- (count all-rows) (count (mapcat val placed)))
+            continuous (group/continuous-color placed mapping env)
             color-of (:color-of continuous)
             stats (annotation/data-stats (if continuous
                                            (assoc chart-split :groups (:groups continuous) :mapping (:mapping continuous))
-                                           chart-split)
+                                           (assoc chart-split :groups placed))
                                          options env
                                          (fn [gs]
                                            (let [rects (into [] (mapcat (fn [{:keys [rows aesthetics]}]
-                                                                          (keep #(some-> (rect-of %)
-                                                                                         (cond-> (seq aesthetics) (assoc :aesthetics aesthetics))
-                                                                                         (cond-> color-of (assoc :color-value (color-of %))))
-                                                                                rows)))
+                                                                          (map #(cond-> (rect-of %)
+                                                                                  (seq aesthetics) (assoc :aesthetics aesthetics)
+                                                                                  color-of (assoc :color-value (color-of %)))
+                                                                               rows)))
                                                              gs)]
-                                             [{:rects rects :style st :rows (reduce + 0 (map (comp count :rows) gs))}
-                                              (extents-of rects)])))
-            skipped (reduce + 0 (for [[_ {:keys [rects rows]}] (:data stats)] (- (long rows) (count rects))))]
-        (cond-> (-> stats
-                    (update :data update-vals #(dissoc % :rows))
-                    (assoc-in [:dropped :position] skipped))
-          continuous (-> (update :extents #(merge-with merge %
-                                                      (group/color-value-extents
-                                                       (update-vals (:data stats) (fn [d] (map :color-value (:rects d))))
-                                                       (:plot-scales env))))
-                         (assoc-in [:dropped :color] (:dropped continuous))
-                         (cond-> (some #(and (contains? % :color-value) (nil? (:color-value %)))
-                                       (mapcat :rects (vals (:data stats))))
-                           (update :na conj :color))))))))
+                                             [{:rects rects :style st} (extents-of rects)])))
+            color-stats (when continuous
+                          (group/continuous-color-stats continuous
+                                                        (update-vals (:data stats) (fn [d] (map :color-value (:rects d))))
+                                                        (:plot-scales env)))]
+        (cond-> (assoc-in stats [:dropped :position] skipped)
+          color-stats (-> (update :extents #(merge-with merge % (:extents color-stats)))
+                          (assoc-in [:dropped :color] (:dropped color-stats))
+                          (cond-> (:na? color-stats) (update :na conj :color))))))))
 
 (defn draw
   "Draw the rects of one panel (whole-pixel edges), filled with the group's mapped `:color`, else the rect's literal

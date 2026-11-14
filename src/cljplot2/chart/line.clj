@@ -74,22 +74,22 @@
                                                 gradient? (assoc :colors (mapv #(nth % 2) pts)))))
                                           gs)
                              :style st}))]
+    (let [color-stats (when gradient?
+                        (group/continuous-color-stats continuous (update-vals data #(mapcat :colors (:lines %))) plot-scales))]
     {:data data
      :extents (merge-with merge (group/aesthetic-extents panels (:plot-scales env))
-                          (when gradient?
-                            (group/color-value-extents (update-vals data #(mapcat :colors (:lines %))) plot-scales))
+                          (:extents color-stats)
                           (into {} (keep (fn [[panel {:keys [lines]}]]
                                            (let [xs (mapcat :x lines) ys (remove nil? (mapcat :y lines))]
                                              (when (seq ys)
                                                [panel {:x (data/extent :x xs) :y (data/extent :y ys)}]))))
                                 data))
      :padding (merge {:x [0.05 0.05] :y [0.05 0.05]} (:padding options))
-     :na (cond-> (group/na-dims panels)
-           (and gradient? (some nil? (mapcat :colors (mapcat :lines (vals data))))) (conj :color))
+     :na (cond-> (group/na-dims panels) (:na? color-stats) (conj :color))
      :dropped (cond-> (assoc dropped
                      :x (count (remove #(data/valid-value? (x-of %)) rows))
                      :y (count (remove #(data/valid-value? (y-of %)) rows)))
-                gradient? (assoc :color (:dropped continuous)))}))
+                gradient? (assoc :color (:dropped color-stats)))})))
 
 (defn- segment-colors
   "Colors of the segments of a gradient line with point color values `colors` under the finalized color `scale`:
