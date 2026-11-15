@@ -10,7 +10,8 @@
     plot mapping `{:x :yield}` never turns a literal rule into data rules; rows follow facets as for other charts.
     Literal options win over the mapping.
 
-  A position is a number or a level (string / keyword) of the position scale - on a `:bands` scale a level stands for
+  A position is a number, a `java.time` value (on a datetime scale) or a level (string / keyword) of the position
+  scale - on a `:bands` scale a level stands for
   its band (a point at the band centre, an interval over its step). Positions enter the scale extents unless the
   option `:extent` is false."
   (:require [fastmath.core :as m]
@@ -24,13 +25,13 @@
 (set! *unchecked-math* :warn-on-boxed)
 
 (defn position?
-  "Is `v` a position: a finite number, a string or a keyword?"
+  "Is `v` a position: a finite number, a `java.time` value, a string or a keyword?"
   [v]
-  (or (and (number? v) (m/valid-double? (double v))) (string? v) (keyword? v)))
+  (or (and (number? v) (m/valid-double? (double v))) (data/temporal? v) (string? v) (keyword? v)))
 
 (def position
-  "A position: a finite number or a level (string / keyword)."
-  (schema/named-type ::position position? "should be a finite number or a level (string / keyword)"))
+  "A position: a finite number, a `java.time` value or a level (string / keyword)."
+  (schema/named-type ::position position? "should be a finite number, a java.time value or a level (string / keyword)"))
 
 (defn positions-schema
   "Schema of a literal option: `item` or a non-empty vector of them."
@@ -124,7 +125,7 @@
           ends (fn [v range-end]
                  (cond
                    (nil? v) [(double range-end) (double range-end)]
-                   (number? v) (let [p (pixel v)] [p p])
+                   (or (number? v) (data/temporal? v)) (let [p (pixel v)] [p p])
                    :else (let [p (double (pixel v))] [(- p half) (+ p half)])))]
       (fn [a b]
         (let [ps (concat (ends a r0) (ends b r1))]

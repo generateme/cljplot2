@@ -45,7 +45,7 @@
   `:chart` - per chart kind defaults: `:scatter`, `:histogram`, `:density`, `:line`, `:ecdf` (old cljplot blue
   `[69 117 180]` - clojure2d `(last (palette :rdylbu-9))` - with cljplot's alphas: scatter 180, stripplot 100, rug 100),
   `:treemap` (`:padding`, `:border-color`, `:border-width`), strip charts `:box`, `:violin`, `:stripplot`, `:beeswarm`, `:rug`,
-  `:extent`, annotations `:rule`, `:rect`, `:function`, bands `:ribbon`, `:smooth` (band `:alpha` 0.3); each checked against its chart's style schema; line and
+  `:extent`, annotations `:rule`, `:rect`, `:function`, bands `:ribbon`, `:smooth` (band `:alpha` 0.3), `:segment`, `:candlestick` (green up, red down); each checked against its chart's style schema; line and
   function `:bridge` - the style of bridges over gaps (`:alpha` multiplies the line alpha, optional `:width`, `:dash`);
   line `:alpha` - opacity of `:fill :color` and stacked areas.
 
@@ -108,6 +108,8 @@
            :function {:color [69 117 180] :width 1 :dash :none :fill :none :bridge {:alpha 0.3}}
            :ribbon {:color [69 117 180] :fill :color :alpha 0.3 :stroke-color :none :stroke-width 1 :dash :none}
            :smooth {:color [69 117 180] :width 1 :dash :none :fill :color :alpha 0.3}
+           :segment {:color [69 117 180] :width 1 :dash :none}
+           :candlestick {:up-color [26 152 80] :down-color [215 48 39] :body-width 0.7 :wick-width 1 :stroke-color :none}
            :rect {:fill [0 0 0 30] :stroke-color :none :stroke-width 1}}
    :axis {:x {:line-color :black :line-width 1 :tick-color :black :tick-length 6 :tick-width 1
               :label-gap 2 :tick-spacing 80 :label-rotation 0}

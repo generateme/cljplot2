@@ -31,9 +31,14 @@
 
   Options common to all charts: `:data` (own data, see [[cljplot2.data.rows/rows]]) and `:mapping` (merged over the
   plot's mapping; a chart value with `:inherit-mapping :facets` - the annotation charts - takes only the plot
-  mapping's facet keys)."
+  mapping's facet keys).
+
+  Context in every facet panel: a chart whose mapping sets the facet keys to `nil` (`{:facet nil}`, see
+  [[cljplot2.data.facet/facet-dims]]) is drawn in every panel - e.g. all lines greyed behind the faceted ones:
+  `(line {:mapping {:facet nil :color nil :group :g} :color [200 200 200]})` listed before `(line)`."
   (:require [cljplot2.chart.beeswarm :as beeswarm]
             [cljplot2.chart.box :as box]
+            [cljplot2.chart.candlestick :as candlestick]
             [cljplot2.chart.density :as density]
             [cljplot2.chart.ecdf :as ecdf]
             [cljplot2.chart.extent :as extent]
@@ -45,6 +50,7 @@
             [cljplot2.chart.rug :as rug]
             [cljplot2.chart.rule :as rule]
             [cljplot2.chart.scatter :as scatter]
+            [cljplot2.chart.segment :as segment]
             [cljplot2.chart.smooth :as smooth]
             [cljplot2.chart.stripplot :as stripplot]
             [cljplot2.chart.text :as text]
@@ -76,7 +82,9 @@
    :rect (:style rect/schemas)
    :function (:style function/schemas)
    :ribbon (:style ribbon/schemas)
-   :smooth (:style smooth/schemas)})
+   :smooth (:style smooth/schemas)
+   :segment (:style segment/schemas)
+   :candlestick (:style candlestick/schemas)})
 
 (defn- annotation-value
   "Chart value of an annotation chart: it inherits only the facet keys of the plot mapping."
@@ -113,6 +121,17 @@
   interpolators), see [[cljplot2.chart.smooth]]."
   ([] (smooth {}))
   ([options] (chart-value :smooth smooth/compute smooth/draw smooth/legend smooth/schemas options)))
+
+(defn segment
+  "Segments from `(:x, :y)` to `(:xend, :yend)` (an end literal, mapped or the start coordinate - lollipops with
+  `{:yend 0}`), see [[cljplot2.chart.segment]]."
+  ([] (segment {}))
+  ([options] (chart-value :segment segment/compute segment/draw segment/legend segment/schemas options)))
+
+(defn candlestick
+  "Candlesticks (or OHLC bars) of `:open :high :low :close` per `:x`, see [[cljplot2.chart.candlestick]]."
+  ([] (candlestick {}))
+  ([options] (chart-value :candlestick candlestick/compute candlestick/draw candlestick/legend candlestick/schemas options)))
 
 (defn treemap
   "Treemap of `:value` over the `:hierarchy` levels, see [[cljplot2.chart.treemap]]."

@@ -6,7 +6,8 @@
   * [[bin]] - a continuous column cut into bins: half-open intervals (see [[cljplot2.data.shingle/Interval]]),
     levels for strips, colours or facets (sorted ascending wherever they are levels)
   * [[breaks]] - the bin breaks shared with the histogram's `:bins`
-  * [[categorical]] - a mapping marker declaring a dimension categorical"
+  * [[categorical]] - a mapping marker declaring a dimension categorical
+  * [[rank-rows]] - the rank of a value among the rows at each x (bump charts)"
   (:require [fastmath.core :as m]
             [malli.core :as malli]
             [fastmath.stats :as stats]
@@ -195,3 +196,29 @@
          ordered (map first (sort-by second (if descending #(compare %2 %1) compare) scored))
          unscored (remove (set (map first scored)) (remove nil? levels))]
      (into (vec ordered) (try (sort unscored) (catch ClassCastException _ unscored))))))
+
+(def rank-ties
+  "Tie strategies of [[rank-rows]] (`fastmath.core/rank`)."
+  #{:average :first :last :random :min :max :dense})
+
+(defn rank-rows
+  "Rows of `data` (rows or columns, see [[cljplot2.data.rows/rows]]) with the rank of `value` among the rows sharing
+  their `x` value added under `:key` (default `:rank`): 1-based, the highest value first (`:descending`, default
+  true); `:ties` - a `fastmath.core/rank` strategy (default `:min`: 1, 1, 3; `:average` gives doubles). A row
+  without a finite value gets `nil` and isn't ranked. For bump charts: a line through the ranks on a reversed y
+  domain (`:scales {:y {:domain [n 1]}}`). Throws `ex-info {:key :ties}` for an unknown strategy."
+  ([data x value] (rank-rows data x value {}))
+  ([data x value {:keys [ties descending key] :or {ties :min descending true key :rank}}]
+   (when-not (contains? rank-ties ties)
+     (schema/fail! (str ":ties should be one of " (vec (sort rank-ties)) ".") {:key :ties :value ties}))
+   (let [rs (rows/rows data)
+         x-of (rows/row-accessor :x x)
+         value-of (rows/row-accessor :value value)
+         finite (fn [v] (when (and (number? v) (m/valid-double? (double v))) (double v)))
+         ranked (into {} (mapcat (fn [indices]
+                                   (let [vs (mapv #(finite (value-of (rs %))) indices)]
+                                     (map vector indices
+                                          (map #(if (integer? %) (inc (long %)) (inc (double %)))
+                                               (m/rank (mapv #(if descending (- (double %)) %) vs) ties))))))
+                     (vals (group-by #(x-of (rs %)) (filter #(finite (value-of (rs %))) (range (count rs))))))]
+     (vec (map-indexed (fn [i r] (assoc r key (ranked i))) rs)))))

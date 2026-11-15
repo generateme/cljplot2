@@ -220,6 +220,16 @@
             b (+ b (* phi per-px))]
         (if log? [(m/pow 10.0 a) (m/pow 10.0 b)] [a b])))))
 
+(defn- pad-domain-pixels
+  "[[pad-pixels]] of the ends of `domain`; a `:datetime` domain in epoch milliseconds (see
+  [[cljplot2.data.rows/x-key]]), its ends back in their types (a `LocalDate` end becomes a `LocalDateTime`)."
+  [kind domain padding-px length]
+  (let [a (first domain) b (last domain)]
+    (if (= :datetime kind)
+      (let [[ka kb] (pad-pixels :linear [(rows/x-key a) (rows/x-key b)] padding-px length)]
+        [(rows/key->x ka a) (rows/key->x kb b)])
+      (pad-pixels kind [(double a) (double b)] padding-px length))))
+
 (def ^:private extent-kinds {:numeric :linear :categorical :bands :temporal :datetime})
 
 (defn data-scale-spec
@@ -332,8 +342,8 @@
   "Finalized scale of phase-1 `spec` for the pixel `range` (`[start end]`) and `tick-hint` (the count used unless
   the spec has `:ticks`). Steps: the domain is extended by `nice` (limited, see `:nice` in [[scale-spec]]) with
   the explicit tick count or the hint, then padded by `:padding` (see [[data-scale-spec]]), then by the pixel room
-  `:padding-px` `[lo hi]` (charts' labels past the data; `:linear` and `:log` only, skipped when over half the
-  range);
+  `:padding-px` `[lo hi]` (charts' labels past the data; `:linear`, `:log` and `:datetime` - in epoch milliseconds,
+  skipped when over half the range);
   ticks outside the final domain are dropped. A bands scale without `:ticks` has a tick at every band. A spec with
   `:axis false` gives a finalized scale with `:axis false` (no axis, no grid lines)."
   [spec range tick-hint]
@@ -347,9 +357,8 @@
         domain (if-let [padding (:padding spec)]
                  (pad kind [(double (first niced)) (double (last niced))] padding)
                  niced)
-        domain (if-let [padding-px (when (#{:linear :log} kind) (:padding-px spec))]
-                 (pad-pixels kind [(double (first domain)) (double (last domain))] padding-px
-                             (m/abs (- (double (second range)) (double (first range)))))
+        domain (if-let [padding-px (when (#{:linear :log :datetime} kind) (:padding-px spec))]
+                 (pad-domain-pixels kind domain padding-px (m/abs (- (double (second range)) (double (first range)))))
                  domain)
         attributes (assoc base :domain domain :ticks (or explicit (if (= kind :bands) (vec domain) tick-hint)))
         scale (s/scale kind attributes)
