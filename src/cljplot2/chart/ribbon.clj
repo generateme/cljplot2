@@ -107,7 +107,7 @@
   (let [[a b] (if (= :y along) [1 0] [0 1])
         [grid [us ls]] (curve/sample-columns (mapv #(nth % a) upper) [(mapv #(nth % b) upper) (mapv #(nth % b) lower)]
                                              opts false)
-        point (fn [t v] (curve/clamp-point (if (= :y along) [v t] [t v])))]
+        point (fn [t v] (curve/drawn-point (if (= :y along) [v t] [t v])))]
     [(mapv point grid us) (mapv point grid ls)]))
 
 (defn band-runs
@@ -120,7 +120,7 @@
         lower (mapv #(pixel projection %1 %2) xs los)
         finite? (fn [^Vec2 p] (and (m/valid-double? (.x p)) (m/valid-double? (.y p))))
         paired? (fn [i] (and (finite? (upper i)) (finite? (lower i))))
-        point (fn [^Vec2 p] (curve/clamp-point [(.x p) (.y p)]))
+        point (fn [^Vec2 p] (curve/drawn-point [(.x p) (.y p)]))
         pairs (into [] (comp (partition-by paired?)
                              (filter #(and (paired? (first %)) (> (count %) 1)))
                              (map (fn [run] [(mapv #(point (upper %)) run) (mapv #(point (lower %)) run)])))

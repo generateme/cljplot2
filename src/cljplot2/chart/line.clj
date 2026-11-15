@@ -285,7 +285,7 @@
   "Drawn point runs (pixels) of the index runs `index-runs` of `px` / `py` under `opts`; a curve error names the
   line's group `aesthetics`."
   [index-runs px py opts aesthetics]
-  (try (mapv (fn [run] (mapv curve/clamp-point (curve/curve-points (mapv (fn [i] [(px i) (py i)]) run) opts))) index-runs)
+  (try (mapv (fn [run] (mapv curve/drawn-point (curve/curve-points (mapv (fn [i] [(px i) (py i)]) run) opts))) index-runs)
        (catch clojure.lang.ExceptionInfo e
          (if (= :interpolator (:key (ex-data e)))
            (let [message (:message (first (:errors (ex-data e))))]
@@ -320,7 +320,7 @@
   their boundaries and no band turns inside out."
   [lines position scales opts]
   (let [projection (scale/projection scales)
-        pixel (fn [vx vy] (let [^Vec2 p (projection vx vy)] (curve/clamp-point [(.x p) (.y p)])))]
+        pixel (fn [vx vy] (let [^Vec2 p (projection vx vy)] (curve/drawn-point [(.x p) (.y p)])))]
     (if-not (:interpolator opts)
       (mapv (fn [{:keys [x y y0]}] [(mapv pixel x y) (mapv pixel x y0)]) lines)
       (let [flipped? (scale/flipped? scales)
@@ -333,7 +333,7 @@
                        (mapv (fn [ys] (mapv (fn [[^double y0 ^double y1] ^double b] [(+ y0 b) (+ y1 b)]) ys base))
                              (position/stack-values :stack hs)))
                      (position/stack-values position hs))
-            point (fn [t v] (let [q (double (y-fwd v))] (curve/clamp-point (if flipped? [q t] [t q]))))]
+            point (fn [t v] (let [q (double (y-fwd v))] (curve/drawn-point (if flipped? [q t] [t q]))))]
         (mapv (fn [ys] [(mapv (fn [t [_ y1]] (point t y1)) grid ys) (mapv (fn [t [y0 _]] (point t y0)) grid ys)]) stacks)))))
 
 (defn- draw-stacked!
@@ -386,7 +386,7 @@
                 index-runs (polyline/finite-runs px py)
                 point-runs (if curved?
                              (drawn-runs index-runs px py opts aesthetics)
-                             (mapv (fn [run] (mapv (fn [i] (curve/clamp-point [(px i) (py i)])) run)) index-runs))
+                             (mapv (fn [run] (mapv (fn [i] (curve/drawn-point [(px i) (py i)])) run)) index-runs))
                 st (assoc st :fill (polyline/area-color st false))]
             (cond
               colors

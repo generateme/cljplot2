@@ -10,8 +10,10 @@
   `:body-width` (0..1, default 0.7) - the fraction of the smallest pixel gap between distinct x (of a band's width on
   a bands scale; 10 pixels with a single x). Options (style defaults from theme `[:chart :candlestick]`):
   `:up-color`, `:down-color`, `:body-width`, `:wick-width`, `:stroke-color`, `:style`, `:padding {:x [lo hi] :y [lo
-  hi]}` (default 5% each side). A row with an invalid value is dropped (counted per key). Colour means up / down: a
-  mapped aesthetic or `:group` throws `ex-info {:key :mapping}`; no legend."
+  hi]}` (default 5% each side). A row with an invalid value is dropped (counted per key), as is one whose values
+  don't hold `low <= open, close <= high` (counted as `:ohlc`). Colour means up / down: an aesthetic or `:group` in
+  the chart's own `:mapping` throws `ex-info {:key :mapping}`; ones inherited from the plot mapping are ignored (the
+  candles draw nothing into their legend keys)."
   (:require [clojure2d.core :as c2d]
             [cljplot2.data.rows :as data]
             [cljplot2.graphics.polyline :as polyline]
@@ -55,15 +57,18 @@
 
 (defn compute
   "Per panel: `{:candles [{:x :open :high :low :close}] :style style :kind :candle|:ohlc}`; extents (y over all four
-  values), padding, `:dropped` (`:x` and every value key)."
+  values), padding, `:dropped` (`:x`, every value key, `:ohlc` - inconsistent values)."
   [{:keys [options]} {:keys [groups mapping]} {:keys [theme]}]
-  (when-let [dims (seq (cond-> (aesthetic/mapped-dims mapping) (some? (:group mapping)) (conj :group)))]
+  (when-let [dims (let [own (:mapping options)] (seq (cond-> (aesthetic/mapped-dims own) (some? (:group own)) (conj :group))))]
     (schema/fail! "Candlestick colours mean up / down; it takes no aesthetics or :group (unmap them in the chart's :mapping)."
                   {:key :mapping :value (vec dims)}))
   (let [accessors (into {:x (data/row-accessor :x (:x mapping))}
                         (map (fn [k] [k (data/row-accessor k (get mapping k))]))
                         value-keys)
-        valid? (fn [r] (and (data/valid-value? ((:x accessors) r)) (every? #(finite? ((accessors %) r)) value-keys)))
+        complete? (fn [r] (and (data/valid-value? ((:x accessors) r)) (every? #(finite? ((accessors %) r)) value-keys)))
+        consistent? (fn [r] (let [[^double o ^double h ^double l ^double c] (mapv #(double ((accessors %) r)) value-keys)]
+                              (and (<= l (Math/min o c)) (<= (Math/max o c) h))))
+        valid? (fn [r] (and (complete? r) (consistent? r)))
         rows (mapcat val groups)
         _ (doseq [[k f] accessors]
             (when (and (seq rows) (not-any? #(if (= :x k) (data/valid-value? (f %)) (finite? (f %))) rows))
@@ -80,7 +85,8 @@
                     data)
      :padding (merge {:x [0.05 0.05] :y [0.05 0.05]} (:padding options))
      :na #{}
-     :dropped (into {:x (count (remove #(data/valid-value? ((:x accessors) %)) rows))}
+     :dropped (into {:x (count (remove #(data/valid-value? ((:x accessors) %)) rows))
+                     :ohlc (count (remove consistent? (filter complete? rows)))}
                     (map (fn [k] [k (count (remove #(finite? ((accessors k) %)) rows))]))
                     value-keys)}))
 
@@ -134,8 +140,6 @@
                     (c2d/rect canvas rx ry rw rh true))))))))))
 
 (defn legend
-  "Key glyph: an up candle (never called by the pipeline - the chart maps no legend dimension)."
-  [{:keys [options]} _attributes canvas {:keys [x y w h]} env]
-  (let [st (style options (:theme env))]
-    (c2d/set-color canvas (:up-color st))
-    (c2d/rect canvas (+ (double x) (* 0.35 (double w))) (+ (double y) (* 0.25 (double h))) (* 0.3 (double w)) (* 0.5 (double h)))))
+  "Key glyph: nothing - candle colours mean up / down, not an inherited aesthetic's level."
+  [_chart _attributes _canvas _box _env]
+  nil)

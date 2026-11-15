@@ -258,10 +258,10 @@
             (recur (inc i) (conj piece p) pieces)))))))
 
 (defn- piece-runs
-  "Drawn runs of a piece: its finite runs, clamped (see [[cljplot2.graphics.curve/clamp-point]])."
+  "Drawn runs of a piece: its finite runs as drawn (see [[cljplot2.graphics.curve/drawn-point]])."
   [piece]
   (let [xs (mapv first piece) ys (mapv second piece)]
-    (mapv (fn [run] (mapv (fn [i] (curve/clamp-point [(xs i) (ys i)])) run)) (polyline/finite-runs xs ys))))
+    (mapv (fn [run] (mapv (fn [i] (curve/drawn-point [(xs i) (ys i)])) run)) (polyline/finite-runs xs ys))))
 
 (defn- require-scales!
   "Throw `ex-info` unless the panel has both position scales (an `:f` chart without data elsewhere: no `:domain` and

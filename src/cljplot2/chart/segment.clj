@@ -13,6 +13,7 @@
   (:require [cljplot2.data.annotation :as annotation]
             [cljplot2.data.group :as group]
             [cljplot2.data.rows :as data]
+            [cljplot2.graphics.curve :as curve]
             [cljplot2.graphics.polyline :as polyline]
             [cljplot2.scale.aesthetic :as aesthetic]
             [cljplot2.scale.position :as scale]
@@ -106,18 +107,22 @@
     (vec (repeat n (:color st)))))
 
 (defn draw
-  "Draw the segments of one panel; ends the scales can't place skip the segment."
+  "Draw the segments of one panel, consecutive segments of one colour with one stroke setup; ends the scales can't
+  place skip the segment."
   [_chart {:keys [segments style]} canvas _box scales env]
   (let [projection (scale/projection scales)
-        theme (:theme env)]
+        theme (:theme env)
+        point (fn [vx vy] (let [^Vec2 p (projection vx vy)] [(.x p) (.y p)]))
+        placed? (fn [[[x0 y0] [x1 y1]]] (every? #(Double/isFinite (double %)) [x0 y0 x1 y1]))]
     (doseq [{:keys [x y xend yend colors aesthetics]} segments
             :let [st (group/style style aesthetics scales theme)]
             :when st
-            [vx vy vxe vye color] (map vector x y xend yend (segment-colors colors (count x) st scales theme))
-            :when (some? color)
-            :let [^Vec2 a (projection vx vy)
-                  ^Vec2 b (projection vxe vye)]]
-      (polyline/draw! canvas [(.x a) (.x b)] [(.y a) (.y b)] (assoc st :color color)))))
+            same-color (partition-by second (map (fn [vx vy vxe vye color] [[(point vx vy) (point vxe vye)] color])
+                                                 x y xend yend (segment-colors colors (count x) st scales theme)))
+            :let [color (second (first same-color))]
+            :when (some? color)]
+      (polyline/stroke-runs! canvas (mapv #(mapv curve/drawn-point %) (filter placed? (map first same-color)))
+                             (assoc st :color color)))))
 
 (defn legend
   "Key glyph: a horizontal line through the middle of `box` in the segment style."

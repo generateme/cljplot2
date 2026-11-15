@@ -1,7 +1,7 @@
 (ns cljplot2.graphics.curve
   "Curves in pixel coordinates: the runs of a line (consecutive finite points, see [[cljplot2.graphics.polyline]])
   turned into the points that are drawn, plus what lines and areas share around them (bridges over gaps, the area
-  baseline, the pixel clamp).
+  baseline, the drawn point - clamped and rounded, see [[drawn-point]]).
 
   A run is a vector of `[x y]` pixel points. Curve options (`opts`):
 
@@ -229,10 +229,21 @@
   as 1e300 overflow); the direction of a clamped segment inside the panel changes by under limit / panel size."
   1.0e6)
 
-(defn clamp-point
-  "`[x y]` with each coordinate clamped to ±[[pixel-limit]]."
+(def ^:private ^:const pixel-resolution
+  "Pixel coordinates are rounded to multiples of 1 / pixel-resolution: rounding noise of sampled curves (a flat run at
+  `155.0` sampled as `154.99999999999997`) would otherwise cross pixel boundaries under Java2D's stroke normalization
+  and draw dots at the joins of thick lines."
+  1.0e6)
+
+(defn- drawn-coordinate
+  ^double [^double v]
+  (/ (Math/rint (* (m/constrain v (- pixel-limit) pixel-limit) pixel-resolution)) pixel-resolution))
+
+(defn drawn-point
+  "`[x y]` as drawn: each coordinate clamped to ±[[pixel-limit]] and rounded to 1e-6 pixel (see
+  [[pixel-resolution]])."
   [[x y]]
-  [(m/constrain (double x) (- pixel-limit) pixel-limit) (m/constrain (double y) (- pixel-limit) pixel-limit)])
+  [(drawn-coordinate (double x)) (drawn-coordinate (double y))])
 
 (defn area-baseline
   "Pixel position of the area baseline along the finalized `y-scale`: y = 0 clamped into the panel (`w` x `h`) in the

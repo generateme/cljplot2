@@ -8,9 +8,10 @@
             [cljplot2.data.facet :as facet]
             [cljplot2.data.levels :as levels]
             [cljplot2.data.rows :as rows]
+            [cljplot2.graphics.curve :as curve]
             [malli.core :as mc])
   (:import [java.awt.image BufferedImage]
-           [java.time LocalDate LocalDateTime]))
+           [java.time LocalDate LocalDateTime LocalTime]))
 
 (def ^:private size {:width 400 :height 300})
 (defn- build [p] (plot/build p size))
@@ -167,10 +168,10 @@
   (testing "4.1 rows with an invalid value dropped; aesthetics rejected"
     (let [s (stats (candle-plot {}) 0)]
       (is (= 3 (count (get-in s [:data facet/single-panel :candles]))))
-      (is (= {:x 0 :open 1 :high 0 :low 0 :close 0} (:dropped s)))
+      (is (= {:x 0 :open 1 :high 0 :low 0 :close 0 :ohlc 0} (:dropped s)))
       (is (= {:kind :numeric :min 8.0 :max 12.0} (get-in s [:extents facet/single-panel :y])) "4.5 y over the values"))
-    (is (= :mapping (:key (error #(build (candle-plot {} {:mapping (assoc ohlc-mapping :color :d)}))))))
-    (is (= :mapping (:key (error #(build (candle-plot {} {:mapping (assoc ohlc-mapping :group :d)})))))))
+    (is (= :mapping (:key (error #(build (candle-plot {:mapping {:color :d}}))))) "own aesthetic")
+    (is (= :mapping (:key (error #(build (candle-plot {:mapping {:group :d}})))))))
   (testing "4.2 up green, down red bodies"
     (let [img (plot/render-image (candle-plot {}) size)]
       (is (pos? (pixels-of img [26 152 80])))
@@ -216,3 +217,75 @@
           b (build p)]
       (is (apply > (map double (get-in b [:finalized-scales :y :domain]))) "reversed")
       (is (instance? BufferedImage (plot/render-image p size))))))
+
+;; review fixes
+
+(deftest review-drawn-point-test
+  (testing "K1 drawn points: clamped, rounded to 1e-6 px"
+    (is (= [155.0 1.0e6] (curve/drawn-point [154.99999999999997 1.0e300])))
+    (is (= [155.0 -1.0e6] (curve/drawn-point [155.00000000000003 ##-Inf])))
+    (is (= [0.5 0.123457] (curve/drawn-point [0.5 0.1234567]))))
+  (testing "K1 a thick monotone line's flat run draws as a straight line (no dots at the joins)"
+    (let [rows [{:x 0 :y 5} {:x 1 :y 3} {:x 2 :y 3} {:x 3 :y 3} {:x 4 :y 1}]
+          img (fn [opts] (plot/render-image {:data rows :mapping {:x :x :y :y} :theme white
+                                             :scales {:x {:domain [0 4]} :y {:domain [0 6]}}
+                                             :charts [(chart/line (merge {:width 3 :color [0 0 255]} opts))]} size))
+          curved (img {:interpolator :monotone})
+          straight (img {})
+          panel-x (fn [v] (+ 29 (* v 90)))
+          column (fn [^BufferedImage im x] (mapv #(rgb im x %) (range 300)))]
+      (is (every? #(= (column curved %) (column straight %)) (range (panel-x 1.2) (panel-x 2.8)))))))
+
+(deftest review-temporal-domain-test
+  (testing "K2 a single date widens one day either side"
+    (let [p {:data [{:d day0 :v 1} {:d day0 :v 2}] :mapping {:x :d :y :v} :charts [(chart/scatter)]}]
+      (is (= [(LocalDate/of 2023 12 31) (LocalDate/of 2024 1 2)] (get-in (build p) [:scale-specs :x :domain])))
+      (is (instance? BufferedImage (plot/render-image p size)))))
+  (testing "K2 a single LocalTime: one hour either side, within the day"
+    (let [domain (fn [t] (get-in (build {:data [{:t t :v 1}] :mapping {:x :t :y :v} :charts [(chart/scatter)]}) [:scale-specs :x :domain]))]
+      (is (= [(LocalTime/of 11 0) (LocalTime/of 13 0)] (domain (LocalTime/of 12 0))))
+      (is (= [(LocalTime/of 22 30) (LocalTime/of 23 59 59)] (domain (LocalTime/of 23 30))))
+      (is (= [LocalTime/MIDNIGHT (LocalTime/of 1 0)] (domain LocalTime/MIDNIGHT)))))
+  (testing "K2 a single candle on a date; a text-only :select plot"
+    (is (instance? BufferedImage (plot/render-image (candle-plot {} {:data (take 1 ohlc)}) size)))
+    (is (instance? BufferedImage (plot/render-image {:data series :charts [(chart/text {:mapping {:x :d :y :v :label :s} :select :last})]} size)))))
+
+(deftest review-rank-test
+  (testing "K3 x shared by key: 1 and 1.0 one x; dates; invalid x unranked"
+    (is (= [2 1] (map :rank (levels/rank-rows [{:x 1 :v 5} {:x 1.0 :v 9}] :x :v))))
+    (is (= [nil nil 1] (map :rank (levels/rank-rows [{:x nil :v 1} {:x ##NaN :v 2} {:x "a" :v 3}] :x :v))))
+    (is (= [2 1] (map :rank (levels/rank-rows [{:x day0 :v 1} {:x (LocalDate/of 2024 1 1) :v 2}] :x :v))))))
+
+(deftest review-room-test
+  (testing "K4 the room follows :rotation: a long label at 90 degrees needs its height"
+    (let [room (fn [rotation] (second (:x (:padding-px (stats {:data [{:x 1 :y 1 :t "a-long-label"} {:x 2 :y 2 :t "a-long-label"}]
+                                                               :charts [(chart/text {:mapping {:x :x :y :y :label :t} :select :last
+                                                                                     :rotation rotation})]} 0)))))]
+      (is (< (* 2.0 (double (room 90))) (double (room 0)))))))
+
+(deftest review-candlestick-test
+  (testing "K6 inconsistent rows dropped, counted as :ohlc"
+    (let [s (stats (candle-plot {} {:data (conj (vec (take 3 ohlc)) {:d (.plusDays day0 5) :o 10 :h 9 :l 11 :c 10}
+                                                {:d (.plusDays day0 6) :o 13 :h 12 :l 9 :c 10})}) 0)]
+      (is (= 3 (count (get-in s [:data facet/single-panel :candles]))))
+      (is (= 2 (get-in s [:dropped :ohlc])))))
+  (testing "K7 aesthetics inherited from the plot mapping are ignored; no glyph in their keys"
+    (let [p {:data (mapv #(assoc % :g "p") (take 3 ohlc)) :mapping (assoc ohlc-mapping :y :c :color :g)
+             :charts [(chart/candlestick) (chart/line)]}]
+      (is (= 3 (count (get-in (build p) [:stats 0 :data facet/single-panel :candles]))))
+      (is (instance? BufferedImage (plot/render-image p size))))))
+
+(deftest review-segment-test
+  (testing "K8 / K9 per-segment colours: one stroke setup per run of a colour, colours as the scale gives them"
+    (let [rows (mapv (fn [i] {:x i :y (inc i) :v (double i)}) (range 6))
+          img (plot/render-image {:data rows :mapping {:x :x :y :y :color :v} :theme white
+                                  :scales {:color {:kind :linear :range [[255 0 0] [0 0 255]]}}
+                                  :charts [(chart/segment {:yend 0 :width 4})]} size)]
+      (is (pos? (pixels-of img [255 0 0])) "lowest value red")
+      (is (pos? (pixels-of img [0 0 255])) "highest value blue"))))
+
+(deftest review-single-body-test
+  (testing "K9 a single candle body is 10 px wide"
+    (let [img (plot/render-image (candle-plot {} {:data [(assoc (first ohlc) :d 1)]}) size)
+          row (for [x (range 400) :let [[r g b] (rgb img x 150)] :when (= [r g b] [26 152 80])] x)]
+      (is (<= 9 (count row) 11)))))

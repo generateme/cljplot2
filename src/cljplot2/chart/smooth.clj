@@ -203,8 +203,8 @@
                                  {:runs (ribbon/band-runs x lo hi projection {}) :fill (ribbon/band-fill st)}))
                           nil nil scales)
       (doseq [[{:keys [x y]} st] drawn
-              :let [points (mapv projection x y)]]
-        (polyline/draw! canvas (mapv #(.x ^Vec2 %) points) (mapv #(.y ^Vec2 %) points) st)))))
+              :let [points (mapv (fn [vx vy] (let [^Vec2 p (projection vx vy)] (curve/drawn-point [(.x p) (.y p)]))) x y)]]
+        (polyline/draw! canvas (mapv first points) (mapv second points) st)))))
 
 (defn legend
   "Key glyph: a filled square in the band colour (without a band - none) under a horizontal line in the line style."

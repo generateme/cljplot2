@@ -220,8 +220,8 @@
 
 (deftest pixel-clamp-test
   (testing "2.9 coordinates clamped to the pixel limit"
-    (is (= [1.0e6 -1.0e6] (curve/clamp-point [1.0e300 ##-Inf])))
-    (is (= [3.0 4.0] (curve/clamp-point [3 4]))))
+    (is (= [1.0e6 -1.0e6] (curve/drawn-point [1.0e300 ##-Inf])))
+    (is (= [3.0 4.0] (curve/drawn-point [3 4]))))
   (testing "2.9 a huge value under an explicit y domain draws clipped"
     (is (some? (plot/render-image (line-plot {} {:data (conj pts {:x 5 :y 1.0e300}) :scales {:y {:domain [0 5]}}}) size)))))
 

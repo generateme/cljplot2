@@ -13,7 +13,7 @@
   row in data order). Without an `:anchor` / `:offset` it places the text past the point - `:last` `[:left :middle]`
   offset `[5 0]`, `:first` `[:right :middle]` `[-5 0]` (flipped plots: `[:center :bottom]` `[0 5]`, `[:center :top]`
   `[0 -5]`) - and keeps room for the labels on that side of x (`:padding-px`: the widest label - the tallest when
-  flipped - and the offset).
+  flipped, `:rotation` included - and the offset; on a `LocalTime` axis only within the day).
 
   Options: `:anchor` - the point of the text box placed at the position, `[h v]` (`h` one of `:left :center :right`,
   `v` one of `:top :middle :bottom`; default `[:center :middle]`); `:offset [dx dy]` - pixels, `dy` up (default
@@ -99,7 +99,7 @@
     [:first true] {:anchor [:center :top] :offset [0 -5]}))
 
 (defn- label-room
-  "`:padding-px` `{:x [lo hi]}` of selected labels `texts` drawn with `options` (style keys, `:select`, `:offset`):
+  "`:padding-px` `{:x [lo hi]}` of selected labels `texts` drawn with `options` (style keys, `:rotation`, `:select`, `:offset`):
   the widest text (the tallest when `flip?`) plus the offset along x, on the high side for `:last`, the low side for
   `:first`; `nil` without texts."
   [texts options {:keys [theme flip? hint]}]
@@ -107,7 +107,7 @@
     (measure/call-with-scratch-canvas
      hint
      (fn [c]
-       (let [spec (merge {:kind :label :role :annotation} (select-keys options style-keys))
+       (let [spec (merge {:kind :label :role :annotation :rotation (get options :rotation 0)} (select-keys options style-keys))
              along (reduce max (map (fn [t] (let [^Vec2 size (measure/natural-size (assoc spec :text (str t)) {:canvas c :theme theme})]
                                               (if flip? (.y size) (.x size))))
                                     texts))

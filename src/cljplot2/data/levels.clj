@@ -204,8 +204,9 @@
 (defn rank-rows
   "Rows of `data` (rows or columns, see [[cljplot2.data.rows/rows]]) with the rank of `value` among the rows sharing
   their `x` value added under `:key` (default `:rank`): 1-based, the highest value first (`:descending`, default
-  true); `:ties` - a `fastmath.core/rank` strategy (default `:min`: 1, 1, 3; `:average` gives doubles). A row
-  without a finite value gets `nil` and isn't ranked. For bump charts: a line through the ranks on a reversed y
+  true); `:ties` - a `fastmath.core/rank` strategy (default `:min`: 1, 1, 3; `:average` gives doubles). Rows share an
+  x by its key (numbers and `java.time` values by [[cljplot2.data.rows/x-key]] - `1` and `1.0` are one x - levels by
+  value). A row without a finite value or a valid x gets `nil` and isn't ranked. For bump charts: a line through the ranks on a reversed y
   domain (`:scales {:y {:domain [n 1]}}`). Throws `ex-info {:key :ties}` for an unknown strategy."
   ([data x value] (rank-rows data x value {}))
   ([data x value {:keys [ties descending key] :or {ties :min descending true key :rank}}]
@@ -215,10 +216,12 @@
          x-of (rows/row-accessor :x x)
          value-of (rows/row-accessor :value value)
          finite (fn [v] (when (and (number? v) (m/valid-double? (double v))) (double v)))
+         x-group (fn [r] (let [v (x-of r)] (when (rows/valid-value? v) (or (rows/x-key v) v))))
+         rankable? (fn [i] (and (finite (value-of (rs i))) (some? (x-group (rs i)))))
          ranked (into {} (mapcat (fn [indices]
                                    (let [vs (mapv #(finite (value-of (rs %))) indices)]
                                      (map vector indices
                                           (map #(if (integer? %) (inc (long %)) (inc (double %)))
                                                (m/rank (mapv #(if descending (- (double %)) %) vs) ties))))))
-                     (vals (group-by #(x-of (rs %)) (filter #(finite (value-of (rs %))) (range (count rs))))))]
+                     (vals (group-by #(x-group (rs %)) (filter rankable? (range (count rs))))))]
      (vec (map-indexed (fn [i r] (assoc r key (ranked i))) rs)))))

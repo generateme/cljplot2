@@ -30,7 +30,8 @@
             [cljplot2.data.rows :as rows]
             [cljplot2.schema :as schema])
   (:import [fastmath.vector Vec2]
-           [java.time LocalDateTime]
+           [java.time LocalDateTime LocalTime]
+           [java.time.temporal ChronoUnit Temporal]
            [java.time.format DateTimeFormatter]))
 
 (set! *warn-on-reflection* true)
@@ -222,7 +223,8 @@
 
 (defn- pad-domain-pixels
   "[[pad-pixels]] of the ends of `domain`; a `:datetime` domain in epoch milliseconds (see
-  [[cljplot2.data.rows/x-key]]), its ends back in their types (a `LocalDate` end becomes a `LocalDateTime`)."
+  [[cljplot2.data.rows/x-key]]), its ends back in their types (a `LocalDate` end becomes a `LocalDateTime`; a
+  `LocalTime` end stays within the day, so room past midnight is lost)."
   [kind domain padding-px length]
   (let [a (first domain) b (last domain)]
     (if (= :datetime kind)
@@ -232,12 +234,22 @@
 
 (def ^:private extent-kinds {:numeric :linear :categorical :bands :temporal :datetime})
 
+(defn- widen-temporal
+  "`[lo hi]` of `java.time` values; a single value `t` widens to one day either side (a `LocalTime` - one hour, kept
+  within the day)."
+  [lo hi]
+  (cond
+    (not (zero? (compare lo hi))) [lo hi]
+    (instance? LocalTime lo) (let [s (.toSecondOfDay ^LocalTime lo)]
+                               [(LocalTime/ofSecondOfDay (max 0 (- s 3600))) (LocalTime/ofSecondOfDay (min 86399 (+ s 3600)))])
+    :else [(.minus ^Temporal lo 1 ChronoUnit/DAYS) (.plus ^Temporal lo 1 ChronoUnit/DAYS)]))
+
 (defn data-scale-spec
   "Phase-1 spec of plot scale `k` from its `spec` (may be `{}`) and the merged data `extent` (may be `nil`)
   with the charts' `padding` `[lo hi]`. An explicit `:domain` wins over data (`nil` - not set). A data domain gets
   `:kind` from the spec or the extent (numeric -> `:linear`, categorical -> `:bands`, temporal -> `:datetime`); a
   numeric extent on a `:bands` scale needs an explicit `:domain` unless it carries its levels (`:values`, sorted);
-  numeric data domains are widened when collapsed to one value.
+  numeric and temporal (`:datetime`) data domains are widened when collapsed to one value.
   Numeric continuous domains - data or explicit - get `:padding`: the spec `:expand`, else the charts' `padding`
   (only when there is data; `:radial` - none below the data); [[finalize]] applies it after `nice`, so the
   outermost ticks sit inside the panel. Temporal, `:interpolated` and categorical domains aren't padded."
@@ -249,7 +261,9 @@
                 (let [kind (or (:kind spec) (extent-kinds (:kind extent)))
                       domain (case (:kind extent)
                                :categorical (:values extent)
-                               :temporal [(:min extent) (:max extent)]
+                               :temporal (if (= :datetime kind)
+                                           (widen-temporal (:min extent) (:max extent))
+                                           [(:min extent) (:max extent)])
                                :numeric (cond
                                           (not= :bands kind) (widen (double (:min extent)) (double (:max extent)))
                                           ;; levels reported by the charts (strip charts' numeric :y levels)
