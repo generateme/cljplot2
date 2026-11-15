@@ -35,8 +35,8 @@
 
   `:palette` - aesthetic defaults, see [[cljplot2.scale.aesthetic]]: `:color` (palette name or colors, old cljplot
   `:category20`), `:gradient` (colors or palette name; `:k2` reversed), `:shape` (shape sequence), `:size`
-  (`[min max]` pixels), `:dash` (dash sequence: `:solid`, then old cljplot `line-dash-styles`), `:na` (color of NA
-  values).
+  (`[min max]` pixels), `:dash` (dash sequence: the [[cljplot2.schema/dash-styles]] names, adjacent styles far
+  apart), `:na` (color of NA values).
 
   `:legend` - `:gap` (pixels between key and label and between legends), `:key-size` (key box side, pixels),
   `:fill`, `:border-color`, `:border-width`, color bar `:bar-length` (`:stretch` - over the space left, or a number,
@@ -86,7 +86,7 @@
              :gradient (vec (reverse (c/palette :k2)))
              :shape [\O \s \A \x \+ \V \o \S \^ \v \{ \} \< \>]
              :size [2 10]
-             :dash [:solid [1 1] [2 2] [4 4] [5 1 3] [4 1] [10 2] [14 2 7 2] [14 2 2 7] [2 2 20 2 20 2]]
+             :dash [:solid :dashed :dotted :dot-dash :long-dash :dot-dot-dash :two-dash :loose-dot]
              :na [150 150 150]}
    :legend {:gap 5 :key-size 14 :fill :none :border-color :none :border-width 1 :bar-length :stretch :bar-width nil}
    :chart {:scatter {:size 4 :color [69 117 180 180] :stroke-color :none :stroke-width 1 :shape \O}

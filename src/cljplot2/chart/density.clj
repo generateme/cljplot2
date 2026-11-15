@@ -268,16 +268,7 @@
 (defn legend
   "Key glyph: a horizontal line through the middle of `box`; when the chart fills areas (`:fill`, or `:stack` /
   `:normalize` positions, ridgelines) a filled square (the area colour) outlined in the line colour."
-  [{:keys [options]} attributes canvas {:keys [x y w h]} env]
+  [{:keys [options]} attributes canvas box env]
   (let [st (merge (style options (:theme env)) (select-keys attributes [:color :dash]))
         area (area-color st (or (contains? #{:stack :normalize} (:position options)) (:ridges? (:chart-stats env))))]
-    (if (theme/none? area)
-      (let [cy (+ (double y) (* 0.5 (double h)))]
-        (polyline/draw! canvas [(double x) (+ (double x) (double w))] [cy cy] st))
-      (let [side (* 0.7 (m/min (double w) (double h)))
-            cx (+ (double x) (* 0.5 (double w)))
-            cy (+ (double y) (* 0.5 (double h)))]
-        (c2d/set-color canvas area)
-        (c2d/crect canvas cx cy side side)
-        (when (polyline/set-style! canvas st)
-          (c2d/crect canvas cx cy side side true))))))
+    (polyline/key-glyph! canvas box st area)))

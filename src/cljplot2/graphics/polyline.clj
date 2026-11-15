@@ -80,20 +80,47 @@
    (schema/optional :width schema/non-neg)
    (schema/nilable :dash schema/dash)])
 
+(defn- path-length
+  "Length of the polyline through `points` (pixels)."
+  ^double [points]
+  (reduce + 0.0 (map (fn [[x0 y0] [x1 y1]] (m/hypot (- (double x1) (double x0)) (- (double y1) (double y0))))
+                     points (rest points))))
+
 (defn draw-segments!
   "Stroke every segment of `xs` / `ys` (pixels) between consecutive finite points - segment `i` from point `i` to
-  `i + 1` - in color `(segment-colors i)` (`nil` or `:none` skips it), with the `:width` and `:dash` of line `style`
-  (each segment restarts the dash) and round caps, so corners show no gaps."
+  `i + 1` - in color `(segment-colors i)` (`nil` or `:none` skips it), with the `:width` and `:dash` of line `style`:
+  consecutive segments of one color form one path (round joins, round caps at its ends, so color changes show no
+  gaps); the dash runs on along each run of finite points, across color changes and skipped segments."
   [canvas xs ys segment-colors {:keys [width dash]}]
   (when (pos? (double width))
-    (c2d/set-stroke-custom canvas (cond-> {:size (double width) :cap :round :join :round}
-                                    (dash-pattern dash) (assoc :dash (dash-pattern dash))))
-    (doseq [run (finite-runs xs ys)
-            [i j] (partition 2 1 run)
-            :let [color (segment-colors i)]
-            :when (and (some? color) (not (theme/none? color)))]
-      (c2d/set-color canvas color)
-      (c2d/line canvas (double (nth xs i)) (double (nth ys i)) (double (nth xs j)) (double (nth ys j))))))
+    (let [pattern (dash-pattern dash)
+          stroke (cond-> {:size (double width) :cap :round :join :round} pattern (assoc :dash pattern))]
+      (doseq [run (finite-runs xs ys)]
+        (reduce (fn [^double phase segments]
+                  (let [color (segment-colors (ffirst segments))
+                        points (mapv (fn [i] [(double (nth xs i)) (double (nth ys i))])
+                                     (cons (ffirst segments) (map second segments)))]
+                    (when (and (some? color) (not (theme/none? color)))
+                      (c2d/set-stroke-custom canvas (cond-> stroke pattern (assoc :dash-phase phase)))
+                      (c2d/set-color canvas color)
+                      (c2d/path canvas points false true))
+                    (+ phase (path-length points))))
+                0.0
+                (partition-by (fn [[i _]] (segment-colors i)) (partition 2 1 run)))))))
+
+(defn key-glyph!
+  "Legend key glyph of a line in `box` (`{:x :y :w :h}`): a horizontal line through the middle in line `style`; with
+  an `area` color (not `:none`) a filled square (0.7 of the smaller side) outlined in the line style."
+  [canvas {:keys [x y w h]} style area]
+  (let [cx (+ (double x) (* 0.5 (double w)))
+        cy (+ (double y) (* 0.5 (double h)))]
+    (if (theme/none? area)
+      (draw! canvas [(double x) (+ (double x) (double w))] [cy cy] style)
+      (let [side (* 0.7 (m/min (double w) (double h)))]
+        (c2d/set-color canvas area)
+        (c2d/crect canvas cx cy side side)
+        (when (set-style! canvas style)
+          (c2d/crect canvas cx cy side side true))))))
 
 (defn fill-under!
   "Fill the area between each run of `xs` / `ys` (pixels) and its baseline: the polygon from the base point of the

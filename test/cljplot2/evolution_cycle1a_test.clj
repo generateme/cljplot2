@@ -14,6 +14,7 @@
             [cljplot2.graphics.curve :as curve]
             [cljplot2.graphics.polyline :as polyline]
             [cljplot2.layout.grid :as grid]
+            [cljplot2.scale.aesthetic :as aesthetic]
             [cljplot2.scale.position :as scale]
             [cljplot2.schema :as schema])
   (:import [java.awt.image BufferedImage]
@@ -43,13 +44,13 @@
 
 (deftest dash-names-test
   (testing "1.1 names resolve to fixed pixel lengths; :solid is solid"
-    (is (= [4.0 4.0] (polyline/dash-pattern :dashed)))
-    (is (= [1.0 3.0 4.0 3.0] (polyline/dash-pattern :dot-dash)))
+    (is (= [5.0 3.0] (polyline/dash-pattern :dashed)))
+    (is (= [1.0 2.0 5.0 2.0] (polyline/dash-pattern :dot-dash)))
     (is (nil? (polyline/dash-pattern :solid)))
     (is (nil? (polyline/dash-pattern :none)))
     (is (nil? (polyline/dash-pattern nil)))
     (is (= [2.0 1.0] (polyline/dash-pattern [2 1])))
-    (is (same-image? (line-plot {:dash :dashed :width 2}) (line-plot {:dash [4 4] :width 2})))
+    (is (same-image? (line-plot {:dash :dashed :width 2}) (line-plot {:dash [5 3] :width 2})))
     (is (same-image? (line-plot {:dash :solid}) (line-plot {:dash :none}))))
   (testing "1.1 an unknown name throws {:key :dash} with the closest name"
     (let [e (error #(build (line-plot {:dash :dashd})))]
@@ -60,14 +61,14 @@
     (is (= :dash (:key (error #(build (line-plot {:dash [1 0]})))))))
   (testing "1.2 theme grid lines take names"
     (let [grid-theme (fn [dash] {:panel {:grid {:x {:color :black :width 1 :dash dash} :y :none}}})]
-      (is (same-image? (line-plot {} {:theme (grid-theme :dotted)}) (line-plot {} {:theme (grid-theme [1 3])}))))))
+      (is (same-image? (line-plot {} {:theme (grid-theme :dotted)}) (line-plot {} {:theme (grid-theme [1 2])}))))))
 
 (def ^:private grouped (for [s ["a" "b" "c"] i (range 4)] {:x i :y (+ i ({"a" 0 "b" 3 "c" 6} s)) :s s}))
 
 (deftest dash-aesthetic-test
   (testing "1.3 an ordinal :dash scale cycles theme :palette :dash"
     (let [b (build {:data grouped :mapping {:x :x :y :y :dash :s} :charts [(chart/line)]})]
-      (is (= [:solid [1 1] [2 2]] (mapv #(get-in % [:attributes :dash]) (:entries (first (legends b))))))))
+      (is (= [:solid :dashed :dotted] (mapv #(get-in % [:attributes :dash]) (:entries (first (legends b))))))))
   (testing "1.3 level map and vector ranges, reverse"
     (let [b (build {:data grouped :mapping {:x :x :y :y :dash :s} :charts [(chart/line)]
                     :scales {:dash {:range {"a" :dotted "b" :dashed "c" [9 1]}}}})]
@@ -100,19 +101,15 @@
           ls (legends b)]
       (is (= 1 (count ls)))
       (is (every? #(and (:color (:attributes %)) (:dash (:attributes %))) (:entries (first ls))))))
-  (testing "1.4 line, rule (data mode), density and ecdf draw a mapped dash"
-    (let [base {:data grouped :theme white}
-          dashed {:dash :s}
-          rendered (fn [ch mapping] (plot/render-image (assoc base :mapping mapping :charts [ch]) size))]
-      (doseq [[ch mapping] [[(chart/line {:width 3}) {:x :x :y :y}]
-                            [(chart/rule {:mapping {:y :y :dash :s} :width 3}) {}]
-                            [(chart/density {:width 3}) {:x :y}]
-                            [(chart/ecdf {:width 3}) {:x :y}]]]
-        (is (not (same-image? (assoc base :mapping mapping :charts [ch])
-                              (assoc base :mapping (merge mapping (if (= :rule (:kind ch)) {} dashed))
-                                     :charts [(if (= :rule (:kind ch)) (chart/rule {:mapping {:y :y} :width 3}) ch)])))
-            (str (:kind ch) " differs with :dash mapped"))
-        (is (some? (rendered ch (merge mapping (when-not (= :rule (:kind ch)) dashed))))))))
+  (testing "1.4 line, density and ecdf draw a mapped dash"
+    (doseq [[ch mapping] [[(chart/line {:width 3}) {:x :x :y :y}]
+                          [(chart/density {:width 3}) {:x :y}]
+                          [(chart/ecdf {:width 3}) {:x :y}]]
+            :let [p {:data grouped :theme white :mapping mapping :charts [ch]}]]
+      (is (not (same-image? p (assoc-in p [:mapping :dash] :s))) (str (:kind ch) " changes with :dash mapped"))))
+  (testing "1.4 a data rule draws a mapped dash through its own mapping"
+    (let [p (fn [mapping] {:data grouped :theme white :charts [(chart/rule {:mapping mapping :width 3})]})]
+      (is (not (same-image? (p {:y :y}) (p {:y :y :dash :s}))))))
   (testing "1.5 a chart without lines ignores a mapped dash, as :shape on line"
     (is (some? (plot/render-image {:data grouped :mapping {:x :x :y :y :dash :s} :charts [(chart/scatter)]} size)))
     (is (some? (plot/render-image {:data grouped :mapping {:x :x :y :y :shape :s} :charts [(chart/line)]} size)))))
@@ -402,7 +399,7 @@
     (is (some? (build (fn-plot {:f m/sin :domain [0 1]} {:theme {:chart {:function {:color :red :width 2}}}})))))
   (testing "4.12 legend glyph with dash"
     (let [b (build (fn-plot {:f [m/sin m/cos] :domain [0 3] :mapping {:dash :function}}))]
-      (is (= [:solid [1 1]] (mapv #(get-in % [:attributes :dash]) (:entries (first (legends b))))))
+      (is (= [:solid :dashed] (mapv #(get-in % [:attributes :dash]) (:entries (first (legends b))))))
       (is (some? (plot/render-image (fn-plot {:f [m/sin m/cos] :domain [0 3] :mapping {:dash :function} :fill [0 0 255 60]}) size))))))
 
 (deftest function-orientation-test
@@ -453,3 +450,55 @@
   (testing "dash? vocabulary"
     (is (every? schema/dash? [:none :solid :dashed [1] [1.5 2]]))
     (is (not-any? schema/dash? [nil :wavy [] [0] [-1 2] "dashed"]))))
+
+;; review fixes
+
+(deftest dash-set-test
+  (testing "F2 every named pattern shows a gap within a 14 px legend key"
+    (doseq [[k lengths] schema/dash-styles :when (vector? lengths)]
+      (is (< (double (first lengths)) 14.0) (str k " starts with a dash shorter than the key"))
+      (is (<= (+ (double (first lengths)) (double (second lengths))) 14.0) (str k " has its first gap inside the key"))))
+  (testing "F2 the default palette: the named styles, all different"
+    (let [palette (get-in (build {:data grouped :mapping {:x :x :y :y} :charts [(chart/line)]}) [:theme :palette :dash])]
+      (is (every? #(contains? schema/dash-styles %) palette))
+      (is (apply distinct? palette))
+      (is (= :solid (first palette))))))
+
+(deftest gradient-dash-test
+  (let [data (for [i (range 8)] {:x i :y (m/sin i)})
+        p (fn [opts] {:data data :mapping {:x :x :y :y :color :y} :theme white :charts [(chart/line (merge {:width 2} opts))]})]
+    (testing "F1 a dash shows on an interpolated gradient line"
+      (is (not (same-image? (p {:interpolator :pchip}) (p {:interpolator :pchip :dash :dashed})))))
+    (testing "F1 the dash runs on across segments of an uncurved gradient line"
+      (is (not (same-image? (p {}) (p {:dash :long-dash})))))
+    (testing "F3 sampled segments share colors in chunks of a few pixels"
+      (let [chunk-colors @#'line/chunk-colors
+            points (mapv (fn [i] [(double i) 0.0]) (range 21))
+            color-scale (aesthetic/scale-spec :color {:domain [0 20] :range [:black :white]} nil false {})
+            colors (chunk-colors points [0.0 20.0] [0.0 20.0] 0 color-scale {:palette {:na :grey}})]
+        (is (= 20 (count colors)))
+        (is (= 5 (count (partition-by identity colors))) "20 px in 4 px chunks")))))
+
+(deftest lerp-walk-test
+  (let [lerp @#'line/lerp-values]
+    (testing "F8 one walk: ascending, descending, outside the ends, repeated ts"
+      (is (= [-5.0 0.0 5.0 5.0 15.0 25.0] (lerp [0.0 10.0 20.0] [0.0 10.0 20.0] [-5.0 0.0 5.0 5.0 15.0 25.0])))
+      (is (= [25.0 15.0 5.0] (lerp [20.0 10.0 0.0] [20.0 10.0 0.0] [25.0 15.0 5.0])))
+      (is (= [] (lerp [0.0 1.0] [0.0 1.0] []))))))
+
+(deftest function-bands-test
+  (testing "F7 a categorical x scale: {:key :f}"
+    (let [e (error #(plot/render-image {:data [{:x "a" :y 1} {:x "b" :y 2}] :mapping {:x :x :y :y}
+                                        :charts [(chart/scatter) (chart/function {:f m/sin})]} size))]
+      (is (= :f (:key e)))
+      (is (= :bands (:value e))))))
+
+(deftest key-glyph-test
+  (testing "F6 line and function legends show the fill; without it a line"
+    (let [glyph (fn [opts] (let [b (build {:data grouped :mapping {:x :x :y :y :color :s} :theme white
+                                            :charts [(chart/line opts)]})]
+                             (some? b)))]
+      (is (glyph {:fill [255 0 0]}))
+      (is (not (same-image? {:data grouped :mapping {:x :x :y :y :color :s} :theme white :charts [(chart/line {})]}
+                            {:data grouped :mapping {:x :x :y :y :color :s} :theme white :charts [(chart/line {:fill [255 0 0 0]})]}))
+          "a transparent fill still changes the legend glyph (square outline)"))))

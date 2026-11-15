@@ -5,8 +5,9 @@
   * `:f` / `:parametric` (exactly one) - a function, a vector of functions or a map label -> function. Each function
     is a row `{:function label}` (label - the map key, or the index in a vector, 0 for a single function), grouped
     by the chart's own `:mapping` (`{:color :function}`, `:dash`, `:group`); labels are levels: a mapped `:function`
-    is declared categorical ([[categorical-labels]]), so numeric labels get ordinal scales. Without a mapping every
-    function takes the theme style.
+    is declared categorical ([[categorical-labels]]), so numeric labels get ordinal scales - the plot's scale of that
+    aesthetic, shared with the other charts (numeric data of another chart on it then needs few distinct values).
+    Without a mapping every function takes the theme style.
   * `:domain [lo hi]` (`:f`) - numbers or `java.time` values; without it the plot's explicit x domain, else the x
     scale's domain at drawing (the chart then adds no extents). On a temporal domain or a `:datetime` x scale `f`
     receives a `LocalDateTime`.
@@ -24,8 +25,7 @@
   * `:color`, `:width`, `:dash`, `:bridge` - style, defaults from theme `[:chart :function]`; `:padding` as line.
 
   Exceptions thrown by a function propagate."
-  (:require [clojure2d.core :as c2d]
-            [fastmath.core :as m]
+  (:require [fastmath.core :as m]
             [fastmath.stats :as stats]
             [wadogo.scale :as s]
             [cljplot2.data.accessor :as accessor]
@@ -36,8 +36,7 @@
             [cljplot2.graphics.polyline :as polyline]
             [cljplot2.scale.aesthetic :as aesthetic]
             [cljplot2.scale.position :as scale]
-            [cljplot2.schema :as schema]
-            [cljplot2.theme :as theme])
+            [cljplot2.schema :as schema])
   (:import [fastmath.vector Vec2]))
 
 (set! *warn-on-reflection* true)
@@ -191,10 +190,11 @@
       (let [points (for [[_ f] fs v (span-samples t (sample-count sample-step parametric-samples))
                          :let [p (point-of (f v))] :when p]
                      p)
-            xs (map first points)]
+            xs (map first points)
+            ey (y-extent-of (map second points) options explicit-y?)]
         (cond-> {}
           (seq xs) (assoc :x (data/extent :x xs))
-          (y-extent-of (map second points) options explicit-y?) (assoc :y (y-extent-of (map second points) options explicit-y?))))
+          ey (assoc :y ey)))
       (if-let [d (or domain (explicit-span plot-scales :x))]
         (let [ys (for [[_ f] fs v (span-samples d (sample-count sample-step extent-samples) (:x plot-scales))
                        :let [y (plottable (f v))] :when y]
@@ -265,7 +265,8 @@
 
 (defn- require-scales!
   "Throw `ex-info` unless the panel has both position scales (an `:f` chart without data elsewhere: no `:domain` and
-  no explicit x domain - `{:key :domain}`; no y samples and no y data - `{:key :y-extent}`)."
+  no explicit x domain - `{:key :domain}`; no y samples and no y data - `{:key :y-extent}`) and a continuous x scale
+  to sample (categorical x - `{:key :f}`)."
   [scales]
   (cond
     (nil? (:x scales))
@@ -273,7 +274,11 @@
                   {:key :domain :value nil})
     (nil? (:y scales))
     (schema/fail! "A function chart needs a y range: samples counted by :y-extent, an explicit {:y {:domain ..}} or another chart's y data."
-                  {:key :y-extent :value nil})))
+                  {:key :y-extent :value nil})
+    (not (scale/continuous-kinds (:kind (:x scales))))
+    (schema/fail! (str "A function chart samples a continuous x scale; the plot's x scale is " (:kind (:x scales))
+                       " (categorical data).")
+                  {:key :f :value (:kind (:x scales))})))
 
 (defn- f-points
   "Pixel points of `f` sampled along the x scale over `domain` (default the scale's) every `sample-step`."
@@ -324,17 +329,7 @@
 
 (defn legend
   "Key glyph: a horizontal line through the middle of `box`; with `:fill` a filled square (the fill) outlined in
-  the line style."
-  [{:keys [options]} attributes canvas {:keys [x y w h]} env]
-  (let [st (merge (style options (:theme env)) (select-keys attributes [:color :dash]))
-        fill (:fill st :none)]
-    (if (theme/none? fill)
-      (let [cy (+ (double y) (* 0.5 (double h)))]
-        (polyline/draw! canvas [(double x) (+ (double x) (double w))] [cy cy] st))
-      (let [side (* 0.7 (m/min (double w) (double h)))
-            cx (+ (double x) (* 0.5 (double w)))
-            cy (+ (double y) (* 0.5 (double h)))]
-        (c2d/set-color canvas fill)
-        (c2d/crect canvas cx cy side side)
-        (when (polyline/set-style! canvas st)
-          (c2d/crect canvas cx cy side side true))))))
+  the line style, see [[cljplot2.graphics.polyline/key-glyph!]]."
+  [{:keys [options]} attributes canvas box env]
+  (let [st (merge (style options (:theme env)) (select-keys attributes [:color :dash]))]
+    (polyline/key-glyph! canvas box st (:fill st :none))))

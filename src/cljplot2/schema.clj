@@ -68,14 +68,17 @@
                "should be [lo hi], non-negative numbers"))
 
 (def dash-styles
-  "Named dash styles: name -> dash lengths in pixels (fixed, not scaled by the line width; ggplot linetypes);
+  "Named dash styles: name -> dash lengths in pixels (fixed, not scaled by the line width; names after ggplot
+  linetypes). Every pattern shows a gap within 14 pixels (a legend key), so the styles stay apart in legends;
   `:solid` draws a solid line, as `:none`."
   {:solid :none
-   :dashed [4.0 4.0]
-   :dotted [1.0 3.0]
-   :dot-dash [1.0 3.0 4.0 3.0]
-   :long-dash [7.0 3.0]
-   :two-dash [2.0 2.0 6.0 2.0]})
+   :dashed [5.0 3.0]
+   :dotted [1.0 2.0]
+   :dot-dash [1.0 2.0 5.0 2.0]
+   :long-dash [10.0 3.0]
+   :two-dash [2.0 2.0 6.0 2.0]
+   :dot-dot-dash [1.0 2.0 1.0 2.0 5.0 2.0]
+   :loose-dot [1.0 4.0]})
 
 (defn dash?
   "Is `v` a dash: `:none`, a name of [[dash-styles]] or a non-empty sequence of positive lengths?"

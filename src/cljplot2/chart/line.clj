@@ -14,12 +14,13 @@
   multiplied by `:alpha`, optional `:width` / `:dash`; the area stays empty).
   Groups (see [[cljplot2.data.group]]) come from ordinal aesthetics (`:color` colors the line) and `:group`.
   A `:color` with a linear or binned scale doesn't group: it colors each line along its length - every segment in
-  the color of the mean of its two end values (the theme NA color when one is NA), round caps, the dash restarting
-  per segment; rows outside the color scale's explicit domain are dropped (counted), NA rows follow the plot's
-  `:groups {:na}`. With an `:interpolator` the sampled points take the color value interpolated linearly between
-  their data points (`:curve` can't color along the length - `ex-info {:key :curve}`); a bridge takes the color of
+  the color of the mean of its two end values (the theme NA color when one is NA), round caps, the dash running on
+  along the line; rows outside the color scale's explicit domain are dropped (counted), NA rows follow the plot's
+  `:groups {:na}`. With an `:interpolator` the sampled curve takes the color value interpolated linearly between
+  its data points, in steps of a few pixels (`:curve` can't color along the length - `ex-info {:key :curve}`); a bridge takes the color of
   its two end values."
-  (:require [cljplot2.data.rows :as data]
+  (:require [fastmath.core :as m]
+            [cljplot2.data.rows :as data]
             [cljplot2.data.group :as group]
             [cljplot2.graphics.curve :as curve]
             [cljplot2.graphics.polyline :as polyline]
@@ -101,33 +102,82 @@
                      :y (count (remove #(data/valid-value? (y-of %)) rows)))
                 gradient? (assoc :color (:dropped color-stats)))})))
 
+(defn- value-colors
+  "Colors of the color values `values` under the finalized color `scale`: the theme NA color for `nil` (every value
+  without a scale - all values NA)."
+  [values scale theme]
+  (let [na (get-in theme [:palette :na])
+        color-of (if scale (aesthetic/attribute-fn :color scale na) (constantly na))]
+    (mapv #(if (nil? %) na (color-of (double %))) values)))
+
 (defn- segment-colors
   "Colors of the segments of a gradient line with point color values `colors` under the finalized color `scale`:
   segment `i` - the color of the mean of values `i` and `i + 1`, the theme NA color when either is NA (every
   segment without a scale - all values NA)."
   [colors scale theme]
-  (let [na (get-in theme [:palette :na])
-        color-of (if scale (aesthetic/attribute-fn :color scale na) (constantly na))]
-    (mapv (fn [a b] (if (or (nil? a) (nil? b)) na (color-of (* 0.5 (+ (double a) (double b))))))
-          colors (rest colors))))
+  (value-colors (mapv (fn [a b] (when (and (some? a) (some? b)) (* 0.5 (+ (double a) (double b))))) colors (rest colors))
+                scale theme))
 
 (defn- lerp-values
   "Values at positions `ts` interpolated linearly from `values` at strictly monotone `positions` (`nil` where an
-  enclosing value is `nil`); positions outside take the nearest segment."
+  enclosing value is `nil`); positions outside take the nearest segment. `ts` run in the direction of `positions`
+  (one walk over both)."
   [positions values ts]
-  (let [[ps vs] (if (> (double (first positions)) (double (peek positions)))
-                  [(vec (rseq positions)) (vec (rseq values))]
-                  [positions values])
-        last-segment (- (long (count ps)) 2)]
-    (mapv (fn [t]
-            (let [t (double t)
-                  i (long (loop [i 0] (if (and (< i last-segment) (> t (double (ps (inc i))))) (recur (inc i)) i)))
-                  a (vs i) b (vs (inc i))]
-              (when (and (some? a) (some? b))
-                (let [p0 (double (ps i)) p1 (double (ps (inc i)))
-                      f (if (== p0 p1) 0.0 (/ (- t p0) (- p1 p0)))]
-                  (+ (double a) (* f (- (double b) (double a))))))))
-          ts)))
+  (let [reversed? (> (double (first positions)) (double (peek positions)))
+        [ps vs ts] (if reversed? [(vec (rseq positions)) (vec (rseq values)) (reverse ts)] [positions values ts])
+        last-segment (- (long (count ps)) 2)
+        lerped (loop [i 0 ts (seq ts) acc []]
+                 (if-not ts
+                   acc
+                   (let [t (double (first ts))]
+                     (if (and (< i last-segment) (> t (double (ps (inc i)))))
+                       (recur (inc i) ts acc)
+                       (let [a (vs i) b (vs (inc i))
+                             p0 (double (ps i)) p1 (double (ps (inc i)))
+                             f (if (== p0 p1) 0.0 (/ (- t p0) (- p1 p0)))]
+                         (recur i (next ts) (conj acc (when (and (some? a) (some? b))
+                                                        (+ (double a) (* f (- (double b) (double a))))))))))))]
+    (if reversed? (vec (rseq lerped)) lerped)))
+
+(def ^:private ^:const color-chunk
+  "Pixels of a sampled gradient line drawn in one color (colors change in steps this long, so the segments of a step
+  join into one path)."
+  4.0)
+
+(defn- chunk-colors
+  "Color of every segment of the sampled `points` of a curved gradient run: the color value interpolated (see
+  [[lerp-values]]) from the run's data `positions` / `values` along axis index `a` at the middle of the segment's
+  [[color-chunk]] (chunks by length along the curve)."
+  [points positions values a scale theme]
+  (let [lengths (vec (reductions + 0.0 (map (fn [[x0 y0] [x1 y1]] (m/hypot (- (double x1) (double x0)) (- (double y1) (double y0))))
+                                            points (rest points))))
+        chunk-of (mapv #(long (quot (double (lengths %)) color-chunk)) (range (dec (count points))))
+        chunks (partition-by chunk-of (range (dec (count points))))
+        middles (mapv (fn [segments] (let [i (long (nth segments (quot (count segments) 2)))]
+                                       (* 0.5 (+ (double (nth (points i) a)) (double (nth (points (inc i)) a))))))
+                      chunks)
+        colors (value-colors (lerp-values positions values middles) scale theme)]
+    (vec (mapcat (fn [segments color] (repeat (count segments) color)) chunks colors))))
+
+(defn- draw-gradient!
+  "Stroke a gradient line: `index-runs` of the data points `px` / `py` with color values `colors`, drawn as
+  `point-runs`; curved runs take color values interpolated along `along` in [[color-chunk]] steps; bridges (`gaps`
+  `:bridge`) the color of their end values."
+  [canvas px py colors index-runs point-runs curved? along st gaps scales theme]
+  (let [a (if (= :y along) 1 0)]
+    (if curved?
+      (doseq [[run points] (map vector index-runs point-runs)
+              :when (> (count points) 1)]
+        (polyline/draw-segments! canvas (mapv first points) (mapv second points)
+                                 (chunk-colors points (mapv #(if (zero? a) (px %) (py %)) run) (mapv colors run) a
+                                               (:color scales) theme)
+                                 st))
+      (polyline/draw-segments! canvas px py (segment-colors colors (:color scales) theme) st))
+    (when (= :bridge gaps)
+      (doseq [[r0 r1] (map vector index-runs (rest index-runs))
+              :let [color (first (segment-colors [(colors (peek r0)) (colors (first r1))] (:color scales) theme))]]
+        (polyline/stroke-runs! canvas [[[(px (peek r0)) (py (peek r0))] [(px (first r1)) (py (first r1))]]]
+                               (polyline/bridge-style (assoc st :color color) (:bridge st)))))))
 
 (defn- curve-options
   "Curve options of the chart `options` for a line whose x runs along pixel axis `:y` when `flipped?`."
@@ -197,8 +247,8 @@
             (curve/draw-runs! canvas point-runs st area gaps)))))))
 
 (defn legend
-  "Key glyph: a horizontal line through the middle of `box`."
-  [{:keys [options]} attributes canvas {:keys [x y w h]} env]
-  (let [st (merge (style options (:theme env)) (select-keys attributes [:color :dash]))
-        cy (+ (double y) (* 0.5 (double h)))]
-    (polyline/draw! canvas [(double x) (+ (double x) (double w))] [cy cy] st)))
+  "Key glyph: a horizontal line through the middle of `box`; with `:fill` a filled square (the fill) outlined in
+  the line style, see [[cljplot2.graphics.polyline/key-glyph!]]."
+  [{:keys [options]} attributes canvas box env]
+  (let [st (merge (style options (:theme env)) (select-keys attributes [:color :dash]))]
+    (polyline/key-glyph! canvas box st (:fill st :none))))
