@@ -17,6 +17,7 @@
             [cljplot2.graphics.draw :as draw]
             [cljplot2.data.facet :as facet]
             [cljplot2.graphics.measure :as measure]
+            [cljplot2.graphics.polyline :as polyline]
             [cljplot2.scale.position :as scale]
             [cljplot2.theme :as theme])
   (:import [java.awt Graphics2D Rectangle]))
@@ -76,7 +77,7 @@
           :when (and finalized (not (false? (:axis finalized)))
                      (not (theme/none? line)) (not (theme/none? color)) (pos? (double width)))]
     (c2d/set-color c color)
-    (c2d/set-stroke-custom c (cond-> {:size (double width) :cap :butt} (not (theme/none? dash)) (assoc :dash (vec dash))))
+    (c2d/set-stroke-custom c (cond-> {:size (double width) :cap :butt} (polyline/dash-pattern dash) (assoc :dash (polyline/dash-pattern dash))))
     (let [forward (scale/forward-fn finalized)
           horizontal? (scale/horizontal? k finalized)]
       (doseq [tick (:ticks finalized)

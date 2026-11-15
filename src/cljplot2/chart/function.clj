@@ -1,0 +1,340 @@
+(ns cljplot2.chart.function
+  "Function: curves of functions sampled across the panel - `y = f(x)` (`:f`) or parametric `[x y] = f(t)`
+  (`:parametric`). No data: the chart draws in every panel and inherits only the plot's facet keys (as annotations).
+
+  * `:f` / `:parametric` (exactly one) - a function, a vector of functions or a map label -> function. Each function
+    is a row `{:function label}` (label - the map key, or the index in a vector, 0 for a single function), grouped
+    by the chart's own `:mapping` (`{:color :function}`, `:dash`, `:group`); labels are levels: a mapped `:function`
+    is declared categorical ([[categorical-labels]]), so numeric labels get ordinal scales. Without a mapping every
+    function takes the theme style.
+  * `:domain [lo hi]` (`:f`) - numbers or `java.time` values; without it the plot's explicit x domain, else the x
+    scale's domain at drawing (the chart then adds no extents). On a temporal domain or a `:datetime` x scale `f`
+    receives a `LocalDateTime`.
+  * `:t [lo hi]` (`:parametric`, required) - numbers or `java.time` values (then `f` receives a `LocalDateTime`,
+    sampled evenly in elapsed time).
+  * `:sample-step` - `:f`: pixels between samples along x (default 1) or `{:count n}`; `:parametric`: only
+    `{:count n}` (default 500).
+  * `:y-limits [lo hi]` - samples outside don't count for the y extent (the curve is only clipped).
+  * `:y-extent` - y extent of the samples without `:y-limits` or an explicit plot y domain: `:quantiles` (default,
+    the 1% and 99% sample quantiles), `{:quantiles [p q]}`, `:min-max` or `:none` (no y extent).
+  * `:gaps` - `nil` / non-finite results break the curve: `:break` (default) or `:bridge` (see
+    [[cljplot2.chart.line]]); consecutive samples beyond opposite panel edges (asymptotes) cut the curve, never
+    bridged.
+  * `:fill` - `:f`: the area to y = 0 (clamped into the panel); `:parametric`: the polygon the curve closes.
+  * `:color`, `:width`, `:dash`, `:bridge` - style, defaults from theme `[:chart :function]`; `:padding` as line.
+
+  Exceptions thrown by a function propagate."
+  (:require [clojure2d.core :as c2d]
+            [fastmath.core :as m]
+            [fastmath.stats :as stats]
+            [wadogo.scale :as s]
+            [cljplot2.data.accessor :as accessor]
+            [cljplot2.data.facet :as facet]
+            [cljplot2.data.group :as group]
+            [cljplot2.data.rows :as data]
+            [cljplot2.graphics.curve :as curve]
+            [cljplot2.graphics.polyline :as polyline]
+            [cljplot2.scale.aesthetic :as aesthetic]
+            [cljplot2.scale.position :as scale]
+            [cljplot2.schema :as schema]
+            [cljplot2.theme :as theme])
+  (:import [fastmath.vector Vec2]))
+
+(set! *warn-on-reflection* true)
+(set! *unchecked-math* :warn-on-boxed)
+
+(def ^:private ^:const extent-samples 1000)
+(def ^:private ^:const parametric-samples 500)
+(def ^:private default-quantiles [0.01 0.99])
+
+;; schema
+
+(def ^:private functions
+  (schema/named-type ::functions
+                     #(or (fn? %) (and (vector? %) (seq %) (every? fn? %)) (and (map? %) (seq %) (every? fn? (vals %))))
+                     "should be a function, a non-empty vector of functions or a non-empty map label -> function"))
+
+(defn- span-value? [v] (or (schema/finite? v) (data/temporal? v)))
+
+(def ^:private span
+  (schema/named-type ::span
+                     #(and (vector? %) (= 2 (count %)) (every? span-value? %)
+                           (or (every? number? %) (every? data/temporal? %))
+                           (if (every? number? %) (< (double (% 0)) (double (% 1))) (not= (% 0) (% 1))))
+                     "should be [lo hi]: finite numbers lo < hi, or two different java.time values"))
+
+(def ^:private limits
+  (schema/named-type ::limits #(and (vector? %) (= 2 (count %)) (every? schema/finite? %) (< (double (% 0)) (double (% 1))))
+                     "should be [lo hi], finite numbers, lo < hi"))
+
+(def ^:private y-extent
+  (schema/named-type ::y-extent
+                     #(or (contains? #{:quantiles :min-max :none} %)
+                          (and (map? %) (= [:quantiles] (keys %))
+                               (let [q (:quantiles %)]
+                                 (and (vector? q) (= 2 (count q)) (every? number? q)
+                                      (<= 0.0 (double (q 0))) (< (double (q 0)) (double (q 1))) (<= (double (q 1)) 1.0)))))
+                     "should be :quantiles, :min-max, :none or {:quantiles [p q]}, 0 <= p < q <= 1"))
+
+(def ^:private style-entries
+  (conj polyline/style-entries (schema/optional :fill schema/color) (schema/optional :bridge polyline/bridge-schema)))
+
+(def schemas
+  "Schemas of the function chart: `:style` (theme `[:chart :function]`), `:options`, `:mapping` (the chart's own)."
+  {:style (into [:map {:closed true}] style-entries)
+   :options (-> [:map {:closed true}]
+                (into style-entries)
+                (conj (schema/optional :data (schema/forbidden "isn't used: a function chart samples its functions"))
+                      (schema/optional :mapping data/mapping-schema)
+                      (schema/optional :f functions)
+                      (schema/optional :parametric functions)
+                      (schema/optional :domain span)
+                      (schema/optional :t span)
+                      (schema/optional :sample-step curve/sample-step)
+                      (schema/optional :y-limits limits)
+                      (schema/optional :y-extent y-extent)
+                      (schema/optional :gaps [:enum :break :bridge])
+                      (schema/optional :padding data/position-padding)))
+   :mapping [:map]})
+
+(defn categorical-labels
+  "`options` with every accessor `:function` of the chart's own `:mapping` marked categorical (see
+  [[cljplot2.data.accessor]]): function labels are levels, also when they're numbers (vector indices)."
+  [options]
+  (if-let [mapping (:mapping options)]
+    (assoc options :mapping (update-vals mapping #(if (= :function %) (accessor/->CategoricalAccessor :function) %)))
+    options))
+
+(defn- style
+  [options theme]
+  (merge (get-in theme [:chart :function]) (select-keys options [:color :width :dash :fill :bridge])))
+
+;; input
+
+(defn- labelled
+  "`[[label f] ..]` of a function, a vector of functions or a map label -> function."
+  [fs]
+  (cond
+    (fn? fs) [[0 fs]]
+    (map? fs) (vec fs)
+    :else (vec (map-indexed vector fs))))
+
+(defn- checked-input!
+  "`[parametric? labelled-functions]` of the options; throws `ex-info` for a missing or doubled function, a
+  parametric chart without `:t` or with a pixel `:sample-step`, `:t` / `:domain` on the wrong form."
+  [{:keys [f parametric t domain sample-step]}]
+  (cond
+    (and (nil? f) (nil? parametric)) (schema/fail! "A function chart needs :f or :parametric." {:key :f :value nil})
+    (and f parametric) (schema/fail! "A function chart takes :f or :parametric, not both." {:key :f :value f})
+    (and parametric (nil? t)) (schema/fail! "A :parametric function chart needs :t [lo hi]." {:key :t :value nil})
+    (and parametric (some? sample-step) (not (map? sample-step)))
+    (schema/fail! "A :parametric function chart samples by count: :sample-step {:count n}." {:key :sample-step :value sample-step})
+    (and parametric domain) (schema/fail! ":domain is for :f; a :parametric chart takes :t." {:key :domain :value domain})
+    (and f t) (schema/fail! ":t is for :parametric; an :f chart takes :domain." {:key :t :value t}))
+  [(some? parametric) (labelled (or f parametric))])
+
+;; sampling
+
+(def ^:private sampled-kinds
+  "Continuous position scale kinds samples follow (evenly in the scale's transform)."
+  #{:linear :log :pow :symlog})
+
+(defn- span-samples
+  "`n` values evenly spread over the span `[lo hi]`: numbers - evenly in the transform of the position scale spec
+  `spec` (`:log`, `:pow`, `:symlog` with its `:base` / `:exponent`; else linear), or `LocalDateTime`s evenly in
+  elapsed time."
+  ([span n] (span-samples span n nil))
+  ([[lo hi] ^long n spec]
+   (let [ws (if (number? lo)
+              (s/scale (get sampled-kinds (:kind spec) :linear)
+                       (merge (select-keys spec [:base :exponent]) {:domain [(double lo) (double hi)] :range [0.0 1.0]}))
+              (s/scale :datetime {:domain [lo hi] :range [0.0 1.0]}))]
+     (mapv #(s/inverse ws (/ (double %) (double (dec n)))) (range n)))))
+
+(defn- sample-count ^long [sample-step default] (long (if (map? sample-step) (:count sample-step) default)))
+
+(defn- plottable [v] (when (or (schema/finite? v) (data/temporal? v)) v))
+
+(defn- point-of
+  "`[x y]` of a parametric result with plottable coordinates, else `nil`."
+  [v]
+  (when (and (sequential? v) (= 2 (count v)))
+    (let [[x y] v] (when (and (plottable x) (plottable y)) [x y]))))
+
+(defn- explicit-span
+  "The plot's explicit domain of position scale `k` when it can be sampled (two numbers or `java.time` values)."
+  [plot-scales k]
+  (let [d (get-in plot-scales [k :domain])]
+    (when (and (sequential? d) (= 2 (count d)) (every? span-value? d)) (vec d))))
+
+(defn- y-extent-of
+  "Extent of the y samples `ys` (plottable values): within `y-limits` - their min / max; else by `mode` (see the
+  namespace doc); temporal values - their min / max; `nil` with an explicit plot y domain or nothing left."
+  [ys {:keys [y-limits y-extent]} explicit-y?]
+  (when-not explicit-y?
+    (let [mode (or y-extent :quantiles)
+          numeric? (every? number? ys)]
+      (cond
+        (empty? ys) nil
+        y-limits (data/extent :y (filter #(<= (double (y-limits 0)) (double %) (double (y-limits 1))) ys))
+        (= :none mode) nil
+        (or (= :min-max mode) (not numeric?)) (data/extent :y ys)
+        :else (let [[p q] (if (map? mode) (:quantiles mode) default-quantiles)
+                    [lo hi] (stats/quantiles ys [p q])]
+                (data/extent :y [lo hi]))))))
+
+(defn- sampled-extents
+  "Position extents of the labelled functions from samples, or `{}` when x has nothing to sample yet."
+  [parametric? fs {:keys [t domain sample-step] :as options} plot-scales]
+  (let [explicit-y? (some? (get-in plot-scales [:y :domain]))]
+    (if parametric?
+      (let [points (for [[_ f] fs v (span-samples t (sample-count sample-step parametric-samples))
+                         :let [p (point-of (f v))] :when p]
+                     p)
+            xs (map first points)]
+        (cond-> {}
+          (seq xs) (assoc :x (data/extent :x xs))
+          (y-extent-of (map second points) options explicit-y?) (assoc :y (y-extent-of (map second points) options explicit-y?))))
+      (if-let [d (or domain (explicit-span plot-scales :x))]
+        (let [ys (for [[_ f] fs v (span-samples d (sample-count sample-step extent-samples) (:x plot-scales))
+                       :let [y (plottable (f v))] :when y]
+                   y)
+              e (y-extent-of ys options explicit-y?)]
+          (cond-> {:x (data/extent :x d)} e (assoc :y e)))
+        {}))))
+
+(defn compute
+  "One panel - every panel (`facet/all-panels`): `{:functions [{:f :aesthetics}] :style :parametric? :domain :t
+  :sample-step :gaps}`, the functions grouped by the chart's own mapping; position extents from samples (see the
+  namespace doc), aesthetic extents of the labels."
+  [{:keys [options]} {:keys [mapping]} {:keys [theme plot-scales] :as env}]
+  (let [[parametric? fs] (checked-input! options)
+        rows (mapv (fn [[label f]] {:function label ::f f}) fs)
+        {:keys [panels dropped]} (group/split {facet/all-panels rows} (select-keys mapping (conj aesthetic/dims :group)) env)
+        functions (vec (for [g (get panels facet/all-panels) row (:rows g)] {:f (::f row) :aesthetics (:aesthetics g)}))
+        extents (sampled-extents parametric? fs options plot-scales)]
+    {:data {facet/all-panels (merge {:functions functions :style (style options theme) :parametric? parametric?}
+                                    (select-keys options [:domain :t :sample-step :gaps]))}
+     :extents (merge-with merge (group/aesthetic-extents panels plot-scales)
+                          (if (seq extents) {facet/all-panels extents} {}))
+     :padding (merge {:x [0.05 0.05] :y [0.05 0.05]} (:padding options))
+     :na (group/na-dims panels)
+     :dropped dropped}))
+
+;; drawing
+
+(defn- jump?
+  "Do consecutive pixel positions `a`, `b` jump farther than the panel `extent` (an asymptote between two samples:
+  a sampled continuous curve moves less; this includes samples beyond opposite panel edges)?"
+  [^double extent ^double a ^double b]
+  (> (m/abs (- b a)) extent))
+
+(defn- stub
+  "Point continuing the segment from `from` to `to` past `to` by `reach` pixels (a piece's end running out of the
+  panel at a cut), `nil` when the segment has no direction or isn't finite."
+  [[x0 y0] [x1 y1] ^double reach]
+  (let [dx (- (double x1) (double x0)) dy (- (double y1) (double y0))
+        len (m/hypot dx dy)]
+    (when (and (m/valid-double? len) (pos? len))
+      [(+ (double x1) (* reach (/ dx len))) (+ (double y1) (* reach (/ dy len)))])))
+
+(defn- cut-pieces
+  "Points `[[x y] ..]` (NaN coordinates break) split where consecutive points jump farther than the `w` x `h`
+  panel in x or y (asymptotes, see [[jump?]]); at a cut each piece runs on out of the panel along its end segment
+  (see [[stub]])."
+  [points ^double w ^double h]
+  (let [n (count points)
+        reach (+ w h)
+        cut? (fn [[x0 y0] [x1 y1]] (or (jump? w x0 x1) (jump? h y0 y1)))
+        point (fn [^long i] (when (< -1 i n) (points i)))]
+    (loop [i 0 piece [] pieces []]
+      (if (== i n)
+        (conj pieces piece)
+        (let [p (points i)]
+          (if (and (pos? i) (cut? (points (dec i)) p))
+            (let [before (some-> (point (- i 2)) (stub (points (dec i)) reach))
+                  after (some-> (point (inc i)) (stub p reach))]
+              (recur (inc i) (cond-> [] after (conj after) true (conj p)) (conj pieces (cond-> piece before (conj before)))))
+            (recur (inc i) (conj piece p) pieces)))))))
+
+(defn- piece-runs
+  "Drawn runs of a piece: its finite runs, clamped (see [[cljplot2.graphics.curve/clamp-point]])."
+  [piece]
+  (let [xs (mapv first piece) ys (mapv second piece)]
+    (mapv (fn [run] (mapv (fn [i] (curve/clamp-point [(xs i) (ys i)])) run)) (polyline/finite-runs xs ys))))
+
+(defn- require-scales!
+  "Throw `ex-info` unless the panel has both position scales (an `:f` chart without data elsewhere: no `:domain` and
+  no explicit x domain - `{:key :domain}`; no y samples and no y data - `{:key :y-extent}`)."
+  [scales]
+  (cond
+    (nil? (:x scales))
+    (schema/fail! "A function chart needs an x domain: its :domain, an explicit {:x {:domain ..}} or another chart's x data."
+                  {:key :domain :value nil})
+    (nil? (:y scales))
+    (schema/fail! "A function chart needs a y range: samples counted by :y-extent, an explicit {:y {:domain ..}} or another chart's y data."
+                  {:key :y-extent :value nil})))
+
+(defn- f-points
+  "Pixel points of `f` sampled along the x scale over `domain` (default the scale's) every `sample-step`."
+  [f domain sample-step scales]
+  (let [x-scale (:x scales)
+        flipped? (scale/flipped? scales)
+        fx (scale/forward-fn x-scale)
+        fy (scale/forward-fn (:y scales))
+        inv (scale/inverse-fn x-scale)
+        r0 (double (first (:range x-scale)))
+        r1 (double (second (:range x-scale)))
+        [lo hi] (or domain (:domain x-scale))
+        clamp (fn [^double p] (m/constrain p (m/min r0 r1) (m/max r0 r1)))
+        p0 (double (clamp (fx lo))) p1 (double (clamp (fx hi)))]
+    (when (and (m/valid-double? p0) (m/valid-double? p1) (not (== p0 p1)))
+      (mapv (fn [p] (let [y (plottable (f (inv p)))
+                          q (if (and y (not (data/temporal? y))) (double (fy y)) ##NaN)]
+                      (if flipped? [q p] [p q])))
+            (curve/sample-grid p0 p1 (or sample-step curve/default-sample-step))))))
+
+(defn- parametric-points
+  "Pixel points of the parametric `f` sampled over `t` by count."
+  [f t sample-step scales]
+  (let [projection (scale/projection scales)]
+    (mapv (fn [v] (if-let [[x y] (point-of (f v))]
+                    (let [^Vec2 p (projection x y)] [(.x p) (.y p)])
+                    [##NaN ##NaN]))
+          (span-samples t (sample-count sample-step parametric-samples)))))
+
+(defn draw
+  "Draw every function of the panel: sampled, cut at asymptotes, each piece filled (`:fill`), stroked and bridged
+  (`:gaps :bridge`) as a line (see [[cljplot2.graphics.curve/draw-runs!]])."
+  [_chart {:keys [functions style parametric? domain t sample-step gaps]} canvas {:keys [w h]} scales env]
+  (when-not parametric? (require-scales! scales))
+  (let [w (double w) h (double h)
+        y-scale (:y scales)
+        area (if parametric?
+               :closed
+               {:baseline (curve/area-baseline y-scale w h) :horizontal? (not (scale/horizontal? :y y-scale))})]
+    (doseq [{:keys [f aesthetics]} functions
+            :let [st (group/style style aesthetics scales (:theme env))]
+            :when st
+            piece (cut-pieces (if parametric?
+                                (parametric-points f t sample-step scales)
+                                (f-points f domain sample-step scales))
+                              w h)]
+      (curve/draw-runs! canvas (piece-runs piece) st area (or gaps :break)))))
+
+(defn legend
+  "Key glyph: a horizontal line through the middle of `box`; with `:fill` a filled square (the fill) outlined in
+  the line style."
+  [{:keys [options]} attributes canvas {:keys [x y w h]} env]
+  (let [st (merge (style options (:theme env)) (select-keys attributes [:color :dash]))
+        fill (:fill st :none)]
+    (if (theme/none? fill)
+      (let [cy (+ (double y) (* 0.5 (double h)))]
+        (polyline/draw! canvas [(double x) (+ (double x) (double w))] [cy cy] st))
+      (let [side (* 0.7 (m/min (double w) (double h)))
+            cx (+ (double x) (* 0.5 (double w)))
+            cy (+ (double y) (* 0.5 (double h)))]
+        (c2d/set-color canvas fill)
+        (c2d/crect canvas cx cy side side)
+        (when (polyline/set-style! canvas st)
+          (c2d/crect canvas cx cy side side true))))))

@@ -88,6 +88,6 @@
 (defn legend
   "Key glyph: a horizontal line through the middle of `box`."
   [{:keys [options]} attributes canvas {:keys [x y w h]} env]
-  (let [st (merge (style options (:theme env)) (select-keys attributes [:color]))
+  (let [st (merge (style options (:theme env)) (select-keys attributes [:color :dash]))
         cy (+ (double y) (* 0.5 (double h)))]
     (polyline/draw! canvas [(double x) (+ (double x) (double w))] [cy cy] st)))

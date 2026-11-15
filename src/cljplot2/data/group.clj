@@ -148,7 +148,7 @@
 
 (defn style
   "`base` style of a chart with the group's mapped `aesthetics` applied through finalized `scales` (`:color` - NA
-  color from theme `[:palette :na]`, `:shape`, `:size` - the base value when NA); `nil` when a value is outside
+  color from theme `[:palette :na]`, `:shape`, `:size`, `:dash` - the base value when NA); `nil` when a value is outside
   its scale's domain (the group is skipped)."
   [base aesthetics scales theme]
   (reduce (fn [st [k v]]

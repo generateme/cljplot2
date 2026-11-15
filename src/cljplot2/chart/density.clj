@@ -269,7 +269,7 @@
   "Key glyph: a horizontal line through the middle of `box`; when the chart fills areas (`:fill`, or `:stack` /
   `:normalize` positions, ridgelines) a filled square (the area colour) outlined in the line colour."
   [{:keys [options]} attributes canvas {:keys [x y w h]} env]
-  (let [st (merge (style options (:theme env)) (select-keys attributes [:color]))
+  (let [st (merge (style options (:theme env)) (select-keys attributes [:color :dash]))
         area (area-color st (or (contains? #{:stack :normalize} (:position options)) (:ridges? (:chart-stats env))))]
     (if (theme/none? area)
       (let [cy (+ (double y) (* 0.5 (double h)))]

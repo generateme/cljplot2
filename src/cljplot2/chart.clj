@@ -18,14 +18,14 @@
     (`env` - `{:theme :na-level? :plot-scales :flip? :hint}`, `:plot-scales` - the plot's `:scales`, `:flip?` - the
     plot's `:flip`, `:hint` - the rendering hint, for measuring text); stored per chart in the
     plot's `:stats`. Aesthetic extents (`:color`,
-    `:shape`, `:size`) are [[cljplot2.data.rows/value-extent]]s; `:na` lists aesthetics with NA (`nil`) values
+    `:shape`, `:size`, `:dash`) are [[cljplot2.data.rows/value-extent]]s; `:na` lists aesthetics with NA (`nil`) values
   * `(draw chart computed canvas panel-box scales env)` - draws one panel's `computed` data; called by the panel
     with isolated graphics clipped to the panel box. Pixel positions come only from
     `cljplot2.scale.position/projection` (data `x`, `y` -> pixel point; `:x` is vertical in a plot with `:flip true`),
     never from assuming `:x` is horizontal; it gives `##NaN` for values the scale can't place, and such values are
     skipped. Charts compute in their own frame (`:x`, `:y`); flip is a drawing concern only.
   * `(legend chart attributes canvas box env)` - optional; draws the chart's key glyph in a legend key `box`,
-    `attributes` - the entry's mapped style attributes (`{:color c :shape s :size z}`, NA ones absent except color);
+    `attributes` - the entry's mapped style attributes (`{:color c :shape s :size z :dash d}`, NA ones absent except color);
     `env` also has the chart's computed data (`:chart-stats`, see compute).
     Every chart mapping a legend's dimension draws into its keys, in chart order.
 
@@ -37,6 +37,7 @@
             [cljplot2.chart.density :as density]
             [cljplot2.chart.ecdf :as ecdf]
             [cljplot2.chart.extent :as extent]
+            [cljplot2.chart.function :as function]
             [cljplot2.chart.histogram :as histogram]
             [cljplot2.chart.line :as line]
             [cljplot2.chart.rect :as rect]
@@ -70,7 +71,8 @@
    :rug (:style rug/schemas)
    :extent (:style extent/schemas)
    :rule (:style rule/schemas)
-   :rect (:style rect/schemas)})
+   :rect (:style rect/schemas)
+   :function (:style function/schemas)})
 
 (defn- annotation-value
   "Chart value of an annotation chart: it inherits only the facet keys of the plot mapping."
@@ -149,6 +151,13 @@
   "Rectangles and bands (`:x [a b]`, `:y [a b]`), see [[cljplot2.chart.rect]] and [[cljplot2.data.annotation]]."
   ([] (rect {}))
   ([options] (annotation-value :rect rect/compute rect/draw rect/legend rect/schemas options)))
+
+(defn function
+  "Curves of functions (`:f` - y = f(x), `:parametric` - [x y] = f(t)) sampled across the panel, see
+  [[cljplot2.chart.function]]."
+  ([] (function {}))
+  ([options] (annotation-value :function function/compute function/draw function/legend function/schemas
+                               (function/categorical-labels options))))
 
 (defn text
   "Text labels at positions, see [[cljplot2.chart.text]] and [[cljplot2.data.annotation]]."

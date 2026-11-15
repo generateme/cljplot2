@@ -8,7 +8,7 @@
 
   * `:labels` - plot titles, see [[cljplot2.layout.plot-grid]]
   * `:scales` - `{:x spec :y spec}`, position scales, see [[cljplot2.scale.position/data-scale-spec]]; facet scales, see
-    [[cljplot2.data.facet]]; aesthetic scales `:color` `:shape` `:size`, see [[cljplot2.scale.aesthetic]]
+    [[cljplot2.data.facet]]; aesthetic scales `:color` `:shape` `:size` `:dash`, see [[cljplot2.scale.aesthetic]]
   * `:data`, `:mapping` - plot data and mapping, see [[cljplot2.data.rows]]
   * `:charts` - vector of chart values, see [[cljplot2.chart]]
   * `:facets` - `{:columns :rows :order :na-panel}` facet layout options, see [[cljplot2.data.facet]]
@@ -38,7 +38,7 @@
   * `:theme` - deep-merged over [[cljplot2.theme/default-theme]]; stored resolved
 
   Facet mapping keys (`:facet`, `:facet-col`, `:facet-row`) split rows into panels, see [[cljplot2.data.facet]].
-  Aesthetic mapping keys (`:color`, `:shape`, `:size`) style marks, see [[cljplot2.scale.aesthetic]]; `:group` splits
+  Aesthetic mapping keys (`:color`, `:shape`, `:size`, `:dash`) style marks, see [[cljplot2.scale.aesthetic]]; `:group` splits
   rows into groups for charts drawing one mark per group, see [[cljplot2.data.group]]."
   (:require [fastmath.core :as m]
             [cljplot2.chart :as chart]

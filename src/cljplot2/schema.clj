@@ -67,9 +67,33 @@
   (named-type ::padding #(and (vector? %) (= 2 (count %)) (every? non-neg-number? %))
                "should be [lo hi], non-negative numbers"))
 
+(def dash-styles
+  "Named dash styles: name -> dash lengths in pixels (fixed, not scaled by the line width; ggplot linetypes);
+  `:solid` draws a solid line, as `:none`."
+  {:solid :none
+   :dashed [4.0 4.0]
+   :dotted [1.0 3.0]
+   :dot-dash [1.0 3.0 4.0 3.0]
+   :long-dash [7.0 3.0]
+   :two-dash [2.0 2.0 6.0 2.0]})
+
+(defn dash?
+  "Is `v` a dash: `:none`, a name of [[dash-styles]] or a non-empty sequence of positive lengths?"
+  [v]
+  (or (= :none v) (contains? dash-styles v) (and (sequential? v) (seq v) (every? pos-number? v))))
+
+(def ^:private dash-names-text (str/join " " (map pr-str (sort (keys dash-styles)))))
+
+(defn- dash-message
+  "Error message of an invalid dash `value`: the closest style name for a misspelt keyword."
+  [value]
+  (let [suggestion (when (keyword? value) (first (me/-most-similar-to #{} value (set (keys dash-styles)))))]
+    (str (if suggestion (str "unknown dash style, should be spelled " (pr-str suggestion) "; ") "")
+         "should be :none, a dash style (" dash-names-text ") or a non-empty sequence of positive numbers")))
+
 (def dash
-  (named-type ::dash #(or (= :none %) (and (sequential? %) (seq %) (every? pos-number? %)))
-               "should be :none or a non-empty sequence of positive numbers"))
+  (malli/-simple-schema {:type ::dash :pred dash?
+                         :type-properties {:error/fn (fn [{:keys [value]} _] (dash-message value))}}))
 
 (def ^:private h-aligns #{:left :center :right})
 (def ^:private v-aligns #{:top :middle :bottom})

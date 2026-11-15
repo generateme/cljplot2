@@ -268,6 +268,17 @@
   (let [scale (->wadogo finalized)]
     (fn ^double [value] (let [p (scale value)] (if (nil? p) ##NaN (double p))))))
 
+(defn inverse-fn
+  "Function mapping a pixel position to its value in the finalized continuous scale (wadogo `inverse`: a number, a
+  `LocalDateTime` on a `:datetime` scale, rounded to the millisecond). A `:bands` scale has no inverse - `ex-info
+  {:key :kind}`. Builds the wadogo scale once; reuse the function for many positions."
+  [finalized]
+  (when-not (continuous-kinds (:kind finalized))
+    (schema/fail! (str "A " (:kind finalized) " scale has no inverse; a continuous scale is needed.")
+                  {:key :kind :value (:kind finalized)}))
+  (let [scale (->wadogo finalized)]
+    (fn [^double pixel] (s/inverse scale pixel))))
+
 (defn forward
   "Pixel position of a single `value` in a finalized scale; for many values use [[forward-fn]]."
   ^double [finalized value]

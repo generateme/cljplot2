@@ -14,7 +14,8 @@
 
   `:panel` - `:fill`, `:border-color`, `:border-width` (pixels, rounded, drawn inside the panel box),
   `:grid {:x line :y line}` - grid lines at tick positions, `line` is `{:color :width :dash}` or `:none`
-  (`:dash` - a sequence of positive dash lengths, or `:none` for a solid line).
+  (`:dash` - a sequence of positive dash lengths, a dash style name of [[cljplot2.schema/dash-styles]], or `:none`
+  for a solid line).
 
   `:axis {:x axis :y axis}` - `axis` is `{:line-color :line-width :tick-color :tick-length :tick-width :label-gap
   :tick-spacing :label-rotation}` (pixels; `:tick-spacing` > 0 is the target distance between ticks, a line or tick of
@@ -34,7 +35,8 @@
 
   `:palette` - aesthetic defaults, see [[cljplot2.scale.aesthetic]]: `:color` (palette name or colors, old cljplot
   `:category20`), `:gradient` (colors or palette name; `:k2` reversed), `:shape` (shape sequence), `:size`
-  (`[min max]` pixels), `:na` (color of NA values).
+  (`[min max]` pixels), `:dash` (dash sequence: `:solid`, then old cljplot `line-dash-styles`), `:na` (color of NA
+  values).
 
   `:legend` - `:gap` (pixels between key and label and between legends), `:key-size` (key box side, pixels),
   `:fill`, `:border-color`, `:border-width`, color bar `:bar-length` (`:stretch` - over the space left, or a number,
@@ -43,7 +45,8 @@
   `:chart` - per chart kind defaults: `:scatter`, `:histogram`, `:density`, `:line`, `:ecdf` (old cljplot blue
   `[69 117 180]` - clojure2d `(last (palette :rdylbu-9))` - with cljplot's alphas: scatter 180, stripplot 100, rug 100),
   `:treemap` (`:padding`, `:border-color`, `:border-width`), strip charts `:box`, `:violin`, `:stripplot`, `:beeswarm`, `:rug`,
-  `:extent`, annotations `:rule`, `:rect`; each checked against its chart's style schema.
+  `:extent`, annotations `:rule`, `:rect`, `:function`; each checked against its chart's style schema; line and
+  function `:bridge` - the style of bridges over gaps (`:alpha` multiplies the line alpha, optional `:width`, `:dash`).
 
   Colors are any clojure2d color or `:none` (draw nothing). `nil` in a theme override means \"not set\"
   and keeps the value underneath, see [[deep-merge]].
@@ -83,6 +86,7 @@
              :gradient (vec (reverse (c/palette :k2)))
              :shape [\O \s \A \x \+ \V \o \S \^ \v \{ \} \< \>]
              :size [2 10]
+             :dash [:solid [1 1] [2 2] [4 4] [5 1 3] [4 1] [10 2] [14 2 7 2] [14 2 2 7] [2 2 20 2 20 2]]
              :na [150 150 150]}
    :legend {:gap 5 :key-size 14 :fill :none :border-color :none :border-width 1 :bar-length :stretch :bar-width nil}
    :chart {:scatter {:size 4 :color [69 117 180 180] :stroke-color :none :stroke-width 1 :shape \O}
@@ -90,7 +94,7 @@
                        :zero-line-width 1}
            :density {:color [69 117 180] :width 1 :dash :none :fill :none :alpha 0.6 :zero-line-color :black
                      :zero-line-width 1}
-           :line {:color [69 117 180] :width 1 :dash :none :fill :none}
+           :line {:color [69 117 180] :width 1 :dash :none :fill :none :bridge {:alpha 0.3}}
            :ecdf {:color [69 117 180] :width 1 :dash :none}
            :treemap {:padding 3 :border-color :white :border-width 1}
            :box {:color [69 117 180] :stroke-color :darker :stroke-width 1 :shape \O :size 5}
@@ -100,6 +104,7 @@
            :rug {:color [69 117 180 100] :line-width 1}
            :extent {:color [69 117 180] :line-width 2 :shape \O :size 7}
            :rule {:color [60 60 60] :width 1 :dash :none}
+           :function {:color [69 117 180] :width 1 :dash :none :fill :none :bridge {:alpha 0.3}}
            :rect {:fill [0 0 0 30] :stroke-color :none :stroke-width 1}}
    :axis {:x {:line-color :black :line-width 1 :tick-color :black :tick-length 6 :tick-width 1
               :label-gap 2 :tick-spacing 80 :label-rotation 0}

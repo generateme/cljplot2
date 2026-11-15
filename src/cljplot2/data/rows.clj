@@ -22,7 +22,7 @@
 
 (def mapping-keys
   "Mapping keys of the built-in dimensions (accessors); `:hierarchy` (treemap) holds a vector of accessors."
-  [:x :y :color :shape :size :group :facet :facet-col :facet-row :order :value])
+  [:x :y :color :shape :size :dash :group :facet :facet-col :facet-row :order :value])
 
 (def mapping-schema
   "A plot or chart `:mapping`: accessors (keyword or function; `nil` - not mapped) of the built-in keys, `:hierarchy`
