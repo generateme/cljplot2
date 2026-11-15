@@ -41,9 +41,11 @@
             [cljplot2.chart.histogram :as histogram]
             [cljplot2.chart.line :as line]
             [cljplot2.chart.rect :as rect]
+            [cljplot2.chart.ribbon :as ribbon]
             [cljplot2.chart.rug :as rug]
             [cljplot2.chart.rule :as rule]
             [cljplot2.chart.scatter :as scatter]
+            [cljplot2.chart.smooth :as smooth]
             [cljplot2.chart.stripplot :as stripplot]
             [cljplot2.chart.text :as text]
             [cljplot2.chart.treemap :as treemap]
@@ -72,7 +74,9 @@
    :extent (:style extent/schemas)
    :rule (:style rule/schemas)
    :rect (:style rect/schemas)
-   :function (:style function/schemas)})
+   :function (:style function/schemas)
+   :ribbon (:style ribbon/schemas)
+   :smooth (:style smooth/schemas)})
 
 (defn- annotation-value
   "Chart value of an annotation chart: it inherits only the facet keys of the plot mapping."
@@ -98,6 +102,17 @@
   "Line through `(:x, :y)` points, see [[cljplot2.chart.line]]."
   ([] (line {}))
   ([options] (chart-value :line line/compute line/draw line/legend line/schemas options)))
+
+(defn ribbon
+  "Band between `:ymin` and `:ymax` along `:x`, see [[cljplot2.chart.ribbon]]."
+  ([] (ribbon {}))
+  ([options] (chart-value :ribbon ribbon/compute ribbon/draw ribbon/legend ribbon/schemas options)))
+
+(defn smooth
+  "Fitted curve of `:y` on `:x` with confidence, prediction or bootstrap bands (`:method` loess, lm, glm, gp,
+  interpolators), see [[cljplot2.chart.smooth]]."
+  ([] (smooth {}))
+  ([options] (chart-value :smooth smooth/compute smooth/draw smooth/legend smooth/schemas options)))
 
 (defn treemap
   "Treemap of `:value` over the `:hierarchy` levels, see [[cljplot2.chart.treemap]]."

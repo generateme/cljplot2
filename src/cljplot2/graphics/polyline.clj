@@ -8,6 +8,7 @@
   (:require [clojure2d.color :as c]
             [clojure2d.core :as c2d]
             [fastmath.core :as m]
+            [cljplot2.scale.position :as scale]
             [cljplot2.schema :as schema]
             [cljplot2.theme :as theme])
   (:import [java.awt Color Graphics2D LinearGradientPaint]))
@@ -216,3 +217,22 @@
         (c2d/path canvas polygon true false))
       (c2d/set-color canvas (gradient 1.0)))))
 
+
+(defn- gradient-axis-points
+  "Pixel `[from to]` of the `axis` (`:x` / `:y`) scale's range in `scales`, along the panel direction of that scale."
+  [scales axis]
+  (let [sc (get scales axis)
+        [r0 r1] (map double (:range sc))]
+    (if (scale/horizontal? axis sc) [[r0 0.0] [r1 0.0]] [[0.0 r0] [0.0 r1]])))
+
+(defn fill-area!
+  "Fill the area between the paired point runs `upper` and `lower` (`[x y]` pixels, point `i` of one paired with point
+  `i` of the other): with `gradient` (a gradient function) - a linear gradient paint over the range of the `axis`
+  (`:x` / `:y`) scale in `scales`; else in `color` (`:none` fills nothing)."
+  [canvas upper lower color gradient axis scales]
+  (cond
+    gradient
+    (let [[from to] (gradient-axis-points scales axis)]
+      (fill-gradient-paint! canvas [(into (vec upper) (rseq (vec lower)))] gradient from to))
+    :else
+    (fill-between! canvas (mapv first upper) (mapv second upper) (mapv first lower) (mapv second lower) color)))

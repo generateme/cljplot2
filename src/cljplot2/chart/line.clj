@@ -37,8 +37,7 @@
             [cljplot2.scale.aesthetic :as aesthetic]
             [cljplot2.scale.position :as scale]
             [cljplot2.schema :as schema])
-  (:import [fastmath.vector Vec2]
-           [java.time Instant LocalDate LocalDateTime LocalTime OffsetDateTime ZonedDateTime ZoneOffset]))
+  (:import [fastmath.vector Vec2]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -77,19 +76,6 @@
 
 (defn- sortable? [xs] (or (every? number? xs) (every? data/temporal? xs)))
 
-(defn- x-key
-  "Number aligning an x value: a number as a double, a `java.time` value as epoch milliseconds (UTC; a `LocalTime` as
-  milliseconds of the day - ordered as wadogo places it, on one day); `nil` otherwise."
-  [x]
-  (cond
-    (number? x) (double x)
-    (instance? LocalDate x) (* 86400000.0 (.toEpochDay ^LocalDate x))
-    (instance? LocalDateTime x) (double (.toEpochMilli (.toInstant ^LocalDateTime x ZoneOffset/UTC)))
-    (instance? Instant x) (double (.toEpochMilli ^Instant x))
-    (instance? ZonedDateTime x) (double (.toEpochMilli (.toInstant ^ZonedDateTime x)))
-    (instance? OffsetDateTime x) (double (.toEpochMilli (.toInstant ^OffsetDateTime x)))
-    (instance? LocalTime x) (/ (double (.toNanoOfDay ^LocalTime x)) 1.0e6)))
-
 (defn- aligned-heights
   "Heights of a group with points at x keys `ks` (strictly increasing) and values `vs` at the union keys `union`
   (increasing): linear between its points, 0 outside its range (one walk over both)."
@@ -111,7 +97,7 @@
 
 (defn- stacked-lines
   "The lines of one panel stacked by `position` (see [[cljplot2.data.position/stack-values]]): every group on the
-  union of the groups' x (keys of [[x-key]]), interpolated linearly inside its own range and 0 outside; NA y points
+  union of the groups' x (keys of [[cljplot2.data.rows/x-key]]), interpolated linearly inside its own range and 0 outside; NA y points
   left out (interpolated across); points in x order whatever `:sort` says. Each line `{:x union :y upper :y0 lower
   :heights aligned :aesthetics}` (`:heights` - the group's aligned values, for smoothing at drawing). Non-numeric,
   non-temporal x or a repeated x in a group throws `ex-info {:key :x}`."
@@ -119,7 +105,7 @@
   (let [groups (mapv (fn [{:keys [x y aesthetics]}]
                        (let [keyed (->> (map vector x y)
                                         (filter #(some? (second %)))
-                                        (map (fn [[vx vy]] [(or (x-key vx)
+                                        (map (fn [[vx vy]] [(or (data/x-key vx)
                                                                 (schema/fail! "Stacked lines need numeric or temporal (java.time) x."
                                                                               {:key :x :value vx}))
                                                             vx vy]))
@@ -326,24 +312,6 @@
         (polyline/stroke-runs! canvas [[[(px (peek r0)) (py (peek r0))] [(px (first r1)) (py (first r1))]]]
                                (polyline/bridge-style (assoc st :color color) (:bridge st)))))))
 
-(defn- gradient-axis-points
-  "Pixel `[from to]` of the `axis` (`:x` / `:y`) scale's range in `scales`, along the panel direction of that scale."
-  [scales axis]
-  (let [sc (get scales axis)
-        [r0 r1] (map double (:range sc))]
-    (if (scale/horizontal? axis sc) [[r0 0.0] [r1 0.0]] [[0.0 r0] [0.0 r1]])))
-
-(defn- fill-area!
-  "Fill the area between the paired point runs `upper` and `lower` of one line: with `gradient` (a gradient
-  function) - a linear gradient paint over the range of the `axis` (`:x` / `:y`) scale; else in `color`."
-  [canvas upper lower color gradient axis scales]
-  (cond
-    gradient
-    (let [[from to] (gradient-axis-points scales axis)]
-      (polyline/fill-gradient-paint! canvas [(into (vec upper) (rseq (vec lower)))] gradient from to))
-    :else
-    (polyline/fill-between! canvas (mapv first upper) (mapv second upper) (mapv first lower) (mapv second lower) color)))
-
 (defn stacked-band-points
   "Drawn `[upper lower]` pixel runs of every stacked line of a panel (`lines` from [[stacked-lines]], one shared x).
   Without an `:interpolator` in `opts` the data boundaries; with one, the groups' heights are sampled on one pixel
@@ -379,7 +347,7 @@
                          (map vector lines (stacked-band-points lines position scales opts))))]
     ;; all areas first, then the boundaries (as density): no band covers a stroke
     (doseq [[upper lower st] bands]
-      (fill-area! canvas upper lower (polyline/area-color st true) gradient axis scales))
+      (polyline/fill-area! canvas upper lower (polyline/area-color st true) gradient axis scales))
     (doseq [[upper _ st] bands]
       (polyline/stroke-runs! canvas [upper] st))))
 
@@ -426,7 +394,7 @@
                   (draw-gradient! canvas px py colors index-runs point-runs curved? (:along opts) st gaps scales (:theme env)))
               gradient
               (do (doseq [run point-runs :when (> (count run) 1)]
-                    (fill-area! canvas run (base-run run area) nil gradient axis scales))
+                    (polyline/fill-area! canvas run (base-run run area) nil gradient axis scales))
                   (curve/draw-runs! canvas point-runs (assoc st :fill :none) nil gaps))
               :else
               (curve/draw-runs! canvas point-runs st area gaps))))))))

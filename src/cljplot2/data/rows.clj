@@ -15,14 +15,15 @@
   need the levels (ordinal colour, shape, size) - at most [[max-levels]] of them."
   (:require [fastmath.core :as m]
             [cljplot2.data.accessor :as accessor]
-            [cljplot2.schema :as schema]))
+            [cljplot2.schema :as schema])
+  (:import [java.time Instant LocalDate LocalDateTime LocalTime OffsetDateTime ZonedDateTime ZoneOffset]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
 (def mapping-keys
   "Mapping keys of the built-in dimensions (accessors); `:hierarchy` (treemap) holds a vector of accessors."
-  [:x :y :color :shape :size :dash :group :facet :facet-col :facet-row :order :value])
+  [:x :y :ymin :ymax :color :shape :size :dash :group :facet :facet-col :facet-row :order :value])
 
 (def mapping-schema
   "A plot or chart `:mapping`: accessors (keyword or function; `nil` - not mapped) of the built-in keys, `:hierarchy`
@@ -85,6 +86,36 @@
     :else (schema/fail! "Mapping accessor must be a keyword or a function." {:key :mapping :value k})))
 
 (defn temporal? [v] (instance? java.time.temporal.Temporal v))
+
+(defn x-key
+  "Number aligning an x value: a number as a double, a `java.time` value as epoch milliseconds (UTC; a `LocalTime` as
+  milliseconds of the day - ordered as wadogo places it, on one day); `nil` otherwise."
+  [x]
+  (cond
+    (number? x) (double x)
+    (instance? LocalDate x) (* 86400000.0 (.toEpochDay ^LocalDate x))
+    (instance? LocalDateTime x) (double (.toEpochMilli (.toInstant ^LocalDateTime x ZoneOffset/UTC)))
+    (instance? Instant x) (double (.toEpochMilli ^Instant x))
+    (instance? ZonedDateTime x) (double (.toEpochMilli (.toInstant ^ZonedDateTime x)))
+    (instance? OffsetDateTime x) (double (.toEpochMilli (.toInstant ^OffsetDateTime x)))
+    (instance? LocalTime x) (/ (double (.toNanoOfDay ^LocalTime x)) 1.0e6)))
+
+(defn key->x
+  "The x value of the [[x-key]] `key` in the type of the x value `like`: a double for a number; a `java.time` value
+  rounded to the millisecond - a `LocalDate` as a `LocalDateTime` (keys fall between days), a `ZonedDateTime` /
+  `OffsetDateTime` in the zone / offset of `like`, a `LocalTime` within the day. `(x-key (key->x k like))` is `k`
+  for a whole number of milliseconds (in the day, for a `LocalTime`)."
+  [key like]
+  (let [k (double key)]
+    (if (number? like)
+      k
+      (let [instant (Instant/ofEpochMilli (Math/round k))]
+        (cond
+          (or (instance? LocalDate like) (instance? LocalDateTime like)) (LocalDateTime/ofInstant instant ZoneOffset/UTC)
+          (instance? Instant like) instant
+          (instance? ZonedDateTime like) (ZonedDateTime/ofInstant instant (.getZone ^ZonedDateTime like))
+          (instance? OffsetDateTime like) (OffsetDateTime/ofInstant instant (.getOffset ^OffsetDateTime like))
+          (instance? LocalTime like) (LocalTime/ofNanoOfDay (* 1000000 (m/constrain (Math/round k) 0 86399999))))))))
 
 (definterface OrderedLevel)
 ;; Marker of categorical level types with a natural order (they also implement `Comparable`), e.g. shingle / bin
