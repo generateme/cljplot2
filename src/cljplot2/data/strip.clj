@@ -1,6 +1,6 @@
 (ns cljplot2.data.strip
-  "1d strips: charts drawing the distribution of `:x` values (box, violin, stripplot, rug, extent) placed across the
-  `:y` dimension (value on `:x`, horizontal by default; `:flip true` makes strips vertical).
+  "1d strips: charts drawing the distribution of `:x` values (box, violin, stripplot, rug, extent) or one value per
+  item (bar) placed across the `:y` dimension (value on `:x`, horizontal by default; `:flip true` makes strips vertical).
 
   Contract: a strip chart computes, per panel, **items** - one per `:y` level and group -
   `{:level l :key k :aesthetics a :values [..] :slot [lo hi]}` plus its own statistics, all in data units along the
@@ -31,6 +31,11 @@
   groups, one half each; split violins). Dodged and mirrored groups follow reading order, as the legend: the first
   group on top of horizontal strips, on the left of vertical (`:flip`) ones.
 
+  Mirror (bar, extent) - option `:mirror`: a grouping dimension (an ordinal aesthetic or `:group`) with exactly two
+  levels; items of the second level are `:mirrored? true` - the chart draws them on the negative side (see
+  [[split]]); groups differing only in that dimension share a slot, and the default `:position` follows the count of
+  the remaining groups. Not with `:position :mirror` (half slots).
+
   Ridgelines (histogram and density with a categorical or bands `:y`, see [[ridges?]]): one-sided profiles growing
   from the band centre toward the next level, the tallest `:overlap` (default 0.9) band steps high.
 
@@ -46,6 +51,7 @@
             [cljplot2.data.position :as position]
             [cljplot2.data.rows :as data]
             [cljplot2.data.shingle :as shingle]
+            [cljplot2.scale.aesthetic :as aesthetic]
             [cljplot2.graphics.measure :as measure]
             [cljplot2.scale.position :as scale]
             [cljplot2.schema :as schema])
@@ -69,6 +75,10 @@
    (schema/optional :bottom-share schema/fraction)
    (schema/nilable :n-label schema/bool)
    (schema/optional :n-format :string)])
+
+(def mirror-option
+  "Map entry of the `:mirror` option of strip charts drawing a negative side (bar, extent)."
+  (schema/optional :mirror (into [:enum] (conj aesthetic/dims :group))))
 
 (def ridge-options
   "Map entries of the ridgeline options (histogram and density with a categorical `:y`)."
@@ -120,6 +130,30 @@
                 (zipmap group-keys (if first-high? [[0.0 0.5] [-0.5 0.0]] [[-0.5 0.0] [0.0 0.5]]))
                 (schema/fail! "Strip :position :mirror needs exactly two groups." {:key :position :groups n})))))
 
+(defn- mirror-index
+  "Index of the `:mirror` dimension in the grouping `dims`; `nil` without `:mirror`. Throws `ex-info {:key :mirror}`
+  when it isn't a grouping dimension or comes with `:position :mirror`."
+  [options dims]
+  (when-let [k (:mirror options)]
+    (let [i (.indexOf ^java.util.List dims k)]
+      (when (neg? i)
+        (schema/fail! "Strip :mirror should be a mapped grouping dimension (an ordinal aesthetic or :group)."
+                      {:key :mirror :value k}))
+      (when (= :mirror (:position options))
+        (schema/fail! "Strip :mirror doesn't combine with :position :mirror (half slots)." {:key :mirror :value k}))
+      i)))
+
+(defn- without-index [key ^long i] (into (subvec key 0 i) (subvec key (inc i))))
+
+(defn- mirrored-level
+  "The level of the mirror dimension `k` (index `i`) drawn on the negative side - the second of exactly two over the
+  ordered `group-keys`. Throws `ex-info {:key :mirror}` for another count of levels."
+  [group-keys ^long i k]
+  (let [levels (vec (distinct (map #(nth % i) group-keys)))]
+    (when-not (= 2 (count levels))
+      (schema/fail! "Strip :mirror needs exactly two levels of its dimension." {:key :mirror :value k :levels levels}))
+    (levels 1)))
+
 (defn- levels-in-order
   "`[[level rows] ...]` of the `rows` with a valid `y-of` value, levels ordered by `level-rank` (level -> its first
   appearance in the chart's rows; `group-by` alone keeps no order past 8 levels)."
@@ -137,11 +171,13 @@
   * `::count-rows true` - `:x` isn't read: every item has `:values []` and `:n` - its count of rows (an item per
     level with rows; no `:x` errors or drops)
   * `::rows true` - items also carry their `:rows`
-  * `::slot-key f` - slots are given to `(f group-key)` instead of the group key, so groups with the same slot key
-    share a slot (default `identity`); the default `:position` follows the count of slot keys
 
+  With `:mirror` (see the namespace doc) items carry `:mirrored?` and the result `:mirror? true`; `:slot-keys` - the
+  keys slots are given to (group keys, without the mirror dimension).
   Throws `ex-info {:key :mapping}` when there are rows but no finite `:x` value (or, placed in bands, no valid `:y`
-  value), `ex-info {:key :n-format}` for an `:n-format` that can't format a count."
+  value), `ex-info {:key :n-format}` for an `:n-format` that can't format a count, `ex-info {:key :mirror}` for a
+  mirror dimension that isn't a grouping dimension, doesn't have exactly two levels or comes with `:position
+  :mirror`."
   [{:keys [groups mapping]} options default-place env]
   (let [_ (when-let [fmt (:n-format options)]
             (try (format fmt 1)
@@ -161,8 +197,10 @@
         _ (when y-of (check-levels! y-levels (:plot-scales env)))
         level-rank (zipmap (distinct y-levels) (range))
         group-keys (group/ordered-keys (mapcat #(map :key %) (vals panels)) dims (:plot-scales env))
-        slot-key (get options ::slot-key identity)
+        mi (mirror-index options dims)
+        slot-key (if mi #(without-index % mi) identity)
         slot-keys (vec (distinct (map slot-key group-keys)))
+        mirrored (when (and mi (seq group-keys)) (mirrored-level group-keys mi (:mirror options)))
         position (get options :position (if (> (count slot-keys) 1) :dodge :overlay))
         ;; reading order: the first group on top of horizontal strips (the high cross end), on the left of vertical
         ;; (flipped) ones (the low end); ridgelines grow the first group toward the next level (the high end)
@@ -179,6 +217,7 @@
                                     (cond-> {:level level :key (:key g) :aesthetics (:aesthetics g) :values values
                                              :n (if count-rows? (count rows) (count values))
                                              :slot (slot-of (slot-key (:key g)))}
+                                      mi (assoc :mirrored? (= mirrored (nth (:key g) mi)))
                                       (::rows options) (assoc :rows rows))))))
         x-dropped (if x-of
                     (count (remove #(let [v (x-of %)] (and (number? v) (m/valid-double? (double v)))) all-rows))
@@ -190,6 +229,8 @@
      :position position
      :items items
      :group-keys group-keys
+     :slot-keys slot-keys
+     :mirror? (some? mi)
      :dims dims
      :panels panels
      :dropped (cond-> (assoc dropped :x x-dropped)
@@ -301,6 +342,11 @@
   "Pixels between an item's largest drawn value and its n label."
   3.0)
 
+(defn- n-label-side
+  "Direction of an item's n label along the value axis: `-1.0` for a `:mirrored?` item, else `1.0`."
+  ^double [item]
+  (if (:mirrored? item) -1.0 1.0))
+
 (defn- n-label-text [options item] (format (get options :n-format "n=%d") (:n item)))
 
 (defn end-label-room
@@ -348,19 +394,23 @@
 
 (defn n-label-room
   "`:padding-px` of a strip chart (`items` - `{panel [item ...]}`) with `:n-label`: room past the largest values for
-  the count labels (see [[end-label-room]]); `nil` without n labels or items."
+  the count labels, past the smallest for `:mirrored?` items (see [[end-label-room]]); `nil` without n labels or
+  items."
   [options items env]
   (when (data/option options :n-label false)
-    (end-label-room (map (fn [item] {:text (n-label-text options item) :side 1.0}) (mapcat val items)) env)))
+    (end-label-room (map (fn [item] {:text (n-label-text options item) :side (n-label-side item)}) (mapcat val items))
+                    env)))
 
 (defn draw-n-labels!
   "With option `:n-label`, draw each item's count `:n` (`:n-format`, default `\"n=%d\"`) just past `(top-value item)` -
-  its largest drawn value (see [[draw-end-labels!]]); [[n-label-room]] keeps room for them past the data."
+  its largest drawn value, the smallest for a `:mirrored?` item, which is labelled toward decreasing values (see
+  [[draw-end-labels!]]); [[n-label-room]] keeps room for them past the data."
   [canvas pl items top-value options scales env]
   (when (data/option options :n-label false)
     (draw-end-labels! canvas pl
                       (map (fn [{:keys [level slot] :as item}]
-                             {:level level :slot slot :at (top-value item) :side 1.0 :text (n-label-text options item)})
+                             {:level level :slot slot :at (top-value item) :side (n-label-side item)
+                              :text (n-label-text options item)})
                            items)
                       scales env)))
 

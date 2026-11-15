@@ -18,10 +18,12 @@
 (defn- rgb [^BufferedImage img x y]
   (let [v (.getRGB img (int x) (int y))] [(bit-and (bit-shift-right v 16) 0xff) (bit-and (bit-shift-right v 8) 0xff) (bit-and v 0xff)]))
 (defn- red-run
-  "Longest run of pure-red pixels along column `x` of `img`."
-  [^BufferedImage img x]
-  (->> (range (.getHeight img)) (map #(= [255 0 0] (rgb img x %))) (partition-by identity) (filter first) (map count)
-       (reduce max 0)))
+  "Longest vertical run of pure-red pixels over every column of `img` - a horizontal bar's thickness, a vertical bar's
+  height (wherever the axes put the bar)."
+  [^BufferedImage img]
+  (reduce max 0 (for [x (range (.getWidth img))]
+                  (->> (range (.getHeight img)) (map #(= [255 0 0] (rgb img x %))) (partition-by identity) (filter first)
+                       (map count) (reduce max 0)))))
 
 (def ^:private cyl (vec (concat (repeat 11 {:cyl "4"}) (repeat 7 {:cyl "6"}) (repeat 14 {:cyl "8"}))))
 (def ^:private values [{:g "a" :v 1.0} {:g "a" :v 2.0} {:g "a" :v 6.0} {:g "b" :v 4.0}])
@@ -33,9 +35,8 @@
       (is (= [["a" 0.0 3.0] ["b" 0.0 5.0]] (ends p)))
       (let [img (plot/render-image (assoc p :theme white :charts [(chart/bar {:color [255 0 0] :stroke-color :none})]) size)
             vimg (plot/render-image (assoc p :flip true :theme white :charts [(chart/bar {:color [255 0 0] :stroke-color :none})]) size)]
-        (is (pos? (red-run img 120)) "horizontal bars cross a column near the left")
-        (is (< (red-run img 120) 150) "a horizontal bar is thinner than the panel")
-        (is (> (red-run vimg 290) 150) "the tall vertical bar spans most of the panel height")))))
+        (is (< 0 (red-run img) 150) "a horizontal bar is thinner than the panel")
+        (is (> (red-run vimg) 150) "the tall vertical bar spans most of the panel height")))))
 
 (deftest bar-stats
   (testing "1.2.1 value stats over :x"
@@ -69,7 +70,13 @@
     (is (= [0.0 0.0] (measure/heights :percent [0 0] (repeat 1.0))) "zero total")
     (is (= [] (measure/heights :count [] [])))
     (is (= "Count" (get-in (stats {:data cyl :mapping {:y :cyl} :charts [(chart/bar {:stat :count})]} 0) [:axis-titles :x])))
-    (is (= {} (:axis-titles (stats {:data values :mapping {:x :v :y :g} :charts [(chart/bar)]} 0))) "value stats suggest no title")))
+    (testing "R10 value stats over a keyword :x: \"<stat> of <x>\" when a bar aggregates; else none"
+      (is (= {:x "sum of v"} (:axis-titles (stats {:data values :mapping {:x :v :y :g} :charts [(chart/bar)]} 0))))
+      (is (= {:x "mean of v"} (:axis-titles (stats {:data values :mapping {:x :v :y :g} :charts [(chart/bar {:stat :mean})]} 0))))
+      (is (= {} (:axis-titles (stats {:data [{:g "a" :v 1} {:g "b" :v 2}] :mapping {:x :v :y :g} :charts [(chart/bar)]} 0)))
+          "one value per bar")
+      (is (= {} (:axis-titles (stats {:data values :mapping {:x :v :y :g} :charts [(chart/bar {:stat count})]} 0))) "a stat function")
+      (is (= {} (:axis-titles (stats {:data values :mapping {:x #(:v %) :y :g} :charts [(chart/bar)]} 0))) "a function :x"))))
 
 (deftest positions
   (let [p (fn [opts] {:data two-groups :mapping {:x :v :y :l :color :c} :charts [(chart/bar opts)]})
@@ -147,8 +154,8 @@
   (testing "1.4.1 :width is the bar's share of the band"
     (let [p (fn [w] {:data [{:l "a" :v 3} {:l "b" :v 5}] :mapping {:x :v :y :l} :theme white
                      :charts [(chart/bar {:width w :color [255 0 0] :stroke-color :none})]})
-          wide (red-run (plot/render-image (p 0.8) size) 120)
-          narrow (red-run (plot/render-image (p 0.4) size) 120)]
+          wide (red-run (plot/render-image (p 0.8) size))
+          narrow (red-run (plot/render-image (p 0.4) size))]
       (is (<= 1.9 (/ (double wide) narrow) 2.1))))
   (testing "1.4.2 :varwidth true - sqrt of the count relative to the largest"
     (let [data (concat (repeat 4 {:l "a" :v 1}) (repeat 1 {:l "b" :v 1}))]
@@ -181,7 +188,7 @@
 
 (deftest labels
   (let [p (fn [data opts] {:data data :mapping {:x :v :y :l} :charts [(chart/bar opts)]})
-        texts (fn [pl] (mapv :text (mapcat :labels (bars pl))))]
+        texts (fn [pl] (mapv :text (keep :label (bars pl))))]
     (testing "1.6.2 value labels: whole numbers as integers, else distinct digits; a format string"
       (is (= ["3" "5"] (texts (p [{:l "a" :v 3} {:l "b" :v 5}] {:value-label true}))))
       (is (= ["1.25" "1.5"] (texts (p [{:l "a" :v 1.25} {:l "b" :v 1.5}] {:value-label true}))))
@@ -189,13 +196,27 @@
       (is (= :value-format (:key (error #(build (p [{:l "a" :v 3}] {:value-label true :value-format "%d"})))))))
     (testing "1.6.2 negative and mirrored bars label past their negative end; room on that side"
       (let [pl (p [{:l "a" :v -3} {:l "b" :v 5}] {:value-label true})
-            [a b] (mapcat :labels (bars pl))
+            [a b] (keep :label (bars pl))
             [lo hi] (get-in (stats pl 0) [:padding-px :x])]
         (is (= [-3.0 -1.0] [(:at a) (:side a)]))
         (is (= [5.0 1.0] [(:at b) (:side b)]))
         (is (and (pos? lo) (pos? hi))))
-      (is (= #{-1.0 1.0} (set (map :side (mapcat :labels (bars {:data pyramid :mapping {:x :n :y :age :color :sex}
+      (is (= #{-1.0 1.0} (set (map :side (keep :label (bars {:data pyramid :mapping {:x :n :y :age :color :sex}
                                                                  :charts [(chart/bar {:mirror :color :value-label true})]})))))))
+    (testing "R3 a zero-length bar gets no value label (its n label stays)"
+      (is (= ["5"] (texts (p [{:l "a" :v 0} {:l "b" :v 5}] {:value-label true}))))
+      (is (= ["n=1" "5 n=1"] (texts (p [{:l "a" :v 0} {:l "b" :v 5}] {:value-label true :n-label true})))))
+    (testing "R2 value and n label form one label: side by side along horizontal bars, stacked along vertical ones"
+      (let [data [{:l "a" :v 3}]
+            label (fn [pl] (:text (first (keep :label (bars pl)))))]
+        (is (= "3 n=1" (label (p data {:value-label true :n-label true}))))
+        (is (= "3\nn=1" (label (assoc (p data {:value-label true :n-label true}) :flip true))))
+        (is (= "3\nn=1" (label (p data {:value-label true :n-label true :label-stack :vertical}))))
+        (is (= "3 n=1" (label (assoc (p data {:value-label true :n-label true :label-stack :horizontal}) :flip true))))
+        (is (= 1 (count (keep :label (bars (p data {:value-label true :n-label true}))))))
+        (is (> (second (get-in (stats (p data {:value-label true :n-label true}) 0) [:padding-px :x]))
+               (second (get-in (stats (p data {:value-label true}) 0) [:padding-px :x])))
+            "room for the joined label")))
     (testing "1.6.1 n labels count the rows of each bar; no labels - no room"
       (is (= ["n=11" "n=7" "n=14"] (texts {:data cyl :mapping {:y :cyl} :charts [(chart/bar {:stat :count :n-label true})]})))
       (is (nil? (:padding-px (stats (p [{:l "a" :v 3}] {}) 0)))))
@@ -211,7 +232,23 @@
           bar-slots (into {} (map (juxt (juxt :level :key) :slot) (get-in built [:stats 0 :data :panel :bars])))
           extent-slots (into {} (map (juxt (juxt :level :key) :slot) (get-in built [:stats 1 :data :panel :items])))]
       (is (= 4 (count bar-slots)))
-      (is (= bar-slots extent-slots)))))
+      (is (= bar-slots extent-slots))))
+  (testing "R1 with the same :mirror, extents take the bars' slots and side"
+    (let [data (for [a ["y" "o"] sx ["f" "m"] v [1 2 4]] {:a a :s sx :v v})
+          built (build {:data data :mapping {:x :v :y :a :color :s}
+                        :charts [(chart/bar {:stat :mean :mirror :color}) (chart/extent {:method :min-max :mirror :color :n-label true})]})
+          bar-of (into {} (map (juxt (juxt :level :key) identity) (get-in built [:stats 0 :data :panel :bars])))
+          items (get-in built [:stats 1 :data :panel :items])]
+      (is (every? #(= (:slot %) (:slot (bar-of [(:level %) (:key %)]))) items))
+      (is (= #{[1.0 4.0] [-4.0 -1.0]} (set (map (juxt :lo :hi) items))))
+      (is (every? #(neg? (:center %)) (filter #(= ["m"] (:key %)) items)) "centres negated")
+      (is (= {:x :absolute} (get-in built [:stats 1 :tick-format])))
+      (let [[lo hi] (get-in built [:stats 1 :padding-px :x])] (is (and (pos? lo) (pos? hi)) "n label room on both sides"))))
+  (testing "R1 :mirror with :position :mirror (half slots) is rejected; an unmapped dimension too"
+    (is (= :mirror (:key (error #(build {:data two-groups :mapping {:x :v :y :l :color :c}
+                                         :charts [(chart/extent {:mirror :color :position :mirror})]})))))
+    (is (= :mirror (:key (error #(build {:data two-groups :mapping {:x :v :y :l}
+                                         :charts [(chart/extent {:mirror :color})]})))))))
 
 (deftest strips-and-panels
   (testing "1.8 facets: bars per panel; {:facet nil} in every panel"

@@ -77,7 +77,7 @@
                   :labels {:title "regions stacked on each side"}}
                  {:data pyramid-data :mapping {:x :people :y :age :color :region :group :sex}
                   :charts [(chart/bar {:mirror :group :position :normalize})]
-                  :labels {:title ":mirror :group, :normalize"}}]
+                  :labels {:title ":mirror :group, :normalize" :x "male | share | female"}}]
                 {:columns 3}))
 
 (def widths

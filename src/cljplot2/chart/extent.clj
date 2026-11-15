@@ -10,6 +10,9 @@
   [[bootstrap-intervals]]) - the interval of `:statistic` (a function of the values, default fastmath `mean`)
   resampled with `:rng` (a fastmath random generator, copied per build - every build draws the same samples, see
   [[cljplot2.data.rng/for-build]]; without it every build creates a fresh one); `:center` - `:method` (the method's centre, default) or `:none`;
+  `:mirror` - a grouping dimension with two levels: the second level's intervals on the negative side (negated, as
+  mirrored bars - error bars over `chart/bar` with the same `:mirror`; value tick labels show magnitudes, see
+  [[cljplot2.data.strip]]);
   `:padding {:x [lo hi]}` (default `[0.05 0.05]`), plus the strip options and `:data` / `:mapping`."
   (:require [clojure2d.core :as c2d]
             [fastmath.core :as m]
@@ -75,6 +78,7 @@
                       (schema/nilable :method-args [:sequential any?])
                       (schema/nilable :rng rng/schema)
                       (schema/optional :center [:enum :method :none])
+                      strip/mirror-option
                       (schema/optional :padding data/position-padding)))
    :mapping [:map [:x schema/accessor]]})
 
@@ -114,15 +118,21 @@
       (schema/fail! "Extent :method should return [lo hi] or [lo hi centre]." {:key :method :value result}))
     {:lo (double lo) :hi (double hi) :center (some-> c double)}))
 
+(defn- mirrored
+  "Interval `{:lo :hi :center}` on the negative side: `{:lo -hi :hi -lo :center -center}`."
+  [{:keys [^double lo ^double hi center]}]
+  {:lo (- hi) :hi (- lo) :center (when center (- (double center)))})
+
 (defn compute
-  "Per panel: `{:items [..] :style st :place p :options o}`, items with [[interval]]; extents (x - the intervals and
-  centres), padding, `:na`, `:dropped`."
+  "Per panel: `{:items [..] :style st :place p :options o}`, items with [[interval]] (negated for `:mirrored?`
+  items); extents (x - the intervals and centres), padding, `:na`, `:dropped`, `:tick-format` (mirror)."
   [{:keys [options]} chart-split {:keys [theme] :as env}]
-  (let [{:keys [place items panels dropped]} (strip/split chart-split options :center env)
+  (let [{:keys [place items panels dropped mirror?]} (strip/split chart-split options :center env)
         method (get options :method :min-max)
         rng (rng/for-build (:rng options))
-        items (update-vals items (fn [its] (mapv #(merge % (interval (:values %) method {:method-args (:method-args options) :rng rng
-                                                                                :statistic (:statistic options)})) its)))]
+        side (fn [it iv] (if (:mirrored? it) (mirrored iv) iv))
+        items (update-vals items (fn [its] (mapv #(merge % (side % (interval (:values %) method {:method-args (:method-args options) :rng rng
+                                                                                        :statistic (:statistic options)}))) its)))]
     {:data (update-vals items (fn [its] {:items its :style (style options theme) :place place :options options}))
      :extents (merge-with merge (group/aesthetic-extents panels (:plot-scales env))
                           (strip/extents place items (fn [{:keys [lo hi center]}]
@@ -132,7 +142,8 @@
      :padding-explicit (strip/explicit-padding place options)
      :padding-px (strip/n-label-room options items env)
      :na (group/na-dims panels)
-     :dropped dropped}))
+     :dropped dropped
+     :tick-format (when mirror? {:x :absolute})}))
 
 (defn- line! [canvas ^Vec2 a ^Vec2 b] (c2d/line canvas (.x a) (.y a) (.x b) (.y b)))
 
@@ -141,7 +152,10 @@
   [_chart {:keys [items style place options]} canvas box scales env]
   (let [{:keys [point] :as pl} (strip/placement box scales options place)
         center? (not= :none (get options :center :method))]
-    (strip/draw-n-labels! canvas pl items (fn [{:keys [hi center]}] (max (double hi) (double (or center hi))))
+    (strip/draw-n-labels! canvas pl items (fn [{:keys [lo hi center mirrored?]}]
+                                            (if mirrored?
+                                              (min (double lo) (double (or center lo)))
+                                              (max (double hi) (double (or center hi)))))
                           options scales env)
     (doseq [{:keys [level slot lo hi center aesthetics]} items
             :let [st (group/style style aesthetics scales (:theme env))
