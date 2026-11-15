@@ -5,7 +5,7 @@
 
   A run is a vector of `[x y]` pixel points. Curve options (`opts`):
 
-  * `:interpolator` - a fastmath 1D interpolation method ([[interpolation-methods]]) or `(fn [xs ys & params] f)`
+  * `:interpolator` - a fastmath 1D interpolation method ([[cljplot2.schema/interpolation-methods]]) or `(fn [xs ys & params] f)`
     returning a function of x; `:interpolator-params` - a vector passed after `xs ys` (as wadogo `:interpolated`).
     Without `:curve`: functional interpolation - each run is fitted along the horizontal pixel axis of the line
     (`:along` `:x` - the default - or `:y` for a flipped chart) and evaluated on a [[sample-grid]]; the run's points
@@ -32,17 +32,6 @@
   "Pixels between evaluated positions."
   1.0)
 
-(def interpolation-methods
-  "fastmath `interpolation` methods taking one-dimensional `xs`, `ys` (the 2D grid methods excluded)."
-  #{:linear :cubic :monotone :pchip :akima :neville :divided-difference :polynomial :sprague :step-before
-    :step-after :step :b-spline :barycentric :loess :cubic-smoothing :pava :cir :microsphere-projection :shepard
-    :rbf :kriging :gp})
-
-(def interpolator
-  "Schema of `:interpolator`."
-  (schema/named-type ::interpolator #(or (fn? %) (contains? interpolation-methods %))
-                     (str "should be a function (fn [xs ys & params] f) or a fastmath 1D interpolation method: "
-                          (apply str (interpose " " (sort interpolation-methods))))))
 
 (def sample-step
   "Schema of `:sample-step`: positive pixels or `{:count n}`, n >= 2."
@@ -53,7 +42,7 @@
 
 (def options
   "Map entries of the curve options of a line chart."
-  [(schema/optional :interpolator interpolator)
+  [(schema/optional :interpolator schema/interpolator)
    (schema/optional :interpolator-params [:vector any?])
    (schema/optional :curve [:enum :parametric :bezier])
    (schema/optional :sample-step sample-step)])

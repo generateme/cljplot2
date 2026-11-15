@@ -10,17 +10,29 @@
   has no count (also when it lists its ticks). Ticks outside the final domain are dropped.
 
   [[->wadogo]] rebuilds the wadogo scale; [[forward-fn]] returns a value -> pixel function (build it once and reuse
-  it); [[forward]] maps a single value."
+  it); [[forward]] maps a single value; [[inverse-fn]] a pixel -> value function.
+
+  Kinds: `:linear`, `:log`, `:pow`, `:symlog`, `:radial` (square-root like: distances from the range start grow as
+  the square root of the value, as radii of areas), `:interpolated` (an explicit `:domain` of n increasing numbers
+  mapped piecewise to `:stops` - n increasing fractions of the panel, default evenly spaced - through `:interpolator`
+  / `:interpolator-params`, default `:linear`; non-monotone methods as `:cubic` can overshoot; no padding and no
+  nice unless `:nice` is given; explicit `:ticks` suit its stretched parts), `:datetime`, `:bands`.
+  Ticks of continuous kinds: `:ticks-method` `:default` (d3) or `:pretty` (R `pretty()`; default for `:datetime`)
+  with `:ticks-params` `{:min-n n}` (clamped to the tick count) and, for `:datetime` `:pretty`, calendar ticks
+  `{:unit u :step s}` (a tick every s units: `:seconds` .. `:years`, see wadogo). `:formatter` - a function of a tick
+  value, or on `:datetime` a `java.time` pattern string (`\"MMM yyyy\"`)."
   (:require [fastmath.core :as m]
             [wadogo.scale :as s]
             [cljplot2.data.rows :as rows]
             [cljplot2.schema :as schema])
-  (:import [fastmath.vector Vec2]))
+  (:import [fastmath.vector Vec2]
+           [java.time LocalDateTime]
+           [java.time.format DateTimeFormatter]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
-(def continuous-kinds #{:linear :log :pow :symlog :datetime})
+(def continuous-kinds #{:linear :log :pow :symlog :radial :interpolated :datetime})
 (def position-kinds (conj continuous-kinds :bands))
 
 (def ^:private ^:const max-integral-label 1.0e15)
@@ -47,6 +59,9 @@
         :bands (when-not (apply distinct? domain) "bands domain values should be distinct")
         :datetime (when-not (and (every? temporal? domain) (not= (first domain) (last domain)))
                     "datetime domain should be two different java.time values")
+        :interpolated (when-not (and (>= (count domain) 2) (every? schema/finite? domain)
+                                     (apply < (map double domain)))
+                        "interpolated domain should be two or more strictly increasing finite numbers")
         (cond
           (not-every? schema/finite? domain) "domain should contain finite numbers"
           (== (double (reduce min domain)) (double (reduce max domain))) "domain should not be a single value"
@@ -54,7 +69,13 @@
 
 (def ^:private wadogo-attributes
   "wadogo scale attributes passed through to the scale (see wadogo's kinds)."
-  [:clamp :unknown :round :base :exponent :padding-in :padding-out :align-outer :align])
+  [:clamp :unknown :round :base :exponent :padding-in :padding-out :align-outer :align :interpolator-params])
+
+(def ^:private ticks-params
+  [:map {:closed true}
+   (schema/optional :min-n [:and :int [:>= 0]])
+   (schema/optional :unit (into [:enum] [:seconds :minutes :hours :days :weeks :months :years]))
+   (schema/optional :step schema/pos-int)])
 
 (def scale-spec-schema
   "Plot scale spec of `:x` / `:y`: wadogo attributes plus `:nice` and `:expand`, see [[scale-spec]] and
@@ -68,8 +89,12 @@
           (schema/nilable :ticks [:multi {:dispatch sequential?} [true [:sequential any?]] [false schema/pos-int]])
           (schema/nilable :nice [:multi {:dispatch boolean?} [true :boolean] [false [:and schema/finite schema/non-neg]]])
           (schema/optional :expand schema/padding)
-          (schema/optional :formatter schema/function)
+          (schema/optional :formatter [:multi {:dispatch string?} [true :string] [false schema/function]])
           (schema/optional :axis schema/bool)
+          (schema/optional :stops [:sequential {:min 2} schema/finite])
+          (schema/optional :interpolator schema/interpolator)
+          (schema/optional :ticks-method [:enum :default :pretty])
+          (schema/optional :ticks-params ticks-params)
           (schema/optional :range (schema/forbidden "is set from the layout, it can't be given"))
           (schema/optional :padding (schema/forbidden "is internal; use :expand"))
           (schema/optional :tick-format (schema/forbidden "is internal (set by charts); use :formatter"))]
@@ -87,12 +112,45 @@
       (schema/fail! (if (= kind :bands) "Bands :ticks must be domain values." "Scale :ticks contain an invalid value.")
                     {:key :ticks :in [:scales k :ticks] :value bad}))))
 
+(defn- kind-option-problem
+  "`[key message]` of the first option of `spec` its resolved `kind` doesn't take, or `nil`: `:stops`,
+  `:interpolator(-params)` and `:expand` (interpolated takes no padding); tick options on bands; calendar ticks off
+  `:datetime` `:pretty`; a string `:formatter` off `:datetime`; `:stops` not matching the domain."
+  [kind {:keys [stops domain ticks-method ticks-params formatter] :as spec}]
+  (let [interpolated? (= :interpolated kind)]
+    (cond
+      (and (some? stops) (not interpolated?)) [:stops ":stops need :kind :interpolated"]
+      (and (some? (:interpolator spec)) (not interpolated?)) [:interpolator ":interpolator needs :kind :interpolated"]
+      (and (contains? spec :interpolator-params) (not interpolated?)) [:interpolator-params ":interpolator-params needs :kind :interpolated"]
+      (and interpolated? (contains? spec :expand)) [:expand "an :interpolated scale takes no :expand (its domain ends are the panel edges)"]
+      (and (some? stops) (not= (count stops) (count domain))) [:stops ":stops need one fraction per :domain value"]
+      (and (some? stops) (not (and (every? #(<= 0.0 (double %) 1.0) stops) (apply < (map double stops)))))
+      [:stops ":stops should be strictly increasing fractions in [0 1]"]
+      (and (= :bands kind) (some? ticks-method)) [:ticks-method "a :bands scale has no tick methods"]
+      (and (= :bands kind) (some? ticks-params)) [:ticks-params "a :bands scale has no tick methods"]
+      (and (or (:unit ticks-params) (:step ticks-params)) (not (and (= :datetime kind) (not= :default ticks-method))))
+      [:ticks-params "calendar ticks (:unit / :step) need a :datetime scale with :ticks-method :pretty"]
+      (and (:step ticks-params) (nil? (:unit ticks-params))) [:ticks-params "calendar ticks :step needs a :unit"]
+      (and (string? formatter) (not= :datetime kind)) [:formatter "a pattern string :formatter needs a :datetime scale"])))
+
+(defn- pattern-formatter
+  "Formatter function of the `java.time` pattern `pattern`; an invalid pattern, or one a `LocalDateTime` can't
+  format (zones), throws `ex-info {:key :formatter}`."
+  [k pattern]
+  (try (let [f (DateTimeFormatter/ofPattern pattern)]
+         (.format f (LocalDateTime/of 2000 1 1 0 0))
+         (fn [v] (.format f ^java.time.temporal.TemporalAccessor v)))
+       (catch Exception e
+         (schema/fail! (str "Invalid date pattern: " (ex-message e) ".") {:key :formatter :in [:scales k :formatter] :value pattern}))))
+
 (defn scale-spec
   "Phase-1 spec of the plot scale `k` from its attributes `spec` (a map of wadogo attributes and `:nice`, valid by
   [[scale-spec-schema]]): `:kind` inferred from the domain when missing; no `:domain`, or a data domain not suiting the
-  kind (e.g. `:log` with 0) throws `ex-info {:key :domain}`.
-  `:nice` (default `true`): extend continuous domains to nice values by at most 10% of the range; a number sets
-  that limit (fraction); falsy turns it off.
+  kind (e.g. `:log` with 0) throws `ex-info {:key :domain}`; options the kind doesn't take throw `ex-info` keyed
+  by the option.
+  `:nice` (default `true`, `false` for `:interpolated`): extend continuous domains to nice values by at most 10% of
+  the range; a number sets that limit (fraction); falsy turns it off. `:datetime` gets `:ticks-method :pretty` unless
+  given; a pattern string `:formatter` becomes a function.
   A tick list is checked against the kind and domain (`ex-info {:key :ticks}`)."
   [k spec]
   (let [{:keys [domain ticks]} spec
@@ -101,8 +159,12 @@
         kind (or (:kind spec) (domain-kind domain))]
     (when-let [problem (domain-problem spec)] ;; a data domain may not suit the spec's kind (e.g. log)
       (schema/fail! (str "Scale " problem ".") {:key :domain :in [:scales k :domain] :value domain}))
+    (when-let [[key message] (kind-option-problem kind spec)]
+      (schema/fail! (str message ".") {:key key :in [:scales k key] :value (get spec key)}))
     (when (sequential? ticks) (validate-tick-list! k kind domain ticks))
-    (assoc spec :kind kind :nice (get spec :nice true))))
+    (cond-> (assoc spec :kind kind :nice (get spec :nice (not= :interpolated kind)))
+      (and (= :datetime kind) (nil? (:ticks-method spec))) (assoc :ticks-method :pretty)
+      (string? (:formatter spec)) (update :formatter #(pattern-formatter k %)))))
 
 (def ^:private ^:const collapse-widening 0.1)
 
@@ -154,6 +216,8 @@
   (only when there is data); [[finalize]] applies it after `nice`, so the outermost ticks sit inside the panel.
   Temporal and categorical domains aren't padded."
   [k spec extent padding]
+  (when (and (= :interpolated (:kind spec)) (nil? (:domain spec)))
+    (schema/fail! "An :interpolated scale needs an explicit :domain (its stop values)." {:key :domain :in [:scales k :domain]}))
   (let [built (if (or (some? (:domain spec)) (nil? extent))
                 (scale-spec k spec)
                 (let [kind (or (:kind spec) (extent-kinds (:kind extent)))
@@ -169,7 +233,7 @@
                   (scale-spec k (assoc spec :kind kind :domain domain))))
         padding (or (:expand spec) (when extent padding))]
     (cond-> built
-      (and padding (not= :datetime (:kind built)) (continuous-kinds (:kind built)))
+      (and padding (not (#{:datetime :interpolated} (:kind built))) (continuous-kinds (:kind built)))
       (assoc :padding (vec padding)))))
 
 (defn tick-hint
@@ -202,7 +266,8 @@
     (default-tick-labels scale spec ticks)))
 
 (defn ->wadogo
-  "wadogo scale of a finalized scale."
+  "wadogo scale of a finalized scale (a `:radial` one is built over `[0, end - start]`: pixels come from
+  [[forward-fn]], which adds the range start)."
   [finalized]
   (s/scale (:kind finalized) (:attributes finalized)))
 
@@ -226,6 +291,26 @@
     (s/domain (s/nice scale {:max-extension (if (number? nice-option) nice-option default-nice-max-extension)}))
     (s/domain scale)))
 
+(defn- pixel-offset
+  "Pixels added to the wadogo position of a finalized scale of `kind` over `range`: a `:radial` scale is built over
+  `[0, end - start]` (wadogo squares the range ends, so its distances grow as the square root of the value only from
+  0) and shifted by the range start; 0 for other kinds."
+  ^double [kind range]
+  (if (= :radial kind) (double (first range)) 0.0))
+
+(defn- wadogo-range
+  "Range given to wadogo for a scale of `kind` over the pixel `range` `[start end]` (see [[pixel-offset]])."
+  [kind [start end]]
+  (if (= :radial kind) [0.0 (- (double end) (double start))] [start end]))
+
+(defn- stop-pixels
+  "Pixel positions of the `n` stops of an `:interpolated` scale over `range` `[start end]`: the fractions `stops`
+  (default evenly spaced) of the way from start to end."
+  [[start end] ^long n stops]
+  (let [start (double start) end (double end)]
+    (mapv (fn [f] (+ start (* (double f) (- end start))))
+          (or stops (map #(/ (double %) (double (dec n))) (range n))))))
+
 (defn finalize
   "Finalized scale of phase-1 `spec` for the pixel `range` (`[start end]`) and `tick-hint` (the count used unless
   the spec has `:ticks`). Steps: the domain is extended by `nice` (limited, see `:nice` in [[scale-spec]]) with
@@ -237,8 +322,10 @@
   [spec range tick-hint]
   (let [kind (:kind spec)
         explicit (:ticks spec)
-        base (assoc (dissoc spec :kind :nice :expand :padding :padding-px :tick-format :axis) :range range)
         nice-count (if (integer? explicit) explicit tick-hint)
+        base (cond-> (assoc (dissoc spec :kind :nice :expand :padding :padding-px :tick-format :axis :stops) :range (wadogo-range kind range))
+               (get-in spec [:ticks-params :min-n]) (update-in [:ticks-params :min-n] #(min (long %) (long nice-count)))
+               (= :interpolated kind) (assoc :range (stop-pixels range (count (:domain spec)) (:stops spec))))
         niced (nice-domain (s/scale kind (assoc base :ticks nice-count)) kind (:nice spec))
         domain (if-let [padding (:padding spec)]
                  (pad kind [(double (first niced)) (double (last niced))] padding)
@@ -249,8 +336,9 @@
                  domain)
         attributes (assoc base :domain domain :ticks (or explicit (if (= kind :bands) (vec domain) tick-hint)))
         scale (s/scale kind attributes)
+        offset (pixel-offset kind range)
         ticks (if (continuous-kinds kind)
-                (filterv #(inside-range? range (double (scale %))) (s/ticks scale))
+                (filterv #(inside-range? range (+ offset (double (scale %)))) (s/ticks scale))
                 (vec (s/ticks scale)))]
     (cond-> {:kind kind
              :domain domain
@@ -265,8 +353,9 @@
   value the scale can't place (e.g. not in a bands domain) - callers skip such values.
   Builds the wadogo scale once; reuse the function for many values."
   [finalized]
-  (let [scale (->wadogo finalized)]
-    (fn ^double [value] (let [p (scale value)] (if (nil? p) ##NaN (double p))))))
+  (let [scale (->wadogo finalized)
+        offset (pixel-offset (:kind finalized) (:range finalized))]
+    (fn ^double [value] (let [p (scale value)] (if (nil? p) ##NaN (+ offset (double p)))))))
 
 (defn inverse-fn
   "Function mapping a pixel position to its value in the finalized continuous scale (wadogo `inverse`: a number, a
@@ -276,8 +365,9 @@
   (when-not (continuous-kinds (:kind finalized))
     (schema/fail! (str "A " (:kind finalized) " scale has no inverse; a continuous scale is needed.")
                   {:key :kind :value (:kind finalized)}))
-  (let [scale (->wadogo finalized)]
-    (fn [^double pixel] (s/inverse scale pixel))))
+  (let [scale (->wadogo finalized)
+        offset (pixel-offset (:kind finalized) (:range finalized))]
+    (fn [^double pixel] (s/inverse scale (- pixel offset)))))
 
 (defn forward
   "Pixel position of a single `value` in a finalized scale; for many values use [[forward-fn]]."

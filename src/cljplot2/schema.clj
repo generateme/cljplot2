@@ -98,6 +98,19 @@
   (malli/-simple-schema {:type ::dash :pred dash?
                          :type-properties {:error/fn (fn [{:keys [value]} _] (dash-message value))}}))
 
+(def interpolation-methods
+  "fastmath `interpolation` methods taking one-dimensional `xs`, `ys` (the 2D grid methods excluded): line curves and
+  `:interpolated` position scales."
+  #{:linear :cubic :monotone :pchip :akima :neville :divided-difference :polynomial :sprague :step-before
+    :step-after :step :b-spline :barycentric :loess :cubic-smoothing :pava :cir :microsphere-projection :shepard
+    :rbf :kriging :gp})
+
+(def interpolator
+  "Schema of `:interpolator`: a fastmath 1D method of [[interpolation-methods]] or a function."
+  (named-type ::interpolator #(or (fn? %) (contains? interpolation-methods %))
+              (str "should be a function (fn [xs ys & params] f) or a fastmath 1D interpolation method: "
+                   (str/join " " (sort interpolation-methods)))))
+
 (def ^:private h-aligns #{:left :center :right})
 (def ^:private v-aligns #{:top :middle :bottom})
 
