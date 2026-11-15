@@ -170,6 +170,20 @@
       interpolator (functional-points (fit-fn interpolator interpolator-params) run along step)
       :else run)))
 
+(defn band-points
+  "The drawn `[upper lower]` boundaries of a band - paired runs of one length sharing their positions along `along`
+  (stacked areas): without an `:interpolator` as given, else both fitted with it and evaluated on one grid (the
+  grid depends only on the shared end positions and the step), so the samples stay paired; too few points for the
+  method - both straight."
+  [upper lower {:keys [interpolator interpolator-params sample-step along] :or {along :x}}]
+  (if interpolator
+    (let [fit-of (fit-fn interpolator interpolator-params)
+          step (or sample-step default-sample-step)
+          u (functional-points fit-of upper along step)
+          l (functional-points fit-of lower along step)]
+      (if (== (count u) (count l)) [u l] [upper lower]))
+    [upper lower]))
+
 (defn curved?
   "Do the curve options `opts` change the drawn points (an `:interpolator` or a `:curve`)?"
   [opts]

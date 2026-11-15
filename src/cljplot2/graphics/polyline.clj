@@ -9,7 +9,8 @@
             [clojure2d.core :as c2d]
             [fastmath.core :as m]
             [cljplot2.schema :as schema]
-            [cljplot2.theme :as theme]))
+            [cljplot2.theme :as theme])
+  (:import [java.awt Color Graphics2D LinearGradientPaint]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -171,3 +172,63 @@
                            (into (map (fn [i] [(nth xs i) (nth ys i)])) run)
                            (into (map (fn [i] [(nth bxs i) (nth bys i)])) (rseq run)))
                 true false))))
+
+;; areas
+
+(defn area-color
+  "Fill of a group's area with line style `st` (group attributes merged): the group colour with opacity `:alpha`
+  (0..1) for `:fill :color` or for stacked areas (`stacked?`) without a fill, else `:fill` (`:none` - no area)."
+  [st stacked?]
+  (if (or (= :color (:fill st)) (and stacked? (theme/none? (:fill st :none))))
+    (c/set-alpha (:color st) (* 255.0 (double (:alpha st))))
+    (:fill st :none)))
+
+(def fill-gradient-schema
+  "Schema of `:fill-gradient`: a clojure2d gradient - a preset keyword, a colour list or a function of `t`."
+  (schema/named-type ::fill-gradient #(or (keyword? %) (sequential? %) (fn? %))
+                     "should be a clojure2d gradient: a preset keyword, a colour list or a function"))
+
+(defn gradient-fn
+  "clojure2d gradient of the `:fill-gradient` option `g` (a function is taken as is); throws `ex-info
+  {:key :fill-gradient}` for an unknown one."
+  [g]
+  (if (fn? g)
+    g
+    (try (c/gradient g)
+         (catch Exception e
+           (schema/fail! "Unknown :fill-gradient." {:key :fill-gradient :value g :cause (ex-message e)})))))
+
+(defn fill-gradient-quads!
+  "Fill between the paired point runs `upper` and `lower` (`[x y]` pixels) quad by quad, each coloured by `gradient`
+  at its middle position (`ps`, one per point) relative to `[p0 p1]`; quads with a non-finite corner are skipped."
+  [canvas upper lower ps gradient [p0 p1]]
+  (let [p0 (double p0) span (- (double p1) p0)
+        ok? (fn [[x y]] (and (m/valid-double? (double x)) (m/valid-double? (double y))))]
+    (c2d/set-stroke-custom canvas {:size 1.0 :join :miter})
+    (doseq [^long i (range (dec (count upper)))
+            :let [a (upper i) b (upper (inc i)) c (lower (inc i)) d (lower i)]
+            :when (and (ok? a) (ok? b) (ok? c) (ok? d))]
+      (let [t (if (pos? span) (/ (- (* 0.5 (+ (double (ps i)) (double (ps (inc i))))) p0) span) 0.5)
+            quad [a b c d]]
+        (c2d/set-color canvas (gradient (m/constrain t 0.0 1.0)))
+        (c2d/path canvas quad true false)
+        (c2d/path canvas quad true true)))))
+
+(def ^:private ^:const gradient-stops
+  "Stops of a linear gradient paint sampled from a gradient function."
+  32)
+
+(defn fill-gradient-paint!
+  "Fill every polygon of `polygons` (`[x y]` pixel points) with a linear gradient paint from pixel point `from`
+  (`gradient` at 0) to `to` (at 1), [[gradient-stops]] stops sampled; the paint is reset to the gradient's last
+  colour afterwards (callers set their colour again)."
+  [canvas polygons gradient [fx fy] [tx ty]]
+  (let [fractions (float-array (map #(/ (double %) (dec gradient-stops)) (range gradient-stops)))
+        colors (into-array Color (map #(c/awt-color (gradient (aget fractions %))) (range gradient-stops)))
+        ^Graphics2D g (:graphics canvas)]
+    (when-not (and (== (double fx) (double tx)) (== (double fy) (double ty)))
+      (.setPaint g (LinearGradientPaint. (float fx) (float fy) (float tx) (float ty) fractions colors))
+      (doseq [polygon polygons :when (> (count polygon) 2)]
+        (c2d/path canvas polygon true false))
+      (c2d/set-color canvas (gradient 1.0)))))
+
