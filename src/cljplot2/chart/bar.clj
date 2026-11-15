@@ -1,0 +1,283 @@
+(ns cljplot2.chart.bar
+  "Bar chart: one bar per `:y` level and group - a strip chart (see [[cljplot2.data.strip]]: levels on a `:bands` `:y`
+  scale, bar lengths along `:x`; horizontal by default, `:flip true` for vertical bars; placement `:place`, `:width`,
+  `:dodge-gap`, `:n-label`).
+
+  Options (style defaults from theme `[:chart :bar]`):
+
+  * `:stat` - the bar length from the item's rows: `:sum` (default; of the `:x` values - one row per level gives its
+    value), `:mean`, `:median` (fastmath.stats), a function of the `:x` values returning a finite number, or a count
+    measure of the rows (`:x` not needed, see [[cljplot2.data.measure]]): `:count`, `:percent`, `:pmf` (of the
+    group's total in the panel)
+  * `:position` - groups: `:dodge` (default with two or more groups; side by side in the band), `:overlay` (over each
+    other, translucent fill `:alpha`), `:stack` (on top of each other, in group order; negative lengths stack from 0
+    the other way), `:normalize` (stacked, each level summing to 1; non-negative lengths)
+  * `:mirror` - a grouping dimension (an ordinal aesthetic or `:group`) with exactly two levels: the second level's
+    bars point the other way (back-to-back bars, e.g. population pyramids); `:position` applies on each side (a
+    dodged pair shares its slot), `:normalize` sums to 1 on one side and -1 on the other; value tick labels show
+    magnitudes; `:zero-line` (default true) draws the 0 line on top (`:zero-line-color`, `:zero-line-width`)
+  * `:varwidth` - bar widths relative to the widest: `true` - by the square root of the count (as box plots), a
+    keyword or function of a row - by the item's sum of its finite values (non-negative)
+  * `:value-label` - `true` writes each bar's length past its end (`:value-format` - a format string of the number,
+    default: whole numbers as integers, otherwise the fewest digits telling the labels apart)
+  * `:color` (fill), `:stroke-color` (a color, `:none` or `:darker` - the darkened fill, default), `:stroke-width`,
+    `:alpha`
+  * `:padding {:x [lo hi]}` - default 5%, none at the baseline side the bars grow from (bars start on the axis)
+
+  Error bars: `chart/extent` with the same mapping takes the same slots (e.g. `{:method :stddev}` over `:mean` bars)."
+  (:require [clojure2d.color :as c]
+            [fastmath.core :as m]
+            [fastmath.stats :as stats]
+            [cljplot2.chart.box :as box]
+            [cljplot2.data.group :as group]
+            [cljplot2.data.levels :as levels]
+            [cljplot2.data.measure :as measure]
+            [cljplot2.data.position :as position]
+            [cljplot2.data.rows :as data]
+            [cljplot2.data.strip :as strip]
+            [cljplot2.graphics.draw :as draw]
+            [cljplot2.scale.aesthetic :as aesthetic]
+            [cljplot2.schema :as schema]))
+
+(set! *warn-on-reflection* true)
+(set! *unchecked-math* :warn-on-boxed)
+
+(def ^:private count-stats #{:count :percent :pmf})
+(def ^:private value-stats {:sum stats/sum :mean stats/mean :median stats/median})
+(def ^:private positions #{:overlay :dodge :stack :normalize})
+
+(def ^:private style-entries
+  [(schema/optional :color schema/solid-color)
+   (schema/optional :stroke-color draw/stroke-color)
+   (schema/optional :stroke-width schema/non-neg)
+   (schema/optional :alpha schema/fraction)
+   (schema/optional :zero-line-color schema/color)
+   (schema/optional :zero-line-width schema/non-neg)])
+
+(def schemas
+  "Schemas of the bar chart: `:style` (theme `[:chart :bar]`), `:options`, `:mapping` (merged; `:x` checked at
+  compute - count stats don't need it)."
+  {:style (into [:map {:closed true}] style-entries)
+   :options (-> [:map {:closed true}]
+                (into style-entries)
+                (into data/common-options)
+                (into (remove #(= :position (first %)) strip/options))
+                (conj (schema/optional :stat [:or (into [:enum] (sort (into count-stats (keys value-stats)))) schema/function])
+                      (schema/optional :position (into [:enum] (sort positions)))
+                      (schema/optional :mirror (into [:enum] (conj aesthetic/dims :group)))
+                      (schema/nilable :zero-line schema/bool)
+                      (schema/nilable :varwidth [:or schema/bool schema/accessor])
+                      (schema/nilable :value-label schema/bool)
+                      (schema/optional :value-format :string)
+                      (schema/optional :padding data/position-padding)))
+   :mapping [:map]})
+
+(defn- style
+  [options theme]
+  (merge (get-in theme [:chart :bar])
+         (select-keys options [:color :stroke-color :stroke-width :alpha :zero-line-color :zero-line-width])))
+
+(defn- check-options!
+  "Throw for a value stat without an `:x` mapping (`{:key :mapping}`) and a `:value-format` that can't format a
+  number (`{:key :value-format}`)."
+  [options mapping]
+  (when (and (nil? (:x mapping)) (not (count-stats (get options :stat :sum))))
+    (schema/fail! "Bar :stat needs an :x mapping (only :count, :percent and :pmf count rows without it)."
+                  {:key :mapping :value :x}))
+  (when-let [fmt (:value-format options)]
+    (try (format fmt 1.5)
+         (catch Exception e
+           (schema/fail! "Bar :value-format should format a number (e.g. \"%.1f\")."
+                         {:key :value-format :value fmt :cause (ex-message e)})))))
+
+(defn- mirror-index
+  "Index of the `:mirror` dimension in the grouping `dims`; `nil` without `:mirror`. Throws `ex-info {:key :mirror}`
+  when it isn't a grouping dimension of the chart."
+  [options dims]
+  (when-let [k (:mirror options)]
+    (let [i (.indexOf ^java.util.List dims k)]
+      (when (neg? i)
+        (schema/fail! "Bar :mirror should be a mapped grouping dimension (an ordinal aesthetic or :group)."
+                      {:key :mirror :value k}))
+      i)))
+
+(defn- without-index [key ^long i] (into (subvec key 0 i) (subvec key (inc i))))
+
+(defn- mirrored-level
+  "The level of the mirror dimension (index `i`) drawn the other way - the second of exactly two over `group-keys`.
+  Throws `ex-info {:key :mirror}` for another count of levels."
+  [group-keys ^long i k]
+  (let [levels (vec (distinct (map #(nth % i) group-keys)))]
+    (when-not (= 2 (count levels))
+      (schema/fail! "Bar :mirror needs exactly two levels of its dimension." {:key :mirror :value k :levels levels}))
+    (levels 1)))
+
+(defn- item-lengths
+  "Bar length `:length` of every item (`{panel [item ...]}`) by `stat`; count measures over each group's items of
+  the panel. Throws `ex-info {:key :stat}` when a stat function returns no finite number."
+  [stat items]
+  (update-vals items
+               (fn [its]
+                 (if (count-stats stat)
+                   (let [by-key (group-by :key its)
+                         lengths (into {} (mapcat (fn [[_ g]] (map vector g (measure/heights stat (map :n g) (repeat 1.0))))) by-key)]
+                     (mapv #(assoc % :length (lengths %)) its))
+                   (let [f (get value-stats stat stat)]
+                     (mapv (fn [{:keys [values] :as it}]
+                             (let [v (f values)]
+                               (when-not (and (number? v) (m/valid-double? (double v)))
+                                 (schema/fail! "Bar :stat should return a finite number." {:key :stat :value v}))
+                               (assoc it :length (double v))))
+                           its))))))
+
+(defn- side-ends
+  "`[y0 y1]` of the items `its` (one side of one panel) placed by `position` over the panel's `levels` (a group
+  without a level counts 0), keyed by item."
+  [position levels its]
+  (let [index (zipmap levels (range))
+        by-key (group-by :key its)
+        group-keys (vec (distinct (map :key its)))
+        lengths (mapv (fn [k] (reduce (fn [ls it] (assoc ls (index (:level it)) (:length it)))
+                                      (vec (repeat (count levels) 0.0)) (by-key k)))
+                      group-keys)
+        ends (position/stack-values position lengths)]
+    (into {} (for [[gi k] (map-indexed vector group-keys) it (by-key k)] [it ((ends gi) (index (:level it)))]))))
+
+(defn- placed-bars
+  "Items of one panel with `:y0 :y1` (bar ends along `:x`): `position` on each side, the `mirrored?` items' ends
+  negated (`[y0 y1]` -> `[-y1 -y0]`); item order kept."
+  [position mirrored? its]
+  (let [levels (vec (distinct (map :level its)))
+        ends (merge (side-ends position levels (remove mirrored? its))
+                    (update-vals (side-ends position levels (filter mirrored? its))
+                                 (fn [[^double y0 ^double y1]] [(- y1) (- y0)])))]
+    (mapv (fn [it] (let [[y0 y1] (ends it)] (assoc it :y0 y0 :y1 y1))) its)))
+
+(defn- weight-factors
+  "Item -> width factor for `:varwidth`: `true` - [[cljplot2.chart.box/width-factors]], a keyword / function - the
+  item's sum of finite weights of its `:rows` relative to the largest; `nil` / `false` - 1. Throws `ex-info {:key
+  :varwidth}` for a negative sum."
+  [varwidth items]
+  (cond
+    (true? varwidth) (box/width-factors items true)
+    (or (keyword? varwidth) (fn? varwidth))
+    (let [acc (data/row-accessor :varwidth varwidth)
+          weight (fn [{:keys [rows]}] (double (reduce + 0.0 (:values (data/finite-numbers (map acc rows))))))
+          weights (map weight items)
+          _ (when-let [w (first (filter neg? weights))]
+              (schema/fail! "Bar :varwidth weights should be non-negative." {:key :varwidth :value w}))
+          wmax (double (reduce max 0.0 weights))]
+      (fn ^double [item] (if (pos? wmax) (/ (double (weight item)) wmax) 0.0)))
+    :else (constantly 1.0)))
+
+(defn- end-of
+  "The bar's far end from 0 along `:x` and the direction it points (`1.0` / `-1.0`; a zero bar points up)."
+  [{:keys [^double y0 ^double y1]}]
+  (if (neg? (+ y0 y1)) [(m/min y0 y1) -1.0] [(m/max y0 y1) 1.0]))
+
+(defn- value-texts
+  "Bar -> value label text: the bar's length `|y1 - y0|` by `:value-format`, else [[cljplot2.data.levels/break-labels]]
+  over all `bars` (whole numbers as integers, else the fewest digits telling them apart)."
+  [options bars]
+  (let [length (fn [{:keys [^double y0 ^double y1]}] (m/abs (- y1 y0)))]
+    (if-let [fmt (:value-format options)]
+      (fn [bar] (format fmt (length bar)))
+      (let [ls (distinct (map length bars))]
+        (if (seq ls) (let [texts (zipmap ls (levels/break-labels ls))] (comp texts length)) (constantly ""))))))
+
+(defn- end-labels
+  "End labels (see [[cljplot2.data.strip/draw-end-labels!]]) of `bars`: their lengths with `:value-label`, counts
+  with `:n-label` (`:n-format`), both past the bar end."
+  [options bars value-text]
+  (concat (when (data/option options :value-label false)
+            (map (fn [{:keys [level slot] :as bar}]
+                   (let [[at side] (end-of bar)] {:level level :slot slot :at at :side side :text (value-text bar)}))
+                 bars))
+          (when (data/option options :n-label false)
+            (map (fn [{:keys [level slot n] :as bar}]
+                   (let [[at side] (end-of bar)]
+                     {:level level :slot slot :at at :side side :text (format (get options :n-format "n=%d") n)}))
+                 bars))))
+
+(defn- baseline
+  "Padding `[lo hi]` and padding request (`nil` sides - none) of the value axis over every bar end `ys`: no padding
+  at a side the bars grow from (all ends on one side of 0)."
+  [ys]
+  (let [lo (double (reduce min 0.0 ys)) hi (double (reduce max 0.0 ys))
+        from-lo? (zero? lo) from-hi? (zero? hi)]
+    {:padding [(if from-lo? 0.0 0.05) (if from-hi? 0.0 0.05)]
+     :request (when (or from-lo? from-hi?) [(when from-lo? 0.0) (when from-hi? 0.0)])}))
+
+(defn compute
+  "Per panel: `{:bars [item ...] :style st :place p :options o :translucent? b :zero-line? b}`, items (see
+  [[cljplot2.data.strip/split]]) with `:length`, `:y0 :y1`, `:width-factor`, `:labels` (end labels); extents (x - the
+  bar ends and 0, y - see [[cljplot2.data.strip/extents]]), padding, `:padding-px` (label room), `:na`, `:dropped`,
+  `:axis-titles` (count measures, `\"Proportion\"`), `:tick-format` (mirror)."
+  [{:keys [options]} {:keys [mapping] :as chart-split} {:keys [theme] :as env}]
+  (check-options! options mapping)
+  (let [stat (get options :stat :sum)
+        position (get options :position)
+        dims (group/group-dims (dissoc mapping :y))
+        mi (mirror-index options dims)
+        varwidth (:varwidth options)
+        slot-key (if mi #(without-index % mi) identity)
+        split-options (cond-> (dissoc options :position)
+                        (some? position) (assoc :position (if (#{:stack :normalize} position) :overlay position))
+                        (count-stats stat) (assoc ::strip/count-rows true)
+                        (or (keyword? varwidth) (fn? varwidth)) (assoc ::strip/rows true)
+                        mi (assoc ::strip/slot-key slot-key))
+        {:keys [place items panels dropped group-keys] :as split} (strip/split chart-split split-options :center env)
+        position (or position (:position split))
+        mirrored (when (and mi (seq group-keys)) (mirrored-level group-keys mi (:mirror options)))
+        mirrored? (if mirrored (fn [it] (= mirrored (nth (:key it) mi))) (constantly false))
+        items (item-lengths stat items)
+        items (update-vals items #(placed-bars position mirrored? %))
+        factor (weight-factors varwidth (mapcat val items))
+        items (update-vals items (fn [its] (mapv #(-> % (assoc :width-factor (factor %)) (dissoc :rows)) its)))
+        all-bars (mapcat val items)
+        value-text (value-texts options all-bars)
+        items (update-vals items (fn [its] (mapv #(assoc % :labels (end-labels options [%] value-text)) its)))
+        {base-padding :padding request :request} (baseline (mapcat (juxt :y0 :y1) all-bars))
+        translucent? (and (= :overlay position) (> (count (distinct (map slot-key group-keys))) 1))
+        mirror? (some? mi)]
+    {:data (update-vals items (fn [its] {:bars its :style (style options theme) :place place :options options
+                                         :translucent? translucent?
+                                         :zero-line? (and mirror? (data/option options :zero-line true))}))
+     :extents (merge-with merge (group/aesthetic-extents panels (:plot-scales env))
+                          (strip/extents place items (fn [{:keys [^double y0 ^double y1]}]
+                                                       [(m/min 0.0 y0 y1) (m/max 0.0 y0 y1)])))
+     :padding (merge (assoc (strip/padding place (dissoc options :padding)) :x base-padding) (:padding options))
+     :padding-explicit (data/explicit-padding (cond-> (or (strip/explicit-padding place {}) {})
+                                                request (assoc :x request))
+                                              options)
+     :padding-px (strip/end-label-room (mapcat :labels (mapcat val items)) env)
+     :na (group/na-dims panels)
+     :dropped dropped
+     :axis-titles (if-let [t (if (= :normalize position) "Proportion" (measure/titles stat))] {:x t} {})
+     :tick-format (when mirror? {:x :absolute})}))
+
+(defn draw
+  "Draw the bars of one panel (zero-length bars, bars under half a pixel and bars of groups outside an aesthetic
+  domain skipped), then the mirror's 0 line and the end labels."
+  [_chart {:keys [bars style place options translucent? zero-line?]} canvas box scales env]
+  (let [{:keys [point] :as pl} (strip/placement box scales options place)
+        stroke-width (double (:stroke-width style))
+        drawn (filterv #(group/style style (:aesthetics %) scales (:theme env)) bars)]
+    (doseq [{:keys [level slot ^double y0 ^double y1 width-factor aesthetics]} drawn
+            :when (not (== y0 y1))
+            :let [st (group/style style aesthetics scales (:theme env))
+                  c0 (strip/in-slot slot 0.0)
+                  hw (* (strip/slot-half slot) (double width-factor))
+                  fill (if translucent? (c/set-alpha (:color st) (* 255.0 (double (:alpha style)))) (:color st))]]
+      (draw/bar! canvas (point y0 level (- c0 hw)) (point y1 level (+ c0 hw))
+                 fill (draw/outline-color (:stroke-color st) (:color st)) stroke-width))
+    (when zero-line?
+      (draw/zero-line! canvas box scales style :x))
+    (strip/draw-end-labels! canvas pl (mapcat :labels drawn) scales env)))
+
+(defn legend
+  "Key glyph: a filled square (see [[cljplot2.graphics.draw/bar-key!]]); translucent with a mapped `:color` (not the
+  `:mirror` dimension) and `:position :overlay`."
+  [{:keys [options]} attributes canvas box env]
+  (draw/bar-key! canvas box (merge (style options (:theme env)) (select-keys attributes [:color]))
+                 (and (contains? attributes :color) (= :overlay (:position options)) (not= :color (:mirror options)))))

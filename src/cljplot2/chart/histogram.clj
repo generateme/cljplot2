@@ -36,6 +36,7 @@
             [cljplot2.data.rows :as data]
             [cljplot2.data.group :as group]
             [cljplot2.data.levels :as levels]
+            [cljplot2.data.measure :as measure]
             [cljplot2.data.position :as position]
             [cljplot2.data.strip :as strip]
             [cljplot2.graphics.draw :as draw]
@@ -46,8 +47,6 @@
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
-
-(def ^:private measures {:percent "Percent of Total" :count "Count" :pmf "Probability" :density "Density"})
 
 (def ^:private style-entries
   [(schema/optional :color schema/solid-color)
@@ -64,7 +63,7 @@
                 (into style-entries)
                 (into data/common-options)
                 (conj (schema/optional :bins [:and levels/bins [:fn {:error/message "quantile bins aren't supported by histograms (give a breaks vector)"} (complement map?)]])
-                      (schema/optional :y (into [:enum] (keys measures)))
+                      (schema/optional :y (into [:enum] (keys measure/titles)))
                       (schema/optional :position (into [:enum] (sort position/positions)))
                       (schema/nilable :symmetric schema/bool)
                       (schema/nilable :zero-line schema/bool)
@@ -88,18 +87,9 @@
     {:counts (vec counts) :outside (- (count values) (long (reduce + 0 (vec counts))))}))
 
 (defn- heights
-  "Bar heights of `counts` (bins `brks`) for measure `y`."
+  "Bar heights of `counts` (bins `brks`) for count measure `y` (see [[cljplot2.data.measure/heights]])."
   [y brks counts]
-  (let [total (double (reduce + 0 counts))]
-    (mapv (fn [^long cnt [^double a ^double b]]
-            (if (zero? total)
-              0.0
-              (case y
-                :count (double cnt)
-                :percent (/ (* 100.0 cnt) total)
-                :pmf (/ cnt total)
-                :density (/ cnt (* total (- b a))))))
-          counts (partition 2 1 brks))))
+  (measure/heights y counts (map (fn [[^double a ^double b]] (- b a)) (partition 2 1 brks))))
 
 (defn- ridge-compute
   "Ridgeline stats (categorical or bands `:y`): per panel `{:ridges [item ...] :top h :overlap o :style st :translucent? b}`, items
@@ -199,31 +189,8 @@
        :padding-explicit (data/explicit-padding (when-not (= position :mirror) {:y [0.0 nil]}) options)
        :na (group/na-dims panels)
        :dropped (assoc dropped :x (+ (long (reduce + 0 (map :dropped (mapcat identity (vals xs))))) (long outside)))
-       :axis-titles {:y (if (= position :normalize) "Proportion" (measures y))}
+       :axis-titles {:y (if (= position :normalize) "Proportion" (measure/titles y))}
        :tick-format (when (= position :mirror) {:y :absolute})})))
-
-(def ^:private ^:const min-bar-pixels
-  "Bars thinner than this (pixels, along the bar's height) aren't drawn: sub-pixel slivers only smear y = 0."
-  0.5)
-
-(defn- visible-bar?
-  "Is a bar `w` x `h` pixels (the height along the value axis, whichever way it points) drawn?"
-  [^double w ^double h]
-  (and (>= w min-bar-pixels) (>= h min-bar-pixels)))
-
-(defn- bar!
-  "Fill the rectangle with corners `a` and `b` (`Vec2`) with `fill`, outline it with `stroke` (a color or `:none`)
-  when `stroke-width` is positive."
-  [canvas ^Vec2 a ^Vec2 b fill stroke stroke-width]
-  (let [stroke-width (double stroke-width)
-        x (m/min (.x a) (.x b)) y (m/min (.y a) (.y b))
-        w (m/abs (- (.x b) (.x a))) h (m/abs (- (.y b) (.y a)))]
-    (when (visible-bar? w h)
-      (c2d/set-color canvas fill)
-      (c2d/rect canvas x y w h)
-      (when (and (pos? stroke-width) (not (theme/none? stroke)))
-        (c2d/set-color canvas stroke)
-        (c2d/rect canvas x y w h true)))))
 
 (defn- draw-ridges!
   "Draw ridgeline histograms of one panel, farthest level first; empty bins skipped."
@@ -244,7 +211,7 @@
               :when (pos? (double h))
               :let [a (point x0 level side 0.0) b (point x1 level side (/ (double h) top))]
               :when (and (ok? a) (ok? b))]
-        (bar! canvas a b fill (draw/outline-color (:stroke-color st) fill) stroke-width)))))
+        (draw/bar! canvas a b fill (draw/outline-color (:stroke-color st) fill) stroke-width)))))
 
 (defn draw
   "Draw the bars of one panel; grouped overlay bars get fill alpha `:alpha`; empty bins, bars under half a pixel and
@@ -264,7 +231,7 @@
           (let [{left :x top :y w :w h :h} (draw/rect-of projection x0 y0 x1 y1)
                 fill (:color st)
                 stroke (draw/outline-color (:stroke-color st) fill)]
-            (when (visible-bar? (double w) (double h))
+            (when (draw/visible-bar? (double w) (double h))
               (c2d/set-color canvas (if translucent?
                                       (c/set-alpha fill (* 255.0 (double (:alpha style))))
                                       fill))
@@ -278,16 +245,6 @@
 (defn legend
   "Key glyph: a filled square (outlined by `:stroke-color`) inset in `box`; with a mapped `:color` and `:overlay` position (the
   groups' bars are translucent) the fill gets `:alpha` too."
-  [{:keys [options]} attributes canvas {:keys [x y w h]} env]
-  (let [st (merge (style options (:theme env)) (select-keys attributes [:color]))
-        translucent? (and (contains? attributes :color) (= :overlay (get options :position :overlay)))
-        side (* 0.7 (m/min (double w) (double h)))
-        cx (+ (double x) (* 0.5 (double w)))
-        cy (+ (double y) (* 0.5 (double h)))]
-    (c2d/set-color canvas (if translucent? (c/set-alpha (:color st) (* 255.0 (double (:alpha st)))) (:color st)))
-    (c2d/crect canvas cx cy side side)
-    (let [stroke (draw/outline-color (:stroke-color st) (:color st))]
-      (when (and (pos? (double (:stroke-width st))) (not (theme/none? stroke)))
-        (c2d/set-stroke-custom canvas {:size (double (:stroke-width st))})
-        (c2d/set-color canvas stroke)
-        (c2d/crect canvas cx cy side side true)))))
+  [{:keys [options]} attributes canvas box env]
+  (draw/bar-key! canvas box (merge (style options (:theme env)) (select-keys attributes [:color]))
+                 (and (contains? attributes :color) (= :overlay (get options :position :overlay)))))

@@ -45,7 +45,7 @@
   `:chart` - per chart kind defaults: `:scatter`, `:histogram`, `:density`, `:line`, `:ecdf` (old cljplot blue
   `[69 117 180]` - clojure2d `(last (palette :rdylbu-9))` - with cljplot's alphas: scatter 180, stripplot 100, rug 100),
   `:treemap` (`:padding`, `:border-color`, `:border-width`), strip charts `:box`, `:violin`, `:stripplot`, `:beeswarm`, `:rug`,
-  `:extent`, annotations `:rule`, `:rect`, `:function`, bands `:ribbon`, `:smooth` (band `:alpha` 0.3), `:segment`, `:candlestick` (green up, red down); each checked against its chart's style schema; line and
+  `:extent`, `:bar`, annotations `:rule`, `:rect`, `:function`, bands `:ribbon`, `:smooth` (band `:alpha` 0.3), `:segment`, `:candlestick` (green up, red down); each checked against its chart's style schema; line and
   function `:bridge` - the style of bridges over gaps (`:alpha` multiplies the line alpha, optional `:width`, `:dash`);
   line `:alpha` - opacity of `:fill :color` and stacked areas.
 
@@ -93,6 +93,8 @@
    :chart {:scatter {:size 4 :color [69 117 180 180] :stroke-color :none :stroke-width 1 :shape \O}
            :histogram {:color [69 117 180] :stroke-color :darker :stroke-width 1 :alpha 0.6 :zero-line-color :black
                        :zero-line-width 1}
+           :bar {:color [69 117 180] :stroke-color :darker :stroke-width 1 :alpha 0.6 :zero-line-color :black
+                 :zero-line-width 1}
            :density {:color [69 117 180] :width 1 :dash :none :fill :none :alpha 0.6 :zero-line-color :black
                      :zero-line-width 1}
            :line {:color [69 117 180] :width 1 :dash :none :fill :none :alpha 0.6 :bridge {:alpha 0.3}}

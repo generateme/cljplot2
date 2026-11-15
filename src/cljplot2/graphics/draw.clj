@@ -24,19 +24,20 @@
 (declare pixel-center)
 
 (defn zero-line!
-  "The y = 0 line across the panel `box` (`{:w :h}`; along the x scale's direction, flip-aware) in style
-  `:zero-line-color` / `:zero-line-width` (mirror densities and histograms); nothing when 0 isn't in the y scale or
-  the line draws nothing."
-  [canvas {:keys [w h]} scales {:keys [zero-line-color zero-line-width]}]
-  (let [p (if (:y scales) (scale/forward (:y scales) 0.0) ##NaN)
-        width (double zero-line-width)]
-    (when (and (not (m/nan? p)) (not (theme/none? zero-line-color)) (pos? width))
-      (let [p (pixel-center p)]
-        (c2d/set-color canvas zero-line-color)
-        (c2d/set-stroke-custom canvas {:size width :cap :butt})
-        (if (scale/horizontal? :y (:y scales))
-          (c2d/line canvas p 0 p h)
-          (c2d/line canvas 0 p w p))))))
+  "The line at 0 of value scale `k` (default `:y`) across the panel `box` (`{:w :h}`; flip-aware) in style
+  `:zero-line-color` / `:zero-line-width` (mirror densities, histograms and bars); nothing when 0 isn't in the scale
+  or the line draws nothing."
+  ([canvas box scales style] (zero-line! canvas box scales style :y))
+  ([canvas {:keys [w h]} scales {:keys [zero-line-color zero-line-width]} k]
+   (let [p (if (k scales) (scale/forward (k scales) 0.0) ##NaN)
+         width (double zero-line-width)]
+     (when (and (not (m/nan? p)) (not (theme/none? zero-line-color)) (pos? width))
+       (let [p (pixel-center p)]
+         (c2d/set-color canvas zero-line-color)
+         (c2d/set-stroke-custom canvas {:size width :cap :butt})
+         (if (scale/horizontal? k (k scales))
+           (c2d/line canvas p 0 p h)
+           (c2d/line canvas 0 p w p)))))))
 
 (defn pixel-center
   "Center of the pixel containing coordinate `p`; thin lines drawn there cover whole pixels (no antialiasing smear)."
@@ -81,6 +82,45 @@
         ax (m/round (.x a)) ay (m/round (.y a))
         bx (m/round (.x b)) by (m/round (.y b))]
     {:x (m/min ax bx) :y (m/min ay by) :w (m/abs (- bx ax)) :h (m/abs (- by ay))}))
+
+(def ^:private ^:const min-bar-pixels
+  "Bars thinner than this (pixels, along either side) aren't drawn: sub-pixel slivers only smear the baseline."
+  0.5)
+
+(defn visible-bar?
+  "Is a bar `w` x `h` pixels drawn (both sides at least half a pixel)?"
+  [^double w ^double h]
+  (and (>= w min-bar-pixels) (>= h min-bar-pixels)))
+
+(defn bar!
+  "Fill the rectangle with pixel corners `a` and `b` (`Vec2`, any order) with `fill`, outline it with `stroke` (a
+  color or `:none`) when `stroke-width` is positive; nothing for a bar that isn't [[visible-bar?]]."
+  [canvas ^Vec2 a ^Vec2 b fill stroke stroke-width]
+  (let [stroke-width (double stroke-width)
+        x (m/min (.x a) (.x b)) y (m/min (.y a) (.y b))
+        w (m/abs (- (.x b) (.x a))) h (m/abs (- (.y b) (.y a)))]
+    (when (visible-bar? w h)
+      (c2d/set-color canvas fill)
+      (c2d/rect canvas x y w h)
+      (when (and (pos? stroke-width) (not (theme/none? stroke)))
+        (c2d/set-color canvas stroke)
+        (c2d/rect canvas x y w h true)))))
+
+(defn bar-key!
+  "Legend key glyph of a bar chart (histogram, bar): a filled square inset in `box`, outlined by `:stroke-color` (see
+  [[outline-color]]) when `:stroke-width` is positive; `translucent?` - the fill gets `:alpha` (grouped overlay bars).
+  `st` - `{:color :stroke-color :stroke-width :alpha}`."
+  [canvas {:keys [x y w h]} st translucent?]
+  (let [side (* 0.7 (m/min (double w) (double h)))
+        cx (+ (double x) (* 0.5 (double w)))
+        cy (+ (double y) (* 0.5 (double h)))]
+    (c2d/set-color canvas (if translucent? (c/set-alpha (:color st) (* 255.0 (double (:alpha st)))) (:color st)))
+    (c2d/crect canvas cx cy side side)
+    (let [stroke (outline-color (:stroke-color st) (:color st))]
+      (when (and (pos? (double (:stroke-width st))) (not (theme/none? stroke)))
+        (c2d/set-stroke-custom canvas {:size (double (:stroke-width st))})
+        (c2d/set-color canvas stroke)
+        (c2d/crect canvas cx cy side side true)))))
 
 (defn cvd-filter-fn
   "Color function simulating the color vision deficiency `deficiency` - a clojure2d `cvd-filter` keyword

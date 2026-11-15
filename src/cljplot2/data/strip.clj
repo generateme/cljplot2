@@ -34,7 +34,8 @@
   Ridgelines (histogram and density with a categorical or bands `:y`, see [[ridges?]]): one-sided profiles growing
   from the band centre toward the next level, the tallest `:overlap` (default 0.9) band steps high.
 
-  Every strip chart throws `ex-info {:key :mapping}` when its rows have no finite `:x` value.
+  Every strip chart throws `ex-info {:key :mapping}` when its rows have no finite `:x` value (except a chart counting
+  rows, see [[split]]).
 
   n labels (every strip chart): `:n-label true` draws each item's count, formatted by `:n-format` (default
   `\"n=%d\"`), just past its largest drawn value (see [[draw-n-labels!]]); the chart asks for value-axis room for
@@ -119,14 +120,28 @@
                 (zipmap group-keys (if first-high? [[0.0 0.5] [-0.5 0.0]] [[-0.5 0.0] [0.0 0.5]]))
                 (schema/fail! "Strip :position :mirror needs exactly two groups." {:key :position :groups n})))))
 
+(defn- levels-in-order
+  "`[[level rows] ...]` of the `rows` with a valid `y-of` value, levels ordered by `level-rank` (level -> its first
+  appearance in the chart's rows; `group-by` alone keeps no order past 8 levels)."
+  [y-of level-rank rows]
+  (sort-by (comp level-rank first) (group-by y-of (filter (comp data/valid-value? y-of) rows))))
+
 (defn split
   "Items of a strip chart: the rows of every panel (`chart-split` - `{:groups {panel rows} :mapping m}`) split into
   groups (ordinal aesthetics, `:group`) and `:y` levels, `:values` - the finite `:x` numbers.
-  Returns `{:place p :position pos :items {panel [item ...]} :group-keys [..] :panels split-panels :dropped {dim n}}`;
-  items carry `:level` (`nil` without bands), `:key`, `:aesthetics`, `:values`, `:slot`. `default-place` - the
-  chart's placement without `:y`. Throws `ex-info {:key :mapping}` when there are rows but no finite `:x` value (or,
-  placed in bands, no valid `:y` value),
-  `ex-info {:key :n-format}` for an `:n-format` that can't format a count."
+  Returns `{:place p :position pos :items {panel [item ...]} :group-keys [..] :dims [..] :panels split-panels
+  :dropped {dim n}}` (`:dims` - the grouping dimensions, the order of a group key's values); items carry `:level`
+  (`nil` without bands), `:key`, `:aesthetics`, `:values`, `:n` (the count of values), `:slot`. `default-place` - the
+  chart's placement without `:y`. Internal options of charts built on strips:
+
+  * `::count-rows true` - `:x` isn't read: every item has `:values []` and `:n` - its count of rows (an item per
+    level with rows; no `:x` errors or drops)
+  * `::rows true` - items also carry their `:rows`
+  * `::slot-key f` - slots are given to `(f group-key)` instead of the group key, so groups with the same slot key
+    share a slot (default `identity`); the default `:position` follows the count of slot keys
+
+  Throws `ex-info {:key :mapping}` when there are rows but no finite `:x` value (or, placed in bands, no valid `:y`
+  value), `ex-info {:key :n-format}` for an `:n-format` that can't format a count."
   [{:keys [groups mapping]} options default-place env]
   (let [_ (when-let [fmt (:n-format options)]
             (try (format fmt 1)
@@ -135,7 +150,8 @@
                                  {:key :n-format :value fmt :cause (ex-message e)}))))
         place (place-of options mapping default-place)
         {:keys [panels dims dropped]} (group/split groups (dissoc mapping :y) env)
-        x-of (data/row-accessor :x (:x mapping))
+        count-rows? (boolean (::count-rows options))
+        x-of (when-not count-rows? (data/row-accessor :x (:x mapping)))
         y-of (when (= :band place) (data/row-accessor :y (:y mapping)))
         all-rows (mapcat :rows (mapcat val panels))
         y-levels (when y-of (filter data/valid-value? (map y-of all-rows)))
@@ -143,30 +159,38 @@
             (schema/fail! "No valid values for a mapped dimension - check the mapping."
                           {:key :mapping :value :y :rows (count all-rows)}))
         _ (when y-of (check-levels! y-levels (:plot-scales env)))
+        level-rank (zipmap (distinct y-levels) (range))
         group-keys (group/ordered-keys (mapcat #(map :key %) (vals panels)) dims (:plot-scales env))
-        position (get options :position (if (> (count group-keys) 1) :dodge :overlay))
+        slot-key (get options ::slot-key identity)
+        slot-keys (vec (distinct (map slot-key group-keys)))
+        position (get options :position (if (> (count slot-keys) 1) :dodge :overlay))
         ;; reading order: the first group on top of horizontal strips (the high cross end), on the left of vertical
         ;; (flipped) ones (the low end); ridgelines grow the first group toward the next level (the high end)
         first-high? (or (::ridge options) (not (:flip? env)))
-        slot-of (if (seq group-keys) (slots position group-keys (double (get options :dodge-gap 0.1)) first-high?) {})
+        slot-of (if (seq slot-keys) (slots position slot-keys (double (get options :dodge-gap 0.1)) first-high?) {})
         items (update-vals panels
                            (fn [gs]
                              (vec (for [g gs
                                         [level rows] (if y-of
-                                                       (group-by y-of (filter (comp data/valid-value? y-of) (:rows g)))
+                                                       (levels-in-order y-of level-rank (:rows g))
                                                        [[nil (:rows g)]])
-                                        :let [{:keys [values]} (data/finite-numbers (map x-of rows))]
-                                        :when (seq values)]
-                                    {:level level :key (:key g) :aesthetics (:aesthetics g) :values values
-                                     :slot (slot-of (:key g))}))))
-        x-dropped (count (remove #(let [v (x-of %)] (and (number? v) (m/valid-double? (double v)))) all-rows))]
-    (when (and (seq all-rows) (= x-dropped (count all-rows)))
+                                        :let [values (if x-of (:values (data/finite-numbers (map x-of rows))) [])]
+                                        :when (or count-rows? (seq values))]
+                                    (cond-> {:level level :key (:key g) :aesthetics (:aesthetics g) :values values
+                                             :n (if count-rows? (count rows) (count values))
+                                             :slot (slot-of (slot-key (:key g)))}
+                                      (::rows options) (assoc :rows rows))))))
+        x-dropped (if x-of
+                    (count (remove #(let [v (x-of %)] (and (number? v) (m/valid-double? (double v)))) all-rows))
+                    0)]
+    (when (and x-of (seq all-rows) (= x-dropped (count all-rows)))
       (schema/fail! "No valid values for a mapped dimension - check the mapping."
                     {:key :mapping :value :x :rows (count all-rows)}))
     {:place place
      :position position
      :items items
      :group-keys group-keys
+     :dims dims
      :panels panels
      :dropped (cond-> (assoc dropped :x x-dropped)
                 y-of (assoc :y (count (remove (comp data/valid-value? y-of) all-rows))))}))
@@ -277,47 +301,68 @@
   "Pixels between an item's largest drawn value and its n label."
   3.0)
 
-(defn- n-label-text [options item] (format (get options :n-format "n=%d") (count (:values item))))
+(defn- n-label-text [options item] (format (get options :n-format "n=%d") (:n item)))
+
+(defn end-label-room
+  "`:padding-px` `{:x [lo hi]}` for end labels `labels` (`[{:text t :side s} ...]`, see [[draw-end-labels!]]): per
+  side of the value axis the largest label's size along it (its height when the plot is flipped, env `:flip?`) plus
+  the gap, measured with the `:annotation` role (env `:theme`, `:hint`); 0 on a side without labels; `nil` without
+  labels."
+  [labels {:keys [theme flip? hint]}]
+  (when (seq labels)
+    (measure/call-with-scratch-canvas
+     hint
+     (fn [c]
+       (let [room (fn [^double side]
+                    (let [texts (distinct (keep #(when (== side (double (:side %))) (:text %)) labels))]
+                      (if (seq texts)
+                        (+ (double (reduce max (map (fn [t] (let [^Vec2 size (measure/natural-size {:kind :label :role :annotation :text t}
+                                                                                                     {:canvas c :theme theme})]
+                                                              (if flip? (.y size) (.x size))))
+                                                    texts)))
+                           n-label-gap)
+                        0.0)))]
+         {:x [(room -1.0) (room 1.0)]})))))
+
+(defn draw-end-labels!
+  "Draw end labels `labels` - `[{:level l :slot s :at v :side d :text t} ...]` - each just past value `v` along the
+  value axis, toward increasing values (`d` 1) or decreasing ones (`d` -1), centred on its slot (text role
+  `:annotation`). `pl` - the chart's [[placement]]; [[end-label-room]] keeps room for them past the data."
+  [canvas {:keys [point]} labels scales env]
+  (let [x-scale (:x scales)
+        [r0 r1] (:range x-scale)
+        ;; pixel direction of increasing values
+        up (if (< (double r1) (double r0)) -1.0 1.0)
+        horizontal? (scale/horizontal? :x x-scale)
+        pad n-label-gap]
+    (doseq [{:keys [level slot at side text]} labels
+            :let [dir (* up (double side))
+                  anchor (if horizontal?
+                           (if (pos? dir) [:left :middle] [:right :middle])
+                           (if (pos? dir) [:center :top] [:center :bottom]))
+                  ^Vec2 p (point at level (in-slot slot 0.0))
+                  x (if horizontal? (+ (.x p) (* dir pad)) (.x p))
+                  y (if horizontal? (.y p) (+ (.y p) (* dir pad)))]
+            :when (and (m/valid-double? x) (m/valid-double? y))]
+      (label/draw-at! canvas {:kind :label :role :annotation :text text} anchor x y env))))
 
 (defn n-label-room
-  "`:padding-px` of a strip chart (`items` - `{panel [item ...]}`) with `:n-label`: `{:x [0 px]}`, `px` - the largest
-  label's size along the value axis (its height when the plot is flipped, env `:flip?`) plus the gap, measured with
-  the `:annotation` role (env `:theme`, `:hint`), so the labels past the largest values fit; `nil` without n labels
-  or items."
-  [options items {:keys [theme flip? hint]}]
-  (let [texts (when (data/option options :n-label false)
-                (distinct (map #(n-label-text options %) (mapcat val items))))]
-    (when (seq texts)
-      (measure/call-with-scratch-canvas
-       hint
-       (fn [c]
-         (let [along (reduce max (map (fn [t] (let [^Vec2 size (measure/natural-size {:kind :label :role :annotation :text t}
-                                                                                       {:canvas c :theme theme})]
-                                                (if flip? (.y size) (.x size))))
-                                      texts))]
-           {:x [0.0 (+ (double along) n-label-gap)]}))))))
+  "`:padding-px` of a strip chart (`items` - `{panel [item ...]}`) with `:n-label`: room past the largest values for
+  the count labels (see [[end-label-room]]); `nil` without n labels or items."
+  [options items env]
+  (when (data/option options :n-label false)
+    (end-label-room (map (fn [item] {:text (n-label-text options item) :side 1.0}) (mapcat val items)) env)))
 
 (defn draw-n-labels!
-  "With option `:n-label`, draw each item's count of values (`:n-format`, default `\"n=%d\"`; text role
-  `:annotation`) just past `(top-value item)` - its largest drawn value - along the value axis, centred on its slot.
-  `pl` - the chart's [[placement]]; [[n-label-room]] keeps room for them past the data."
-  [canvas {:keys [point]} items top-value options scales env]
+  "With option `:n-label`, draw each item's count `:n` (`:n-format`, default `\"n=%d\"`) just past `(top-value item)` -
+  its largest drawn value (see [[draw-end-labels!]]); [[n-label-room]] keeps room for them past the data."
+  [canvas pl items top-value options scales env]
   (when (data/option options :n-label false)
-    (let [x-scale (:x scales)
-          [r0 r1] (:range x-scale)
-          ;; pixel direction of increasing values
-          up (if (< (double r1) (double r0)) -1.0 1.0)
-          horizontal? (scale/horizontal? :x x-scale)
-          pad n-label-gap
-          anchor (if horizontal?
-                   (if (pos? up) [:left :middle] [:right :middle])
-                   (if (pos? up) [:center :top] [:center :bottom]))]
-      (doseq [{:keys [level slot] :as item} items
-              :let [^Vec2 p (point (top-value item) level (in-slot slot 0.0))
-                    x (if horizontal? (+ (.x p) (* up pad)) (.x p))
-                    y (if horizontal? (.y p) (+ (.y p) (* up pad)))]
-              :when (and (m/valid-double? x) (m/valid-double? y))]
-        (label/draw-at! canvas {:kind :label :role :annotation :text (n-label-text options item)} anchor x y env)))))
+    (draw-end-labels! canvas pl
+                      (map (fn [{:keys [level slot] :as item}]
+                             {:level level :slot slot :at (top-value item) :side 1.0 :text (n-label-text options item)})
+                           items)
+                      scales env)))
 
 (defn ridges?
   "Does a histogram / density of `chart-split` (`{:groups {panel rows} :mapping m}`) draw ridgelines: `:y` mapped

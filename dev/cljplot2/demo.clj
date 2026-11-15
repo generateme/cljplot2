@@ -10,7 +10,7 @@
 
 (def demos
   "Demo names (namespaces `cljplot2.demo.<name>`), in run order: build steps, then capability demos."
-  (into (mapv #(str "step" %) (range 1 12)) ["flip" "positions" "strips" "annotation" "helpers" "smooth" "evolution"]))
+  (into (mapv #(str "step" %) (range 1 12)) ["flip" "positions" "strips" "annotation" "helpers" "smooth" "evolution" "bar"]))
 
 (defn- demo-images
   "`images` of the demo `demo` (its namespace is loaded on first use)."
