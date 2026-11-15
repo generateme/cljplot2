@@ -266,7 +266,7 @@
   "Draw the bars of one panel (zero-length bars, bars under half a pixel and bars of groups outside an aesthetic
   domain skipped), then the mirror's 0 line and the end labels (of the bars whose group is drawn)."
   [_chart {:keys [bars style place options translucent? zero-line?]} canvas box scales env]
-  (let [{:keys [point] :as pl} (strip/placement box scales options place)
+  (let [{:keys [range-point geometry] :as pl} (strip/placement box scales options place)
         stroke-width (double (:stroke-width style))
         pattern-fill (draw/pattern-fill-cache)
         styled (keep (fn [bar] (some->> (group/style style (:aesthetics bar) scales (:theme env)) (vector bar))) bars)]
@@ -275,8 +275,8 @@
             :let [c0 (strip/in-slot slot 0.0)
                   hw (* (strip/slot-half slot) (double width-factor))
                   fill (if translucent? (c/set-alpha (:color st) (* 255.0 (double (:alpha style)))) (:color st))]]
-      (draw/bar! canvas (point y0 level (- c0 hw)) (point y1 level (+ c0 hw))
-                 fill (draw/outline-color (:stroke-color st) (:color st)) stroke-width (pattern-fill st fill)))
+      (draw/range-bar! canvas geometry (range-point y0 level (- c0 hw)) (range-point y1 level (+ c0 hw))
+                       fill (draw/outline-color (:stroke-color st) (:color st)) stroke-width (pattern-fill st fill)))
     (when zero-line?
       (draw/zero-line! canvas box scales style :x))
     (strip/draw-end-labels! canvas pl (keep (fn [[{:keys [label]} st]]

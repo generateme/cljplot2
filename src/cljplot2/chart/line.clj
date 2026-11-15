@@ -35,6 +35,7 @@
             [cljplot2.graphics.curve :as curve]
             [cljplot2.graphics.draw :as draw]
             [cljplot2.graphics.polyline :as polyline]
+            [cljplot2.scale.coord :as coord]
             [cljplot2.scale.aesthetic :as aesthetic]
             [cljplot2.scale.position :as scale]
             [cljplot2.schema :as schema])
@@ -139,10 +140,26 @@
       (:gaps options) (schema/fail! "Stacked lines interpolate across missing values; :gaps doesn't apply."
                                     {:key :gaps :value (:gaps options)}))))
 
+(defn- check-polar!
+  "Throw `ex-info {:key k}` for an option polar lines don't support (`coord` - the plot's `:coord`): `:interpolator`,
+  `:curve`, a stacked or stream `:position`, an area (`:fill`, `:fill-gradient`)."
+  [options coord]
+  (when (coord/polar? coord)
+    (let [problem (cond
+                    (:interpolator options) :interpolator
+                    (:curve options) :curve
+                    (not= :overlay (get options :position :overlay)) :position
+                    (:fill-gradient options) :fill-gradient
+                    (and (some? (:fill options)) (not= :none (:fill options))) :fill)]
+      (when problem
+        (schema/fail! (str "Polar lines are straight and unfilled: " problem " isn't supported with :coord :polar.")
+                      {:key :coord :value problem})))))
+
 (defn compute
   "Per panel: `{:lines [{:x [..] :y [..] :aesthetics}] :style style}` (`y` `nil` where the line breaks; a gradient
   line also has `:colors` - the color value of every point); extents, padding, `:na`, `:dropped`."
   [{:keys [options]} {:keys [groups mapping]} {:keys [theme plot-scales] :as env}]
+  (check-polar! options (:coord env))
   (let [st (style options theme)
         position (get options :position :overlay)
         continuous (group/continuous-color groups mapping env)
@@ -370,6 +387,7 @@
   [{:keys [options]} {:keys [lines style]} canvas {:keys [w h]} scales env]
   (when (seq lines)
     (let [projection (scale/projection scales)
+          geometry (scale/coord-geometry scales)
           y-scale (:y scales)
           y-horizontal? (scale/horizontal? :y y-scale)
           area {:baseline (curve/area-baseline y-scale w h) :horizontal? (not y-horizontal?)}
@@ -390,9 +408,13 @@
                 px (mapv #(.x ^Vec2 %) points)
                 py (mapv #(.y ^Vec2 %) points)
                 index-runs (polyline/finite-runs px py)
-                point-runs (if curved?
-                             (drawn-runs index-runs px py opts aesthetics)
-                             (mapv (fn [run] (mapv (fn [i] (curve/drawn-point [(px i) (py i)])) run)) index-runs))
+                point-runs (cond
+                             curved? (drawn-runs index-runs px py opts aesthetics)
+                             (:arcs geometry) (let [rp (scale/range-projection scales)
+                                                    range-points (mapv (fn [vx vy] (if (nil? vy) [##NaN ##NaN] (rp vx vy))) x y)]
+                                                (mapv (fn [run] (mapv curve/drawn-point (coord/line-path geometry (mapv range-points run) true)))
+                                                      index-runs))
+                             :else (mapv (fn [run] (mapv (fn [i] (curve/drawn-point [(px i) (py i)])) run)) index-runs))
                 st (assoc st :fill (polyline/area-color st false))]
             (cond
               colors

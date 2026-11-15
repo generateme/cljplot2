@@ -17,7 +17,9 @@
 
   Options: `:anchor` - the point of the text box placed at the position, `[h v]` (`h` one of `:left :center :right`,
   `v` one of `:top :middle :bottom`; default `[:center :middle]`); `:offset [dx dy]` - pixels, `dy` up (default
-  `[0 0]`); `:rotation` - degrees, clockwise (default 0; the anchor applies to the rotated text's bounding box);
+  `[0 0]`); `:rotation` - degrees, clockwise (default 0; the anchor applies to the rotated text's bounding box), or `:radial` -
+  in a polar plot each label along its angle, labels on the left half turned to read upright, anchored away from the
+  centre unless `:anchor` is given (0 in cartesian plots);
   `:font`, `:size`, `:font-style`, `:color` - over the text role `[:text :annotation]` (the text chart's theme style;
   a theme `[:chart :text]` entry is rejected); `:extent`, `:data` /
   `:mapping`. Text stays upright when the plot is flipped; only the anchor position enters the extents."
@@ -27,6 +29,7 @@
             [cljplot2.data.group :as group]
             [cljplot2.data.rows :as data]
             [cljplot2.graphics.measure :as measure]
+            [cljplot2.scale.coord :as coord]
             [cljplot2.scale.position :as scale]
             [cljplot2.schema :as schema]
             [cljplot2.theme :as theme])
@@ -34,6 +37,11 @@
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
+
+(defn- numeric-rotation
+  "The `:rotation` option in degrees: `:radial` (polar only) counts as 0."
+  [options]
+  (let [r (get options :rotation 0)] (if (number? r) r 0)))
 
 (defn- panel-position? [p] (and (vector? p) (= 2 (count p)) (= :panel (first p))))
 
@@ -62,7 +70,7 @@
                       (schema/nilable :text any?)
                       (schema/optional :anchor [:tuple [:enum :left :center :right] [:enum :top :middle :bottom]])
                       (schema/optional :offset [:tuple schema/finite schema/finite])
-                      (schema/optional :rotation schema/finite)
+                      (schema/optional :rotation [:or schema/finite [:= :radial]])
                       (schema/optional :select [:enum :last :first])))
    :mapping [:map]})
 
@@ -107,7 +115,7 @@
     (measure/call-with-scratch-canvas
      hint
      (fn [c]
-       (let [spec (merge {:kind :label :role :annotation :rotation (get options :rotation 0)} (select-keys options style-keys))
+       (let [spec (merge {:kind :label :role :annotation :rotation (numeric-rotation options)} (select-keys options style-keys))
              along (reduce max (map (fn [t] (let [^Vec2 size (measure/natural-size (assoc spec :text (str t)) {:canvas c :theme theme})]
                                               (if flip? (.y size) (.x size))))
                                     texts))
@@ -154,23 +162,38 @@
   [options theme]
   (merge {:color (get-in theme [:text :annotation :color])} (select-keys options style-keys)))
 
+(defn- radial-rotation
+  "Clockwise degrees turning a label along angle `theta` (radians, 0 up, clockwise), upright on the left half."
+  [^double theta]
+  (let [a (double (mod (- (m/degrees theta) 90.0) 360.0))]
+    (if (< 90.0 a 270.0) (- a 180.0) a)))
+
 (defn draw
   "Draw the labels of one panel through [[cljplot2.content.label/draw-at!]]; unplaceable positions are skipped."
   [_chart {:keys [groups options]} canvas _box scales env]
-  (let [anchor (get options :anchor [:center :middle])
+  (let [geometry (scale/coord-geometry scales)
+        radial? (and geometry (= :radial (:rotation options)))
         [dx dy] (get options :offset [0 0])
-        rotation (get options :rotation 0)
         [hk vk] (if (scale/flipped? scales) [:y :x] [:x :y])
         h-pixel (annotation/axis-pixel-fn (get scales hk))
-        v-pixel (annotation/axis-pixel-fn (get scales vk))]
+        v-pixel (annotation/axis-pixel-fn (get scales vk))
+        ;; range position -> [pixel x, pixel y, rotation, anchor]
+        place (if geometry
+                (fn [^double h ^double v]
+                  (let [^Vec2 p (coord/to-pixel geometry h v)]
+                    [(+ (.x p) (double dx)) (- (.y p) (double dy))
+                     (if radial? (radial-rotation h) (numeric-rotation options))
+                     (get options :anchor (if radial? (coord/outward-anchor h) [:center :middle]))]))
+                (let [rotation (numeric-rotation options)
+                      anchor (get options :anchor [:center :middle])]
+                  (fn [^double h ^double v] [(+ h (double dx)) (- v (double dy)) rotation anchor])))]
     (doseq [{:keys [labels aesthetics]} groups
             :let [st (group/style (base-style options (:theme env)) aesthetics scales (:theme env))]
             :when st
             {:keys [x y text]} labels
             :let [pos {:x x :y y}
-                  px (+ (double (h-pixel (pos hk))) (double dx))
-                  py (- (double (v-pixel (pos vk))) (double dy))]
-            :when (and (m/valid-double? px) (m/valid-double? py))]
+                  [px py rotation anchor] (place (double (h-pixel (pos hk))) (double (v-pixel (pos vk))))]
+            :when (and (m/valid-double? (double px)) (m/valid-double? (double py)))]
       (label/draw-at! canvas (merge {:kind :label :role :annotation :text (str text) :rotation rotation} st)
                       anchor px py env))))
 

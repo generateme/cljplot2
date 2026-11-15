@@ -136,6 +136,8 @@
                           (assoc-in [:dropped :color] (:dropped color-stats))
                           (cond-> (:na? color-stats) (update :na conj :color))))))))
 
+(declare draw-pixel-rect!)
+
 (defn draw
   "Draw the rects of one panel (whole-pixel edges), filled with the group's mapped `:color`, else the rect's literal
   or the style fill (with `:alpha`); a rect with an unplaceable end, or outside its color scale, is skipped."
@@ -144,8 +146,13 @@
         sw (double (:stroke-width style))
         pattern-fill (draw/pattern-fill-cache)
         x-horizontal? (scale/horizontal? :x (:x scales))
+        geometry (scale/coord-geometry scales)
         interval-of {:x (annotation/interval-fn (:x scales)) :y (annotation/interval-fn (:y scales))}
-        panel-side (fn [horizontal?] [0.0 (double (if horizontal? w h))])
+        ;; the whole extent along an axis: panel pixels, polar - the angular range or the radii
+        panel-side (fn [horizontal?] (cond
+                                       (and geometry horizontal?) (vec (sort (:theta geometry)))
+                                       geometry [(:inner-radius geometry) (:radius geometry)]
+                                       :else [0.0 (double (if horizontal? w h))]))
         side (fn [k horizontal? interval]
                (if interval
                  ((interval-of k) (first interval) (second interval))
@@ -165,17 +172,27 @@
             :when (and px py)]
       (let [[h0 h1] (if x-horizontal? px py)
             [v0 v1] (if x-horizontal? py px)
-            left (m/round (double h0)) top (m/round (double v0))
-            rw (- (m/round (double h1)) left) rh (- (m/round (double v1)) top)
             fill (with-alpha (or fill g-fill) (:alpha style))]
-        (when-not (theme/none? fill)
-          (c2d/set-color canvas fill)
-          (c2d/rect canvas left top rw rh)
-          (draw/fill-with-pattern! canvas (pattern-fill st fill) #(c2d/rect canvas left top rw rh)))
-        (when (and (not (theme/none? stroke)) (pos? sw))
-          (c2d/set-stroke-custom canvas {:size sw :join :miter})
-          (c2d/set-color canvas stroke)
-          (c2d/rect canvas left top rw rh true))))))
+        (if geometry
+          (do (c2d/set-stroke-custom canvas {:size sw :join :miter})
+              (draw/range-bar! canvas geometry [h0 v0] [h1 v1] (if (theme/none? fill) [0 0 0 0] fill)
+                               (if (pos? sw) stroke :none) sw (when-not (theme/none? fill) (pattern-fill st fill))))
+          (draw-pixel-rect! canvas h0 v0 h1 v1 fill st stroke sw pattern-fill))))))
+
+(defn- draw-pixel-rect!
+  "A rect between range (pixel) positions `h0..h1` x `v0..v1` (whole-pixel edges): fill with its pattern, stroke."
+  [canvas h0 v0 h1 v1 fill st stroke sw pattern-fill]
+  (let [left (m/round (double h0)) top (m/round (double v0))
+        rw (- (m/round (double h1)) left) rh (- (m/round (double v1)) top)
+        sw (double sw)]
+    (when-not (theme/none? fill)
+      (c2d/set-color canvas fill)
+      (c2d/rect canvas left top rw rh)
+      (draw/fill-with-pattern! canvas (pattern-fill st fill) #(c2d/rect canvas left top rw rh)))
+    (when (and (not (theme/none? stroke)) (pos? sw))
+      (c2d/set-stroke-custom canvas {:size sw :join :miter})
+      (c2d/set-color canvas stroke)
+      (c2d/rect canvas left top rw rh true))))
 
 (defn legend
   "Key glyph: a filled square (the entry's color, else the style fill, with `:alpha`) with the rect's stroke,

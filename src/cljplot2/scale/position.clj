@@ -28,6 +28,7 @@
             [wadogo.scale :as s]
             [wadogo.ticks.pretty-datetime :as pretty-datetime]
             [cljplot2.data.rows :as rows]
+            [cljplot2.scale.coord :as coord]
             [cljplot2.schema :as schema])
   (:import [fastmath.vector Vec2]
            [java.time LocalDateTime LocalTime]
@@ -463,14 +464,36 @@
   [finalized]
   (if finalized (forward-fn finalized) (fn ^double [_] ##NaN)))
 
-(defn projection
-  "Function of data `x`, `y` to the pixel point (`Vec2`) of the finalized position `scales`: the horizontal scale's
-  position gives the point's x, the vertical scale's its y (`:x` horizontal unless [[flipped?]]). A value the scale
-  can't place, or a missing scale, gives `##NaN` in that coordinate. Charts place marks only through it.
-  Builds the wadogo scales once; reuse the function for many points."
+(defn coord-geometry
+  "Polar geometry of the finalized position `scales` (`:coord` of either, see [[cljplot2.scale.coord/geometry]]);
+  `nil` - cartesian (range positions are pixels)."
+  [scales]
+  (or (:coord (:x scales)) (:coord (:y scales))))
+
+(defn range-projection
+  "Function of data `x`, `y` to its range point `[h v]` in the finalized position `scales`: the horizontal scale's
+  range position, then the vertical one's (pixels in cartesian plots - the same as [[projection]]; angle and radius
+  in polar ones, see [[cljplot2.scale.coord]]); `##NaN` where a scale can't place a value."
   [scales]
   (let [fx (forward-or-nan (:x scales))
         fy (forward-or-nan (:y scales))]
     (if (flipped? scales)
-      (fn ^Vec2 [x y] (Vec2. (double (fy y)) (double (fx x))))
-      (fn ^Vec2 [x y] (Vec2. (double (fx x)) (double (fy y)))))))
+      (fn [x y] [(double (fy y)) (double (fx x))])
+      (fn [x y] [(double (fx x)) (double (fy y))]))))
+
+(defn projection
+  "Function of data `x`, `y` to the pixel point (`Vec2`) of the finalized position `scales`: the horizontal scale's
+  position gives the point's x, the vertical scale's its y (`:x` horizontal unless [[flipped?]]); in a polar plot
+  they are the angle and radius, turned into the pixel by [[cljplot2.scale.coord/to-pixel]]. A value the scale
+  can't place, or a missing scale, gives `##NaN` in that coordinate. Charts place marks only through it.
+  Builds the wadogo scales once; reuse the function for many points."
+  [scales]
+  (let [fx (forward-or-nan (:x scales))
+        fy (forward-or-nan (:y scales))
+        geometry (coord-geometry scales)]
+    (cond
+      geometry (if (flipped? scales)
+                 (fn ^Vec2 [x y] (coord/to-pixel geometry (double (fy y)) (double (fx x))))
+                 (fn ^Vec2 [x y] (coord/to-pixel geometry (double (fx x)) (double (fy y)))))
+      (flipped? scales) (fn ^Vec2 [x y] (Vec2. (double (fy y)) (double (fx x))))
+      :else (fn ^Vec2 [x y] (Vec2. (double (fx x)) (double (fy y)))))))

@@ -17,6 +17,7 @@
             [cljplot2.data.rows :as data]
             [cljplot2.graphics.curve :as curve]
             [cljplot2.graphics.polyline :as polyline]
+            [cljplot2.scale.coord :as coord]
             [cljplot2.scale.aesthetic :as aesthetic]
             [cljplot2.scale.position :as scale]
             [cljplot2.schema :as schema])
@@ -125,10 +126,14 @@
   "Draw the segments of one panel, consecutive segments of one colour with one stroke setup; ends the scales can't
   place skip the segment."
   [_chart {:keys [segments style]} canvas _box scales env]
-  (let [projection (scale/projection scales)
+  (let [geometry (scale/coord-geometry scales)
+        point (if geometry
+                (scale/range-projection scales)
+                (let [projection (scale/projection scales)] (fn [vx vy] (let [^Vec2 p (projection vx vy)] [(.x p) (.y p)]))))
         theme (:theme env)
-        point (fn [vx vy] (let [^Vec2 p (projection vx vy)] [(.x p) (.y p)]))
-        placed? (fn [[[x0 y0] [x1 y1]]] (every? #(Double/isFinite (double %)) [x0 y0 x1 y1]))]
+        placed? (fn [[[x0 y0] [x1 y1]]] (every? #(Double/isFinite (double %)) [x0 y0 x1 y1]))
+        ;; polar: range ends to pixels - a chord, or an arc with :arcs
+        drawn (if geometry #(coord/line-path geometry % (:arcs geometry)) identity)]
     (doseq [{:keys [x y xend yend colors aesthetics]} segments
             :let [st (group/style style aesthetics scales theme)]
             :when st
@@ -136,7 +141,7 @@
                                                  x y xend yend (segment-colors colors (count x) st scales theme)))
             :let [color (second (first same-color))]
             :when (some? color)]
-      (polyline/stroke-runs! canvas (mapv #(mapv curve/drawn-point %) (filter placed? (map first same-color)))
+      (polyline/stroke-runs! canvas (mapv #(mapv curve/drawn-point (drawn %)) (filter placed? (map first same-color)))
                              (assoc st :color color)))))
 
 (defn legend

@@ -21,6 +21,10 @@
     labels, tick formats and theme `[:axis k]` keep their keys; only the finalized scales' `:direction` changes, and
     axes, grid lines, axis titles and charts follow it (charts draw through
     [[cljplot2.scale.position/projection]])
+  * `:coord` - `{:kind :polar ...}`: polar coordinates - the horizontal scale maps to angles, the vertical one to radii
+    (`:flip` swaps them; see [[cljplot2.scale.coord]]); polar guides inside the panel, no outer axes; only charts
+    declaring `:polar` in their `:coords` (bar, segment, scatter, line, text, rule, rect); not with `:aspect :iso` or
+    `:margins`
   * `:custom-grid` - a hand-written grid (see [[cljplot2.layout.grid]]) used instead of the generated one; only
     `:labels {:title t}` may accompany it (a title row above it). Items with `{:kind :plot :plot p}` content hold
     whole plots (see [[cljplot2.content.subplot]])
@@ -51,6 +55,7 @@
             [cljplot2.layout.grid :as grid]
             [cljplot2.graphics.measure :as measure]
             [cljplot2.layout.plot-grid :as plot-grid]
+            [cljplot2.scale.coord :as coord]
             [cljplot2.scale.position :as scale]
             [cljplot2.theme :as theme]
             ;; built-in content kinds (natural-size / draw-content methods)
@@ -236,7 +241,7 @@
   [[margin-stats]])."
   [{:keys [charts split theme groups scales flip] :as plot}]
   (let [env {:theme theme :na-level? (get groups :na true) :plot-scales scales :flip? (boolean flip)
-             :hint (get-in plot [:options :hint])}]
+             :hint (get-in plot [:options :hint]) :coord (:coord plot)}]
     (assoc plot
            :stats (mapv (fn [chart chart-split] ((:compute chart) chart chart-split env)) charts (:charts split))
            :margin-stats (margin-stats plot env))))
@@ -363,12 +368,18 @@
                       arrange (plot-grid/arrange-grid arrange labels theme)
                       (and custom-grid labels) (plot-grid/titled-custom-grid custom-grid labels theme)
                       custom-grid custom-grid
-                      :else (plot-grid/plot-grid (assoc plot :labels (effective-labels labels stats))))))
+                      :else (plot-grid/plot-grid (cond-> (assoc plot :labels (effective-labels labels stats))
+                                                   ;; polar guides are drawn inside the panel: no outer axes
+                                                   (coord/polar? (:coord plot))
+                                                   (update :scale-specs (fn [specs] (reduce (fn [acc k] (if (contains? acc k) (assoc-in acc [k :axis] false) acc))
+                                                                                           specs [:x :y]))))))))
 
 (defn- panel-content?
   "Is `content` a main panel (`:panel` content that isn't a plot margin's)?"
   [content]
   (and (= :panel (:kind content)) (nil? (:margin content))))
+
+(declare cartesian-scales polar-scales)
 
 (defn finalize-scales
   "Scales of `:scale-specs` finalized in panel-local coordinates for the reference panel of `layout` - the first
@@ -376,7 +387,8 @@
   range `[0 w]`, the vertical one `[h 0]`, each with `:direction` (`:horizontal` / `:vertical`); tick hint from the
   panel size along it and theme `[:axis k :tick-spacing]` (by scale key). All panels share these scales (they differ by at most 1 px in size).
   Before the first layout round (`layout` is `nil`) a provisional finalization is used: range `[0 1]`, 10 ticks.
-  Aesthetic scales are passed through unchanged (no pixel range).
+  Aesthetic scales are passed through unchanged (no pixel range). A polar plot (`:coord`) gets range-space scales
+  instead, see [[polar-scales]].
   Throws `ex-info` with `{:key :scales}` when the grid has no `:panel` content."
   [plot layout]
   (let [specs (into {} (filter (comp position-scales key)) (:scale-specs plot))
@@ -384,19 +396,79 @@
         panel (when (and layout (seq specs))
                 (or (grid/find-content-box (:grid plot) layout panel-content?)
                     (schema/fail! "Plot :scales need a :panel item in the grid." {:key :scales :in [:scales]})))]
-    (into (into {} (filter (comp aesthetic/dim? key)) (:scale-specs plot))
-          (map (fn [[k spec]]
-                    (let [horizontal? (= k horizontal)]
-                      [k (assoc (if-not panel
-                                  (scale/finalize spec [0.0 1.0] provisional-tick-hint)
-                                  (let [{:keys [w h]} panel
-                                        w (long w) h (long h)
-                                        spacing (double (get-in plot [:theme :axis k :tick-spacing]))]
-                                    (if horizontal?
-                                      (scale/finalize spec [0.0 (double w)] (scale/tick-hint w spacing))
-                                      (scale/finalize spec [(double h) 0.0] (scale/tick-hint h spacing)))))
-                                :direction (if horizontal? :horizontal :vertical))])))
-          specs)))
+    (if (and panel (coord/polar? (:coord plot)))
+      (into (into {} (filter (comp aesthetic/dim? key)) (:scale-specs plot)) (polar-scales plot specs horizontal panel))
+      (cartesian-scales plot specs horizontal panel))))
+
+(defn- cartesian-scales
+  "Finalized scales of [[finalize-scales]] in cartesian coordinates (and provisional polar ones, `panel` `nil`)."
+  [plot specs horizontal panel]
+  (into (into {} (filter (comp aesthetic/dim? key)) (:scale-specs plot))
+        (map (fn [[k spec]]
+               (let [horizontal? (= k horizontal)]
+                 [k (assoc (if-not panel
+                             (scale/finalize spec [0.0 1.0] provisional-tick-hint)
+                             (let [{:keys [w h]} panel
+                                   w (long w) h (long h)
+                                   spacing (double (get-in plot [:theme :axis k :tick-spacing]))]
+                               (if horizontal?
+                                 (scale/finalize spec [0.0 (double w)] (scale/tick-hint w spacing))
+                                 (scale/finalize spec [(double h) 0.0] (scale/tick-hint h spacing)))))
+                           :direction (if horizontal? :horizontal :vertical))])))
+        specs))
+
+(defn- theta-label-room
+  "Pixels kept around the circle of a polar panel for the angular tick labels of finalized `theta` (scale `k`): the
+  largest extent of a label away from the centre at its angle (`|sin a|·width + |cos a|·height` - labels sit
+  outside the circle, anchored away from it) plus the theme's tick length and label gap; 0 without labels or with
+  `:axis false`."
+  [plot k theta]
+  (let [labels (when (and theta (not (false? (:axis theta)))) (seq (map vector (:ticks theta) (:tick-labels theta))))]
+    (if-not labels
+      0.0
+      (let [forward (scale/forward-fn theta)]
+        (measure/call-with-scratch-canvas
+         (get-in plot [:options :hint])
+         (fn [c]
+           (+ (double (reduce max 0.0 (map (fn [[tick t]]
+                                             (let [^fastmath.vector.Vec2 size (measure/natural-size {:kind :label :role :tick-label :text t}
+                                                                                                    {:canvas c :theme (:theme plot)})
+                                                   a (double (forward tick))]
+                                               (if (m/valid-double? a)
+                                                 (+ (* (m/abs (m/sin a)) (.x size)) (* (m/abs (m/cos a)) (.y size)))
+                                                 0.0)))
+                                           labels)))
+              (double (get-in plot [:theme :axis k :label-gap]))
+              (double (get-in plot [:theme :axis k :tick-length])))))))))
+
+(defn- polar-scales
+  "Finalized position scales of a polar plot for its reference `panel` box (see [[cljplot2.scale.coord]]): the
+  horizontal scale (`horizontal` key) over the angular range (radians, ticks hinted from the circumference; a
+  continuous one neither padded nor niced unless the plot's scale sets `:expand` / `:nice`), the
+  vertical one over `[inner radius, radius]` - the radius half the panel's smaller side less the angular labels'
+  room; both carry `:direction` and the panel's polar geometry `:coord`."
+  [plot specs horizontal {:keys [w h]}]
+  (let [w (double w) h (double h)
+        coord-spec (:coord plot)
+        vertical (if (= horizontal :x) :y :x)
+        spacing (fn [k] (double (get-in plot [:theme :axis k :tick-spacing])))
+        [t0 t1 :as theta-range] (coord/theta-range coord-spec)
+        half (* 0.5 (m/min w h))
+        ;; a continuous angle spans the full circle by default: no padding, no nice (pies), unless the plot's scale asks
+        user (get-in plot [:scales horizontal])
+        theta (when-let [spec (get specs horizontal)]
+                (scale/finalize (cond-> spec
+                                  (not (contains? user :expand)) (dissoc :padding)
+                                  (not (contains? user :nice)) (assoc :nice false))
+                                theta-range (scale/tick-hint (* (m/abs (- (double t1) (double t0))) half) (spacing horizontal))))
+        radius (m/max 1.0 (- half (double (theta-label-room plot horizontal theta))))
+        geometry (coord/geometry coord-spec w h radius)
+        inner (double (:inner-radius geometry))
+        r (when-let [spec (get specs vertical)]
+            (scale/finalize spec [inner radius] (scale/tick-hint (- radius inner) (spacing vertical))))]
+    (cond-> {}
+      theta (assoc horizontal (assoc theta :direction :horizontal :coord geometry))
+      r (assoc vertical (assoc r :direction :vertical :coord geometry)))))
 
 (defn- solve-layout
   "Layout of `plot`'s `:grid`: repeat measure -> solve -> finalize scales until item measurements stop changing, at
@@ -568,6 +640,7 @@
    [:draw schema/function]
    (schema/nilable :legend schema/function)
    (schema/optional :inherit-mapping [:enum :all :facets])
+   (schema/optional :coords [:set [:enum :cartesian :polar]])
    (schema/nilable :schema chart-schemas)])
 
 (def scales-schema
@@ -603,6 +676,7 @@
    (schema/nilable :legend schema/bool)
    (schema/nilable :aspect [:enum :iso])
    (schema/nilable :flip schema/bool)
+   (schema/nilable :coord coord/coord-schema)
    (schema/nilable :labels plot-grid/labels-schema)
    (schema/nilable :custom-grid :map)
    (schema/nilable :arrange plot-grid/arrange-schema)
@@ -630,7 +704,7 @@
 (defn- rule-errors
   "Errors of the rules across plot keys (for a plot whose keys are valid): facet mappings, scales without a mapping,
   `:custom-grid` / `:arrange` combinations (with labels, `:aspect :iso` or `:flip`)."
-  [{:keys [scales labels custom-grid arrange aspect flip] :as plot}]
+  [{:keys [scales labels custom-grid arrange aspect flip charts] :as plot}]
   (let [mappings (merged-mappings plot)
         dim-sets (distinct (remove empty? (map facet/facet-dims mappings)))
         error (fn [in value message] {:in in :value value :message message})]
@@ -654,6 +728,13 @@
        [(error [:aspect] aspect "iso needs the generated grid, not :custom-grid or :arrange")])
      (when (and flip (or custom-grid arrange))
        [(error [:flip] flip "flip needs the generated grid, not :custom-grid or :arrange")])
+     (when (coord/polar? (:coord plot))
+       (concat
+        (when (= :iso aspect) [(error [:coord] (:coord plot) "polar coordinates can't be combined with :aspect :iso")])
+        (when (seq (:margins plot)) [(error [:coord] (:coord plot) "polar coordinates can't be combined with :margins")])
+        (keep-indexed (fn [i c] (when-not (contains? (get c :coords #{:cartesian}) :polar)
+                                  (error [:charts i] (:kind c) (str "chart " (:kind c) " doesn't support polar coordinates"))))
+                      charts)))
      (when (or custom-grid arrange)
        (for [k (keys labels) :when (not= k :title)]
          (error [:labels k] (get labels k) "only :title is allowed with :custom-grid or :arrange")))

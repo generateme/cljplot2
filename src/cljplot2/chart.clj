@@ -2,6 +2,10 @@
   "Charts. A chart value is a plain map `{:kind :options :compute :draw :legend :schema}` made by a constructor;
   `:compute` and `:draw` are top-level functions, so chart values print and compare as data.
 
+  `:coords` (optional, default `#{:cartesian}`) - the coordinate systems the chart draws in (plot `:coord`, see
+  [[cljplot2.scale.coord]]); polar charts: [[bar]], [[segment]], [[scatter]], [[line]], [[text]], [[rule]],
+  [[rect]].
+
   `:schema` (optional for user charts) - `{:options s :style s :mapping s}` malli schemas, checked by `build` before
   any stage runs: `:options` against the chart's options, `:mapping` against the plot mapping merged with the chart's,
   `:style` against theme `[:chart kind]` (built-in kinds: [[builtin-styles]], always). Charts don't validate their
@@ -91,6 +95,11 @@
    :candlestick (:style candlestick/schemas)
    :bar (:style bar/schemas)})
 
+(defn- polar
+  "Chart value `v` drawing in polar coordinates too."
+  [v]
+  (assoc v :coords #{:cartesian :polar}))
+
 (defn- annotation-value
   "Chart value of an annotation chart: it inherits only the facet keys of the plot mapping."
   [kind compute draw legend schema options]
@@ -99,7 +108,7 @@
 (defn scatter
   "Scatter chart, see [[cljplot2.chart.scatter]]."
   ([] (scatter {}))
-  ([options] (chart-value :scatter scatter/compute scatter/draw scatter/legend scatter/schemas options)))
+  ([options] (polar (chart-value :scatter scatter/compute scatter/draw scatter/legend scatter/schemas options))))
 
 (defn histogram
   "Histogram of `:x`, see [[cljplot2.chart.histogram]]."
@@ -114,7 +123,7 @@
 (defn line
   "Line through `(:x, :y)` points, see [[cljplot2.chart.line]]."
   ([] (line {}))
-  ([options] (chart-value :line line/compute line/draw line/legend line/schemas options)))
+  ([options] (polar (chart-value :line line/compute line/draw line/legend line/schemas options))))
 
 (defn ribbon
   "Band between `:ymin` and `:ymax` along `:x`, see [[cljplot2.chart.ribbon]]."
@@ -131,7 +140,7 @@
   "Segments from `(:x, :y)` to `(:xend, :yend)` (an end literal, mapped or the start coordinate - lollipops with
   `{:yend 0}`), see [[cljplot2.chart.segment]]."
   ([] (segment {}))
-  ([options] (chart-value :segment segment/compute segment/draw segment/legend segment/schemas options)))
+  ([options] (polar (chart-value :segment segment/compute segment/draw segment/legend segment/schemas options))))
 
 (defn candlestick
   "Candlesticks (or OHLC bars) of `:open :high :low :close` per `:x`, see [[cljplot2.chart.candlestick]]."
@@ -142,7 +151,7 @@
   "Bars of `:x` per `:y` level and group (`:stat` sum, mean, median, a function or a count measure; dodged, stacked,
   normalized, mirrored), see [[cljplot2.chart.bar]] and [[cljplot2.data.strip]]."
   ([] (bar {}))
-  ([options] (chart-value :bar bar/compute bar/draw bar/legend bar/schemas options)))
+  ([options] (polar (chart-value :bar bar/compute bar/draw bar/legend bar/schemas options))))
 
 (defn treemap
   "Treemap of `:value` over the `:hierarchy` levels, see [[cljplot2.chart.treemap]]."
@@ -190,12 +199,12 @@
   "Reference lines (`:x`, `:y`, `:slope` / `:intercept`), see [[cljplot2.chart.rule]] and
   [[cljplot2.data.annotation]]."
   ([] (rule {}))
-  ([options] (annotation-value :rule rule/compute rule/draw rule/legend rule/schemas options)))
+  ([options] (polar (annotation-value :rule rule/compute rule/draw rule/legend rule/schemas options))))
 
 (defn rect
   "Rectangles and bands (`:x [a b]`, `:y [a b]`), see [[cljplot2.chart.rect]] and [[cljplot2.data.annotation]]."
   ([] (rect {}))
-  ([options] (annotation-value :rect rect/compute rect/draw rect/legend rect/schemas options)))
+  ([options] (polar (annotation-value :rect rect/compute rect/draw rect/legend rect/schemas options))))
 
 (defn function
   "Curves of functions (`:f` - y = f(x), `:parametric` - [x y] = f(t)) sampled across the panel, see
@@ -207,4 +216,4 @@
 (defn text
   "Text labels at positions, see [[cljplot2.chart.text]] and [[cljplot2.data.annotation]]."
   ([] (text {}))
-  ([options] (annotation-value :text text/compute text/draw text/legend text/schemas options)))
+  ([options] (polar (annotation-value :text text/compute text/draw text/legend text/schemas options))))

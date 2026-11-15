@@ -20,6 +20,7 @@
             [cljplot2.data.rows :as data]
             [cljplot2.graphics.draw :as draw]
             [cljplot2.graphics.polyline :as polyline]
+            [cljplot2.scale.coord :as coord]
             [cljplot2.scale.position :as scale]
             [cljplot2.schema :as schema])
   (:import [fastmath.vector Vec2]))
@@ -64,6 +65,9 @@
   "Literal: `{:rules [{:xs :ys :ablines}] :style st}` in every panel, extents of `:x` / `:y`. Data: per panel one
   rule set per group (with `:aesthetics`); rows with an invalid value of a mapped key are skipped."
   [{:keys [options]} {:keys [mapping] :as chart-split} {:keys [theme] :as env}]
+  (when (and (coord/polar? (:coord env)) (or (some? (:slope options)) (some? (:intercept options))
+                                             (some? (:slope mapping)) (some? (:intercept mapping))))
+    (schema/fail! "Rule :slope / :intercept lines aren't supported with :coord :polar." {:key :coord :value :slope}))
   (let [st (style options theme)
         many (fn [v] (annotation/as-vector v #(not (vector? %))))]
     (if (annotation/literal? options position-keys)
@@ -102,13 +106,22 @@
         y-pixel (annotation/pixel-fn (:y scales))
         x-horizontal? (scale/horizontal? :x (:x scales))
         y-horizontal? (scale/horizontal? :y (:y scales))
-        across! (fn [horizontal-axis? p]
-                  (when (m/valid-double? p)
-                    (let [p (draw/pixel-center p)]
-                      ;; a position on a horizontal axis is a vertical line
-                      (if horizontal-axis?
-                        (c2d/line canvas p 0.0 p (double h))
-                        (c2d/line canvas 0.0 p (double w) p)))))]
+        geometry (scale/coord-geometry scales)
+        across! (if geometry
+                  ;; polar: a position on the angular (horizontal) axis is a spoke, on the radial one a circle
+                  (fn [horizontal-axis? p]
+                    (when (m/valid-double? p)
+                      (c2d/path canvas (if horizontal-axis?
+                                         (coord/line-path geometry [[p (:inner-radius geometry)] [p (:radius geometry)]] false)
+                                         (coord/circle-path geometry p))
+                                false true)))
+                  (fn [horizontal-axis? p]
+                    (when (m/valid-double? p)
+                      (let [p (draw/pixel-center p)]
+                        ;; a position on a horizontal axis is a vertical line
+                        (if horizontal-axis?
+                          (c2d/line canvas p 0.0 p (double h))
+                          (c2d/line canvas 0.0 p (double w) p))))))]
     (doseq [{:keys [xs ys ablines aesthetics]} rules
             :let [st (group/style style aesthetics scales (:theme env))]
             :when (and st (polyline/set-style! canvas st))]

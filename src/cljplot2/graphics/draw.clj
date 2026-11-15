@@ -5,6 +5,7 @@
             [fastmath.core :as m]
             [cljplot2.graphics.measure :as measure]
             [cljplot2.graphics.pattern :as pattern]
+            [cljplot2.scale.coord :as coord]
             [cljplot2.scale.position :as scale]
             [cljplot2.schema :as schema]
             [cljplot2.theme :as theme])
@@ -157,6 +158,24 @@
        (when (and (pos? stroke-width) (not (theme/none? stroke)))
          (c2d/set-color canvas stroke)
          (c2d/rect canvas x y w h true))))))
+
+(defn range-bar!
+  "[[bar!]] of the range rectangle with corners `[h0 v0]` and `[h1 v1]` (see [[cljplot2.scale.coord]]): in cartesian
+  plots (`geometry` `nil`) the pixel rectangle itself; in polar ones (`geometry` - the panel's polar geometry) the
+  annular sector, filled with `fill` and the pattern of `pattern-fill`, outlined with `stroke` when `stroke-width`
+  is positive."
+  [canvas geometry [h0 v0] [h1 v1] fill stroke stroke-width pattern-fill]
+  (if-not geometry
+    (bar! canvas (Vec2. (double h0) (double v0)) (Vec2. (double h1) (double v1)) fill stroke stroke-width pattern-fill)
+    (let [polygon (coord/rect-path geometry h0 v0 h1 v1)
+          stroke-width (double stroke-width)]
+      (when (every? (fn [[x y]] (and (m/valid-double? (double x)) (m/valid-double? (double y)))) polygon)
+        (c2d/set-color canvas fill)
+        (c2d/path canvas polygon true false)
+        (fill-with-pattern! canvas pattern-fill #(c2d/path canvas polygon true false))
+        (when (and (pos? stroke-width) (not (theme/none? stroke)))
+          (c2d/set-color canvas stroke)
+          (c2d/path canvas polygon true true))))))
 
 (defn bar-key!
   "Legend key glyph of a bar chart (histogram, bar): a filled square inset in `box` with its pattern (see

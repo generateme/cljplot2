@@ -53,6 +53,7 @@
             [cljplot2.data.shingle :as shingle]
             [cljplot2.scale.aesthetic :as aesthetic]
             [cljplot2.graphics.measure :as measure]
+            [cljplot2.scale.coord :as coord]
             [cljplot2.scale.position :as scale]
             [cljplot2.schema :as schema])
   (:import [fastmath.vector Vec2]))
@@ -305,8 +306,11 @@
   `:x` scale and the cross coordinate (placement range `[-0.5 0.5]`, positive toward higher `:y`) across it;
   `:span` - the pixel length of the whole cross range; `:value-pixel` - `(fn [value] -> px)` along the value axis;
   `:centre` - `(fn [level] -> px)` of the cross range's centre; `:sign` - the pixel direction of increasing `:y`;
-  `:step` - the band step in pixels (`:band`, else `nil`). A level or value the scales can't place gives `##NaN`
-  coordinates. Flip-aware: the cross axis is the `:y` direction (horizontal when flipped). `:bottom` without a `:y`
+  `:step` - the band step in pixels (`:band`, else `nil`); `:range-point` - `(fn [value level cross] -> [h v])`, the
+  point in range space (pixels in cartesian plots, angle and radius in polar ones, see [[cljplot2.scale.coord]]),
+  `:geometry` - the polar geometry or `nil`. In a polar plot range lengths and `:step` are in range units (radians
+  across angles). A level or value the scales can't place gives `##NaN` coordinates. Flip-aware: the cross axis is
+  the `:y` direction (horizontal when flipped). `:bottom` without a `:y`
   scale is placed as `:center`.
   Throws `ex-info {:key :place}` for `:band` without a `:bands` `:y` scale, `{:at v}` and `:bottom` on a `:bands` one."
   [{:keys [w h]} scales options place]
@@ -317,13 +321,24 @@
         y-scale (:y scales)
         fy (when y-scale (scale/forward-fn y-scale))
         cross-horizontal? (scale/flipped? scales)
-        length (double (if cross-horizontal? w h))
-        ;; pixel direction of increasing :y
-        sign (if y-scale
-               (let [[a b] (:range y-scale)] (if (< (double b) (double a)) -1.0 1.0))
-               (if cross-horizontal? 1.0 -1.0))
+        polar (scale/coord-geometry scales)
+        ;; polar: the cross range is the y scale's range, else the angular / radial extent of the panel's circle
+        [e0 e1] (when polar
+                  (mapv double (or (:range y-scale)
+                                   (if cross-horizontal? (:theta polar) [(:inner-radius polar) (:radius polar)]))))
+        length (double (cond polar (m/abs (- (double e1) (double e0))) cross-horizontal? w :else h))
+        ;; range direction of increasing :y
+        sign (double (cond
+                       y-scale (let [[a b] (:range y-scale)] (if (< (double b) (double a)) -1.0 1.0))
+                       polar (if (< (double e1) (double e0)) -1.0 1.0)
+                       :else (if cross-horizontal? 1.0 -1.0)))
+        ;; range position of the cross range's low-value end and of its middle
+        low (double (cond polar e0 (pos? sign) 0.0 :else length))
+        middle (if polar (* 0.5 (+ (double e0) (double e1))) (* 0.5 length))
         width (double (get options :width 0.8))
-        thickness (double (get options :thickness (if (= :edge place) 8.0 20.0)))
+        thickness (let [t (double (get options :thickness (if (= :edge place) 8.0 20.0)))]
+                    ;; pixels; across angles at the outer radius
+                    (if (and polar cross-horizontal?) (/ t (double (:radius polar))) t))
         geometry (when (= :band place)
                    (or (scale/band-geometry y-scale)
                        (schema/fail! "Strip :place :band needs a :bands :y scale." {:key :place :value (:kind y-scale)})))
@@ -333,17 +348,22 @@
         centre-and-span (cond
                           (= :band place) (fn [level] [(if fy (fy level) ##NaN) (* width (double bandwidth))])
                           (map? place) (let [c (if fy (fy (:at place)) ##NaN)] (constantly [c thickness]))
-                          (= :center place) (constantly [(* 0.5 length) (* width length)])
-                          (= :edge place) (let [low (if (pos? sign) 0.0 length)]
-                                            (constantly [(+ low (* sign 0.5 thickness)) thickness]))
-                          (= :bottom place) (let [low (if (pos? sign) 0.0 length)
-                                                  zero (double (fy 0.0))]
-                                              (constantly [(* 0.5 (+ low zero)) (* width (m/abs (- zero low)))])))]
-    {:point (fn ^Vec2 [value level ^double cross]
-              (let [[c span] (centre-and-span level)
-                    p (+ (double c) (* sign cross (double span)))
-                    v (double (fx value))]
-                (if cross-horizontal? (Vec2. p v) (Vec2. v p))))
+                          (= :center place) (constantly [middle (* width length)])
+                          (= :edge place) (constantly [(+ low (* sign 0.5 thickness)) thickness])
+                          (= :bottom place) (let [zero (double (fy 0.0))]
+                                              (constantly [(* 0.5 (+ low zero)) (* width (m/abs (- zero low)))])))
+        range-point (fn [value level ^double cross]
+                      (let [[c span] (centre-and-span level)
+                            p (+ (double c) (* sign cross (double span)))
+                            v (double (fx value))]
+                        (if cross-horizontal? [p v] [v p])))]
+    {:point (if polar
+              (fn ^Vec2 [value level ^double cross]
+                (let [[h v] (range-point value level cross)] (coord/to-pixel polar (double h) (double v))))
+              (fn ^Vec2 [value level ^double cross]
+                (let [[h v] (range-point value level cross)] (Vec2. (double h) (double v)))))
+     :range-point range-point
+     :geometry polar
      :span (fn ^double [level] (double (second (centre-and-span level))))
      :value-pixel (fn ^double [value] (double (fx value)))
      :centre (fn ^double [level] (double (first (centre-and-span level))))
@@ -382,11 +402,20 @@
                         0.0)))]
          {:x [(room -1.0) (room 1.0)]})))))
 
+(declare draw-polar-end-labels! draw-cartesian-end-labels!)
+
 (defn draw-end-labels!
   "Draw end labels `labels` - `[{:level l :slot s :at v :side d :text t} ...]` - each just past value `v` along the
   value axis, toward increasing values (`d` 1) or decreasing ones (`d` -1), or centred on `v` (`d` 0, e.g. inside a
   stacked bar; no room needed), centred on its slot (text role `:annotation`; optional `:color` overrides the role's).
-  `pl` - the chart's [[placement]]; [[end-label-room]] keeps room for them past the data."
+  `pl` - the chart's [[placement]]; [[end-label-room]] keeps room for them past the data. Polar plots: past the value
+  along the radius (anchored away from the centre) or along the angle (centred), see [[cljplot2.scale.coord]]."
+  [canvas {:keys [point geometry] :as pl} labels scales env]
+  (if geometry
+    (draw-polar-end-labels! canvas pl labels scales env)
+    (draw-cartesian-end-labels! canvas pl labels scales env)))
+
+(defn- draw-cartesian-end-labels!
   [canvas {:keys [point]} labels scales env]
   (let [x-scale (:x scales)
         [r0 r1] (:range x-scale)
@@ -405,6 +434,24 @@
                   y (if horizontal? (.y p) (+ (.y p) (* dir pad)))]
             :when (and (m/valid-double? x) (m/valid-double? y))]
       (label/draw-at! canvas (cond-> {:kind :label :role :annotation :text text} color (assoc :color color)) anchor x y env))))
+
+(defn- draw-polar-end-labels!
+  [canvas {:keys [range-point geometry]} labels scales env]
+  (let [x-scale (:x scales)
+        radial? (not (scale/horizontal? :x x-scale))
+        [r0 r1] (:range x-scale)
+        up (if (< (double r1) (double r0)) -1.0 1.0)
+        ;; the gap in range units: pixels along the radius, radians at the outer radius along the angle
+        pad (if radial? n-label-gap (/ n-label-gap (double (:radius geometry))))]
+    (doseq [{:keys [level slot at side text color]} labels
+            :let [dir (* up (double side))
+                  [h v] (range-point at level (in-slot slot 0.0))
+                  [h v] (if radial? [h (+ (double v) (* dir pad))] [(+ (double h) (* dir pad)) v])
+                  ^Vec2 p (coord/to-pixel geometry (double h) (double v))
+                  anchor (if (and radial? (not (zero? dir))) (coord/outward-anchor (double h)) [:center :middle])]
+            :when (and (m/valid-double? (.x p)) (m/valid-double? (.y p)))]
+      (label/draw-at! canvas (cond-> {:kind :label :role :annotation :text text} color (assoc :color color))
+                      anchor (.x p) (.y p) env))))
 
 (defn n-label-room
   "`:padding-px` of a strip chart (`items` - `{panel [item ...]}`) with `:n-label`: room past the largest values for
