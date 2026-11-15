@@ -23,6 +23,7 @@
             [cljplot2.data.annotation :as annotation]
             [cljplot2.data.group :as group]
             [cljplot2.data.rows :as data]
+            [cljplot2.graphics.draw :as draw]
             [cljplot2.scale.aesthetic :as aesthetic]
             [cljplot2.scale.position :as scale]
             [cljplot2.schema :as schema]
@@ -32,9 +33,10 @@
 (set! *unchecked-math* :warn-on-boxed)
 
 (def ^:private style-entries
-  [(schema/optional :fill schema/color)
-   (schema/optional :stroke-color schema/color)
-   (schema/optional :stroke-width schema/non-neg)])
+  (into [(schema/optional :fill schema/color)
+         (schema/optional :stroke-color schema/color)
+         (schema/optional :stroke-width schema/non-neg)]
+        draw/pattern-style-entries))
 
 (def ^:private end-schema [:maybe annotation/position])
 (def ^:private interval-schema [:tuple end-schema end-schema])
@@ -60,7 +62,7 @@
   "Theme style under the options; a vector of fills (literal, per rect) leaves the theme fill as the base."
   [options theme]
   (merge (get-in theme [:chart :rect])
-         (select-keys options [:stroke-color :stroke-width :alpha])
+         (select-keys options [:stroke-color :stroke-width :alpha :pattern :pattern-color])
          (when (schema/color? (:fill options)) (select-keys options [:fill]))))
 
 (defn- with-alpha
@@ -149,13 +151,13 @@
                  (panel-side horizontal?)))
         group-fill (memoize (fn [aesthetics]
                               (when-let [st (group/style style aesthetics scales (:theme env))]
-                                [(if (contains? aesthetics :color) (:color st) (:fill st))])))
+                                [(if (contains? aesthetics :color) (:color st) (:fill st)) st])))
         na (get-in env [:theme :palette :na])
         value-color (if-let [scale (:color scales)] (aesthetic/attribute-fn :color scale na) (constantly na))]
     (doseq [{:keys [x y fill aesthetics] :as r} rects
-            :let [[g-fill :as styled] (if (contains? r :color-value)
-                                        (some-> (value-color (:color-value r)) vector)
-                                        (group-fill aesthetics))]
+            :let [[g-fill st :as styled] (if (contains? r :color-value)
+                                           (some-> (value-color (:color-value r)) (vector style))
+                                           (group-fill aesthetics))]
             :when styled
             :let [px (side :x x-horizontal? x)
                   py (side :y (not x-horizontal?) y)]
@@ -167,7 +169,8 @@
             fill (with-alpha (or fill g-fill) (:alpha style))]
         (when-not (theme/none? fill)
           (c2d/set-color canvas fill)
-          (c2d/rect canvas left top rw rh))
+          (c2d/rect canvas left top rw rh)
+          (draw/fill-with-pattern! canvas (draw/pattern-fill st fill) #(c2d/rect canvas left top rw rh)))
         (when (and (not (theme/none? stroke)) (pos? sw))
           (c2d/set-stroke-custom canvas {:size sw :join :miter})
           (c2d/set-color canvas stroke)
@@ -177,7 +180,7 @@
   "Key glyph: a filled square (the entry's color, else the style fill, with `:alpha`) with the rect's stroke,
   centred in `box`."
   [{:keys [options]} attributes canvas {:keys [x y w h]} env]
-  (let [st (style options (:theme env))
+  (let [st (merge (style options (:theme env)) (select-keys attributes [:pattern]))
         fill (with-alpha (get attributes :color (:fill st)) (:alpha st))
         stroke (:stroke-color st)
         sw (double (:stroke-width st))
@@ -186,7 +189,8 @@
         top (m/round (+ (double y) (* 0.5 (- (double h) side))))]
     (when-not (theme/none? fill)
       (c2d/set-color canvas fill)
-      (c2d/rect canvas left top side side))
+      (c2d/rect canvas left top side side)
+      (draw/fill-with-pattern! canvas (draw/pattern-fill st fill) #(c2d/rect canvas left top side side)))
     (when (and (not (theme/none? stroke)) (pos? sw))
       (c2d/set-stroke-custom canvas {:size sw :join :miter})
       (c2d/set-color canvas stroke)

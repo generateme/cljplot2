@@ -49,12 +49,13 @@
 (set! *unchecked-math* :warn-on-boxed)
 
 (def ^:private style-entries
-  [(schema/optional :color schema/solid-color)
-   (schema/optional :stroke-color draw/stroke-color)
-   (schema/optional :stroke-width schema/non-neg)
-   (schema/optional :alpha schema/fraction)
-   (schema/optional :zero-line-color schema/color)
-   (schema/optional :zero-line-width schema/non-neg)])
+  (into [(schema/optional :color schema/solid-color)
+         (schema/optional :stroke-color draw/stroke-color)
+         (schema/optional :stroke-width schema/non-neg)
+         (schema/optional :alpha schema/fraction)
+         (schema/optional :zero-line-color schema/color)
+         (schema/optional :zero-line-width schema/non-neg)]
+        draw/pattern-style-entries))
 
 (def schemas
   "Schemas of the histogram: `:style` (theme `[:chart :histogram]`), `:options`, `:mapping` (merged)."
@@ -73,7 +74,7 @@
 
 (defn- style
   [options theme]
-  (merge (get-in theme [:chart :histogram]) (select-keys options [:color :stroke-color :stroke-width :alpha :zero-line-color :zero-line-width])))
+  (merge (get-in theme [:chart :histogram]) (select-keys options [:color :stroke-color :stroke-width :alpha :zero-line-color :zero-line-width :pattern :pattern-color])))
 
 (defn- bin-counts
   "Counts of `values` per bin of `brks` (last bin closed) and the number outside."
@@ -211,7 +212,7 @@
               :when (pos? (double h))
               :let [a (point x0 level side 0.0) b (point x1 level side (/ (double h) top))]
               :when (and (ok? a) (ok? b))]
-        (draw/bar! canvas a b fill (draw/outline-color (:stroke-color st) fill) stroke-width)))))
+        (draw/bar! canvas a b fill (draw/outline-color (:stroke-color st) fill) stroke-width (draw/pattern-fill st fill))))))
 
 (defn draw
   "Draw the bars of one panel; grouped overlay bars get fill alpha `:alpha`; empty bins, bars under half a pixel and
@@ -230,12 +231,12 @@
                 :when st]
           (let [{left :x top :y w :w h :h} (draw/rect-of projection x0 y0 x1 y1)
                 fill (:color st)
-                stroke (draw/outline-color (:stroke-color st) fill)]
+                stroke (draw/outline-color (:stroke-color st) fill)
+                drawn-fill (if translucent? (c/set-alpha fill (* 255.0 (double (:alpha style)))) fill)]
             (when (draw/visible-bar? (double w) (double h))
-              (c2d/set-color canvas (if translucent?
-                                      (c/set-alpha fill (* 255.0 (double (:alpha style))))
-                                      fill))
+              (c2d/set-color canvas drawn-fill)
               (c2d/rect canvas left top w h)
+              (draw/fill-with-pattern! canvas (draw/pattern-fill st drawn-fill) #(c2d/rect canvas left top w h))
               (when (and (pos? stroke-width) (not (theme/none? stroke)))
                 (c2d/set-color canvas stroke)
                 (c2d/rect canvas left top w h true)))))
@@ -246,5 +247,5 @@
   "Key glyph: a filled square (outlined by `:stroke-color`) inset in `box`; with a mapped `:color` and `:overlay` position (the
   groups' bars are translucent) the fill gets `:alpha` too."
   [{:keys [options]} attributes canvas box env]
-  (draw/bar-key! canvas box (merge (style options (:theme env)) (select-keys attributes [:color]))
+  (draw/bar-key! canvas box (merge (style options (:theme env)) (select-keys attributes [:color :pattern]))
                  (and (contains? attributes :color) (= :overlay (get options :position :overlay)))))

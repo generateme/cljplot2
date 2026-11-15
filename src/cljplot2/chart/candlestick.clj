@@ -17,6 +17,7 @@
   candles draw nothing into their legend keys)."
   (:require [clojure2d.core :as c2d]
             [cljplot2.data.rows :as data]
+            [cljplot2.graphics.draw :as draw]
             [cljplot2.graphics.polyline :as polyline]
             [cljplot2.scale.aesthetic :as aesthetic]
             [cljplot2.scale.position :as scale]
@@ -37,7 +38,10 @@
    (schema/optional :down-color schema/color)
    (schema/optional :body-width schema/fraction)
    (schema/optional :wick-width schema/non-neg)
-   (schema/optional :stroke-color schema/color)])
+   (schema/optional :stroke-color schema/color)
+   (schema/optional :up-pattern schema/pattern)
+   (schema/optional :down-pattern schema/pattern)
+   (schema/optional :pattern-color draw/stroke-color)])
 
 (def ^:private value-keys [:open :high :low :close])
 
@@ -53,7 +57,8 @@
 
 (defn- style
   [options theme]
-  (merge (get-in theme [:chart :candlestick]) (select-keys options [:up-color :down-color :body-width :wick-width :stroke-color])))
+  (merge (get-in theme [:chart :candlestick]) (select-keys options [:up-color :down-color :body-width :wick-width :stroke-color :up-pattern
+                                                                 :down-pattern :pattern-color])))
 
 (defn- finite? [v] (and (number? v) (Double/isFinite (double v))))
 
@@ -142,7 +147,8 @@
       (doseq [[c a] (map vector candles xs)
               :let [a (double a)
                     [^double o ^double h ^double l ^double cl] (mapv #(double (across (projection (:x c) (% c)))) value-keys)
-                    color (if (>= (double (:close c)) (double (:open c))) (:up-color style) (:down-color style))]
+                    up? (>= (double (:close c)) (double (:open c)))
+                    color (if up? (:up-color style) (:down-color style))]
               :when (every? #(Double/isFinite (double %)) [a o h l cl])]
         (if (= :ohlc kind)
           (do (stroke! canvas color wick [(point a l) (point a h)])
@@ -155,6 +161,11 @@
                       [rx ry rw rh] (if flipped? [lo (- a half) span (* 2.0 half)] [(- a half) lo (* 2.0 half) span])]
                   (c2d/set-color canvas color)
                   (c2d/rect canvas rx ry rw rh)
+                  (draw/fill-with-pattern! canvas
+                                           (draw/pattern-fill {:pattern (if up? (:up-pattern style) (:down-pattern style))
+                                                               :pattern-color (:pattern-color style)}
+                                                              color)
+                                           #(c2d/rect canvas rx ry rw rh))
                   (when-not (theme/none? (:stroke-color style))
                     (c2d/set-stroke canvas 1.0)
                     (c2d/set-color canvas (:stroke-color style))

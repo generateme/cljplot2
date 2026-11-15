@@ -136,7 +136,7 @@
      :stats (into (vec stats) (mapcat :stats sides))}))
 
 (defn legends
-  "Legend contents of a plot built up to `:scale-specs`, in aesthetic order (`:color`, `:shape`, `:size`, `:dash`); empty when
+  "Legend contents of a plot built up to `:scale-specs`, in aesthetic order (`:color`, `:shape`, `:size`, `:dash`, `:pattern`); empty when
   the plot's `:legend` is `false` or nothing with a legend is mapped. Keys draw the glyphs of [[legend-charts]] (margin
   charts included)."
   [{:keys [scale-specs theme legend] :as plot}]

@@ -4,10 +4,12 @@
             [clojure2d.core :as c2d]
             [fastmath.core :as m]
             [cljplot2.graphics.measure :as measure]
+            [cljplot2.graphics.pattern :as pattern]
             [cljplot2.scale.position :as scale]
             [cljplot2.schema :as schema]
             [cljplot2.theme :as theme])
-  (:import [fastmath.vector Vec2]))
+  (:import [fastmath.vector Vec2]
+           [java.awt Graphics2D TexturePaint]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -16,10 +18,44 @@
   "Schema of a filled mark's `:stroke-color`: a color, `:none` (no outline) or `:darker` (the darkened fill)."
   [:or [:= :darker] schema/color])
 
+(def pattern-style-entries
+  "Style map entries of a filled chart's pattern: `:pattern` (see [[cljplot2.schema/pattern]]) and `:pattern-color`
+  (the ink: a color or `:darker`, see [[pattern-ink]])."
+  [(schema/optional :pattern schema/pattern)
+   (schema/optional :pattern-color stroke-color)])
+
 (defn outline-color
   "Outline color of a mark filled with `fill` for `:stroke-color` `stroke` (see [[stroke-color]]); `:none` stays `:none`."
   [stroke fill]
   (if (= :darker stroke) (c/darken fill) stroke))
+
+(defn pattern-ink
+  "Ink of a fill pattern over `fill` for `:pattern-color` `ink` (a color or `:darker` - the darkened fill), no more
+  opaque than the fill: a translucent fill (e.g. overlaid groups) gets translucent ink."
+  [ink fill]
+  (let [ink (outline-color ink fill)
+        alpha (m/min (c/alpha ink) (c/alpha fill))]
+    (if (< alpha (c/alpha ink)) (c/set-alpha ink alpha) ink)))
+
+(defn pattern-fill
+  "Pattern fill `{:pattern p :ink c}` of a mark filled with `fill` in style `st` (`:pattern`, `:pattern-color`, see
+  [[pattern-ink]]); `nil` without a pattern (`:solid`, `nil`) or a fill (`:none`, `nil`)."
+  [st fill]
+  (let [p (:pattern st)]
+    (when (and (pattern/spec-of p) (some? fill) (not (theme/none? fill)))
+      {:pattern p :ink (pattern-ink (:pattern-color st :darker) fill)})))
+
+(defn fill-with-pattern!
+  "Draw the pattern of `pattern-fill` (see [[pattern-fill]]; `nil` - nothing) over a fill: `draw-fn` (no arguments)
+  fills the same shapes again while the canvas paints the pattern's tile; the previous paint is restored. `draw-fn`
+  must not set a colour."
+  [canvas pattern-fill draw-fn]
+  (when-let [spec (pattern/spec-of (:pattern pattern-fill))]
+    (let [^Graphics2D g (:graphics canvas)
+          paint (.getPaint g)
+          p (double (pattern/period spec))]
+      (.setPaint g (TexturePaint. (pattern/tile spec (:ink pattern-fill)) (java.awt.geom.Rectangle2D$Double. 0.0 0.0 p p)))
+      (try (draw-fn) (finally (.setPaint g paint))))))
 
 (declare pixel-center)
 
@@ -93,29 +129,35 @@
   (and (>= w min-bar-pixels) (>= h min-bar-pixels)))
 
 (defn bar!
-  "Fill the rectangle with pixel corners `a` and `b` (`Vec2`, any order) with `fill`, outline it with `stroke` (a
-  color or `:none`) when `stroke-width` is positive; nothing for a bar that isn't [[visible-bar?]]."
-  [canvas ^Vec2 a ^Vec2 b fill stroke stroke-width]
-  (let [stroke-width (double stroke-width)
-        x (m/min (.x a) (.x b)) y (m/min (.y a) (.y b))
-        w (m/abs (- (.x b) (.x a))) h (m/abs (- (.y b) (.y a)))]
-    (when (visible-bar? w h)
-      (c2d/set-color canvas fill)
-      (c2d/rect canvas x y w h)
-      (when (and (pos? stroke-width) (not (theme/none? stroke)))
-        (c2d/set-color canvas stroke)
-        (c2d/rect canvas x y w h true)))))
+  "Fill the rectangle with pixel corners `a` and `b` (`Vec2`, any order) with `fill` and the pattern of
+  `pattern-fill` (see [[pattern-fill]], `nil` - none), outline it with `stroke` (a color or `:none`) when
+  `stroke-width` is positive; nothing for a bar that isn't [[visible-bar?]]."
+  ([canvas a b fill stroke stroke-width] (bar! canvas a b fill stroke stroke-width nil))
+  ([canvas ^Vec2 a ^Vec2 b fill stroke stroke-width pattern-fill]
+   (let [stroke-width (double stroke-width)
+         x (m/min (.x a) (.x b)) y (m/min (.y a) (.y b))
+         w (m/abs (- (.x b) (.x a))) h (m/abs (- (.y b) (.y a)))]
+     (when (visible-bar? w h)
+       (c2d/set-color canvas fill)
+       (c2d/rect canvas x y w h)
+       (fill-with-pattern! canvas pattern-fill #(c2d/rect canvas x y w h))
+       (when (and (pos? stroke-width) (not (theme/none? stroke)))
+         (c2d/set-color canvas stroke)
+         (c2d/rect canvas x y w h true))))))
 
 (defn bar-key!
-  "Legend key glyph of a bar chart (histogram, bar): a filled square inset in `box`, outlined by `:stroke-color` (see
-  [[outline-color]]) when `:stroke-width` is positive; `translucent?` - the fill gets `:alpha` (grouped overlay bars).
-  `st` - `{:color :stroke-color :stroke-width :alpha}`."
+  "Legend key glyph of a bar chart (histogram, bar): a filled square inset in `box` with its pattern (see
+  [[pattern-fill]]), outlined by `:stroke-color` (see [[outline-color]]) when `:stroke-width` is positive;
+  `translucent?` - the fill gets `:alpha` (grouped overlay bars). `st` - `{:color :stroke-color :stroke-width :alpha
+  :pattern :pattern-color}`."
   [canvas {:keys [x y w h]} st translucent?]
   (let [side (* 0.7 (m/min (double w) (double h)))
         cx (+ (double x) (* 0.5 (double w)))
-        cy (+ (double y) (* 0.5 (double h)))]
-    (c2d/set-color canvas (if translucent? (c/set-alpha (:color st) (* 255.0 (double (:alpha st)))) (:color st)))
+        cy (+ (double y) (* 0.5 (double h)))
+        fill (if translucent? (c/set-alpha (:color st) (* 255.0 (double (:alpha st)))) (:color st))]
+    (c2d/set-color canvas fill)
     (c2d/crect canvas cx cy side side)
+    (fill-with-pattern! canvas (pattern-fill st fill) #(c2d/crect canvas cx cy side side))
     (let [stroke (outline-color (:stroke-color st) (:color st))]
       (when (and (pos? (double (:stroke-width st))) (not (theme/none? stroke)))
         (c2d/set-stroke-custom canvas {:size (double (:stroke-width st))})

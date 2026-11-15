@@ -1,5 +1,6 @@
 (ns cljplot2.scale.aesthetic
-  "Aesthetics: the non-positional dimensions `:color`, `:shape`, `:size` and `:dash` mapped from data (D4), and their
+  "Aesthetics: the non-positional dimensions `:color`, `:shape`, `:size`, `:dash` and `:pattern` (fill patterns of
+  filled marks) mapped from data (D4), and their
   scales (D5).
 
   Mapping: an accessor (keyword or function), `nil` = not mapped. A row's value is kept when it is valid
@@ -9,15 +10,15 @@
   Scale spec - plot `:scales {dim spec}`:
 
   * `:kind` - `:ordinal`, `:linear`, `:binned` or `:identity` (both below); default `:linear` for numeric `:color` / `:size` data or a numeric explicit
-    domain of two values, otherwise `:ordinal` (`:shape` and `:dash` are always ordinal or identity); numeric data with more than
+    domain of two values, otherwise `:ordinal` (`:shape`, `:dash` and `:pattern` are always ordinal or identity); numeric data with more than
     [[cljplot2.data.rows/max-levels]] distinct values can be ordinal only with an explicit `:domain`
   * `:domain` - ordinal: distinct levels (default: data levels, sorted - in the charts' order when every chart's
     extent is `:ordered?`, e.g. function labels; numbers equal as doubles, `1931` = `1931.0`);
     linear: `[lo hi]` (default: data min, max)
-  * `:range` - default from theme `:palette` (`:color`, `:gradient`, `:shape`, `:size`, `:dash`):
+  * `:range` - default from theme `:palette` (`:color`, `:gradient`, `:shape`, `:size`, `:dash`, `:pattern`):
     ordinal `:color` - palette name or colors (cycled; with `:spread` also a gradient); linear / binned `:color` -
     palette name, colors (a gradient), a clojure2d gradient name or a function of `t` in `[0 1]`; `:shape` - shapes (cycled); `:size` - `[min max]` (ordinal levels evenly spread); `:dash` - dashes (cycled, see
-    [[cljplot2.schema/dash]])
+    [[cljplot2.schema/dash]]); `:pattern` - patterns (cycled, see [[cljplot2.schema/pattern]])
     or a level map `{level attribute}` (ordinal scales; every level needs an entry, extra keys are ignored)
   * `:kind :binned` (`:color` only, never inferred) - numeric values coloured by bin: `:bins` - a count of equal bins
     over the domain (default 5), a breaks vector (its ends are the domain), a bin method (`:sturges`, ...) or quantile
@@ -52,11 +53,11 @@
 
 (def dims
   "Aesthetic dimensions, in legend order."
-  [:color :shape :size :dash])
+  [:color :shape :size :dash :pattern])
 
 (def ^:private ordinal-only
   "Aesthetic dimensions whose scales are never linear or binned (their attributes have no order)."
-  #{:shape :dash})
+  #{:shape :dash :pattern})
 
 (def dim? (set dims))
 
@@ -92,6 +93,8 @@
 
 (def ^:private dashes [:sequential {:min 1} schema/dash])
 
+(def ^:private patterns [:sequential {:min 1} schema/pattern])
+
 (def ^:private gradient [:multi {:dispatch fn?} [true schema/function] [false palette]])
 
 (defn- gradient-name?
@@ -117,8 +120,10 @@
                 :color color-range
                 :shape shapes
                 :size size-range
-                :dash dashes)
-        attribute (case k :color schema/solid-color :shape schema/shape :size schema/non-neg :dash schema/dash)]
+                :dash dashes
+                :pattern patterns)
+        attribute (case k :color schema/solid-color :shape schema/shape :size schema/non-neg :dash schema/dash
+                    :pattern schema/pattern)]
     [:multi {:dispatch map?} [true (level-map attribute)] [false plain]]))
 
 (def palette-schema
@@ -129,6 +134,7 @@
    [:shape shapes]
    [:size size-range]
    [:dash dashes]
+   [:pattern patterns]
    [:na schema/solid-color]])
 
 (defn- level-key
@@ -138,7 +144,7 @@
 
 (defn- explicit-kind
   "Kind of aesthetic `k` with an explicit domain in `spec`: the spec's `:kind`, else `:linear` for two numbers (not
-  `:shape` / `:dash`), else `:ordinal`."
+  `:shape` / `:dash` / `:pattern`), else `:ordinal`."
   [k {:keys [kind domain]}]
   (or kind (if (and (not (ordinal-only k)) (= 2 (count domain)) (every? number? domain)) :linear :ordinal)))
 
@@ -247,7 +253,7 @@
 (defn inferred-kind
   "Scale kind of aesthetic `k` with plot scale `spec` (may be `{}`) for data that is numeric (`data-numeric?`) or not:
   the spec's `:kind`; else `:linear` for a numeric two-value explicit domain or, without a domain, numeric data
-  (`:color`, `:size`); else `:ordinal`. `:shape` and `:dash` are always ordinal (or identity)."
+  (`:color`, `:size`); else `:ordinal`. `:shape`, `:dash` and `:pattern` are always ordinal (or identity)."
   [k spec data-numeric?]
   (if (sequential? (:domain spec))
     (explicit-kind k spec)
@@ -280,13 +286,14 @@
 
 (defn valid-attribute?
   "Is `v` an attribute of aesthetic `k` as such: a color (not `:none`), a shape, a non-negative finite size, a dash
-  ([[cljplot2.schema/dash?]])?"
+  ([[cljplot2.schema/dash?]]), a pattern ([[cljplot2.schema/pattern?]])?"
   [k v]
   (case k
     :color (schema/solid-color? v)
     :shape (contains? shape/shapes v)
     :size (and (schema/finite? v) (>= (double v) 0.0))
-    :dash (schema/dash? v)))
+    :dash (schema/dash? v)
+    :pattern (schema/pattern? v)))
 
 (defn identity-scale?
   "Does the plot's scale `spec` (may be `nil`) declare `:kind :identity`?"

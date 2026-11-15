@@ -46,11 +46,12 @@
 (set! *unchecked-math* :warn-on-boxed)
 
 (def ^:private style-entries
-  (conj polyline/style-entries
-        (schema/optional :fill [:or [:= :color] schema/color])
-        (schema/optional :alpha schema/fraction)
-        (schema/optional :zero-line-color schema/color)
-        (schema/optional :zero-line-width schema/non-neg)))
+  (into (conj polyline/style-entries
+              (schema/optional :fill [:or [:= :color] schema/color])
+              (schema/optional :alpha schema/fraction)
+              (schema/optional :zero-line-color schema/color)
+              (schema/optional :zero-line-width schema/non-neg))
+        draw/pattern-style-entries))
 
 (def ^:private positions (into (disj position/positions :dodge) position/stream-positions))
 
@@ -77,7 +78,8 @@
 
 (defn- style
   [options theme]
-  (merge (get-in theme [:chart :density]) (select-keys options [:color :width :dash :fill :alpha :zero-line-color :zero-line-width])))
+  (merge (get-in theme [:chart :density]) (select-keys options [:color :width :dash :fill :alpha :zero-line-color :zero-line-width :pattern
+                                                                 :pattern-color])))
 
 (defn- panel-curves
   "Curves of a panel's groups `gs` (with their `group-values`) for `position`; `group-keys` - all groups in order.
@@ -225,14 +227,19 @@
           (cond
             (and gradient (= :y gradient-axis))
             (let [x0 (first xs)
-                  pixel (fn [^Vec2 p] [(.x p) (.y p)])]
-              (polyline/fill-gradient-paint! canvas [(into (mapv pixel curve) (rseq (mapv pixel base)))] gradient
-                                             (pixel (point x0 level side 0.0)) (pixel (point x0 level side 1.0))))
+                  pixel (fn [^Vec2 p] [(.x p) (.y p)])
+                  polygon (into (mapv pixel curve) (rseq (mapv pixel base)))]
+              (polyline/fill-gradient-paint! canvas [polygon] gradient
+                                             (pixel (point x0 level side 0.0)) (pixel (point x0 level side 1.0)))
+              (draw/fill-with-pattern! canvas (draw/pattern-fill st (gradient 0.5)) #(c2d/path canvas polygon true false)))
             gradient
-            (fill-gradient-quads! canvas (mapv (fn [^Vec2 p] [(.x p) (.y p)]) curve) (mapv (fn [^Vec2 p] [(.x p) (.y p)]) base)
-                                          xs gradient (:domain (:x scales)))
+            (let [pixel (fn [^Vec2 p] [(.x p) (.y p)])
+                  polygon (into (mapv pixel curve) (rseq (mapv pixel base)))]
+              (fill-gradient-quads! canvas (mapv pixel curve) (mapv pixel base) xs gradient (:domain (:x scales)))
+              (draw/fill-with-pattern! canvas (draw/pattern-fill st (gradient 0.5)) #(c2d/path canvas polygon true false)))
             :else
-            (polyline/fill-under! canvas px py bx by (polyline/area-color st true)))
+            (let [fill (polyline/area-color st true)]
+              (polyline/fill-under! canvas px py bx by fill (draw/pattern-fill st fill))))
           (polyline/draw! canvas px py st))))))
 
 (defn draw
@@ -254,8 +261,8 @@
         (doseq [{:keys [st y0? curve base]} drawn
                 :let [[px py] curve [bx by] base]]
           (if y0?
-            (polyline/fill-between! canvas px py bx by (polyline/area-color st true))
-            (polyline/fill-under! canvas px py bx by (polyline/area-color st false))))
+            (let [fill (polyline/area-color st true)] (polyline/fill-between! canvas px py bx by fill (draw/pattern-fill st fill)))
+            (let [fill (polyline/area-color st false)] (polyline/fill-under! canvas px py bx by fill (draw/pattern-fill st fill)))))
         (doseq [{:keys [st curve]} drawn
                 :let [[px py] curve]]
           (polyline/draw! canvas px py st))
@@ -266,6 +273,6 @@
   "Key glyph: a horizontal line through the middle of `box`; when the chart fills areas (`:fill`, or `:stack` /
   `:normalize` positions, ridgelines) a filled square (the area colour) outlined in the line colour."
   [{:keys [options]} attributes canvas box env]
-  (let [st (merge (style options (:theme env)) (select-keys attributes [:color :dash]))
+  (let [st (merge (style options (:theme env)) (select-keys attributes [:color :dash :pattern]))
         area (polyline/area-color st (or (contains? stacked-positions (:position options)) (:ridges? (:chart-stats env))))]
-    (polyline/key-glyph! canvas box st area)))
+    (polyline/key-glyph! canvas box st area (draw/pattern-fill st area))))

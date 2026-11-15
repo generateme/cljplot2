@@ -29,10 +29,11 @@
 (set! *unchecked-math* :warn-on-boxed)
 
 (def ^:private style-entries
-  [(schema/optional :color schema/solid-color)
-   (schema/optional :stroke-color draw/stroke-color)
-   (schema/optional :stroke-width schema/non-neg)
-   (schema/optional :inner-color schema/color)])
+  (into [(schema/optional :color schema/solid-color)
+         (schema/optional :stroke-color draw/stroke-color)
+         (schema/optional :stroke-width schema/non-neg)
+         (schema/optional :inner-color schema/color)]
+        draw/pattern-style-entries))
 
 (def schemas
   "Schemas of the violin chart: `:style` (theme `[:chart :violin]`), `:options`, `:mapping` (merged)."
@@ -53,7 +54,7 @@
 
 (defn- style
   [options theme]
-  (merge (get-in theme [:chart :violin]) (select-keys options [:color :stroke-color :stroke-width :inner-color])))
+  (merge (get-in theme [:chart :violin]) (select-keys options [:color :stroke-color :stroke-width :inner-color :pattern :pattern-color])))
 
 (defn- profile
   "`{:xs [..] :ds [..] :n}` - the KDE of `values` on its grid (raw densities)."
@@ -136,8 +137,10 @@
             across (fn [v] (let [w (* extent (width-at xs widths (double v)))]
                              (if mirror-half? [(p v base) (p v (+ base w))] [(p v (- base w)) (p v (+ base w))])))]
         (when (every? #(and (m/valid-double? (.x ^Vec2 %)) (m/valid-double? (.y ^Vec2 %))) polygon)
-          (c2d/set-color canvas fill)
-          (c2d/path canvas (mapv (fn [^Vec2 v] [(.x v) (.y v)]) polygon) true false)
+          (let [pixels (mapv (fn [^Vec2 v] [(.x v) (.y v)]) polygon)]
+            (c2d/set-color canvas fill)
+            (c2d/path canvas pixels true false)
+            (draw/fill-with-pattern! canvas (draw/pattern-fill st fill) #(c2d/path canvas pixels true false)))
           (when-not (theme/none? stroke)
             (c2d/set-stroke-custom canvas {:size sw :join :round})
             (c2d/set-color canvas stroke)
@@ -170,7 +173,7 @@
   "Key glyph: a small horizontal violin silhouette - a symmetric lens with pointed ends, half-width `(1 - t^2)` along
   `t` in `[-1 1]` - filled with `:color` and outlined with `:stroke-color`, centred in `box`."
   [{:keys [options]} attributes canvas {:keys [x y w h]} env]
-  (let [st (merge (style options (:theme env)) (select-keys attributes [:color]))
+  (let [st (merge (style options (:theme env)) (select-keys attributes [:color :pattern]))
         cx (+ (double x) (* 0.5 (double w))) cy (+ (double y) (* 0.5 (double h)))
         half-length (* 0.42 (double w)) half-width (* 0.3 (double h))
         ts (map #(- (* 2.0 (/ (double %) glyph-points)) 1.0) (range (inc glyph-points)))
@@ -179,6 +182,7 @@
         stroke (draw/outline-color (:stroke-color st) (:color st))]
     (c2d/set-color canvas (:color st))
     (c2d/path canvas outline true false)
+    (draw/fill-with-pattern! canvas (draw/pattern-fill st (:color st)) #(c2d/path canvas outline true false))
     (when-not (theme/none? stroke)
       (c2d/set-stroke-custom canvas {:size (double (:stroke-width st)) :join :round})
       (c2d/set-color canvas stroke)

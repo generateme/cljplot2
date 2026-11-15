@@ -20,6 +20,7 @@
             [cljplot2.data.rows :as data]
             [cljplot2.data.group :as group]
             [cljplot2.graphics.curve :as curve]
+            [cljplot2.graphics.draw :as draw]
             [cljplot2.graphics.polyline :as polyline]
             [cljplot2.scale.position :as scale]
             [cljplot2.schema :as schema]
@@ -30,10 +31,12 @@
 (set! *unchecked-math* :warn-on-boxed)
 
 (def band-style-entries
-  "Map entries of a band's fill style: `:color`, `:fill` (`:color`, a colour or `:none`), `:alpha`."
-  [(schema/optional :color schema/color)
-   (schema/optional :fill [:or [:= :color] schema/color])
-   (schema/optional :alpha schema/fraction)])
+  "Map entries of a band's fill style: `:color`, `:fill` (`:color`, a colour or `:none`), `:alpha`, `:pattern`,
+  `:pattern-color` (see [[cljplot2.graphics.draw/pattern-style-entries]])."
+  (into [(schema/optional :color schema/color)
+         (schema/optional :fill [:or [:= :color] schema/color])
+         (schema/optional :alpha schema/fraction)]
+        draw/pattern-style-entries))
 
 (def ^:private style-entries
   (conj band-style-entries
@@ -57,7 +60,8 @@
 
 (defn- style
   [options theme]
-  (merge (get-in theme [:chart :ribbon]) (select-keys options [:color :fill :alpha :stroke-color :stroke-width :dash])))
+  (merge (get-in theme [:chart :ribbon]) (select-keys options [:color :fill :alpha :stroke-color :stroke-width :dash :pattern
+                                                                :pattern-color])))
 
 (defn- sortable? [xs] (or (every? number? xs) (every? data/temporal? xs)))
 
@@ -135,13 +139,14 @@
   (polyline/area-color st false))
 
 (defn draw-bands!
-  "Draw `bands` - `{:runs [[upper lower] ..] :fill color :edge line-style}` (`:edge` `nil` - no edge): every band
-  filled (`gradient` along `axis` of `scales` when given, else its `:fill`), then the edges of every band - both
+  "Draw `bands` - `{:runs [[upper lower] ..] :fill color :edge line-style :pattern-fill pf}` (`:edge` `nil` - no
+  edge; `:pattern-fill` - see [[cljplot2.graphics.draw/pattern-fill]], `nil` - none): every band filled (`gradient`
+  along `axis` of `scales` when given, else its `:fill`) with its pattern, then the edges of every band - both
   bounds - stroked."
   [canvas bands gradient axis scales]
-  (doseq [{:keys [runs fill]} bands
+  (doseq [{:keys [runs fill pattern-fill]} bands
           [upper lower] runs]
-    (polyline/fill-area! canvas upper lower fill gradient axis scales))
+    (polyline/fill-area! canvas upper lower fill gradient axis scales pattern-fill))
   (doseq [{:keys [runs edge]} bands :when edge]
     (polyline/stroke-runs! canvas (mapcat identity runs) edge)))
 
@@ -164,13 +169,14 @@
       (draw-bands! canvas
                    (vec (keep (fn [{:keys [x ymin ymax aesthetics]}]
                                 (when-let [st (group/style style aesthetics scales (:theme env))]
-                                  {:runs (band-runs x ymin ymax projection opts) :fill (band-fill st) :edge (edge-style st)}))
+                                  {:runs (band-runs x ymin ymax projection opts) :fill (band-fill st) :edge (edge-style st)
+                                   :pattern-fill (draw/pattern-fill st (if gradient (gradient 0.5) (band-fill st)))}))
                               bands))
                    gradient (:fill-gradient-axis options :x) scales))))
 
 (defn legend
   "Key glyph: a filled square in the band colour (`:fill-gradient` - its middle colour), outlined with the edge."
   [{:keys [options]} attributes canvas box env]
-  (let [st (merge (style options (:theme env)) (select-keys attributes [:color :dash]))
+  (let [st (merge (style options (:theme env)) (select-keys attributes [:color :dash :pattern]))
         area (if-let [g (:fill-gradient options)] ((polyline/gradient-fn g) 0.5) (band-fill st))]
-    (polyline/key-glyph! canvas box (or (edge-style st) {:color :none :width 0}) area)))
+    (polyline/key-glyph! canvas box (or (edge-style st) {:color :none :width 0}) area (draw/pattern-fill st area))))

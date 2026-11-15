@@ -32,6 +32,7 @@
             [cljplot2.data.rng :as rng]
             [cljplot2.data.smooth :as smooth]
             [cljplot2.graphics.curve :as curve]
+            [cljplot2.graphics.draw :as draw]
             [cljplot2.graphics.polyline :as polyline]
             [cljplot2.scale.position :as scale]
             [cljplot2.schema :as schema]
@@ -45,9 +46,10 @@
 (def ^:private ^:const default-n 200)
 
 (def ^:private style-entries
-  (conj polyline/style-entries
-        (schema/optional :fill [:or [:= :color] schema/color])
-        (schema/optional :alpha schema/fraction)))
+  (into (conj polyline/style-entries
+              (schema/optional :fill [:or [:= :color] schema/color])
+              (schema/optional :alpha schema/fraction))
+        draw/pattern-style-entries))
 
 (def ^:private method-schema
   (schema/named-type ::method #(or (fn? %) (contains? smooth/smooth-methods %))
@@ -78,7 +80,7 @@
 
 (defn- style
   [options theme]
-  (merge (get-in theme [:chart :smooth]) (select-keys options [:color :width :dash :fill :alpha])))
+  (merge (get-in theme [:chart :smooth]) (select-keys options [:color :width :dash :fill :alpha :pattern :pattern-color])))
 
 (defn- fit-spec
   "The fit of the chart `options` with style `st`: `{:method :params :band :levels :bootstrap}` (`:band :none` for a
@@ -206,7 +208,8 @@
       (ribbon/draw-bands! canvas
                           (vec (for [[{:keys [x bands]} st] drawn
                                      {:keys [lo hi]} bands]
-                                 {:runs (ribbon/band-runs x lo hi projection {}) :fill (ribbon/band-fill st)}))
+                                 {:runs (ribbon/band-runs x lo hi projection {}) :fill (ribbon/band-fill st)
+                                  :pattern-fill (draw/pattern-fill st (ribbon/band-fill st))}))
                           nil nil scales)
       (doseq [[{:keys [x y]} st] drawn
               :let [points (mapv (fn [vx vy] (let [^Vec2 p (projection vx vy)] (curve/drawn-point [(.x p) (.y p)]))) x y)]]
@@ -215,8 +218,8 @@
 (defn legend
   "Key glyph: a filled square in the band colour (without a band - none) under a horizontal line in the line style."
   [{:keys [options]} attributes canvas box env]
-  (let [st (merge (style options (:theme env)) (select-keys attributes [:color :dash]))
+  (let [st (merge (style options (:theme env)) (select-keys attributes [:color :dash :pattern]))
         band (get options :band (smooth/default-band (get options :method :loess)))]
     (when-not (= :none band)
-      (polyline/key-glyph! canvas box {:color :none :width 0} (ribbon/band-fill st)))
+      (polyline/key-glyph! canvas box {:color :none :width 0} (ribbon/band-fill st) (draw/pattern-fill st (ribbon/band-fill st))))
     (polyline/key-glyph! canvas box st :none)))

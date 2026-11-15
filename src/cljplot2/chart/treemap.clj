@@ -31,9 +31,10 @@
 (set! *unchecked-math* :warn-on-boxed)
 
 (def ^:private style-entries
-  [(schema/optional :padding schema/non-neg)
-   (schema/optional :border-color schema/color)
-   (schema/optional :border-width schema/non-neg)])
+  (into [(schema/optional :padding schema/non-neg)
+         (schema/optional :border-color schema/color)
+         (schema/optional :border-width schema/non-neg)]
+        draw/pattern-style-entries))
 
 (def schemas
   "Schemas of the treemap: `:style` (theme `[:chart :treemap]`), `:options`, `:mapping` (merged)."
@@ -48,7 +49,7 @@
 
 (defn- style
   [options theme]
-  (merge (get-in theme [:chart :treemap]) (select-keys options [:padding :border-color :border-width])))
+  (merge (get-in theme [:chart :treemap]) (select-keys options [:padding :border-color :border-width :pattern :pattern-color])))
 
 (defn- hierarchy-accessors
   [hierarchy]
@@ -156,9 +157,10 @@
   (canvas/call-with-isolated-graphics c #(draw/draw-content {:kind :label :role role :text text} % box env)))
 
 (defn- fill-box!
-  [c color {:keys [x y w h] :as box} {:keys [border-color border-width]}]
+  [c color {:keys [x y w h] :as box} {:keys [border-color border-width] :as st}]
   (c2d/set-color c color)
   (c2d/rect c (long x) (long y) (long w) (long h))
+  (draw/fill-with-pattern! c (draw/pattern-fill st color) #(c2d/rect c (long x) (long y) (long w) (long h)))
   (draw/inner-border! c box border-color border-width))
 
 (defn- children-rects
@@ -222,8 +224,11 @@
       (draw-node! canvas tree {:x 0.0 :y 0.0 :w (double w) :h (double h)} 0 nil ctx env))))
 
 (defn legend
-  "Key glyph: a filled square inset in `box`."
-  [_chart attributes canvas {:keys [x y w h]} _env]
-  (let [side (* 0.7 (m/min (double w) (double h)))]
+  "Key glyph: a filled square inset in `box`, with the chart's `:pattern`."
+  [{:keys [options]} attributes canvas {:keys [x y w h]} env]
+  (let [side (* 0.7 (m/min (double w) (double h)))
+        cx (+ (double x) (* 0.5 (double w))) cy (+ (double y) (* 0.5 (double h)))]
     (c2d/set-color canvas (:color attributes))
-    (c2d/crect canvas (+ (double x) (* 0.5 (double w))) (+ (double y) (* 0.5 (double h))) side side)))
+    (c2d/crect canvas cx cy side side)
+    (draw/fill-with-pattern! canvas (draw/pattern-fill (style options (:theme env)) (:color attributes))
+                             #(c2d/crect canvas cx cy side side))))

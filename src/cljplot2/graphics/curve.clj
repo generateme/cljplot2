@@ -20,6 +20,7 @@
   (:require [clojure2d.core.shape :as sh]
             [fastmath.core :as m]
             [cljplot2.data.interpolation :as fit]
+            [cljplot2.graphics.draw :as draw]
             [cljplot2.graphics.polyline :as polyline]
             [cljplot2.scale.position :as scale]
             [cljplot2.schema :as schema])
@@ -260,12 +261,14 @@
   "Draw the drawn runs `point-runs` (pixels, see [[curve-points]]) of one line in line `style` (plus `:fill`,
   `:bridge`): the area first - `area` `{:baseline px :horizontal? h}` (to the baseline, see
   [[cljplot2.graphics.polyline/fill-runs-to-baseline!]]), `:closed` (each run's own polygon) or `nil` (none) - then
-  the stroke, then with `gaps` `:bridge` the bridges between the runs (see [[bridges]]) in the bridge style."
+  the stroke, then with `gaps` `:bridge` the bridges between the runs (see [[bridges]]) in the bridge style. The area
+  gets the style's `:pattern` (see [[cljplot2.graphics.draw/pattern-fill]])."
   [canvas point-runs style area gaps]
-  (let [fill (:fill style :none)]
+  (let [fill (:fill style :none)
+        pattern-fill (draw/pattern-fill style fill)]
     (cond
-      (= :closed area) (polyline/fill-closed-runs! canvas point-runs fill)
-      (map? area) (polyline/fill-runs-to-baseline! canvas point-runs (:baseline area) (:horizontal? area) fill))
+      (= :closed area) (polyline/fill-closed-runs! canvas point-runs fill pattern-fill)
+      (map? area) (polyline/fill-runs-to-baseline! canvas point-runs (:baseline area) (:horizontal? area) fill pattern-fill))
     (polyline/stroke-runs! canvas point-runs style)
     (when (= :bridge gaps)
       (polyline/stroke-runs! canvas (bridges point-runs) (polyline/bridge-style style (:bridge style))))))

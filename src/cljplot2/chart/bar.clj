@@ -58,12 +58,13 @@
 (def ^:private positions #{:overlay :dodge :stack :normalize})
 
 (def ^:private style-entries
-  [(schema/optional :color schema/solid-color)
-   (schema/optional :stroke-color draw/stroke-color)
-   (schema/optional :stroke-width schema/non-neg)
-   (schema/optional :alpha schema/fraction)
-   (schema/optional :zero-line-color schema/color)
-   (schema/optional :zero-line-width schema/non-neg)])
+  (into [(schema/optional :color schema/solid-color)
+         (schema/optional :stroke-color draw/stroke-color)
+         (schema/optional :stroke-width schema/non-neg)
+         (schema/optional :alpha schema/fraction)
+         (schema/optional :zero-line-color schema/color)
+         (schema/optional :zero-line-width schema/non-neg)]
+        draw/pattern-style-entries))
 
 (def schemas
   "Schemas of the bar chart: `:style` (theme `[:chart :bar]`), `:options`, `:mapping` (merged; `:x` checked at
@@ -87,7 +88,8 @@
 (defn- style
   [options theme]
   (merge (get-in theme [:chart :bar])
-         (select-keys options [:color :stroke-color :stroke-width :alpha :zero-line-color :zero-line-width])))
+         (select-keys options [:color :stroke-color :stroke-width :alpha :zero-line-color :zero-line-width :pattern
+                               :pattern-color])))
 
 (defn- check-options!
   "Throw for a value stat without an `:x` mapping (`{:key :mapping}`) and a `:value-format` that can't format a
@@ -272,7 +274,7 @@
                   hw (* (strip/slot-half slot) (double width-factor))
                   fill (if translucent? (c/set-alpha (:color st) (* 255.0 (double (:alpha style)))) (:color st))]]
       (draw/bar! canvas (point y0 level (- c0 hw)) (point y1 level (+ c0 hw))
-                 fill (draw/outline-color (:stroke-color st) (:color st)) stroke-width))
+                 fill (draw/outline-color (:stroke-color st) (:color st)) stroke-width (draw/pattern-fill st fill)))
     (when zero-line?
       (draw/zero-line! canvas box scales style :x))
     (strip/draw-end-labels! canvas pl (keep (fn [[{:keys [label]} st]]
@@ -285,5 +287,5 @@
   "Key glyph: a filled square (see [[cljplot2.graphics.draw/bar-key!]]); translucent with a mapped `:color` when the
   bars are (overlay groups in two or more slots, see [[compute]] - env `:chart-stats`)."
   [{:keys [options]} attributes canvas box env]
-  (draw/bar-key! canvas box (merge (style options (:theme env)) (select-keys attributes [:color]))
+  (draw/bar-key! canvas box (merge (style options (:theme env)) (select-keys attributes [:color :pattern]))
                  (boolean (and (contains? attributes :color) (some :translucent? (vals (get-in env [:chart-stats :data])))))))

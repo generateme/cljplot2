@@ -33,6 +33,7 @@
             [cljplot2.data.group :as group]
             [cljplot2.data.position :as position]
             [cljplot2.graphics.curve :as curve]
+            [cljplot2.graphics.draw :as draw]
             [cljplot2.graphics.polyline :as polyline]
             [cljplot2.scale.aesthetic :as aesthetic]
             [cljplot2.scale.position :as scale]
@@ -43,10 +44,11 @@
 (set! *unchecked-math* :warn-on-boxed)
 
 (def ^:private style-entries
-  (conj polyline/style-entries
-        (schema/optional :fill [:or [:= :color] schema/color])
-        (schema/optional :alpha schema/fraction)
-        (schema/optional :bridge polyline/bridge-schema)))
+  (into (conj polyline/style-entries
+              (schema/optional :fill [:or [:= :color] schema/color])
+              (schema/optional :alpha schema/fraction)
+              (schema/optional :bridge polyline/bridge-schema))
+        draw/pattern-style-entries))
 
 (def positions
   "Line positions: `:overlay` (default), stacked `:stack` / `:normalize` and the stream positions (see
@@ -72,7 +74,7 @@
 
 (defn- style
   [options theme]
-  (merge (get-in theme [:chart :line]) (select-keys options [:color :width :dash :fill :alpha :bridge])))
+  (merge (get-in theme [:chart :line]) (select-keys options [:color :width :dash :fill :alpha :bridge :pattern :pattern-color])))
 
 (defn- sortable? [xs] (or (every? number? xs) (every? data/temporal? xs)))
 
@@ -348,8 +350,10 @@
                              [upper lower st]))
                          (map vector lines (stacked-band-points lines position scales opts))))]
     ;; all areas first, then the boundaries (as density): no band covers a stroke
-    (doseq [[upper lower st] bands]
-      (polyline/fill-area! canvas upper lower (polyline/area-color st true) gradient axis scales))
+    (doseq [[upper lower st] bands
+            :let [fill (polyline/area-color st true)]]
+      (polyline/fill-area! canvas upper lower fill gradient axis scales
+                           (draw/pattern-fill st (if gradient (gradient 0.5) fill))))
     (doseq [[upper _ st] bands]
       (polyline/stroke-runs! canvas [upper] st))))
 
@@ -392,11 +396,13 @@
                 st (assoc st :fill (polyline/area-color st false))]
             (cond
               colors
-              (do (polyline/fill-runs-to-baseline! canvas point-runs (:baseline area) (:horizontal? area) (:fill st))
+              (do (polyline/fill-runs-to-baseline! canvas point-runs (:baseline area) (:horizontal? area) (:fill st)
+                                                   (draw/pattern-fill st (:fill st)))
                   (draw-gradient! canvas px py colors index-runs point-runs curved? (:along opts) st gaps scales (:theme env)))
               gradient
               (do (doseq [run point-runs :when (> (count run) 1)]
-                    (polyline/fill-area! canvas run (base-run run area) nil gradient axis scales))
+                    (polyline/fill-area! canvas run (base-run run area) nil gradient axis scales
+                                         (draw/pattern-fill st (gradient 0.5))))
                   (curve/draw-runs! canvas point-runs (assoc st :fill :none) nil gaps))
               :else
               (curve/draw-runs! canvas point-runs st area gaps))))))))
@@ -406,8 +412,8 @@
   `:fill-gradient` - its middle colour) a filled square outlined in the line style, see
   [[cljplot2.graphics.polyline/key-glyph!]]."
   [{:keys [options]} attributes canvas box env]
-  (let [st (merge (style options (:theme env)) (select-keys attributes [:color :dash]))
+  (let [st (merge (style options (:theme env)) (select-keys attributes [:color :dash :pattern]))
         area (if-let [g (:fill-gradient options)]
                ((polyline/gradient-fn g) 0.5)
                (polyline/area-color st (contains? stacked-positions (:position options))))]
-    (polyline/key-glyph! canvas box st area)))
+    (polyline/key-glyph! canvas box st area (draw/pattern-fill st area))))

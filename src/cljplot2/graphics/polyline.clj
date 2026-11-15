@@ -8,6 +8,7 @@
   (:require [clojure2d.color :as c]
             [clojure2d.core :as c2d]
             [fastmath.core :as m]
+            [cljplot2.graphics.draw :as draw]
             [cljplot2.scale.position :as scale]
             [cljplot2.schema :as schema]
             [cljplot2.theme :as theme])
@@ -112,8 +113,10 @@
 
 (defn key-glyph!
   "Legend key glyph of a line in `box` (`{:x :y :w :h}`): a horizontal line through the middle in line `style`; with
-  an `area` color (not `:none`) a filled square (0.7 of the smaller side) outlined in the line style."
-  [canvas {:keys [x y w h]} style area]
+  an `area` color (not `:none`) a filled square (0.7 of the smaller side) with the pattern of `pattern-fill` (see
+  [[cljplot2.graphics.draw/pattern-fill]], `nil` - none) outlined in the line style."
+  ([canvas box style area] (key-glyph! canvas box style area nil))
+  ([canvas {:keys [x y w h]} style area pattern-fill]
   (let [cx (+ (double x) (* 0.5 (double w)))
         cy (+ (double y) (* 0.5 (double h)))]
     (if (theme/none? area)
@@ -121,58 +124,69 @@
       (let [side (* 0.7 (m/min (double w) (double h)))]
         (c2d/set-color canvas area)
         (c2d/crect canvas cx cy side side)
+        (draw/fill-with-pattern! canvas pattern-fill #(c2d/crect canvas cx cy side side))
         (when (set-style! canvas style)
-          (c2d/crect canvas cx cy side side true))))))
+          (c2d/crect canvas cx cy side side true)))))))
+
+(defn fill-polygons!
+  "Fill `polygons` (`[x y]` pixel points each) in `color` (`:none` fills nothing), then the pattern of `pattern-fill`
+  over them (see [[cljplot2.graphics.draw/pattern-fill]], `nil` - none)."
+  [canvas polygons color pattern-fill]
+  (when-not (theme/none? color)
+    (let [polygons (vec polygons)
+          fill! #(doseq [polygon polygons] (c2d/path canvas polygon true false))]
+      (c2d/set-color canvas color)
+      (fill!)
+      (draw/fill-with-pattern! canvas pattern-fill fill!))))
 
 (defn fill-under!
   "Fill the area between each run of `xs` / `ys` (pixels) and its baseline: the polygon from the base point of the
   run's first point through the run to the base point of its last one (`bxs` / `bys` - the base point of every
   point, e.g. the projection of `(x, 0)`; a horizontal baseline for unflipped charts, vertical for flipped).
-  `:none` fills nothing."
-  [canvas xs ys bxs bys color]
-  (when-not (theme/none? color)
-    (c2d/set-color canvas color)
-    (doseq [run (finite-runs xs ys) :when (> (count run) 1)
-            :let [i0 (first run) i1 (peek run)]]
-      (c2d/path canvas (-> [[(nth bxs i0) (nth bys i0)]]
-                           (into (map (fn [i] [(nth xs i) (nth ys i)])) run)
-                           (conj [(nth bxs i1) (nth bys i1)]))
-                true false))))
+  `:none` fills nothing; `pattern-fill` - its pattern over the fill (see [[fill-polygons!]])."
+  ([canvas xs ys bxs bys color] (fill-under! canvas xs ys bxs bys color nil))
+  ([canvas xs ys bxs bys color pattern-fill]
+   (fill-polygons! canvas (for [run (finite-runs xs ys) :when (> (count run) 1)
+                                :let [i0 (first run) i1 (peek run)]]
+                            (-> [[(nth bxs i0) (nth bys i0)]]
+                                (into (map (fn [i] [(nth xs i) (nth ys i)])) run)
+                                (conj [(nth bxs i1) (nth bys i1)])))
+                   color pattern-fill)))
 
 (defn fill-runs-to-baseline!
   "Fill the area between each run of `point-runs` (pixels) and the baseline at pixel `baseline`: horizontal
   (`horizontal?`, a y position - unflipped charts) or vertical (an x position); the polygon runs from the base point
-  of the run's first point through the run to the base point of its last. `:none` fills nothing."
-  [canvas point-runs baseline horizontal? color]
-  (when-not (theme/none? color)
-    (c2d/set-color canvas color)
-    (let [baseline (double baseline)
-          base (if horizontal? (fn [[x _]] [x baseline]) (fn [[_ y]] [baseline y]))]
-      (doseq [run point-runs :when (> (count run) 1)]
-        (c2d/path canvas (-> [(base (first run))] (into run) (conj (base (peek run)))) true false)))))
+  of the run's first point through the run to the base point of its last. `:none` fills nothing; `pattern-fill` -
+  its pattern over the fill (see [[fill-polygons!]])."
+  ([canvas point-runs baseline horizontal? color]
+   (fill-runs-to-baseline! canvas point-runs baseline horizontal? color nil))
+  ([canvas point-runs baseline horizontal? color pattern-fill]
+   (let [baseline (double baseline)
+         base (if horizontal? (fn [[x _]] [x baseline]) (fn [[_ y]] [baseline y]))]
+     (fill-polygons! canvas (for [run point-runs :when (> (count run) 1)]
+                              (-> [(base (first run))] (into run) (conj (base (peek run)))))
+                     color pattern-fill))))
 
 (defn fill-closed-runs!
-  "Fill every run of `point-runs` (pixels) as the polygon it closes. `:none` fills nothing."
-  [canvas point-runs color]
-  (when-not (theme/none? color)
-    (c2d/set-color canvas color)
-    (doseq [run point-runs :when (> (count run) 2)]
-      (c2d/path canvas run true false))))
+  "Fill every run of `point-runs` (pixels) as the polygon it closes. `:none` fills nothing; `pattern-fill` - its
+  pattern over the fill (see [[fill-polygons!]])."
+  ([canvas point-runs color] (fill-closed-runs! canvas point-runs color nil))
+  ([canvas point-runs color pattern-fill]
+   (fill-polygons! canvas (filter #(> (count %) 2) point-runs) color pattern-fill)))
 
 (defn fill-between!
   "Fill the area between the upper curve `xs` / `ys` and the lower curve `bxs` / `bys` (pixels, point `i` of one
   paired with point `i` of the other): one polygon per run of indices where both points are finite. `:none` fills
-  nothing."
-  [canvas xs ys bxs bys color]
-  (when-not (theme/none? color)
-    (c2d/set-color canvas color)
-    (doseq [run (finite-runs (mapv (fn [a b] (if (m/valid-double? (double b)) a ##NaN)) xs bxs)
-                             (mapv (fn [a b] (if (m/valid-double? (double b)) a ##NaN)) ys bys))
-            :when (> (count run) 1)]
-      (c2d/path canvas (-> []
-                           (into (map (fn [i] [(nth xs i) (nth ys i)])) run)
-                           (into (map (fn [i] [(nth bxs i) (nth bys i)])) (rseq run)))
-                true false))))
+  nothing; `pattern-fill` - its pattern over the fill (see [[fill-polygons!]])."
+  ([canvas xs ys bxs bys color] (fill-between! canvas xs ys bxs bys color nil))
+  ([canvas xs ys bxs bys color pattern-fill]
+   (fill-polygons! canvas (for [run (finite-runs (mapv (fn [a b] (if (m/valid-double? (double b)) a ##NaN)) xs bxs)
+                                                 (mapv (fn [a b] (if (m/valid-double? (double b)) a ##NaN)) ys bys))
+                                :when (> (count run) 1)]
+                            (-> []
+                                (into (map (fn [i] [(nth xs i) (nth ys i)])) run)
+                                (into (map (fn [i] [(nth bxs i) (nth bys i)])) (rseq run))))
+                   color pattern-fill)))
 
 ;; areas
 
@@ -228,11 +242,17 @@
 (defn fill-area!
   "Fill the area between the paired point runs `upper` and `lower` (`[x y]` pixels, point `i` of one paired with point
   `i` of the other): with `gradient` (a gradient function) - a linear gradient paint over the range of the `axis`
-  (`:x` / `:y`) scale in `scales`; else in `color` (`:none` fills nothing)."
-  [canvas upper lower color gradient axis scales]
-  (cond
-    gradient
-    (let [[from to] (gradient-axis-points scales axis)]
-      (fill-gradient-paint! canvas [(into (vec upper) (rseq (vec lower)))] gradient from to))
-    :else
-    (fill-between! canvas (mapv first upper) (mapv second upper) (mapv first lower) (mapv second lower) color)))
+  (`:x` / `:y`) scale in `scales`; else in `color` (`:none` fills nothing); then the pattern of `pattern-fill` (see
+  [[fill-polygons!]]; over a gradient its ink is `:pattern-color` against the gradient's middle colour)."
+  ([canvas upper lower color gradient axis scales] (fill-area! canvas upper lower color gradient axis scales nil))
+  ([canvas upper lower color gradient axis scales pattern-fill]
+   (cond
+     gradient
+     (let [[from to] (gradient-axis-points scales axis)
+           polygon (into (vec upper) (rseq (vec lower)))]
+       (fill-gradient-paint! canvas [polygon] gradient from to)
+       (when (> (count polygon) 2)
+         (draw/fill-with-pattern! canvas pattern-fill #(c2d/path canvas polygon true false))))
+     :else
+     (fill-between! canvas (mapv first upper) (mapv second upper) (mapv first lower) (mapv second lower) color
+                    pattern-fill))))

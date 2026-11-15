@@ -98,6 +98,52 @@
   (malli/-simple-schema {:type ::dash :pred dash?
                          :type-properties {:error/fn (fn [{:keys [value]} _] (dash-message value))}}))
 
+(def pattern-styles
+  "Named fill patterns: name -> pattern spec (see [[pattern?]]); pixels, fixed. Every pattern shows at least two marks
+  within 14 pixels (a legend key); `:solid` - no pattern (the plain fill)."
+  {:solid :solid
+   :hatch {:kind :lines :angle 45 :spacing 6.0 :width 1.0}
+   :back-hatch {:kind :lines :angle 135 :spacing 6.0 :width 1.0}
+   :horizontal {:kind :lines :angle 0 :spacing 6.0 :width 1.0}
+   :vertical {:kind :lines :angle 90 :spacing 6.0 :width 1.0}
+   :cross {:kind :cross :angle 0 :spacing 6.0 :width 1.0}
+   :diagonal-cross {:kind :cross :angle 45 :spacing 6.0 :width 1.0}
+   :dots {:kind :dots :spacing 6.0 :size 2.0}
+   :dense-dots {:kind :dots :spacing 4.0 :size 1.5}})
+
+(def pattern-angles
+  "Angles (degrees) of line and cross patterns: those whose tiles repeat seamlessly."
+  #{0 45 90 135})
+
+(defn- pattern-spec?
+  [{:keys [kind angle spacing width size] :as v}]
+  (and (map? v)
+       (case kind
+         (:lines :cross) (and (= #{:kind :angle :spacing :width} (set (keys v)))
+                              (contains? pattern-angles angle) (pos-number? spacing) (pos-number? width))
+         :dots (and (= #{:kind :spacing :size} (set (keys v))) (pos-number? spacing) (pos-number? size))
+         false)))
+
+(defn pattern?
+  "Is `v` a fill pattern: `:solid`, a name of [[pattern-styles]] or a spec - `{:kind :lines :angle a :spacing s :width
+  w}` / `{:kind :cross ...}` (`a` one of [[pattern-angles]]) or `{:kind :dots :spacing s :size d}` (positive pixels)?"
+  [v]
+  (or (contains? pattern-styles v) (pattern-spec? v)))
+
+(def ^:private pattern-names-text (str/join " " (map pr-str (sort (keys pattern-styles)))))
+
+(defn- pattern-message
+  "Error message of an invalid pattern `value`: the closest name for a misspelt keyword."
+  [value]
+  (let [suggestion (when (keyword? value) (first (me/-most-similar-to #{} value (set (keys pattern-styles)))))]
+    (str (if suggestion (str "unknown pattern, should be spelled " (pr-str suggestion) "; ") "")
+         "should be a pattern name (" pattern-names-text "), {:kind :lines|:cross :angle 0|45|90|135 :spacing s :width w}"
+         " or {:kind :dots :spacing s :size d} (positive pixels)")))
+
+(def pattern
+  (malli/-simple-schema {:type ::pattern :pred pattern?
+                         :type-properties {:error/fn (fn [{:keys [value]} _] (pattern-message value))}}))
+
 (def interpolation-methods
   "fastmath `interpolation` methods taking one-dimensional `xs`, `ys` (the 2D grid methods excluded): line curves and
   `:interpolated` position scales."

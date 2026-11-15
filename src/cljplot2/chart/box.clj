@@ -31,11 +31,12 @@
 (set! *unchecked-math* :warn-on-boxed)
 
 (def ^:private style-entries
-  [(schema/optional :color schema/solid-color)
-   (schema/optional :stroke-color draw/stroke-color)
-   (schema/optional :stroke-width schema/non-neg)
-   (schema/optional :shape schema/shape)
-   (schema/optional :size schema/non-neg)])
+  (into [(schema/optional :color schema/solid-color)
+         (schema/optional :stroke-color draw/stroke-color)
+         (schema/optional :stroke-width schema/non-neg)
+         (schema/optional :shape schema/shape)
+         (schema/optional :size schema/non-neg)]
+        draw/pattern-style-entries))
 
 (def schemas
   "Schemas of the box chart: `:style` (theme `[:chart :box]`), `:options`, `:mapping` (merged)."
@@ -52,7 +53,7 @@
 
 (defn- style
   [options theme]
-  (merge (get-in theme [:chart :box]) (select-keys options [:color :stroke-color :stroke-width :shape :size])))
+  (merge (get-in theme [:chart :box]) (select-keys options [:color :stroke-color :stroke-width :shape :size :pattern :pattern-color])))
 
 (defn box-stats
   "Tukey box statistics of `values` (non-empty): `{:q1 :median :q3 :lav :uav :outliers [..] :mean :n}`."
@@ -128,6 +129,7 @@
                   w (m/abs (- (.x ^Vec2 b) (.x ^Vec2 a))) h (m/abs (- (.y ^Vec2 b) (.y ^Vec2 a)))]
               (c2d/set-color canvas fill)
               (c2d/rect canvas x y w h)
+              (draw/fill-with-pattern! canvas (draw/pattern-fill st fill) #(c2d/rect canvas x y w h))
               (when-not (theme/none? stroke)
                 (c2d/set-color canvas stroke)
                 (c2d/rect canvas x y w h true)))
@@ -147,12 +149,13 @@
 (defn legend
   "Key glyph: a small box with a median line, centred in `box`."
   [{:keys [options]} attributes canvas {:keys [x y w h]} env]
-  (let [st (merge (style options (:theme env)) (select-keys attributes [:color]))
+  (let [st (merge (style options (:theme env)) (select-keys attributes [:color :pattern]))
         bw (* 0.7 (double w)) bh (* 0.5 (double h))
         bx (+ (double x) (* 0.5 (- (double w) bw))) by (+ (double y) (* 0.5 (- (double h) bh)))]
     (c2d/set-stroke-custom canvas {:size (double (:stroke-width st))})
     (c2d/set-color canvas (:color st))
     (c2d/rect canvas bx by bw bh)
+    (draw/fill-with-pattern! canvas (draw/pattern-fill st (:color st)) #(c2d/rect canvas bx by bw bh))
     (let [stroke (draw/outline-color (:stroke-color st) (:color st))]
       (when-not (theme/none? stroke)
         (c2d/set-color canvas stroke)

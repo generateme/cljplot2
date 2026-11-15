@@ -36,7 +36,8 @@
   `:palette` - aesthetic defaults, see [[cljplot2.scale.aesthetic]]: `:color` (palette name or colors, old cljplot
   `:category20`), `:gradient` (colors or palette name; `:k2` reversed), `:shape` (shape sequence), `:size`
   (`[min max]` pixels), `:dash` (dash sequence: the [[cljplot2.schema/dash-styles]] names, adjacent styles far
-  apart), `:na` (color of NA values).
+  apart), `:pattern` (pattern sequence: the [[cljplot2.schema/pattern-styles]] names without `:solid`), `:na` (color
+  of NA values).
 
   `:legend` - `:gap` (pixels between key and label and between legends), `:key-size` (key box side, pixels),
   `:fill`, `:border-color`, `:border-width`, color bar `:bar-length` (`:stretch` - over the space left, or a number,
@@ -88,31 +89,43 @@
              :shape [\O \s \A \x \+ \V \o \S \^ \v \{ \} \< \>]
              :size [2 10]
              :dash [:solid :dashed :dotted :dot-dash :long-dash :dot-dot-dash :two-dash :loose-dot]
+             :pattern [:hatch :back-hatch :horizontal :vertical :cross :diagonal-cross :dots :dense-dots]
              :na [150 150 150]}
    :legend {:gap 5 :key-size 14 :fill :none :border-color :none :border-width 1 :bar-length :stretch :bar-width nil}
    :chart {:scatter {:size 4 :color [69 117 180 180] :stroke-color :none :stroke-width 1 :shape \O}
            :histogram {:color [69 117 180] :stroke-color :darker :stroke-width 1 :alpha 0.6 :zero-line-color :black
+                       :pattern :solid :pattern-color :darker
                        :zero-line-width 1}
            :bar {:color [69 117 180] :stroke-color :darker :stroke-width 1 :alpha 0.6 :zero-line-color :black
+                 :pattern :solid :pattern-color :darker
                  :zero-line-width 1}
            :density {:color [69 117 180] :width 1 :dash :none :fill :none :alpha 0.6 :zero-line-color :black
+                     :pattern :solid :pattern-color :darker
                      :zero-line-width 1}
-           :line {:color [69 117 180] :width 1 :dash :none :fill :none :alpha 0.6 :bridge {:alpha 0.3}}
+           :line {:color [69 117 180] :width 1 :dash :none :fill :none :alpha 0.6 :bridge {:alpha 0.3}
+                  :pattern :solid :pattern-color :darker}
            :ecdf {:color [69 117 180] :width 1 :dash :none}
-           :treemap {:padding 3 :border-color :white :border-width 1}
-           :box {:color [69 117 180] :stroke-color :darker :stroke-width 1 :shape \O :size 5}
-           :violin {:color [69 117 180] :stroke-color :darker :stroke-width 1 :inner-color :none}
+           :treemap {:padding 3 :border-color :white :border-width 1
+                     :pattern :solid :pattern-color :darker}
+           :box {:color [69 117 180] :stroke-color :darker :stroke-width 1 :shape \O :size 5
+                 :pattern :solid :pattern-color :darker}
+           :violin {:color [69 117 180] :stroke-color :darker :stroke-width 1 :inner-color :none
+                    :pattern :solid :pattern-color :darker}
            :stripplot {:size 10 :color [69 117 180 100] :stroke-color :none :stroke-width 1 :shape \O}
            :beeswarm {:size 6 :color [69 117 180 180] :stroke-color :none :stroke-width 1 :shape \O}
            :rug {:color [69 117 180 100] :line-width 1}
            :extent {:color [69 117 180] :line-width 2 :shape \O :size 7}
            :rule {:color [60 60 60] :width 1 :dash :none}
            :function {:color [69 117 180] :width 1 :dash :none :fill :none :bridge {:alpha 0.3}}
-           :ribbon {:color [69 117 180] :fill :color :alpha 0.3 :stroke-color :none :stroke-width 1 :dash :none}
-           :smooth {:color [69 117 180] :width 1 :dash :none :fill :color :alpha 0.3}
+           :ribbon {:color [69 117 180] :fill :color :alpha 0.3 :stroke-color :none :stroke-width 1 :dash :none
+                    :pattern :solid :pattern-color :darker}
+           :smooth {:color [69 117 180] :width 1 :dash :none :fill :color :alpha 0.3
+                    :pattern :solid :pattern-color :darker}
            :segment {:color [69 117 180] :width 1 :dash :none}
-           :candlestick {:up-color [26 152 80] :down-color [215 48 39] :body-width 0.7 :wick-width 1 :stroke-color :none}
-           :rect {:fill [0 0 0 30] :stroke-color :none :stroke-width 1}}
+           :candlestick {:up-color [26 152 80] :down-color [215 48 39] :body-width 0.7 :wick-width 1 :stroke-color :none
+                         :up-pattern :solid :down-pattern :solid :pattern-color :darker}
+           :rect {:fill [0 0 0 30] :stroke-color :none :stroke-width 1
+                  :pattern :solid :pattern-color :darker}}
    :axis {:x {:line-color :black :line-width 1 :tick-color :black :tick-length 6 :tick-width 1
               :label-gap 2 :tick-spacing 80 :label-rotation 0}
           :y {:line-color :black :line-width 1 :tick-color :black :tick-length 6 :tick-width 1
