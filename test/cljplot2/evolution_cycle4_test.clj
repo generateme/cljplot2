@@ -112,8 +112,8 @@
           with (domain (text-plot {:select :last}))
           without (domain (text-plot {}))]
       (is (instance? LocalDateTime (second with)))
-      (is (pos? (compare (second with) (LocalDateTime/of 2024 1 10 0 0))))
-      (is (= (LocalDateTime/of 2024 1 10 0 0) (second without)) "datetime domains unpadded otherwise"))))
+      (is (pos? (compare (second with) (second without))) "the label room on top of the padding")
+      (is (pos? (compare (second without) (LocalDateTime/of 2024 1 10 0 0))) "datetime domains padded (L6)"))))
 
 ;; 3. segment
 

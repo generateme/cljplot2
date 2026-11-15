@@ -2,11 +2,14 @@
   "Function: curves of functions sampled across the panel - `y = f(x)` (`:f`) or parametric `[x y] = f(t)`
   (`:parametric`). No data: the chart draws in every panel and inherits only the plot's facet keys (as annotations).
 
-  * `:f` / `:parametric` (exactly one) - a function, a vector of functions or a map label -> function. Each function
-    is a row `{:function label}` (label - the map key, or the index in a vector, 0 for a single function), grouped
-    by the chart's own `:mapping` (`{:color :function}`, `:dash`, `:group`); labels are levels: a mapped `:function`
-    is declared categorical ([[categorical-labels]]), so numeric labels get ordinal scales - the plot's scale of that
-    aesthetic, shared with the other charts (numeric data of another chart on it then needs few distinct values).
+  * `:f` / `:parametric` (exactly one) - a function, a vector of functions, a vector of `[label function]` pairs or
+    a map label -> function. Each function is a row `{:function label}` (label - the pair's or map's key, or the
+    index in a vector, 0 for a single function), grouped by the chart's own `:mapping` (`{:color :function}`,
+    `:dash`, `:group`); labels are levels in the given order (vector order, pair order, a map's iteration order - a
+    hash map of more than 8 entries has none, use pairs), not sorted, unless the plot's scale has an explicit
+    `:domain`: a mapped `:function` is declared categorical ([[categorical-labels]]), so numeric labels get ordinal
+    scales - the plot's scale of that aesthetic, shared with the other charts (numeric data of another chart on it
+    then needs few distinct values).
     Without a mapping every function takes the theme style.
   * `:domain [lo hi]` (`:f`) - numbers or `java.time` values; without it the plot's explicit x domain, else the x
     scale's domain at drawing (the chart then adds no extents). On a temporal domain or a `:datetime` x scale `f`
@@ -48,10 +51,13 @@
 
 ;; schema
 
+(defn- labelled-pair? [p] (and (vector? p) (= 2 (count p)) (fn? (second p))))
+
 (def ^:private functions
   (schema/named-type ::functions
-                     #(or (fn? %) (and (vector? %) (seq %) (every? fn? %)) (and (map? %) (seq %) (every? fn? (vals %))))
-                     "should be a function, a non-empty vector of functions or a non-empty map label -> function"))
+                     #(or (fn? %) (and (vector? %) (seq %) (or (every? fn? %) (every? labelled-pair? %)))
+                          (and (map? %) (seq %) (every? fn? (vals %))))
+                     "should be a function, a non-empty vector of functions or of [label function] pairs, or a non-empty map label -> function"))
 
 (defn- span-value? [v] (or (schema/finite? v) (data/temporal? v)))
 
@@ -111,12 +117,24 @@
 ;; input
 
 (defn- labelled
-  "`[[label f] ..]` of a function, a vector of functions or a map label -> function."
+  "`[[label f] ..]` of a function, a vector of functions or of `[label f]` pairs, or a map label -> function."
   [fs]
   (cond
     (fn? fs) [[0 fs]]
     (map? fs) (vec fs)
+    (every? labelled-pair? fs) (vec fs)
     :else (vec (map-indexed vector fs))))
+
+(defn- label-ordered-extents
+  "Aesthetic `extents` (`{panel {dim extent}}`) with the dims `mapping` maps to `:function` listing the `labels` in
+  their given order, marked `:ordered?` (ordinal scales keep it, see [[cljplot2.scale.aesthetic]])."
+  [extents mapping labels]
+  (let [dims (filter #(= :function (some-> (get mapping %) accessor/unwrap)) aesthetic/dims)
+        order (vec (distinct labels))]
+    (update-vals extents (fn [es] (reduce (fn [es k] (if-let [e (get es k)]
+                                                         (assoc es k (assoc e :values (filterv (set (:values e)) order) :ordered? true))
+                                                         es))
+                                          es dims)))))
 
 (defn- checked-input!
   "`[parametric? labelled-functions]` of the options; throws `ex-info` for a missing or doubled function, a
@@ -215,7 +233,7 @@
         extents (sampled-extents parametric? fs options plot-scales)]
     {:data {facet/all-panels (merge {:functions functions :style (style options theme) :parametric? parametric?}
                                     (select-keys options [:domain :t :sample-step :gaps]))}
-     :extents (merge-with merge (group/aesthetic-extents panels plot-scales)
+     :extents (merge-with merge (label-ordered-extents (group/aesthetic-extents panels plot-scales) mapping (map first fs))
                           (if (seq extents) {facet/all-panels extents} {}))
      :padding (merge {:x [0.05 0.05] :y [0.05 0.05]} (:padding options))
      :na (group/na-dims panels)

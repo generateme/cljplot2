@@ -3,7 +3,8 @@
   [[cljplot2.data.rows/x-key]]) evaluated on a grid, with confidence, prediction or bootstrap bands at one or more
   levels.
 
-  Methods ([[smooth-methods]]): `:loess` (fastmath loess, bands from its standard errors and t quantiles of its `:df`),
+  Methods ([[smooth-methods]]): `:loess` (fastmath loess - by default local quadratic over 75% of the points, as
+  ggplot2's `geom_smooth` ([[loess-defaults]]); bands from its standard errors and t quantiles of its `:df`),
   `:lm` (fastmath linear model, `:degree` - orthogonal polynomial terms; confidence and prediction intervals),
   `:glm` (fastmath generalized linear model; confidence intervals), `:gp` (fastmath Gaussian process, mean ± z·σ of
   the latent function) and every other fastmath 1D interpolation method or a function `(fn [xs ys] f)` (no own band;
@@ -34,6 +35,14 @@
   "Band kinds: `:confidence`, `:prediction` (`:lm`), `:bootstrap`, `:none`."
   [:confidence :prediction :bootstrap :none])
 
+(def loess-defaults
+  "`:loess` options under the user's `:method-params`: ggplot2 `geom_smooth`'s span (`:bandwidth` 0.75) and local
+  quadratic fits (`:degree` 2); fastmath's robustness iterations (`:iters`, default 2) are kept - `:iters 0` is
+  ggplot2's plain fit."
+  {:bandwidth 0.75 :degree 2})
+
+(defn- loess-params [params] (merge loess-defaults params))
+
 (defn default-band
   "Band of `method` without a `:band` option: `:confidence` for [[error-methods]], else `:none`."
   [method]
@@ -42,12 +51,13 @@
 (defn required-points
   "Fewest distinct x values a fit of `method` with `params` needs: `:lm` - `degree + 2`, `:glm` - 3 (fastmath needs a
   residual degree of freedom beyond the coefficients, intercept included); `:loess` - enough for 2
-  neighbours at its `:bandwidth` (default 0.3: 7; a `:bandwidth` has to be a number in (0, 1]); others 2."
+  neighbours at its `:bandwidth` (default 0.75 - [[loess-defaults]]: 3; a `:bandwidth` has to be a number in
+  (0, 1]); others 2."
   ^long [method params]
   (case method
     :lm (+ 2 (long (get params :degree 1)))
     :glm 3
-    :loess (let [bandwidth (double (get params :bandwidth 0.3))]
+    :loess (let [bandwidth (double (:bandwidth (loess-params params)))]
              (loop [n 2] (if (>= (m/floor (* bandwidth n)) 2.0) n (recur (inc n)))))
     2))
 
@@ -88,7 +98,7 @@
   (case method
     (:lm :glm) (fn [xs ys] (let [model (regression-model method params xs ys default-level)]
                              (fn [x] (regression/predict model [x]))))
-    :loess (fn [xs ys] (interpolation/loess xs ys params))
+    :loess (fn [xs ys] (interpolation/loess xs ys (loess-params params)))
     :gp (fn [xs ys] (let [model (gp-model xs ys params)] (fn [x] (gp/predict model x false))))
     (fit/fit-fn method (when (some? params) [params]))))
 

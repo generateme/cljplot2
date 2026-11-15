@@ -204,6 +204,17 @@
         b (+ b (* (double phi) span))]
     (if log? [(m/pow 10.0 a) (m/pow 10.0 b)] [a b])))
 
+(defn- pad-domain
+  "[[pad]] of the ends of `domain`; a `:datetime` domain in epoch milliseconds (see [[cljplot2.data.rows/x-key]]), its
+  ends back in their types (a `LocalDate` end becomes a `LocalDateTime`; niced domains are `LocalDateTime` already,
+  `LocalTime` data included)."
+  [kind domain padding]
+  (let [a (first domain) b (last domain)]
+    (if (= :datetime kind)
+      (let [[ka kb] (pad :linear [(rows/x-key a) (rows/x-key b)] padding)]
+        [(rows/key->x ka a) (rows/key->x kb b)])
+      (pad kind [(double a) (double b)] padding))))
+
 (defn- pad-pixels
   "Extend `[lo hi]` so that `[plo phi]` pixels of a `length` pixels long range lie beyond it (in log10 space for
   `:log`); unchanged when the room would take more than half the range."
@@ -224,7 +235,7 @@
 (defn- pad-domain-pixels
   "[[pad-pixels]] of the ends of `domain`; a `:datetime` domain in epoch milliseconds (see
   [[cljplot2.data.rows/x-key]]), its ends back in their types (a `LocalDate` end becomes a `LocalDateTime`; a
-  `LocalTime` end stays within the day, so room past midnight is lost)."
+  `LocalTime` end - only with `:nice false`, niced domains are `LocalDateTime` - stays within the day)."
   [kind domain padding-px length]
   (let [a (first domain) b (last domain)]
     (if (= :datetime kind)
@@ -252,7 +263,8 @@
   numeric and temporal (`:datetime`) data domains are widened when collapsed to one value.
   Numeric continuous domains - data or explicit - get `:padding`: the spec `:expand`, else the charts' `padding`
   (only when there is data; `:radial` - none below the data); [[finalize]] applies it after `nice`, so the
-  outermost ticks sit inside the panel. Temporal, `:interpolated` and categorical domains aren't padded."
+  outermost ticks sit inside the panel; temporal (`:datetime`) domains too, in epoch milliseconds (marks at the
+  ends stay inside). `:interpolated` and categorical domains aren't padded."
   [k spec extent padding]
   (when (and (= :interpolated (:kind spec)) (nil? (:domain spec)))
     (schema/fail! "An :interpolated scale needs an explicit :domain (its stop values)." {:key :domain :in [:scales k :domain]}))
@@ -274,7 +286,7 @@
         padding (or (:expand spec)
                     (when extent (if (= :radial (:kind built)) (assoc (vec padding) 0 0.0) padding)))]
     (cond-> built
-      (and padding (not (#{:datetime :interpolated} (:kind built))) (continuous-kinds (:kind built)))
+      (and padding (not= :interpolated (:kind built)) (continuous-kinds (:kind built)))
       (assoc :padding (vec padding)))))
 
 (defn tick-hint
@@ -369,7 +381,7 @@
                (= :interpolated kind) (assoc :range (stop-pixels range (count (:domain spec)) (:stops spec))))
         niced (nice-domain (s/scale kind (assoc base :ticks nice-count)) kind (:nice spec))
         domain (if-let [padding (:padding spec)]
-                 (pad kind [(double (first niced)) (double (last niced))] padding)
+                 (pad-domain kind niced padding)
                  niced)
         domain (if-let [padding-px (when (#{:linear :log :datetime} kind) (:padding-px spec))]
                  (pad-domain-pixels kind domain padding-px (m/abs (- (double (second range)) (double (first range)))))

@@ -13,7 +13,7 @@
   row in data order). Without an `:anchor` / `:offset` it places the text past the point - `:last` `[:left :middle]`
   offset `[5 0]`, `:first` `[:right :middle]` `[-5 0]` (flipped plots: `[:center :bottom]` `[0 5]`, `[:center :top]`
   `[0 -5]`) - and keeps room for the labels on that side of x (`:padding-px`: the widest label - the tallest when
-  flipped, `:rotation` included - and the offset; on a `LocalTime` axis only within the day).
+  flipped, `:rotation` included - and the offset).
 
   Options: `:anchor` - the point of the text box placed at the position, `[h v]` (`h` one of `:left :center :right`,
   `v` one of `:top :middle :bottom`; default `[:center :middle]`); `:offset [dx dy]` - pixels, `dy` up (default

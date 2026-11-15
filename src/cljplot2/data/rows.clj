@@ -202,7 +202,8 @@
 
 (defn merge-extents
   "Merge extents of dimension `k` (`nil`s skipped); `:values` are kept (merged, distinct) when every extent has them
-  (numeric / temporal: at most [[max-levels]]); `:sample`s (all values, for data-driven bins) are concatenated.
+  (numeric / temporal: at most [[max-levels]]); `:sample`s (all values, for data-driven bins) are concatenated;
+  `:ordered?` (levels in a given order, not to be sorted) stays when every extent has it.
   Mixed kinds throw `ex-info {:key :extents}`."
   [k extents]
   (let [es (remove nil? extents)]
@@ -217,4 +218,5 @@
                      :min (reduce #(if (neg? (compare %2 %1)) %2 %1) (map :min es))
                      :max (reduce #(if (pos? (compare %2 %1)) %2 %1) (map :max es))})
           (every? :values es) (capped-values (mapcat :values es))
+          (every? :ordered? es) (assoc :ordered? true)
           (some :sample es) (assoc :sample (into [] (mapcat :sample) es)))))))

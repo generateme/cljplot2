@@ -11,7 +11,8 @@
   * `:kind` - `:ordinal`, `:linear`, `:binned` or `:identity` (both below); default `:linear` for numeric `:color` / `:size` data or a numeric explicit
     domain of two values, otherwise `:ordinal` (`:shape` and `:dash` are always ordinal or identity); numeric data with more than
     [[cljplot2.data.rows/max-levels]] distinct values can be ordinal only with an explicit `:domain`
-  * `:domain` - ordinal: distinct levels (default: data levels, sorted; numbers equal as doubles, `1931` = `1931.0`);
+  * `:domain` - ordinal: distinct levels (default: data levels, sorted - in the charts' order when every chart's
+    extent is `:ordered?`, e.g. function labels; numbers equal as doubles, `1931` = `1931.0`);
     linear: `[lo hi]` (default: data min, max)
   * `:range` - default from theme `:palette` (`:color`, `:gradient`, `:shape`, `:size`, `:dash`):
     ordinal `:color` - palette name or colors (cycled; with `:spread` also a gradient); linear / binned `:color` -
@@ -227,6 +228,8 @@
   [k explicit extent]
   (cond
     explicit (vec explicit)
+    (and (:ordered? extent) (:values extent)) (first (reduce (fn [[acc seen] v] (if (contains? seen (level-key v)) [acc seen] [(conj acc v) (conj seen (level-key v))]))
+                                                             [[] #{}] (:values extent)))
     (:values extent) (data/sorted-levels k (vals (reduce (fn [acc v] (if (contains? acc (level-key v)) acc (assoc acc (level-key v) v)))
                                                          {} (:values extent)))
                                          :domain)

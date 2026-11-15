@@ -168,12 +168,15 @@
     (is (= 3 (smooth/required-points :lm nil)))
     (is (= 5 (smooth/required-points :lm {:degree 3})))
     (is (= 3 (smooth/required-points :glm {:family :poisson})))
-    (is (= 7 (smooth/required-points :loess nil)))
+    (is (= 3 (smooth/required-points :loess nil)) "default bandwidth 0.75")
+    (is (= 7 (smooth/required-points :loess {:bandwidth 0.3})))
     (is (= 4 (smooth/required-points :loess {:bandwidth 0.5})))
     (is (= 2 (smooth/required-points :loess {:bandwidth 1.0})))
     (is (= 2 (smooth/required-points :cubic nil)))
-    (is (= 1 (get-in (stats (smooth-plot (take 6 line-data) {})) [:dropped :group])) "6 points, loess at 0.3")
-    (is (= 0 (get-in (stats (smooth-plot (take 7 line-data) {})) [:dropped :group]))))
+    (is (= 1 (get-in (stats (smooth-plot (take 6 line-data) {:method-params {:bandwidth 0.3}})) [:dropped :group])) "6 points, loess at 0.3")
+    (is (= 0 (get-in (stats (smooth-plot (take 7 line-data) {:method-params {:bandwidth 0.3}})) [:dropped :group])))
+    (is (= 1 (get-in (stats (smooth-plot (take 2 line-data) {})) [:dropped :group])) "2 points, default 0.75")
+    (is (= 0 (get-in (stats (smooth-plot (take 3 line-data) {})) [:dropped :group]))))
   (testing "3.1.2 other fit errors name the group"
     (let [e (error #(build (smooth-plot (mapv (fn [r] (assoc r :g "a")) line-data)
                                         {:method (fn [_ _] (throw (ex-info "boom" {})))} {:mapping {:x :x :y :y :color :g}})))]
@@ -186,11 +189,11 @@
   (let [xs (mapv :x noisy) ys (mapv :y noisy)]
     (testing "3.2.1 loess (default) equals fastmath loess on the grid"
       (let [{:keys [x y]} (curve-of (smooth-plot noisy {:band :none}))
-            f (interpolation/loess xs ys)]
+            f (interpolation/loess xs ys smooth/loess-defaults)]
         (is (close? 1e-12 (map f x) y))))
     (testing "3.2.1 :method-params reach loess"
       (let [{:keys [x y]} (curve-of (smooth-plot noisy {:band :none :method-params {:bandwidth 0.6 :iters 0}}))
-            f (interpolation/loess xs ys {:bandwidth 0.6 :iters 0})]
+            f (interpolation/loess xs ys {:bandwidth 0.6 :degree 2 :iters 0})]
         (is (close? 1e-12 (map f x) y))))
     (testing "3.2.2 lm degree 1 on an exact line; degree 3 equals fastmath"
       (is (close? 1e-9 (map #(+ 1 (* 2 %)) (:x (curve-of (smooth-plot line-data {:method :lm}))))
@@ -219,7 +222,8 @@
       (is (some? (curve-of (smooth-plot (into line-data line-data) {:method :cubic})))))
     (testing "3.2.6 unknown method; :degree outside lm or not a positive integer"
       (is (= :method (:key (error #(build (smooth-plot noisy {:method :nope}))))))
-      (is (= :method-params (:key (error #(build (smooth-plot noisy {:method-params {:degree 2}}))))))
+      (is (= :method-params (:key (error #(build (smooth-plot noisy {:method-params {:degree 3}}))))) "loess degree 1 or 2")
+      (is (= :method-params (:key (error #(build (smooth-plot noisy {:method :gp :method-params {:degree 2}}))))))
       (is (= :method-params (:key (error #(build (smooth-plot noisy {:method :lm :method-params {:degree 0}}))))))
       (is (= :method-params (:key (error #(build (smooth-plot noisy {:method :lm :method-params {:degree 1.5}})))))))))
 
@@ -237,7 +241,7 @@
         (is (close? 1e-9 (map second ci) (:hi (first bands))))))
     (testing "3.3.2 loess band: fit ± t · stderr"
       (let [{:keys [x y bands]} (curve-of (smooth-plot noisy {}))
-            f (interpolation/loess xs ys)
+            f (interpolation/loess xs ys smooth/loess-defaults)
             t (r/icdf (r/distribution :t {:degrees-of-freedom (:df f)}) 0.975)]
         (is (close? 1e-9 (map (fn [x fit] (- (double fit) (* t (double (second (f x true)))))) x y) (:lo (first bands))))))
     (testing "3.3.2 gp band: mean ± z · σ"

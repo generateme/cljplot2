@@ -296,9 +296,12 @@
     (is (= [-1.0 11.0] (:domain (get-in (build (scatter-plot {:scales {:x {:domain [0 10] :expand [0.1 0.1]}}})) [:finalized-scales :x])))))
   (testing "explicit domain without charts (axes only) isn't padded"
     (is (= [0.0 10.0] (mapv double (:domain (get-in (build {:scales {:x {:domain [0 10]}}}) [:finalized-scales :x]))))))
-  (testing "temporal and bands domains aren't padded"
-    (is (nil? (get-in (build (scatter-plot {:data [{:a (LocalDate/of 2020 1 1) :b 1} {:a (LocalDate/of 2020 6 1) :b 2}]}))
-                      [:scale-specs :x :padding])))
+  (testing "temporal domains are padded like numeric ones (Evolution notebook review L6); bands aren't"
+    (let [b (build (scatter-plot {:data [{:a (LocalDate/of 2020 1 1) :b 1} {:a (LocalDate/of 2020 6 1) :b 2}]}))
+          [lo hi] (get-in b [:finalized-scales :x :domain])]
+      (is (= [0.05 0.05] (get-in b [:scale-specs :x :padding])))
+      (is (neg? (compare lo (java.time.LocalDateTime/of 2020 1 1 0 0))) "below the first date")
+      (is (pos? (compare hi (java.time.LocalDateTime/of 2020 6 1 0 0))) "above the last date"))
     (is (nil? (get-in (build (scatter-plot {:data [{:a 1 :b "u"} {:a 2 :b "v"}]})) [:scale-specs :y :padding]))))
   (testing ":padding is internal"
     (is (= {:key :padding :in [:scales :x :padding] :value [0 0]} (error #(build (scatter-plot {:scales {:x {:padding [0 0]}}})))))))

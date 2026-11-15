@@ -252,8 +252,11 @@
 
 ;; ### Smoothers with confidence bands
 
-;; Loess (default) with nested 50% / 95% bands; a linear model per diet; a Gaussian process (mean ± z·σ). On a date
-;; axis the fit works in epoch milliseconds - a kernel's scale too (here 3 years).
+;; Loess (default) with nested 50% / 95% bands; a linear model per diet; a Gaussian process (mean ± z·σ). The loess
+;; defaults are ggplot2's `geom_smooth` ones - 75% of the points, local quadratic fits - with fastmath's two robustness
+;; iterations (`:method-params {:iters 0}` is ggplot2's plain fit; the robust bands are a little wider). The bands
+;; equal R's `predict(se = TRUE)` for the same fit; with 144 or 220 points they are narrow. On a date axis the fit
+;; works in epoch milliseconds - a kernel's scale too (here three months).
 
 (nu/source-note {:source "R Graph Gallery - Scatterplot with ggplot2 (smoothing); Polynomial curve fitting"
                  :url ["https://r-graph-gallery.com/50-51-52-scatter-plot-with-ggplot2.html"
@@ -489,8 +492,8 @@
 
 ;; ### Lollipop
 
-;; A segment from zero to each value (`(chart/segment {:yend 0})`) under a point; any x, here car models, flipped
-;; for readable labels.
+;; A segment from zero to each value (`(chart/segment {:yend 0})`) under a point, on any x: car models (flipped for
+;; readable labels) or dates.
 
 (nu/source-note {:source "R Graph Gallery - Basic lollipop plot; data-to-viz - Lollipop"
                  :url ["https://r-graph-gallery.com/300-basic-lollipop-plot.html"
@@ -499,13 +502,19 @@
 
 (let [ordered (sort-by :mpg mtcars)]
   (plot/render-image
-   {:data ordered
-    :mapping {:x :model :y :mpg}
-    :scales {:x {:domain (mapv :model ordered)}}
-    :flip true
-    :charts [(chart/segment {:yend 0 :color [150 150 150]}) (chart/scatter {:size 7 :color [33 102 172]})]
-    :labels {:title "Fuel economy of 32 cars" :x nil :y "miles per gallon"}}
-   {:width 800 :height 700}))
+   (plot/arrange
+    [{:data ordered
+      :mapping {:x :model :y :mpg}
+      :scales {:x {:domain (mapv :model ordered)}}
+      :flip true
+      :charts [(chart/segment {:yend 0 :color [150 150 150]}) (chart/scatter {:size 7 :color [33 102 172]})]
+      :labels {:title "Fuel economy of 32 cars" :x nil :y "miles per gallon"}}
+     {:data (filter #(= 1959 (:year %)) air)
+      :mapping {:x :date :y :passengers}
+      :charts [(chart/segment {:yend 0 :color [150 150 150]}) (chart/scatter {:size 7 :color [33 102 172]})]
+      :labels {:title "Passengers in 1959" :x nil :y "thousands"}}]
+    {:columns 2})
+   {:width 1000 :height 700}))
 
 ;; ### Candlestick
 
@@ -579,19 +588,40 @@
 
 ;; ## Functions
 
-;; `chart/function` samples functions across the panel: a vector of functions is one group each; `:y-limits` keeps
-;; asymptotes from flattening the curve (segments across a limit are cut).
+;; `chart/function` samples functions across the panel. Several functions - a vector, `[label f]` pairs or a map -
+;; are one group each: `{:mapping {:color :function}}` colours them and gives the legend, labels in the given
+;; order. `:y-limits` keeps asymptotes from flattening the curve (segments across a limit are cut).
+
+;; ### Many functions with a legend
 
 (nu/source-note {:source "cljplot2 - chart/function"})
 
 (plot/render-image
  (plot/arrange
-  [{:charts [(chart/function {:f [m/sin m/cos] :domain [(- m/TWO_PI) m/TWO_PI]})]
-    :labels {:title "sin and cos" :x "x" :y "y"}}
+  [{:charts [(chart/function {:f (mapv (fn [k] [(str "sin " k "x") (fn [x] (m/sin (* k (double x))))]) (range 1 11))
+                              :domain [0 m/PI] :mapping {:color :function}})]
+    :scales {:color {:title nil}}
+    :labels {:title "ten [label f] pairs" :x "x" :y "y"}}
    {:charts [(chart/function {:f m/tan :domain [(- m/PI) m/PI] :y-limits [-5 5]})]
     :labels {:title "tan with :y-limits [-5 5]" :x "x" :y "y"}}]
   {:columns 2})
  {:width 1000 :height 400})
+
+;; ### Parametric curves
+
+;; `:parametric` - `(fn [t] [x y])` over `:t [lo hi]`, sampled by count; Lissajous figures on an isometric aspect.
+
+(nu/source-note {:source "Wikipedia - Lissajous curve" :url "https://en.wikipedia.org/wiki/Lissajous_curve"})
+
+(plot/render-image
+ (plot/arrange
+  (vec (for [[a b] [[1 2] [3 2] [3 4] [5 4]]]
+         {:aspect :iso
+          :charts [(chart/function {:parametric (fn [t] [(m/sin (* a (double t))) (m/sin (* b (double t)))])
+                                    :t [0 m/TWO_PI] :sample-step {:count 1000}})]
+          :labels {:title (str "a = " a ", b = " b) :x nil :y nil}}))
+  {:columns 4})
+ {:width 1000 :height 300})
 
 ;; ## Caveats
 

@@ -11,7 +11,7 @@
   a bands scale; 10 pixels with a single x). Options (style defaults from theme `[:chart :candlestick]`):
   `:up-color`, `:down-color`, `:body-width`, `:wick-width`, `:stroke-color`, `:style`, `:padding {:x [lo hi] :y [lo
   hi]}` (default 5% each side; the x extent also reaches half the smallest x gap beyond the data, so the outer bodies
-  fit on a date axis, which gets no padding). A row with an invalid value is dropped (counted per key), as is one whose values
+  fit whatever the padding). A row with an invalid value is dropped (counted per key), as is one whose values
   don't hold `low <= open, close <= high` (counted as `:ohlc`). Colour means up / down: an aesthetic or `:group` in
   the chart's own `:mapping` throws `ex-info {:key :mapping}`; ones inherited from the plot mapping are ignored (the
   candles draw nothing into their legend keys)."
@@ -58,8 +58,8 @@
 (defn- finite? [v] (and (number? v) (Double/isFinite (double v))))
 
 (defn- half-gap-ends
-  "`xs` with ends half the smallest gap between distinct x beyond the data, so the outer bodies fit (temporal
-  domains get no padding): numbers and `java.time` values by [[cljplot2.data.rows/x-key]] - a `LocalDate` by whole
+  "`xs` with ends half the smallest gap between distinct x beyond the data, so the outer bodies fit with any
+  padding: numbers and `java.time` values by [[cljplot2.data.rows/x-key]] - a `LocalDate` by whole
   days, keeping its type; `xs` unchanged with fewer than 2 distinct keyed values or levels."
   [xs]
   (let [keyed (sort-by first (distinct (keep (fn [x] (when-let [k (data/x-key x)] [k x])) xs)))

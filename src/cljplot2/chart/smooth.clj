@@ -4,7 +4,9 @@
   Options (style defaults from theme `[:chart :smooth]`):
 
   * `:method` - `:loess` (default), `:lm`, `:glm`, `:gp`, any other fastmath 1D interpolation method or a function
-    `(fn [xs ys] f)`; `:method-params` - a map: the options of fastmath `loess` (`:bandwidth`, `:iters`, ...), `lm`
+    `(fn [xs ys] f)`; `:method-params` - a map: the options of fastmath `loess` (over the ggplot2 defaults
+    `{:bandwidth 0.75 :degree 2}` - see [[cljplot2.data.smooth/loess-defaults]]; `:iters` robustness iterations,
+    fastmath's default 2, `0` - ggplot2's plain fit), `lm`
     (`:degree` - polynomial degree, default 1 - and lm options), `glm` (`:family`, ...), `gaussian-process` (`:kernel`,
     `:noise`, `:kscale`, `:normalize?`), else the extra argument of the method (or function)
   * `:band` - `:confidence` (default for `:loess`, `:lm`, `:glm`, `:gp`), `:prediction` (`:lm`), `:bootstrap` (any
@@ -80,8 +82,9 @@
 
 (defn- fit-spec
   "The fit of the chart `options` with style `st`: `{:method :params :band :levels :bootstrap}` (`:band :none` for a
-  `:fill :none`; the bootstrap `:rng` copied for this build). Throws `ex-info` for `:degree` without `:lm` or not a
-  positive integer, a loess `:bandwidth` outside (0, 1] (`{:key :method-params}`), a band the method has none of
+  `:fill :none`; the bootstrap `:rng` copied for this build). Throws `ex-info` for `:degree` with a method other than
+  `:lm` (a positive integer) or `:loess` (1 or 2), a loess `:bandwidth` outside (0, 1] (`{:key :method-params}`), a
+  band the method has none of
   (`{:key :band}`)."
   [options st]
   (let [method (get options :method :loess)
@@ -91,8 +94,10 @@
     (when (and (= :loess method) (contains? params :bandwidth)
                (not (and (number? (:bandwidth params)) (< 0.0 (double (:bandwidth params))) (<= (double (:bandwidth params)) 1.0))))
       (schema/fail! ":method-params :bandwidth of loess should be a number in (0 1]." {:key :method-params :value (:bandwidth params)}))
-    (when (and (contains? params :degree) (not= :lm method))
-      (schema/fail! ":method-params :degree is for :method :lm." {:key :method-params :value params}))
+    (when (and (contains? params :degree) (not (#{:lm :loess} method)))
+      (schema/fail! ":method-params :degree is for :method :lm or :loess." {:key :method-params :value params}))
+    (when (and (= :loess method) (contains? params :degree) (not (#{1 2} (:degree params))))
+      (schema/fail! ":method-params :degree of loess should be 1 or 2." {:key :method-params :value (:degree params)}))
     (when (and (= :lm method) (contains? params :degree) (not (and (integer? (:degree params)) (pos? (long (:degree params))))))
       (schema/fail! ":method-params :degree should be a positive integer." {:key :method-params :value (:degree params)}))
     (when (and (= :confidence band) (not (contains? smooth/error-methods method)))
