@@ -210,3 +210,47 @@
     (is (pos? (key-ink bar/legend (chart/bar {:pattern-color red}) {:color [250 250 250] :pattern :hatch})))
     (is (zero? (key-ink bar/legend (chart/bar {:pattern-color red}) {:color [250 250 250]})))
     (is (pos? (key-ink density/legend (chart/density {:fill :color :alpha 1.0 :pattern-color red}) {:color [250 250 250] :pattern :cross})))))
+
+(deftest review-fixes
+  (testing "T1 :pattern-color :none - no pattern, no error"
+    (is (nil? (draw/pattern-fill {:pattern :hatch :pattern-color :none} :red)))
+    (is (zero? (ink {:data groups :mapping {:x :v :y :g} :charts [(chart/bar {:color :white :pattern :hatch :pattern-color :none})]}))))
+  (testing "T2 one pattern fill per pattern, ink and fill in a draw call"
+    (let [cache (draw/pattern-fill-cache)
+          a (cache {:pattern :hatch :color :blue} [255 255 255])
+          b (cache {:pattern :hatch :color :red} [255 255 255])]
+      (is (identical? a b) "other style keys don't matter")
+      (is (not (identical? a (cache {:pattern :dots} [255 255 255]))))
+      (is (not (identical? a (cache {:pattern :hatch} [0 0 0]))))
+      (is (nil? (cache {:pattern :solid} [0 0 0])))
+      (is (instance? java.awt.TexturePaint (:paint a)))))
+  (testing "T3 angles as doubles"
+    (is (schema/pattern? {:kind :lines :angle 45.0 :spacing 6 :width 1}))
+    (is (not (schema/pattern? {:kind :lines :angle 45.5 :spacing 6 :width 1})))
+    (is (= 8 (pattern/period {:kind :cross :angle 135.0 :spacing 6 :width 1})))
+    (is (pos? (ink {:data groups :mapping {:x :v :y :g}
+                    :charts [(chart/bar {:color :white :pattern-color red :pattern {:kind :lines :angle 90.0 :spacing 5 :width 1}})]}))))
+  (testing "T5 treemap: leaves patterned, group boxes not"
+    (let [data (for [g ["p" "q"] l ["a" "b"]] {:g g :l l :v 1})
+          render (fn [p] (plot/render-image {:data data :mapping {:value :v :hierarchy [:g :l]} :legend false :theme white
+                                             :charts [(chart/treemap {:pattern p :pattern-color red :padding 12})]}
+                                            size))]
+      (is (pos? (red-count (render :hatch))))
+      (is (zero? (red-count (render :solid))))
+      (testing "the group padding (just inside a group box) stays free of ink"
+        (let [img (render :hatch)]
+          (is (not-any? reddish? (for [x (range 300)] (rgb img x 9)))
+              "a row inside the top padding band (panel starts at y 0 in a legend-free plot without title)")))))
+  (testing "T7 default position: dodge only when a level holds two or more groups"
+    (let [slots (fn [p] (set (map :slot (get-in (build p) [:stats 0 :data :panel (if (= :bar (get-in p [:charts 0 :kind])) :bars :items)]))))]
+      (is (= #{[-0.5 0.5]} (slots {:data groups :mapping {:x :v :y :g :color :g} :charts [(chart/bar)]}))
+          "one group per level - full band")
+      (is (false? (get-in (build {:data groups :mapping {:x :v :y :g :color :g} :charts [(chart/bar)]}) [:stats 0 :data :panel :translucent?]))
+          "not translucent")
+      (is (= 2 (count (slots {:data (concat groups (map #(assoc % :g "a" :c "z") groups)) :mapping {:x :v :y :g :color :c}
+                              :charts [(chart/bar)]})))
+          "a level with two groups dodges")
+      (is (= #{[-0.5 0.5]} (slots {:data samples :mapping {:x :v :y :g :color :g} :charts [(chart/box)]})) "box too")
+      (is (= #{[-0.5 0.5]} (slots {:data samples :mapping {:x :v :y :g :color :g} :charts [(chart/extent)]})) "and extent")
+      (is (= 2 (count (slots {:data samples :mapping {:x :v :color :g} :charts [(chart/box)]})))
+          "without levels the panel is the level: groups dodge"))))

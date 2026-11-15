@@ -143,7 +143,8 @@
           point (fn [a c] (if flipped? [c a] [a c]))
           xs (mapv #(along (projection (:x %) (:low %))) candles)
           half (* 0.5 (body-width xs (:body-width style) (:x scales)))
-          wick (double (:wick-width style))]
+          wick (double (:wick-width style))
+          pattern-fill (draw/pattern-fill-cache)]
       (doseq [[c a] (map vector candles xs)
               :let [a (double a)
                     [^double o ^double h ^double l ^double cl] (mapv #(double (across (projection (:x c) (% c)))) value-keys)
@@ -162,7 +163,7 @@
                   (c2d/set-color canvas color)
                   (c2d/rect canvas rx ry rw rh)
                   (draw/fill-with-pattern! canvas
-                                           (draw/pattern-fill {:pattern (if up? (:up-pattern style) (:down-pattern style))
+                                           (pattern-fill {:pattern (if up? (:up-pattern style) (:down-pattern style))
                                                                :pattern-color (:pattern-color style)}
                                                               color)
                                            #(c2d/rect canvas rx ry rw rh))

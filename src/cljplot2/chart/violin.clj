@@ -116,7 +116,8 @@
   "Draw the violins of one panel: the outline polygon (filled), then the inner marks."
   [_chart {:keys [items style place options mirror?]} canvas box scales env]
   (let [{:keys [point] :as pl} (strip/placement box scales options place)
-        inner (get options :inner :box)]
+        inner (get options :inner :box)
+        pattern-fill (draw/pattern-fill-cache)]
     (doseq [{:keys [level slot xs widths q1 median q3 lav uav values aesthetics]} items
             :let [st (group/style style aesthetics scales (:theme env))]
             :when st]
@@ -140,7 +141,7 @@
           (let [pixels (mapv (fn [^Vec2 v] [(.x v) (.y v)]) polygon)]
             (c2d/set-color canvas fill)
             (c2d/path canvas pixels true false)
-            (draw/fill-with-pattern! canvas (draw/pattern-fill st fill) #(c2d/path canvas pixels true false)))
+            (draw/fill-with-pattern! canvas (pattern-fill st fill) #(c2d/path canvas pixels true false)))
           (when-not (theme/none? stroke)
             (c2d/set-stroke-custom canvas {:size sw :join :round})
             (c2d/set-color canvas stroke)

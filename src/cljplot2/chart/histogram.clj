@@ -200,6 +200,7 @@
         point (strip/ridge-point pl (double overlap))
         top (double top)
         stroke-width (double (:stroke-width style))
+        pattern-fill (draw/pattern-fill-cache)
         ok? (fn [^Vec2 p] (and (m/valid-double? (.x p)) (m/valid-double? (.y p))))]
     (when (pos? top)
       (c2d/set-stroke-custom canvas {:size stroke-width :join :miter})
@@ -212,7 +213,7 @@
               :when (pos? (double h))
               :let [a (point x0 level side 0.0) b (point x1 level side (/ (double h) top))]
               :when (and (ok? a) (ok? b))]
-        (draw/bar! canvas a b fill (draw/outline-color (:stroke-color st) fill) stroke-width (draw/pattern-fill st fill))))))
+        (draw/bar! canvas a b fill (draw/outline-color (:stroke-color st) fill) stroke-width (pattern-fill st fill))))))
 
 (defn draw
   "Draw the bars of one panel; grouped overlay bars get fill alpha `:alpha`; empty bins, bars under half a pixel and
@@ -223,7 +224,8 @@
     (draw-ridges! computed canvas box scales env)
     (when (seq bars)
       (let [projection (scale/projection scales)
-            stroke-width (double (:stroke-width style))]
+            stroke-width (double (:stroke-width style))
+            pattern-fill (draw/pattern-fill-cache)]
         (c2d/set-stroke-custom canvas {:size stroke-width :join :miter})
         (doseq [{:keys [x0 x1 y0 y1 aesthetics]} bars
                 :when (not (== (double y0) (double y1)))
@@ -236,7 +238,7 @@
             (when (draw/visible-bar? (double w) (double h))
               (c2d/set-color canvas drawn-fill)
               (c2d/rect canvas left top w h)
-              (draw/fill-with-pattern! canvas (draw/pattern-fill st drawn-fill) #(c2d/rect canvas left top w h))
+              (draw/fill-with-pattern! canvas (pattern-fill st drawn-fill) #(c2d/rect canvas left top w h))
               (when (and (pos? stroke-width) (not (theme/none? stroke)))
                 (c2d/set-color canvas stroke)
                 (c2d/rect canvas left top w h true)))))

@@ -105,7 +105,8 @@
   "Draw the boxes of one panel."
   [_chart {:keys [items style place options]} canvas box scales env]
   (let [{:keys [point] :as pl} (strip/placement box scales options place)
-        outliers? (data/option options :outliers true)]
+        outliers? (data/option options :outliers true)
+        pattern-fill (draw/pattern-fill-cache)]
     (doseq [{:keys [level slot q1 median q3 lav uav outliers mean width-factor aesthetics]} items
             :let [st (group/style style aesthetics scales (:theme env))]
             :when st]
@@ -129,7 +130,7 @@
                   w (m/abs (- (.x ^Vec2 b) (.x ^Vec2 a))) h (m/abs (- (.y ^Vec2 b) (.y ^Vec2 a)))]
               (c2d/set-color canvas fill)
               (c2d/rect canvas x y w h)
-              (draw/fill-with-pattern! canvas (draw/pattern-fill st fill) #(c2d/rect canvas x y w h))
+              (draw/fill-with-pattern! canvas (pattern-fill st fill) #(c2d/rect canvas x y w h))
               (when-not (theme/none? stroke)
                 (c2d/set-color canvas stroke)
                 (c2d/rect canvas x y w h true)))

@@ -1,6 +1,7 @@
 (ns cljplot2.scale.aesthetic
   "Aesthetics: the non-positional dimensions `:color`, `:shape`, `:size`, `:dash` and `:pattern` (fill patterns of
-  filled marks) mapped from data (D4), and their
+  filled marks; charts without fills - points, plain lines - use it only to group, as `:shape` on lines) mapped from
+  data (D4), and their
   scales (D5).
 
   Mapping: an accessor (keyword or function), `nil` = not mapped. A row's value is kept when it is valid

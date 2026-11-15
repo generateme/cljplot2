@@ -9,8 +9,9 @@
     value), `:mean`, `:median` (fastmath.stats), a function of the `:x` values returning a finite number, or a count
     measure of the rows (`:x` not needed, see [[cljplot2.data.measure]]): `:count`, `:percent`, `:pmf` (of the
     group's total in the panel)
-  * `:position` - groups: `:dodge` (default with two or more groups; side by side in the band), `:overlay` (over each
-    other, translucent fill `:alpha`), `:stack` (on top of each other, in group order; negative lengths stack from 0
+  * `:position` - groups: `:dodge` (default when some level holds two or more groups; side by side in the band),
+    `:overlay` (the default otherwise - one group per level fills its band; groups sharing a level translucent, fill
+    `:alpha`), `:stack` (on top of each other, in group order; negative lengths stack from 0
     the other way), `:normalize` (stacked, each level summing to 1; non-negative lengths)
   * `:mirror` - a grouping dimension (an ordinal aesthetic or `:group`) with exactly two levels (see
     [[cljplot2.data.strip]]): the second level's bars point the other way (back-to-back bars, e.g. population
@@ -232,7 +233,7 @@
                         (count-stats stat) (assoc ::strip/count-rows true)
                         (or (keyword? varwidth) (fn? varwidth)) (assoc ::strip/rows true)
                         (:mirror options) (assoc ::strip/mirror (:mirror options)))
-        {:keys [place items panels dropped slot-keys mirror?] :as split} (strip/split chart-split split-options :center env)
+        {:keys [place items panels dropped shared-levels? mirror?] :as split} (strip/split chart-split split-options :center env)
         position (or position (:position split))
         items (item-lengths stat items)
         items (update-vals items #(placed-bars position %))
@@ -244,7 +245,7 @@
         centred? (contains? #{:stack :normalize} position)
         items (update-vals items (fn [its] (mapv #(assoc % :label (end-label options separator centred? value-text %)) its)))
         {base-padding :padding request :request} (baseline (mapcat (juxt :y0 :y1) all-bars))
-        translucent? (and (= :overlay position) (> (count slot-keys) 1))]
+        translucent? (and (= :overlay position) shared-levels?)]
     {:data (update-vals items (fn [its] {:bars its :style (style options theme) :place place :options options
                                          :translucent? translucent?
                                          :zero-line? (and mirror? (data/option options :zero-line true))}))
@@ -267,6 +268,7 @@
   [_chart {:keys [bars style place options translucent? zero-line?]} canvas box scales env]
   (let [{:keys [point] :as pl} (strip/placement box scales options place)
         stroke-width (double (:stroke-width style))
+        pattern-fill (draw/pattern-fill-cache)
         styled (keep (fn [bar] (some->> (group/style style (:aesthetics bar) scales (:theme env)) (vector bar))) bars)]
     (doseq [[{:keys [level slot ^double y0 ^double y1 width-factor]} st] styled
             :when (not (== y0 y1))
@@ -274,7 +276,7 @@
                   hw (* (strip/slot-half slot) (double width-factor))
                   fill (if translucent? (c/set-alpha (:color st) (* 255.0 (double (:alpha style)))) (:color st))]]
       (draw/bar! canvas (point y0 level (- c0 hw)) (point y1 level (+ c0 hw))
-                 fill (draw/outline-color (:stroke-color st) (:color st)) stroke-width (draw/pattern-fill st fill)))
+                 fill (draw/outline-color (:stroke-color st) (:color st)) stroke-width (pattern-fill st fill)))
     (when zero-line?
       (draw/zero-line! canvas box scales style :x))
     (strip/draw-end-labels! canvas pl (keep (fn [[{:keys [label]} st]]
@@ -285,7 +287,7 @@
 
 (defn legend
   "Key glyph: a filled square (see [[cljplot2.graphics.draw/bar-key!]]); translucent with a mapped `:color` when the
-  bars are (overlay groups in two or more slots, see [[compute]] - env `:chart-stats`)."
+  bars are (overlay groups sharing a level, see [[compute]] - env `:chart-stats`)."
   [{:keys [options]} attributes canvas box env]
   (draw/bar-key! canvas box (merge (style options (:theme env)) (select-keys attributes [:color :pattern]))
                  (boolean (and (contains? attributes :color) (some :translucent? (vals (get-in env [:chart-stats :data])))))))

@@ -157,10 +157,12 @@
   (canvas/call-with-isolated-graphics c #(draw/draw-content {:kind :label :role role :text text} % box env)))
 
 (defn- fill-box!
-  [c color {:keys [x y w h] :as box} {:keys [border-color border-width] :as st}]
+  "Fill `box` with `color` and the pattern of style `st` (`pattern-fill` - see
+  [[cljplot2.graphics.draw/pattern-fill-cache]]), then its inner border."
+  [c color {:keys [x y w h] :as box} {:keys [border-color border-width] :as st} pattern-fill]
   (c2d/set-color c color)
   (c2d/rect c (long x) (long y) (long w) (long h))
-  (draw/fill-with-pattern! c (draw/pattern-fill st color) #(c2d/rect c (long x) (long y) (long w) (long h)))
+  (draw/fill-with-pattern! c (pattern-fill st color) #(c2d/rect c (long x) (long y) (long w) (long h)))
   (draw/inner-border! c box border-color border-width))
 
 (defn- children-rects
@@ -172,7 +174,7 @@
 
 (defn- draw-node!
   "Draw `node` in `rect` at `depth` with fill `color` (`nil` for the root: no fill, no header)."
-  [c node rect depth color {:keys [style options leaf-color top-color] :as ctx} env]
+  [c node rect depth color {:keys [style options leaf-color top-color pattern-fill] :as ctx} env]
   (let [box (pixel-box rect)
         depth (long depth)
         root? (zero? depth)]
@@ -188,7 +190,7 @@
               content {:x (+ (double x) padding) :y (+ (double y) padding header-h)
                        :w (- (double w) (* 2.0 padding)) :h (- (double h) (* 2.0 padding) header-h)}]
           (when-not root?
-            (fill-box! c (c/brighten color) box style))
+            (fill-box! c (c/brighten color) box (dissoc style :pattern) pattern-fill))
           (when header?
             (draw-label! c :treemap-group (str (:name node))
                          {:x (+ (long (:x box)) (long (m/round padding))) :y (+ (long (:y box)) (long (m/round padding)))
@@ -201,7 +203,7 @@
                           ctx env))))
         (let [fill (or (leaf-color node) color)]
           (when-not root?
-            (fill-box! c fill box style))
+            (fill-box! c fill box style pattern-fill))
           (when (and (:leaf-labels options) (some? (:name node)))
             (let [^Vec2 size (label-size :treemap-leaf (str (:name node)) env)]
               (when (and (<= (.x size) (double (:w box))) (<= (.y size) (double (:h box))))
@@ -218,7 +220,7 @@
           palette-fn (aesthetic/attribute-fn :color (aesthetic/scale-spec :color {:kind :ordinal :domain (vec (range (max 1 (long top-count))))}
                                                                           nil false (:palette theme))
                                              na)
-          ctx {:style style :options options
+          ctx {:style style :options options :pattern-fill (draw/pattern-fill-cache)
                :leaf-color (fn [leaf] (when color-fn (color-fn (:color leaf))))
                :top-color (fn [child] (if colored? na (palette-fn (:top-index child))))}]
       (draw-node! canvas tree {:x 0.0 :y 0.0 :w (double w) :h (double h)} 0 nil ctx env))))

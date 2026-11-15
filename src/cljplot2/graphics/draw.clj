@@ -38,23 +38,36 @@
     (if (< alpha (c/alpha ink)) (c/set-alpha ink alpha) ink)))
 
 (defn pattern-fill
-  "Pattern fill `{:pattern p :ink c}` of a mark filled with `fill` in style `st` (`:pattern`, `:pattern-color`, see
-  [[pattern-ink]]); `nil` without a pattern (`:solid`, `nil`) or a fill (`:none`, `nil`)."
+  "Pattern fill `{:pattern p :ink c :paint texture}` of a mark filled with `fill` in style `st` (`:pattern`,
+  `:pattern-color` - see [[pattern-ink]]; `:paint` - the tile's `TexturePaint`, anchored at the user origin); `nil`
+  without a pattern (`:solid`, `nil`), an ink (`:pattern-color :none`) or a fill (`:none`, `nil`). Many marks of one
+  style share it: build it once per group, or use [[pattern-fill-cache]]."
   [st fill]
-  (let [p (:pattern st)]
-    (when (and (pattern/spec-of p) (some? fill) (not (theme/none? fill)))
-      {:pattern p :ink (pattern-ink (:pattern-color st :darker) fill)})))
+  (let [p (:pattern st)
+        ink (:pattern-color st :darker)]
+    (when-let [spec (pattern/spec-of p)]
+      (when (and (some? fill) (not (theme/none? fill)) (not (theme/none? ink)))
+        (let [ink (pattern-ink ink fill)
+              period (double (pattern/period spec))]
+          {:pattern p :ink ink
+           :paint (TexturePaint. (pattern/tile spec ink) (java.awt.geom.Rectangle2D$Double. 0.0 0.0 period period))})))))
+
+(defn pattern-fill-cache
+  "A function of `st` and `fill` giving [[pattern-fill]], built once per pattern, ink and fill - for one draw call
+  over many marks (bars, boxes, rects)."
+  []
+  (let [cached (memoize (fn [p ink fill] (pattern-fill {:pattern p :pattern-color ink} fill)))]
+    (fn [st fill] (cached (:pattern st) (:pattern-color st :darker) fill))))
 
 (defn fill-with-pattern!
   "Draw the pattern of `pattern-fill` (see [[pattern-fill]]; `nil` - nothing) over a fill: `draw-fn` (no arguments)
   fills the same shapes again while the canvas paints the pattern's tile; the previous paint is restored. `draw-fn`
   must not set a colour."
   [canvas pattern-fill draw-fn]
-  (when-let [spec (pattern/spec-of (:pattern pattern-fill))]
+  (when-let [^TexturePaint texture (:paint pattern-fill)]
     (let [^Graphics2D g (:graphics canvas)
-          paint (.getPaint g)
-          p (double (pattern/period spec))]
-      (.setPaint g (TexturePaint. (pattern/tile spec (:ink pattern-fill)) (java.awt.geom.Rectangle2D$Double. 0.0 0.0 p p)))
+          paint (.getPaint g)]
+      (.setPaint g texture)
       (try (draw-fn) (finally (.setPaint g paint))))))
 
 (declare pixel-center)

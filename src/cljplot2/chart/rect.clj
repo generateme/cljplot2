@@ -142,6 +142,7 @@
   [_chart {:keys [rects style]} canvas {:keys [w h]} scales env]
   (let [stroke (:stroke-color style)
         sw (double (:stroke-width style))
+        pattern-fill (draw/pattern-fill-cache)
         x-horizontal? (scale/horizontal? :x (:x scales))
         interval-of {:x (annotation/interval-fn (:x scales)) :y (annotation/interval-fn (:y scales))}
         panel-side (fn [horizontal?] [0.0 (double (if horizontal? w h))])
@@ -170,7 +171,7 @@
         (when-not (theme/none? fill)
           (c2d/set-color canvas fill)
           (c2d/rect canvas left top rw rh)
-          (draw/fill-with-pattern! canvas (draw/pattern-fill st fill) #(c2d/rect canvas left top rw rh)))
+          (draw/fill-with-pattern! canvas (pattern-fill st fill) #(c2d/rect canvas left top rw rh)))
         (when (and (not (theme/none? stroke)) (pos? sw))
           (c2d/set-stroke-custom canvas {:size sw :join :miter})
           (c2d/set-color canvas stroke)

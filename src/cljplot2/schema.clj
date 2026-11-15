@@ -120,7 +120,8 @@
   (and (map? v)
        (case kind
          (:lines :cross) (and (= #{:kind :angle :spacing :width} (set (keys v)))
-                              (contains? pattern-angles angle) (pos-number? spacing) (pos-number? width))
+                              (number? angle) (some #(== (double angle) (double %)) pattern-angles)
+                              (pos-number? spacing) (pos-number? width))
          :dots (and (= #{:kind :spacing :size} (set (keys v))) (pos-number? spacing) (pos-number? size))
          false)))
 

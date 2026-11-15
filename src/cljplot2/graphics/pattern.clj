@@ -26,12 +26,12 @@
   "Whole-pixel period of the tile of pattern `spec` (see the namespace doc)."
   ^long [{:keys [kind angle spacing]}]
   (let [s (double spacing)]
-    (m/max 2 (m/round (if (and (not= :dots kind) (contains? #{45 135} angle)) (* s m/SQRT2) s)))))
+    (m/max 2 (m/round (if (and (not= :dots kind) (contains? #{45 135} (long angle))) (* s m/SQRT2) s)))))
 
 (defn- line-angles
   "Angles of the line families of a line or cross `spec`."
   [{:keys [kind angle]}]
-  (if (= :cross kind) [angle (+ 90 (long angle))] [angle]))
+  (if (= :cross kind) [(long angle) (+ 90 (long angle))] [(long angle)]))
 
 (defn- draw-lines!
   "One period of parallel lines at `angle` (0, 45, 90, 135 or 180 - 0 again) across the `p`-pixel tile, copies one

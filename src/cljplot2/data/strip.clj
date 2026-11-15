@@ -26,15 +26,15 @@
     chart is an x-only chart placed as `:center`
 
   Groups (ordinal aesthetics and `:group`, see [[cljplot2.data.group]]) inside a placement - option `:position`:
-  `:dodge` (default with two or more groups; the cross range split equally, each part narrowed by `:dodge-gap` - a
-  fraction of it, default 0.1 - so groups don't touch), `:overlay` (the whole range) or `:mirror` (exactly two
-  groups, one half each; split violins). Dodged and mirrored groups follow reading order, as the legend: the first
+  `:dodge` (default when some level holds two or more groups; the cross range split equally, each part narrowed by
+  `:dodge-gap` - a fraction of it, default 0.1 - so groups don't touch), `:overlay` (the whole range; the default
+  otherwise - one group per level fills its band) or `:mirror` (exactly two groups, one half each; split violins). Dodged and mirrored groups follow reading order, as the legend: the first
   group on top of horizontal strips, on the left of vertical (`:flip`) ones.
 
   Mirror (bar, extent) - option `:mirror` (passed to [[split]] as `::mirror`): a grouping dimension (an ordinal
   aesthetic or `:group`) with exactly two levels; items of the second level are `:mirrored? true` - the chart draws
-  them on the negative side; groups differing only in that dimension share a slot, and the default `:position` follows the count of
-  the remaining groups. Not with `:position :mirror` (half slots).
+  them on the negative side; groups differing only in that dimension share a slot (the default `:position` looks at
+  the remaining groups). Not with `:position :mirror` (half slots).
 
   Ridgelines (histogram and density with a categorical or bands `:y`, see [[ridges?]]): one-sided profiles growing
   from the band centre toward the next level, the tallest `:overlap` (default 0.9) band steps high.
@@ -154,6 +154,14 @@
       (schema/fail! "Strip :mirror needs exactly two levels of its dimension." {:key :mirror :value k :levels levels}))
     (levels 1)))
 
+(defn- shared-levels?
+  "Does some level of a panel (`items` - `{panel [item ...]}`, `:level` `nil` without bands - the whole panel) hold
+  items of two or more slot keys (`slot-key` of their group key)?"
+  [items slot-key]
+  (boolean (some (fn [its] (some (fn [[_ level-items]] (> (count (distinct (map (comp slot-key :key) level-items))) 1))
+                                 (group-by :level its)))
+                 (vals items))))
+
 (defn- levels-in-order
   "`[[level rows] ...]` of the `rows` with a valid `y-of` value, levels ordered by `level-rank` (level -> its first
   appearance in the chart's rows; `group-by` alone keeps no order past 8 levels)."
@@ -174,7 +182,8 @@
   * `::mirror k` - the chart's `:mirror` dimension (see the namespace doc): items carry `:mirrored?` and the result
     `:mirror? true`; charts without a negative side never pass it
 
-  `:slot-keys` - the keys slots are given to (group keys, without the mirror dimension).
+  `:slot-keys` - the keys slots are given to (group keys, without the mirror dimension); `:shared-levels?` - some level
+  holds two or more of them (the default `:position` is then `:dodge`, else `:overlay`).
   Throws `ex-info {:key :mapping}` when there are rows but no finite `:x` value (or, placed in bands, no valid `:y`
   value), `ex-info {:key :n-format}` for an `:n-format` that can't format a count, `ex-info {:key :mirror}` for a
   mirror dimension that isn't a grouping dimension, doesn't have exactly two levels or comes with `:position
@@ -202,11 +211,6 @@
         slot-key (if mi #(without-index % mi) identity)
         slot-keys (vec (distinct (map slot-key group-keys)))
         mirrored (when (and mi (seq group-keys)) (mirrored-level group-keys mi (::mirror options)))
-        position (get options :position (if (> (count slot-keys) 1) :dodge :overlay))
-        ;; reading order: the first group on top of horizontal strips (the high cross end), on the left of vertical
-        ;; (flipped) ones (the low end); ridgelines grow the first group toward the next level (the high end)
-        first-high? (or (::ridge options) (not (:flip? env)))
-        slot-of (if (seq slot-keys) (slots position slot-keys (double (get options :dodge-gap 0.1)) first-high?) {})
         items (update-vals panels
                            (fn [gs]
                              (vec (for [g gs
@@ -216,10 +220,16 @@
                                         :let [values (if x-of (:values (data/finite-numbers (map x-of rows))) [])]
                                         :when (or count-rows? (seq values))]
                                     (cond-> {:level level :key (:key g) :aesthetics (:aesthetics g) :values values
-                                             :n (if count-rows? (count rows) (count values))
-                                             :slot (slot-of (slot-key (:key g)))}
+                                             :n (if count-rows? (count rows) (count values))}
                                       mi (assoc :mirrored? (= mirrored (nth (:key g) mi)))
                                       (::rows options) (assoc :rows rows))))))
+        shared? (shared-levels? items slot-key)
+        position (get options :position (if shared? :dodge :overlay))
+        ;; reading order: the first group on top of horizontal strips (the high cross end), on the left of vertical
+        ;; (flipped) ones (the low end); ridgelines grow the first group toward the next level (the high end)
+        first-high? (or (::ridge options) (not (:flip? env)))
+        slot-of (if (seq slot-keys) (slots position slot-keys (double (get options :dodge-gap 0.1)) first-high?) {})
+        items (update-vals items (fn [its] (mapv #(assoc % :slot (slot-of (slot-key (:key %)))) its)))
         x-dropped (if x-of
                     (count (remove #(let [v (x-of %)] (and (number? v) (m/valid-double? (double v)))) all-rows))
                     0)]
@@ -231,6 +241,7 @@
      :items items
      :group-keys group-keys
      :slot-keys slot-keys
+     :shared-levels? shared?
      :mirror? (some? mi)
      :dims dims
      :panels panels

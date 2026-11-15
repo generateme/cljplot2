@@ -117,16 +117,16 @@
   [[cljplot2.graphics.draw/pattern-fill]], `nil` - none) outlined in the line style."
   ([canvas box style area] (key-glyph! canvas box style area nil))
   ([canvas {:keys [x y w h]} style area pattern-fill]
-  (let [cx (+ (double x) (* 0.5 (double w)))
-        cy (+ (double y) (* 0.5 (double h)))]
-    (if (theme/none? area)
-      (draw! canvas [(double x) (+ (double x) (double w))] [cy cy] style)
-      (let [side (* 0.7 (m/min (double w) (double h)))]
-        (c2d/set-color canvas area)
-        (c2d/crect canvas cx cy side side)
-        (draw/fill-with-pattern! canvas pattern-fill #(c2d/crect canvas cx cy side side))
-        (when (set-style! canvas style)
-          (c2d/crect canvas cx cy side side true)))))))
+   (let [cx (+ (double x) (* 0.5 (double w)))
+         cy (+ (double y) (* 0.5 (double h)))]
+     (if (theme/none? area)
+       (draw! canvas [(double x) (+ (double x) (double w))] [cy cy] style)
+       (let [side (* 0.7 (m/min (double w) (double h)))]
+         (c2d/set-color canvas area)
+         (c2d/crect canvas cx cy side side)
+         (draw/fill-with-pattern! canvas pattern-fill #(c2d/crect canvas cx cy side side))
+         (when (set-style! canvas style)
+           (c2d/crect canvas cx cy side side true)))))))
 
 (defn fill-polygons!
   "Fill `polygons` (`[x y]` pixel points each) in `color` (`:none` fills nothing), then the pattern of `pattern-fill`
