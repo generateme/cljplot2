@@ -140,3 +140,36 @@
     (is (= ["x" "x" "x"] (:tick-labels (finalized :x {:domain [d0 d1] :nice false :ticks-params {:unit :months :step 3}
                                                       :formatter (constantly "x")} [0.0 400.0]))))
     (is (every? string? (:tick-labels (finalized :x {:domain [d0 d1]} [0.0 400.0]))))))
+
+;; review fixes
+
+(deftest calendar-cap-test
+  (testing "G1 too many calendar ticks: {:key :ticks-params} at build"
+    (let [e (error #(build {:data [{:d (LocalDate/of 2016 1 1) :v 1} {:d (LocalDate/of 2017 1 1) :v 2}] :mapping {:x :d :y :v}
+                            :charts [(chart/line)] :scales {:x {:ticks-params {:unit :minutes}}}}))]
+      (is (= :ticks-params (:key e)))
+      (is (= {:unit :minutes :step 1} (:value e))))
+    (is (= :ticks-params (:key (spec-error :x {:domain [(LocalDateTime/of 2016 1 1 0 0) (LocalDateTime/of 2016 1 2 0 0)]
+                                               :ticks-params {:unit :seconds :step 5}})))))
+  (testing "G1 under the cap: hours over a day, a step that brings it under"
+    (is (= 25 (count (:ticks (finalized :x {:domain [(LocalDateTime/of 2016 1 1 0 0) (LocalDateTime/of 2016 1 2 0 0)] :nice false
+                                            :ticks-params {:unit :hours}} [0.0 400.0])))))
+    (is (some? (scale/scale-spec :x {:domain [d0 d1] :ticks-params {:unit :minutes :step 60}})))))
+
+(deftest radial-padding-test
+  (testing "G2 no padding below the data on a radial scale; above as linear; :expand wins"
+    (is (= [0.0 0.05] (get-in (build (scatter {:y {:kind :radial}})) [:scale-specs :y :padding])))
+    (is (= [0.1 0.1] (get-in (build (scatter {:y {:kind :radial :expand [0.1 0.1]}})) [:scale-specs :y :padding])))
+    (is (= [0.05 0.05] (get-in (build (scatter {:y {:kind :linear}})) [:scale-specs :y :padding])) "linear unchanged")))
+
+(deftest reversed-interpolated-test
+  (testing "G6 decreasing stops: a reversed axis"
+    (let [f (finalized :x {:kind :interpolated :domain [0 10 100] :stops [1 0.3 0]} [0.0 100.0])
+          fwd (scale/forward-fn f)]
+      (is (near? 100.0 (fwd 0)))
+      (is (near? 30.0 (fwd 10)))
+      (is (near? 0.0 (fwd 100)))
+      (is (near? 10.0 (double ((scale/inverse-fn f) 30.0))))
+      (is (= 5 (count (:ticks (finalized :x {:kind :interpolated :domain [0 10 100] :stops [1 0.3 0] :ticks [0 5 10 50 100]} [0.0 100.0])))))))
+  (testing "G6 non-monotone stops still rejected"
+    (is (= :stops (:key (spec-error :x {:kind :interpolated :domain [0 10 100] :stops [0 1 0.5]}))))))

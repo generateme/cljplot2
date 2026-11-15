@@ -13,16 +13,20 @@
   it); [[forward]] maps a single value; [[inverse-fn]] a pixel -> value function.
 
   Kinds: `:linear`, `:log`, `:pow`, `:symlog`, `:radial` (square-root like: distances from the range start grow as
-  the square root of the value, as radii of areas), `:interpolated` (an explicit `:domain` of n increasing numbers
-  mapped piecewise to `:stops` - n increasing fractions of the panel, default evenly spaced - through `:interpolator`
+  the square root of the distance from the domain start, as radii of areas; no padding below the data from the
+  charts - the steep start would stretch it), `:interpolated` (an explicit `:domain` of n increasing numbers
+  mapped piecewise to `:stops` - n strictly increasing (or decreasing: a reversed axis) fractions of the panel,
+  default evenly spaced - through `:interpolator`
   / `:interpolator-params`, default `:linear`; non-monotone methods as `:cubic` can overshoot; no padding and no
   nice unless `:nice` is given; explicit `:ticks` suit its stretched parts), `:datetime`, `:bands`.
   Ticks of continuous kinds: `:ticks-method` `:default` (d3) or `:pretty` (R `pretty()`; default for `:datetime`)
   with `:ticks-params` `{:min-n n}` (clamped to the tick count) and, for `:datetime` `:pretty`, calendar ticks
-  `{:unit u :step s}` (a tick every s units: `:seconds` .. `:years`, see wadogo). `:formatter` - a function of a tick
+  `{:unit u :step s}` (a tick every s units: `:seconds` .. `:years`, see wadogo; more than wadogo's
+  `max-calendar-ticks` over the domain - `ex-info {:key :ticks-params}`). `:formatter` - a function of a tick
   value, or on `:datetime` a `java.time` pattern string (`\"MMM yyyy\"`)."
   (:require [fastmath.core :as m]
             [wadogo.scale :as s]
+            [wadogo.ticks.pretty-datetime :as pretty-datetime]
             [cljplot2.data.rows :as rows]
             [cljplot2.schema :as schema])
   (:import [fastmath.vector Vec2]
@@ -74,7 +78,7 @@
 (def ^:private ticks-params
   [:map {:closed true}
    (schema/optional :min-n [:and :int [:>= 0]])
-   (schema/optional :unit (into [:enum] [:seconds :minutes :hours :days :weeks :months :years]))
+   (schema/optional :unit (into [:enum] (sort pretty-datetime/calendar-units)))
    (schema/optional :step schema/pos-int)])
 
 (def scale-spec-schema
@@ -124,14 +128,24 @@
       (and (contains? spec :interpolator-params) (not interpolated?)) [:interpolator-params ":interpolator-params needs :kind :interpolated"]
       (and interpolated? (contains? spec :expand)) [:expand "an :interpolated scale takes no :expand (its domain ends are the panel edges)"]
       (and (some? stops) (not= (count stops) (count domain))) [:stops ":stops need one fraction per :domain value"]
-      (and (some? stops) (not (and (every? #(<= 0.0 (double %) 1.0) stops) (apply < (map double stops)))))
-      [:stops ":stops should be strictly increasing fractions in [0 1]"]
+      (and (some? stops) (not (and (every? #(<= 0.0 (double %) 1.0) stops)
+                                   (or (apply < (map double stops)) (apply > (map double stops))))))
+      [:stops ":stops should be strictly increasing (or decreasing) fractions in [0 1]"]
       (and (= :bands kind) (some? ticks-method)) [:ticks-method "a :bands scale has no tick methods"]
       (and (= :bands kind) (some? ticks-params)) [:ticks-params "a :bands scale has no tick methods"]
       (and (or (:unit ticks-params) (:step ticks-params)) (not (and (= :datetime kind) (not= :default ticks-method))))
       [:ticks-params "calendar ticks (:unit / :step) need a :datetime scale with :ticks-method :pretty"]
       (and (:step ticks-params) (nil? (:unit ticks-params))) [:ticks-params "calendar ticks :step needs a :unit"]
       (and (string? formatter) (not= :datetime kind)) [:formatter "a pattern string :formatter needs a :datetime scale"])))
+
+(defn- check-calendar-span!
+  "Throw `ex-info {:key :ticks-params}` when the calendar ticks of `ticks-params` over the datetime `domain` would
+  exceed wadogo's `max-calendar-ticks` (the domain read as wadogo stores it, `LocalDateTime`s)."
+  [k domain {:keys [unit step] :or {step 1}}]
+  (let [[lo hi] (s/domain (s/scale :datetime {:domain domain}))]
+    (try (pretty-datetime/validate-calendar-span lo hi unit step)
+         (catch clojure.lang.ExceptionInfo e
+           (schema/fail! (ex-message e) {:key :ticks-params :in [:scales k :ticks-params] :value {:unit unit :step step}})))))
 
 (defn- pattern-formatter
   "Formatter function of the `java.time` pattern `pattern`; an invalid pattern, or one a `LocalDateTime` can't
@@ -162,6 +176,8 @@
     (when-let [[key message] (kind-option-problem kind spec)]
       (schema/fail! (str message ".") {:key key :in [:scales k key] :value (get spec key)}))
     (when (sequential? ticks) (validate-tick-list! k kind domain ticks))
+    (when (and (= :datetime kind) (get-in spec [:ticks-params :unit]))
+      (check-calendar-span! k domain (:ticks-params spec)))
     (cond-> (assoc spec :kind kind :nice (get spec :nice (not= :interpolated kind)))
       (and (= :datetime kind) (nil? (:ticks-method spec))) (assoc :ticks-method :pretty)
       (string? (:formatter spec)) (update :formatter #(pattern-formatter k %)))))
@@ -213,8 +229,8 @@
   numeric extent on a `:bands` scale needs an explicit `:domain` unless it carries its levels (`:values`, sorted);
   numeric data domains are widened when collapsed to one value.
   Numeric continuous domains - data or explicit - get `:padding`: the spec `:expand`, else the charts' `padding`
-  (only when there is data); [[finalize]] applies it after `nice`, so the outermost ticks sit inside the panel.
-  Temporal and categorical domains aren't padded."
+  (only when there is data; `:radial` - none below the data); [[finalize]] applies it after `nice`, so the
+  outermost ticks sit inside the panel. Temporal, `:interpolated` and categorical domains aren't padded."
   [k spec extent padding]
   (when (and (= :interpolated (:kind spec)) (nil? (:domain spec)))
     (schema/fail! "An :interpolated scale needs an explicit :domain (its stop values)." {:key :domain :in [:scales k :domain]}))
@@ -231,7 +247,8 @@
                                           :else (schema/fail! "Numeric data declared categorical (or on a bands scale) needs an explicit :domain unless its charts give the levels (strip charts do)."
                                                               {:key :domain :in [:scales k :domain]})))]
                   (scale-spec k (assoc spec :kind kind :domain domain))))
-        padding (or (:expand spec) (when extent padding))]
+        padding (or (:expand spec)
+                    (when extent (if (= :radial (:kind built)) (assoc (vec padding) 0 0.0) padding)))]
     (cond-> built
       (and padding (not (#{:datetime :interpolated} (:kind built))) (continuous-kinds (:kind built)))
       (assoc :padding (vec padding)))))
