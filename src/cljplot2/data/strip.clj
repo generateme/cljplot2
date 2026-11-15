@@ -31,9 +31,9 @@
   groups, one half each; split violins). Dodged and mirrored groups follow reading order, as the legend: the first
   group on top of horizontal strips, on the left of vertical (`:flip`) ones.
 
-  Mirror (bar, extent) - option `:mirror`: a grouping dimension (an ordinal aesthetic or `:group`) with exactly two
-  levels; items of the second level are `:mirrored? true` - the chart draws them on the negative side (see
-  [[split]]); groups differing only in that dimension share a slot, and the default `:position` follows the count of
+  Mirror (bar, extent) - option `:mirror` (passed to [[split]] as `::mirror`): a grouping dimension (an ordinal
+  aesthetic or `:group`) with exactly two levels; items of the second level are `:mirrored? true` - the chart draws
+  them on the negative side; groups differing only in that dimension share a slot, and the default `:position` follows the count of
   the remaining groups. Not with `:position :mirror` (half slots).
 
   Ridgelines (histogram and density with a categorical or bands `:y`, see [[ridges?]]): one-sided profiles growing
@@ -131,10 +131,10 @@
                 (schema/fail! "Strip :position :mirror needs exactly two groups." {:key :position :groups n})))))
 
 (defn- mirror-index
-  "Index of the `:mirror` dimension in the grouping `dims`; `nil` without `:mirror`. Throws `ex-info {:key :mirror}`
+  "Index of the `::mirror` dimension in the grouping `dims`; `nil` without it. Throws `ex-info {:key :mirror}`
   when it isn't a grouping dimension or comes with `:position :mirror`."
   [options dims]
-  (when-let [k (:mirror options)]
+  (when-let [k (::mirror options)]
     (let [i (.indexOf ^java.util.List dims k)]
       (when (neg? i)
         (schema/fail! "Strip :mirror should be a mapped grouping dimension (an ordinal aesthetic or :group)."
@@ -171,9 +171,10 @@
   * `::count-rows true` - `:x` isn't read: every item has `:values []` and `:n` - its count of rows (an item per
     level with rows; no `:x` errors or drops)
   * `::rows true` - items also carry their `:rows`
+  * `::mirror k` - the chart's `:mirror` dimension (see the namespace doc): items carry `:mirrored?` and the result
+    `:mirror? true`; charts without a negative side never pass it
 
-  With `:mirror` (see the namespace doc) items carry `:mirrored?` and the result `:mirror? true`; `:slot-keys` - the
-  keys slots are given to (group keys, without the mirror dimension).
+  `:slot-keys` - the keys slots are given to (group keys, without the mirror dimension).
   Throws `ex-info {:key :mapping}` when there are rows but no finite `:x` value (or, placed in bands, no valid `:y`
   value), `ex-info {:key :n-format}` for an `:n-format` that can't format a count, `ex-info {:key :mirror}` for a
   mirror dimension that isn't a grouping dimension, doesn't have exactly two levels or comes with `:position
@@ -200,7 +201,7 @@
         mi (mirror-index options dims)
         slot-key (if mi #(without-index % mi) identity)
         slot-keys (vec (distinct (map slot-key group-keys)))
-        mirrored (when (and mi (seq group-keys)) (mirrored-level group-keys mi (:mirror options)))
+        mirrored (when (and mi (seq group-keys)) (mirrored-level group-keys mi (::mirror options)))
         position (get options :position (if (> (count slot-keys) 1) :dodge :overlay))
         ;; reading order: the first group on top of horizontal strips (the high cross end), on the left of vertical
         ;; (flipped) ones (the low end); ridgelines grow the first group toward the next level (the high end)
@@ -372,8 +373,9 @@
 
 (defn draw-end-labels!
   "Draw end labels `labels` - `[{:level l :slot s :at v :side d :text t} ...]` - each just past value `v` along the
-  value axis, toward increasing values (`d` 1) or decreasing ones (`d` -1), centred on its slot (text role
-  `:annotation`). `pl` - the chart's [[placement]]; [[end-label-room]] keeps room for them past the data."
+  value axis, toward increasing values (`d` 1) or decreasing ones (`d` -1), or centred on `v` (`d` 0, e.g. inside a
+  stacked bar; no room needed), centred on its slot (text role `:annotation`; optional `:color` overrides the role's).
+  `pl` - the chart's [[placement]]; [[end-label-room]] keeps room for them past the data."
   [canvas {:keys [point]} labels scales env]
   (let [x-scale (:x scales)
         [r0 r1] (:range x-scale)
@@ -381,16 +383,17 @@
         up (if (< (double r1) (double r0)) -1.0 1.0)
         horizontal? (scale/horizontal? :x x-scale)
         pad n-label-gap]
-    (doseq [{:keys [level slot at side text]} labels
+    (doseq [{:keys [level slot at side text color]} labels
             :let [dir (* up (double side))
-                  anchor (if horizontal?
-                           (if (pos? dir) [:left :middle] [:right :middle])
-                           (if (pos? dir) [:center :top] [:center :bottom]))
+                  anchor (cond
+                           (zero? dir) [:center :middle]
+                           horizontal? (if (pos? dir) [:left :middle] [:right :middle])
+                           :else (if (pos? dir) [:center :top] [:center :bottom]))
                   ^Vec2 p (point at level (in-slot slot 0.0))
                   x (if horizontal? (+ (.x p) (* dir pad)) (.x p))
                   y (if horizontal? (.y p) (+ (.y p) (* dir pad)))]
             :when (and (m/valid-double? x) (m/valid-double? y))]
-      (label/draw-at! canvas {:kind :label :role :annotation :text text} anchor x y env))))
+      (label/draw-at! canvas (cond-> {:kind :label :role :annotation :text text} color (assoc :color color)) anchor x y env))))
 
 (defn n-label-room
   "`:padding-px` of a strip chart (`items` - `{panel [item ...]}`) with `:n-label`: room past the largest values for

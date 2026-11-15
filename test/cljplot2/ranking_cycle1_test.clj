@@ -4,7 +4,10 @@
             [cljplot2.test-util :refer [error]]
             [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
-            [cljplot2.data.measure :as measure])
+            [clojure2d.core :as c2d]
+            [cljplot2.chart.bar :as bar]
+            [cljplot2.data.measure :as measure]
+            [cljplot2.theme :as theme])
   (:import [java.awt.image BufferedImage]))
 
 (def ^:private size {:width 400 :height 300})
@@ -270,3 +273,55 @@
           data (map-indexed (fn [i l] {:l l :v i}) ls)]
       (is (= ls (mapv :level (bars {:data data :mapping {:x :v :y :l} :charts [(chart/bar)]}))))
       (is (= ls (get-in (build {:data data :mapping {:x :v :y :l} :charts [(chart/box)]}) [:stats 0 :extents :panel :y :values]))))))
+
+(deftest review-2
+  (testing "S1 labels of stacked and normalized bars sit centred in their segments; no room for them"
+    (let [p (fn [opts] {:data two-groups :mapping {:x :v :y :l :color :c} :charts [(chart/bar (merge {:value-label true} opts))]})
+          labels (fn [opts] (into {} (map (fn [b] [[(:level b) (first (:key b))] ((juxt :at :side :text) (:label b))]) (bars (p opts)))))]
+      (is (= {["p" "x"] [1.0 0.0 "2"] ["p" "y"] [3.5 0.0 "3"] ["q" "x"] [2.5 0.0 "5"] ["q" "y"] [5.5 0.0 "1"]}
+             (labels {:position :stack})))
+      (is (every? #(zero? (second %)) (vals (labels {:position :normalize}))))
+      (is (= [5.0 1.0 "5"] (get (labels {:position :dodge}) ["q" "x"])) "dodged labels stay past the end")
+      (is (= [0.0 0.0] (get-in (stats (p {:position :stack}) 0) [:padding-px :x])) "centred labels need no room")
+      (testing "mirrored stacks centre on the negative side"
+        (is (every? #(and (neg? (:at %)) (zero? (:side %)))
+                    (keep :label (filter :mirrored? (bars {:data pyramid :mapping {:x :n :y :age :color :sex :group :region}
+                                                           :charts [(chart/bar {:mirror :color :position :stack :value-label true})]}))))))
+      (testing "contrast colour: white text on a dark fill"
+        (let [img (plot/render-image {:data [{:l "a" :v 10}] :mapping {:x :v :y :l} :theme white
+                                      :charts [(chart/bar {:position :stack :value-label true :color [0 0 0] :stroke-color :none})]}
+                                     size)]
+          (is (some (fn [c] (every? #(> (long %) 200) c)) (for [x (range 150 300) y (range 100 200)] (rgb img x y))))))))
+  (testing "S2 the legend key is translucent exactly when the bars are"
+    (let [key-rgb (fn [p]
+                    (let [built (build p)
+                          canvas (c2d/canvas 20 20)]
+                      (c2d/with-canvas-> canvas (c2d/set-background :white))
+                      (c2d/with-canvas [c canvas]
+                        (bar/legend (first (:charts p)) {:color [255 0 0]} c {:x 0 :y 0 :w 20 :h 20}
+                                    {:theme theme/default-theme :chart-stats (get-in built [:stats 0])}))
+                      (rgb (c2d/get-image canvas) 10 10)))
+          single (filter #(= "x" (:c %)) two-groups)]
+      (is (not= [255 0 0] (key-rgb {:data two-groups :mapping {:x :v :y :l :color :c} :charts [(chart/bar {:position :overlay})]})))
+      (is (= [255 0 0] (key-rgb {:data (concat single (map #(assoc % :g "h") single)) :mapping {:x :v :y :l :color :c :group :g}
+                                 :charts [(chart/bar {:position :overlay :mirror :group})]}))
+          "one colour level, mirrored by :group - solid bars, solid key")
+      (is (= [255 0 0] (key-rgb {:data two-groups :mapping {:x :v :y :l :color :c} :charts [(chart/bar {:position :stack})]})))))
+  (testing "S5 mirror + extent with dodged groups beside the mirror dimension; the :group recipe keeps slots"
+    (let [built (build {:data pyramid :mapping {:x :n :y :age :color :sex :group :region}
+                        :charts [(chart/bar {:mirror :color :position :dodge})
+                                 (chart/extent {:mirror :color})
+                                 (chart/extent {:mirror :group :mapping {:color nil :group :sex}})]})
+          slots (fn [i k] (into {} (map (juxt (juxt :level :key) :slot) (get-in built [:stats i :data :panel k]))))
+          bar-slots (slots 0 :bars)]
+      (is (= bar-slots (slots 1 :items)))
+      (is (= 2 (count (distinct (vals bar-slots)))))
+      (is (= #{[-0.5 0.5]} (set (vals (slots 2 :items)))) "the :group recipe without the other dimension: one slot per side")
+      (is (every? #(neg? (:hi %)) (filter :mirrored? (get-in built [:stats 1 :data :panel :items]))))))
+  (testing "S5 a vertical stack is narrower along horizontal bars than side by side"
+    (let [room (fn [stack] (second (get-in (stats {:data [{:l "a" :v 3}] :mapping {:x :v :y :l}
+                                                   :charts [(chart/bar {:value-label true :n-label true :label-stack stack})]} 0)
+                                           [:padding-px :x])))]
+      (is (< (room :vertical) (room :horizontal)))))
+  (testing "S6 strip charts without a negative side don't accept :mirror"
+    (is (some? (error #(build {:data two-groups :mapping {:x :v :y :l :color :c} :charts [(chart/box {:mirror :color})]}))))))

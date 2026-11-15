@@ -28,7 +28,11 @@
   * `:padding {:x [lo hi]}` - default 5%, none at the baseline side the bars grow from (bars start on the axis)
 
   Error bars: `chart/extent` with the same mapping (and the same `:mirror`) takes the same slots and side (e.g.
-  `{:method :stddev}` over `:mean` bars).
+  `{:method :stddev}` over `:mean` bars). With a mapped `:color` the extent takes the bars' fills and disappears over
+  them: map the variable to `:group` instead (`{:mapping {:color nil :group k} :color c}` - the bars' slots when
+  `k` is their only grouping besides the `:mirror` dimension).
+
+  Labels of stacked and normalized bars sit centred in their segments, in black or white by the fill.
 
   Axis title suggested for the value axis: the count measure (`\"Count\"` ...), `\"Proportion\"` for `:normalize`,
   `\"<stat> of <x>\"` for `:sum`, `:mean`, `:median` of a keyword `:x` when some bar has more than one value."
@@ -173,14 +177,15 @@
         (if (seq ls) (let [texts (zipmap ls (levels/break-labels ls))] (comp texts length)) (constantly ""))))))
 
 (defn- end-label
-  "End label (see [[cljplot2.data.strip/draw-end-labels!]]) of `bar` past its end: its length (`:value-label`, not
-  for a zero-length bar) and count (`:n-label`, `:n-format`), joined by `separator`; `nil` without either."
-  [options separator value-text {:keys [level slot n ^double y0 ^double y1] :as bar}]
+  "Label (see [[cljplot2.data.strip/draw-end-labels!]]) of `bar`: its length (`:value-label`, not for a zero-length
+  bar) and count (`:n-label`, `:n-format`), joined by `separator`, past the bar's end - centred in it when
+  `centred?` (stacked segments, `:side 0`, drawn in the fill's contrast colour); `nil` without either."
+  [options separator centred? value-text {:keys [level slot n ^double y0 ^double y1] :as bar}]
   (let [texts (cond-> []
                 (and (data/option options :value-label false) (not (== y0 y1))) (conj (value-text bar))
                 (data/option options :n-label false) (conj (format (get options :n-format "n=%d") n)))]
     (when (seq texts)
-      (let [[at side] (end-of bar)]
+      (let [[at side] (if centred? [(* 0.5 (+ y0 y1)) 0.0] (end-of bar))]
         {:level level :slot slot :at at :side side :text (str/join separator texts)}))))
 
 (defn- label-separator
@@ -223,7 +228,8 @@
         split-options (cond-> (dissoc options :position)
                         (some? position) (assoc :position (if (#{:stack :normalize} position) :overlay position))
                         (count-stats stat) (assoc ::strip/count-rows true)
-                        (or (keyword? varwidth) (fn? varwidth)) (assoc ::strip/rows true))
+                        (or (keyword? varwidth) (fn? varwidth)) (assoc ::strip/rows true)
+                        (:mirror options) (assoc ::strip/mirror (:mirror options)))
         {:keys [place items panels dropped slot-keys mirror?] :as split} (strip/split chart-split split-options :center env)
         position (or position (:position split))
         items (item-lengths stat items)
@@ -233,7 +239,8 @@
         all-bars (mapcat val items)
         value-text (value-texts options (remove (fn [{:keys [^double y0 ^double y1]}] (== y0 y1)) all-bars))
         separator (label-separator options (:flip? env))
-        items (update-vals items (fn [its] (mapv #(assoc % :label (end-label options separator value-text %)) its)))
+        centred? (contains? #{:stack :normalize} position)
+        items (update-vals items (fn [its] (mapv #(assoc % :label (end-label options separator centred? value-text %)) its)))
         {base-padding :padding request :request} (baseline (mapcat (juxt :y0 :y1) all-bars))
         translucent? (and (= :overlay position) (> (count slot-keys) 1))]
     {:data (update-vals items (fn [its] {:bars its :style (style options theme) :place place :options options
@@ -268,11 +275,15 @@
                  fill (draw/outline-color (:stroke-color st) (:color st)) stroke-width))
     (when zero-line?
       (draw/zero-line! canvas box scales style :x))
-    (strip/draw-end-labels! canvas pl (keep (comp :label first) styled) scales env)))
+    (strip/draw-end-labels! canvas pl (keep (fn [[{:keys [label]} st]]
+                                              (when label
+                                                (cond-> label (zero? (double (:side label))) (assoc :color (box/contrast-color (:color st))))))
+                                            styled)
+                            scales env)))
 
 (defn legend
-  "Key glyph: a filled square (see [[cljplot2.graphics.draw/bar-key!]]); translucent with a mapped `:color` (not the
-  `:mirror` dimension) and `:position :overlay`."
+  "Key glyph: a filled square (see [[cljplot2.graphics.draw/bar-key!]]); translucent with a mapped `:color` when the
+  bars are (overlay groups in two or more slots, see [[compute]] - env `:chart-stats`)."
   [{:keys [options]} attributes canvas box env]
   (draw/bar-key! canvas box (merge (style options (:theme env)) (select-keys attributes [:color]))
-                 (and (contains? attributes :color) (= :overlay (:position options)) (not= :color (:mirror options)))))
+                 (boolean (and (contains? attributes :color) (some :translucent? (vals (get-in env [:chart-stats :data])))))))

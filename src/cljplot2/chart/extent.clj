@@ -127,7 +127,8 @@
   "Per panel: `{:items [..] :style st :place p :options o}`, items with [[interval]] (negated for `:mirrored?`
   items); extents (x - the intervals and centres), padding, `:na`, `:dropped`, `:tick-format` (mirror)."
   [{:keys [options]} chart-split {:keys [theme] :as env}]
-  (let [{:keys [place items panels dropped mirror?]} (strip/split chart-split options :center env)
+  (let [{:keys [place items panels dropped mirror?]} (strip/split chart-split (cond-> options (:mirror options) (assoc ::strip/mirror (:mirror options)))
+                                                                    :center env)
         method (get options :method :min-max)
         rng (rng/for-build (:rng options))
         side (fn [it iv] (if (:mirrored? it) (mirrored iv) iv))
