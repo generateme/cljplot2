@@ -1,0 +1,1342 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.37">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>3&nbsp; Evolution – cljplot2</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./use_cases.colors.html" rel="prev">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-7f8f88aac4f3542376d5c11b86a4c14d.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-0d7f492f10755a5ae24b960b9550d083.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+
+</head>
+
+<body class="nav-sidebar floating quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./use_cases.distribution.html">Use cases</a></li><li class="breadcrumb-item"><a href="./use_cases.evolution.html"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Evolution</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="./">cljplot2</a> 
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">cljplot2</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text">Use cases</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./use_cases.distribution.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">Distribution</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./use_cases.colors.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Colors</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./use_cases.evolution.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Evolution</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#lines" id="toc-lines" class="nav-link active" data-scroll-target="#lines"><span class="header-section-number">3.1</span> Lines</a>
+  <ul>
+  <li><a href="#basic-line-with-dates" id="toc-basic-line-with-dates" class="nav-link" data-scroll-target="#basic-line-with-dates"><span class="header-section-number">3.1.1</span> Basic line with dates</a></li>
+  <li><a href="#line-styling" id="toc-line-styling" class="nav-link" data-scroll-target="#line-styling"><span class="header-section-number">3.1.2</span> Line styling</a></li>
+  <li><a href="#log-scale" id="toc-log-scale" class="nav-link" data-scroll-target="#log-scale"><span class="header-section-number">3.1.3</span> Log scale</a></li>
+  <li><a href="#several-groups" id="toc-several-groups" class="nav-link" data-scroll-target="#several-groups"><span class="header-section-number">3.1.4</span> Several groups</a></li>
+  <li><a href="#steps-and-interpolated-lines" id="toc-steps-and-interpolated-lines" class="nav-link" data-scroll-target="#steps-and-interpolated-lines"><span class="header-section-number">3.1.5</span> Steps and interpolated lines</a></li>
+  <li><a href="#sampling-step" id="toc-sampling-step" class="nav-link" data-scroll-target="#sampling-step"><span class="header-section-number">3.1.6</span> Sampling step</a></li>
+  <li><a href="#missing-values" id="toc-missing-values" class="nav-link" data-scroll-target="#missing-values"><span class="header-section-number">3.1.7</span> Missing values</a></li>
+  </ul></li>
+  <li><a href="#time-axes" id="toc-time-axes" class="nav-link" data-scroll-target="#time-axes"><span class="header-section-number">3.2</span> Time axes</a>
+  <ul>
+  <li><a href="#date-format-and-breaks" id="toc-date-format-and-breaks" class="nav-link" data-scroll-target="#date-format-and-breaks"><span class="header-section-number">3.2.1</span> Date format and breaks</a></li>
+  <li><a href="#time-window" id="toc-time-window" class="nav-link" data-scroll-target="#time-window"><span class="header-section-number">3.2.2</span> Time window</a></li>
+  <li><a href="#annotations" id="toc-annotations" class="nav-link" data-scroll-target="#annotations"><span class="header-section-number">3.2.3</span> Annotations</a></li>
+  <li><a href="#time-heatmap" id="toc-time-heatmap" class="nav-link" data-scroll-target="#time-heatmap"><span class="header-section-number">3.2.4</span> Time heatmap</a></li>
+  </ul></li>
+  <li><a href="#smoothing-and-uncertainty" id="toc-smoothing-and-uncertainty" class="nav-link" data-scroll-target="#smoothing-and-uncertainty"><span class="header-section-number">3.3</span> Smoothing and uncertainty</a>
+  <ul>
+  <li><a href="#smoothers-with-confidence-bands" id="toc-smoothers-with-confidence-bands" class="nav-link" data-scroll-target="#smoothers-with-confidence-bands"><span class="header-section-number">3.3.1</span> Smoothers with confidence bands</a></li>
+  <li><a href="#ribbon" id="toc-ribbon" class="nav-link" data-scroll-target="#ribbon"><span class="header-section-number">3.3.2</span> Ribbon</a></li>
+  </ul></li>
+  <li><a href="#many-lines" id="toc-many-lines" class="nav-link" data-scroll-target="#many-lines"><span class="header-section-number">3.4</span> Many lines</a>
+  <ul>
+  <li><a href="#highlighting-one-line" id="toc-highlighting-one-line" class="nav-link" data-scroll-target="#highlighting-one-line"><span class="header-section-number">3.4.1</span> Highlighting one line</a></li>
+  <li><a href="#small-multiples-with-the-others-greyed" id="toc-small-multiples-with-the-others-greyed" class="nav-link" data-scroll-target="#small-multiples-with-the-others-greyed"><span class="header-section-number">3.4.2</span> Small multiples with the others greyed</a></li>
+  <li><a href="#labels-at-line-ends" id="toc-labels-at-line-ends" class="nav-link" data-scroll-target="#labels-at-line-ends"><span class="header-section-number">3.4.3</span> Labels at line ends</a></li>
+  <li><a href="#bump-chart" id="toc-bump-chart" class="nav-link" data-scroll-target="#bump-chart"><span class="header-section-number">3.4.4</span> Bump chart</a></li>
+  </ul></li>
+  <li><a href="#areas" id="toc-areas" class="nav-link" data-scroll-target="#areas"><span class="header-section-number">3.5</span> Areas</a>
+  <ul>
+  <li><a href="#area-chart" id="toc-area-chart" class="nav-link" data-scroll-target="#area-chart"><span class="header-section-number">3.5.1</span> Area chart</a></li>
+  <li><a href="#gradient-area" id="toc-gradient-area" class="nav-link" data-scroll-target="#gradient-area"><span class="header-section-number">3.5.2</span> Gradient area</a></li>
+  <li><a href="#stacked-area" id="toc-stacked-area" class="nav-link" data-scroll-target="#stacked-area"><span class="header-section-number">3.5.3</span> Stacked area</a></li>
+  <li><a href="#percent-stacked-area" id="toc-percent-stacked-area" class="nav-link" data-scroll-target="#percent-stacked-area"><span class="header-section-number">3.5.4</span> Percent stacked area</a></li>
+  <li><a href="#stacking-order" id="toc-stacking-order" class="nav-link" data-scroll-target="#stacking-order"><span class="header-section-number">3.5.5</span> Stacking order</a></li>
+  <li><a href="#streamgraph" id="toc-streamgraph" class="nav-link" data-scroll-target="#streamgraph"><span class="header-section-number">3.5.6</span> Streamgraph</a></li>
+  </ul></li>
+  <li><a href="#other-marks" id="toc-other-marks" class="nav-link" data-scroll-target="#other-marks"><span class="header-section-number">3.6</span> Other marks</a>
+  <ul>
+  <li><a href="#lollipop" id="toc-lollipop" class="nav-link" data-scroll-target="#lollipop"><span class="header-section-number">3.6.1</span> Lollipop</a></li>
+  <li><a href="#candlestick" id="toc-candlestick" class="nav-link" data-scroll-target="#candlestick"><span class="header-section-number">3.6.2</span> Candlestick</a></li>
+  <li><a href="#line-coloured-by-its-value" id="toc-line-coloured-by-its-value" class="nav-link" data-scroll-target="#line-coloured-by-its-value"><span class="header-section-number">3.6.3</span> Line coloured by its value</a></li>
+  <li><a href="#connected-scatter" id="toc-connected-scatter" class="nav-link" data-scroll-target="#connected-scatter"><span class="header-section-number">3.6.4</span> Connected scatter</a></li>
+  </ul></li>
+  <li><a href="#functions" id="toc-functions" class="nav-link" data-scroll-target="#functions"><span class="header-section-number">3.7</span> Functions</a></li>
+  <li><a href="#caveats" id="toc-caveats" class="nav-link" data-scroll-target="#caveats"><span class="header-section-number">3.8</span> Caveats</a>
+  <ul>
+  <li><a href="#cutting-the-y-axis-aspect-ratio" id="toc-cutting-the-y-axis-aspect-ratio" class="nav-link" data-scroll-target="#cutting-the-y-axis-aspect-ratio"><span class="header-section-number">3.8.1</span> Cutting the y axis; aspect ratio</a></li>
+  </ul></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./use_cases.distribution.html">Use cases</a></li><li class="breadcrumb-item"><a href="./use_cases.evolution.html"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Evolution</span></a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Evolution</span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<style></style>
+<style>.printedClojure .sourceCode {
+  background-color: transparent;
+  border-style: none;
+}
+</style>
+<style>.clay-limit-image-width .clay-image {max-width: 100%}
+.clay-side-by-side .sourceCode {margin: 0}
+.clay-side-by-side {margin: 1em 0}
+</style>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js" type="text/javascript"></script>
+<script src="https://code.jquery.com/ui/1.13.1/jquery-ui.min.js" type="text/javascript"></script>
+<p>Values over time and other ordered variables: lines, time axes, smoothing and uncertainty, many lines, areas and marks for evolution (the <a href="https://r-graph-gallery.com/time-series.html">R Graph Gallery</a> evolution pages and the <a href="https://www.data-to-viz.com/caveats.html">data-to-viz</a> caveats).</p>
+<p>Dates are <code>java.time</code> values: a datetime scale places <code>LocalDate</code>, <code>LocalDateTime</code>, <code>Instant</code> and the other temporal types; curves and fits work in epoch milliseconds.</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">ns</span> use-cases.evolution</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  (<span class="at">:require</span> [fastmath.core <span class="at">:as</span> m]</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>            [fastmath.kernel <span class="at">:as</span> kernel]</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>            [fastmath.random <span class="at">:as</span> r]</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>            [cljplot2.chart <span class="at">:as</span> chart]</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>            [cljplot2.core <span class="at">:as</span> plot]</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>            [cljplot2.data.levels <span class="at">:as</span> levels]</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>            [notebook-utils <span class="at">:as</span> nu])</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>  (<span class="at">:import</span> [java.<span class="kw">time</span> LocalDate]</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>           [java.<span class="kw">time</span>.<span class="kw">format</span> DateTimeFormatter]))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">defn-</span><span class="fu"> with-dates</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Rows with the ISO string `:date` parsed to a `LocalDate`."</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  [rows]</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>  (<span class="kw">mapv</span> #(<span class="kw">update</span> <span class="va">%</span> <span class="at">:date</span> (<span class="kw">fn</span> [d] (LocalDate/parse d))) rows))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="printedClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="va">#'use-cases.evolution/with-dates</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> economics </span>(with-dates (nu/dataset <span class="at">:economics</span>)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> air </span>(with-dates (nu/dataset <span class="at">:air-passengers</span>)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> chicks </span>(nu/dataset <span class="at">:chick-weight</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> mtcars </span>(nu/dataset <span class="at">:mtcars</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> lincoln</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Lincoln weather with `:date` parsed (`2016-1-1` - not ISO)."</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  (<span class="kw">let</span> [f (DateTimeFormatter/ofPattern <span class="st">"yyyy-M-d"</span>)]</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>    (<span class="kw">mapv</span> #(<span class="kw">update</span> <span class="va">%</span> <span class="at">:date</span> (<span class="kw">fn</span> [d] (LocalDate/parse d f))) (nu/dataset <span class="at">:lincoln-weather</span>))))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> economics-long</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Economics in long form - `:variable`, `:value` and `:value01` (the value rescaled to 0..1 per variable), as</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="st">  ggplot2's `economics_long`."</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>  (<span class="kw">vec</span> (<span class="kw">for</span> [k [<span class="at">:pce</span> <span class="at">:pop</span> <span class="at">:psavert</span> <span class="at">:uempmed</span> <span class="at">:unemploy</span>]</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>             <span class="at">:let</span> [vs (<span class="kw">map</span> k economics) lo (<span class="kw">double</span> (<span class="kw">reduce</span> <span class="kw">min</span> vs)) hi (<span class="kw">double</span> (<span class="kw">reduce</span> <span class="kw">max</span> vs))]</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>             row economics]</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>         {<span class="at">:date</span> (<span class="at">:date</span> row) <span class="at">:variable</span> (<span class="kw">name</span> k) <span class="at">:value</span> (k row) <span class="at">:value01</span> (<span class="kw">/</span> (<span class="kw">-</span> (<span class="kw">double</span> (k row)) lo) (<span class="kw">-</span> hi lo))})))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<section id="lines" class="level2" data-number="3.1">
+<h2 data-number="3.1" class="anchored" data-anchor-id="lines"><span class="header-section-number">3.1</span> Lines</h2>
+<p>A line joins points in x order; dates on x give a datetime axis.</p>
+<section id="basic-line-with-dates" class="level3" data-number="3.1.1">
+<h3 data-number="3.1.1" class="anchored" data-anchor-id="basic-line-with-dates"><span class="header-section-number">3.1.1</span> Basic line with dates</h3>
+<p>Source: R Graph Gallery - Line chart with ggplot2; Time series (<a href="https://r-graph-gallery.com/line-chart-ggplot2.html">1</a>, <a href="https://r-graph-gallery.com/279-plotting-time-series-with-ggplot2.html">2</a>). Data: US economic time series, 1967-2015, R ggplot2 package <code>economics</code> (Federal Reserve Bank of St.&nbsp;Louis, FRED); licence: MIT (ggplot2).</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a> {<span class="at">:data</span> economics</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:date</span> <span class="at">:y</span> <span class="at">:unemploy</span>}</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">:charts</span> [(chart/line)]</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"Unemployed persons in the US"</span> <span class="at">:x</span> <span class="va">nil</span> <span class="at">:y</span> <span class="st">"thousands"</span>}}</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a> {<span class="at">:width</span> <span class="dv">800</span> <span class="at">:height</span> <span class="dv">400</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="use_cases.evolution_files/image0.png" class="img-fluid"></p>
+</div>
+</section>
+<section id="line-styling" class="level3" data-number="3.1.2">
+<h3 data-number="3.1.2" class="anchored" data-anchor-id="line-styling"><span class="header-section-number">3.1.2</span> Line styling</h3>
+<p>Width, colour and points are chart options; <code>:dash</code> mapped to a variable takes the named dash styles in order (<code>:solid</code>, <code>:dashed</code>, <code>:dotted</code>, …), so lines read apart without colour.</p>
+<p>Source: <a href="https://r-graph-gallery.com/line-chart-ggplot2.html">R Graph Gallery - Line chart with ggplot2 (customization)</a>. Data: US economic time series, 1967-2015, R ggplot2 package <code>economics</code> (Federal Reserve Bank of St.&nbsp;Louis, FRED); licence: MIT (ggplot2).</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">let</span> [recent (<span class="kw">filter</span> #(.isAfter ^LocalDate (<span class="at">:date</span> <span class="va">%</span>) (LocalDate/of <span class="dv">2010</span> <span class="dv">1</span> <span class="dv">1</span>)) economics)</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>      recent-long (<span class="kw">filter</span> #(<span class="kw">and</span> (.isAfter ^LocalDate (<span class="at">:date</span> <span class="va">%</span>) (LocalDate/of <span class="dv">2010</span> <span class="dv">1</span> <span class="dv">1</span>))</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>                                (#{<span class="st">"psavert"</span> <span class="st">"uempmed"</span> <span class="st">"unemploy"</span>} (<span class="at">:variable</span> <span class="va">%</span>)))</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>                          economics-long)]</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>  (plot/render-image</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>   (plot/arrange</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>    [{<span class="at">:data</span> recent <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:date</span> <span class="at">:y</span> <span class="at">:psavert</span>}</span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>      <span class="at">:charts</span> [(chart/line {<span class="at">:width</span> <span class="dv">2</span> <span class="at">:color</span> [<span class="dv">215</span> <span class="dv">48</span> <span class="dv">39</span>]}) (chart/scatter {<span class="at">:size</span> <span class="dv">5</span> <span class="at">:color</span> [<span class="dv">215</span> <span class="dv">48</span> <span class="dv">39</span>]})]</span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>      <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"width, colour, points"</span> <span class="at">:x</span> <span class="va">nil</span> <span class="at">:y</span> <span class="st">"savings rate, %"</span>}}</span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>     {<span class="at">:data</span> recent-long <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:date</span> <span class="at">:y</span> <span class="at">:value01</span> <span class="at">:dash</span> <span class="at">:variable</span>}</span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>      <span class="at">:charts</span> [(chart/line {<span class="at">:width</span> <span class="fl">1.5</span> <span class="at">:color</span> <span class="at">:black</span>})]</span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>      <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":dash by variable"</span> <span class="at">:x</span> <span class="va">nil</span> <span class="at">:y</span> <span class="st">"rescaled"</span>}}]</span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a>    {<span class="at">:columns</span> <span class="dv">2</span>})</span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a>   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">400</span>}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="use_cases.evolution_files/image1.png" class="img-fluid"></p>
+</div>
+</section>
+<section id="log-scale" class="level3" data-number="3.1.3">
+<h3 data-number="3.1.3" class="anchored" data-anchor-id="log-scale"><span class="header-section-number">3.1.3</span> Log scale</h3>
+<p>Growth at a steady rate is a straight line on a log axis; <code>:sqrt</code>, <code>:pow</code> and <code>:symlog</code> are the other continuous transforms (wadogo scales).</p>
+<p>Source: <a href="https://r-graph-gallery.com/line-plot-log-scale.html">R Graph Gallery - Line plot with log scale</a>. Data: US economic time series, 1967-2015, R ggplot2 package <code>economics</code> (Federal Reserve Bank of St.&nbsp;Louis, FRED); licence: MIT (ggplot2).</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a> (plot/arrange</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>  [{<span class="at">:data</span> economics <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:date</span> <span class="at">:y</span> <span class="at">:pce</span>} <span class="at">:charts</span> [(chart/line)]</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"linear"</span> <span class="at">:x</span> <span class="va">nil</span> <span class="at">:y</span> <span class="st">"consumption, billions USD"</span>}}</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>   {<span class="at">:data</span> economics <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:date</span> <span class="at">:y</span> <span class="at">:pce</span>} <span class="at">:scales</span> {<span class="at">:y</span> {<span class="at">:kind</span> <span class="at">:log</span>}} <span class="at">:charts</span> [(chart/line)]</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":log"</span> <span class="at">:x</span> <span class="va">nil</span> <span class="at">:y</span> <span class="st">"consumption, billions USD"</span>}}]</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>  {<span class="at">:columns</span> <span class="dv">2</span>})</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a> {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">400</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="use_cases.evolution_files/image2.png" class="img-fluid"></p>
+</div>
+</section>
+<section id="several-groups" class="level3" data-number="3.1.4">
+<h3 data-number="3.1.4" class="anchored" data-anchor-id="several-groups"><span class="header-section-number">3.1.4</span> Several groups</h3>
+<p>One line per level of <code>:color</code>; values on different units are rescaled to 0..1 to share an axis.</p>
+<p>Source: <a href="https://r-graph-gallery.com/line-chart-several-groups-ggplot2.html">R Graph Gallery - Line chart with several groups</a>. Data: US economic time series, 1967-2015, R ggplot2 package <code>economics</code> (Federal Reserve Bank of St.&nbsp;Louis, FRED); licence: MIT (ggplot2).</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a> {<span class="at">:data</span> economics-long</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:date</span> <span class="at">:y</span> <span class="at">:value01</span> <span class="at">:color</span> <span class="at">:variable</span>}</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">:charts</span> [(chart/line)]</span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"Five economic series, rescaled"</span> <span class="at">:x</span> <span class="va">nil</span> <span class="at">:y</span> <span class="st">"value (0..1)"</span>}}</span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a> {<span class="at">:width</span> <span class="dv">900</span> <span class="at">:height</span> <span class="dv">450</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="use_cases.evolution_files/image3.png" class="img-fluid"></p>
+</div>
+</section>
+<section id="steps-and-interpolated-lines" class="level3" data-number="3.1.5">
+<h3 data-number="3.1.5" class="anchored" data-anchor-id="steps-and-interpolated-lines"><span class="header-section-number">3.1.5</span> Steps and interpolated lines</h3>
+<p><code>:interpolator</code> takes any fastmath one-dimensional method: steps, monotone (no overshoot) or cubic curves through the points.</p>
+<p>Source: R Graph Gallery - Line plot; data-to-viz - Line plot (<a href="https://r-graph-gallery.com/line-plot.html">1</a>, <a href="https://www.data-to-viz.com/graph/line.html">2</a>). Data: Monthly airline passengers, 1949-1960, R datasets package <code>AirPassengers</code> (Box &amp; Jenkins 1976); licence: Part of R (GPL-2 | GPL-3).</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">let</span> [year (<span class="kw">filter</span> #(<span class="kw">=</span> <span class="dv">1955</span> (<span class="at">:year</span> <span class="va">%</span>)) air)</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>      panel (<span class="kw">fn</span> [title opts] {<span class="at">:data</span> year <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:date</span> <span class="at">:y</span> <span class="at">:passengers</span>}</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>                              <span class="at">:charts</span> [(chart/line opts) (chart/scatter {<span class="at">:size</span> <span class="dv">5</span>})]</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>                              <span class="at">:labels</span> {<span class="at">:title</span> title <span class="at">:x</span> <span class="va">nil</span> <span class="at">:y</span> <span class="st">"passengers, thousands"</span>}})]</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>  (plot/render-image</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>   (plot/arrange [(panel <span class="st">":step-after"</span> {<span class="at">:interpolator</span> <span class="at">:step-after</span>})</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>                  (panel <span class="st">":monotone"</span> {<span class="at">:interpolator</span> <span class="at">:monotone</span>})</span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>                  (panel <span class="st">":cubic"</span> {<span class="at">:interpolator</span> <span class="at">:cubic</span>})]</span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>                 {<span class="at">:columns</span> <span class="dv">3</span>})</span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">350</span>}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="use_cases.evolution_files/image4.png" class="img-fluid"></p>
+</div>
+</section>
+<section id="sampling-step" class="level3" data-number="3.1.6">
+<h3 data-number="3.1.6" class="anchored" data-anchor-id="sampling-step"><span class="header-section-number">3.1.6</span> Sampling step</h3>
+<p>An interpolated line is evaluated every <code>:sample-step</code> pixels (default 1) or at <code>{:count n}</code> positions per run - a coarse count shows the polyline behind a curve.</p>
+<p>Source: cljplot2 - line :sample-step. Data: Monthly airline passengers, 1949-1960, R datasets package <code>AirPassengers</code> (Box &amp; Jenkins 1976); licence: Part of R (GPL-2 | GPL-3).</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">let</span> [years (<span class="kw">filter</span> #(<span class="kw">&lt;=</span> <span class="dv">1958</span> (<span class="at">:year</span> <span class="va">%</span>)) air)</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>      panel (<span class="kw">fn</span> [title step] {<span class="at">:data</span> years <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:date</span> <span class="at">:y</span> <span class="at">:passengers</span>}</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>                              <span class="at">:charts</span> [(chart/line {<span class="at">:interpolator</span> <span class="at">:cubic</span> <span class="at">:sample-step</span> step}) (chart/scatter {<span class="at">:size</span> <span class="dv">4</span>})]</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>                              <span class="at">:labels</span> {<span class="at">:title</span> title <span class="at">:x</span> <span class="va">nil</span> <span class="at">:y</span> <span class="st">"passengers, thousands"</span>}})]</span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>  (plot/render-image</span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>   (plot/arrange [(panel <span class="st">"every pixel (default)"</span> <span class="dv">1</span>) (panel <span class="st">"{:count 12} per run"</span> {<span class="at">:count</span> <span class="dv">12</span>})] {<span class="at">:columns</span> <span class="dv">2</span>})</span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">380</span>}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="use_cases.evolution_files/image5.png" class="img-fluid"></p>
+</div>
+</section>
+<section id="missing-values" class="level3" data-number="3.1.7">
+<h3 data-number="3.1.7" class="anchored" data-anchor-id="missing-values"><span class="header-section-number">3.1.7</span> Missing values</h3>
+<p>A missing (<code>nil</code>) value breaks the line (<code>:gaps :break</code>, default); <code>:gaps :bridge</code> joins the ends with a dimmed segment, so the gap stays visible.</p>
+<p>Source: cljplot2 - line :gaps. Data: US economic time series, 1967-2015, R ggplot2 package <code>economics</code> (Federal Reserve Bank of St.&nbsp;Louis, FRED); licence: MIT (ggplot2).</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">let</span> [gappy (<span class="kw">map</span> (<span class="kw">fn</span> [row] (<span class="kw">if</span> (<span class="kw">&lt;=</span> <span class="dv">1990</span> (.getYear ^LocalDate (<span class="at">:date</span> row)) <span class="dv">1992</span>) (<span class="kw">assoc</span> row <span class="at">:psavert</span> <span class="va">nil</span>) row))</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>                 (<span class="kw">filter</span> #(<span class="kw">&lt;=</span> <span class="dv">1985</span> (.getYear ^LocalDate (<span class="at">:date</span> <span class="va">%</span>)) <span class="dv">1997</span>) economics))</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>      panel (<span class="kw">fn</span> [title gaps] {<span class="at">:data</span> gappy <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:date</span> <span class="at">:y</span> <span class="at">:psavert</span>}</span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>                              <span class="at">:charts</span> [(chart/line {<span class="at">:gaps</span> gaps <span class="at">:width</span> <span class="fl">1.5</span>})]</span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>                              <span class="at">:labels</span> {<span class="at">:title</span> title <span class="at">:x</span> <span class="va">nil</span> <span class="at">:y</span> <span class="st">"savings rate, %"</span>}})]</span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>  (plot/render-image</span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>   (plot/arrange [(panel <span class="st">":gaps :break"</span> <span class="at">:break</span>) (panel <span class="st">":gaps :bridge"</span> <span class="at">:bridge</span>)] {<span class="at">:columns</span> <span class="dv">2</span>})</span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">380</span>}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="use_cases.evolution_files/image6.png" class="img-fluid"></p>
+</div>
+</section>
+</section>
+<section id="time-axes" class="level2" data-number="3.2">
+<h2 data-number="3.2" class="anchored" data-anchor-id="time-axes"><span class="header-section-number">3.2</span> Time axes</h2>
+<p>Datetime ticks fall on calendar units; the formatter is a function or a <code>java.time</code> pattern string.</p>
+<section id="date-format-and-breaks" class="level3" data-number="3.2.1">
+<h3 data-number="3.2.1" class="anchored" data-anchor-id="date-format-and-breaks"><span class="header-section-number">3.2.1</span> Date format and breaks</h3>
+<p>Source: R Graph Gallery - Time series with ggplot2; Manage dates (<a href="https://r-graph-gallery.com/279-plotting-time-series-with-ggplot2.html">1</a>, <a href="https://r-graph-gallery.com/191-manage-date-data.html">2</a>). Data: US economic time series, 1967-2015, R ggplot2 package <code>economics</code> (Federal Reserve Bank of St.&nbsp;Louis, FRED); licence: MIT (ggplot2).</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a> (plot/arrange</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>  [{<span class="at">:data</span> economics <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:date</span> <span class="at">:y</span> <span class="at">:uempmed</span>}</span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">:scales</span> {<span class="at">:x</span> {<span class="at">:ticks-params</span> {<span class="at">:unit</span> <span class="at">:years</span> <span class="at">:step</span> <span class="dv">5</span>} <span class="at">:formatter</span> <span class="st">"yyyy"</span>}}</span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">:charts</span> [(chart/line)] <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"every 5 years, </span><span class="sc">\"</span><span class="st">yyyy</span><span class="sc">\"</span><span class="st">"</span> <span class="at">:x</span> <span class="va">nil</span> <span class="at">:y</span> <span class="st">"weeks"</span>}}</span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>   {<span class="at">:data</span> (<span class="kw">filter</span> #(<span class="kw">=</span> <span class="dv">2008</span> (.getYear ^LocalDate (<span class="at">:date</span> <span class="va">%</span>))) economics) <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:date</span> <span class="at">:y</span> <span class="at">:uempmed</span>}</span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">:scales</span> {<span class="at">:x</span> {<span class="at">:ticks-params</span> {<span class="at">:unit</span> <span class="at">:months</span> <span class="at">:step</span> <span class="dv">2</span>} <span class="at">:formatter</span> <span class="st">"MMM"</span>}}</span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">:charts</span> [(chart/line) (chart/scatter {<span class="at">:size</span> <span class="dv">5</span>})] <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"2008, every 2 months, </span><span class="sc">\"</span><span class="st">MMM</span><span class="sc">\"</span><span class="st">"</span> <span class="at">:x</span> <span class="va">nil</span> <span class="at">:y</span> <span class="st">"weeks"</span>}}]</span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>  {<span class="at">:columns</span> <span class="dv">2</span>})</span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a> {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">400</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="use_cases.evolution_files/image7.png" class="img-fluid"></p>
+</div>
+</section>
+<section id="time-window" class="level3" data-number="3.2.2">
+<h3 data-number="3.2.2" class="anchored" data-anchor-id="time-window"><span class="header-section-number">3.2.2</span> Time window</h3>
+<p>An explicit <code>:domain</code> of dates shows one window of a long series; the data outside is clipped by the panel.</p>
+<p>Source: <a href="https://r-graph-gallery.com/279-plotting-time-series-with-ggplot2.html">R Graph Gallery - Time series with ggplot2 (select a time frame)</a>. Data: US economic time series, 1967-2015, R ggplot2 package <code>economics</code> (Federal Reserve Bank of St.&nbsp;Louis, FRED); licence: MIT (ggplot2).</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a> {<span class="at">:data</span> economics</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:date</span> <span class="at">:y</span> <span class="at">:unemploy</span>}</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">:scales</span> {<span class="at">:x</span> {<span class="at">:domain</span> [(LocalDate/of <span class="dv">2000</span> <span class="dv">1</span> <span class="dv">1</span>) (LocalDate/of <span class="dv">2010</span> <span class="dv">1</span> <span class="dv">1</span>)]} <span class="at">:y</span> {<span class="at">:domain</span> [<span class="dv">4000</span> <span class="dv">16000</span>]}}</span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">:charts</span> [(chart/line {<span class="at">:width</span> <span class="fl">1.5</span>})]</span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"Unemployment, 2000-2010"</span> <span class="at">:x</span> <span class="va">nil</span> <span class="at">:y</span> <span class="st">"thousands"</span>}}</span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a> {<span class="at">:width</span> <span class="dv">800</span> <span class="at">:height</span> <span class="dv">400</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="use_cases.evolution_files/image8.png" class="img-fluid"></p>
+</div>
+</section>
+<section id="annotations" class="level3" data-number="3.2.3">
+<h3 data-number="3.2.3" class="anchored" data-anchor-id="annotations"><span class="header-section-number">3.2.3</span> Annotations</h3>
+<p>Literal rects, rules and texts take dates as positions: recessions shaded behind the line, a rule and a label.</p>
+<p>Source: <a href="https://r-graph-gallery.com/line_chart_annotation.html">R Graph Gallery - Line chart annotation</a>. Data: US economic time series, 1967-2015, R ggplot2 package <code>economics</code> (Federal Reserve Bank of St.&nbsp;Louis, FRED); licence: MIT (ggplot2).</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">let</span> [d (<span class="kw">fn</span> [y mo] (LocalDate/of (<span class="kw">int</span> y) (<span class="kw">int</span> mo) <span class="dv">1</span>))</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>      recessions [[(d <span class="dv">1969</span> <span class="dv">12</span>) (d <span class="dv">1970</span> <span class="dv">11</span>)] [(d <span class="dv">1973</span> <span class="dv">11</span>) (d <span class="dv">1975</span> <span class="dv">3</span>)] [(d <span class="dv">1980</span> <span class="dv">1</span>) (d <span class="dv">1980</span> <span class="dv">7</span>)] [(d <span class="dv">1981</span> <span class="dv">7</span>) (d <span class="dv">1982</span> <span class="dv">11</span>)]</span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>                  [(d <span class="dv">1990</span> <span class="dv">7</span>) (d <span class="dv">1991</span> <span class="dv">3</span>)] [(d <span class="dv">2001</span> <span class="dv">3</span>) (d <span class="dv">2001</span> <span class="dv">11</span>)] [(d <span class="dv">2007</span> <span class="dv">12</span>) (d <span class="dv">2009</span> <span class="dv">6</span>)]]]</span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>  (plot/render-image</span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>   {<span class="at">:data</span> economics</span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:date</span> <span class="at">:y</span> <span class="at">:unemploy</span>}</span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">:charts</span> [(chart/rect {<span class="at">:x</span> recessions <span class="at">:fill</span> [<span class="dv">0</span> <span class="dv">0</span> <span class="dv">0</span> <span class="dv">35</span>]})</span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>             (chart/line {<span class="at">:width</span> <span class="fl">1.5</span>})</span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a>             (chart/rule {<span class="at">:x</span> (d <span class="dv">2008</span> <span class="dv">9</span>) <span class="at">:dash</span> <span class="at">:dashed</span> <span class="at">:color</span> [<span class="dv">215</span> <span class="dv">48</span> <span class="dv">39</span>]})</span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a>             (chart/text {<span class="at">:x</span> (d <span class="dv">2008</span> <span class="dv">9</span>) <span class="at">:y</span> <span class="dv">14500</span> <span class="at">:text</span> <span class="st">"Lehman Brothers"</span> <span class="at">:anchor</span> [<span class="at">:right</span> <span class="at">:middle</span>] <span class="at">:offset</span> [-<span class="dv">5</span> <span class="dv">0</span>]</span>
+<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a>                          <span class="at">:color</span> [<span class="dv">215</span> <span class="dv">48</span> <span class="dv">39</span>]})]</span>
+<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"Unemployment and US recessions (NBER)"</span> <span class="at">:x</span> <span class="va">nil</span> <span class="at">:y</span> <span class="st">"thousands"</span>}}</span>
+<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a>   {<span class="at">:width</span> <span class="dv">900</span> <span class="at">:height</span> <span class="dv">450</span>}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="use_cases.evolution_files/image9.png" class="img-fluid"></p>
+</div>
+</section>
+<section id="time-heatmap" class="level3" data-number="3.2.4">
+<h3 data-number="3.2.4" class="anchored" data-anchor-id="time-heatmap"><span class="header-section-number">3.2.4</span> Time heatmap</h3>
+<p>Year × month as two categorical axes, the value as a linear colour: seasonality and growth at once. A rect whose ends are levels covers the level’s band.</p>
+<p>Source: <a href="https://r-graph-gallery.com/283-the-hourly-heatmap.html">R Graph Gallery - The hourly heatmap</a>. Data: Monthly airline passengers, 1949-1960, R datasets package <code>AirPassengers</code> (Box &amp; Jenkins 1976); licence: Part of R (GPL-2 | GPL-3).</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">let</span> [months [<span class="st">"Jan"</span> <span class="st">"Feb"</span> <span class="st">"Mar"</span> <span class="st">"Apr"</span> <span class="st">"May"</span> <span class="st">"Jun"</span> <span class="st">"Jul"</span> <span class="st">"Aug"</span> <span class="st">"Sep"</span> <span class="st">"Oct"</span> <span class="st">"Nov"</span> <span class="st">"Dec"</span>]</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>      rows (<span class="kw">map</span> #(<span class="kw">assoc</span> <span class="va">%</span> <span class="at">:year-level</span> (<span class="kw">str</span> (<span class="at">:year</span> <span class="va">%</span>))) air)]</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>  (plot/render-image</span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>   {<span class="at">:data</span> rows</span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">:scales</span> {<span class="at">:x</span> {<span class="at">:domain</span> months} <span class="at">:color</span> {<span class="at">:range</span> <span class="at">:viridis/viridis</span> <span class="at">:title</span> <span class="st">"passengers"</span>}}</span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">:charts</span> [(chart/rect {<span class="at">:mapping</span> {<span class="at">:x0</span> <span class="at">:month</span> <span class="at">:x1</span> <span class="at">:month</span> <span class="at">:y0</span> <span class="at">:year-level</span> <span class="at">:y1</span> <span class="at">:year-level</span> <span class="at">:color</span> <span class="at">:passengers</span>}</span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>                          <span class="at">:stroke-color</span> <span class="at">:white</span>})]</span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"Airline passengers by month (thousands)"</span> <span class="at">:x</span> <span class="va">nil</span> <span class="at">:y</span> <span class="va">nil</span>}}</span>
+<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a>   {<span class="at">:width</span> <span class="dv">800</span> <span class="at">:height</span> <span class="dv">500</span>}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="use_cases.evolution_files/image10.png" class="img-fluid"></p>
+</div>
+</section>
+</section>
+<section id="smoothing-and-uncertainty" class="level2" data-number="3.3">
+<h2 data-number="3.3" class="anchored" data-anchor-id="smoothing-and-uncertainty"><span class="header-section-number">3.3</span> Smoothing and uncertainty</h2>
+<p><code>chart/smooth</code> fits a curve per group with a band; <code>chart/ribbon</code> draws any band given as <code>:ymin</code> / <code>:ymax</code>.</p>
+<section id="smoothers-with-confidence-bands" class="level3" data-number="3.3.1">
+<h3 data-number="3.3.1" class="anchored" data-anchor-id="smoothers-with-confidence-bands"><span class="header-section-number">3.3.1</span> Smoothers with confidence bands</h3>
+<p>Loess (default) with nested 50% / 95% bands; a linear model per diet; a Gaussian process (mean ± z·σ). On a date axis the fit works in epoch milliseconds - a kernel’s scale too (here 3 years).</p>
+<p>Source: R Graph Gallery - Scatterplot with ggplot2 (smoothing); Polynomial curve fitting (<a href="https://r-graph-gallery.com/50-51-52-scatter-plot-with-ggplot2.html">1</a>, <a href="https://r-graph-gallery.com/44-polynomial-curve-fitting.html">2</a>). Data: Monthly airline passengers, 1949-1960, R datasets package <code>AirPassengers</code> (Box &amp; Jenkins 1976); licence: Part of R (GPL-2 | GPL-3).</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb21"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">let</span> [year-ms (<span class="kw">*</span> <span class="fl">365.25</span> <span class="fl">86400000.0</span>)]</span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>  (plot/render-image</span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>   (plot/arrange</span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>    [{<span class="at">:data</span> air <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:date</span> <span class="at">:y</span> <span class="at">:passengers</span>}</span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>      <span class="at">:charts</span> [(chart/scatter {<span class="at">:size</span> <span class="dv">3</span>}) (chart/smooth {<span class="at">:level</span> [<span class="fl">0.5</span> <span class="fl">0.95</span>]})]</span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a>      <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"loess, 50% / 95%"</span> <span class="at">:x</span> <span class="va">nil</span> <span class="at">:y</span> <span class="st">"passengers"</span>}}</span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a>     {<span class="at">:data</span> chicks <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:time</span> <span class="at">:y</span> <span class="at">:weight</span> <span class="at">:color</span> <span class="at">:diet</span>}</span>
+<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a>      <span class="at">:charts</span> [(chart/scatter {<span class="at">:size</span> <span class="dv">3</span>}) (chart/smooth {<span class="at">:method</span> <span class="at">:lm</span>})]</span>
+<span id="cb21-9"><a href="#cb21-9" aria-hidden="true" tabindex="-1"></a>      <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"lm per diet"</span> <span class="at">:x</span> <span class="st">"days"</span> <span class="at">:y</span> <span class="st">"weight, g"</span>}}</span>
+<span id="cb21-10"><a href="#cb21-10" aria-hidden="true" tabindex="-1"></a>     {<span class="at">:data</span> (<span class="kw">filter</span> #(<span class="kw">&lt;=</span> <span class="dv">1956</span> (<span class="at">:year</span> <span class="va">%</span>)) air) <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:date</span> <span class="at">:y</span> <span class="at">:passengers</span>}</span>
+<span id="cb21-11"><a href="#cb21-11" aria-hidden="true" tabindex="-1"></a>      <span class="at">:charts</span> [(chart/smooth {<span class="at">:method</span> <span class="at">:gp</span> <span class="at">:level</span> [<span class="fl">0.5</span> <span class="fl">0.95</span>]</span>
+<span id="cb21-12"><a href="#cb21-12" aria-hidden="true" tabindex="-1"></a>                              <span class="at">:method-params</span> {<span class="at">:kernel</span> (kernel/kernel <span class="at">:gaussian</span> {<span class="at">:sigma</span> (<span class="kw">*</span> <span class="fl">0.25</span> year-ms)})</span>
+<span id="cb21-13"><a href="#cb21-13" aria-hidden="true" tabindex="-1"></a>                                              <span class="at">:noise</span> <span class="fl">0.05</span> <span class="at">:normalize</span>? <span class="va">true</span>}})</span>
+<span id="cb21-14"><a href="#cb21-14" aria-hidden="true" tabindex="-1"></a>               (chart/scatter {<span class="at">:size</span> <span class="dv">4</span>})]</span>
+<span id="cb21-15"><a href="#cb21-15" aria-hidden="true" tabindex="-1"></a>      <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"Gaussian process"</span> <span class="at">:x</span> <span class="va">nil</span> <span class="at">:y</span> <span class="st">"passengers"</span>}}]</span>
+<span id="cb21-16"><a href="#cb21-16" aria-hidden="true" tabindex="-1"></a>    {<span class="at">:columns</span> <span class="dv">3</span>})</span>
+<span id="cb21-17"><a href="#cb21-17" aria-hidden="true" tabindex="-1"></a>   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">380</span>}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="use_cases.evolution_files/image11.png" class="img-fluid"></p>
+</div>
+</section>
+<section id="ribbon" class="level3" data-number="3.3.2">
+<h3 data-number="3.3.2" class="anchored" data-anchor-id="ribbon"><span class="header-section-number">3.3.2</span> Ribbon</h3>
+<p>Daily minimum and maximum temperatures as a band, the mean as a line.</p>
+<p>Source: <a href="https://r-graph-gallery.com/104-plot-lines-with-error-envelopes-ggplot2.html">R Graph Gallery - Lines with error envelopes</a>. Data: Weather in Lincoln, Nebraska, 2016, R ggridges package <code>lincoln_weather</code> (Weather Underground, via Wilke); licence: GPL-2 (ggridges).</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a> {<span class="at">:data</span> lincoln</span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:date</span>}</span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">:scales</span> {<span class="at">:x</span> {<span class="at">:formatter</span> <span class="st">"MMM"</span>}}</span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">:charts</span> [(chart/ribbon {<span class="at">:mapping</span> {<span class="at">:ymin</span> <span class="at">:min-temp</span> <span class="at">:ymax</span> <span class="at">:max-temp</span>} <span class="at">:color</span> [<span class="dv">215</span> <span class="dv">48</span> <span class="dv">39</span>]})</span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a>           (chart/line {<span class="at">:mapping</span> {<span class="at">:y</span> <span class="at">:mean-temp</span>} <span class="at">:color</span> [<span class="dv">150</span> <span class="dv">30</span> <span class="dv">20</span>]})]</span>
+<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"Lincoln, Nebraska, 2016: daily min-max and mean"</span> <span class="at">:x</span> <span class="va">nil</span> <span class="at">:y</span> <span class="st">"temperature, F"</span>}}</span>
+<span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a> {<span class="at">:width</span> <span class="dv">900</span> <span class="at">:height</span> <span class="dv">420</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="use_cases.evolution_files/image12.png" class="img-fluid"></p>
+</div>
+</section>
+</section>
+<section id="many-lines" class="level2" data-number="3.4">
+<h2 data-number="3.4" class="anchored" data-anchor-id="many-lines"><span class="header-section-number">3.4</span> Many lines</h2>
+<p>Fifty chicks are a spaghetti plot; highlighting, small multiples and labels make it readable.</p>
+<section id="highlighting-one-line" class="level3" data-number="3.4.1">
+<h3 data-number="3.4.1" class="anchored" data-anchor-id="highlighting-one-line"><span class="header-section-number">3.4.1</span> Highlighting one line</h3>
+<p>All lines in grey (<code>:group</code>, no colour), then the one of interest from its own <code>:data</code> in colour.</p>
+<p>Source: data-to-viz - Spaghetti plot; R Graph Gallery - Highlight elements in a line chart (<a href="https://www.data-to-viz.com/caveat/spaghetti.html">1</a>, <a href="https://r-graph-gallery.com/354-highlight-specific-elements-in-line-chart.html">2</a>). Data: Weight versus age of chicks on four diets, R datasets package <code>ChickWeight</code> (Crowder &amp; Hand 1990); licence: Part of R (GPL-2 | GPL-3).</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb23"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a> {<span class="at">:data</span> chicks</span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:time</span> <span class="at">:y</span> <span class="at">:weight</span>}</span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">:charts</span> [(chart/line {<span class="at">:mapping</span> {<span class="at">:group</span> <span class="at">:chick</span>} <span class="at">:color</span> [<span class="dv">190</span> <span class="dv">190</span> <span class="dv">190</span>]})</span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>           (chart/line {<span class="at">:data</span> (<span class="kw">filter</span> #(<span class="kw">=</span> <span class="st">"21"</span> (<span class="at">:chick</span> <span class="va">%</span>)) chicks) <span class="at">:width</span> <span class="fl">2.5</span> <span class="at">:color</span> [<span class="dv">215</span> <span class="dv">48</span> <span class="dv">39</span>]})</span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>           (chart/text {<span class="at">:data</span> (<span class="kw">filter</span> #(<span class="kw">=</span> <span class="st">"21"</span> (<span class="at">:chick</span> <span class="va">%</span>)) chicks) <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:time</span> <span class="at">:y</span> <span class="at">:weight</span> <span class="at">:label</span> <span class="at">:chick</span>}</span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>                        <span class="at">:select</span> <span class="at">:last</span> <span class="at">:color</span> [<span class="dv">215</span> <span class="dv">48</span> <span class="dv">39</span>]})]</span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"Chick 21 among all fifty"</span> <span class="at">:x</span> <span class="st">"days"</span> <span class="at">:y</span> <span class="st">"weight, g"</span>}}</span>
+<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a> {<span class="at">:width</span> <span class="dv">800</span> <span class="at">:height</span> <span class="dv">450</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="use_cases.evolution_files/image13.png" class="img-fluid"></p>
+</div>
+</section>
+<section id="small-multiples-with-the-others-greyed" class="level3" data-number="3.4.2">
+<h3 data-number="3.4.2" class="anchored" data-anchor-id="small-multiples-with-the-others-greyed"><span class="header-section-number">3.4.2</span> Small multiples with the others greyed</h3>
+<p>A chart whose mapping sets the facet key to <code>nil</code> is drawn in every panel: all chicks in grey behind each diet’s own.</p>
+<p>Source: <a href="https://r-graph-gallery.com/web-line-chart-small-multiple-all-group-greyed-out.html">R Graph Gallery - Small multiple line chart, all groups greyed out</a>. Data: Weight versus age of chicks on four diets, R datasets package <code>ChickWeight</code> (Crowder &amp; Hand 1990); licence: Part of R (GPL-2 | GPL-3).</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb24"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a> {<span class="at">:data</span> chicks</span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:time</span> <span class="at">:y</span> <span class="at">:weight</span> <span class="at">:group</span> <span class="at">:chick</span> <span class="at">:facet</span> <span class="at">:diet</span>}</span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">:charts</span> [(chart/line {<span class="at">:mapping</span> {<span class="at">:facet</span> <span class="va">nil</span>} <span class="at">:color</span> [<span class="dv">175</span> <span class="dv">175</span> <span class="dv">175</span>]})</span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a>           (chart/line {<span class="at">:color</span> [<span class="dv">33</span> <span class="dv">102</span> <span class="dv">172</span>]})]</span>
+<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"Chicks per diet, all chicks in grey"</span> <span class="at">:x</span> <span class="st">"days"</span> <span class="at">:y</span> <span class="st">"weight, g"</span>}}</span>
+<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a> {<span class="at">:width</span> <span class="dv">900</span> <span class="at">:height</span> <span class="dv">600</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="use_cases.evolution_files/image14.png" class="img-fluid"></p>
+</div>
+</section>
+<section id="labels-at-line-ends" class="level3" data-number="3.4.3">
+<h3 data-number="3.4.3" class="anchored" data-anchor-id="labels-at-line-ends"><span class="header-section-number">3.4.3</span> Labels at line ends</h3>
+<p><code>chart/text</code> with <code>:select :last</code> keeps one label per series at its last point and makes room for it.</p>
+<p>Source: <a href="https://r-graph-gallery.com/web-line-chart-with-labels-at-end-of-line.html">R Graph Gallery - Line chart with labels at end of lines</a>. Data: US economic time series, 1967-2015, R ggplot2 package <code>economics</code> (Federal Reserve Bank of St.&nbsp;Louis, FRED); licence: MIT (ggplot2).</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb25"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">let</span> [recent (<span class="kw">filter</span> #(<span class="kw">and</span> (.isAfter ^LocalDate (<span class="at">:date</span> <span class="va">%</span>) (LocalDate/of <span class="dv">2005</span> <span class="dv">1</span> <span class="dv">1</span>))</span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>                            (#{<span class="st">"pce"</span> <span class="st">"psavert"</span> <span class="st">"unemploy"</span>} (<span class="at">:variable</span> <span class="va">%</span>)))</span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>                      economics-long)]</span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a>  (plot/render-image</span>
+<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a>   {<span class="at">:data</span> recent</span>
+<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:date</span> <span class="at">:y</span> <span class="at">:value01</span> <span class="at">:color</span> <span class="at">:variable</span>}</span>
+<span id="cb25-7"><a href="#cb25-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">:charts</span> [(chart/line {<span class="at">:width</span> <span class="fl">1.5</span>})</span>
+<span id="cb25-8"><a href="#cb25-8" aria-hidden="true" tabindex="-1"></a>             (chart/text {<span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:date</span> <span class="at">:y</span> <span class="at">:value01</span> <span class="at">:label</span> <span class="at">:variable</span> <span class="at">:color</span> <span class="at">:variable</span>} <span class="at">:select</span> <span class="at">:last</span>})]</span>
+<span id="cb25-9"><a href="#cb25-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">:legend</span> <span class="va">false</span></span>
+<span id="cb25-10"><a href="#cb25-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"Three economic series since 2005, labelled at the end"</span> <span class="at">:x</span> <span class="va">nil</span> <span class="at">:y</span> <span class="st">"value (0..1)"</span>}}</span>
+<span id="cb25-11"><a href="#cb25-11" aria-hidden="true" tabindex="-1"></a>   {<span class="at">:width</span> <span class="dv">900</span> <span class="at">:height</span> <span class="dv">450</span>}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="use_cases.evolution_files/image15.png" class="img-fluid"></p>
+</div>
+</section>
+<section id="bump-chart" class="level3" data-number="3.4.4">
+<h3 data-number="3.4.4" class="anchored" data-anchor-id="bump-chart"><span class="header-section-number">3.4.4</span> Bump chart</h3>
+<p>Ranks instead of values: <code>levels/rank-rows</code> ranks the chicks at every weighing (1 - the heaviest; ties by data order with <code>:ties :first</code>), a monotone line joins the ranks on a reversed axis.</p>
+<p>Source: <a href="https://r-graph-gallery.com/408-basic-bump-plot.html">R Graph Gallery - Basic bump plot</a>. Data: Weight versus age of chicks on four diets, R datasets package <code>ChickWeight</code> (Crowder &amp; Hand 1990); licence: Part of R (GPL-2 | GPL-3).</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb26"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">let</span> [eight (<span class="kw">set</span> (<span class="kw">map</span> <span class="kw">str</span> (<span class="kw">range</span> <span class="dv">1</span> <span class="dv">9</span>)))</span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>      ranked (levels/rank-rows (<span class="kw">filter</span> #(<span class="kw">and</span> (eight (<span class="at">:chick</span> <span class="va">%</span>)) (<span class="kw">zero?</span> (<span class="kw">mod</span> (<span class="at">:time</span> <span class="va">%</span>) <span class="dv">4</span>))) chicks) <span class="at">:time</span> <span class="at">:weight</span></span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a>                              {<span class="at">:ties</span> <span class="at">:first</span>})]</span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a>  (plot/render-image</span>
+<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a>   {<span class="at">:data</span> ranked</span>
+<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:time</span> <span class="at">:y</span> <span class="at">:rank</span> <span class="at">:color</span> <span class="at">:chick</span>}</span>
+<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">:scales</span> {<span class="at">:y</span> {<span class="at">:domain</span> [<span class="fl">8.5</span> <span class="fl">0.5</span>] <span class="at">:nice</span> <span class="va">false</span> <span class="at">:ticks</span> (<span class="kw">vec</span> (<span class="kw">range</span> <span class="dv">1</span> <span class="dv">9</span>))}}</span>
+<span id="cb26-8"><a href="#cb26-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">:charts</span> [(chart/line {<span class="at">:interpolator</span> <span class="at">:monotone</span> <span class="at">:width</span> <span class="dv">3</span>})</span>
+<span id="cb26-9"><a href="#cb26-9" aria-hidden="true" tabindex="-1"></a>             (chart/scatter {<span class="at">:size</span> <span class="dv">9</span>})</span>
+<span id="cb26-10"><a href="#cb26-10" aria-hidden="true" tabindex="-1"></a>             (chart/text {<span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:time</span> <span class="at">:y</span> <span class="at">:rank</span> <span class="at">:label</span> <span class="at">:chick</span> <span class="at">:color</span> <span class="at">:chick</span>} <span class="at">:select</span> <span class="at">:last</span>})]</span>
+<span id="cb26-11"><a href="#cb26-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">:legend</span> <span class="va">false</span></span>
+<span id="cb26-12"><a href="#cb26-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"Weight rank of chicks 1-8 on diet 1"</span> <span class="at">:x</span> <span class="st">"days"</span> <span class="at">:y</span> <span class="st">"rank"</span>}}</span>
+<span id="cb26-13"><a href="#cb26-13" aria-hidden="true" tabindex="-1"></a>   {<span class="at">:width</span> <span class="dv">800</span> <span class="at">:height</span> <span class="dv">450</span>}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="use_cases.evolution_files/image16.png" class="img-fluid"></p>
+</div>
+</section>
+</section>
+<section id="areas" class="level2" data-number="3.5">
+<h2 data-number="3.5" class="anchored" data-anchor-id="areas"><span class="header-section-number">3.5</span> Areas</h2>
+<p>An area fills between a line and zero, or between stacked lines.</p>
+<section id="area-chart" class="level3" data-number="3.5.1">
+<h3 data-number="3.5.1" class="anchored" data-anchor-id="area-chart"><span class="header-section-number">3.5.1</span> Area chart</h3>
+<p>Source: R Graph Gallery - Area chart with ggplot2; data-to-viz - Area chart (<a href="https://r-graph-gallery.com/164-area-chart-ggplot2.html">1</a>, <a href="https://www.data-to-viz.com/graph/area.html">2</a>). Data: US economic time series, 1967-2015, R ggplot2 package <code>economics</code> (Federal Reserve Bank of St.&nbsp;Louis, FRED); licence: MIT (ggplot2).</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb27"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a> {<span class="at">:data</span> economics</span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:date</span> <span class="at">:y</span> <span class="at">:psavert</span>}</span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">:charts</span> [(chart/line {<span class="at">:fill</span> <span class="at">:color</span> <span class="at">:alpha</span> <span class="fl">0.4</span> <span class="at">:width</span> <span class="fl">1.5</span>})]</span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"Personal savings rate"</span> <span class="at">:x</span> <span class="va">nil</span> <span class="at">:y</span> <span class="st">"%"</span>}}</span>
+<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a> {<span class="at">:width</span> <span class="dv">800</span> <span class="at">:height</span> <span class="dv">400</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="use_cases.evolution_files/image17.png" class="img-fluid"></p>
+</div>
+</section>
+<section id="gradient-area" class="level3" data-number="3.5.2">
+<h3 data-number="3.5.2" class="anchored" data-anchor-id="gradient-area"><span class="header-section-number">3.5.2</span> Gradient area</h3>
+<p><code>:fill-gradient</code> colours the area along the y (or x) scale’s range.</p>
+<p>Source: <a href="https://r-graph-gallery.com/357-area-chart-with-gradient.html">R Graph Gallery - Area chart with gradient</a>. Data: US economic time series, 1967-2015, R ggplot2 package <code>economics</code> (Federal Reserve Bank of St.&nbsp;Louis, FRED); licence: MIT (ggplot2).</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb28"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a> {<span class="at">:data</span> economics</span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:date</span> <span class="at">:y</span> <span class="at">:psavert</span>}</span>
+<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">:charts</span> [(chart/line {<span class="at">:fill-gradient</span> [[<span class="dv">255</span> <span class="dv">255</span> <span class="dv">255</span> <span class="dv">0</span>] [<span class="dv">33</span> <span class="dv">102</span> <span class="dv">172</span> <span class="dv">200</span>]] <span class="at">:fill-gradient-axis</span> <span class="at">:y</span> <span class="at">:width</span> <span class="fl">1.5</span></span>
+<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a>                        <span class="at">:color</span> [<span class="dv">33</span> <span class="dv">102</span> <span class="dv">172</span>]})]</span>
+<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"Savings rate, gradient along y"</span> <span class="at">:x</span> <span class="va">nil</span> <span class="at">:y</span> <span class="st">"%"</span>}}</span>
+<span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a> {<span class="at">:width</span> <span class="dv">800</span> <span class="at">:height</span> <span class="dv">400</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="use_cases.evolution_files/image18.png" class="img-fluid"></p>
+</div>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb29"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> diet-means</span></span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Mean chick weight per diet and day."</span></span>
+<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a>  (<span class="kw">vec</span> (<span class="kw">for</span> [[[diet <span class="kw">time</span>] rows] (<span class="kw">sort-by</span> <span class="kw">key</span> (<span class="kw">group-by</span> (<span class="kw">juxt</span> <span class="at">:diet</span> <span class="at">:time</span>) chicks))]</span>
+<span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a>         {<span class="at">:diet</span> diet <span class="at">:time</span> <span class="kw">time</span> <span class="at">:weight</span> (<span class="kw">/</span> (<span class="kw">double</span> (<span class="kw">reduce</span> <span class="kw">+</span> (<span class="kw">map</span> <span class="at">:weight</span> rows))) (<span class="kw">count</span> rows))})))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section>
+<section id="stacked-area" class="level3" data-number="3.5.3">
+<h3 data-number="3.5.3" class="anchored" data-anchor-id="stacked-area"><span class="header-section-number">3.5.3</span> Stacked area</h3>
+<p><code>:position :stack</code> aligns the groups on the union of their x values and stacks them; every band is filled.</p>
+<p>Source: R Graph Gallery - Stacked area chart; data-to-viz - Stacked area (<a href="https://r-graph-gallery.com/136-stacked-area-chart.html">1</a>, <a href="https://www.data-to-viz.com/graph/stackedarea.html">2</a>). Data: Weight versus age of chicks on four diets, R datasets package <code>ChickWeight</code> (Crowder &amp; Hand 1990); licence: Part of R (GPL-2 | GPL-3).</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb30"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a> {<span class="at">:data</span> diet-means</span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:time</span> <span class="at">:y</span> <span class="at">:weight</span> <span class="at">:color</span> <span class="at">:diet</span>}</span>
+<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">:charts</span> [(chart/line {<span class="at">:position</span> <span class="at">:stack</span>})]</span>
+<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"Mean chick weight per diet, stacked"</span> <span class="at">:x</span> <span class="st">"days"</span> <span class="at">:y</span> <span class="st">"weight, g"</span>}}</span>
+<span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a> {<span class="at">:width</span> <span class="dv">800</span> <span class="at">:height</span> <span class="dv">420</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="use_cases.evolution_files/image19.png" class="img-fluid"></p>
+</div>
+</section>
+<section id="percent-stacked-area" class="level3" data-number="3.5.4">
+<h3 data-number="3.5.4" class="anchored" data-anchor-id="percent-stacked-area"><span class="header-section-number">3.5.4</span> Percent stacked area</h3>
+<p>Source: <a href="https://r-graph-gallery.com/136-stacked-area-chart.html">R Graph Gallery - Stacked area chart (proportion)</a>. Data: Weight versus age of chicks on four diets, R datasets package <code>ChickWeight</code> (Crowder &amp; Hand 1990); licence: Part of R (GPL-2 | GPL-3).</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb31"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a> {<span class="at">:data</span> diet-means</span>
+<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:time</span> <span class="at">:y</span> <span class="at">:weight</span> <span class="at">:color</span> <span class="at">:diet</span>}</span>
+<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">:charts</span> [(chart/line {<span class="at">:position</span> <span class="at">:normalize</span>})]</span>
+<span id="cb31-5"><a href="#cb31-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"Share of each diet in the summed mean weight"</span> <span class="at">:x</span> <span class="st">"days"</span>}}</span>
+<span id="cb31-6"><a href="#cb31-6" aria-hidden="true" tabindex="-1"></a> {<span class="at">:width</span> <span class="dv">800</span> <span class="at">:height</span> <span class="dv">420</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="use_cases.evolution_files/image20.png" class="img-fluid"></p>
+</div>
+</section>
+<section id="stacking-order" class="level3" data-number="3.5.5">
+<h3 data-number="3.5.5" class="anchored" data-anchor-id="stacking-order"><span class="header-section-number">3.5.5</span> Stacking order</h3>
+<p>Groups stack in the colour scale’s order: an explicit <code>:domain</code> reorders the bands (and the legend).</p>
+<p>Source: data-to-viz - Stacking caveat; R Graph Gallery - Reorder a variable (<a href="https://www.data-to-viz.com/caveat/stacking.html">1</a>, <a href="https://r-graph-gallery.com/267-reorder-a-variable-in-ggplot2.html">2</a>). Data: Weight versus age of chicks on four diets, R datasets package <code>ChickWeight</code> (Crowder &amp; Hand 1990); licence: Part of R (GPL-2 | GPL-3).</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb32"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a> (plot/arrange</span>
+<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a>  [{<span class="at">:data</span> diet-means <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:time</span> <span class="at">:y</span> <span class="at">:weight</span> <span class="at">:color</span> <span class="at">:diet</span>}</span>
+<span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">:charts</span> [(chart/line {<span class="at">:position</span> <span class="at">:stack</span>})] <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"diets 1, 2, 3, 4"</span> <span class="at">:x</span> <span class="st">"days"</span> <span class="at">:y</span> <span class="st">"weight, g"</span>}}</span>
+<span id="cb32-5"><a href="#cb32-5" aria-hidden="true" tabindex="-1"></a>   {<span class="at">:data</span> diet-means <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:time</span> <span class="at">:y</span> <span class="at">:weight</span> <span class="at">:color</span> <span class="at">:diet</span>} <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:domain</span> [<span class="st">"3"</span> <span class="st">"4"</span> <span class="st">"2"</span> <span class="st">"1"</span>]}}</span>
+<span id="cb32-6"><a href="#cb32-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">:charts</span> [(chart/line {<span class="at">:position</span> <span class="at">:stack</span>})] <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"diets 3, 4, 2, 1"</span> <span class="at">:x</span> <span class="st">"days"</span> <span class="at">:y</span> <span class="st">"weight, g"</span>}}]</span>
+<span id="cb32-7"><a href="#cb32-7" aria-hidden="true" tabindex="-1"></a>  {<span class="at">:columns</span> <span class="dv">2</span>})</span>
+<span id="cb32-8"><a href="#cb32-8" aria-hidden="true" tabindex="-1"></a> {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">400</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="use_cases.evolution_files/image21.png" class="img-fluid"></p>
+</div>
+</section>
+<section id="streamgraph" class="level3" data-number="3.5.6">
+<h3 data-number="3.5.6" class="anchored" data-anchor-id="streamgraph"><span class="header-section-number">3.5.6</span> Streamgraph</h3>
+<p>Stacked around a moving baseline: <code>:silhouette</code> (symmetric around zero) and <code>:wiggle</code> (least slope); an <code>:interpolator</code> smooths the bands.</p>
+<p>Source: R Graph Gallery - Streamgraph; data-to-viz - Streamgraph (<a href="https://r-graph-gallery.com/streamgraph.html">1</a>, <a href="https://www.data-to-viz.com/graph/streamgraph.html">2</a>). Data: Weight versus age of chicks on four diets, R datasets package <code>ChickWeight</code> (Crowder &amp; Hand 1990); licence: Part of R (GPL-2 | GPL-3).</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb33"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
+<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a> (plot/arrange</span>
+<span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a>  [{<span class="at">:data</span> diet-means <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:time</span> <span class="at">:y</span> <span class="at">:weight</span> <span class="at">:color</span> <span class="at">:diet</span>}</span>
+<span id="cb33-4"><a href="#cb33-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">:charts</span> [(chart/line {<span class="at">:position</span> <span class="at">:silhouette</span> <span class="at">:interpolator</span> <span class="at">:monotone</span>})]</span>
+<span id="cb33-5"><a href="#cb33-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":silhouette"</span> <span class="at">:x</span> <span class="st">"days"</span> <span class="at">:y</span> <span class="va">nil</span>}}</span>
+<span id="cb33-6"><a href="#cb33-6" aria-hidden="true" tabindex="-1"></a>   {<span class="at">:data</span> diet-means <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:time</span> <span class="at">:y</span> <span class="at">:weight</span> <span class="at">:color</span> <span class="at">:diet</span>}</span>
+<span id="cb33-7"><a href="#cb33-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">:charts</span> [(chart/line {<span class="at">:position</span> <span class="at">:wiggle</span> <span class="at">:interpolator</span> <span class="at">:monotone</span>})]</span>
+<span id="cb33-8"><a href="#cb33-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":wiggle"</span> <span class="at">:x</span> <span class="st">"days"</span> <span class="at">:y</span> <span class="va">nil</span>}}]</span>
+<span id="cb33-9"><a href="#cb33-9" aria-hidden="true" tabindex="-1"></a>  {<span class="at">:columns</span> <span class="dv">2</span>})</span>
+<span id="cb33-10"><a href="#cb33-10" aria-hidden="true" tabindex="-1"></a> {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">400</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="use_cases.evolution_files/image22.png" class="img-fluid"></p>
+</div>
+</section>
+</section>
+<section id="other-marks" class="level2" data-number="3.6">
+<h2 data-number="3.6" class="anchored" data-anchor-id="other-marks"><span class="header-section-number">3.6</span> Other marks</h2>
+<p>Segments, candlesticks, colour along a line and paths through time.</p>
+<section id="lollipop" class="level3" data-number="3.6.1">
+<h3 data-number="3.6.1" class="anchored" data-anchor-id="lollipop"><span class="header-section-number">3.6.1</span> Lollipop</h3>
+<p>A segment from zero to each value (<code>(chart/segment {:yend 0})</code>) under a point; any x, here car models, flipped for readable labels.</p>
+<p>Source: R Graph Gallery - Basic lollipop plot; data-to-viz - Lollipop (<a href="https://r-graph-gallery.com/300-basic-lollipop-plot.html">1</a>, <a href="https://www.data-to-viz.com/graph/lollipop.html">2</a>). Data: Motor Trend car road tests (1974), R datasets package <code>mtcars</code> (Henderson &amp; Velleman 1981); licence: Part of R (GPL-2 | GPL-3).</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb34"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">let</span> [ordered (<span class="kw">sort-by</span> <span class="at">:mpg</span> mtcars)]</span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a>  (plot/render-image</span>
+<span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a>   {<span class="at">:data</span> ordered</span>
+<span id="cb34-4"><a href="#cb34-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:model</span> <span class="at">:y</span> <span class="at">:mpg</span>}</span>
+<span id="cb34-5"><a href="#cb34-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">:scales</span> {<span class="at">:x</span> {<span class="at">:domain</span> (<span class="kw">mapv</span> <span class="at">:model</span> ordered)}}</span>
+<span id="cb34-6"><a href="#cb34-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">:flip</span> <span class="va">true</span></span>
+<span id="cb34-7"><a href="#cb34-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">:charts</span> [(chart/segment {<span class="at">:yend</span> <span class="dv">0</span> <span class="at">:color</span> [<span class="dv">150</span> <span class="dv">150</span> <span class="dv">150</span>]}) (chart/scatter {<span class="at">:size</span> <span class="dv">7</span> <span class="at">:color</span> [<span class="dv">33</span> <span class="dv">102</span> <span class="dv">172</span>]})]</span>
+<span id="cb34-8"><a href="#cb34-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"Fuel economy of 32 cars"</span> <span class="at">:x</span> <span class="va">nil</span> <span class="at">:y</span> <span class="st">"miles per gallon"</span>}}</span>
+<span id="cb34-9"><a href="#cb34-9" aria-hidden="true" tabindex="-1"></a>   {<span class="at">:width</span> <span class="dv">800</span> <span class="at">:height</span> <span class="dv">700</span>}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="use_cases.evolution_files/image23.png" class="img-fluid"></p>
+</div>
+</section>
+<section id="candlestick" class="level3" data-number="3.6.2">
+<h3 data-number="3.6.2" class="anchored" data-anchor-id="candlestick"><span class="header-section-number">3.6.2</span> Candlestick</h3>
+<p>Open-high-low-close per day: the wick from low to high, the body from open to close, green up and red down; OHLC bars as the alternative. The prices are a seeded random walk.</p>
+<p>Source: <a href="https://en.wikipedia.org/wiki/Candlestick_chart">Wikipedia - Candlestick chart</a>.</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb35"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> prices</span></span>
+<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Daily open / high / low / close of a random walk over 40 trading days."</span></span>
+<span id="cb35-3"><a href="#cb35-3" aria-hidden="true" tabindex="-1"></a>  (<span class="kw">let</span> [rng (r/rng <span class="at">:mersenne</span> <span class="dv">21</span>)</span>
+<span id="cb35-4"><a href="#cb35-4" aria-hidden="true" tabindex="-1"></a>        start (LocalDate/of <span class="dv">2024</span> <span class="dv">3</span> <span class="dv">1</span>)]</span>
+<span id="cb35-5"><a href="#cb35-5" aria-hidden="true" tabindex="-1"></a>    (<span class="kw">vec</span> (map-indexed (<span class="kw">fn</span> [i close]</span>
+<span id="cb35-6"><a href="#cb35-6" aria-hidden="true" tabindex="-1"></a>                        (<span class="kw">let</span> [open (<span class="kw">+</span> close (<span class="kw">*</span> <span class="fl">1.2</span> (r/grandom rng)))</span>
+<span id="cb35-7"><a href="#cb35-7" aria-hidden="true" tabindex="-1"></a>                              spread (m/abs (<span class="kw">*</span> <span class="fl">0.8</span> (<span class="kw">double</span> (r/grandom rng))))]</span>
+<span id="cb35-8"><a href="#cb35-8" aria-hidden="true" tabindex="-1"></a>                          {<span class="at">:date</span> (.plusDays start i) <span class="at">:open</span> open <span class="at">:close</span> close</span>
+<span id="cb35-9"><a href="#cb35-9" aria-hidden="true" tabindex="-1"></a>                           <span class="at">:high</span> (<span class="kw">+</span> (<span class="kw">max</span> open close) spread) <span class="at">:low</span> (<span class="kw">-</span> (<span class="kw">min</span> open close) spread)}))</span>
+<span id="cb35-10"><a href="#cb35-10" aria-hidden="true" tabindex="-1"></a>                      (<span class="kw">take</span> <span class="dv">40</span> (reductions <span class="kw">+</span> <span class="fl">50.0</span> (<span class="kw">repeatedly</span> #(r/grandom rng))))))))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb36"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
+<span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a> (plot/arrange</span>
+<span id="cb36-3"><a href="#cb36-3" aria-hidden="true" tabindex="-1"></a>  [{<span class="at">:data</span> prices <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:date</span> <span class="at">:open</span> <span class="at">:open</span> <span class="at">:high</span> <span class="at">:high</span> <span class="at">:low</span> <span class="at">:low</span> <span class="at">:close</span> <span class="at">:close</span>}</span>
+<span id="cb36-4"><a href="#cb36-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">:charts</span> [(chart/candlestick)] <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"candlestick"</span> <span class="at">:x</span> <span class="va">nil</span> <span class="at">:y</span> <span class="st">"price"</span>}}</span>
+<span id="cb36-5"><a href="#cb36-5" aria-hidden="true" tabindex="-1"></a>   {<span class="at">:data</span> prices <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:date</span> <span class="at">:open</span> <span class="at">:open</span> <span class="at">:high</span> <span class="at">:high</span> <span class="at">:low</span> <span class="at">:low</span> <span class="at">:close</span> <span class="at">:close</span>}</span>
+<span id="cb36-6"><a href="#cb36-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">:charts</span> [(chart/candlestick {<span class="at">:style</span> <span class="at">:ohlc</span>})] <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":style :ohlc"</span> <span class="at">:x</span> <span class="va">nil</span> <span class="at">:y</span> <span class="st">"price"</span>}}]</span>
+<span id="cb36-7"><a href="#cb36-7" aria-hidden="true" tabindex="-1"></a>  {<span class="at">:columns</span> <span class="dv">2</span>})</span>
+<span id="cb36-8"><a href="#cb36-8" aria-hidden="true" tabindex="-1"></a> {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">400</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="use_cases.evolution_files/image24.png" class="img-fluid"></p>
+</div>
+</section>
+<section id="line-coloured-by-its-value" class="level3" data-number="3.6.3">
+<h3 data-number="3.6.3" class="anchored" data-anchor-id="line-coloured-by-its-value"><span class="header-section-number">3.6.3</span> Line coloured by its value</h3>
+<p>A linear <code>:color</code> colours the line along its length; binned, it shows ranges (see also the Colors chapter).</p>
+<p>Source: <a href="https://r-graph-gallery.com/200-change-color-in-lineplot-following-y-value.html">R Graph Gallery - Line plot colour following y value</a>. Data: Weather in Lincoln, Nebraska, 2016, R ggridges package <code>lincoln_weather</code> (Weather Underground, via Wilke); licence: GPL-2 (ggridges).</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb37"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
+<span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a> (plot/arrange</span>
+<span id="cb37-3"><a href="#cb37-3" aria-hidden="true" tabindex="-1"></a>  [{<span class="at">:data</span> lincoln <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:date</span> <span class="at">:y</span> <span class="at">:mean-temp</span> <span class="at">:color</span> <span class="at">:mean-temp</span>} <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:range</span> <span class="at">:RColorBrewer/RdYlBu</span> <span class="at">:reverse</span> <span class="va">true</span> <span class="at">:title</span> <span class="st">"F"</span>}}</span>
+<span id="cb37-4"><a href="#cb37-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">:charts</span> [(chart/line {<span class="at">:width</span> <span class="dv">2</span>})] <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"linear"</span> <span class="at">:x</span> <span class="va">nil</span> <span class="at">:y</span> <span class="st">"mean temperature, F"</span>}}</span>
+<span id="cb37-5"><a href="#cb37-5" aria-hidden="true" tabindex="-1"></a>   {<span class="at">:data</span> lincoln <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:date</span> <span class="at">:y</span> <span class="at">:mean-temp</span> <span class="at">:color</span> <span class="at">:mean-temp</span>}</span>
+<span id="cb37-6"><a href="#cb37-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:range</span> <span class="at">:RColorBrewer/RdYlBu</span> <span class="at">:kind</span> <span class="at">:binned</span> <span class="at">:reverse</span> <span class="va">true</span> <span class="at">:bins</span> [<span class="dv">20</span> <span class="dv">40</span> <span class="dv">60</span> <span class="dv">80</span>] <span class="at">:title</span> <span class="st">"F"</span>}}</span>
+<span id="cb37-7"><a href="#cb37-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">:charts</span> [(chart/line {<span class="at">:width</span> <span class="dv">2</span>})] <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"binned"</span> <span class="at">:x</span> <span class="va">nil</span> <span class="at">:y</span> <span class="st">"mean temperature, F"</span>}}]</span>
+<span id="cb37-8"><a href="#cb37-8" aria-hidden="true" tabindex="-1"></a>  {<span class="at">:columns</span> <span class="dv">2</span>})</span>
+<span id="cb37-9"><a href="#cb37-9" aria-hidden="true" tabindex="-1"></a> {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">400</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="use_cases.evolution_files/image25.png" class="img-fluid"></p>
+</div>
+</section>
+<section id="connected-scatter" class="level3" data-number="3.6.4">
+<h3 data-number="3.6.4" class="anchored" data-anchor-id="connected-scatter"><span class="header-section-number">3.6.4</span> Connected scatter</h3>
+<p>Two variables against each other, joined in time order (<code>:sort false</code>); <code>:curve :bezier</code> passes a smooth path through the points, labels mark some years.</p>
+<p>Source: R Graph Gallery - Connected scatterplot with ggplot2; data-to-viz - Connected scatter (<a href="https://r-graph-gallery.com/connected_scatterplot_ggplot2.html">1</a>, <a href="https://www.data-to-viz.com/graph/connectedscatter.html">2</a>). Data: US economic time series, 1967-2015, R ggplot2 package <code>economics</code> (Federal Reserve Bank of St.&nbsp;Louis, FRED); licence: MIT (ggplot2).</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb38"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">let</span> [yearly (<span class="kw">vec</span> (<span class="kw">for</span> [[year rows] (<span class="kw">sort-by</span> <span class="kw">key</span> (<span class="kw">group-by</span> #(.getYear ^LocalDate (<span class="at">:date</span> <span class="va">%</span>)) economics))</span>
+<span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a>                        <span class="at">:when</span> (<span class="kw">&lt;=</span> <span class="dv">2000</span> year <span class="dv">2014</span>)]</span>
+<span id="cb38-3"><a href="#cb38-3" aria-hidden="true" tabindex="-1"></a>                    {<span class="at">:year</span> year</span>
+<span id="cb38-4"><a href="#cb38-4" aria-hidden="true" tabindex="-1"></a>                     <span class="at">:uempmed</span> (<span class="kw">/</span> (<span class="kw">double</span> (<span class="kw">reduce</span> <span class="kw">+</span> (<span class="kw">map</span> <span class="at">:uempmed</span> rows))) (<span class="kw">count</span> rows))</span>
+<span id="cb38-5"><a href="#cb38-5" aria-hidden="true" tabindex="-1"></a>                     <span class="at">:psavert</span> (<span class="kw">/</span> (<span class="kw">double</span> (<span class="kw">reduce</span> <span class="kw">+</span> (<span class="kw">map</span> <span class="at">:psavert</span> rows))) (<span class="kw">count</span> rows))}))]</span>
+<span id="cb38-6"><a href="#cb38-6" aria-hidden="true" tabindex="-1"></a>  (plot/render-image</span>
+<span id="cb38-7"><a href="#cb38-7" aria-hidden="true" tabindex="-1"></a>   {<span class="at">:data</span> yearly</span>
+<span id="cb38-8"><a href="#cb38-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:uempmed</span> <span class="at">:y</span> <span class="at">:psavert</span>}</span>
+<span id="cb38-9"><a href="#cb38-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">:charts</span> [(chart/line {<span class="at">:sort</span> <span class="va">false</span> <span class="at">:curve</span> <span class="at">:bezier</span> <span class="at">:color</span> [<span class="dv">33</span> <span class="dv">102</span> <span class="dv">172</span>]})</span>
+<span id="cb38-10"><a href="#cb38-10" aria-hidden="true" tabindex="-1"></a>             (chart/scatter {<span class="at">:size</span> <span class="dv">6</span> <span class="at">:color</span> [<span class="dv">33</span> <span class="dv">102</span> <span class="dv">172</span>]})</span>
+<span id="cb38-11"><a href="#cb38-11" aria-hidden="true" tabindex="-1"></a>             (chart/text {<span class="at">:data</span> (<span class="kw">filter</span> #(#{<span class="dv">2000</span> <span class="dv">2003</span> <span class="dv">2006</span> <span class="dv">2009</span> <span class="dv">2012</span> <span class="dv">2014</span>} (<span class="at">:year</span> <span class="va">%</span>)) yearly) <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:uempmed</span> <span class="at">:y</span> <span class="at">:psavert</span> <span class="at">:label</span> <span class="at">:year</span>}</span>
+<span id="cb38-12"><a href="#cb38-12" aria-hidden="true" tabindex="-1"></a>                          <span class="at">:anchor</span> [<span class="at">:left</span> <span class="at">:bottom</span>] <span class="at">:offset</span> [<span class="dv">4</span> <span class="dv">4</span>]})]</span>
+<span id="cb38-13"><a href="#cb38-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"Unemployment duration vs savings rate, 2000-2014"</span> <span class="at">:x</span> <span class="st">"median unemployment, weeks"</span> <span class="at">:y</span> <span class="st">"savings rate, %"</span>}}</span>
+<span id="cb38-14"><a href="#cb38-14" aria-hidden="true" tabindex="-1"></a>   {<span class="at">:width</span> <span class="dv">800</span> <span class="at">:height</span> <span class="dv">550</span>}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="use_cases.evolution_files/image26.png" class="img-fluid"></p>
+</div>
+</section>
+</section>
+<section id="functions" class="level2" data-number="3.7">
+<h2 data-number="3.7" class="anchored" data-anchor-id="functions"><span class="header-section-number">3.7</span> Functions</h2>
+<p><code>chart/function</code> samples functions across the panel: a vector of functions is one group each; <code>:y-limits</code> keeps asymptotes from flattening the curve (segments across a limit are cut).</p>
+<p>Source: cljplot2 - chart/function.</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb39"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
+<span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a> (plot/arrange</span>
+<span id="cb39-3"><a href="#cb39-3" aria-hidden="true" tabindex="-1"></a>  [{<span class="at">:charts</span> [(chart/function {<span class="at">:f</span> [m/sin m/cos] <span class="at">:domain</span> [(<span class="kw">-</span> m/TWO_PI) m/TWO_PI]})]</span>
+<span id="cb39-4"><a href="#cb39-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"sin and cos"</span> <span class="at">:x</span> <span class="st">"x"</span> <span class="at">:y</span> <span class="st">"y"</span>}}</span>
+<span id="cb39-5"><a href="#cb39-5" aria-hidden="true" tabindex="-1"></a>   {<span class="at">:charts</span> [(chart/function {<span class="at">:f</span> m/tan <span class="at">:domain</span> [(<span class="kw">-</span> m/PI) m/PI] <span class="at">:y-limits</span> [-<span class="dv">5</span> <span class="dv">5</span>]})]</span>
+<span id="cb39-6"><a href="#cb39-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"tan with :y-limits [-5 5]"</span> <span class="at">:x</span> <span class="st">"x"</span> <span class="at">:y</span> <span class="st">"y"</span>}}]</span>
+<span id="cb39-7"><a href="#cb39-7" aria-hidden="true" tabindex="-1"></a>  {<span class="at">:columns</span> <span class="dv">2</span>})</span>
+<span id="cb39-8"><a href="#cb39-8" aria-hidden="true" tabindex="-1"></a> {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">400</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="use_cases.evolution_files/image27.png" class="img-fluid"></p>
+</div>
+</section>
+<section id="caveats" class="level2" data-number="3.8">
+<h2 data-number="3.8" class="anchored" data-anchor-id="caveats"><span class="header-section-number">3.8</span> Caveats</h2>
+<section id="cutting-the-y-axis-aspect-ratio" class="level3" data-number="3.8.1">
+<h3 data-number="3.8.1" class="anchored" data-anchor-id="cutting-the-y-axis-aspect-ratio"><span class="header-section-number">3.8.1</span> Cutting the y axis; aspect ratio</h3>
+<p>Starting y at zero shows changes against the whole; a cut axis magnifies them. A wide panel flattens slopes, a narrow one steepens them - the same data.</p>
+<p>Source: data-to-viz - Cut y axis; Aspect ratio (<a href="https://www.data-to-viz.com/caveat/cut_y_axis.html">1</a>, <a href="https://www.data-to-viz.com/caveat/aspect_ratio.html">2</a>). Data: US economic time series, 1967-2015, R ggplot2 package <code>economics</code> (Federal Reserve Bank of St.&nbsp;Louis, FRED); licence: MIT (ggplot2).</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb40"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">let</span> [recent (<span class="kw">filter</span> #(.isAfter ^LocalDate (<span class="at">:date</span> <span class="va">%</span>) (LocalDate/of <span class="dv">2012</span> <span class="dv">1</span> <span class="dv">1</span>)) economics)</span>
+<span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a>      plot-of (<span class="kw">fn</span> [title y] {<span class="at">:data</span> recent <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:date</span> <span class="at">:y</span> <span class="at">:pop</span>} <span class="at">:scales</span> {<span class="at">:y</span> y}</span>
+<span id="cb40-3"><a href="#cb40-3" aria-hidden="true" tabindex="-1"></a>                             <span class="at">:charts</span> [(chart/line {<span class="at">:width</span> <span class="fl">1.5</span>})] <span class="at">:labels</span> {<span class="at">:title</span> title <span class="at">:x</span> <span class="va">nil</span> <span class="at">:y</span> <span class="st">"population, thousands"</span>}})]</span>
+<span id="cb40-4"><a href="#cb40-4" aria-hidden="true" tabindex="-1"></a>  (plot/render-image</span>
+<span id="cb40-5"><a href="#cb40-5" aria-hidden="true" tabindex="-1"></a>   (plot/arrange [(plot/arrange [(plot-of <span class="st">"y from 0"</span> {<span class="at">:domain</span> [<span class="dv">0</span> <span class="dv">330000</span>]}) (plot-of <span class="st">"y cut"</span> {})] {<span class="at">:columns</span> <span class="dv">2</span>})</span>
+<span id="cb40-6"><a href="#cb40-6" aria-hidden="true" tabindex="-1"></a>                  (plot/arrange [(plot-of <span class="st">"wide"</span> {}) (plot-of <span class="st">"narrow"</span> {})] {<span class="at">:columns</span> <span class="dv">2</span> <span class="at">:widths</span> [<span class="dv">4</span> <span class="dv">1</span>]})]</span>
+<span id="cb40-7"><a href="#cb40-7" aria-hidden="true" tabindex="-1"></a>                 {<span class="at">:columns</span> <span class="dv">1</span>})</span>
+<span id="cb40-8"><a href="#cb40-8" aria-hidden="true" tabindex="-1"></a>   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">700</span>}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="use_cases.evolution_files/image28.png" class="img-fluid"></p>
+</div>
+<div style="background-color:grey;height:2px;width:100%;"></div>
+<div><pre><small><small>source: notebooks/use_cases/evolution.clj</small></small></pre></div>
+
+
+</section>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="./use_cases.colors.html" class="pagination-link" aria-label="Colors">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Colors</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

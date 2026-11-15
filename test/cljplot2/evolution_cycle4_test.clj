@@ -289,3 +289,13 @@
     (let [img (plot/render-image (candle-plot {} {:data [(assoc (first ohlc) :d 1)]}) size)
           row (for [x (range 400) :let [[r g b] (rgb img x 150)] :when (= [r g b] [26 152 80])] x)]
       (is (<= 9 (count row) 11)))))
+
+(deftest candlestick-ends-test
+  (testing "the x extent reaches half the smallest gap beyond the data (outer bodies fit on a date axis)"
+    (let [x-extent (fn [rows] (get-in (stats (candle-plot {} {:data rows}) 0) [:extents facet/single-panel :x]))]
+      (is (= {:kind :temporal :min (.minusDays day0 1) :max (.plusDays day0 3)} (x-extent (take 3 ohlc))) "LocalDate: whole days")
+      (is (= {:kind :numeric :min 0.0 :max 6.0} (x-extent (map-indexed #(assoc %2 :d (+ 1 (* 2 %1))) (take 3 ohlc)))) "numbers: gap 2")
+      (is (= {:kind :temporal :min day0 :max day0} (x-extent (take 1 ohlc))) "one x: unchanged")
+      (is (= {:kind :categorical :values ["a" "b"]} (x-extent (map #(assoc %1 :d %2) (take 2 ohlc) ["a" "b"]))) "levels: unchanged")))
+  (testing "a candlestick and a line on LocalDate x share one axis"
+    (is (instance? BufferedImage (plot/render-image (merge (candle-plot {}) {:charts [(chart/candlestick) (chart/line {:mapping {:y :c}})]}) size)))))

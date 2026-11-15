@@ -10,7 +10,8 @@
   `:body-width` (0..1, default 0.7) - the fraction of the smallest pixel gap between distinct x (of a band's width on
   a bands scale; 10 pixels with a single x). Options (style defaults from theme `[:chart :candlestick]`):
   `:up-color`, `:down-color`, `:body-width`, `:wick-width`, `:stroke-color`, `:style`, `:padding {:x [lo hi] :y [lo
-  hi]}` (default 5% each side). A row with an invalid value is dropped (counted per key), as is one whose values
+  hi]}` (default 5% each side; the x extent also reaches half the smallest x gap beyond the data, so the outer bodies
+  fit on a date axis, which gets no padding). A row with an invalid value is dropped (counted per key), as is one whose values
   don't hold `low <= open, close <= high` (counted as `:ohlc`). Colour means up / down: an aesthetic or `:group` in
   the chart's own `:mapping` throws `ex-info {:key :mapping}`; ones inherited from the plot mapping are ignored (the
   candles draw nothing into their legend keys)."
@@ -21,7 +22,8 @@
             [cljplot2.scale.position :as scale]
             [cljplot2.schema :as schema]
             [cljplot2.theme :as theme])
-  (:import [fastmath.vector Vec2]))
+  (:import [fastmath.vector Vec2]
+           [java.time LocalDate]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -55,6 +57,24 @@
 
 (defn- finite? [v] (and (number? v) (Double/isFinite (double v))))
 
+(defn- half-gap-ends
+  "`xs` with ends half the smallest gap between distinct x beyond the data, so the outer bodies fit (temporal
+  domains get no padding): numbers and `java.time` values by [[cljplot2.data.rows/x-key]] - a `LocalDate` by whole
+  days, keeping its type; `xs` unchanged with fewer than 2 distinct keyed values or levels."
+  [xs]
+  (let [keyed (sort-by first (distinct (keep (fn [x] (when-let [k (data/x-key x)] [k x])) xs)))
+        gaps (filter pos? (map (fn [[a _] [b _]] (- (double b) (double a))) keyed (rest keyed)))]
+    (if (or (not= (count keyed) (count (distinct xs))) (empty? gaps))
+      xs
+      (let [half (* 0.5 (double (reduce min gaps)))
+            [k0 x0] (first keyed)
+            [k1 x1] (last keyed)
+            beyond (fn [k x sign]
+                     (if (instance? LocalDate x)
+                       (.plusDays ^LocalDate x (* (long sign) (long (Math/ceil (/ half 86400000.0)))))
+                       (data/key->x (+ (double k) (* (double sign) half)) x)))]
+        (conj (vec xs) (beyond k0 x0 -1) (beyond k1 x1 1))))))
+
 (defn compute
   "Per panel: `{:candles [{:x :open :high :low :close}] :style style :kind :candle|:ohlc}`; extents (y over all four
   values), padding, `:dropped` (`:x`, every value key, `:ohlc` - inconsistent values)."
@@ -80,7 +100,7 @@
     {:data data
      :extents (into {} (keep (fn [[panel {:keys [candles]}]]
                                (when (seq candles)
-                                 [panel {:x (data/extent :x (map :x candles))
+                                 [panel {:x (data/extent :x (half-gap-ends (map :x candles)))
                                          :y (data/extent :y (mapcat (apply juxt value-keys) candles))}])))
                     data)
      :padding (merge {:x [0.05 0.05] :y [0.05 0.05]} (:padding options))

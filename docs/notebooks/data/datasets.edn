@@ -60,4 +60,26 @@
           :source "R datasets package `quakes` (Harvard PRIM-H project)"
           :licence "Part of R (GPL-2 | GPL-3)"
           :via "cljplot2 dev/resources"
-          :notes "1000 rows: `lat`, `long`, `depth` (km), `mag` (Richter), `stations`."}}
+          :notes "1000 rows: `lat`, `long`, `depth` (km), `mag` (Richter), `stations`."}
+ :economics {:file "economics.csv"
+             :format :csv
+             :title "US economic time series, 1967-2015"
+             :source "R ggplot2 package `economics` (Federal Reserve Bank of St. Louis, FRED)"
+             :licence "MIT (ggplot2)"
+             :via "Rscript: ggplot2::economics (ggplot2 4.0.3), date as ISO yyyy-mm-dd, write.csv"
+             :notes "574 monthly rows: `date` (ISO string), `pce` (personal consumption expenditures, billions USD), `pop` (thousands), `psavert` (personal savings rate, %), `uempmed` (median unemployment duration, weeks), `unemploy` (unemployed, thousands)."}
+ :chick-weight {:file "chick-weight.csv"
+                :format :csv
+                :title "Weight versus age of chicks on four diets"
+                :source "R datasets package `ChickWeight` (Crowder & Hand 1990)"
+                :licence "Part of R (GPL-2 | GPL-3)"
+                :via "Rscript: datasets::ChickWeight, columns renamed to lower case, chick and diet as strings, write.csv"
+                :strings [:chick :diet]
+                :notes "578 rows: `weight` (g), `time` (days since birth, 0-21), `chick` (id, 50 chicks), `diet` (\"1\"-\"4\")."}
+ :air-passengers {:file "air-passengers.csv"
+                  :format :csv
+                  :title "Monthly airline passengers, 1949-1960"
+                  :source "R datasets package `AirPassengers` (Box & Jenkins 1976)"
+                  :licence "Part of R (GPL-2 | GPL-3)"
+                  :via "Rscript: datasets::AirPassengers as rows: first day of the month (ISO), year, month abbreviation, write.csv"
+                  :notes "144 rows: `date` (ISO string), `year`, `month` (Jan-Dec), `passengers` (thousands)."}}
