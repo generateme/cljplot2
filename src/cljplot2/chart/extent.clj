@@ -8,15 +8,15 @@
   `:percentile`, `[0.01]` for `:ci`, `[alpha samples]` for the bootstrap methods; default none); bootstrap methods
   (`:bootstrap-normal`, `-basic`, `-percentile`, `-mad-median`, `-bc`, `-bca`, `-studentized`, `-t`, see
   [[bootstrap-intervals]]) - the interval of `:statistic` (a function of the values, default fastmath `mean`)
-  resampled with `:rng` (a fastmath random generator; without it every build creates a fresh one); `:center` - `:method` (the method's centre, default) or `:none`;
+  resampled with `:rng` (a fastmath random generator, copied per build - every build draws the same samples, see
+  [[cljplot2.data.rng/for-build]]; without it every build creates a fresh one); `:center` - `:method` (the method's centre, default) or `:none`;
   `:padding {:x [lo hi]}` (default `[0.05 0.05]`), plus the strip options and `:data` / `:mapping`."
   (:require [clojure2d.core :as c2d]
             [fastmath.core :as m]
-            [fastmath.random :as r]
             [fastmath.stats :as stats]
             [fastmath.stats.bootstrap :as boot]
-            [cljplot2.chart.stripplot :as stripplot]
             [cljplot2.data.group :as group]
+            [cljplot2.data.rng :as rng]
             [cljplot2.data.rows :as data]
             [cljplot2.data.strip :as strip]
             [cljplot2.graphics.shape :as shape]
@@ -73,7 +73,7 @@
                                                  schema/function])
                       (schema/nilable :statistic schema/function)
                       (schema/nilable :method-args [:sequential any?])
-                      (schema/nilable :rng stripplot/rng)
+                      (schema/nilable :rng rng/schema)
                       (schema/optional :center [:enum :method :none])
                       (schema/optional :padding data/position-padding)))
    :mapping [:map [:x schema/accessor]]})
@@ -120,7 +120,7 @@
   [{:keys [options]} chart-split {:keys [theme] :as env}]
   (let [{:keys [place items panels dropped]} (strip/split chart-split options :center env)
         method (get options :method :min-max)
-        rng (or (:rng options) (r/rng :mersenne))
+        rng (rng/for-build (:rng options))
         items (update-vals items (fn [its] (mapv #(merge % (interval (:values %) method {:method-args (:method-args options) :rng rng
                                                                                 :statistic (:statistic options)})) its)))]
     {:data (update-vals items (fn [its] {:items its :style (style options theme) :place place :options options}))

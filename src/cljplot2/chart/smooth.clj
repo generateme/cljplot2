@@ -8,16 +8,18 @@
     (`:degree` - polynomial degree, default 1 - and lm options), `glm` (`:family`, ...), `gaussian-process` (`:kernel`,
     `:noise`, `:kscale`, `:normalize?`), else the extra argument of the method (or function)
   * `:band` - `:confidence` (default for `:loess`, `:lm`, `:glm`, `:gp`), `:prediction` (`:lm`), `:bootstrap` (any
-    method; `:bootstrap {:samples :rng :ci :estimation}` - see `fastmath.interpolation/bootstrap`) or `:none`
+    method; `:bootstrap {:samples :rng :ci :estimation}` - see `fastmath.interpolation/bootstrap`; `:rng` is copied
+    per build, see [[cljplot2.data.rng/for-build]]) or `:none`
     (default for the other methods; their `:confidence` throws `ex-info {:key :band}`); `:level` - a number in (0, 1)
-    or a vector of them (nested bands, the widest drawn first), default 0.95
+    or a vector of them (nested bands, the widest drawn first; repeated levels drawn once), default 0.95
   * `:n` - grid points (default 200) over each group's x range; `:full-range true` - over the plot's x `:domain`
     when it is given, else over the x range of all groups of the panel
   * `:color`, `:width`, `:dash` (line), `:fill` (bands: `:color` - default, the group colour at `:alpha`, default
-    0.3 - a colour or `:none`)
+    0.3 - a colour or `:none`: no band, as `:band :none`)
   * `:padding {:x [lo hi] :y [lo hi]}` - default 5% each side
 
-  x is numeric or temporal (`java.time`, fitted in epoch milliseconds - see [[cljplot2.data.rows/x-key]]); rows with an
+  x is numeric or temporal (`java.time`, fitted in epoch milliseconds - see [[cljplot2.data.rows/x-key]]; parameters
+  in x units, such as a `:gp` kernel's `:sigma`, are in milliseconds then); rows with an
   invalid x or y are left out (counted). Groups (see [[cljplot2.data.group]]) come from ordinal aesthetics (`:color`)
   and `:group`, one fit per group; a group with fewer distinct x than the method needs (see
   [[cljplot2.data.smooth/required-points]]) has no curve and is counted in `:dropped {:group n}`; other fit errors
@@ -25,11 +27,13 @@
   (:require [cljplot2.chart.ribbon :as ribbon]
             [cljplot2.data.rows :as data]
             [cljplot2.data.group :as group]
+            [cljplot2.data.rng :as rng]
             [cljplot2.data.smooth :as smooth]
             [cljplot2.graphics.curve :as curve]
             [cljplot2.graphics.polyline :as polyline]
             [cljplot2.scale.position :as scale]
             [cljplot2.schema :as schema]
+            [cljplot2.theme :as theme]
             [fastmath.core :as m])
   (:import [fastmath.vector Vec2]))
 
@@ -62,7 +66,7 @@
                       (schema/optional :level [:or level-schema [:vector {:min 1} level-schema]])
                       (schema/nilable :bootstrap [:map {:closed true}
                                                   (schema/optional :samples schema/pos-int)
-                                                  (schema/optional :rng any?)
+                                                  (schema/optional :rng rng/schema)
                                                   (schema/optional :ci (into [:enum] (sort smooth/bootstrap-intervals)))
                                                   (schema/optional :estimation keyword?)])
                       (schema/nilable :n [:and :int [:>= 2]])
@@ -75,13 +79,18 @@
   (merge (get-in theme [:chart :smooth]) (select-keys options [:color :width :dash :fill :alpha])))
 
 (defn- fit-spec
-  "The fit of the chart `options`: `{:method :params :band :levels :bootstrap}`. Throws `ex-info` for `:degree`
-  without `:lm` (`{:key :method-params}`), a band the method has none of (`{:key :band}`)."
-  [options]
+  "The fit of the chart `options` with style `st`: `{:method :params :band :levels :bootstrap}` (`:band :none` for a
+  `:fill :none`; the bootstrap `:rng` copied for this build). Throws `ex-info` for `:degree` without `:lm` or not a
+  positive integer, a loess `:bandwidth` outside (0, 1] (`{:key :method-params}`), a band the method has none of
+  (`{:key :band}`)."
+  [options st]
   (let [method (get options :method :loess)
         params (:method-params options)
         band (get options :band (smooth/default-band method))
         level (get options :level 0.95)]
+    (when (and (= :loess method) (contains? params :bandwidth)
+               (not (and (number? (:bandwidth params)) (< 0.0 (double (:bandwidth params))) (<= (double (:bandwidth params)) 1.0))))
+      (schema/fail! ":method-params :bandwidth of loess should be a number in (0 1]." {:key :method-params :value (:bandwidth params)}))
     (when (and (contains? params :degree) (not= :lm method))
       (schema/fail! ":method-params :degree is for :method :lm." {:key :method-params :value params}))
     (when (and (= :lm method) (contains? params :degree) (not (and (integer? (:degree params)) (pos? (long (:degree params))))))
@@ -91,7 +100,8 @@
                     {:key :band :value band}))
     (when (and (= :prediction band) (not= :lm method))
       (schema/fail! ":band :prediction is for :method :lm." {:key :band :value band}))
-    {:method method :params params :band band :levels (if (number? level) [level] level) :bootstrap (:bootstrap options)}))
+    {:method method :params params :band (if (theme/none? (:fill st)) :none band) :levels (if (number? level) [level] level)
+     :bootstrap (when (= :bootstrap band) (update (:bootstrap options) :rng rng/for-build))}))
 
 (defn- group-points
   "`[[key x y] ..]` of the rows of group `g` with a valid x and a finite y (`key` - [[cljplot2.data.rows/x-key]]); a
@@ -140,7 +150,7 @@
   `:group`)."
   [{:keys [options]} {:keys [groups mapping]} {:keys [theme plot-scales] :as env}]
   (let [st (style options theme)
-        spec (fit-spec options)
+        spec (fit-spec options st)
         required (smooth/required-points (:method spec) (:params spec))
         n (long (or (:n options) default-n))
         full-range? (data/option options :full-range false)

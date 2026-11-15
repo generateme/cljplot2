@@ -4,6 +4,9 @@
             [cljplot2.test-util :refer [error]]
             [cljplot2.chart :as chart]
             [cljplot2.chart.ribbon :as ribbon]
+            [cljplot2.chart.smooth :as smooth-chart]
+            [clojure2d.core :as c2d]
+            [cljplot2.data.rng :as rng]
             [cljplot2.core :as plot]
             [cljplot2.data.facet :as facet]
             [cljplot2.data.rows :as rows]
@@ -161,9 +164,10 @@
                                 {:method :lm} {:mapping {:x :x :y :y :color :g}}))]
       (is (= 1 (get-in s [:dropped :group])))
       (is (= 1 (count (get-in s [:data facet/single-panel :curves]))))))
-  (testing "3.1.2 required points: lm degree + 1, loess by bandwidth, others 2"
-    (is (= 2 (smooth/required-points :lm nil)))
-    (is (= 4 (smooth/required-points :lm {:degree 3})))
+  (testing "3.1.2 required points: lm degree + 2, glm 3, loess by bandwidth, others 2"
+    (is (= 3 (smooth/required-points :lm nil)))
+    (is (= 5 (smooth/required-points :lm {:degree 3})))
+    (is (= 3 (smooth/required-points :glm {:family :poisson})))
     (is (= 7 (smooth/required-points :loess nil)))
     (is (= 4 (smooth/required-points :loess {:bandwidth 0.5})))
     (is (= 2 (smooth/required-points :loess {:bandwidth 1.0})))
@@ -302,3 +306,87 @@
       {:method :lm} {:flip true}
       {:band :none} {}
       {:fill [200 0 0 60] :dash :dashed :width 2} {})))
+
+;; review fixes
+
+(deftest review-bandwidth-test
+  (testing "J1 loess :bandwidth outside (0, 1] or not a number throws instead of hanging"
+    (are [bw] (= :method-params (:key (error #(build (smooth-plot noisy {:method-params {:bandwidth bw}})))))
+      0 -1 0.0 1.5 :x nil)
+    (is (some? (curve-of (smooth-plot noisy {:method-params {:bandwidth 1.0}}))) "1 is allowed")
+    (is (= 200 (smooth/required-points :loess {:bandwidth 0.01})))
+    (is (= 0 (get-in (stats (smooth-plot noisy {:method :lm :method-params {:bandwidth 0}})) [:dropped :group]))
+        ":bandwidth is a loess parameter only")))
+
+(deftest review-rng-test
+  (testing "J3 for-build: a copy in the current state, the option not advanced"
+    (let [g (r/rng :mersenne 9)
+          _ (r/drandom g)
+          c (rng/for-build g)]
+      (is (not (identical? g c)))
+      (is (= (r/drandom c) (r/drandom g)) "the same next number")
+      (is (some? (rng/for-build nil)))
+      (let [synced (r/synced-rng :mersenne 1)] (is (identical? synced (rng/for-build synced)) "not copyable: itself"))))
+  (testing "J3 every build of a plot with a seeded :rng draws the same numbers"
+    (let [boot {:method :cubic-smoothing :band :bootstrap :bootstrap {:samples 20 :rng (r/rng :mersenne 3)}}
+          p (smooth-plot noisy boot)]
+      (is (= (:bands (curve-of p)) (:bands (curve-of p)))))
+    (let [strip-data (mapv (fn [i] {:x (double i) :y (if (even? i) "a" "b")}) (range 20))
+          strip (fn [c] {:data strip-data :mapping {:x :x :y :y} :charts [c]})
+          items #(get-in (stats %) [:data facet/single-panel :items])
+          g (r/rng :mersenne 4)
+          p (strip (chart/stripplot {:rng g}))]
+      (is (= (map :offsets (items p)) (map :offsets (items p))) "stripplot")
+      (is (= (r/drandom g) (r/drandom (r/rng :mersenne 4))) "the option untouched")
+      (let [e (strip (chart/extent {:method :bootstrap-percentile :rng (r/rng :mersenne 5)}))]
+        (is (= (map :lo (items e)) (map :lo (items e))) "extent")))))
+
+(deftest review-levels-fill-test
+  (testing "J6 repeated levels drawn once"
+    (is (= [0.95 0.5] (map :level (:bands (curve-of (smooth-plot noisy {:level [0.5 0.95 0.5 0.95]})))))))
+  (testing "J7 :fill :none: no band computed, no extent from it"
+    (let [s (stats (smooth-plot noisy {:method :lm :fill :none}))]
+      (is (= [] (get-in s [:data facet/single-panel :curves 0 :bands])))
+      (is (= (reduce min (get-in s [:data facet/single-panel :curves 0 :y])) (get-in s [:extents facet/single-panel :y :min]))))
+    (is (= [] (:bands (curve-of (smooth-plot noisy {:method :lm} {:theme {:chart {:smooth {:fill :none}}}})))) "theme :fill :none")))
+
+(deftest review-edges-test
+  (testing "J8 lm with degree + 1 points has no residual df: dropped; degree + 2 fitted"
+    (is (= 1 (get-in (stats (smooth-plot (take 3 line-data) {:method :lm :method-params {:degree 2}})) [:dropped :group])))
+    (is (= 1 (get-in (stats (smooth-plot (take 2 line-data) {:method :glm})) [:dropped :group])))
+    (let [{:keys [y bands]} (curve-of (smooth-plot (take 4 line-data) {:method :lm :method-params {:degree 2}}))]
+      (is (close? 1e-9 [1 7] [(first y) (peek y)]))
+      (is (every? #(Double/isFinite %) (:lo (first bands)))))
+    (is (instance? BufferedImage (plot/render-image (merge (smooth-plot (take 2 line-data) {:method :lm}) {:charts [(chart/scatter) (chart/smooth {:method :lm})]}) size))
+        "everything dropped: the plot still renders"))
+  (testing "J4 shared models keep the bands: lm at 0.95 and gp"
+    (let [xs (mapv :x noisy) ys (mapv :y noisy)
+          {:keys [x bands]} (curve-of (smooth-plot noisy {:method :lm :level [0.95 0.5]}))
+          model (regression/lm ys (mapv vector xs))]
+      (is (close? 1e-9 (map #(first (:confidence-interval (regression/predict model [%] true))) x) (:lo (first bands)))))))
+
+(defn- legend-image
+  "Image of the `legend` glyph of `chart` with `attributes` in a 20 x 20 white box."
+  [legend chart attributes]
+  (let [canvas (c2d/canvas 20 20)]
+    (c2d/with-canvas-> canvas (c2d/set-background :white))
+    (c2d/with-canvas [c canvas] (legend chart attributes c {:x 0 :y 0 :w 20 :h 20} {:theme theme/default-theme}))
+    (c2d/get-image canvas)))
+
+(defn- near? [a b] (every? (fn [[p q]] (<= (Math/abs (- (long p) (long q))) 2)) (map vector a b)))
+
+(defn- rgb [^BufferedImage img x y]
+  (let [v (.getRGB img (int x) (int y))] [(bit-and (bit-shift-right v 16) 0xff) (bit-and (bit-shift-right v 8) 0xff) (bit-and v 0xff)]))
+
+(deftest review-legend-test
+  (testing "J8 smooth glyph: band square under the line; none without a band"
+    (let [img (legend-image smooth-chart/legend (chart/smooth) {:color [255 0 0]})]
+      (is (near? [255 179 179] (rgb img 6 6)) "band at alpha 0.3")
+      (is (= 255 (first (rgb img 10 10))))
+      (is (> 100 (second (rgb img 10 10))) "the line"))
+    (is (= [255 255 255] (rgb (legend-image smooth-chart/legend (chart/smooth {:band :none}) {:color [255 0 0]}) 6 6))))
+  (testing "J8 ribbon glyph: band square, edge only with :stroke-color"
+    (let [img (legend-image ribbon/legend (chart/ribbon) {:color [255 0 0]})]
+      (is (near? [255 179 179] (rgb img 10 10)))
+      (is (near? [255 179 179] (rgb img 3 10)) "no edge"))
+    (is (= [0 0 0] (rgb (legend-image ribbon/legend (chart/ribbon {:stroke-color [0 0 0]}) {:color [255 0 0]}) 3 10)))))

@@ -19,7 +19,7 @@
   nothing."
   (:require [clojure2d.core.shape :as sh]
             [fastmath.core :as m]
-            [fastmath.interpolation :as interpolation]
+            [cljplot2.data.interpolation :as fit]
             [cljplot2.graphics.polyline :as polyline]
             [cljplot2.scale.position :as scale]
             [cljplot2.schema :as schema])
@@ -63,13 +63,6 @@
 
 ;; fitting
 
-(defn fit-fn
-  "`(fn [xs ys] f)` of `interpolator` (a method keyword or a function) with the extra arguments `params`."
-  [interpolator params]
-  (if (keyword? interpolator)
-    (fn [xs ys] (apply interpolation/interpolation interpolator xs ys params))
-    (fn [xs ys] (apply interpolator xs ys params))))
-
 (defn- fit
   "`(fit xs ys)` - the fitted function, or `nil` when there are fewer points than the method needs. Other fastmath
   input errors throw `ex-info {:key :interpolator}`."
@@ -94,7 +87,7 @@
 (defn- axis-index ^long [along] (if (= :y along) 1 0))
 
 (defn functional-points
-  "Points of `run` interpolated by `fit` (see [[fit-fn]]) along pixel axis `along` (`:x` / `:y`), evaluated every
+  "Points of `run` interpolated by `fit` (see [[cljplot2.data.interpolation/fit-fn]]) along pixel axis `along` (`:x` / `:y`), evaluated every
   `sample-step`; the run in its direction. The run as is with fewer than 2 points or too few for the method; not
   strictly monotone along the axis - `ex-info {:key :interpolator}`."
   [fit-of run along sample-step]
@@ -166,8 +159,8 @@
       (schema/fail! ":curve :bezier draws its own path; it can't be combined with :interpolator."
                     {:key :curve :value curve})
       (= :bezier curve) (bezier-points run)
-      (= :parametric curve) (parametric-points (fit-fn (or interpolator :cubic) interpolator-params) run step)
-      interpolator (functional-points (fit-fn interpolator interpolator-params) run along step)
+      (= :parametric curve) (parametric-points (fit/fit-fn (or interpolator :cubic) interpolator-params) run step)
+      interpolator (functional-points (fit/fit-fn interpolator interpolator-params) run along step)
       :else run)))
 
 (defn- segment-index
@@ -207,8 +200,8 @@
           rev? (= direction :decreasing)
           ps (mapv double (if rev? (rseq positions) positions))
           grid (sample-grid (double (first positions)) (double (peek positions)) (or sample-step default-sample-step))
-          fit-of (fit-fn interpolator interpolator-params)
-          linear (fit-fn :linear nil)]
+          fit-of (fit/fit-fn interpolator interpolator-params)
+          linear (fit/fit-fn :linear nil)]
       [grid (mapv (fn [column]
                     (let [vs (mapv double (if rev? (rseq column) column))
                           f (or (fit fit-of ps vs) (fit linear ps vs))]

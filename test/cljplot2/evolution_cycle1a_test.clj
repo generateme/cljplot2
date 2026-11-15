@@ -3,6 +3,7 @@
   line curve options, the function chart."
   (:require [clojure.test :refer [deftest testing is are]]
             [cljplot2.test-util :refer [error]]
+            [cljplot2.data.interpolation :as fit]
             [clojure2d.color :as c]
             [fastmath.core :as m]
             [cljplot2.chart :as chart]
@@ -130,13 +131,13 @@
 
 (deftest functional-interpolation-test
   (let [run [[0.0 10.0] [10.0 0.0] [20.0 10.0] [30.0 5.0]]
-        fit (curve/fit-fn :pchip nil)]
+        fit (fit/fit-fn :pchip nil)]
     (testing "2.2 pchip passes through every point; samples every step"
       (let [drawn (curve/functional-points fit run :x 1.0)]
         (is (= 31 (count drawn)))
         (is (every? (fn [[x y]] (some (fn [[a b]] (and (= x a) (< (Math/abs (- (double y) (double b))) 0.5))) drawn)) run))))
     (testing "2.2 steps are flat"
-      (let [drawn (curve/functional-points (curve/fit-fn :step-after nil) run :x 1.0)]
+      (let [drawn (curve/functional-points (fit/fit-fn :step-after nil) run :x 1.0)]
         (is (= #{10.0} (set (map second (filter #(< (first %) 10.0) drawn)))))))
     (testing "2.2 decreasing positions (reversed scale) keep the run's direction"
       (let [drawn (curve/functional-points fit (vec (rseq run)) :x 1.0)]
@@ -168,7 +169,7 @@
       (is (= :interpolator (:key (error #(plot/render-image (line-plot {:interpolator :loess}) size))))
           "other fastmath input errors"))
     (testing "2.5 too few points for the method: the run as is"
-      (is (= [[0.0 0.0] [1.0 1.0] [2.0 0.0]] (curve/functional-points (curve/fit-fn :akima nil) [[0.0 0.0] [1.0 1.0] [2.0 0.0]] :x 1.0))))))
+      (is (= [[0.0 0.0] [1.0 1.0] [2.0 0.0]] (curve/functional-points (fit/fit-fn :akima nil) [[0.0 0.0] [1.0 1.0] [2.0 0.0]] :x 1.0))))))
 
 (deftest paths-test
   (let [square [[0.0 0.0] [10.0 0.0] [10.0 10.0] [0.0 10.0] [0.0 0.0]]

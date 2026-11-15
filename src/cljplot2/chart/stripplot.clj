@@ -2,7 +2,8 @@
   "Strip plot (lattice `stripplot`): one point per `:x` value, jittered across its strip - a strip chart (see [[cljplot2.data.strip]]).
 
   Jitter: Gaussian offsets (fastmath `grandom` on the option `:rng`, a fastmath random generator; without it every
-  build creates a fresh one, so builds differ - pass `:rng` for reproducible plots) with standard deviation
+  build creates a fresh one, so builds differ - pass `:rng` for reproducible plots; it is copied per build, see
+  [[cljplot2.data.rng/for-build]]) with standard deviation
   `:jitter` / 4 of the item's cross range, clamped to ±`:jitter` / 2 (`:jitter` default 0.8; 0 - all points on the
   centre line). Offsets are drawn at compute and kept in the stats.
 
@@ -12,6 +13,7 @@
   (:require [fastmath.core :as m]
             [fastmath.random :as r]
             [cljplot2.data.group :as group]
+            [cljplot2.data.rng :as rng]
             [cljplot2.data.rows :as data]
             [cljplot2.data.strip :as strip]
             [cljplot2.graphics.shape :as shape]
@@ -28,10 +30,6 @@
    (schema/optional :stroke-width schema/non-neg)
    (schema/optional :shape schema/shape)])
 
-(def rng
-  "A fastmath random generator (see `fastmath.random/rng`)."
-  (schema/named-type ::rng #(satisfies? fastmath.protocols/RNGProto %) "should be a fastmath random generator"))
-
 (def schemas
   "Schemas of the stripplot chart: `:style` (theme `[:chart :stripplot]`), `:options`, `:mapping` (merged)."
   {:style (into [:map {:closed true}] style-entries)
@@ -40,7 +38,7 @@
                 (into data/common-options)
                 (into strip/options)
                 (conj (schema/optional :jitter schema/fraction)
-                      (schema/nilable :rng rng)
+                      (schema/nilable :rng rng/schema)
                       (schema/optional :padding data/position-padding)))
    :mapping [:map [:x schema/accessor]]})
 
@@ -59,7 +57,7 @@
   values), padding, `:na`, `:dropped`."
   [{:keys [options]} chart-split {:keys [theme] :as env}]
   (let [{:keys [place items panels dropped]} (strip/split chart-split options :center env)
-        rng (or (:rng options) (r/rng :mersenne))
+        rng (rng/for-build (:rng options))
         jitter (double (get options :jitter 0.8))
         items (update-vals items (fn [its] (mapv #(assoc % :offsets (jitter-offsets rng (count (:values %)) jitter)) its)))]
     {:data (update-vals items (fn [its] {:items its :style (style options theme) :place place :options options}))
