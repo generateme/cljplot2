@@ -54,7 +54,8 @@
   "A chart's `:padding-explicit` stat: the sides of its `:padding` that are requests, not defaults - the chart's own
   `requests` (`{dim [lo hi]}`, a `nil` side - none: zero at a baseline bars or stems start from, room for marks below
   the data) with the `:padding` option over them (the user's sides are requests). The pipeline takes per side the
-  largest request of the charts, the largest padding only where none requests. `nil` when there are none."
+  largest request of the charts whose extent reaches that end of the merged extent, the largest padding only where
+  none does. `nil` when there are none."
   [requests options]
   (not-empty (merge requests (:padding options))))
 

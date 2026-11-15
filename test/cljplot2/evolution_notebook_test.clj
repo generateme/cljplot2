@@ -134,3 +134,25 @@
     (testing "charts without requests: unchanged (largest padding)"
       (is (= [0.05 0.05] (get-in (build {:data rows :mapping {:x :x :y :y} :charts [(chart/line) (chart/scatter)]})
                                  [:extents :y :padding]))))))
+
+(deftest padding-requests-reach-test
+  (let [y-domain (fn [p] (get-in (build p) [:finalized-scales :y :domain]))]
+    (testing "N1 another chart's data below a baseline voids the zero request: default padding below"
+      (is (< (double (first (y-domain {:data [{:x 1 :y -5} {:x 2 :y 1} {:x 2 :y 3}] :mapping {:x :x}
+                                       :charts [(chart/histogram) (chart/scatter {:mapping {:y :y}})]})))
+             -5.0) "histogram + a point at -5")
+      (is (< (double (first (y-domain {:data [{:x 1 :y 1 :g "a"} {:x 2 :y 2 :g "a"}] :mapping {:x :x :y :y}
+                                       :charts [(chart/line {:position :stack :mapping {:color :g}})
+                                                (chart/scatter {:data [{:x 1 :y -3}]})]})))
+             -3.0) "stacked line + a point at -3"))
+    (testing "N1 a user request on a chart that doesn't reach the end doesn't cut the other chart's marks"
+      (is (neg? (double (first (y-domain {:mapping {:x :x :y :y}
+                                          :charts [(chart/scatter {:data [{:x 1 :y 3} {:x 2 :y 5}] :padding {:y [0 0]}})
+                                                   (chart/scatter {:data [{:x 1 :y 0} {:x 2 :y 10}]})]})))))
+      (is (= 0.0 (double (first (y-domain {:mapping {:x :x :y :y}
+                                           :charts [(chart/scatter {:data [{:x 1 :y 0} {:x 2 :y 5}] :padding {:y [0 0]}})
+                                                    (chart/scatter {:data [{:x 1 :y 3} {:x 2 :y 10}]})]}))))
+          "the requesting chart reaches the low end: its zero holds"))
+    (testing "a tie at the end: both charts reach it, the request holds"
+      (is (= 0.0 (double (first (y-domain {:data [{:x 1 :y 0} {:x 2 :y 5}] :mapping {:x :x :y :y}
+                                           :charts [(chart/segment {:yend 0}) (chart/scatter)]}))))))))

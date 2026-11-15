@@ -254,13 +254,22 @@
   [[a b] [c d]]
   [(m/max (double a) (double c)) (m/max (double b) (double d))])
 
+(defn- reaches-end?
+  "Does the chart extent `chart-extent` reach the merged `extent`'s end on side `i` (0 - low, 1 - high)? Categorical
+  extents always do (no ends to compare)."
+  [extent chart-extent i]
+  (let [bound (if (zero? (long i)) :min :max)]
+    (or (= :categorical (:kind extent))
+        (zero? (compare (bound chart-extent) (bound extent))))))
+
 (defn- merged-padding
-  "Padding `[lo hi]` of the charts `with-extent` (`:padding`, `:explicit` - requested sides or `nil`): per side the
-  largest request when some chart requests that side (see [[cljplot2.data.rows/explicit-padding]] - a zero at a
-  baseline wins over other charts' defaults, room below the data over a zero), else the largest padding."
-  [with-extent]
+  "Padding `[lo hi]` of the charts `with-extent` (`:extent`, `:padding`, `:explicit` - requested sides or `nil`) over
+  their merged `extent`: per side the largest request of the charts whose extent reaches that end (see
+  [[cljplot2.data.rows/explicit-padding]] - a zero at a baseline wins over other charts' defaults, room below the data
+  over a zero; another chart's data beyond the baseline voids it), else the largest padding."
+  [extent with-extent]
   (mapv (fn [i]
-          (let [requests (keep #(some-> (:explicit %) (nth i)) with-extent)]
+          (let [requests (keep #(when (reaches-end? extent (:extent %) i) (some-> (:explicit %) (nth i))) with-extent)]
             (double (reduce max 0.0 (if (seq requests) requests (map #(nth (:padding %) i) with-extent))))))
         [0 1]))
 
@@ -278,9 +287,10 @@
                                :companion? (every? :companion? es)}))
                           stats)]
     (when (some (complement :companion?) with-extent)
-      {:extent (data/merge-extents k (map :extent with-extent))
-       :padding (merged-padding with-extent)
-       :padding-px (reduce per-side-max [0.0 0.0] (map :padding-px with-extent))})))
+      (let [extent (data/merge-extents k (map :extent with-extent))]
+        {:extent extent
+         :padding (merged-padding extent with-extent)
+         :padding-px (reduce per-side-max [0.0 0.0] (map :padding-px with-extent))}))))
 
 (defn- extents-stage
   "Per position scale: extents merged over charts and panels, padding per side from the charts with an extent there
