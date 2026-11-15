@@ -170,19 +170,50 @@
       interpolator (functional-points (fit-fn interpolator interpolator-params) run along step)
       :else run)))
 
-(defn band-points
-  "The drawn `[upper lower]` boundaries of a band - paired runs of one length sharing their positions along `along`
-  (stacked areas): without an `:interpolator` as given, else both fitted with it and evaluated on one grid (the
-  grid depends only on the shared end positions and the step), so the samples stay paired; too few points for the
-  method - both straight."
-  [upper lower {:keys [interpolator interpolator-params sample-step along] :or {along :x}}]
-  (if interpolator
-    (let [fit-of (fit-fn interpolator interpolator-params)
-          step (or sample-step default-sample-step)
-          u (functional-points fit-of upper along step)
-          l (functional-points fit-of lower along step)]
-      (if (== (count u) (count l)) [u l] [upper lower]))
-    [upper lower]))
+(defn- segment-index
+  "Index `i` of the segment `[ps(i) ps(i+1)]` of the increasing positions `ps` (at least 2) holding `t` (the first or
+  the last segment beyond the ends)."
+  ^long [ps ^double t]
+  (loop [lo 0 hi (- (count ps) 2)]
+    (if (>= lo hi)
+      lo
+      (let [mid (quot (+ lo hi 1) 2)]
+        (if (< t (double (ps mid))) (recur lo (dec mid)) (recur mid hi))))))
+
+(defn- keep-sign
+  "Sample `v` at `t` kept to the sign of the two knot values around it (`ps` increasing, `vs`) when they share it."
+  ^double [ps vs ^double t ^double v]
+  (let [i (segment-index ps t)
+        a (double (vs i)) b (double (vs (inc i)))]
+    (cond
+      (and (>= a 0.0) (>= b 0.0)) (m/max 0.0 v)
+      (and (<= a 0.0) (<= b 0.0)) (m/min 0.0 v)
+      :else v)))
+
+(defn sample-columns
+  "Columns of values sampled on one grid: `positions` - strictly monotone pixel positions shared by the columns,
+  `columns` - one vector of values per column (one per position), fitted with `opts` `:interpolator` /
+  `:interpolator-params` and evaluated on the [[sample-grid]] (`:sample-step`) from the first position to the last.
+  `keep-sign?` - a sample between two knots of one sign keeps it (heights of stacked bands never cross 0 where the
+  data doesn't). A column too short for the method is fitted linearly (all columns share the grid); fewer than 2
+  positions - as given. Returns `[grid sampled-columns]`. Not strictly monotone positions throw `ex-info {:key
+  :interpolator}`."
+  [positions columns {:keys [interpolator interpolator-params sample-step]} keep-sign?]
+  (if (< (count positions) 2)
+    [positions columns]
+    (let [direction (strictly-monotone positions)
+          _ (when-not direction
+              (schema/fail! "Interpolation needs strictly monotone x positions." {:key :interpolator :value positions}))
+          rev? (= direction :decreasing)
+          ps (mapv double (if rev? (rseq positions) positions))
+          grid (sample-grid (double (first positions)) (double (peek positions)) (or sample-step default-sample-step))
+          fit-of (fit-fn interpolator interpolator-params)
+          linear (fit-fn :linear nil)]
+      [grid (mapv (fn [column]
+                    (let [vs (mapv double (if rev? (rseq column) column))
+                          f (or (fit fit-of ps vs) (fit linear ps vs))]
+                      (mapv (fn [t] (let [v (double (f t))] (if keep-sign? (keep-sign ps vs t v) v))) grid)))
+                  columns)])))
 
 (defn curved?
   "Do the curve options `opts` change the drawn points (an `:interpolator` or a `:curve`)?"

@@ -10,7 +10,10 @@
             [cljplot2.data.position :as position]
             [cljplot2.graphics.curve :as curve]
             [cljplot2.graphics.polyline :as polyline]
-            [cljplot2.layout.grid :as grid])
+            [cljplot2.chart.line :as line]
+            [cljplot2.layout.grid :as grid]
+            [cljplot2.scale.position :as scale]
+            [fastmath.random :as r])
   (:import [java.awt.image BufferedImage]
            [java.time LocalDate]))
 
@@ -95,27 +98,48 @@
 
 ;; 3. bands
 
+(defn- finalized [k domain rng] (scale/finalize (scale/scale-spec k {:domain domain :nice false}) rng 5))
+
 (deftest bands-test
-  (testing "3.1 paired samples: one grid for both boundaries"
-    (let [upper [[0.0 10.0] [10.0 0.0] [20.0 5.0] [30.0 2.0]]
-          lower [[0.0 20.0] [10.0 15.0] [20.0 18.0] [30.0 16.0]]
-          [u l] (curve/band-points upper lower {:interpolator :pchip})]
-      (is (= (count u) (count l) 31))
-      (is (= (mapv first u) (mapv first l))))
-    (is (= [[[0.0 1.0]] [[0.0 2.0]]] (curve/band-points [[0.0 1.0]] [[0.0 2.0]] {})) "no interpolator: as given")
-    (let [[u l] (curve/band-points [[0.0 1.0] [1.0 2.0]] [[0.0 3.0] [1.0 4.0]] {:interpolator :akima})]
-      (is (= [[0.0 1.0] [1.0 2.0]] u) "too few for akima: straight")
-      (is (= 2 (count l)))))
+  (testing "3.1 one grid for every column; signs kept between same-sign knots"
+    (let [[grid [a b]] (curve/sample-columns [0.0 100.0 200.0 300.0] [[0 5 0 5] [1 1 1 1]] {:interpolator :cubic} true)]
+      (is (= 301 (count grid) (count a) (count b)))
+      (is (every? #(>= (double %) 0.0) a) "cubic overshoot below 0 clamped"))
+    (let [[_ [a]] (curve/sample-columns [0.0 100.0 200.0] [[0 -5 0]] {:interpolator :cubic} true)]
+      (is (every? #(<= (double %) 0.0) a)))
+    (let [[_ [a]] (curve/sample-columns [0.0 100.0 200.0 300.0] [[0 5 0 5]] {:interpolator :cubic} false)]
+      (is (some neg? a) "without keep-sign the overshoot stays"))
+    (is (= [[0.0] [[3.0]]] (curve/sample-columns [0.0] [[3.0]] {:interpolator :pchip} true)) "one position: as given")
+    (let [[grid [a]] (curve/sample-columns [0.0 100.0] [[1.0 2.0]] {:interpolator :akima} true)]
+      (is (= 101 (count grid) (count a)) "too few for akima: linear on the same grid")
+      (is (= 1.5 (nth a 50))))
+    (let [[grid _] (curve/sample-columns [300.0 200.0 100.0 0.0] [[1 2 3 4]] {:interpolator :pchip} true)]
+      (is (= 300.0 (first grid)) "decreasing positions keep their direction"))
+    (is (= :interpolator (:key (error #(curve/sample-columns [0.0 0.0 1.0] [[1 2 3]] {:interpolator :pchip} true))))))
+  (testing "H1 smoothed bands share boundaries and never turn inside out"
+    (let [rng (r/rng :mersenne 7)
+          scales {:x (finalized :x [0.0 7.0] [0.0 400.0]) :y (finalized :y [-20.0 40.0] [300.0 0.0])}]
+      (doseq [position [:stack :normalize :silhouette :wiggle]
+              interpolator [:pchip :cubic :akima]
+              _ (range 20)]
+        (let [data (for [g ["a" "b" "c"] x (range 8)]
+                     {:x x :y (if (< (r/drandom rng) 0.4) 0.0 (r/drandom rng 0 6)) :g g})
+              lines (lines-of (build {:data data :mapping {:x :x :y :y :color :g} :charts [(chart/line {:position position})]}))
+              bands (line/stacked-band-points lines position scales {:interpolator interpolator})]
+          (is (every? (fn [[upper lower]] (every? (fn [[[_ yu] [_ yl]]] (<= (double yu) (+ (double yl) 1e-6))) (map vector upper lower)))
+                      bands)
+              (str position " " interpolator ": upper above lower"))
+          (is (every? (fn [[[u _] [_ l]]] (= u l)) (partition 2 1 bands)) "band k+1 sits on band k")))))
   (testing "3.2 no background between adjacent bands"
     (let [data (for [g ["a" "b"] x (range 6)] {:x x :y (+ 1 (mod (+ x (count g)) 3)) :g g})
           p {:data data :mapping {:x :x :y :y :color :g} :theme white
              :charts [(chart/line {:position :stack :interpolator :pchip :alpha 1.0})]}
           {:keys [x y w h]} (panel-box p)
-          img (plot/render-image p size)
-          col (+ x (* 0.5 w))
-          ;; from the panel bottom up to the top band's upper edge every pixel is coloured
-          colored (take-while #(not= [255 255 255] (rgb img col %)) (range (- (+ y h) 2) y -1))]
-      (is (> (count colored) (* 0.3 h))))))
+          img (plot/render-image p size)]
+      (doseq [fx [0.15 0.35 0.5 0.65 0.85]
+              :let [col (+ x (* fx w))
+                    colored (take-while #(not= [255 255 255] (rgb img col %)) (range (- (+ y h) 2) y -1))]]
+        (is (> (count colored) (* 0.3 h)))))))
 
 ;; 4. area colour
 
@@ -172,3 +196,23 @@
     (testing "5.3 ridge gradient along y"
       (is (some? (plot/render-image {:data data :mapping {:x :v :y :g}
                                      :charts [(chart/density {:fill-gradient [:red :blue] :fill-gradient-axis :y})]} size))))))
+
+;; review fixes
+
+(deftest review-fixes-test
+  (testing "H2 :sort false doesn't matter for stacking"
+    (let [data [{:x 3 :y 3 :g "a"} {:x 1 :y 1 :g "a"} {:x 2 :y 1 :g "b"}]
+          [a] (lines-of (build (stack-plot {:position :stack :sort false} {:data data})))]
+      (is (= [1 2 3] (:x a)))
+      (is (= [1.0 2.0 3.0] (:heights a)))))
+  (testing "H3 LocalTime x"
+    (let [t (fn [h] (java.time.LocalTime/of h 0))
+          [a b] (lines-of (build (stack-plot {:position :stack} {:data [{:x (t 1) :y 1 :g "a"} {:x (t 3) :y 3 :g "a"} {:x (t 2) :y 1 :g "b"}]})))]
+      (is (= [(t 1) (t 2) (t 3)] (:x a)))
+      (is (= [0.0 1.0 0.0] (:heights b)))))
+  (testing "H4 :fill-gradient-axis needs :fill-gradient"
+    (is (= :fill-gradient-axis (:key (error #(build (stack-plot {:fill-gradient-axis :y}))))))
+    (let [data (for [g ["a" "b"] i (range 30)] {:v (+ (count g) (mod i 7)) :g g})]
+      (is (= :fill-gradient-axis (:key (error #(build {:data data :mapping {:x :v} :charts [(chart/density {:fill-gradient-axis :y})]})))))
+      (is (= :fill-gradient-axis (:key (error #(build {:data data :mapping {:x :v :y :g} :charts [(chart/density {:fill-gradient-axis :y})]}))))))))
+

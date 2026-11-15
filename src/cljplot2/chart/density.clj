@@ -110,6 +110,8 @@
   "Ridgeline stats (categorical or bands `:y`): per panel `{:ridges [item ...] :top max-density :overlap o :style st :gradient g}`,
   items (see [[cljplot2.data.strip/ridge-split]]) with `:xs` / `:ds` - the curve; one `:top` over all panels."
   [options chart-split {:keys [theme] :as env}]
+  (when (and (:fill-gradient-axis options) (nil? (:fill-gradient options)))
+    (schema/fail! ":fill-gradient-axis needs :fill-gradient." {:key :fill-gradient-axis :value (:fill-gradient-axis options)}))
   (let [{:keys [position items panels dropped]} (strip/ridge-split chart-split options env)
         n (long (or (:n options) 512))
         curve? #(>= (count (distinct (:values %))) 2)
@@ -182,7 +184,25 @@
     (strip/ridges? chart-split env) (ridge-compute options chart-split env)
     (:fill-gradient options) (schema/fail! "Density :fill-gradient is for ridgelines (a categorical or bands :y)."
                                            {:key :fill-gradient :value (:fill-gradient options)})
+    (:fill-gradient-axis options) (schema/fail! "Density :fill-gradient-axis is for ridgelines with :fill-gradient."
+                                                {:key :fill-gradient-axis :value (:fill-gradient-axis options)})
     :else (flat-compute chart chart-split env)))
+
+(defn- fill-gradient-quads!
+  "Fill between the paired point runs `upper` and `lower` (`[x y]` pixels) quad by quad, each coloured by `gradient`
+  at its middle position (`ps`, one per point) relative to `[p0 p1]`; quads with a non-finite corner are skipped."
+  [canvas upper lower ps gradient [p0 p1]]
+  (let [p0 (double p0) span (- (double p1) p0)
+        ok? (fn [[x y]] (and (m/valid-double? (double x)) (m/valid-double? (double y))))]
+    (c2d/set-stroke-custom canvas {:size 1.0 :join :miter})
+    (doseq [^long i (range (dec (count upper)))
+            :let [a (upper i) b (upper (inc i)) c (lower (inc i)) d (lower i)]
+            :when (and (ok? a) (ok? b) (ok? c) (ok? d))]
+      (let [t (if (pos? span) (/ (- (* 0.5 (+ (double (ps i)) (double (ps (inc i))))) p0) span) 0.5)
+            quad [a b c d]]
+        (c2d/set-color canvas (gradient (m/constrain t 0.0 1.0)))
+        (c2d/path canvas quad true false)
+        (c2d/path canvas quad true true)))))
 
 (defn- draw-ridges!
   "Draw ridgelines of one panel, farthest level first: area (gradient, `:fill` or the colour with `:alpha`), line."
@@ -207,7 +227,7 @@
               (polyline/fill-gradient-paint! canvas [(into (mapv pixel curve) (rseq (mapv pixel base)))] gradient
                                              (pixel (point x0 level side 0.0)) (pixel (point x0 level side 1.0))))
             gradient
-            (polyline/fill-gradient-quads! canvas (mapv (fn [^Vec2 p] [(.x p) (.y p)]) curve) (mapv (fn [^Vec2 p] [(.x p) (.y p)]) base)
+            (fill-gradient-quads! canvas (mapv (fn [^Vec2 p] [(.x p) (.y p)]) curve) (mapv (fn [^Vec2 p] [(.x p) (.y p)]) base)
                                           xs gradient (:domain (:x scales)))
             :else
             (polyline/fill-under! canvas px py bx by (polyline/area-color st true)))

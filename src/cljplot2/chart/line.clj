@@ -38,7 +38,7 @@
             [cljplot2.scale.position :as scale]
             [cljplot2.schema :as schema])
   (:import [fastmath.vector Vec2]
-           [java.time Instant LocalDate LocalDateTime OffsetDateTime ZonedDateTime ZoneOffset]))
+           [java.time Instant LocalDate LocalDateTime LocalTime OffsetDateTime ZonedDateTime ZoneOffset]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -78,7 +78,8 @@
 (defn- sortable? [xs] (or (every? number? xs) (every? data/temporal? xs)))
 
 (defn- x-key
-  "Number aligning an x value: a number as a double, a `java.time` value as epoch milliseconds (UTC); `nil` otherwise."
+  "Number aligning an x value: a number as a double, a `java.time` value as epoch milliseconds (UTC; a `LocalTime` as
+  milliseconds of the day - ordered as wadogo places it, on one day); `nil` otherwise."
   [x]
   (cond
     (number? x) (double x)
@@ -86,7 +87,8 @@
     (instance? LocalDateTime x) (double (.toEpochMilli (.toInstant ^LocalDateTime x ZoneOffset/UTC)))
     (instance? Instant x) (double (.toEpochMilli ^Instant x))
     (instance? ZonedDateTime x) (double (.toEpochMilli (.toInstant ^ZonedDateTime x)))
-    (instance? OffsetDateTime x) (double (.toEpochMilli (.toInstant ^OffsetDateTime x)))))
+    (instance? OffsetDateTime x) (double (.toEpochMilli (.toInstant ^OffsetDateTime x)))
+    (instance? LocalTime x) (/ (double (.toNanoOfDay ^LocalTime x)) 1.0e6)))
 
 (defn- aligned-heights
   "Heights of a group with points at x keys `ks` (strictly increasing) and values `vs` at the union keys `union`
@@ -110,14 +112,20 @@
 (defn- stacked-lines
   "The lines of one panel stacked by `position` (see [[cljplot2.data.position/stack-values]]): every group on the
   union of the groups' x (keys of [[x-key]]), interpolated linearly inside its own range and 0 outside; NA y points
-  left out (interpolated across). Each line `{:x union :y upper :y0 lower :aesthetics}`. Non-numeric, non-temporal
-  x or a repeated x in a group throws `ex-info {:key :x}`."
+  left out (interpolated across); points in x order whatever `:sort` says. Each line `{:x union :y upper :y0 lower
+  :heights aligned :aesthetics}` (`:heights` - the group's aligned values, for smoothing at drawing). Non-numeric,
+  non-temporal x or a repeated x in a group throws `ex-info {:key :x}`."
   [lines position]
   (let [groups (mapv (fn [{:keys [x y aesthetics]}]
-                       (let [pts (filterv #(some? (second %)) (map vector x y))
-                             ks (mapv #(or (x-key (first %))
-                                           (schema/fail! "Stacked lines need numeric or temporal x." {:key :x :value (first %)}))
-                                      pts)]
+                       (let [keyed (->> (map vector x y)
+                                        (filter #(some? (second %)))
+                                        (map (fn [[vx vy]] [(or (x-key vx)
+                                                                (schema/fail! "Stacked lines need numeric or temporal (java.time) x."
+                                                                              {:key :x :value vx}))
+                                                            vx vy]))
+                                        (sort-by first))
+                             ks (mapv first keyed)
+                             pts (mapv (fn [[_ vx vy]] [vx vy]) keyed)]
                          (when-not (or (< (count ks) 2) (apply < ks))
                            (schema/fail! "Stacked lines need distinct x values within a group." {:key :x :group aesthetics}))
                          {:ks ks :vs (mapv #(double (second %)) pts) :xs (mapv first pts) :aesthetics aesthetics}))
@@ -128,8 +136,8 @@
         heights (mapv (fn [{:keys [ks vs]}] (aligned-heights ks vs union)) groups)
         ys (position/stack-values position heights)
         xs (vec (vals by-key))]
-    (mapv (fn [{:keys [aesthetics]} y01] {:x xs :y (mapv second y01) :y0 (mapv first y01) :aesthetics aesthetics})
-          groups ys)))
+    (mapv (fn [{:keys [aesthetics]} hs y01] {:x xs :y (mapv second y01) :y0 (mapv first y01) :heights hs :aesthetics aesthetics})
+          groups heights ys)))
 
 (defn- check-stacking!
   "Throw `ex-info` for options a stacked `position` can't take: a line colored along its length (`gradient?`),
@@ -152,6 +160,8 @@
         continuous (group/continuous-color groups mapping env)
         gradient? (some? continuous)
         _ (check-stacking! position gradient? options)
+        _ (when (and (:fill-gradient-axis options) (nil? (:fill-gradient options)))
+            (schema/fail! ":fill-gradient-axis needs :fill-gradient." {:key :fill-gradient-axis :value (:fill-gradient-axis options)}))
         _ (when (and gradient? (:fill-gradient options))
             (schema/fail! "A line colored along its length can't take :fill-gradient." {:key :fill-gradient :value (:fill-gradient options)}))
         color-of (:color-of continuous)
@@ -334,16 +344,39 @@
     :else
     (polyline/fill-between! canvas (mapv first upper) (mapv second upper) (mapv first lower) (mapv second lower) color)))
 
+(defn stacked-band-points
+  "Drawn `[upper lower]` pixel runs of every stacked line of a panel (`lines` from [[stacked-lines]], one shared x).
+  Without an `:interpolator` in `opts` the data boundaries; with one, the groups' heights are sampled on one pixel
+  grid (see [[cljplot2.graphics.curve/sample-columns]], signs kept) and stacked there again by `position` -
+  `:wiggle` on its baseline interpolated from the data (its offsets accumulate per index) - so adjacent bands share
+  their boundaries and no band turns inside out."
+  [lines position scales opts]
+  (let [projection (scale/projection scales)
+        pixel (fn [vx vy] (let [^Vec2 p (projection vx vy)] (curve/clamp-point [(.x p) (.y p)])))]
+    (if-not (:interpolator opts)
+      (mapv (fn [{:keys [x y y0]}] [(mapv pixel x y) (mapv pixel x y0)]) lines)
+      (let [flipped? (scale/flipped? scales)
+            x-fwd (scale/forward-fn (:x scales))
+            y-fwd (scale/forward-fn (:y scales))
+            positions (mapv x-fwd (:x (first lines)))
+            [grid hs] (curve/sample-columns positions (mapv :heights lines) opts true)
+            stacks (if (= :wiggle position)
+                     (let [[_ [base]] (curve/sample-columns positions [(:y0 (first lines))] opts false)]
+                       (mapv (fn [ys] (mapv (fn [[^double y0 ^double y1] ^double b] [(+ y0 b) (+ y1 b)]) ys base))
+                             (position/stack-values :stack hs)))
+                     (position/stack-values position hs))
+            point (fn [t v] (let [q (double (y-fwd v))] (curve/clamp-point (if flipped? [q t] [t q]))))]
+        (mapv (fn [ys] [(mapv (fn [t [_ y1]] (point t y1)) grid ys) (mapv (fn [t [y0 _]] (point t y0)) grid ys)]) stacks)))))
+
 (defn- draw-stacked!
-  "Draw the stacked lines of a panel: every band (`:y0` .. `:y`) filled - `gradient` along `axis`, else `:fill` or
-  the group colour at `:alpha` - then every upper boundary stroked, both through `opts` (see
-  [[cljplot2.graphics.curve/band-points]])."
-  [canvas lines style projection opts gradient axis scales theme]
-  (let [pixel (fn [vx vy] (let [^Vec2 p (projection vx vy)] (curve/clamp-point [(.x p) (.y p)])))
-        bands (vec (keep (fn [{:keys [x y y0 aesthetics]}]
-                           (when-let [st (group/style style aesthetics scales theme)]
-                             (conj (curve/band-points (mapv pixel x y) (mapv pixel x y0) opts) st)))
-                         lines))]
+  "Draw the stacked lines of a panel (see [[stacked-band-points]]): every band filled - `gradient` along `axis`, else
+  `:fill` or the group colour at `:alpha` - then every upper boundary stroked; groups outside an aesthetic domain are
+  stacked but not drawn."
+  [canvas lines style position opts gradient axis scales theme]
+  (let [bands (vec (keep (fn [[line [upper lower]]]
+                           (when-let [st (group/style style (:aesthetics line) scales theme)]
+                             [upper lower st]))
+                         (map vector lines (stacked-band-points lines position scales opts))))]
     ;; all areas first, then the boundaries (as density): no band covers a stroke
     (doseq [[upper lower st] bands]
       (fill-area! canvas upper lower (polyline/area-color st true) gradient axis scales))
@@ -375,7 +408,7 @@
         (schema/fail! "A line colored along its length can't take :curve (use :interpolator)."
                       {:key :curve :value (:curve opts)}))
       (if (some :y0 lines)
-        (draw-stacked! canvas lines style projection opts gradient axis scales (:theme env))
+        (draw-stacked! canvas lines style (:position options) opts gradient axis scales (:theme env))
         (doseq [{:keys [x y aesthetics colors]} lines
                 :let [st (group/style style aesthetics scales (:theme env))]
                 :when st]

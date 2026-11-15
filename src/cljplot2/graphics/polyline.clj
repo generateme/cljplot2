@@ -198,22 +198,6 @@
          (catch Exception e
            (schema/fail! "Unknown :fill-gradient." {:key :fill-gradient :value g :cause (ex-message e)})))))
 
-(defn fill-gradient-quads!
-  "Fill between the paired point runs `upper` and `lower` (`[x y]` pixels) quad by quad, each coloured by `gradient`
-  at its middle position (`ps`, one per point) relative to `[p0 p1]`; quads with a non-finite corner are skipped."
-  [canvas upper lower ps gradient [p0 p1]]
-  (let [p0 (double p0) span (- (double p1) p0)
-        ok? (fn [[x y]] (and (m/valid-double? (double x)) (m/valid-double? (double y))))]
-    (c2d/set-stroke-custom canvas {:size 1.0 :join :miter})
-    (doseq [^long i (range (dec (count upper)))
-            :let [a (upper i) b (upper (inc i)) c (lower (inc i)) d (lower i)]
-            :when (and (ok? a) (ok? b) (ok? c) (ok? d))]
-      (let [t (if (pos? span) (/ (- (* 0.5 (+ (double (ps i)) (double (ps (inc i))))) p0) span) 0.5)
-            quad [a b c d]]
-        (c2d/set-color canvas (gradient (m/constrain t 0.0 1.0)))
-        (c2d/path canvas quad true false)
-        (c2d/path canvas quad true true)))))
-
 (def ^:private ^:const gradient-stops
   "Stops of a linear gradient paint sampled from a gradient function."
   32)
