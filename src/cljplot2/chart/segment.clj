@@ -8,7 +8,7 @@
   Options (style defaults from theme `[:chart :segment]`): `:color`, `:width`, `:dash`, `:xend`, `:yend`,
   `:padding {:x [lo hi] :y [lo hi]}` (default 5% each side; none on the side where a literal `:xend` / `:yend` is the
   end of the axis extent - a request that wins over other charts' default padding, so lollipop stems start at the
-  axis, see [[cljplot2.data.rows/explicit-padding]]). A row with an invalid coordinate it needs is dropped
+  axis; voided when another chart's data goes beyond the baseline, see [[cljplot2.data.rows/explicit-padding]]). A row with an invalid coordinate it needs is dropped
   (counted per key). Groups (see [[cljplot2.data.group]]) come from ordinal aesthetics (`:color`, `:dash`) and
   `:group`; a linear or binned `:color` colours each segment by its row's value (rows outside the colour scale's
   explicit domain dropped, NA rows in the theme NA colour)."
