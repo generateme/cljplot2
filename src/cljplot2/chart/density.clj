@@ -130,6 +130,7 @@
      :extents (merge-with merge (group/aesthetic-extents panels (:plot-scales env))
                           (strip/extents :band items (fn [{:keys [xs]}] [(first xs) (peek xs)])))
      :padding (merge {:x [0.05 0.05]} (:padding options))
+     :padding-explicit (data/explicit-padding {} options)
      :scale-defaults (strip/ridge-scale-defaults overlap (= :mirror position) (:flip? env) (get-in env [:plot-scales :y]))
      :na (group/na-dims panels)
      :dropped (assoc dropped :group no-curve)}))
@@ -170,6 +171,7 @@
                                                            :max (double (reduce max 0.0 (curve-ys curves)))})}])))
                                 data))
      :padding (merge {:x [0.05 0.05] :y (if (#{:mirror :silhouette :wiggle} position) [0.05 0.05] [0.0 0.05])} (:padding options))
+     :padding-explicit (data/explicit-padding (when-not (#{:mirror :silhouette :wiggle} position) {:y [0.0 nil]}) options)
      :na (group/na-dims panels)
      :dropped (assoc dropped :x x-dropped :group no-curve)
      :axis-titles {:y (if (= position :normalize) "Proportion" "Density")}

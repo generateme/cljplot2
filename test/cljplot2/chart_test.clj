@@ -110,14 +110,19 @@
         fns (atom 0)]
     (walk/postwalk #(do (when (fn? %) (swap! fns inc)) %) stats)
     (is (zero? @fns))
-    (is (= [:data :dropped :extents :na :padding] (sort (keys (first stats)))))))
+    (is (= [:data :dropped :extents :na :padding :padding-explicit] (sort (keys (first stats)))))))
 
 (deftest extents-test
   (let [built (build {:mapping {:x :a :y :b}
                       :charts [(chart/scatter {:data [{:a 0 :b 1} {:a 5 :b 2}]})
                                (chart/scatter {:data [{:a 3 :b 1} {:a 10 :b 2}] :padding {:x [0.2 0.0]}})]})]
     (is (= {:kind :numeric :min 0.0 :max 10.0} (get-in built [:extents :x :extent])))
-    (is (= [0.2 0.05] (get-in built [:extents :x :padding])) "largest padding per side"))
+    (is (= [0.2 0.0] (get-in built [:extents :x :padding])) "per side the largest request (the user's :padding) over the defaults")
+    (is (= [0.05 0.05] (get-in (build {:mapping {:x :a :y :b}
+                                        :charts [(chart/scatter {:data [{:a 0 :b 1} {:a 5 :b 2}]})
+                                                 (chart/scatter {:data [{:a 3 :b 1} {:a 10 :b 2}] :padding {:y [0.2 0.0]}})]})
+                               [:extents :x :padding]))
+        "no request on x: the largest default"))
   (testing "different kinds across charts"
     (is (= :extents (:key (error #(build {:mapping {:x :a :y :b}
                                                :charts [(chart/scatter {:data [{:a 1 :b 1}]})

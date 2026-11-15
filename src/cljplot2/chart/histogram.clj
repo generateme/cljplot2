@@ -127,6 +127,7 @@
      :extents (merge-with merge (group/aesthetic-extents panels (:plot-scales env))
                           (strip/extents :band items (fn [_] [(first brks) (peek brks)])))
      :padding (merge {:x [0.05 0.05]} (:padding options))
+     :padding-explicit (data/explicit-padding {} options)
      :scale-defaults (strip/ridge-scale-defaults overlap (= :mirror position) (:flip? env) (get-in env [:plot-scales :y]))
      :na (group/na-dims panels)
      :dropped (update dropped :x #(+ (long (or % 0)) (long outside)))}))
@@ -195,6 +196,7 @@
       {:data data
        :extents (merge-with merge aesthetic-extents (into {} (filter val) bar-extents))
        :padding (merge {:x [0.05 0.05] :y (if (= position :mirror) [0.05 0.05] [0.0 0.05])} (:padding options))
+       :padding-explicit (data/explicit-padding (when-not (= position :mirror) {:y [0.0 nil]}) options)
        :na (group/na-dims panels)
        :dropped (assoc dropped :x (+ (long (reduce + 0 (map :dropped (mapcat identity (vals xs))))) (long outside)))
        :axis-titles {:y (if (= position :normalize) "Proportion" (measures y))}

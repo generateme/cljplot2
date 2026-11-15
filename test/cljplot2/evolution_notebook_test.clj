@@ -92,3 +92,45 @@
                                  :charts [(chart/scatter)]})
                          [:finalized-scales :x :domain])]
         (is (neg? (compare lo (LocalDateTime/of 2020 1 1 0 0))))))))
+
+;; M1 segment baseline padding
+
+(deftest segment-baseline-padding-test
+  (let [padding (fn [rows opts & [extra]]
+                  (get-in (build (merge {:data rows :mapping {:x :x :y :y} :charts [(chart/segment opts)]} extra)) [:stats 0 :padding]))]
+    (testing "no padding on the side where the literal end is the extent's end"
+      (is (= [0.0 0.05] (:y (padding [{:x 1 :y 3} {:x 2 :y 5}] {:yend 0}))) "stems up from 0")
+      (is (= [0.05 0.0] (:y (padding [{:x 1 :y -3} {:x 2 :y -5}] {:yend 0}))) "stems down to 0")
+      (is (= [0.05 0.05] (:y (padding [{:x 1 :y -3} {:x 2 :y 5}] {:yend 0}))) "0 inside: both sides")
+      (is (= [0.0 0.05] (:x (padding [{:x 1 :y 3} {:x 2 :y 5}] {:xend 0}))) ":xend on x")
+      (is (= [0.05 0.05] (:x (padding [{:x 1 :y 3} {:x 2 :y 5}] {:yend 0}))) "the other axis keeps 5%")
+      (is (= [0.05 0.05] (:y (padding [{:x 1 :y 3} {:x 2 :y 5}] {}))) "no literal end"))
+    (testing "dates and the user's :padding"
+      (is (= [0.0 0.05] (:x (padding [{:x (LocalDate/of 2020 1 5) :y 1}] {:xend (LocalDate/of 2020 1 1)}))))
+      (is (= [0.1 0.1] (:y (padding [{:x 1 :y 3}] {:yend 0 :padding {:y [0.1 0.1]}})))))
+    (testing "the axis starts at the baseline"
+      (is (= 0.0 (double (first (get-in (build {:data [{:x 1 :y 3} {:x 2 :y 5}] :mapping {:x :x :y :y} :charts [(chart/segment {:yend 0})]})
+                                        [:finalized-scales :y :domain]))))))))
+
+(deftest padding-requests-test
+  (let [y-domain (fn [p] (get-in (build p) [:finalized-scales :y :domain]))
+        rows [{:x 1 :y 3} {:x 2 :y 5}]]
+    (testing "a lollipop - segment {:yend 0} with a scatter - starts at the axis"
+      (is (= 0.0 (double (first (y-domain {:data rows :mapping {:x :x :y :y}
+                                           :charts [(chart/segment {:yend 0}) (chart/scatter)]}))))))
+    (testing "a histogram with points on it starts at 0 too"
+      (is (= 0.0 (double (first (y-domain {:data [{:x 1 :y 0.5} {:x 2 :y 1} {:x 2 :y 1.5}] :mapping {:x :x}
+                                           :charts [(chart/histogram) (chart/scatter {:mapping {:y :y}})]}))))))
+    (testing "the user's :padding is a request: zero wins over another chart's default (axis at the data minimum)"
+      (is (= 3.0 (double (first (y-domain {:data rows :mapping {:x :x :y :y}
+                                           :charts [(chart/line) (chart/scatter {:padding {:y [0 0.05]}})]}))))))
+    (testing "requests compete by size: room below the data over a zero baseline"
+      (let [b (build {:data (mapv (fn [v] {:x (double v)}) (range 10)) :mapping {:x :x}
+                      :charts [(chart/density) (chart/rug {:place :bottom})]})]
+        (is (neg? (double (first (get-in b [:finalized-scales :y :domain])))))))
+    (testing "data below the baseline: the baseline isn't the extent's end, the defaults apply"
+      (is (neg? (double (first (y-domain {:data (conj rows {:x 3 :y -2}) :mapping {:x :x :y :y}
+                                          :charts [(chart/segment {:yend 0}) (chart/scatter)]}))))))
+    (testing "charts without requests: unchanged (largest padding)"
+      (is (= [0.05 0.05] (get-in (build {:data rows :mapping {:x :x :y :y} :charts [(chart/line) (chart/scatter)]})
+                                 [:extents :y :padding]))))))

@@ -129,6 +129,7 @@
                                                        [(m/min (double lo) (double (or center lo)))
                                                         (m/max (double hi) (double (or center hi)))])))
      :padding (strip/padding place options)
+     :padding-explicit (strip/explicit-padding place options)
      :padding-px (strip/n-label-room options items env)
      :na (group/na-dims panels)
      :dropped dropped}))

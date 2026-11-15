@@ -104,6 +104,7 @@
                                          :y (data/extent :y (mapcat (apply juxt value-keys) candles))}])))
                     data)
      :padding (merge {:x [0.05 0.05] :y [0.05 0.05]} (:padding options))
+     :padding-explicit (data/explicit-padding {} options)
      :na #{}
      :dropped (into {:x (count (remove #(data/valid-value? ((:x accessors) %)) rows))
                      :ohlc (count (remove consistent? (filter complete? rows)))}

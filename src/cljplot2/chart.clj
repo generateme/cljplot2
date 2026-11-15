@@ -9,6 +9,9 @@
 
   * `(compute chart {:groups {panel rows} :mapping mapping} env)` -> data
     `{:extents {panel {dim extent}} :padding {dim [lo hi]} :data {panel computed} :na #{dim} :dropped {dim n}}`
+    (`:padding` - the chart's padding, fractions of the span; optional `:padding-explicit {dim [lo hi]}` - the sides
+    that are requests, `nil` - default: per side the plot takes the largest request, the largest padding only where
+    no chart requests, see [[cljplot2.data.rows/explicit-padding]])
     (an extent with `:companion? true` counts only when another chart has extents of its dimension)
     and optionally `:axis-titles {:x t :y t}` (suggested axis titles; the first chart's win, plot `:labels` win over
     all) and `:tick-format {:x f :y f}` (suggested tick label format, `:absolute` - magnitudes; used unless the plot's

@@ -192,6 +192,8 @@
      :padding (merge {:x [0.05 0.05]
                       :y (if (and (#{:stack :normalize} position) (not negative?)) [0.0 0.05] [0.05 0.05])}
                      (:padding options))
+     :padding-explicit (data/explicit-padding (when (and (#{:stack :normalize} position) (not negative?)) {:y [0.0 nil]})
+                                              options)
      :axis-titles (when (= :normalize position) {:y "Proportion"})
      :na (cond-> (group/na-dims panels) (:na? color-stats) (conj :color))
      :dropped (cond-> (assoc dropped

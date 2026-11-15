@@ -189,6 +189,7 @@
                                                                                                 curves))))}])))
                                 data))
      :padding (merge {:x [0.05 0.05] :y [0.05 0.05]} (:padding options))
+     :padding-explicit (data/explicit-padding {} options)
      :na (group/na-dims panels)
      :dropped (assoc dropped
                      :x (count (remove #(data/valid-value? (x-of %)) rows))

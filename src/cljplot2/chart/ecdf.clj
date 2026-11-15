@@ -70,6 +70,7 @@
                                                      :y {:kind :numeric :min 0.0 :max 1.0}}])))
                                 data))
      :padding (merge {:x [0.05 0.05] :y [0.05 0.05]} (:padding options))
+     :padding-explicit (data/explicit-padding {} options)
      :na (group/na-dims panels)
      :dropped (assoc dropped :x x-dropped)
      :axis-titles {:y "Empirical CDF"}}))

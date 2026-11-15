@@ -41,6 +41,7 @@
      :extents (merge-with merge (group/aesthetic-extents panels (:plot-scales env))
                           (strip/extents place items (fn [{:keys [values]}] [(reduce min values) (reduce max values)])))
      :padding (strip/padding place options)
+     :padding-explicit (strip/explicit-padding place options)
      :padding-px (strip/n-label-room options items env)
      :na (group/na-dims panels)
      :dropped dropped}))

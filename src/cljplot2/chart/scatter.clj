@@ -98,6 +98,7 @@
                                                 (map (fn [k] [k (aesthetic/value-extent k (get plot-scales k) (remove nil? (p k)))]))
                                                 (drop 2 dims))))
      :padding padding
+     :padding-explicit (data/explicit-padding {} options)
      :na (set (filter (fn [k] (some #(some nil? (% k)) (vals points))) (drop 2 dims)))
      :dropped dropped}))
 

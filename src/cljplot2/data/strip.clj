@@ -192,6 +192,12 @@
          (when (= :bottom place) {:y [(double (get options :bottom-share 0.15)) 0.0]})
          (:padding options)))
 
+(defn explicit-padding
+  "`:padding-explicit` of a strip chart for `place` (see [[cljplot2.data.rows/explicit-padding]]): `:bottom` - the
+  room below the data (y `[:bottom-share nil]`), and the `:padding` option."
+  [place options]
+  (data/explicit-padding (when (= :bottom place) {:y [(double (get options :bottom-share 0.15)) nil]}) options))
+
 (defn extents
   "Per panel extents of `items` (see [[split]]): `:x` from `x-range` (item -> `[lo hi]` in data units, `nil` -
   none), `:y` by `place` ([[y-extent]]); panels without items are left out."

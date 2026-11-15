@@ -254,25 +254,38 @@
   [[a b] [c d]]
   [(m/max (double a) (double c)) (m/max (double b) (double d))])
 
+(defn- merged-padding
+  "Padding `[lo hi]` of the charts `with-extent` (`:padding`, `:explicit` - requested sides or `nil`): per side the
+  largest request when some chart requests that side (see [[cljplot2.data.rows/explicit-padding]] - a zero at a
+  baseline wins over other charts' defaults, room below the data over a zero), else the largest padding."
+  [with-extent]
+  (mapv (fn [i]
+          (let [requests (keep #(some-> (:explicit %) (nth i)) with-extent)]
+            (double (reduce max 0.0 (if (seq requests) requests (map #(nth (:padding %) i) with-extent))))))
+        [0 1]))
+
 (defn- position-extent
   "Position dimension `k` over charts' `stats`: `{:extent :padding :padding-px}` - extents merged over charts and
-  panels, padding (and pixel room) the largest per side among the charts with an extent there; `nil` without one. A
-  chart whose extents of `k` are all companions (`:companion? true`) joins only when another chart has extents of it."
+  panels, padding per side from the charts with an extent there (see [[merged-padding]]), pixel room the largest per
+  side; `nil` without one. A chart whose extents of `k` are all companions (`:companion? true`) joins only when
+  another chart has extents of it."
   [stats k]
   (let [with-extent (keep (fn [st]
                             (when-let [es (seq (keep #(get % k) (vals (:extents st))))]
                               {:extent (data/merge-extents k es) :padding (get-in st [:padding k] [0 0])
+                               :explicit (get-in st [:padding-explicit k])
                                :padding-px (get-in st [:padding-px k] [0 0])
                                :companion? (every? :companion? es)}))
                           stats)]
     (when (some (complement :companion?) with-extent)
       {:extent (data/merge-extents k (map :extent with-extent))
-       :padding (reduce per-side-max [0.0 0.0] (map :padding with-extent))
+       :padding (merged-padding with-extent)
        :padding-px (reduce per-side-max [0.0 0.0] (map :padding-px with-extent))})))
 
 (defn- extents-stage
-  "Per position scale: extents merged over charts and panels, padding (and pixel room `:padding-px`) as the largest
-  per side among the charts with an extent there. A chart whose extents of a dimension are all companions (`:companion? true`) joins only a
+  "Per position scale: extents merged over charts and panels, padding per side from the charts with an extent there
+  (the largest request, else the largest padding - see [[merged-padding]]) and pixel room `:padding-px` (the largest
+  per side). A chart whose extents of a dimension are all companions (`:companion? true`) joins only a
   dimension another chart has extents of; companions alone give no extent (and no data scale). Per aesthetic: merged
   extent and `:na?`."
   [{:keys [stats] :as plot}]

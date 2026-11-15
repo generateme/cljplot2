@@ -6,7 +6,9 @@
   with `:x :y` mapped draws stems from 0 (lollipops with a scatter; horizontal ones in a flipped plot).
 
   Options (style defaults from theme `[:chart :segment]`): `:color`, `:width`, `:dash`, `:xend`, `:yend`,
-  `:padding {:x [lo hi] :y [lo hi]}` (default 5% each side). A row with an invalid coordinate it needs is dropped
+  `:padding {:x [lo hi] :y [lo hi]}` (default 5% each side; none on the side where a literal `:xend` / `:yend` is the
+  end of the axis extent - a request that wins over other charts' default padding, so lollipop stems start at the
+  axis, see [[cljplot2.data.rows/explicit-padding]]). A row with an invalid coordinate it needs is dropped
   (counted per key). Groups (see [[cljplot2.data.group]]) come from ordinal aesthetics (`:color`, `:dash`) and
   `:group`; a linear or binned `:color` colours each segment by its row's value (rows outside the colour scale's
   explicit domain dropped, NA rows in the theme NA colour)."
@@ -47,6 +49,16 @@
     (some? (get mapping k)) [(data/row-accessor k (get mapping k)) true]
     :else [start-of false]))
 
+(defn- baseline-request
+  "Padding request `[lo hi]` of one axis (see [[cljplot2.data.rows/explicit-padding]]): zero on the side where the
+  literal end `end` (`nil` - none) is the axis extent's end over the panels' `extents` - stems stand on the baseline,
+  as bars on 0 - else `nil` (no request); `nil` without such a side."
+  [end extents]
+  (let [e (data/merge-extents :end (remove nil? extents))
+        at? (fn [bound] (and (some? end) (some? bound) (not= :categorical (:kind e)) (zero? (compare (if (number? end) (double end) end) bound))))
+        request [(when (at? (:min e)) 0.0) (when (at? (:max e)) 0.0)]]
+    (when (some some? request) request)))
+
 (defn compute
   "Per panel: `{:segments [{:x [..] :y [..] :xend [..] :yend [..] :aesthetics}] :style style}` (a segment coloured
   along a linear / binned `:color` also has `:colors`); extents (x over x and xend, y over y and yend), padding,
@@ -79,17 +91,20 @@
                              :style st}))
         color-stats (when continuous
                       (group/continuous-color-stats continuous (update-vals data #(mapcat :colors (:segments %))) plot-scales))
-        invalid (fn [f] (count (remove #(data/valid-value? (f %)) rows)))]
+        invalid (fn [f] (count (remove #(data/valid-value? (f %)) rows)))
+        position-extents (into {} (keep (fn [[panel {:keys [segments]}]]
+                                          (let [xs (concat (mapcat :x segments) (mapcat :xend segments))]
+                                            (when (seq xs)
+                                              [panel {:x (data/extent :x xs)
+                                                      :y (data/extent :y (concat (mapcat :y segments) (mapcat :yend segments)))}]))))
+                               data)
+        requests (into {} (keep (fn [[k end]] (some->> (baseline-request end (map k (vals position-extents))) (vector k))))
+                       {:x (:xend options) :y (:yend options)})]
     {:data data
-     :extents (merge-with merge (group/aesthetic-extents panels plot-scales)
-                          (:extents color-stats)
-                          (into {} (keep (fn [[panel {:keys [segments]}]]
-                                           (let [xs (concat (mapcat :x segments) (mapcat :xend segments))]
-                                             (when (seq xs)
-                                               [panel {:x (data/extent :x xs)
-                                                       :y (data/extent :y (concat (mapcat :y segments) (mapcat :yend segments)))}]))))
-                                data))
-     :padding (merge {:x [0.05 0.05] :y [0.05 0.05]} (:padding options))
+     :extents (merge-with merge (group/aesthetic-extents panels plot-scales) (:extents color-stats) position-extents)
+     :padding (merge (into {} (map (fn [k] [k (mapv #(if (nil? %) 0.05 %) (get requests k [nil nil]))])) [:x :y])
+                     (:padding options))
+     :padding-explicit (data/explicit-padding requests options)
      :na (cond-> (group/na-dims panels) (:na? color-stats) (conj :color))
      :dropped (cond-> (assoc dropped :x (invalid x-of) :y (invalid y-of))
                 xend-mapped? (assoc :xend (invalid xend-of))

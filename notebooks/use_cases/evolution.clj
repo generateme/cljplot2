@@ -255,7 +255,7 @@
 ;; Loess (default) with nested 50% / 95% bands; a linear model per diet; a Gaussian process (mean ± z·σ). The loess
 ;; defaults are ggplot2's `geom_smooth` ones - 75% of the points, local quadratic fits - with fastmath's two robustness
 ;; iterations (`:method-params {:iters 0}` is ggplot2's plain fit; the robust bands are a little wider). The bands
-;; equal R's `predict(se = TRUE)` for the same fit; with 144 or 220 points they are narrow. On a date axis the fit
+;; of the plain fit (`:iters 0`) equal R's `predict(se = TRUE)`; with 144 or 220 points they are narrow. On a date axis the fit
 ;; works in epoch milliseconds - a kernel's scale too (here three months).
 
 (nu/source-note {:source "R Graph Gallery - Scatterplot with ggplot2 (smoothing); Polynomial curve fitting"
