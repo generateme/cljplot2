@@ -12,7 +12,8 @@
   Natural size is the text block rounded up plus padding on every side; rotation `90`/`270` swaps width and height.
   Internally (axis tick labels, theme `[:axis k :label-rotation]`) any angle is drawn: the natural size is then the
   rounded-up bounding box of the rotated text frame, the text rotated about the box centre.
-  Drawing clips the text to the item box (intersected with any outer clip).
+  Drawing clips the text to the item box (intersected with any outer clip). A style `:background` fills the text
+  frame (the box; for an angle that isn't a multiple of 90 the rotated unrotated-size frame) under the text.
   Content is validated against [[label-options]] by [[cljplot2.graphics.measure/validate-content]] (called from
   `grid/prepare`).
 
@@ -67,6 +68,7 @@
      :v-align (align 1)
      :padding (double padding)
      :color (:color style)
+     :background (:background style)
      :font (font/resolve-font (:font style) (:font-style style) (:size style))}))
 
 (defn- text-metrics
@@ -150,6 +152,9 @@
         (c2d/translate canvas (+ x (* 0.5 w)) (+ y (* 0.5 h)))
         (c2d/rotate canvas (m/radians rotation))
         (c2d/translate canvas (* -0.5 ^double frame-w) (* -0.5 ^double frame-h))
+        (when-let [background (when-not (= :none (:background spec)) (:background spec))]
+          (c2d/set-color canvas background)
+          (c2d/rect canvas 0.0 0.0 frame-w frame-h))
         (c2d/set-color canvas (:color spec))
         (dorun (map-indexed (fn [^long idx ^double line-width]
                               (c2d/text canvas (nth (:lines spec) idx)

@@ -7,12 +7,20 @@
   `:order-direction` (`:ascending` default or `:descending`, see draw order below), plus `:data` and `:mapping`
   (see [[cljplot2.chart]]).
 
+  Jitter (ggplot `geom_jitter`): `:jitter [dx dy]` - uniform offsets in `±dx` / `±dy` data units added at compute, so
+  the jittered points make the extents (on a `:log` axis in decades - see
+  [[cljplot2.scale.position/stat-transform]]); a dimension with a positive jitter needs numeric values. `:rng` - a
+  fastmath random generator, copied per build (see [[cljplot2.data.rng/for-build]]): one generator gives the same
+  points in every build; without it builds differ.
+
   Draw order: data order, or - with mapping `:order` (an accessor) - ascending order values within each panel
   (later points drawn on top; ties keep data order; rows with a `nil` or invalid order value drawn first)."
   (:require [clojure2d.core :as c2d]
             [fastmath.core :as m]
+            [fastmath.random :as r]
             [fastmath.vector :as v]
             [cljplot2.scale.aesthetic :as aesthetic]
+            [cljplot2.data.rng :as rng]
             [cljplot2.data.rows :as data]
             [cljplot2.scale.position :as scale]
             [cljplot2.graphics.shape :as shape]
@@ -38,7 +46,9 @@
                 (into style-entries)
                 (into data/common-options)
                 (conj (schema/optional :padding data/position-padding)
-                      (schema/optional :order-direction [:enum :ascending :descending])))
+                      (schema/optional :order-direction [:enum :ascending :descending])
+                      (schema/optional :jitter [:tuple schema/non-neg schema/non-neg])
+                      (schema/nilable :rng rng/schema)))
    :mapping [:map [:x schema/accessor] [:y schema/accessor]]})
 
 (defn- style
@@ -63,6 +73,32 @@
     (try (into (vec invalid) (sort-by order-of cmp valid))
          (catch ClassCastException _
            (schema/fail! "Scatter :order values must be mutually comparable." {:key :order})))))
+
+(defn- jittered
+  "`values` (numbers) each moved by a uniform offset in `±d` drawn from `rng`, in the coordinates of `transform`
+  (see [[cljplot2.scale.position/stat-transform]]); `values` themselves for `d` 0. Throws `ex-info {:key :jitter}`
+  for a non-numeric value."
+  [values rng ^double d {:keys [forward inverse]}]
+  (if (zero? d)
+    values
+    (mapv (fn [v]
+            (when-not (number? v)
+              (schema/fail! "Scatter :jitter needs numeric positions." {:key :jitter :value v}))
+            (inverse (+ (double (forward v)) (r/drandom rng (- d) d))))
+          values)))
+
+(defn- jitter-points
+  "Panel `points` with x and y jittered by `[dx dy]` (`:jitter`) from the generator of `:rng` (one per build), in the
+  plot's axis coordinates (`plot-scales`); unchanged without `:jitter`."
+  [points {:keys [jitter] :as options} plot-scales]
+  (if-let [[dx dy] jitter]
+    (let [g (rng/for-build (:rng options))
+          tx (scale/stat-transform (:x plot-scales))
+          ty (scale/stat-transform (:y plot-scales))]
+      (into {} (map (fn [[panel p]]
+                      [panel (assoc p :x (jittered (:x p) g (double dx) tx) :y (jittered (:y p) g (double dy) ty))]))
+            points))
+    points))
 
 (defn compute
   "Per panel: points (rows with valid mapped x and y and kept aesthetic values, see [[cljplot2.scale.aesthetic]]) as
@@ -89,7 +125,8 @@
         points (update-vals values (fn [vs] (let [kept (filterv keep-row? vs)]
                                               (into {:style st}
                                                     (map-indexed (fn [i k] [k (mapv #(% i) kept)]))
-                                                    dims))))]
+                                                    dims))))
+        points (jitter-points points options plot-scales)]
     (doseq [[i k] (map-indexed vector dims)]
       (when (and (pos? row-count) (not-any? #(aesthetic/valid-value? k (get plot-scales k) (% i)) all-values))
         (schema/fail! "No valid values for a mapped dimension - check the mapping." {:key :mapping :value k :rows row-count})))

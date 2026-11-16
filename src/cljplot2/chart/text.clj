@@ -20,8 +20,9 @@
   `[0 0]`); `:rotation` - degrees, clockwise (default 0; the anchor applies to the rotated text's bounding box), or `:radial` -
   in a polar plot each label along its angle, labels on the left half turned to read upright, anchored away from the
   centre unless `:anchor` is given (0 in cartesian plots);
-  `:font`, `:size`, `:font-style`, `:color` - over the text role `[:text :annotation]` (the text chart's theme style;
-  a theme `[:chart :text]` entry is rejected); `:extent`, `:data` /
+  `:font`, `:size`, `:font-style`, `:color`, `:padding` (pixels around the text), `:background` (a color, alpha
+  allowed, filling the text plus padding - a label box, ggplot `geom_label`) - over the text role `[:text :annotation]`
+  (the text chart's theme style; a theme `[:chart :text]` entry is rejected); `:extent`, `:data` /
   `:mapping`. Text stays upright when the plot is flipped; only the anchor position enters the extents."
   (:require [fastmath.core :as m]
             [cljplot2.content.label :as label]
@@ -57,7 +58,7 @@
    [true panel-position]
    [false (annotation/positions-schema text-position)]])
 
-(def ^:private style-keys [:font :size :font-style :color])
+(def ^:private style-keys [:font :size :font-style :color :padding :background])
 
 (def schemas
   "Schemas of the text chart: `:options`, `:mapping` (merged); the style is the text role `[:text :annotation]`."

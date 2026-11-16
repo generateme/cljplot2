@@ -33,6 +33,9 @@
   * `:midpoint m` - linear / binned `:color`: `m` at the gradient's middle, both sides scaled by the larger distance
     to it (ggplot `gradient2`)
   * `:reverse true` - the attributes in reverse (linear `t` → `1 - t`, ordinal / binned attributes reversed)
+  * `:area true` - linear / ordinal `:size`: the shape's area (∝ size²), not its size, linear in `t` - size
+    `√(a² + t·(b² − a²))` for `:range [a b]` (ggplot `scale_size`); with `:domain [0 hi]` and `:range [0 max]` the
+    area is proportional to the value (ggplot `scale_size_area`)
   * `:formatter` - legend labels (function); `:title` - legend title (`nil` - no title); `:legend` - `false` hides it
 
   [[scale-spec]] gives plain data (with `:na?` - the scale has an NA level); it is also the finalized scale: no
@@ -179,8 +182,9 @@
 
 (defn- option-problems
   "`[[key message] ...]` - options of aesthetic `k`'s scale `spec` that its `kind` doesn't allow or that contradict
-  each other (a level map `:range`, `:spread`, `:midpoint`, `:reverse`, `:bins`, identity's `:domain` / `:range`)."
-  [k kind {:keys [range spread midpoint reverse bins domain] :as spec}]
+  each other (a level map `:range`, `:spread`, `:midpoint`, `:reverse`, `:area`, `:bins`, identity's `:domain` /
+  `:range`)."
+  [k kind {:keys [range spread midpoint reverse area bins domain] :as spec}]
   (let [level-map? (map? range)
         bins-domain (when (and (vector? bins) (>= (count bins) 2)) [(double (first bins)) (double (peek bins))])]
     (cond-> []
@@ -197,6 +201,7 @@
       (and (some? midpoint) (or (not= k :color) (not (#{:linear :binned} kind))))
       (conj [:midpoint ":midpoint needs a linear or binned :color scale"])
       (and reverse (= kind :identity)) (conj [:reverse "an identity scale can't be reversed"])
+      (and area (or (not= k :size) (not (#{:linear :ordinal} kind)))) (conj [:area ":area needs a linear or ordinal :size scale"])
       (and reverse level-map?) (conj [:reverse ":reverse can't be combined with a level map :range"])
       (and (some? bins) (not= kind :binned)) (conj [:bins ":bins needs :kind :binned"])
       (and (= kind :binned) bins-domain (sequential? domain) (= 2 (count domain))
@@ -229,12 +234,13 @@
           (schema/optional :spread schema/bool)
           (schema/optional :midpoint schema/finite)
           (schema/optional :reverse schema/bool)
+          (schema/optional :area schema/bool)
           (schema/optional :bins levels/bins)
           (schema/optional :formatter schema/function)
           (schema/nilable :title string?)
           (schema/nilable :legend schema/bool)]
          [#(domain-problem k %) [:domain]]
-         (map #(option-rule k %) [:kind :domain :range :spread :midpoint :reverse :bins])))
+         (map #(option-rule k %) [:kind :domain :range :spread :midpoint :reverse :area :bins])))
 
 (defn- resolve-range
   "Concrete range of dimension `k` from the (validated) range value `r`: a level map or a function as given, the
@@ -380,7 +386,8 @@
   `nil` when there is neither an explicit domain nor data. Throws `ex-info` (`:key` - the offending option) for
   options the resolved kind doesn't allow.
   Returns `{:kind :domain :range :na?}` (identity: no `:domain` / `:range`; binned: also `:breaks`, the domain being
-  their ends) plus the spec's `:spread`, `:midpoint`, `:reverse`, `:formatter`, `:title`, `:legend` when given."
+  their ends) plus the spec's `:spread`, `:midpoint`, `:reverse`, `:area`, `:formatter`, `:title`, `:legend` when
+  given."
   [k spec extent na? palette]
   (let [explicit (:domain spec)]
     (when (or explicit extent)
@@ -407,6 +414,7 @@
           (:spread spec) (assoc :spread true)
           (some? (:midpoint spec)) (assoc :midpoint (double (:midpoint spec)))
           (:reverse spec) (assoc :reverse true)
+          (:area spec) (assoc :area true)
           (contains? spec :formatter) (assoc :formatter (:formatter spec))
           (contains? spec :title) (assoc :title (:title spec))
           (contains? spec :legend) (assoc :legend (:legend spec)))))))
@@ -419,14 +427,24 @@
       [(* 0.5 (+ lo hi))]
       (mapv #(+ lo (* (- hi lo) (/ (double %) (double (dec n))))) (range n)))))
 
+(defn- size-fn
+  "Function of `t` in `[0 1]` giving the size within `[a b]` (`range`): linear, or with `area?` the size whose square
+  (the shape's area) is linear in `t`."
+  [[a b] area?]
+  (let [a (double a) b (double b)]
+    (if area?
+      (let [a2 (* a a) b2 (* b b)] (fn ^double [^double t] (m/sqrt (+ a2 (* t (- b2 a2))))))
+      (fn ^double [^double t] (+ a (* t (- b a)))))))
+
 (defn- ordinal-attributes
-  "Attribute of every level of ordinal scale `spec` of dimension `k`: from a level map; sizes evenly over the range;
-  `:spread` colors resampled from the range; otherwise the range cycled. Reversed with `:reverse`."
-  [k {:keys [domain range spread reverse]}]
+  "Attribute of every level of ordinal scale `spec` of dimension `k`: from a level map; sizes evenly over the range
+  (in area with `:area`); `:spread` colors resampled from the range; otherwise the range cycled. Reversed with
+  `:reverse`."
+  [k {:keys [domain range spread reverse area]}]
   (let [n (count domain)
         attributes (cond
                      (map? range) (let [index (update-keys range level-key)] (mapv #(get index (level-key %)) domain))
-                     (= k :size) (evenly n range)
+                     (= k :size) (mapv (size-fn range area) (evenly n [0.0 1.0]))
                      spread (vec (c/resample range (max 1 n)))
                      :else (mapv #(nth range (mod (long %) (count range))) (clojure.core/range n)))]
     (if reverse (vec (rseq attributes)) attributes)))
@@ -481,7 +499,7 @@
                   t-of (if (:reverse spec) (fn ^double [^double v] (- 1.0 (double (t-of v)))) t-of)
                   f (if (= k :color)
                       (let [g (gradient-of range)] (fn [^double t] (g t)))
-                      (let [a (double (range 0)) b (double (range 1))] (fn [^double t] (+ a (* t (- b a))))))]
+                      (size-fn range (:area spec)))]
               (fn [v]
                 (cond
                   (nil? v) na

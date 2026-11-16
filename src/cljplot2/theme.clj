@@ -9,6 +9,8 @@
   * `:color` - any clojure2d color
   * `:padding` - pixels added on every side of the text
   * `:align` - `[h v]` placement of the text in its box (optional, default `[:center :middle]`), see [[cljplot2.content.label]]
+  * `:background` - a color (alpha allowed) filling the label's box - the text plus `:padding` (optional, default
+    none; `:none` - none)
 
   `:plot` - `:background` (fills the canvas), `:margin` (pixels on every side).
 
@@ -64,7 +66,7 @@
 
 (def style-keys
   "Keys of a text style; content may override them inline."
-  [:font :size :font-style :color :padding :align])
+  [:font :size :font-style :color :padding :align :background])
 
 (def ^:private centered [:center :middle])
 
@@ -176,11 +178,12 @@
 
 (def text-style-schema
   "A text role's style."
-  (-> [:map {:closed true}] (into text-style-entries) (conj (schema/optional :align schema/align))))
+  (-> [:map {:closed true}] (into text-style-entries)
+      (conj (schema/optional :align schema/align) (schema/optional :background schema/color))))
 
 (def text-style-overrides
   "Map entries of the style keys content may override (all optional), see [[style-keys]]."
-  (mapv (fn [[k s]] (schema/optional k s)) (conj text-style-entries [:align schema/align])))
+  (mapv (fn [[k s]] (schema/optional k s)) (conj text-style-entries [:align schema/align] [:background schema/color])))
 
 (def ^:private grid-line
   (schema/keyword-or :none [:map {:closed true} [:color schema/color] [:width schema/non-neg] [:dash schema/dash]]))
