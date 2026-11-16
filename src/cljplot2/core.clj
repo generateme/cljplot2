@@ -28,6 +28,22 @@
   [edges options]
   (graphs/network edges options))
 
+(defn dendrogram
+  "Dendrogram of an `hclust` result or a tree, see [[cljplot2.graphs/dendrogram]]."
+  [source options]
+  (graphs/dendrogram source options))
+
+(defn clustered-heatmap
+  "Heatmap with rows and columns ordered by hierarchical clustering and their dendrograms, see
+  [[cljplot2.graphs/clustered-heatmap]]."
+  [rows options]
+  (graphs/clustered-heatmap rows options))
+
+(defn bundle
+  "Hierarchical edge bundling of edges between a tree's leaves, see [[cljplot2.graphs/bundle]]."
+  [edges tree options]
+  (graphs/bundle edges tree options))
+
 (defn render
   "Build and draw `plot`, returning a clojure2d canvas, see [[cljplot2.render/render]]."
   ([plot] (render/render plot))

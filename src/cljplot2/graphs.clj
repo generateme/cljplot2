@@ -1,9 +1,13 @@
 (ns cljplot2.graphs
-  "Plot builders of graphs: a layout from [[cljplot2.data.graph]] drawn with ordinary charts, returned as a plot map
-  (edit it, add charts, or build the plot from the layout yourself)."
+  "Plot builders of graphs and trees: a layout from [[cljplot2.data.graph]] / [[cljplot2.data.tree]] drawn with
+  ordinary charts, returned as a plot map (edit it, add charts, or build the plot from the layout yourself)."
   (:require [clojure2d.color :as c]
+            [fastmath.core :as m]
+            [fastmath.ml.clustering :as cl]
             [cljplot2.chart :as chart]
             [cljplot2.data.graph :as graph]
+            [cljplot2.data.tree :as tree]
+            [cljplot2.multiplot :as plot]
             [cljplot2.data.rows :as data]
             [cljplot2.scale.aesthetic :as aesthetic]
             [cljplot2.schema :as schema]
@@ -108,3 +112,185 @@
              :scales (merge {:x x-axis :y y-axis} scales)
              :labels {:title title :x nil :y nil}}
       user-theme (assoc :theme user-theme))))
+
+;; trees
+
+(def ^:private branch-color [70 70 70])
+
+(defn- as-tree
+  "A tree (see [[cljplot2.data.tree]]) from `source`: an `hclust` result (named by `labels`) or a tree as it is."
+  [source labels]
+  (if (contains? source :tree) (tree/from-hclust source labels) source))
+
+(defn- leaf-axis
+  "Position scale of the leaf axis: leaves at 0..n-1 with half a step around, ticks at the leaves labelled by their
+  names (`labels?` false - no axis)."
+  [leaves labels?]
+  (let [n (count leaves)
+        names (mapv #(str (:name %)) leaves)]
+    (cond-> {:domain [-0.5 (- (double n) 0.5)] :nice false :expand [0.0 0.0]}
+      labels? (assoc :ticks (vec (range n)) :formatter #(get names (long (Math/round (double %))) ""))
+      (not labels?) (assoc :axis false))))
+
+(defn- branch-chart
+  "Line chart of the tree's elbow `paths` (rows `{:id :x :y :cluster}`): a path per branch, coloured by cluster when
+  clustered (branches above the cut in the NA colour)."
+  [paths clustered? line-style]
+  (chart/line (merge {:color branch-color :width 1}
+                     line-style
+                     {:data paths :sort false
+                      ;; cluster numbers are levels, not quantities
+                      :mapping (cond-> {:x :x :y :y :group :id} clustered? (assoc :color #(some-> (:cluster %) str)))})))
+
+(defn- radial-labels
+  "Two text charts of the leaf names around a circle (`nodes` with `:angle` and `:leaf?`), just outside radius 1,
+  each turned along its angle and reading outward: the right half anchored left, the left half anchored right; the
+  font smaller for many leaves (9 pt down to 5 pt)."
+  [nodes]
+  (let [leaves (filterv :leaf? nodes)
+        size (m/constrain (/ 1400.0 (double (max 1 (count leaves)))) 5.0 9.0)
+        row (fn [{:keys [name angle]}]
+              (let [a (m/radians (double angle)) r 1.03]
+                {:x (* r (m/sin a)) :y (* r (m/cos a)) :label (str name)
+                 :angle (if (<= (double angle) 180.0) (- (double angle) 90.0) (- (double angle) 270.0))}))
+        [right left] ((juxt filter remove) #(<= (double (:angle %)) 180.0) leaves)]
+    (cond-> []
+      (seq right) (conj (chart/text {:data (mapv row right) :mapping {:x :x :y :y :label :label :angle :angle}
+                                     :anchor [:left :middle] :size size}))
+      (seq left) (conj (chart/text {:data (mapv row left) :mapping {:x :x :y :y :label :label :angle :angle}
+                                    :anchor [:right :middle] :size size})))))
+
+(def ^:private circle-axis
+  "Both axes of a circular plot: the unit circle plus room for the leaf labels."
+  {:domain [-1.5 1.5] :nice false :expand [0.0 0.0] :axis false})
+
+(defn dendrogram
+  "Dendrogram plot of `source` - a fastmath `hclust` result or a tree of [[cljplot2.data.tree]] - as a plot map:
+  branches as elbow paths (`chart/line`), leaves at 0..n-1 along the leaf axis labelled by their names.
+
+  `options`: `:labels` (names of an `hclust` result's observations), `:k` (cluster colours, see
+  [[cljplot2.data.tree/layout]]; branches above the cut in the NA colour, no legend), `:circular` (radial, labels
+  outward, equal axes), `:horizontal` (leaves on the left, heights growing right), `:labels?` (default `true`),
+  `:line-style` (line options of the branches), `:title`, `:theme`. The height axis is shown for `hclust` trees
+  (merge heights), hidden otherwise.
+
+  Equivalents: R `plot(hclust)`, `dendextend` `color_branches(k)`, ggraph `geom_edge_elbow` (`circular = TRUE`)."
+  [source {:keys [labels k circular horizontal title line-style] user-theme :theme :as options}]
+  (let [labels? (get options :labels? true)
+        t (as-tree source labels)
+        {:keys [nodes paths]} (tree/layout t (cond-> {:circular circular} k (assoc :k k)))
+        leaves (tree/leaves t)
+        heights? (contains? source :tree)
+        top (double (:height t))]
+    (cond-> {:charts (cond-> [(branch-chart paths (some? k) line-style)]
+                       (and circular labels?) (into (radial-labels nodes)))
+             :scales (cond-> (if circular
+                               {:x circle-axis :y circle-axis}
+                               {:x (leaf-axis leaves labels?)
+                                :y (cond-> {:domain [0.0 (if (pos? top) top 1.0)] :nice false}
+                                     (not heights?) (assoc :axis false))})
+                       k (assoc :color {:legend false}))
+             :labels {:title title :x nil :y (when (and heights? (not circular)) "height")}}
+      circular (assoc :aspect :iso)
+      (and horizontal (not circular)) (assoc :flip true)
+      (and labels? (not circular) (not horizontal)) (assoc-in [:theme :axis :x :label-rotation] -90)
+      user-theme (update :theme #(theme/deep-merge % user-theme)))))
+
+(defn- value-matrix
+  "`[row-levels col-levels matrix]` of long `rows` (`:row`, `:col`, `:value` accessors; levels in first-appearance
+  order); throws `ex-info` for a missing or non-finite cell (`:value`), fewer than 2 rows or columns (`:rows`)."
+  [rows {:keys [row col value]}]
+  (let [[row-of col-of value-of] (map #(data/row-accessor %1 %2) [:row :col :value] [row col value])
+        rs (vec (distinct (map row-of rows)))
+        cs (vec (distinct (map col-of rows)))
+        cell (into {} (map (fn [r] [[(row-of r) (col-of r)] (value-of r)])) rows)]
+    (when (or (< (count rs) 2) (< (count cs) 2))
+      (schema/fail! "A clustered heatmap needs at least 2 rows and 2 columns." {:key :rows}))
+    [rs cs (mapv (fn [r] (mapv (fn [c] (let [v (cell [r c])]
+                                         (if (and (number? v) (m/valid-double? (double v)))
+                                           (double v)
+                                           (schema/fail! "Every row x column cell needs a finite value." {:key :value :value [r c]}))))
+                               cs))
+                 rs)]))
+
+(defn- transpose [matrix] (apply mapv vector matrix))
+
+(defn clustered-heatmap
+  "Clustered heatmap of long `rows` as an arrange plot map: tiles of `:value` at `:row` x `:col` (accessors), rows and
+  columns ordered by fastmath `hclust` of the value matrix's rows and columns (`:method` default `:complete`,
+  `:distance` default `:euclidean`), their dendrograms left of and above the tiles (each leaf at its tile's centre;
+  `:row-tree? false` / `:col-tree? false` - order only). `:scales` - the tile plot's scales (e.g. `:color`), `:title`,
+  `:theme`. Throws `ex-info` for a missing cell (`:value`), fewer than 2 rows or columns (`:rows`).
+
+  Equivalents: R `heatmap`, `pheatmap` (without annotations)."
+  [rows {:keys [method distance scales title row-tree? col-tree?] user-theme :theme
+         :or {method :complete distance :euclidean row-tree? true col-tree? true} :as options}]
+  (let [[rs cs matrix] (value-matrix rows options)
+        opts {:method method :distance distance}
+        row-tree (tree/from-hclust (cl/hclust matrix opts) rs)
+        col-tree (tree/from-hclust (cl/hclust (transpose matrix) opts) cs)
+        row-order (mapv :name (tree/leaves row-tree))
+        col-order (mapv :name (tree/leaves col-tree))
+        cells (vec (for [[i r] (map-indexed vector rs) [j c] (map-indexed vector cs)]
+                     {:row r :col c :value ((matrix i) j)}))
+        heatmap (cond-> {:data cells :mapping {:x :col :y :row :color :value}
+                         :scales (merge {:x {:domain col-order} :y {:domain row-order}} scales)
+                         :charts [(chart/tile)]
+                         :theme {:axis {:x {:label-rotation -90}}}
+                         :labels {:x nil :y nil}}
+                  user-theme (update :theme theme/deep-merge user-theme))
+        tree-plot (fn [t mirror? flip?]
+                    (let [{:keys [paths]} (tree/layout t {})
+                          top (double (:height t))
+                          n (count (tree/leaves t))]
+                      (cond-> {:charts [(branch-chart (if mirror? (mapv #(update % :y (fn [y] (- top (double y)))) paths) paths) false nil)]
+                               :scales {:x {:domain [-0.5 (- (double n) 0.5)] :nice false :expand [0.0 0.0] :axis false}
+                                        :y {:domain [0.0 (if (pos? top) top 1.0)] :nice false :expand [0.0 0.0] :axis false}}
+                               :legend false :labels {:x nil :y nil}}
+                        flip? (assoc :flip true)
+                        user-theme (assoc :theme user-theme))))
+        blank {:charts [] :scales {:x {:domain [0 1] :axis false} :y {:domain [0 1] :axis false}} :labels {:x nil :y nil}}]
+    (plot/arrange (cond
+                    (and row-tree? col-tree?) [blank (tree-plot col-tree false false) (tree-plot row-tree true true) heatmap]
+                    col-tree? [(tree-plot col-tree false false) heatmap]
+                    row-tree? [(tree-plot row-tree true true) heatmap]
+                    :else [heatmap])
+                  (cond-> {:columns (if row-tree? 2 1) :equal-panels false}
+                    row-tree? (assoc :widths [1 4])
+                    col-tree? (assoc :heights [1 4])
+                    title (assoc :title title)))))
+
+(defn bundle
+  "Hierarchical edge bundling plot of `edges` (rows between leaves of `tree` - a [[cljplot2.data.tree/from-parents]]
+  tree, leaves by `:id`; `:from` / `:to` accessors) as a plot map: leaves around a circle (the radial layout of the
+  tree), each edge a B-spline along the tree path between its leaves, straightened by `:beta` (default 0.85, see
+  [[cljplot2.data.tree/bundle-paths]]); edges coloured by the top-level group of their source leaf (`:color-by-group?`,
+  default `true`; else `:edge-color`), with `:alpha` (default 0.4); leaf names outward around the circle
+  (`:labels?`, default `true`). Edges with an end that isn't a leaf are dropped (see `bundle-paths` for the count).
+  `:title`, `:theme`.
+
+  Equivalents: ggraph `geom_conn_bundle` (`tension`), d3 `curveBundle.beta`; Holten (2006)."
+  [edges tree {:keys [from to beta alpha edge-color title] user-theme :theme
+               :or {beta 0.85 alpha 0.4 edge-color [70 110 180]} :as options}]
+  (let [labels? (get options :labels? true)
+        by-group? (get options :color-by-group? true)
+        laid (tree/layout tree {:circular true})
+        nodes (:nodes laid)
+        top-group (fn [i] (let [chain (vec (take-while some? (iterate #(:parent (nodes %)) i)))]
+                            (:name (nodes (nth chain (max 0 (- (count chain) 2)))))))
+        leaf-group (into {} (keep-indexed (fn [i n] (when (:leaf? n) [(:id n) (str (top-group i))])) nodes))
+        {:keys [paths]} (tree/bundle-paths edges laid (cond-> {:beta beta} from (assoc :from from) to (assoc :to to)))
+        from-of (data/row-accessor :from (or from :from))
+        paths (mapv #(assoc % ::group (leaf-group (from-of %))) paths)
+        leaves (mapv #(assoc % ::group (leaf-group (:id %))) (filter :leaf? nodes))
+        rgba (fn [col] (c/set-alpha (c/to-color col) (* 255.0 (double alpha))))]
+    (cond-> {:charts (cond-> [(chart/line (cond-> {:data paths :sort false :width 1
+                                                   :mapping (cond-> {:x :x :y :y :group :id} by-group? (assoc :color ::group))}
+                                            (not by-group?) (assoc :color (rgba edge-color))))
+                              (chart/scatter {:data leaves :size 3 :mapping (cond-> {:x :x :y :y} by-group? (assoc :color ::group))})]
+                       labels? (into (radial-labels nodes)))
+             :aspect :iso
+             :scales (cond-> {:x circle-axis :y circle-axis} by-group? (assoc :color {:title nil}))
+             :labels {:title title :x nil :y nil}}
+      (and by-group? (< (double alpha) 1.0)) (assoc-in [:theme :palette :color] (mapv rgba (c/palette :category10)))
+      user-theme (update :theme #(theme/deep-merge % user-theme)))))
