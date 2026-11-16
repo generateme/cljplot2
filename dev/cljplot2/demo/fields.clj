@@ -1,8 +1,9 @@
 (ns cljplot2.demo.fields
   "Correlation cycle 2 demo: 2D fields - faithful density raster with contour lines, filled density contours under
   the points, iris contours by species, a smoothed heatmap (bicubic gridded field beside its tile), a function field
-  with contours, a faceted density, contours on a log x axis."
-  (:require [fastmath.random :as r]
+  with contours, a faceted density, contours on a log x axis, the user's `fn2d` on [-pi, pi]^2 in grey levels."
+  (:require [fastmath.core :as m]
+            [fastmath.random :as r]
             [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
             [cljplot2.demo.parallel :refer [iris]]
@@ -47,6 +48,20 @@
    :scales {:color {:range :RColorBrewer/RdBu :midpoint 0 :title "sin x cos y"}}
    :labels {:title "A function field with contours"}})
 
+(defn fn2d
+  [^double x ^double y]
+  (* (- (+ (* x x)
+           (* y y)))
+     (m/sin x)
+     (m/sin y)
+     (m/sin (* x y))))
+
+(def fn2d-field
+  {:charts [(chart/field {:f fn2d :domain {:x [(- m/PI) m/PI] :y [(- m/PI) m/PI]} :n 300})]
+   :scales {:color {:range [:white :black]}}
+   :aspect :iso
+   :labels {:title "-(x^2 + y^2) sin x sin y sin xy"}})
+
 (def faceted
   {:data iris :mapping {:x :petal_length :y :petal_width :facet :species}
    :charts [(chart/field) (chart/scatter {:size 2 :color :black})]
@@ -59,7 +74,7 @@
 (def log-contour
   {:data lognormal-points :mapping {:x :income :y :score} :scales {:x {:kind :log}}
    :charts [(chart/scatter {:size 2 :color [0 0 0 60]}) (chart/contour {:levels 6})]
-   :labels {:title "Contours on a log x axis (estimated in data units)"}})
+   :labels {:title "Contours on a log x axis (density of log10 x)"}})
 
 (def images
   "Images of this demo: `[file-name plot options]`, saved to `results/fields/` by [[cljplot2.demo/render!]]."
@@ -69,4 +84,5 @@
    ["smoothed-heatmap-1000x450.png" smoothed-heatmap {:width 1000 :height 450}]
    ["function-600x450.png" function-field {:width 600 :height 450}]
    ["faceted-900x400.png" faceted {:width 900 :height 400}]
-   ["log-contour-600x450.png" log-contour {:width 600 :height 450}]])
+   ["log-contour-600x450.png" log-contour {:width 600 :height 450}]
+   ["fn2d-600x550.png" fn2d-field {:width 600 :height 550}]])

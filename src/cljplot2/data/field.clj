@@ -15,11 +15,16 @@
     [lo hi]}`, else the plot's explicit `:x` / `:y` scale domains
 
   A grid (see [[sample]]) holds `:n` x values by y values (option `:n`, default 100, or `[nx ny]`) spanning the
-  domain end to end; values that aren't finite numbers are `##NaN` (not drawn, not contoured)."
+  domain end to end; values that aren't finite numbers are `##NaN` (not drawn, not contoured).
+
+  Scales: on a `:log` axis the density is estimated, and every grid sampled, in log10 coordinates (see
+  [[cljplot2.scale.position/stat-transform]]) - contours follow the points as the axis shows them, grid points are
+  even on screen; the density value is then per log10 unit of that axis."
   (:require [fastmath.core :as m]
             [fastmath.interpolation :as interp]
             [fastmath.kernel :as k]
             [cljplot2.data.rows :as data]
+            [cljplot2.scale.position :as scale]
             [cljplot2.schema :as schema])
   (:import [fastmath.java Array]))
 
@@ -52,23 +57,35 @@
 
 (defn- finite? [v] (and (number? v) (m/valid-double? (double v))))
 
+(def ^:private estimate-error-keys
+  "fastmath `:property` of a density error -> the chart option to blame."
+  {:kernel :kernel :binned? :binned? :bandwidth :bandwidth :bandwidth-options :bandwidth})
+
 (defn density
   "`{:f f :domain [[x0 x1] [y0 y1]]}` - the 2D KDE of the points `xs`, `ys` (finite numbers, equal counts, at least
-  one; see the namespace doc for `:kernel`, `:bandwidth`, `:binned?`, `:cut`); `positive` - `[x? y?]`, axes whose
-  domain must stay positive (log scales): widening stops at the data minimum when it would reach 0. Throws `ex-info
-  {:key :bandwidth}` when fastmath can't estimate (e.g. a selector on one point)."
-  [xs ys {:keys [kernel bandwidth binned? cut]} positive]
-  (let [{:keys [kde h]} (try (k/kernel-density-2d (or kernel :gaussian) xs ys
+  one; see the namespace doc for `:kernel`, `:bandwidth`, `:binned?`, `:cut`), estimated in the coordinates of the
+  axis `transforms` (`[tx ty]`, see [[cljplot2.scale.position/stat-transform]]; points a transform can't place left
+  out): `f` takes data units, the domain - the points' transformed range widened by `:cut` bandwidths - is in data
+  units. On a log axis the density is per log10 unit. Throws `ex-info` keyed by the option fastmath blames (`:kernel`,
+  `:binned?`, else `:bandwidth`) when it can't estimate (e.g. a selector on one point)."
+  [xs ys {:keys [kernel bandwidth binned? cut]} [tx ty]]
+  (let [fx (:forward tx) fy (:forward ty)
+        pts (filterv (fn [[u v]] (and (m/valid-double? u) (m/valid-double? v)))
+                     (map (fn [x y] [(fx (double x)) (fy (double y))]) xs ys))
+        _ (when (empty? pts)
+            (schema/fail! "No points the axis scales can place (e.g. only non-positive values on a log axis)." {:key :x}))
+        us (mapv first pts) vs (mapv second pts)
+        {:keys [kde h]} (try (k/kernel-density-2d (or kernel :gaussian) us vs
                                                    {:bandwidth (or bandwidth :nrd) :binned? (boolean binned?)} true)
                              (catch clojure.lang.ExceptionInfo e
-                               (schema/fail! (str "Density estimation failed: " (ex-message e)) {:key :bandwidth :cause (ex-data e)})))
+                               (schema/fail! (str "Density estimation failed: " (ex-message e))
+                                             {:key (get estimate-error-keys (:property (ex-data e)) :bandwidth) :cause (ex-data e)})))
         [hx hy] h
         cut (double (if (nil? cut) 3.0 cut))
-        widen (fn [vs ^double hw positive?]
-                (let [lo (double (reduce min vs)) wide (- lo (* cut hw))]
-                  [(if (and positive? (<= wide 0.0)) lo wide) (+ (double (reduce max vs)) (* cut hw))]))
-        [px py] positive]
-    {:f kde :domain [(widen xs (double hx) px) (widen ys (double hy) py)]}))
+        widen (fn [ws ^double hw inverse]
+                [(inverse (- (double (reduce min ws)) (* cut hw))) (inverse (+ (double (reduce max ws)) (* cut hw)))])]
+    {:f (fn [x y] (kde (fx (double x)) (fy (double y))))
+     :domain [(widen us (double hx) (:inverse tx)) (widen vs (double hy) (:inverse ty))]}))
 
 (defn lattice
   "`{:f f :domain [[x0 x1] [y0 y1]]}` - the interpolation (`interpolation`, see the namespace doc) of the gridded
@@ -124,19 +141,29 @@
     a))
 
 (defn sample
-  "The grid of field function `f` over `domain` (`[[x0 x1] [y0 y1]]`) with `[nx ny]` points:
-  `{:xs doubles :ys doubles :nx :ny :values doubles}` - `values` row by row (`i + j nx` for `xs[i]`, `ys[j]`),
-  `##NaN` where `f` doesn't return a finite number. Exceptions `f` throws propagate."
-  [f [[x0 x1] [y0 y1]] [nx ny]]
-  (let [nx (long nx) ny (long ny)
-        ^doubles xs (axis-points x0 x1 nx)
-        ^doubles ys (axis-points y0 y1 ny)
-        values (double-array (* nx ny))]
-    (dotimes [j ny]
-      (dotimes [i nx]
-        (let [v (f (Array/aget xs i) (Array/aget ys j))]
-          (Array/aset values (+ i (* j nx)) (if (finite? v) (double v) ##NaN)))))
-    {:xs xs :ys ys :nx nx :ny ny :values values}))
+  "The grid of field function `f` (data units) over `domain` (`[[x0 x1] [y0 y1]]`, data units) with `[nx ny]`
+  points evenly spaced in the coordinates of the axis `transforms` (`[tx ty]`, see
+  [[cljplot2.scale.position/stat-transform]]; `nil` - identity): `{:xs doubles :ys doubles :nx :ny :values doubles
+  :transforms [tx ty]}` - `xs`, `ys` in transformed coordinates, `values` row by row (`i + j nx` for `xs[i]`,
+  `ys[j]`), `##NaN` where `f` doesn't return a finite number. Exceptions `f` throws propagate."
+  ([f domain size] (sample f domain size nil))
+  ([f [[x0 x1] [y0 y1]] [nx ny] transforms]
+   (let [[tx ty] (or transforms [(scale/stat-transform nil) (scale/stat-transform nil)])
+         nx (long nx) ny (long ny)
+         fx (:forward tx) fy (:forward ty) ix (:inverse tx) iy (:inverse ty)
+         ^doubles xs (axis-points (fx (double x0)) (fx (double x1)) nx)
+         ^doubles ys (axis-points (fy (double y0)) (fy (double y1)) ny)
+         values (double-array (* nx ny))]
+     (dotimes [j ny]
+       (dotimes [i nx]
+         (let [v (f (ix (Array/aget xs i)) (iy (Array/aget ys j)))]
+           (Array/aset values (+ i (* j nx)) (if (finite? v) (double v) ##NaN)))))
+     {:xs xs :ys ys :nx nx :ny ny :values values :transforms [tx ty]})))
+
+(defn to-data
+  "Data-unit point `[x y]` of a point `[u v]` in `grid`'s transformed coordinates."
+  [{[tx ty] :transforms} [u v]]
+  [((:inverse tx) (double u)) ((:inverse ty) (double v))])
 
 (defn value-range
   "`[lo hi]` of the finite values of `grids`; `nil` without any."
@@ -152,9 +179,11 @@
   (min (- n 2) (long (m/floor t))))
 
 (defn grid-value
-  "Bilinear value of `grid` (see [[sample]]) at `x`, `y`: `##NaN` outside its domain or next to a `##NaN` value."
-  ^double [{:keys [^doubles xs ^doubles ys nx ny ^doubles values]} ^double x ^double y]
-  (let [nx (long nx) ny (long ny)
+  "Bilinear value of `grid` (see [[sample]]) at data point `x`, `y` (taken into the grid's coordinates): `##NaN`
+  outside its domain or next to a `##NaN` value."
+  ^double [{:keys [^doubles xs ^doubles ys nx ny ^doubles values] [tx ty] :transforms} ^double x ^double y]
+  (let [x (double ((:forward tx) x)) y (double ((:forward ty) y))
+        nx (long nx) ny (long ny)
         x0 (Array/aget xs 0) y0 (Array/aget ys 0)
         sx (/ (- (Array/aget xs (dec nx)) x0) (dec nx))
         sy (/ (- (Array/aget ys (dec ny)) y0) (dec ny))
@@ -178,6 +207,12 @@
           bad (fn [k] (let [acc (data/row-accessor k (mapping k))] (count (remove (comp finite? acc) rows))))]
       {:x (bad :x) :y (bad :y)})))
 
+(defn axis-transforms
+  "`[tx ty]` - the stat transforms of the plot's `:x` / `:y` scale specs (see
+  [[cljplot2.scale.position/stat-transform]])."
+  [plot-scales]
+  [(scale/stat-transform (:x plot-scales)) (scale/stat-transform (:y plot-scales))])
+
 (defn source-field
   "`{:f f :domain d}` of the field of one panel / group's `rows` from a chart's `options`, merged `mapping` and the
   plot's scale specs `plot-scales` (see the namespace doc); `nil` for points / gridded data without rows."
@@ -191,5 +226,4 @@
                   y-of (data/row-accessor :y (:y mapping))
                   pts (filterv (fn [[x y]] (and (finite? x) (finite? y))) (map (juxt x-of y-of) rows))]
               (when (seq pts)
-                (density (map first pts) (map second pts) options
-                         (mapv #(= :log (get-in plot-scales [% :kind])) [:x :y]))))))
+                (density (map first pts) (map second pts) options (axis-transforms plot-scales))))))

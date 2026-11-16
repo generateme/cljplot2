@@ -71,7 +71,7 @@
 (def log-scale
   {:data quakes :mapping {:x :mag :y :stations} :scales {:y {:kind :log}}
    :charts [(chart/bin2d {:cell :square :bins 12})]
-   :labels {:title "Log y: corners projected one by one"}})
+   :labels {:title "Log y: binned in log10 y, cells even on screen"}})
 
 (def ^:private cars
   (vec (sort-by (juxt :cyl :mpg) (map #(assoc % :car (:name %)) mtcars))))

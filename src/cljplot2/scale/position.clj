@@ -401,6 +401,20 @@
              :attributes attributes}
       (false? (:axis spec)) (assoc :axis false))))
 
+(def ^:private identity-transform
+  {:forward (fn ^double [^double v] v) :inverse (fn ^double [^double v] v)})
+
+(def ^:private log10-transform
+  {:forward (fn ^double [^double v] (if (pos? v) (m/log10 v) ##NaN))
+   :inverse (fn ^double [^double v] (m/pow 10.0 v))})
+
+(defn stat-transform
+  "`{:forward f :inverse g}` - the coordinates a 2D stat (field, contour, bin2d) works in on an axis with the plot's
+  scale spec `spec` (may be `nil`): `log10` for `:log` (a non-positive value maps to `##NaN`), the identity
+  otherwise. Densities and bins are then even on screen. Other non-linear kinds are not transformed yet."
+  [spec]
+  (if (= :log (:kind spec)) log10-transform identity-transform))
+
 (defn forward-fn
   "Function mapping a value to its pixel position in the finalized scale (band center for `:bands`); `##NaN` for a
   value the scale can't place (e.g. not in a bands domain) - callers skip such values.

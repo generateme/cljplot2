@@ -36,21 +36,30 @@
 
 ;; 2. sources and sampling
 
+(def ^:private identity-axes [(scale/stat-transform nil) (scale/stat-transform nil)])
+(def ^:private log-x-axes [(scale/stat-transform {:kind :log}) (scale/stat-transform nil)])
+
 (deftest density-source-test
   (testing "2.1 the fastmath 2D KDE, domain widened by :cut bandwidths"
     (let [xs (map :x cloud) ys (map :y cloud)
-          {:keys [f domain]} (field/density xs ys {} [false false])
+          {:keys [f domain]} (field/density xs ys {} identity-axes)
           {:keys [kde h]} (k/kernel-density-2d :gaussian xs ys :nrd true)
           [hx] h]
       (is (m/delta-eq (kde 0.3 0.1) (f 0.3 0.1)))
       (is (m/delta-eq (- (double (reduce min xs)) (* 3.0 (double hx))) (ffirst domain)))
-      (is (m/delta-eq (double (reduce min xs)) (ffirst (:domain (field/density xs ys {:cut 0} [false false])))))))
-  (testing "2.1 a log axis keeps its domain positive"
-    (let [{:keys [domain]} (field/density [1 2 3 100] [1 2 3 4] {} [true false])]
-      (is (== 1.0 (ffirst domain)))))
+      (is (m/delta-eq (double (reduce min xs)) (ffirst (:domain (field/density xs ys {:cut 0} identity-axes)))))))
+  (testing "F1 a log axis: estimated in log10 x, domain in data units and positive"
+    (let [xs (map #(m/exp (double (:x %))) cloud) ys (map :y cloud)
+          {:keys [f domain]} (field/density xs ys {} log-x-axes)
+          kde (k/kernel-density-2d :gaussian (map #(m/log10 (double %)) xs) ys)]
+      (is (m/delta-eq (kde (m/log10 2.0) 0.1) (f 2.0 0.1)))
+      (is (pos? (double (ffirst domain))))
+      (is (= :x (:key (error #(field/density [-1 0] [1 2] {} log-x-axes)))) "nothing a log axis can place")))
   (testing "2.5 one point with a selector: {:key :bandwidth}; with a number it estimates"
-    (is (= :bandwidth (:key (error #(field/density [1] [1] {} [false false])))))
-    (is (some? (field/density [1] [1] {:bandwidth 0.5} [false false])))))
+    (is (= :bandwidth (:key (error #(field/density [1] [1] {} identity-axes)))))
+    (is (some? (field/density [1] [1] {:bandwidth 0.5} identity-axes))))
+  (testing "F5 fastmath errors keyed by the option to blame"
+    (is (= :kernel (:key (error #(field/density [1 2 3] [1 2 4] {:kernel :bogus} identity-axes)))))))
 
 (deftest lattice-source-test
   (let [rows (for [x [0 1 2] y [0 10]] {:x x :y y :v (+ x y)})
@@ -190,6 +199,41 @@
       (is (= {:x 1 :y 1} (:dropped s))))
     (is (empty? (:data (stats {:data [] :mapping {:x :x :y :y} :charts [(chart/field)]}))))))
 
+(deftest field-options-test
+  (testing "F9 :n [nx ny], :binned?, :kernel, :interpolation through the chart"
+    (let [grid (fn [opts] (get-in (stats {:data cloud :mapping {:x :x :y :y} :charts [(chart/field opts)]}) [:data :panel :grid]))
+          g (grid {:n [7 4]})
+          exact (grid {:n 9}) binned (grid {:n 9 :binned? true})]
+      (is (= [7 4] [(:nx g) (:ny g)]))
+      (is (< (m/abs (- 1.0 (/ (reduce + (:values binned)) (reduce + (:values exact))))) 0.01))
+      (is (not= (vec (:values exact)) (vec (:values (grid {:n 9 :kernel :epanechnikov}))))))
+    (let [surface (for [x (range 5) y (range 4)] {:x x :y y :v (* x y)})
+          values (fn [interpolation] (vec (:values (get-in (stats {:data surface :mapping {:x :x :y :y :value :v}
+                                                                  :charts [(chart/field {:interpolation interpolation :n [5 4]})]})
+                                                           [:data :panel :grid]))))]
+      (doseq [interpolation [:bilinear :bicubic :cubic-2d]]
+        (is (every? true? (map #(m/delta-eq (double %1) (double %2) 1e-9) (values interpolation) (for [y (range 4) x (range 5)] (* x y))))
+            (str interpolation " passes through the lattice"))))))
+
+(deftest log-axis-test
+  (let [rng (java.util.Random. 9)
+        pts (vec (repeatedly 600 (fn [] (let [a (.nextGaussian rng)] {:x (m/exp (+ 3.0 (* 0.8 a))) :y (+ (* 10.0 a) (* 8.0 (.nextGaussian rng)))}))))
+        geo-mean (m/exp (/ (reduce + (map #(m/log (double (:x %))) pts)) (count pts)))]
+    (testing "F1 the innermost contour is centred on the points as the log axis shows them"
+      (let [cs (get-in (stats {:data pts :mapping {:x :x :y :y} :scales {:x {:kind :log}} :charts [(chart/contour {:levels 8})]})
+                       [:data :panel :contours])
+            xs (mapcat #(map first (:points %)) (:lines (last (sort-by :level cs))))
+            centre (m/sqrt (* (double (reduce min xs)) (double (reduce max xs))))]
+        (is (< (m/abs (- 1.0 (/ centre geo-mean))) 0.1) (str centre " vs " geo-mean))))
+    (testing "F2 bin2d cells regular in log10 x"
+      (let [cells (get-in (stats {:data pts :mapping {:x :x :y :y} :scales {:x {:kind :log}} :charts [(chart/bin2d {:cell :square :bins 10})]})
+                          [:data :panel :cells])
+            widths (map (fn [{:keys [corners]}] (let [lx (map #(m/log10 (double (first %))) corners)] (- (double (reduce max lx)) (double (reduce min lx))))) cells)]
+        (is (every? #(m/delta-eq (double (first widths)) (double %) 1e-9) widths))))
+    (testing "F2 a point a log axis can't place is dropped and counted"
+      (is (= 1 (get-in (stats {:data (conj pts {:x -1.0 :y 0.0}) :mapping {:x :x :y :y} :scales {:x {:kind :log}} :charts [(chart/bin2d)]})
+                       [:dropped :x]))))))
+
 (deftest field-facets-test
   (testing "one grid domain over the panels, a density per panel"
     (let [s (stats {:data (map #(assoc % :f (if (neg? (double (:x %))) "l" "r")) cloud) :mapping {:x :x :y :y :facet :f}
@@ -223,7 +267,18 @@
   (testing "4.2 filled regions drawn lowest first; lines otherwise"
     (let [d (get-in (stats {:data cloud :mapping {:x :x :y :y} :charts [(chart/contour {:fill true :levels 3})]}) [:data :panel])]
       (is (:fill? d))
-      (is (every? :rings (:contours d))))))
+      (is (every? :rings (:contours d)))))
+  (testing "F3 filled bands colored by their middle; the color extent spans the values"
+    (let [s (stats {:charts [(chart/contour {:f (fn [x _] x) :domain {:x [0 1] :y [0 1]} :fill true :levels [0.2 0.6]})]})
+          cs (get-in s [:data :panel :contours])]
+      (is (= [[0.2 0.4] [0.6 0.8]] (map (juxt :level :color-value) cs)))
+      (is (= [0.0 1.0] ((juxt :min :max) (get-in s [:extents :panel :color]))))))
+  (testing "F4 grouped filled contours translucent by default; :alpha wins"
+    (let [alpha (fn [opts] (get-in (stats {:data grouped-cloud :mapping {:x :x :y :y :color :g} :charts [(chart/contour opts)]})
+                                   [:data :panel :style :alpha]))]
+      (is (== 0.5 (alpha {:fill true})))
+      (is (== 0.8 (alpha {:fill true :alpha 0.8})))
+      (is (== 1.0 (alpha {}))))))
 
 (deftest contour-draw-test
   (testing "4.4 a fixed color line crosses the cone where expected"

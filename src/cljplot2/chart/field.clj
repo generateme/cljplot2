@@ -10,6 +10,10 @@
   points, the `:value` accessor's name for gridded data, none for a function (a plot `:scales {:color {:title t}}`
   wins). Position scales keep their data domains (no nice extension): the raster fills the panel.
 
+  The whole domain is painted, low values included (as ggplot2's raster): with sparse data most of a panel takes the
+  low end of the gradient - pick a palette or `:alpha` accordingly. On a `:log` axis the field is sampled (and a
+  density estimated) in log10 coordinates, see [[cljplot2.data.field]].
+
   Options (style defaults from theme `[:chart :field]`): `:alpha` (multiplies the colors' alpha, a fraction)."
   (:require [clojure2d.color :as c]
             [clojure2d.core :as c2d]
@@ -63,7 +67,7 @@
                      groups)
         domain (field/union-domain (map :domain (vals fields)))
         size (field/grid-size (:n options))]
-    {:grids (update-vals fields (fn [{:keys [f]}] (field/sample f domain size)))
+    {:grids (update-vals fields (fn [{:keys [f]}] (field/sample f domain size (field/axis-transforms plot-scales))))
      :domain domain
      :dropped (field/dropped-positions kind mapping groups)}))
 

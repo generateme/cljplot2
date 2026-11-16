@@ -21,7 +21,8 @@
   * `:cell-scale` (shrink factor, `(0 1]`), `:stroke-color` (a color, `:none` or `:darker`), `:stroke-width`,
     `:alpha` (fill alpha, a fraction)
 
-  Only occupied cells are drawn."
+  Only occupied cells are drawn. On a `:log` axis the points are binned in log10 coordinates (cells regular on
+  screen; `:binwidth` and the `:density` cell area in log10 units of that axis)."
   (:require [cljplot2.data.cells :as cells]
             [cljplot2.data.measure :as measure]
             [cljplot2.data.rows :as data]
@@ -53,37 +54,40 @@
 
 (defn compute
   "Per panel: `{:cells [{:corners [[x y] ..] :value v} ..] :style st}` - occupied cells; extents (panels with
-  cells): x / y - the cells' box in the normalized space's proportions (see [[cljplot2.data.cells/bin-points]]; the
-  plain box when either plot scale isn't linear, e.g. `:log` - there cells aren't regular anyway),
+  cells): x / y - the cells' box in the normalized space's proportions (see [[cljplot2.data.cells/bin-points]]),
   color - the values over all panels; no padding, `:scale-defaults` without nice domains (keeps the
-  cells' shape), `:dropped` (`:x`, `:y` - rows without a finite number)."
+  cells' shape), `:dropped` (`:x`, `:y` - rows without a finite number, or one the axis can't place - e.g. 0 on a log
+  axis)."
   [{:keys [options]} {:keys [groups mapping]} {:keys [theme plot-scales] :as env}]
   (let [st (style options theme)
         measure (get options :measure :count)
         x-of (data/row-accessor :x (:x mapping))
         y-of (data/row-accessor :y (:y mapping))
-        pairs (update-vals groups (fn [rows] (mapv (fn [row] [(x-of row) (y-of row)]) rows)))
+        [tx ty] [(scale/stat-transform (:x plot-scales)) (scale/stat-transform (:y plot-scales))]
+        fx (:forward tx) fy (:forward ty) ix (:inverse tx) iy (:inverse ty)
+        ;; positions in the axes' screen-linear coordinates (log10 on a log axis)
+        transformed (fn [v f] (when (finite? v) (let [u (double (f (double v)))] (when (m/valid-double? u) u))))
+        pairs (update-vals groups (fn [rows] (mapv (fn [row] [(transformed (x-of row) fx) (transformed (y-of row) fy)]) rows)))
         all (apply concat (vals pairs))
-        points (update-vals pairs (fn [ps] (filterv (fn [[x y]] (and (finite? x) (finite? y))) ps)))
-        {:keys [panels area extent cells-extent]} (cells/bin-points points (merge {:cell (:cell st) :bins :scott}
+        points (update-vals pairs (fn [ps] (filterv (fn [[x y]] (and x y)) ps)))
+        to-data (fn [[u v]] [(ix (double u)) (iy (double v))])
+        {:keys [panels area extent]} (cells/bin-points points (merge {:cell (:cell st) :bins :scott}
                                                               (select-keys options [:bins :binwidth :shape]))
                                                 env)
         valued (update-vals panels (fn [cs]
                                      (let [counts (mapv :count cs)
                                            values (measure/heights measure counts (repeat (count cs) area))]
-                                       (mapv (fn [c value] {:corners (:corners c) :value value}) cs values))))
+                                       (mapv (fn [c value] {:corners (mapv to-data (:corners c)) :value value}) cs values))))
         color-extent (aesthetic/value-extent :color (get plot-scales :color) (map :value (mapcat val valued)))
-        linear? (every? #(contains? #{nil :linear} (get-in plot-scales [% :kind])) [:x :y])
-        extent (if linear? extent cells-extent)
-        position-extent (fn [[lo hi]] {:kind :numeric :min (double lo) :max (double hi)})]
+        position-extent (fn [[lo hi] inverse] {:kind :numeric :min (double (inverse lo)) :max (double (inverse hi))})]
     {:data (update-vals valued (fn [cs] {:cells cs :style st}))
      :extents (update-vals valued (fn [cs]
                                     (when (seq cs)
-                                      {:x (position-extent (:x extent)) :y (position-extent (:y extent)) :color color-extent})))
+                                      {:x (position-extent (:x extent) ix) :y (position-extent (:y extent) iy) :color color-extent})))
      :padding {:x [0.0 0.0] :y [0.0 0.0]}
      :scale-defaults (when extent {:x {:nice false} :y {:nice false}})
-     :dropped {:x (count (remove (comp finite? first) all))
-               :y (count (remove (comp finite? second) all))}}))
+     :dropped {:x (count (remove first all))
+               :y (count (remove second all))}}))
 
 (defn draw
   "Draw one panel's occupied cells."

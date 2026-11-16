@@ -9,12 +9,15 @@
   * `:levels` - an integer: that many levels evenly spread over the range of every sampled value (the ends left
     out; default 10), or a vector of level values
   * `:fill` - `true`: fill the region at or above each level (lowest first, so the bands stack; holes stay open)
-    instead of drawing lines
+    instead of drawing lines; each band colored by its middle value (between its level and the next, the top band up
+    to the largest value); grouped filled contours are translucent by default (alpha × 0.5), the groups overlap
   * colors: by default each level its color through the plot's color scale (a computed color, legend titled like
     [[cljplot2.chart.field]]); option `:color` - one color for every line; a grouping mapping (`:color` with
     categorical values, `:group`, other ordinal aesthetics) - a field per group (points / gridded data of the group)
     with its lines in the group's style, levels shared by the groups
-  * `:width`, `:dash`, `:alpha` (multiplies the colors' alpha, a fraction)"
+  * `:width`, `:dash`, `:alpha` (multiplies the colors' alpha, a fraction)
+
+  On a `:log` axis the field is sampled (a density estimated) in log10 coordinates, see [[cljplot2.data.field]]."
   (:require [clojure2d.color :as c]
             [clojure2d.core :as c2d]
             [fastmath.core :as m]
@@ -52,6 +55,10 @@
   [options theme]
   (merge (get-in theme [:chart :contour]) (select-keys options [:color :width :dash :alpha])))
 
+(def ^:private ^:const grouped-fill-alpha
+  "Alpha factor of grouped filled contours without an `:alpha` option: the groups' regions overlap."
+  0.5)
+
 (defn- grouped?
   "Do the chart's merged `mapping` group it (a mapped aesthetic or `:group`)?"
   [mapping]
@@ -80,24 +87,34 @@
 
 (defn compute
   "Per panel: `{:contours [{:level l :aesthetics a :lines [{:points :closed?} ..] :rings [[..] ..]} ..] :style st
-  :fill? b :by-level? b}`; extents x / y - the sampled domain, color - the levels (by-level coloring) or the groups'
-  values; no padding, `:na`, `:dropped`."
+  :fill? b :by-level? b}`; extents x / y - the sampled domain, color - the levels (lines colored by level), the value
+  range (filled bands), or the groups' values; no padding, `:na`, `:dropped`."
   [{:keys [options]} {:keys [groups mapping]} {:keys [theme plot-scales] :as env}]
   (let [fields (group-fields options mapping groups env)
         domain (field/union-domain (map (comp :domain #(nth % 2)) fields))
         size (field/grid-size (:n options))
-        sampled (mapv (fn [[panel aesthetics {:keys [f]}]] [panel aesthetics (field/sample f domain size)]) fields)
-        levels (contour/levels (field/value-range (map #(nth % 2) sampled)) (get options :levels 10))
+        transforms (field/axis-transforms plot-scales)
+        sampled (mapv (fn [[panel aesthetics {:keys [f]}]] [panel aesthetics (field/sample f domain size transforms)]) fields)
+        [lo hi :as value-range] (field/value-range (map #(nth % 2) sampled))
+        levels (contour/levels value-range (get options :levels 10))
         fill? (boolean (:fill options))
         by-level? (not (or (:color options) (grouped? mapping)))
+        ;; a filled band's color - the middle of its level and the next (the top band: up to the largest value)
+        color-values (if (and fill? (seq levels))
+                       (mapv (fn [l nxt] (* 0.5 (+ (double l) (double nxt)))) levels (concat (rest levels) [(m/max (double hi) (double (peek levels)))]))
+                       levels)
+        in-data (fn [grid points] (mapv #(field/to-data grid %) points))
         panels (reduce (fn [acc [panel aesthetics grid]]
                          (update acc panel (fnil into [])
-                                 (for [level levels]
+                                 (for [[level color-value] (map vector levels color-values)]
                                    (if fill?
-                                     {:level level :aesthetics aesthetics :rings (contour/level-rings grid level)}
-                                     {:level level :aesthetics aesthetics :lines (contour/isolines grid level)}))))
+                                     {:level level :color-value color-value :aesthetics aesthetics
+                                      :rings (mapv #(in-data grid %) (contour/level-rings grid level))}
+                                     {:level level :color-value color-value :aesthetics aesthetics
+                                      :lines (mapv #(update % :points (partial in-data grid)) (contour/isolines grid level))}))))
                        {} sampled)
-        st (style options theme)
+        st (cond-> (style options theme)
+             (and fill? (grouped? mapping) (nil? (:alpha options))) (update :alpha #(* grouped-fill-alpha (double (or % 1.0)))))
         [[x0 x1] [y0 y1]] domain
         group-extents (when (grouped? mapping)
                         (group/aesthetic-extents (update-vals (group-by first fields)
@@ -107,8 +124,11 @@
      :extents (into {} (map (fn [panel]
                               [panel (cond-> {:x {:kind :numeric :min (double x0) :max (double x1)}
                                               :y {:kind :numeric :min (double y0) :max (double y1)}}
-                                       (and by-level? (seq levels)) (assoc :color {:kind :numeric :min (double (first levels))
-                                                                                   :max (double (peek levels))})
+                                       (and by-level? (seq levels))
+                                       (assoc :color (if fill?
+                                                       ;; bands over the whole value range: the lowest band isn't the gradient's end
+                                                       {:kind :numeric :min (double lo) :max (double hi)}
+                                                       {:kind :numeric :min (double (first levels)) :max (double (peek levels))}))
                                        group-extents (merge (get group-extents panel)))]))
                     (keys panels))
      :padding {:x [0.0 0.0] :y [0.0 0.0]}
@@ -116,11 +136,12 @@
      :dropped (field/dropped-positions (field/source-kind options mapping) mapping groups)}))
 
 (defn- level-style
-  "Line / fill style of a contour: by level through the color scale, else the group's style over the chart's."
-  [{:keys [level aesthetics]} st scales env by-level?]
+  "Line / fill style of a contour: by its color value (the level, or a filled band's middle) through the color
+  scale, else the group's style over the chart's."
+  [{:keys [color-value aesthetics]} st scales env by-level?]
   (if by-level?
     (when-let [col (aesthetic/attribute-fn :color (:color scales) (get-in env [:theme :palette :na]))]
-      (some->> (col level) (assoc st :color)))
+      (some->> (col color-value) (assoc st :color)))
     (group/style st aesthetics scales (:theme env))))
 
 (defn- with-alpha
