@@ -45,7 +45,7 @@
 
   `:chart` - per chart kind defaults: `:scatter`, `:histogram`, `:density`, `:line`, `:ecdf` (old cljplot blue
   `[69 117 180]` - clojure2d `(last (palette :rdylbu-9))` - with cljplot's alphas: scatter 180, stripplot 100, rug 100),
-  `:treemap` (`:padding`, `:border-color`, `:border-width`), `:partition` (`:border-color`, `:border-width`), `:pack` (`:padding`, `:border-color`, `:border-width`), `:waffle` (`:gap`, `:shape`, borders), `:venn` (`:alpha`, borders), `:tile` / `:bin2d` (`:cell`, `:cell-scale`, `:stroke-color`, `:stroke-width`), `:field` (`:alpha`), `:contour` (`:color`, `:width`, `:dash`, `:alpha`), strip charts `:box`, `:violin`, `:stripplot`, `:beeswarm`, `:rug`,
+  `:treemap` (`:padding`, `:border-color`, `:border-width`), `:partition` (`:border-color`, `:border-width`), `:pack` (`:padding`, `:border-color`, `:border-width`), `:waffle` (`:gap`, `:shape`, borders), `:venn` (`:alpha`, borders), `:tile` / `:bin2d` (`:cell`, `:cell-scale`, `:stroke-color`, `:stroke-width`), `:field` (`:alpha`), `:contour` (`:color`, `:width`, `:dash`, `:alpha`), `:correlation` (`:color`, `:stroke-color`, `:stroke-width`), strip charts `:box`, `:violin`, `:stripplot`, `:beeswarm`, `:rug`,
   `:extent`, `:bar`, annotations `:rule`, `:rect`, `:function`, bands `:ribbon`, `:smooth` (band `:alpha` 0.3), `:segment`, `:candlestick` (green up, red down), `:parallel` (radar `:fill` `:alpha` 0.25); each checked against its chart's style schema; line and
   function `:bridge` - the style of bridges over gaps (`:alpha` multiplies the line alpha, optional `:width`, `:dash`);
   line `:alpha` - opacity of `:fill :color` and stacked areas.
@@ -115,6 +115,7 @@
            :bin2d {:cell :pointy-hex :cell-scale 1.0 :stroke-color :none :stroke-width 1}
            :field {:alpha 1.0}
            :contour {:color [69 117 180] :width 1 :dash :none :alpha 1.0}
+           :correlation {:color [69 117 180] :stroke-color :darker :stroke-width 1}
            :box {:color [69 117 180] :stroke-color :darker :stroke-width 1 :shape \O :size 5
                  :pattern :solid :pattern-color :darker}
            :violin {:color [69 117 180] :stroke-color :darker :stroke-width 1 :inner-color :none
@@ -155,6 +156,7 @@
           :venn-set {:font "Liberation Mono" :size 11 :font-style :bold :color :black :padding 2 :align centered}
           :venn-count {:font "Liberation Mono" :size 10 :font-style :plain :color :black :padding 2 :align centered}
           :tile-value {:font "Liberation Mono" :size 9 :font-style :plain :color :black :padding 1 :align centered}
+          :correlation {:font "Liberation Mono" :size 12 :font-style :plain :color :black :padding 1 :align centered}
           :annotation {:font "Liberation Mono" :size 10 :font-style :plain :color :black :padding 2 :align centered}}})
 
 (defn deep-merge

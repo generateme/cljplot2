@@ -62,6 +62,7 @@
             [cljplot2.chart.box :as box]
             [cljplot2.chart.candlestick :as candlestick]
             [cljplot2.chart.contour :as contour]
+            [cljplot2.chart.correlation :as correlation]
             [cljplot2.chart.density :as density]
             [cljplot2.chart.ecdf :as ecdf]
             [cljplot2.chart.extent :as extent]
@@ -110,6 +111,7 @@
    :bin2d (:style bin2d/schemas)
    :field (:style field/schemas)
    :contour (:style contour/schemas)
+   :correlation (:style correlation/schemas)
    :ecdf (:style ecdf/schemas)
    :box (:style box/schemas)
    :violin (:style violin/schemas)
@@ -302,3 +304,10 @@
   ([] (contour {}))
   ([options] (assoc (chart-value :contour contour/compute contour/draw contour/legend contour/schemas options)
                     :computed-aesthetics contour/computed-aesthetics)))
+
+(defn correlation
+  "Correlation coefficient of the panel's `:x` / `:y` drawn as a glyph (number, shade, square, circle, ellipse, pie) -
+  a correlogram cell, see [[cljplot2.chart.correlation]]."
+  ([] (correlation {}))
+  ([options] (assoc (chart-value :correlation correlation/compute correlation/draw correlation/legend correlation/schemas options)
+                    :computed-aesthetics correlation/computed-aesthetics)))

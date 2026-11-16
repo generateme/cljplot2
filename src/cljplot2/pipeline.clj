@@ -15,6 +15,9 @@
   * `:groups` - `{:na bool}`: `nil` aesthetic values form the NA level (default `true`) or are dropped
   * `:labels` - plot titles; charts may suggest axis titles (`:axis-titles` in their stats), `:labels` win
   * `:legend` - `false` hides all legends, see [[cljplot2.content.legend]]
+  * `:legend-only` - `true`: the plot draws only its legends (from its charts and scales as usual; no panel, axes or
+    axis titles; `:labels {:title t}` above them), e.g. a legend cell of an `:arrange` (see
+    [[cljplot2.layout.plot-grid/legend-only-grid]]); not with `:custom-grid` / `:arrange`
   * `:aspect` - `:iso`: equal pixels per data unit on x and y (linear scales, generated grid); the panel aspect ratio
     changes, the panel block is centred in the leftover space
   * `:flip` - `true` draws the `:x` scale vertically and `:y` horizontally (generated grid only). Scales, extents,
@@ -333,16 +336,15 @@
   pixel room asked by charts (`:padding-px`) is added to continuous position specs (see
   [[cljplot2.scale.position/finalize]]); scale attributes suggested by a chart (`:scale-defaults {dim attributes}`, the first chart's) are used as a whole
   unless the plot's own spec sets any of them (attributes like bands `:padding-out` / `:align-outer` only make
-  sense together); a computed aesthetic's title (see [[cljplot2.scale.aesthetic/computed-aesthetics]], the first
-  chart's) is the aesthetic scale's `:title` unless the plot's spec has one."
+  sense together); a computed aesthetic's suggested `:title` / `:legend` / `:range` (see
+  [[cljplot2.scale.aesthetic/computed-aesthetics]], the first chart's) are the aesthetic scale's unless the plot's
+  spec sets them."
   [{:keys [scales extents theme stats] :as plot}]
   (let [ks (distinct (concat (filter #(or (position-scales %) (aesthetic/dim? %)) (keys scales)) (keys extents)))
-        suggested-titles (reduce (fn [acc titles] (merge titles acc)) {}
-                                 (map aesthetic/computed-aesthetics (:charts plot) (map :mapping (get-in plot [:split :charts]))))
-        aesthetic-spec (fn [k] (let [spec (get scales k {})]
-                                 (if (and (not (contains? spec :title)) (contains? suggested-titles k))
-                                   (assoc spec :title (suggested-titles k))
-                                   spec)))]
+        suggested (reduce (fn [acc computed] (merge (update-vals computed aesthetic/computed-scale-attributes) acc)) {}
+                          (map aesthetic/computed-aesthetics (:charts plot) (map :mapping (get-in plot [:split :charts]))))
+        ;; the plot's own spec wins attribute by attribute
+        aesthetic-spec (fn [k] (merge (get suggested k) (get scales k {})))]
     (assoc plot
            ;; a margin's magnitude scale: built as a position spec from the margin charts' stats
            :margin-stats (update-vals (:margin-stats plot)
@@ -368,6 +370,37 @@
       (map? labels) (merge suggested labels)
       :else labels)))
 
+(declare build)
+
+(defn- legend-only-width
+  "Pixels a `:legend-only` plot `p` needs across: its legends' natural width plus its plot margins (built up to its
+  scale specs at the outer plot's `options`)."
+  [p options]
+  (let [built (build p (assoc (select-keys options [:width :height :hint]) :until :scale-specs))
+        legends (legend/legends built)]
+    (measure/call-with-scratch-canvas
+     (:hint options)
+     (fn [canvas]
+       (+ (* 2.0 (double (get-in built [:theme :plot :margin])))
+          (if (seq legends)
+            (.x ^fastmath.vector.Vec2 (measure/natural-size {:kind :legends :legends legends} {:canvas canvas :theme (:theme built)}))
+            0.0))))))
+
+(defn- resolved-arrange
+  "`arrange` with its `:measured` widths as `[:fixed px]` - the widest legend-only plot of that column (see
+  [[legend-only-width]])."
+  [{:keys [plots widths] :as arrange} options]
+  (if-not (some #{:measured} widths)
+    arrange
+    (let [c (count widths)]
+      (assoc arrange :widths
+             (vec (map-indexed (fn [j w]
+                                 (if (= :measured w)
+                                   [:fixed (long (m/ceil (reduce max 0.0 (map #(legend-only-width % options)
+                                                                               (keep-indexed (fn [i p] (when (= j (rem (long i) c)) p)) plots)))))]
+                                   w))
+                               widths))))))
+
 (defn- grid-stage
   "The plot's grid: `:custom-grid` when given (under a title row when `:labels` has `:title`; other labels throw),
   otherwise generated from plot keys (`:labels` over the charts' suggested axis titles)."
@@ -376,7 +409,8 @@
              (or (not= :linear (get-in scale-specs [:x :kind])) (not= :linear (get-in scale-specs [:y :kind]))))
     (schema/fail! "Plot :aspect :iso needs linear :x and :y scales." {:key :aspect :in [:aspect] :value aspect}))
   (assoc plot :grid (cond
-                      arrange (plot-grid/arrange-grid arrange labels theme)
+                      arrange (plot-grid/arrange-grid (resolved-arrange arrange (:options plot)) labels theme)
+                      (:legend-only plot) (plot-grid/legend-only-grid (legend/legends plot) labels theme)
                       (and custom-grid labels) (plot-grid/titled-custom-grid custom-grid labels theme)
                       custom-grid custom-grid
                       :else (plot-grid/plot-grid (cond-> (assoc plot :labels (effective-labels labels stats))
@@ -400,11 +434,12 @@
   Before the first layout round (`layout` is `nil`) a provisional finalization is used: range `[0 1]`, 10 ticks.
   Aesthetic scales are passed through unchanged (no pixel range). A polar plot (`:coord`) gets range-space scales
   instead, see [[polar-scales]].
+  A `:legend-only` plot has no panel: its position scales stay provisional.
   Throws `ex-info` with `{:key :scales}` when the grid has no `:panel` content."
   [plot layout]
   (let [specs (into {} (filter (comp position-scales key)) (:scale-specs plot))
         horizontal (scale/horizontal-key (:flip plot))
-        panel (when (and layout (seq specs))
+        panel (when (and layout (seq specs) (not (:legend-only plot)))
                 (or (grid/find-content-box (:grid plot) layout panel-content?)
                     (schema/fail! "Plot :scales need a :panel item in the grid." {:key :scales :in [:scales]})))]
     (if (and panel (coord/polar? (:coord plot)))
@@ -432,9 +467,9 @@
   "Pixels kept around the circle of a polar panel for the angular tick labels of finalized `theta` (scale `k`): the
   largest extent of a label away from the centre at its angle (`|sin a|·width + |cos a|·height` - labels sit
   outside the circle, anchored away from it) plus the theme's tick length and label gap; 0 without labels or with
-  `:axis false`."
+  `:axis false` / `:grid`."
   [plot k theta]
-  (let [labels (when (and theta (not (false? (:axis theta)))) (seq (map vector (:ticks theta) (:tick-labels theta))))]
+  (let [labels (when (and theta (scale/axis-drawn? theta)) (seq (map vector (:ticks theta) (:tick-labels theta))))]
     (if-not labels
       0.0
       (let [forward (scale/forward-fn theta)]
@@ -616,6 +651,38 @@
                          (str "Sub-plot failed: " (or (ex-message e) (.getName (class e)))))]
            (throw (ex-info message (assoc data :subplot id :subplot-path (into [id] (:subplot-path data))) e))))))
 
+(declare stage-order stage-extra-keys)
+
+(defn- equal-panel-tracks
+  "Track sizes `[[:fixed px] ..]` along one axis making the panels of `n` tracks equal: `sizes` - the current track
+  sizes, `insets` - per track the room around the panel (`nil` - a fixed track, kept), the free room shared equally."
+  [sizes insets]
+  (let [flexible (keep-indexed (fn [i inset] (when inset i)) insets)
+        free (- (double (reduce + (map #(nth sizes %) flexible))) (double (reduce + (keep identity insets))))
+        panel (if (seq flexible) (m/floor (/ free (count flexible))) 0.0)]
+    (mapv (fn [size inset] [:fixed (long (if inset (+ panel (double inset)) size))]) sizes insets)))
+
+(defn- equal-panel-plot
+  "The plot of an `:equal-panels` arrange (built once: `cells` `[{:id :box}]`, aligned `subplots` `{id built}`) with
+  `[:fixed px]` widths / heights giving every panel one size (see [[equal-panel-tracks]]); `:equal-panels` dropped."
+  [{:keys [arrange] :as plot} cells subplots]
+  (let [{:keys [plots columns rows widths]} arrange
+        n (count plots)
+        c (long (or columns (if rows (long (m/ceil (/ (double n) (double rows)))) 1)))
+        r (long (or rows (m/ceil (/ (double n) (double c)))))
+        index (fn [[_ k]] [(quot (long k) c) (rem (long k) c)])
+        by-cell (into {} (map (fn [{:keys [id box]}] [(index id) {:box box :insets (align/panel-insets (subplots id))}])) cells)
+        fixed-column? (fn [j] (let [w (get widths j)] (or (= :measured w) (vector? w))))
+        column-size (fn [j] (long (or (some #(get-in by-cell [[% j] :box :w]) (range r)) 0)))
+        row-size (fn [i] (long (or (some #(get-in by-cell [[i %] :box :h]) (range c)) 0)))
+        room (fn [cells-of sides] (let [ins (keep :insets cells-of)] (when (seq ins) (reduce max (map #(reduce + (map % sides)) ins)))))
+        column-insets (mapv (fn [j] (when-not (fixed-column? j) (or (room (keep #(by-cell [% j]) (range r)) [:left :right]) 0))) (range c))
+        row-insets (mapv (fn [i] (or (room (keep #(by-cell [i %]) (range c)) [:top :bottom]) 0)) (range r))]
+    (-> (apply dissoc plot (concat stage-order (mapcat val stage-extra-keys)))
+        (assoc-in [:arrange :widths] (equal-panel-tracks (mapv column-size (range c)) column-insets))
+        (assoc-in [:arrange :heights] (equal-panel-tracks (mapv row-size (range r)) row-insets))
+        (update :arrange dissoc :equal-panels))))
+
 (defn- subplots-stage
   "Every `{:kind :plot}` item of the grid (nested grids included) built at its box size with the plot's hint:
   `{item-id built-plot}`. Items whose box is smaller than 1x1 px are skipped. Plot item ids must be unique across
@@ -630,12 +697,14 @@
                              (when (and (>= (long (:w box)) 1) (>= (long (:h box)) 1))
                                {:id id :box box :plot (:plot content)
                                 :built (build-subplot (:plot content) id box hint)}))
-                           items))]
-      (assoc plot :subplots
-             (if (and (:arrange plot) (get-in plot [:arrange :align] true))
-               (align/align-panels cells (fn [{:keys [id box] p :plot} padding]
-                                        (build-subplot (assoc p :alignment-padding padding) id box hint)))
-               (into {} (map (juxt :id :built)) cells))))))
+                           items))
+          subplots (if (and (:arrange plot) (get-in plot [:arrange :align] true))
+                     (align/align-panels cells (fn [{:keys [id box] p :plot} padding]
+                                              (build-subplot (assoc p :alignment-padding padding) id box hint)))
+                     (into {} (map (juxt :id :built)) cells))]
+      (if (get-in plot [:arrange :equal-panels])
+        (build (equal-panel-plot plot cells subplots) (select-keys options [:width :height :hint]))
+        (assoc plot :subplots subplots)))))
 
 (def stage-order
   "Pipeline stages in execution order."
@@ -707,6 +776,7 @@
    (schema/nilable :facets facet/facet-options)
    (schema/nilable :groups [:map {:closed true} (schema/nilable :na schema/bool)])
    (schema/nilable :legend schema/bool)
+   (schema/nilable :legend-only schema/bool)
    (schema/nilable :aspect [:enum :iso])
    (schema/nilable :flip schema/bool)
    (schema/nilable :coord coord/coord-schema)
@@ -765,6 +835,8 @@
        (error [:scales k] (get scales k) "facet scale needs a facet mapping of its key"))
      (when (and custom-grid arrange)
        [(error [:arrange] arrange "can't be combined with :custom-grid")])
+     (when (and (:legend-only plot) (or custom-grid arrange))
+       [(error [:legend-only] (:legend-only plot) "a legend-only plot has its own grid, not :custom-grid or :arrange")])
      (when (and (= :iso aspect) (or custom-grid arrange))
        [(error [:aspect] aspect "iso needs the generated grid, not :custom-grid or :arrange")])
      (when (and flip (or custom-grid arrange))

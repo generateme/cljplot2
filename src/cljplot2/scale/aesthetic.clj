@@ -73,8 +73,15 @@
   [mapping]
   (filterv #(some? (get mapping %)) dims))
 
+(defn computed-scale-attributes
+  "Scale attributes a computed aesthetic suggests from its `computed-aesthetics` value (see [[computed-aesthetics]]):
+  a title (string or `nil`) - `{:title t}`; a map - its `:title`, `:legend` and `:range` (e.g. a diverging palette)."
+  [v]
+  (if (map? v) (select-keys v [:title :legend :range]) {:title v}))
+
 (defn computed-aesthetics
-  "`{dim title}` of the aesthetics chart value `chart` computes itself with its merged `mapping`: its
+  "`{dim title-or-attributes}` of the aesthetics chart value `chart` computes itself with its merged `mapping` (a
+  title, or `{:title t :legend b}` - see [[computed-scale-attributes]]): its
   `:computed-aesthetics` - a map, or a function of the chart's options and the mapping returning one (e.g. a color
   computed only when nothing groups the chart, a title named after a mapped accessor; a top-level function keeps chart
   values comparable as data); `{}` without one."

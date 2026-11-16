@@ -63,9 +63,10 @@
              plot-labels)))
 
 (defn- axis-shown?
-  "Does position scale `k` have a spec in `scale-specs` without `:axis false` (an axis is drawn for it)?"
+  "Does position scale `k` have a spec in `scale-specs` whose axis is drawn (see
+  [[cljplot2.scale.position/axis-drawn?]])?"
   [scale-specs k]
-  (and (contains? scale-specs k) (not (false? (get-in scale-specs [k :axis])))))
+  (and (contains? scale-specs k) (scale/axis-drawn? (get scale-specs k))))
 
 (defn- axis-items
   "Items of the axis of scale `k` drawn on `side`: `:bottom` (horizontal scale; axis under the panel, end overhang
@@ -358,6 +359,10 @@
     (cond
       (< (* r c) n) (str "layout " r "x" c " is too small for " n " plots")
       (and widths (not= c (count widths))) (str ":widths should have one weight per column (" c ")")
+      (some (fn [j] (and (= :measured (nth widths j))
+                         (not-every? :legend-only (keep (fn [i] (get (vec plots) (+ (long j) (* c (long i))))) (range r)))))
+            (range (count widths)))
+      ":widths :measured sizes a column of :legend-only plots only"
       (and heights (not= r (count heights))) (str ":heights should have one weight per row (" r ")"))))
 
 (def arrange-schema
@@ -367,9 +372,10 @@
     [:plots [:sequential {:min 1} :map]]
     (schema/nilable :columns schema/pos-int)
     (schema/nilable :rows schema/pos-int)
-    (schema/nilable :widths [:sequential schema/pos])
-    (schema/nilable :heights [:sequential schema/pos])
-    (schema/nilable :align schema/bool)]
+    (schema/nilable :widths [:sequential [:or schema/pos [:= :measured] [:tuple [:= :fixed] schema/non-neg]]])
+    (schema/nilable :heights [:sequential [:or schema/pos [:tuple [:= :fixed] schema/non-neg]]])
+    (schema/nilable :align schema/bool)
+    (schema/nilable :equal-panels schema/bool)]
    [arrange-problem]))
 
 (defn- arrange-weights
@@ -377,16 +383,32 @@
   (if (nil? ws) (vec (repeat n 1)) (vec ws)))
 
 (defn- weighted-tracks
-  "Flexible tracks `[prefix i]` weighted by `ws`, fixed gaps `[gap-prefix i]` between them."
+  "Tracks `[prefix i]` - flexible, weighted by `ws`; an entry `[:fixed px]` is a fixed track - fixed gaps
+  `[gap-prefix i]` between them."
   [prefix gap-prefix ws gap]
-  (vec (butlast (mapcat (fn [i w] [{:id [prefix i] :size [:flexible w]} {:id [gap-prefix i] :size [:fixed gap]}])
+  (vec (butlast (mapcat (fn [i w] [{:id [prefix i] :size (if (vector? w) w [:flexible w])} {:id [gap-prefix i] :size [:fixed gap]}])
                         (range) ws))))
+
+(defn legend-only-grid
+  "Grid of a plot with `:legend-only true`: only its legends (`legends` - contents, see
+  [[cljplot2.content.legend/legends]]) in a measured column between the plot margins, under an optional title row
+  (`labels` - only `:title`); no panel, axes or axis titles."
+  [legends labels theme]
+  (let [margin (get-in theme [:plot :margin])
+        margin-track (fn [id] {:id id :size [:fixed margin]})]
+    {:columns [(margin-track :margin-left) {:id :legend :size [:measured]} {:id :legend-rest :size [:flexible]}
+               (margin-track :margin-right)]
+     :rows [(margin-track :margin-top) {:id :title :size [:measured]} {:id :legend-row :size [:flexible]}
+            (margin-track :margin-bottom)]
+     :items (-> (legend-items legends :legend-row)
+                (into (label-items (select-keys labels [:title]) {:title {:column :legend :row :title}})))}))
 
 (defn arrange-grid
   "Grid of the plot `:arrange` spec `{:plots [p ...] :columns :rows :widths :heights}` in `theme`: cells `[:plot i]`
   filled row by row (columns `[:column c]`, rows `[:row r]`) with `[:multiplot :gap]` between them, `[:plot :margin]`
   around, and an optional title row (`labels` - only `:title`) above the cells, inside the margins.
-  `arrange` is valid by [[arrange-schema]]."
+  `arrange` is valid by [[arrange-schema]], its `:measured` widths resolved to `[:fixed px]` (see the pipeline's
+  grid stage)."
   [{:keys [plots columns rows widths heights]} labels theme]
   (let [plots (vec plots)
         [^long r ^long c] (arrange-shape (count plots) columns rows)

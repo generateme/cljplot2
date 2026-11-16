@@ -15,7 +15,7 @@
 
 (def ^:private sides [:left :top :right :bottom])
 
-(defn- panel-insets
+(defn panel-insets
   "Distances `{:left :top :right :bottom}` from the edges of built plot `built` to its panel area, or `nil` without
   `:panel` items."
   [built]

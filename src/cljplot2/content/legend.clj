@@ -187,9 +187,10 @@
                                   mapped)
                      numeric? (or (some? computed) (and (seq values) (every? number? values)))
                      kind (when (or computed (seq mapped)) (aesthetic/inferred-kind k spec numeric?))
+                     suggested (when computed (aesthetic/computed-scale-attributes (get computed k)))
+                     spec (merge suggested spec)
                      title (cond
                              (contains? spec :title) (:title spec)
-                             computed (get computed k)
                              (and (= 1 (count accessors)) (keyword? (first accessors))) (name (first accessors)))]
                :when (and kind (not= :identity kind) (not (false? (:legend spec))))]
            (if (and (= k :color) (#{:linear :binned} kind))

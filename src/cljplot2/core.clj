@@ -17,6 +17,11 @@
   ([plots] (multiplot/arrange plots))
   ([plots options] (multiplot/arrange plots options)))
 
+(defn pairs
+  "Scatter-plot matrix (and correlogram) of numeric variables, see [[cljplot2.multiplot/pairs]]."
+  [data options]
+  (multiplot/pairs data options))
+
 (defn render
   "Build and draw `plot`, returning a clojure2d canvas, see [[cljplot2.render/render]]."
   ([plot] (render/render plot))

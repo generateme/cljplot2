@@ -50,7 +50,7 @@
     (when-not (or (nil? fill) (theme/none? fill))
       (doseq [k [:x :y]
               :let [finalized (get-in env [:scales k])]
-              :when (and (= :bands (:kind finalized)) (not (false? (:axis finalized))))
+              :when (and (= :bands (:kind finalized)) (scale/grid-drawn? finalized))
               :let [forward (scale/forward-fn finalized)
                     half (* 0.5 (double (:step (scale/band-geometry finalized))))
                     horizontal? (scale/horizontal? k finalized)]
@@ -76,7 +76,7 @@
                 {:keys [color width dash] :as line} (if (and (= :bands (:kind finalized)) (not (theme/none? axis-line)))
                                                       (get-in env [:theme :panel :grid :bands])
                                                       axis-line)]
-          :when (and finalized (not (false? (:axis finalized)))
+          :when (and finalized (scale/grid-drawn? finalized)
                      (not (theme/none? line)) (not (theme/none? color)) (pos? (double width)))]
     (c2d/set-color c color)
     (c2d/set-stroke-custom c (cond-> {:size (double width) :cap :butt} (polyline/dash-pattern dash) (assoc :dash (polyline/dash-pattern dash))))
@@ -96,7 +96,7 @@
         {:keys [color width] :as line} (if (and (= :bands (:kind finalized)) (not (theme/none? axis-line)))
                                          (get-in env [:theme :panel :grid :bands])
                                          axis-line)]
-    (when (and finalized (not (false? (:axis finalized)))
+    (when (and finalized (scale/grid-drawn? finalized)
                (not (theme/none? line)) (not (theme/none? color)) (pos? (double width)))
       line)))
 
@@ -116,7 +116,7 @@
     (when-not (or (nil? fill) (theme/none? fill))
       (doseq [k [:x :y]
               :let [finalized (get-in env [:scales k])]
-              :when (and (= :bands (:kind finalized)) (not (false? (:axis finalized))))
+              :when (and (= :bands (:kind finalized)) (scale/grid-drawn? finalized))
               :let [forward (scale/forward-fn finalized)
                     half (* 0.5 (double (:step (scale/band-geometry finalized))))
                     angular? (= k akey)]
@@ -151,7 +151,7 @@
 (defn- draw-polar-labels!
   "Tick labels of a polar panel (role `:tick-label`): the angular scale's around the circle, just outside the outer
   radius (theme `[:axis k :tick-length]` + `:label-gap`), anchored away from the centre; the radial scale's along the
-  start spoke, beside it. Scales with `:axis false` have none."
+  start spoke, beside it. Scales with `:axis false` or `:axis :grid` have none."
   [c geometry env]
   (let [scales (:scales env)
         akey (angular-key scales)
@@ -159,7 +159,7 @@
         t0 (double (first (:theta geometry)))
         radius (double (:radius geometry))
         labels (fn [k] (let [finalized (get scales k)]
-                         (when (and finalized (not (false? (:axis finalized))))
+                         (when (and finalized (scale/axis-drawn? finalized))
                            (map vector (:ticks finalized) (:tick-labels finalized) (repeat (scale/forward-fn finalized))))))]
     (doseq [[tick text forward] (labels akey)
             :let [theta (double (forward tick))
