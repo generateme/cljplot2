@@ -4,6 +4,7 @@
             [fastmath.core :as m]
             [fastmath.ml.clustering :as cl]
             [cljplot2.test-util :refer [error]]
+            [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
             [cljplot2.data.tree :as tree]
             [cljplot2.layout.grid :as grid])
@@ -120,6 +121,12 @@
       (is (false? (get-in (plot/dendrogram lt {:labels? false}) [:scales :x :axis])))))
   (testing "2.2 the height axis spans 0 to the root height"
     (is (= [0.0 (apply max (:height (:tree result)))] (get-in (plot/dendrogram result {}) [:scales :y :domain]))))
+  (testing "R4 group labels: named groups of level trees"
+    (let [lt (tree/from-levels [{:r "A" :c "x"} {:r "A" :c "y"} {:r "B" :c "z"}] {:hierarchy [:r :c]})
+          p (plot/dendrogram lt {:group-labels? true})]
+      (is (= ["A" "B"] (sort (map #((get-in (last (:charts p)) [:options :mapping :label]) %) (get-in (last (:charts p)) [:options :data])))))
+      (is (= 1 (count (:charts (plot/dendrogram lt {})))))
+      (is (instance? BufferedImage (plot/render-image p {:width 300 :height 300})))))
   (testing "2.1 one leaf"
     (is (instance? BufferedImage (plot/render-image (plot/dendrogram {:name "x" :height 0.0} {}) {:width 200 :height 200})))))
 
@@ -133,8 +140,14 @@
 (deftest clustered-heatmap-test
   (testing "3.1 tile order = the clustering's leaf order; leaves at their tiles' centres"
     (let [p (plot/clustered-heatmap cells {:row :r :col :c :value :v})
-          [_ col-plot row-plot heat] (get-in p [:arrange :plots])]
-      (is (= 4 (count (get-in p [:arrange :plots]))))
+          [col-plot _ empty-legend heat row-plot legend] (get-in p [:arrange :plots])]
+      (is (= 6 (count (get-in p [:arrange :plots]))) "column tree / blank / empty legend over tiles / row tree / legend")
+      (is (:legend-only legend))
+      (is (:legend-only empty-legend))
+      (is (false? (:legend heat)) "the legend in its own column")
+      (is (true? (:flip row-plot)) "row tree right of the tiles, leaves facing them")
+      (is (= [0.8 0.2 :measured] (get-in p [:arrange :widths])))
+      (is (= [0.2 0.8] (get-in p [:arrange :heights])))
       (is (= #{"r1" "r2"} (set (take 2 (get-in heat [:scales :y :domain])))) "similar rows together")
       (is (= [-0.5 3.5] (get-in row-plot [:scales :x :domain])) "row dendrogram: a step per row")
       (is (= [-0.5 2.5] (get-in col-plot [:scales :x :domain])))
@@ -144,7 +157,7 @@
     (let [p (plot/clustered-heatmap cells {:row :r :col :c :value :v})
           built (plot/build p {:width 600 :height 600})
           box (fn [i] (grid/item-box (get-in built [:subplots [:plot i] :layout]) :panel))
-          col-tree (box 1) row-tree (box 2) heat (box 3)]
+          col-tree (box 0) heat (box 3) row-tree (box 4)]
       (is (every? some? [col-tree row-tree heat]))
       (is (<= (m/abs (- (double (:x heat)) (double (:x col-tree)))) 1.0) "column dendrogram over the tiles")
       (is (<= (m/abs (- (double (:w heat)) (double (:w col-tree)))) 1.0))
@@ -155,9 +168,14 @@
     (is (= :value (:key (error #(plot/clustered-heatmap (assoc-in cells [0 :v] ##NaN) {:row :r :col :c :value :v})))))
     (is (= :rows (:key (error #(plot/clustered-heatmap (filterv (fn [c] (= "r1" (:r c))) cells) {:row :r :col :c :value :v})))))
     (is (= :rows (:key (error #(plot/clustered-heatmap (filterv (fn [c] (= "c1" (:c c))) cells) {:row :r :col :c :value :v}))))))
-  (testing "3.3 order only"
-    (is (= 1 (count (get-in (plot/clustered-heatmap cells {:row :r :col :c :value :v :row-tree? false :col-tree? false}) [:arrange :plots]))))
-    (is (= 2 (count (get-in (plot/clustered-heatmap cells {:row :r :col :c :value :v :row-tree? false}) [:arrange :plots]))))))
+  (testing "3.3 order only; R5 :tree-size"
+    (is (= 2 (count (get-in (plot/clustered-heatmap cells {:row :r :col :c :value :v :row-tree? false :col-tree? false}) [:arrange :plots]))) "tiles and legend")
+    (is (= 4 (count (get-in (plot/clustered-heatmap cells {:row :r :col :c :value :v :row-tree? false}) [:arrange :plots]))))
+    (is (= 3 (count (get-in (plot/clustered-heatmap cells {:row :r :col :c :value :v :col-tree? false}) [:arrange :plots]))))
+    (is (= [0.7 0.3 :measured] (get-in (plot/clustered-heatmap cells {:row :r :col :c :value :v :tree-size [0.3 0.1]}) [:arrange :widths])))
+    (are [ts] (= :tree-size (:key (error #(plot/clustered-heatmap cells {:row :r :col :c :value :v :tree-size ts}))))
+      [0 0.2] [0.2 1] [0.2] 0.2)
+    (is (instance? BufferedImage (plot/render-image (plot/clustered-heatmap cells {:row :r :col :c :value :v :col-tree? false}) {:width 400 :height 300})))))
 
 ;; 4. bundling
 
@@ -194,3 +212,36 @@
         (is (instance? BufferedImage (plot/render-image p {:width 400 :height 400})))
         (is (= 2 (count (:charts (plot/bundle [{:from :a :to :c}] package-tree {:labels? false})))))
         (is (some? (get-in (plot/bundle [{:from :a :to :c}] package-tree {:color-by-group? false}) [:charts 0 :options :color])))))))
+
+;; review: text anchored in its own frame, line stroke alpha
+
+(deftest anchor-frame-test
+  (testing "U1 :anchor-frame :text - the text starts at its position whatever its angle; :box (default) unchanged"
+    (let [red [255 0 0]
+          img (fn [frame angle]
+                (plot/render-image {:theme {:plot {:background :white :margin 0} :panel {:fill :white :grid {:x :none :y :none}}}
+                                    :scales {:x {:domain [0 1] :axis false} :y {:domain [0 1] :axis false}}
+                                    :charts [(chart/text {:data [{:x 0.5 :y 0.5 :t "MMMMMMMM"}] :mapping {:x :x :y :y :label :t}
+                                                          :rotation angle :anchor [:left :middle] :anchor-frame frame :color red :size 16})]}
+                                   {:width 400 :height 400}))
+          ;; painted pixels of the text, relative to the anchor (the panel centre)
+          pts (fn [^BufferedImage i] (for [x (range 400) y (range 400)
+                                           :let [v (.getRGB i x y)]
+                                           :when (= red [(bit-and (bit-shift-right v 16) 0xff) (bit-and (bit-shift-right v 8) 0xff) (bit-and v 0xff)])]
+                                       [(- x 200) (- y 200)]))
+          near-anchor (fn [ps] (apply min (map (fn [[x y]] (m/hypot (double x) (double y))) ps)))]
+      (is (< (near-anchor (pts (img :text 45))) 10.0) "the text begins at the anchor (frame padding, glyph bearing)")
+      (is (> (near-anchor (pts (img :box 45))) 20.0) "the box's left-middle is away from the text's start")
+      (is (every? (fn [[x y]] (and (>= (long x) -3) (<= (long y) 3))) (pts (img :text 315))) "315: up and to the right of the anchor")
+      (is (= (set (pts (img :text 0))) (set (pts (img :box 0)))) "no rotation - the same"))))
+
+(deftest stroke-alpha-test
+  (testing "R3 line :stroke-alpha fades the stroke, not the legend key"
+    (let [p (fn [a] {:theme {:plot {:background :white} :panel {:fill :white :grid {:x :none :y :none}}}
+                     :data [{:x 0 :y 0 :g "a"} {:x 1 :y 1 :g "a"}] :mapping {:x :x :y :y :color :g}
+                     :charts [(chart/line (cond-> {:width 4} a (assoc :stroke-alpha a)))]})
+          dark (fn [^BufferedImage i] (count (for [x (range 300) y (range 200) :let [v (.getRGB i x y)]
+                                                   :when (< (bit-and v 0xff) 200)] 1)))]
+      (is (> (dark (plot/render-image (p nil) {:width 300 :height 200}))
+             (dark (plot/render-image (p 0.2) {:width 300 :height 200}))))
+      (is (= :stroke-alpha (nth (:in (error #(plot/build (p 1.5) {:width 300 :height 200}))) 3))))))

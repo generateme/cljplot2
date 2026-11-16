@@ -21,7 +21,9 @@
   in a polar plot each label along its angle, labels on the left half turned to read upright, anchored away from the
   centre unless `:anchor` is given (0 in cartesian plots);
   A mapped `:angle` (degrees, clockwise; `nil` or not a finite number - `:rotation`) turns each label on its own,
-  over `:rotation` and `:radial`.
+  over `:rotation` and `:radial`. `:anchor-frame` - `:box` (default: `:anchor` is a point of the rotated label's
+  bounding box) or `:text` (a point of the unrotated text, the text turned about it - `[:left :middle]` starts every
+  label at its position whatever its angle, as radial labels around a circle).
   `:font`, `:size`, `:font-style`, `:color`, `:padding` (pixels around the text - unlike other charts' position
   `:padding {:x [lo hi]}`), `:background` (a color, alpha allowed, filling the text plus padding - a label box, ggplot
   `geom_label`; the legend key keeps the background with the theme's padding) - over the text role `[:text :annotation]`
@@ -75,7 +77,8 @@
                       (schema/optional :anchor [:tuple [:enum :left :center :right] [:enum :top :middle :bottom]])
                       (schema/optional :offset [:tuple schema/finite schema/finite])
                       (schema/optional :rotation [:or schema/finite [:= :radial]])
-                      (schema/optional :select [:enum :last :first])))
+                      (schema/optional :select [:enum :last :first])
+                      (schema/optional :anchor-frame [:enum :box :text])))
    :mapping [:map]})
 
 (defn- one? [v] (not (and (vector? v) (not (panel-position? v)))))
@@ -195,8 +198,8 @@
                   [px py rotation anchor] (place (double (h-pixel (pos hk))) (double (v-pixel (pos vk))))
                   rotation (if (and (number? angle) (m/valid-double? (double angle))) angle rotation)]
             :when (and (m/valid-double? (double px)) (m/valid-double? (double py)))]
-      (label/draw-at! canvas (merge {:kind :label :role :annotation :text (str text) :rotation rotation} st)
-                      anchor px py env))))
+      ((if (= :text (:anchor-frame options)) label/draw-at-frame! label/draw-at!)
+       canvas (merge {:kind :label :role :annotation :text (str text) :rotation rotation} st) anchor px py env))))
 
 (defn legend
   "Key glyph: the letter `a` in the text style (the role's padding, so it fits the key), centred in `box`."

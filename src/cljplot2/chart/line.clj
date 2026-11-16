@@ -28,10 +28,13 @@
   `:groups {:na}`. With an `:interpolator` the sampled curve takes the color value interpolated linearly between
   its data points, in steps of a few pixels (`:curve` can't color along the length - `ex-info {:key :curve}`); a bridge takes the color of
   its two end values.
+  `:stroke-alpha` (a fraction) multiplies the stroke colour's opacity of unstacked lines (many overlapping lines; the
+  legend key stays opaque).
   Arrows (see [[cljplot2.graphics.arrow]]): `:arrow {:end :start :size :shape}`, `:start-gap` / `:end-gap` (pixels) -
   at the ends of every run of a plain stroked line (no fill, fill gradient, colour along the length or stacking -
   `ex-info {:key :arrow}`; no bridges between the runs)."
-  (:require [fastmath.core :as m]
+  (:require [clojure2d.color :as c]
+            [fastmath.core :as m]
             [cljplot2.data.rows :as data]
             [cljplot2.data.group :as group]
             [cljplot2.data.position :as position]
@@ -75,6 +78,7 @@
                       (schema/optional :fill-gradient polyline/fill-gradient-schema)
                       (schema/optional :fill-gradient-axis [:enum :x :y])
                       (schema/optional :padding data/position-padding)
+                      (schema/optional :stroke-alpha schema/fraction)
                       (schema/optional :arrow arrow/schema)
                       (schema/optional :start-gap schema/non-neg)
                       (schema/optional :end-gap schema/non-neg)))
@@ -415,7 +419,11 @@
       (if (some :y0 lines)
         (draw-stacked! canvas lines style (:position options) opts gradient axis scales (:theme env))
         (doseq [{:keys [x y aesthetics colors]} lines
-                :let [st (group/style style aesthetics scales (:theme env))]
+                :let [st (group/style style aesthetics scales (:theme env))
+                      st (if (and st (:stroke-alpha options) (not= :none (:color st)))
+                           (update st :color #(let [col (c/to-color %)]
+                                                (c/set-alpha col (* (double (:stroke-alpha options)) (double (c/alpha col))))))
+                           st)]
                 :when st]
           (let [points (mapv (fn [vx vy] (if (nil? vy) (Vec2. ##NaN ##NaN) (projection vx vy))) x y)
                 px (mapv #(.x ^Vec2 %) points)

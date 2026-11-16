@@ -174,6 +174,26 @@
      :y (m/round (- (double y) (* (double (anchor-fraction v)) (.y size))))
      :w (.x size) :h (.y size)}))
 
+(defn draw-at-frame!
+  "Draw label `content` on canvas `c` with the `anchor` point of its unrotated text frame (`[h v]` as [[draw-at!]] -
+  e.g. `[:left :middle]` - the start of the text) at pixel `x`, `y`, the text rotated about that point by its
+  `:rotation`: radial labels start at their anchor whatever the angle. (For a rotation of 0 the same as
+  [[draw-at!]].) `env` - `:theme`. Isolates the canvas state."
+  [c content [h v] x y env]
+  (let [theme (:theme env)
+        [fw fh] (text-frame content c theme)
+        ^fastmath.vector.Vec2 size (measure/natural-size content {:canvas c :theme theme})
+        a (m/radians (double (get content :rotation 0)))
+        ;; from the anchor to the frame's centre, in frame units, then rotated clockwise (y down)
+        dx (* (- 0.5 (double (anchor-fraction h))) (double fw))
+        dy (* (- 0.5 (double (anchor-fraction v))) (double fh))
+        cx (+ (double x) (- (* dx (m/cos a)) (* dy (m/sin a))))
+        cy (+ (double y) (+ (* dx (m/sin a)) (* dy (m/cos a))))
+        left (m/round (- cx (* 0.5 (.x size))))
+        top (m/round (- cy (* 0.5 (.y size))))]
+    (canvas/call-with-isolated-graphics
+     c #(draw/draw-content content % {:x left :y top :w (.x size) :h (.y size)} env))))
+
 (defn draw-at!
   "Draw label `content` on canvas `c` with the `anchor` point of its box (`[h v]`, `h` one of `:left :center :right`,
   `v` one of `:top :middle :bottom`; the box is the natural size - for rotated text the rotated frame's bounding box)

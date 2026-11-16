@@ -129,9 +129,11 @@
       [(conj nodes (assoc (dissoc node :children) :x (double next-x) :y (double (:height node)) :depth depth
                           :parent parent :leaf? true :cluster cluster))
        (inc next-x)]
-      (let [[nodes' x'] (reduce (fn [acc child] (placed child [i (inc (long depth)) cluster] acc cut-of))
-                                [(conj nodes nil) next-x] (:children node))
-            kids (filter #(= i (:parent %)) nodes')]
+      (let [[nodes' x' kids] (reduce (fn [[ns x ks] child]
+                                       (let [[ns' x'] (placed child [i (inc (long depth)) cluster] [ns x] cut-of)]
+                                         [ns' x' (conj ks (count ns))]))
+                                     [(conj nodes nil) next-x []] (:children node))
+            kids (map nodes' kids)]
         [(assoc nodes' i (assoc (dissoc node :children) :x (/ (double (reduce + (map :x kids))) (count kids))
                                 :y (double (:height node)) :depth depth :parent parent :leaf? false :cluster cluster))
          x']))))

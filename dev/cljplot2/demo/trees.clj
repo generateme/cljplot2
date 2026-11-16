@@ -41,7 +41,7 @@
 
 (def world-hierarchy
   (plot/dendrogram (tree/from-levels world {:hierarchy [:region :subregion]})
-                   {:horizontal true :title "World regions and subregions"}))
+                   {:horizontal true :group-labels? true :title "World regions and subregions"}))
 
 (def mtcars-heatmap
   (plot/clustered-heatmap (vec (for [[car row] (map vector cars standardized) [k v] (map vector variables row)]
