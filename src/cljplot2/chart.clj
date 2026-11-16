@@ -153,7 +153,8 @@
   ([options] (chart-value :candlestick candlestick/compute candlestick/draw candlestick/legend candlestick/schemas options)))
 
 (defn bar
-  "Bars of `:x` per `:y` level and group (`:stat` sum, mean, median, a function or a count measure; dodged, stacked,
+  "Bars per level of the categorical axis and group (`{:x level :y value}` vertical, `{:x value :y level}`
+  horizontal, `:level-axis`; `:stat` sum, mean, median, a function or a count measure; dodged, stacked,
   normalized, mirrored), see [[cljplot2.chart.bar]] and [[cljplot2.data.strip]]."
   ([] (bar {}))
   ([options] (polar (chart-value :bar bar/compute bar/draw bar/legend bar/schemas options))))
@@ -175,33 +176,33 @@
   ([options] (chart-value :ecdf ecdf/compute ecdf/draw ecdf/legend ecdf/schemas options)))
 
 (defn box
-  "Box plot of `:x` per `:y` level and group, see [[cljplot2.chart.box]] and [[cljplot2.data.strip]]."
+  "Box plot of the values per level (the categorical axis, `:level-axis`) and group, see [[cljplot2.chart.box]] and [[cljplot2.data.strip]]."
   ([] (box {}))
   ([options] (chart-value :box box/compute box/draw box/legend box/schemas options)))
 
 (defn violin
-  "Violin plot of `:x` per `:y` level and group, see [[cljplot2.chart.violin]] and [[cljplot2.data.strip]]."
+  "Violin plot of the values per level (the categorical axis, `:level-axis`) and group, see [[cljplot2.chart.violin]] and [[cljplot2.data.strip]]."
   ([] (violin {}))
   ([options] (chart-value :violin violin/compute violin/draw violin/legend violin/schemas options)))
 
 (defn stripplot
-  "Jittered strip plot of `:x` per `:y` level and group, see [[cljplot2.chart.stripplot]] and [[cljplot2.data.strip]]."
+  "Jittered strip plot of the values per level (the categorical axis, `:level-axis`) and group, see [[cljplot2.chart.stripplot]] and [[cljplot2.data.strip]]."
   ([] (stripplot {}))
   ([options] (chart-value :stripplot stripplot/compute stripplot/draw stripplot/legend stripplot/schemas options)))
 
 (defn beeswarm
-  "Beeswarm of `:x` per `:y` level and group (points packed without overlap), see [[cljplot2.chart.beeswarm]] and
+  "Beeswarm of the values per level (the categorical axis, `:level-axis`) and group (points packed without overlap), see [[cljplot2.chart.beeswarm]] and
   [[cljplot2.data.strip]]."
   ([] (beeswarm {}))
   ([options] (chart-value :beeswarm beeswarm/compute beeswarm/draw beeswarm/legend beeswarm/schemas options)))
 
 (defn rug
-  "Rug of `:x` values, see [[cljplot2.chart.rug]] and [[cljplot2.data.strip]]."
+  "Rug of the values (per level of the categorical axis when one is mapped, `:level-axis`), see [[cljplot2.chart.rug]] and [[cljplot2.data.strip]]."
   ([] (rug {}))
   ([options] (chart-value :rug rug/compute rug/draw rug/legend rug/schemas options)))
 
 (defn extent
-  "Interval of `:x` per `:y` level and group (fastmath.stats extents), see [[cljplot2.chart.extent]] and
+  "Interval of the values per level (the categorical axis, `:level-axis`) and group (fastmath.stats extents), see [[cljplot2.chart.extent]] and
   [[cljplot2.data.strip]]."
   ([] (extent {}))
   ([options] (chart-value :extent extent/compute extent/draw extent/legend extent/schemas options)))

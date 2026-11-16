@@ -1,5 +1,6 @@
 (ns cljplot2.chart.extent
-  "Extent: an interval of the `:x` values per `:y` level and group, drawn as a line with end caps and a centre mark -
+  "Extent: an interval of the values per level (the categorical axis, see `:level-axis` in [[cljplot2.data.strip]])
+  and group, drawn as a line with end caps and a centre mark -
   a strip chart (see [[cljplot2.data.strip]]). Intervals come from the fastmath.stats extents.
 
   Options (style defaults from theme `[:chart :extent]`): `:color`, `:line-width` (`:width` is the strip option), `:shape`, `:size` (centre
@@ -80,7 +81,7 @@
                       (schema/optional :center [:enum :method :none])
                       strip/mirror-option
                       (schema/optional :padding data/position-padding)))
-   :mapping [:map [:x schema/accessor]]})
+   :mapping strip/values-mapping})
 
 (defn- style
   [options theme]
@@ -123,7 +124,7 @@
   [{:keys [^double lo ^double hi center]}]
   {:lo (- hi) :hi (- lo) :center (when center (- (double center)))})
 
-(defn compute
+(defn- compute-in-strip-frame
   "Per panel: `{:items [..] :style st :place p :options o}`, items with [[interval]] (negated for `:mirrored?`
   items); extents (x - the intervals and centres), padding, `:na`, `:dropped`, `:tick-format` (mirror)."
   [{:keys [options]} chart-split {:keys [theme] :as env}]
@@ -148,7 +149,7 @@
 
 (defn- line! [canvas ^Vec2 a ^Vec2 b] (c2d/line canvas (.x a) (.y a) (.x b) (.y b)))
 
-(defn draw
+(defn- draw-in-strip-frame
   "Draw the intervals of one panel: the line, end caps (half the item's cross range) and the centre mark."
   [_chart {:keys [items style place options]} canvas box scales env]
   (let [{:keys [point] :as pl} (strip/placement box scales options place)
@@ -173,6 +174,17 @@
       (when (and center? center)
         (shape/draw! canvas (:shape st) (p center c0) (assoc st :stroke-color :none))))))
 
+
+(defn compute
+  "Stats of the chart with its levels on the categorical axis (see [[cljplot2.data.strip/compute-oriented]]):
+  [[compute-in-strip-frame]] in the strip frame."
+  [chart chart-split env]
+  (strip/compute-oriented compute-in-strip-frame chart chart-split env))
+
+(defn draw
+  "Draw one panel (see [[cljplot2.data.strip/draw-oriented]]): [[draw-in-strip-frame]] in the strip frame."
+  [chart computed canvas box scales env]
+  (strip/draw-oriented draw-in-strip-frame chart computed canvas box scales env))
 (defn legend
   "Key glyph: a horizontal capped line with the centre mark."
   [{:keys [options]} attributes canvas {:keys [x y w h]} env]

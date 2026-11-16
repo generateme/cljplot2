@@ -37,7 +37,7 @@
                 (into strip/options)
                 (conj (schema/nilable :fit schema/bool)
                       (schema/optional :padding data/position-padding)))
-   :mapping [:map [:x schema/accessor]]})
+   :mapping strip/values-mapping})
 
 (defn- style
   [options theme]
@@ -91,7 +91,7 @@
   (let [widest (double (reduce max 0.0 (map #(m/abs (double %)) offsets)))]
     (if (> widest room) (mapv #(* (double %) (/ room widest)) offsets) (vec offsets))))
 
-(defn compute
+(defn- compute-in-strip-frame
   "Per panel: `{:items [..] :style st :place p :options o :one-sided? b}`; extents (x - the values), padding, `:na`,
   `:dropped`."
   [{:keys [options]} chart-split {:keys [theme] :as env}]
@@ -106,7 +106,7 @@
      :na (group/na-dims panels)
      :dropped dropped}))
 
-(defn draw
+(defn- draw-in-strip-frame
   "Draw the points of one panel, each item swarmed by [[swarm-offsets]] around its centre line (one-sided: from 0
   outward), fitted into its slot with `:fit`."
   [_chart {:keys [items style place options one-sided?]} canvas box scales env]
@@ -130,6 +130,17 @@
           (shape/draw! canvas (:shape st) p st))))
     (strip/draw-n-labels! canvas pl items (fn [{:keys [values]}] (reduce max values)) options scales env)))
 
+
+(defn compute
+  "Stats of the chart with its levels on the categorical axis (see [[cljplot2.data.strip/compute-oriented]]):
+  [[compute-in-strip-frame]] in the strip frame."
+  [chart chart-split env]
+  (strip/compute-oriented compute-in-strip-frame chart chart-split env))
+
+(defn draw
+  "Draw one panel (see [[cljplot2.data.strip/draw-oriented]]): [[draw-in-strip-frame]] in the strip frame."
+  [chart computed canvas box scales env]
+  (strip/draw-oriented draw-in-strip-frame chart computed canvas box scales env))
 (defn legend
   "Key glyph: the chart's shape centred in `box`."
   [{:keys [options]} attributes canvas {:keys [x y w h]} env]

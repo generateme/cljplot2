@@ -27,13 +27,13 @@
                 (into data/common-options)
                 (into strip/options)
                 (conj (schema/optional :padding data/position-padding)))
-   :mapping [:map [:x schema/accessor]]})
+   :mapping strip/values-mapping})
 
 (defn- style
   [options theme]
   (merge (get-in theme [:chart :rug]) (select-keys options [:color :line-width])))
 
-(defn compute
+(defn- compute-in-strip-frame
   "Per panel: `{:items [..] :style st :place p :options o}`; extents (x - the values), padding, `:na`, `:dropped`."
   [{:keys [options]} chart-split {:keys [theme] :as env}]
   (let [{:keys [place items panels dropped]} (strip/split chart-split options :edge env)]
@@ -46,7 +46,7 @@
      :na (group/na-dims panels)
      :dropped dropped}))
 
-(defn draw
+(defn- draw-in-strip-frame
   "Draw the rug lines of one panel."
   [_chart {:keys [items style place options]} canvas box scales env]
   (let [{:keys [point] :as pl} (strip/placement box scales options place)]
@@ -63,6 +63,17 @@
         (c2d/line canvas (.x a) (.y a) (.x b) (.y b))))
     (strip/draw-n-labels! canvas pl items (fn [{:keys [values]}] (reduce max values)) options scales env)))
 
+
+(defn compute
+  "Stats of the chart with its levels on the categorical axis (see [[cljplot2.data.strip/compute-oriented]]):
+  [[compute-in-strip-frame]] in the strip frame."
+  [chart chart-split env]
+  (strip/compute-oriented compute-in-strip-frame chart chart-split env))
+
+(defn draw
+  "Draw one panel (see [[cljplot2.data.strip/draw-oriented]]): [[draw-in-strip-frame]] in the strip frame."
+  [chart computed canvas box scales env]
+  (strip/draw-oriented draw-in-strip-frame chart computed canvas box scales env))
 (defn legend
   "Key glyph: a short vertical line in the middle of `box`."
   [{:keys [options]} attributes canvas {:keys [x y w h]} env]

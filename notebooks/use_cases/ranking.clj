@@ -4,8 +4,9 @@
 ;; (the [R Graph Gallery](https://r-graph-gallery.com/) ranking pages - barplot, lollipop, circular barplot, spider,
 ;; parallel - and the [data-to-viz](https://www.data-to-viz.com/caveats.html) caveats).
 ;;
-;; Bars are a strip chart: the levels on `:y`, the bar lengths along `:x` - horizontal by default, vertical with
-;; `:flip true`. Order comes from the data (levels in first-appearance order) or an explicit `:domain`.
+;; Bars are a strip chart: the levels sit on the categorical axis - `{:x :country :y :value}` draws vertical bars,
+;; `{:x :value :y :country}` horizontal ones (`:level-axis` decides when both or neither axis is categorical). Order
+;; comes from the data (levels in first-appearance order: left to right, bottom to top) or an explicit `:domain`.
 
 (ns use-cases.ranking
   (:require [clojure.string :as str]
@@ -13,6 +14,7 @@
             [fastmath.stats :as stats]
             [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
+            [cljplot2.data.levels :as levels]
             [notebook-utils :as nu]))
 
 (def weapons
@@ -23,7 +25,7 @@
 (def top-10 (vec (take 10 top-20)))
 
 (defn- ascending
-  "Countries of `rows` in increasing value - as a `:y` domain the largest bar ends on top."
+  "Countries of `rows` in increasing value - as the domain of horizontal bars the largest one ends on top."
   [rows]
   (mapv :country (sort-by :value rows)))
 
@@ -45,6 +47,8 @@
 ;; mean, a median, or a count of rows.
 
 ;; ### Basic barplot
+
+;; Twenty long country names read best on horizontal bars: the countries on `:y`.
 
 (nu/source-note {:source "R Graph Gallery - Basic barplot with ggplot2; data-to-viz - Barplot"
                  :url ["https://r-graph-gallery.com/218-basic-barplots-with-ggplot2.html"
@@ -73,8 +77,9 @@
   (vec (for [[title opts] [[":color" {:color [215 48 39]}]
                            [":stroke-color, :stroke-width" {:color :white :stroke-color [33 102 172] :stroke-width 2}]
                            [":width 0.4" {:width 0.4}]]]
-         {:data (rseq top-10)
-          :mapping {:x :value :y :country}
+         {:data top-10
+          :mapping {:x :country :y :value}
+          :theme {:axis {:x {:label-rotation -90}}}
           :charts [(chart/bar opts)]
           :labels {:title title :x nil :y nil}}))
   {:columns 3})
@@ -82,7 +87,8 @@
 
 ;; ### Horizontal and vertical bars
 
-;; Horizontal bars keep long labels readable; `:flip true` turns them vertical (here with tick labels turned -45°).
+;; The mapping orients the bars: the countries on `:x` - vertical bars (tick labels turned -45°), on `:y` - horizontal
+;; ones, which keep long labels readable.
 
 (nu/source-note {:source "R Graph Gallery - Barplot; data-to-viz - Barplot"
                  :url ["https://r-graph-gallery.com/barplot.html" "https://www.data-to-viz.com/graph/barplot.html"]
@@ -90,14 +96,13 @@
 
 (plot/render-image
  (plot/arrange
-  [{:data (rseq top-10) :mapping {:x :value :y :country}
+  [{:data top-10 :mapping {:x :country :y :value}
+    :theme {:axis {:x {:label-rotation -45}}}
     :charts [(chart/bar)]
-    :labels {:title "Horizontal (default)" :x "exports" :y nil}}
-   {:data top-10 :mapping {:x :value :y :country}
-    :flip true
-    :theme {:axis {:y {:label-rotation -45}}}
+    :labels {:title "{:x :country :y :value}" :x nil :y "exports"}}
+   {:data (rseq top-10) :mapping {:x :value :y :country}
     :charts [(chart/bar)]
-    :labels {:title "Vertical (:flip true)" :x "exports" :y nil}}]
+    :labels {:title "{:x :value :y :country}" :x "exports" :y nil}}]
   {:columns 2})
  {:width 1000 :height 450})
 
@@ -125,7 +130,8 @@
 ;; ### Variable width
 
 ;; `:varwidth true` - bar widths by the square root of the number of rows (as box plots), `:n-label` writes the
-;; counts: mean fuel economy per number of cylinders, 11, 7 and 14 cars.
+;; counts: mean fuel economy per number of cylinders, 11, 7 and 14 cars. The cylinder counts are numbers, declared
+;; categorical with `levels/categorical`.
 
 (nu/source-note {:source "R Graph Gallery - Barplot with variable width"
                  :url "https://r-graph-gallery.com/81-barplot-with-variable-width.html"
@@ -133,10 +139,9 @@
 
 (plot/render-image
  {:data mtcars
-  :mapping {:x :mpg :y #(str (long (:cyl %)) " cylinders")}
-  :scales {:y {:domain ["4 cylinders" "6 cylinders" "8 cylinders"]}}
+  :mapping {:x (levels/categorical :cyl) :y :mpg}
   :charts [(chart/bar {:stat :mean :varwidth true :n-label true})]
-  :labels {:title "Mean fuel economy, widths by the number of cars" :x "mean miles per gallon" :y nil}}
+  :labels {:title "Mean fuel economy, widths by the number of cars" :x "cylinders" :y "mean miles per gallon"}}
  {:width 800 :height 400})
 
 ;; ### Error bars
@@ -150,11 +155,10 @@
 (plot/render-image
  (plot/arrange
   (vec (for [k [:sepal-length :petal-length]]
-         {:data iris :mapping {:x k :y :species}
-          :flip true
+         {:data iris :mapping {:x :species :y k}
           :charts [(chart/bar {:stat :mean :color [120 160 200]})
                    (chart/extent {:method :stddev :center :none :color [40 40 40] :line-width 1.5})]
-          :labels {:title (str "Mean " (name k) " ± sd") :x "cm" :y nil}}))
+          :labels {:title (str "Mean " (name k) " ± sd") :x nil :y "cm"}}))
   {:columns 2})
  {:width 900 :height 400})
 
@@ -171,21 +175,20 @@
 (plot/render-image
  (plot/arrange
   [{:data (filter #(#{"Fair" "Good" "Ideal"} (:cut %)) diamonds)
-    :mapping {:y :clarity :pattern :cut}
-    :scales {:y {:domain clarities} :pattern {:domain ["Fair" "Good" "Ideal"]}}
-    :flip true
+    :mapping {:x :clarity :pattern :cut}
+    :scales {:x {:domain clarities} :pattern {:domain ["Fair" "Good" "Ideal"]}}
     :charts [(chart/bar {:stat :count :color :white :stroke-color :black :pattern-color :black})]
-    :labels {:title "Diamonds per clarity, :pattern by cut" :x "count" :y nil}}
-   {:data top-10 :mapping {:x :value :y :country}
-    :scales {:y {:domain (ascending top-10)}}
+    :labels {:title "Diamonds per clarity, :pattern by cut" :x nil :y "count"}}
+   {:data top-10 :mapping {:x :country :y :value}
+    :theme {:axis {:x {:label-rotation -90}}}
     :charts [(chart/bar {:color :white :stroke-color :black :pattern :hatch :pattern-color :black})]
-    :labels {:title "A literal :pattern :hatch" :x "exports" :y nil}}]
+    :labels {:title "A literal :pattern :hatch" :x nil :y "exports"}}]
   {:columns 2 :widths [3 2]})
  {:width 1000 :height 450})
 
 ;; ### Value labels
 
-;; `:value-label true` writes each bar's length past its end - beside horizontal bars, above vertical ones.
+;; `:value-label true` writes each bar's length past its end - above vertical bars, beside horizontal ones.
 
 (nu/source-note {:source "R Graph Gallery - Barplot with number of observations"
                  :url "https://r-graph-gallery.com/37-barplot-with-number-of-observation.html"
@@ -193,16 +196,13 @@
 
 (plot/render-image
  (plot/arrange
-  [{:data top-10 :mapping {:x :value :y :country}
-    :scales {:y {:domain (ascending top-10)}}
+  [{:data top-10 :mapping {:x :country :y :value}
+    :theme {:axis {:x {:label-rotation -45}}}
     :charts [(chart/bar {:value-label true})]
-    :labels {:title "Horizontal" :x "exports" :y nil}}
-   {:data top-10 :mapping {:x :value :y :country}
-    :scales {:y {:domain (rseq (ascending top-10))}}
-    :flip true
-    :theme {:axis {:y {:label-rotation -45}}}
+    :labels {:title "Vertical" :x nil :y "exports"}}
+   {:data (rseq top-10) :mapping {:x :value :y :country}
     :charts [(chart/bar {:value-label true})]
-    :labels {:title "Vertical" :x "exports" :y nil}}]
+    :labels {:title "Horizontal" :x "exports" :y nil}}]
   {:columns 2})
  {:width 1000 :height 450})
 
@@ -217,11 +217,10 @@
 
 (plot/render-image
  {:data diamonds
-  :mapping {:y :clarity :color :cut}
-  :scales {:y {:domain clarities} :color {:domain cuts}}
-  :flip true
+  :mapping {:x :clarity :color :cut}
+  :scales {:x {:domain clarities} :color {:domain cuts}}
   :charts [(chart/bar {:stat :count})]
-  :labels {:title "Diamonds per clarity and cut" :x "count" :y "clarity"}}
+  :labels {:title "Diamonds per clarity and cut" :x "clarity" :y "count"}}
  {:width 900 :height 450})
 
 ;; ### Stacked bars
@@ -236,18 +235,18 @@
  (plot/arrange
   (vec (for [p [:stack :normalize]]
          {:data diamonds
-          :mapping {:y :clarity :color :cut}
-          :scales {:y {:domain clarities} :color {:domain cuts}}
-          :flip true
+          :mapping {:x :clarity :color :cut}
+          :scales {:x {:domain clarities} :color {:domain cuts}}
           :charts [(chart/bar {:stat :count :position p})]
-          :labels {:title (str ":position " p) :y "clarity"}}))
+          :labels {:title (str ":position " p) :x "clarity"}}))
   {:columns 2})
  {:width 1000 :height 450})
 
 ;; ### Mirrored bars
 
-;; `:mirror` turns the second level of a two-level variable the other way: back-to-back bars, with value labels as
-;; magnitudes. Answers for and against eight proposals, stacked by how sure people were.
+;; `:mirror` turns the second level of a two-level variable the other way: back-to-back bars, with value tick labels
+;; as magnitudes. Answers for and against eight proposals, stacked by how sure people were: the mirror on `:group`
+;; (for / against), four colours - two blues, two reds - on `:color`.
 
 (def votes
   "Seeded answers to eight proposals: people for and against, sure or leaning."
@@ -257,31 +256,34 @@
                [answer share] [["for" support] ["against" (- 100 support)]]
                [certainty f] [["sure" 0.6] ["leaning" 0.4]]]
            {:proposal (str "proposal " (inc i)) :answer answer :certainty certainty
-            :people (long (* f share 12))}))))
+            :answer-certainty (str answer ", " certainty) :people (long (* f share 12))}))))
 
 (nu/source-note {:source "R Graph Gallery - Barplot (back-to-back bars)"
                  :url "https://r-graph-gallery.com/barplot.html"})
 
 (plot/render-image
  {:data votes
-  :mapping {:x :people :y :proposal :color :answer :group :certainty}
-  :scales {:color {:domain ["for" "against"] :range {"for" [33 102 172] "against" [215 48 39]}}}
-  :charts [(chart/bar {:mirror :color :position :stack})]
-  :labels {:title "For | against, sure and leaning stacked" :x "people" :y nil}}
- {:width 800 :height 400})
+  :mapping {:x :proposal :y :people :color :answer-certainty :group :answer}
+  :scales {:color {:domain ["for, sure" "for, leaning" "against, sure" "against, leaning"]
+                   :range {"for, sure" [8 69 148] "for, leaning" [107 174 214]
+                           "against, sure" [165 15 21] "against, leaning" [251 106 74]}}}
+  :charts [(chart/bar {:mirror :group :position :stack})]
+  :labels {:title "For (up) and against (down), sure and leaning" :x nil :y "people"}}
+ {:width 900 :height 450})
 
 ;; ### Economist-style labelled bars
 
 ;; No axes - the labels carry the values: name and value inside the bar at its base when they fit (a text chart at
-;; x = 0, in white), else just past the bar's end.
+;; x = 0, in white), else just past the bar's end. Whether a label fits is estimated here: about 7 pixels per
+;; character against the bar's share of a 700 pixel panel.
 
 (nu/source-note {:source "R Graph Gallery - Horizontal barplot with labels (The Economist style)"
                  :url "https://r-graph-gallery.com/web-horizontal-barplot-with-labels-the-economist.html"
                  :dataset :weapons})
 
 (let [rows (mapv #(assoc % :label (str (:country %) "  " (:value %))) top-10)
-      ;; a label fits when the bar is longer than its text: ~7 px per character on a ~700 px wide panel
-      fits? (fn [{:keys [value label]}] (> (* 700.0 (/ (double value) 12394.0)) (+ 12.0 (* 7.0 (count label)))))
+      longest (double (reduce max (map :value rows)))
+      fits? (fn [{:keys [value label]}] (> (* 700.0 (/ (double value) longest)) (+ 12.0 (* 7.0 (count label)))))
       text (fn [rows x anchor color] (chart/text {:data rows :mapping {:x x :y :country :label :label}
                                                   :anchor anchor :offset [6 0] :color color}))]
   (plot/render-image
@@ -406,8 +408,8 @@
 
 ;; ## Circular barplot
 
-;; Bars in polar coordinates: `:coord {:kind :polar}` with `:flip true` puts the levels around the circle and the
-;; lengths along the radius; `:inner` leaves a hole.
+;; Bars in polar coordinates: with `:coord {:kind :polar}` the horizontal axis goes around the circle - the levels
+;; on `:x` - and the vertical one along the radius; `:inner` leaves a hole.
 
 ;; ### Circular barplot: labels, order, gaps
 
@@ -430,15 +432,15 @@
 (let [levels (vec (mapcat (fn [g] (concat (map :item (filter #(= g (:group %)) shop-groups)) [(str "_" g)])) ["A" "B" "C"]))]
   (plot/render-image
    (plot/arrange
-    [{:data top-20 :mapping {:x :value :y :country}
-      :flip true :coord {:kind :polar :inner 0.3}
-      :scales {:y {:domain (ascending top-20) :axis false} :x {:axis false :domain [0 26000]}}
+    [{:data top-20 :mapping {:x :country :y :value}
+      :coord {:kind :polar :inner 0.3}
+      :scales {:x {:domain (ascending top-20) :axis false} :y {:axis false :domain [0 26000]}}
       :charts [(chart/bar {:color [33 102 172] :stroke-color :none})
-               (chart/text {:mapping {:x :value :y :country :label :country} :rotation :radial :size 8})]
+               (chart/text {:mapping {:x :country :y :value :label :country} :rotation :radial :size 8})]
       :labels {:title "Ordered, radial labels" :x nil :y nil}}
-     {:data shop-groups :mapping {:x :value :y :item :color :group}
-      :flip true :coord {:kind :polar :inner 0.2}
-      :scales {:y {:domain levels :formatter (fn [v] (if (= \_ (first (str v))) "" (str v)))}}
+     {:data shop-groups :mapping {:x :item :y :value :color :group}
+      :coord {:kind :polar :inner 0.2}
+      :scales {:x {:domain levels :formatter (fn [v] (if (= \_ (first (str v))) "" (str v)))}}
       :charts [(chart/bar)]
       :labels {:title "Gaps between groups" :x nil :y nil}}]
     {:columns 2})
@@ -460,8 +462,8 @@
 (plot/render-image
  (plot/arrange
   (vec (for [p [:stack :dodge]]
-         {:data parts :mapping {:x :value :y :item :color :part}
-          :flip true :coord {:kind :polar :inner 0.15}
+         {:data parts :mapping {:x :item :y :value :color :part}
+          :coord {:kind :polar :inner 0.15}
           :charts [(chart/bar {:position p})]
           :labels {:title (str ":position " p) :x nil :y nil}}))
   {:columns 2})
@@ -602,7 +604,7 @@
       :charts [(chart/parallel {:variables car-variables :fill :color :width 2 :limits car-limits})]
       :labels {:title "Ranges of all 32 cars (:limits)" :x nil}}]
     {:columns 2 :widths [2 3]})
-   {:data mtcars :mapping {:color #(str (long (:cyl %)) " cyl")} :coord {:kind :polar}
+   {:data (map #(assoc % :cylinders (str (long (:cyl %)))) mtcars) :mapping {:color :cylinders} :coord {:kind :polar}
     :charts [(chart/parallel {:variables car-variables :scaling :std})]
     :labels {:title "All cars by cylinders (:std)" :x nil}}]
   {:columns 1 :heights [1 1]})
@@ -634,7 +636,8 @@
 
 ;; ### Order the data
 
-;; Bars of unordered categories make the reader sort them; ordered by value, the ranking is read at a glance.
+;; Unordered categories make the reader sort them; ordered by value, the ranking is read at a glance - here all 38
+;; countries with a value, as lollipops.
 
 (nu/source-note {:source "data-to-viz - Order your data"
                  :url "https://www.data-to-viz.com/caveat/order_data.html"
@@ -642,12 +645,13 @@
 
 (plot/render-image
  (plot/arrange
-  [{:data (alphabetical top-20) :mapping {:x :value :y :country}
-    :charts [(chart/bar)] :labels {:title "Alphabetical" :x "exports" :y nil}}
-   {:data top-20 :mapping {:x :value :y :country} :scales {:y {:domain (ascending top-20)}}
-    :charts [(chart/bar)] :labels {:title "Ordered" :x "exports" :y nil}}]
+  (vec (for [[title scales] [["Alphabetical" {}] ["Ordered by value" {:y {:domain (ascending weapons)}}]]]
+         {:data (alphabetical weapons) :mapping {:x :value :y :country} :scales scales
+          :theme {:axis {:y {:label-gap 1}}}
+          :charts [(chart/segment {:xend 0 :color [150 150 150]}) (chart/scatter {:size 5 :color [33 102 172]})]
+          :labels {:title title :x "exports" :y nil}}))
   {:columns 2})
- {:width 1000 :height 500})
+ {:width 1000 :height 800})
 
 ;; ### Barplot or histogram
 
@@ -660,8 +664,8 @@
 
 (plot/render-image
  (plot/arrange
-  [{:data diamonds :mapping {:y :cut} :scales {:y {:domain cuts}} :flip true
-    :charts [(chart/bar {:stat :count})] :labels {:title "Barplot: diamonds per cut" :x "count" :y nil}}
+  [{:data diamonds :mapping {:x :cut} :scales {:x {:domain cuts}}
+    :charts [(chart/bar {:stat :count})] :labels {:title "Barplot: diamonds per cut" :x nil :y "count"}}
    {:data diamonds :mapping {:x :price}
     :charts [(chart/histogram)] :labels {:title "Histogram: diamond prices" :x "price, USD"}}]
   {:columns 2})
@@ -695,10 +699,11 @@
 
 (plot/render-image
  (plot/arrange
-  [{:data top-10 :mapping {:x :value :y :country} :scales {:y {:domain (ascending top-10)}}
-    :flip true :coord {:kind :polar :inner 0.2}
+  [{:data top-10 :mapping {:x :country :y :value} :scales {:x {:domain (ascending top-10)}}
+    :coord {:kind :polar :inner 0.2}
     :charts [(chart/bar)] :labels {:title "Circular" :x nil :y nil}}
-   {:data top-10 :mapping {:x :value :y :country} :scales {:y {:domain (ascending top-10)}}
-    :charts [(chart/bar)] :labels {:title "Straight" :x "exports" :y nil}}]
+   {:data top-10 :mapping {:x :country :y :value} :scales {:x {:domain (ascending top-10)}}
+    :theme {:axis {:x {:label-rotation -45}}}
+    :charts [(chart/bar)] :labels {:title "Straight" :x nil :y "exports"}}]
   {:columns 2})
  {:width 1000 :height 500})

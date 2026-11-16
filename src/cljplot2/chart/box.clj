@@ -1,6 +1,7 @@
 (ns cljplot2.chart.box
-  "Box plot: a Tukey box per `:y` level and group of the `:x` values - a strip chart (see [[cljplot2.data.strip]]:
-  placement `:place`, `:width`, `:thickness`, groups `:position`).
+  "Box plot: a Tukey box per level and group of the values - a strip chart (see [[cljplot2.data.strip]]: levels on
+  the categorical axis, `:level-axis`; placement `:place`, `:width`, `:thickness`, groups `:position`). Axes below are
+  named in the strip frame - `:x` the values, `:y` the levels; exchange them for vertical boxes (levels on `:x`).
 
   Per item: quartiles Q1, median, Q3 (fastmath `percentiles`, legacy estimation), whiskers to the adjacent values
   (the most extreme values within 1.5 IQR of the box, fastmath `adjacent-values`), outliers beyond them.
@@ -49,7 +50,7 @@
                       (schema/nilable :mean schema/bool)
                       (schema/nilable :varwidth schema/bool)
                       (schema/optional :padding data/position-padding)))
-   :mapping [:map [:x schema/accessor]]})
+   :mapping strip/values-mapping})
 
 (defn- style
   [options theme]
@@ -71,7 +72,7 @@
   (let [nmax (double (reduce max 1 (map :n items)))]
     (fn ^double [item] (if varwidth? (m/sqrt (/ (double (:n item)) nmax)) 1.0))))
 
-(defn compute
+(defn- compute-in-strip-frame
   "Per panel: `{:items [item ...] :style st :place p :options o}`, items with [[box-stats]] and `:width-factor`;
   extents (x - whiskers and, with `:outliers`, outliers; y - see [[cljplot2.data.strip/extents]]), padding, `:na`,
   `:dropped`."
@@ -101,7 +102,7 @@
   [color]
   (if (> 127.5 (double (c/luma color))) :white :black))
 
-(defn draw
+(defn- draw-in-strip-frame
   "Draw the boxes of one panel."
   [_chart {:keys [items style place options]} canvas box scales env]
   (let [{:keys [point] :as pl} (strip/placement box scales options place)
@@ -147,6 +148,17 @@
                           (fn [{:keys [uav outliers]}] (if (and outliers? (seq outliers)) (reduce max uav outliers) uav))
                           options scales env)))
 
+
+(defn compute
+  "Stats of the chart with its levels on the categorical axis (see [[cljplot2.data.strip/compute-oriented]]):
+  [[compute-in-strip-frame]] in the strip frame."
+  [chart chart-split env]
+  (strip/compute-oriented compute-in-strip-frame chart chart-split env))
+
+(defn draw
+  "Draw one panel (see [[cljplot2.data.strip/draw-oriented]]): [[draw-in-strip-frame]] in the strip frame."
+  [chart computed canvas box scales env]
+  (strip/draw-oriented draw-in-strip-frame chart computed canvas box scales env))
 (defn legend
   "Key glyph: a small box with a median line, centred in `box`."
   [{:keys [options]} attributes canvas {:keys [x y w h]} env]

@@ -1,6 +1,12 @@
 (ns cljplot2.data.strip
-  "1d strips: charts drawing the distribution of `:x` values (box, violin, stripplot, rug, extent) or one value per
-  item (bar) placed across the `:y` dimension (value on `:x`, horizontal by default; `:flip true` makes strips vertical).
+  "1d strips: charts drawing the distribution of values (box, violin, stripplot, beeswarm, rug, extent) or one value
+  per item (bar) placed across the levels of a categorical axis.
+
+  Orientation (see [[level-axis]]): the levels sit on the categorical mapping axis - `{:x level :y value}` draws
+  vertical strips, `{:x value :y level}` horizontal ones; option `:level-axis` (`:x` / `:y`) decides when both or
+  neither axis is categorical (and always wins). Charts compute and draw in the **strip frame** - levels on `:y`,
+  values on `:x`, as described below - through [[compute-oriented]] / [[draw-oriented]], which transpose input,
+  stats and scales for levels on `:x`. `:flip true` exchanges the drawn axes on top of that.
 
   Contract: a strip chart computes, per panel, **items** - one per `:y` level and group -
   `{:level l :key k :aesthetics a :values [..] :slot [lo hi]}` plus its own statistics, all in data units along the
@@ -75,7 +81,8 @@
    (schema/optional :dodge-gap schema/fraction)
    (schema/optional :bottom-share schema/fraction)
    (schema/nilable :n-label schema/bool)
-   (schema/optional :n-format :string)])
+   (schema/optional :n-format :string)
+   (schema/optional :level-axis [:enum :x :y])])
 
 (def mirror-option
   "Map entry of the `:mirror` option of strip charts drawing a negative side (bar, extent)."
@@ -111,7 +118,7 @@
   [levels plot-scales]
   (let [bands? (= :bands (get-in plot-scales [:y :kind]))]
     (when-not (every? #(or (categorical-level? %) (and bands? (number? %))) levels)
-      (schema/fail! "Strip :y levels must be categorical (strings / keywords / intervals), or numbers declared categorical (:scales {:y {:type :categorical}} or :mapping {:y (levels/categorical k)})."
+      (schema/fail! "Strip levels (the level axis, see :level-axis) must be categorical (strings / keywords / intervals), or numbers declared categorical (:scales {:y {:type :categorical}} or :mapping {:y (levels/categorical k)})."
                     {:key :place :value (first (remove categorical-level? levels))}))))
 
 (defn- slots
@@ -198,6 +205,9 @@
         place (place-of options mapping default-place)
         {:keys [panels dims dropped]} (group/split groups (dissoc mapping :y) env)
         count-rows? (boolean (::count-rows options))
+        _ (when (and (not count-rows?) (nil? (:x mapping)))
+            (schema/fail! "Strip values aren't mapped: map them on the axis other than the levels (see :level-axis)."
+                          {:key :mapping :value :values}))
         x-of (when-not count-rows? (data/row-accessor :x (:x mapping)))
         y-of (when (= :band place) (data/row-accessor :y (:y mapping)))
         all-rows (mapcat :rows (mapcat val panels))
@@ -528,3 +538,96 @@
   "`items` in drawing order for placement `pl`: levels farthest toward higher `:y` first, so nearer ridges cover them."
   [{:keys [centre sign]} items]
   (sort-by #(- (* (double sign) (double (centre (:level %))))) items))
+
+;; orientation
+
+(def values-mapping
+  "Mapping schema of strip charts reading values: `:x` or `:y` mapped (the values sit on the axis other than the
+  levels, see [[level-axis]])."
+  (schema/with-rules [:map]
+    [#(when-not (or (some? (:x %)) (some? (:y %))) "should map :x or :y (the values)") nil]))
+
+(defn- categorical-axis?
+  "Does dimension `k` of `mapping` hold strip levels: a `:bands` plot scale in `plot-scales` (`:type :categorical`
+  and categorical mapping markers resolve to it) or some value of `rows` a string, keyword or interval?"
+  [k mapping rows plot-scales]
+  (when-let [acc (get mapping k)]
+    (or (= :bands (get-in plot-scales [k :kind]))
+        (let [value-of (data/row-accessor k acc)]
+          (boolean (some #(categorical-level? (value-of %)) rows))))))
+
+(defn- numeric-axis?
+  "Does dimension `k` of `mapping` have some number among the values of `rows`?"
+  [k mapping rows]
+  (when-let [acc (get mapping k)]
+    (let [value-of (data/row-accessor k acc)]
+      (boolean (some #(number? (value-of %)) rows)))))
+
+(defn level-axis
+  "The mapping axis holding a strip chart's levels: `:level-axis` of `options` (always wins), else from `mapping`
+  over `rows` (all panels) and the plot's scales `plot-scales` - the categorical axis (see [[categorical-axis?]]);
+  with neither categorical, `:x` when only `:y` is mapped (one vertical level), else `:y` (one level, a count, or an
+  axis without values - the strip frame reports it). Throws `ex-info {:key :level-axis}` when both axes are
+  categorical, or both have numbers."
+  [options mapping rows plot-scales]
+  (or (:level-axis options)
+      (let [x-categorical? (categorical-axis? :x mapping rows plot-scales)
+            y-categorical? (categorical-axis? :y mapping rows plot-scales)]
+        (cond
+          (and x-categorical? y-categorical?)
+          (schema/fail! "Both :x and :y are categorical: set :level-axis (:x or :y - the axis holding the strip levels)."
+                        {:key :level-axis :value [:x :y]})
+          x-categorical? :x
+          y-categorical? :y
+          (and (numeric-axis? :x mapping rows) (numeric-axis? :y mapping rows))
+          (schema/fail! (str "Strip levels must be categorical (strings / keywords / intervals) on :x or :y, or numbers "
+                             "declared categorical (:scales {:y {:type :categorical}} or :mapping {:y (levels/categorical k)}); "
+                             "or set :level-axis.")
+                        {:key :level-axis :value [:x :y]})
+          (and (some? (:y mapping)) (nil? (:x mapping))) :x
+          :else :y))))
+
+(defn- swap-xy
+  "`m` with the entries of `:x` and `:y` exchanged (an absent one stays absent); `nil` for `nil`."
+  [m]
+  (when m
+    (cond-> (dissoc m :x :y)
+      (contains? m :y) (assoc :x (get m :y))
+      (contains? m :x) (assoc :y (get m :x)))))
+
+(def ^:private stats-dimension-maps
+  "Stats keys of a strip chart whose maps are keyed by dimension."
+  [:padding :padding-explicit :padding-px :axis-titles :tick-format :scale-defaults :dropped])
+
+(defn- transposed-stats
+  "`stats` of a chart computed in the strip frame (levels on `:y`) with their dimensions exchanged for levels on
+  `:x`: the dimension-keyed maps, every panel's extents and the `:na` dimensions."
+  [stats]
+  (cond-> (reduce (fn [s k] (if (contains? s k) (update s k swap-xy) s)) stats stats-dimension-maps)
+    (contains? stats :extents) (update :extents update-vals swap-xy)
+    (contains? stats :na) (update :na #(set (map (fn [d] (get {:x :y :y :x} d d)) %)))))
+
+(defn compute-oriented
+  "Stats of a strip chart whose `compute` works in the strip frame (levels on `:y`, values on `:x`), with the
+  levels on the mapping axis of [[level-axis]]: on `:x` it computes the transposed input - mapping, the `:padding`
+  option and the plot's scales with `:x` and `:y` exchanged, `:flip?` inverted - and its stats are transposed back
+  (see [[transposed-stats]]). The stats carry `:level-axis`, every panel's data `::level-axis` (for
+  [[draw-oriented]])."
+  [compute chart {:keys [groups mapping] :as chart-split} env]
+  (let [axis (level-axis (:options chart) mapping (mapcat val groups) (:plot-scales env))
+        stats (if (= :y axis)
+                (compute chart chart-split env)
+                (transposed-stats
+                 (compute (cond-> chart (get-in chart [:options :padding]) (update-in [:options :padding] swap-xy))
+                          (assoc chart-split :mapping (swap-xy mapping))
+                          (-> env (update :flip? not) (update :plot-scales swap-xy)))))]
+    (-> stats
+        (update :data update-vals #(assoc % ::level-axis axis))
+        (assoc :level-axis axis))))
+
+(defn draw-oriented
+  "Draw one panel's `computed` data with a strip chart's `draw` working in the strip frame: the position scales
+  exchanged when the levels are on `:x` (see [[compute-oriented]]) - placement and projections take their
+  directions from the scales."
+  [draw chart computed canvas box scales env]
+  (draw chart computed canvas box (if (= :x (::level-axis computed)) (swap-xy scales) scales) env))

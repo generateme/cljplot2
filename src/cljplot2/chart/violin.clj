@@ -1,5 +1,6 @@
 (ns cljplot2.chart.violin
-  "Violin plot: a kernel density estimate (see [[cljplot2.data.kde]]) of the `:x` values per `:y` level and group,
+  "Violin plot: a kernel density estimate (see [[cljplot2.data.kde]]) of the values per level (the categorical axis, see
+  `:level-axis` in [[cljplot2.data.strip]]) and group,
   mirrored around the item's centre line - a strip chart (see [[cljplot2.data.strip]]: placement `:place`, `:width`,
   `:thickness`, groups `:position`; `:mirror` with two groups draws a split violin, one half per group).
 
@@ -50,7 +51,7 @@
                       (schema/nilable :varwidth schema/bool)
                       (schema/optional :inner [:enum :box :quartiles :rug :points :none])
                       (schema/optional :padding data/position-padding)))
-   :mapping [:map [:x schema/accessor]]})
+   :mapping strip/values-mapping})
 
 (defn- style
   [options theme]
@@ -63,7 +64,7 @@
         {:keys [x y]} (kde/curve e (kde/grid-points (:lo e) (:hi e) (long (or (:n options) 100))))]
     {:xs x :ds y}))
 
-(defn compute
+(defn- compute-in-strip-frame
   "Per panel: `{:items [..] :style st :place p :options o :mirror? b}`; an item has `:xs`, `:widths` (densities scaled to
   `[0 1]` by `:scale` and `:varwidth`) and the [[cljplot2.chart.box/box-stats]] of its values; extents (x - the KDE
   ranges), padding, `:na`, `:dropped` (`:group` - items without a violin)."
@@ -112,7 +113,7 @@
                   w0 (double (widths (dec i))) w1 (double (widths i))]
               (if (== x0 x1) w1 (+ w0 (* (- w1 w0) (/ (- v x0) (- x1 x0)))))))))
 
-(defn draw
+(defn- draw-in-strip-frame
   "Draw the violins of one panel: the outline polygon (filled), then the inner marks."
   [_chart {:keys [items style place options mirror?]} canvas box scales env]
   (let [{:keys [point] :as pl} (strip/placement box scales options place)
@@ -170,6 +171,17 @@
 
 (def ^:private ^:const glyph-points 24)
 
+
+(defn compute
+  "Stats of the chart with its levels on the categorical axis (see [[cljplot2.data.strip/compute-oriented]]):
+  [[compute-in-strip-frame]] in the strip frame."
+  [chart chart-split env]
+  (strip/compute-oriented compute-in-strip-frame chart chart-split env))
+
+(defn draw
+  "Draw one panel (see [[cljplot2.data.strip/draw-oriented]]): [[draw-in-strip-frame]] in the strip frame."
+  [chart computed canvas box scales env]
+  (strip/draw-oriented draw-in-strip-frame chart computed canvas box scales env))
 (defn legend
   "Key glyph: a small horizontal violin silhouette - a symmetric lens with pointed ends, half-width `(1 - t^2)` along
   `t` in `[-1 1]` - filled with `:color` and outlined with `:stroke-color`, centred in `box`."

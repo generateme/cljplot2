@@ -72,8 +72,9 @@
 (deftest place-errors-test
   (are [p] (= :place (:key (error #(built p))))
     {:data rows :mapping {:x :v} :charts [(chart/box {:place :band})]}
-    {:data rows :mapping {:x :v :y :lvl} :charts [(chart/box {:place :center})]}
-    {:data rows :mapping {:x :v :y :v} :charts [(chart/box)]})
+    {:data rows :mapping {:x :v :y :lvl} :charts [(chart/box {:place :center})]})
+  ;; both axes numeric: the level axis is undecided (orientation)
+  (is (= :level-axis (:key (error #(built {:data rows :mapping {:x :v :y :v} :charts [(chart/box)]})))))
   (is (= #{[:charts 0 :options :place]} (error-ins #(built {:data rows :mapping {:x :v} :charts [(chart/box {:place :middle})]}))))
   (testing "numeric levels work with an explicit :bands kind, sorted"
     (let [b (built {:data (map #(assoc % :n (mod (:v %) 3)) rows) :mapping {:x :v :y :n} :scales {:y {:kind :bands}}

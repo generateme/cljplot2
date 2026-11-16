@@ -169,7 +169,13 @@
       (is (seq reds))
       (is (every? (fn [j] (some #(<= (m/abs (- (double j) (+ (double y) (fy %)))) (+ (* 0.4 bw) 4.0)) ["a" "b" "c"])) reds))))
   (testing "F2 strip and ridge charts without a finite :x throw {:key :mapping}"
-    (doseq [c [(chart/box) (chart/beeswarm) (chart/density) (chart/histogram)]]
+    ;; string values make both axes categorical for strip charts (orientation: {:key :level-axis}); with the level
+    ;; axis set, the missing finite values are reported
+    (doseq [c [(chart/box) (chart/beeswarm)]]
+      (is (= :level-axis (:key (error #(built {:data (map (fn [r] (assoc r :v "x")) rows) :mapping {:x :v :y :lvl}
+                                               :charts [c]}))))
+          (str (:kind c))))
+    (doseq [c [(chart/box {:level-axis :y}) (chart/beeswarm {:level-axis :y}) (chart/density) (chart/histogram)]]
       (is (= :mapping (:key (error #(built {:data (map (fn [r] (assoc r :v "x")) rows) :mapping {:x :v :y :lvl}
                                             :charts [c]}))))
           (str (:kind c)))))

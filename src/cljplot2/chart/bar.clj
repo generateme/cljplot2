@@ -1,7 +1,8 @@
 (ns cljplot2.chart.bar
-  "Bar chart: one bar per `:y` level and group - a strip chart (see [[cljplot2.data.strip]]: levels on a `:bands` `:y`
-  scale, bar lengths along `:x`; horizontal by default, `:flip true` for vertical bars; placement `:place`, `:width`,
-  `:dodge-gap`, `:n-label`).
+  "Bar chart: one bar per level and group - a strip chart (see [[cljplot2.data.strip]]): levels on the categorical
+  axis - `{:x level :y value}` vertical bars, `{:x value :y level}` horizontal ones, `:level-axis` when both or neither
+  axis is categorical; placement `:place`, `:width`, `:dodge-gap`, `:n-label`. Axes below are named in the strip frame
+  - `:x` the values, `:y` the levels; exchange them for vertical bars (levels on `:x`), also in `:padding`.
 
   Options (style defaults from theme `[:chart :bar]`):
 
@@ -93,12 +94,12 @@
                                :pattern-color])))
 
 (defn- check-options!
-  "Throw for a value stat without an `:x` mapping (`{:key :mapping}`) and a `:value-format` that can't format a
-  number (`{:key :value-format}`)."
+  "Throw for a value stat without a value mapping (`:x` in the strip frame; `{:key :mapping}`) and a `:value-format`
+  that can't format a number (`{:key :value-format}`)."
   [options mapping]
   (when (and (nil? (:x mapping)) (not (count-stats (get options :stat :sum))))
-    (schema/fail! "Bar :stat needs an :x mapping (only :count, :percent and :pmf count rows without it)."
-                  {:key :mapping :value :x}))
+    (schema/fail! "Bar :stat needs the values mapped - on the axis other than the levels (only :count, :percent and :pmf count rows without them)."
+                  {:key :mapping :value :values}))
   (when-let [fmt (:value-format options)]
     (try (format fmt 1.5)
          (catch Exception e
@@ -218,7 +219,7 @@
     {:padding [(if from-lo? 0.0 0.05) (if from-hi? 0.0 0.05)]
      :request (when (or from-lo? from-hi?) [(when from-lo? 0.0) (when from-hi? 0.0)])}))
 
-(defn compute
+(defn- compute-in-strip-frame
   "Per panel: `{:bars [item ...] :style st :place p :options o :translucent? b :zero-line? b}`, items (see
   [[cljplot2.data.strip/split]]) with `:length`, `:y0 :y1`, `:width-factor`, `:label` (the end label or `nil`); extents (x - the
   bar ends and 0, y - see [[cljplot2.data.strip/extents]]), padding, `:padding-px` (label room), `:na`, `:dropped`,
@@ -262,7 +263,7 @@
      :axis-titles (if-let [t (value-title stat position (:x mapping) all-bars)] {:x t} {})
      :tick-format (when mirror? {:x :absolute})}))
 
-(defn draw
+(defn- draw-in-strip-frame
   "Draw the bars of one panel (zero-length bars, bars under half a pixel and bars of groups outside an aesthetic
   domain skipped), then the mirror's 0 line and the end labels (of the bars whose group is drawn)."
   [_chart {:keys [bars style place options translucent? zero-line?]} canvas box scales env]
@@ -285,6 +286,17 @@
                                             styled)
                             scales env)))
 
+
+(defn compute
+  "Stats of the chart with its levels on the categorical axis (see [[cljplot2.data.strip/compute-oriented]]):
+  [[compute-in-strip-frame]] in the strip frame."
+  [chart chart-split env]
+  (strip/compute-oriented compute-in-strip-frame chart chart-split env))
+
+(defn draw
+  "Draw one panel (see [[cljplot2.data.strip/draw-oriented]]): [[draw-in-strip-frame]] in the strip frame."
+  [chart computed canvas box scales env]
+  (strip/draw-oriented draw-in-strip-frame chart computed canvas box scales env))
 (defn legend
   "Key glyph: a filled square (see [[cljplot2.graphics.draw/bar-key!]]); translucent with a mapped `:color` when the
   bars are (overlay groups sharing a level, see [[compute]] - env `:chart-stats`)."
