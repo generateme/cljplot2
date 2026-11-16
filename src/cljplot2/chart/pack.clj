@@ -10,8 +10,9 @@
   each group the smallest circle around its packed children - a group's area is not proportional to its value
   (packing leaves gaps), compare leaves within a group. Children are packed in `:order` - `:value` (default,
   descending: the largest near the centre) or `:data` (first appearance). The whole packing fits the panel's
-  shorter side, centred; circles stay round in any panel shape. `:padding` (pixels) leaves gaps of twice its size
-  between siblings and between a child and its parent's edge.
+  shorter side, centred; circles stay round in any panel shape. Facet panels pack separately, each filling its own
+  box: circle sizes compare within a panel, not across panels. `:padding` (pixels, as d3's) - the gap between
+  siblings and between a child and its parent's edge; a panel too small for such gaps gets the widest it holds.
 
   Colors (as the partition): without a mapped `:color` each top-level node takes the next `[:palette :color]` color,
   the nodes below it lighter by depth (see [[cljplot2.data.hierarchy/depth-shade]]); a mapped `:color` colors the
@@ -23,9 +24,10 @@
   Labels: `:group-labels` / `:leaf-labels` (default true - the node's name; `false` - none; a function of the node
   info `{:name :value :depth :path :share :parent-share}` (see [[cljplot2.data.hierarchy/node-info]]) returning the
   text, `nil` / `\"\"` - none; unnamed nodes get no label), text roles `:pack-group` / `:pack-leaf`, in black or white
-  by the circle's fill, drawn after all circles and only when they fit: a leaf label centred (its box's diagonal
-  within the diameter); a group label inside the circle under its top (its box's top corners on the circle at most,
-  the box above the centre)."
+  by the circle painted under the label's centre, drawn after all circles and only when they fit: a leaf label
+  centred (its box's diagonal within the diameter); a group label inside the circle under its top (its box's top
+  corners on the circle at most, the box above the centre) - it may cover child circles. A label overlapping one
+  placed before it (parents first: an ancestor's) isn't drawn."
   (:require [clojure2d.core :as c2d]
             [fastmath.core :as m]
             [cljplot2.content.label :as label]
@@ -134,6 +136,38 @@
           (when (>= t h)
             [x (+ (- y t) (* 0.5 h))]))))))
 
+(defn- covering-node
+  "The last of the drawn `nodes` (parents first: the deepest) containing pixel `(x, y)` - the circle painted there."
+  [nodes ^double x ^double y]
+  (last (filter #(<= (m/hypot (- x (double (:x %))) (- y (double (:y %)))) (double (:r %))) nodes)))
+
+(defn- boxes-overlap?
+  [a b]
+  (and (< (double (:x a)) (+ (double (:x b)) (double (:w b)))) (< (double (:x b)) (+ (double (:x a)) (double (:w a))))
+       (< (double (:y a)) (+ (double (:y b)) (double (:h b)))) (< (double (:y b)) (+ (double (:y a)) (double (:h a))))))
+
+(defn- label-placements
+  "Labels of the drawn `nodes` (parents first) to draw: `[{:content c :x px :y py :box b} ..]` - each fitting its
+  circle (see [[label-position]]) and overlapping no label placed before it (an ancestor's label wins), in black or
+  white by the circle painted under its centre. `size-of` - natural size of a label content, `fill-of` - a node's
+  fill, `line-size` - a role's font size (circles narrower than one line aren't measured)."
+  [nodes size-of fill-of line-size]
+  (reduce (fn [placed {:keys [label leaf? r] :as node}]
+            (let [role (if leaf? :pack-leaf :pack-group)]
+              (if-not (and label (>= (* 2.0 (double r)) (double (line-size role))))
+                placed
+                (let [content {:kind :label :role role :text label}
+                      ^Vec2 size (size-of content)
+                      [px py] (label-position node size)
+                      box (when px {:x (- (double px) (* 0.5 (.x size))) :y (- (double py) (* 0.5 (.y size)))
+                                    :w (.x size) :h (.y size)})]
+                  (if (or (nil? box) (some #(boxes-overlap? box (:box %)) placed))
+                    placed
+                    (conj placed {:content (assoc content :color (draw/contrast-color (fill-of (covering-node nodes px py))))
+                                  :x px :y py :box box}))))))
+          []
+          nodes))
+
 (defn draw
   "Pack and draw one panel's tree in the panel `box`: circles parents first, then their labels."
   [_chart {:keys [tree style options] :as panel} canvas {:keys [w h]} scales env]
@@ -148,15 +182,9 @@
       (doseq [node nodes
               :let [fill (fill-of node)]]
         (circle! canvas node fill stroke sw (pattern-fill style fill)))
-      (doseq [{:keys [label leaf? r] :as node} nodes
-              :when label
-              :let [role (if leaf? :pack-leaf :pack-group)]
-              ;; a line is at least the font size tall: circles without that room aren't measured
-              :when (>= (* 2.0 (double r)) (double (get-in theme [:text role :size])))
-              :let [content {:kind :label :role role :text label}
-                    [px py] (label-position node (measure/natural-size content {:canvas canvas :theme theme}))]
-              :when px]
-        (label/draw-at! canvas (assoc content :color (draw/contrast-color (fill-of node))) [:center :middle] px py env)))))
+      (doseq [{:keys [content x y]} (label-placements nodes #(measure/natural-size % {:canvas canvas :theme theme}) fill-of
+                                                      #(get-in theme [:text % :size]))]
+        (label/draw-at! canvas content [:center :middle] x y env)))))
 
 (defn legend
   "Key glyph: a filled circle inset in `box`, with the chart's `:pattern`."

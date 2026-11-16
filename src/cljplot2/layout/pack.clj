@@ -9,7 +9,8 @@
   * [[enclose]] - the smallest enclosing circle of circles: Welzl's move-to-front scheme over a basis of up to three
     circles (correct in any input order; a random order only speeds it up).
   * [[pack]] - a tree of `{:value :children}` nodes: leaf radii from the square root of the value (area proportional
-    to value), each group the enclosing circle of its packed children, the root scaled to fit the box."
+    to value), each group the enclosing circle of its packed children, the root scaled to fit the box; gaps of
+    `padding` pixels."
   (:require [fastmath.core :as m]))
 
 (set! *warn-on-reflection* true)
@@ -213,15 +214,15 @@
 
 (defn- layout-units
   "`node` with its radius `:r` and its children's centres `:x :y` relative to its own (layout units): leaves -
-  `sqrt(value)`; groups - children packed with `gap` added to their radii, centred on the enclosing circle, radius the
-  enclosing one plus `gap`."
-  [node ^double gap]
+  `sqrt(value)`; groups - children packed with `half-gap` added to their radii, centred on the enclosing circle,
+  radius the enclosing one plus `half-gap` (gaps of `2 half-gap` between siblings and to the parent's edge)."
+  [node ^double half-gap]
   (if-let [cs (seq (:children node))]
-    (let [cs (mapv #(layout-units % gap) cs)
-          centres (pack-siblings (map #(+ (double (:r %)) gap) cs))
-          {ex :x ey :y er :r} (enclose (map (fn [c [x y]] {:x x :y y :r (+ (double (:r c)) gap)}) cs centres))]
+    (let [cs (mapv #(layout-units % half-gap) cs)
+          centres (pack-siblings (map #(+ (double (:r %)) half-gap) cs))
+          {ex :x ey :y er :r} (enclose (map (fn [c [x y]] {:x x :y y :r (+ (double (:r c)) half-gap)}) cs centres))]
       (assoc node
-             :r (+ (double er) gap)
+             :r (+ (double er) half-gap)
              :children (mapv (fn [c [x y]] (assoc c :x (- (double x) (double ex)) :y (- (double y) (double ey)))) cs centres)))
     (assoc node :r (m/sqrt (double (:value node))))))
 
@@ -232,27 +233,69 @@
     (:children node) (update :children
                              (fn [cs] (mapv #(absolute % (+ cx (* scale (double (:x %)))) (+ cy (* scale (double (:y %)))) scale) cs)))))
 
-(def ^:private ^:const max-padding-rounds
-  "Layout passes fitting the pixel padding (each pass corrects the padding in layout units for the scale it gives)."
-  8)
+(def ^:private ^:const gap-tolerance
+  "Pixels: a fitted gap this close to the asked one is exact enough."
+  0.01)
+
+(def ^:private ^:const max-fit-rounds
+  "Layout passes searching the padding in layout units (bracketing, then false position)."
+  60)
+
+(defn- laid-out
+  "Layout of `tree` in layout units with `half-gap` units added to every child's and group's radius (see
+  [[layout-units]]): `{:half-gap u :laid tree :scale px-per-unit :gap px}` - the scale fitting `side` pixels, `:gap` -
+  the resulting gap in pixels."
+  [tree ^double half-gap ^double side]
+  (let [laid (layout-units tree half-gap)
+        scale (/ side (* 2.0 (double (:r laid))))]
+    {:half-gap half-gap :laid laid :scale scale :gap (* 2.0 half-gap scale)}))
+
+(defn- fit-gap
+  "Layout of `tree` (see [[laid-out]]) whose gaps are `gap` pixels at `side` pixels: the half gap in layout units
+  bracketed by doubling, then refined by false position (Illinois) to [[gap-tolerance]]. When the box can't hold such
+  gaps (they stop growing as the leaves shrink towards points) - the largest gaps found."
+  [tree ^double gap ^double side]
+  (let [at (fn [^double u] (laid-out tree u side))
+        close? (fn [e] (< (m/abs (- (double (:gap e)) gap)) gap-tolerance))
+        lo (at 0.0)
+        first-guess (at (/ (* 0.5 gap) (double (:scale lo))))]
+    (if (close? first-guess)
+      first-guess
+      ;; bracket: `hi` with a gap at least the asked one; stop when doubling stops widening the gaps (infeasible)
+      (let [[lo hi feasible?] (loop [lo lo hi first-guess round 0]
+                                (cond
+                                  (>= (double (:gap hi)) gap) [lo hi true]
+                                  (>= round max-fit-rounds) [lo hi false]
+                                  :else (let [next (at (* 2.0 (double (:half-gap hi))))]
+                                          (if (< (- (double (:gap next)) (double (:gap hi))) (* 1e-3 gap))
+                                            [hi next false]
+                                            (recur hi next (inc round))))))]
+        (if-not feasible?
+          (max-key :gap lo hi)
+          (loop [lo lo hi hi lo-w 1.0 hi-w 1.0 side-kept nil round 0]
+            (let [flo (- (double (:gap lo)) gap) fhi (- (double (:gap hi)) gap)
+                  ulo (double (:half-gap lo)) uhi (double (:half-gap hi))
+                  u (/ (- (* ulo (* hi-w fhi)) (* uhi (* lo-w flo))) (- (* hi-w fhi) (* lo-w flo)))
+                  e (at u)
+                  fe (- (double (:gap e)) gap)]
+              (cond
+                (or (close? e) (>= round max-fit-rounds)) e
+                (neg? fe) (recur e hi 1.0 (if (= side-kept :hi) (* 0.5 hi-w) 1.0) :hi (inc round))
+                :else (recur lo e (if (= side-kept :lo) (* 0.5 lo-w) 1.0) 1.0 :lo (inc round))))))))))
 
 (defn pack
   "Tree `tree` (`{:value v :children [..]}` nodes: positive values, groups with at least one child, children in
   packing order - the first ones near the centre) packed into the pixel box `{:x :y :w :h}`: every node gets
-  `:x :y :r` (pixels, absolute). The root circle fits the box's shorter side, centred. `padding` (pixels): added to
-  every child's radius before packing and to every group's enclosing radius - gaps of `2 padding` between siblings and
-  between a child and its parent's edge, fitted over a few passes (the padding in layout units depends on the
-  scale)."
+  `:x :y :r` (pixels, absolute). The root circle fits the box's shorter side, centred. `padding` (pixels, as d3's):
+  the gap between siblings and between a child and its parent's edge - half of it added to every child's radius
+  before packing and to every group's enclosing radius, the size in layout units searched for the scale it gives
+  (within 0.01 px); a box too small for such gaps gets the widest gaps it holds (the leaves shrink towards points)."
   [tree {:keys [x y w h]} padding]
   (let [side (m/min (double w) (double h))
         padding (double padding)
         cx (+ (double x) (* 0.5 (double w)))
-        cy (+ (double y) (* 0.5 (double h)))]
-    (if-not (pos? side)
-      (absolute (layout-units tree 0.0) cx cy 0.0)
-      (loop [gap 0.0 round 0]
-        (let [laid (layout-units tree gap)
-              scale (/ side (* 2.0 (double (:r laid))))]
-          (if (or (zero? padding) (>= round max-padding-rounds) (< (m/abs (- (* gap scale) padding)) 0.01))
-            (absolute laid cx cy scale)
-            (recur (/ padding scale) (inc round))))))))
+        cy (+ (double y) (* 0.5 (double h)))
+        {:keys [laid scale]} (if (and (pos? side) (pos? padding))
+                               (fit-gap tree padding side)
+                               (laid-out tree 0.0 (m/max side 0.0)))]
+    (absolute laid cx cy scale)))

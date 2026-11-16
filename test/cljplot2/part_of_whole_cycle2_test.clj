@@ -10,7 +10,8 @@
             [cljplot2.data.hierarchy :as hierarchy]
             [cljplot2.layout.grid :as grid]
             [cljplot2.layout.pack :as pack])
-  (:import [java.awt.image BufferedImage]))
+  (:import [java.awt.image BufferedImage]
+           [fastmath.vector Vec2]))
 
 ;; 1. layout
 
@@ -60,6 +61,23 @@
                              e))]
     (apply min-key :r (filter (fn [e] (every? #(contains-circle? e %) cs)) candidates))))
 
+(defn- enclosing-radius
+  "Radius of the smallest circle centred at `[x y]` containing circles `cs`."
+  ^double [cs x y]
+  (reduce max (map #(+ (dist [x y] [(:x %) (:y %)]) (double (:r %))) cs)))
+
+(defn- searched-radius
+  "Smallest enclosing radius by compass search over centres (a convex function), independent of the layout's formulas."
+  ^double [cs]
+  (loop [x (/ (reduce + (map :x cs)) (count cs)) y (/ (reduce + (map :y cs)) (count cs)) step 10.0]
+    (if (< step 1e-12)
+      (enclosing-radius cs x y)
+      (let [here (enclosing-radius cs x y)
+            [bx by br] (apply min-key #(nth % 2) (for [[dx dy] [[1 0] [-1 0] [0 1] [0 -1] [0.7 0.7] [-0.7 0.7] [0.7 -0.7] [-0.7 -0.7]]
+                                                       :let [nx (+ x (* step dx)) ny (+ y (* step dy))]]
+                                                   [nx ny (enclosing-radius cs nx ny)]))]
+        (if (< (double br) here) (recur bx by step) (recur x y (* 0.5 step)))))))
+
 (deftest enclose-test
   (testing "1.2 one, two"
     (is (= {:x 1 :y 2 :r 3} (pack/enclose [{:x 1 :y 2 :r 3}])))
@@ -74,7 +92,8 @@
                   e (pack/enclose cs)
                   b (brute-enclose cs)]]
       (is (every? #(contains-circle? e %) cs) (str "seed " seed))
-      (is (< (m/abs (- (double (:r e)) (double (:r b)))) (* 1e-9 (double (:r b)))) (str "seed " seed)))))
+      (is (< (m/abs (- (double (:r e)) (double (:r b)))) (* 1e-9 (double (:r b)))) (str "seed " seed))
+      (is (<= (double (:r e)) (+ (searched-radius cs) 1e-7)) (str "seed " seed ": no smaller circle found by search")))))
 
 (defn- tree-of [rows hierarchy]
   (hierarchy/ordered-tree (get-in (hierarchy/panel-trees {:p rows} {:value :v :hierarchy hierarchy} {}) [:trees :p]) :value))
@@ -95,19 +114,33 @@
             leaves (remove :children (nodes p))
             k (/ (m/sq (:r (first leaves))) (:value (first leaves)))]
         (is (every? #(< (m/abs (- (/ (m/sq (:r %)) (:value %)) k)) (* 1e-6 k)) leaves))))
-    (testing "1.4.2 / 1.4.4 children inside their parents, gaps of twice the padding (pixels)"
-      (doseq [padding [0 1.5 5]
+    (testing "1.4.2 / 1.4.4 children inside their parents, gaps of the padding (pixels, as d3's)"
+      (doseq [padding [0 1.5 5 20]
               :let [p (pack/pack (tree-of rows [:a :b]) box padding)
-                    gap (* 2.0 padding)]]
+                    gap (- (double padding) 0.05)]]
         (doseq [g (filter :children (nodes p))
                 :let [cs (:children g)]]
-          (is (every? #(<= (+ (dist [(:x g) (:y g)] [(:x %) (:y %)]) (:r %)) (+ (- (:r g) gap) 1.0)) cs)
+          (is (every? #(<= (+ (dist [(:x g) (:y g)] [(:x %) (:y %)]) (:r %)) (- (:r g) gap)) cs)
               (str "padding " padding ": child to parent edge"))
-          (is (every? (fn [[a b]] (>= (- (dist [(:x a) (:y a)] [(:x b) (:y b)]) (:r a) (:r b)) (- gap 1.0)))
+          (is (every? (fn [[a b]] (>= (- (dist [(:x a) (:y a)] [(:x b) (:y b)]) (:r a) (:r b)) gap))
                       (for [i (range (count cs)) j (range (inc i) (count cs))] [(cs i) (cs j)]))
               (str "padding " padding ": siblings")))
         (is (<= (- 10.0 1e-6) (- (double (:x p)) (double (:r p)))) "root inside the box")
         (is (<= (+ (double (:y p)) (double (:r p))) (+ 320.0 1e-6)))))
+    (testing "V1 the fitted gap: exact within 0.01 px where it fits; the widest a small box holds"
+      (let [min-gap (fn [t] (reduce min (for [g (filter :children (nodes t)) :let [cs (:children g)]
+                                              i (range (count cs)) j (range (inc i) (count cs))
+                                              :let [a (cs i) b (cs j)]]
+                                          (- (dist [(:x a) (:y a)] [(:x b) (:y b)]) (:r a) (:r b)))))
+            t (tree-of rows [:a :b])]
+        (doseq [[padding side] [[6 200] [12 200] [2 60]]]
+          (is (< (m/abs (- (double (min-gap (pack/pack t {:x 0 :y 0 :w side :h side} padding))) (double padding))) 0.011)
+              (str "padding " padding " in " side " px")))
+        (let [small (pack/pack t {:x 0 :y 0 :w 40 :h 40} 30)
+              wider (pack/pack t {:x 0 :y 0 :w 40 :h 40} 60)]
+          (is (< (double (min-gap small)) 30.0) "too small for 30 px gaps")
+          (is (every? #(m/valid-double? (double (:r %))) (nodes small)))
+          (is (< (m/abs (- (double (min-gap small)) (double (min-gap wider)))) 0.5) "saturated: the widest gaps it holds"))))
     (testing "one leaf: centred, as large as the root"
       (let [p (pack/pack (tree-of [{:a "A" :v 3}] [:a]) box 0)
             leaf (first (:children p))]
@@ -203,11 +236,9 @@
     (let [[_ _ packed :as r] (render (pk {:data [{:a "L" :v 1} {:a "R" :v 1}] :charts [(chart/pack {:root true :leaf-labels false})]}))]
       (is (= [128 128 128] (at r {:x (:x packed) :y (- (double (:y packed)) (* 0.8 (double (:r packed))))})))))
   (testing "2.7 :hidden-levels - no rings at that depth, leaves in place"
-    (let [[_ _ packed :as r] (render (pk {:charts [(chart/pack {:hidden-levels #{1} :leaf-labels false :group-labels false})]}))
-          [shown _ _] (render (pk {:charts no-labels}))]
+    (let [[_ _ packed :as r] (render (pk {:charts [(chart/pack {:hidden-levels #{1} :leaf-labels false :group-labels false})]}))]
       (is (not= (first (get-in plain [:palette :color])) (at r (above-children (named packed "A")))))
-      (is (close? (color-rgb (hierarchy/depth-shade (first (get-in plain [:palette :color])) 2)) (at r (named packed "a1"))))
-      (is (some? shown))))
+      (is (close? (color-rgb (hierarchy/depth-shade (first (get-in plain [:palette :color])) 2)) (at r (named packed "a1"))))))
   (testing "patterns and borders draw"
     (let [[_ ^BufferedImage img packed] (render (pk {:charts [(chart/pack {:pattern :hatch :leaf-labels false :group-labels false})]}))
           {:keys [x y]} (named packed "b1")
@@ -260,5 +291,28 @@
     (let [doc (:doc (meta (find-ns 'cljplot2.chart.pack)))]
       (is (str/includes? doc ":hierarchy [:name]"))
       (is (str/includes? doc "not proportional"))
-      (is (str/includes? doc "twice")))
+      (is (str/includes? doc "the gap between"))
+      (is (str/includes? doc "not across panels")))
     (is (str/includes? (:doc (meta #'chart/pack)) "cljplot2.chart.pack"))))
+
+(deftest label-placements-test
+  (let [placements #'cljplot2.chart.pack/label-placements
+        size-of (fn [{:keys [text]}] (Vec2. (* 6.0 (count text)) 12.0))
+        fill-of (fn [{:keys [depth]}] (if (= 1 depth) [0 0 120] [250 250 200]))
+        line (constantly 9)
+        parent {:x 100.0 :y 100.0 :r 80.0 :depth 1 :leaf? false :label "Parent"}
+        child {:x 100.0 :y 104.0 :r 75.0 :depth 2 :leaf? false :label "Child"}]
+    (testing "V3 a label overlapping an ancestor's isn't drawn"
+      (is (= ["Parent"] (map (comp :text :content) (placements [parent child] size-of fill-of line)))))
+    (testing "V3 separate labels are all drawn"
+      (is (= ["Parent" "leaf"] (map (comp :text :content)
+                                    (placements [parent {:x 100.0 :y 120.0 :r 30.0 :depth 2 :leaf? true :label "leaf"}] size-of fill-of line)))))
+    (testing "V5 colour by the circle painted under the label: the child's light fill, not the parent's dark one"
+      (let [[{:keys [content]}] (placements [parent (assoc child :y 100.0 :r 78.0 :label nil)] size-of fill-of line)]
+        (is (= :black (:color content)))))
+    (testing "the parent's dark fill when no child lies under the label"
+      (let [[{:keys [content]}] (placements [parent {:x 100.0 :y 150.0 :r 20.0 :depth 2 :leaf? true :label nil}] size-of fill-of line)]
+        (is (= :white (:color content)))))
+    (testing "circles narrower than a line aren't measured"
+      (is (empty? (placements [{:x 10.0 :y 10.0 :r 4.0 :depth 1 :leaf? true :label "x"}]
+                              (fn [_] (throw (ex-info "measured" {}))) fill-of line))))))

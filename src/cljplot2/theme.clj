@@ -108,7 +108,7 @@
            :treemap {:padding 3 :border-color :white :border-width 1
                      :pattern :solid :pattern-color :darker}
            :partition {:border-color :white :border-width 1 :pattern :solid :pattern-color :darker}
-           :pack {:padding 1.5 :border-color :white :border-width 1 :pattern :solid :pattern-color :darker}
+           :pack {:padding 3 :border-color :white :border-width 1 :pattern :solid :pattern-color :darker}
            :box {:color [69 117 180] :stroke-color :darker :stroke-width 1 :shape \O :size 5
                  :pattern :solid :pattern-color :darker}
            :violin {:color [69 117 180] :stroke-color :darker :stroke-width 1 :inner-color :none

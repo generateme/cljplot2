@@ -12,7 +12,8 @@
   `nil` / `\"\"` - none; e.g. `#(format \"%s\\n%.1f%%\" (:name %) (* 100 (:share %)))`; unnamed nodes get no label),
   `:padding` (pixels inside every group), `:border-color`,
   `:border-width`. Group headers use the `:treemap-group` text role in a strip at the group's top (reserved only when
-  the header fits the group's width); leaf labels the
+  the header fits the group's width); facet panels lay out separately, each filling its own box (rectangle areas
+  compare within a panel, not across panels); leaf labels the
   `:treemap-leaf` role, centered, drawn only when they fit; label text in black or white by the fill under it. The layout is computed when drawing, from the panel box."
   (:require [clojure2d.color :as c]
             [clojure2d.core :as c2d]
