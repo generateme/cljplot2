@@ -1,6 +1,7 @@
 (ns cljplot2.demo.parallel
   "Ranking cycle 4 demo: parallel coordinates (iris by species, a highlighted species, scalings side by side, a
-  vertical layout) and radar charts (mtcars rows with fills and limits, groups). Data: `iris.csv` and `mtcars.csv`
+  vertical layout, smooth connections) and radar charts (mtcars rows with fills and limits, groups, smooth, variables
+  as rings). Data: `iris.csv` and `mtcars.csv`
   bundled with fastmath."
   (:require [clojure.data.csv :as csv]
             [clojure.java.io :as io]
@@ -69,6 +70,24 @@
                   :labels {:title ":arcs, hatched fills" :x nil}}]
                 {:columns 2}))
 
+(def smooth
+  (plot/arrange (vec (for [[title opts] [["Straight (default)" {}]
+                                         [":curve :smooth" {:curve :smooth}]
+                                         [":smoothness 0.4" {:curve :smooth :smoothness 0.4}]]]
+                       {:data (take-nth 3 iris) :mapping {:color :species} :legend false
+                        :charts [(chart/parallel (merge {:variables iris-variables} opts))]
+                        :labels {:title title :x nil}}))
+                {:columns 3}))
+
+(def radar-variants
+  (plot/arrange [{:data cars :mapping {:color :name} :coord {:kind :polar} :legend false
+                  :charts [(chart/parallel {:variables car-variables :fill :color :curve :smooth :width 2})]
+                  :labels {:title "Smooth radar" :x nil}}
+                 {:data cars :mapping {:color :name} :coord {:kind :polar :inner 0.3 :span 300} :flip true :legend false
+                  :charts [(chart/parallel {:variables [:mpg :hp :wt] :width 2})]
+                  :labels {:title "Variables as rings (:flip, :span 300)" :x nil}}]
+                {:columns 2}))
+
 (def images
   "Images of this demo: `[file-name plot options]`, saved to `results/parallel/` by [[cljplot2.demo/render!]]."
   [["iris-700x400.png" by-species {:width 700 :height 400}]
@@ -76,4 +95,6 @@
    ["scalings-900x600.png" scalings {:width 900 :height 600}]
    ["vertical-600x500.png" vertical {:width 600 :height 500}]
    ["radars-900x450.png" radars {:width 900 :height 450}]
-   ["radar-groups-900x450.png" radar-groups {:width 900 :height 450}]])
+   ["radar-groups-900x450.png" radar-groups {:width 900 :height 450}]
+   ["smooth-1000x380.png" smooth {:width 1000 :height 380}]
+   ["radar-variants-900x450.png" radar-variants {:width 900 :height 450}]])

@@ -83,7 +83,7 @@
    (schema/optional :width schema/non-neg)
    (schema/nilable :dash schema/dash)])
 
-(defn- path-length
+(defn path-length
   "Length of the polyline through `points` (pixels)."
   ^double [points]
   (reduce + 0.0 (map (fn [[x0 y0] [x1 y1]] (m/hypot (- (double x1) (double x0)) (- (double y1) (double y0))))
