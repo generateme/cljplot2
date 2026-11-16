@@ -444,7 +444,8 @@
 (defn- polar-scales
   "Finalized position scales of a polar plot for its reference `panel` box (see [[cljplot2.scale.coord]]): the
   horizontal scale (`horizontal` key) over the angular range (radians, ticks hinted from the circumference; a
-  continuous one neither padded nor niced unless the plot's scale sets `:expand` / `:nice`; pixel room `:padding-px`
+  continuous one neither padded nor niced unless its spec sets `:expand` (the plot's scale, or a chart's
+  `:scale-defaults`) / the plot's scale sets `:nice`; pixel room `:padding-px`
   in radians at the outer radius; ticks hinted at the final radius), the
   vertical one over `[inner radius, radius]` - the radius half the panel's smaller side less the angular labels'
   room; both carry `:direction` and the panel's polar geometry `:coord`."
@@ -455,13 +456,14 @@
         spacing (fn [k] (double (get-in plot [:theme :axis k :tick-spacing])))
         [t0 t1 :as theta-range] (coord/theta-range coord-spec)
         half (* 0.5 (m/min w h))
-        ;; a continuous angle spans the full circle by default: no padding, no nice (pies), unless the plot's scale asks
+        ;; a continuous angle spans the full circle by default: no padding, no nice (pies), unless asked - `:expand` in
+        ;; the spec (the plot's scale or a chart's suggestion), `:nice` in the plot's scale (specs always carry one)
         user (get-in plot [:scales horizontal])
         theta-span (m/abs (- (double t1) (double t0)))
         ;; pixel room (labels past the data) becomes radians at radius `r`
         theta-spec (when-let [spec (get specs horizontal)]
                      (cond-> spec
-                       (not (contains? user :expand)) (dissoc :padding)
+                       (not (contains? spec :expand)) (dissoc :padding)
                        (not (contains? user :nice)) (assoc :nice false)))
         theta-at (fn [^double r]
                    (when theta-spec

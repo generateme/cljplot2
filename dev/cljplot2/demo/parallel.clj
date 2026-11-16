@@ -1,8 +1,7 @@
 (ns cljplot2.demo.parallel
   "Ranking cycle 4 demo: parallel coordinates (iris by species, a highlighted species, scalings side by side, a
   vertical layout, smooth connections) and radar charts (mtcars rows with fills and limits, groups, smooth, variables
-  as rings). Data: `iris.csv` and `mtcars.csv`
-  bundled with fastmath."
+  as rings). Data: `iris.csv` and `mtcars.csv` bundled with fastmath."
   (:require [clojure.data.csv :as csv]
             [clojure.java.io :as io]
             [cljplot2.chart :as chart]
@@ -83,9 +82,9 @@
   (plot/arrange [{:data cars :mapping {:color :name} :coord {:kind :polar} :legend false
                   :charts [(chart/parallel {:variables car-variables :fill :color :curve :smooth :width 2})]
                   :labels {:title "Smooth radar" :x nil}}
-                 {:data cars :mapping {:color :name} :coord {:kind :polar :inner 0.3 :span 300} :flip true :legend false
+                 {:data cars :mapping {:color :name} :coord {:kind :polar :inner 0.3} :flip true :legend false
                   :charts [(chart/parallel {:variables [:mpg :hp :wt] :width 2})]
-                  :labels {:title "Variables as rings (:flip, :span 300)" :x nil}}]
+                  :labels {:title "Variables as rings (:flip)" :x nil}}]
                 {:columns 2}))
 
 (def images

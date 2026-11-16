@@ -302,6 +302,43 @@
           [h v] (peek (#'parallel/closed g true [[0.5 5.0] [2.0 6.0]]))]
       (is (close? [(+ 0.5 (* 2.0 Math/PI)) 5.0] [h v])))))
 
+(deftest review2-fixes
+  (let [angles (fn [extra opts]
+                 (let [b (build (merge {:data rows3 :coord polar :flip true :charts [(chart/parallel (merge {:variables [:a :b]} opts))]} extra))
+                       rp (scale/range-projection (:finalized-scales b))
+                       [t0 t1] (:theta (scale/coord-geometry (:finalized-scales b)))]
+                   {:lo-gap (- (double (first (rp "a" 0.0))) (double t0)) :hi-gap (- (double t1) (double (first (rp "a" 1.0))))}))]
+    (testing "S1 a flipped full-circle radar pads the value angle: an axis's ends don't meet"
+      (let [{:keys [lo-gap hi-gap]} (angles {} {})]
+        (is (< 0.25 (double lo-gap) 0.35) "5% of 1.1 x 2 pi")
+        (is (< 0.25 (double hi-gap) 0.35))))
+    (testing "S1 :padding :y sets the angle padding; the plot's :scales :y :expand wins"
+      (is (> (double (:lo-gap (angles {} {:padding {:y [0.2 0.2]}}))) (double (:lo-gap (angles {} {})))))
+      (is (< (Math/abs (double (:lo-gap (angles {:scales {:y {:expand [0 0]}}} {})))) 1e-9))
+      (is (< (Math/abs (double (:lo-gap (angles {:scales {:y {:axis true}}} {})))) 1e-9) "plot spec sets :axis - suggestions dropped as a whole"))
+    (testing "S1 the suggestion only under flip + polar"
+      (is (= {:y {:axis false}} (:scale-defaults (stats {:data rows3 :charts [(chart/parallel {:variables [:a :b]})]}))))
+      (is (= {:y {:axis false}} (:scale-defaults (stats {:data rows3 :coord polar :charts [(chart/parallel {:variables [:a :b]})]}))))
+      (is (= {:y {:axis false}} (:scale-defaults (stats {:data rows3 :flip true :charts [(chart/parallel {:variables [:a :b]})]}))))
+      (is (= {:y {:axis false :expand [0.1 0]}}
+             (:scale-defaults (stats {:data rows3 :coord polar :flip true :charts [(chart/parallel {:variables [:a :b] :padding {:y [0.1 0]}})]}))))))
+  (testing "S1 other polar charts keep unpadded angles (pies)"
+    (let [b (build {:data [{:p "a" :n 1} {:p "b" :n 3}] :mapping {:x :n :color :p} :coord polar :scales {:x {:axis false}}
+                    :charts [(chart/bar {:position :stack :width 1.0})]})]
+      (is (= [0.0 4.0] (mapv double (get-in b [:finalized-scales :x :domain]))))))
+  (testing "S2 only a full circle closes rows"
+    (is (#'parallel/full-circle? {:theta [0.0 (* 2.0 Math/PI)]}))
+    (is (#'parallel/full-circle? {:theta [1.0 (- 1.0 (* 2.0 Math/PI))]}) "counter-clockwise")
+    (is (not (#'parallel/full-circle? {:theta [0.0 Math/PI]})))
+    (let [p {:data [{:a 0 :b 0 :c 0 :d 0} {:a 1 :b 1 :c 1 :d 1}] :coord {:kind :polar :span 180 :start -90} :legend false
+             :theme plain :charts [(chart/parallel {:variables [:a :b :c :d] :color red :width 2 :axes false :curve :smooth})]}
+          b (build p) img (plot/render-image p size)
+          [ax ay] (radar-pixel b "a" 1.0) [dx dy] (radar-pixel b "d" 1.0)]
+      (is (red-around? img b (radar-pixel b "b" 1.0)) "the row is drawn")
+      (is (not (red-around? img b [(* 0.5 (+ (double ax) (double dx))) (* 0.5 (+ (double ay) (double dy)))])) "no closing d -> a")))
+  (testing "S4 :padding takes :y only"
+    (is (= [:charts 0 :options :padding :x] (:in (error #(build {:data rows3 :charts [(chart/parallel {:variables [:a :b] :padding {:x [0 0]}})]})))))))
+
 (deftest curves-and-edges
   (testing "R2 smooth-segment: ends exact, perpendicular to the axes, between the values"
     (let [seg (parallel/smooth-segment [0.0 10.0] [100.0 50.0] 1 1.0 100)
@@ -340,9 +377,6 @@
   (testing "arcs and a half circle render"
     (is (instance? BufferedImage (plot/render-image {:data rows3 :coord {:kind :polar :arcs true :span 180}
                                                      :charts [(chart/parallel {:variables [:a :b ["a2" :a]] :fill :color})]} size))))
-  (testing "a non-full circle doesn't add a turn when closing"
-    (let [g {:kind :polar :theta [0.0 Math/PI] :cx 0.0 :cy 0.0}]
-      (is (= [[1.0 5.0] [2.0 6.0] [1.0 5.0]] (#'parallel/closed g true [[1.0 5.0] [2.0 6.0]])))))
   (testing "R8 :padding"
     (is (= [0.0 1.0] (get-in (build {:data rows3 :charts [(chart/parallel {:variables [:a :b] :padding {:y [0 0]}})]}) [:finalized-scales :y :domain]))))
   (testing "no rows; one row (zero spreads) in polar"

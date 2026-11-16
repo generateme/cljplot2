@@ -1,6 +1,6 @@
 (ns cljplot2.chart.parallel
   "Parallel coordinates: every row of wide data drawn as a line across one axis per variable; under a polar plot
-  `:coord` the same chart is a radar (spider) chart - variables on angles, the line closed.
+  `:coord` the same chart is a radar (spider) chart (see Polar below).
 
   `:variables` (required) - at least two keywords or `[label accessor]` pairs, in axis order; labels (a keyword's
   name, or the pair's label as a string) must differ. They are the levels of the chart's `:x` (categorical, in the
@@ -30,18 +30,22 @@
 
   `:curve :smooth` joins consecutive axes with smooth curves instead of straight segments: a cubic bezier in range
   space that meets every axis perpendicularly, at its value, and never leaves the range between the two values;
-  `:smoothness` (0 1], default 1 - the bend spread over the whole gap, smaller values keep it near the axes.
+  `:smoothness` (0 1], default 1 - the bend spread over the whole gap, smaller values keep it near the axes. In polar
+  plots the curves are sampled in range space, so they follow the circle whether or not `:coord :arcs` is set.
 
-  Polar (radar): variables on angles, values on the radius; each row's line closes (last variable -> first), chords
-  or arcs (`:coord :arcs`). With `:flip` the variables are rings and the values angles; lines don't close, and
-  on a full circle both ends of every axis meet at the start angle (the angle isn't padded) - give `:span` < 360. `:fill`
+  Polar (radar): variables on angles, values on the radius, chords or arcs (`:coord :arcs`); on a full circle each
+  row's line closes (last variable -> first), on a partial one (`:span` < 360) it doesn't. With `:flip` the
+  variables are rings and the values angles: lines don't close, and the angle is padded by `:padding :y` (suggested
+  as its `:expand`, so the ends of an axis don't meet; the plot's `:scales :y` wins). `:fill`
   (`:color` - the line's colour at `:alpha`, or a colour) fills every complete row's polygon, with `:pattern`; polar
   only (a theme fill is ignored in cartesian plots). While the plot's y axis is hidden, a web (theme
-  `[:panel :grid :y]`) joins the axes at equal fractions of their length: polygons, or lines across the rings.
+  `[:panel :grid :y]`) joins the axes at equal fractions of their length, as the rows do: closed polygons on a full
+  circle, else open lines (across the rings with `:flip`).
 
   Options (style defaults from theme `[:chart :parallel]`): `:color`, `:width`, `:dash`, `:fill`, `:alpha`,
   `:pattern`, `:pattern-color`, `:variables`, `:scaling`, `:robust-center`, `:robust-spread`, `:limits {key [lo hi]}`,
-  `:axes`, `:missing`, `:curve`, `:smoothness`, `:padding {:x [lo hi] :y [lo hi]}` (default 5% each side).
+  `:axes`, `:missing`, `:curve`, `:smoothness`, `:padding {:y [lo hi]}` (fractions of the scaled extent, default 0.05
+  each side; the variables' `:x` is a bands scale).
   Groups (see [[cljplot2.data.group]]) come from ordinal aesthetics (`:color`, `:dash`) and `:group`; a line per
   row, in its group's style."
   (:require [fastmath.core :as m]
@@ -141,7 +145,7 @@
                         (schema/optional :robust-spread robust-spread)
                         (schema/optional :curve [:enum :smooth])
                         (schema/optional :smoothness [:and schema/finite [:> 0] [:<= 1]])
-                        (schema/optional :padding data/position-padding)))
+                        (schema/optional :padding [:map {:closed true} (schema/optional :y schema/padding)])))
               [unknown-limits [:limits]]
               (needs :robust-center #(= :robust (:scaling %)) ":robust-center needs :scaling :robust")
               (needs :robust-spread #(= :robust (:scaling %)) ":robust-spread needs :scaling :robust")
@@ -226,8 +230,9 @@
   "Per panel: `{:lines [{:rows [[scaled-or-nil ..] ..] :aesthetics}] :axes axes :style style}` (`axes` - see
   [[variable-axes]], without accessors); extents (`:x` - the variable labels, ordered; `:y` - the scaled values and
   axis ends), aesthetic extents, `:na`, `:dropped` (`:variables` - rows with a missing value), `:scale-defaults`
-  hiding the plot's y axis, `:style` - the chart style (`:fill :none` in cartesian plots; the legend's too)."
-  [{:keys [options]} {:keys [groups mapping]} {:keys [theme plot-scales coord] :as env}]
+  hiding the plot's y axis (in a flipped polar plot also padding the value angle, `:expand`), `:style` - the chart
+  style (`:fill :none` in cartesian plots; the legend's too)."
+  [{:keys [options]} {:keys [groups mapping]} {:keys [theme plot-scales coord flip?] :as env}]
   (check-fill! options coord)
   (let [{:keys [panels dropped]} (group/split groups mapping env)
         axes (variable-axes options (mapcat (fn [gs] (mapcat :rows gs)) (vals panels)))
@@ -244,15 +249,16 @@
         x-extent (assoc (data/extent :x labels) :ordered? true)
         y (y-extent axes (mapcat (fn [ls] (mapcat (comp (partial apply concat) :rows) ls)) (vals panel-lines)))
         st (cond-> (style options theme) (not (coord/polar? coord)) (assoc :fill :none))
+        padding (merge {:x [0.05 0.05] :y [0.05 0.05]} (:padding options))
         drawn-axes (mapv #(dissoc % :accessor) axes)]
     {:data (update-vals panel-lines (fn [ls] {:lines (mapv #(dissoc % :incomplete) ls) :axes drawn-axes :style st}))
      :extents (merge-with merge
                           (group/aesthetic-extents panels plot-scales)
                           (update-vals panels (constantly {:x x-extent :y y})))
-     :padding (merge {:x [0.05 0.05] :y [0.05 0.05]} (:padding options))
+     :padding padding
      :na (group/na-dims panels)
      :dropped (assoc dropped :variables (reduce + 0 (mapcat #(map :incomplete %) (vals panel-lines))))
-     :scale-defaults {:y {:axis false}}
+     :scale-defaults {:y (cond-> {:axis false} (and (coord/polar? coord) flip?) (assoc :expand (:y padding)))}
      :style st}))
 
 ;; draw
@@ -264,14 +270,13 @@
     (< (m/abs (- (m/abs (- (double t1) (double t0))) m/TWO_PI)) 1.0e-9)))
 
 (defn- closed
-  "Range points `pts` of a row, closed with its first point when `closes?` (a radar with the variables on angles); on
-  a full circle the closing point is a turn further on, so arcs and smooth curves to it run forward."
+  "Range points `pts` of a row, closed with its first point a turn further on when `closes?` (a radar with the
+  variables on the angles of a full circle), so arcs and smooth curves to it run forward."
   [geometry closes? pts]
   (if closes?
     (let [[h v] (first pts)
-          [t0 t1] (:theta geometry)
-          turn (if (full-circle? geometry) (- (double t1) (double t0)) 0.0)]
-      (conj pts [(+ (double h) turn) v]))
+          [t0 t1] (:theta geometry)]
+      (conj pts [(+ (double h) (- (double t1) (double t0))) v]))
     pts))
 
 (def ^:private ^:const smooth-step-pixels
@@ -381,7 +386,7 @@
 
 (defn- draw-web!
   "Radar web: lines joining the axes at equal fractions of their length (ticks of 0..1 over the longest axis) -
-  closed polygons when `closes?`, else lines across the rings - in theme `[:panel :grid :y]`."
+  closed polygons when `closes?`, else open lines (partial circles, rings) - in theme `[:panel :grid :y]`."
   [canvas axes rp geometry closes? env]
   (let [line (get-in env [:theme :panel :grid :y])
         placed (keep #(when-let [ends (axis-ends rp %)] [(:label %) ends]) axes)
@@ -399,7 +404,7 @@
   [{:keys [options]} {:keys [lines axes style]} canvas _box scales env]
   (let [geometry (scale/coord-geometry scales)
         flipped? (scale/flipped? scales)
-        closes? (and (some? geometry) (not flipped?))
+        closes? (and (some? geometry) (not flipped?) (full-circle? geometry))
         rp (scale/range-projection scales)
         smooth (when (= :smooth (:curve options))
                  {:value-index (if flipped? 0 1) :smoothness (double (:smoothness options 1.0))})
