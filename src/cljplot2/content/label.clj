@@ -13,7 +13,8 @@
   Internally (axis tick labels, theme `[:axis k :label-rotation]`) any angle is drawn: the natural size is then the
   rounded-up bounding box of the rotated text frame, the text rotated about the box centre.
   Drawing clips the text to the item box (intersected with any outer clip). A style `:background` fills the text
-  frame (the box; for an angle that isn't a multiple of 90 the rotated unrotated-size frame) under the text.
+  frame under the text: the item box (a label placed at a point by [[draw-at!]] gets its natural size - text plus
+  padding; a layout item may be larger), or for an angle that isn't a multiple of 90 the rotated natural frame.
   Content is validated against [[label-options]] by [[cljplot2.graphics.measure/validate-content]] (called from
   `grid/prepare`).
 

@@ -203,6 +203,7 @@
       (and reverse (= kind :identity)) (conj [:reverse "an identity scale can't be reversed"])
       (and area (or (not= k :size) (not (#{:linear :ordinal} kind)))) (conj [:area ":area needs a linear or ordinal :size scale"])
       (and reverse level-map?) (conj [:reverse ":reverse can't be combined with a level map :range"])
+      (and area level-map?) (conj [:area ":area can't be combined with a level map :range"])
       (and (some? bins) (not= kind :binned)) (conj [:bins ":bins needs :kind :binned"])
       (and (= kind :binned) bins-domain (sequential? domain) (= 2 (count domain))
            (not= bins-domain (mapv double domain)))

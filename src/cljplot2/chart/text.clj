@@ -20,8 +20,9 @@
   `[0 0]`); `:rotation` - degrees, clockwise (default 0; the anchor applies to the rotated text's bounding box), or `:radial` -
   in a polar plot each label along its angle, labels on the left half turned to read upright, anchored away from the
   centre unless `:anchor` is given (0 in cartesian plots);
-  `:font`, `:size`, `:font-style`, `:color`, `:padding` (pixels around the text), `:background` (a color, alpha
-  allowed, filling the text plus padding - a label box, ggplot `geom_label`) - over the text role `[:text :annotation]`
+  `:font`, `:size`, `:font-style`, `:color`, `:padding` (pixels around the text - unlike other charts' position
+  `:padding {:x [lo hi]}`), `:background` (a color, alpha allowed, filling the text plus padding - a label box, ggplot
+  `geom_label`; the legend key keeps the background with the theme's padding) - over the text role `[:text :annotation]`
   (the text chart's theme style; a theme `[:chart :text]` entry is rejected); `:extent`, `:data` /
   `:mapping`. Text stays upright when the plot is flipped; only the anchor position enters the extents."
   (:require [fastmath.core :as m]
@@ -193,8 +194,8 @@
                       anchor px py env))))
 
 (defn legend
-  "Key glyph: the letter `a` in the text style, centred in `box`."
+  "Key glyph: the letter `a` in the text style (the role's padding, so it fits the key), centred in `box`."
   [{:keys [options]} attributes canvas {:keys [x y w h]} env]
-  (let [st (merge (base-style options (:theme env)) (select-keys attributes [:color]))]
+  (let [st (merge (dissoc (base-style options (:theme env)) :padding) (select-keys attributes [:color]))]
     (label/draw-at! canvas (merge {:kind :label :role :annotation :text "a"} st) [:center :middle]
                     (+ (double x) (* 0.5 (double w))) (+ (double y) (* 0.5 (double h))) env)))

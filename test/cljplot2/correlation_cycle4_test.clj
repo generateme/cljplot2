@@ -60,7 +60,10 @@
       :color {:area true :kind :linear}
       :shape {:area true}
       :color {:area true :kind :binned}
-      :size {:area true :kind :identity}))
+      :size {:area true :kind :identity}
+      :size {:area true :domain ["a" "b"] :range {"a" 2 "b" 5}}))
+  (testing "F2 :area with a level map :range rejected, like :reverse"
+    (is (= :area (:key (error #(aesthetic/scale-spec :size {:area true :domain ["a" "b"] :range {"a" 2 "b" 5}} nil false palette))))))
   (testing "1.3 legend keys follow the area sizes"
     (let [p (fn [area?] {:data [{:x 1 :y 1 :s "a"} {:x 2 :y 2 :s "b"} {:x 3 :y 3 :s "c"}] :mapping {:x :x :y :y :size :s}
                          :charts [(chart/scatter {:color [255 0 0] :stroke-width 0})] :legend-only true
@@ -93,7 +96,7 @@
                 (c2d/with-canvas [c canvas] (label/text-frame content c theme/default-theme)))]
     (testing "2.1 the frame filled at its padding corner, rotated with the text"
       (are [deg] (= [255 0 0] (apply rgb (label-image (assoc content :rotation deg)) (frame-corner frame deg)))
-        0 90 30))
+        0 90 30 180 270 -30))
     (testing "2.1 alpha blends with what is below"
       (let [[r g b] (apply rgb (label-image (assoc content :background [255 0 0 128])) (frame-corner frame 0))]
         (is (= 255 r))
@@ -125,6 +128,17 @@
                                                                         :background [255 0 0]})]}
                                     {:width 300 :height 200})
                              [255 0 0]))))
+    (testing "F7 legend key: background kept, the role's padding instead of the chart's"
+      (let [key-image (fn [opts]
+                        (let [canvas (c2d/canvas 40 40)]
+                          (c2d/with-canvas-> canvas (c2d/set-background :white))
+                          (c2d/with-canvas [c canvas]
+                            (let [ch (chart/text (merge {:x 0 :y 0 :text "a"} opts))]
+                              ((:legend ch) ch {} c {:x 0 :y 0 :w 40 :h 40} {:theme theme/default-theme})))
+                          (c2d/get-image canvas)))
+            n (count-color (key-image {:background [255 0 0]}) [255 0 0])]
+        (is (pos? n))
+        (is (= n (count-color (key-image {:background [255 0 0] :padding 30}) [255 0 0])) "a large :padding doesn't grow the key")))
     (testing "2.3 other label roles via the theme"
       (let [p (fn [t] {:data [{:x 0 :y 0 :v 1} {:x 1 :y 0 :v 2}] :mapping {:x :x :y :y :color :v}
                        :charts [(chart/tile {:value-label true})] :legend false :theme t})]
@@ -176,6 +190,29 @@
           d (map #(- (m/log10 (double %1)) (m/log10 (double (:x %2)))) (get-in s [:data :panel :x]) data)]
       (is (every? #(<= -0.5 (double %) 0.5) d))
       (is (> (apply max d) 0.25) "offsets in decades, not data units")))
+  (testing "F1 a non-positive value on :log stays, the scale reports it"
+    (are [data] (= :domain (:key (error #(stats {:data data :mapping {:x :x :y :y} :scales {:x {:kind :log}}
+                                                  :charts [(chart/scatter {:jitter [0.3 0] :rng (r/rng :mersenne 1)})]}))))
+      [{:x 0 :y 1} {:x 10 :y 2}]
+      [{:x 10 :y 2} {:x -1 :y 1}])
+    (is (re-find #"positive" (try (stats {:data [{:x 0 :y 1} {:x 10 :y 2}] :mapping {:x :x :y :y} :scales {:x {:kind :log}}
+                                          :charts [(chart/scatter {:jitter [0.3 0]})]})
+                                  "" (catch clojure.lang.ExceptionInfo e (ex-message e))))))
+  (testing "F4 categorical positions: the error names chart/stripplot"
+    (is (re-find #"stripplot" (try (stats {:data [{:x "a" :y 1}] :mapping {:x :x :y :y} :charts [(chart/scatter {:jitter [0.2 0]})]})
+                                   "" (catch clojure.lang.ExceptionInfo e (ex-message e))))))
+  (testing "F8 flipped and polar plots: x jittered in its own scale's coordinates"
+    (let [data (vec (for [v [10 100 1000] _ (range 20)] {:x v :y 1}))
+          decades (fn [p] (map #(- (m/log10 (double %1)) (m/log10 (double (:x %2)))) (get-in (stats p) [:data :panel :x]) data))
+          p (fn [extra] (merge {:data data :mapping {:x :x :y :y} :scales {:x {:kind :log}}
+                                :charts [(chart/scatter {:jitter [0.5 0] :rng (r/rng :mersenne 3)})]} extra))]
+      (doseq [extra [{:flip true} {:coord {:kind :polar}}]
+              :let [d (decades (p extra))]]
+        (is (every? #(<= -0.5 (double %) 0.5) d) (pr-str extra))
+        (is (> (apply max d) 0.25) (pr-str extra))
+        (is (= (repeat (count data) 1) (get-in (stats (p extra)) [:data :panel :y])) (pr-str extra)))
+      (is (instance? BufferedImage (plot/render-image (p {:flip true}) {:width 200 :height 200})))
+      (is (instance? BufferedImage (plot/render-image (p {:coord {:kind :polar}}) {:width 200 :height 200})))))
   (testing "3.4 invalid positions dropped and counted, not jittered"
     (let [s (stats {:data (conj lattice {:x nil :y 1} {:x 1 :y ##NaN}) :mapping {:x :x :y :y}
                     :charts [(chart/scatter {:jitter [0.2 0.2] :rng (r/rng :mersenne 1)})]})]

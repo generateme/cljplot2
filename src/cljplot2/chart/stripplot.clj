@@ -5,7 +5,8 @@
   build creates a fresh one, so builds differ - pass `:rng` for reproducible plots; it is copied per build, see
   [[cljplot2.data.rng/for-build]]) with standard deviation
   `:jitter` / 4 of the item's cross range, clamped to ±`:jitter` / 2 (`:jitter` default 0.8; 0 - all points on the
-  centre line). Offsets are drawn at compute and kept in the stats.
+  centre line). Offsets are drawn at compute and kept in the stats. Jitter of numeric x / y in data units (uniform):
+  scatter `:jitter [dx dy]`, see [[cljplot2.chart.scatter]].
 
   Options (style defaults from theme `[:chart :stripplot]`): `:size`, `:color`, `:stroke-color`, `:stroke-width`,
   `:shape` (as scatter, see [[cljplot2.graphics.shape]]); `:jitter`, `:rng`, `:padding {:x [lo hi]}` (default

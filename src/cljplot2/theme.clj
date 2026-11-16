@@ -9,8 +9,9 @@
   * `:color` - any clojure2d color
   * `:padding` - pixels added on every side of the text
   * `:align` - `[h v]` placement of the text in its box (optional, default `[:center :middle]`), see [[cljplot2.content.label]]
-  * `:background` - a color (alpha allowed) filling the label's box - the text plus `:padding` (optional, default
-    none; `:none` - none)
+  * `:background` - a color (alpha allowed) filling the label's box (optional, default none; `:none` - none): for
+    labels charts place at a point (text chart, tile values, ...) the text plus `:padding`; for layout labels
+    (titles, axis titles, strips, legend labels) the whole item box
 
   `:plot` - `:background` (fills the canvas), `:margin` (pixels on every side).
 

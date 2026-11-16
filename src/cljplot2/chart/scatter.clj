@@ -9,9 +9,11 @@
 
   Jitter (ggplot `geom_jitter`): `:jitter [dx dy]` - uniform offsets in `±dx` / `±dy` data units added at compute, so
   the jittered points make the extents (on a `:log` axis in decades - see
-  [[cljplot2.scale.position/stat-transform]]); a dimension with a positive jitter needs numeric values. `:rng` - a
-  fastmath random generator, copied per build (see [[cljplot2.data.rng/for-build]]): one generator gives the same
-  points in every build; without it builds differ.
+  [[cljplot2.scale.position/stat-transform]]; a value the axis can't place - non-positive on `:log` - stays as it is,
+  for the scale to report); a dimension with a positive jitter needs numeric values. `:rng` - a fastmath random
+  generator, copied per build (see [[cljplot2.data.rng/for-build]]): one generator gives the same points in every
+  build; without it builds differ. Points along a categorical axis: [[cljplot2.chart.stripplot]] (Gaussian jitter
+  across each level's strip, a fraction of the strip).
 
   Draw order: data order, or - with mapping `:order` (an accessor) - ascending order values within each panel
   (later points drawn on top; ties keep data order; rows with a `nil` or invalid order value drawn first)."
@@ -76,15 +78,18 @@
 
 (defn- jittered
   "`values` (numbers) each moved by a uniform offset in `±d` drawn from `rng`, in the coordinates of `transform`
-  (see [[cljplot2.scale.position/stat-transform]]); `values` themselves for `d` 0. Throws `ex-info {:key :jitter}`
-  for a non-numeric value."
+  (see [[cljplot2.scale.position/stat-transform]]); `values` themselves for `d` 0; a value the transform can't place
+  (`##NaN`, e.g. non-positive on `:log`) unchanged, so the scale reports it. Throws `ex-info {:key :jitter}` for a
+  non-numeric value."
   [values rng ^double d {:keys [forward inverse]}]
   (if (zero? d)
     values
     (mapv (fn [v]
             (when-not (number? v)
-              (schema/fail! "Scatter :jitter needs numeric positions." {:key :jitter :value v}))
-            (inverse (+ (double (forward v)) (r/drandom rng (- d) d))))
+              (schema/fail! "Scatter :jitter needs numeric positions; along a categorical axis use chart/stripplot."
+                            {:key :jitter :value v}))
+            (let [t (double (forward v))]
+              (if (m/nan? t) v (inverse (+ t (r/drandom rng (- d) d))))))
           values)))
 
 (defn- jitter-points
