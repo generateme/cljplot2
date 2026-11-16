@@ -14,7 +14,8 @@
   part of it the item's group gets (see positions below). At draw, [[placement]] maps a value and a cross coordinate
   to a pixel point.
 
-  Placement - option `:place`:
+  Placement - option `:place` (axes named in the strip frame: with the levels on `:x` - e.g. a lone `{:y v}` mapping
+  - read `:x` for `:y` below, so `{:at v}` and `:bottom` refer to the plot's `:x` scale):
 
   * `:band` (default when `:y` is mapped): `:y` levels on a `:bands` scale (strings, keywords, intervals - e.g.
     [[cljplot2.data.levels/bin]] - or numbers with
@@ -557,11 +558,11 @@
           (boolean (some #(categorical-level? (value-of %)) rows))))))
 
 (defn- numeric-axis?
-  "Does dimension `k` of `mapping` have some number among the values of `rows`?"
+  "Does dimension `k` of `mapping` have some finite number among the values of `rows`?"
   [k mapping rows]
   (when-let [acc (get mapping k)]
     (let [value-of (data/row-accessor k acc)]
-      (boolean (some #(number? (value-of %)) rows)))))
+      (boolean (some #(let [v (value-of %)] (and (number? v) (m/valid-double? (double v)))) rows)))))
 
 (defn level-axis
   "The mapping axis holding a strip chart's levels: `:level-axis` of `options` (always wins), else from `mapping`
@@ -575,7 +576,8 @@
             y-categorical? (categorical-axis? :y mapping rows plot-scales)]
         (cond
           (and x-categorical? y-categorical?)
-          (schema/fail! "Both :x and :y are categorical: set :level-axis (:x or :y - the axis holding the strip levels)."
+          (schema/fail! (str "Both :x and :y are categorical: set :level-axis (:x or :y - the axis holding the strip "
+                             "levels), or check that the values are numbers.")
                         {:key :level-axis :value [:x :y]})
           x-categorical? :x
           y-categorical? :y

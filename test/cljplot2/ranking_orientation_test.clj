@@ -56,6 +56,12 @@
     (is (empty? (:bars (first (vals (:data (stats {:data rows :mapping {:x :c :y :v} :charts [(chart/bar {:data []})]})))))))
     (is (= :mapping (:key (error #(build {:data rows :mapping {:x :c} :charts [(chart/box)]}))))
         "levels without values")
+    (is (= :mapping (:key (error #(build {:data (map (fn [r] (assoc r :w ##NaN)) rows) :mapping {:x :v :y :w} :charts [(chart/box)]}))))
+        "T4 only NaN on :y: not numeric - the strip frame reports the missing levels")
+    (is (str/includes? (ex-message (try (build {:data (map (fn [r] (assoc r :v "x")) rows) :mapping {:x :v :y :c} :charts [(chart/box)]})
+                                        (catch Exception e e)))
+                       "values are numbers")
+        "T2 both categorical: the message points at non-numeric values too")
     (is (= :mapping (:key (error #(build {:data rows :mapping {:color :g} :charts [(chart/box)]}))))
         "no values axis mapped (schema)"))
   (testing "1.4 one level axis for all facets"

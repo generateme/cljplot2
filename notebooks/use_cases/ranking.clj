@@ -637,7 +637,8 @@
 ;; ### Order the data
 
 ;; Unordered categories make the reader sort them; ordered by value, the ranking is read at a glance - here all 38
-;; countries with a value, as lollipops.
+;; countries with a value, as lollipops on a log scale (exports from 2 to 12394; the stems start at 1, as log 0 is
+;; undefined).
 
 (nu/source-note {:source "data-to-viz - Order your data"
                  :url "https://www.data-to-viz.com/caveat/order_data.html"
@@ -645,11 +646,12 @@
 
 (plot/render-image
  (plot/arrange
-  (vec (for [[title scales] [["Alphabetical" {}] ["Ordered by value" {:y {:domain (ascending weapons)}}]]]
-         {:data (alphabetical weapons) :mapping {:x :value :y :country} :scales scales
+  (vec (for [[title y-scale] [["Alphabetical" {}] ["Ordered by value" {:domain (ascending weapons)}]]]
+         {:data (alphabetical weapons) :mapping {:x :value :y :country}
+          :scales {:x {:kind :log} :y y-scale}
           :theme {:axis {:y {:label-gap 1}}}
-          :charts [(chart/segment {:xend 0 :color [150 150 150]}) (chart/scatter {:size 5 :color [33 102 172]})]
-          :labels {:title title :x "exports" :y nil}}))
+          :charts [(chart/segment {:xend 1 :color [150 150 150]}) (chart/scatter {:size 5 :color [33 102 172]})]
+          :labels {:title title :x "exports (log scale)" :y nil}}))
   {:columns 2})
  {:width 1000 :height 800})
 

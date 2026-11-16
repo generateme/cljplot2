@@ -2,7 +2,8 @@
   "Bar chart: one bar per level and group - a strip chart (see [[cljplot2.data.strip]]): levels on the categorical
   axis - `{:x level :y value}` vertical bars, `{:x value :y level}` horizontal ones, `:level-axis` when both or neither
   axis is categorical; placement `:place`, `:width`, `:dodge-gap`, `:n-label`. Axes below are named in the strip frame
-  - `:x` the values, `:y` the levels; exchange them for vertical bars (levels on `:x`), also in `:padding`.
+  - `:x` the values, `:y` the levels; exchange them for vertical bars (levels on `:x`), also in `:padding`:
+  `{:mapping {:x :country :y :value}}` with `(chart/bar {:padding {:y [0 0.1]}})` leaves 10% above the tallest bar.
 
   Options (style defaults from theme `[:chart :bar]`):
 
