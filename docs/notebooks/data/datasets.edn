@@ -89,4 +89,19 @@
            :source "data-to-viz example dataset `7_OneCatOneNum` (Yan Holtz)"
            :licence "MIT (data_to_viz repository)"
            :via "GitHub raw holtzy/data_to_viz Example_dataset/7_OneCatOneNum.csv, header renamed to `country,value`, CRLF -> LF"
-           :notes "51 rows: `country`, `value` (exports); 13 countries without a value (blank), an `Others` row."}}
+           :notes "51 rows: `country`, `value` (exports); 13 countries without a value (blank), an `Others` row."}
+ :world-population {:file "world-population.csv"
+                    :format :csv
+                    :title "World population by region, subregion and country"
+                    :source "data-to-viz example dataset `11_SevCatOneNumNestedOneObsPerGroup` (Yan Holtz; Wikipedia)"
+                    :licence "MIT (data_to_viz repository)"
+                    :via "GitHub raw holtzy/data_to_viz Example_dataset/11_SevCatOneNumNestedOneObsPerGroup.csv, `;` -> `,`, header renamed to `region,subregion,country,population`, the 4 rows without a region dropped, `-1` (unknown) left blank"
+                    :notes "246 rows: `region` (5), `subregion` (22), `country`, `population`; 17 countries without a population (blank)."}
+ :artist-words {:file "artist-words.csv"
+                :format :csv
+                :strings [:song :word]
+                :title "Words in the songs of three French artists"
+                :source "data-to-viz example dataset `14_SeveralIndepLists` (Yan Holtz)"
+                :licence "MIT (data_to_viz repository)"
+                :via "GitHub raw holtzy/data_to_viz Example_dataset/14_SeveralIndepLists.csv, space-separated -> CSV"
+                :notes "11529 rows: `artist` (booba, georges-brassens, nekfeu), `song`, `word` - one row per word use."}}

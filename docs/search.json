@@ -412,5 +412,115 @@
       "Use cases",
       "<span class='chapter-number'>4</span>  <span class='chapter-title'>Ranking</span>"
     ]
+  },
+  {
+    "objectID": "use_cases.part_of_a_whole.html",
+    "href": "use_cases.part_of_a_whole.html",
+    "title": "5  Part of a whole",
+    "section": "",
+    "text": "5.1 Grouped and stacked bars\nHow a whole splits into parts: grouped and stacked bars, treemaps, donuts and pies, circle packing, sunbursts, waffles, Venn diagrams and UpSet plots (the R Graph Gallery part-of-a-whole pages, the data-to-viz sunburst and the pie caveat).\nNot here: dendrograms wait for hierarchical clustering in fastmath (backlog); the sunburst of flows belongs to the Flow chapter.\nBars of groups within categories: side by side, on top of each other, scaled to the whole, or one panel per category.",
+    "crumbs": [
+      "Use cases",
+      "<span class='chapter-number'>5</span>  <span class='chapter-title'>Part of a whole</span>"
+    ]
+  },
+  {
+    "objectID": "use_cases.part_of_a_whole.html#grouped-and-stacked-bars",
+    "href": "use_cases.part_of_a_whole.html#grouped-and-stacked-bars",
+    "title": "5  Part of a whole",
+    "section": "",
+    "text": "5.1.1 Grouped, stacked, percent\nR Graph Gallery’s specie × condition values (seeded): :dodge compares the groups, :stack the totals, :normalize the shares; facets give a panel per specie; negative values stack downward from 0.\n\n(def species-conditions\n  (let [rng (r/rng :mersenne 42)]\n    (vec (for [specie [\"banana\" \"poacee\" \"sorgho\" \"triticum\"]\n               condition [\"normal\" \"stress\" \"Nitrogen\"]]\n           {:specie specie :condition condition :value (m/abs (r/grandom rng 0.0 15.0))}))))\n\n\n(def signed-conditions\n  (let [rng (r/rng :mersenne 7)]\n    (mapv #(assoc % :value (r/grandom rng 0.0 15.0)) species-conditions)))\n\nSource: R Graph Gallery - Grouped and Stacked barplot.\n\n(plot/render-image\n (plot/arrange\n  (vec (concat\n        (for [[title position] [[\"grouped (:dodge)\" :dodge] [\"stacked (:stack)\" :stack] [\"percent (:normalize)\" :normalize]]]\n          {:data species-conditions :mapping {:x :specie :y :value :color :condition}\n           :charts [(chart/bar {:position position})]\n           :labels {:title title :x nil :y nil}})\n        [{:data species-conditions :mapping {:x :condition :y :value :facet :specie}\n          :theme {:axis {:x {:label-rotation -90}}}\n          :charts [(chart/bar)]\n          :labels {:title \"small multiples\" :x nil :y nil}}\n         {:data signed-conditions :mapping {:x :specie :y :value :color :condition}\n          :charts [(chart/bar {:position :stack})]\n          :labels {:title \"negative values\" :x nil :y nil}}]))\n  {:columns 3})\n {:width 1000 :height 650})\n\n\n\n\n\n\n5.1.2 Likert scale\nSurvey answers as diverging stacked bars (seeded counts): disagreement to the left of 0, agreement to the right, the neutral answers split half to each side. The colour domain orders the stacks from the middle outward.\n\n(def answers [\"Strongly disagree\" \"Disagree\" \"Neutral\" \"Agree\" \"Strongly agree\"])\n\n\n(def likert\n  (let [rng (r/rng :mersenne 3)]\n    (vec (for [q (range 1 6)\n               [i answer] (map-indexed vector answers)\n               :let [n (+ 5 (r/irandom rng 40))\n                     sign ({0 -1.0 1 -1.0 3 1.0 4 1.0} i)]\n               row (if sign\n                     [{:question (str \"Q\" q) :answer answer :side \"\" :count (* sign n)}]\n                     ;; the neutral answer: half on each side, two groups of one colour\n                     [{:question (str \"Q\" q) :answer answer :side \"-\" :count (* -0.5 n)}\n                      {:question (str \"Q\" q) :answer answer :side \"+\" :count (* 0.5 n)}])]\n           row))))\n\nSource: R Graph Gallery - Grouped and Stacked barplot (the Likert package).\n\n(plot/render-image\n {:data likert :mapping {:x :count :y :question :color :answer :group :side}\n  :scales {:color {:domain [\"Neutral\" \"Disagree\" \"Agree\" \"Strongly disagree\" \"Strongly agree\"]\n                   :range {\"Strongly disagree\" [178 24 43] \"Disagree\" [239 138 98] \"Neutral\" [200 200 200]\n                           \"Agree\" [103 169 207] \"Strongly agree\" [33 102 172]}}\n          :x {:formatter #(str (long (m/abs (double %))))}}\n  :charts [(chart/bar {:position :stack})]\n  :labels {:title \"Five questions, five answers\" :x \"answers\" :y nil}}\n {:width 800 :height 380})",
+    "crumbs": [
+      "Use cases",
+      "<span class='chapter-number'>5</span>  <span class='chapter-title'>Part of a whole</span>"
+    ]
+  },
+  {
+    "objectID": "use_cases.part_of_a_whole.html#treemap",
+    "href": "use_cases.part_of_a_whole.html#treemap",
+    "title": "5  Part of a whole",
+    "section": "5.2 Treemap",
+    "text": "5.2 Treemap\nNested rectangles, areas proportional to the value: the world’s population by region, subregion and country.\n\n5.2.1 Basic, groups and subgroups\nOne level (regions) and three (regions → subregions → countries); :padding frames the groups, a theme palette recolours the regions.\nSource: R Graph Gallery - Treemap; data-to-viz - Treemap (1, 2). Data: World population by region, subregion and country, data-to-viz example dataset 11_SevCatOneNumNestedOneObsPerGroup (Yan Holtz; Wikipedia); licence: MIT (data_to_viz repository).\n\n(plot/render-image\n (plot/arrange\n  [{:data world :mapping {:value :population :hierarchy [:region]} :charts [(chart/treemap)]\n    :labels {:title \"regions\"}}\n   {:data world :mapping {:value :population :hierarchy [:region :subregion :country]}\n    :theme {:palette {:color :set2}}\n    :charts [(chart/treemap {:padding 4 :border-color [60 60 60]})]\n    :labels {:title \"regions, subregions, countries (:set2, :padding 4)\"}}]\n  {:columns 2 :widths [1 2]})\n {:width 1000 :height 520})\n\n\n\n\n\n\n5.2.2 Annotated treemap\nLabel functions get the node’s name, value, depth and shares: the countries with their population in millions.\nSource: R Graph Gallery - Treemap (annotations, labels and colors). Data: World population by region, subregion and country, data-to-viz example dataset 11_SevCatOneNumNestedOneObsPerGroup (Yan Holtz; Wikipedia); licence: MIT (data_to_viz repository).\n\n(plot/render-image\n {:data world :mapping {:value :population :hierarchy [:region :country]}\n  :charts [(chart/treemap {:leaf-labels #(format \"%s\\n%.0f M\" (:name %) (/ (double (:value %)) 1e6))\n                           :group-labels #(format \"%s - %.1f%%\" (:name %) (* 100.0 (double (:share %))))})]\n  :labels {:title \"World population (millions)\"}}\n {:width 1000 :height 700})",
+    "crumbs": [
+      "Use cases",
+      "<span class='chapter-number'>5</span>  <span class='chapter-title'>Part of a whole</span>"
+    ]
+  },
+  {
+    "objectID": "use_cases.part_of_a_whole.html#donut",
+    "href": "use_cases.part_of_a_whole.html#donut",
+    "title": "5  Part of a whole",
+    "section": "5.3 Donut",
+    "text": "5.3 Donut\nA ring of stacked shares: the regions’ populations around a hole (:inner - the hole’s radius as a fraction).\n\n5.3.1 Basic, labels, ring thickness\nSource: R Graph Gallery - Donut chart; data-to-viz - Donut (1, 2). Data: World population by region, subregion and country, data-to-viz example dataset 11_SevCatOneNumNestedOneObsPerGroup (Yan Holtz; Wikipedia); licence: MIT (data_to_viz repository).\n\n(plot/render-image\n (plot/arrange\n  (vec (for [inner [0.3 0.7]]\n         (assoc pie-base\n                :coord {:kind :polar :inner inner}\n                :scales {:x {:axis false}}\n                :charts [(chart/bar {:position :stack :width 1.0 :value-label percent-label})]\n                :labels {:title (str \":inner \" inner) :x nil :y nil})))\n  {:columns 2})\n {:width 1000 :height 450})\n\n\n\n\n\n\n5.3.2 Half donut\n:span 180 from :start -90: the circle shrinks to a half and fits its panel; outer labels name the parts.\nSource: data-to-viz - Donut (variations). Data: World population by region, subregion and country, data-to-viz example dataset 11_SevCatOneNumNestedOneObsPerGroup (Yan Holtz; Wikipedia); licence: MIT (data_to_viz repository).\n\n(plot/render-image\n (assoc pie-base\n        :coord {:kind :polar :inner 0.5 :span 180 :start -90}\n        :legend false\n        :charts [(chart/bar {:position :stack :width 1.0 :value-label share-label :label-position :outer})]\n        :labels {:title \"World population by region\" :x nil :y nil})\n {:width 800 :height 420})",
+    "crumbs": [
+      "Use cases",
+      "<span class='chapter-number'>5</span>  <span class='chapter-title'>Part of a whole</span>"
+    ]
+  },
+  {
+    "objectID": "use_cases.part_of_a_whole.html#pie",
+    "href": "use_cases.part_of_a_whole.html#pie",
+    "title": "5  Part of a whole",
+    "section": "5.4 Pie",
+    "text": "5.4 Pie\nA donut without its hole. data-to-viz: angles are hard to compare - see the caveat at the end.\n\n5.4.1 Basic, colours, a clean pie\nThe default pie shows its value axis around the circle; a palette recolours it; :axis false cleans it up.\nSource: R Graph Gallery - Pie chart. Data: World population by region, subregion and country, data-to-viz example dataset 11_SevCatOneNumNestedOneObsPerGroup (Yan Holtz; Wikipedia); licence: MIT (data_to_viz repository).\n\n(plot/render-image\n (plot/arrange\n  [(assoc pie-base :legend false :charts [(chart/bar {:position :stack :width 1.0})] :labels {:title \"default\" :x nil :y nil})\n   (assoc pie-base :theme {:palette {:color :MetBrewer/Archambault}} :legend false\n          :charts [(chart/bar {:position :stack :width 1.0})] :labels {:title \":MetBrewer/Archambault\" :x nil :y nil})\n   (assoc pie-base :scales {:x {:axis false}} :legend false\n          :charts [(chart/bar {:position :stack :width 1.0 :stroke-color :white :stroke-width 1})]\n          :labels {:title \"clean\" :x nil :y nil})]\n  {:columns 3})\n {:width 1000 :height 380})\n\n\n\n\n\n\n5.4.2 Slice labels\nLabel functions get each slice’s value, count and share: shares inside the slices, or names and shares outside with leader lines (:label-position :outer - the angle axis gives way, the circle makes room).\nSource: R Graph Gallery - Pie chart (labels). Data: World population by region, subregion and country, data-to-viz example dataset 11_SevCatOneNumNestedOneObsPerGroup (Yan Holtz; Wikipedia); licence: MIT (data_to_viz repository).\n\n(plot/render-image\n (plot/arrange\n  [(assoc pie-base :scales {:x {:axis false}}\n          :charts [(chart/bar {:position :stack :width 1.0 :value-label percent-label})]\n          :labels {:title \"inside\" :x nil :y nil})\n   (assoc pie-base :legend false\n          :charts [(chart/bar {:position :stack :width 1.0 :value-label share-label :label-position :outer\n                               :label-leader true})]\n          :labels {:title \"outside, with leaders\" :x nil :y nil})]\n  {:columns 2})\n {:width 1000 :height 480})",
+    "crumbs": [
+      "Use cases",
+      "<span class='chapter-number'>5</span>  <span class='chapter-title'>Part of a whole</span>"
+    ]
+  },
+  {
+    "objectID": "use_cases.part_of_a_whole.html#circle-packing",
+    "href": "use_cases.part_of_a_whole.html#circle-packing",
+    "title": "5  Part of a whole",
+    "section": "5.5 Circle packing",
+    "text": "5.5 Circle packing\nCircles with areas proportional to the value, nested in their groups’ enclosing circles - a group’s area isn’t proportional to its value (packing leaves gaps), compare circles within a group.\n\n5.5.1 One level\nEurope’s countries: a circle each; leaves coloured by their subregion; wider gaps (:padding, pixels).\nSource: R Graph Gallery - Circular packing; data-to-viz - Circular packing (1, 2). Data: World population by region, subregion and country, data-to-viz example dataset 11_SevCatOneNumNestedOneObsPerGroup (Yan Holtz; Wikipedia); licence: MIT (data_to_viz repository).\n\n(plot/render-image\n (plot/arrange\n  [{:data europe :mapping {:value :population :hierarchy [:country]} :legend false\n    :charts [(chart/pack)] :labels {:title \"basic\"}}\n   {:data europe :mapping {:value :population :hierarchy [:country] :color :subregion}\n    :charts [(chart/pack {:padding 6 :leaf-labels false})] :labels {:title \"by subregion, :padding 6\"}}]\n  {:columns 2})\n {:width 1000 :height 480})\n\n\n\n\n\n\n5.5.2 Several levels\nRegions → subregions → countries: the regions’ colours lighter at every level, group names under their circles’ tops; hiding the regions (:hidden-levels #{1}) leaves the subregions floating.\nSource: R Graph Gallery - Circular packing (several levels). Data: World population by region, subregion and country, data-to-viz example dataset 11_SevCatOneNumNestedOneObsPerGroup (Yan Holtz; Wikipedia); licence: MIT (data_to_viz repository).\n\n(plot/render-image\n (plot/arrange\n  [{:data world :mapping {:value :population :hierarchy [:region :subregion :country]}\n    :charts [(chart/pack)] :labels {:title \"three levels\"}}\n   {:data world :mapping {:value :population :hierarchy [:region :subregion :country]}\n    :charts [(chart/pack {:hidden-levels #{1}})] :labels {:title \"regions hidden\"}}]\n  {:columns 2})\n {:width 1000 :height 520})",
+    "crumbs": [
+      "Use cases",
+      "<span class='chapter-number'>5</span>  <span class='chapter-title'>Part of a whole</span>"
+    ]
+  },
+  {
+    "objectID": "use_cases.part_of_a_whole.html#sunburst",
+    "href": "use_cases.part_of_a_whole.html#sunburst",
+    "title": "5  Part of a whole",
+    "section": "5.6 Sunburst",
+    "text": "5.6 Sunburst\nThe hierarchy as rings: a partition (an icicle in cartesian coordinates) under polar coordinates - regions inside, subregions, then countries outward.\nSource: data-to-viz - Sunburst. Data: World population by region, subregion and country, data-to-viz example dataset 11_SevCatOneNumNestedOneObsPerGroup (Yan Holtz; Wikipedia); licence: MIT (data_to_viz repository).\n\n(plot/render-image\n (plot/arrange\n  [{:data world :mapping {:value :population :hierarchy [:region :subregion :country]} :coord {:kind :polar :inner 0.15}\n    :charts [(chart/partition)] :labels {:title \"sunburst\"}}\n   {:data world :mapping {:value :population :hierarchy [:region :subregion]}\n    :charts [(chart/partition)] :labels {:title \"icicle (two levels)\"}}]\n  {:columns 2})\n {:width 1000 :height 520})",
+    "crumbs": [
+      "Use cases",
+      "<span class='chapter-number'>5</span>  <span class='chapter-title'>Part of a whole</span>"
+    ]
+  },
+  {
+    "objectID": "use_cases.part_of_a_whole.html#waffle",
+    "href": "use_cases.part_of_a_whole.html#waffle",
+    "title": "5  Part of a whole",
+    "section": "5.7 Waffle",
+    "text": "5.7 Waffle\nA grid of cells: by default 10 × 10, a cell per percent of the whole (largest-remainder rounding keeps the total at 100).\n\n5.7.1 Basic, shapes, colours, groups\nThe regions’ shares; circle cells; a palette; subregions within each region (a facet per region).\nSource: R Graph Gallery - Waffle chart. Data: World population by region, subregion and country, data-to-viz example dataset 11_SevCatOneNumNestedOneObsPerGroup (Yan Holtz; Wikipedia); licence: MIT (data_to_viz repository).\n\n(plot/render-image\n (plot/arrange\n  [{:data world :mapping {:color :region :value :population} :charts [(chart/waffle)] :labels {:title \"regions\"}}\n   {:data world :mapping {:color :region :value :population} :theme {:palette {:color :dark2}}\n    :charts [(chart/waffle {:shape :circle :gap 0.15})] :labels {:title \"circles, :dark2\"}}]\n  {:columns 2})\n {:width 1000 :height 400})\n\n\n\n\nSource: R Graph Gallery - Waffle chart (groups and subgroups). Data: World population by region, subregion and country, data-to-viz example dataset 11_SevCatOneNumNestedOneObsPerGroup (Yan Holtz; Wikipedia); licence: MIT (data_to_viz repository).\n\n(plot/render-image\n {:data world :mapping {:color :subregion :value :population :facet :region}\n  :charts [(chart/waffle {:gap 0.15})]\n  :labels {:title \"Subregions within each region\"}}\n {:width 1000 :height 520})",
+    "crumbs": [
+      "Use cases",
+      "<span class='chapter-number'>5</span>  <span class='chapter-title'>Part of a whole</span>"
+    ]
+  },
+  {
+    "objectID": "use_cases.part_of_a_whole.html#venn-diagram-and-upset",
+    "href": "use_cases.part_of_a_whole.html#venn-diagram-and-upset",
+    "title": "5  Part of a whole",
+    "section": "5.8 Venn diagram and UpSet",
+    "text": "5.8 Venn diagram and UpSet\nThe words three French artists use in their songs: a word is in an artist’s set when it appears in their lyrics. data-to-viz: no more than three sets in a Venn diagram, a number in every region - the UpSet plot handles more.\n\n5.8.1 Two and three sets\nTwo artists: circle areas and the overlap proportional to the word counts. Three: the classic layout, counts and shares from a label function.\nSource: R Graph Gallery - Venn diagram; data-to-viz - Venn diagram (1, 2). Data: Words in the songs of three French artists, data-to-viz example dataset 14_SeveralIndepLists (Yan Holtz); licence: MIT (data_to_viz repository).\n\n(plot/render-image\n (plot/arrange\n  [{:data words :mapping {:set :artist :item :word}\n    :charts [(chart/venn {:sets [\"booba\" \"nekfeu\"]})] :labels {:title \"two artists\"}}\n   {:data words :mapping {:set :artist :item :word}\n    :charts [(chart/venn {:region-labels #(format \"%d\\n%.0f%%\" (:size %) (* 100.0 (double (:share %))))})]\n    :labels {:title \"three artists\"}}]\n  {:columns 2})\n {:width 1000 :height 480})\n\n\n\n\n\n\n5.8.2 UpSet plot\nBars of the exact intersections (largest first) over a dot matrix of the sets in each: from cljplot2.data.sets/upset-rows and membership-rows.\nSource: R Graph Gallery - Venn diagram (the UpSetR alternative). Data: Words in the songs of three French artists, data-to-viz example dataset 14_SeveralIndepLists (Yan Holtz); licence: MIT (data_to_viz repository).\n\n(plot/render-image\n (let [m {:set :artist :item :word}\n       dots (sets/membership-rows words m)]\n   (plot/arrange [{:data (sets/upset-rows words m) :mapping {:x :combination :y :size}\n                   :scales {:x {:axis false}}\n                   :charts [(chart/bar {:value-label true})] :labels {:title \"Words shared by the artists\" :x nil :y \"words\"}}\n                  {:data dots :mapping {:x :combination :y :set}\n                   :theme {:axis {:x {:label-rotation -45}}}\n                   :charts [(chart/scatter {:size 12 :color [210 210 210]})\n                            (chart/scatter {:data (filter :member? dots) :size 12 :color :black})]\n                   :labels {:x nil :y nil}}]\n                 {:columns 1 :heights [3 2]}))\n {:width 900 :height 650})",
+    "crumbs": [
+      "Use cases",
+      "<span class='chapter-number'>5</span>  <span class='chapter-title'>Part of a whole</span>"
+    ]
+  },
+  {
+    "objectID": "use_cases.part_of_a_whole.html#caveats",
+    "href": "use_cases.part_of_a_whole.html#caveats",
+    "title": "5  Part of a whole",
+    "section": "5.9 Caveats",
+    "text": "5.9 Caveats\n\n5.9.1 The issue with pie charts\ndata-to-viz: three sets of five nearly equal values. As pies the differences hide in the angles; as bars they read at once. (3D pies, exploded slices and legends far from the slices make it worse - not drawn here.)\n\n(def caveat-data\n  {\"data 1\" [17 18 20 22 24] \"data 2\" [20 18 21 20 20] \"data 3\" [24 23 21 19 18]})\n\n\n(defn- caveat-rows [values] (mapv (fn [part v] {:part part :value v}) [\"a\" \"b\" \"c\" \"d\" \"e\"] values))\n\n\n#'use-cases.part-of-a-whole/caveat-rows\n\nSource: data-to-viz - The issue with pie chart.\n\n(plot/render-image\n (plot/arrange\n  (vec (concat\n        (for [[title values] caveat-data]\n          {:data (caveat-rows values) :mapping {:x :value :color :part} :coord {:kind :polar} :scales {:x {:axis false}}\n           :legend false :charts [(chart/bar {:position :stack :width 1.0})] :labels {:title title :x nil :y nil}})\n        (for [[title values] caveat-data]\n          {:data (caveat-rows values) :mapping {:x :part :y :value :color :part} :legend false\n           :charts [(chart/bar)] :labels {:title title :x nil :y nil}})))\n  {:columns 3})\n {:width 1000 :height 650})\n\n\n\n\n\n\n5.9.2 Other caveats\n\nCircle packing: only leaf areas follow the values - a group’s circle also holds the gaps between its children.\nTreemaps: label at most three levels; deeper ones get too small to read (data-to-viz).\nSunbursts and donuts compare angles, as pies do; outer rings exaggerate the deeper levels (their arcs are longer for the same share).\n\n\nsource: notebooks/use_cases/part_of_a_whole.clj",
+    "crumbs": [
+      "Use cases",
+      "<span class='chapter-number'>5</span>  <span class='chapter-title'>Part of a whole</span>"
+    ]
   }
 ]
