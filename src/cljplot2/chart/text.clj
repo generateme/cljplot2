@@ -162,12 +162,6 @@
   [options theme]
   (merge {:color (get-in theme [:text :annotation :color])} (select-keys options style-keys)))
 
-(defn- radial-rotation
-  "Clockwise degrees turning a label along angle `theta` (radians, 0 up, clockwise), upright on the left half."
-  [^double theta]
-  (let [a (double (mod (- (m/degrees theta) 90.0) 360.0))]
-    (if (< 90.0 a 270.0) (- a 180.0) a)))
-
 (defn draw
   "Draw the labels of one panel through [[cljplot2.content.label/draw-at!]]; unplaceable positions are skipped."
   [_chart {:keys [groups options]} canvas _box scales env]
@@ -182,7 +176,7 @@
                 (fn [^double h ^double v]
                   (let [^Vec2 p (coord/to-pixel geometry h v)]
                     [(+ (.x p) (double dx)) (- (.y p) (double dy))
-                     (if radial? (radial-rotation h) (numeric-rotation options))
+                     (if radial? (coord/radial-rotation h) (numeric-rotation options))
                      (get options :anchor (if radial? (coord/outward-anchor h) [:center :middle]))]))
                 (let [rotation (numeric-rotation options)
                       anchor (get options :anchor [:center :middle])]

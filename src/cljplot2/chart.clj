@@ -46,6 +46,7 @@
   Context in every facet panel: a chart whose mapping sets the facet keys to `nil` (`{:facet nil}`, see
   [[cljplot2.data.facet/facet-dims]]) is drawn in every panel - e.g. all lines greyed behind the faceted ones:
   `(line {:mapping {:facet nil :color nil :group :g} :color [200 200 200]})` listed before `(line)`."
+  (:refer-clojure :exclude [partition])
   (:require [cljplot2.chart.bar :as bar]
             [cljplot2.chart.beeswarm :as beeswarm]
             [cljplot2.chart.box :as box]
@@ -57,6 +58,7 @@
             [cljplot2.chart.histogram :as histogram]
             [cljplot2.chart.line :as line]
             [cljplot2.chart.parallel :as parallel]
+            [cljplot2.chart.partition :as partition]
             [cljplot2.chart.rect :as rect]
             [cljplot2.chart.ribbon :as ribbon]
             [cljplot2.chart.rug :as rug]
@@ -83,6 +85,7 @@
    :density (:style density/schemas)
    :line (:style line/schemas)
    :treemap (:style treemap/schemas)
+   :partition (:style partition/schemas)
    :ecdf (:style ecdf/schemas)
    :box (:style box/schemas)
    :violin (:style violin/schemas)
@@ -169,6 +172,12 @@
   "Treemap of `:value` over the `:hierarchy` levels, see [[cljplot2.chart.treemap]]."
   ([] (treemap {}))
   ([options] (chart-value :treemap treemap/compute treemap/draw treemap/legend treemap/schemas options)))
+
+(defn partition
+  "Partition of `:value` over the `:hierarchy` levels: an icicle, a sunburst under a polar `:coord`, see
+  [[cljplot2.chart.partition]]."
+  ([] (partition {}))
+  ([options] (polar (chart-value :partition partition/compute partition/draw partition/legend partition/schemas options))))
 
 (defn ecdf
   "Empirical CDF of `:x`, see [[cljplot2.chart.ecdf]]."

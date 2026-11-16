@@ -68,6 +68,12 @@
       (Vec2. (+ cx (* v (m/sin h))) (- cy (* v (m/cos h)))))
     (Vec2. h v)))
 
+(defn radial-rotation
+  "Clockwise degrees turning a label along angle `theta` (radians, 0 up, clockwise), upright on the left half."
+  ^double [^double theta]
+  (let [a (double (mod (- (m/degrees theta) 90.0) 360.0))]
+    (if (< 90.0 a 270.0) (- a 180.0) a)))
+
 (defn outward-anchor
   "Label anchor `[h v]` of text placed at angle `theta` (radians, 0 up, clockwise) that should extend away from the
   centre: left-anchored on the right side, right-anchored on the left, top-anchored at the bottom, bottom-anchored at

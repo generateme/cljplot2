@@ -170,7 +170,7 @@
 
 (deftest text
   (testing "2.5.1 radial rotation: along the angle, upright"
-    (let [rot #(double (#'cljplot2.chart.text/radial-rotation (m/radians %)))]
+    (let [rot #(double (coord/radial-rotation (m/radians %)))]
       (is (< (Math/abs (rot 90)) 1e-9) "3 o'clock - horizontal")
       (is (< (Math/abs (rot 270)) 1e-9) "9 o'clock - horizontal, upright")
       (is (< (Math/abs (- (rot 200) -70.0)) 1e-9) "left half turned upright")
