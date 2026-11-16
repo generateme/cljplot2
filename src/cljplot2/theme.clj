@@ -46,7 +46,7 @@
   `:chart` - per chart kind defaults: `:scatter`, `:histogram`, `:density`, `:line`, `:ecdf` (old cljplot blue
   `[69 117 180]` - clojure2d `(last (palette :rdylbu-9))` - with cljplot's alphas: scatter 180, stripplot 100, rug 100),
   `:treemap` (`:padding`, `:border-color`, `:border-width`), strip charts `:box`, `:violin`, `:stripplot`, `:beeswarm`, `:rug`,
-  `:extent`, `:bar`, annotations `:rule`, `:rect`, `:function`, bands `:ribbon`, `:smooth` (band `:alpha` 0.3), `:segment`, `:candlestick` (green up, red down); each checked against its chart's style schema; line and
+  `:extent`, `:bar`, annotations `:rule`, `:rect`, `:function`, bands `:ribbon`, `:smooth` (band `:alpha` 0.3), `:segment`, `:candlestick` (green up, red down), `:parallel` (radar `:fill` `:alpha` 0.25); each checked against its chart's style schema; line and
   function `:bridge` - the style of bridges over gaps (`:alpha` multiplies the line alpha, optional `:width`, `:dash`);
   line `:alpha` - opacity of `:fill :color` and stacked areas.
 
@@ -122,6 +122,8 @@
            :smooth {:color [69 117 180] :width 1 :dash :none :fill :color :alpha 0.3
                     :pattern :solid :pattern-color :darker}
            :segment {:color [69 117 180] :width 1 :dash :none}
+           :parallel {:color [69 117 180 140] :width 1 :dash :none :fill :none :alpha 0.25
+                      :pattern :solid :pattern-color :darker}
            :candlestick {:up-color [26 152 80] :down-color [215 48 39] :body-width 0.7 :wick-width 1 :stroke-color :none
                          :up-pattern :solid :down-pattern :solid :pattern-color :darker}
            :rect {:fill [0 0 0 30] :stroke-color :none :stroke-width 1

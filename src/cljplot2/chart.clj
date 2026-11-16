@@ -4,7 +4,7 @@
 
   `:coords` (optional, default `#{:cartesian}`) - the coordinate systems the chart draws in (plot `:coord`, see
   [[cljplot2.scale.coord]]); polar charts: [[bar]], [[segment]], [[scatter]], [[line]], [[text]], [[rule]],
-  [[rect]].
+  [[rect]], [[parallel]] (radar).
 
   `:schema` (optional for user charts) - `{:options s :style s :mapping s}` malli schemas, checked by `build` before
   any stage runs: `:options` against the chart's options, `:mapping` against the plot mapping merged with the chart's,
@@ -56,6 +56,7 @@
             [cljplot2.chart.function :as function]
             [cljplot2.chart.histogram :as histogram]
             [cljplot2.chart.line :as line]
+            [cljplot2.chart.parallel :as parallel]
             [cljplot2.chart.rect :as rect]
             [cljplot2.chart.ribbon :as ribbon]
             [cljplot2.chart.rug :as rug]
@@ -96,7 +97,8 @@
    :smooth (:style smooth/schemas)
    :segment (:style segment/schemas)
    :candlestick (:style candlestick/schemas)
-   :bar (:style bar/schemas)})
+   :bar (:style bar/schemas)
+   :parallel (:style parallel/schemas)})
 
 (defn- polar
   "Chart value `v` drawing in polar coordinates too."
@@ -155,6 +157,12 @@
   normalized, mirrored), see [[cljplot2.chart.bar]] and [[cljplot2.data.strip]]."
   ([] (bar {}))
   ([options] (polar (chart-value :bar bar/compute bar/draw bar/legend bar/schemas options))))
+
+(defn parallel
+  "Parallel coordinates of wide rows over `:variables` (one axis per variable, affine `:scaling`); a radar chart under
+  a polar `:coord`, see [[cljplot2.chart.parallel]]."
+  ([] (parallel {}))
+  ([options] (polar (chart-value :parallel parallel/compute parallel/draw parallel/legend parallel/schemas options))))
 
 (defn treemap
   "Treemap of `:value` over the `:hierarchy` levels, see [[cljplot2.chart.treemap]]."
