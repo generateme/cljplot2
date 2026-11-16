@@ -75,6 +75,13 @@
         {:gap 1} :gap
         {:shape :star} :shape
         {:fill-order :diagonal} :fill-order))
+    (testing "X2 at most 10000 cells"
+      (is (= :unit (:key (error #(stats {:data [{:c "a" :v 2e6} {:c "b" :v 1e6}] :mapping {:color :c :value :v} :charts [(chart/waffle {:unit 1})]})))))
+      (is (= 10000 (reduce + (map :cells (get-in (stats {:data [{:c "a" :v 1e4}] :mapping {:color :c :value :v} :charts [(chart/waffle {:unit 1 :columns 100})]})
+                                                 [:data :panel :categories]))))
+          "exactly the limit")
+      (is (= :rows (:key (error #(stats {:data rows :mapping {:color :c} :charts [(chart/waffle {:rows 200 :columns 100})]})))))
+      (is (= :columns (:key (error #(stats {:data rows :mapping {:color :c} :charts [(chart/waffle {:columns 10001})]}))))))
     (testing "facets and empty data render"
       (is (= 2 (count (:data (stats {:data (map #(assoc % :f (if (= "a" (:c %)) "p" "q")) rows) :mapping {:color :c :facet :f}
                                      :charts [(chart/waffle)]})))))
@@ -132,6 +139,11 @@
 (deftest sets-test
   (testing "2.1 mapping keys :set / :item are accessors"
     (is (= :set (:key (error #(plot/build {:data members :mapping {:set 3 :item :item} :charts [(chart/venn)]} {:width 200 :height 200}))))))
+  (testing "X1 combinations in first-appearance order of their items"
+    (let [rows (concat (for [i (range 20)] {:set "A" :item (str "a" i)}) (for [i (range 10 30)] {:set "B" :item (str "a" i)})
+                       (for [i (range 25 40)] {:set "C" :item (str "a" i)}))]
+      (is (= [["A"] ["A" "B"] ["B"] ["B" "C"] ["C"]] (map :sets (sets/intersections rows mapping))))
+      (is (= ["a0" "a1"] (take 2 (:items (sets/memberships rows mapping)))))))
   (testing "2.2 exact combinations"
     (is (= {["A"] 40 ["A" "B"] 10 ["A" "B" "C"] 10 ["B" "C"] 20 ["B"] 10 ["C"] 30} (as-map (sets/intersections members mapping)))))
   (testing "2.2 repeated rows count once; disjoint; subset; empty"
@@ -224,12 +236,45 @@
             row (+ (long y) (quot (long h) 2))
             colors (set (for [i (range (long x) (+ (long x) (long w)) 5)] (rgb img i row)))]
         (is (<= 4 (count colors)) "background, A, B and their overlap along the centre line")))
-    (testing "every circle inside the panel; empty data renders"
-      (let [[_ ^BufferedImage img {:keys [x y w h]}] (render (p {:charts [(chart/venn {:set-labels false :region-labels false})]}) {:width 300 :height 500})]
-        (is (every? #(= [255 255 255] %) (concat (for [i (range (long x) (+ (long x) (long w)))] (rgb img i (long y)))
-                                                (for [i (range (long x) (+ (long x) (long w)))] (rgb img i (+ (long y) (long h) -1)))))
-            "the panel's top and bottom rows untouched (the diagram fits the width)"))
+    (testing "X7 every circle inside the panel, margins kept; empty data renders"
+      (let [fit #'cljplot2.chart.venn/fit]
+        (doseq [circles [(venn/three-sets) (venn/two-sets 60 50 20 true) (venn/two-sets 100 30 30 true) (venn/two-sets 60 50 0 true)]
+                [w h mx my] [[300.0 500.0 0.0 0.0] [500.0 300.0 20.0 12.0] [400.0 400.0 30.0 30.0]]
+                :let [to-pixel (fit circles w h mx my)
+                      scale (double (:scale (meta to-pixel)))]
+                {:keys [x y r]} circles
+                :let [[px py] (to-pixel [x y]) pr (* scale (double r))]]
+          (is (<= (- mx 1e-9) (- (double px) pr)))
+          (is (<= (+ (double px) pr) (+ (- w mx) 1e-9)))
+          (is (<= (- my 1e-9) (- (double py) pr)))
+          (is (<= (+ (double py) pr) (+ (- h my) 1e-9)))))
       (is (some? (plot/render (p {:data []}) {:width 200 :height 200}))))
+    (testing "X4 set names too wide for the panel: left out, the diagram still drawn"
+      (let [long-name (apply str (repeat 40 "W"))
+            [_ img {:keys [x y w h]}] (render (p {:data (map #(update % :set (fn [s] (if (= "A" s) long-name s))) members)
+                                                  :charts [(chart/venn {:region-labels false})]})
+                                              {:width 300 :height 300})]
+        (is (not= [255 255 255] (rgb img (+ (long x) (quot (long w) 2)) (+ (long y) (quot (long h) 2)))))))
+    (testing "X5 region labels in black or white by the painted color"
+      (let [[_ img {:keys [x y w h]}] (render (p {:data (take 110 members) :charts [(chart/venn {:sets ["A" "B"] :alpha 1.0 :set-labels false})]
+                                                  :theme {:palette {:color [[0 0 90] [0 0 90]]}}})
+                                              {:width 400 :height 400})
+            row (+ (long y) (quot (long h) 2))]
+        (is (some (fn [[r g b]] (and (> (long r) 200) (> (long g) 200) (> (long b) 200) (< (long r) 255)))
+                  (for [i (range (long x) (+ (long x) (long w)))] (rgb img i row)))
+            "light text (antialiased white) on the dark fills")))
     (testing "3.5 docs"
       (is (str/includes? (:doc (meta (find-ns 'cljplot2.chart.venn))) "UpSet"))
-      (is (str/includes? (:doc (meta (find-ns 'cljplot2.chart.waffle))) "largest remainder")))))
+      (is (str/includes? (:doc (meta (find-ns 'cljplot2.chart.waffle))) "largest remainder"))
+      (is (str/includes? (:doc (meta (find-ns 'cljplot2.chart.venn))) "spills")))))
+
+(deftest painted-color-test
+  (testing "X5 the color painted under a user-space point, through the canvas transform"
+    (let [canvas (clojure2d.core/canvas 50 40)]
+      (clojure2d.core/with-canvas-> canvas
+        (clojure2d.core/set-color :white) (clojure2d.core/rect 0 0 50 40)
+        (clojure2d.core/translate 10 5)
+        (clojure2d.core/set-color [0 0 200]) (clojure2d.core/rect 0 0 5 5))
+      (let [g (clojure2d.core/with-canvas [c canvas] (clojure2d.core/translate c 10 5) (cljplot2.graphics.draw/painted-color c 2.0 2.0))]
+        (is (= [0.0 0.0 200.0] (vec (take 3 g))))))
+    (is (nil? (clojure2d.core/with-canvas [c (clojure2d.core/canvas 10 10)] (cljplot2.graphics.draw/painted-color c 50.0 5.0))))))

@@ -14,9 +14,11 @@
   Drawing (style defaults from theme `[:chart :venn]`): each set the next `[:palette :color]` color, filled with
   `:alpha` (overlaps mix), outlined with `:border-color` (a color, `:none` or `:darker` - the darkened set color) and
   `:border-width`; no legend - `:set-labels` (default true) writes the set names outside their circles (text role
-  `:venn-set`). `:region-labels` (default true - the count; `false` - none; a function of `{:sets [s ..] :size n
-  :share f}` - `:share` of the panel's distinct items - returning the text) labels every region of the layout
-  (text role `:venn-count`), in black or white by the color under it."
+  `:venn-set`; left out when their room would leave the diagram less than half the panel). `:region-labels`
+  (default true - the count; `false` - none; a function of `{:sets [s ..] :size n :share f}` - `:share` of the
+  panel's distinct items - returning the text) labels every region of the layout (text role `:venn-count`), in black
+  or white by the color painted under it - always drawn, as data-to-viz asks: a label wider than a small region spills
+  over its edges."
   (:require [clojure2d.color :as c]
             [clojure2d.core :as c2d]
             [fastmath.core :as m]
@@ -119,22 +121,6 @@
     (with-meta (fn [[x y]] [(+ (* 0.5 w) (* scale (- (double x) cx))) (+ (* 0.5 h) (* scale (- (double y) cy)))])
       {:scale scale})))
 
-(defn- background
-  "Color under the diagram: the panel fill, else the plot background."
-  [theme]
-  (let [fill (get-in theme [:panel :fill])]
-    (if (theme/none? fill) (get-in theme [:plot :background]) fill)))
-
-(defn- region-color
-  "Color of a region inside the sets of `region` (indices): the background with each set's translucent fill over it,
-  in drawing order."
-  [region fills base]
-  (reduce (fn [below i]
-            (let [col (c/to-color (fills i)) a (/ (double (c/alpha col)) 255.0)]
-              (c/lerp below col a)))
-          (c/to-color base)
-          (sort region)))
-
 (defn draw
   "Draw one panel's diagram: circles, set names, region labels."
   [_chart {:keys [sets sizes regions total style options] :as panel} canvas {:keys [w h]} _scales env]
@@ -145,11 +131,11 @@
         fills (mapv #(c/set-alpha (c/to-color (palette %)) (* 255.0 (double (:alpha style)))) (range n))
         name-contents (mapv (fn [s] {:kind :label :role :venn-set :text (str s)}) sets)
         name-sizes (mapv #(measure/natural-size % {:canvas canvas :theme theme}) name-contents)
-        [mx my] (if (:set-labels options)
-                  [(+ label-gap (double (reduce max 0.0 (map #(.x ^Vec2 %) name-sizes))))
-                   (+ label-gap (double (reduce max 0.0 (map #(.y ^Vec2 %) name-sizes))))]
-                  [0.0 0.0])
-        to-pixel (fit circles (double w) (double h) mx my)
+        mx (+ label-gap (double (reduce max 0.0 (map #(.x ^Vec2 %) name-sizes))))
+        my (+ label-gap (double (reduce max 0.0 (map #(.y ^Vec2 %) name-sizes))))
+        ;; set names only while their room leaves the diagram at least half the panel each way
+        names? (and (:set-labels options) (< (* 4.0 mx) (double w)) (< (* 4.0 my) (double h)))
+        to-pixel (if names? (fit circles w h mx my) (fit circles w h 0.0 0.0))
         scale (double (:scale (meta to-pixel)))
         sw (double (:border-width style))]
     (doseq [[i {:keys [x y r]}] (map-indexed vector circles)
@@ -162,7 +148,7 @@
           (c2d/set-stroke-custom canvas {:size sw})
           (c2d/set-color canvas stroke)
           (c2d/ellipse canvas px py d d true))))
-    (when (:set-labels options)
+    (when names?
       (doseq [[i {:keys [x y r]}] (map-indexed vector circles)
               :when (pos? (double r))
               :let [[dx dy] (name-direction circles i)
@@ -181,7 +167,7 @@
               :when (and (some? text) (not= "" text))
               :let [[px py] (to-pixel point)]]
         (label/draw-at! canvas {:kind :label :role :venn-count :text (str text)
-                                :color (draw/contrast-color (region-color region fills (background theme)))}
+                                :color (draw/contrast-color (or (draw/painted-color canvas px py) :white))}
                         [:center :middle] px py env)))))
 
 (defn legend

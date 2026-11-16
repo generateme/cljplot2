@@ -32,18 +32,19 @@
   (or sets (vec (distinct (keep set-of rows)))))
 
 (defn memberships
-  "`{:sets [s ..] :members {item #{s ..}} :dropped n}` of `rows` under `mapping` (`:set`, `:item` accessors): every
-  item's sets among the chosen ones (see [[set-order]]); `:dropped` - rows with a `nil` set or item."
+  "`{:sets [s ..] :members {item #{s ..}} :items [item ..] :dropped n}` of `rows` under `mapping` (`:set`, `:item`
+  accessors): every item's sets among the chosen ones (see [[set-order]]), `:items` - the items of `:members` in
+  first-appearance order; `:dropped` - rows with a `nil` set or item."
   ([rows mapping] (memberships rows mapping nil))
   ([rows mapping sets]
    (let [[set-of item-of] (accessors mapping)
          order (set-order rows set-of sets)
          chosen (set order)
-         valid (filter #(and (some? (set-of %)) (some? (item-of %))) rows)]
+         valid (filter #(and (some? (set-of %)) (some? (item-of %))) rows)
+         in-chosen (filter #(chosen (set-of %)) valid)]
      {:sets order
-      :members (reduce (fn [acc row] (let [s (set-of row)]
-                                       (if (chosen s) (update acc (item-of row) (fnil conj #{}) s) acc)))
-                       {} valid)
+      :members (reduce (fn [acc row] (update acc (item-of row) (fnil conj #{}) (set-of row))) {} in-chosen)
+      :items (vec (distinct (map item-of in-chosen)))
       :dropped (- (count rows) (count valid))})))
 
 (defn intersections
@@ -51,11 +52,11 @@
   only, sets in set order, combinations in first-appearance order of their items."
   ([rows mapping] (intersections rows mapping nil))
   ([rows mapping sets]
-   (let [{order :sets members :members} (memberships rows mapping sets)
+   (let [{order :sets members :members items :items} (memberships rows mapping sets)
          rank (zipmap order (range))
-         combination (fn [ss] (vec (sort-by rank ss)))
-         sizes (frequencies (map (comp combination val) members))]
-     (mapv (fn [c] {:sets c :size (sizes c)}) (distinct (map (comp combination val) members))))))
+         combinations (map #(vec (sort-by rank (members %))) items)
+         sizes (frequencies combinations)]
+     (mapv (fn [c] {:sets c :size (sizes c)}) (distinct combinations)))))
 
 (defn set-sizes
   "Distinct items per set of `rows`: `{s n}` over the chosen sets (see [[set-order]]; a set without items - 0)."

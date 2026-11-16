@@ -10,7 +10,8 @@
   Cells: by default a `:rows` x `:columns` grid (10 x 10 - a percent waffle, a cell per percent); each category gets
   its share of the panel's total, rounded by largest remainder so the cells always fill the grid. With `:unit` (the
   value of one cell) each category gets `value / unit` cells (largest remainder of the total over the unit), the grid
-  `:columns` wide and as many rows as needed (`:rows` ignored). Categories fill the grid in their level order, from
+  `:columns` wide and as many rows as needed (`:rows` ignored); more than 10000 cells in a panel throw `ex-info` (`{:key :unit}`, `{:key :rows}` for a
+  larger grid). Categories fill the grid in their level order, from
   the bottom-left cell: `:fill-order` `:rows` (default; along the bottom row, then up) or `:columns` (up the first
   column, then right).
 
@@ -35,7 +36,9 @@
          (schema/optional :border-width schema/non-neg)]
         draw/pattern-style-entries))
 
-(def ^:private positive-int [:int {:min 1}])
+(def ^:const max-cells
+  "Most cells a waffle panel draws; more (a small `:unit`, a large grid) throw - cells would shrink below a pixel."
+  10000)
 
 (def schemas
   "Schemas of the waffle: `:style` (theme `[:chart :waffle]`), `:options`, `:mapping` (merged)."
@@ -43,8 +46,8 @@
    :options (-> [:map {:closed true}]
                 (into style-entries)
                 (into data/common-options)
-                (conj (schema/optional :rows positive-int)
-                      (schema/optional :columns positive-int)
+                (conj (schema/optional :rows [:int {:min 1 :max max-cells}])
+                      (schema/optional :columns [:int {:min 1 :max max-cells}])
                       (schema/optional :unit [:and schema/finite [:> 0]])
                       (schema/optional :fill-order [:enum :rows :columns])))
    :mapping [:map [:color schema/accessor]]})
@@ -70,12 +73,19 @@
         (vec (map-indexed (fn [i f] (if (extra i) (inc (long f)) f)) floors))))))
 
 (defn- cell-counts
-  "`[counts columns rows]` of a panel's category `weights` for the options (see the namespace doc)."
+  "`[counts columns rows]` of a panel's category `weights` for the options (see the namespace doc). Throws
+  `ex-info {:key :unit}` (`{:key :rows}` for a grid) for more than [[max-cells]] cells."
   [weights {:keys [rows columns unit]}]
   (if unit
-    (let [cells (long (m/round (/ (double (reduce + 0.0 weights)) (double unit))))]
+    (let [cells (m/round (/ (double (reduce + 0.0 weights)) (double unit)))]
+      (when (> cells max-cells)
+        (schema/fail! (str "A waffle of " cells " cells (at most " max-cells "): raise :unit.") {:key :unit :value unit}))
       [(largest-remainder weights cells) columns (max 1 (long (m/ceil (/ (double cells) (double columns)))))])
-    [(largest-remainder weights (* (long rows) (long columns))) columns rows]))
+    (let [cells (* (long rows) (long columns))]
+      (when (> cells max-cells)
+        (schema/fail! (str "A waffle of " cells " cells (at most " max-cells "): use fewer :rows / :columns.")
+                      {:key :rows :value rows}))
+      [(largest-remainder weights cells) columns rows])))
 
 (defn- value-ok? [v] (and (number? v) (m/valid-double? (double v)) (>= (double v) 0.0)))
 

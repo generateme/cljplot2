@@ -30,6 +30,17 @@
   [color]
   (if (> 127.5 (double (c/luma color))) :white :black))
 
+(defn painted-color
+  "Color already painted on `canvas` at user-space point `(x, y)` (through the canvas transform, e.g. a panel's
+  translation); `nil` outside the image."
+  [canvas ^double x ^double y]
+  (let [^Graphics2D g (:graphics canvas)
+        ^java.awt.image.BufferedImage img (c2d/get-image canvas)
+        p (.transform (.getTransform g) (java.awt.geom.Point2D$Double. x y) nil)
+        px (long (m/floor (.getX p))) py (long (m/floor (.getY p)))]
+    (when (and (< -1 px (.getWidth img)) (< -1 py (.getHeight img)))
+      (c/to-color (.getRGB img px py)))))
+
 (defn outline-color
   "Outline color of a mark filled with `fill` for `:stroke-color` `stroke` (see [[stroke-color]]); `:none` stays `:none`."
   [stroke fill]

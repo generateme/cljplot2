@@ -484,7 +484,6 @@
                   (valid-attribute? k v) (if (= k :size) (double v) v)
                   :else nil))))
 
-
 (defn palette-color-fn
   "`(f i)` - the `i`-th color (0 <= i < `n`) of the theme's `[:palette :color]` as an ordinal scale over `n` levels
   would give it (the NA color for other `i`)."
