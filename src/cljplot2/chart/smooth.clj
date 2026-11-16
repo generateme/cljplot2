@@ -23,8 +23,8 @@
   x is numeric or temporal (`java.time`, fitted in epoch milliseconds - see [[cljplot2.data.rows/x-key]]; parameters
   in x units, such as a `:gp` kernel's `:sigma`, are in milliseconds then); rows with an
   invalid x or y are left out (counted). Groups (see [[cljplot2.data.group]]) come from ordinal aesthetics (`:color`)
-  and `:group`, one fit per group; a group with fewer distinct x than the method needs (see
-  [[cljplot2.data.smooth/required-points]]) has no curve and is counted in `:dropped {:group n}`; other fit errors
+  and `:group`, one fit per group; a group with fewer distinct x or rows than the method needs (see
+  [[cljplot2.data.smooth/fit-requirements]]) has no curve and is counted in `:dropped {:group n}`; other fit errors
   throw `ex-info {:key :method}` naming the group. A band undefined at a point (loess outside the data) breaks there."
   (:require [cljplot2.chart.ribbon :as ribbon]
             [cljplot2.data.rows :as data]
@@ -158,7 +158,7 @@
   [{:keys [options]} {:keys [groups mapping]} {:keys [theme plot-scales] :as env}]
   (let [st (style options theme)
         spec (fit-spec options st)
-        required (smooth/required-points (:method spec) (:params spec))
+        {required-x :distinct-x required-rows :rows} (smooth/fit-requirements (:method spec) (:params spec))
         n (long (or (:n options) default-n))
         full-range? (data/option options :full-range false)
         {:keys [panels dropped]} (group/split groups mapping env)
@@ -169,7 +169,7 @@
             (when (and (seq rows) (not-any? #(data/valid-value? (f %)) rows))
               (schema/fail! "No valid values for a mapped dimension - check the mapping." {:key :mapping :value k :rows (count rows)})))
         points (update-vals panels (fn [gs] (mapv #(group-points % x-of y-of) gs)))
-        fittable? (fn [pts] (>= (count (distinct (map first pts))) required))
+        fittable? (fn [pts] (and (>= (count pts) (long required-rows)) (>= (count (distinct (map first pts))) (long required-x))))
         data (into {} (map (fn [[panel gs]]
                              (let [pts (points panel)
                                    panel-range (when full-range?

@@ -6,7 +6,8 @@
             [cljplot2.data.accessor :as accessor]
             [cljplot2.scale.aesthetic :as aesthetic]
             [cljplot2.data.rows :as data]
-            [cljplot2.schema :as schema]))
+            [cljplot2.schema :as schema]
+            [cljplot2.theme :as theme]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -91,7 +92,8 @@
   * `:diagonal` - charts of the diagonal cells (x - the variable, y their own magnitude scale with its axis hidden),
     default `(chart/density)`; `:names` - the variable's name in the middle of the cell
   * `:labels` - `{variable text}`, display names (default the variable's name)
-  * `:theme` - every cell's and the matrix's theme; `:title` - a title above the matrix
+  * `:theme` - every cell's and the matrix's theme; `:title` - a title above the matrix. Cells have no plot margin
+    and are `[:facet :gap]` apart, as facet panels (a `[:plot :margin]` / `[:multiplot :gap]` in `:theme` wins)
 
   All cells of a column share the x domain of its variable, all cells of a row the y domain of its (the variable's
   range widened by 5 %, no nice extension, no chart padding). Tick labels and axis titles (the variable names) only on the outer cells
@@ -100,7 +102,8 @@
   column of `:legend-only` plots, sized to the legend, shows the mapped aesthetics (keys of the lower charts, a color
   bar for a continuous color - left out of the diagonal cells) or, without a mapping, the colors the lower / upper
   charts compute (e.g. the r color bar of correlation glyphs);
-  the matrix has `:equal-panels`. Throws `ex-info {:key :variables}` for
+  the matrix has `:equal-panels` and cells shaded as a checkerboard like facet panels (`:alternate-panel` on odd
+  `i + j`, theme `[:panel :alternate-fill]`; `:none` turns it off). Throws `ex-info {:key :variables}` for
   a wrong variable count, a missing or non-numeric variable.
 
   Equivalents: GGally `ggpairs` - the defaults (scatter below, correlation text above - per group when grouped -,
@@ -134,6 +137,10 @@
                         :else (vec (distinct (filter #(seq (aesthetic/computed-aesthetics % pair-mapping)) (concat lower upper)))))
         legend? (boolean (seq legend-charts))
         axis (fn [outer?] (if outer? true :grid))
+        ;; panels as close as facet panels: cells without plot margins, the facet gap between them (`theme` wins)
+        cell-theme (theme/deep-merge {:plot {:margin 0}} theme)
+        matrix-theme (theme/deep-merge {:multiplot {:gap (get-in (theme/deep-merge theme/default-theme theme) [:facet :gap])}}
+                                       theme)
         cell (fn [^long i ^long j]
                (let [vx (variables j) vy (variables i)
                      diag? (= i j) bottom? (= i (dec n)) left? (zero? j)
@@ -151,15 +158,15 @@
                                             :else {:domain (domains vy) :nice false :expand [0.0 0.0] :axis (axis left?)})}
                           :labels {:x (when bottom? (name-of vx)) :y (when left? (name-of vy))}
                           :legend false}
-                   names? (assoc-in [:scales :y] {:domain [0 1] :expand [0.0 0.0] :axis :grid})
+                   (odd? (+ i j)) (assoc :alternate-panel true)
+                   ;; names or an empty diagonal: no data on y - a fixed unit domain
+                   (and diag? (or names? (empty? charts))) (assoc-in [:scales :y] {:domain [0 1] :expand [0.0 0.0] :axis :grid})
                    names? (update :mapping dissoc :y)
-                   theme (assoc :theme theme))))
-        legend-cell (fn [^long i] (cond-> {:legend-only true}
-                              (zero? i) (assoc :data rows :mapping pair-mapping :charts legend-charts)
-                              theme (assoc :theme theme)))
+                   true (assoc :theme cell-theme))))
+        legend-cell (fn [^long i] (cond-> {:legend-only true :theme cell-theme}
+                              (zero? i) (assoc :data rows :mapping pair-mapping :charts legend-charts)))
         plots (vec (for [i (range n) j (range (if legend? (inc n) n))]
                      (if (== (long j) n) (legend-cell i) (cell i j))))]
-    (arrange plots (cond-> {:columns (if legend? (inc n) n) :equal-panels true}
+    (arrange plots (cond-> {:columns (if legend? (inc n) n) :equal-panels true :theme matrix-theme}
                      legend? (assoc :widths (conj (vec (repeat n 1)) :measured))
-                     title (assoc :title title)
-                     theme (assoc :theme theme)))))
+                     title (assoc :title title)))))

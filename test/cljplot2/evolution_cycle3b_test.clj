@@ -159,20 +159,34 @@
     (let [s (stats (smooth-plot (into line-data [{:x nil :y 1} {:x 3 :y nil} {:x 4 :y ##NaN}]) {:method :lm}))]
       (is (= {:x 1 :y 2 :group 0} (select-keys (:dropped s) [:x :y :group]))))
     (is (= :x (:key (error #(build (smooth-plot [{:x "a" :y 1} {:x "b" :y 2}] {:method :lm})))))))
+  (testing "notebook review: lm needs degree + 1 distinct x and degree + 2 rows (Anscombe IV)"
+    (let [curves (fn [data opts] (let [s (stats (smooth-plot data (merge {:method :lm} opts)))]
+                                   [(count (get-in s [:data facet/single-panel :curves])) (get-in s [:dropped :group])]))
+          anscombe-iv (mapv (fn [x y] {:x x :y y}) [8 8 8 8 8 8 8 19 8 8 8] [6.58 5.76 7.71 8.84 8.47 7.04 5.25 12.5 5.56 7.91 6.89])]
+      (is (= [1 0] (curves anscombe-iv {})) "two distinct x, eleven rows: fitted")
+      (is (= [1 0] (curves [{:x 1 :y 1} {:x 1 :y 2} {:x 2 :y 3}] {})) "two distinct x, three rows: the minimum")
+      (is (= [0 1] (curves [{:x 1 :y 1} {:x 2 :y 3}] {})) "two rows: no residual degree of freedom")
+      (is (= [0 1] (curves [{:x 1 :y 1} {:x 1 :y 2} {:x 1 :y 3}] {})) "one distinct x")
+      (is (= [0 1] (curves [{:x 1 :y 1} {:x 1 :y 2} {:x 2 :y 3} {:x 2 :y 4}] {:method-params {:degree 2}})) "degree 2: three distinct x")
+      (is (= [1 0] (curves [{:x 1 :y 1} {:x 2 :y 2} {:x 3 :y 5} {:x 3 :y 4}] {:method-params {:degree 2}})) "degree 2: three distinct x, four rows")
+      (let [{:keys [y bands]} (first (get-in (stats (smooth-plot anscombe-iv {:method :lm})) [:data facet/single-panel :curves]))
+            finite? (fn [vs] (every? #(Double/isFinite (double %)) vs))]
+        (is (finite? y) "a finite line")
+        (is (and (seq bands) (every? #(and (finite? (:lo %)) (finite? (:hi %))) bands)) "a finite confidence band"))))
   (testing "3.1.2 too few distinct x: the group dropped, the others drawn"
     (let [s (stats (smooth-plot (conj (mapv #(assoc % :g "a") line-data) {:x 1 :y 1 :g "b"} {:x 1 :y 2 :g "b"})
                                 {:method :lm} {:mapping {:x :x :y :y :color :g}}))]
       (is (= 1 (get-in s [:dropped :group])))
       (is (= 1 (count (get-in s [:data facet/single-panel :curves]))))))
-  (testing "3.1.2 required points: lm degree + 2, glm 3, loess by bandwidth, others 2"
-    (is (= 3 (smooth/required-points :lm nil)))
-    (is (= 5 (smooth/required-points :lm {:degree 3})))
-    (is (= 3 (smooth/required-points :glm {:family :poisson})))
-    (is (= 3 (smooth/required-points :loess nil)) "default bandwidth 0.75")
-    (is (= 7 (smooth/required-points :loess {:bandwidth 0.3})))
-    (is (= 4 (smooth/required-points :loess {:bandwidth 0.5})))
-    (is (= 2 (smooth/required-points :loess {:bandwidth 1.0})))
-    (is (= 2 (smooth/required-points :cubic nil)))
+  (testing "3.1.2 fit requirements: lm degree + 1 distinct x and degree + 2 rows, glm 3, loess by bandwidth, others 2"
+    (is (= {:distinct-x 2 :rows 3} (smooth/fit-requirements :lm nil)))
+    (is (= {:distinct-x 4 :rows 5} (smooth/fit-requirements :lm {:degree 3})))
+    (is (= {:distinct-x 3 :rows 3} (smooth/fit-requirements :glm {:family :poisson})))
+    (is (= {:distinct-x 3 :rows 3} (smooth/fit-requirements :loess nil)) "default bandwidth 0.75")
+    (is (= 7 (:distinct-x (smooth/fit-requirements :loess {:bandwidth 0.3}))))
+    (is (= 4 (:distinct-x (smooth/fit-requirements :loess {:bandwidth 0.5}))))
+    (is (= 2 (:distinct-x (smooth/fit-requirements :loess {:bandwidth 1.0}))))
+    (is (= {:distinct-x 2 :rows 2} (smooth/fit-requirements :cubic nil)))
     (is (= 1 (get-in (stats (smooth-plot (take 6 line-data) {:method-params {:bandwidth 0.3}})) [:dropped :group])) "6 points, loess at 0.3")
     (is (= 0 (get-in (stats (smooth-plot (take 7 line-data) {:method-params {:bandwidth 0.3}})) [:dropped :group])))
     (is (= 1 (get-in (stats (smooth-plot (take 2 line-data) {})) [:dropped :group])) "2 points, default 0.75")
@@ -318,7 +332,7 @@
     (are [bw] (= :method-params (:key (error #(build (smooth-plot noisy {:method-params {:bandwidth bw}})))))
       0 -1 0.0 1.5 :x nil)
     (is (some? (curve-of (smooth-plot noisy {:method-params {:bandwidth 1.0}}))) "1 is allowed")
-    (is (= 200 (smooth/required-points :loess {:bandwidth 0.01})))
+    (is (= 200 (:distinct-x (smooth/fit-requirements :loess {:bandwidth 0.01}))))
     (is (= 0 (get-in (stats (smooth-plot noisy {:method :lm :method-params {:bandwidth 0}})) [:dropped :group]))
         ":bandwidth is a loess parameter only")))
 

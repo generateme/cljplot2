@@ -155,7 +155,7 @@ One point per observation at its two values; colour, shape and size carry more v
 Living area against sale price of 1460 houses: the default points, then a translucent fill with an outline and
 another shape.
 
-Source: R Graph Gallery - Basic scatterplot with ggplot2; data-to-viz - Scatter ([1](https://r-graph-gallery.com/272-basic-scatterplot-with-ggplot2.html), [2](https://www.data-to-viz.com/graph/scatter.html)). Data: House prices: living area and sale price, data-to-viz example dataset `2_TwoNum` (Yan Holtz; Kaggle House Prices, Ames, Iowa); licence: MIT (data_to_viz repository).
+Source: R Graph Gallery - Basic scatterplot with ggplot2; data-to-viz - Scatter ([1](https://r-graph-gallery.com/272-basic-scatterplot-with-ggplot2.html), [2](https://www.data-to-viz.com/graph/scatter.html)). Data: House prices: living area and sale price, data-to-viz example dataset `2_TwoNum` (Yan Holtz; Kaggle House Prices competition); licence: MIT (data_to_viz repository).
 
 
 ::: {.sourceClojure}
@@ -278,7 +278,7 @@ Source: [R Graph Gallery - Marginal distribution with ggplot2](https://r-graph-g
 
 `chart/smooth {:method :lm}` adds the least-squares line and its 95 % confidence band.
 
-Source: [R Graph Gallery - Scatterplot with a regression line](https://r-graph-gallery.com/50-51-52-scatter-plot-with-ggplot2.html). Data: House prices: living area and sale price, data-to-viz example dataset `2_TwoNum` (Yan Holtz; Kaggle House Prices, Ames, Iowa); licence: MIT (data_to_viz repository).
+Source: [R Graph Gallery - Scatterplot with a regression line](https://r-graph-gallery.com/50-51-52-scatter-plot-with-ggplot2.html). Data: House prices: living area and sale price, data-to-viz example dataset `2_TwoNum` (Yan Holtz; Kaggle House Prices competition); licence: MIT (data_to_viz repository).
 
 
 ::: {.sourceClojure}
@@ -353,7 +353,8 @@ Source: [R Graph Gallery - Scatterplot](https://r-graph-gallery.com/scatterplot.
 ### Manhattan plot
 
 A genome-wide association plot (seeded data): one point per marker at its position along the chromosomes and its
-−log10 p-value, chromosomes in alternating colours, the significance threshold 5·10⁻⁸ as a rule.
+−log10 p-value, chromosomes in alternating colours and numbered at their centres (explicit `:ticks` with a
+`:formatter`), the significance threshold 5·10⁻⁸ as a rule.
 
 Source: [R Graph Gallery - Manhattan plot](https://r-graph-gallery.com/101_Manhattan_plot.html).
 
@@ -382,14 +383,17 @@ Source: [R Graph Gallery - Manhattan plot](https://r-graph-gallery.com/101_Manha
 
 ::: {.sourceClojure}
 ```clojure
-(plot/render-image
- {:data markers :mapping {:x :position :y :log-p :color #(if (odd? (:chromosome %)) "odd" "even")}
-  :charts [(chart/scatter {:size 3})
-           (chart/rule {:y (- (m/log10 5.0e-8)) :dash :dashed :color [200 40 40]})]
-  :scales {:color {:range {"odd" [40 70 120] "even" [140 170 210]} :legend false}}
-  :labels {:title "Association with a trait along 22 chromosomes" :x "marker position (chromosome by chromosome)"
-           :y "-log10 p"}}
- {:width 1000 :height 400})
+(let [centres (into (sorted-map) (for [[chromosome rows] (group-by :chromosome markers)]
+                                     [(stats/mean (map :position rows)) chromosome]))]
+  (plot/render-image
+   {:data markers :mapping {:x :position :y :log-p :color #(if (odd? (:chromosome %)) "odd" "even")}
+    :charts [(chart/scatter {:size 3})
+             (chart/rule {:y (- (m/log10 5.0e-8)) :dash :dashed :color [200 40 40]})]
+    :scales {:x {:ticks (vec (keys centres)) :formatter #(str (get centres (double %)))}
+             :color {:range {"odd" [40 70 120] "even" [140 170 210]} :legend false}}
+    :theme {:panel {:grid {:x :none}}}
+    :labels {:title "Association with a trait along 22 chromosomes" :x "chromosome" :y "-log10 p"}}
+   {:width 1000 :height 400}))
 ```
 :::
 
@@ -462,7 +466,7 @@ columns of different units; `:cell :pointy-hex` draws the same grid as a honeyco
 :::
 
 
-Source: R Graph Gallery - Heatmap; data-to-viz - Heatmap ([1](https://r-graph-gallery.com/heatmap.html), [2](https://www.data-to-viz.com/graph/heatmap.html)). Data: Countries: demographic indicators, data-to-viz example dataset `multivariate` (Yan Holtz; UN World Population Prospects); licence: MIT (data_to_viz repository).
+Source: R Graph Gallery - Heatmap; data-to-viz - Heatmap ([1](https://r-graph-gallery.com/heatmap.html), [2](https://www.data-to-viz.com/graph/heatmap.html)). Data: Countries: demographic indicators, data-to-viz example dataset `multivariate` (Yan Holtz; original source not documented); licence: MIT (data_to_viz repository).
 
 
 ::: {.sourceClojure}
@@ -494,7 +498,7 @@ Raw values put every indicator on one colour scale, so life expectancy (around 8
 standardizing each column first gives every indicator the full palette. Any palette or gradient works:
 viridis on the left, a diverging RdBu around 0 on the right.
 
-Source: [R Graph Gallery - Heatmap with the levelplot function](https://r-graph-gallery.com/79-levelplot-with-ggplot2.html). Data: Countries: demographic indicators, data-to-viz example dataset `multivariate` (Yan Holtz; UN World Population Prospects); licence: MIT (data_to_viz repository).
+Source: [R Graph Gallery - Heatmap with the levelplot function](https://r-graph-gallery.com/79-levelplot-with-ggplot2.html). Data: Countries: demographic indicators, data-to-viz example dataset `multivariate` (Yan Holtz; original source not documented); licence: MIT (data_to_viz repository).
 
 
 ::: {.sourceClojure}
@@ -524,9 +528,10 @@ Source: [R Graph Gallery - Heatmap with the levelplot function](https://r-graph-
 ### Side colour bar
 
 A category of the columns as a one-row tile above the heatmap: both plots share the column order (`:domain`),
-`plot/arrange` aligns the cells. Here: the six most populous countries of each continent, grouped by continent.
+`plot/arrange` aligns the cells. Here: up to six of the most populous countries of each continent (the dataset
+has two in North America), grouped by continent.
 
-Source: [R Graph Gallery - The heatmap function (side colours)](https://r-graph-gallery.com/215-the-heatmap-function.html). Data: Countries: demographic indicators, data-to-viz example dataset `multivariate` (Yan Holtz; UN World Population Prospects); licence: MIT (data_to_viz repository).
+Source: [R Graph Gallery - The heatmap function (side colours)](https://r-graph-gallery.com/215-the-heatmap-function.html). Data: Countries: demographic indicators, data-to-viz example dataset `multivariate` (Yan Holtz; original source not documented); licence: MIT (data_to_viz repository).
 
 
 ::: {.sourceClojure}
@@ -593,7 +598,7 @@ Source: [R Graph Gallery - Correlation matrix with ggally (heatmap)](https://r-g
 Daily bitcoin price changes on a calendar: ISO week across, weekday down, a row of panels per year; the colour
 is the day's change, capped at ±10 % so a few extreme days don't flatten the rest.
 
-Source: [R Graph Gallery - The hourly heatmap (calendar layout)](https://r-graph-gallery.com/283-the-hourly-heatmap.html). Data: Bitcoin daily price, 2013-2018, data-to-viz example dataset `3_TwoNumOrdered` (Yan Holtz); licence: MIT (data_to_viz repository).
+Source: [R Graph Gallery - The hourly heatmap (calendar layout)](https://r-graph-gallery.com/283-the-hourly-heatmap.html). Data: Bitcoin daily price, 2013-2018, data-to-viz example dataset `3_TwoNumOrdered` (Yan Holtz; CoinMarketCap via JesseVent/crypto); licence: MIT (data_to_viz repository).
 
 
 ::: {.sourceClojure}
@@ -628,7 +633,7 @@ Source: [R Graph Gallery - The hourly heatmap (calendar layout)](https://r-graph
 The order of the categories is the scale's `:domain`: the data order (the default; here the dataset's subregions)
 hides structure that a meaningful order shows - countries sorted by life expectancy.
 
-Source: [R Graph Gallery - Heatmap](https://r-graph-gallery.com/heatmap.html). Data: Countries: demographic indicators, data-to-viz example dataset `multivariate` (Yan Holtz; UN World Population Prospects); licence: MIT (data_to_viz repository).
+Source: [R Graph Gallery - Heatmap](https://r-graph-gallery.com/heatmap.html). Data: Countries: demographic indicators, data-to-viz example dataset `multivariate` (Yan Holtz; original source not documented); licence: MIT (data_to_viz repository).
 
 
 ::: {.sourceClojure}
@@ -1067,6 +1072,57 @@ Source: [data-to-viz - Overplotting (jitter)](https://www.data-to-viz.com/caveat
 
 
 ## Caveats
+
+
+### Anscombe's quartet
+
+Four datasets with the same means, variances, linear fit and r ≈ 0.82 - and four different relations: a line, a
+curve, a line with an outlier, a single far point making the correlation. Always look at the scatter plot.
+
+Source: [Anscombe (1973), Graphs in Statistical Analysis (R datasets::anscombe)](https://en.wikipedia.org/wiki/Anscombe%27s_quartet).
+
+
+::: {.sourceClojure}
+```clojure
+(def anscombe
+  "Anscombe's quartet (R `datasets::anscombe`) in long form."
+  (let [x123 [10 8 13 9 11 14 6 4 12 7 5]
+        x4 [8 8 8 8 8 8 8 19 8 8 8]
+        ys {"I" [8.04 6.95 7.58 8.81 8.33 9.96 7.24 4.26 10.84 4.82 5.68]
+            "II" [9.14 8.14 8.74 8.77 9.26 8.10 6.13 3.10 9.13 7.26 4.74]
+            "III" [7.46 6.77 12.74 7.11 7.81 8.84 6.08 5.39 8.15 6.42 5.73]
+            "IV" [6.58 5.76 7.71 8.84 8.47 7.04 5.25 12.50 5.56 7.91 6.89]}]
+    (vec (for [set ["I" "II" "III" "IV"] [x y] (map vector (if (= "IV" set) x4 x123) (ys set))]
+           {:set set :x x :y y}))))
+```
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(let [r-label (fn [rows] (format "r = %.2f" (stats/pearson-correlation (map :x rows) (map :y rows))))]
+  (plot/render-image
+   {:data anscombe :mapping {:x :x :y :y :facet :set}
+    :facets {:columns 4}
+    :charts [(chart/smooth {:method :lm})
+             (chart/scatter {:size 7 :color [200 60 40]})
+             (chart/text {:data (vec (for [[set rows] (group-by :set anscombe)] {:set set :x 4 :y 13 :label (r-label rows)}))
+                          :mapping {:x :x :y :y :label :label} :anchor [:left :top]
+                          :background [255 255 255 210] :padding 3})]
+    :labels {:title "Anscombe's quartet: one r, four relations"}}
+   {:width 1000 :height 330}))
+```
+:::
+
+
+::: {.clay-image}
+![](use_cases.correlation_files/image29.png)
+:::
+
+
+
+### Other caveats
 
 
 - Correlation is not causation: two variables can move together because a third one drives both.

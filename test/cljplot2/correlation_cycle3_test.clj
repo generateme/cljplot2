@@ -262,3 +262,40 @@
           boxes (panel-boxes b)]
       (is (= 2 (count boxes)))
       (is (apply = (map :h boxes))))))
+
+;; notebook review U1: alternate panel shading outside facets
+
+(deftest alternate-panel-test
+  (let [shade [0 0 0 128]
+        theme {:plot {:background :white} :panel {:fill :white :alternate-fill shade :grid {:x :none :y :none}}}
+        p (fn [extra] (merge {:data [{:x 0 :y 0} {:x 1 :y 1}] :mapping {:x :x :y :y} :charts [] :theme theme} extra))
+        center (fn [plot] (let [built (plot/build plot {:width 200 :height 200})
+                                {:keys [x y w h]} (grid/item-box (:layout built) :panel)]
+                            (rgb (plot/render-image plot {:width 200 :height 200}) (+ x (quot w 2)) (+ y (quot h 2)))))]
+    (testing "U1 :alternate-panel shades a single panel; absent / false - plain fill"
+      (is (= [127 127 127] (center (p {:alternate-panel true}))))
+      (is (= [255 255 255] (center (p {}))))
+      (is (= [255 255 255] (center (p {:alternate-panel false})))))
+    (testing "U1 :alternate-fill :none turns it off"
+      (is (= [255 255 255] (center (p {:alternate-panel true :theme (assoc-in theme [:panel :alternate-fill] :none)})))))
+    (testing "U1 schema: a boolean"
+      (is (= [:alternate-panel] (:in (error #(plot/build (p {:alternate-panel 1}) {:width 200 :height 200}))))))
+    (testing "U1 pairs: cells with odd i + j shaded, the diagonal included"
+      (let [cells (get-in (plot/pairs cloud {:variables [:a :b :c]}) [:arrange :plots])
+            grouped (get-in (plot/pairs cloud {:variables [:a :b] :mapping {:color :g}}) [:arrange :plots])]
+        (is (= [false true false true false true false true false] (mapv #(boolean (:alternate-panel %)) cells)))
+        (is (= [false true nil true false nil] (mapv #(when-not (:legend-only %) (boolean (:alternate-panel %))) grouped))
+            "the legend column unshaded")
+        (is (some? (plot/render-image (plot/pairs cloud {:variables [:a :b] :diagonal nil}) {:width 300 :height 300}))
+            "an empty diagonal (nil) builds")
+        (is (= [127 127 127] (center (assoc (nth cells 1) :charts [] :theme theme))) "a shaded cell draws the shade")))
+    (testing "U1 pairs gaps as facets: cells without plot margin, [:facet :gap] apart; the given theme wins"
+      (let [m (plot/pairs cloud {:variables [:a :b]})
+            custom (plot/pairs cloud {:variables [:a :b] :theme {:facet {:gap 2} :plot {:margin 4}}})
+            gap (fn [p] (get-in p [:theme :multiplot :gap]))
+            margins (fn [p] (set (map #(get-in % [:theme :plot :margin]) (get-in p [:arrange :plots]))))]
+        (is (= 5 (gap m)))
+        (is (= #{0} (margins m)))
+        (is (= 2 (gap custom)) "the theme's facet gap")
+        (is (= #{4} (margins custom)) "the theme's plot margin")
+        (is (= 7 (gap (plot/pairs cloud {:variables [:a :b] :theme {:multiplot {:gap 7}}}))) "an explicit multiplot gap")))))

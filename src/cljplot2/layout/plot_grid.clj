@@ -155,7 +155,8 @@
 (defn single-panel-grid
   "Grid of a single-panel plot: its `:labels`, axes of its `:scale-specs`, its plot margins (`:margin-stats`, see
   [[cljplot2.pipeline]]: a `:top-margin` row above the panel, a `:right-margin` column right of it - before the
-  legend - each next to a gap) and the margin of its (merged) `:theme`."
+  legend - each next to a gap) and the margin of its (merged) `:theme`. `:alternate-panel true` shades the panel as an
+  odd facet panel."
   [{:keys [labels theme scale-specs flip margin-stats] :as plot}]
   (let [margin-track (margin-track-fn plot)
         measured (fn [id] {:id id :size [:measured]})
@@ -169,7 +170,7 @@
                (into (plot-margin-tracks margin-stats :top theme))
                (into [(measured :y-overhang) {:id :panel :size [:flexible]}
                       (measured :x-axis) (measured :x-title) (margin-track :margin-bottom)]))
-     :items (-> [{:id :panel :column :panel :row :panel :content {:kind :panel}}]
+     :items (-> [{:id :panel :column :panel :row :panel :content (cond-> {:kind :panel} (:alternate-panel plot) (assoc :alternate true))}]
                 (into (mapcat (fn [[side k]] (when (axis-shown? scale-specs k) (axis-items side k)))) (side-scales flip))
                 (into (label-items (side-labels labels flip) {}))
                 (into (legend-items legends :panel))

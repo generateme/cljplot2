@@ -258,7 +258,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#size-transparency-sampling-binning-facets-margins" id="toc-size-transparency-sampling-binning-facets-margins" class="nav-link" data-scroll-target="#size-transparency-sampling-binning-facets-margins"><span class="header-section-number">6.8.1</span> Size, transparency, sampling, binning, facets, margins</a></li>
   <li><a href="#jitter" id="toc-jitter" class="nav-link" data-scroll-target="#jitter"><span class="header-section-number">6.8.2</span> Jitter</a></li>
   </ul></li>
-  <li><a href="#caveats" id="toc-caveats" class="nav-link" data-scroll-target="#caveats"><span class="header-section-number">6.9</span> Caveats</a></li>
+  <li><a href="#caveats" id="toc-caveats" class="nav-link" data-scroll-target="#caveats"><span class="header-section-number">6.9</span> Caveats</a>
+  <ul>
+  <li><a href="#anscombes-quartet" id="toc-anscombes-quartet" class="nav-link" data-scroll-target="#anscombes-quartet"><span class="header-section-number">6.9.1</span> Anscombe’s quartet</a></li>
+  <li><a href="#other-caveats" id="toc-other-caveats" class="nav-link" data-scroll-target="#other-caveats"><span class="header-section-number">6.9.2</span> Other caveats</a></li>
+  </ul></li>
   </ul>
 </nav>
     </div>
@@ -359,7 +363,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="basic-scatter-styled-points" class="level3" data-number="6.1.1">
 <h3 data-number="6.1.1" class="anchored" data-anchor-id="basic-scatter-styled-points"><span class="header-section-number">6.1.1</span> Basic scatter, styled points</h3>
 <p>Living area against sale price of 1460 houses: the default points, then a translucent fill with an outline and another shape.</p>
-<p>Source: R Graph Gallery - Basic scatterplot with ggplot2; data-to-viz - Scatter (<a href="https://r-graph-gallery.com/272-basic-scatterplot-with-ggplot2.html">1</a>, <a href="https://www.data-to-viz.com/graph/scatter.html">2</a>). Data: House prices: living area and sale price, data-to-viz example dataset <code>2_TwoNum</code> (Yan Holtz; Kaggle House Prices, Ames, Iowa); licence: MIT (data_to_viz repository).</p>
+<p>Source: R Graph Gallery - Basic scatterplot with ggplot2; data-to-viz - Scatter (<a href="https://r-graph-gallery.com/272-basic-scatterplot-with-ggplot2.html">1</a>, <a href="https://www.data-to-viz.com/graph/scatter.html">2</a>). Data: House prices: living area and sale price, data-to-viz example dataset <code>2_TwoNum</code> (Yan Holtz; Kaggle House Prices competition); licence: MIT (data_to_viz repository).</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
 <span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a> (plot/arrange</span>
@@ -438,7 +442,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="linear-fit-with-a-confidence-band" class="level3" data-number="6.1.5">
 <h3 data-number="6.1.5" class="anchored" data-anchor-id="linear-fit-with-a-confidence-band"><span class="header-section-number">6.1.5</span> Linear fit with a confidence band</h3>
 <p><code>chart/smooth {:method :lm}</code> adds the least-squares line and its 95 % confidence band.</p>
-<p>Source: <a href="https://r-graph-gallery.com/50-51-52-scatter-plot-with-ggplot2.html">R Graph Gallery - Scatterplot with a regression line</a>. Data: House prices: living area and sale price, data-to-viz example dataset <code>2_TwoNum</code> (Yan Holtz; Kaggle House Prices, Ames, Iowa); licence: MIT (data_to_viz repository).</p>
+<p>Source: <a href="https://r-graph-gallery.com/50-51-52-scatter-plot-with-ggplot2.html">R Graph Gallery - Scatterplot with a regression line</a>. Data: House prices: living area and sale price, data-to-viz example dataset <code>2_TwoNum</code> (Yan Holtz; Kaggle House Prices competition); licence: MIT (data_to_viz repository).</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
 <span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a> {<span class="at">:data</span> houses <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:living-area</span> <span class="at">:y</span> <span class="at">:price</span>}</span>
@@ -485,7 +489,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="manhattan-plot" class="level3" data-number="6.1.8">
 <h3 data-number="6.1.8" class="anchored" data-anchor-id="manhattan-plot"><span class="header-section-number">6.1.8</span> Manhattan plot</h3>
-<p>A genome-wide association plot (seeded data): one point per marker at its position along the chromosomes and its −log10 p-value, chromosomes in alternating colours, the significance threshold 5·10⁻⁸ as a rule.</p>
+<p>A genome-wide association plot (seeded data): one point per marker at its position along the chromosomes and its −log10 p-value, chromosomes in alternating colours and numbered at their centres (explicit <code>:ticks</code> with a <code>:formatter</code>), the significance threshold 5·10⁻⁸ as a rule.</p>
 <p>Source: <a href="https://r-graph-gallery.com/101_Manhattan_plot.html">R Graph Gallery - Manhattan plot</a>.</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> markers</span></span>
@@ -505,14 +509,17 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb22-15"><a href="#cb22-15" aria-hidden="true" tabindex="-1"></a>          (<span class="kw">recur</span> (<span class="kw">inc</span> chromosome) (<span class="kw">+</span> offset n) (<span class="kw">into</span> rows chromosome-rows)))))))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb23"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
-<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a> {<span class="at">:data</span> markers <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:position</span> <span class="at">:y</span> <span class="at">:log-p</span> <span class="at">:color</span> #(<span class="kw">if</span> (<span class="kw">odd?</span> (<span class="at">:chromosome</span> <span class="va">%</span>)) <span class="st">"odd"</span> <span class="st">"even"</span>)}</span>
-<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">:charts</span> [(chart/scatter {<span class="at">:size</span> <span class="dv">3</span>})</span>
-<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>           (chart/rule {<span class="at">:y</span> (<span class="kw">-</span> (m/log10 <span class="fl">5.0e-8</span>)) <span class="at">:dash</span> <span class="at">:dashed</span> <span class="at">:color</span> [<span class="dv">200</span> <span class="dv">40</span> <span class="dv">40</span>]})]</span>
-<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:range</span> {<span class="st">"odd"</span> [<span class="dv">40</span> <span class="dv">70</span> <span class="dv">120</span>] <span class="st">"even"</span> [<span class="dv">140</span> <span class="dv">170</span> <span class="dv">210</span>]} <span class="at">:legend</span> <span class="va">false</span>}}</span>
-<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"Association with a trait along 22 chromosomes"</span> <span class="at">:x</span> <span class="st">"marker position (chromosome by chromosome)"</span></span>
-<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>           <span class="at">:y</span> <span class="st">"-log10 p"</span>}}</span>
-<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a> {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">400</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb23"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">let</span> [centres (<span class="kw">into</span> (<span class="kw">sorted-map</span>) (<span class="kw">for</span> [[chromosome rows] (<span class="kw">group-by</span> <span class="at">:chromosome</span> markers)]</span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>                                     [(stats/mean (<span class="kw">map</span> <span class="at">:position</span> rows)) chromosome]))]</span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>  (plot/render-image</span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>   {<span class="at">:data</span> markers <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:position</span> <span class="at">:y</span> <span class="at">:log-p</span> <span class="at">:color</span> #(<span class="kw">if</span> (<span class="kw">odd?</span> (<span class="at">:chromosome</span> <span class="va">%</span>)) <span class="st">"odd"</span> <span class="st">"even"</span>)}</span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">:charts</span> [(chart/scatter {<span class="at">:size</span> <span class="dv">3</span>})</span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>             (chart/rule {<span class="at">:y</span> (<span class="kw">-</span> (m/log10 <span class="fl">5.0e-8</span>)) <span class="at">:dash</span> <span class="at">:dashed</span> <span class="at">:color</span> [<span class="dv">200</span> <span class="dv">40</span> <span class="dv">40</span>]})]</span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">:scales</span> {<span class="at">:x</span> {<span class="at">:ticks</span> (<span class="kw">vec</span> (<span class="kw">keys</span> centres)) <span class="at">:formatter</span> #(<span class="kw">str</span> (<span class="kw">get</span> centres (<span class="kw">double</span> <span class="va">%</span>)))}</span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a>             <span class="at">:color</span> {<span class="at">:range</span> {<span class="st">"odd"</span> [<span class="dv">40</span> <span class="dv">70</span> <span class="dv">120</span>] <span class="st">"even"</span> [<span class="dv">140</span> <span class="dv">170</span> <span class="dv">210</span>]} <span class="at">:legend</span> <span class="va">false</span>}}</span>
+<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">:theme</span> {<span class="at">:panel</span> {<span class="at">:grid</span> {<span class="at">:x</span> <span class="at">:none</span>}}}</span>
+<span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"Association with a trait along 22 chromosomes"</span> <span class="at">:x</span> <span class="st">"chromosome"</span> <span class="at">:y</span> <span class="st">"-log10 p"</span>}}</span>
+<span id="cb23-11"><a href="#cb23-11" aria-hidden="true" tabindex="-1"></a>   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">400</span>}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="clay-image">
 <p><img src="use_cases.correlation_files/image8.png" class="img-fluid"></p>
@@ -557,7 +564,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb26"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> europe </span>(<span class="kw">filterv</span> #(<span class="kw">=</span> <span class="st">"Europe"</span> (<span class="at">:continent</span> <span class="va">%</span>)) countries))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<p>Source: R Graph Gallery - Heatmap; data-to-viz - Heatmap (<a href="https://r-graph-gallery.com/heatmap.html">1</a>, <a href="https://www.data-to-viz.com/graph/heatmap.html">2</a>). Data: Countries: demographic indicators, data-to-viz example dataset <code>multivariate</code> (Yan Holtz; UN World Population Prospects); licence: MIT (data_to_viz repository).</p>
+<p>Source: R Graph Gallery - Heatmap; data-to-viz - Heatmap (<a href="https://r-graph-gallery.com/heatmap.html">1</a>, <a href="https://www.data-to-viz.com/graph/heatmap.html">2</a>). Data: Countries: demographic indicators, data-to-viz example dataset <code>multivariate</code> (Yan Holtz; original source not documented); licence: MIT (data_to_viz repository).</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb27"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">let</span> [rows (z-scores europe)</span>
 <span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>      heatmap (<span class="kw">fn</span> [cell title legend?]</span>
@@ -578,7 +585,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="palettes-normalized-columns" class="level3" data-number="6.2.2">
 <h3 data-number="6.2.2" class="anchored" data-anchor-id="palettes-normalized-columns"><span class="header-section-number">6.2.2</span> Palettes, normalized columns</h3>
 <p>Raw values put every indicator on one colour scale, so life expectancy (around 80) drowns the rates (0-20); standardizing each column first gives every indicator the full palette. Any palette or gradient works: viridis on the left, a diverging RdBu around 0 on the right.</p>
-<p>Source: <a href="https://r-graph-gallery.com/79-levelplot-with-ggplot2.html">R Graph Gallery - Heatmap with the levelplot function</a>. Data: Countries: demographic indicators, data-to-viz example dataset <code>multivariate</code> (Yan Holtz; UN World Population Prospects); licence: MIT (data_to_viz repository).</p>
+<p>Source: <a href="https://r-graph-gallery.com/79-levelplot-with-ggplot2.html">R Graph Gallery - Heatmap with the levelplot function</a>. Data: Countries: demographic indicators, data-to-viz example dataset <code>multivariate</code> (Yan Holtz; original source not documented); licence: MIT (data_to_viz repository).</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb28"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">let</span> [rows (z-scores (<span class="kw">take</span> <span class="dv">25</span> europe))</span>
 <span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>      base {<span class="at">:data</span> rows <span class="at">:theme</span> {<span class="at">:axis</span> {<span class="at">:x</span> {<span class="at">:label-rotation</span> <span class="dv">90</span>}}} <span class="at">:labels</span> {<span class="at">:x</span> <span class="va">nil</span> <span class="at">:y</span> <span class="va">nil</span>}}]</span>
@@ -599,8 +606,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="side-colour-bar" class="level3" data-number="6.2.3">
 <h3 data-number="6.2.3" class="anchored" data-anchor-id="side-colour-bar"><span class="header-section-number">6.2.3</span> Side colour bar</h3>
-<p>A category of the columns as a one-row tile above the heatmap: both plots share the column order (<code>:domain</code>), <code>plot/arrange</code> aligns the cells. Here: the six most populous countries of each continent, grouped by continent.</p>
-<p>Source: <a href="https://r-graph-gallery.com/215-the-heatmap-function.html">R Graph Gallery - The heatmap function (side colours)</a>. Data: Countries: demographic indicators, data-to-viz example dataset <code>multivariate</code> (Yan Holtz; UN World Population Prospects); licence: MIT (data_to_viz repository).</p>
+<p>A category of the columns as a one-row tile above the heatmap: both plots share the column order (<code>:domain</code>), <code>plot/arrange</code> aligns the cells. Here: up to six of the most populous countries of each continent (the dataset has two in North America), grouped by continent.</p>
+<p>Source: <a href="https://r-graph-gallery.com/215-the-heatmap-function.html">R Graph Gallery - The heatmap function (side colours)</a>. Data: Countries: demographic indicators, data-to-viz example dataset <code>multivariate</code> (Yan Holtz; original source not documented); licence: MIT (data_to_viz repository).</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb29"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">let</span> [picked (<span class="kw">vec</span> (<span class="kw">mapcat</span> (<span class="kw">fn</span> [[_ rows]] (<span class="kw">take</span> <span class="dv">6</span> (<span class="kw">sort-by</span> #(<span class="kw">-</span> (<span class="kw">double</span> (<span class="at">:pop</span> <span class="va">%</span>))) rows)))</span>
 <span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a>                          (<span class="kw">sort-by</span> <span class="kw">key</span> (<span class="kw">group-by</span> <span class="at">:continent</span> countries))))</span>
@@ -647,7 +654,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="calendar-heatmap" class="level3" data-number="6.2.5">
 <h3 data-number="6.2.5" class="anchored" data-anchor-id="calendar-heatmap"><span class="header-section-number">6.2.5</span> Calendar heatmap</h3>
 <p>Daily bitcoin price changes on a calendar: ISO week across, weekday down, a row of panels per year; the colour is the day’s change, capped at ±10 % so a few extreme days don’t flatten the rest.</p>
-<p>Source: <a href="https://r-graph-gallery.com/283-the-hourly-heatmap.html">R Graph Gallery - The hourly heatmap (calendar layout)</a>. Data: Bitcoin daily price, 2013-2018, data-to-viz example dataset <code>3_TwoNumOrdered</code> (Yan Holtz); licence: MIT (data_to_viz repository).</p>
+<p>Source: <a href="https://r-graph-gallery.com/283-the-hourly-heatmap.html">R Graph Gallery - The hourly heatmap (calendar layout)</a>. Data: Bitcoin daily price, 2013-2018, data-to-viz example dataset <code>3_TwoNumOrdered</code> (Yan Holtz; CoinMarketCap via JesseVent/crypto); licence: MIT (data_to_viz repository).</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb31"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">let</span> [weekdays [<span class="st">"Mon"</span> <span class="st">"Tue"</span> <span class="st">"Wed"</span> <span class="st">"Thu"</span> <span class="st">"Fri"</span> <span class="st">"Sat"</span> <span class="st">"Sun"</span>]</span>
 <span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a>      days (<span class="kw">vec</span> (<span class="kw">for</span> [[<span class="kw">prev</span> day] (<span class="kw">partition</span> <span class="dv">2</span> <span class="dv">1</span> bitcoin)</span>
@@ -672,7 +679,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="row-and-column-order" class="level3" data-number="6.2.6">
 <h3 data-number="6.2.6" class="anchored" data-anchor-id="row-and-column-order"><span class="header-section-number">6.2.6</span> Row and column order</h3>
 <p>The order of the categories is the scale’s <code>:domain</code>: the data order (the default; here the dataset’s subregions) hides structure that a meaningful order shows - countries sorted by life expectancy.</p>
-<p>Source: <a href="https://r-graph-gallery.com/heatmap.html">R Graph Gallery - Heatmap</a>. Data: Countries: demographic indicators, data-to-viz example dataset <code>multivariate</code> (Yan Holtz; UN World Population Prospects); licence: MIT (data_to_viz repository).</p>
+<p>Source: <a href="https://r-graph-gallery.com/heatmap.html">R Graph Gallery - Heatmap</a>. Data: Countries: demographic indicators, data-to-viz example dataset <code>multivariate</code> (Yan Holtz; original source not documented); licence: MIT (data_to_viz repository).</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb32"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">let</span> [rows (z-scores europe)</span>
 <span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>      by-life (<span class="kw">mapv</span> <span class="at">:country</span> (<span class="kw">sort-by</span> <span class="at">:life-expectancy</span> europe))</span>
@@ -964,6 +971,41 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="caveats" class="level2" data-number="6.9">
 <h2 data-number="6.9" class="anchored" data-anchor-id="caveats"><span class="header-section-number">6.9</span> Caveats</h2>
+<section id="anscombes-quartet" class="level3" data-number="6.9.1">
+<h3 data-number="6.9.1" class="anchored" data-anchor-id="anscombes-quartet"><span class="header-section-number">6.9.1</span> Anscombe’s quartet</h3>
+<p>Four datasets with the same means, variances, linear fit and r ≈ 0.82 - and four different relations: a line, a curve, a line with an outlier, a single far point making the correlation. Always look at the scatter plot.</p>
+<p>Source: <a href="https://en.wikipedia.org/wiki/Anscombe%27s_quartet">Anscombe (1973), Graphs in Statistical Analysis (R datasets::anscombe)</a>.</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb48"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb48-1"><a href="#cb48-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> anscombe</span></span>
+<span id="cb48-2"><a href="#cb48-2" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Anscombe's quartet (R `datasets::anscombe`) in long form."</span></span>
+<span id="cb48-3"><a href="#cb48-3" aria-hidden="true" tabindex="-1"></a>  (<span class="kw">let</span> [x123 [<span class="dv">10</span> <span class="dv">8</span> <span class="dv">13</span> <span class="dv">9</span> <span class="dv">11</span> <span class="dv">14</span> <span class="dv">6</span> <span class="dv">4</span> <span class="dv">12</span> <span class="dv">7</span> <span class="dv">5</span>]</span>
+<span id="cb48-4"><a href="#cb48-4" aria-hidden="true" tabindex="-1"></a>        x4 [<span class="dv">8</span> <span class="dv">8</span> <span class="dv">8</span> <span class="dv">8</span> <span class="dv">8</span> <span class="dv">8</span> <span class="dv">8</span> <span class="dv">19</span> <span class="dv">8</span> <span class="dv">8</span> <span class="dv">8</span>]</span>
+<span id="cb48-5"><a href="#cb48-5" aria-hidden="true" tabindex="-1"></a>        ys {<span class="st">"I"</span> [<span class="fl">8.04</span> <span class="fl">6.95</span> <span class="fl">7.58</span> <span class="fl">8.81</span> <span class="fl">8.33</span> <span class="fl">9.96</span> <span class="fl">7.24</span> <span class="fl">4.26</span> <span class="fl">10.84</span> <span class="fl">4.82</span> <span class="fl">5.68</span>]</span>
+<span id="cb48-6"><a href="#cb48-6" aria-hidden="true" tabindex="-1"></a>            <span class="st">"II"</span> [<span class="fl">9.14</span> <span class="fl">8.14</span> <span class="fl">8.74</span> <span class="fl">8.77</span> <span class="fl">9.26</span> <span class="fl">8.10</span> <span class="fl">6.13</span> <span class="fl">3.10</span> <span class="fl">9.13</span> <span class="fl">7.26</span> <span class="fl">4.74</span>]</span>
+<span id="cb48-7"><a href="#cb48-7" aria-hidden="true" tabindex="-1"></a>            <span class="st">"III"</span> [<span class="fl">7.46</span> <span class="fl">6.77</span> <span class="fl">12.74</span> <span class="fl">7.11</span> <span class="fl">7.81</span> <span class="fl">8.84</span> <span class="fl">6.08</span> <span class="fl">5.39</span> <span class="fl">8.15</span> <span class="fl">6.42</span> <span class="fl">5.73</span>]</span>
+<span id="cb48-8"><a href="#cb48-8" aria-hidden="true" tabindex="-1"></a>            <span class="st">"IV"</span> [<span class="fl">6.58</span> <span class="fl">5.76</span> <span class="fl">7.71</span> <span class="fl">8.84</span> <span class="fl">8.47</span> <span class="fl">7.04</span> <span class="fl">5.25</span> <span class="fl">12.50</span> <span class="fl">5.56</span> <span class="fl">7.91</span> <span class="fl">6.89</span>]}]</span>
+<span id="cb48-9"><a href="#cb48-9" aria-hidden="true" tabindex="-1"></a>    (<span class="kw">vec</span> (<span class="kw">for</span> [<span class="kw">set</span> [<span class="st">"I"</span> <span class="st">"II"</span> <span class="st">"III"</span> <span class="st">"IV"</span>] [x y] (<span class="kw">map</span> <span class="kw">vector</span> (<span class="kw">if</span> (<span class="kw">=</span> <span class="st">"IV"</span> <span class="kw">set</span>) x4 x123) (ys <span class="kw">set</span>))]</span>
+<span id="cb48-10"><a href="#cb48-10" aria-hidden="true" tabindex="-1"></a>           {<span class="at">:set</span> <span class="kw">set</span> <span class="at">:x</span> x <span class="at">:y</span> y}))))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb49"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">let</span> [r-label (<span class="kw">fn</span> [rows] (<span class="kw">format</span> <span class="st">"r = %.2f"</span> (stats/pearson-correlation (<span class="kw">map</span> <span class="at">:x</span> rows) (<span class="kw">map</span> <span class="at">:y</span> rows))))]</span>
+<span id="cb49-2"><a href="#cb49-2" aria-hidden="true" tabindex="-1"></a>  (plot/render-image</span>
+<span id="cb49-3"><a href="#cb49-3" aria-hidden="true" tabindex="-1"></a>   {<span class="at">:data</span> anscombe <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:y</span> <span class="at">:facet</span> <span class="at">:set</span>}</span>
+<span id="cb49-4"><a href="#cb49-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">:facets</span> {<span class="at">:columns</span> <span class="dv">4</span>}</span>
+<span id="cb49-5"><a href="#cb49-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">:charts</span> [(chart/smooth {<span class="at">:method</span> <span class="at">:lm</span>})</span>
+<span id="cb49-6"><a href="#cb49-6" aria-hidden="true" tabindex="-1"></a>             (chart/scatter {<span class="at">:size</span> <span class="dv">7</span> <span class="at">:color</span> [<span class="dv">200</span> <span class="dv">60</span> <span class="dv">40</span>]})</span>
+<span id="cb49-7"><a href="#cb49-7" aria-hidden="true" tabindex="-1"></a>             (chart/text {<span class="at">:data</span> (<span class="kw">vec</span> (<span class="kw">for</span> [[<span class="kw">set</span> rows] (<span class="kw">group-by</span> <span class="at">:set</span> anscombe)] {<span class="at">:set</span> <span class="kw">set</span> <span class="at">:x</span> <span class="dv">4</span> <span class="at">:y</span> <span class="dv">13</span> <span class="at">:label</span> (r-label rows)}))</span>
+<span id="cb49-8"><a href="#cb49-8" aria-hidden="true" tabindex="-1"></a>                          <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:y</span> <span class="at">:label</span> <span class="at">:label</span>} <span class="at">:anchor</span> [<span class="at">:left</span> <span class="at">:top</span>]</span>
+<span id="cb49-9"><a href="#cb49-9" aria-hidden="true" tabindex="-1"></a>                          <span class="at">:background</span> [<span class="dv">255</span> <span class="dv">255</span> <span class="dv">255</span> <span class="dv">210</span>] <span class="at">:padding</span> <span class="dv">3</span>})]</span>
+<span id="cb49-10"><a href="#cb49-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"Anscombe's quartet: one r, four relations"</span>}}</span>
+<span id="cb49-11"><a href="#cb49-11" aria-hidden="true" tabindex="-1"></a>   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">330</span>}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="use_cases.correlation_files/image29.png" class="img-fluid"></p>
+</div>
+</section>
+<section id="other-caveats" class="level3" data-number="6.9.2">
+<h3 data-number="6.9.2" class="anchored" data-anchor-id="other-caveats"><span class="header-section-number">6.9.2</span> Other caveats</h3>
 <ul>
 <li><p>Correlation is not causation: two variables can move together because a third one drives both.</p></li>
 <li><p>Pearson’s r measures only a linear relation: very different clouds (Anscombe’s quartet) share one r; look at the scatter plot, and use Spearman or Kendall (<code>chart/correlation {:method :spearman}</code>) for monotone relations.</p></li>
@@ -974,6 +1016,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div><pre><small><small>source: notebooks/use_cases/correlation.clj</small></small></pre></div>
 
 
+</section>
 </section>
 
 </main> <!-- /main -->

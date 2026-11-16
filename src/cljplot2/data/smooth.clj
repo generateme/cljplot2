@@ -48,18 +48,21 @@
   [method]
   (if (contains? error-methods method) :confidence :none))
 
-(defn required-points
-  "Fewest distinct x values a fit of `method` with `params` needs: `:lm` - `degree + 2`, `:glm` - 3 (fastmath needs a
-  residual degree of freedom beyond the coefficients, intercept included); `:loess` - enough for 2
-  neighbours at its `:bandwidth` (default 0.75 - [[loess-defaults]]: 3; a `:bandwidth` has to be a number in
-  (0, 1]); others 2."
-  ^long [method params]
-  (case method
-    :lm (+ 2 (long (get params :degree 1)))
-    :glm 3
-    :loess (let [bandwidth (double (:bandwidth (loess-params params)))]
-             (loop [n 2] (if (>= (m/floor (* bandwidth n)) 2.0) n (recur (inc n)))))
-    2))
+(defn fit-requirements
+  "`{:distinct-x d :rows n}` - the fewest distinct x values and rows a fit of `method` with `params` needs:
+  `:lm` - `degree + 1` distinct x (the polynomial's coefficients are determined) and `degree + 2` rows (a residual
+  degree of freedom for the confidence band; repeated x count - R `lm` fits Anscombe's set IV, two distinct x);
+  `:glm` - 3 and 3; `:loess` - enough distinct x for 2 neighbours at its `:bandwidth` (default 0.75 -
+  [[loess-defaults]]: 3; a `:bandwidth` has to be a number in (0, 1]); others 2 (interpolations fit the mean y of
+  each distinct x, see [[prepared]])."
+  [method params]
+  (let [both (fn [n] {:distinct-x n :rows n})]
+    (case method
+      :lm (let [degree (long (get params :degree 1))] {:distinct-x (inc degree) :rows (+ 2 degree)})
+      :glm (both 3)
+      :loess (let [bandwidth (double (:bandwidth (loess-params params)))]
+               (both (loop [n 2] (if (>= (m/floor (* bandwidth n)) 2.0) n (recur (inc n))))))
+      (both 2))))
 
 (defn prepared
   "`[xs ys]` sorted by x, with the mean y of repeated x."
@@ -142,7 +145,7 @@
     [(mapv first intervals) (mapv second intervals)]))
 
 (defn fit-curve
-  "Fit of `ys` on `xs` (numbers; at least [[required-points]] distinct `xs`) by `:method` with `:params` evaluated at
+  "Fit of `ys` on `xs` (numbers; at least the [[fit-requirements]] of `method`) by `:method` with `:params` evaluated at
   the grid `keys`, with `:band` bands at every distinct level of `:levels` (widest first): `{:fit [..] :bands [{:level l
   :lo [..] :hi [..]}]}` (`NaN` where a band is undefined). `:bootstrap` - the options of
   `fastmath.interpolation/bootstrap` (`:samples`, `:rng`, `:ci`, `:estimation`). Fit errors propagate."

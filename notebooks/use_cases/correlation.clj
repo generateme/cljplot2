@@ -167,7 +167,8 @@
 ;; ### Manhattan plot
 
 ;; A genome-wide association plot (seeded data): one point per marker at its position along the chromosomes and its
-;; −log10 p-value, chromosomes in alternating colours, the significance threshold 5·10⁻⁸ as a rule.
+;; −log10 p-value, chromosomes in alternating colours and numbered at their centres (explicit `:ticks` with a
+;; `:formatter`), the significance threshold 5·10⁻⁸ as a rule.
 
 (nu/source-note {:source "R Graph Gallery - Manhattan plot"
                  :url "https://r-graph-gallery.com/101_Manhattan_plot.html"})
@@ -188,14 +189,17 @@
                                 {:chromosome chromosome :position (+ offset i) :log-p (- (m/log10 (max p 1.0e-12)))})]
           (recur (inc chromosome) (+ offset n) (into rows chromosome-rows)))))))
 
-(plot/render-image
- {:data markers :mapping {:x :position :y :log-p :color #(if (odd? (:chromosome %)) "odd" "even")}
-  :charts [(chart/scatter {:size 3})
-           (chart/rule {:y (- (m/log10 5.0e-8)) :dash :dashed :color [200 40 40]})]
-  :scales {:color {:range {"odd" [40 70 120] "even" [140 170 210]} :legend false}}
-  :labels {:title "Association with a trait along 22 chromosomes" :x "marker position (chromosome by chromosome)"
-           :y "-log10 p"}}
- {:width 1000 :height 400})
+(let [centres (into (sorted-map) (for [[chromosome rows] (group-by :chromosome markers)]
+                                     [(stats/mean (map :position rows)) chromosome]))]
+  (plot/render-image
+   {:data markers :mapping {:x :position :y :log-p :color #(if (odd? (:chromosome %)) "odd" "even")}
+    :charts [(chart/scatter {:size 3})
+             (chart/rule {:y (- (m/log10 5.0e-8)) :dash :dashed :color [200 40 40]})]
+    :scales {:x {:ticks (vec (keys centres)) :formatter #(str (get centres (double %)))}
+             :color {:range {"odd" [40 70 120] "even" [140 170 210]} :legend false}}
+    :theme {:panel {:grid {:x :none}}}
+    :labels {:title "Association with a trait along 22 chromosomes" :x "chromosome" :y "-log10 p"}}
+   {:width 1000 :height 400}))
 
 ;; ### Simpson's paradox
 
@@ -277,7 +281,8 @@
 ;; ### Side colour bar
 
 ;; A category of the columns as a one-row tile above the heatmap: both plots share the column order (`:domain`),
-;; `plot/arrange` aligns the cells. Here: the six most populous countries of each continent, grouped by continent.
+;; `plot/arrange` aligns the cells. Here: up to six of the most populous countries of each continent (the dataset
+;; has two in North America), grouped by continent.
 
 (nu/source-note {:source "R Graph Gallery - The heatmap function (side colours)"
                  :url "https://r-graph-gallery.com/215-the-heatmap-function.html"
@@ -630,6 +635,39 @@
    {:width 900 :height 420}))
 
 ;; ## Caveats
+
+;; ### Anscombe's quartet
+
+;; Four datasets with the same means, variances, linear fit and r ≈ 0.82 - and four different relations: a line, a
+;; curve, a line with an outlier, a single far point making the correlation. Always look at the scatter plot.
+
+(nu/source-note {:source "Anscombe (1973), Graphs in Statistical Analysis (R datasets::anscombe)"
+                 :url "https://en.wikipedia.org/wiki/Anscombe%27s_quartet"})
+
+(def anscombe
+  "Anscombe's quartet (R `datasets::anscombe`) in long form."
+  (let [x123 [10 8 13 9 11 14 6 4 12 7 5]
+        x4 [8 8 8 8 8 8 8 19 8 8 8]
+        ys {"I" [8.04 6.95 7.58 8.81 8.33 9.96 7.24 4.26 10.84 4.82 5.68]
+            "II" [9.14 8.14 8.74 8.77 9.26 8.10 6.13 3.10 9.13 7.26 4.74]
+            "III" [7.46 6.77 12.74 7.11 7.81 8.84 6.08 5.39 8.15 6.42 5.73]
+            "IV" [6.58 5.76 7.71 8.84 8.47 7.04 5.25 12.50 5.56 7.91 6.89]}]
+    (vec (for [set ["I" "II" "III" "IV"] [x y] (map vector (if (= "IV" set) x4 x123) (ys set))]
+           {:set set :x x :y y}))))
+
+(let [r-label (fn [rows] (format "r = %.2f" (stats/pearson-correlation (map :x rows) (map :y rows))))]
+  (plot/render-image
+   {:data anscombe :mapping {:x :x :y :y :facet :set}
+    :facets {:columns 4}
+    :charts [(chart/smooth {:method :lm})
+             (chart/scatter {:size 7 :color [200 60 40]})
+             (chart/text {:data (vec (for [[set rows] (group-by :set anscombe)] {:set set :x 4 :y 13 :label (r-label rows)}))
+                          :mapping {:x :x :y :y :label :label} :anchor [:left :top]
+                          :background [255 255 255 210] :padding 3})]
+    :labels {:title "Anscombe's quartet: one r, four relations"}}
+   {:width 1000 :height 330}))
+
+;; ### Other caveats
 
 ;; - Correlation is not causation: two variables can move together because a third one drives both.
 ;; - Pearson's r measures only a linear relation: very different clouds (Anscombe's quartet) share one r; look at

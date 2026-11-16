@@ -108,14 +108,14 @@
  :house-prices {:file "house-prices.csv"
                 :format :csv
                 :title "House prices: living area and sale price"
-                :source "data-to-viz example dataset `2_TwoNum` (Yan Holtz; Kaggle House Prices, Ames, Iowa)"
+                :source "data-to-viz example dataset `2_TwoNum` (Yan Holtz; Kaggle House Prices competition)"
                 :licence "MIT (data_to_viz repository)"
                 :via "GitHub raw holtzy/data_to_viz Example_dataset/2_TwoNum.csv, header renamed to `living_area,price`, CRLF -> LF"
                 :notes "1460 rows: `living-area` (square feet above ground), `price` (USD)."}
  :bitcoin {:file "bitcoin.csv"
            :format :csv
            :title "Bitcoin daily price, 2013-2018"
-           :source "data-to-viz example dataset `3_TwoNumOrdered` (Yan Holtz)"
+           :source "data-to-viz example dataset `3_TwoNumOrdered` (Yan Holtz; CoinMarketCap via JesseVent/crypto)"
            :licence "MIT (data_to_viz repository)"
            :via "GitHub raw holtzy/data_to_viz Example_dataset/3_TwoNumOrdered.csv, space-separated -> CSV"
            :notes "1822 rows: `date` (ISO string, 2013-04-28 to 2018-04-23), `value` (USD)."}
@@ -129,7 +129,7 @@
  :countries {:file "countries.csv"
              :format :csv
              :title "Countries: demographic indicators"
-             :source "data-to-viz example dataset `multivariate` (Yan Holtz; UN World Population Prospects)"
+             :source "data-to-viz example dataset `multivariate` (Yan Holtz; original source not documented)"
              :licence "MIT (data_to_viz repository)"
              :via "GitHub raw holtzy/data_to_viz Example_dataset/multivariate.csv, `;` -> `,`, header renamed to kebab-case, CRLF -> LF"
              :notes "201 rows: `country`, `pop` (thousands), `birth-rate`, `mortality-rate`, `life-expectancy`, `infant-mortality`, `children-per-woman`, `growth-rate`, `population-aged-65` (thousands), `group` (subregion), `continent` (6, `South America` holds the Americas)."}}

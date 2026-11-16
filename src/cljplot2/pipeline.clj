@@ -18,6 +18,9 @@
   * `:legend-only` - `true`: the plot draws only its legends (from its charts and scales as usual; no panel, axes or
     axis titles; `:labels {:title t}` above them), e.g. a legend cell of an `:arrange` (see
     [[cljplot2.layout.plot-grid/legend-only-grid]]); not with `:custom-grid` / `:arrange`
+  * `:alternate-panel` - `true`: a single-panel plot draws theme `[:panel :alternate-fill]` over its panel fill - the
+    shading of odd facet panels, for checkerboards of `:arrange` cells (e.g. [[cljplot2.multiplot/pairs]]); facet
+    panels shade by position regardless
   * `:aspect` - `:iso`: equal pixels per data unit on x and y (linear scales, generated grid); the panel aspect ratio
     changes, the panel block is centred in the leftover space
   * `:flip` - `true` draws the `:x` scale vertically and `:y` horizontally (generated grid only). Scales, extents,
@@ -778,6 +781,7 @@
    (schema/nilable :groups [:map {:closed true} (schema/nilable :na schema/bool)])
    (schema/nilable :legend schema/bool)
    (schema/nilable :legend-only schema/bool)
+   (schema/nilable :alternate-panel schema/bool)
    (schema/nilable :aspect [:enum :iso])
    (schema/nilable :flip schema/bool)
    (schema/nilable :coord coord/coord-schema)
