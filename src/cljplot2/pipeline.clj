@@ -449,7 +449,8 @@
   in radians at the outer radius; ticks hinted at the final radius), the
   vertical one over `[inner radius, radius]` - the largest radius fitting the sector's bounding box (see
   [[cljplot2.scale.coord/sector-box]]; a full circle - half the panel's smaller side) into the panel less the angular
-  labels' room on every side; both carry `:direction` and the panel's polar geometry `:coord`."
+  labels' room on every side and the charts' `:outer-room` (`[horizontal vertical]` pixels - labels outside the
+  circle, the largest over the charts); both carry `:direction` and the panel's polar geometry `:coord`."
   [plot specs horizontal {:keys [w h]}]
   (let [w (double w) h (double h)
         coord-spec (:coord plot)
@@ -457,10 +458,14 @@
         spacing (fn [k] (double (get-in plot [:theme :axis k :tick-spacing])))
         [t0 t1 :as theta-range] (coord/theta-range coord-spec)
         [bx0 by0 bx1 by1] (coord/sector-box coord-spec)
-        ;; the radius fitting the sector's box into the panel less `room` on every side
+        ;; charts' labels outside the circle (`:outer-room [horizontal vertical]` pixels, the largest)
+        outer-rooms (keep :outer-room (:stats plot))
+        outer-h (double (reduce max 0.0 (map first outer-rooms)))
+        outer-v (double (reduce max 0.0 (map second outer-rooms)))
+        ;; the radius fitting the sector's box into the panel less `room` (plus the charts' outer room) on every side
         fit-radius (fn ^double [^double room]
-                     (m/min (- (/ w (- (double bx1) (double bx0))) (/ (* 2.0 room) (- (double bx1) (double bx0))))
-                            (- (/ h (- (double by1) (double by0))) (/ (* 2.0 room) (- (double by1) (double by0))))))
+                     (m/min (- (/ w (- (double bx1) (double bx0))) (/ (* 2.0 (+ room outer-h)) (- (double bx1) (double bx0))))
+                            (- (/ h (- (double by1) (double by0))) (/ (* 2.0 (+ room outer-v)) (- (double by1) (double by0))))))
         ;; a continuous angle spans the full circle by default: no padding, no nice (pies), unless asked - `:expand` in
         ;; the spec (the plot's scale or a chart's suggestion), `:nice` in the plot's scale (specs always carry one)
         user (get-in plot [:scales horizontal])

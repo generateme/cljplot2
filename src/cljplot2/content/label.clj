@@ -160,6 +160,14 @@
 (def ^:private anchor-fraction
   {:left 0.0 :center 0.5 :right 1.0 :top 0.0 :middle 0.5 :bottom 1.0})
 
+(defn box-at
+  "Pixel box `{:x :y :w :h}` [[draw-at!]] gives label `content` with its `anchor` at `x`, `y` (`env` - `:theme`)."
+  [c content [h v] x y env]
+  (let [^fastmath.vector.Vec2 size (measure/natural-size content {:canvas c :theme (:theme env)})]
+    {:x (m/round (- (double x) (* (double (anchor-fraction h)) (.x size))))
+     :y (m/round (- (double y) (* (double (anchor-fraction v)) (.y size))))
+     :w (.x size) :h (.y size)}))
+
 (defn draw-at!
   "Draw label `content` on canvas `c` with the `anchor` point of its box (`[h v]`, `h` one of `:left :center :right`,
   `v` one of `:top :middle :bottom`; the box is the natural size - for rotated text the rotated frame's bounding box)

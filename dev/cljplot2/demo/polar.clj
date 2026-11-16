@@ -1,6 +1,6 @@
 (ns cljplot2.demo.polar
   "Ranking cycle 3 demo: polar coordinates - circular barplots (labels, gaps, stacked, dodged), a circular lollipop,
-  rings, chords vs arcs, pie / donut / half donut."
+  rings, chords vs arcs, pie / donut / half donut, pie labels (outer with leaders, centred shares, collisions)."
   (:require [clojure.string :as str]
             [fastmath.random :as r]
             [cljplot2.chart :as chart]
@@ -92,6 +92,26 @@
                   :labels {:title "Half donut (:span 180)" :x nil :y nil}}]
                 {:columns 3}))
 
+(def pie-label
+  "Pie label: the part's name and its share of the whole."
+  #(format "%s\n%.0f%%" (get-in % [:group :color]) (* 100 (:share %))))
+
+(def labelled-pies
+  (plot/arrange [{:data shares :mapping {:x :n :color :part} :coord {:kind :polar} :scales {:x {:axis false}} :legend nil
+                  :charts [(chart/bar {:position :stack :width 1.0 :value-label pie-label :label-position :outer
+                                       :label-leader true})]
+                  :labels {:title "Outer labels with leaders" :x nil :y nil}}
+                 {:data shares :mapping {:x :n :color :part} :coord {:kind :polar :inner 0.5} :scales {:x {:axis false}}
+                  :charts [(chart/bar {:position :stack :width 1.0 :value-label #(format "%.0f%%" (* 100 (:share %)))})]
+                  :labels {:title "Donut: centred shares" :x nil :y nil}}]
+                {:columns 2}))
+
+(def many-slices
+  {:data (map (fn [i] {:part (str "p" i) :n (if (< i 3) (* 30 (- 3 i)) (inc (mod i 3)))}) (range 20))
+   :mapping {:x :n :color :part} :coord {:kind :polar} :scales {:x {:axis false}} :legend nil
+   :charts [(chart/bar {:position :stack :width 1.0 :value-label #(get-in % [:group :color]) :label-position :outer})]
+   :labels {:title "20 slices: colliding labels skipped" :x nil :y nil}})
+
 (def images
   "Images of this demo: `[file-name plot options]`, saved to `results/polar/` by [[cljplot2.demo/render!]]."
   [["circular-900x450.png" circular {:width 900 :height 450}]
@@ -99,4 +119,6 @@
    ["positions-900x450.png" positions {:width 900 :height 450}]
    ["lollipop-rings-900x450.png" lollipop-rings {:width 900 :height 450}]
    ["chords-arcs-800x400.png" chords-arcs {:width 800 :height 400}]
-   ["pies-900x320.png" pies {:width 900 :height 320}]])
+   ["pies-900x320.png" pies {:width 900 :height 320}]
+   ["labelled-pies-900x420.png" labelled-pies {:width 900 :height 420}]
+   ["many-slices-500x500.png" many-slices {:width 500 :height 500}]])

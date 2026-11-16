@@ -22,10 +22,18 @@
     (`:zero-line-color`, `:zero-line-width`)
   * `:varwidth` - bar widths relative to the widest: `true` - by the square root of the count (as box plots), a
     keyword or function of a row - by the item's sum of its finite values (non-negative)
-  * `:value-label` - `true` writes each bar's length past its end (`:value-format` - a format string of the number,
-    default: whole numbers as integers, otherwise the fewest digits telling the labels apart); zero-length bars get
-    none. With `:n-label` too, both texts form one label - `:label-stack` `:horizontal` (side by side) or `:vertical`
-    (one above the other), default along the bars (horizontal bars side by side, vertical ones stacked)
+  * `:value-label` - `true` writes each bar's length (`:value-format` - a format string of the number, default: whole
+    numbers as integers, otherwise the fewest digits telling the labels apart), or a function of `{:value length :n
+    count :share s :level l :group {dim value}}` (`:share` - of the absolute lengths of its level's bars; `:group` -
+    the bar's aesthetic values) returning the text (`nil` / `\"\"` - none), e.g. pie labels
+    `#(format \"%s\\n%.0f%%\" (get-in % [:group :color]) (* 100 (:share %)))`; zero-length bars get none. With `:n-label`
+    too, both texts form one label - `:label-stack` `:horizontal` (side by side) or `:vertical` (one above the
+    other), default along the bars (horizontal bars side by side, vertical ones stacked)
+  * `:label-position` - `:end` (past the bar's end; the default), `:center` (centred in the bar, in black or white by
+    its fill; the default for `:stack` / `:normalize`) or `:outer` (polar plots only: past the outer radius at the
+    bar's middle angle, anchored outward - pie labels; the circle shrinks to keep room for them; `:label-leader true`
+    draws a line from the bar's outer edge). Labels are placed largest bar first and skipped when they overlap one
+    placed before; a centred label that doesn't fit its bar is skipped
   * `:color` (fill), `:stroke-color` (a color, `:none` or `:darker` - the darkened fill, default), `:stroke-width`,
     `:alpha`
   * `:padding {:x [lo hi]}` - default 5%, none at the baseline side the bars grow from (bars start on the axis)
@@ -44,6 +52,7 @@
             [fastmath.core :as m]
             [fastmath.stats :as stats]
             [cljplot2.chart.box :as box]
+            [cljplot2.content.label :as label]
             [cljplot2.data.group :as group]
             [cljplot2.data.levels :as levels]
             [cljplot2.data.measure :as measure]
@@ -51,6 +60,7 @@
             [cljplot2.data.rows :as data]
             [cljplot2.data.strip :as strip]
             [cljplot2.graphics.draw :as draw]
+            [cljplot2.scale.coord :as coord]
             [cljplot2.schema :as schema]))
 
 (set! *warn-on-reflection* true)
@@ -83,7 +93,9 @@
                       (schema/optional :label-stack [:enum :horizontal :vertical])
                       (schema/nilable :zero-line schema/bool)
                       (schema/nilable :varwidth [:or schema/bool schema/accessor])
-                      (schema/nilable :value-label schema/bool)
+                      (schema/nilable :value-label [:or schema/bool schema/function])
+                      (schema/optional :label-position [:enum :end :center :outer])
+                      (schema/nilable :label-leader schema/bool)
                       (schema/optional :value-format :string)
                       (schema/optional :padding data/position-padding)))
    :mapping [:map]})
@@ -181,17 +193,36 @@
       (let [ls (distinct (map length bars))]
         (if (seq ls) (let [texts (zipmap ls (levels/break-labels ls))] (comp texts length)) (constantly ""))))))
 
+(defn- label-info
+  "What a `:value-label` function gets for `bar`: `{:value length :n count :share s :level l :group {dim value}}` -
+  `:share` of the absolute lengths of its level's bars in the panel (`level-total`)."
+  [{:keys [length n level aesthetics]} level-total]
+  (let [total (double (level-total level))]
+    {:value length :n n :share (if (pos? total) (/ (m/abs (double length)) total) 0.0) :level level :group aesthetics}))
+
+(defn- value-label-text
+  "Value text of `bar` for `:value-label` `labels` (`true` - by `value-text`, a function of [[label-info]]); `nil`
+  for none, a zero-length bar or an empty result."
+  [labels value-text level-total {:keys [^double y0 ^double y1] :as bar}]
+  (when (and labels (not (== y0 y1)))
+    (let [t (if (fn? labels) (labels (label-info bar level-total)) (value-text bar))]
+      (when (and (some? t) (not= "" t)) (str t)))))
+
 (defn- end-label
-  "Label (see [[cljplot2.data.strip/draw-end-labels!]]) of `bar`: its length (`:value-label`, not for a zero-length
-  bar) and count (`:n-label`, `:n-format`), joined by `separator`, past the bar's end - centred in it when
-  `centred?` (stacked segments, `:side 0`, drawn in the fill's contrast colour); `nil` without either."
-  [options separator centred? value-text {:keys [level slot n ^double y0 ^double y1] :as bar}]
-  (let [texts (cond-> []
-                (and (data/option options :value-label false) (not (== y0 y1))) (conj (value-text bar))
+  "Label (see [[cljplot2.data.strip/draw-end-labels!]]) of `bar`: its value text (`:value-label`, see
+  [[value-label-text]]) and count (`:n-label`, `:n-format`), joined by `separator`; placed by `label-position` -
+  `:end` past the bar's end, `:center` centred in it (`:side 0`, drawn in the fill's contrast colour), `:outer` past
+  a polar plot's outer radius (`:outer?`, `:leader?` from `:label-leader`); every label carries its bar's `:span
+  [y0 y1]`; `nil` without text."
+  [options separator label-position value-text level-total {:keys [level slot n ^double y0 ^double y1] :as bar}]
+  (let [value (value-label-text (data/option options :value-label false) value-text level-total bar)
+        texts (cond-> []
+                value (conj value)
                 (data/option options :n-label false) (conj (format (get options :n-format "n=%d") n)))]
     (when (seq texts)
-      (let [[at side] (if centred? [(* 0.5 (+ y0 y1)) 0.0] (end-of bar))]
-        {:level level :slot slot :at at :side side :text (str/join separator texts)}))))
+      (let [[at side] (if (= :end label-position) (end-of bar) [(* 0.5 (+ y0 y1)) 0.0])]
+        (cond-> {:level level :slot slot :at at :side side :text (str/join separator texts) :span [y0 y1]}
+          (= :outer label-position) (assoc :outer? true :leader? (data/option options :label-leader false)))))))
 
 (defn- label-separator
   "Separator of the value and count texts of one label: `:label-stack` `:horizontal` - a space, `:vertical` - a line
@@ -244,8 +275,16 @@
         all-bars (mapcat val items)
         value-text (value-texts options (remove (fn [{:keys [^double y0 ^double y1]}] (== y0 y1)) all-bars))
         separator (label-separator options (:flip? env))
-        centred? (contains? #{:stack :normalize} position)
-        items (update-vals items (fn [its] (mapv #(assoc % :label (end-label options separator centred? value-text %)) its)))
+        label-position (get options :label-position (if (contains? #{:stack :normalize} position) :center :end))
+        _ (when (and (= :outer label-position) (not (coord/polar? (:coord env))))
+            (schema/fail! "Bar :label-position :outer places labels outside a polar plot's circle: use :end or :center in cartesian plots."
+                          {:key :label-position :value :outer}))
+        items (update-vals items
+                           (fn [its]
+                             (let [level-total (reduce (fn [acc {:keys [level length]}] (update acc level (fnil + 0.0) (m/abs (double length))))
+                                                       {} its)]
+                               (mapv #(assoc % :label (end-label options separator label-position value-text level-total %)) its))))
+        labels (keep :label (mapcat val items))
         {base-padding :padding request :request} (baseline (mapcat (juxt :y0 :y1) all-bars))
         translucent? (and (= :overlay position) shared-levels?)]
     {:data (update-vals items (fn [its] {:bars its :style (style options theme) :place place :options options
@@ -258,11 +297,47 @@
      :padding-explicit (data/explicit-padding (cond-> (or (strip/explicit-padding place {}) {})
                                                 request (assoc :x request))
                                               options)
-     :padding-px (strip/end-label-room (keep :label (mapcat val items)) env)
+     :padding-px (strip/end-label-room labels env)
+     :outer-room (strip/outer-label-room labels env)
      :na (group/na-dims panels)
      :dropped dropped
      :axis-titles (if-let [t (value-title stat position (:x mapping) all-bars)] {:x t} {})
      :tick-format (when mirror? {:x :absolute})}))
+
+(defn- boxes-overlap?
+  [a b]
+  (and (< (double (:x a)) (+ (double (:x b)) (double (:w b)))) (< (double (:x b)) (+ (double (:x a)) (double (:w a))))
+       (< (double (:y a)) (+ (double (:y b)) (double (:h b)))) (< (double (:y b)) (+ (double (:y a)) (double (:h a))))))
+
+(defn- fits-segment?
+  "Does a centred label of `box` fit its bar's segment (`bar` - `:level :slot :y0 :y1 :width-factor`)? Cartesian:
+  the box inside the segment's pixel rectangle; polar: its width within the segment's radial extent, its height within
+  the segment's angular extent at its middle radius."
+  [{:keys [range-point geometry]} {:keys [level slot ^double y0 ^double y1 width-factor]} box]
+  (let [c0 (strip/in-slot slot 0.0)
+        hw (* (strip/slot-half slot) (double width-factor))
+        corners (for [v [y0 y1] cross [(- c0 hw) (+ c0 hw)]] (range-point v level cross))
+        hs (map #(double (first %)) corners) vs (map #(double (second %)) corners)
+        h-extent (- (double (reduce max hs)) (double (reduce min hs)))
+        v-extent (- (double (reduce max vs)) (double (reduce min vs)))]
+    (if geometry
+      (let [mid-r (* 0.5 (+ (double (reduce max vs)) (double (reduce min vs))))]
+        (and (<= (double (:w box)) v-extent) (<= (double (:h box)) (* h-extent mid-r))))
+      (and (<= (double (:w box)) h-extent) (<= (double (:h box)) v-extent)))))
+
+(defn- kept-placements
+  "End-label `placements` (largest bars first) without the centred labels that don't fit their segment and the
+  labels overlapping one kept before them; `bar-of` - label -> its bar."
+  [canvas pl placements bar-of env]
+  (reduce (fn [kept {:keys [label content anchor x y] :as p}]
+            (let [box (label/box-at canvas content anchor x y env)
+                  centred? (and (zero? (double (:side label))) (not (:outer? label)))]
+              (if (or (and centred? (not (fits-segment? pl (bar-of label) box)))
+                      (some #(boxes-overlap? box (:box %)) kept))
+                kept
+                (conj kept (assoc p :box box)))))
+          []
+          placements))
 
 (defn- draw-in-strip-frame
   "Draw the bars of one panel (zero-length bars, bars under half a pixel and bars of groups outside an aesthetic
@@ -281,11 +356,17 @@
                        fill (draw/outline-color (:stroke-color st) (:color st)) stroke-width (pattern-fill st fill)))
     (when zero-line?
       (draw/zero-line! canvas box scales style :x))
-    (strip/draw-end-labels! canvas pl (keep (fn [[{:keys [label]} st]]
-                                              (when label
-                                                (cond-> label (zero? (double (:side label))) (assoc :color (draw/contrast-color (:color st))))))
-                                            styled)
-                            scales env)))
+    (let [labelled (keep (fn [[{:keys [label] :as bar} st]]
+                           (when label
+                             [bar (cond-> label
+                                    (and (zero? (double (:side label))) (not (:outer? label)))
+                                    (assoc :color (draw/contrast-color (:color st))))]))
+                         styled)
+          ;; largest bars first: their labels win collisions
+          ordered (sort-by (fn [[{:keys [^double y0 ^double y1]}]] (- (m/abs (- y1 y0)))) labelled)
+          bar-of (into {} (map (fn [[bar l]] [l bar])) ordered)
+          placements (strip/end-label-placements pl (map second ordered) scales)]
+      (strip/draw-label-placements! canvas (kept-placements canvas pl placements bar-of env) env))))
 
 
 (defn compute

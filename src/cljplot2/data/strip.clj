@@ -52,7 +52,8 @@
   n labels (every strip chart): `:n-label true` draws each item's count, formatted by `:n-format` (default
   `\"n=%d\"`), just past its largest drawn value (see [[draw-n-labels!]]); the chart asks for value-axis room for
   them (`:padding-px`, see [[n-label-room]])."
-  (:require [fastmath.core :as m]
+  (:require [clojure2d.core :as c2d]
+            [fastmath.core :as m]
             [cljplot2.content.label :as label]
             [cljplot2.data.group :as group]
             [cljplot2.data.position :as position]
@@ -413,56 +414,118 @@
                         0.0)))]
          {:x [(room -1.0) (room 1.0)]})))))
 
-(declare draw-polar-end-labels! draw-cartesian-end-labels!)
+(def ^:const outer-label-gap
+  "Pixels between a polar plot's outer radius and an `:outer?` end label."
+  6.0)
 
-(defn draw-end-labels!
-  "Draw end labels `labels` - `[{:level l :slot s :at v :side d :text t} ...]` - each just past value `v` along the
-  value axis, toward increasing values (`d` 1) or decreasing ones (`d` -1), or centred on `v` (`d` 0, e.g. inside a
-  stacked bar; no room needed), centred on its slot (text role `:annotation`; optional `:color` overrides the role's).
-  `pl` - the chart's [[placement]]; [[end-label-room]] keeps room for them past the data. Polar plots: past the value
-  along the radius (anchored away from the centre) or along the angle (centred), see [[cljplot2.scale.coord]]."
-  [canvas {:keys [point geometry] :as pl} labels scales env]
+(declare polar-end-label-placements cartesian-end-label-placements)
+
+(defn end-label-placements
+  "Where [[draw-end-labels!]] draws `labels` (see there): `[{:label l :content c :anchor [h v] :x px :y py :leader
+  [[x0 y0] [x1 y1]]} ...]` - `:content` the label content, `:leader` (an `:outer?` label with `:leader?`) a line from
+  its segment's outer edge; labels without a placeable position left out."
+  [{:keys [geometry] :as pl} labels scales]
   (if geometry
-    (draw-polar-end-labels! canvas pl labels scales env)
-    (draw-cartesian-end-labels! canvas pl labels scales env)))
+    (polar-end-label-placements pl labels scales)
+    (cartesian-end-label-placements pl labels scales)))
 
-(defn- draw-cartesian-end-labels!
-  [canvas {:keys [point]} labels scales env]
+(defn- label-content
+  [{:keys [text color]}]
+  (cond-> {:kind :label :role :annotation :text text} color (assoc :color color)))
+
+(defn- cartesian-end-label-placements
+  [{:keys [point]} labels scales]
   (let [x-scale (:x scales)
         [r0 r1] (:range x-scale)
         ;; pixel direction of increasing values
         up (if (< (double r1) (double r0)) -1.0 1.0)
         horizontal? (scale/horizontal? :x x-scale)
         pad n-label-gap]
-    (doseq [{:keys [level slot at side text color]} labels
-            :let [dir (* up (double side))
-                  anchor (cond
-                           (zero? dir) [:center :middle]
-                           horizontal? (if (pos? dir) [:left :middle] [:right :middle])
-                           :else (if (pos? dir) [:center :top] [:center :bottom]))
-                  ^Vec2 p (point at level (in-slot slot 0.0))
-                  x (if horizontal? (+ (.x p) (* dir pad)) (.x p))
-                  y (if horizontal? (.y p) (+ (.y p) (* dir pad)))]
-            :when (and (m/valid-double? x) (m/valid-double? y))]
-      (label/draw-at! canvas (cond-> {:kind :label :role :annotation :text text} color (assoc :color color)) anchor x y env))))
+    (vec (for [{:keys [level slot at side] :as l} labels
+               :let [dir (* up (double side))
+                     anchor (cond
+                              (zero? dir) [:center :middle]
+                              horizontal? (if (pos? dir) [:left :middle] [:right :middle])
+                              :else (if (pos? dir) [:center :top] [:center :bottom]))
+                     ^Vec2 p (point at level (in-slot slot 0.0))
+                     x (if horizontal? (+ (.x p) (* dir pad)) (.x p))
+                     y (if horizontal? (.y p) (+ (.y p) (* dir pad)))]
+               :when (and (m/valid-double? x) (m/valid-double? y))]
+           {:label l :content (label-content l) :anchor anchor :x x :y y}))))
 
-(defn- draw-polar-end-labels!
-  [canvas {:keys [range-point geometry]} labels scales env]
+(defn- outer-placement
+  "Placement of an `:outer?` label: past the outer radius at the angle of its segment's middle (value `at`, the slot's
+  centre), anchored away from the centre; the leader from the segment's farthest corner (values `:span`)."
+  [{:keys [range-point geometry]} {:keys [level slot at span leader?] :as l}]
+  (let [[h _] (range-point at level (in-slot slot 0.0))
+        h (double h)
+        r (+ (double (:radius geometry)) outer-label-gap)
+        ^Vec2 p (coord/to-pixel geometry h r)
+        edge (when leader?
+               (reduce max (for [value span cross [-0.5 0.5]] (double (second (range-point value level (in-slot slot cross)))))))]
+    (when (and (m/valid-double? (.x p)) (m/valid-double? (.y p)))
+      (cond-> {:label l :content (label-content l) :anchor (coord/outward-anchor h) :x (.x p) :y (.y p)}
+        (and edge (m/valid-double? (double edge)))
+        (assoc :leader (let [^Vec2 a (coord/to-pixel geometry h (double edge))
+                             ^Vec2 b (coord/to-pixel geometry h (- r 1.0))]
+                         [[(.x a) (.y a)] [(.x b) (.y b)]]))))))
+
+(defn- polar-end-label-placements
+  [{:keys [range-point geometry] :as pl} labels scales]
   (let [x-scale (:x scales)
         radial? (not (scale/horizontal? :x x-scale))
         [r0 r1] (:range x-scale)
         up (if (< (double r1) (double r0)) -1.0 1.0)
         ;; the gap in range units: pixels along the radius, radians at the outer radius along the angle
         pad (if radial? n-label-gap (/ n-label-gap (double (:radius geometry))))]
-    (doseq [{:keys [level slot at side text color]} labels
-            :let [dir (* up (double side))
-                  [h v] (range-point at level (in-slot slot 0.0))
-                  [h v] (if radial? [h (+ (double v) (* dir pad))] [(+ (double h) (* dir pad)) v])
-                  ^Vec2 p (coord/to-pixel geometry (double h) (double v))
-                  anchor (if (and radial? (not (zero? dir))) (coord/outward-anchor (double h)) [:center :middle])]
-            :when (and (m/valid-double? (.x p)) (m/valid-double? (.y p)))]
-      (label/draw-at! canvas (cond-> {:kind :label :role :annotation :text text} color (assoc :color color))
-                      anchor (.x p) (.y p) env))))
+    (vec (keep (fn [{:keys [level slot at side outer?] :as l}]
+                 (if outer?
+                   (outer-placement pl l)
+                   (let [dir (* up (double side))
+                         [h v] (range-point at level (in-slot slot 0.0))
+                         [h v] (if radial? [h (+ (double v) (* dir pad))] [(+ (double h) (* dir pad)) v])
+                         ^Vec2 p (coord/to-pixel geometry (double h) (double v))
+                         anchor (if (and radial? (not (zero? dir))) (coord/outward-anchor (double h)) [:center :middle])]
+                     (when (and (m/valid-double? (.x p)) (m/valid-double? (.y p)))
+                       {:label l :content (label-content l) :anchor anchor :x (.x p) :y (.y p)}))))
+               labels))))
+
+(defn draw-label-placements!
+  "Draw end-label `placements` (see [[end-label-placements]]): leader lines (1 pixel, the label's color or the
+  `:annotation` role's), then the labels."
+  [canvas placements env]
+  (doseq [{:keys [leader content]} placements
+          :when leader
+          :let [[[x0 y0] [x1 y1]] leader]]
+    (c2d/set-color canvas (or (:color content) (get-in env [:theme :text :annotation :color])))
+    (c2d/set-stroke-custom canvas {:size 1.0})
+    (c2d/line canvas (double x0) (double y0) (double x1) (double y1)))
+  (doseq [{:keys [content anchor x y]} placements]
+    (label/draw-at! canvas content anchor x y env)))
+
+(defn draw-end-labels!
+  "Draw end labels `labels` - `[{:level l :slot s :at v :side d :text t} ...]` - each just past value `v` along the
+  value axis, toward increasing values (`d` 1) or decreasing ones (`d` -1), or centred on `v` (`d` 0, e.g. inside a
+  stacked bar; no room needed), centred on its slot (text role `:annotation`; optional `:color` overrides the role's).
+  `pl` - the chart's [[placement]]; [[end-label-room]] keeps room for them past the data. Polar plots: past the value
+  along the radius (anchored away from the centre) or along the angle (centred), see [[cljplot2.scale.coord]]; an
+  `:outer?` label (`:span [v0 v1]` - its segment's values, `:leader?` - a leader line) past the outer radius at its
+  segment's middle angle, anchored outward (room: [[outer-label-room]])."
+  [canvas pl labels scales env]
+  (draw-label-placements! canvas (end-label-placements pl labels scales) env))
+
+(defn outer-label-room
+  "`[horizontal vertical]` pixels `:outer?` end labels `labels` need around a polar plot's circle (the widest and
+  the tallest label plus [[outer-label-gap]]), measured with the `:annotation` role (env `:theme`, `:hint`); `nil`
+  without such labels."
+  [labels {:keys [theme hint]}]
+  (when-let [texts (seq (distinct (keep #(when (:outer? %) (:text %)) labels)))]
+    (measure/call-with-scratch-canvas
+     hint
+     (fn [c]
+       (let [sizes (map #(measure/natural-size {:kind :label :role :annotation :text %} {:canvas c :theme theme}) texts)]
+         [(+ outer-label-gap (double (reduce max (map (fn [^Vec2 s] (.x s)) sizes))))
+          (+ outer-label-gap (double (reduce max (map (fn [^Vec2 s] (.y s)) sizes))))])))))
 
 (defn n-label-room
   "`:padding-px` of a strip chart (`items` - `{panel [item ...]}`) with `:n-label`: room past the largest values for
