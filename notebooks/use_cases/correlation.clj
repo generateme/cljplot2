@@ -640,6 +640,8 @@
 
 ;; Four datasets with the same means, variances, linear fit and r ≈ 0.82 - and four different relations: a line, a
 ;; curve, a line with an outlier, a single far point making the correlation. Always look at the scatter plot.
+;; The same mean and spread of x and the same residual variance give the same line and confidence band; drawn over
+;; the whole x domain (`:full-range` with an explicit `:domain`, shared by the panels) they coincide.
 
 (nu/source-note {:source "Anscombe (1973), Graphs in Statistical Analysis (R datasets::anscombe)"
                  :url "https://en.wikipedia.org/wiki/Anscombe%27s_quartet"})
@@ -659,7 +661,8 @@
   (plot/render-image
    {:data anscombe :mapping {:x :x :y :y :facet :set}
     :facets {:columns 4}
-    :charts [(chart/smooth {:method :lm})
+    :scales {:x {:domain [3 20]}}
+    :charts [(chart/smooth {:method :lm :full-range true})
              (chart/scatter {:size 7 :color [200 60 40]})
              (chart/text {:data (vec (for [[set rows] (group-by :set anscombe)] {:set set :x 4 :y 13 :label (r-label rows)}))
                           :mapping {:x :x :y :y :label :label} :anchor [:left :top]
