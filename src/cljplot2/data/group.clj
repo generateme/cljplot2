@@ -97,37 +97,48 @@
        :dims dims
        :dropped (into {} (map (fn [k vs] [k (count (remove #(kept-value? k na-level? plot-scales %) vs))]) dims columns))})))
 
-(defn continuous-color
-  "A linear or binned `:color` of chart `mapping` - colored per row, not grouped - resolved as the plot scale will
-  resolve it (from the plot's scale spec in `env` `:plot-scales` and the values in `groups`, `{panel rows}`);
-  `nil` when `:color` is unmapped or groups. Returns `{:groups :mapping :color-of :dropped}`: `groups` without the
-  rows outside the color scale's explicit domain (and NA rows when `env` `:na-level?` is false), `mapping` without
-  `:color` (to split by the other dimensions), the row accessor of the color and the count of rows dropped."
-  [groups mapping {:keys [plot-scales na-level?] :or {na-level? true}}]
-  (when-let [acc (:color mapping)]
-    (let [color-of (data/row-accessor :color acc)
-          spec (get plot-scales :color {})
-          present (keep color-of (mapcat val groups))
+(defn continuous
+  "A linear or binned aesthetic `k` (`:color`, `:size`) of chart `mapping` - styled per row, not grouped - resolved as
+  the plot scale will resolve it (from the plot's scale spec in `env` `:plot-scales` and the values in `groups`,
+  `{panel rows}`); `nil` when `k` is unmapped or groups. Returns `{:groups :mapping :value-of :dropped}`: `groups`
+  without the rows outside the scale's explicit domain (and NA rows when `env` `:na-level?` is false), `mapping`
+  without `k` (to split by the other dimensions), the row accessor of the value and the count of rows dropped."
+  [k groups mapping {:keys [plot-scales na-level?] :or {na-level? true}}]
+  (when-let [acc (get mapping k)]
+    (let [value-of (data/row-accessor k acc)
+          spec (get plot-scales k {})
+          present (keep value-of (mapcat val groups))
           numeric? (and (seq present) (every? number? present))]
-      (when (#{:linear :binned} (aesthetic/inferred-kind :color spec numeric?))
-        (let [kept? (fn [row] (let [v (color-of row)] (if (nil? v) na-level? (aesthetic/kept-value? :color spec v))))]
+      (when (#{:linear :binned} (aesthetic/inferred-kind k spec numeric?))
+        (let [kept? (fn [row] (let [v (value-of row)] (if (nil? v) na-level? (aesthetic/kept-value? k spec v))))]
           {:groups (update-vals groups #(filterv kept? %))
-           :mapping (dissoc mapping :color)
-           :color-of color-of
+           :mapping (dissoc mapping k)
+           :value-of value-of
            :dropped (count (remove kept? (mapcat val groups)))})))))
 
-(defn continuous-color-stats
-  "Stats of a chart's per-row colors (see [[continuous-color]]) from `panel-values` - `{panel [color value ...]}`
-  (NA as `nil`) of what the chart draws: `:extents` `{panel {:color extent}}` of the non-NA values under the plot's
-  color scale spec in `plot-scales` (panels without one left out), `:dropped` - the rows `continuous` dropped,
-  `:na?` - some value is NA."
-  [continuous panel-values plot-scales]
+(defn continuous-color
+  "[[continuous]] of `:color`, the value accessor also as `:color-of`."
+  [groups mapping env]
+  (when-let [c (continuous :color groups mapping env)]
+    (assoc c :color-of (:value-of c))))
+
+(defn continuous-stats
+  "Stats of a chart's per-row values of aesthetic `k` (see [[continuous]]) from `panel-values` - `{panel [value
+  ...]}` (NA as `nil`) of what the chart draws: `:extents` `{panel {k extent}}` of the non-NA values under the plot's
+  scale spec in `plot-scales` (panels without one left out), `:dropped` - the rows `continuous` dropped, `:na?` -
+  some value is NA."
+  [k continuous panel-values plot-scales]
   {:extents (into {} (keep (fn [[panel vs]]
-                             (when-let [e (aesthetic/value-extent :color (get plot-scales :color) (remove nil? vs))]
-                               [panel {:color e}])))
+                             (when-let [e (aesthetic/value-extent k (get plot-scales k) (remove nil? vs))]
+                               [panel {k e}])))
                   panel-values)
    :dropped (:dropped continuous)
    :na? (boolean (some nil? (mapcat val panel-values)))})
+
+(defn continuous-color-stats
+  "[[continuous-stats]] of `:color`."
+  [continuous panel-values plot-scales]
+  (continuous-stats :color continuous panel-values plot-scales))
 
 (defn aesthetic-extents
   "Per panel of split `panels`: value extents of the non-NA aesthetic values of its groups, under the plot's

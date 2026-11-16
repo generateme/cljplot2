@@ -27,11 +27,15 @@
   along the line; rows outside the color scale's explicit domain are dropped (counted), NA rows follow the plot's
   `:groups {:na}`. With an `:interpolator` the sampled curve takes the color value interpolated linearly between
   its data points, in steps of a few pixels (`:curve` can't color along the length - `ex-info {:key :curve}`); a bridge takes the color of
-  its two end values."
+  its two end values.
+  Arrows (see [[cljplot2.graphics.arrow]]): `:arrow {:end :start :size :shape}`, `:start-gap` / `:end-gap` (pixels) -
+  at the ends of every run of a plain stroked line (no fill, fill gradient, colour along the length or stacking -
+  `ex-info {:key :arrow}`; no bridges between the runs)."
   (:require [fastmath.core :as m]
             [cljplot2.data.rows :as data]
             [cljplot2.data.group :as group]
             [cljplot2.data.position :as position]
+            [cljplot2.graphics.arrow :as arrow]
             [cljplot2.graphics.curve :as curve]
             [cljplot2.graphics.draw :as draw]
             [cljplot2.graphics.polyline :as polyline]
@@ -70,7 +74,10 @@
                       (schema/optional :position (into [:enum] (sort positions)))
                       (schema/optional :fill-gradient polyline/fill-gradient-schema)
                       (schema/optional :fill-gradient-axis [:enum :x :y])
-                      (schema/optional :padding data/position-padding)))
+                      (schema/optional :padding data/position-padding)
+                      (schema/optional :arrow arrow/schema)
+                      (schema/optional :start-gap schema/non-neg)
+                      (schema/optional :end-gap schema/non-neg)))
    :mapping [:map [:x schema/accessor] [:y schema/accessor]]})
 
 (defn- style
@@ -401,6 +408,10 @@
       (when (and curved? (:curve opts) (some :colors lines))
         (schema/fail! "A line colored along its length can't take :curve (use :interpolator)."
                       {:key :curve :value (:curve opts)}))
+      (when (and (some options [:arrow :start-gap :end-gap])
+                 (or (some :y0 lines) (some :colors lines) gradient (not= :none (:fill style :none))))
+        (schema/fail! "Arrows and end gaps need a plain stroked line (no fill, gradient, colour along the length or stacking)."
+                      {:key :arrow}))
       (if (some :y0 lines)
         (draw-stacked! canvas lines style (:position options) opts gradient axis scales (:theme env))
         (doseq [{:keys [x y aesthetics colors]} lines
@@ -432,6 +443,9 @@
                     (polyline/fill-area! canvas run (base-run run area) nil gradient axis scales
                                          (draw/pattern-fill st (gradient 0.5))))
                   (curve/draw-runs! canvas point-runs (assoc st :fill :none) nil gaps))
+              (some options [:arrow :start-gap :end-gap])
+              (doseq [run point-runs :when (> (count run) 1)]
+                (arrow/draw-run! canvas run st [(:arrow options) (:start-gap options) (:end-gap options)]))
               :else
               (curve/draw-runs! canvas point-runs st area gaps))))))))
 

@@ -20,6 +20,8 @@
   `[0 0]`); `:rotation` - degrees, clockwise (default 0; the anchor applies to the rotated text's bounding box), or `:radial` -
   in a polar plot each label along its angle, labels on the left half turned to read upright, anchored away from the
   centre unless `:anchor` is given (0 in cartesian plots);
+  A mapped `:angle` (degrees, clockwise; `nil` or not a finite number - `:rotation`) turns each label on its own,
+  over `:rotation` and `:radial`.
   `:font`, `:size`, `:font-style`, `:color`, `:padding` (pixels around the text - unlike other charts' position
   `:padding {:x [lo hi]}`), `:background` (a color, alpha allowed, filling the text plus padding - a label box, ggplot
   `geom_label`; the legend key keeps the background with the theme's padding) - over the text role `[:text :annotation]`
@@ -143,12 +145,14 @@
                                 {:x (map :x labels) :y (map :y labels)}))
     (let [_ (annotation/require-mapping! "Text" mapping [[:x :y :label]])
           [x-of y-of t-of] (map #(data/row-accessor % (get mapping %)) [:x :y :label])
+          angle-of (when (some? (:angle mapping)) (data/row-accessor :angle (:angle mapping)))
           select (:select options)
           options (cond->> options select (merge (select-placement select (:flip? env))))
           labels-of (fn [rows] (selected (vec (for [r rows
                                                     :let [x (x-of r) y (y-of r)]
                                                     :when (and (annotation/position? x) (annotation/position? y))]
-                                                {:x x :y y :text (t-of r)}))
+                                                (cond-> {:x x :y y :text (t-of r)}
+                                                  angle-of (assoc :angle (angle-of r)))))
                                          select))
           stats (annotation/data-stats chart-split options env
                                        (fn [gs]
@@ -186,9 +190,10 @@
     (doseq [{:keys [labels aesthetics]} groups
             :let [st (group/style (base-style options (:theme env)) aesthetics scales (:theme env))]
             :when st
-            {:keys [x y text]} labels
+            {:keys [x y text angle]} labels
             :let [pos {:x x :y y}
-                  [px py rotation anchor] (place (double (h-pixel (pos hk))) (double (v-pixel (pos vk))))]
+                  [px py rotation anchor] (place (double (h-pixel (pos hk))) (double (v-pixel (pos vk))))
+                  rotation (if (and (number? angle) (m/valid-double? (double angle))) angle rotation)]
             :when (and (m/valid-double? (double px)) (m/valid-double? (double py)))]
       (label/draw-at! canvas (merge {:kind :label :role :annotation :text (str text) :rotation rotation} st)
                       anchor px py env))))

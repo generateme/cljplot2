@@ -1,6 +1,7 @@
 (ns cljplot2.core
   "Public API."
-  (:require [cljplot2.pipeline :as pipeline]
+  (:require [cljplot2.graphs :as graphs]
+            [cljplot2.pipeline :as pipeline]
             [cljplot2.multiplot :as multiplot]
             [cljplot2.render :as render]))
 
@@ -21,6 +22,11 @@
   "Scatter-plot matrix (and correlogram) of numeric variables, see [[cljplot2.multiplot/pairs]]."
   [data options]
   (multiplot/pairs data options))
+
+(defn network
+  "Network plot of edge rows (graph layout, segments, nodes, labels), see [[cljplot2.graphs/network]]."
+  [edges options]
+  (graphs/network edges options))
 
 (defn render
   "Build and draw `plot`, returning a clojure2d canvas, see [[cljplot2.render/render]]."
