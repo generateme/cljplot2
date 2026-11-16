@@ -160,6 +160,18 @@
       (seq left) (conj (chart/text {:data (mapv row left) :mapping {:x :x :y :y :label :label :angle :angle}
                                     :anchor [:right :middle] :anchor-frame :text :size size})))))
 
+(def ^:private ^:const root-room
+  "Room past the root on a dendrogram's height axis (a fraction of the root height): its cross line stays inside the
+  panel instead of on (and clipped at) its border."
+  0.03)
+
+(defn- height-axis
+  "Height scale of a dendrogram whose root is at `top` (`0` - a single leaf: up to 1): from 0 exactly (leaves on the
+  axis) to the root plus [[root-room]], no nice extension or chart padding."
+  [top]
+  (let [top (double top)]
+    {:domain [0.0 (* (+ 1.0 root-room) (if (pos? top) top 1.0))] :nice false :expand [0.0 0.0]}))
+
 (def ^:private circle-axis
   "Both axes of a circular plot: the unit circle plus room for the leaf labels."
   {:domain [-1.5 1.5] :nice false :expand [0.0 0.0] :axis false})
@@ -192,7 +204,7 @@
              :scales (cond-> (if circular
                                {:x circle-axis :y circle-axis}
                                {:x (leaf-axis leaves labels?)
-                                :y (cond-> {:domain [0.0 (if (pos? top) top 1.0)] :nice false}
+                                :y (cond-> (height-axis top)
                                      (not heights?) (assoc :axis false))})
                        k (assoc :color {:legend false}))
              :labels {:title title :x nil :y (when (and heights? (not circular)) "height")}}
@@ -262,7 +274,7 @@
                           n (count (tree/leaves t))]
                       (cond-> {:charts [(branch-chart paths false nil)]
                                :scales {:x {:domain [-0.5 (- (double n) 0.5)] :nice false :expand [0.0 0.0] :axis false}
-                                        :y {:domain [0.0 (if (pos? top) top 1.0)] :nice false :expand [0.0 0.0] :axis false}}
+                                        :y (assoc (height-axis top) :axis false)}
                                :legend false :labels {:x nil :y nil}}
                         flip? (assoc :flip true)
                         user-theme (assoc :theme user-theme))))

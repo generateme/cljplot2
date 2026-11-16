@@ -119,8 +119,9 @@
         (is (instance? BufferedImage (plot/render-image c {:width 300 :height 300}))))
       (is (= 1 (count (:charts (plot/dendrogram lt {:circular true :labels? false})))))
       (is (false? (get-in (plot/dendrogram lt {:labels? false}) [:scales :x :axis])))))
-  (testing "2.2 the height axis spans 0 to the root height"
-    (is (= [0.0 (apply max (:height (:tree result)))] (get-in (plot/dendrogram result {}) [:scales :y :domain]))))
+  (testing "2.2 the height axis spans 0 to the root height plus 3 % (H2: the root's line inside the panel)"
+    (is (= [0.0 (* 1.03 (double (apply max (:height (:tree result)))))] (get-in (plot/dendrogram result {}) [:scales :y :domain])))
+    (is (= [0.0 1.03] (get-in (plot/dendrogram {:name "x" :height 0.0} {}) [:scales :y :domain])) "one leaf - up to 1"))
   (testing "R4 group labels: named groups of level trees"
     (let [lt (tree/from-levels [{:r "A" :c "x"} {:r "A" :c "y"} {:r "B" :c "z"}] {:hierarchy [:r :c]})
           p (plot/dendrogram lt {:group-labels? true})]
@@ -163,6 +164,16 @@
       (is (<= (m/abs (- (double (:w heat)) (double (:w col-tree)))) 1.0))
       (is (<= (m/abs (- (double (:y heat)) (double (:y row-tree)))) 1.0) "row dendrogram beside the tiles")
       (is (<= (m/abs (- (double (:h heat)) (double (:h row-tree)))) 1.0))))
+  (testing "H1 the row tree's root line is drawn: dark pixels at the root height between its children"
+    (let [p (plot/clustered-heatmap cells {:row :r :col :c :value :v})
+          row-plot (assoc (nth (get-in p [:arrange :plots]) 4) :theme {:plot {:background :white} :panel {:fill :white :grid {:x :none :y :none}}})
+          size {:width 200 :height 400}
+          {:keys [x y w h]} (grid/item-box (:layout (plot/build row-plot size)) :panel)
+          ^BufferedImage img (plot/render-image row-plot size)
+          root-x (long (Math/round (+ (double x) (* (double w) (/ 1.0 1.03)))))
+          dark? (fn [px py] (< (bit-and (.getRGB img (int px) (int py)) 0xff) 160))]
+      (is (< root-x (+ (long x) (long w))) "inside the panel")
+      (is (pos? (count (for [py (range (long y) (+ (long y) (long h))) px [(dec root-x) root-x (inc root-x)] :when (dark? px py)] 1))))))
   (testing "3.2 missing / non-finite cell, too few rows or columns"
     (is (= :value (:key (error #(plot/clustered-heatmap (pop cells) {:row :r :col :c :value :v})))))
     (is (= :value (:key (error #(plot/clustered-heatmap (assoc-in cells [0 :v] ##NaN) {:row :r :col :c :value :v})))))
