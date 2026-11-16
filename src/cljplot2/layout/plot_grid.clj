@@ -27,10 +27,12 @@
   Legends ([[cljplot2.content.legend/legends]]) add columns `:legend-gap` (fixed, theme `[:legend :gap]`) and `:legend`
   (measured) after `:x-overhang`, and an item `:legends` spanning the panel rows (from the top strip) with
   `{:kind :legends}` content: the legends stacked top-down, wrapping into further columns when too tall."
-  (:require [cljplot2.data.facet :as facet]
+  (:require [fastmath.core :as m]
+            [cljplot2.data.facet :as facet]
             [cljplot2.data.shingle :as shingle]
             [cljplot2.content.label :as label]
             [cljplot2.content.legend :as legend]
+            [cljplot2.graphics.measure :as measure]
             [cljplot2.scale.position :as scale]
             [cljplot2.schema :as schema]
             [clojure.set :as set]))
@@ -212,11 +214,60 @@
 
 (defn panel-layout
   "`{:columns c :rows r}` of the plot's panels: the facet layout of `split-facets` (see the split stage) with plot
-  `scales` and `facets` options, `{:columns 1 :rows 1}` without facets."
-  [split-facets scales facets]
-  (if (seq (:dims split-facets))
-    (let [{:keys [rows cols]} (facet-panels split-facets scales facets)] {:columns cols :rows rows})
-    {:columns 1 :rows 1}))
+  `facets` options (as [[facet-grid]] lays it out, strips not formatted), `{:columns 1 :rows 1}` without facets.
+  Throws as [[cljplot2.data.facet/wrap-shape]] for a wrap layout too small for its panels."
+  [{:keys [dims levels]} facets]
+  (cond
+    (empty? dims) {:columns 1 :rows 1}
+    (= dims [:facet]) (let [[rows cols] (facet/wrap-shape (count (:facet levels)) facets)] {:columns cols :rows rows})
+    :else {:columns (count (get levels :facet-col [nil])) :rows (count (get levels :facet-row [nil]))}))
+
+(def ^:private estimate-tick-label
+  "Stand-in tick label of an axis whose ticks are unknown (before stats)."
+  "00")
+
+(defn- size-height ^double [size] (if size (.y ^fastmath.vector.Vec2 size) 0.0))
+(defn- size-width ^double [size] (if size (.x ^fastmath.vector.Vec2 size) 0.0))
+
+(defn- axis-room
+  "Pixels an axis `k` takes across itself for tick labels `across` pixels deep (theme tick length and label gap)."
+  ^double [theme k ^double across]
+  (+ (double (get-in theme [:axis k :tick-length])) (double (get-in theme [:axis k :label-gap])) across))
+
+(defn estimated-panel-size
+  "Expected `[w h]` (pixels, at least 1) of one panel of `plot` before its stats are known: the plot's `:width` /
+  `:height` less the room this grid gives the plot margins, the title and axis titles (`:labels`), the axes (stand-in
+  two-digit tick labels, no end overhangs), plot `margins` (`{side {:size px}}`), the `legends` (contents, e.g.
+  [[cljplot2.content.legend/provisional-legends]]) and the facet strips and gaps of `panel-layout` (`{:columns
+  :rows}`; `facets?` - strips present, `grid?` - facet-grid strips (one row, one column), else wrap strips over
+  every row), split among the panels. Measured on a scratch canvas; an estimate - real tick labels and wrapped
+  legends differ."
+  [{:keys [options theme labels flip]} legends margins {:keys [columns rows]} facets? grid?]
+  (measure/call-with-scratch-canvas
+   (:hint options)
+   (fn [canvas]
+     (let [env {:canvas canvas :theme theme}
+           size (fn [content] (measure/natural-size content env))
+           text-size (fn [role l] (when (some? l)
+                                    (size (merge {:kind :label :role role} (if (map? l) (dissoc l :rotation) {:text (str l)})))))
+           {:keys [x y title]} (side-labels labels flip)
+           margin (double (get-in theme [:plot :margin]))
+           tick (size {:kind :label :role :tick-label :text estimate-tick-label})
+           tick-w (size-width tick) tick-h (size-height tick)
+           gap (double (get-in theme [:facet :gap]))
+           strip (if facets? (size-height (size {:kind :strip :text "Xg"})) 0.0)
+           margin-room (fn ^double [side] (if-let [{:keys [size]} (get margins side)] (+ (double size) gap) 0.0))
+           legend-room (if (seq legends)
+                         (+ (double (get-in theme [:legend :gap])) (size-width (size {:kind :legends :legends legends})))
+                         0.0)
+           columns (long columns) rows (long rows)
+           w (- (double (:width options)) (* 2.0 margin) (size-height (text-size :axis-title y))
+                (axis-room theme :y tick-w) (double (margin-room :right)) legend-room
+                (* gap (dec columns)) (if grid? strip 0.0))
+           h (- (double (:height options)) (* 2.0 margin) (size-height (text-size :title title))
+                (double (margin-room :top)) (axis-room theme :x tick-h)
+                (size-height (text-size :axis-title x)) (* gap (dec rows)) (if grid? strip (* strip rows)))]
+       [(m/max 1.0 (/ w columns)) (m/max 1.0 (/ h rows))]))))
 
 (defn facet-grid
   "Grid of a faceted plot (see [[cljplot2.data.facet]]): panels `[:panel r c]` in a `rows` x `cols` layout with gaps

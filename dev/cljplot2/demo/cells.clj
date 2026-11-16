@@ -53,7 +53,7 @@
                   :labels {:title "square 2D histogram"}}]
                 {:columns 2}))
 
-(def normal-pairs
+(def ^:private normal-pairs
   "Seeded correlated normal pairs."
   (let [rng (r/rng :mersenne 11)]
     (vec (repeatedly 3000 (fn [] (let [a (r/grandom rng) b (r/grandom rng)] {:u a :v (+ (* 0.6 a) (* 0.8 b))}))))))
@@ -76,7 +76,7 @@
 (def ^:private cars
   (vec (sort-by (juxt :cyl :mpg) (map #(assoc % :car (:name %)) mtcars))))
 
-(def car-order (mapv :car cars))
+(def ^:private car-order (mapv :car cars))
 
 (def ^:private standardized
   (let [stat (into {} (for [k mtcars-variables] (let [vs (map k mtcars)] [k [(stats/mean vs) (stats/stddev vs)]])))]

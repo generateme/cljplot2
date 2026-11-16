@@ -3,7 +3,8 @@
 
   Mapping: `:x`, `:y` - each axis categorical (strings / keywords: a cell per level, the band scale without padding)
   or numeric (cells centred on the values, sized by the axis's resolution - the smallest gap between distinct values
-  over all panels); `:color` - numeric (a gradient, color bar) or categorical (palette, legend keys). Rows with an
+  over all panels: values on a regular lattice tile the panel, scattered values give cells as narrow as their
+  closest pair - bin them with [[cljplot2.chart.bin2d]], or round them to a lattice, instead); `:color` - numeric (a gradient, color bar) or categorical (palette, legend keys). Rows with an
   invalid x / y or a color outside the color scale are dropped and counted; a `nil` color is NA (theme
   `[:palette :na]`). Several rows at one (x, y) in a panel: the last one is drawn, the others counted in `:dropped
   {:duplicate n}`. Facets: a heatmap per panel.
@@ -17,7 +18,8 @@
   Options (style defaults from theme `[:chart :tile]`): `:cell`, `:cell-scale` (shrink factor, `(0 1]`; gaps between
   cells), `:stroke-color` (a color, `:none` or `:darker`), `:stroke-width`, `:alpha` (fill alpha, a fraction);
   `:value-label` - `true` (the color value: numbers to 2 decimals) or a function of `{:value :x :y}` returning the
-  text (`nil` - none), drawn centred in black or white by the fill (text role `:tile-value`).
+  text (`nil` - none), drawn centred in black or white by the color painted under it (translucent fills included;
+  text role `:tile-value`).
 
   Colour bar beside a heatmap (pheatmap-style annotation): a one-row tile (`:y` constant, `:color` the annotation)
   above the heatmap in `(plot/arrange [bar heatmap] {:columns 1 :heights [1 6]})`, both plots with the same explicit
@@ -88,12 +90,24 @@
         order (distinct (map key-of rows))]
     [(mapv last-row order) (- (count rows) (count last-row))]))
 
+(defn- band-room
+  "Bands attributes keeping room for cells reaching `[lo hi]` (index units) from their band centres: no inner
+  padding; outer padding (in steps, each side - total twice it) for the reach past the outer half bands, put on the
+  side that needs it. `:align-outer` is the share of the outer space on the low-pixel side: the first band's side of
+  a horizontal axis, the last band's of a `vertical?` one (its range runs upward)."
+  [[lo hi] vertical?]
+  (let [beyond (fn ^double [^double reach] (if (> reach (+ 0.5 1.0e-9)) (- reach 0.5) 0.0))
+        first-side (double (beyond (- (double lo))))
+        last-side (double (beyond (double hi)))
+        total (+ first-side last-side)]
+    (cond-> {:padding-in 0.0 :padding-out (* 0.5 total)}
+      (pos? total) (assoc :align-outer (/ (if vertical? last-side first-side) total)))))
+
 (defn compute
   "Per panel: `{:cells [[x y color] ..] :axes {:x info :y info} :style st :value-label f}` (axis info - see
   [[axis-info]]); extents (numeric axes: the values widened by the cells' reach; categorical: the levels), color
-  value extents, no padding, `:scale-defaults` (categorical axes: bands `:padding-in 0`, `:padding-out` - the cells'
-  reach past their band; numeric axes: no nice domain - cells fill the panel), `:na`, `:dropped` (`:x`, `:y`, `:color`, `:duplicate`)."
-  [{:keys [options]} {:keys [groups mapping]} {:keys [theme na-level? plot-scales] :or {na-level? true}}]
+  value extents, no padding, `:scale-defaults` (categorical axes: see [[band-room]]; numeric axes: no nice domain - cells fill the panel), `:na`, `:dropped` (`:x`, `:y`, `:color`, `:duplicate`)."
+  [{:keys [options]} {:keys [groups mapping]} {:keys [theme na-level? plot-scales flip?] :or {na-level? true}}]
   (let [st (style options theme)
         accessors (mapv #(data/row-accessor % (mapping %)) [:x :y :color])
         values (update-vals groups (fn [rows] (mapv (fn [row] (mapv #(% row) accessors)) rows)))
@@ -106,6 +120,8 @@
         numeric? (fn [k] (= :numeric (:kind (axes k))))
         [rx ry] (cells/lattice-reach (:cell st) (numeric? :x) (numeric? :y))
         reach {:x rx :y ry}
+        [x-extent y-extent] (cells/lattice-extent (:cell st) (numeric? :x) (numeric? :y))
+        overhang {:x x-extent :y y-extent}
         axis-extent (fn [k vs]
                       (when (seq vs)
                         (if (numeric? k)
@@ -122,9 +138,7 @@
                                                                                    (remove nil? (map #(nth % 2) cs)))})))
      :padding {:x [0.0 0.0] :y [0.0 0.0]}
      :scale-defaults (into {} (for [k [:x :y]]
-                                [k (if (numeric? k)
-                                     {:nice false}
-                                     {:padding-in 0.0 :padding-out (m/max 0.0 (- (double (reach k)) 0.5))})]))
+                                [k (if (numeric? k) {:nice false} (band-room (overhang k) (= k (if flip? :x :y))))]))
      :na (if (some #(nil? (nth % 2)) kept-all) #{:color} #{})
      :dropped {:x (count (remove #(position-ok? (first %)) all))
                :y (count (remove #(position-ok? (second %)) all))
@@ -152,12 +166,15 @@
          :index (fn [value] (m/round (/ (- (double value) lo) r)))}))))
 
 (defn- label-text
-  "Text of the value label of a cell (`value-label` - the option), `nil` - none."
+  "Text of the value label of a cell (`value-label` - the option), `nil` - none: a function's result as text; for
+  `true` a number to at most 2 decimals (whole numbers without them), a keyword's name, other values as text."
   [value-label value x y]
   (cond
     (fn? value-label) (some-> (value-label {:value value :x x :y y}) str)
     (nil? value) nil
-    (and (number? value) (not (integer? value))) (str (m/approx (double value) 2))
+    (number? value) (let [r (m/approx (double value) 2)]
+                      (if (== r (m/round r)) (str (m/round r)) (str r)))
+    (keyword? value) (name value)
     :else (str value)))
 
 (defn draw
@@ -187,7 +204,8 @@
                                                                [(/ (double (reduce + (map first offsets))) n)
                                                                 (/ (double (reduce + (map second offsets))) n)]))]
                 :when (and text (not (m/nan? (.x centre))) (not (m/nan? (.y centre))))]
-          (label/draw-at! canvas {:kind :label :role :tile-value :text text :color (draw/contrast-color fill)}
+          (label/draw-at! canvas {:kind :label :role :tile-value :text text
+                                  :color (draw/contrast-color (or (draw/painted-color canvas (.x centre) (.y centre)) fill))}
                           [:center :middle] (.x centre) (.y centre) env))))))
 
 (defn legend

@@ -10,7 +10,9 @@
   Options (style defaults from theme `[:chart :bin2d]`):
 
   * `:cell` - a `fastmath.grid` cell type (default `:pointy-hex`)
-  * `:bins` - `:scott` (default, fastmath's estimate) or a positive integer: cells across the x range
+  * `:bins` - `:scott` (default, fastmath's normal-reference estimate - coarse for a few hundred points or
+    multimodal data, e.g. about 5 cells across Old Faithful's 272 eruptions) or a positive integer: cells across the
+    x range (20-30 is a common choice)
   * `:binwidth` - cell size in x data units (wins over `:bins`)
   * `:shape` - the normalized space's height / width ratio (default: estimated, see above)
   * `:measure` - the color: `:count` (default), `:percent` (of the panel's points), `:pmf` (share of the panel's
@@ -51,9 +53,10 @@
 
 (defn compute
   "Per panel: `{:cells [{:corners [[x y] ..] :value v} ..] :style st}` - occupied cells; extents (panels with
-  cells): x / y - the cells' box in the normalized space's proportions (see [[cljplot2.data.cells/bin-points]]),
+  cells): x / y - the cells' box in the normalized space's proportions (see [[cljplot2.data.cells/bin-points]]; the
+  plain box when either plot scale isn't linear, e.g. `:log` - there cells aren't regular anyway),
   color - the values over all panels; no padding, `:scale-defaults` without nice domains (keeps the
-  cells' shape), `:legend-titles {:color title}`, `:dropped` (`:x`, `:y` - rows without a finite number)."
+  cells' shape), `:dropped` (`:x`, `:y` - rows without a finite number)."
   [{:keys [options]} {:keys [groups mapping]} {:keys [theme plot-scales] :as env}]
   (let [st (style options theme)
         measure (get options :measure :count)
@@ -62,7 +65,7 @@
         pairs (update-vals groups (fn [rows] (mapv (fn [row] [(x-of row) (y-of row)]) rows)))
         all (apply concat (vals pairs))
         points (update-vals pairs (fn [ps] (filterv (fn [[x y]] (and (finite? x) (finite? y))) ps)))
-        {:keys [panels area extent]} (cells/bin-points points (merge {:cell (:cell st) :bins :scott}
+        {:keys [panels area extent cells-extent]} (cells/bin-points points (merge {:cell (:cell st) :bins :scott}
                                                               (select-keys options [:bins :binwidth :shape]))
                                                 env)
         valued (update-vals panels (fn [cs]
@@ -70,6 +73,8 @@
                                            values (measure/heights measure counts (repeat (count cs) area))]
                                        (mapv (fn [c value] {:corners (:corners c) :value value}) cs values))))
         color-extent (aesthetic/value-extent :color (get plot-scales :color) (map :value (mapcat val valued)))
+        linear? (every? #(contains? #{nil :linear} (get-in plot-scales [% :kind])) [:x :y])
+        extent (if linear? extent cells-extent)
         position-extent (fn [[lo hi]] {:kind :numeric :min (double lo) :max (double hi)})]
     {:data (update-vals valued (fn [cs] {:cells cs :style st}))
      :extents (update-vals valued (fn [cs]
@@ -77,7 +82,6 @@
                                       {:x (position-extent (:x extent)) :y (position-extent (:y extent)) :color color-extent})))
      :padding {:x [0.0 0.0] :y [0.0 0.0]}
      :scale-defaults (when extent {:x {:nice false} :y {:nice false}})
-     :legend-titles {:color (measure/titles measure)}
      :dropped {:x (count (remove (comp finite? first) all))
                :y (count (remove (comp finite? second) all))}}))
 

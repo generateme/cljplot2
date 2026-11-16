@@ -63,7 +63,7 @@
             [cljplot2.content.panel]
             [cljplot2.content.axis]
             [cljplot2.content.strip]
-            [cljplot2.content.legend]
+            [cljplot2.content.legend :as legend]
             [cljplot2.content.subplot :as subplot]))
 
 (set! *warn-on-reflection* true)
@@ -240,10 +240,13 @@
   "Per chart: the data its `:compute` returns from its split groups; margin charts too (`:margin-stats`, see
   [[margin-stats]])."
   [{:keys [charts split theme groups scales flip facets options aspect] :as plot}]
-  (let [env {:theme theme :na-level? (get groups :na true) :plot-scales scales :flip? (boolean flip)
-             :hint (:hint options) :coord (:coord plot)
-             :size [(:width options) (:height options)] :aspect aspect
-             :panel-layout (plot-grid/panel-layout (:facets split) scales facets)}]
+  (let [facet-dims (get-in split [:facets :dims])
+        env {:theme theme :na-level? (get groups :na true) :plot-scales scales :flip? (boolean flip)
+             :hint (:hint options) :coord (:coord plot) :aspect aspect
+             ;; measured on demand only (text measuring): charts needing the panel's shape before the layout
+             :panel-size (delay (plot-grid/estimated-panel-size plot (legend/provisional-legends plot (:charts split))
+                                                                (plot-margins plot) (plot-grid/panel-layout (:facets split) facets)
+                                                                (boolean (seq facet-dims)) (not= [:facet] facet-dims)))}]
     (assoc plot
            :stats (mapv (fn [chart chart-split] ((:compute chart) chart chart-split env)) charts (:charts split))
            :margin-stats (margin-stats plot env))))
@@ -330,11 +333,11 @@
   pixel room asked by charts (`:padding-px`) is added to continuous position specs (see
   [[cljplot2.scale.position/finalize]]); scale attributes suggested by a chart (`:scale-defaults {dim attributes}`, the first chart's) are used as a whole
   unless the plot's own spec sets any of them (attributes like bands `:padding-out` / `:align-outer` only make
-  sense together); a legend title suggested by a chart (`:legend-titles {dim title}`, the first chart's) is the aesthetic
-  scale's `:title` unless the plot's spec has one."
+  sense together); a computed aesthetic's title (chart value `:computed-aesthetics {dim title}`, the first chart's) is
+  the aesthetic scale's `:title` unless the plot's spec has one."
   [{:keys [scales extents theme stats] :as plot}]
   (let [ks (distinct (concat (filter #(or (position-scales %) (aesthetic/dim? %)) (keys scales)) (keys extents)))
-        suggested-titles (reduce (fn [acc titles] (merge titles acc)) {} (keep :legend-titles stats))
+        suggested-titles (reduce (fn [acc titles] (merge titles acc)) {} (keep :computed-aesthetics (:charts plot)))
         aesthetic-spec (fn [k] (let [spec (get scales k {})]
                                  (if (and (not (contains? spec :title)) (contains? suggested-titles k))
                                    (assoc spec :title (suggested-titles k))
@@ -743,6 +746,12 @@
                    mappings)
      (when (> (count dim-sets) 1)
        [(error [:charts] (vec dim-sets) "charts should use the same facet mapping")])
+     (for [[j chart] (map-indexed vector charts)
+           k (keys (:computed-aesthetics chart))
+           [i m] (map-indexed vector mappings)
+           :when (and (not= i j) (some? (get m k)))]
+       (error [:charts i :options :mapping k] (get m k)
+              (str "chart " j " computes " k " itself; another chart can't map it (set it to nil in this chart's :mapping)")))
      (let [margin-mappings (when (empty? (schema/errors margins-schema (:margins plot) [:margins]))
                              (for [[_ {:keys [charts]}] (plot-margins plot) c charts] (get-in c [:options :mapping])))]
        (for [k (keys scales)

@@ -30,6 +30,7 @@
             [fastmath.vector :as v]
             [wadogo.scale :as s]
             [cljplot2.data.levels :as levels]
+            [cljplot2.data.rows :as data]
             [cljplot2.scale.aesthetic :as aesthetic]
             [cljplot2.scale.position :as position]
             [cljplot2.graphics.canvas :as canvas]
@@ -151,6 +152,50 @@
       (cond->> (mapv (fn [[_ members]] (legend-content members theme charts mappings)) groups)
         (let [spec (:color scale-specs)] (and (#{:linear :binned} (:kind spec)) (not (false? (:legend spec)))))
         (into [(colorbar-content (:color scale-specs) (set (keep :color mappings)))])))))
+
+;; provisional legends (before stats)
+
+(def ^:private ^:const provisional-values
+  "Most distinct mapped values a provisional legend lists."
+  50)
+
+(def ^:private provisional-tick-label
+  "Stand-in tick label of a provisional color bar (its ticks are unknown before stats)."
+  "00")
+
+(defn provisional-legends
+  "Legend contents `plot` is expected to get, before its stats (for estimating the panel size, see
+  [[cljplot2.layout.plot-grid/estimated-panel-size]]): one per aesthetic mapped by a chart (`chart-inputs` -
+  `[{:mapping :groups}]` of the split stage) or computed by one (`:computed-aesthetics {dim title}` of the chart
+  values) - a color bar with a stand-in tick label for a linear or binned color (a computed one too), else a legend
+  of the distinct mapped values (at most 50); titles as [[legends]] gives them (the scale's `:title`, the computed
+  title, an accessor keyword's name). None for an identity scale, a scale with `:legend false`, or plot `:legend
+  false`."
+  [{:keys [charts scales legend]} chart-inputs]
+  (if (false? legend)
+    []
+    (vec (for [k aesthetic/dims
+               :let [spec (get scales k {})
+                     computed (some #(when (contains? (:computed-aesthetics %) k) %) charts)
+                     mapped (filter #(some? (get-in % [:mapping k])) chart-inputs)
+                     accessors (set (map #(get-in % [:mapping k]) mapped))
+                     values (into [] (comp (mapcat (fn [{:keys [mapping groups]}]
+                                                     (map (data/row-accessor k (mapping k)) (mapcat val groups))))
+                                           (remove nil?) (distinct) (take provisional-values))
+                                  mapped)
+                     numeric? (or (some? computed) (and (seq values) (every? number? values)))
+                     kind (when (or computed (seq mapped)) (aesthetic/inferred-kind k spec numeric?))
+                     title (cond
+                             (contains? spec :title) (:title spec)
+                             computed (get-in computed [:computed-aesthetics k])
+                             (and (= 1 (count accessors)) (keyword? (first accessors))) (name (first accessors)))]
+               :when (and kind (not= :identity kind) (not (false? (:legend spec))))]
+           (if (and (= k :color) (#{:linear :binned} kind))
+             {:kind :colorbar :title title :scale {:kind :linear :domain [0.0 1.0]} :ticks [0.0]
+              :labels [provisional-tick-label]}
+             {:kind :legend :title title :charts []
+              :entries (mapv (fn [v] {:label (str v) :attributes {}})
+                             (if (#{:linear :binned} kind) [provisional-tick-label] values))})))))
 
 ;; content
 

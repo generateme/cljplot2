@@ -2,8 +2,10 @@
   "Charts. A chart value is a plain map `{:kind :options :compute :draw :legend :schema}` made by a constructor;
   `:compute` and `:draw` are top-level functions, so chart values print and compare as data.
 
-  `:computed-aesthetics` (optional) - aesthetics the chart computes itself instead of mapping (e.g. [[bin2d]]'s
-  color): a plot `:scales` entry of such an aesthetic is valid without a chart mapping it.
+  `:computed-aesthetics` (optional) - `{dim title}`: aesthetics the chart computes itself instead of mapping (e.g.
+  [[bin2d]]'s color, titled by its measure): a plot `:scales` entry of such an aesthetic is valid without a chart
+  mapping it, and `title` (a string or `nil`) is its legend title unless the plot's scale has a `:title` (the first
+  chart's title wins).
 
   `:coords` (optional, default `#{:cartesian}`) - the coordinate systems the chart draws in (plot `:coord`, see
   [[cljplot2.scale.coord]]); polar charts: [[bar]], [[segment]], [[scatter]], [[line]], [[text]], [[rule]],
@@ -25,12 +27,10 @@
     scale has a `:formatter`) and `:scale-defaults {:x attrs :y attrs}` (suggested position scale attributes, e.g.
     bands `:padding-out`; dropped when the plot's own `:scales` entry sets any of them) and `:padding-px {dim [lo hi]}`
     (pixels kept free beyond the data on each side of a continuous position scale, e.g. for labels past the data)
-    and `:legend-titles {dim title}` (suggested aesthetic legend titles, e.g. a computed color's measure; the first
-    chart's win, a plot scale's `:title` wins over all)
-    (`env` - `{:theme :na-level? :plot-scales :flip? :hint :coord :size :aspect :panel-layout}`, `:plot-scales` - the
-    plot's `:scales`, `:flip?` - the plot's `:flip`, `:hint` - the rendering hint, for measuring text, `:size` - the
-    plot's `[width height]` in pixels, `:aspect` - the plot's `:aspect`, `:panel-layout` - `{:columns c :rows r}` of
-    the facet panels); stored per chart in the
+    (`env` - `{:theme :na-level? :plot-scales :flip? :hint :coord :aspect :panel-size}`, `:plot-scales` - the plot's
+    `:scales`, `:flip?` - the plot's `:flip`, `:hint` - the rendering hint, for measuring text, `:aspect` - the plot's
+    `:aspect`, `:panel-size` - a delay of one panel's estimated `[w h]` in pixels (see
+    [[cljplot2.layout.plot-grid/estimated-panel-size]]; deref only when needed - it measures text)); stored per chart in the
     plot's `:stats`. Aesthetic extents (`:color`,
     `:shape`, `:size`, `:dash`) are [[cljplot2.data.rows/value-extent]]s; `:na` lists aesthetics with NA (`nil`) values
   * `(draw chart computed canvas panel-box scales env)` - draws one panel's `computed` data; called by the panel
@@ -81,7 +81,8 @@
             [cljplot2.chart.treemap :as treemap]
             [cljplot2.chart.venn :as venn]
             [cljplot2.chart.violin :as violin]
-            [cljplot2.chart.waffle :as waffle]))
+            [cljplot2.chart.waffle :as waffle]
+            [cljplot2.data.measure :as measure]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -219,7 +220,8 @@
 (defn bin2d
   "Points counted in grid cells (hexbin, 2D histogram), see [[cljplot2.chart.bin2d]]."
   ([] (bin2d {}))
-  ([options] (assoc (chart-value :bin2d bin2d/compute bin2d/draw nil bin2d/schemas options) :computed-aesthetics #{:color})))
+  ([options] (assoc (chart-value :bin2d bin2d/compute bin2d/draw nil bin2d/schemas options)
+                     :computed-aesthetics {:color (measure/titles (get options :measure :count))})))
 
 (defn ecdf
   "Empirical CDF of `:x`, see [[cljplot2.chart.ecdf]]."

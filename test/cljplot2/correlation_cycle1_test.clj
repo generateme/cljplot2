@@ -5,9 +5,11 @@
             [cljplot2.test-util :refer [error]]
             [cljplot2.chart :as chart]
             [cljplot2.chart.tile :as tile]
+            [cljplot2.content.legend :as legend]
             [cljplot2.core :as plot]
             [cljplot2.data.cells :as cells]
             [cljplot2.layout.grid :as grid]
+            [cljplot2.layout.plot-grid :as plot-grid]
             [cljplot2.scale.position :as scale])
   (:import [java.awt.image BufferedImage]))
 
@@ -50,18 +52,26 @@
    :draw (fn [& _])})
 
 (deftest stats-env-test
-  (testing "1.1 :size, :aspect, :panel-layout reach compute"
+  (testing "1.1 :aspect and a lazy panel-size estimate reach compute"
     (plot/build {:data [{:x 1 :y 1}] :mapping {:x :x :y :y} :charts [(chart/scatter) (probe-chart)]} {:width 640 :height 480})
-    (is (= [640 480] (:size @seen-env)))
     (is (nil? (:aspect @seen-env)))
-    (is (= {:columns 1 :rows 1} (:panel-layout @seen-env)))
+    (is (delay? (:panel-size @seen-env)))
+    (is (not (realized? (:panel-size @seen-env))) "not measured unless a chart needs it")
+    (let [[w h] @(:panel-size @seen-env)]
+      (is (< 560 w 640) "axis room taken, no legend")
+      (is (< 400 h 480)))
     (plot/build {:data (for [f ["a" "b" "c"]] {:x 1 :y 1 :f f}) :mapping {:x :x :y :y :facet :f} :aspect :iso
                  :charts [(chart/scatter) (probe-chart)]} {:width 600 :height 400})
     (is (= :iso (:aspect @seen-env)))
-    (is (= {:columns 3 :rows 1} (:panel-layout @seen-env)) "3 wrapped panels in one row")
-    (plot/build {:data (for [c ["a" "b" "c"] r ["u" "v"]] {:x 1 :y 1 :c c :r r}) :mapping {:x :x :y :y :facet-col :c :facet-row :r}
-                 :charts [(chart/scatter) (probe-chart)]} {:width 600 :height 400})
-    (is (= {:columns 3 :rows 2} (:panel-layout @seen-env)))))
+    (is (< 150.0 (first @(:panel-size @seen-env)) 200.0) "3 wrapped panels in one row")))
+
+(deftest panel-layout-test
+  (testing "panel layout of the split facets, without formatting strips"
+    (is (= {:columns 1 :rows 1} (plot-grid/panel-layout {:dims []} {})))
+    (is (= {:columns 3 :rows 1} (plot-grid/panel-layout {:dims [:facet] :levels {:facet ["a" "b" "c"]}} {})))
+    (is (= {:columns 2 :rows 2} (plot-grid/panel-layout {:dims [:facet] :levels {:facet ["a" "b" "c"]}} {:columns 2})))
+    (is (= {:columns 3 :rows 2} (plot-grid/panel-layout {:dims [:facet-col :facet-row] :levels {:facet-col [1 2 3] :facet-row [1 2]}} {})))
+    (is (= {:columns 1 :rows 2} (plot-grid/panel-layout {:dims [:facet-row] :levels {:facet-row [1 2]}} {})))))
 
 ;; 1.2 shape factor
 
@@ -69,8 +79,7 @@
   (testing "1.2 :shape > :iso > estimated panel shape > 1"
     (is (== 2.5 (cells/shape-factor {:shape 2.5} 10 1 {:aspect :iso :size [600 400]})))
     (is (== 0.1 (cells/shape-factor {} 10 1 {:aspect :iso :size [600 400]})))
-    (is (m/delta-eq (/ 2.0 3.0) (cells/shape-factor {} 10 1 {:size [600 400] :panel-layout {:columns 1 :rows 1}})))
-    (is (m/delta-eq (/ (/ 400.0 2) (/ 600.0 3)) (cells/shape-factor {} 10 1 {:size [600 400] :panel-layout {:columns 3 :rows 2}})))
+    (is (m/delta-eq (/ 2.0 3.0) (cells/shape-factor {} 10 1 {:panel-size (delay [600 400])})))
     (is (== 1.0 (cells/shape-factor {} 10 1 {})))))
 
 ;; 1.3 / 1.4 binning
@@ -118,11 +127,11 @@
 ;; 1.5 regularity
 
 (defn- hex-pixel-sides
-  "Side lengths in pixels of the first drawn cell of a built bin2d plot."
+  "Side lengths in pixels of the first drawn cell (of any panel) of a built bin2d plot."
   [built]
   (let [{:keys [x y]} (:finalized-scales built)
         proj (scale/projection {:x x :y y})
-        corners (:corners (first (get-in (first (:stats built)) [:data :panel :cells])))
+        corners (:corners (first (mapcat :cells (vals (:data (first (:stats built)))))))
         pts (mapv (fn [[a b]] (proj a b)) corners)]
     (map (fn [^fastmath.vector.Vec2 p ^fastmath.vector.Vec2 q] (m/hypot (- (.x p) (.x q)) (- (.y p) (.y q))))
          pts (concat (rest pts) [(first pts)]))))
@@ -137,9 +146,12 @@
       (is (< (spread (hex-pixel-sides b)) 0.01))))
   (testing "1.5 a given :shape matching the panel - regular within 1 %"
     (let [p {:data (map (fn [[x y]] {:x x :y y}) cloud) :mapping {:x :x :y :y} :legend false}
-          b0 (plot/build (assoc p :charts [(chart/bin2d {:bins 8})]) {:width 600 :height 400})
-          {:keys [w h]} (grid/item-box (:layout b0) :panel)
-          b (plot/build (assoc p :charts [(chart/bin2d {:bins 8 :shape (/ (double h) (double w))})]) {:width 600 :height 400})]
+          build (fn [shape] (plot/build (assoc p :charts [(chart/bin2d (cond-> {:bins 8} shape (assoc :shape shape)))])
+                                        {:width 600 :height 400}))
+          panel-shape (fn [b] (let [{:keys [w h]} (grid/item-box (:layout b) :panel)] (/ (double h) (double w))))
+          ;; the shape changes the extents, so the tick labels and the panel: settle it in a few builds
+          b (nth (iterate (comp build panel-shape) (build nil)) 3)]
+      (is (< (m/abs (- 1.0 (/ (panel-shape b) (double (get-in b [:charts 0 :options :shape]))))) 0.005) "shape matches the panel")
       (is (< (spread (hex-pixel-sides b)) 0.01))))
   (testing "1.5 default 600 x 600 with a legend - within 10 %"
     (let [b (plot/build {:data (map (fn [[x y]] {:x x :y y}) cloud) :mapping {:x :x :y :y} :charts [(chart/bin2d {:bins 8})]}
@@ -216,11 +228,20 @@
                                :charts [(chart/tile)]}))) "dates are neither numbers nor categories")))
 
 (deftest tile-compute-test
-  (testing "3.2 categorical axes: band padding suggestions, no extents widening"
-    (let [s (stats {:data grid-rows :mapping {:x :x :y :y :color :v} :charts [(chart/tile {:cell :pointy-hex})]})]
-      (is (= {:padding-in 0.0} (dissoc (get-in s [:scale-defaults :x]) :padding-out)))
-      (is (m/delta-eq 0.5 (get-in s [:scale-defaults :x :padding-out])))
-      (is (= ["a" "b" "c"] (get-in s [:extents :panel :x :values])))))
+  (testing "3.2 categorical axes: band room on the side cells reach past, no extents widening"
+    (let [s (stats {:data grid-rows :mapping {:x :x :y :y :color :v} :charts [(chart/tile {:cell :pointy-hex})]})
+          {:keys [padding-in padding-out align-outer]} (get-in s [:scale-defaults :x])]
+      (is (== 0.0 padding-in))
+      (is (m/delta-eq 0.25 padding-out) "half a step in all, twice the per-side padding")
+      (is (== 0.0 align-outer) "all of it after the last column (odd rows shifted right)")
+      (is (m/delta-eq 0.5 (get-in s [:scale-defaults :y :align-outer])) "hexagon tips: both ends")
+      (is (= ["a" "b" "c"] (get-in s [:extents :panel :x :values]))))
+    (let [s (stats {:data grid-rows :mapping {:x :x :y :y :color :v} :charts [(chart/tile {:cell :flat-hex})]})]
+      (is (== 1.0 (get-in s [:scale-defaults :y :align-outer])) "vertical: the room above the top row is the low-pixel side")
+      (is (= {:padding-in 0.0 :padding-out 0.0} (get-in (stats {:data grid-rows :mapping {:x :x :y :y :color :v} :charts [(chart/tile)]})
+                                                         [:scale-defaults :x])) "squares: no room"))
+    (let [s (stats {:data grid-rows :mapping {:x :x :y :y :color :v} :flip true :charts [(chart/tile {:cell :flat-hex})]})]
+      (is (== 0.0 (get-in s [:scale-defaults :y :align-outer])) "flipped: y runs horizontally, room after its last band")))
   (testing "3.3 numeric axes: extents widened by half the resolution, no nice domain"
     (let [s (stats {:data [{:x 0 :y 0 :v 1} {:x 2 :y 0 :v 2} {:x 4 :y 1 :v 3}] :mapping {:x :x :y :y :color :v} :charts [(chart/tile)]})]
       (is (= {:kind :numeric :min -1.0 :max 5.0} (get-in s [:extents :panel :x])))
@@ -280,6 +301,7 @@
 ;; 4. bin2d
 
 (def ^:private cloud-rows (mapv (fn [[x y]] {:x x :y y}) cloud))
+(def ^:private cloud-rows* cloud-rows)
 
 (deftest bin2d-schema-test
   (testing "4.1 options and mapping"
@@ -315,11 +337,13 @@
 
 (deftest bin2d-draw-test
   (testing "4.3 only occupied cells: an empty region stays background"
-    (let [[_ img {:keys [x y w h]}] (render {:data [{:x 0 :y 0} {:x 10 :y 10}] :mapping {:x :x :y :y} :legend false
-                                             :charts [(chart/bin2d {:cell :square :bins 10})]}
-                                            {:width 300 :height 300})]
+    (let [p {:data [{:x 0 :y 0} {:x 10 :y 10}] :mapping {:x :x :y :y} :legend false
+             :charts [(chart/bin2d {:cell :square :bins 10})]}
+          [built img {:keys [x y w h]}] (render p {:width 300 :height 300})
+          proj (scale/projection (select-keys (:finalized-scales built) [:x :y]))
+          ^fastmath.vector.Vec2 occupied (proj 0.2 0.2)]
       (is (= [255 255 255] (rgb img (+ (long x) (quot (long w) 2)) (+ (long y) (quot (long h) 2)))))
-      (is (not= [255 255 255] (rgb img (+ (long x) 3) (+ (long y) (long h) -3)))))))
+      (is (not= [255 255 255] (rgb img (+ (long x) (long (.x occupied))) (+ (long y) (long (.y occupied)))))))))
 
 (deftest legend-title-test
   (testing "4.4 suggested legend title; a plot scale :title wins"
@@ -355,3 +379,81 @@
                          panel (grid/item-box (:layout s) :panel)]
                      (+ (double (:x cell)) (double (:x panel)) (scale/forward (get-in s [:finalized-scales :x]) level))))]
       (is (every? (fn [car] (< (m/abs (- (centre [:plot 0] car) (centre [:plot 1] car))) 1.0)) cars)))))
+
+;; review fixes
+
+(deftest regularity-estimate-test
+  (testing "R1 hexagons within 10 % of regular: wide legends, tall / wide plots, facets"
+    (doseq [[w h opts p] [[600 600 {:measure :percent} {}] [400 900 {} {}] [900 400 {} {}] [600 600 {:measure :density} {}]
+                          [900 400 {} {:mapping {:x :x :y :y :facet :f}}] [600 700 {} {:mapping {:x :x :y :y :facet :f} :facets {:columns 1}}]
+                          [600 500 {} {:labels {:title "A title" :x "x title" :y "y title"}}]]]
+      (let [rows (map (fn [[x y]] {:x x :y y :f (if (< (double x) 5.0) "left" "right")}) cloud)
+            b (plot/build (merge {:data rows :mapping {:x :x :y :y} :charts [(chart/bin2d (merge {:bins 8} opts))]} p)
+                          {:width w :height h})]
+        (is (< (spread (hex-pixel-sides b)) 0.1) (str [w h opts p]))))))
+
+(deftest estimated-panel-size-test
+  (testing "R1 the estimate is within 5 % of the laid-out panel"
+    (doseq [[p size] [[{:data grid-rows :mapping {:x :x :y :y :color :v} :charts [(chart/tile)]} {:width 600 :height 400}]
+                      [{:data grid-rows :mapping {:x :x :y :y :color :x} :charts [(chart/tile)] :labels {:title "t" :x "x"}} {:width 500 :height 500}]
+                      [{:data cloud-rows* :mapping {:x :x :y :y} :charts [(chart/bin2d {:measure :percent})]} {:width 700 :height 400}]]]
+      (let [b (plot/build (assoc p :charts (conj (:charts p) (probe-chart))) size)
+            [ew eh] @(:panel-size @seen-env)
+            {:keys [w h]} (grid/item-box (:layout b) :panel)]
+        (is (< (m/abs (- 1.0 (/ (double ew) (double w)))) 0.05) (str "width " ew " vs " w))
+        (is (< (m/abs (- 1.0 (/ (double eh) (double h)))) 0.05) (str "height " eh " vs " h))))))
+
+(deftest provisional-legends-test
+  (let [inputs (fn [mapping rows] [{:mapping mapping :groups {:panel rows}}])]
+    (testing "R1 legends expected before stats"
+      (is (= [] (legend/provisional-legends {:charts [] :scales {} :legend false} (inputs {:color :c} [{:c "a"}]))))
+      (is (= [] (legend/provisional-legends {:charts [] :scales {}} (inputs {:x :x} [{:x 1}]))) "nothing mapped")
+      (let [[l] (legend/provisional-legends {:charts [] :scales {}} (inputs {:color :c} [{:c "a"} {:c "b"} {:c "a"} {:c nil}]))]
+        (is (= [:legend "c" ["a" "b"]] [(:kind l) (:title l) (mapv :label (:entries l))])))
+      (let [[l] (legend/provisional-legends {:charts [] :scales {}} (inputs {:color :v} [{:v 1} {:v 2}]))]
+        (is (= [:colorbar "v"] [(:kind l) (:title l)])))
+      (let [[l] (legend/provisional-legends {:charts [(chart/bin2d {:measure :pmf})] :scales {}} (inputs {:x :x :y :y} [{:x 1 :y 1}]))]
+        (is (= [:colorbar "Probability"] [(:kind l) (:title l)])))
+      (is (= [] (legend/provisional-legends {:charts [] :scales {:color {:legend false}}} (inputs {:color :c} [{:c "a"}]))))
+      (is (= "own" (:title (first (legend/provisional-legends {:charts [] :scales {:color {:title "own"}}} (inputs {:color :c} [{:c "a"}])))))))))
+
+(deftest computed-aesthetics-test
+  (testing "R4 another chart can't map an aesthetic bin2d computes"
+    (is (= [:charts 0 :options :mapping :color]
+           (:in (error #(stats {:data cloud-rows* :mapping {:x :x :y :y}
+                                :charts [(chart/scatter {:mapping {:color :x}}) (chart/bin2d)]})))))
+    (is (nil? (error #(stats {:data cloud-rows* :mapping {:x :x :y :y} :charts [(chart/scatter) (chart/bin2d)]})))))
+  (testing "the measure titles the computed color"
+    (is (= {:color "Density"} (:computed-aesthetics (chart/bin2d {:measure :density}))))
+    (is (= {:color "Count"} (:computed-aesthetics (chart/bin2d))))))
+
+(deftest tile-label-fixes-test
+  (testing "R6 whole numbers without decimals, keyword names"
+    (is (= "321" (#'tile/label-text true 321.0 "a" "b")))
+    (is (= "-2" (#'tile/label-text true -2.0004 "a" "b")))
+    (is (= "a" (#'tile/label-text true :a "a" "b"))))
+  (testing "R6 contrast against the painted color: a translucent dark fill reads light"
+    (let [p {:data [{:x "a" :y "p" :c "dark"}] :mapping {:x :x :y :y :color :c} :legend false
+             :theme {:palette {:color [[0 0 60]]} :text {:tile-value {:size 30}}}
+             :charts [(chart/tile {:alpha 0.15 :value-label (constantly "WWW")})]}
+          [_ img {:keys [x y w h]}] (render p {:width 200 :height 150})
+          pixels (for [px (range (+ (long x) 10) (+ (long x) (long w) -10)) py (range (+ (long y) 10) (+ (long y) (long h) -10))]
+                   (rgb img px py))]
+      (is (some #{[0 0 0]} pixels) "black ink")
+      (is (not-any? #{[255 255 255]} (remove #(= % (rgb img (+ (long x) 2) (+ (long y) 2))) pixels)) "no white ink"))))
+
+(deftest tile-flip-facets-test
+  (testing "R7 flipped tile: the cell of (a, p) sits where the flipped projection puts it"
+    (let [p {:data [{:x "a" :y "p" :c "k"} {:x "b" :y "q" :c "m"}] :mapping {:x :x :y :y :color :c} :legend false :flip true
+             :charts [(chart/tile)]}
+          [built img {:keys [x y]}] (render p {:width 300 :height 300})
+          proj (scale/projection (select-keys (:finalized-scales built) [:x :y]))
+          ^fastmath.vector.Vec2 a (proj "a" "p")
+          ^fastmath.vector.Vec2 b (proj "b" "q")]
+      (is (= [255 0 0] (rgb img (+ (long x) (long (.x a))) (+ (long y) (long (.y a))))))
+      (is (= [0 0 255] (rgb img (+ (long x) (long (.x b))) (+ (long y) (long (.y b))))))))
+  (testing "R7 faceted tile: a heatmap per panel"
+    (let [s (stats {:data (concat (map #(assoc % :f "one") grid-rows) (map #(assoc % :f "two") (take 2 grid-rows)))
+                    :mapping {:x :x :y :y :color :v :facet :f} :charts [(chart/tile)]})]
+      (is (= [6 2] (map (comp count :cells) (map (:data s) ["one" "two"]))))
+      (is (= (get-in s [:data "one" :axes]) (get-in s [:data "two" :axes])) "one layout over the panels"))))

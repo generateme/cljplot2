@@ -11,7 +11,8 @@
   Binned cells (bin2d): points binned on a grid laid over a normalized space, see [[bin-points]]: x maps to
   `u = (x - x0) / (x1 - x0)` in `[0 1]`, y to `v = s (y - y0) / (y1 - y0)`, `s` the [[shape-factor]] - the expected
   panel height / width - so cells of one size in `u` / `v` are regular in pixels when the panel's pixels per unit
-  match: exactly with plot `:aspect :iso` or a given `:shape` matching the panel, approximately otherwise. Cell
+  match: exactly with plot `:aspect :iso` or a given `:shape` matching the panel, approximately otherwise (the panel
+  size is estimated before the layout - from the plot size less titles, axes, legends and facet strips). Cell
   corners are mapped back to data units and projected corner by corner (on non-linear scales the edges stay straight
   lines between projected corners).
 
@@ -95,28 +96,33 @@
     centre-x? (centred 0)
     centre-y? (centred 1)))
 
-(defn lattice-reach
-  "`[rx ry]`: how far any lattice cell of `cell-type` reaches from its point along each axis, in index units, with
-  the axes centred as in [[lattice-offsets]]."
+(defn lattice-extent
+  "`[[x-lo x-hi] [y-lo y-hi]]`: the lowest and highest offsets of any lattice cell of `cell-type` from its point
+  along each axis, in index units, with the axes centred as in [[lattice-offsets]] (e.g. `:pointy-hex` x
+  `[-0.5 1.0]` - odd rows shifted right)."
   [cell-type centre-x? centre-y?]
-  (let [offsets (for [a [0 1] b [0 1]] (lattice-offsets cell-type a b centre-x? centre-y?))
-        reach (fn [k] (reduce max (map #(m/abs (double (nth % k))) (apply concat offsets))))]
-    [(reach 0) (reach 1)]))
+  (let [offsets (apply concat (for [a [0 1] b [0 1]] (lattice-offsets cell-type a b centre-x? centre-y?)))
+        extent (fn [k] (let [vs (map #(double (nth % k)) offsets)] [(reduce min vs) (reduce max vs)]))]
+    [(extent 0) (extent 1)]))
+
+(defn lattice-reach
+  "`[rx ry]`: how far any lattice cell of `cell-type` reaches from its point along each axis, in index units (the
+  larger side of [[lattice-extent]])."
+  [cell-type centre-x? centre-y?]
+  (mapv (fn [[lo hi]] (m/max (m/abs (double lo)) (m/abs (double hi)))) (lattice-extent cell-type centre-x? centre-y?)))
 
 ;; binned cells
 
 (defn shape-factor
   "Shape factor `s` of the normalized space (see the namespace doc) for data spans `x-span`, `y-span` (positive):
   option `:shape` when given; with `env` `:aspect :iso` - `y-span / x-span` (equal pixels per data unit); else the
-  expected panel height / width - `(h / rows) / (w / columns)` from `env` `:size [w h]` and `:panel-layout
-  {:columns :rows}` (1.0 without a size)."
-  ^double [{:keys [shape]} x-span y-span {:keys [aspect size panel-layout]}]
+  expected panel height / width from `env` `:panel-size` (a delay of `[w h]`, see
+  [[cljplot2.layout.plot-grid/estimated-panel-size]]); 1.0 without one."
+  ^double [{:keys [shape]} x-span y-span {:keys [aspect panel-size]}]
   (cond
     shape (double shape)
     (= :iso aspect) (/ (double y-span) (double x-span))
-    size (let [[w h] size
-               {:keys [columns rows] :or {columns 1 rows 1}} panel-layout]
-           (/ (/ (double h) (double rows)) (/ (double w) (double columns))))
+    panel-size (let [[w h] (force panel-size)] (/ (double h) (double w)))
     :else 1.0))
 
 (defn- span
@@ -135,25 +141,28 @@
     :else (stats/estimate-grid-size points cell :scott)))
 
 (defn- proportional-box
-  "`[[u0 u1] [v0 v1]]`: the bounding box of the normalized `points`, its shorter side grown (centred) so that its
-  height / width is `s` - the box's pixels per unit are equal on both axes exactly when the panel's height / width
-  is `s`."
-  [points ^double s]
+  "`[[u0 u1] [v0 v1]]`: the bounding box of the normalized `points`; unless `plain?`, its shorter side grown
+  (centred) so that its height / width is `s` - the box's pixels per unit are equal on both axes exactly when the
+  panel's height / width is `s`."
+  [points ^double s plain?]
   (let [us (map #(double (first %)) points) vs (map #(double (second %)) points)
         u0 (double (reduce min us)) u1 (double (reduce max us))
         v0 (double (reduce min vs)) v1 (double (reduce max vs))
         w (- u1 u0) h (- v1 v0)]
-    (if (< h (* s w))
+    (cond
+      plain? [[u0 u1] [v0 v1]]
+      (< h (* s w))
       (let [grow (* 0.5 (- (* s w) h))] [[u0 u1] [(- v0 grow) (+ v1 grow)]])
-      (let [grow (* 0.5 (- (/ h s) w))] [[(- u0 grow) (+ u1 grow)] [v0 v1]]))))
+      :else (let [grow (* 0.5 (- (/ h s) w))] [[(- u0 grow) (+ u1 grow)] [v0 v1]]))))
 
 (defn bin-points
   "Points of every panel (`panel-points` - `{panel [[x y] ..]}`, finite numbers) binned on one grid of `:cell` type
   over the normalized space of all points (options `:cell`, `:bins`, `:binwidth`, `:shape`; `env` for
   [[shape-factor]]). Returns `{:panels {panel [{:corners [[x y] ..] :count n} ..]} :area a :extent {:x [lo hi] :y
-  [lo hi]}}` - occupied cells only, corners in data units, `a` - a cell's area in data units, `:extent` - the
-  cells' bounding box widened to the shape factor's proportions (the plot extents keeping cells regular, see
-  [[proportional-box]]); `{:panels {} :area 0.0}` without points. Panels share the grid: equal cells in every panel."
+  [lo hi]} :cells-extent {..}}` - occupied cells only, corners in data units, `a` - a cell's area in data units,
+  `:cells-extent` - the cells' bounding box, `:extent` - that box widened to the shape factor's proportions (the plot
+  extents keeping cells regular on linear scales, see [[proportional-box]]); `{:panels {} :area 0.0}` without
+  points. Panels share the grid: equal cells in every panel."
   [panel-points options env]
   (let [all (apply concat (vals panel-points))]
     (if (empty? all)
@@ -171,12 +180,14 @@
                                     (fn [pts]
                                       (mapv (fn [{:keys [mid count]}] {:corners (grid/corners g mid) :count count})
                                             (:bins-maps (stats/histogram2d (map to-unit pts) cell size)))))
-            [[u0 u1] [v0 v1]] (proportional-box (mapcat :corners (mapcat val unit-cells)) s)
-            [lo-x lo-y] (from-unit [u0 v0])
-            [hi-x hi-y] (from-unit [u1 v1])]
+            unit-corners (mapcat :corners (mapcat val unit-cells))
+            data-extent (fn [[[u0 u1] [v0 v1]]]
+                          (let [[lo-x lo-y] (from-unit [u0 v0]) [hi-x hi-y] (from-unit [u1 v1])]
+                            {:x [lo-x hi-x] :y [lo-y hi-y]}))]
         {:panels (update-vals unit-cells (fn [cs] (mapv #(update % :corners (partial mapv from-unit)) cs)))
          :area (/ (* (double (grid/area g)) xs ys) s)
-         :extent {:x [lo-x hi-x] :y [lo-y hi-y]}}))))
+         :cells-extent (data-extent (proportional-box unit-corners s true))
+         :extent (data-extent (proportional-box unit-corners s false))}))))
 
 ;; drawing
 
