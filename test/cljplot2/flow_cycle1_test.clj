@@ -139,7 +139,10 @@
           arrow-px (painted (segment-image {:arrow {:size 10}}) red)
           near-end (fn [pts] (let [mx (long (apply max (map first pts)))] (filter #(> (long (first %)) (- mx 12)) pts)))]
       (is (<= (span (near-end plain-px) second) 3))
-      (is (>= (span (near-end arrow-px) second) 8) "the head is about 10 px wide")))
+      (is (>= (span (near-end arrow-px) second) 4) "the head is about 7 px wide (angle 20); fully painted rows ~ 4")
+      (is (>= (span (near-end (painted (segment-image {:arrow {:size 10 :angle 45}}) red)) second) 14) "angle 45: about 20 px wide")
+      (is (< (span (near-end (painted (segment-image {:arrow {:size 10 :angle 10}}) red)) second)
+             (span (near-end arrow-px) second)) "narrower with a smaller angle")))
   (testing "3.1 :end-gap moves the tip back; :start too; :open heads"
     (let [max-x (fn [opts] (apply max (map first (painted (segment-image opts) red))))
           min-x (fn [opts] (apply min (map first (painted (segment-image opts) red))))]
@@ -147,7 +150,7 @@
       (is (> (min-x {:start-gap 30}) (+ (min-x {}) 25)))
       (let [pts (painted (segment-image {:arrow {:start true :end false}}) red)
             mn (long (apply min (map first pts)))]
-        (is (>= (span (filter #(< (long (first %)) (+ mn 12)) pts) second) 6)))
+        (is (>= (span (filter #(< (long (first %)) (+ mn 12)) pts) second) 4)))
       (let [pts (painted (segment-image {:arrow {:shape :open :size 10}}) red)
             mx (long (apply max (map first pts)))]
         (is (>= (span (filter #(> (long (first %)) (- mx 12)) pts) second) 6)))))
@@ -155,14 +158,14 @@
     (is (empty? (painted (segment-image {:start-gap 120 :end-gap 120}) red))))
   (testing "3.1 schema"
     (are [o] (= :arrow (nth (:in (error #(stats {:data [{:x 0 :y 0}] :mapping {:x :x :y :y} :charts [(chart/segment o)]}))) 3))
-      {:arrow {:size 0}} {:arrow {:shape :round}} {:arrow true}))
+      {:arrow {:size 0}} {:arrow {:shape :round}} {:arrow true} {:arrow {:angle 0}} {:arrow {:angle 90}}))
   (testing "3.1 line arrows; a filled or stacked line rejects them"
     (let [line (fn [opts] (image {:data [{:x 0 :y 0} {:x 1 :y 0}] :mapping {:x :x :y :y}
                                    :scales {:x {:domain [0 1] :expand [0 0]} :y {:domain [-1 1]}}
                                    :charts [(chart/line (merge {:color red :width 2} opts))]}
                                   {:width 200 :height 100}))]
       (let [pts (painted (line {:arrow {:size 10}}) red) mx (long (apply max (map first pts)))]
-        (is (>= (span (filter #(> (long (first %)) (- mx 12)) pts) second) 8)))
+        (is (>= (span (filter #(> (long (first %)) (- mx 12)) pts) second) 4)))
       (is (= :arrow (:key (error #(line {:arrow {} :fill :color})))))
       (is (= :arrow (:key (error #(image {:data [{:x 0 :y 0 :g "a"} {:x 1 :y 1 :g "a"}] :mapping {:x :x :y :y :color :g}
                                           :charts [(chart/line {:position :stack :arrow {}})]} {:width 200 :height 100}))))))))

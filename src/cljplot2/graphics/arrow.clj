@@ -2,8 +2,10 @@
   "Arrowheads and end gaps of stroked runs (vectors of `[x y]` pixel points), for the `:arrow`, `:start-gap` and
   `:end-gap` options of lines and segments.
 
-  `:arrow` - `{:end true :start false :size 8 :shape :closed}`: heads at the run's end and / or start, `:size` pixels
-  long (half as wide on each side), `:closed` - a filled triangle (the line stops at its base), `:open` - two strokes.
+  `:arrow` - `{:end true :start false :size 8 :angle 20 :shape :closed}`: heads at the run's end and / or start,
+  `:size` pixels long, `:angle` - degrees between each side and the line (ggplot2 `arrow(angle)`; 20 - a narrow head
+  about 0.73 x `:size` wide, 45 - as wide as twice its length), `:closed` - a filled triangle (the line stops at its
+  base), `:open` - two strokes.
   A head points along the run's last stretch of at least its length (the tangent of a curve). Gaps (pixels) shorten
   the run along its length first - an arrow pointing at a node of that radius; a run no longer than its gaps isn't
   drawn."
@@ -21,9 +23,10 @@
    (schema/optional :end schema/bool)
    (schema/optional :start schema/bool)
    (schema/optional :size schema/pos)
+   (schema/optional :angle [:and number? [:> 0] [:< 90]])
    (schema/optional :shape [:enum :closed :open])])
 
-(def ^:private defaults {:end true :start false :size 8.0 :shape :closed})
+(def ^:private defaults {:end true :start false :size 8.0 :angle 20.0 :shape :closed})
 
 (defn- point-at
   "Point at `d` pixels from the start of the run `[p0 p1 ..]` along its length; `[point index]` - `index` of the
@@ -55,8 +58,9 @@
           rseq vec (trim-start (double end-gap)) rseq vec))
 
 (defn- head-points
-  "`[tip left right]` of a head of `size` at the end of `run` (pointing from the point `size` pixels back)."
-  [run ^double size]
+  "`[tip left right]` of a head of `size` and half-angle `angle` (degrees) at the end of `run` (pointing from the point
+  `size` pixels back)."
+  [run ^double size ^double angle]
   (let [tip (peek run)
         back (or (first (point-at (vec (rseq run)) size)) (first run))
         [tx ty] tip [bx by] back
@@ -64,7 +68,7 @@
         l (m/hypot dx dy)]
     (when (pos? l)
       (let [ux (/ dx l) uy (/ dy l)
-            half (* 0.5 size)
+            half (* size (m/tan (m/radians angle)))
             base-x (- (double tx) (* ux size)) base-y (- (double ty) (* uy size))]
         [tip [(- base-x (* uy half)) (+ base-y (* ux half))] [(+ base-x (* uy half)) (- base-y (* ux half))]]))))
 
@@ -81,10 +85,11 @@
   shortened under closed heads, then the heads drawn."
   [canvas run style [arrow start-gap end-gap]]
   (when-let [run (trimmed run (or start-gap 0.0) (or end-gap 0.0))]
-    (let [{:keys [end start size shape]} (when arrow (merge defaults arrow))
+    (let [{:keys [end start size angle shape]} (when arrow (merge defaults arrow))
           size (double (or size 0.0))
-          head-end (when end (head-points run size))
-          head-start (when start (head-points (vec (rseq run)) size))
+          angle (double (or angle 20.0))
+          head-end (when end (head-points run size angle))
+          head-start (when start (head-points (vec (rseq run)) size angle))
           closed? (= :closed shape)
           stroked (if closed?
                     (trimmed run (if head-start (* 0.9 size) 0.0) (if head-end (* 0.9 size) 0.0))
