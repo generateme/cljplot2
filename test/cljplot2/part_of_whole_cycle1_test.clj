@@ -182,8 +182,8 @@
           blue [0 0 255]]
       (is (= blue (cell-pixel r 0.3 0.25)) "B, depth 1, bottom half")
       (is (= [255 0 0] (cell-pixel r 0.8 0.25)) "A")
-      (is (close? (color-rgb (partition/depth-shade blue 2)) (cell-pixel r 0.2 0.75)) "b1, depth 2 - lighter, above")
-      (is (close? (color-rgb (partition/depth-shade [255 0 0] 2)) (cell-pixel r 0.95 0.75)))))
+      (is (close? (color-rgb (hierarchy/depth-shade blue 2)) (cell-pixel r 0.2 0.75)) "b1, depth 2 - lighter, above")
+      (is (close? (color-rgb (hierarchy/depth-shade [255 0 0] 2)) (cell-pixel r 0.95 0.75)))))
   (testing ":root true - the root cell in the NA color"
     (is (= [128 128 128] (cell-pixel (render (pt {:charts [(chart/partition {:root true :leaf-labels false :group-labels false})]})) 0.5 0.1))))
   (testing "2.5.2 mapped :color: leaves mapped, groups NA, legend"
@@ -202,7 +202,7 @@
     (let [r (render (pt {:coord {:kind :polar} :charts no-labels}))]
       (is (= [0 0 255] (polar-pixel r 90 0.25)) "B over 0..216 degrees, inner ring")
       (is (= [255 0 0] (polar-pixel r 300 0.25)) "A over 216..360")
-      (is (close? (color-rgb (partition/depth-shade [0 0 255] 2)) (polar-pixel r 60 0.75)) "b1, outer ring")
+      (is (close? (color-rgb (hierarchy/depth-shade [0 0 255] 2)) (polar-pixel r 60 0.75)) "b1, outer ring")
       (is (= [0 0 255] (polar-pixel r 1 0.4)) "just right of 12 o'clock")
       (is (= [255 0 0] (polar-pixel r 359 0.4)) "just left of it")))
   (testing ":inner leaves a hole; flipped polar and tiny canvases render"
@@ -293,14 +293,14 @@
           blue [0 0 255]
           muted [90 110 130]
           l1 (double (l muted))]
-      (is (= blue (partition/depth-shade blue 1)) "the top level: the color itself")
-      (is (< (m/abs (- (double (l (partition/depth-shade muted 2))) (+ l1 (* 0.25 (- 90.0 l1))))) 0.5))
-      (is (< (m/abs (- (double (l (partition/depth-shade muted 3))) (+ l1 (* 0.4375 (- 90.0 l1))))) 0.5))
-      (is (< (double (l blue)) (double (l (partition/depth-shade blue 2)))) "saturated: lighter (RGB clamped)")
-      (is (< (double (l (partition/depth-shade [174 199 232] 4))) 90.0) "a light palette color stays below 90")
-      (is (< (double (l (partition/depth-shade blue 9))) (double (l (partition/depth-shade blue 10))) 90.5) "monotone, bounded")
-      (is (= [250 250 250] (partition/depth-shade [250 250 250] 3)) "lighter than the ceiling: kept")
-      (is (< (m/abs (- (double (l (partition/depth-shade [0 0 0] 2))) 22.5)) 0.5) "black")))
+      (is (= blue (hierarchy/depth-shade blue 1)) "the top level: the color itself")
+      (is (< (m/abs (- (double (l (hierarchy/depth-shade muted 2))) (+ l1 (* 0.25 (- 90.0 l1))))) 0.5))
+      (is (< (m/abs (- (double (l (hierarchy/depth-shade muted 3))) (+ l1 (* 0.4375 (- 90.0 l1))))) 0.5))
+      (is (< (double (l blue)) (double (l (hierarchy/depth-shade blue 2)))) "saturated: lighter (RGB clamped)")
+      (is (< (double (l (hierarchy/depth-shade [174 199 232] 4))) 90.0) "a light palette color stays below 90")
+      (is (< (double (l (hierarchy/depth-shade blue 9))) (double (l (hierarchy/depth-shade blue 10))) 90.5) "monotone, bounded")
+      (is (= [250 250 250] (hierarchy/depth-shade [250 250 250] 3)) "lighter than the ceiling: kept")
+      (is (< (m/abs (- (double (l (hierarchy/depth-shade [0 0 0] 2))) 22.5)) 0.5) "black")))
   (testing "U4 a reversed y domain puts the root at the top"
     (let [r (render (pt {:charts no-labels :scales {:y {:domain [2 0]}}}))]
       (is (= [0 0 255] (cell-pixel r 0.3 0.75)) "B (depth 1) in the top half")

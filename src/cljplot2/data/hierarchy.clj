@@ -8,10 +8,12 @@
 
   Node: a group `{:name :value :children}` or a leaf `{:name :value :color}`; `:value` is the sum of the leaves below.
   The root is always a group with `:name nil`; its children carry `:top-index` (see [[panel-trees]])."
-  (:require [fastmath.core :as m]
+  (:require [clojure2d.color :as c]
+            [fastmath.core :as m]
             [cljplot2.scale.aesthetic :as aesthetic]
             [cljplot2.data.rows :as data]
-            [cljplot2.schema :as schema]))
+            [cljplot2.schema :as schema])
+  (:import [fastmath.vector Vec4]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -116,6 +118,43 @@
                                                        nil false (:palette theme))
                           (get-in theme [:palette :na])))
 
+(def ^:private ^:const lightness-ceiling
+  "CIELAB lightness L* that deeper levels approach (white is 100)."
+  90.0)
+
+(def ^:private ^:const lightening-per-level
+  "Fraction of the way to [[lightness-ceiling]] each level below the top one goes."
+  0.25)
+
+(defn depth-shade
+  "`color` of a top-level node shaded for `depth` (1 - the top level, `color` itself): L* moves towards
+  [[lightness-ceiling]] by [[lightening-per-level]] per level (colors lighter than the ceiling stay)."
+  [color depth]
+  (if (<= (long depth) 1)
+    color
+    (let [^Vec4 lab (c/to-LAB color)
+          l (.x lab)
+          f (- 1.0 (m/pow (- 1.0 lightening-per-level) (dec (long depth))))]
+      (if (< l lightness-ceiling)
+        (c/clamp (c/from-LAB (Vec4. (+ l (* (- lightness-ceiling l) f)) (.y lab) (.z lab) (.w lab))))
+        color))))
+
+(defn fill-fn
+  "Fill of a drawn node `{:depth :top-index :leaf? :color}` of a panel `{:top-count :colored?}` (`:colored?` - a
+  mapped `:color`): without a mapped color the top-level node's palette color (see [[top-color-fn]]) shaded by
+  depth ([[depth-shade]]), the root `[:palette :na]`; with one leaves take their mapped color, groups and the root
+  `[:palette :na]`."
+  [{:keys [top-count colored?]} scales theme]
+  (let [na (get-in theme [:palette :na])]
+    (if colored?
+      (let [color-fn (aesthetic/attribute-fn :color (:color scales) na)]
+        (fn [{:keys [leaf? color]}] (if leaf? (color-fn color) na)))
+      (let [top-color (top-color-fn theme top-count)]
+        (fn [{:keys [depth top-index]}]
+          (if (zero? (long depth))
+            na
+            (depth-shade (top-color top-index) depth)))))))
+
 (defn ordered-children
   "Children of group `node` in `order`: `:value` - descending values (ties in data order), `:data` - first
   appearance (an unnamed leaf last)."
@@ -124,6 +163,13 @@
     (if (= order :data)
       cs
       (vec (sort-by (comp - double :value) cs)))))
+
+(defn ordered-tree
+  "`tree` with every group's children in `order` (see [[ordered-children]])."
+  [tree order]
+  (if (:children tree)
+    (assoc tree :children (mapv #(ordered-tree % order) (ordered-children tree order)))
+    tree))
 
 (defn node-info
   "What label functions get for `node` at `depth` (root 0) with level values `path` from the root, in a tree of

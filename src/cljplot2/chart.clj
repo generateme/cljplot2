@@ -57,6 +57,7 @@
             [cljplot2.chart.function :as function]
             [cljplot2.chart.histogram :as histogram]
             [cljplot2.chart.line :as line]
+            [cljplot2.chart.pack :as pack]
             [cljplot2.chart.parallel :as parallel]
             [cljplot2.chart.partition :as partition]
             [cljplot2.chart.rect :as rect]
@@ -86,6 +87,7 @@
    :line (:style line/schemas)
    :treemap (:style treemap/schemas)
    :partition (:style partition/schemas)
+   :pack (:style pack/schemas)
    :ecdf (:style ecdf/schemas)
    :box (:style box/schemas)
    :violin (:style violin/schemas)
@@ -178,6 +180,11 @@
   [[cljplot2.chart.partition]]."
   ([] (partition {}))
   ([options] (polar (chart-value :partition partition/compute partition/draw partition/legend partition/schemas options))))
+
+(defn pack
+  "Circle packing of `:value` over the `:hierarchy` levels, see [[cljplot2.chart.pack]]."
+  ([] (pack {}))
+  ([options] (chart-value :pack pack/compute pack/draw pack/legend pack/schemas options)))
 
 (defn ecdf
   "Empirical CDF of `:x`, see [[cljplot2.chart.ecdf]]."

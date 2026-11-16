@@ -45,7 +45,7 @@
 
   `:chart` - per chart kind defaults: `:scatter`, `:histogram`, `:density`, `:line`, `:ecdf` (old cljplot blue
   `[69 117 180]` - clojure2d `(last (palette :rdylbu-9))` - with cljplot's alphas: scatter 180, stripplot 100, rug 100),
-  `:treemap` (`:padding`, `:border-color`, `:border-width`), `:partition` (`:border-color`, `:border-width`), strip charts `:box`, `:violin`, `:stripplot`, `:beeswarm`, `:rug`,
+  `:treemap` (`:padding`, `:border-color`, `:border-width`), `:partition` (`:border-color`, `:border-width`), `:pack` (`:padding`, `:border-color`, `:border-width`), strip charts `:box`, `:violin`, `:stripplot`, `:beeswarm`, `:rug`,
   `:extent`, `:bar`, annotations `:rule`, `:rect`, `:function`, bands `:ribbon`, `:smooth` (band `:alpha` 0.3), `:segment`, `:candlestick` (green up, red down), `:parallel` (radar `:fill` `:alpha` 0.25); each checked against its chart's style schema; line and
   function `:bridge` - the style of bridges over gaps (`:alpha` multiplies the line alpha, optional `:width`, `:dash`);
   line `:alpha` - opacity of `:fill :color` and stacked areas.
@@ -108,6 +108,7 @@
            :treemap {:padding 3 :border-color :white :border-width 1
                      :pattern :solid :pattern-color :darker}
            :partition {:border-color :white :border-width 1 :pattern :solid :pattern-color :darker}
+           :pack {:padding 1.5 :border-color :white :border-width 1 :pattern :solid :pattern-color :darker}
            :box {:color [69 117 180] :stroke-color :darker :stroke-width 1 :shape \O :size 5
                  :pattern :solid :pattern-color :darker}
            :violin {:color [69 117 180] :stroke-color :darker :stroke-width 1 :inner-color :none
@@ -143,6 +144,8 @@
           :treemap-leaf {:font "Liberation Mono" :size 9 :font-style :plain :color :black :padding 2 :align centered}
           :partition-group {:font "Liberation Mono" :size 10 :font-style :bold :color :black :padding 2 :align centered}
           :partition-leaf {:font "Liberation Mono" :size 9 :font-style :plain :color :black :padding 2 :align centered}
+          :pack-group {:font "Liberation Mono" :size 10 :font-style :bold :color :black :padding 2 :align centered}
+          :pack-leaf {:font "Liberation Mono" :size 9 :font-style :plain :color :black :padding 2 :align centered}
           :annotation {:font "Liberation Mono" :size 10 :font-style :plain :color :black :padding 2 :align centered}}})
 
 (defn deep-merge

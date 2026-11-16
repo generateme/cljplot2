@@ -24,18 +24,16 @@
   text, `nil` / `\"\"` - none; unnamed nodes get no label), text roles `:partition-group` / `:partition-leaf`
   (the text in black or white by the cell's fill), centred in the cell and drawn only when they fit: horizontal in cartesian plots (within the cell), along the
   radius in polar ones (the text's width within the ring, its height within the arc at the middle radius)."
-  (:require [clojure2d.color :as c]
-            [fastmath.core :as m]
+  (:require [fastmath.core :as m]
             [cljplot2.content.label :as label]
             [cljplot2.data.hierarchy :as hierarchy]
             [cljplot2.data.rows :as data]
             [cljplot2.graphics.draw :as draw]
             [cljplot2.graphics.measure :as measure]
-            [cljplot2.scale.aesthetic :as aesthetic]
             [cljplot2.scale.coord :as coord]
             [cljplot2.scale.position :as scale]
             [cljplot2.schema :as schema])
-  (:import [fastmath.vector Vec2 Vec4]))
+  (:import [fastmath.vector Vec2]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -58,14 +56,6 @@
    :mapping hierarchy/mapping-schema})
 
 (def ^:private defaults {:order :value :root false :group-labels true :leaf-labels true})
-
-(def ^:private ^:const lightness-ceiling
-  "CIELAB lightness L* that deeper levels approach (white is 100)."
-  90.0)
-
-(def ^:private ^:const lightening-per-level
-  "Fraction of the way to [[lightness-ceiling]] each level below the top one goes."
-  0.25)
 
 (defn- style
   [options theme]
@@ -118,32 +108,6 @@
 
 ;; drawing
 
-(defn depth-shade
-  "`color` of a top-level node shaded for `depth` (1 - the top level, `color` itself): L* moves towards
-  [[lightness-ceiling]] by [[lightening-per-level]] per level (colors lighter than the ceiling stay)."
-  [color depth]
-  (if (<= (long depth) 1)
-    color
-    (let [^Vec4 lab (c/to-LAB color)
-          l (.x lab)
-          f (- 1.0 (m/pow (- 1.0 lightening-per-level) (dec (long depth))))]
-      (if (< l lightness-ceiling)
-        (c/clamp (c/from-LAB (Vec4. (+ l (* (- lightness-ceiling l) f)) (.y lab) (.z lab) (.w lab))))
-        color))))
-
-(defn- fill-fn
-  "Fill of a cell: see the namespace doc."
-  [{:keys [top-count colored?]} scales theme]
-  (let [na (get-in theme [:palette :na])]
-    (if colored?
-      (let [color-fn (aesthetic/attribute-fn :color (:color scales) na)]
-        (fn [{:keys [leaf? color]}] (if leaf? (color-fn color) na)))
-      (let [top-color (hierarchy/top-color-fn theme top-count)]
-        (fn [{:keys [depth top-index]}]
-          (if (zero? (long depth))
-            na
-            (depth-shade (top-color top-index) depth)))))))
-
 (defn- line-room
   "Room for the label's height in the cell between range points `[h0 v0]` and `[h1 v1]`: the cell's height, the arc
   at the middle radius in polar plots."
@@ -171,7 +135,7 @@
   [_chart {:keys [cells style] :as panel} canvas _box scales env]
   (let [geometry (scale/coord-geometry scales)
         range-point (scale/range-projection scales)
-        fill-of (fill-fn panel scales (:theme env))
+        fill-of (hierarchy/fill-fn panel scales (:theme env))
         pattern-fill (draw/pattern-fill-cache)
         corners (mapv (fn [{:keys [x0 x1 y0 y1]}] [(range-point x0 y0) (range-point x1 y1)]) cells)
         stroke (:border-color style)
