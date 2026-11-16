@@ -27,10 +27,13 @@
     plot's `:stats`. Aesthetic extents (`:color`,
     `:shape`, `:size`, `:dash`) are [[cljplot2.data.rows/value-extent]]s; `:na` lists aesthetics with NA (`nil`) values
   * `(draw chart computed canvas panel-box scales env)` - draws one panel's `computed` data; called by the panel
-    with isolated graphics clipped to the panel box. Pixel positions come only from
-    `cljplot2.scale.position/projection` (data `x`, `y` -> pixel point; `:x` is vertical in a plot with `:flip true`),
-    never from assuming `:x` is horizontal; it gives `##NaN` for values the scale can't place, and such values are
-    skipped. Charts compute in their own frame (`:x`, `:y`); flip is a drawing concern only.
+    with isolated graphics clipped to the panel box. Pixel positions come from `cljplot2.scale.position/projection`
+    (data `x`, `y` -> pixel point; `:x` is vertical in a plot with `:flip true`), never from assuming `:x` is
+    horizontal; it gives `##NaN` for values the scale can't place, and such values are skipped. Shapes that must
+    follow a polar plot's circle are built in range space - `cljplot2.scale.position/range-projection` (or the
+    scales' forward functions, `cljplot2.data.strip/placement` `:range-point`) - and turned into pixels by
+    `cljplot2.scale.coord` (`to-pixel`, `line-path`, `rect-path`, `circle-path`; the identity in cartesian plots).
+    Charts compute in their own frame (`:x`, `:y`); flip and polar coordinates are drawing concerns only.
   * `(legend chart attributes canvas box env)` - optional; draws the chart's key glyph in a legend key `box`,
     `attributes` - the entry's mapped style attributes (`{:color c :shape s :size z :dash d}`, NA ones absent except color);
     `env` also has the chart's computed data (`:chart-stats`, see compute).

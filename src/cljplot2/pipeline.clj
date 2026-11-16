@@ -23,8 +23,8 @@
     [[cljplot2.scale.position/projection]])
   * `:coord` - `{:kind :polar ...}`: polar coordinates - the horizontal scale maps to angles, the vertical one to radii
     (`:flip` swaps them; see [[cljplot2.scale.coord]]); polar guides inside the panel, no outer axes; only charts
-    declaring `:polar` in their `:coords` (bar, segment, scatter, line, text, rule, rect); not with `:aspect :iso` or
-    `:margins`
+    declaring `:polar` in their `:coords` (bar, segment, scatter, line, text, rule, rect); not with `:aspect :iso`,
+    `:margins`, `:custom-grid` or `:arrange` (sub-plots may be polar)
   * `:custom-grid` - a hand-written grid (see [[cljplot2.layout.grid]]) used instead of the generated one; only
     `:labels {:title t}` may accompany it (a title row above it). Items with `{:kind :plot :plot p}` content hold
     whole plots (see [[cljplot2.content.subplot]])
@@ -444,7 +444,8 @@
 (defn- polar-scales
   "Finalized position scales of a polar plot for its reference `panel` box (see [[cljplot2.scale.coord]]): the
   horizontal scale (`horizontal` key) over the angular range (radians, ticks hinted from the circumference; a
-  continuous one neither padded nor niced unless the plot's scale sets `:expand` / `:nice`), the
+  continuous one neither padded nor niced unless the plot's scale sets `:expand` / `:nice`; pixel room `:padding-px`
+  in radians at the outer radius; ticks hinted at the final radius), the
   vertical one over `[inner radius, radius]` - the radius half the panel's smaller side less the angular labels'
   room; both carry `:direction` and the panel's polar geometry `:coord`."
   [plot specs horizontal {:keys [w h]}]
@@ -456,12 +457,21 @@
         half (* 0.5 (m/min w h))
         ;; a continuous angle spans the full circle by default: no padding, no nice (pies), unless the plot's scale asks
         user (get-in plot [:scales horizontal])
-        theta (when-let [spec (get specs horizontal)]
-                (scale/finalize (cond-> spec
-                                  (not (contains? user :expand)) (dissoc :padding)
-                                  (not (contains? user :nice)) (assoc :nice false))
-                                theta-range (scale/tick-hint (* (m/abs (- (double t1) (double t0))) half) (spacing horizontal))))
-        radius (m/max 1.0 (- half (double (theta-label-room plot horizontal theta))))
+        theta-span (m/abs (- (double t1) (double t0)))
+        ;; pixel room (labels past the data) becomes radians at radius `r`
+        theta-spec (when-let [spec (get specs horizontal)]
+                     (cond-> spec
+                       (not (contains? user :expand)) (dissoc :padding)
+                       (not (contains? user :nice)) (assoc :nice false)))
+        theta-at (fn [^double r]
+                   (when theta-spec
+                     (scale/finalize (cond-> theta-spec
+                                       (:padding-px theta-spec) (update :padding-px (fn [p] (mapv #(/ (double %) r) p))))
+                                     theta-range (scale/tick-hint (* theta-span r) (spacing horizontal)))))
+        ;; the label room from a first pass at half the panel; ticks and room again at the radius it leaves
+        first-pass (theta-at half)
+        radius (m/max 1.0 (- half (double (theta-label-room plot horizontal first-pass))))
+        theta (theta-at radius)
         geometry (coord/geometry coord-spec w h radius)
         inner (double (:inner-radius geometry))
         r (when-let [spec (get specs vertical)]
@@ -731,6 +741,8 @@
      (when (coord/polar? (:coord plot))
        (concat
         (when (= :iso aspect) [(error [:coord] (:coord plot) "polar coordinates can't be combined with :aspect :iso")])
+        (when (or custom-grid arrange)
+          [(error [:coord] (:coord plot) "polar coordinates need the generated grid, not :custom-grid or :arrange (put them on the plots inside)")])
         (when (seq (:margins plot)) [(error [:coord] (:coord plot) "polar coordinates can't be combined with :margins")])
         (keep-indexed (fn [i c] (when-not (contains? (get c :coords #{:cartesian}) :polar)
                                   (error [:charts i] (:kind c) (str "chart " (:kind c) " doesn't support polar coordinates"))))

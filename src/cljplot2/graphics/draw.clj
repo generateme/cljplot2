@@ -144,8 +144,8 @@
 
 (defn bar!
   "Fill the rectangle with pixel corners `a` and `b` (`Vec2`, any order) with `fill` and the pattern of
-  `pattern-fill` (see [[pattern-fill]], `nil` - none), outline it with `stroke` (a color or `:none`) when
-  `stroke-width` is positive; nothing for a bar that isn't [[visible-bar?]]."
+  `pattern-fill` (see [[pattern-fill]], `nil` - none), outline it with `stroke` (a color or `:none`, `stroke-width`
+  pixels, mitred) when `stroke-width` is positive; nothing for a bar that isn't [[visible-bar?]]."
   ([canvas a b fill stroke stroke-width] (bar! canvas a b fill stroke stroke-width nil))
   ([canvas ^Vec2 a ^Vec2 b fill stroke stroke-width pattern-fill]
    (let [stroke-width (double stroke-width)
@@ -156,6 +156,7 @@
        (c2d/rect canvas x y w h)
        (fill-with-pattern! canvas pattern-fill #(c2d/rect canvas x y w h))
        (when (and (pos? stroke-width) (not (theme/none? stroke)))
+         (c2d/set-stroke-custom canvas {:size stroke-width :join :miter})
          (c2d/set-color canvas stroke)
          (c2d/rect canvas x y w h true))))))
 
@@ -174,6 +175,7 @@
         (c2d/path canvas polygon true false)
         (fill-with-pattern! canvas pattern-fill #(c2d/path canvas polygon true false))
         (when (and (pos? stroke-width) (not (theme/none? stroke)))
+          (c2d/set-stroke-custom canvas {:size stroke-width :join :miter})
           (c2d/set-color canvas stroke)
           (c2d/path canvas polygon true true))))))
 

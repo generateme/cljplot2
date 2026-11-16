@@ -257,6 +257,23 @@
                                                         (+ (double a) (* f (- (double b) (double a))))))))))))]
     (if reversed? (vec (rseq lerped)) lerped)))
 
+(defn- curve-options
+  "Curve options of the chart `options` for a line whose x runs along pixel axis `:y` when `flipped?`."
+  [options flipped?]
+  (assoc (select-keys options [:interpolator :interpolator-params :curve :sample-step]) :along (if flipped? :y :x)))
+
+(defn- drawn-runs
+  "Drawn point runs (pixels) of the index runs `index-runs` of `px` / `py` under `opts`; a curve error names the
+  line's group `aesthetics`."
+  [index-runs px py opts aesthetics]
+  (try (mapv (fn [run] (mapv curve/drawn-point (curve/curve-points (mapv (fn [i] [(px i) (py i)]) run) opts))) index-runs)
+       (catch clojure.lang.ExceptionInfo e
+         (if (= :interpolator (:key (ex-data e)))
+           (let [message (:message (first (:errors (ex-data e))))]
+             (schema/fail! (str message (when (seq aesthetics) (str " Group: " (pr-str aesthetics) ".")))
+                           (cond-> (dissoc (ex-data e) :errors) (seq aesthetics) (assoc :group aesthetics))))
+           (throw e)))))
+
 (def ^:private ^:const color-chunk
   "Pixels of a sampled gradient line drawn in one color (colors change in steps this long, so the segments of a step
   join into one path)."
@@ -277,10 +294,12 @@
         colors (value-colors (lerp-values positions values middles) scale theme)]
     (vec (mapcat (fn [segments color] (repeat (count segments) color)) chunks colors))))
 
+(declare draw-gradient-bridges!)
+
 (defn- draw-gradient!
   "Stroke a gradient line: `index-runs` of the data points `px` / `py` with color values `colors`, drawn as
-  `point-runs`; curved runs take color values interpolated along `along` in [[color-chunk]] steps; bridges (`gaps`
-  `:bridge`) the color of their end values."
+  `point-runs`; curved runs take color values interpolated along `along` in [[color-chunk]] steps (see
+  [[chunk-colors]]); bridges (`gaps` `:bridge`) the color of their end values (see [[draw-gradient-bridges!]])."
   [canvas px py colors index-runs point-runs curved? along st gaps scales theme]
   (let [a (if (= :y along) 1 0)]
     (if curved?
@@ -291,47 +310,30 @@
                                                (:color scales) theme)
                                  st))
       (polyline/draw-segments! canvas px py (segment-colors colors (:color scales) theme) st))
-    (when (= :bridge gaps)
-      (doseq [[r0 r1] (map vector index-runs (rest index-runs))
-              :let [color (first (segment-colors [(colors (peek r0)) (colors (first r1))] (:color scales) theme))]]
-        (polyline/stroke-runs! canvas [[[(px (peek r0)) (py (peek r0))] [(px (first r1)) (py (first r1))]]]
-                               (polyline/bridge-style (assoc st :color color) (:bridge st)))))))
+    (draw-gradient-bridges! canvas px py colors index-runs st gaps scales theme)))
 
-(defn- curve-options
-  "Curve options of the chart `options` for a line whose x runs along pixel axis `:y` when `flipped?`."
-  [options flipped?]
-  (assoc (select-keys options [:interpolator :interpolator-params :curve :sample-step]) :along (if flipped? :y :x)))
+(defn- draw-arc-gradient!
+  "Stroke a gradient line of a polar plot with `:arcs`: each data segment between consecutive points of `index-runs`
+  (range points `range-points`) densified along the circle in `geometry` and stroked in the segment's colour (see
+  [[segment-colors]]); bridges as [[draw-gradient!]] (pixel points `px` / `py`)."
+  [canvas geometry range-points px py colors index-runs st gaps scales theme]
+  (let [segment-color (segment-colors colors (:color scales) theme)]
+    (doseq [run index-runs
+            [i j] (partition 2 1 run)
+            :let [points (mapv curve/drawn-point (coord/line-path geometry [(range-points i) (range-points j)] true))]]
+      (polyline/draw-segments! canvas (mapv first points) (mapv second points)
+                               (vec (repeat (dec (count points)) (segment-color i))) st)))
+  (draw-gradient-bridges! canvas px py colors index-runs st gaps scales theme))
 
-(defn- drawn-runs
-  "Drawn point runs (pixels) of the index runs `index-runs` of `px` / `py` under `opts`; a curve error names the
-  line's group `aesthetics`."
-  [index-runs px py opts aesthetics]
-  (try (mapv (fn [run] (mapv curve/drawn-point (curve/curve-points (mapv (fn [i] [(px i) (py i)]) run) opts))) index-runs)
-       (catch clojure.lang.ExceptionInfo e
-         (if (= :interpolator (:key (ex-data e)))
-           (let [message (:message (first (:errors (ex-data e))))]
-             (schema/fail! (str message (when (seq aesthetics) (str " Group: " (pr-str aesthetics) ".")))
-                           (cond-> (dissoc (ex-data e) :errors) (seq aesthetics) (assoc :group aesthetics))))
-           (throw e)))))
-
-(defn- draw-gradient!
-  "Stroke a gradient line: `index-runs` of the data points `px` / `py` with color values `colors`, drawn as
-  `point-runs`; curved runs take color values interpolated along `along`; bridges (`gaps` `:bridge`) the color of
-  their end values."
-  [canvas px py colors index-runs point-runs curved? along st gaps scales theme]
-  (let [a (if (= :y along) 1 0)]
-    (if curved?
-      (doseq [[run points] (map vector index-runs point-runs)
-              :when (> (count points) 1)]
-        (let [values (lerp-values (mapv #(if (zero? a) (px %) (py %)) run) (mapv colors run) (mapv #(nth % a) points))]
-          (polyline/draw-segments! canvas (mapv first points) (mapv second points)
-                                   (segment-colors values (:color scales) theme) st)))
-      (polyline/draw-segments! canvas px py (segment-colors colors (:color scales) theme) st))
-    (when (= :bridge gaps)
-      (doseq [[r0 r1] (map vector index-runs (rest index-runs))
-              :let [color (first (segment-colors [(colors (peek r0)) (colors (first r1))] (:color scales) theme))]]
-        (polyline/stroke-runs! canvas [[[(px (peek r0)) (py (peek r0))] [(px (first r1)) (py (first r1))]]]
-                               (polyline/bridge-style (assoc st :color color) (:bridge st)))))))
+(defn- draw-gradient-bridges!
+  "With `gaps` `:bridge`, the bridges between the runs `index-runs` of a gradient line (pixel points `px` / `py`):
+  straight, in the colour of their end values, in the bridge style."
+  [canvas px py colors index-runs st gaps scales theme]
+  (when (= :bridge gaps)
+    (doseq [[r0 r1] (map vector index-runs (rest index-runs))
+            :let [color (first (segment-colors [(colors (peek r0)) (colors (first r1))] (:color scales) theme))]]
+      (polyline/stroke-runs! canvas [[[(px (peek r0)) (py (peek r0))] [(px (first r1)) (py (first r1))]]]
+                             (polyline/bridge-style (assoc st :color color) (:bridge st))))))
 
 (defn stacked-band-points
   "Drawn `[upper lower]` pixel runs of every stacked line of a panel (`lines` from [[stacked-lines]], one shared x).
@@ -408,19 +410,23 @@
                 px (mapv #(.x ^Vec2 %) points)
                 py (mapv #(.y ^Vec2 %) points)
                 index-runs (polyline/finite-runs px py)
+                ;; polar with :arcs: the range points, joined along the circle
+                range-points (when (:arcs geometry)
+                               (let [rp (scale/range-projection scales)]
+                                 (mapv (fn [vx vy] (if (nil? vy) [##NaN ##NaN] (rp vx vy))) x y)))
                 point-runs (cond
                              curved? (drawn-runs index-runs px py opts aesthetics)
-                             (:arcs geometry) (let [rp (scale/range-projection scales)
-                                                    range-points (mapv (fn [vx vy] (if (nil? vy) [##NaN ##NaN] (rp vx vy))) x y)]
-                                                (mapv (fn [run] (mapv curve/drawn-point (coord/line-path geometry (mapv range-points run) true)))
-                                                      index-runs))
+                             range-points (mapv (fn [run] (mapv curve/drawn-point (coord/line-path geometry (mapv range-points run) true)))
+                                                index-runs)
                              :else (mapv (fn [run] (mapv (fn [i] (curve/drawn-point [(px i) (py i)])) run)) index-runs))
                 st (assoc st :fill (polyline/area-color st false))]
             (cond
               colors
               (do (polyline/fill-runs-to-baseline! canvas point-runs (:baseline area) (:horizontal? area) (:fill st)
                                                    (draw/pattern-fill st (:fill st)))
-                  (draw-gradient! canvas px py colors index-runs point-runs curved? (:along opts) st gaps scales (:theme env)))
+                  (if range-points
+                    (draw-arc-gradient! canvas geometry range-points px py colors index-runs st gaps scales (:theme env))
+                    (draw-gradient! canvas px py colors index-runs point-runs curved? (:along opts) st gaps scales (:theme env))))
               gradient
               (do (doseq [run point-runs :when (> (count run) 1)]
                     (polyline/fill-area! canvas run (base-run run area) nil gradient axis scales

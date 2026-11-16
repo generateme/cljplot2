@@ -32,8 +32,8 @@
             [:kind [:= :polar]]
             (schema/optional :start schema/finite)
             (schema/optional :direction [:enum :clockwise :counter-clockwise])
-            (schema/optional :span [:and schema/finite [:fn {:error/message "should be in (0 360]"} #(< 0.0 (double %) 360.000001)]])
-            (schema/optional :inner [:and schema/finite [:fn {:error/message "should be in [0 1)"} #(<= 0.0 (double %) 0.999999)]])
+            (schema/optional :span [:and schema/finite [:> 0] [:<= 360]])
+            (schema/optional :inner [:and schema/finite [:>= 0] [:< 1]])
             (schema/nilable :arcs schema/bool)]]])
 
 (defn polar?

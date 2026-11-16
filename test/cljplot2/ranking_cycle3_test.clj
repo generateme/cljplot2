@@ -203,3 +203,67 @@
   (testing "3.6 facets: a circle per panel"
     (is (instance? BufferedImage (plot/render-image {:data (for [f ["p" "q"] r sales] (assoc r :f f)) :mapping {:x :c :y :v :facet :f}
                                                      :coord polar :charts [(chart/bar {:mapping {:x :v :y :c}})]} size)))))
+
+(deftest review-fixes
+  (testing "U1 bar outlines take :stroke-width (cartesian and polar)"
+    (let [dark (fn [^BufferedImage img] (count (for [x (range (.getWidth img)) y (range (.getHeight img))
+                                                   :when (< (long (last (rgb img x y))) 30)] 1)))
+          img (fn [sw c] (plot/render-image {:data [{:c "a" :v 1}] :mapping {:x :v :y :c} :theme plain :coord c :legend false
+                                             :charts [(chart/bar {:color :white :stroke-color :black :stroke-width sw})]}
+                                            {:width 200 :height 150}))]
+      (is (> (dark (img 6 nil)) (* 2 (dark (img 1 nil)))))
+      (is (> (dark (img 6 polar)) (* 2 (dark (img 1 polar)))))))
+  (testing "U2 polar needs the generated grid"
+    (is (= :coord (:key (error #(build {:data sales :mapping {:x :c :y :v} :coord polar :charts [(chart/scatter)]
+                                        :custom-grid {:columns [{:id :panel :size 1}] :rows [{:id :panel :size 1}]
+                                                      :items [{:id :panel :column :panel :row :panel :content {:kind :panel}}]}})))))
+    (is (= :coord (:key (error #(build {:coord polar :arrange {:plots [{:data sales :mapping {:x :c :y :v} :charts [(chart/scatter)]}]}})))))
+    (is (nil? (error #(build {:arrange {:plots [{:data sales :mapping {:x :c :y :v} :coord polar :charts [(chart/scatter)]}]}})))
+        "sub-plots may be polar"))
+  (testing "U3 a colour gradient line with :arcs follows the circle"
+    (let [p {:data [{:c "a" :v 20 :k 0} {:c "c" :v 20 :k 1}] :mapping {:x :c :y :v :color :k} :coord {:kind :polar :arcs true}
+             :scales {:x {:domain ["a" "b" "c" "d"]} :y {:domain [0 40]} :color {:range [[255 0 0] [255 0 0]]}} :theme plain :legend false
+             :charts [(chart/line {:width 3})]}
+          b (build p) img (plot/render-image p size)
+          g (geometry b)
+          fx (cljplot2.scale.position/forward-fn (get-in b [:finalized-scales :x]))
+          r (double ((cljplot2.scale.position/forward-fn (get-in b [:finalized-scales :y])) 20))]
+      (is (red-around? img b (coord/to-pixel g (double (fx "b")) r)) "through the middle angle at the same radius")))
+  (testing "U5 value labels on rings get room along the angle"
+    (let [dom (fn [label?] (get-in (build {:data sales :mapping {:x :v :y :c} :coord polar
+                                           :charts [(chart/bar {:value-label label?})]})
+                                   [:finalized-scales :x :domain]))]
+      (is (> (double (second (dom true))) (double (second (dom false)))))))
+  (testing "U9 radius labels along the start spoke"
+    (let [p {:data sales :mapping {:x :c :y :v} :coord polar
+             :theme {:plot {:background :white} :panel {:fill :white :grid {:x :none :y :none :bands-fill :none}}
+                     :text {:tick-label {:color red}}}
+             :charts [(chart/scatter {:size 0.1})]}
+          b (build p) img (plot/render-image p size)
+          g (geometry b)
+          fy (cljplot2.scale.position/forward-fn (get-in b [:finalized-scales :y]))
+          tick (last (get-in b [:finalized-scales :y :ticks]))
+          ^Vec2 at (coord/to-pixel g 0.0 (double (fy tick)))]
+      (is (some (fn [[dx dy]] (let [[r g bl] (pixel-at img b (Vec2. (- (.x at) (double dx)) (+ (.y at) (double dy))))]
+                                (and (> (long r) 150) (< (long g) 120) (< (long bl) 120))))
+                (for [dx (range 2 40) dy (range -6 7)] [dx dy]))
+          "red label pixels left of the spoke, at the tick radius")))
+  (testing "U9 polar placement: centred and edge strips across the radius"
+    (let [b (build {:data sales :mapping {:x :c :y :v} :coord {:kind :polar :inner 0.2} :charts [(chart/scatter)]})
+          g (geometry b)
+          scales (assoc (:finalized-scales b) :y nil)
+          centre (cljplot2.data.strip/placement {:w 0 :h 0} scales {:width 1.0} :center)
+          edge (cljplot2.data.strip/placement {:w 0 :h 0} scales {} :edge)
+          [_ v] ((:range-point centre) "a" nil 0.0)
+          [_ e] ((:range-point edge) "a" nil 0.0)]
+      (is (< (Math/abs (- (double v) (* 0.5 (+ (double (:inner-radius g)) (double (:radius g)))))) 1e-9))
+      (is (< (Math/abs (- (double e) (+ (double (:inner-radius g)) 4.0))) 1e-9) "an 8 px edge strip from the inner radius")))
+  (testing "U9 a constant-radius segment with :arcs stays on its circle"
+    (let [p {:data [{:c "a" :v 20 :ce "c"}] :mapping {:x :c :y :v} :coord {:kind :polar :arcs true} :theme plain
+             :scales {:x {:domain ["a" "b" "c" "d"]} :y {:domain [0 40]}}
+             :charts [(chart/segment {:mapping {:xend :ce} :yend 20 :color red :width 3})]}
+          b (build p) img (plot/render-image p size)
+          g (geometry b)
+          fx (cljplot2.scale.position/forward-fn (get-in b [:finalized-scales :x]))
+          r (double ((cljplot2.scale.position/forward-fn (get-in b [:finalized-scales :y])) 20))]
+      (is (red-around? img b (coord/to-pixel g (double (fx "b")) r))))))
