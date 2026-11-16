@@ -15,6 +15,10 @@
     `:overlay` (the default otherwise - one group per level fills its band; groups sharing a level translucent, fill
     `:alpha`), `:stack` (on top of each other, in group order; negative lengths stack from 0
     the other way), `:normalize` (stacked, each level summing to 1; non-negative lengths)
+  * `:negative-order` - `:stack`: the groups below 0 in group order (`:forward`, default) or reversed (`:reverse` - the
+    last group nearest 0): with groups ordered from one end of a scale to the other (strongly disagree ... strongly
+    agree) and the disagreeing values negative, the bars diverge from the middle (Likert scales; split a neutral
+    group's value half below, half above 0 with a `:group`)
   * `:mirror` - a grouping dimension (an ordinal aesthetic or `:group`) with exactly two levels (see
     [[cljplot2.data.strip]]): the second level's bars point the other way (back-to-back bars, e.g. population
     pyramids); `:position` applies on each side (a dodged pair shares its slot), `:normalize` sums to 1 on one side
@@ -96,6 +100,7 @@
                       (schema/nilable :varwidth [:or schema/bool schema/accessor])
                       (schema/nilable :value-label [:or schema/bool schema/function])
                       (schema/optional :label-position [:enum :end :center :outer])
+                      (schema/optional :negative-order [:enum :forward :reverse])
                       (schema/nilable :label-leader schema/bool)
                       (schema/optional :value-format :string)
                       (schema/optional :padding data/position-padding)))
@@ -139,26 +144,27 @@
                            its))))))
 
 (defn- side-ends
-  "`[y0 y1]` of the items `its` (one side of one panel) placed by `position` over the panel's `levels` (a group
-  without a level counts 0), keyed by `[group-key level]`."
-  [position levels its]
+  "`[y0 y1]` of the items `its` (one side of one panel) placed by `position` (`stack-options` - see
+  [[cljplot2.data.position/stack-values]]) over the panel's `levels` (a group without a level counts 0), keyed by
+  `[group-key level]`."
+  [position stack-options levels its]
   (let [index (zipmap levels (range))
         by-key (group-by :key its)
         group-keys (vec (distinct (map :key its)))
         lengths (mapv (fn [k] (reduce (fn [ls it] (assoc ls (index (:level it)) (:length it)))
                                       (vec (repeat (count levels) 0.0)) (by-key k)))
                       group-keys)
-        ends (position/stack-values position lengths)]
+        ends (position/stack-values position lengths stack-options)]
     (into {} (for [[gi k] (map-indexed vector group-keys) it (by-key k)]
                [[k (:level it)] ((ends gi) (index (:level it)))]))))
 
 (defn- placed-bars
-  "Items of one panel with `:y0 :y1` (bar ends along `:x`): `position` on each side, the `:mirrored?` items' ends
-  negated (`[y0 y1]` -> `[-y1 -y0]`); item order kept."
-  [position its]
+  "Items of one panel with `:y0 :y1` (bar ends along `:x`): `position` on each side (`stack-options`, see
+  [[side-ends]]), the `:mirrored?` items' ends negated (`[y0 y1]` -> `[-y1 -y0]`); item order kept."
+  [position stack-options its]
   (let [levels (vec (distinct (map :level its)))
-        ends (merge (side-ends position levels (remove :mirrored? its))
-                    (update-vals (side-ends position levels (filter :mirrored? its))
+        ends (merge (side-ends position stack-options levels (remove :mirrored? its))
+                    (update-vals (side-ends position stack-options levels (filter :mirrored? its))
                                  (fn [[^double y0 ^double y1]] [(- y1) (- y0)])))]
     (mapv (fn [it] (let [[y0 y1] (ends [(:key it) (:level it)])] (assoc it :y0 y0 :y1 y1))) its)))
 
@@ -270,7 +276,7 @@
         {:keys [place items panels dropped shared-levels? mirror?] :as split} (strip/split chart-split split-options :center env)
         position (or position (:position split))
         items (item-lengths stat items)
-        items (update-vals items #(placed-bars position %))
+        items (update-vals items #(placed-bars position (select-keys options [:negative-order]) %))
         factor (weight-factors varwidth (mapcat val items))
         items (update-vals items (fn [its] (mapv #(-> % (assoc :width-factor (factor %)) (dissoc :rows)) its)))
         all-bars (mapcat val items)

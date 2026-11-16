@@ -6,7 +6,9 @@
 
   * `:overlay` - every group from 0 (marks drawn over each other)
   * `:dodge` - side by side: the shared interval split among the groups ([[dodge-interval]]), heights from 0
-  * `:stack` - groups on top of each other, in group order; negative heights stack downward from 0, separately
+  * `:stack` - groups on top of each other, in group order; negative heights stack downward from 0, separately - in
+    group order too, or (`:negative-order :reverse`) in reverse group order: the last group nearest 0, so groups ordered
+    from one end to the other diverge from the middle (Likert scales)
   * `:normalize` - stacked and normalized: per index the groups sum to 1 (an index summing to 0 stays at 0)
   * `:mirror` - exactly two groups, the second drawn downward (`[-h 0]`)
 
@@ -34,14 +36,19 @@
   (vec (reductions (fn [acc hs] (mapv + acc hs)) (vec (repeat n 0.0)) (butlast heights))))
 
 (defn- stacked
-  "Per group per index `[y0 y1]`: positive heights stacked upward from 0, negative ones downward, each in group
-  order (`n` - the shared length)."
-  [heights ^long n]
-  (let [above (cumulative (mapv #(mapv (fn [^double h] (m/max 0.0 h)) %) heights) n)
-        below (cumulative (mapv #(mapv (fn [^double h] (m/min 0.0 h)) %) heights) n)]
+  "Per group per index `[y0 y1]`: positive heights stacked upward from 0 in group order, negative ones downward - in
+  group order, or in reverse with `reverse-negative?` (`n` - the shared length)."
+  ([heights n] (stacked heights n false))
+  ([heights n reverse-negative?]
+   (let [n (long n)
+         above (cumulative (mapv #(mapv (fn [^double h] (m/max 0.0 h)) %) heights) n)
+         negative (mapv #(mapv (fn [^double h] (m/min 0.0 h)) %) heights)
+         below (if reverse-negative?
+                 (vec (rseq (cumulative (vec (rseq negative)) n)))
+                 (cumulative negative n))]
     (mapv (fn [hs ups downs]
             (mapv (fn [^double h ^double up ^double down] (if (neg? h) [(+ down h) down] [up (+ up h)])) hs ups downs))
-          heights above below)))
+          heights above below))))
 
 (defn- silhouette-baseline
   "Per index: minus half the total height (the stack centred on 0)."
@@ -69,10 +76,12 @@
 
 (defn stack-values
   "Per group per index `[y0 y1]` of `heights` (one vector per group, in group order, all of the same length - one
-  value per shared index) for `position` (see the namespace doc). No groups give `[]`.
+  value per shared index) for `position` (see the namespace doc); `options` - `:negative-order` `:forward` (default)
+  or `:reverse` (`:stack`). No groups give `[]`.
   Throws `ex-info` `{:key :position}` for `:mirror` with other than two groups, and for negative heights with
   `:normalize` or a stream position."
-  [position heights]
+  ([position heights] (stack-values position heights nil))
+  ([position heights {:keys [negative-order]}]
   (let [heights (mapv #(mapv double %) heights)
         n (long (count (first heights)))]
     (when-not (apply = n (map count heights))
@@ -85,13 +94,13 @@
       (= :mirror position) (if (= 2 (count heights))
                              [(mapv (fn [h] [0.0 h]) (heights 0)) (mapv (fn [^double h] [(- h) 0.0]) (heights 1))]
                              (schema/fail! "Position :mirror needs exactly two groups." {:key :position :groups (count heights)}))
-      (= :stack position) (stacked heights n)
+      (= :stack position) (stacked heights n (= :reverse negative-order))
       (= :normalize position) (let [totals (apply mapv + heights)
                                     scale (mapv (fn [^double t] (if (pos? t) (/ 1.0 t) 0.0)) totals)]
                                 (stacked (mapv #(mapv * % scale) heights) n))
       (= :silhouette position) (shifted (stacked heights n) (silhouette-baseline heights))
       (= :wiggle position) (shifted (stacked heights n) (wiggle-baseline heights n))
-      :else (throw (ex-info (str "Unknown position " (pr-str position) ".") {:key :position :value position})))))
+      :else (throw (ex-info (str "Unknown position " (pr-str position) ".") {:key :position :value position}))))))
 
 (defn dodge-interval
   "The `i`-th of `n` equal sub-intervals of `[a b]` (`n` positive)."

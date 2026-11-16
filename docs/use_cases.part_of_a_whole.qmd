@@ -27,7 +27,8 @@ Flow chapter.
 ::: {.sourceClojure}
 ```clojure
 (ns use-cases.part-of-a-whole
-  (:require [fastmath.core :as m]
+  (:require [clojure2d.color :as c]
+            [fastmath.core :as m]
             [fastmath.random :as r]
             [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
@@ -157,8 +158,9 @@ Source: [R Graph Gallery - Grouped and Stacked barplot](https://r-graph-gallery.
 (plot/render-image
  (plot/arrange
   (vec (concat
-        (for [[title position] [["grouped (:dodge)" :dodge] ["stacked (:stack)" :stack] ["percent (:normalize)" :normalize]]]
-          {:data species-conditions :mapping {:x :specie :y :value :color :condition}
+        (for [[title position legend?] [["grouped (:dodge)" :dodge false] ["stacked (:stack)" :stack false]
+                                        ["percent (:normalize)" :normalize true]]]
+          {:data species-conditions :mapping {:x :specie :y :value :color :condition} :legend legend?
            :charts [(chart/bar {:position position})]
            :labels {:title title :x nil :y nil}})
         [{:data species-conditions :mapping {:x :condition :y :value :facet :specie}
@@ -183,7 +185,8 @@ Source: [R Graph Gallery - Grouped and Stacked barplot](https://r-graph-gallery.
 ### Likert scale
 
 Survey answers as diverging stacked bars (seeded counts): disagreement to the left of 0, agreement to the right,
-the neutral answers split half to each side. The colour domain orders the stacks from the middle outward.
+the neutral answers split half to each side (two `:group`s of one colour). `:negative-order :reverse` stacks the
+negative side from the last answer, so the answers in their natural order diverge from the middle.
 
 
 ::: {.sourceClojure}
@@ -219,11 +222,11 @@ Source: [R Graph Gallery - Grouped and Stacked barplot (the Likert package)](htt
 ```clojure
 (plot/render-image
  {:data likert :mapping {:x :count :y :question :color :answer :group :side}
-  :scales {:color {:domain ["Neutral" "Disagree" "Agree" "Strongly disagree" "Strongly agree"]
+  :scales {:color {:domain answers
                    :range {"Strongly disagree" [178 24 43] "Disagree" [239 138 98] "Neutral" [200 200 200]
                            "Agree" [103 169 207] "Strongly agree" [33 102 172]}}
           :x {:formatter #(str (long (m/abs (double %))))}}
-  :charts [(chart/bar {:position :stack})]
+  :charts [(chart/bar {:position :stack :negative-order :reverse})]
   :labels {:title "Five questions, five answers" :x "answers" :y nil}}
  {:width 800 :height 380})
 ```
@@ -361,7 +364,8 @@ A donut without its hole. data-to-viz: angles are hard to compare - see the cave
 
 ### Basic, colours, a clean pie
 
-The default pie shows its value axis around the circle; a palette recolours it; `:axis false` cleans it up.
+The default pie shows its value axis around the circle - the cumulative population, here in billions; a palette
+recolours it; `:axis false` cleans it up.
 
 Source: [R Graph Gallery - Pie chart](https://r-graph-gallery.com/pie-plot.html). Data: World population by region, subregion and country, data-to-viz example dataset `11_SevCatOneNumNestedOneObsPerGroup` (Yan Holtz; Wikipedia); licence: MIT (data_to_viz repository).
 
@@ -370,8 +374,10 @@ Source: [R Graph Gallery - Pie chart](https://r-graph-gallery.com/pie-plot.html)
 ```clojure
 (plot/render-image
  (plot/arrange
-  [(assoc pie-base :legend false :charts [(chart/bar {:position :stack :width 1.0})] :labels {:title "default" :x nil :y nil})
+  [(assoc pie-base :legend false :scales {:x {:formatter #(format "%.0fB" (/ (double %) 1e9))}}
+          :charts [(chart/bar {:position :stack :width 1.0})] :labels {:title "default (axis in billions)" :x nil :y nil})
    (assoc pie-base :theme {:palette {:color :MetBrewer/Archambault}} :legend false
+          :scales {:x {:formatter #(format "%.0fB" (/ (double %) 1e9))}}
           :charts [(chart/bar {:position :stack :width 1.0})] :labels {:title ":MetBrewer/Archambault" :x nil :y nil})
    (assoc pie-base :scales {:x {:axis false}} :legend false
           :charts [(chart/bar {:position :stack :width 1.0 :stroke-color :white :stroke-width 1})]
@@ -427,7 +433,8 @@ proportional to its value (packing leaves gaps), compare circles within a group.
 
 ### One level
 
-Europe's countries: a circle each; leaves coloured by their subregion; wider gaps (`:padding`, pixels).
+Europe's countries: a circle each (the palette's colours repeat - they only tell neighbours apart); leaves coloured
+by their subregion; wider gaps (`:padding`, pixels).
 
 Source: R Graph Gallery - Circular packing; data-to-viz - Circular packing ([1](https://r-graph-gallery.com/circle-packing.html), [2](https://www.data-to-viz.com/graph/circularpacking.html)). Data: World population by region, subregion and country, data-to-viz example dataset `11_SevCatOneNumNestedOneObsPerGroup` (Yan Holtz; Wikipedia); licence: MIT (data_to_viz repository).
 
@@ -455,7 +462,7 @@ Source: R Graph Gallery - Circular packing; data-to-viz - Circular packing ([1](
 ### Several levels
 
 Regions → subregions → countries: the regions' colours lighter at every level, group names under their circles'
-tops; hiding the regions (`:hidden-levels #{1}`) leaves the subregions floating.
+tops.
 
 Source: [R Graph Gallery - Circular packing (several levels)](https://r-graph-gallery.com/circle-packing.html). Data: World population by region, subregion and country, data-to-viz example dataset `11_SevCatOneNumNestedOneObsPerGroup` (Yan Holtz; Wikipedia); licence: MIT (data_to_viz repository).
 
@@ -463,19 +470,35 @@ Source: [R Graph Gallery - Circular packing (several levels)](https://r-graph-ga
 ::: {.sourceClojure}
 ```clojure
 (plot/render-image
- (plot/arrange
-  [{:data world :mapping {:value :population :hierarchy [:region :subregion :country]}
-    :charts [(chart/pack)] :labels {:title "three levels"}}
-   {:data world :mapping {:value :population :hierarchy [:region :subregion :country]}
-    :charts [(chart/pack {:hidden-levels #{1}})] :labels {:title "regions hidden"}}]
-  {:columns 2})
- {:width 1000 :height 520})
+ {:data world :mapping {:value :population :hierarchy [:region :subregion :country]}
+  :charts [(chart/pack)] :labels {:title "Regions, subregions, countries"}}
+ {:width 1000 :height 800})
 ```
 :::
 
 
 ::: {.clay-image}
 ![](use_cases.part_of_a_whole_files/image9.png)
+:::
+
+
+Hiding the regions (`:hidden-levels #{1}`) leaves the subregions floating - the layout stays the same.
+
+Source: [R Graph Gallery - Circular packing (hide some levels)](https://r-graph-gallery.com/circle-packing.html). Data: World population by region, subregion and country, data-to-viz example dataset `11_SevCatOneNumNestedOneObsPerGroup` (Yan Holtz; Wikipedia); licence: MIT (data_to_viz repository).
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image
+ {:data world :mapping {:value :population :hierarchy [:region :subregion :country]}
+  :charts [(chart/pack {:hidden-levels #{1}})] :labels {:title "Regions hidden"}}
+ {:width 1000 :height 800})
+```
+:::
+
+
+::: {.clay-image}
+![](use_cases.part_of_a_whole_files/image10.png)
 :::
 
 
@@ -503,7 +526,7 @@ Source: [data-to-viz - Sunburst](https://www.data-to-viz.com/graph/sunburst.html
 
 
 ::: {.clay-image}
-![](use_cases.part_of_a_whole_files/image10.png)
+![](use_cases.part_of_a_whole_files/image11.png)
 :::
 
 
@@ -516,7 +539,8 @@ A grid of cells: by default 10 × 10, a cell per percent of the whole (largest-r
 
 ### Basic, shapes, colours, groups
 
-The regions' shares; circle cells; a palette; subregions within each region (a facet per region).
+The regions' shares; circle cells; a palette; subregions within each region (a facet per region, each region's
+subregions in shades of one colour - 22 subregions are more than a palette's 20 colours).
 
 Source: [R Graph Gallery - Waffle chart](https://r-graph-gallery.com/waffle.html). Data: World population by region, subregion and country, data-to-viz example dataset `11_SevCatOneNumNestedOneObsPerGroup` (Yan Holtz; Wikipedia); licence: MIT (data_to_viz repository).
 
@@ -535,7 +559,7 @@ Source: [R Graph Gallery - Waffle chart](https://r-graph-gallery.com/waffle.html
 
 
 ::: {.clay-image}
-![](use_cases.part_of_a_whole_files/image11.png)
+![](use_cases.part_of_a_whole_files/image12.png)
 :::
 
 
@@ -544,8 +568,23 @@ Source: [R Graph Gallery - Waffle chart (groups and subgroups)](https://r-graph-
 
 ::: {.sourceClojure}
 ```clojure
+(def subregion-colors
+  "Each region's subregions in shades of the region's colour (darker to lighter)."
+  (into {} (for [[base [_ subregions]] (map vector (c/palette :category10)
+                                             (sort-by key (group-by :region (nu/dataset :world-population))))
+                 :let [names (sort (distinct (map :subregion subregions)))]
+                 [i subregion] (map-indexed vector names)]
+             [subregion (c/brighten base (- (* 0.7 (double i)) 1.0))])))
+```
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
 (plot/render-image
  {:data world :mapping {:color :subregion :value :population :facet :region}
+  :scales {:color {:range subregion-colors}}
   :charts [(chart/waffle {:gap 0.15})]
   :labels {:title "Subregions within each region"}}
  {:width 1000 :height 520})
@@ -554,7 +593,7 @@ Source: [R Graph Gallery - Waffle chart (groups and subgroups)](https://r-graph-
 
 
 ::: {.clay-image}
-![](use_cases.part_of_a_whole_files/image12.png)
+![](use_cases.part_of_a_whole_files/image13.png)
 :::
 
 
@@ -589,7 +628,7 @@ Source: R Graph Gallery - Venn diagram; data-to-viz - Venn diagram ([1](https://
 
 
 ::: {.clay-image}
-![](use_cases.part_of_a_whole_files/image13.png)
+![](use_cases.part_of_a_whole_files/image14.png)
 :::
 
 
@@ -622,7 +661,7 @@ Source: [R Graph Gallery - Venn diagram (the UpSetR alternative)](https://r-grap
 
 
 ::: {.clay-image}
-![](use_cases.part_of_a_whole_files/image14.png)
+![](use_cases.part_of_a_whole_files/image15.png)
 :::
 
 
@@ -682,7 +721,7 @@ Source: [data-to-viz - The issue with pie chart](https://www.data-to-viz.com/cav
 
 
 ::: {.clay-image}
-![](use_cases.part_of_a_whole_files/image15.png)
+![](use_cases.part_of_a_whole_files/image16.png)
 :::
 
 

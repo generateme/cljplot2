@@ -8,7 +8,8 @@
 ;; Flow chapter.
 
 (ns use-cases.part-of-a-whole
-  (:require [fastmath.core :as m]
+  (:require [clojure2d.color :as c]
+            [fastmath.core :as m]
             [fastmath.random :as r]
             [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
@@ -65,8 +66,9 @@
 (plot/render-image
  (plot/arrange
   (vec (concat
-        (for [[title position] [["grouped (:dodge)" :dodge] ["stacked (:stack)" :stack] ["percent (:normalize)" :normalize]]]
-          {:data species-conditions :mapping {:x :specie :y :value :color :condition}
+        (for [[title position legend?] [["grouped (:dodge)" :dodge false] ["stacked (:stack)" :stack false]
+                                        ["percent (:normalize)" :normalize true]]]
+          {:data species-conditions :mapping {:x :specie :y :value :color :condition} :legend legend?
            :charts [(chart/bar {:position position})]
            :labels {:title title :x nil :y nil}})
         [{:data species-conditions :mapping {:x :condition :y :value :facet :specie}
@@ -82,7 +84,8 @@
 ;; ### Likert scale
 
 ;; Survey answers as diverging stacked bars (seeded counts): disagreement to the left of 0, agreement to the right,
-;; the neutral answers split half to each side. The colour domain orders the stacks from the middle outward.
+;; the neutral answers split half to each side (two `:group`s of one colour). `:negative-order :reverse` stacks the
+;; negative side from the last answer, so the answers in their natural order diverge from the middle.
 
 (def answers ["Strongly disagree" "Disagree" "Neutral" "Agree" "Strongly agree"])
 
@@ -104,11 +107,11 @@
 
 (plot/render-image
  {:data likert :mapping {:x :count :y :question :color :answer :group :side}
-  :scales {:color {:domain ["Neutral" "Disagree" "Agree" "Strongly disagree" "Strongly agree"]
+  :scales {:color {:domain answers
                    :range {"Strongly disagree" [178 24 43] "Disagree" [239 138 98] "Neutral" [200 200 200]
                            "Agree" [103 169 207] "Strongly agree" [33 102 172]}}
           :x {:formatter #(str (long (m/abs (double %))))}}
-  :charts [(chart/bar {:position :stack})]
+  :charts [(chart/bar {:position :stack :negative-order :reverse})]
   :labels {:title "Five questions, five answers" :x "answers" :y nil}}
  {:width 800 :height 380})
 
@@ -194,7 +197,8 @@
 
 ;; ### Basic, colours, a clean pie
 
-;; The default pie shows its value axis around the circle; a palette recolours it; `:axis false` cleans it up.
+;; The default pie shows its value axis around the circle - the cumulative population, here in billions; a palette
+;; recolours it; `:axis false` cleans it up.
 
 (nu/source-note {:source "R Graph Gallery - Pie chart"
                  :url "https://r-graph-gallery.com/pie-plot.html"
@@ -202,8 +206,10 @@
 
 (plot/render-image
  (plot/arrange
-  [(assoc pie-base :legend false :charts [(chart/bar {:position :stack :width 1.0})] :labels {:title "default" :x nil :y nil})
+  [(assoc pie-base :legend false :scales {:x {:formatter #(format "%.0fB" (/ (double %) 1e9))}}
+          :charts [(chart/bar {:position :stack :width 1.0})] :labels {:title "default (axis in billions)" :x nil :y nil})
    (assoc pie-base :theme {:palette {:color :MetBrewer/Archambault}} :legend false
+          :scales {:x {:formatter #(format "%.0fB" (/ (double %) 1e9))}}
           :charts [(chart/bar {:position :stack :width 1.0})] :labels {:title ":MetBrewer/Archambault" :x nil :y nil})
    (assoc pie-base :scales {:x {:axis false}} :legend false
           :charts [(chart/bar {:position :stack :width 1.0 :stroke-color :white :stroke-width 1})]
@@ -239,7 +245,8 @@
 
 ;; ### One level
 
-;; Europe's countries: a circle each; leaves coloured by their subregion; wider gaps (`:padding`, pixels).
+;; Europe's countries: a circle each (the palette's colours repeat - they only tell neighbours apart); leaves coloured
+;; by their subregion; wider gaps (`:padding`, pixels).
 
 (nu/source-note {:source "R Graph Gallery - Circular packing; data-to-viz - Circular packing"
                  :url ["https://r-graph-gallery.com/circle-packing.html" "https://www.data-to-viz.com/graph/circularpacking.html"]
@@ -257,20 +264,27 @@
 ;; ### Several levels
 
 ;; Regions → subregions → countries: the regions' colours lighter at every level, group names under their circles'
-;; tops; hiding the regions (`:hidden-levels #{1}`) leaves the subregions floating.
+;; tops.
 
 (nu/source-note {:source "R Graph Gallery - Circular packing (several levels)"
                  :url "https://r-graph-gallery.com/circle-packing.html"
                  :dataset :world-population})
 
 (plot/render-image
- (plot/arrange
-  [{:data world :mapping {:value :population :hierarchy [:region :subregion :country]}
-    :charts [(chart/pack)] :labels {:title "three levels"}}
-   {:data world :mapping {:value :population :hierarchy [:region :subregion :country]}
-    :charts [(chart/pack {:hidden-levels #{1}})] :labels {:title "regions hidden"}}]
-  {:columns 2})
- {:width 1000 :height 520})
+ {:data world :mapping {:value :population :hierarchy [:region :subregion :country]}
+  :charts [(chart/pack)] :labels {:title "Regions, subregions, countries"}}
+ {:width 1000 :height 800})
+
+;; Hiding the regions (`:hidden-levels #{1}`) leaves the subregions floating - the layout stays the same.
+
+(nu/source-note {:source "R Graph Gallery - Circular packing (hide some levels)"
+                 :url "https://r-graph-gallery.com/circle-packing.html"
+                 :dataset :world-population})
+
+(plot/render-image
+ {:data world :mapping {:value :population :hierarchy [:region :subregion :country]}
+  :charts [(chart/pack {:hidden-levels #{1}})] :labels {:title "Regions hidden"}}
+ {:width 1000 :height 800})
 
 ;; ## Sunburst
 
@@ -297,7 +311,8 @@
 
 ;; ### Basic, shapes, colours, groups
 
-;; The regions' shares; circle cells; a palette; subregions within each region (a facet per region).
+;; The regions' shares; circle cells; a palette; subregions within each region (a facet per region, each region's
+;; subregions in shades of one colour - 22 subregions are more than a palette's 20 colours).
 
 (nu/source-note {:source "R Graph Gallery - Waffle chart"
                  :url "https://r-graph-gallery.com/waffle.html"
@@ -315,8 +330,17 @@
                  :url "https://r-graph-gallery.com/waffle.html"
                  :dataset :world-population})
 
+(def subregion-colors
+  "Each region's subregions in shades of the region's colour (darker to lighter)."
+  (into {} (for [[base [_ subregions]] (map vector (c/palette :category10)
+                                             (sort-by key (group-by :region (nu/dataset :world-population))))
+                 :let [names (sort (distinct (map :subregion subregions)))]
+                 [i subregion] (map-indexed vector names)]
+             [subregion (c/brighten base (- (* 0.7 (double i)) 1.0))])))
+
 (plot/render-image
  {:data world :mapping {:color :subregion :value :population :facet :region}
+  :scales {:color {:range subregion-colors}}
   :charts [(chart/waffle {:gap 0.15})]
   :labels {:title "Subregions within each region"}}
  {:width 1000 :height 520})
