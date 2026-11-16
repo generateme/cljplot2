@@ -70,7 +70,9 @@
             [cljplot2.chart.stripplot :as stripplot]
             [cljplot2.chart.text :as text]
             [cljplot2.chart.treemap :as treemap]
-            [cljplot2.chart.violin :as violin]))
+            [cljplot2.chart.venn :as venn]
+            [cljplot2.chart.violin :as violin]
+            [cljplot2.chart.waffle :as waffle]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -88,6 +90,8 @@
    :treemap (:style treemap/schemas)
    :partition (:style partition/schemas)
    :pack (:style pack/schemas)
+   :waffle (:style waffle/schemas)
+   :venn (:style venn/schemas)
    :ecdf (:style ecdf/schemas)
    :box (:style box/schemas)
    :violin (:style violin/schemas)
@@ -185,6 +189,16 @@
   "Circle packing of `:value` over the `:hierarchy` levels, see [[cljplot2.chart.pack]]."
   ([] (pack {}))
   ([options] (chart-value :pack pack/compute pack/draw pack/legend pack/schemas options)))
+
+(defn waffle
+  "Waffle of the `:color` categories' shares (or counts with `:unit`) as grid cells, see [[cljplot2.chart.waffle]]."
+  ([] (waffle {}))
+  ([options] (chart-value :waffle waffle/compute waffle/draw waffle/legend waffle/schemas options)))
+
+(defn venn
+  "Venn diagram of 2 or 3 sets from `:set` / `:item` membership rows, see [[cljplot2.chart.venn]]."
+  ([] (venn {}))
+  ([options] (chart-value :venn venn/compute venn/draw venn/legend venn/schemas options)))
 
 (defn ecdf
   "Empirical CDF of `:x`, see [[cljplot2.chart.ecdf]]."

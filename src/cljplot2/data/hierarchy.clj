@@ -114,9 +114,7 @@
   "Default fill of the top-level node with `:top-index` i (`(f i)`): the theme's `[:palette :color]` over `top-count`
   top-level nodes."
   [theme top-count]
-  (aesthetic/attribute-fn :color (aesthetic/scale-spec :color {:kind :ordinal :domain (vec (range (max 1 (long top-count))))}
-                                                       nil false (:palette theme))
-                          (get-in theme [:palette :na])))
+  (aesthetic/palette-color-fn theme top-count))
 
 (def ^:private ^:const lightness-ceiling
   "CIELAB lightness L* that deeper levels approach (white is 100)."

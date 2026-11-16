@@ -484,6 +484,14 @@
                   (valid-attribute? k v) (if (= k :size) (double v) v)
                   :else nil))))
 
+
+(defn palette-color-fn
+  "`(f i)` - the `i`-th color (0 <= i < `n`) of the theme's `[:palette :color]` as an ordinal scale over `n` levels
+  would give it (the NA color for other `i`)."
+  [theme n]
+  (attribute-fn :color (scale-spec :color {:kind :ordinal :domain (vec (range (max 1 (long n))))} nil false (:palette theme))
+                (get-in theme [:palette :na])))
+
 (defn legend-entries
   "Legend entries `[{:label :value}]` of scale `spec` of dimension `k` (`:value nil` - the NA entry, last), or `nil`
   when it has no legend: `:legend false`, an identity scale, or linear / binned color (a color bar instead).
