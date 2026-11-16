@@ -210,6 +210,14 @@
        :panels (vec (for [[r rl] (map-indexed vector row-levels) [c cl] (map-indexed vector col-levels)]
                       {:key (key-of cl rl) :row r :col c}))})))
 
+(defn panel-layout
+  "`{:columns c :rows r}` of the plot's panels: the facet layout of `split-facets` (see the split stage) with plot
+  `scales` and `facets` options, `{:columns 1 :rows 1}` without facets."
+  [split-facets scales facets]
+  (if (seq (:dims split-facets))
+    (let [{:keys [rows cols]} (facet-panels split-facets scales facets)] {:columns cols :rows rows})
+    {:columns 1 :rows 1}))
+
 (defn facet-grid
   "Grid of a faceted plot (see [[cljplot2.data.facet]]): panels `[:panel r c]` in a `rows` x `cols` layout with gaps
   (theme `[:facet :gap]`), strips (wrap: above each panel; grid: column strips above the top row, row strips on

@@ -239,9 +239,11 @@
 (defn- stats-stage
   "Per chart: the data its `:compute` returns from its split groups; margin charts too (`:margin-stats`, see
   [[margin-stats]])."
-  [{:keys [charts split theme groups scales flip] :as plot}]
+  [{:keys [charts split theme groups scales flip facets options aspect] :as plot}]
   (let [env {:theme theme :na-level? (get groups :na true) :plot-scales scales :flip? (boolean flip)
-             :hint (get-in plot [:options :hint]) :coord (:coord plot)}]
+             :hint (:hint options) :coord (:coord plot)
+             :size [(:width options) (:height options)] :aspect aspect
+             :panel-layout (plot-grid/panel-layout (:facets split) scales facets)}]
     (assoc plot
            :stats (mapv (fn [chart chart-split] ((:compute chart) chart chart-split env)) charts (:charts split))
            :margin-stats (margin-stats plot env))))
@@ -328,9 +330,15 @@
   pixel room asked by charts (`:padding-px`) is added to continuous position specs (see
   [[cljplot2.scale.position/finalize]]); scale attributes suggested by a chart (`:scale-defaults {dim attributes}`, the first chart's) are used as a whole
   unless the plot's own spec sets any of them (attributes like bands `:padding-out` / `:align-outer` only make
-  sense together)."
+  sense together); a legend title suggested by a chart (`:legend-titles {dim title}`, the first chart's) is the aesthetic
+  scale's `:title` unless the plot's spec has one."
   [{:keys [scales extents theme stats] :as plot}]
-  (let [ks (distinct (concat (filter #(or (position-scales %) (aesthetic/dim? %)) (keys scales)) (keys extents)))]
+  (let [ks (distinct (concat (filter #(or (position-scales %) (aesthetic/dim? %)) (keys scales)) (keys extents)))
+        suggested-titles (reduce (fn [acc titles] (merge titles acc)) {} (keep :legend-titles stats))
+        aesthetic-spec (fn [k] (let [spec (get scales k {})]
+                                 (if (and (not (contains? spec :title)) (contains? suggested-titles k))
+                                   (assoc spec :title (suggested-titles k))
+                                   spec)))]
     (assoc plot
            ;; a margin's magnitude scale: built as a position spec from the margin charts' stats
            :margin-stats (update-vals (:margin-stats plot)
@@ -340,11 +348,10 @@
                                           m)))
            :scale-specs
            (into {} (keep (fn [k]
-                            (let [{:keys [extent na?] :as e} (get extents k)
-                                  spec (get scales k {})]
+                            (let [{:keys [extent na?] :as e} (get extents k)]
                               (if (aesthetic/dim? k)
-                                (some->> (aesthetic/scale-spec k spec extent na? (:palette theme)) (vector k))
-                                [k (position-spec stats k spec e)]))))
+                                (some->> (aesthetic/scale-spec k (aesthetic-spec k) extent na? (:palette theme)) (vector k))
+                                [k (position-spec stats k (get scales k {}) e)]))))
                  ks))))
 
 (defn- effective-labels
@@ -739,7 +746,8 @@
      (let [margin-mappings (when (empty? (schema/errors margins-schema (:margins plot) [:margins]))
                              (for [[_ {:keys [charts]}] (plot-margins plot) c charts] (get-in c [:options :mapping])))]
        (for [k (keys scales)
-             :when (and (aesthetic/dim? k) (not-any? #(some? (get % k)) (concat mappings margin-mappings)))]
+             :when (and (aesthetic/dim? k) (not-any? #(some? (get % k)) (concat mappings margin-mappings))
+                        (not-any? #(contains? (:computed-aesthetics %) k) charts))]
          (error [:scales k] (get scales k) "aesthetic scale needs a chart mapping its key")))
      (for [k (keys scales)
            :when (and (facet/facet-keys k) (not (some #{k} (first dim-sets))))]

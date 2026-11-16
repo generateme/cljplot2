@@ -2,6 +2,9 @@
   "Charts. A chart value is a plain map `{:kind :options :compute :draw :legend :schema}` made by a constructor;
   `:compute` and `:draw` are top-level functions, so chart values print and compare as data.
 
+  `:computed-aesthetics` (optional) - aesthetics the chart computes itself instead of mapping (e.g. [[bin2d]]'s
+  color): a plot `:scales` entry of such an aesthetic is valid without a chart mapping it.
+
   `:coords` (optional, default `#{:cartesian}`) - the coordinate systems the chart draws in (plot `:coord`, see
   [[cljplot2.scale.coord]]); polar charts: [[bar]], [[segment]], [[scatter]], [[line]], [[text]], [[rule]],
   [[rect]], [[parallel]] (radar), [[partition]] (sunburst).
@@ -22,8 +25,12 @@
     scale has a `:formatter`) and `:scale-defaults {:x attrs :y attrs}` (suggested position scale attributes, e.g.
     bands `:padding-out`; dropped when the plot's own `:scales` entry sets any of them) and `:padding-px {dim [lo hi]}`
     (pixels kept free beyond the data on each side of a continuous position scale, e.g. for labels past the data)
-    (`env` - `{:theme :na-level? :plot-scales :flip? :hint}`, `:plot-scales` - the plot's `:scales`, `:flip?` - the
-    plot's `:flip`, `:hint` - the rendering hint, for measuring text); stored per chart in the
+    and `:legend-titles {dim title}` (suggested aesthetic legend titles, e.g. a computed color's measure; the first
+    chart's win, a plot scale's `:title` wins over all)
+    (`env` - `{:theme :na-level? :plot-scales :flip? :hint :coord :size :aspect :panel-layout}`, `:plot-scales` - the
+    plot's `:scales`, `:flip?` - the plot's `:flip`, `:hint` - the rendering hint, for measuring text, `:size` - the
+    plot's `[width height]` in pixels, `:aspect` - the plot's `:aspect`, `:panel-layout` - `{:columns c :rows r}` of
+    the facet panels); stored per chart in the
     plot's `:stats`. Aesthetic extents (`:color`,
     `:shape`, `:size`, `:dash`) are [[cljplot2.data.rows/value-extent]]s; `:na` lists aesthetics with NA (`nil`) values
   * `(draw chart computed canvas panel-box scales env)` - draws one panel's `computed` data; called by the panel
@@ -49,6 +56,7 @@
   (:refer-clojure :exclude [partition])
   (:require [cljplot2.chart.bar :as bar]
             [cljplot2.chart.beeswarm :as beeswarm]
+            [cljplot2.chart.bin2d :as bin2d]
             [cljplot2.chart.box :as box]
             [cljplot2.chart.candlestick :as candlestick]
             [cljplot2.chart.density :as density]
@@ -69,6 +77,7 @@
             [cljplot2.chart.smooth :as smooth]
             [cljplot2.chart.stripplot :as stripplot]
             [cljplot2.chart.text :as text]
+            [cljplot2.chart.tile :as tile]
             [cljplot2.chart.treemap :as treemap]
             [cljplot2.chart.venn :as venn]
             [cljplot2.chart.violin :as violin]
@@ -92,6 +101,8 @@
    :pack (:style pack/schemas)
    :waffle (:style waffle/schemas)
    :venn (:style venn/schemas)
+   :tile (:style tile/schemas)
+   :bin2d (:style bin2d/schemas)
    :ecdf (:style ecdf/schemas)
    :box (:style box/schemas)
    :violin (:style violin/schemas)
@@ -199,6 +210,16 @@
   "Venn diagram of 2 or 3 sets from `:set` / `:item` membership rows, see [[cljplot2.chart.venn]]."
   ([] (venn {}))
   ([options] (chart-value :venn venn/compute venn/draw venn/legend venn/schemas options)))
+
+(defn tile
+  "Heatmap cells of any `fastmath.grid` type at (`:x`, `:y`), filled by `:color`, see [[cljplot2.chart.tile]]."
+  ([] (tile {}))
+  ([options] (chart-value :tile tile/compute tile/draw tile/legend tile/schemas options)))
+
+(defn bin2d
+  "Points counted in grid cells (hexbin, 2D histogram), see [[cljplot2.chart.bin2d]]."
+  ([] (bin2d {}))
+  ([options] (assoc (chart-value :bin2d bin2d/compute bin2d/draw nil bin2d/schemas options) :computed-aesthetics #{:color})))
 
 (defn ecdf
   "Empirical CDF of `:x`, see [[cljplot2.chart.ecdf]]."
