@@ -142,3 +142,43 @@
                   ps)
           "ink at every leader's middle")
       (is (not-any? :leader (placements (pie {:value-label (constantly "W") :label-position :outer}))) "no leaders by default"))))
+
+(deftest review-fixes-test
+  (testing "Y1 :outer labels hide the angle axis by default; the plot's scale brings it back"
+    (is (= {:x {:axis false}} (get-in (plot/build (pie {:value-label true :label-position :outer}) size) [:stats 0 :scale-defaults])))
+    (is (= {:x {:axis false}} (get-in (plot/build {:data shares :mapping {:x :part :y :n} :coord {:kind :polar}
+                                                   :charts [(chart/bar {:value-label true :label-position :outer})]} size)
+                                      [:stats 0 :scale-defaults]))
+        "circular barplot: the levels on the angle")
+    (is (= {:y {:axis false}} (get-in (plot/build (pie {:value-label true :label-position :outer} {:flip true}) size)
+                                      [:stats 0 :scale-defaults]))
+        "flipped: the angle on :y")
+    (is (false? (get-in (plot/build (pie {:value-label true :label-position :outer}) size) [:finalized-scales :x :axis])))
+    (is (not (false? (get-in (plot/build (pie {:value-label true :label-position :outer} {:scales {:x {:axis true}}}) size)
+                             [:finalized-scales :x :axis]))))
+    (is (nil? (get-in (plot/build (pie {:value-label true}) size) [:stats 0 :scale-defaults]))))
+  (testing "Y2 end labels of every strip chart skip collisions"
+    (let [rows (for [i (range 30) v [1 2 3]] {:c (format "%02d" i) :v v})
+          seen (atom [])]
+      (with-redefs [strip/draw-label-placements! (fn [_ ps _] (swap! seen into ps))]
+        (plot/render-image {:data rows :mapping {:x :v :y :c} :charts [(chart/box {:n-label true})]} {:width 300 :height 120}))
+      (is (< 0 (count @seen) 30))
+      (is (every? :box @seen))))
+  (testing "Y3 leaders lead: longer gap, more room"
+    (let [with (pie {:value-label (constantly "W") :label-position :outer :label-leader true})
+          without (pie {:value-label (constantly "W") :label-position :outer})]
+      (is (every? (fn [{[[x0 y0] [x1 y1]] :leader}] (>= (m/hypot (- (double x1) (double x0)) (- (double y1) (double y0))) 14.0))
+                  (placements with)))
+      (is (> (double (first (get-in (plot/build with size) [:stats 0 :outer-room])))
+             (double (first (get-in (plot/build without size) [:stats 0 :outer-room])))))))
+  (testing "Y4 every label carries its own bar"
+    (is (every? #(get-in % [:label :bar]) (placements (pie {:value-label true}))))
+    (let [ps (placements {:data [{:c "a" :g "p" :v 2} {:c "a" :g "q" :v 2}] :mapping {:x :c :y :v :color :g}
+                          :charts [(chart/bar {:position :overlay :value-label true})]})]
+      (is (= 1 (count ps)) "two equal overlaid bars: one label (the other collides)")))
+  (testing "Y5 a centred label wider than its slice's chord near 12 o'clock is skipped"
+    (let [p (pie {:value-label #(if (= "top" (get-in % [:group :color])) "WWWWWWWWWW" "x")}
+                 {:data [{:part "top" :n 6} {:part "rest" :n 94}] :coord {:kind :polar :start -10.8}})
+          texts (map #(get-in % [:content :text]) (placements p))]
+      (is (not (some #{"WWWWWWWWWW"} texts)))
+      (is (some #{"x"} texts)))))

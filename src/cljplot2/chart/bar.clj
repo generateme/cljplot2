@@ -31,9 +31,10 @@
     other), default along the bars (horizontal bars side by side, vertical ones stacked)
   * `:label-position` - `:end` (past the bar's end; the default), `:center` (centred in the bar, in black or white by
     its fill; the default for `:stack` / `:normalize`) or `:outer` (polar plots only: past the outer radius at the
-    bar's middle angle, anchored outward - pie labels; the circle shrinks to keep room for them; `:label-leader true`
-    draws a line from the bar's outer edge). Labels are placed largest bar first and skipped when they overlap one
-    placed before; a centred label that doesn't fit its bar is skipped
+    bar's middle angle, anchored outward - pie labels; the circle shrinks to keep room for them; the angle axis is
+    hidden by default, its labels would sit under them (`:scales {k {:axis true}}` brings it back); `:label-leader
+    true` draws a line from the bar's outer edge, the labels further out). Labels are placed largest bar first and
+    skipped when they overlap one placed before; a centred label is skipped unless its box lies inside its bar
   * `:color` (fill), `:stroke-color` (a color, `:none` or `:darker` - the darkened fill, default), `:stroke-width`,
     `:alpha`
   * `:padding {:x [lo hi]}` - default 5%, none at the baseline side the bars grow from (bars start on the axis)
@@ -299,44 +300,45 @@
                                               options)
      :padding-px (strip/end-label-room labels env)
      :outer-room (strip/outer-label-room labels env)
+     ;; outer labels replace the angle axis (it would sit under them)
+     :scale-defaults (when (= :outer label-position) {(if (:flip? env) :y :x) {:axis false}})
      :na (group/na-dims panels)
      :dropped dropped
      :axis-titles (if-let [t (value-title stat position (:x mapping) all-bars)] {:x t} {})
      :tick-format (when mirror? {:x :absolute})}))
 
-(defn- boxes-overlap?
-  [a b]
-  (and (< (double (:x a)) (+ (double (:x b)) (double (:w b)))) (< (double (:x b)) (+ (double (:x a)) (double (:w a))))
-       (< (double (:y a)) (+ (double (:y b)) (double (:h b)))) (< (double (:y b)) (+ (double (:y a)) (double (:h a))))))
+(defn- in-sector?
+  "Is pixel `[x y]` inside the polar sector of angles `h0..h1` (range positions, radians) and radii `v0..v1` of
+  `geometry`?"
+  [{:keys [cx cy]} h0 h1 v0 v1 [x y]]
+  (let [h0 (double h0) h1 (double h1) v0 (double v0) v1 (double v1)
+        dx (- (double x) (double cx)) dy (- (double y) (double cy))
+        r (m/hypot dx dy)
+        ;; the point's angle (0 up, clockwise) brought to [h0, h0 + 2 pi)
+        a (+ h0 (double (mod (- (m/atan2 dx (- dy)) h0) m/TWO_PI)))]
+    (and (<= v0 r v1) (<= a h1))))
 
 (defn- fits-segment?
-  "Does a centred label of `box` fit its bar's segment (`bar` - `:level :slot :y0 :y1 :width-factor`)? Cartesian:
-  the box inside the segment's pixel rectangle; polar: its width within the segment's radial extent, its height within
-  the segment's angular extent at its middle radius."
-  [{:keys [range-point geometry]} {:keys [level slot ^double y0 ^double y1 width-factor]} box]
+  "Does a centred label with pixel `box` fit its bar's segment (`bar` - `:level :slot :y0 :y1 :width-factor`)? The
+  box inside the segment: cartesian - its rectangle; polar - every box corner inside its sector."
+  [{:keys [range-point geometry]} {:keys [level slot ^double y0 ^double y1 width-factor]} {:keys [x y w h]}]
   (let [c0 (strip/in-slot slot 0.0)
         hw (* (strip/slot-half slot) (double width-factor))
         corners (for [v [y0 y1] cross [(- c0 hw) (+ c0 hw)]] (range-point v level cross))
         hs (map #(double (first %)) corners) vs (map #(double (second %)) corners)
-        h-extent (- (double (reduce max hs)) (double (reduce min hs)))
-        v-extent (- (double (reduce max vs)) (double (reduce min vs)))]
+        h0 (double (reduce min hs)) h1 (double (reduce max hs))
+        v0 (double (reduce min vs)) v1 (double (reduce max vs))
+        x (double x) y (double y) w (double w) h (double h)]
     (if geometry
-      (let [mid-r (* 0.5 (+ (double (reduce max vs)) (double (reduce min vs))))]
-        (and (<= (double (:w box)) v-extent) (<= (double (:h box)) (* h-extent mid-r))))
-      (and (<= (double (:w box)) h-extent) (<= (double (:h box)) v-extent)))))
+      (every? #(in-sector? geometry h0 h1 v0 v1 %) [[x y] [(+ x w) y] [x (+ y h)] [(+ x w) (+ y h)]])
+      (and (<= h0 x) (<= (+ x w) h1) (<= v0 y) (<= (+ y h) v1)))))
 
-(defn- kept-placements
-  "End-label `placements` (largest bars first) without the centred labels that don't fit their segment and the
-  labels overlapping one kept before them; `bar-of` - label -> its bar."
-  [canvas pl placements bar-of env]
-  (reduce (fn [kept {:keys [label content anchor x y] :as p}]
-            (let [box (label/box-at canvas content anchor x y env)
-                  centred? (and (zero? (double (:side label))) (not (:outer? label)))]
-              (if (or (and centred? (not (fits-segment? pl (bar-of label) box)))
-                      (some #(boxes-overlap? box (:box %)) kept))
-                kept
-                (conj kept (assoc p :box box)))))
-          []
+(defn- fitting-placements
+  "End-label `placements` without the centred labels that don't fit their segment (each label carries its `:bar`)."
+  [canvas pl placements env]
+  (filter (fn [{:keys [label content anchor x y]}]
+            (or (not (zero? (double (:side label)))) (:outer? label)
+                (fits-segment? pl (:bar label) (label/box-at canvas content anchor x y env))))
           placements))
 
 (defn- draw-in-strip-frame
@@ -356,17 +358,16 @@
                        fill (draw/outline-color (:stroke-color st) (:color st)) stroke-width (pattern-fill st fill)))
     (when zero-line?
       (draw/zero-line! canvas box scales style :x))
-    (let [labelled (keep (fn [[{:keys [label] :as bar} st]]
-                           (when label
-                             [bar (cond-> label
-                                    (and (zero? (double (:side label))) (not (:outer? label)))
-                                    (assoc :color (draw/contrast-color (:color st))))]))
-                         styled)
+    (let [labels (keep (fn [[{:keys [label] :as bar} st]]
+                         (when label
+                           (cond-> (assoc label :bar bar)
+                             (and (zero? (double (:side label))) (not (:outer? label)))
+                             (assoc :color (draw/contrast-color (:color st))))))
+                       styled)
           ;; largest bars first: their labels win collisions
-          ordered (sort-by (fn [[{:keys [^double y0 ^double y1]}]] (- (m/abs (- y1 y0)))) labelled)
-          bar-of (into {} (map (fn [[bar l]] [l bar])) ordered)
-          placements (strip/end-label-placements pl (map second ordered) scales)]
-      (strip/draw-label-placements! canvas (kept-placements canvas pl placements bar-of env) env))))
+          ordered (sort-by (fn [{{:keys [^double y0 ^double y1]} :bar}] (- (m/abs (- y1 y0)))) labels)
+          placements (fitting-placements canvas pl (strip/end-label-placements pl ordered scales) env)]
+      (strip/draw-label-placements! canvas (strip/without-collisions canvas placements env) env))))
 
 
 (defn compute

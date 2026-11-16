@@ -418,6 +418,14 @@
   "Pixels between a polar plot's outer radius and an `:outer?` end label."
   6.0)
 
+(def ^:const leader-label-gap
+  "Pixels between a polar plot's outer radius and an `:outer?` end label with a leader line (`:leader?`)."
+  16.0)
+
+(defn- outer-gap
+  ^double [{:keys [leader?]}]
+  (if leader? leader-label-gap outer-label-gap))
+
 (declare polar-end-label-placements cartesian-end-label-placements)
 
 (defn end-label-placements
@@ -459,7 +467,7 @@
   [{:keys [range-point geometry]} {:keys [level slot at span leader?] :as l}]
   (let [[h _] (range-point at level (in-slot slot 0.0))
         h (double h)
-        r (+ (double (:radius geometry)) outer-label-gap)
+        r (+ (double (:radius geometry)) (outer-gap l))
         ^Vec2 p (coord/to-pixel geometry h r)
         edge (when leader?
                (reduce max (for [value span cross [-0.5 0.5]] (double (second (range-point value level (in-slot slot cross)))))))]
@@ -490,6 +498,23 @@
                        {:label l :content (label-content l) :anchor anchor :x (.x p) :y (.y p)}))))
                labels))))
 
+(defn- boxes-overlap?
+  [a b]
+  (and (< (double (:x a)) (+ (double (:x b)) (double (:w b)))) (< (double (:x b)) (+ (double (:x a)) (double (:w a))))
+       (< (double (:y a)) (+ (double (:y b)) (double (:h b)))) (< (double (:y b)) (+ (double (:y a)) (double (:h a))))))
+
+(defn without-collisions
+  "End-label `placements` (see [[end-label-placements]]) with their pixel `:box` (see
+  [[cljplot2.content.label/box-at]]), each overlapping one kept before it left out - earlier placements win."
+  [canvas placements env]
+  (reduce (fn [kept {:keys [content anchor x y] :as p}]
+            (let [box (label/box-at canvas content anchor x y env)]
+              (if (some #(boxes-overlap? box (:box %)) kept)
+                kept
+                (conj kept (assoc p :box box)))))
+          []
+          placements))
+
 (defn draw-label-placements!
   "Draw end-label `placements` (see [[end-label-placements]]): leader lines (1 pixel, the label's color or the
   `:annotation` role's), then the labels."
@@ -510,22 +535,25 @@
   `pl` - the chart's [[placement]]; [[end-label-room]] keeps room for them past the data. Polar plots: past the value
   along the radius (anchored away from the centre) or along the angle (centred), see [[cljplot2.scale.coord]]; an
   `:outer?` label (`:span [v0 v1]` - its segment's values, `:leader?` - a leader line) past the outer radius at its
-  segment's middle angle, anchored outward (room: [[outer-label-room]])."
+  segment's middle angle, anchored outward (room: [[outer-label-room]]). A label overlapping one drawn before it
+  (in `labels` order) is left out."
   [canvas pl labels scales env]
-  (draw-label-placements! canvas (end-label-placements pl labels scales) env))
+  (draw-label-placements! canvas (without-collisions canvas (end-label-placements pl labels scales) env) env))
 
 (defn outer-label-room
   "`[horizontal vertical]` pixels `:outer?` end labels `labels` need around a polar plot's circle (the widest and
-  the tallest label plus [[outer-label-gap]]), measured with the `:annotation` role (env `:theme`, `:hint`); `nil`
-  without such labels."
+  the tallest label plus the gap - [[leader-label-gap]] when some label has a leader, else [[outer-label-gap]]),
+  measured with the `:annotation` role (env `:theme`, `:hint`); `nil` without such labels."
   [labels {:keys [theme hint]}]
-  (when-let [texts (seq (distinct (keep #(when (:outer? %) (:text %)) labels)))]
-    (measure/call-with-scratch-canvas
-     hint
-     (fn [c]
-       (let [sizes (map #(measure/natural-size {:kind :label :role :annotation :text %} {:canvas c :theme theme}) texts)]
-         [(+ outer-label-gap (double (reduce max (map (fn [^Vec2 s] (.x s)) sizes))))
-          (+ outer-label-gap (double (reduce max (map (fn [^Vec2 s] (.y s)) sizes))))])))))
+  (let [outer (filter :outer? labels)]
+    (when-let [texts (seq (distinct (map :text outer)))]
+      (measure/call-with-scratch-canvas
+       hint
+       (fn [c]
+         (let [sizes (map #(measure/natural-size {:kind :label :role :annotation :text %} {:canvas c :theme theme}) texts)
+               gap (double (reduce max (map outer-gap outer)))]
+           [(+ gap (double (reduce max (map (fn [^Vec2 s] (.x s)) sizes))))
+            (+ gap (double (reduce max (map (fn [^Vec2 s] (.y s)) sizes))))]))))))
 
 (defn n-label-room
   "`:padding-px` of a strip chart (`items` - `{panel [item ...]}`) with `:n-label`: room past the largest values for
