@@ -174,9 +174,9 @@
 (defn- force-positions
   "`[xs ys]` of the Fruchterman-Reingold layout of `n` nodes with weighted edge `ends` (`[i j w]`) after
   `iterations` steps from random positions of generator `g`: ideal distance `k = sqrt(1 / n)`, temperature from 0.1
-  falling linearly to 0, a pull to the centroid (`k` per unit distance) instead of a frame - the result is scaled into
-  the unit square afterwards."
-  [g ^long n ends ^long iterations]
+  falling linearly to 0, a pull to the centroid (`gravity * k` per unit distance) instead of a frame - the result is
+  scaled into the unit square afterwards."
+  [g ^long n ends [^long iterations ^double gravity]]
   (let [[^doubles xs ^doubles ys] (random-positions g n)
         k (m/sqrt (/ 1.0 (double (max 1 n))))
         mean-w (if (seq ends) (/ (double (reduce + (map #(double (nth % 2)) ends))) (count ends)) 1.0)
@@ -185,7 +185,7 @@
       (let [disp [(double-array n) (double-array n)]]
         (repel! xs ys disp (* k k))
         (attract! xs ys disp [ends k])
-        (gravitate! xs ys disp k)
+        (gravitate! xs ys disp (* gravity k))
         (move! xs ys disp (* 0.1 (- 1.0 (/ (double step) (double iterations)))))))
     [xs ys]))
 
@@ -205,12 +205,16 @@
 
 (defn layout
   "Graph `g` (see [[graph]]) with positions (see the namespace doc). `opts`: `:layout` - `:force` (default),
-  `:circle`, `:random`; `:iterations` (force, default 500); `:rng`. Force layouts are scaled into the unit square
-  keeping their proportions. Throws `ex-info {:key :layout}` for an unknown layout."
+  `:circle`, `:random`; force: `:iterations` (default 500), `:gravity` - the pull to the centroid in units of the
+  ideal edge length (default 1; 0 - none: loose parts drift apart; more - a tighter layout); `:rng`. Force layouts
+  are scaled into the unit square keeping their proportions. Throws `ex-info` for an unknown layout (`:layout`), a
+  `:gravity` that isn't a finite number >= 0 (`:gravity`)."
   ([g] (layout g {}))
-  ([{:keys [nodes edges loops] :as g} {:keys [iterations rng] kind :layout :or {kind :force iterations 500}}]
+  ([{:keys [nodes edges loops] :as g} {:keys [iterations gravity rng] kind :layout :or {kind :force iterations 500 gravity 1.0}}]
    (when-not (layouts kind)
      (schema/fail! (str "Unknown layout, known: " (sort layouts) ".") {:key :layout :value kind}))
+   (when-not (and (number? gravity) (m/valid-double? (double gravity)) (>= (double gravity) 0.0))
+     (schema/fail! "Layout :gravity should be a finite number >= 0." {:key :gravity :value gravity}))
    (let [n (count nodes)
          index (zipmap (map :id nodes) (range))
          [^doubles xs ^doubles ys] (case kind
@@ -218,7 +222,7 @@
                                      :random (random-positions (rng/for-build rng) n)
                                      :force (fitted (force-positions (rng/for-build rng) n
                                                                      (mapv (fn [e] [(index (:from e)) (index (:to e)) (:value e)]) edges)
-                                                                     (long iterations))))
+                                                                     [(long iterations) (double gravity)])))
          placed (fn [e] (let [i (long (index (:from e))) j (long (index (:to e)))]
                           (assoc e :x (aget xs i) :y (aget ys i) :xend (aget xs j) :yend (aget ys j))))]
      (assoc g

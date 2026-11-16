@@ -1,6 +1,7 @@
 (ns cljplot2.flow-cycle1-test
   "Flow cycle 1: graph data, layouts, arrows and segment widths, text angles, `plot/network`."
   (:require [clojure.test :refer [deftest testing is are]]
+            [clojure2d.color :as color]
             [clojure2d.core :as c2d]
             [fastmath.core :as m]
             [fastmath.random :as r]
@@ -109,8 +110,15 @@
       (let [[a b] (positions (graph/graph [{:from 1 :to 2}]) {:rng (r/rng :mersenne 1)})]
         (is (< (dist [0.5 0.5] [(* 0.5 (+ (double (a 0)) (double (b 0)))) (* 0.5 (+ (double (a 1)) (double (b 1))))]) 1.0e-9)
             "two nodes symmetric about the centre")))
-    (testing "2.1 unknown layout"
-      (is (= :layout (:key (error #(graph/layout path {:layout :spring}))))))
+    (testing "2.1 unknown layout; R4 :gravity a finite number >= 0"
+      (is (= :layout (:key (error #(graph/layout path {:layout :spring})))))
+      (are [g] (= :gravity (:key (error #(graph/layout path {:gravity g}))))
+        -1 ##NaN "1" nil))
+    (testing "R4 :gravity 0 lets components drift apart, more pulls them together"
+      (let [g (graph/graph [{:from 1 :to 2} {:from 3 :to 4}])
+            gap (fn [gravity] (let [ps (positions g {:rng (r/rng :mersenne 7) :gravity gravity})]
+                                (/ (dist (ps 0) (ps 1)) (min (dist (ps 0) (ps 2)) (dist (ps 1) (ps 3))))))]
+        (is (< (gap 0) (gap 5)) "edge length relative to the distance between the parts grows with gravity")))
     (testing "2.5 118 nodes within 2 s"
       (let [g (graph/graph (for [i (range 118) j (range 3)] {:from i :to (mod (+ i 1 (* 7 j)) 118)}))
             t (System/nanoTime)]
@@ -217,7 +225,7 @@
           default (gaps {})
           sized (gaps {:mapping {:size :in} :scales {:size {:range [4 20]}}})]
       (is (= 1 (count (set (vals default)))) "one radius")
-      (is (== (+ 1.0 (* 0.5 (double (get-in theme/default-theme [:chart :scatter :size])))) (double (default "a"))))
+      (is (== 7.0 (double (default "a"))) "builder node size 12: radius 6 + 1")
       (is (> (double (sized "b")) (double (sized "a"))) "b has two in-edges - larger")
       (is (some? (get-in (plot/network star {:directed? true}) [:charts 0 :options :arrow])))
       (is (instance? BufferedImage (plot/render-image (plot/network star {:directed? true :mapping {:size :in}}) {:width 300 :height 300})))))
@@ -225,6 +233,30 @@
     (let [p (plot/network star {:rng (r/rng :mersenne 1) :mapping {:size :degree}})]
       (is (= {:x :x :y :y :size :degree} (get-in p [:charts 1 :options :mapping])))
       (is (instance? BufferedImage (plot/render-image p {:width 300 :height 300})))))
+  (testing "R1 node and edge styles: builder defaults, options win, opaque fill"
+    (let [p (plot/network star {:rng (r/rng :mersenne 1)})
+          nodes (get-in p [:charts 1 :options])
+          edges (get-in p [:charts 0 :options])]
+      (is (= [12 :white 1] ((juxt :size :stroke-color :stroke-width) nodes)))
+      (is (== 255.0 (double (color/alpha (:color nodes)))) "opaque")
+      (is (= [120 120 120 200] (:color edges)))
+      (is (= 20 (get-in (plot/network star {:node-style {:size 20}}) [:charts 1 :options :size])))
+      (is (= :red (get-in (plot/network star {:edge-style {:color :red}}) [:charts 0 :options :color])))
+      (is (nil? (get-in (plot/network star {:edge-mapping {:color :value}}) [:charts 0 :options :color])) "mapped colour: no fixed one")))
+  (testing "R1 a mapped node size: range [6 24] in area unless the scales set them"
+    (is (= {:range [6 24] :area true} (get-in (plot/network star {:mapping {:size :degree}}) [:scales :size])))
+    (is (= {:range [2 8] :area true} (get-in (plot/network star {:mapping {:size :degree} :scales {:size {:range [2 8]}}}) [:scales :size])))
+    (is (nil? (get-in (plot/network star {}) [:scales :size])) "no size mapping - no size scale"))
+  (testing "R2 label offset: the largest node radius + 3"
+    (is (= [9.0 0] (get-in (plot/network star {:labels true}) [:charts 2 :options :offset])))
+    (is (= [15.0 0] (get-in (plot/network star {:labels true :mapping {:size :degree}}) [:charts 2 :options :offset])) "range top 24"))
+  (testing "R3 arrowhead: at least 7, 3 x the widest edge; :edge-style :arrow wins"
+    (let [arrow (fn [opts] (get-in (plot/network star (merge {:directed? true} opts)) [:charts 0 :options :arrow]))]
+      (is (= {:size 7.0} (arrow {})) "1 px edges")
+      (is (= {:size 30.0} (arrow {:edge-mapping {:size :value}})) "palette size range top 10")
+      (is (= {:size 12.0} (arrow {:edge-mapping {:size :value} :scales {:size {:range [1 4]}}})))
+      (is (= {:size 9.0} (arrow {:edge-style {:width 3}})))
+      (is (= {:size 5 :shape :open} (arrow {:edge-style {:arrow {:size 5 :shape :open}}})))))
   (testing "4.4 validation"
     (is (= :layout (:key (error #(plot/network star {:layout :tree})))))
     (is (= :edges (:key (error #(plot/network [[1 2]] {})))))

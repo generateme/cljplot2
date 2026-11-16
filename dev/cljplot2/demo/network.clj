@@ -1,6 +1,7 @@
 (ns cljplot2.demo.network
   "Flow cycle 1 demo: network plots - Les Misérables co-occurrences (force layout, colour by group, size by degree),
-  circle vs force layout, directed migration flows with arrows and widths, the mtcars correlation network.
+  circle vs force layout, directed migration flows with arrows and widths (opposite flows of a pair share one line -
+  curved edges come later), the mtcars correlation network.
 
   Data: `miserables.json` - vega-datasets (D. E. Knuth, The Stanford GraphBase, 1993; licence not specified);
   `migration.csv` - data-to-viz `13_AdjacencyDirectedWeighted_long.csv` (Yan Holtz, MIT), migration flows between
@@ -28,7 +29,6 @@
   (plot/network co-occurrences {:nodes characters :rng (r/rng :mersenne 3)
                                 :mapping {:color :group :size :degree}
                                 :labels #(when (>= (long (:degree %)) 10) (:id %))
-                                :scales {:size {:range [2 14] :area true}}
                                 :title "Les Misérables: characters appearing together"}))
 
 (def layouts
