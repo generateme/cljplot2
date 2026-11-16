@@ -10,17 +10,19 @@
   `d - 1` to `d`, the root at the bottom (the centre in polar plots). Children lie inside their parent's `x` span in
   `:order` - `:value` (default, descending) or `:data` (first appearance); a group's unnamed leaf comes last.
   `:root true` draws the root too, on `y` `[0 1]`, every level one up. The x / y axes and grid are hidden
-  (`:scale-defaults`); the plot's scales may override that (e.g. a reversed `:y` puts the root at the top).
+  (`:scale-defaults`); the plot's scales may override that. The root at the top: a reversed `:y` domain -
+  `:scales {:y {:domain [n 0]}}`, `n` the number of levels (one more with `:root true`).
 
   Colors: without a mapped `:color` each top-level node takes the next `[:palette :color]` color, its descendants
-  share it, brightened by depth; a mapped `:color` colors the leaves (legend keys), groups and the root take
+  share it, lighter by depth (each level a quarter of the way from its CIELAB lightness L* to 90 - light colors
+  stay apart from white borders); a mapped `:color` colors the leaves (legend keys), groups and the root take
   `[:palette :na]`. Style (theme `[:chart :partition]`): `:border-color`, `:border-width` (the cells' outlines),
   `:pattern`, `:pattern-color`.
 
   Labels: `:group-labels` / `:leaf-labels` (default true - the node's name; `false` - none; a function of the node
   info `{:name :value :depth :path :share :parent-share}` (see [[cljplot2.data.hierarchy/node-info]]) returning the
-  text, `nil` / `\"\"` - none; unnamed nodes get no label), text roles `:partition-group` / `:partition-leaf`,
-  centred in the cell and drawn only when they fit: horizontal in cartesian plots (within the cell), along the
+  text, `nil` / `\"\"` - none; unnamed nodes get no label), text roles `:partition-group` / `:partition-leaf`
+  (the text in black or white by the cell's fill), centred in the cell and drawn only when they fit: horizontal in cartesian plots (within the cell), along the
   radius in polar ones (the text's width within the ring, its height within the arc at the middle radius)."
   (:require [clojure2d.color :as c]
             [fastmath.core :as m]
@@ -33,7 +35,7 @@
             [cljplot2.scale.coord :as coord]
             [cljplot2.scale.position :as scale]
             [cljplot2.schema :as schema])
-  (:import [fastmath.vector Vec2]))
+  (:import [fastmath.vector Vec2 Vec4]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -57,9 +59,13 @@
 
 (def ^:private defaults {:order :value :root false :group-labels true :leaf-labels true})
 
-(def ^:private ^:const depth-brighten-step
-  "CIELAB brighten steps (see `clojure2d.color/brighten`) per level below the top one."
-  0.5)
+(def ^:private ^:const lightness-ceiling
+  "CIELAB lightness L* that deeper levels approach (white is 100)."
+  90.0)
+
+(def ^:private ^:const lightening-per-level
+  "Fraction of the way to [[lightness-ceiling]] each level below the top one goes."
+  0.25)
 
 (defn- style
   [options theme]
@@ -112,6 +118,19 @@
 
 ;; drawing
 
+(defn depth-shade
+  "`color` of a top-level node shaded for `depth` (1 - the top level, `color` itself): L* moves towards
+  [[lightness-ceiling]] by [[lightening-per-level]] per level (colors lighter than the ceiling stay)."
+  [color depth]
+  (if (<= (long depth) 1)
+    color
+    (let [^Vec4 lab (c/to-LAB color)
+          l (.x lab)
+          f (- 1.0 (m/pow (- 1.0 lightening-per-level) (dec (long depth))))]
+      (if (< l lightness-ceiling)
+        (c/clamp (c/from-LAB (Vec4. (+ l (* (- lightness-ceiling l) f)) (.y lab) (.z lab) (.w lab))))
+        color))))
+
 (defn- fill-fn
   "Fill of a cell: see the namespace doc."
   [{:keys [top-count colored?]} scales theme]
@@ -123,7 +142,16 @@
         (fn [{:keys [depth top-index]}]
           (if (zero? (long depth))
             na
-            (c/brighten (top-color top-index) (* depth-brighten-step (dec (double depth))))))))))
+            (depth-shade (top-color top-index) depth)))))))
+
+(defn- line-room
+  "Room for the label's height in the cell between range points `[h0 v0]` and `[h1 v1]`: the cell's height, the arc
+  at the middle radius in polar plots."
+  ^double [geometry [h0 v0] [h1 v1]]
+  (let [h0 (double h0) v0 (double v0) h1 (double h1) v1 (double v1)]
+    (if geometry
+      (* (m/abs (- h1 h0)) (m/abs (* 0.5 (+ v0 v1))))
+      (m/abs (- v1 v0)))))
 
 (defn- label-fit
   "`[pixel-x pixel-y rotation]` of a label of natural (unrotated) `size` centred in the cell between range points
@@ -151,14 +179,17 @@
     (doseq [[cell [a b]] (map vector cells corners)
             :let [fill (fill-of cell)]]
       (draw/range-bar! canvas geometry a b fill stroke sw (pattern-fill style fill)))
-    (doseq [[{:keys [label leaf?]} [a b]] (map vector cells corners)
-            :when label
-            :let [content {:kind :label :role (if leaf? :partition-leaf :partition-group) :text label}
-                  size (measure/natural-size content {:canvas canvas :theme (:theme env)})]
-            :when (every? #(m/valid-double? (double %)) (concat a b))
-            :let [[x y rotation] (label-fit geometry a b size)]
+    (doseq [[{:keys [label leaf?] :as cell} [a b]] (map vector cells corners)
+            :when (and label (every? #(m/valid-double? (double %)) (concat a b)))
+            :let [role (if leaf? :partition-leaf :partition-group)]
+            ;; a line is at least the font size tall: cells without that room aren't measured
+            :when (>= (line-room geometry a b) (double (get-in env [:theme :text role :size])))
+            :let [content {:kind :label :role role :text label}
+                  size (measure/natural-size content {:canvas canvas :theme (:theme env)})
+                  [x y rotation] (label-fit geometry a b size)]
             :when x]
-      (label/draw-at! canvas (assoc content :rotation rotation) [:center :middle] x y env))))
+      (label/draw-at! canvas (assoc content :rotation rotation :color (draw/contrast-color (fill-of cell)))
+                      [:center :middle] x y env))))
 
 (defn legend
   "Key glyph: a filled square inset in `box`, with the chart's `:pattern`."

@@ -184,7 +184,9 @@
 (defn- dark? [[r g b]] (and (< r 80) (< g 80) (< b 80)))
 
 (deftest leaf-label-fit-test
-  (let [p (tm {:data [{:a "BIG" :v 1000} {:a "tiny" :v 1}] :mapping {:value :v :hierarchy [:a]} :theme plain})
+  (let [p (tm {:data [{:a "BIG" :v 1000} {:a "tiny" :v 1}] :mapping {:value :v :hierarchy [:a]}
+              ;; light fills: black labels (contrast with the fill)
+              :theme (assoc plain :palette {:color [[255 230 150] [200 230 255]]})})
         built (build p)
         {px :x py :y pw :w ph :h} (grid/item-box (:layout built) :panel)
         [big tiny] (treemap/squarify [1000 1] {:x 0.0 :y 0.0 :w (double pw) :h (double ph)})

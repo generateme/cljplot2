@@ -25,6 +25,11 @@
   [(schema/optional :pattern schema/pattern)
    (schema/optional :pattern-color stroke-color)])
 
+(defn contrast-color
+  "Black or white, whichever reads better on `color` (by luma): text and lines drawn over a fill."
+  [color]
+  (if (> 127.5 (double (c/luma color))) :white :black))
+
 (defn outline-color
   "Outline color of a mark filled with `fill` for `:stroke-color` `stroke` (see [[stroke-color]]); `:none` stays `:none`."
   [stroke fill]

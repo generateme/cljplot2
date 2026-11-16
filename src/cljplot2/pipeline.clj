@@ -23,7 +23,7 @@
     [[cljplot2.scale.position/projection]])
   * `:coord` - `{:kind :polar ...}`: polar coordinates - the horizontal scale maps to angles, the vertical one to radii
     (`:flip` swaps them; see [[cljplot2.scale.coord]]); polar guides inside the panel, no outer axes; only charts
-    declaring `:polar` in their `:coords` (bar, segment, scatter, line, text, rule, rect); not with `:aspect :iso`,
+    declaring `:polar` in their `:coords` (bar, segment, scatter, line, text, rule, rect, parallel, partition); not with `:aspect :iso`,
     `:margins`, `:custom-grid` or `:arrange` (sub-plots may be polar)
   * `:custom-grid` - a hand-written grid (see [[cljplot2.layout.grid]]) used instead of the generated one; only
     `:labels {:title t}` may accompany it (a title row above it). Items with `{:kind :plot :plot p}` content hold
@@ -447,15 +447,20 @@
   continuous one neither padded nor niced unless its spec sets `:expand` (the plot's scale, or a chart's
   `:scale-defaults`) / the plot's scale sets `:nice`; pixel room `:padding-px`
   in radians at the outer radius; ticks hinted at the final radius), the
-  vertical one over `[inner radius, radius]` - the radius half the panel's smaller side less the angular labels'
-  room; both carry `:direction` and the panel's polar geometry `:coord`."
+  vertical one over `[inner radius, radius]` - the largest radius fitting the sector's bounding box (see
+  [[cljplot2.scale.coord/sector-box]]; a full circle - half the panel's smaller side) into the panel less the angular
+  labels' room on every side; both carry `:direction` and the panel's polar geometry `:coord`."
   [plot specs horizontal {:keys [w h]}]
   (let [w (double w) h (double h)
         coord-spec (:coord plot)
         vertical (if (= horizontal :x) :y :x)
         spacing (fn [k] (double (get-in plot [:theme :axis k :tick-spacing])))
         [t0 t1 :as theta-range] (coord/theta-range coord-spec)
-        half (* 0.5 (m/min w h))
+        [bx0 by0 bx1 by1] (coord/sector-box coord-spec)
+        ;; the radius fitting the sector's box into the panel less `room` on every side
+        fit-radius (fn ^double [^double room]
+                     (m/min (- (/ w (- (double bx1) (double bx0))) (/ (* 2.0 room) (- (double bx1) (double bx0))))
+                            (- (/ h (- (double by1) (double by0))) (/ (* 2.0 room) (- (double by1) (double by0))))))
         ;; a continuous angle spans the full circle by default: no padding, no nice (pies), unless asked - `:expand` in
         ;; the spec (the plot's scale or a chart's suggestion), `:nice` in the plot's scale (specs always carry one)
         user (get-in plot [:scales horizontal])
@@ -470,9 +475,9 @@
                      (scale/finalize (cond-> theta-spec
                                        (:padding-px theta-spec) (update :padding-px (fn [p] (mapv #(/ (double %) r) p))))
                                      theta-range (scale/tick-hint (* theta-span r) (spacing horizontal)))))
-        ;; the label room from a first pass at half the panel; ticks and room again at the radius it leaves
-        first-pass (theta-at half)
-        radius (m/max 1.0 (- half (double (theta-label-room plot horizontal first-pass))))
+        ;; the label room from a first pass at the whole panel; ticks and room again at the radius it leaves
+        first-pass (theta-at (double (fit-radius 0.0)))
+        radius (m/max 1.0 (double (fit-radius (double (theta-label-room plot horizontal first-pass)))))
         theta (theta-at radius)
         geometry (coord/geometry coord-spec w h radius)
         inner (double (:inner-radius geometry))

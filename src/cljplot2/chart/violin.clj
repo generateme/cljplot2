@@ -133,7 +133,7 @@
             polygon (into upper (rseq lower))
             fill (:color st)
             stroke (draw/outline-color (:stroke-color st) fill)
-            inner-color (if (theme/none? (:inner-color st)) (box/contrast-color fill) (:inner-color st))
+            inner-color (if (theme/none? (:inner-color st)) (draw/contrast-color fill) (:inner-color st))
             sw (double (:stroke-width st))
             p (fn [v cross] (point v level cross))
             across (fn [v] (let [w (* extent (width-at xs widths (double v)))]

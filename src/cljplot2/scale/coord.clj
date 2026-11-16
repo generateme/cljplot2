@@ -48,16 +48,37 @@
         span (m/radians (double (get coord :span 360.0)))]
     [start (if (= :counter-clockwise (:direction coord)) (- start span) (+ start span))]))
 
+(defn sector-box
+  "Bounding box `[x0 y0 x1 y1]` of the sector of polar `coord` on the unit circle around the origin, in panel
+  orientation (x right, y down): the outer arc (its ends and the 12, 3, 6 and 9 o'clock points within it) and the
+  centre - or, with an `:inner` radius, the inner arc's ends. A full circle gives `[-1 -1 1 1]`."
+  [coord]
+  (let [[t0 t1] (theta-range coord)
+        a (m/min (double t0) (double t1))
+        b (m/max (double t0) (double t1))
+        quarter (* 0.5 m/PI)
+        inner (double (get coord :inner 0.0))
+        point (fn [^double theta ^double r] [(* r (m/sin theta)) (- (* r (m/cos theta)))])
+        quarters (map #(* quarter (double %)) (range (long (m/ceil (/ a quarter))) (inc (long (m/floor (/ b quarter))))))
+        points (concat [(point a 1.0) (point b 1.0)]
+                       (map #(point % 1.0) quarters)
+                       (if (pos? inner) [(point a inner) (point b inner)] [[0.0 0.0]]))
+        xs (map first points) ys (map second points)]
+    [(reduce min xs) (reduce min ys) (reduce max xs) (reduce max ys)]))
+
 (defn geometry
   "Polar layout of a `w` x `h` panel for `coord` with `radius` - the outer radius (pixels): `{:kind :polar :cx :cy
-  :radius :inner-radius :theta [start end] :arcs}`; centre in the panel's middle."
+  :radius :inner-radius :theta [start end] :arcs}`; the centre places the sector's bounding box (see [[sector-box]])
+  in the panel's middle - a full circle's centre is the panel's middle, a half circle's on the panel's edge."
   [coord ^double w ^double h ^double radius]
-  {:kind :polar
-   :cx (* 0.5 w) :cy (* 0.5 h)
-   :radius radius
-   :inner-radius (* radius (double (get coord :inner 0.0)))
-   :theta (theta-range coord)
-   :arcs (boolean (:arcs coord))})
+  (let [[x0 y0 x1 y1] (sector-box coord)]
+    {:kind :polar
+     :cx (- (* 0.5 w) (* radius 0.5 (+ (double x0) (double x1))))
+     :cy (- (* 0.5 h) (* radius 0.5 (+ (double y0) (double y1))))
+     :radius radius
+     :inner-radius (* radius (double (get coord :inner 0.0)))
+     :theta (theta-range coord)
+     :arcs (boolean (:arcs coord))}))
 
 (defn to-pixel
   "Panel pixel of range point `(h, v)` in `geometry` (`nil` - cartesian, the point itself): polar - the angle `h`

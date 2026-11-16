@@ -283,7 +283,7 @@
       (draw/zero-line! canvas box scales style :x))
     (strip/draw-end-labels! canvas pl (keep (fn [[{:keys [label]} st]]
                                               (when label
-                                                (cond-> label (zero? (double (:side label))) (assoc :color (box/contrast-color (:color st))))))
+                                                (cond-> label (zero? (double (:side label))) (assoc :color (draw/contrast-color (:color st))))))
                                             styled)
                             scales env)))
 

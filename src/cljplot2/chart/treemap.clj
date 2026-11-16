@@ -13,7 +13,7 @@
   `:padding` (pixels inside every group), `:border-color`,
   `:border-width`. Group headers use the `:treemap-group` text role in a strip at the group's top (reserved only when
   the header fits the group's width); leaf labels the
-  `:treemap-leaf` role, centered, drawn only when they fit. The layout is computed when drawing, from the panel box."
+  `:treemap-leaf` role, centered, drawn only when they fit; label text in black or white by the fill under it. The layout is computed when drawing, from the panel box."
   (:require [clojure2d.color :as c]
             [clojure2d.core :as c2d]
             [fastmath.core :as m]
@@ -82,8 +82,10 @@
   (measure/natural-size {:kind :label :role role :text text} env))
 
 (defn- draw-label!
-  [c role text box env]
-  (canvas/call-with-isolated-graphics c #(draw/draw-content {:kind :label :role role :text text} % box env)))
+  "Draw `text` in the `role` style inside `box`, in black or white by the `fill` under it."
+  [c role text fill box env]
+  (canvas/call-with-isolated-graphics
+   c #(draw/draw-content {:kind :label :role role :text text :color (draw/contrast-color fill)} % box env)))
 
 (defn- fill-box!
   "Fill `box` with `color` and the pattern of style `st` (`pattern-fill` - see
@@ -131,7 +133,7 @@
           (when-not root?
             (fill-box! c (c/brighten color) box (dissoc style :pattern) pattern-fill))
           (when header?
-            (draw-label! c :treemap-group header-text
+            (draw-label! c :treemap-group header-text (c/brighten color)
                          {:x (+ (long (:x box)) (long (m/round padding))) :y (+ (long (:y box)) (long (m/round padding)))
                           :w (m/max 0 (- (long (:w box)) (* 2 (long (m/round padding))))) :h (long (m/ceil header-h))}
                          env))
@@ -148,7 +150,7 @@
           (when-let [text (label-text (:leaf-labels options) node at total)]
             (let [^Vec2 size (label-size :treemap-leaf text env)]
               (when (and (<= (.x size) (double (:w box))) (<= (.y size) (double (:h box))))
-                (draw-label! c :treemap-leaf text box env)))))))))
+                (draw-label! c :treemap-leaf text fill box env)))))))))
 
 (defn draw
   "Lay out and draw one panel's treemap in the panel `box`."
@@ -166,11 +168,8 @@
                   nil ctx env))))
 
 (defn legend
-  "Key glyph: a filled square inset in `box`, with the chart's `:pattern`."
-  [{:keys [options]} attributes canvas {:keys [x y w h]} env]
-  (let [side (* 0.7 (m/min (double w) (double h)))
-        cx (+ (double x) (* 0.5 (double w))) cy (+ (double y) (* 0.5 (double h)))]
-    (c2d/set-color canvas (:color attributes))
-    (c2d/crect canvas cx cy side side)
-    (draw/fill-with-pattern! canvas (draw/pattern-fill (style options (:theme env)) (:color attributes))
-                             #(c2d/crect canvas cx cy side side))))
+  "Key glyph: a filled square inset in `box`, with the chart's `:pattern` (see [[cljplot2.graphics.draw/bar-key!]])."
+  [{:keys [options]} attributes canvas box env]
+  (draw/bar-key! canvas box (assoc (select-keys (style options (:theme env)) [:pattern :pattern-color])
+                                   :color (:color attributes) :stroke-width 0)
+                 false))

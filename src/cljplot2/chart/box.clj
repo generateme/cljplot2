@@ -97,11 +97,6 @@
 
 (defn- finite? [^Vec2 p] (and (m/valid-double? (.x p)) (m/valid-double? (.y p))))
 
-(defn contrast-color
-  "Black or white, whichever reads better on `color` (by luma)."
-  [color]
-  (if (> 127.5 (double (c/luma color))) :white :black))
-
 (defn- draw-in-strip-frame
   "Draw the boxes of one panel."
   [_chart {:keys [items style place options]} canvas box scales env]
@@ -135,14 +130,14 @@
               (when-not (theme/none? stroke)
                 (c2d/set-color canvas stroke)
                 (c2d/rect canvas x y w h true)))
-            (c2d/set-color canvas (contrast-color fill))
+            (c2d/set-color canvas (draw/contrast-color fill))
             (line! canvas (p median (- c0 hw)) (p median (+ c0 hw)))
             (when outliers?
               (doseq [o outliers]
                 (shape/draw! canvas (:shape st) (p o c0) (assoc st :stroke-color stroke))))
             (when (:mean options)
               (shape/draw! canvas \O (p mean c0) {:size (m/max 3.0 (* 0.5 (double (:size st))))
-                                                   :color (contrast-color fill) :stroke-color stroke
+                                                   :color (draw/contrast-color fill) :stroke-color stroke
                                                    :stroke-width sw}))))))
     (strip/draw-n-labels! canvas pl items
                           (fn [{:keys [uav outliers]}] (if (and outliers? (seq outliers)) (reduce max uav outliers) uav))
@@ -173,5 +168,5 @@
       (when-not (theme/none? stroke)
         (c2d/set-color canvas stroke)
         (c2d/rect canvas bx by bw bh true)))
-    (c2d/set-color canvas (contrast-color (:color st)))
+    (c2d/set-color canvas (draw/contrast-color (:color st)))
     (c2d/line canvas (+ bx (* 0.5 bw)) by (+ bx (* 0.5 bw)) (+ by bh))))

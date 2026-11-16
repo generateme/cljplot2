@@ -9,7 +9,8 @@
             [cljplot2.chart.partition :as partition]
             [cljplot2.core :as plot]
             [cljplot2.data.hierarchy :as hierarchy]
-            [cljplot2.layout.grid :as grid])
+            [cljplot2.layout.grid :as grid]
+            [cljplot2.scale.coord :as coord])
   (:import [java.awt.image BufferedImage]))
 
 (def ^:private rows
@@ -176,13 +177,13 @@
 (def ^:private no-labels [(chart/partition {:leaf-labels false :group-labels false})])
 
 (deftest colors-test
-  (testing "2.5.1 top-level palette colors, brightened by depth; 2.8 the root at the bottom"
+  (testing "2.5.1 top-level palette colors, lighter by depth; 2.8 the root at the bottom"
     (let [r (render (pt {:charts no-labels}))
           blue [0 0 255]]
       (is (= blue (cell-pixel r 0.3 0.25)) "B, depth 1, bottom half")
       (is (= [255 0 0] (cell-pixel r 0.8 0.25)) "A")
-      (is (close? (color-rgb (c/brighten blue 0.5)) (cell-pixel r 0.2 0.75)) "b1, depth 2 - brightened, above")
-      (is (close? (color-rgb (c/brighten [255 0 0] 0.5)) (cell-pixel r 0.95 0.75)))))
+      (is (close? (color-rgb (partition/depth-shade blue 2)) (cell-pixel r 0.2 0.75)) "b1, depth 2 - lighter, above")
+      (is (close? (color-rgb (partition/depth-shade [255 0 0] 2)) (cell-pixel r 0.95 0.75)))))
   (testing ":root true - the root cell in the NA color"
     (is (= [128 128 128] (cell-pixel (render (pt {:charts [(chart/partition {:root true :leaf-labels false :group-labels false})]})) 0.5 0.1))))
   (testing "2.5.2 mapped :color: leaves mapped, groups NA, legend"
@@ -201,7 +202,7 @@
     (let [r (render (pt {:coord {:kind :polar} :charts no-labels}))]
       (is (= [0 0 255] (polar-pixel r 90 0.25)) "B over 0..216 degrees, inner ring")
       (is (= [255 0 0] (polar-pixel r 300 0.25)) "A over 216..360")
-      (is (close? (color-rgb (c/brighten [0 0 255] 0.5)) (polar-pixel r 60 0.75)) "b1, outer ring")
+      (is (close? (color-rgb (partition/depth-shade [0 0 255] 2)) (polar-pixel r 60 0.75)) "b1, outer ring")
       (is (= [0 0 255] (polar-pixel r 1 0.4)) "just right of 12 o'clock")
       (is (= [255 0 0] (polar-pixel r 359 0.4)) "just left of it")))
   (testing ":inner leaves a hole; flipped polar and tiny canvases render"
@@ -218,24 +219,29 @@
 
 (def ^:private one [{:a "Group" :b "leaf" :v 1}])
 
+(def ^:private light-fills
+  "Light fills: labels in black (see [[cljplot2.graphics.draw/contrast-color]])."
+  {:palette {:color [[255 230 150] [200 230 255]]}})
+
 (deftest labels-test
   (testing "2.7.1 cartesian: drawn when they fit, else hidden"
-    (is (pos? (dark-count (render (pt {:data one})))))
+    (is (pos? (dark-count (render (pt {:data one :theme light-fills})))))
     (is (zero? (dark-count (render (pt {:data one :charts [(chart/partition {:leaf-labels false :group-labels false})]})))))
     (is (zero? (dark-count (render (pt {:data [{:a (apply str (repeat 80 "W")) :v 1}]})))) "too wide"))
   (testing "2.7.2 polar: along the radius when they fit"
-    (is (pos? (dark-count (render (pt {:data one :coord {:kind :polar}})))))
+    (is (pos? (dark-count (render (pt {:data one :theme light-fills :coord {:kind :polar}})))))
     (is (zero? (dark-count (render (pt {:data [{:a (apply str (repeat 60 "W")) :v 1}] :coord {:kind :polar}}))))
         "wider than the ring")
     (is (zero? (dark-count (render (pt {:data (cons {:a "W" :v 1} (for [i (range 400)] {:a (str "g" i) :v 100}))
                                         :coord {:kind :polar} :charts [(chart/partition {:order :data})]}))))
         "taller than its arc: thin sectors"))
   (testing "2.7.3 roles: the theme's text role styles the labels"
-    (is (zero? (dark-count (render (pt {:data one :theme {:text {:partition-leaf {:color :white} :partition-group {:color :white}}}})))))))
+    (is (zero? (dark-count (render (pt {:data one :theme {:text {:partition-leaf {:size 300} :partition-group {:size 300}}}}))))
+        "too big to fit")))
 
 ;; 3. label functions
 
-(defn- tm [opts] {:data one :mapping mapping :theme (assoc-in plain [:chart :treemap] {:padding 0 :border-color :none}) :charts [(chart/treemap (merge {:group-labels false} opts))]})
+(defn- tm [opts] {:data one :mapping mapping :theme (-> plain (merge light-fills) (assoc-in [:chart :treemap] {:padding 0 :border-color :none})) :charts [(chart/treemap (merge {:group-labels false} opts))]})
 
 (deftest treemap-label-functions-test
   (testing "3.1 the function gets the node info"
@@ -255,8 +261,8 @@
     (let [top (fn [opts] (let [[built img] (render (tm (merge {:leaf-labels false} opts)))
                                {:keys [x y w]} (panel-box built)]
                            (rgb img (+ (long x) (quot (long w) 2)) (+ (long y) 3))))]
-      (is (not= [255 0 0] (top {:group-labels #(str "G " (:value %))})) "header strip")
-      (is (= [255 0 0] (top {:group-labels (constantly nil)})) "no strip"))))
+      (is (not= [255 230 150] (top {:group-labels #(str "G " (:value %))})) "header strip")
+      (is (= [255 230 150] (top {:group-labels (constantly nil)})) "no strip"))))
 
 (deftest docs-test
   (testing "2.9 the sunburst is documented"
@@ -264,3 +270,80 @@
     (is (str/includes? (:doc (meta (find-ns 'cljplot2.chart.partition))) ":coord {:kind :polar}")))
   (testing "3.3 the share format example"
     (is (str/includes? (:doc (meta (find-ns 'cljplot2.chart.treemap))) ":share"))))
+
+;; review fixes
+
+(defn- light? [[r g b]] (and (> (long r) 200) (> (long g) 200) (> (long b) 200)))
+
+(defn- count-in-panel [pred [built ^BufferedImage img]]
+  (let [{:keys [x y w h]} (panel-box built)]
+    (count (filter pred (for [i (range (long x) (+ (long x) (long w))) j (range (long y) (+ (long y) (long h)))] (rgb img i j))))))
+
+(deftest review-fixes-test
+  (testing "U1 labels in black or white by the fill: partition and treemap"
+    (let [dark {:palette {:color [[0 0 110]]}}
+          light {:palette {:color [[250 240 120]]}}]
+      (is (pos? (count-in-panel light? (render (pt {:data [{:a "Group" :v 1}] :theme dark})))) "white text on a dark cell")
+      (is (pos? (count-in-panel dark? (render (pt {:data [{:a "Group" :v 1}] :theme light})))))
+      (is (pos? (count-in-panel light? (render (pt {:data [{:a "Group" :v 1}] :theme dark :coord {:kind :polar}})))))
+      (is (pos? (count-in-panel light? (render (assoc (tm {:group-labels false}) :data [{:a "G" :b "Leaf" :v 1}]
+                                                      :theme (merge plain dark {:chart {:treemap {:padding 0 :border-color :none}}}))))))))
+  (testing "U2 depth shade: L* a quarter of the way to 90 per level; never past it; light colors kept"
+    (let [l (fn [col] (.x ^fastmath.vector.Vec4 (c/to-LAB col)))
+          blue [0 0 255]
+          muted [90 110 130]
+          l1 (double (l muted))]
+      (is (= blue (partition/depth-shade blue 1)) "the top level: the color itself")
+      (is (< (m/abs (- (double (l (partition/depth-shade muted 2))) (+ l1 (* 0.25 (- 90.0 l1))))) 0.5))
+      (is (< (m/abs (- (double (l (partition/depth-shade muted 3))) (+ l1 (* 0.4375 (- 90.0 l1))))) 0.5))
+      (is (< (double (l blue)) (double (l (partition/depth-shade blue 2)))) "saturated: lighter (RGB clamped)")
+      (is (< (double (l (partition/depth-shade [174 199 232] 4))) 90.0) "a light palette color stays below 90")
+      (is (< (double (l (partition/depth-shade blue 9))) (double (l (partition/depth-shade blue 10))) 90.5) "monotone, bounded")
+      (is (= [250 250 250] (partition/depth-shade [250 250 250] 3)) "lighter than the ceiling: kept")
+      (is (< (m/abs (- (double (l (partition/depth-shade [0 0 0] 2))) 22.5)) 0.5) "black")))
+  (testing "U4 a reversed y domain puts the root at the top"
+    (let [r (render (pt {:charts no-labels :scales {:y {:domain [2 0]}}}))]
+      (is (= [0 0 255] (cell-pixel r 0.3 0.75)) "B (depth 1) in the top half")
+      (is (str/includes? (:doc (meta (find-ns 'cljplot2.chart.partition))) ":domain [n 0]"))))
+  (testing "U3 partition listed among the polar charts"
+    (is (str/includes? (:doc (meta (find-ns 'cljplot2.chart))) "[[partition]]"))
+    (is (str/includes? (:doc (meta (find-ns 'cljplot2.pipeline))) "parallel, partition")))
+  (testing "U5 the treemap legend key: a square in the leaf color"
+    (let [[built ^BufferedImage img] (render (assoc (tm {}) :mapping (assoc mapping :color :b)))
+          legend (some #(when (= :legends (:id %)) %) (get-in built [:grid :items]))]
+      (is (some? legend))
+      (is (true? (boolean (some #(= [255 230 150] %) (for [i (range (- (.getWidth img) 120) (.getWidth img)) j (range (.getHeight img))]
+                                                         (rgb img i j)))))
+          "the legend's key in the first palette color"))))
+
+(deftest sector-fit-test
+  (testing "U7 sector boxes"
+    (let [box (fn [coord] (mapv #(/ (Math/round (* 1000.0 (double %))) 1000.0) (coord/sector-box (assoc coord :kind :polar))))]
+      (are [coord b] (= b (box coord))
+        {} [-1.0 -1.0 1.0 1.0]
+        {:start 45} [-1.0 -1.0 1.0 1.0]
+        {:inner 0.5} [-1.0 -1.0 1.0 1.0]
+        {:span 180 :start -90} [-1.0 -1.0 1.0 0.0]
+        {:span 90} [0.0 -1.0 1.0 0.0]
+        {:span 90 :inner 0.5} [0.0 -1.0 1.0 0.0]
+        {:span 90 :direction :counter-clockwise} [-1.0 -1.0 0.0 0.0]
+        {:start 30 :span 30 :inner 0.5} [0.25 -0.866 0.866 -0.25]
+        {:start 90 :span 180} [-1.0 0.0 1.0 1.0])))
+  (testing "U7 geometry: a full circle centred, a half circle on the panel's bottom edge"
+    (let [g (coord/geometry {:kind :polar} 400.0 300.0 100.0)]
+      (is (= [200.0 150.0] [(:cx g) (:cy g)])))
+    (let [g (coord/geometry {:kind :polar :span 180 :start -90} 400.0 200.0 200.0)]
+      (is (= [200.0 200.0] [(:cx g) (:cy g)]))))
+  (testing "U7 a half circle gets the larger radius and stays in the panel"
+    (let [p {:data [{:a "A" :v 1} {:a "B" :v 2}] :mapping {:value :v :hierarchy [:a]} :charts [(chart/partition)]
+             :coord {:kind :polar :span 180 :start -90}}
+          built (plot/build p {:width 700 :height 450})
+          {:keys [w h]} (panel-box built)
+          {:keys [cy radius]} (get-in built [:finalized-scales :x :coord])
+          full (get-in (plot/build (assoc p :coord {:kind :polar}) {:width 700 :height 450}) [:finalized-scales :x :coord])]
+      (is (= (* 0.5 (m/min (double w) (double h))) (:radius full)) "a full circle: half the smaller side (no angle labels)")
+      (is (> (double radius) (* 1.5 (double (:radius full)))))
+      (is (< (m/abs (- (* 2.0 (double radius)) (double w))) 0.5) "width-limited: the diameter spans the panel")
+      (is (< (m/abs (- (- (double cy) (double radius)) (- (double h) (double cy)))) 0.5)
+          "the half circle's box centred: equal room above the arc and below the centre")
+      (is (<= 0.0 (- (double cy) (double radius)))))))

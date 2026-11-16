@@ -4,7 +4,7 @@
 
   `:coords` (optional, default `#{:cartesian}`) - the coordinate systems the chart draws in (plot `:coord`, see
   [[cljplot2.scale.coord]]); polar charts: [[bar]], [[segment]], [[scatter]], [[line]], [[text]], [[rule]],
-  [[rect]], [[parallel]] (radar).
+  [[rect]], [[parallel]] (radar), [[partition]] (sunburst).
 
   `:schema` (optional for user charts) - `{:options s :style s :mapping s}` malli schemas, checked by `build` before
   any stage runs: `:options` against the chart's options, `:mapping` against the plot mapping merged with the chart's,
