@@ -165,8 +165,9 @@
    (let [ws (if (number? lo)
               (s/scale (get sampled-kinds (:kind spec) :linear)
                        (merge (select-keys spec [:base :exponent]) {:domain [(double lo) (double hi)] :range [0.0 1.0]}))
-              (s/scale :datetime {:domain [lo hi] :range [0.0 1.0]}))]
-     (mapv #(s/inverse ws (/ (double %) (double (dec n)))) (range n)))))
+              (s/scale :datetime {:domain [lo hi] :range [0.0 1.0]}))
+         n- (m/long-dec n)]
+     (mapv (fn [^double v] (s/inverse ws (/ v n-))) (range n)))))
 
 (defn- sample-count ^long [sample-step default] (long (if (map? sample-step) (:count sample-step) default)))
 

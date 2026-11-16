@@ -82,4 +82,11 @@
                   :source "R datasets package `AirPassengers` (Box & Jenkins 1976)"
                   :licence "Part of R (GPL-2 | GPL-3)"
                   :via "Rscript: datasets::AirPassengers as rows: first day of the month (ISO), year, month abbreviation, write.csv"
-                  :notes "144 rows: `date` (ISO string), `year`, `month` (Jan-Dec), `passengers` (thousands)."}}
+                  :notes "144 rows: `date` (ISO string), `year`, `month` (Jan-Dec), `passengers` (thousands)."}
+ :weapons {:file "weapons.csv"
+           :format :csv
+           :title "Weapon exports by country"
+           :source "data-to-viz example dataset `7_OneCatOneNum` (Yan Holtz)"
+           :licence "MIT (data_to_viz repository)"
+           :via "GitHub raw holtzy/data_to_viz Example_dataset/7_OneCatOneNum.csv, header renamed to `country,value`, CRLF -> LF"
+           :notes "51 rows: `country`, `value` (exports); 13 countries without a value (blank), an `Others` row."}}
