@@ -53,14 +53,15 @@
 (deftest computed-color-test
   (testing "1.3 colored by r unless number, fixed color or grouped"
     (is (= {} (aesthetic/computed-aesthetics (chart/correlation) {:x :a :y :b})))
-    (is (= {:color {:title "r" :legend false :range :RColorBrewer/RdBu}} (aesthetic/computed-aesthetics (chart/correlation {:glyph :pie}) {:x :a :y :b})))
+    (is (= {:color {:title "r" :range :RColorBrewer/RdBu}} (aesthetic/computed-aesthetics (chart/correlation {:glyph :pie}) {:x :a :y :b})))
     (is (= {} (aesthetic/computed-aesthetics (chart/correlation {:glyph :pie :color :red}) {:x :a :y :b})))
     (is (= {} (aesthetic/computed-aesthetics (chart/correlation {:glyph :pie}) {:x :a :y :b :color :g}))))
-  (testing "1.3 the r legend hidden by default, shown on request; domain [-1 1]"
+  (testing "U2 the r color bar shown by default, hidden on request; domain [-1 1]"
     (let [legends (fn [p] (some #(when (= :legends (:id %)) (get-in % [:content :legends])) (get-in (plot/build p {:width 400 :height 300}) [:grid :items])))
           p {:data cloud :mapping {:x :a :y :b} :charts [(chart/correlation {:glyph :shade})]}]
-      (is (empty? (legends p)))
-      (is (= [:colorbar] (map :kind (legends (assoc p :scales {:color {:legend true}})))))
+      (is (= [:colorbar] (map :kind (legends p))))
+      (is (= "r" (:title (first (legends p)))))
+      (is (empty? (legends (assoc p :scales {:color {:legend false}}))))
       (is (= {:kind :numeric :min -1.0 :max 1.0} (get-in (stats p) [:extents :panel :color]))))))
 
 (defn- glyph-image
@@ -225,3 +226,39 @@
       (let [t (System/nanoTime)]
         (plot/render-image p {:width 900 :height 800})
         (is (< (/ (- (System/nanoTime) t) 1.0e6) 3000.0))))))
+
+;; review fixes
+
+(deftest review-fixes-test
+  (testing "U1 the number glyph names its method; a grouped first line too"
+    (is (= {"Corr" :pearson "Spearman" :spearman "Kendall" :kendall} (zipmap (vals correlation/method-labels) (keys correlation/method-labels))))
+    (let [d (get-in (stats {:data cloud :mapping {:x :a :y :b} :charts [(chart/correlation {:method :kendall})]}) [:data :panel])]
+      (is (= :kendall (:method d)))))
+  (testing "R2 a continuous color doesn't group (and colors no glyph)"
+    (let [s (stats {:data cloud :mapping {:x :a :y :b :color :c} :charts [(chart/correlation {:glyph :pie})]})]
+      (is (nil? (get-in s [:data :panel :groups])))
+      (is (false? (get-in s [:data :panel :by-r?]))))
+    (is (instance? BufferedImage (plot/render-image (plot/pairs cloud {:variables [:a :b :c] :mapping {:color :c}}) {:width 500 :height 500}))))
+  (testing "R3 NA for a missing r on every glyph; the :color option colors the number"
+    (let [[img box] (glyph-image :pie (repeat 10 1))]
+      (is (some #(not= bg %) (for [fx (range 0.3 0.7 0.02)] (at img box fx 0.5))) "NA text drawn"))
+    (is (= [255 0 0] (get-in (stats {:data cloud :mapping {:x :a :y :b} :charts [(chart/correlation {:color [255 0 0]})]}) [:data :panel :text-color]))))
+  (testing "U2 pairs: an ungrouped correlogram gets an r legend column; plain scatter / number none"
+    (let [cg (:arrange (plot/pairs cloud {:variables [:a :b :c] :lower (chart/correlation {:glyph :ellipse}) :upper (chart/correlation {:glyph :pie})}))]
+      (is (= 4 (:columns cg)))
+      (is (= [1 1 1 :measured] (:widths cg)))
+      (is (= [:correlation] (distinct (map :kind (:charts (get-in cg [:plots 3])))))))
+    (is (= 3 (:columns (:arrange (plot/pairs cloud {:variables [:a :b :c]}))))))
+  (testing "R6 grouped pairs with glyph charts: the theme color, one group legend"
+    (let [b (plot/build (plot/pairs cloud {:variables [:a :b] :mapping {:color :g} :upper (chart/correlation {:glyph :pie})}) {:width 500 :height 400})]
+      (is (false? (get-in b [:subplots [:plot 1] :stats 0 :data :panel :by-r?])))))
+  (testing "R1 a plot too small for its axes still builds, panels at least 1 px"
+    (let [b (plot/build (plot/pairs cloud {:variables [:a :b :c :d]}) {:width 420 :height 420})]
+      (is (every? #(>= (long (:w %)) 1) (panel-boxes b)))))
+  (testing "R6 :measured across several rows, :equal-panels with a fixed column"
+    (let [lo (fn [g] {:data cloud :mapping {:x :a :y :b :color g} :legend-only true :charts [(chart/scatter)]})
+          sc {:data cloud :mapping {:x :a :y :b} :charts [(chart/scatter)]}
+          b (plot/build (plot/arrange [sc (lo :g) sc (lo :s)] {:columns 2 :widths [1 :measured] :equal-panels true}) {:width 600 :height 500})
+          boxes (panel-boxes b)]
+      (is (= 2 (count boxes)))
+      (is (apply = (map :h boxes))))))

@@ -3,7 +3,8 @@
   Panels of arranged plots are aligned in rows and columns by default, see [[cljplot2.layout.align]]."
   (:require [fastmath.core :as m]
             [cljplot2.chart :as chart]
-            [cljplot2.data.group :as group]
+            [cljplot2.data.accessor :as accessor]
+            [cljplot2.scale.aesthetic :as aesthetic]
             [cljplot2.data.rows :as data]
             [cljplot2.schema :as schema]))
 
@@ -29,7 +30,8 @@
     on its own), see [[cljplot2.layout.align]]
   * `:equal-panels` - `true`: after the first layout the columns and rows are resized so every aligned panel has the
     same width and height (cells with axes get the extra room; fixed / `:measured` columns keep their width) - a
-    matrix of panels, e.g. [[pairs]]; a `:widths` / `:heights` entry may also be `[:fixed px]`
+    matrix of panels, e.g. [[pairs]]; the whole multiplot is built twice; a `:widths` / `:heights` entry may also be
+    `[:fixed px]`
   * `:title` - overall title above the cells (`:labels {:title t}`)
   * `:theme` - the multiplot's theme: background, title style, `[:multiplot :gap]` between cells, `[:plot :margin]`
     around them; sub-plots keep their own themes
@@ -93,9 +95,12 @@
 
   All cells of a column share the x domain of its variable, all cells of a row the y domain of its (the variable's
   range widened by 5 %, no nice extension, no chart padding). Tick labels and axis titles (the variable names) only on the outer cells
-  - x under the bottom row, y left of the left column - the inner sides keep grid lines (`:axis :grid`). With a
-  grouping mapping the cells' legends are hidden and a column of `:legend-only` plots (the first one with the legend
-  of the lower charts) is sized to the legend; the matrix has `:equal-panels`. Throws `ex-info {:key :variables}` for
+  - x under the bottom row, y left of the left column - the inner sides keep grid lines (`:axis :grid`; the top-left
+  diagonal cell shows no y tick labels: its axis is the diagonal chart's own). The cells' legends are hidden; one
+  column of `:legend-only` plots, sized to the legend, shows the mapped aesthetics (keys of the lower charts, a color
+  bar for a continuous color - left out of the diagonal cells) or, without a mapping, the colors the lower / upper
+  charts compute (e.g. the r color bar of correlation glyphs);
+  the matrix has `:equal-panels`. Throws `ex-info {:key :variables}` for
   a wrong variable count, a missing or non-numeric variable.
 
   Equivalents: GGally `ggpairs` - the defaults (scatter below, correlation text above - per group when grouped -,
@@ -114,7 +119,20 @@
         lower (if (= ::default lower) [(chart/scatter)] (slot-charts lower))
         upper (if (= ::default upper) [(chart/correlation {:glyph :number})] (slot-charts upper))
         diagonal (if (= ::default diagonal) [(chart/density)] diagonal)
-        grouped? (boolean (seq (group/group-dims mapping)))
+        mapped? (boolean (seq (aesthetic/mapped-dims mapping)))
+        ;; aesthetics with continuous values (e.g. a numeric :color) color marks without grouping: left out on the
+        ;; diagonal, whose 1d charts group by their aesthetics
+        continuous (set (filter (fn [k] (let [vs (keep (data/row-accessor k (mapping k)) rows)]
+                                          (and (seq vs) (every? number? vs) (not (accessor/categorical? (mapping k))))))
+                                (aesthetic/mapped-dims mapping)))
+        diagonal-mapping (apply dissoc mapping continuous)
+        pair-mapping (assoc mapping :x (variables 1) :y (variables 0))
+        ;; the legend column: the mapped aesthetics (keys / color bars of the lower charts), else the colors the cell
+        ;; charts compute (r color bars)
+        legend-charts (cond
+                        mapped? (if (seq lower) lower [(chart/scatter)])
+                        :else (vec (distinct (filter #(seq (aesthetic/computed-aesthetics % pair-mapping)) (concat lower upper)))))
+        legend? (boolean (seq legend-charts))
         axis (fn [outer?] (if outer? true :grid))
         cell (fn [^long i ^long j]
                (let [vx (variables j) vy (variables i)
@@ -125,7 +143,7 @@
                                   (> i j) lower
                                   :else upper)]
                  (cond-> {:data rows
-                          :mapping (cond-> (assoc mapping :x vx) (not diag?) (assoc :y vy))
+                          :mapping (if diag? (assoc diagonal-mapping :x vx) (assoc mapping :x vx :y vy))
                           :charts charts
                           ;; exact domains (already padded): no chart padding on top
                           :scales {:x {:domain (domains vx) :nice false :expand [0.0 0.0] :axis (axis bottom?)}
@@ -137,12 +155,11 @@
                    names? (update :mapping dissoc :y)
                    theme (assoc :theme theme))))
         legend-cell (fn [^long i] (cond-> {:legend-only true}
-                              (zero? i) (assoc :data rows :mapping (assoc mapping :x (variables 1) :y (variables 0))
-                                               :charts (if (seq lower) lower [(chart/scatter)]))
+                              (zero? i) (assoc :data rows :mapping pair-mapping :charts legend-charts)
                               theme (assoc :theme theme)))
-        plots (vec (for [i (range n) j (range (if grouped? (inc n) n))]
+        plots (vec (for [i (range n) j (range (if legend? (inc n) n))]
                      (if (== (long j) n) (legend-cell i) (cell i j))))]
-    (arrange plots (cond-> {:columns (if grouped? (inc n) n) :equal-panels true}
-                     grouped? (assoc :widths (conj (vec (repeat n 1)) :measured))
+    (arrange plots (cond-> {:columns (if legend? (inc n) n) :equal-panels true}
+                     legend? (assoc :widths (conj (vec (repeat n 1)) :measured))
                      title (assoc :title title)
                      theme (assoc :theme theme)))))

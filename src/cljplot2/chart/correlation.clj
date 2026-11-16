@@ -7,18 +7,21 @@
 
   `:glyph`:
 
-  * `:number` (default) - r to 2 decimals (text role `:correlation`); with a grouping mapping (`:color`, `:group`,
-    other ordinal aesthetics) \"Corr: r\" of all the panel's points and a line per group, in its style
+  * `:number` (default) - \"<method>: r\" to 2 decimals (\"Corr\", \"Spearman\", \"Kendall\"; text role
+    `:correlation`, shrunk to fit a narrow panel); with a grouping mapping (`:group`, ordinal aesthetics such as a categorical `:color`) a line per
+    group under it, in the group's style
   * `:shade` - the whole panel in r's color
   * `:square`, `:circle` - area proportional to |r|
   * `:ellipse` - the bivariate normal contour of r: axes along the diagonals, minor / major ratio
     √((1−|r|)/(1+|r|)), rising for r > 0
   * `:pie` - a disk filled |r|·360° from the top, clockwise for r > 0, counter-clockwise for r < 0, outlined
 
-  Color: r through the plot's color scale (a computed color - domain [-1 1], diverging `:RColorBrewer/RdBu`, legend
-  hidden by default: the glyph carries the value; `:scales {:color {...}}` changes any of them); option `:color` - one fixed color; grouped glyphs other
-  than `:number` show the panel's r in the theme color. The `:number` text takes the `:correlation` text role's
-  color; grouped lines their group's color. The chart adds
+  Color: r through the plot's color scale (a computed color - domain [-1 1], diverging `:RColorBrewer/RdBu`, with a
+  color bar; `:scales {:color {...}}` changes them); option `:color` - one fixed color (the `:number` text's too);
+  with a mapped aesthetic (the plot's color then belongs to the mapping - e.g. a continuous `:color` of the other
+  charts, which doesn't group) glyphs other than `:number` show the panel's r in the theme color. The `:number` text
+  takes the `:correlation` text role's color unless `:color` is given; group lines their group's color. A missing r
+  (fewer than 2 points, a constant variable) shows `NA` for every glyph. The chart adds
   no x / y extents: it fills whatever panel it is in (e.g. a `pairs` cell with the other charts' domains).
 
   Options (style defaults from theme `[:chart :correlation]`): `:color`, `:stroke-color` (glyph outline: a color,
@@ -31,6 +34,7 @@
             [cljplot2.data.group :as group]
             [cljplot2.data.rows :as data]
             [cljplot2.graphics.draw :as draw]
+            [cljplot2.graphics.measure :as measure]
             [cljplot2.scale.aesthetic :as aesthetic]
             [cljplot2.schema :as schema]
             [cljplot2.theme :as theme]))
@@ -62,12 +66,16 @@
 (defn- grouped? [mapping] (boolean (seq (group/group-dims mapping))))
 
 (defn computed-aesthetics
-  "The correlation chart's computed color - r, legend hidden - unless a fixed `:color`, the `:number` glyph or a
-  grouping mapping colors it."
+  "The correlation chart's computed color - r on a diverging palette, with its color bar - unless a fixed `:color`,
+  the `:number` glyph or a mapped aesthetic (the plot's color then belongs to the mapping) colors it."
   [options mapping]
   (if (or (:color options) (= :number (get options :glyph :number)) (grouped? mapping))
     {}
-    {:color {:title "r" :legend false :range :RColorBrewer/RdBu}}))
+    {:color {:title "r" :range :RColorBrewer/RdBu}}))
+
+(def method-labels
+  "Label of the coefficient of each `:method`."
+  {:pearson "Corr" :spearman "Spearman" :kendall "Kendall"})
 
 (defn r
   "Correlation coefficient of `xs`, `ys` (doubles) by `method`; `##NaN` for fewer than 2 points or no spread."
@@ -89,15 +97,18 @@
     [(mapv #(double (first %)) ps) (mapv #(double (second %)) ps)]))
 
 (defn compute
-  "Per panel: `{:r r :groups [{:aesthetics a :r r} ..] :glyph g :style st :by-r? b}`; no x / y extents, color extent
+  "Per panel: `{:r r :groups [{:aesthetics a :r r} ..] :glyph g :method m :style st :by-r? b :text-color c}`; no x / y extents, color extent
   [-1 1] when colored by r, the groups' aesthetic extents when grouped; `:dropped` (`:x`, `:y`)."
   [{:keys [options]} {:keys [groups mapping]} {:keys [theme plot-scales] :as env}]
   (let [method (get options :method :pearson)
         glyph (get options :glyph :number)
         x-of (data/row-accessor :x (:x mapping))
         y-of (data/row-accessor :y (:y mapping))
-        grouped (grouped? mapping)
-        split (when grouped (group/split groups mapping env))
+        ;; groups: ordinal aesthetics and :group only - a continuous color colors other charts' marks
+        continuous (group/continuous-color groups mapping env)
+        grouping (if continuous (:mapping continuous) mapping)
+        grouped (grouped? grouping)
+        split (when grouped (group/split groups grouping env))
         by-r? (contains? (computed-aesthetics options mapping) :color)
         rows (mapcat val groups)
         panel-r (fn [rows] (let [[xs ys] (pairs-of rows x-of y-of)] (r method xs ys)))]
@@ -106,7 +117,8 @@
                                    :groups (when grouped
                                              (mapv (fn [{:keys [aesthetics rows]}] {:aesthetics aesthetics :r (panel-r rows)})
                                                    (get-in split [:panels panel])))
-                                   :glyph glyph :by-r? by-r? :style (style options theme)}]))
+                                   :glyph glyph :method method :by-r? by-r? :style (style options theme)
+                                   :text-color (:color options)}]))
                  groups)
      :extents (into {} (map (fn [panel]
                               [panel (cond-> {}
@@ -148,20 +160,36 @@
                           [(+ cx (- (* u ca) (* v sa))) (+ cy (+ (* u sa) (* v ca)))]))
           (range 72))))
 
-(defn- draw-number!
-  [canvas {:keys [r groups]} {:keys [w h]} scales env]
-  (let [lines (if (seq groups)
-                (into [{:text (str "Corr: " (number-text r))}]
-                      (keep (fn [{:keys [aesthetics r]}]
-                              (when-let [st (group/style {:color :black} aesthetics scales (:theme env))]
-                                {:text (str (or (some-> (first (vals aesthetics)) str) "NA") ": " (number-text r)) :color (:color st)}))
-                            groups))
-                [{:text (number-text r)}])
-        line-h (* 1.3 (double (get-in env [:theme :text :correlation :size])))
+(def ^:private ^:const min-text-size
+  "Smallest font size text lines shrink to when the panel is narrow."
+  6.0)
+
+(defn- draw-text-lines!
+  "Text `lines` (`[{:text :color}]`, color optional - the role's) centred in the panel `w` x `h`, one under another;
+  the font shrinks (to [[min-text-size]] at least) so the widest line - and the `template` text, the widest a value
+  can be, so equal panels get one size - fits 92 % of the panel's width."
+  [canvas lines template w h env]
+  (let [role-size (double (get-in env [:theme :text :correlation :size]))
+        content (fn [{:keys [text color]} size] (cond-> {:kind :label :role :correlation :text text :size size} color (assoc :color color)))
+        widest (double (reduce max 0.0 (map #(.x ^fastmath.vector.Vec2 (measure/natural-size (content % role-size) {:canvas canvas :theme (:theme env)}))
+                                            (conj lines {:text template}))))
+        size (if (> widest (* 0.92 (double w))) (m/max min-text-size (m/floor (/ (* role-size 0.92 (double w)) widest))) role-size)
+        line-h (* 1.3 size)
         top (- (* 0.5 (double h)) (* 0.5 line-h (dec (count lines))))]
-    (doseq [[i {:keys [text color]}] (map-indexed vector lines)]
-      (label/draw-at! canvas (cond-> {:kind :label :role :correlation :text text} color (assoc :color color))
-                      [:center :middle] (* 0.5 (double w)) (+ top (* line-h (double i))) env))))
+    (doseq [[i line] (map-indexed vector lines)]
+      (label/draw-at! canvas (content line size) [:center :middle] (* 0.5 (double w)) (+ top (* line-h (double i))) env))))
+
+(defn- draw-number!
+  "The `:number` glyph: `<method label>: r` (the `:color` option, else the role's color), with a line per group in
+  its color."
+  [canvas {:keys [r groups method text-color]} {:keys [w h]} scales env]
+  (let [color text-color
+        lines (into [{:text (str (method-labels method) ": " (number-text r)) :color color}]
+                    (keep (fn [{:keys [aesthetics r]}]
+                            (when-let [st (group/style {:color :black} aesthetics scales (:theme env))]
+                              {:text (str (or (some-> (first (vals aesthetics)) str) "NA") ": " (number-text r)) :color (:color st)})))
+                    groups)]
+    (draw-text-lines! canvas lines (str (method-labels method) ": -0.00") w h env)))
 
 (defn draw
   "Draw one panel's glyph (see the namespace doc)."
@@ -171,7 +199,9 @@
         cx (* 0.5 w) cy (* 0.5 h)
         side (* 0.9 (m/min w h))
         fill (glyph-color r computed scales env)]
-    (case glyph
+    (if (and (m/nan? r) (not= glyph :number))
+      (draw-text-lines! canvas [{:text "NA"}] "NA" w h env)
+      (case glyph
       :number (draw-number! canvas computed box scales env)
       :shade (when fill (c2d/set-color canvas fill) (c2d/rect canvas 0 0 w h))
       (:square :circle) (when fill
@@ -192,7 +222,7 @@
                    sector! #(c2d/arc canvas cx cy side side start (if (neg? r) (- extent) extent) :pie %)]
                (c2d/set-color canvas fill)
                (when (pos? extent) (sector! false))
-               (outline! canvas #(c2d/ellipse canvas cx cy side side %) fill style))))))
+               (outline! canvas #(c2d/ellipse canvas cx cy side side %) fill style)))))))
 
 (defn legend
   "Key glyph of a grouped chart: a filled square in the key's color."

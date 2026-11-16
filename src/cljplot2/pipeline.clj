@@ -659,7 +659,8 @@
   [sizes insets]
   (let [flexible (keep-indexed (fn [i inset] (when inset i)) insets)
         free (- (double (reduce + (map #(nth sizes %) flexible))) (double (reduce + (keep identity insets))))
-        panel (if (seq flexible) (m/floor (/ free (count flexible))) 0.0)]
+        ;; at least a pixel: on a plot too small for its axes the panels stay visible (the cells overflow less)
+        panel (if (seq flexible) (m/max 1.0 (m/floor (/ free (count flexible)))) 0.0)]
     (mapv (fn [size inset] [:fixed (long (if inset (+ panel (double inset)) size))]) sizes insets)))
 
 (defn- equal-panel-plot
