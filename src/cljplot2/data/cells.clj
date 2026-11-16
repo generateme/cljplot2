@@ -131,14 +131,22 @@
   (let [lo (double (reduce min vs)) hi (double (reduce max vs))]
     (if (== lo hi) [(- lo 0.5) 1.0] [lo (- hi lo)])))
 
+(def size-methods
+  "fastmath `estimate-grid-size` methods `:bins` may name: normal-reference rules (cheap) and data-driven ones (a
+  pass over the points per candidate size)."
+  [:scott-correlated :scott :freedman-diaconis :cross-validation :shimazaki-shinomoto])
+
+(def default-size-method :scott-correlated)
+
 (defn- grid-size
-  "Cell size in the normalized space: `:binwidth` (x data units) over `x-span`, `:bins` an integer - 1 / bins,
-  `:bins :scott` (default) - fastmath's estimate for the normalized `points`."
+  "Cell size in the normalized space: `:binwidth` (x data units) over `x-span`, `:bins` an integer - 1 / bins, a
+  [[size-methods]] keyword (default [[default-size-method]]) - fastmath's estimate for the normalized `points` on
+  the `:cell` grid."
   ^double [{:keys [bins binwidth cell]} x-span points]
   (cond
     binwidth (/ (double binwidth) (double x-span))
     (integer? bins) (/ 1.0 (double bins))
-    :else (stats/estimate-grid-size points cell :scott)))
+    :else (stats/estimate-grid-size points (or bins default-size-method) {:grid cell})))
 
 (defn- proportional-box
   "`[[u0 u1] [v0 v1]]`: the bounding box of the normalized `points`, its shorter side grown (centred) so that its
@@ -179,7 +187,7 @@
             unit-cells (update-vals panel-points
                                     (fn [pts]
                                       (mapv (fn [{:keys [mid count]}] {:corners (grid/corners g mid) :count count})
-                                            (:bins-maps (stats/histogram2d (map to-unit pts) cell size)))))
+                                            (:bins-maps (stats/histogram2d (map to-unit pts) size {:grid cell})))))
             [[u0 u1] [v0 v1]] (proportional-box (mapcat :corners (mapcat val unit-cells)) s)
             [lo-x lo-y] (from-unit [u0 v0])
             [hi-x hi-y] (from-unit [u1 v1])]

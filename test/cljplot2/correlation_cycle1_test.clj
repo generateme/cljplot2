@@ -107,8 +107,23 @@
     (let [cs (:p (:panels (cells/bin-points {:p cloud} {:cell :square :bins 3 :binwidth 1.0} {:size [600 600]})))
           [[x0] [x1]] (:corners (first cs))]
       (is (m/delta-eq 1.0 (m/abs (- (double x1) (double x0))) 1e-9))))
-  (testing "1.4.1 :scott default"
-    (is (seq (:p (:panels (cells/bin-points {:p cloud} {:cell :square :bins :scott} {:size [600 600]})))))))
+  (testing "1.4.1 every estimation method bins; the default is :scott-correlated"
+    (doseq [method cells/size-methods
+            cell [:square :pointy-hex]]
+      (is (seq (:p (:panels (cells/bin-points {:p cloud} {:cell cell :bins method} {:size [600 600]})))) [method cell]))
+    (is (= :scott-correlated cells/default-size-method))
+    (let [area (fn [opts] (:area (cells/bin-points {:p cloud} (merge {:cell :square} opts) {:size [600 600]})))]
+      (is (== (area {:bins :scott-correlated}) (area {})) "no :bins - the default method")
+      (is (not= (area {:bins :scott}) (area {:bins :scott-correlated})) "methods differ")))
+  (testing "1.4.1 estimation on degenerate data: one point, constant x, two panels share the estimate"
+    (is (= 1 (count (:p (:panels (cells/bin-points {:p [[1.0 2.0]]} {:cell :square} {:size [600 600]}))))))
+    (is (seq (:p (:panels (cells/bin-points {:p [[1.0 2.0] [1.0 3.0] [1.0 5.0]]} {:cell :pointy-hex :bins :cross-validation}
+                                            {:size [600 600]})))))
+    (let [{:keys [panels area]} (cells/bin-points {:a (take 100 cloud) :b (drop 100 cloud)} {:cell :square} {:size [600 600]})
+          sides (fn [cs] (set (map (fn [{:keys [corners]}] (let [xs (map #(double (first %)) corners)] (m/approx (- (apply max xs) (apply min xs)) 6))) cs)))]
+      (is (pos? (double area)))
+      (is (= 1 (count (sides (:a panels)))) "equal cells")
+      (is (= (sides (:a panels)) (sides (:b panels))) "one grid for both panels"))))
 
 (deftest bin-points-boundary-test
   (testing "no points"
@@ -309,7 +324,7 @@
     (is (nil? (error #(stats {:data cloud-rows :mapping {:x :x :y :y :color :x} :charts [(chart/bin2d {:mapping {:color nil}})]})))
         ":color set to nil in the chart's mapping")
     (are [opts] (some? (error #(stats {:data cloud-rows :mapping {:x :x :y :y} :charts [(chart/bin2d opts)]})))
-      {:bins 0} {:bins 2.5} {:bins :sturges} {:binwidth 0} {:shape -1} {:measure :mean} {:cell :hex})))
+      {:bins 0} {:bins 2.5} {:bins :sturges} {:bins :scott-2d} {:binwidth 0} {:shape -1} {:measure :mean} {:cell :hex})))
 
 (deftest bin2d-measure-test
   (let [values (fn [measure] (map :value (get-in (stats {:data cloud-rows :mapping {:x :x :y :y}

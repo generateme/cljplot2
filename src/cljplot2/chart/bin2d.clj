@@ -10,9 +10,13 @@
   Options (style defaults from theme `[:chart :bin2d]`):
 
   * `:cell` - a `fastmath.grid` cell type (default `:pointy-hex`)
-  * `:bins` - `:scott` (default, fastmath's normal-reference estimate - coarse for a few hundred points or
-    multimodal data, e.g. about 5 cells across Old Faithful's 272 eruptions) or a positive integer: cells across the
-    x range (20-30 is a common choice)
+  * `:bins` - a positive integer: cells across the x range (20-30 is a common choice), or a fastmath
+    `estimate-grid-size` method (a cell area, the same for every cell type): `:scott-correlated` (default - the
+    normal-reference rule taking the axes' correlation into account; about 8 cells across Old Faithful's 272
+    eruptions), `:scott`, `:freedman-diaconis` (normal-reference, coarse for multimodal data), `:cross-validation`,
+    `:shimazaki-shinomoto` (data-driven: adapt to the data's shape, cost a pass over the points per candidate size -
+    noticeable for tens of thousands of points, and overfit coordinates recorded at a coarse precision, e.g. 80-90
+    cells across the quakes' longitudes and latitudes)
   * `:binwidth` - cell size in x data units (wins over `:bins`)
   * `:shape` - the normalized space's height / width ratio (default: estimated, see above)
   * `:measure` - the color: `:count` (default), `:percent` (of the panel's points), `:pmf` (share of the panel's
@@ -40,7 +44,7 @@
    :options (-> [:map {:closed true}]
                 (into cells/style-entries)
                 (into data/common-options)
-                (conj (schema/optional :bins [:or [:= :scott] schema/pos-int])
+                (conj (schema/optional :bins [:or (into [:enum] cells/size-methods) schema/pos-int])
                       (schema/optional :binwidth [:and schema/finite [:> 0]])
                       (schema/optional :shape [:and schema/finite [:> 0]])
                       (schema/optional :measure [:enum :count :percent :pmf :density])))
@@ -71,7 +75,7 @@
         all (apply concat (vals pairs))
         points (update-vals pairs (fn [ps] (filterv (fn [[x y]] (and x y)) ps)))
         to-data (fn [[u v]] [(ix (double u)) (iy (double v))])
-        {:keys [panels area extent]} (cells/bin-points points (merge {:cell (:cell st) :bins :scott}
+        {:keys [panels area extent]} (cells/bin-points points (merge {:cell (:cell st) :bins cells/default-size-method}
                                                               (select-keys options [:bins :binwidth :shape]))
                                                 env)
         valued (update-vals panels (fn [cs]
