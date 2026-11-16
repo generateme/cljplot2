@@ -73,6 +73,15 @@
   [mapping]
   (filterv #(some? (get mapping %)) dims))
 
+(defn computed-aesthetics
+  "`{dim title}` of the aesthetics chart value `chart` computes itself with its merged `mapping`: its
+  `:computed-aesthetics` - a map, or a function of the chart's options and the mapping returning one (e.g. a color
+  computed only when nothing groups the chart, a title named after a mapped accessor; a top-level function keeps chart
+  values comparable as data); `{}` without one."
+  [chart mapping]
+  (let [computed (:computed-aesthetics chart)]
+    (or (if (fn? computed) (computed (:options chart) mapping) computed) {})))
+
 (defn- palette-colors
   "Colors of palette `p` (a palette name or a non-empty sequence of colors), `nil` when it isn't one."
   [p]

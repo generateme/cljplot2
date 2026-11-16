@@ -2,10 +2,12 @@
   "Charts. A chart value is a plain map `{:kind :options :compute :draw :legend :schema}` made by a constructor;
   `:compute` and `:draw` are top-level functions, so chart values print and compare as data.
 
-  `:computed-aesthetics` (optional) - `{dim title}`: aesthetics the chart computes itself instead of mapping (e.g.
-  [[bin2d]]'s color, titled by its measure): a plot `:scales` entry of such an aesthetic is valid without a chart
-  mapping it, and `title` (a string or `nil`) is its legend title unless the plot's scale has a `:title` (the first
-  chart's title wins).
+  `:computed-aesthetics` (optional) - `{dim title}`, or a function of the chart's options and merged mapping
+  returning one:
+  aesthetics the chart computes itself instead of mapping (e.g. [[bin2d]]'s color, titled by its measure): a plot
+  `:scales` entry of such an aesthetic is valid without a chart mapping it, another chart can't map it, and `title`
+  (a string or `nil`) is its legend title unless the plot's scale has a `:title` (the first chart's title wins); see
+  [[cljplot2.scale.aesthetic/computed-aesthetics]].
 
   `:coords` (optional, default `#{:cartesian}`) - the coordinate systems the chart draws in (plot `:coord`, see
   [[cljplot2.scale.coord]]); polar charts: [[bar]], [[segment]], [[scatter]], [[line]], [[text]], [[rule]],
@@ -59,9 +61,11 @@
             [cljplot2.chart.bin2d :as bin2d]
             [cljplot2.chart.box :as box]
             [cljplot2.chart.candlestick :as candlestick]
+            [cljplot2.chart.contour :as contour]
             [cljplot2.chart.density :as density]
             [cljplot2.chart.ecdf :as ecdf]
             [cljplot2.chart.extent :as extent]
+            [cljplot2.chart.field :as field]
             [cljplot2.chart.function :as function]
             [cljplot2.chart.histogram :as histogram]
             [cljplot2.chart.line :as line]
@@ -104,6 +108,8 @@
    :venn (:style venn/schemas)
    :tile (:style tile/schemas)
    :bin2d (:style bin2d/schemas)
+   :field (:style field/schemas)
+   :contour (:style contour/schemas)
    :ecdf (:style ecdf/schemas)
    :box (:style box/schemas)
    :violin (:style violin/schemas)
@@ -282,3 +288,17 @@
   "Text labels at positions, see [[cljplot2.chart.text]] and [[cljplot2.data.annotation]]."
   ([] (text {}))
   ([options] (polar (annotation-value :text text/compute text/draw text/legend text/schemas options))))
+
+(defn field
+  "Raster of a 2D field - the density of points, interpolated gridded `:value`s or a function of `x`, `y` - colored by
+  value, see [[cljplot2.chart.field]]."
+  ([] (field {}))
+  ([options] (assoc (chart-value :field field/compute field/draw nil field/schemas options)
+                    :computed-aesthetics field/computed-aesthetics)))
+
+(defn contour
+  "Contour lines or filled regions of a 2D field (density, gridded `:value`s, a function), see
+  [[cljplot2.chart.contour]]."
+  ([] (contour {}))
+  ([options] (assoc (chart-value :contour contour/compute contour/draw contour/legend contour/schemas options)
+                    :computed-aesthetics contour/computed-aesthetics)))

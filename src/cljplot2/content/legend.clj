@@ -166,8 +166,8 @@
 (defn provisional-legends
   "Legend contents `plot` is expected to get, before its stats (for estimating the panel size, see
   [[cljplot2.layout.plot-grid/estimated-panel-size]]): one per aesthetic mapped by a chart (`chart-inputs` -
-  `[{:mapping :groups}]` of the split stage) or computed by one (`:computed-aesthetics {dim title}` of the chart
-  values) - a color bar with a stand-in tick label for a linear or binned color (a computed one too), else a legend
+  `[{:mapping :groups}]` of the split stage, in chart order) or computed by one (see
+  [[cljplot2.scale.aesthetic/computed-aesthetics]]) - a color bar with a stand-in tick label for a linear or binned color (a computed one too), else a legend
   of the distinct mapped values (at most 50); titles as [[legends]] gives them (the scale's `:title`, the computed
   title, an accessor keyword's name). None for an identity scale, a scale with `:legend false`, or plot `:legend
   false`."
@@ -176,7 +176,9 @@
     []
     (vec (for [k aesthetic/dims
                :let [spec (get scales k {})
-                     computed (some #(when (contains? (:computed-aesthetics %) k) %) charts)
+                     computed (some (fn [[chart {:keys [mapping]}]]
+                                      (let [c (aesthetic/computed-aesthetics chart mapping)] (when (contains? c k) c)))
+                                    (map vector charts chart-inputs))
                      mapped (filter #(some? (get-in % [:mapping k])) chart-inputs)
                      accessors (set (map #(get-in % [:mapping k]) mapped))
                      values (into [] (comp (mapcat (fn [{:keys [mapping groups]}]
@@ -187,7 +189,7 @@
                      kind (when (or computed (seq mapped)) (aesthetic/inferred-kind k spec numeric?))
                      title (cond
                              (contains? spec :title) (:title spec)
-                             computed (get-in computed [:computed-aesthetics k])
+                             computed (get computed k)
                              (and (= 1 (count accessors)) (keyword? (first accessors))) (name (first accessors)))]
                :when (and kind (not= :identity kind) (not (false? (:legend spec))))]
            (if (and (= k :color) (#{:linear :binned} kind))

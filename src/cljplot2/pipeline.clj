@@ -333,11 +333,12 @@
   pixel room asked by charts (`:padding-px`) is added to continuous position specs (see
   [[cljplot2.scale.position/finalize]]); scale attributes suggested by a chart (`:scale-defaults {dim attributes}`, the first chart's) are used as a whole
   unless the plot's own spec sets any of them (attributes like bands `:padding-out` / `:align-outer` only make
-  sense together); a computed aesthetic's title (chart value `:computed-aesthetics {dim title}`, the first chart's) is
-  the aesthetic scale's `:title` unless the plot's spec has one."
+  sense together); a computed aesthetic's title (see [[cljplot2.scale.aesthetic/computed-aesthetics]], the first
+  chart's) is the aesthetic scale's `:title` unless the plot's spec has one."
   [{:keys [scales extents theme stats] :as plot}]
   (let [ks (distinct (concat (filter #(or (position-scales %) (aesthetic/dim? %)) (keys scales)) (keys extents)))
-        suggested-titles (reduce (fn [acc titles] (merge titles acc)) {} (keep :computed-aesthetics (:charts plot)))
+        suggested-titles (reduce (fn [acc titles] (merge titles acc)) {}
+                                 (map aesthetic/computed-aesthetics (:charts plot) (map :mapping (get-in plot [:split :charts]))))
         aesthetic-spec (fn [k] (let [spec (get scales k {})]
                                  (if (and (not (contains? spec :title)) (contains? suggested-titles k))
                                    (assoc spec :title (suggested-titles k))
@@ -747,7 +748,7 @@
      (when (> (count dim-sets) 1)
        [(error [:charts] (vec dim-sets) "charts should use the same facet mapping")])
      (for [[j chart] (map-indexed vector charts)
-           k (keys (:computed-aesthetics chart))
+           k (keys (aesthetic/computed-aesthetics chart (nth mappings j)))
            [i m] (map-indexed vector mappings)
            :when (and (not= i j) (some? (get m k)))]
        (error [:charts i :options :mapping k] (get m k)
@@ -756,7 +757,8 @@
                              (for [[_ {:keys [charts]}] (plot-margins plot) c charts] (get-in c [:options :mapping])))]
        (for [k (keys scales)
              :when (and (aesthetic/dim? k) (not-any? #(some? (get % k)) (concat mappings margin-mappings))
-                        (not-any? #(contains? (:computed-aesthetics %) k) charts))]
+                        (not-any? (fn [[chart m]] (contains? (aesthetic/computed-aesthetics chart m) k))
+                                  (map vector charts mappings)))]
          (error [:scales k] (get scales k) "aesthetic scale needs a chart mapping its key")))
      (for [k (keys scales)
            :when (and (facet/facet-keys k) (not (some #{k} (first dim-sets))))]
