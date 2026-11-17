@@ -250,24 +250,34 @@
     :sigmoid (m/sigmoid v)
     :frac (m/frac v)))
 
+(def hue-colorspaces
+  "Colour spaces of [[domain-color]]: hue first (clojure2d `colorspaces*`, channels 0-255)."
+  #{:HSI :HSB :HSV :HSL :HCL :HWB})
+
 (defn- complex-color
-  "HSB color of complex `z` (old cljplot): hue - arg z, brightness - the wrapped |z|, saturation 3/4 to full; a
-  non-finite argument counts as 0, a non-finite wrapped magnitude (a pole) as 1."
-  [method ^Vec2 z]
+  "Color of complex `z` (old cljplot) through `from-space` (a clojure2d `from-*` converter of a hue-first space):
+  hue - arg z, the third channel - the wrapped |z|, the second - 3/4 to full along it; a non-finite argument counts
+  as 0, a non-finite wrapped magnitude (a pole) as 1."
+  [from-space method ^Vec2 z]
   (let [angle (cx/arg z)
         angle (if (m/valid-double? angle) angle 0.0)
         bright (wrap method (cx/abs z))
         bright (if (m/valid-double? bright) bright 1.0)
         b (* 255.0 bright)]
-    (c/from-HSB* (c/color (m/norm angle m/-PI m/PI 0.0 255.0) (- 255.0 (/ (- 255.0 b) 4.0)) b))))
+    (from-space (c/color (m/norm angle m/-PI m/PI 0.0 255.0) (- 255.0 (/ (- 255.0 b) 4.0)) b))))
 
 (defn domain-color
   "A `:pixel-color` function (see [[cljplot2.chart.field]]) colouring a complex function `f` (a `Vec2` -> `Vec2`
   function of `fastmath.complex`, e.g. `cx/log`) by domain colouring: the point `(x, y)` is `x + iy`, the hue the
-  argument of f there, the brightness its magnitude wrapped by `:wrap` (default `:log2`, see [[wrap]]). Zeros and
-  poles get a colour. Throws `ex-info {:key :wrap}` for an unknown wrap."
+  argument of f there, the brightness its magnitude wrapped by `:wrap` (default `:log2`, see [[wrap]]), in
+  `:colorspace` (default `:HSI` - old cljplot's example; one of [[hue-colorspaces]]). Zeros and poles get a colour.
+  Throws `ex-info {:key :wrap}` / `{:key :colorspace}` for an unknown wrap / colour space."
   ([f] (domain-color f {}))
-  ([f {:keys [wrap] :or {wrap :log2}}]
+  ([f {:keys [wrap colorspace] :or {wrap :log2 colorspace :HSI}}]
    (when-not (wrap-methods wrap)
      (schema/fail! (str "Domain colouring :wrap should be one of " (sort wrap-methods) ".") {:key :wrap :value wrap}))
-   (fn [x y] (complex-color wrap (f (cx/complex x y))))))
+   (when-not (hue-colorspaces colorspace)
+     (schema/fail! (str "Domain colouring :colorspace should be one of " (sort hue-colorspaces) ".")
+                   {:key :colorspace :value colorspace}))
+   (let [from-space (second (c/colorspaces* colorspace))]
+     (fn [x y] (complex-color from-space wrap (f (cx/complex x y)))))))

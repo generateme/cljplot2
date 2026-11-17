@@ -40,12 +40,15 @@
     (is (contains? (error-ins #(built {:data sample :mapping {:y :a} :charts [(chart/qq {:x-distribution (fn [p] p)})]}))
                    [:charts 0 :options :x-distribution]))
     (is (seq (error-ins #(built {:data sample :mapping {:y :a} :charts [(chart/qq {:x-distribution [:normal 1]})]})))))
-  (testing "1.1.3 a side mapped and a distribution throws; a side with neither throws"
-    (is (= :x-distribution (:key (error #(built {:data sample :mapping {:x :a :y :b} :charts [(chart/qq {:x-distribution [:normal]})]})))))
-    (is (= :y-distribution (:key (error #(built {:data sample :mapping {:x :a :y :b} :charts [(chart/pp {:y-distribution [:normal]})]})))))
+  (testing "1.1.3 (R2) a distribution wins over the plot's mapping of its side; the chart's own mapping of it throws"
+    (let [{:keys [x y]} (first (groups-of {:data sample :mapping {:x :a :y :b} :charts [(chart/qq {:x-distribution [:normal]})]}))]
+      (is (= (vec (sort (map :b sample))) y))
+      (is (near? (r/icdf (r/distribution :normal) (/ 0.5 60)) (first x))))
+    (is (= :x-distribution (:key (error #(built {:data sample :charts [(chart/qq {:x-distribution [:normal] :mapping {:x :a :y :b}})]})))))
+    (is (= :y-distribution (:key (error #(built {:data sample :mapping {:x :a} :charts [(chart/pp {:y-distribution [:normal] :mapping {:y :b}})]})))))
     (is (= {:key :mapping :value :x} (select-keys (error #(built {:data sample :mapping {:y :a} :charts [(chart/qq)]})) [:key :value])))
-    (testing "- the chart's own nil mapping opts out of the plot's"
-      (is (seq (groups-of {:data sample :mapping {:x :a :y :b} :charts [(chart/qq {:x-distribution [:normal] :mapping {:x nil}})]}))))))
+    (testing "- a scatter and a Q-Q of the same plot mapping"
+      (is (= 2 (count (:stats (built {:data sample :mapping {:x :a :y :b} :charts [(chart/scatter) (chart/qq {:y-distribution [:normal]})]}))))))))
 
 ;; 1.2 Q-Q
 
@@ -163,6 +166,25 @@
     (is (seq (error-ins #(built {:data sample :mapping {:x :a :y :b} :charts [(chart/pp {:line :quartiles})]}))))
     (is (seq (error-ins #(built {:data sample :mapping {:x :a :y :b} :charts [(chart/qq {:line :identity})]}))))))
 
+(deftest distribution-label-test
+  (testing "R3 a distribution-only chart: :label grouped by its own mapping - legend keys, shared colour scale"
+    (let [p {:charts [(chart/qq {:x-distribution [:normal] :y-distribution [:t {:degrees-of-freedom 3}] :label "t3" :mapping {:color :label}})
+                      (chart/qq {:x-distribution [:normal] :y-distribution [:normal] :label "n" :mapping {:color :label}})]}
+          b (built p)]
+      (is (= [{:color "t3"}] (map :aesthetics (:groups (val (first (:data (first (:stats b)))))))))
+      (is (= #{"t3" "n"} (set (get-in b [:scale-specs :color :domain]))))
+      (is (instance? BufferedImage (plot/render-image p {:width 400 :height 300})))))
+  (testing "R3 the default label: <y name> vs <x name>; unmapped - no aesthetics"
+    (let [b (built {:charts [(chart/qq {:x-distribution [:normal] :y-distribution [:t {:degrees-of-freedom 3}] :mapping {:color :label}})]})]
+      (is (= #{"t vs normal"} (set (get-in b [:scale-specs :color :domain])))))
+    (is (= {} (:aesthetics (first (groups-of {:charts [(chart/qq {:x-distribution (r/distribution :normal) :y-distribution [:normal] :label "x"})]}))))))
+  (testing "R3 :label validated"
+    (is (seq (error-ins #(built {:charts [(chart/qq {:x-distribution [:normal] :y-distribution [:normal] :label 1})]})))))
+  (testing "R5 :points, :domain, :label with a data side throw"
+    (is (= :points (:key (error #(built {:data sample :mapping {:y :a} :charts [(chart/qq {:x-distribution [:normal] :points 10})]})))))
+    (is (= :label (:key (error #(built {:data sample :mapping {:x :a :y :b} :charts [(chart/qq {:label "l"})]})))))
+    (is (= :domain (:key (error #(built {:data sample :mapping {:y :a} :charts [(chart/pp {:x-distribution [:normal] :domain [0 1]})]})))))))
+
 (deftest probability-wiring-test
   (testing "1.4 theme styles validated; a mapped colour legend"
     (is (seq (error-ins #(built {:data sample :mapping {:y :a} :charts [(chart/qq {:x-distribution [:normal]})] :theme {:chart {:qq {:line-width -1}}}}))))
@@ -225,10 +247,26 @@
       (is (= [:ribbon :rule :segment :scatter :scatter] (mapv :kind (:charts p))))
       (is (= ["ACF" "PACF"] (get-in (built p) [:split :facets :levels :facet-row])))))
   (testing "2.3 one kind: no facets, the y title"
-    (let [p (plot/acf noise {:partial? false})]
+    (let [p (plot/acf noise {:partial? :acf})]
       (is (nil? (get-in p [:mapping :facet-row])))
       (is (= "ACF" (get-in p [:labels :y]))))
-    (is (= "PACF" (get-in (plot/acf noise {:partial? true}) [:labels :y]))))
+    (is (= "PACF" (get-in (plot/acf noise {:partial? :pacf}) [:labels :y])))
+    (is (= "ACF" (get-in (plot/acf noise {:partial? false}) [:labels :y])) "false - ACF")
+    (is (= "PACF" (get-in (plot/acf noise {:partial? true}) [:labels :y])) "true - PACF, as acf-rows"))
+  (testing "R4 invalid :partial?, :band, :colors throw; nil options - the defaults"
+    (is (= :partial? (:key (error #(plot/acf noise {:partial? :acf2})))))
+    (is (= :band (:key (error #(plot/acf noise {:band :blocky})))))
+    (is (= :colors (:key (error #(plot/acf noise {:colors {:stems :red}})))))
+    (is (= :colors (:key (error #(plot/acf noise {:colors {:stem :not-a-colour}})))))
+    (is (= :colors (:key (error #(plot/acf noise {:colors [:red]})))))
+    (is (= (plot/acf noise) (plot/acf noise {:partial? nil :band nil :colors nil}))))
+  (testing "U1 the band: a ribbon through the lags (default), a block per lag with :band :stepped"
+    (let [smooth (first (:charts (plot/acf noise {:partial? :acf :lags 5})))
+          stepped (first (:charts (plot/acf noise {:partial? :acf :lags 5 :band :stepped})))]
+      (is (= {:x :lag :ymin :lo :ymax :hi} (get-in smooth [:options :mapping])))
+      (is (= 6 (count (get-in smooth [:options :data]))))
+      (is (= :lag (get-in stepped [:options :mapping :group])))
+      (is (= [-0.5 0.5 0.5 1.5] (take 4 (map :x (get-in stepped [:options :data])))))))
   (testing "2.3 significant lags highlighted; colours, scales, title, theme"
     (let [ma (mapv (fn [i] (+ (noise (inc i)) (* 0.9 (noise i)))) (range 199))
           p (plot/acf ma {:colors {:significant [0 200 0]} :scales {:y {:domain [-1 1]}} :title "t" :theme {:plot {:background :white}}})
@@ -240,7 +278,7 @@
       (is (= "t" (get-in p [:labels :title])))
       (is (instance? BufferedImage (plot/render-image p {:width 500 :height 400})))))
   (testing "2.3 no significant lag: an empty highlight renders"
-    (is (instance? BufferedImage (plot/render-image (plot/acf [1 2 1 2 1 3 2 1] {:partial? false :lags 2}) {:width 300 :height 200})))))
+    (is (instance? BufferedImage (plot/render-image (plot/acf [1 2 1 2 1 3 2 1] {:partial? :acf :lags 2}) {:width 300 :height 200})))))
 
 ;; 3 vector fields
 
@@ -355,6 +393,13 @@
       (is (some? ((field/domain-color (fn [z] (cx/div cx/ONE z))) 0.0 0.0)))
       (is (= :wrap (:key (error #(field/domain-color identity {:wrap :log3})))))
       (is (every? #(some? ((field/domain-color identity {:wrap %}) 0.3 0.4)) field/wrap-methods)))
+    (testing "U2 :colorspace - hue-first spaces, default HSI (brighter than HSB)"
+      (let [luma (fn [col] (c/luma col))]
+        (is (= (dc 0.5 0.3) ((field/domain-color identity {:colorspace :HSI}) 0.5 0.3)))
+        (is (> (double (luma (dc 0.5 0.3))) (double (luma ((field/domain-color identity {:colorspace :HSB}) 0.5 0.3))))))
+      (is (every? #(some? ((field/domain-color identity {:colorspace %}) 0.3 0.4)) field/hue-colorspaces))
+      (is (= :colorspace (:key (error #(field/domain-color identity {:colorspace :LAB})))))
+      (is (= :colorspace (:key (error #(field/domain-color identity {:colorspace :hsi}))))))
     (testing "4.2 the cx/log raster renders"
       (is (instance? BufferedImage (plot/render-image {:charts [(chart/field {:pixel-color (field/domain-color cx/log) :domain {:x [-2 2] :y [-2 2]}})]}
                                                       {:width 120 :height 120}))))))
@@ -405,4 +450,6 @@
       (is (< (double (first @domains)) 2.0))
       (is (> (double (second @domains)) 4.0)))
     (is (seq (error-ins #(built {:charts [(chart/image {:f identity :domain {:x [1 0] :y [0 1]}})]}))))
-    (is (seq (error-ins #(built {:charts [(chart/image {})]}))))))
+    (is (seq (error-ins #(built {:charts [(chart/image {})]}))))
+    (is (= (chart/image {}) (chart/image)) "R6 the 0-arity constructor")
+    (is (seq (error-ins #(built {:charts [(chart/image)]}))))))

@@ -333,9 +333,9 @@
 
 (defn image
   "A free chart: an image of each panel drawn by a callback from the finalized position scales, see
-  [[cljplot2.chart.image]]."
-  [options]
-  (annotation-value :image image/compute image/draw nil image/schemas options))
+  [[cljplot2.chart.image]]; `:f` is required (the schema rejects a chart without it)."
+  ([] (image {}))
+  ([options] (annotation-value :image image/compute image/draw nil image/schemas options)))
 
 (defn contour
   "Contour lines or filled regions of a 2D field (density, gridded `:value`s, a function), see

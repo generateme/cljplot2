@@ -3,16 +3,19 @@
   probabilities) of two sides, see [[cljplot2.data.probability]] for the statistics.
 
   Each side is data - the mapped `:x` / `:y` - or a distribution - `:x-distribution` / `:y-distribution`: a fastmath
-  distribution object, `[:name]` or `[:name params]` (fastmath validates and throws). A side both mapped and given a
-  distribution throws `ex-info {:key :x-distribution}` (set the side's mapping to `nil` in the chart's `:mapping`
-  when the plot maps it); a side with neither throws `ex-info {:key :mapping}`.
+  distribution object, `[:name]` or `[:name params]` (fastmath validates and throws). A distribution side wins over
+  the plot's mapping of that side; the chart's own `:mapping` of it throws `ex-info {:key :x-distribution}`; a side
+  with neither throws `ex-info {:key :mapping}`.
 
   * Data sides: statistics per panel and group (ordinal aesthetics `:color`, `:shape`, `:size` and `:group`) over the
     group's finite values, each column on its own (rows with a non-finite value of a data side are dropped from that
     side and counted); a group with an empty side draws nothing. Two data sides are two columns of the same rows.
   * Both sides distributions: no data - the chart is drawn in every panel and inherits only the plot's facet keys
     (as annotations); Q-Q at `:points` plotting positions, P-P at `:points` values over the required `:domain [lo
-    hi]` (`ex-info {:key :domain}` without it); `:points` default 100.
+    hi]` (`ex-info {:key :domain}` without it); `:points` default 100. `:label` (default \"<y name> vs <x name>\")
+    is the chart's one row `{:label label}`: the chart's own `:mapping {:color :label}` (`:shape`, `:size`) styles it
+    and gives a legend key, e.g. several distribution pairs in one plot.
+    `:points`, `:domain` and `:label` with a data side throw `ex-info` keyed by the option.
 
   P-P evaluates at the sorted distinct pooled values of the data sides; its extents are `[0 1]` on both axes.
 
@@ -37,6 +40,7 @@
             [cljplot2.data.rows :as data]
             [cljplot2.graphics.polyline :as polyline]
             [cljplot2.graphics.shape :as shape]
+            [cljplot2.scale.aesthetic :as aesthetic]
             [cljplot2.scale.position :as scale]
             [cljplot2.schema :as schema])
   (:import [fastmath.vector Vec2]))
@@ -60,6 +64,7 @@
             (schema/nilable :y-distribution probability/distribution-schema)
             (schema/optional :line (into [:enum false] line-values))
             (schema/optional :points [:int {:min 2}])
+            (schema/nilable :label [:or :string :keyword])
             (schema/optional :padding data/position-padding))
       (into extra)))
 
@@ -88,22 +93,30 @@
   (and (some? (:x-distribution options)) (some? (:y-distribution options))))
 
 (defn- sides
-  "`{:x side :y side}` of the chart: `{:distribution d :name s}` or `{:accessor f :key acc}`; throws for a side given
-  both ways or neither."
-  [options mapping]
+  "`{:x side :y side}` of the chart: `{:distribution d :name s}` or `{:accessor f :key acc}` - a distribution option
+  wins over the merged `mapping`; throws for a side also in the chart's own mapping `own`, or with neither."
+  [options own mapping]
   (into {} (map (fn [k]
                   (let [dk (distribution-keys k)
                         spec (get options dk)
                         acc (get mapping k)]
                     (cond
-                      (and (some? spec) (some? acc))
-                      (schema/fail! (str "Probability plot side " k " is both mapped and given " dk "; set {:mapping {" k " nil}}.")
+                      (and (some? spec) (some? (get own k)))
+                      (schema/fail! (str "Probability plot side " k " is both in the chart's :mapping and given " dk ".")
                                     {:key dk :value spec})
                       (some? spec) [k {:distribution (probability/distribution spec) :name (probability/distribution-name spec)}]
                       (some? acc) [k {:accessor (data/row-accessor k acc) :key acc}]
                       :else (schema/fail! (str "Probability plot side " k " needs a mapping or " dk ".")
                                           {:key :mapping :value k})))))
         [:x :y]))
+
+(defn- distributions-only!
+  "Throw `ex-info {:key k}` for an option `k` of two distributions (`:points`, `:domain`, `:label`) given with a data
+  side."
+  [options]
+  (when-not (distributions-only? options)
+    (doseq [k [:points :domain :label] :when (some? (get options k))]
+      (schema/fail! (str "Probability plot " k " applies only when both sides are distributions.") {:key k :value (get options k)}))))
 
 (defn- axis-title
   [kind {:keys [distribution name key]}]
@@ -136,18 +149,27 @@
     {:x (unit-extent) :y (unit-extent)}
     {:x (data/extent :x xs) :y (data/extent :y ys)}))
 
+(defn- default-label
+  [{:keys [x y]}]
+  (str (or (:name y) "Theoretical") " vs " (or (:name x) "Theoretical")))
+
 (defn- distribution-stats
-  "Stats of a chart whose sides are both distributions: one point set drawn in every panel."
-  [kind options sides st]
+  "Stats of a chart whose sides are both distributions: one point set drawn in every panel - the row `{:label l}`
+  grouped by the chart's own aesthetics in `mapping`."
+  [kind options sides st mapping env]
   (let [at (when (= kind :pp)
              (if-let [d (:domain options)]
                (probability/grid d (get options :points default-points))
                (schema/fail! "P-P plot of two distributions needs :domain [lo hi]." {:key :domain :value nil})))
-        g (pairs kind options sides at)]
-    {:data {facet/all-panels {:groups [g] :style st}}
-     :extents {facet/all-panels (point-extents kind (:x g) (:y g))}
-     :na #{}
-     :dropped {}}))
+        g (pairs kind options sides at)
+        rows [{:label (or (:label options) (default-label sides))}]
+        {:keys [panels dropped]} (group/split {facet/all-panels rows} (select-keys mapping (conj aesthetic/dims :group)) env)
+        groups (mapv #(assoc g :aesthetics (:aesthetics %)) (get panels facet/all-panels))]
+    {:data {facet/all-panels {:groups groups :style st}}
+     :extents (merge-with merge (group/aesthetic-extents panels (:plot-scales env))
+                          {facet/all-panels (point-extents kind (:x g) (:y g))})
+     :na (group/na-dims panels)
+     :dropped dropped}))
 
 (defn- group-sides
   "Sides of one group's `rows`: data sides with their finite `:values` and `:dropped` count."
@@ -188,10 +210,11 @@
 
 (defn- compute
   [kind {:keys [options]} chart-split {:keys [theme] :as env}]
-  (let [ss (sides options (:mapping chart-split))
+  (distributions-only! options)
+  (let [ss (sides options (:mapping options) (:mapping chart-split))
         st (style kind options theme)
         stats (if (distributions-only? options)
-                (distribution-stats kind options ss st)
+                (distribution-stats kind options ss st (:mapping chart-split) env)
                 (data-stats kind options ss st chart-split env))
         titles (into {} (keep (fn [k] (some->> (axis-title kind (ss k)) (vector k)))) [:x :y])]
     (cond-> (assoc stats

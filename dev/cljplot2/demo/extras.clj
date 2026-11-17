@@ -35,9 +35,12 @@
    :labels {:title "Q-Q per species and variable (a line per group)" :y "value"}})
 
 (def qq-distributions
-  {:charts [(chart/qq {:x-distribution [:normal] :y-distribution [:t {:degrees-of-freedom 3}] :points 60})
-            (chart/qq {:x-distribution [:normal] :y-distribution [:t {:degrees-of-freedom 30}] :points 60 :color [215 48 39 180] :line false})]
-   :labels {:title "t(3) (blue) and t(30) (red) vs the normal"}})
+  {:charts [(chart/qq {:x-distribution [:normal] :y-distribution [:t {:degrees-of-freedom 3}] :points 60
+                       :label "t(3)" :mapping {:color :label}})
+            (chart/qq {:x-distribution [:normal] :y-distribution [:t {:degrees-of-freedom 30}] :points 60
+                       :label "t(30)" :mapping {:color :label} :line false})]
+   :scales {:color {:title nil}}
+   :labels {:title "Q-Q of t distributions against the normal"}})
 
 (def ^:private t-sample
   (let [d (r/distribution :t {:degrees-of-freedom 3 :rng (r/rng :mersenne 5)})]
@@ -63,7 +66,9 @@
                                   (r/grandom g) (if (< (r/drandom g) 0.03) 6.0 0.0)))
                      0.0 (range 1 400)))))
 
-(def acf-only (plot/acf seasonal {:partial? false :lags 30 :title "ACF of a weekly series"}))
+(def acf-only (plot/acf seasonal {:partial? :acf :lags 30 :title "ACF of a weekly series"}))
+
+(def acf-stepped (plot/acf seasonal {:partial? :pacf :band :stepped :lags 30 :title "PACF, a stepped band"}))
 
 (def lag-7
   {:data (series/lag-rows seasonal 7) :mapping {:x :x :y :y}
@@ -92,7 +97,7 @@
      :mapping {:x :x :y :y :xend :xend :yend :yend}
      :charts [(chart/field {:f (fn [x y] (m/sin (heading (v/vec2 x y)))) :domain {:x [-3 3] :y [-3 3]} :n 300
 })
-              (chart/segment {:color [0 0 0 200] :arrow {:end true :size 4}})]
+              (chart/segment {:color [90 160 235] :width 1.5 :arrow {:end true :size 5}})]
      :scales {:color {:range [:black :white] :title "sin heading"}
               :x {:domain [-3 3] :expand [0 0]} :y {:domain [-3 3] :expand [0 0]}}
      :aspect :iso
@@ -140,6 +145,7 @@
    ["pp-t-500x450.png" pp-t {:width 500 :height 450}]
    ["acf-both-700x500.png" acf-both {:width 700 :height 500}]
    ["acf-only-700x350.png" acf-only {:width 700 :height 350}]
+   ["acf-stepped-700x350.png" acf-stepped {:width 700 :height 350}]
    ["lag-7-500x500.png" lag-7 {:width 500 :height 500}]
    ["field-mapping-600x600.png" field-mapping {:width 600 :height 600}]
    ["vector-field-600x600.png" vector-field {:width 600 :height 600}]
