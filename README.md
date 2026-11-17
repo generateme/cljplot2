@@ -5,8 +5,6 @@
 # cljplot2
 
 A plotting library for Clojure: plots are plain maps of data, mappings and charts, built and rendered by functions.
-No DSL, no grammar of graphics - a chart is a value, a plot is a map you can build, merge and edit with
-`clojure.core`.
 
 - Pure JVM: renders `BufferedImage`s and image files, no browser or JavaScript.
 - Built on [fastmath](https://github.com/generateme/fastmath) (statistics, distributions, layouts),
@@ -21,7 +19,7 @@ No DSL, no grammar of graphics - a chart is a value, a plot is a map you can bui
 There's no release yet. Use a git coordinate in `deps.edn`:
 
 ```clojure
-io.github.generateme/cljplot2 {:git/sha "322c81a664db2c33ccd6022ab5835c7316576efc"}
+io.github.generateme/cljplot2 {:git/sha "2ae278d772277fc9341e287793d41c83af697698"}
 ```
 
 cljplot2 depends on SNAPSHOT versions: fastmath `3.0.0-alpha10-SNAPSHOT` is on Clojars; clojure2d
@@ -83,5 +81,8 @@ clojure -M:clay     # the book into docs/
 ## License
 
 Copyright © GenerateMe and contributors.
+
+Developed with the support of an LLM (Anthropic's Claude) - design, code, tests and documentation were reviewed
+by the author.
 
 Distributed under the [Eclipse Public License 2.0](LICENSE).

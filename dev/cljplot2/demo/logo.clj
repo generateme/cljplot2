@@ -1,8 +1,8 @@
 (ns cljplot2.demo.logo
-  "The cljplot2 logo (after old cljplot's): the word \"cljplot2\" as 2500 jittered points sampled from its rendered
-  text, coloured along x, of random sizes, with density margins on top and right. Written to the tracked `img/` (the
-  README's logo); seeded and drawn in Comfortaa Bold (SIL OFL 1.1, `dev/resources/logo/` - demo only, not in the
-  library), so every render is the same."
+  "The README's images, written to the tracked `img/`: the cljplot2 logo (after old cljplot's) - the word
+  \"cljplot2\" as 2500 jittered points sampled from its rendered text, coloured along x, of random sizes, with density
+  margins on top and right; seeded and drawn in Comfortaa Bold (SIL OFL 1.1, `dev/resources/logo/` - demo only, not
+  in the library), so every render is the same - and the README's example plot."
   (:require [clojure.java.io :as io]
             [clojure2d.color :as c]
             [clojure2d.core :as c2d]
@@ -21,7 +21,8 @@
 (def ^:private text-height 85)
 
 (def ^:private logo-font
-  "Comfortaa Bold - round `c`, `o`, `p` - from the demo's classpath resources."
+  "Comfortaa Bold - round `c`, `o`, `p` - from the demo's classpath resources; the bold face itself, used `:plain`
+  (no synthetic emboldening)."
   (delay (with-open [in (io/input-stream (io/resource "logo/Comfortaa-Bold.ttf"))]
            (Font/createFont Font/TRUETYPE_FONT in))))
 
@@ -31,7 +32,7 @@
   (p/to-pixels (c2d/with-canvas-> (c2d/canvas text-width text-height)
                  (c2d/set-background :black)
                  (c2d/set-color :white)
-                 (c2d/set-font (font/resolve-font @logo-font :bold 56))
+                 (c2d/set-font (font/resolve-font @logo-font :plain 56))
                  (c2d/text text 4 62))))
 
 (defn- lit? [pixels x y] (pos? (double (c/luma (p/get-color pixels x y)))))
@@ -65,6 +66,17 @@
    :margins {:top {:charts margin-density :size 22} :right {:charts margin-density :size 22}}
    :labels {:x "cljplot2 - functional plotting library" :y nil}})
 
+(def example
+  "The README's example plot (keep the two in sync): sin and cos as lines with points, coloured by series."
+  {:data (for [series ["sin" "cos"]
+               x (range 0 6.3 0.1)]
+           {:x x :y ((if (= series "sin") Math/sin Math/cos) x) :series series})
+   :mapping {:x :x :y :y :color :series}
+   :charts [(chart/line) (chart/scatter)]
+   :labels {:title "Hello, cljplot2"}})
+
 (def images
-  "Images of this demo: `[file-name plot options]`, saved to [[output-dir]] by [[cljplot2.demo/render!]]."
-  [["logo.png" logo {:width 600 :height 300}]])
+  "Images of this demo: `[file-name plot options]`, saved to [[output-dir]] by [[cljplot2.demo/render!]] - the logo
+  and the README's example."
+  [["logo.png" logo {:width 600 :height 300}]
+   ["example.png" example {:width 600 :height 350}]])
