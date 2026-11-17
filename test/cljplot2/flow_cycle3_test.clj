@@ -67,6 +67,11 @@
       (is (= 1 (get-in s [:dropped :x])))
       (is (= 1 (get-in s [:dropped :y])))
       (is (= 1 (count (get-in s [:data :panel :polygons]))))))
+  (testing "1.1 an undrawn polygon's level doesn't reach the legend"
+    (let [s (stats {:data (into (mapv #(assoc % :g "a") triangle) [{:x 0 :y 0 :g "b"}])
+                    :mapping {:x :x :y :y :color :g} :charts [(chart/polygon)]})]
+      (is (= 1 (get-in s [:dropped :group])))
+      (is (= ["a"] (get-in s [:extents :panel :color :values])) (pr-str (get-in s [:extents :panel :color])))))
   (testing "1.1 ordinal colour per group; a linear colour from the group's first row"
     (let [rows (fn [g c dx] (map #(assoc % :g g :c c :x (+ dx (double (:x %)))) triangle))
           data (concat (rows "a" 1 0) (rows "b" 5 2))
@@ -159,7 +164,13 @@
       (let [o (graph/node-order g :cluster)
             block (fn [id] (if (#{"a" "b" "c"} id) 0 1))]
         (is (= 6 (count (distinct o))))
-        (is (= 2 (count (partition-by block o))) (str o)))))
+        (is (= 2 (count (partition-by block o))) (str o))))
+    (testing "3.1 :cluster - a hub with heavy ties stays in its block (cosine, not weight size)"
+      (let [heavy (concat blocks (for [t ["a" "b"]] {:from "h" :to t :value 50}) [{:from "h" :to "c" :value 50}])
+            o (graph/node-order (graph/graph heavy {:nodes (conj interleaved {:id "h"})}) :cluster)
+            block (fn [id] (if (#{"a" "b" "c" "h"} id) 0 1))]
+        (is (= 2 (count (partition-by block o))) (str o))
+        (is (< 0 (.indexOf ^java.util.List o "h") 6) (str "not at an end (raw Euclidean puts it first): " o)))))
   (testing "3.1 1- and 2-node graphs, no nodes"
     (is (= ["a"] (graph/node-order (graph/graph [] {:nodes [{:id "a"}]}) :cluster)))
     (is (= ["a" "b"] (graph/node-order (graph/graph [{:from "a" :to "b"}]) :cluster)))
@@ -217,6 +228,23 @@
       (is (= 1 dropped))
       (is (= ["c" "a" "b"] (mapv :id (sort-by :start groups))))
       (is (= #{["a" "b"] ["a" "c"] ["c" "b"]} (set (map (juxt :from :to) ribbons))))))
+  (testing "4.1 :min-value on summed weights: a pair's exchange (undirected), repeated directed edges"
+    (let [weak [{:from "a" :to "b" :value 0.06} {:from "b" :to "a" :value 0.06} {:from "a" :to "c" :value 0.05}]
+          undirected (graph/chord-layout (graph/graph weak) {:min-value 0.1})
+          directed (graph/chord-layout (graph/graph weak {:directed? true}) {:min-value 0.1})
+          repeated (graph/chord-layout (graph/graph [{:from "a" :to "b" :value 0.06} {:from "a" :to "b" :value 0.06}]
+                                                    {:directed? true})
+                                       {:min-value 0.1})]
+      (is (= #{["a" "b"]} (set (map (juxt :from :to) (:ribbons undirected)))) "0.06 + 0.06 kept, a-c dropped")
+      (is (= 1 (:dropped undirected)))
+      (is (empty? (:ribbons directed)))
+      (is (= 3 (:dropped directed)))
+      (is (= #{["a" "b"]} (set (map (juxt :from :to) (:ribbons repeated)))) "two rows of 0.06 - one flow of 0.12")
+      (is (zero? (:dropped repeated)))
+      (is (zero? (:dropped (graph/chord-layout (graph/graph weak) {:min-value 0}))) "0 keeps every edge")))
+  (testing "4.1 undirected ribbons from their end earlier in the ring"
+    (let [{:keys [ribbons]} (graph/chord-layout (graph/graph flows) {:order ["c"]})]
+      (is (= #{["c" "a"] ["c" "b"] ["a" "b"]} (set (map (juxt :from :to) ribbons))))))
   (testing "4.1 ribbons and sectors inside the unit circle; ribbons end at :inner"
     (let [{:keys [arcs ribbons]} (graph/chord-layout (graph/graph flows {:directed? true}) {:inner 0.8})
           r (fn [{:keys [x y]}] (m/hypot (double x) (double y)))]
@@ -231,7 +259,10 @@
       {:pad 120} :pad
       {:pad ##NaN} :pad
       {:inner 1} :inner
-      {:inner 0} :inner)))
+      {:inner 0} :inner
+      {:min-value "x"} :min-value
+      {:min-value -1} :min-value
+      {:min-value ##NaN} :min-value)))
 
 (deftest chord-plot-test
   (testing "4.2 sectors coloured by node, ribbons by source at alpha, labels outside the ring"
@@ -244,6 +275,10 @@
       (is (every? (fn [{:keys [x y]}] (> (m/hypot (double x) (double y)) 1.0)) (mapcat #(get-in % [:options :data]) labels)))
       (is (= :iso (:aspect p)))
       (is (instance? BufferedImage (plot/render-image p {:width 300 :height 300})))))
+  (testing "4.2 user :scales merge key by key: a palette keeps the ring-order domain and the hidden legend"
+    (let [sc (get-in (plot/chord flows {:scales {:color {:range :category10}}}) [:scales :color])]
+      (is (= {:domain ["a" "b" "c"] :legend false :range :category10} sc)))
+    (is (= true (get-in (plot/chord flows {:scales {:color {:legend true}}}) [:scales :color :legend])) "a legend on request"))
   (testing "4.2 :labels? false; nodes without flow unlabelled"
     (is (= 2 (count (:charts (plot/chord flows {:labels? false})))))
     (is (not-any? #(= "q" (:label %)) (mapcat #(get-in % [:options :data]) (drop 2 (:charts (plot/chord flows {:nodes [{:id "q"}]}))))))))
@@ -278,5 +313,17 @@
   (testing "5.2 nodes mapping :size - no default edge widths; an aesthetic for both throws"
     (is (nil? (get-in (first (:charts (plot/arc flows {:mapping {:size :degree}}))) [:options :mapping :size])))
     (is (= :edge-mapping (:key (error #(plot/arc flows {:mapping {:size :degree} :edge-mapping {:size :value}}))))))
+  (testing "5.2 equal weights - no width mapping, no size scale, no legend of one value"
+    (let [p (plot/arc [{:from "a" :to "b"} {:from "b" :to "c"}] {})]
+      (is (nil? (get-in (first (:charts p)) [:options :mapping :size])))
+      (is (nil? (get-in p [:scales :size])))))
+  (testing "5.2 user :scales merge key by key (arc, network, clustered heatmap)"
+    (is (= false (get-in (plot/arc flows {:scales {:y {:title "t"}}}) [:scales :y :axis])))
+    (is (= [0 1 2] (get-in (plot/arc flows {:scales {:x {:title "t"}}}) [:scales :x :ticks])))
+    (is (= false (get-in (plot/network flows {:scales {:x {:title "t"}}}) [:scales :x :axis])))
+    (let [rows (for [r ["r1" "r2" "r3"] c ["c1" "c2"]] {:r r :c c :v (rand)})
+          tiles (first (get-in (plot/clustered-heatmap rows {:row :r :col :c :value :v :col-tree? false :row-tree? false
+                                                             :scales {:x {:title "t"}}}) [:arrange :plots]))]
+      (is (= 2 (count (get-in tiles [:scales :x :domain]))) "the leaf order kept")))
   (testing "5.2 no edges - a plot all the same"
     (is (instance? BufferedImage (plot/render-image (plot/arc [] {:nodes [{:id "a"} {:id "b"}]}) {:width 300 :height 200})))))

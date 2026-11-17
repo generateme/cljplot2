@@ -1,6 +1,6 @@
 (ns cljplot2.data.graph
   "Graphs from edge rows, and their layouts - node positions as data, drawn by ordinary charts (see
-  [[cljplot2.multiplot/network]]).
+  [[cljplot2.graphs/network]]).
 
   A graph is `{:nodes [node ..] :edges [edge ..] :loops [edge ..] :directed? b :dropped n}`:
 
@@ -250,16 +250,29 @@
             (vec (repeat n (vec (repeat n 0.0))))
             edges)))
 
+(defn- weight-at
+  "Weight from node index `i` to `j` in the weights `w`."
+  ^double [w i j]
+  (double ((w i) j)))
+
+(defn- unit-row
+  "`row` (numbers) scaled to length 1; an all-zero row as it is."
+  [row]
+  (let [len (m/sqrt (reduce + 0.0 (map #(* (double %) (double %)) row)))]
+    (if (pos? len) (mapv #(/ (double %) len) row) row)))
+
 (defn- cluster-order
   "Node ids of `g` in the leaf order of fastmath `hclust` (average linkage, Euclidean distance) on the rows of
-  W + W^T (W - [[weight-matrix]]): nodes linked to the same others side by side; fewer than 3 nodes - input order."
+  W + W^T (W - [[weight-matrix]]) scaled to unit length - the cosine distance: nodes linked to the same others side
+  by side, whatever their weights' size (a hub stays among its neighbours); fewer than 3 nodes - input order."
   [{:keys [nodes] :as g}]
-  (let [ids (mapv :id nodes)]
-    (if (< (count ids) 3)
+  (let [ids (mapv :id nodes)
+        n (count ids)]
+    (if (< n 3)
       ids
       (let [w (weight-matrix g ids)
-            sym (mapv (fn [i] (mapv (fn [j] (+ (double ((w i) j)) (double ((w j) i)))) (range (count ids)))) (range (count ids)))]
-        (mapv ids (:order (:tree (cl/hclust sym {:method :average :distance :euclidean}))))))))
+            rows (mapv (fn [i] (unit-row (mapv (fn [j] (+ (weight-at w i j) (weight-at w j i))) (range n)))) (range n))]
+        (mapv ids (:order (:tree (cl/hclust rows {:method :average :distance :euclidean}))))))))
 
 (defn node-order
   "Ids of the nodes of graph `g` (see [[graph]]) in `order`: `nil` - input order; a sequence of ids - those first (a
@@ -287,19 +300,15 @@
                         [(+ (* u u (double x0)) (* t t (double x1))) (+ (* u u (double y0)) (* t t (double y1)))]))
         (range 1 bezier-steps)))
 
-(defn- weight-at
-  "Weight from node index `i` to `j` in the weights `w`."
-  ^double [w i j]
-  (double ((w i) j)))
-
 (defn- chord-angles
   "d3-chord angles (radians, clockwise from the top) of the weights `w` with the nodes in `order` (indices):
   `[groups ends]` - `groups` `{i [start end sum]}`; `ends` `{[i j] {:source [a0 a1] :target [a0 a1]}}` (`directed?`
   - `chordDirected`: group sums over rows and columns, ribbon `i -> j` of width w(i, j) at both ends, a group's
   incoming ends (from the last node down) before its outgoing ones; else `chord`: group sums over rows, the ribbon
-  of the pair `i < j` from w(i, j) at `i` to w(j, i) at `j`); `pad` - radians after every group."
+  of a pair from w(i, j) at `i` - the end earlier in `order` - to w(j, i) at `j`); `pad` - radians after every group."
   [w order directed? ^double pad]
   (let [n (count w)
+        rank (zipmap order (range))
         sums (mapv (fn [i] (reduce + 0.0 (map #(+ (weight-at w i %) (if directed? (weight-at w % i) 0.0)) (range n)))) (range n))
         total (double (reduce + 0.0 sums))
         k (if (pos? total) (/ (max 0.0 (- m/TWO_PI (* pad n))) total) 0.0)
@@ -308,7 +317,7 @@
                             (concat (for [j (range (dec n) -1 -1) :when (pos? (weight-at w j i))] [:in j (weight-at w j i)])
                                     (for [j (range n) :when (pos? (weight-at w i j))] [:out j (weight-at w i j)]))
                             (for [j (range n) :when (or (pos? (weight-at w i j)) (pos? (weight-at w j i)))]
-                              [(if (< (long i) (long j)) :out :in) j (weight-at w i j)])))]
+                              [(if (< (long (rank i)) (long (rank j))) :out :in) j (weight-at w i j)])))]
     (loop [[i & more :as left] (seq order) x 0.0 groups {} ends {}]
       (if-not left
         [groups ends]
@@ -342,23 +351,27 @@
   `chordDirected` for a directed one - see [[chord-angles]]): a ring sector per node, its angle proportional to the
   node's flow (undirected: its edges' weights; directed: out plus in), clockwise from the top in node order with
   `:pad` degrees after each (default 2); a ribbon per linked pair (undirected) or edge (directed) joining its ends'
-  arcs through the centre. `opts`: `:order` (see [[node-order]]), `:pad`, `:inner` - the ring's inner radius
-  (default 0.92; ribbons end there), `:min-value` - edges below it are left out (counted in `:dropped`).
+  arcs through the centre (an undirected ribbon's `:from` - its end earlier in the ring). `opts`: `:order` (see
+  [[node-order]]), `:pad`, `:inner` - the ring's inner radius (default 0.92; ribbons end there), `:min-value` - a
+  summed weight below it is left out: of an ordered pair (directed; repeated edges summed) or of a pair both ways
+  (undirected - the pair's exchange); its edges are counted in `:dropped`.
   Returns `{:groups [{:id :start :end :value}] :arcs [{:group :x :y}] :ribbons [{:ribbon :from :to :value :x :y}]
   :dropped n}` (angles in degrees; `:value` of a ribbon - its source end's weight; polygon rows in point order).
   Throws `ex-info` for a `:pad` that isn't a finite number >= 0 or leaves no room (`:pad`), an `:inner` outside
-  (0, 1) (`:inner`)."
+  (0, 1) (`:inner`), a `:min-value` that isn't a finite number >= 0 (`:min-value`)."
   ([g] (chord-layout g {}))
   ([{:keys [edges directed?] :as g} {:keys [order pad inner min-value] :or {pad 2.0 inner 0.92}}]
    (when-not (and (number? pad) (m/valid-double? (double pad)) (<= 0.0 (double pad)) (< (* (double pad) (count (:nodes g))) 360.0))
      (schema/fail! "Chord :pad should be a finite number of degrees >= 0, leaving room for the arcs." {:key :pad :value pad}))
    (when-not (and (number? inner) (< 0.0 (double inner) 1.0))
      (schema/fail! "Chord :inner should be a radius in (0, 1)." {:key :inner :value inner}))
-   (let [kept (if min-value (filterv #(>= (double (:value %)) (double min-value)) edges) edges)
-         g (assoc g :edges kept)
-         ids (mapv :id (:nodes g))
+   (when-not (or (nil? min-value) (and (number? min-value) (m/valid-double? (double min-value)) (<= 0.0 (double min-value))))
+     (schema/fail! "Chord :min-value should be a finite number >= 0." {:key :min-value :value min-value}))
+   (let [ids (mapv :id (:nodes g))
          index (zipmap ids (range))
-         w (weight-matrix g ids)
+         summed (weight-matrix g ids)
+         weak? (fn [i j] (and min-value (< (weight-at summed i j) (double min-value))))
+         w (mapv (fn [i] (mapv (fn [j] (if (weak? i j) 0.0 (weight-at summed i j))) (range (count ids)))) (range (count ids)))
          [groups ends] (chord-angles w (mapv index (node-order g order)) directed? (m/radians (double pad)))
          inner (double inner)]
      {:groups (vec (for [i (range (count ids)) :let [[a0 a1 v] (groups i)]]
@@ -370,7 +383,7 @@
                           :let [k (str (ids i) " -> " (ids j))]
                           [x y] (ribbon-points inner source target)]
                       {:ribbon k :from (ids i) :to (ids j) :value ((w i) j) :x x :y y}))
-      :dropped (- (count edges) (count kept))})))
+      :dropped (count (filter #(weak? (index (:from %)) (index (:to %))) edges))})))
 
 (defn arc-layout
   "Arc diagram of graph `g` (see [[graph]]) as data: nodes on the x axis at 0, 1, ... in node order (`opts` `:order`,

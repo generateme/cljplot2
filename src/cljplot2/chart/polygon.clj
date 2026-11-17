@@ -6,7 +6,8 @@
   Groups (see [[cljplot2.data.group]]) come from ordinal aesthetics (`:color`) and `:group`; a linear or binned
   `:color` fills each polygon by the value of its group's first row (NA - the theme NA colour; rows outside the colour
   scale's explicit domain dropped). A row with an invalid x or y is dropped (counted per key); a polygon with fewer
-  than 3 points is not drawn (counted in `:dropped {:group n}`). Cartesian plots only (the pipeline rejects the chart
+  than 3 points is not drawn (counted in `:dropped {:group n}`, as violin and density count groups without a mark;
+  its aesthetic values don't reach the legend). Cartesian plots only (the pipeline rejects the chart
   under `:coord :polar`).
   `:padding {:x [lo hi] :y [lo hi]}` (default 5% each side).
 
@@ -54,21 +55,22 @@
   (let [st (style options theme)
         continuous (group/continuous-color groups mapping env)
         color-of (:color-of continuous)
-        {:keys [panels dropped]} (if continuous
-                                   (group/split (:groups continuous) (:mapping continuous) env)
-                                   (group/split groups mapping env))
+        {split-panels :panels dropped :dropped} (if continuous
+                                                  (group/split (:groups continuous) (:mapping continuous) env)
+                                                  (group/split groups mapping env))
         x-of (data/row-accessor :x (:x mapping))
         y-of (data/row-accessor :y (:y mapping))
         valid? (fn [r] (and (data/valid-value? (x-of r)) (data/valid-value? (y-of r))))
-        rows (mapcat (fn [gs] (mapcat :rows gs)) (vals panels))
+        rows (mapcat (fn [gs] (mapcat :rows gs)) (vals split-panels))
         _ (doseq [[k f] [[:x x-of] [:y y-of]]]
             (when (and (seq rows) (not-any? #(data/valid-value? (f %)) rows))
               (schema/fail! "No valid values for a mapped dimension - check the mapping." {:key :mapping :value k :rows (count rows)})))
         polygon (fn [g] (let [rs (filterv valid? (:rows g))]
                           (cond-> {:x (mapv x-of rs) :y (mapv y-of rs) :aesthetics (:aesthetics g)}
                             continuous (assoc :color-value (some-> (first (:rows g)) color-of)))))
-        all (update-vals panels #(mapv polygon %))
-        data (update-vals all (fn [ps] {:polygons (filterv #(>= (count (:x %)) min-points) ps) :style st}))
+        drawn? (fn [g] (>= (count (filter valid? (:rows g))) min-points))
+        panels (update-vals split-panels #(filterv drawn? %))
+        data (update-vals panels (fn [gs] {:polygons (mapv polygon gs) :style st}))
         color-stats (when continuous
                       (group/continuous-color-stats continuous (update-vals data #(map :color-value (:polygons %))) plot-scales))
         invalid (fn [f] (count (remove #(data/valid-value? (f %)) rows)))]
@@ -82,9 +84,8 @@
      :padding (merge {:x [0.05 0.05] :y [0.05 0.05]} (:padding options))
      :padding-explicit (data/explicit-padding {} options)
      :na (cond-> (group/na-dims panels) (:na? color-stats) (conj :color))
-     :dropped (cond-> (-> dropped
-                          (assoc :x (invalid x-of) :y (invalid y-of))
-                          (update :group (fnil + 0) (count (filter #(< (count (:x %)) min-points) (mapcat val all)))))
+     :dropped (cond-> (assoc dropped :x (invalid x-of) :y (invalid y-of)
+                             :group (count (remove drawn? (mapcat val split-panels))))
                 continuous (assoc :color (:dropped color-stats)))}))
 
 (defn- fill-color

@@ -1,6 +1,9 @@
 (ns cljplot2.graphs
   "Plot builders of graphs and trees: a layout from [[cljplot2.data.graph]] / [[cljplot2.data.tree]] drawn with
-  ordinary charts, returned as a plot map (edit it, add charts, or build the plot from the layout yourself)."
+  ordinary charts, returned as a plot map (edit it, add charts, or build the plot from the layout yourself).
+
+  A builder's `:scales` option is merged into the builder's own scales key by key (see [[cljplot2.theme/deep-merge]]):
+  `{:color {:range ..}}` changes the palette and keeps the builder's domain and legend setting."
   (:require [clojure2d.color :as c]
             [fastmath.core :as m]
             [fastmath.ml.clustering :as cl]
@@ -120,7 +123,7 @@
                                                    :anchor [:left :middle] :offset [(+ max-radius 3.0) 0] :size 8
                                                    :background [255 255 255 170] :padding 1})))
              :aspect :iso
-             :scales (merge {:x x-axis :y y-axis} scales)
+             :scales (theme/deep-merge {:x x-axis :y y-axis} scales)
              :labels {:title title :x nil :y nil}}
       user-theme (assoc :theme user-theme))))
 
@@ -271,9 +274,9 @@
         cells (vec (for [[i r] (map-indexed vector rs) [j c] (map-indexed vector cs)]
                      {:row r :col c :value ((matrix i) j)}))
         tile-plot (fn [extra] (cond-> (merge {:data cells :mapping {:x :col :y :row :color :value}
-                                              :scales (merge {:x {:domain (mapv :name (tree/leaves col-tree))}
-                                                              :y {:domain (mapv :name (tree/leaves row-tree))}}
-                                                             scales)
+                                              :scales (theme/deep-merge {:x {:domain (mapv :name (tree/leaves col-tree))}
+                                                                         :y {:domain (mapv :name (tree/leaves row-tree))}}
+                                                                        scales)
                                               :charts [(chart/tile)]}
                                              extra)
                                 user-theme (update :theme theme/deep-merge user-theme)))
@@ -345,7 +348,7 @@
 
   `options`: graph - `:from`, `:to`, `:value`, `:nodes`, `:id`, `:directed?`; layout - `:order` (`nil`, ids,
   `:cluster`; see [[cljplot2.data.graph/node-order]]), `:pad` (degrees, default 2), `:inner` (default 0.92),
-  `:min-value` (weaker edges left out); `:scales` (e.g. `:color`), `:title`, `:theme`.
+  `:min-value` (weaker flows left out - summed per pair, see `chord-layout`); `:scales` (e.g. `:color`), `:title`, `:theme`.
 
   Equivalents: d3 `chord` / `chordDirected` + `ribbon`, R `circlize::chordDiagram` (without tracks or ticks)."
   [edges {:keys [alpha scales title] user-theme :theme :or {alpha 0.6} :as options}]
@@ -359,7 +362,7 @@
                        labels? (into (radial-labels label-nodes)))
              :aspect :iso
              ;; colours in ring order, the same for sectors and ribbons
-             :scales (merge {:x circle-axis :y circle-axis :color {:domain (mapv :id groups) :legend false}} scales)
+             :scales (theme/deep-merge {:x circle-axis :y circle-axis :color {:domain (mapv :id groups) :legend false}} scales)
              :labels {:title title :x nil :y nil}}
       user-theme (assoc :theme user-theme))))
 
@@ -379,17 +382,21 @@
   `options`: graph - `:from`, `:to`, `:value`, `:nodes`, `:id`, `:directed?`; `:order` (`nil`, ids, `:cluster`; see
   [[cljplot2.data.graph/node-order]]); `:mapping` - node aesthetics (`:color`, `:size`, `:shape`; nodes have
   `:degree`, `:in`, `:out` and their row's columns), `:edge-mapping` - edge aesthetics (default `{:size :value}` -
-  widths from the size scale `{:range [0.5 4]}` - unless the nodes map `:size`); an aesthetic in both throws `ex-info
-  {:key :edge-mapping}`; `:node-style` (scatter options over `{:size 8 :stroke-color :white :stroke-width 1}`),
+  widths from the size scale `{:range [0.5 4]}` - when the edge weights differ and the nodes don't map `:size`); an
+  aesthetic in both throws `ex-info {:key :edge-mapping}`; `:node-style` (scatter options over `{:size 8 :stroke-color :white :stroke-width 1}`),
   `:edge-style` (line options over `{:color [120 120 120]}`), `:scales`, `:title`, `:theme`.
 
   Equivalents: ggraph `layout = \"linear\"` + `geom_edge_arc`, arcdiagram (R)."
   [edges {:keys [order mapping edge-mapping alpha scales title node-style edge-style] user-theme :theme
           :or {alpha 0.5} :as options}]
   (let [labels? (get options :labels? true)
-        edge-mapping (if (contains? options :edge-mapping) edge-mapping (when-not (contains? mapping :size) {:size :value}))
+        g (graph/graph edges options)
+        weighted? (< 1 (count (distinct (map :value (:edges g)))))
+        edge-mapping (if (contains? options :edge-mapping)
+                       edge-mapping
+                       (when (and weighted? (not (contains? mapping :size))) {:size :value}))
         _ (check-mappings! mapping edge-mapping)
-        {:keys [nodes arcs]} (graph/arc-layout (graph/graph edges options) {:order order})
+        {:keys [nodes arcs]} (graph/arc-layout g {:order order})
         merged-theme (theme/deep-merge theme/default-theme user-theme)
         top (double (reduce max 0.0 (map :y arcs)))
         top (if (pos? top) top 1.0)]
@@ -399,10 +406,10 @@
                                           :mapping (merge {:x :x :y :y :group :edge} edge-mapping)}))
                       (chart/scatter (merge (node-options merged-theme (merge {:size 8} node-style))
                                             {:data nodes :mapping (merge {:x :x :y :y} mapping)}))]
-             :scales (cond-> (merge {:x (leaf-axis (mapv (fn [n] {:name (:id n)}) nodes) labels?)
-                                     :y {:domain [(- (* arc-room top)) (* (+ 1.0 arc-room) top)] :nice false
-                                         :expand [0.0 0.0] :axis false}}
-                                    scales)
+             :scales (cond-> (theme/deep-merge {:x (leaf-axis (mapv (fn [n] {:name (:id n)}) nodes) labels?)
+                                                :y {:domain [(- (* arc-room top)) (* (+ 1.0 arc-room) top)] :nice false
+                                                    :expand [0.0 0.0] :axis false}}
+                                               scales)
                        (:size edge-mapping) (update :size #(merge arc-width-range %)))
              :labels {:title title :x nil :y nil}}
       labels? (assoc-in [:theme :axis :x :label-rotation] 90)
