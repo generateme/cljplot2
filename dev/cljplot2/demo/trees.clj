@@ -3,16 +3,14 @@
   the world population hierarchy (regions → subregions) as a horizontal dendrogram, the clustered heatmap of
   standardized mtcars, flare's class imports bundled along its package tree.
 
-  Data: `flare.json`, `flare-dependencies.json` - vega-datasets (the flare ActionScript library's classes and imports;
-  licence not documented); world population - data-to-viz `11_SevCatOneNumNestedOneObsPerGroup` (MIT, read from
-  `notebooks/data`)."
-  (:require [clojure.data.csv :as csv]
-            [clojure.data.json :as json]
-            [clojure.java.io :as io]
-            [fastmath.ml.clustering :as cl]
+  Data (`notebooks/data`, sources and licences in its `datasets.edn`): `flare.json`, `flare-dependencies.json` -
+  vega-datasets (the flare ActionScript library's classes and imports; licence not documented); world population -
+  data-to-viz `11_SevCatOneNumNestedOneObsPerGroup` (MIT)."
+  (:require [fastmath.ml.clustering :as cl]
             [fastmath.stats :as stats]
             [cljplot2.core :as plot]
             [cljplot2.data.tree :as tree]
+            [cljplot2.demo.data :as data]
             [cljplot2.demo.parallel :refer [mtcars]]))
 
 (def ^:private variables [:mpg :cyl :disp :hp :drat :wt :qsec :vs :am :gear :carb])
@@ -34,10 +32,7 @@
   (plot/dendrogram clustering {:labels cars :k 3 :circular true :theme {:palette {:color :set1}}
                               :title "The same clustering, circular"}))
 
-(def ^:private world
-  (let [[header & rows] (csv/read-csv (slurp (io/file "notebooks/data/world-population.csv")))
-        ks (mapv keyword header)]
-    (mapv #(zipmap ks %) rows)))
+(def ^:private world (data/csv-rows "world-population.csv"))
 
 (def world-hierarchy
   (plot/dendrogram (tree/from-levels world {:hierarchy [:region :subregion]})
@@ -50,11 +45,10 @@
                            :scales {:color {:range :RColorBrewer/RdBu :midpoint 0 :reverse true :title "z-score"}}
                            :title "mtcars: cars and variables ordered by clustering"}))
 
-(def ^:private read-json #(json/read-str (slurp (io/resource %)) :key-fn keyword))
 
 (def flare-bundle
-  (let [nodes (read-json "flare.json")
-        imports (read-json "flare-dependencies.json")]
+  (let [nodes (data/json-rows "flare.json")
+        imports (data/json-rows "flare-dependencies.json")]
     (plot/bundle imports (tree/from-parents nodes {:name :name})
                  {:from :source :to :target :title "flare: class imports bundled along the package tree"})))
 

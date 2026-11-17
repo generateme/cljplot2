@@ -78,12 +78,12 @@
 
 (def default-theme
   "Defaults in old cljplot style: light lavender-gray background, 10 px margin, panels without fill and border."
-  {:plot {:background 0xe8e8f0 :margin 10}
-   :panel {:fill :none :alternate-fill [0 0 0 20] :border-color :none :border-width 1
+  {:plot {:background 0xececf3 :margin 10}
+   :panel {:fill :none :alternate-fill [0 0 0 12] :border-color :none :border-width 1
            :grid {:x {:color 0xb4b4b4 :width 0.5 :dash [4.0]}
                   :y {:color 0xb4b4b4 :width 0.5 :dash [4.0]}
                   :bands {:color 0xb4b4b4 :width 1 :dash [1.0 2.0]}
-                  :bands-fill [0 0 0 12]}}
+                  :bands-fill [0 0 0 8]}}
    :strip {:fill [255 255 255 150] :border-color [0 0 0 100] :border-width 1 :shingle-fill [255 165 0 110]}
    :facet {:gap 5}
    :multiplot {:gap 10}

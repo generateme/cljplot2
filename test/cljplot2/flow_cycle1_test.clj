@@ -114,11 +114,13 @@
       (is (= :layout (:key (error #(graph/layout path {:layout :spring})))))
       (are [g] (= :gravity (:key (error #(graph/layout path {:gravity g}))))
         -1 ##NaN "1" nil))
-    (testing "R4 :gravity 0 lets components drift apart, more pulls them together"
-      (let [g (graph/graph [{:from 1 :to 2} {:from 3 :to 4}])
-            gap (fn [gravity] (let [ps (positions g {:rng (r/rng :mersenne 7) :gravity gravity})]
-                                (/ (dist (ps 0) (ps 1)) (min (dist (ps 0) (ps 2)) (dist (ps 1) (ps 3))))))]
-        (is (< (gap 0) (gap 5)) "edge length relative to the distance between the parts grows with gravity")))
+    (testing "R4 :gravity acts inside a component; separate components are packed whatever it is"
+      (let [parts (graph/graph [{:from 1 :to 2} {:from 3 :to 4}])
+            star (graph/graph (concat (for [i (range 1 6)] {:from 0 :to i}) [{:from 5 :to 6} {:from 6 :to 7}]))
+            at (fn [g gravity] (positions g {:rng (r/rng :mersenne 7) :gravity gravity}))]
+        (is (every? #(< (m/abs (double %)) 1e-9) (map - (flatten (at parts 0)) (flatten (at parts 5))))
+            "two separate edges: packed the same (up to rounding)")
+        (is (not= (at star 0) (at star 5)) "one component: gravity changes the layout")))
     (testing "2.5 118 nodes within 2 s"
       (let [g (graph/graph (for [i (range 118) j (range 3)] {:from i :to (mod (+ i 1 (* 7 j)) 118)}))
             t (System/nanoTime)]

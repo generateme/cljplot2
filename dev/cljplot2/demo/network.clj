@@ -3,27 +3,22 @@
   circle vs force layout, directed migration flows with arrows and widths (opposite flows of a pair share one line -
   curved edges come later), the mtcars correlation network.
 
-  Data: `miserables.json` - vega-datasets (D. E. Knuth, The Stanford GraphBase, 1993; licence not specified);
+  Data (`notebooks/data`, sources and licences in its `datasets.edn`): `miserables-characters.csv`,
+  `miserables-links.csv` - vega-datasets (D. E. Knuth, The Stanford GraphBase, 1993; licence not specified);
   `migration.csv` - data-to-viz `13_AdjacencyDirectedWeighted_long.csv` (Yan Holtz, MIT), migration flows between
   regions (from, to, value)."
-  (:require [clojure.data.csv :as csv]
-            [clojure.data.json :as json]
-            [clojure.java.io :as io]
-            [fastmath.random :as r]
+  (:require [fastmath.random :as r]
             [fastmath.stats :as stats]
             [cljplot2.core :as plot]
             [cljplot2.data.graph :as graph]
+            [cljplot2.demo.data :as data]
             [cljplot2.demo.parallel :refer [mtcars]]))
 
-(def ^:private miserables (json/read-str (slurp (io/resource "miserables.json")) :key-fn keyword))
-
 (def ^:private characters
-  (mapv (fn [{:keys [name group]}] {:id name :group (str "group " group)}) (:nodes miserables)))
+  (mapv (fn [{:keys [name group]}] {:id name :group (str "group " group)}) (data/csv-rows "miserables-characters.csv")))
 
 (def ^:private co-occurrences
-  (let [names (mapv :id characters)]
-    (mapv (fn [{:keys [source target value]}] {:from (names source) :to (names target) :value value})
-          (:links miserables))))
+  (mapv #(update % :value parse-long) (data/csv-rows "miserables-links.csv")))
 
 (def les-miserables
   (plot/network co-occurrences {:nodes characters :rng (r/rng :mersenne 3)
@@ -39,9 +34,9 @@
                 {:columns 2}))
 
 (def ^:private flows
-  (let [[_ & rows] (csv/read-csv (slurp (io/resource "migration.csv")))]
+  (let [rows (data/csv-rows "migration.csv")]
     ;; the file spells some names with dots ("South.Asia") - one spelling
-    (vec (for [[from to v] rows :let [v (parse-double v) name #(clojure.string/replace % "." " ")]
+    (vec (for [{from :from to :to v :value} rows :let [v (parse-double v) name #(clojure.string/replace % "." " ")]
                :when (and (pos? v) (not= (name from) (name to)))]
            {:from (name from) :to (name to) :value v}))))
 

@@ -143,12 +143,12 @@
 
 (defn- leaf-axis
   "Position scale of the leaf axis: leaves at 0..n-1 with half a step around, ticks at the leaves labelled by their
-  names (`labels?` false - no axis)."
+  names without grid lines (`labels?` false - no axis)."
   [leaves labels?]
   (let [n (count leaves)
         names (mapv #(str (:name %)) leaves)]
     (cond-> {:domain [-0.5 (- (double n) 0.5)] :nice false :expand [0.0 0.0]}
-      labels? (assoc :ticks (vec (range n)) :formatter #(get names (long (Math/round (double %))) ""))
+      labels? (assoc :ticks (vec (range n)) :formatter #(get names (long (Math/round (double %))) "") :axis :no-grid)
       (not labels?) (assoc :axis false))))
 
 (defn- branch-chart
@@ -164,7 +164,8 @@
 (defn- radial-labels
   "Two text charts of the leaf names around a circle (`nodes` with `:angle` and `:leaf?`), just outside radius 1,
   each turned along its angle and reading outward: the right half anchored left, the left half anchored right; the
-  font smaller for many leaves (9 pt down to 5 pt)."
+  font smaller for many leaves (9 pt down to 5 pt); pixel room for the labels kept around the circle
+  (`:reserve-room`)."
   [nodes]
   (let [leaves (filterv :leaf? nodes)
         size (m/constrain (/ 1400.0 (double (max 1 (count leaves)))) 5.0 9.0)
@@ -175,9 +176,9 @@
         [right left] ((juxt filter remove) #(<= (double (:angle %)) 180.0) leaves)]
     (cond-> []
       (seq right) (conj (chart/text {:data (mapv row right) :mapping {:x :x :y :y :label :label :angle :angle}
-                                     :anchor [:left :middle] :anchor-frame :text :size size}))
+                                     :anchor [:left :middle] :anchor-frame :text :size size :reserve-room true}))
       (seq left) (conj (chart/text {:data (mapv row left) :mapping {:x :x :y :y :label :label :angle :angle}
-                                    :anchor [:right :middle] :anchor-frame :text :size size})))))
+                                    :anchor [:right :middle] :anchor-frame :text :size size :reserve-room true})))))
 
 (def ^:private ^:const root-room
   "Room past the root on a dendrogram's height axis (a fraction of the root height): its cross line stays inside the
@@ -192,8 +193,9 @@
     {:domain [0.0 (* (+ 1.0 root-room) (if (pos? top) top 1.0))] :nice false :expand [0.0 0.0]}))
 
 (def ^:private circle-axis
-  "Both axes of a circular plot: the unit circle plus room for the leaf labels."
-  {:domain [-1.5 1.5] :nice false :expand [0.0 0.0] :axis false})
+  "Both axes of a circular plot: the unit circle and the radial labels' start (radius 1.03); the labels keep their own
+  pixel room past it (text `:reserve-room`, see [[radial-labels]]), whatever their length and the panel size."
+  {:domain [-1.05 1.05] :nice false :expand [0.0 0.0] :axis false})
 
 (defn dendrogram
   "Dendrogram plot of `source` - a fastmath `hclust` result or a tree of [[cljplot2.data.tree]] - as a plot map:
@@ -316,10 +318,10 @@
   default `true`; else `:edge-color`), with `:alpha` (default 0.4; the edges only - leaf points and legend keys stay
   opaque); leaf names outward around the circle
   (`:labels?`, default `true`). Edges with an end that isn't a leaf are dropped (see `bundle-paths` for the count).
-  `:title`, `:theme`.
+  `:scales` (e.g. `{:color {:legend false}}`), `:title`, `:theme`.
 
   Equivalents: ggraph `geom_conn_bundle` (`tension`), d3 `curveBundle.beta`; Holten (2006)."
-  [edges tree {:keys [from to beta alpha edge-color title] user-theme :theme
+  [edges tree {:keys [from to beta alpha edge-color scales title] user-theme :theme
                :or {beta 0.85 alpha 0.4 edge-color [70 110 180]} :as options}]
   (let [labels? (get options :labels? true)
         by-group? (get options :color-by-group? true)
@@ -338,7 +340,7 @@
                               (chart/scatter {:data leaves :size 3 :mapping (cond-> {:x :x :y :y} by-group? (assoc :color ::group))})]
                        labels? (into (radial-labels nodes)))
              :aspect :iso
-             :scales (cond-> {:x circle-axis :y circle-axis} by-group? (assoc :color {:title nil}))
+             :scales (theme/deep-merge (cond-> {:x circle-axis :y circle-axis} by-group? (assoc :color {:title nil})) scales)
              :labels {:title title :x nil :y nil}}
       user-theme (update :theme #(theme/deep-merge % user-theme)))))
 

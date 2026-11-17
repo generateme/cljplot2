@@ -203,11 +203,68 @@
         [(amap xs i _ (+ 0.5 (* s (- (aget xs i) cx))))
          (amap ys i _ (+ 0.5 (* s (- (aget ys i) cy))))]))))
 
+(defn- components
+  "Connected components of nodes `0..n-1` linked by `ends` (`[i j w]`): vectors of node indices in increasing order,
+  the components ordered by their smallest index."
+  [^long n ends]
+  (let [neighbours (reduce (fn [acc [i j]] (-> acc (update i conj j) (update j conj i))) (vec (repeat n [])) ends)]
+    (loop [i 0 seen #{} out []]
+      (cond
+        (= i n) out
+        (seen i) (recur (inc i) seen out)
+        :else (let [part (loop [queue [i] part #{i}]
+                           (if-let [k (first queue)]
+                             (let [new (remove part (neighbours k))]
+                               (recur (into (subvec queue 1) new) (into part new)))
+                             part))]
+                (recur (inc i) (into seen part) (conj out (vec (sort part)))))))))
+
+(def ^:private ^:const component-gap
+  "Gap between packed components, in units of a one-node component's side: wider than an edge inside a fitted
+  component (about 1 - 1.7), so separate parts don't read as linked."
+  2.0)
+
+(defn- component-side
+  "Side of the square a component of the nodes `part` is fitted into: the square root of its node count."
+  ^double [part]
+  (m/sqrt (double (count part))))
+
+(defn- packed-force-positions
+  "`[xs ys]` of the force layout (see [[force-positions]]) of every connected component of `n` nodes with `ends` on
+  its own, each fitted into a square of side sqrt(its node count), the squares packed in rows - largest first, a row
+  at most as wide as the square root of their total area - with [[component-gap]] between them (as igraph lays
+  out and merges components); one component - its layout as it is. Components draw their random starts from `g`
+  in packing order."
+  [g ^long n ends opts]
+  (let [parts (components n ends)]
+    (if (<= (count parts) 1)
+      (force-positions g n ends opts)
+      (let [parts (sort-by (comp - count) parts)
+            row-width (max (component-side (first parts))
+                           (m/sqrt (double (reduce + (map #(m/sq (+ (component-side %) component-gap)) parts)))))
+            xs (double-array n) ys (double-array n)]
+        (loop [[part & more] parts x 0.0 y 0.0 row-height 0.0]
+          (when part
+            (let [s (component-side part)
+                  [x y row-height] (if (and (pos? x) (> (+ x s) row-width))
+                                     ;; the next row below: y decreasing
+                                     [0.0 (- (double y) (double row-height) component-gap) 0.0]
+                                     [x y row-height])
+                  index (zipmap part (range))
+                  local (filterv (fn [[i j]] (and (index i) (index j))) ends)
+                  [^doubles px ^doubles py] (fitted (force-positions g (count part) (mapv (fn [[i j w]] [(index i) (index j) w]) local) opts))]
+              (doseq [[k i] (map-indexed vector part)]
+                (aset xs (long i) (+ (double x) (* s (aget px (long k)))))
+                (aset ys (long i) (- (double y) (* s (aget py (long k))))))
+              (recur more (+ (double x) s component-gap) (double y) (max (double row-height) s)))))
+        [xs ys]))))
+
 (defn layout
   "Graph `g` (see [[graph]]) with positions (see the namespace doc). `opts`: `:layout` - `:force` (default),
   `:circle`, `:random`; force: `:iterations` (default 500), `:gravity` - the pull to the centroid in units of the
-  ideal edge length (default 1; 0 - none: loose parts drift apart; more - a tighter layout); `:rng`. Force layouts
-  are scaled into the unit square keeping their proportions. Throws `ex-info` for an unknown layout (`:layout`), a
+  ideal edge length, inside each connected component (default 1; 0 - none; more - a tighter layout); `:rng`. A force layout places every connected
+  component on its own and packs them in rows, largest first (see [[packed-force-positions]]); it is scaled into
+  the unit square keeping its proportions. Throws `ex-info` for an unknown layout (`:layout`), a
   `:gravity` that isn't a finite number >= 0 (`:gravity`)."
   ([g] (layout g {}))
   ([{:keys [nodes edges loops] :as g} {:keys [iterations gravity rng] kind :layout :or {kind :force iterations 500 gravity 1.0}}]
@@ -220,7 +277,7 @@
          [^doubles xs ^doubles ys] (case kind
                                      :circle (circle-positions n)
                                      :random (random-positions (rng/for-build rng) n)
-                                     :force (fitted (force-positions (rng/for-build rng) n
+                                     :force (fitted (packed-force-positions (rng/for-build rng) n
                                                                      (mapv (fn [e] [(index (:from e)) (index (:to e)) (:value e)]) edges)
                                                                      [(long iterations) (double gravity)])))
          placed (fn [e] (let [i (long (index (:from e))) j (long (index (:to e)))]

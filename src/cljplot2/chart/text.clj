@@ -28,7 +28,9 @@
   `:padding {:x [lo hi]}`), `:background` (a color, alpha allowed, filling the text plus padding - a label box, ggplot
   `geom_label`; the legend key keeps the background with the theme's padding) - over the text role `[:text :annotation]`
   (the text chart's theme style; a theme `[:chart :text]` entry is rejected); `:extent`, `:data` /
-  `:mapping`. Text stays upright when the plot is flipped; only the anchor position enters the extents."
+  `:mapping`. Text stays upright when the plot is flipped; only the anchor position enters the extents.
+  `:reserve-room true` keeps pixel room past the data on every side (`:padding-px` of x and y) for the labels at any
+  angle: the largest label's diagonal plus its offset - labels around a circle stay inside the panel."
   (:require [fastmath.core :as m]
             [cljplot2.content.label :as label]
             [cljplot2.data.annotation :as annotation]
@@ -78,7 +80,8 @@
                       (schema/optional :offset [:tuple schema/finite schema/finite])
                       (schema/optional :rotation [:or schema/finite [:= :radial]])
                       (schema/optional :select [:enum :last :first])
-                      (schema/optional :anchor-frame [:enum :box :text])))
+                      (schema/optional :anchor-frame [:enum :box :text])
+                      (schema/optional :reserve-room schema/bool)))
    :mapping [:map]})
 
 (defn- one? [v] (not (and (vector? v) (not (panel-position? v)))))
@@ -130,6 +133,33 @@
              room (+ (double along) (m/abs (double (if flip? dy dx))))]
          {:x (if (= :last (:select options)) [0.0 room] [room 0.0])})))))
 
+(defn- reserved-room
+  "`:padding-px` `{:x [r r] :y [r r]}` for labels `texts` drawn with `options` at any angle: `r` - the largest text's
+  diagonal (unrotated, style keys of `options`) plus the larger offset component; `nil` without texts."
+  [texts options {:keys [theme hint]}]
+  (when (seq texts)
+    (measure/call-with-scratch-canvas
+     hint
+     (fn [c]
+       (let [spec (merge {:kind :label :role :annotation :rotation 0} (select-keys options style-keys))
+             diagonal (reduce max (map (fn [t] (let [^Vec2 size (measure/natural-size (assoc spec :text (str t)) {:canvas c :theme theme})]
+                                                 (m/hypot (.x size) (.y size))))
+                                       texts))
+             [dx dy] (:offset options [0 0])
+             r (+ (double diagonal) (max (m/abs (double dx)) (m/abs (double dy))))]
+         {:x [r r] :y [r r]})))))
+
+(defn- with-reserved-room
+  "Chart `stats` with [[reserved-room]] for the texts of its labels merged into its `:padding-px` (per side the
+  larger) when `options` ask for `:reserve-room`."
+  [stats options env]
+  (if-not (:reserve-room options)
+    stats
+    (let [texts (distinct (map :text (mapcat (fn [panel] (mapcat :labels (:groups panel))) (vals (:data stats)))))
+          room (reserved-room texts options env)]
+      (cond-> stats
+        room (update :padding-px #(merge-with (fn [a b] (mapv max a b)) % room))))))
+
 (defn compute
   "Literal: `{:labels [{:x :y :text}] :options o}` in every panel, extents of the positions. Data: per panel the
   labels of each group (with `:aesthetics`), with `:select` - one per group and text, the `:anchor` / `:offset`
@@ -144,8 +174,9 @@
                     :when (empty? (many k))]
               (schema/fail! (str "Text " k " is required (literal options).") {:key k :value nil}))
           labels (label-positions (many :x) (many :y) (many :text))]
-      (annotation/literal-stats {:groups [{:labels labels}] :options options} options
-                                {:x (map :x labels) :y (map :y labels)}))
+      (with-reserved-room (annotation/literal-stats {:groups [{:labels labels}] :options options} options
+                                                    {:x (map :x labels) :y (map :y labels)})
+        options env))
     (let [_ (annotation/require-mapping! "Text" mapping [[:x :y :label]])
           [x-of y-of t-of] (map #(data/row-accessor % (get mapping %)) [:x :y :label])
           angle-of (when (some? (:angle mapping)) (data/row-accessor :angle (:angle mapping)))
@@ -162,9 +193,10 @@
                                          (let [groups (mapv (fn [g] {:labels (labels-of (:rows g)) :aesthetics (:aesthetics g)}) gs)
                                                ls (mapcat :labels groups)]
                                            [{:groups groups :options options} {:x (map :x ls) :y (map :y ls)}])))]
-      (cond-> stats
-        select (assoc :padding-px (label-room (distinct (map :text (mapcat :labels (mapcat :groups (vals (:data stats))))))
-                                              options env))))))
+      (-> (cond-> stats
+            select (assoc :padding-px (label-room (distinct (map :text (mapcat :labels (mapcat :groups (vals (:data stats))))))
+                                                  options env)))
+          (with-reserved-room options env)))))
 
 (defn- base-style
   "Text style keys of `options` over the theme role's colour (the base for the group's `:color`)."

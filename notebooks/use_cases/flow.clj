@@ -58,11 +58,9 @@
                  :dataset :migration})
 
 (plot/render-image
- (let [room {:x {:domain [-1.7 1.7]} :y {:domain [-1.7 1.7]}}]
-   ;; two panels side by side: more room around the ring for the region names
-   (plot/arrange [(plot/chord migration {:directed? true :min-value 0.1 :scales room :title "directed flows"})
-                  (plot/chord migration {:min-value 0.1 :scales room :title "exchange between regions"})]
-                 {:columns 2}))
+ (plot/arrange [(plot/chord migration {:directed? true :min-value 0.1 :title "directed flows"})
+                (plot/chord migration {:min-value 0.1 :title "exchange between regions"})]
+               {:columns 2})
  {:width 1000 :height 520})
 
 ;; ### Colours, gaps, order and weak links
@@ -89,9 +87,8 @@
 
 ;; Co-authorships between researchers come as a table - a row per author, a column per author, 1 for a joint paper.
 ;; The table isn't square, so its cells become edge rows directly (`graph/adjacency->edges` reads square matrices,
-;; see the correlation network below); the force layout places them, seeded for a stable picture. Small separate
-;; groups of authors drift to tight blobs at the edge; a stronger pull to the centre (`:gravity 8`, default 1) keeps
-;; them near the rest and leaves room to spread.
+;; see the correlation network below); the force layout places them, seeded for a stable picture. Groups of authors
+;; without joint papers between them are laid out apart and packed in rows, the largest first.
 
 (nu/source-note {:source "R Graph Gallery - Input formats for network charts; data-to-viz - Network"
                  :url ["https://r-graph-gallery.com/257-input-formats-for-network-charts.html"
@@ -108,7 +105,7 @@
        (mapv (fn [[a b]] {:from a :to b}))))
 
 (plot/render-image
- (plot/network coauthor-edges {:rng (r/rng :mersenne 11) :node-style {:size 8} :gravity 8
+ (plot/network coauthor-edges {:rng (r/rng :mersenne 11) :node-style {:size 8}
                                :title (str (count coauthor-edges) " co-authorships")})
  {:width 750 :height 700})
 
@@ -301,8 +298,7 @@
 
 ;; ### Bundling strength
 
-;; `:beta` straightens the curves: 0 draws straight lines, 1 follows the tree exactly. The builders return plot
-;; maps, so a plot key - here `:legend false` - is set on the result.
+;; `:beta` straightens the curves: 0 draws straight lines, 1 follows the tree exactly.
 
 (nu/source-note {:source "R Graph Gallery - Custom hierarchical edge bundling"
                  :url "https://r-graph-gallery.com/310-custom-hierarchical-edge-bundling.html"
@@ -310,9 +306,9 @@
 
 (plot/render-image
  (plot/arrange (vec (for [beta [0.0 0.5 1.0]]
-                      (assoc (plot/bundle flare-imports flare-tree {:from :source :to :target :beta beta :labels? false
-                                                                    :title (str ":beta " beta)})
-                             :legend false)))
+                      (plot/bundle flare-imports flare-tree {:from :source :to :target :beta beta :labels? false
+                                                             :scales {:color {:legend false}}
+                                                             :title (str ":beta " beta)})))
                {:columns 3})
  {:width 1000 :height 380})
 

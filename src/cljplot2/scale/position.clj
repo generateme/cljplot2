@@ -86,8 +86,8 @@
 (def scale-spec-schema
   "Plot scale spec of `:x` / `:y`: wadogo attributes plus `:nice` and `:expand`, see [[scale-spec]] and
   [[data-scale-spec]]; `:axis false` hides the scale's axis and its grid lines in every panel, `:axis :grid` hides
-  the axis (no track, ticks, tick labels) but keeps the grid lines (default true; axis titles are separate,
-  `:labels`)."
+  the axis (no track, ticks, tick labels) but keeps the grid lines, `:axis :no-grid` keeps the axis without grid lines
+  (e.g. a tick per category of many; default true; axis titles are separate, `:labels`)."
   (schema/with-rules
    (into [:map {:closed true}
           (schema/optional :kind (into [:enum] (sort position-kinds)))
@@ -97,7 +97,7 @@
           (schema/nilable :nice [:multi {:dispatch boolean?} [true :boolean] [false [:and schema/finite schema/non-neg]]])
           (schema/optional :expand schema/padding)
           (schema/optional :formatter [:multi {:dispatch string?} [true :string] [false schema/function]])
-          (schema/optional :axis [:or :boolean [:= :grid]])
+          (schema/optional :axis [:or :boolean [:enum :grid :no-grid]])
           (schema/optional :stops [:sequential {:min 2} schema/finite])
           (schema/optional :interpolator schema/interpolator)
           (schema/optional :ticks-method [:enum :default :pretty])
@@ -374,7 +374,7 @@
   skipped when over half the range);
   ticks outside the final domain are dropped. A bands scale without `:ticks` has a tick at every band. A spec with
   `:axis false` gives a finalized scale with `:axis false` (no axis, no grid lines), `:axis :grid` one with
-  `:axis :grid` (no axis, grid lines kept)."
+  `:axis :grid` (no axis, grid lines kept), `:axis :no-grid` one with `:axis :no-grid` (the axis, no grid lines)."
   [spec range tick-hint]
   (let [kind (:kind spec)
         explicit (:ticks spec)
@@ -401,7 +401,7 @@
              :ticks ticks
              :tick-labels (tick-labels scale spec ticks)
              :attributes attributes}
-      (contains? #{false :grid} (:axis spec)) (assoc :axis (:axis spec)))))
+      (contains? #{false :grid :no-grid} (:axis spec)) (assoc :axis (:axis spec)))))
 
 (def ^:private identity-transform
   {:forward (fn ^double [^double v] v) :inverse (fn ^double [^double v] v)})
@@ -417,9 +417,10 @@
   (not (contains? #{false :grid} (:axis scale))))
 
 (defn grid-drawn?
-  "Are the grid lines (and band fills) of finalized scale or spec `scale` drawn: `:axis` not `false`."
+  "Are the grid lines (and band fills) of finalized scale or spec `scale` drawn: `:axis` neither `false` nor
+  `:no-grid`."
   [scale]
-  (not (false? (:axis scale))))
+  (not (contains? #{false :no-grid} (:axis scale))))
 
 (defn stat-transform
   "`{:forward f :inverse g}` - the coordinates a 2D stat (field, contour, bin2d) works in on an axis with the plot's

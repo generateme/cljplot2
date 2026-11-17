@@ -93,23 +93,23 @@
         cx (+ x (quot w 2)) cy (+ y (quot h 2))]
     (testing "default: no fill, no border - plot background shows"
       (let [c (plot/render {} {:width 600 :height 400})]
-        (is (= (rgb 0xe8e8f0) (pixel c cx cy) (pixel c x y)))))
+        (is (= (rgb 0xececf3) (pixel c cx cy) (pixel c x y)))))
     (testing "fill"
       (is (= (rgb :red) (pixel (plot/render {:theme {:panel {:fill :red}}} {:width 600 :height 400}) cx cy))))
     (testing "border inside the box"
       (let [c (plot/render {:theme {:panel {:border-color :blue :border-width 3}}} {:width 600 :height 400})]
         (is (= (rgb :blue) (pixel c x y) (pixel c (+ x 2) cy) (pixel c (+ x w -3) cy) (pixel c cx (+ y h -1))))
-        (is (= (rgb 0xe8e8f0) (pixel c (+ x 3) cy) (pixel c (dec x) cy) (pixel c cx (+ y h))))))
+        (is (= (rgb 0xececf3) (pixel c (+ x 3) cy) (pixel c (dec x) cy) (pixel c cx (+ y h))))))
     (testing "border wider than half the box fills it"
       (let [c (plot/render {:theme {:panel {:border-color :blue :border-width 1000}}} {:width 600 :height 400})]
         (is (= (rgb :blue) (pixel c cx cy)))))
     (testing "border width rounded to whole pixels"
       (let [c (plot/render {:theme {:panel {:border-color :blue :border-width 1.6}}} {:width 600 :height 400})]
         (is (= (rgb :blue) (pixel c (inc x) cy)))
-        (is (= (rgb 0xe8e8f0) (pixel c (+ x 2) cy)))))
+        (is (= (rgb 0xececf3) (pixel c (+ x 2) cy)))))
     (testing ":none draws nothing, nil in an override keeps the default"
       (let [c (plot/render {:theme {:panel {:fill :none :border-color nil}}} {:width 600 :height 400})]
-        (is (= (rgb 0xe8e8f0) (pixel c cx cy) (pixel c x y)))))
+        (is (= (rgb 0xececf3) (pixel c cx cy) (pixel c x y)))))
     (testing "invalid border width fails at build time"
       (is (= :border-width (:key (error #(plot/build {:theme {:panel {:border-color :blue :border-width -1}}}))))))))
 
@@ -144,7 +144,7 @@
   (let [built (plot/build plot {:width 600 :height 400})
         {:keys [x y w h]} (grid/item-box (:layout built) :title)
         c (plot/render plot {:width 600 :height 400})
-        bg (rgb 0xe8e8f0)
+        bg (rgb 0xececf3)
         xs (for [px (range x (+ x w)) py (range y (+ y h)) :when (not= bg (pixel c px py))] px)]
     (/ (+ (apply min xs) (apply max xs)) 2.0)))
 

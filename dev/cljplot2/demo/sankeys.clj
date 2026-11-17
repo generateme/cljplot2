@@ -2,19 +2,17 @@
   "Flow cycle 4 demo: sankey diagrams of UK energy flows (justified, and left-aligned with target-coloured flows), a
   Titanic alluvial diagram and a sunburst of website visit sequences.
 
-  Data: `energy.json` - networkD3 `JSONdata/energy.json` (the d3 sankey example; UK Department of Energy & Climate
-  Change 2050 Calculator data; the package is GPL-3, the data's licence isn't stated); Titanic - R `datasets::Titanic`
-  passenger counts (Dawson 1995), inline; visit sequences - synthetic, a seeded random walk over six pages."
-  (:require [clojure.data.json :as json]
-            [clojure.java.io :as io]
-            [clojure.string :as str]
+  Data (`notebooks/data`, sources and licences in its `datasets.edn`): `energy.csv` - networkD3
+  `JSONdata/energy.json` (the d3 sankey example; UK Department of Energy & Climate Change 2050 Calculator data; the
+  package is GPL-3, the data's licence isn't stated); `titanic.csv` - R `datasets::Titanic` passenger counts (Dawson
+  1995); visit sequences - synthetic, a seeded random walk over six pages."
+  (:require [clojure.string :as str]
             [fastmath.random :as r]
-            [cljplot2.core :as plot]))
+            [cljplot2.core :as plot]
+            [cljplot2.demo.data :as data]))
 
 (def ^:private energy
-  (let [{:keys [nodes links]} (json/read-str (slurp (io/resource "energy.json")) :key-fn keyword)
-        names (mapv :name nodes)]
-    (mapv (fn [{:keys [source target value]}] {:from (names source) :to (names target) :value value}) links)))
+  (mapv #(update % :value parse-double) (data/csv-rows "energy.csv")))
 
 (def energy-flows
   (plot/sankey energy {:title "UK energy flows in 2050 (TWh, DECC scenario)"}))
@@ -23,17 +21,8 @@
   (plot/sankey energy {:align :left :link-color :target :title "Left-aligned, flows in their target's colour"}))
 
 (def ^:private titanic
-  "R `Titanic`: `[class sex age survived n]`."
-  (for [[class sex age survived n] [["1st" "Male" "Child" "No" 0] ["2nd" "Male" "Child" "No" 0] ["3rd" "Male" "Child" "No" 35] ["Crew" "Male" "Child" "No" 0]
-                                    ["1st" "Female" "Child" "No" 0] ["2nd" "Female" "Child" "No" 0] ["3rd" "Female" "Child" "No" 17] ["Crew" "Female" "Child" "No" 0]
-                                    ["1st" "Male" "Adult" "No" 118] ["2nd" "Male" "Adult" "No" 154] ["3rd" "Male" "Adult" "No" 387] ["Crew" "Male" "Adult" "No" 670]
-                                    ["1st" "Female" "Adult" "No" 4] ["2nd" "Female" "Adult" "No" 13] ["3rd" "Female" "Adult" "No" 89] ["Crew" "Female" "Adult" "No" 3]
-                                    ["1st" "Male" "Child" "Yes" 5] ["2nd" "Male" "Child" "Yes" 11] ["3rd" "Male" "Child" "Yes" 13] ["Crew" "Male" "Child" "Yes" 0]
-                                    ["1st" "Female" "Child" "Yes" 1] ["2nd" "Female" "Child" "Yes" 13] ["3rd" "Female" "Child" "Yes" 14] ["Crew" "Female" "Child" "Yes" 0]
-                                    ["1st" "Male" "Adult" "Yes" 57] ["2nd" "Male" "Adult" "Yes" 14] ["3rd" "Male" "Adult" "Yes" 75] ["Crew" "Male" "Adult" "Yes" 192]
-                                    ["1st" "Female" "Adult" "Yes" 140] ["2nd" "Female" "Adult" "Yes" 80] ["3rd" "Female" "Adult" "Yes" 76] ["Crew" "Female" "Adult" "Yes" 20]]
-        :when (pos? (long n))]
-    {:class class :sex sex :age age :survived survived :n n}))
+  "R `Titanic` counts without the empty cells."
+  (vec (for [row (data/csv-rows "titanic.csv") :let [n (parse-long (:n row))] :when (pos? n)] (assoc row :n n))))
 
 (def titanic-alluvial
   (plot/alluvial titanic {:axes [:class :sex :age :survived] :value :n :fill :class

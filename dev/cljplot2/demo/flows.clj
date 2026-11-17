@@ -3,8 +3,8 @@
   undirected - the exchange of a pair, `chord`), Les Misérables arc diagrams in input and clustered node order, and
   polygons from rows.
 
-  Data: as [[cljplot2.demo.network]] - `migration.csv` (data-to-viz, Yan Holtz, MIT) and `miserables.json`
-  (vega-datasets, D. E. Knuth; licence not specified)."
+  Data: as [[cljplot2.demo.network]] - `migration.csv` (data-to-viz, Yan Holtz, MIT) and the Les Misérables
+  characters and co-occurrences (vega-datasets, D. E. Knuth; licence not specified), from `notebooks/data`."
   (:require [fastmath.core :as m]
             [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
