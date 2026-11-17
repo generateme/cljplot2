@@ -35,7 +35,8 @@
     [[cljplot2.layout.plot-grid/estimated-panel-size]]; deref only when needed - it measures text)); stored per chart in the
     plot's `:stats`. Aesthetic extents (`:color`,
     `:shape`, `:size`, `:dash`) are [[cljplot2.data.rows/value-extent]]s; `:na` lists aesthetics with NA (`nil`) values
-  * `(draw chart computed canvas panel-box scales env)` - draws one panel's `computed` data; called by the panel
+  * `(draw chart computed canvas panel-box scales env)` - draws one panel's `computed` data (`env` also has the
+    panel's `:panel-key` - its facet level, `[col row]` for a grid, `cljplot2.data.facet/single-panel` without facets); called by the panel
     with isolated graphics clipped to the panel box. Pixel positions come from `cljplot2.scale.position/projection`
     (data `x`, `y` -> pixel point; `:x` is vertical in a plot with `:flip true`), never from assuming `:x` is
     horizontal; it gives `##NaN` for values the scale can't place, and such values are skipped. Shapes that must
@@ -69,11 +70,13 @@
             [cljplot2.chart.field :as field]
             [cljplot2.chart.function :as function]
             [cljplot2.chart.histogram :as histogram]
+            [cljplot2.chart.image :as image]
             [cljplot2.chart.line :as line]
             [cljplot2.chart.pack :as pack]
             [cljplot2.chart.parallel :as parallel]
             [cljplot2.chart.partition :as partition]
             [cljplot2.chart.polygon :as polygon]
+            [cljplot2.chart.probability :as probability]
             [cljplot2.chart.rect :as rect]
             [cljplot2.chart.ribbon :as ribbon]
             [cljplot2.chart.rug :as rug]
@@ -129,7 +132,10 @@
    :candlestick (:style candlestick/schemas)
    :bar (:style bar/schemas)
    :parallel (:style parallel/schemas)
-   :polygon (:style polygon/schemas)})
+   :polygon (:style polygon/schemas)
+   :image (:style image/schemas)
+   :qq (:style probability/qq-schemas)
+   :pp (:style probability/pp-schemas)})
 
 (defn- polar
   "Chart value `v` drawing in polar coordinates too."
@@ -244,6 +250,25 @@
   ([] (ecdf {}))
   ([options] (chart-value :ecdf ecdf/compute ecdf/draw ecdf/legend ecdf/schemas options)))
 
+(defn- probability-value
+  "Chart value of a probability plot: an annotation (every panel, facet keys only) when both sides are distributions."
+  [kind compute schema options]
+  (let [options (if (nil? options) {} options)]
+    ((if (probability/distributions-only? options) annotation-value chart-value)
+     kind compute probability/draw probability/legend schema options)))
+
+(defn qq
+  "Q-Q plot: quantiles of `:x` / `:x-distribution` against `:y` / `:y-distribution`, see
+  [[cljplot2.chart.probability]]."
+  ([] (qq {}))
+  ([options] (probability-value :qq probability/qq-compute probability/qq-schemas options)))
+
+(defn pp
+  "P-P plot: probabilities of `:x` / `:x-distribution` against `:y` / `:y-distribution`, see
+  [[cljplot2.chart.probability]]."
+  ([] (pp {}))
+  ([options] (probability-value :pp probability/pp-compute probability/pp-schemas options)))
+
 (defn box
   "Box plot of the values per level (the categorical axis, `:level-axis`) and group, see [[cljplot2.chart.box]] and [[cljplot2.data.strip]]."
   ([] (box {}))
@@ -305,6 +330,12 @@
   ([] (field {}))
   ([options] (assoc (chart-value :field field/compute field/draw nil field/schemas options)
                     :computed-aesthetics field/computed-aesthetics)))
+
+(defn image
+  "A free chart: an image of each panel drawn by a callback from the finalized position scales, see
+  [[cljplot2.chart.image]]."
+  [options]
+  (annotation-value :image image/compute image/draw nil image/schemas options))
 
 (defn contour
   "Contour lines or filled regions of a 2D field (density, gridded `:value`s, a function), see

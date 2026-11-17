@@ -34,7 +34,8 @@
 
 (def ^:private position-dims [:x :y])
 
-(def ^:private style-entries
+(def style-entries
+  "Map entries of a point style (all optional; defaults from the theme)."
   [(schema/optional :size schema/non-neg)
    (schema/optional :color schema/color)
    (schema/optional :stroke-color schema/color)

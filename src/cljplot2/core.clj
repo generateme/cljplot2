@@ -3,7 +3,8 @@
   (:require [cljplot2.graphs :as graphs]
             [cljplot2.pipeline :as pipeline]
             [cljplot2.multiplot :as multiplot]
-            [cljplot2.render :as render]))
+            [cljplot2.render :as render]
+            [cljplot2.series-plots :as series-plots]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -68,6 +69,11 @@
   "Flow sunburst of sequences (steps as rings coloured by name), see [[cljplot2.graphs/sequences]]."
   [rows options]
   (graphs/sequences rows options))
+
+(defn acf
+  "Correlogram of a series (ACF and PACF stems with significance bands), see [[cljplot2.series-plots/acf]]."
+  ([values] (series-plots/acf values {}))
+  ([values options] (series-plots/acf values options)))
 
 (defn render
   "Build and draw `plot`, returning a clojure2d canvas, see [[cljplot2.render/render]]."

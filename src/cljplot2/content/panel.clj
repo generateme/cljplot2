@@ -30,9 +30,11 @@
 (defmethod measure/natural-size :panel [_ _] (v/vec2 0.0 0.0))
 
 (defn- draw-charts!
-  "Draw every chart's data for `panel-key` (and data of charts drawn in all panels) in panel-local coordinates."
+  "Draw every chart's data for `panel-key` (and data of charts drawn in all panels) in panel-local coordinates; the
+  charts' `env` has the panel's `:panel-key`."
   [c panel-key w h env]
-  (doseq [[chart stats] (map vector (:charts env) (:stats env))
+  (doseq [:let [env (assoc env :panel-key panel-key)]
+          [chart stats] (map vector (:charts env) (:stats env))
           computed [(get-in stats [:data panel-key]) (get-in stats [:data facet/all-panels])]
           :when (some? computed)]
     (canvas/call-with-isolated-graphics

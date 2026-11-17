@@ -98,6 +98,19 @@
   (when-not (= :linear (:kind finalized))
     (schema/fail! "Rule :slope / :intercept needs linear x and y scales." {:key :slope :value [k (:kind finalized)]})))
 
+(defn draw-ablines!
+  "Draw the lines `y = intercept + slope * x` of `ablines` (`[[slope intercept] ..]`) between the ends of the x scale's
+  domain in the canvas' current style; linear x and y `scales` (the caller checks). Lines with a non-finite end are
+  skipped."
+  [canvas scales ablines]
+  (let [projection (scale/projection scales)
+        [x0 x1] (:domain (:x scales))]
+    (doseq [[b a] ablines
+            :let [^Vec2 p (projection x0 (+ (double a) (* (double b) (double x0))))
+                  ^Vec2 q (projection x1 (+ (double a) (* (double b) (double x1))))]
+            :when (every? #(m/valid-double? (double %)) [(.x p) (.y p) (.x q) (.y q)])]
+      (c2d/line canvas (.x p) (.y p) (.x q) (.y q)))))
+
 (defn draw
   "Draw the rules of one panel: `:x` / `:y` lines across the panel (whole-pixel centred), ab lines between the x
   domain ends; unplaceable positions are skipped."
@@ -130,13 +143,7 @@
       (when (seq ablines)
         (linear! :x (:x scales))
         (linear! :y (:y scales))
-        (let [projection (scale/projection scales)
-              [x0 x1] (:domain (:x scales))]
-          (doseq [[b a] ablines
-                  :let [^Vec2 p (projection x0 (+ (double a) (* (double b) (double x0))))
-                        ^Vec2 q (projection x1 (+ (double a) (* (double b) (double x1))))]
-                  :when (every? #(m/valid-double? (double %)) [(.x p) (.y p) (.x q) (.y q)])]
-            (c2d/line canvas (.x p) (.y p) (.x q) (.y q))))))))
+        (draw-ablines! canvas scales ablines)))))
 
 (defn legend
   "Key glyph: a horizontal line through the middle of `box`."

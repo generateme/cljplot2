@@ -14,6 +14,12 @@
   low end of the gradient - pick a palette or `:alpha` accordingly. On a `:log` axis the field is sampled (and a
   density estimated) in log10 coordinates, see [[cljplot2.data.field]].
 
+  `:pixel-color` - a function of `x`, `y` returning a clojure2d color (`nil` - transparent), called at every pixel's
+  data point (the pixel centre): a raster without a grid, a color scale or a legend (e.g. complex domain colouring,
+  see [[cljplot2.data.field/domain-color]]); the domain as for `:f` (option `:domain`, else the plot's explicit x / y
+  domains); not with `:f` (`ex-info {:key :pixel-color}`); the mapping and the other field options are ignored (as
+  with `:f`). It's called w x h times per panel - keep it cheap.
+
   Options (style defaults from theme `[:chart :field]`): `:alpha` (multiplies the colors' alpha, a fraction)."
   (:require [clojure2d.color :as c]
             [clojure2d.core :as c2d]
@@ -36,7 +42,8 @@
    :options (-> [:map {:closed true}]
                 (into style-entries)
                 (into field/options)
-                (into data/common-options))
+                (into data/common-options)
+                (conj (schema/optional :pixel-color schema/function)))
    :mapping [:maybe [:map [:color {:optional true} :nil]]]})
 
 (defn- style
@@ -53,9 +60,9 @@
     :function nil))
 
 (defn computed-aesthetics
-  "The field chart's computed color, titled by [[value-title]]."
+  "The field chart's computed color, titled by [[value-title]]; none with `:pixel-color`."
   [options mapping]
-  {:color (value-title options mapping)})
+  (if (:pixel-color options) {} {:color (value-title options mapping)}))
 
 (defn panel-grids
   "`{:grids {panel grid} :domain d :dropped {..}}` of a field chart's split `groups` (`{panel rows}`): each panel's
@@ -71,38 +78,64 @@
      :domain domain
      :dropped (field/dropped-positions kind mapping groups)}))
 
+(defn- domain-extents
+  [[[x0 x1] [y0 y1]]]
+  {:x {:kind :numeric :min (double x0) :max (double x1)}
+   :y {:kind :numeric :min (double y0) :max (double y1)}})
+
+(defn- pixel-color-stats
+  "Stats of a `:pixel-color` field: the function in every panel of `groups`, extents of its domain."
+  [options groups plot-scales st]
+  (when (:f options)
+    (schema/fail! "A field takes :pixel-color or :f, not both." {:key :pixel-color}))
+  (let [domain (field/function-domain (:domain options) plot-scales)]
+    {:data (update-vals groups (fn [_] {:pixel-color (:pixel-color options) :style st}))
+     :extents (update-vals groups (fn [_] (domain-extents domain)))
+     :padding {:x [0.0 0.0] :y [0.0 0.0]}
+     :scale-defaults {:x {:nice false} :y {:nice false}}
+     :dropped {:x 0 :y 0}}))
+
 (defn compute
   "Per panel: `{:grid grid :style st}` (see [[cljplot2.data.field/sample]]); extents x / y - the sampled domain, color -
-  the finite values of every panel; no padding, `:scale-defaults` without nice domains, `:dropped`."
+  the finite values of every panel; no padding, `:scale-defaults` without nice domains, `:dropped`.
+  With `:pixel-color`: `{:pixel-color f :style st}` per panel, extents x / y - the function domain, no color."
   [{:keys [options]} {:keys [groups mapping]} {:keys [theme plot-scales]}]
-  (let [{:keys [grids domain dropped]} (panel-grids options mapping groups plot-scales)
-        st (style options theme)
-        [lo hi] (field/value-range (vals grids))
-        [[x0 x1] [y0 y1]] domain]
-    {:data (update-vals grids (fn [g] {:grid g :style st}))
-     :extents (update-vals grids (fn [_] (cond-> {:x {:kind :numeric :min (double x0) :max (double x1)}
-                                                  :y {:kind :numeric :min (double y0) :max (double y1)}}
-                                           lo (assoc :color {:kind :numeric :min (double lo) :max (double hi)}))))
-     :padding {:x [0.0 0.0] :y [0.0 0.0]}
-     :scale-defaults (when domain {:x {:nice false} :y {:nice false}})
-     :dropped dropped}))
+  (let [st (style options theme)]
+    (if (:pixel-color options)
+      (pixel-color-stats options groups plot-scales st)
+      (let [{:keys [grids domain dropped]} (panel-grids options mapping groups plot-scales)
+            [lo hi] (field/value-range (vals grids))]
+        {:data (update-vals grids (fn [g] {:grid g :style st}))
+         :extents (update-vals grids (fn [_] (cond-> (domain-extents domain)
+                                               lo (assoc :color {:kind :numeric :min (double lo) :max (double hi)}))))
+         :padding {:x [0.0 0.0] :y [0.0 0.0]}
+         :scale-defaults (when domain {:x {:nice false} :y {:nice false}})
+         :dropped dropped}))))
+
+(defn- grid-color-fn
+  "Color of the grid's value at data `(x, y)` through the plot's color scale, `nil` for `##NaN` or a value outside
+  the scale's domain."
+  [grid scales env]
+  (let [color-of (aesthetic/attribute-fn :color (:color scales) (get-in env [:theme :palette :na]))]
+    (fn [x y] (let [v (field/grid-value grid x y)] (when-not (m/nan? v) (color-of v))))))
 
 (defn draw
-  "Draw one panel's raster: a pixel image of the panel box (see the namespace doc)."
-  [_chart {:keys [grid style]} canvas {:keys [w h]} scales env]
-  (let [w (long (m/round (double w))) h (long (m/round (double h)))]
-    (when (and grid (pos? w) (pos? h) (:color scales))
+  "Draw one panel's raster: a pixel image of the panel box (see the namespace doc); `:pixel-color` - its color at
+  every pixel's data point."
+  [_chart {:keys [grid pixel-color style]} canvas {:keys [w h]} scales env]
+  (let [w (long (m/round (double w))) h (long (m/round (double h)))
+        color-at (cond pixel-color pixel-color
+                       (and grid (:color scales)) (grid-color-fn grid scales env))]
+    (when (and color-at (pos? w) (pos? h))
       (let [flipped? (scale/flipped? scales)
             inverse-h (scale/inverse-fn (if flipped? (:y scales) (:x scales)))
             inverse-v (scale/inverse-fn (if flipped? (:x scales) (:y scales)))
-            color-of (aesthetic/attribute-fn :color (:color scales) (get-in env [:theme :palette :na]))
             alpha (:alpha style)
             transparent (c/color 0 0 0 0)
             pixel-color (fn [_ x y]
                           (let [a (double (inverse-h (+ 0.5 (double x))))
-                                b (double (inverse-v (+ 0.5 (double y))))
-                                v (if flipped? (field/grid-value grid b a) (field/grid-value grid a b))]
-                            (if-let [col (when-not (m/nan? v) (color-of v))]
+                                b (double (inverse-v (+ 0.5 (double y))))]
+                            (if-let [col (if flipped? (color-at b a) (color-at a b))]
                               (let [col (c/to-color col)]
                                 (if alpha (c/set-alpha col (* (double alpha) (double (c/alpha col)))) col))
                               transparent)))

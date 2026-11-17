@@ -49,7 +49,7 @@
   `:chart` - per chart kind defaults: `:scatter`, `:histogram`, `:density`, `:line`, `:ecdf` (old cljplot blue
   `[69 117 180]` - clojure2d `(last (palette :rdylbu-9))` - with cljplot's alphas: scatter 180, stripplot 100, rug 100),
   `:treemap` (`:padding`, `:border-color`, `:border-width`), `:partition` (`:border-color`, `:border-width`), `:pack` (`:padding`, `:border-color`, `:border-width`), `:waffle` (`:gap`, `:shape`, borders), `:venn` (`:alpha`, borders), `:tile` / `:bin2d` (`:cell`, `:cell-scale`, `:stroke-color`, `:stroke-width`), `:field` (`:alpha`), `:contour` (`:color`, `:width`, `:dash`, `:alpha`), `:correlation` (`:color`, `:stroke-color`, `:stroke-width`), strip charts `:box`, `:violin`, `:stripplot`, `:beeswarm`, `:rug`,
-  `:extent`, `:bar`, annotations `:rule`, `:rect`, `:function`, bands `:ribbon`, `:smooth` (band `:alpha` 0.3), `:segment`, `:polygon`, `:candlestick` (green up, red down), `:parallel` (radar `:fill` `:alpha` 0.25); each checked against its chart's style schema; line and
+  `:extent`, `:bar`, annotations `:rule`, `:rect`, `:function`, bands `:ribbon`, `:smooth` (band `:alpha` 0.3), `:segment`, `:polygon`, probability plots `:qq` / `:pp` (scatter's point style, `:line-width`), `:image` (no style), `:candlestick` (green up, red down), `:parallel` (radar `:fill` `:alpha` 0.25); each checked against its chart's style schema; line and
   function `:bridge` - the style of bridges over gaps (`:alpha` multiplies the line alpha, optional `:width`, `:dash`);
   line `:alpha` - opacity of `:fill :color` and stacked areas.
 
@@ -135,6 +135,9 @@
                     :pattern :solid :pattern-color :darker}
            :segment {:color [69 117 180] :width 1 :dash :none}
            :polygon {:color [69 117 180] :alpha 1.0 :stroke-color :none :stroke-width 1}
+           :qq {:size 4 :color [69 117 180 180] :stroke-color :none :stroke-width 1 :shape \O :line-width 1}
+           :image {}
+           :pp {:size 4 :color [69 117 180 180] :stroke-color :none :stroke-width 1 :shape \O :line-width 1}
            :parallel {:color [69 117 180 140] :width 1 :dash :none :fill :none :alpha 0.25
                       :pattern :solid :pattern-color :darker}
            :candlestick {:up-color [26 152 80] :down-color [215 48 39] :body-width 0.7 :wick-width 1 :stroke-color :none

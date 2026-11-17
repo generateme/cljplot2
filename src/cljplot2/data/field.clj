@@ -20,13 +20,16 @@
   Scales: on a `:log` axis the density is estimated, and every grid sampled, in log10 coordinates (see
   [[cljplot2.scale.position/stat-transform]]) - contours follow the points as the axis shows them, grid points are
   even on screen; the density value is then per log10 unit of that axis."
-  (:require [fastmath.core :as m]
+  (:require [clojure2d.color :as c]
+            [fastmath.complex :as cx]
+            [fastmath.core :as m]
             [fastmath.interpolation :as interp]
             [fastmath.kernel :as k]
             [cljplot2.data.rows :as data]
             [cljplot2.scale.position :as scale]
             [cljplot2.schema :as schema])
-  (:import [fastmath.java Array]))
+  (:import [fastmath.java Array]
+           [fastmath.vector Vec2]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -227,3 +230,44 @@
                   pts (filterv (fn [[x y]] (and (finite? x) (finite? y))) (map (juxt x-of y-of) rows))]
               (when (seq pts)
                 (density (map first pts) (map second pts) options (axis-transforms plot-scales))))))
+
+;; complex domain colouring
+
+(def wrap-methods
+  "Wraps of a magnitude into `[0 1]` for [[domain-color]]."
+  #{:log2 :log10 :sin :exp :sigmoid :frac})
+
+(defn wrap
+  "Magnitude `v` (>= 0) wrapped into `[0 1]` by `method` (old cljplot's complex plot): `:log2` / `:log10` - the
+  fraction of log(v + 1) (bands where |f| + 1 doubles / grows tenfold), `:sin` - sin v scaled to `[0 1]`, `:exp` -
+  1 - e^-v, `:sigmoid`, `:frac` - the fraction of v."
+  ^double [method ^double v]
+  (case method
+    :log2 (m/frac (m/log2 (inc v)))
+    :log10 (m/frac (m/log10 (inc v)))
+    :sin (m/norm (m/sin v) -1.0 1.0 0.0 1.0)
+    :exp (- 1.0 (m/exp (- v)))
+    :sigmoid (m/sigmoid v)
+    :frac (m/frac v)))
+
+(defn- complex-color
+  "HSB color of complex `z` (old cljplot): hue - arg z, brightness - the wrapped |z|, saturation 3/4 to full; a
+  non-finite argument counts as 0, a non-finite wrapped magnitude (a pole) as 1."
+  [method ^Vec2 z]
+  (let [angle (cx/arg z)
+        angle (if (m/valid-double? angle) angle 0.0)
+        bright (wrap method (cx/abs z))
+        bright (if (m/valid-double? bright) bright 1.0)
+        b (* 255.0 bright)]
+    (c/from-HSB* (c/color (m/norm angle m/-PI m/PI 0.0 255.0) (- 255.0 (/ (- 255.0 b) 4.0)) b))))
+
+(defn domain-color
+  "A `:pixel-color` function (see [[cljplot2.chart.field]]) colouring a complex function `f` (a `Vec2` -> `Vec2`
+  function of `fastmath.complex`, e.g. `cx/log`) by domain colouring: the point `(x, y)` is `x + iy`, the hue the
+  argument of f there, the brightness its magnitude wrapped by `:wrap` (default `:log2`, see [[wrap]]). Zeros and
+  poles get a colour. Throws `ex-info {:key :wrap}` for an unknown wrap."
+  ([f] (domain-color f {}))
+  ([f {:keys [wrap] :or {wrap :log2}}]
+   (when-not (wrap-methods wrap)
+     (schema/fail! (str "Domain colouring :wrap should be one of " (sort wrap-methods) ".") {:key :wrap :value wrap}))
+   (fn [x y] (complex-color wrap (f (cx/complex x y))))))
