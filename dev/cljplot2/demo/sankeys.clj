@@ -58,7 +58,7 @@
 
 (def visit-sequences
   (plot/sequences visits {:title "2000 website visits: pages in order from the centre"
-                          :scales {:color {:domain pages}}}))
+                          :scales {:color {:domain (conj pages "end")}}}))
 
 (def images
   "Images of this demo: `[file-name plot options]`, saved to `results/sankeys/` by [[cljplot2.demo/render!]]."

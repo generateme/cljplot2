@@ -230,3 +230,12 @@
           (every? :values es) (capped-values (mapcat :values es))
           (every? :ordered? es) (assoc :ordered? true)
           (some :sample es) (assoc :sample (into [] (mapcat :sample) es)))))))
+
+(defn weight
+  "Weight of a row's value `v` (edge weights, counts of flows and sequences): `1.0` for `nil` (an unweighted row),
+  else a finite number >= 0; `ex-info {:key :value}` otherwise."
+  ^double [v]
+  (cond
+    (nil? v) 1.0
+    (and (number? v) (m/valid-double? (double v)) (>= (double v) 0.0)) (double v)
+    :else (schema/fail! "A :value (weight) should be a finite number >= 0." {:key :value :value v})))

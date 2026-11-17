@@ -25,6 +25,10 @@
   colour made opaque (edges don't show through)."
   {:size 12 :stroke-color :white :stroke-width 1})
 
+(def ^:private label-box
+  "Translucent white boxes under labels drawn over marks (network, sankey): readable over bands and edges."
+  {:background [255 255 255 170] :padding 1})
+
 (def ^:private edge-defaults {:color [120 120 120 200]})
 (def ^:private node-size-range {:range [6 24] :area true})
 (def ^:private ^:const frame-padding 0.06)
@@ -120,9 +124,9 @@
                                                                         directed? (assoc :end-gap ::gap))})
                                                directed? (assoc :arrow arrow)))
                               (chart/scatter (merge node-st {:data nodes :mapping (merge {:x :x :y :y} mapping)}))]
-                       label-of (conj (chart/text {:data nodes :mapping {:x :x :y :y :label label-of}
-                                                   :anchor [:left :middle] :offset [(+ max-radius 3.0) 0] :size 8
-                                                   :background [255 255 255 170] :padding 1})))
+                       label-of (conj (chart/text (merge label-box {:data nodes :mapping {:x :x :y :y :label label-of}
+                                                                    :anchor [:left :middle] :offset [(+ max-radius 3.0) 0]
+                                                                    :size 8}))))
              :aspect :iso
              :scales (theme/deep-merge {:x x-axis :y y-axis} scales)
              :labels {:title title :x nil :y nil}}
@@ -429,16 +433,16 @@
   (str (if (contains? node :name) (:name node) (:id node))))
 
 (defn- side-labels
-  "Two text charts of the sankey node names at the middle of their sides: right of the nodes in the left half, left
-  of those in the right half (both inside the frame)."
+  "Two text charts of the sankey node names at the middle of their sides, on [[label-box]]es: right of the nodes in
+  the left half, left of those in the right half (both inside the frame)."
   [nodes]
   (let [row (fn [x {:keys [y0 y1] :as node}] {:x x :y (* 0.5 (+ (double y0) (double y1))) :label (node-label node)})
         [left right] ((juxt filter remove) #(< (double (:x0 %)) 0.5) nodes)]
     (cond-> []
-      (seq left) (conj (chart/text {:data (mapv #(row (:x1 %) %) left) :mapping {:x :x :y :y :label :label}
-                                    :anchor [:left :middle] :offset [4 0] :size 9}))
-      (seq right) (conj (chart/text {:data (mapv #(row (:x0 %) %) right) :mapping {:x :x :y :y :label :label}
-                                     :anchor [:right :middle] :offset [-4 0] :size 9})))))
+      (seq left) (conj (chart/text (merge label-box {:data (mapv #(row (:x1 %) %) left) :mapping {:x :x :y :y :label :label}
+                                                     :anchor [:left :middle] :offset [4 0] :size 9})))
+      (seq right) (conj (chart/text (merge label-box {:data (mapv #(row (:x0 %) %) right) :mapping {:x :x :y :y :label :label}
+                                                      :anchor [:right :middle] :offset [-4 0] :size 9}))))))
 
 (def ^:private sankey-layout-keys [:align :layer :node-width :pad :iterations :node-sort])
 
@@ -523,14 +527,16 @@
 (defn sequences
   "Flow (sequence) sunburst of `rows` as a plot map: the sequences' steps as rings from the centre (see
   [[cljplot2.data.hierarchy/sequence-levels]]; `:sequence`, `:value`, `:separator`, `:end`), every step coloured by
-  its name wherever it occurs, with a legend of the names (`chart/partition` `:color-by :name` under polar); a
-  centre hole `:inner` (default 0.3); `:labels?` (step names in the cells that fit, default `false`); `:scales`,
-  `:title`, `:theme`.
+  its name wherever it occurs, with a legend of the names (`chart/partition` `:color-by :name` under polar); the end
+  marker a step of its own, coloured and in the legend (`:keep-end?`, default `true`; `false` - sequences that end
+  are their group's grey remainder); a centre hole `:inner` (default 0.3); `:labels?` (step names in the cells that
+  fit, default `false`); `:scales`, `:title`, `:theme`.
 
   Equivalents: d3 sequences sunburst (Kerry Rodden), sunburstR."
   [rows {:keys [inner scales title] user-theme :theme :or {inner 0.3} :as options}]
   (let [labels? (get options :labels? false)
-        {:keys [rows hierarchy]} (hierarchy/sequence-levels rows (select-keys options [:sequence :value :separator :end]))]
+        {:keys [rows hierarchy]} (hierarchy/sequence-levels rows (merge {:keep-end? true}
+                                                                        (select-keys options [:sequence :value :separator :end :keep-end?])))]
     (cond-> {:data rows
              :mapping {:value :value :hierarchy hierarchy}
              ;; thin borders: deep rings have many narrow cells

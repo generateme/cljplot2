@@ -7,7 +7,9 @@
   (after its named children).
 
   Node: a group `{:name :value :children}` or a leaf `{:name :value :color}`; `:value` is the sum of the leaves below.
-  The root is always a group with `:name nil`; its children carry `:top-index` (see [[panel-trees]])."
+  The root is always a group with `:name nil`; its children carry `:top-index` (see [[panel-trees]]).
+
+  Sequences (e.g. page visits) become such level rows with [[sequence-levels]] - a flow sunburst."
   (:require [clojure.string :as str]
             [clojure2d.color :as c]
             [fastmath.core :as m]
@@ -201,27 +203,28 @@
 
 (defn- sequence-steps
   "Steps of sequence `s`: a string split at the literal `separator`, or the elements of a sequential value; empty
-  (`nil`, `\"\"`) steps and a final `end` marker removed."
-  [s separator end]
+  (`nil`, `\"\"`) steps removed, a final `end` marker too unless `keep-end?`."
+  [s separator [end keep-end?]]
   (let [steps (cond
                 (string? s) (str/split s (re-pattern (java.util.regex.Pattern/quote (str separator))))
                 (sequential? s) s
                 :else [])
         steps (filterv #(not (or (nil? %) (= "" %))) steps)]
-    (if (and (seq steps) (= end (peek steps))) (pop steps) steps)))
+    (if (and (not keep-end?) (seq steps) (= end (peek steps))) (pop steps) steps)))
 
 (defn sequence-levels
   "Hierarchy rows of sequences (e.g. page visits) for a flow sunburst (`chart/partition` under polar, see
   [[cljplot2.graphs/sequences]]): every row's `:sequence` (an accessor of a string split at `:separator`, default
-  `\"-\"`, or of a sequence of steps; empty steps left out; a final `:end` marker, default `\"end\"`, removed - a sequence ending
-  before others continue becomes its group's unnamed leaf) with `:value` (an accessor, default 1 per row; summed
-  over identical sequences). Returns `{:rows [{:step-1 s1 .. :step-k sk :value v}] :hierarchy [:step-1 ..
+  `\"-\"`, or of a sequence of steps; empty steps left out; a final `:end` marker, default `\"end\"`, removed - a
+  sequence ending before others continue becomes its group's unnamed leaf - or kept as a step of its own with
+  `:keep-end? true`) with `:value` (an accessor, default 1 per row; see [[cljplot2.data.rows/weight]]; summed over
+  identical sequences). Returns `{:rows [{:step-1 s1 .. :step-k sk :value v}] :hierarchy [:step-1 ..
   :step-k] :dropped n}` - `k` the longest sequence, shorter ones padded with `nil`, rows in first-appearance order;
   `:dropped` - rows without steps."
-  [rows {:keys [sequence value separator end] :or {sequence :sequence separator "-" end "end"}}]
+  [rows {:keys [sequence value separator end keep-end?] :or {sequence :sequence separator "-" end "end"}}]
   (let [sequence-of (data/row-accessor :sequence sequence)
-        value-of (if value (data/row-accessor :value value) (constantly 1.0))
-        keyed (map (fn [row] [(sequence-steps (sequence-of row) separator end) (value-of row)]) rows)
+        value-of (if value (data/row-accessor :value value) (constantly nil))
+        keyed (mapv (fn [row] [(sequence-steps (sequence-of row) separator [end keep-end?]) (data/weight (value-of row))]) rows)
         kept (filter (comp seq first) keyed)
         sums (reduce (fn [acc [steps v]] (update acc steps (fnil + 0.0) (double v))) {} kept)
         order (distinct (map first kept))

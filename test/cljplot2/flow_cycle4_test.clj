@@ -42,11 +42,20 @@
       (let [nodes (by-id nodes)]
         (doseq [[end k] [[:from :sy] [:to :ty]]
                 [id ls] (group-by end links)
-                :let [{:keys [y0 y1]} (nodes id)
-                      tops (sort > (map k ls))]]
+                :let [{:keys [y0 y1 value]} (nodes id)
+                      tops (sort > (map k ls))
+                      height (- (double y1) (double y0))
+                      side (double (reduce + (map :width ls)))]]
           (is (close? y1 (first tops)) (str id " stack starts at the node's top"))
           (is (<= (- (double y0) 1e-9) (- (double (last tops)) (double (:width (last (sort-by k > ls)))))) id)
-          (is (close? (- (double y1) (double y0)) (if (= :sy k) (reduce + (map :width ls)) (- (double y1) (double y0))))))))
+          (is (<= side (+ height 1e-9)) (str id " " end " bands within the node"))
+          (when (close? value (reduce + (map :value ls)))
+            (is (close? height side) (str id " " end " - the node's flow fills it"))))))
+    (testing "1.1 a node with more flow out than in: its incoming bands fill only part of it"
+      (let [{:keys [nodes links]} (layout [{:from "a" :to "b" :value 1} {:from "b" :to "c" :value 3}])
+            b (first (filter #(= "b" (:id %)) nodes))
+            in (first (filter #(= "b" (:to %)) links))]
+        (is (close? (* 3.0 (double (:width in))) (- (double (:y1 b)) (double (:y0 b)))))))
     (testing "1.1 columns: nodes inside [0, 1], at least :pad apart"
       (doseq [[_ column] (group-by :layer nodes)
               [upper lower] (partition 2 1 (sort-by :y1 > column))]
@@ -104,7 +113,9 @@
                                                                     {:nodes [{:id "q"}]})
                                                        {})]
       (is (= #{"a" "b"} (set (map :id nodes))))
-      (is (= {:edges 2 :nodes 2} dropped) "c and q")))
+      (is (= {:edges 2 :nodes 2} dropped) "c and q"))
+    (is (= {:edges 1 :nodes 0} (:dropped (layout [{:from "a" :to nil :value 1} {:from "a" :to "b" :value 1}])))
+        "the graph's own drop - an edge with a nil end"))
   (testing "1.2 no flows - an empty layout; one link - two nodes edge to edge"
     (is (= [] (:nodes (layout []))))
     (let [[a b] (:nodes (layout [{:from "a" :to "b" :value 2}]))]
@@ -140,6 +151,7 @@
       (is (= false (get-in p [:scales :color :legend])))
       (is (= true (get-in (plot/sankey flows {:nodes [{:id "a" :kind "in"}] :mapping {:color #(or (:kind %) "other")}})
                           [:scales :color :legend])))
+      (is (= [255 255 255 170] (get-in left [:options :background])) "labels on translucent boxes")
       (is (= 2 (count (:charts (plot/sankey flows {:labels? false})))))
       (is (instance? BufferedImage (plot/render-image p {:width 400 :height 300}))))))
 
@@ -163,6 +175,10 @@
     (let [g (graph/alluvial-graph [{:a 2 :b "x"} {:a "q" :b "y"} {:a 2 :b "y"}] {:axes [:a :b]})]
       (is (= [[0 2] [0 "q"] [1 "x"] [1 "y"]] (mapv :id (:nodes g))))
       (is (= 3.0 (reduce + (map :value (:edges g)))))))
+  (testing "3.1 values: nil counts 1, a string or a negative number throws"
+    (is (= 2.0 (reduce + (map :value (:edges (graph/alluvial-graph [{:a 1 :b 2 :n nil} {:a 1 :b 2 :n 1}] {:axes [:a :b] :value :n}))))))
+    (are [v] (= :value (:key (error #(graph/alluvial-graph [{:a 1 :b 2 :n v}] {:axes [:a :b] :value :n}))))
+      "x" -1 ##NaN))
   (testing "3.1 fewer than 2 axes or a missing value throw"
     (is (= :axes (:key (error #(graph/alluvial-graph people {:axes [:class]})))))
     (is (= :axes (:key (error #(graph/alluvial-graph people {:axes nil})))))
@@ -224,11 +240,26 @@
     (is (= [{:step-1 "a" :step-2 "b" :value 1.0}]
            (:rows (hierarchy/sequence-levels [{:sequence "a.b"}] {:separator "."}))) "a literal separator, not a regex"))
   (testing "4.2 only end markers - dropped"
-    (is (= 1 (:dropped (hierarchy/sequence-levels [{:sequence "end"}] {}))))))
+    (is (= 1 (:dropped (hierarchy/sequence-levels [{:sequence "end"}] {})))))
+  (testing "4.2 :keep-end? - the end marker a step of its own (only at the end)"
+    (is (= [{:step-1 "a" :step-2 "end" :value 1.0}] (:rows (hierarchy/sequence-levels [{:sequence "a-end"}] {:keep-end? true}))))
+    (is (= [{:step-1 "end" :step-2 "a" :value 1.0}] (:rows (hierarchy/sequence-levels [{:sequence "end-a"}] {})))
+        "an end marker inside a sequence is an ordinary step"))
+  (testing "4.2 values: nil counts 1, a string or a negative number throws"
+    (is (= [{:step-1 "a" :value 1.0}] (:rows (hierarchy/sequence-levels [{:sequence "a" :n nil}] {:value :n}))))
+    (are [v] (= :value (:key (error #(hierarchy/sequence-levels [{:sequence "a" :n v}] {:value :n}))))
+      "x" -1 ##Inf)))
 
 (deftest sequences-plot-test
   (testing "4.3 partition by name under polar with a hole"
     (let [p (plot/sequences [{:sequence "home-search-end"} {:sequence "home-end"}] {:inner 0.4})]
       (is (= :name (get-in (first (:charts p)) [:options :color-by])))
       (is (= {:kind :polar :inner 0.4} (:coord p)))
-      (is (instance? BufferedImage (plot/render-image p {:width 300 :height 300}))))))
+      (is (instance? BufferedImage (plot/render-image p {:width 300 :height 300})))))
+  (testing "4.3 the end marker kept by default, with a legend entry; :keep-end? false drops it"
+    (let [rows [{:sequence "home-search-end"} {:sequence "home-end"}]
+          names (fn [p] (set (keep identity (mapcat vals (map #(dissoc % :value) (:data p))))))]
+      (is (contains? (names (plot/sequences rows {})) "end"))
+      (is (not (contains? (names (plot/sequences rows {:keep-end? false})) "end")))
+      (is (= ["end" "home" "search"]
+             (mapv :label (:entries (first (legend/legends (pipeline/build (plot/sequences rows {}) {:width 300 :height 300}))))))))))

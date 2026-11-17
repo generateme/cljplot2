@@ -16,7 +16,10 @@
   generator gives the same layout every time; without it layouts differ.
 
   Ordered layouts: [[node-order]] (input, given or clustered order of the nodes), [[chord-layout]] (d3 `chord` /
-  `chordDirected` - arcs and ribbons in the unit circle), [[arc-layout]] (nodes on a line, edges as semicircles)."
+  `chordDirected` - arcs and ribbons in the unit circle), [[arc-layout]] (nodes on a line, edges as semicircles).
+
+  Flows: [[sankey-layout]] (d3-sankey - nodes in columns, bands between them in the unit square), [[alluvial-graph]]
+  (the graph of an alluvial diagram: a node per level of every axis, strands between consecutive axes)."
   (:require [fastmath.core :as m]
             [fastmath.ml.clustering :as cl]
             [fastmath.random :as r]
@@ -29,14 +32,6 @@
 (set! *unchecked-math* :warn-on-boxed)
 
 (def layouts #{:force :circle :random})
-
-(defn- weight
-  "Edge weight of the value `v`: `1.0` for `nil`, else a finite number >= 0 (`ex-info {:key :value}` otherwise)."
-  ^double [v]
-  (cond
-    (nil? v) 1.0
-    (and (number? v) (m/valid-double? (double v)) (>= (double v) 0.0)) (double v)
-    :else (schema/fail! "Edge :value should be a finite number >= 0." {:key :value :value v})))
 
 (defn- edge-rows!
   "`edges` checked: a sequence of maps (`ex-info {:key :edges}` otherwise)."
@@ -67,7 +62,7 @@
          to-of (data/row-accessor :to to)
          value-of (data/row-accessor :value value)
          [by-id order] (node-rows nodes (data/row-accessor :id id))
-         all (mapv (fn [row] (assoc row :from (from-of row) :to (to-of row) :value (weight (value-of row))))
+         all (mapv (fn [row] (assoc row :from (from-of row) :to (to-of row) :value (data/weight (value-of row))))
                    (edge-rows! edges))
          kept (filterv #(and (some? (:from %)) (some? (:to %))) all)
          {loops true edges false} (group-by #(= (:from %) (:to %)) kept)
@@ -578,12 +573,14 @@
 
   Returns `{:nodes [node + :layer :x0 :x1 :y0 :y1 :value] :links [edge + :link :sy :ty :width] :rects [{:rect :node
   :x :y}] :bands [edge + :link :x :y] :dropped {:edges n :nodes n}}` - nodes in column order, top to bottom; `:rect`
-  the node's index there, `:link` the edge's index (group keys of the polygons, whatever the ids); `:sy` / `:ty` the band's top at the source / target (y up); rect and band rows are polygon
-  points; edges of zero value and self-loops are left out, as are nodes without flow (counted).
+  the node's index there, `:link` the edge's index (group keys of the polygons, whatever the ids); `:sy` / `:ty` the
+  band's top at the source / target (y up); rect and band rows are polygon points; edges of zero value and self-loops
+  are left out, as are nodes without flow (counted; `:edges` also counts the graph's `:dropped` - edges with a `nil`
+  end).
   Throws `ex-info` for a cycle (`:edges`), a bad option (its key), a `:pad` leaving no room in the fullest column
   (`:pad`)."
   ([g] (sankey-layout g {}))
-  ([{:keys [nodes edges loops]} opts]
+  ([{:keys [nodes edges loops] :as g} opts]
    (let [{:keys [align layer node-width pad iterations node-sort] :as opts}
          (merge {:align :justify :node-width 0.03 :pad 0.02 :iterations 6} opts)
          _ (sankey-options! opts)
@@ -597,7 +594,8 @@
          by-node (fn [k] (let [g (group-by k links)] (object-array (map #(mapv :link (get g % [])) (range n)))))
          ^objects outs (by-node :s)
          ^objects ins (by-node :t)
-         dropped {:edges (+ (count loops) (- (count edges) (count flows))) :nodes (- all-count n)}]
+         ;; the graph's own drops (edges with a nil end), self-loops, zero flows
+         dropped {:edges (+ (long (or (:dropped g) 0)) (count loops) (- (count edges) (count flows))) :nodes (- all-count n)}]
      (if (zero? n)
        {:nodes [] :links [] :rects [] :bands [] :dropped dropped}
        (let [values (mapv (fn [i] (max (double (reduce + 0.0 (map #(:value (links %)) (aget outs (long i)))))
@@ -675,7 +673,8 @@
   "Directed graph (see [[graph]]) of an alluvial diagram of `rows` over `:axes` (accessors, at least 2): a node per
   level of every axis - `{:id [axis-index level] :name level :layer axis-index}`, levels in natural order (first
   appearance when they don't compare) - and an edge per pair of levels of consecutive axes and `:fill` level (an
-  accessor, default the first axis) with the summed `:value` (an accessor; default 1 per row) and `:fill` set; edges
+  accessor, default the first axis) with the summed `:value` (an accessor, default 1 per row; see
+  [[cljplot2.data.rows/weight]]) and `:fill` set; edges
   ordered by fill level, so strands of one level lie together at every node. For [[sankey-layout]] with
   `{:layer :layer :node-sort :input}`. Throws `ex-info {:key :axes}` for fewer than 2 axes or a row without a value
   of an axis."
@@ -689,7 +688,7 @@
                               (when (some nil? ls)
                                 (schema/fail! "Every row needs a value of every alluvial axis." {:key :axes :value row}))
                               ls))
-        keyed (mapv (fn [row] [(levels-of row) (fill-of row) (value-of row)]) rows)
+        keyed (mapv (fn [row] [(levels-of row) (fill-of row) (data/weight (value-of row))]) rows)
         fill-rank (zipmap (level-order (map second keyed)) (range))
         nodes (vec (for [i (range (count axes)) level (level-order (map #(nth (first %) i) keyed))]
                      {:id [i level] :name level :layer i}))
