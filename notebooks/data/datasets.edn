@@ -188,4 +188,11 @@
            :source "R datasets package `Titanic` (Dawson 1995)"
            :licence "Part of R (GPL-2 | GPL-3)"
            :via "R datasets::Titanic as a long table, typed in from the R documentation"
-           :notes "32 rows: `class` (1st, 2nd, 3rd, Crew), `sex`, `age` (Child, Adult), `survived` (No, Yes), `n` (people; 2201 in all)."}}
+           :notes "32 rows: `class` (1st, 2nd, 3rd, Crew), `sex`, `age` (Child, Adult), `survived` (No, Yes), `n` (people; 2201 in all)."}
+ :seattle-weather {:file "seattle-weather.csv"
+                   :format :csv
+                   :title "Seattle daily weather 2012-2015"
+                   :source "vega-datasets `seattle-weather.csv` (NOAA daily observations)"
+                   :licence "vega-datasets is BSD-3-Clause; NOAA data, public domain"
+                   :via "old cljplot `data/seattle-weather.csv`"
+                   :notes "1461 rows: `date` (yyyy/MM/dd), `precipitation` (mm), `temp_max`, `temp_min` (°C), `wind` (m/s), `weather` (drizzle, rain, sun, snow, fog)."}}
