@@ -100,7 +100,8 @@
     (let [projection (scale/projection scales)
           to-pixel (fn [[x y]] (projection x y))
           color-of (aesthetic/attribute-fn :color (:color scales) (get-in env [:theme :palette :na]))]
-      (doseq [{:keys [corners value]} cells
-              :let [fill (color-of value)]
-              :when fill]
-        (cells/draw-cell! canvas to-pixel corners fill style)))))
+      (cells/call-with-cell-rendering canvas style
+                                      (fn [c] (doseq [{:keys [corners value]} cells
+                                                      :let [fill (color-of value)]
+                                                      :when fill]
+                                                (cells/draw-cell! c to-pixel corners fill style)))))))

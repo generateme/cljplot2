@@ -195,8 +195,9 @@
                              {:x x :y y :value value :fill fill :to-pixel to-pixel
                               :offsets (cells/lattice-offsets (:cell style) ((:index px) x) ((:index py) y) centre-x? centre-y?)})))
                        cells)]
-      (doseq [{:keys [to-pixel offsets fill]} placed]
-        (cells/draw-cell! canvas to-pixel offsets fill style))
+      (cells/call-with-cell-rendering canvas style
+                                      (fn [c] (doseq [{:keys [to-pixel offsets fill]} placed]
+                                                (cells/draw-cell! c to-pixel offsets fill style))))
       (when value-label
         (doseq [{:keys [x y value fill to-pixel offsets]} placed
                 :let [text (label-text value-label value x y)

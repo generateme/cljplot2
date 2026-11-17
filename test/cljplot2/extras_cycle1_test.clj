@@ -453,3 +453,27 @@
     (is (seq (error-ins #(built {:charts [(chart/image {})]}))))
     (is (= (chart/image {}) (chart/image)) "R6 the 0-arity constructor")
     (is (seq (error-ins #(built {:charts [(chart/image)]}))))))
+
+;; gallery review (cycle 3)
+
+(deftest seamless-cells-test
+  (testing "U3 abutting tiles (37 x 37 cells on fractional pixel edges) leave no seam: one colour across the panel"
+    (let [rows (for [x (range 37) y (range 37)] {:x x :y y :v 1.0})
+          img (panel-image {:data rows :mapping {:x :x :y :y :color :v} :charts [(chart/tile)] :legend false
+                            :scales {:color {:range [[0 20 52] [0 20 52]]}}}
+                           301 301)
+          colours (set (for [x (range 20 280 3) y (range 20 280 3)] (pixel img x y)))]
+      (is (= #{0x001434} colours))))
+  (testing "U3 hexbin cells abut too"
+    (let [g (r/rng :mersenne 3)
+          rows (repeatedly 4000 (fn [] {:x (r/drandom g) :y (r/drandom g)}))
+          img (panel-image {:data rows :mapping {:x :x :y :y} :charts [(chart/bin2d {:bins 8})] :legend false
+                            :scales {:color {:range [[0 20 52] [0 20 52]]}}}
+                           301 301)]
+      (is (= #{0x001434} (set (for [x (range 100 200 2) y (range 100 200 2)] (pixel img x y)))))))
+  (testing "U3 spaced cells (:cell-scale < 1) keep their gaps"
+    (let [rows (for [x (range 10) y (range 10)] {:x x :y y :v 1.0})
+          img (panel-image {:data rows :mapping {:x :x :y :y :color :v} :charts [(chart/tile {:cell-scale 0.8})] :legend false
+                            :scales {:color {:range [[0 20 52] [0 20 52]]}}}
+                           301 301)]
+      (is (< 1 (count (set (for [x (range 20 280 2) y (range 20 280 2)] (pixel img x y)))))))))

@@ -16,12 +16,14 @@
   come in the axes' screen-linear coordinates (bin2d takes a log axis to log10, see
   [[cljplot2.scale.position/stat-transform]]); cell corners go back the same way and are projected corner by corner.
 
-  Drawing: [[draw-cell!]] - a cell polygon through a projection, shrunk by `:cell-scale` toward its centre."
+  Drawing: [[draw-cell!]] - a cell polygon through a projection, shrunk by `:cell-scale` toward its centre; draw a
+  chart's cells inside [[call-with-cell-rendering]] (abutting cells without seams)."
   (:require [clojure2d.color :as c]
             [clojure2d.core :as c2d]
             [fastmath.core :as m]
             [fastmath.grid :as grid]
             [fastmath.stats :as stats]
+            [cljplot2.graphics.canvas :as canvas]
             [cljplot2.graphics.draw :as draw]
             [cljplot2.schema :as schema]
             [cljplot2.theme :as theme])
@@ -207,6 +209,14 @@
             cx (/ (double (reduce + (map #(double (first %)) corners))) n)
             cy (/ (double (reduce + (map #(double (second %)) corners))) n)]
         (mapv (fn [[x y]] [(+ cx (* k (- (double x) cx))) (+ cy (* k (- (double y) cy)))]) corners)))))
+
+(defn call-with-cell-rendering
+  "Call `(f canvas')` to draw cells of `style`: abutting cells (`:cell-scale` >= 1, the default) are filled without
+  antialiasing, so neighbours share their edges - no seams of the panel between them; spaced cells keep smooth edges."
+  [canvas {:keys [cell-scale]} f]
+  (if (>= (double (or cell-scale 1.0)) 1.0)
+    (canvas/call-without-antialiasing canvas f)
+    (f canvas)))
 
 (defn draw-cell!
   "Draw a cell: `corners` (any 2d units, shrunk by the style's `:cell-scale`) turned into pixel points by `to-pixel`

@@ -38,15 +38,6 @@
   [file]
   (str "https://github.com/generateme/cljplot/blob/master/results/" file))
 
-(defn- min-max-mean
-  "`[min max mean]` of `vs` - a `chart/extent` `:method`."
-  [vs]
-  [(reduce min vs) (reduce max vs) (stats/mean vs)])
-
-(defn- grid
-  "`n` evenly spaced values from `lo` to `hi`."
-  [lo hi n]
-  (mapv #(m/norm % 0 (dec n) lo hi) (range n)))
 
 ;; ## Statistics
 
@@ -72,14 +63,16 @@
                  {:columns 2})
    {:width 1000 :height 450}))
 
-;; Two groups against each other: one column per group, the shorter one interpolated.
+;; Two groups against each other: one column per group (the shorter padded with `nil`s, which the chart drops), the
+;; longer one interpolated.
 
 (nu/source-note {:source "cljplot - qqplot" :url examples-url :dataset :faithful})
 
 (let [faithful (nu/dataset :faithful)
       short-wait (map :eruptions (filter #(< (double (:waiting %)) 70.0) faithful))
       long-wait (map :eruptions (filter #(>= (double (:waiting %)) 70.0) faithful))
-      rows (map (fn [a b] {:short a :long b}) (concat short-wait (repeat nil)) long-wait)]
+      rows (take (max (count short-wait) (count long-wait))
+                 (map (fn [a b] {:short a :long b}) (concat short-wait (repeat nil)) (concat long-wait (repeat nil))))]
   (plot/render-image
    {:data rows :mapping {:x :short :y :long}
     :charts [(chart/qq)]
@@ -129,7 +122,7 @@
       xs (repeatedly 10 #(r/drandom g -5 5))
       ys (map #(+ (truth %) (r/grandom g 0.0 0.0005)) xs)
       process (gp/gaussian-process xs ys {:normalize? true :kernel (k/kernel :gaussian {:sigma 0.8}) :noise 0.0005})
-      xtest (grid -5.0 5.0 200)
+      xtest (m/slice-range -5.0 5.0 200)
       band (mapv (fn [x [mu sd]] {:x x :mu mu :lo95 (- mu (* 1.96 sd)) :hi95 (+ mu (* 1.96 sd))
                                   :lo50 (- mu (* 0.67 sd)) :hi50 (+ mu (* 0.67 sd))})
                  xtest (gp/predict-all process xtest true))]
@@ -149,7 +142,7 @@
 
 (let [xs [-4 1 2] ys [-5 1 2]
       process (gp/gaussian-process xs ys {:kernel (k/kernel :gaussian {:sigma 0.8}) :noise 0.005})
-      xtest (grid -5.0 5.0 60)
+      xtest (m/slice-range -5.0 5.0 60)
       rows (mapv (fn [x [y sd]] {:x x :y y :lo (- y (* 1.96 sd)) :hi (+ y (* 1.96 sd))})
                  xtest (gp/posterior-samples process xtest true (r/rng :mersenne 5)))]
   (plot/render-image
@@ -165,7 +158,7 @@
 (nu/source-note {:source "cljplot - Gaussian process posterior and prior samples" :url examples-url})
 
 (let [xs [-4 1 2] ys [-5 1 2]
-      xtest (grid -5.0 5.0 40)
+      xtest (m/slice-range -5.0 5.0 40)
       g (r/rng :mersenne 6)
       periodic (gp/gaussian-process xs ys {:kernel (k/kernel :periodic {:sigma 0.5 :periodicity 8.0}) :noise 0.0001})
       gaussian (gp/gaussian-process xs ys {:kernel (k/kernel :gaussian) :noise 1.0e-7})
@@ -197,7 +190,7 @@
 (def bo-1d
   (opt/bayesian-optimization target {:bounds [[-2.0 10.0]] :vector-arg? false :init-points 2 :rng (r/rng :mersenne 7)}))
 
-(let [xtest (grid -2.0 10.0 200)
+(let [xtest (m/slice-range -2.0 10.0 200)
       step-plot (fn [i]
                   (let [{:keys [xs ys gp util-best]} (nth bo-1d i)
                         band (mapv (fn [x [mu sd]] {:x x :mu mu :lo (- mu (* 1.96 sd)) :hi (+ mu (* 1.96 sd))})
@@ -456,16 +449,17 @@
 
 ;; ### Density contours
 
-;; Old Faithful: the 2D density at a wide and a narrow bandwidth, with the eruptions over it.
+;; Old Faithful: the 2D density at a wide and a narrow bandwidth as filled contour bands (nothing below the lowest
+;; level), with the eruptions over them.
 
 (nu/source-note {:source "cljplot - contour" :url examples-url :dataset :faithful})
 
 (let [faithful (nu/dataset :faithful)
       panel (fn [bandwidth levels title]
               {:data faithful :mapping {:x :waiting :y :eruptions}
-               :charts [(chart/field {:bandwidth bandwidth})
-                        (chart/contour {:bandwidth bandwidth :levels levels :color [255 255 255 150]})
-                        (chart/scatter {:size 4 :color [0 0 0 140]})]
+               :charts [(chart/contour {:bandwidth bandwidth :levels levels :fill true})
+                        (chart/contour {:bandwidth bandwidth :levels levels :color [0 0 0 60]})
+                        (chart/scatter {:size 4 :color [20 60 120 200]})]
                :legend false
                :labels {:title title :x "waiting time [min]" :y "eruption time [min]"}})]
   (plot/render-image
@@ -540,7 +534,7 @@
                   (strip [(chart/rug)])
                   (strip [(chart/box)])
                   (strip [(chart/histogram {:bins 100 :y :count})])
-                  (strip [(chart/extent {:method min-max-mean :color :black})])
+                  (strip [(chart/extent {:method stats/extent :color :black})])
                   (strip [(chart/violin)])
                   (strip [(chart/density {:fill :color})])
                   (strip [(chart/histogram {:bins 150})])]
@@ -589,7 +583,7 @@
 
 (nu/source-note {:source "cljplot - kernels (unsaved sketch)" :url examples-url})
 
-(def kernels [:gaussian :periodic :cauchy :linear :matern-12 :matern-52])
+(def kernels [:gaussian :periodic :cauchy :rational-quadratic :matern-12 :matern-52])
 
 (plot/render-image
  (plot/arrange (for [kernel kernels
@@ -610,7 +604,7 @@
 
 (plot/render-image
  {:data (vec (for [kernel kernels
-                   :let [f (k/kernel kernel) points (grid -1.0 1.0 40)]
+                   :let [f (k/kernel kernel) points (m/slice-range -1.0 1.0 40)]
                    x points y points]
                {:kernel (name kernel) :x x :y y :value (f [x] [y])}))
   :mapping {:x :x :y :y :color :value :facet :kernel}
@@ -708,10 +702,10 @@
    (plot/arrange [(strip "interval" halves [(chart/extent {:method :min-max :center :none :line-width 22})])
                   (strip "box with points" tailed [(chart/box {:outliers true}) (chart/stripplot {:size 6 :rng (r/rng :mersenne 23)})])
                   (strip "density" skewed [(chart/density)])
-                  (strip "min - mean - max" tailed [(chart/extent {:method min-max-mean :shape \V :size 12})
+                  (strip "min - mean - max" tailed [(chart/extent {:method stats/extent :shape \V :size 12})
                                                     (chart/rug {:color [69 117 180 160]})])
-                  (strip "rug" tailed [(chart/rug)])
-                  (strip "distorted strip" tailed [(chart/stripplot {:size 14 :color [69 117 180 60] :rng (r/rng :mersenne 24)})])
+                  (strip "rug" tailed [(chart/rug {:thickness 16})])
+                  (strip "distorted strip" tailed [(chart/stripplot {:size 9 :color [69 117 180 60] :rng (r/rng :mersenne 24)})])
                   (strip "strip" tailed [(chart/stripplot {:size 9 :jitter 0.0 :color [69 117 180 90]})])]
                  {:columns 1})
    {:width 800 :height 800}))
@@ -868,7 +862,7 @@
    {:data (concat (group 1000 0.0 1.0 "a") (group 100 2.0 0.8 "b"))
     :mapping {:x :x :y :y :color :g :size :s}
     :charts [(chart/scatter {:stroke-color :none})]
-    :margins {:right {:charts (chart/rug {:mapping {:size nil}}) :size 25}}
+    :margins {:right {:charts (chart/rug {:mapping {:size nil} :thickness 16}) :size 25}}
     :scales {:color {:range [[60 100 220 200] [140 20 20 120]]} :size {:range [2 18] :legend false}}
     :labels {:title "Two groups, sized points, a rug of y"}}
    {:width 800 :height 600}))
