@@ -48,6 +48,20 @@
             (reduce max (or (:range size-spec) (get-in merged-theme [:palette :size])))
             (or (:width edge-style) (get-in merged-theme [:chart :segment :width])))))
 
+(defn- check-mappings!
+  "Throw `ex-info {:key :edge-mapping}` when an aesthetic is mapped for both nodes (`mapping`) and edges
+  (`edge-mapping`)."
+  [mapping edge-mapping]
+  (when-let [both (seq (filter #(and (contains? mapping %) (contains? edge-mapping %)) aesthetic/dims))]
+    (schema/fail! "An aesthetic is mapped for both nodes and edges - one scale can't show two variables."
+                  {:key :edge-mapping :value (vec both)})))
+
+(defn- node-options
+  "Scatter options of the nodes: the builder's defaults (see [[node-defaults]]) with the theme scatter colour of
+  `merged-theme` made opaque, under the user's `style`."
+  [merged-theme style]
+  (merge node-defaults {:color (c/set-alpha (c/to-color (get-in merged-theme [:chart :scatter :color])) 255)} style))
+
 (defn network
   "Network plot of `edges` (rows; see [[cljplot2.data.graph/graph]]) as a plot map: edges as segments under the nodes
   (scatter), labels beside them; equal units on both axes (`:aspect :iso`), no axes.
@@ -79,13 +93,10 @@
   with `|r|` as the `:value` (weights are non-negative) and `:edge-mapping {:color ..}` by the sign (the diagonal's
   self-loops aren't drawn)."
   [edges {:keys [mapping edge-mapping labels scales title directed? node-style edge-style] user-theme :theme :as options}]
-  (when-let [both (seq (filter #(and (contains? mapping %) (contains? edge-mapping %)) aesthetic/dims))]
-    (schema/fail! "An aesthetic is mapped for both nodes and edges - one scale can't show two variables."
-                  {:key :edge-mapping :value (vec both)}))
+  (check-mappings! mapping edge-mapping)
   (let [{:keys [nodes] :as laid} (graph/layout (graph/graph edges options) options)
         merged-theme (theme/deep-merge theme/default-theme user-theme)
-        node-st (merge node-defaults {:color (c/set-alpha (c/to-color (get-in merged-theme [:chart :scatter :color])) 255)}
-                       node-style)
+        node-st (node-options merged-theme node-style)
         scales (cond-> scales (:size mapping) (update :size #(merge node-size-range %)))
         radius (node-radius-fn nodes mapping (:size scales) [merged-theme (:size node-st)])
         radius-of (zipmap (map :id nodes) (map radius nodes))
@@ -321,4 +332,78 @@
              :aspect :iso
              :scales (cond-> {:x circle-axis :y circle-axis} by-group? (assoc :color {:title nil}))
              :labels {:title title :x nil :y nil}}
+      user-theme (update :theme #(theme/deep-merge % user-theme)))))
+
+;; ordered layouts
+
+(defn chord
+  "Chord diagram of `edges` (rows; see [[cljplot2.data.graph/graph]]) as a plot map (see
+  [[cljplot2.data.graph/chord-layout]] - d3 `chord` for undirected graphs, `chordDirected` with `:directed? true`):
+  a ring sector per node coloured by node (`chart/polygon`), ribbons in their source node's colour at `:alpha`
+  (default 0.6), node names outward from the sectors' middles (`:labels?`, default `true`; nodes without flow
+  unlabelled); equal axes, no axes or legend.
+
+  `options`: graph - `:from`, `:to`, `:value`, `:nodes`, `:id`, `:directed?`; layout - `:order` (`nil`, ids,
+  `:cluster`; see [[cljplot2.data.graph/node-order]]), `:pad` (degrees, default 2), `:inner` (default 0.92),
+  `:min-value` (weaker edges left out); `:scales` (e.g. `:color`), `:title`, `:theme`.
+
+  Equivalents: d3 `chord` / `chordDirected` + `ribbon`, R `circlize::chordDiagram` (without tracks or ticks)."
+  [edges {:keys [alpha scales title] user-theme :theme :or {alpha 0.6} :as options}]
+  (let [labels? (get options :labels? true)
+        g (graph/graph edges options)
+        {:keys [groups arcs ribbons]} (graph/chord-layout g (select-keys options [:order :pad :inner :min-value]))
+        label-nodes (vec (for [{:keys [id start end value]} groups :when (pos? (double value))]
+                           {:name id :leaf? true :angle (* 0.5 (+ (double start) (double end)))}))]
+    (cond-> {:charts (cond-> [(chart/polygon {:data ribbons :alpha (double alpha) :mapping {:x :x :y :y :group :ribbon :color :from}})
+                              (chart/polygon {:data arcs :mapping {:x :x :y :y :color :group}})]
+                       labels? (into (radial-labels label-nodes)))
+             :aspect :iso
+             ;; colours in ring order, the same for sectors and ribbons
+             :scales (merge {:x circle-axis :y circle-axis :color {:domain (mapv :id groups) :legend false}} scales)
+             :labels {:title title :x nil :y nil}}
+      user-theme (assoc :theme user-theme))))
+
+(def ^:private arc-edge-color [120 120 120])
+(def ^:private arc-width-range {:range [0.5 4]})
+(def ^:private ^:const arc-room
+  "Room below the node line and above the highest arc (a fraction of its height): nodes and the top arc stay inside
+  the panel."
+  0.04)
+
+(defn arc
+  "Arc diagram of `edges` (rows; see [[cljplot2.data.graph/graph]]) as a plot map (see
+  [[cljplot2.data.graph/arc-layout]]): nodes on a line in node order (scatter), every edge a semicircle above it (a
+  line chart path) at `:alpha` (default 0.5, the stroke only), node names under the line as x tick labels rotated to
+  read downward (`:labels?`, default `true`); no y axis.
+
+  `options`: graph - `:from`, `:to`, `:value`, `:nodes`, `:id`, `:directed?`; `:order` (`nil`, ids, `:cluster`; see
+  [[cljplot2.data.graph/node-order]]); `:mapping` - node aesthetics (`:color`, `:size`, `:shape`; nodes have
+  `:degree`, `:in`, `:out` and their row's columns), `:edge-mapping` - edge aesthetics (default `{:size :value}` -
+  widths from the size scale `{:range [0.5 4]}` - unless the nodes map `:size`); an aesthetic in both throws `ex-info
+  {:key :edge-mapping}`; `:node-style` (scatter options over `{:size 8 :stroke-color :white :stroke-width 1}`),
+  `:edge-style` (line options over `{:color [120 120 120]}`), `:scales`, `:title`, `:theme`.
+
+  Equivalents: ggraph `layout = \"linear\"` + `geom_edge_arc`, arcdiagram (R)."
+  [edges {:keys [order mapping edge-mapping alpha scales title node-style edge-style] user-theme :theme
+          :or {alpha 0.5} :as options}]
+  (let [labels? (get options :labels? true)
+        edge-mapping (if (contains? options :edge-mapping) edge-mapping (when-not (contains? mapping :size) {:size :value}))
+        _ (check-mappings! mapping edge-mapping)
+        {:keys [nodes arcs]} (graph/arc-layout (graph/graph edges options) {:order order})
+        merged-theme (theme/deep-merge theme/default-theme user-theme)
+        top (double (reduce max 0.0 (map :y arcs)))
+        top (if (pos? top) top 1.0)]
+    (cond-> {:charts [(chart/line (merge {:color arc-edge-color :width 1}
+                                         edge-style
+                                         {:data arcs :sort false :stroke-alpha (double alpha)
+                                          :mapping (merge {:x :x :y :y :group :edge} edge-mapping)}))
+                      (chart/scatter (merge (node-options merged-theme (merge {:size 8} node-style))
+                                            {:data nodes :mapping (merge {:x :x :y :y} mapping)}))]
+             :scales (cond-> (merge {:x (leaf-axis (mapv (fn [n] {:name (:id n)}) nodes) labels?)
+                                     :y {:domain [(- (* arc-room top)) (* (+ 1.0 arc-room) top)] :nice false
+                                         :expand [0.0 0.0] :axis false}}
+                                    scales)
+                       (:size edge-mapping) (update :size #(merge arc-width-range %)))
+             :labels {:title title :x nil :y nil}}
+      labels? (assoc-in [:theme :axis :x :label-rotation] 90)
       user-theme (update :theme #(theme/deep-merge % user-theme)))))

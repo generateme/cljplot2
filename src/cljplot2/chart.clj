@@ -73,6 +73,7 @@
             [cljplot2.chart.pack :as pack]
             [cljplot2.chart.parallel :as parallel]
             [cljplot2.chart.partition :as partition]
+            [cljplot2.chart.polygon :as polygon]
             [cljplot2.chart.rect :as rect]
             [cljplot2.chart.ribbon :as ribbon]
             [cljplot2.chart.rug :as rug]
@@ -127,7 +128,8 @@
    :segment (:style segment/schemas)
    :candlestick (:style candlestick/schemas)
    :bar (:style bar/schemas)
-   :parallel (:style parallel/schemas)})
+   :parallel (:style parallel/schemas)
+   :polygon (:style polygon/schemas)})
 
 (defn- polar
   "Chart value `v` drawing in polar coordinates too."
@@ -193,6 +195,11 @@
   a polar `:coord`, see [[cljplot2.chart.parallel]]."
   ([] (parallel {}))
   ([options] (polar (chart-value :parallel parallel/compute parallel/draw parallel/legend parallel/schemas options))))
+
+(defn polygon
+  "Closed filled polygons through the `(:x, :y)` points of each group in row order, see [[cljplot2.chart.polygon]]."
+  ([] (polygon {}))
+  ([options] (chart-value :polygon polygon/compute polygon/draw polygon/legend polygon/schemas options)))
 
 (defn treemap
   "Treemap of `:value` over the `:hierarchy` levels, see [[cljplot2.chart.treemap]]."

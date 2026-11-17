@@ -28,6 +28,9 @@
   `:groups {:na}`. With an `:interpolator` the sampled curve takes the color value interpolated linearly between
   its data points, in steps of a few pixels (`:curve` can't color along the length - `ex-info {:key :curve}`); a bridge takes the color of
   its two end values.
+  A mapped `:size` is the line width: per group - its first row's value through a linear size scale (doesn't group;
+  NA in the style `:width`, rows outside the size scale's explicit domain dropped), or the group's level of an
+  ordinal size scale; the legend shows lines of those widths.
   `:stroke-alpha` (a fraction) multiplies the stroke colour's opacity of unstacked lines (many overlapping lines; the
   legend key stays opaque).
   Arrows (see [[cljplot2.graphics.arrow]]): `:arrow {:end :start :size :shape}`, `:start-gap` / `:end-gap` (pixels) -
@@ -116,7 +119,7 @@
   :heights aligned :aesthetics}` (`:heights` - the group's aligned values, for smoothing at drawing). Non-numeric,
   non-temporal x or a repeated x in a group throws `ex-info {:key :x}`."
   [lines position]
-  (let [groups (mapv (fn [{:keys [x y aesthetics]}]
+  (let [groups (mapv (fn [{:keys [x y aesthetics] :as line}]
                        (let [keyed (->> (map vector x y)
                                         (filter #(some? (second %)))
                                         (map (fn [[vx vy]] [(or (data/x-key vx)
@@ -128,7 +131,8 @@
                              pts (mapv (fn [[_ vx vy]] [vx vy]) keyed)]
                          (when-not (or (< (count ks) 2) (apply < ks))
                            (schema/fail! "Stacked lines need distinct x values within a group." {:key :x :group aesthetics}))
-                         {:ks ks :vs (mapv #(double (second %)) pts) :xs (mapv first pts) :aesthetics aesthetics}))
+                         (merge {:ks ks :vs (mapv #(double (second %)) pts) :xs (mapv first pts) :aesthetics aesthetics}
+                                (select-keys line [:size-value]))))
                      lines)
         groups (filterv #(seq (:ks %)) groups)
         by-key (into (sorted-map) (mapcat (fn [{:keys [ks xs]}] (map vector ks xs)) groups))
@@ -136,7 +140,9 @@
         heights (mapv (fn [{:keys [ks vs]}] (aligned-heights ks vs union)) groups)
         ys (position/stack-values position heights)
         xs (vec (vals by-key))]
-    (mapv (fn [{:keys [aesthetics]} hs y01] {:x xs :y (mapv second y01) :y0 (mapv first y01) :heights hs :aesthetics aesthetics})
+    (mapv (fn [{:keys [aesthetics] :as g} hs y01]
+            (merge {:x xs :y (mapv second y01) :y0 (mapv first y01) :heights hs :aesthetics aesthetics}
+                   (select-keys g [:size-value])))
           groups heights ys)))
 
 (defn- check-stacking!
@@ -181,8 +187,11 @@
         _ (when (and gradient? (:fill-gradient options))
             (schema/fail! "A line colored along its length can't take :fill-gradient." {:key :fill-gradient :value (:fill-gradient options)}))
         color-of (:color-of continuous)
-        {:keys [panels dropped]} (if continuous
-                                   (group/split (:groups continuous) (:mapping continuous) env)
+        [groups mapping] (if continuous [(:groups continuous) (:mapping continuous)] [groups mapping])
+        sized (group/continuous :size groups mapping env)
+        size-of (:value-of sized)
+        {:keys [panels dropped]} (if sized
+                                   (group/split (:groups sized) (:mapping sized) env)
                                    (group/split groups mapping env))
         x-of (data/row-accessor :x (:x mapping))
         y-of (data/row-accessor :y (:y mapping))
@@ -202,7 +211,8 @@
                                               (cond-> {:x (mapv first pts)
                                                        :y (mapv #(let [v (second %)] (when (data/valid-value? v) v)) pts)
                                                        :aesthetics (:aesthetics g)}
-                                                gradient? (assoc :colors (mapv #(nth % 2) pts)))))
+                                                gradient? (assoc :colors (mapv #(nth % 2) pts))
+                                                sized (assoc :size-value (some-> (first (:rows g)) size-of)))))
                                           gs)
                              :style st}))
         data (if (stacked-positions position)
@@ -210,10 +220,13 @@
                data)
         negative? (some neg? (mapcat (fn [{:keys [lines]}] (mapcat :y0 lines)) (vals data)))]
     (let [color-stats (when gradient?
-                        (group/continuous-color-stats continuous (update-vals data #(mapcat :colors (:lines %))) plot-scales))]
+                        (group/continuous-color-stats continuous (update-vals data #(mapcat :colors (:lines %))) plot-scales))
+          size-stats (when sized
+                       (group/continuous-stats :size sized (update-vals data #(map :size-value (:lines %))) plot-scales))]
     {:data data
      :extents (merge-with merge (group/aesthetic-extents panels (:plot-scales env))
                           (:extents color-stats)
+                          (:extents size-stats)
                           (into {} (keep (fn [[panel {:keys [lines]}]]
                                            (let [xs (mapcat :x lines) ys (remove nil? (concat (mapcat :y lines) (mapcat :y0 lines)))]
                                              (when (seq ys)
@@ -225,11 +238,26 @@
      :padding-explicit (data/explicit-padding (when (and (#{:stack :normalize} position) (not negative?)) {:y [0.0 nil]})
                                               options)
      :axis-titles (when (= :normalize position) {:y "Proportion"})
-     :na (cond-> (group/na-dims panels) (:na? color-stats) (conj :color))
+     :na (cond-> (group/na-dims panels) (:na? color-stats) (conj :color) (:na? size-stats) (conj :size))
      :dropped (cond-> (assoc dropped
                      :x (count (remove #(data/valid-value? (x-of %)) rows))
                      :y (count (remove #(data/valid-value? (y-of %)) rows)))
-                gradient? (assoc :color (:dropped color-stats)))})))
+                gradient? (assoc :color (:dropped color-stats))
+                sized (assoc :size (:dropped size-stats)))})))
+
+(defn- group-style
+  "Style of `line` (a computed line or band) from the chart `style`: its group's aesthetics applied (see
+  [[cljplot2.data.group/style]]), the width from an ordinal `:size` level or from its `:size-value` under the
+  finalized linear size scale (NA - the style width); `nil` when a value is outside its scale's domain (not drawn)."
+  [style line scales theme]
+  (when-let [st (group/style style (:aesthetics line) scales theme)]
+    (let [st (cond-> st (:size st) (-> (assoc :width (:size st)) (dissoc :size)))]
+      (if (contains? line :size-value)
+        (when-let [w (if-let [sc (:size scales)]
+                       ((aesthetic/attribute-fn :size sc (:width st)) (:size-value line))
+                       (:width st))]
+          (assoc st :width w))
+        st))))
 
 (defn- value-colors
   "Colors of the color values `values` under the finalized color `scale`: the theme NA color for `nil` (every value
@@ -376,7 +404,7 @@
   stacked but not drawn."
   [canvas lines style position opts gradient axis scales theme]
   (let [bands (vec (keep (fn [[line [upper lower]]]
-                           (when-let [st (group/style style (:aesthetics line) scales theme)]
+                           (when-let [st (group-style style line scales theme)]
                              [upper lower st]))
                          (map vector lines (stacked-band-points lines position scales opts))))]
     ;; all areas first, then the boundaries (as density): no band covers a stroke
@@ -418,8 +446,8 @@
                       {:key :arrow}))
       (if (some :y0 lines)
         (draw-stacked! canvas lines style (:position options) opts gradient axis scales (:theme env))
-        (doseq [{:keys [x y aesthetics colors]} lines
-                :let [st (group/style style aesthetics scales (:theme env))
+        (doseq [{:keys [x y aesthetics colors] :as line} lines
+                :let [st (group-style style line scales (:theme env))
                       st (if (and st (:stroke-alpha options) (not= :none (:color st)))
                            (update st :color #(let [col (c/to-color %)]
                                                 (c/set-alpha col (* (double (:stroke-alpha options)) (double (c/alpha col))))))
@@ -462,7 +490,8 @@
   `:fill-gradient` - its middle colour) a filled square outlined in the line style, see
   [[cljplot2.graphics.polyline/key-glyph!]]."
   [{:keys [options]} attributes canvas box env]
-  (let [st (merge (style options (:theme env)) (select-keys attributes [:color :dash :pattern]))
+  (let [st (cond-> (merge (style options (:theme env)) (select-keys attributes [:color :dash :pattern]))
+             (:size attributes) (assoc :width (:size attributes)))
         area (if-let [g (:fill-gradient options)]
                ((polyline/gradient-fn g) 0.5)
                (polyline/area-color st (contains? stacked-positions (:position options))))]

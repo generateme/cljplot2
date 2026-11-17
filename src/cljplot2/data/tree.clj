@@ -138,7 +138,7 @@
                                 :y (double (:height node)) :depth depth :parent parent :leaf? false :cluster cluster))
          x']))))
 
-(defn- arc-points
+(defn arc-points
   "Points of the arc at radius `r` from angle `a0` to `a1` (radians, clockwise from the top), every ~2 degrees."
   [^double r ^double a0 ^double a1]
   (let [steps (max 1 (long (m/ceil (/ (m/abs (- a1 a0)) (m/radians 2.0)))))]

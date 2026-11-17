@@ -44,6 +44,16 @@
   [edges tree options]
   (graphs/bundle edges tree options))
 
+(defn chord
+  "Chord diagram of edge rows (ring sectors and ribbons), see [[cljplot2.graphs/chord]]."
+  [edges options]
+  (graphs/chord edges options))
+
+(defn arc
+  "Arc diagram of edge rows (nodes on a line, edges as semicircles), see [[cljplot2.graphs/arc]]."
+  [edges options]
+  (graphs/arc edges options))
+
 (defn render
   "Build and draw `plot`, returning a clojure2d canvas, see [[cljplot2.render/render]]."
   ([plot] (render/render plot))
