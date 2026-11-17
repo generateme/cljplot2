@@ -1,6 +1,7 @@
 (ns cljplot2.demo
   "Demo runner: renders the `images` of the demos (`cljplot2.demo.<name>`, see [[demos]]) to
-  `results/<name>/<file-name>`, all in one JVM.
+  `<output-dir>/<file-name>`, all in one JVM: `output-dir` - the demo namespace's var `output-dir` (a path, e.g. the
+  tracked `img` of the logo demo), else `results/<name>` (gitignored).
 
   CLI: `clojure -M:demo` (every demo), `clojure -M:demo step8 flip` (chosen demos),
   `clojure -M:demo step11/fig-5-6-800x700.png` (one image). REPL: `(render!)`, `(render! \"step8\" ...)`."
@@ -10,12 +11,19 @@
 
 (def demos
   "Demo names (namespaces `cljplot2.demo.<name>`), in run order: build steps, then capability demos."
-  (into (mapv #(str "step" %) (range 1 12)) ["flip" "positions" "strips" "annotation" "helpers" "smooth" "evolution" "bar" "patterns" "polar" "parallel" "partition" "pack" "waffle" "venn" "cells" "fields" "pairs" "marks" "network" "trees" "flows" "sankeys" "extras"]))
+  (into (mapv #(str "step" %) (range 1 12)) ["flip" "positions" "strips" "annotation" "helpers" "smooth" "evolution" "bar" "patterns" "polar" "parallel" "partition" "pack" "waffle" "venn" "cells" "fields" "pairs" "marks" "network" "trees" "flows" "sankeys" "extras" "logo"]))
 
 (defn- demo-images
   "`images` of the demo `demo` (its namespace is loaded on first use)."
   [demo]
   @(requiring-resolve (symbol (str "cljplot2.demo." demo) "images")))
+
+(defn- output-dir
+  "Directory of the demo `demo`'s images: its namespace's `output-dir`, else `results/<demo>`."
+  [demo]
+  (if-let [v (requiring-resolve (symbol (str "cljplot2.demo." demo) "output-dir"))]
+    @v
+    (str "results/" demo)))
 
 (defn- unknown!
   [what value known]
@@ -44,7 +52,7 @@
                :when (or (empty? selected) (some #(= demo (first %)) selected))
                [file-name p options] (demo-images demo)
                :when (chosen? demo file-name)]
-           [(str "results/" demo "/" file-name) p options]))))
+           [(str (output-dir demo) "/" file-name) p options]))))
 
 (defn render!
   "Render and save the images selected by `names` (see [[images]]); returns the saved paths."
