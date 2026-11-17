@@ -132,4 +132,60 @@
              :source "data-to-viz example dataset `multivariate` (Yan Holtz; original source not documented)"
              :licence "MIT (data_to_viz repository)"
              :via "GitHub raw holtzy/data_to_viz Example_dataset/multivariate.csv, `;` -> `,`, header renamed to kebab-case, CRLF -> LF"
-             :notes "201 rows: `country`, `pop` (thousands), `birth-rate`, `mortality-rate`, `life-expectancy`, `infant-mortality`, `children-per-woman`, `growth-rate`, `population-aged-65` (thousands), `group` (subregion), `continent` (6, `South America` holds the Americas)."}}
+             :notes "201 rows: `country`, `pop` (thousands), `birth-rate`, `mortality-rate`, `life-expectancy`, `infant-mortality`, `children-per-woman`, `growth-rate`, `population-aged-65` (thousands), `group` (subregion), `continent` (6, `South America` holds the Americas)."}
+ :miserables-characters {:file "miserables-characters.csv"
+                         :format :csv
+                         :title "Les Misérables characters"
+                         :source "vega-datasets `miserables.json` (D. E. Knuth, The Stanford GraphBase, 1993)"
+                         :licence "Not specified (vega-datasets lists it as notspecified)"
+                         :via "cljplot2 dev/resources/miserables.json, `nodes` as CSV"
+                         :notes "77 rows: `name`, `group` (0-10, a community of characters)."}
+ :miserables-links {:file "miserables-links.csv"
+                    :format :csv
+                    :title "Les Misérables character co-occurrences"
+                    :source "vega-datasets `miserables.json` (D. E. Knuth, The Stanford GraphBase, 1993)"
+                    :licence "Not specified (vega-datasets lists it as notspecified)"
+                    :via "cljplot2 dev/resources/miserables.json, `links` as CSV with node indices replaced by names"
+                    :notes "254 rows: `from`, `to` (character names), `value` (scenes together)."}
+ :migration {:file "migration.csv"
+             :format :csv
+             :title "Migration flows between world regions"
+             :source "data-to-viz example dataset `13_AdjacencyDirectedWeighted` (long form; Yan Holtz, after Abel & Sander 2014)"
+             :licence "MIT (data_to_viz repository)"
+             :via "cljplot2 dev/resources (data_to_viz 13_AdjacencyDirectedWeighted_long.csv)"
+             :notes "100 rows: `from`, `to` (10 regions; some spelled with dots, e.g. `South.Asia`), `value` (millions of migrants; zeros and the diagonal included)."}
+ :coauthors {:file "coauthors.csv"
+             :format :csv
+             :title "Co-authorships between researchers"
+             :source "data-to-viz example dataset `13_AdjacencyUndirectedUnweighted` (Yan Holtz)"
+             :licence "MIT (data_to_viz repository)"
+             :via "GitHub raw holtzy/data_to_viz Example_dataset/13_AdjacencyUndirectedUnweighted.csv, space-separated -> CSV, `NA` -> empty"
+             :notes "118 rows (`from` - an author) x 108 author columns: 1 - a co-authorship, empty - none; not square (93 authors are rows and columns), so read cell by cell rather than as an n x n adjacency matrix."}
+ :flare {:file "flare.json"
+         :format :json
+         :title "Flare visualization toolkit class hierarchy"
+         :source "vega-datasets `flare.json` (the Flare ActionScript library's packages and classes)"
+         :licence "Not documented"
+         :via "cljplot2 dev/resources (vega-datasets)"
+         :notes "252 rows: `id`, `name`, `parent` (id of the package)."}
+ :flare-dependencies {:file "flare-dependencies.json"
+                      :format :json
+                      :title "Flare class imports"
+                      :source "vega-datasets `flare-dependencies.json`"
+                      :licence "Not documented"
+                      :via "cljplot2 dev/resources (vega-datasets)"
+                      :notes "Rows `source`, `target` - ids of `flare` classes (an import)."}
+ :energy {:file "energy.csv"
+          :format :csv
+          :title "UK energy flows in 2050 (a DECC scenario)"
+          :source "networkD3 `JSONdata/energy.json` (the d3 sankey example; UK Department of Energy & Climate Change 2050 Calculator)"
+          :licence "networkD3 is GPL-3; the data's licence isn't stated"
+          :via "GitHub raw christophergandrud/networkD3 JSONdata/energy.json, `links` as CSV with node indices replaced by names"
+          :notes "68 rows: `from`, `to` (48 nodes, every one in a link), `value` (TWh)."}
+ :titanic {:file "titanic.csv"
+           :format :csv
+           :title "Titanic passengers and crew by class, sex, age and survival"
+           :source "R datasets package `Titanic` (Dawson 1995)"
+           :licence "Part of R (GPL-2 | GPL-3)"
+           :via "R datasets::Titanic as a long table, typed in from the R documentation"
+           :notes "32 rows: `class` (1st, 2nd, 3rd, Crew), `sex`, `age` (Child, Adult), `survived` (No, Yes), `n` (people; 2201 in all)."}}
