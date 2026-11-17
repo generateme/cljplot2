@@ -403,3 +403,301 @@
                              [a0 a1] (if (<= x0 x1) [(- m/HALF_PI) m/HALF_PI] [m/HALF_PI (- m/HALF_PI)])]
                        [x y] (tree/arc-points r a0 a1)]
                    {:edge k :from from :to to :value value :x (+ c (double x)) :y y}))})))
+
+;; sankey (d3-sankey port; vertical positions computed top-down as d3, returned y-up)
+
+(def sankey-aligns #{:justify :left :right :center})
+
+(defn- sankey-options!
+  "Sankey `opts` checked: `:align`, `:node-width` in (0, 1), `:pad` a finite number >= 0, `:iterations` an integer
+  >= 0, `:node-sort` `nil` / `:input`; `ex-info` with the option's key otherwise."
+  [{:keys [align node-width pad iterations node-sort]}]
+  (let [fail (fn [k v msg] (schema/fail! msg {:key k :value v}))
+        finite? #(and (number? %) (m/valid-double? (double %)))]
+    (when-not (sankey-aligns align) (fail :align align (str "Sankey :align should be one of " (sort sankey-aligns) ".")))
+    (when-not (and (finite? node-width) (< 0.0 (double node-width) 1.0)) (fail :node-width node-width "Sankey :node-width should be in (0, 1)."))
+    (when-not (and (finite? pad) (<= 0.0 (double pad))) (fail :pad pad "Sankey :pad should be a finite number >= 0."))
+    (when-not (and (integer? iterations) (<= 0 (long iterations))) (fail :iterations iterations "Sankey :iterations should be an integer >= 0."))
+    (when-not (contains? #{nil :input} node-sort) (fail :node-sort node-sort "Sankey :node-sort should be nil or :input."))))
+
+(defn- longest-paths
+  "Longest path length (in links) of every node index `0..n-1` from the start of `next-of` (node index -> next node
+  indices): from the sources for outgoing links (depth), from the sinks for incoming ones (height). A cycle throws
+  `ex-info {:key :edges}`."
+  [^long n next-of]
+  (let [result (long-array n)]
+    (loop [current (set (range n)) x 0]
+      (when (seq current)
+        (when (> x n)
+          (schema/fail! "A sankey needs a graph without cycles." {:key :edges}))
+        (doseq [i current] (aset result (long i) x))
+        (recur (set (mapcat next-of current)) (inc x))))
+    (vec result)))
+
+(defn- sankey-layers
+  "Column of every node index: the `layer-of` value of its node row (`:layer` given - non-negative integers, links
+  forward only; else `ex-info {:key :layer}`), or by `align` from the depths and heights (see d3-sankey)."
+  [nodes links [outs ins] [align layer-of]]
+  (if layer-of
+    (let [layers (mapv layer-of nodes)]
+      (when-not (every? #(and (integer? %) (<= 0 (long %))) layers)
+        (schema/fail! "Sankey :layer should give every node an integer >= 0." {:key :layer :value layers}))
+      (when-let [back (first (filter (fn [{:keys [s t]}] (<= (long (layers t)) (long (layers s)))) links))]
+        (schema/fail! "Sankey links should go to a later :layer." {:key :layer :value [(:id (nodes (:s back))) (:id (nodes (:t back)))]}))
+      layers)
+    (let [n (count nodes)
+          depth (longest-paths n (fn [i] (map #(:t (links %)) (outs i))))
+          height (longest-paths n (fn [i] (map #(:s (links %)) (ins i))))
+          columns (inc (long (reduce max 0 depth)))
+          last-column (dec columns)]
+      (mapv (fn [i]
+              (let [d (long (depth i))]
+                (max 0 (min last-column
+                            (long (case align
+                                    :left d
+                                    :right (- last-column (long (height i)))
+                                    :justify (if (seq (outs i)) d last-column)
+                                    :center (cond (seq (ins i)) d
+                                                  (seq (outs i)) (dec (long (reduce min (map #(depth (:t (links %))) (outs i)))))
+                                                  :else 0)))))))
+            (range n)))))
+
+(defn- link-order
+  "`ids` (link indices) sorted by the top `y0s` of the node `end-of` each link leads to, ties by index (d3
+  `ascendingSourceBreadth` / `ascendingTargetBreadth`)."
+  [ids end-of ^doubles y0s]
+  (vec (sort-by (fn [l] [(aget y0s (long (end-of l))) l]) ids)))
+
+(defn- reorder-links!
+  "Re-sort the outgoing (by target top) and incoming (by source top) links of the nodes `is`."
+  [is [^objects outs ^objects ins] links y0s]
+  (doseq [i is]
+    (aset outs (long i) (link-order (aget outs (long i)) #(:t (links %)) y0s))
+    (aset ins (long i) (link-order (aget ins (long i)) #(:s (links %)) y0s))))
+
+(defn- level-node-top
+  "Top of the node at the far end of link `l` that lets the link run level from its place at the `near` end
+  (`:source` - its source node, as d3 `targetTop`; `:target` - its target node, as d3 `sourceTop`): the near node's
+  links stacked from its top with gaps `pad` (centred), the far node's links stacked without."
+  ^double [l near [^objects outs ^objects ins] [links ^doubles y0s ^doubles widths ^double pad]]
+  (let [{:keys [s t]} (links l)
+        [node own other] (if (= :source near) [s (aget outs (long s)) (aget ins (long t))] [t (aget ins (long t)) (aget outs (long s))])
+        start (- (aget y0s (long node)) (/ (* (dec (count own)) pad) 2.0))
+        before (fn [ls] (reduce + 0.0 (map #(aget widths (long %)) (take-while #(not= l %) ls))))]
+    ;; the link's position in its own node's stack (with gaps), less its position at the other end (without)
+    (- (+ start (double (before own)) (* pad (count (take-while #(not= l %) own)))) (double (before other)))))
+
+(defn- shift!
+  "Move node `i` down by `dy`."
+  [^doubles y0s ^doubles y1s ^long i ^double dy]
+  (aset y0s i (+ (aget y0s i) dy))
+  (aset y1s i (+ (aget y1s i) dy)))
+
+(defn- resolve-collisions!
+  "Push the nodes of `column` (indices, top to bottom) apart to gaps of at least `pad` inside [0, 1], by the fraction
+  `alpha` per step (d3 `resolveCollisions`)."
+  [column [^doubles y0s ^doubles y1s] ^double pad ^double alpha]
+  (let [k (count column)
+        down! (fn [^double y from] (loop [y y i (long from)]
+                                     (when (< i k)
+                                       (let [node (long (column i))
+                                             dy (* (- y (aget y0s node)) alpha)]
+                                         (when (> dy 1.0e-6) (shift! y0s y1s node dy))
+                                         (recur (+ (aget y1s node) pad) (inc i))))))
+        up! (fn [^double y from] (loop [y y i (long from)]
+                                   (when (>= i 0)
+                                     (let [node (long (column i))
+                                           dy (* (- (aget y1s node) y) alpha)]
+                                       (when (> dy 1.0e-6) (shift! y0s y1s node (- dy)))
+                                       (recur (- (aget y0s node) pad) (dec i))))))
+        middle (long (quot k 2))]
+    ;; a fixed :layer can leave a column empty
+    (when (pos? k)
+      (let [subject (long (column middle))]
+        (up! (- (aget y0s subject) pad) (dec middle))
+        (down! (+ (aget y1s subject) pad) (inc middle)))
+      (up! 1.0 (dec k))
+      (down! 0.0 0))))
+
+(defn- relax!
+  "One relaxation sweep over `columns` (a vector of node index vectors, mutated through `column-cells`): every node
+  of the swept columns moves by `alpha` towards the weighted mean position its links ask for (`:right-to-left` -
+  from its targets, else from its sources; weights - value times layer distance), then each column is re-sorted
+  (unless `fixed-order?`) and its collisions resolved by `beta` (d3 `relaxRightToLeft` / `relaxLeftToRight`)."
+  [^objects column-cells direction state [alpha beta fixed-order?]]
+  (let [{:keys [links layers y0s y1s pad link-state]} state
+        ^doubles y0s y0s ^doubles y1s y1s
+        [^objects outs ^objects ins] link-state
+        n (alength column-cells)
+        order (if (= :right-to-left direction) (range (- n 2) -1 -1) (range 1 n))]
+    (doseq [c order]
+      (let [column (aget column-cells (long c))]
+        (doseq [node column]
+          (let [node (long node)
+                [ls near] (if (= :right-to-left direction) [(aget outs node) :target] [(aget ins node) :source])
+                [y w] (reduce (fn [[^double y ^double w] l]
+                                (let [{:keys [s t value]} (links l)
+                                      v (* (double value) (double (- (long (layers t)) (long (layers s)))))]
+                                  [(+ y (* v (level-node-top l near link-state [links y0s (:widths state) pad]))) (+ w v)]))
+                              [0.0 0.0] ls)]
+            (when (pos? (double w))
+              (shift! y0s y1s node (* (- (/ (double y) (double w)) (aget y0s node)) (double alpha)))
+              (reorder-links! (concat [node] (map #(:s (links %)) (aget ins node)) (map #(:t (links %)) (aget outs node)))
+                              link-state links y0s))))
+        (let [column (if fixed-order? column (vec (sort-by #(aget y0s (long %)) column)))]
+          (aset column-cells (long c) column)
+          (resolve-collisions! column [y0s y1s] pad beta))))))
+
+(def ^:private ^:const band-steps 24)
+
+(defn- band-points
+  "Points of a sankey band from `[x0 top0]` to `[x1 top1]`, `width` thick (y-up: the bottom edge `width` below): the
+  top cubic Bezier (control points at the middle x), then the bottom one back."
+  [[^double x0 ^double top0] [^double x1 ^double top1] ^double width]
+  (let [xm (* 0.5 (+ x0 x1))
+        curve (fn [^double a ^double b]
+                (mapv (fn [^long s] (let [t (/ (double s) band-steps) u (- 1.0 t)]
+                                      [(+ (* u u u x0) (* 3.0 u u t xm) (* 3.0 u t t xm) (* t t t x1))
+                                       (+ (* u u u a) (* 3.0 u u t a) (* 3.0 u t t b) (* t t t b))]))
+                      (range (inc band-steps))))]
+    (into (curve top0 top1) (rseq (curve (- top0 width) (- top1 width))))))
+
+(defn sankey-layout
+  "Sankey diagram of graph `g` (see [[graph]]; edges are directed flows whatever `:directed?`) as data in the unit
+  square (a d3-sankey port): nodes in columns (left to right) as rectangles `:node-width` wide, their heights
+  proportional to their value (the larger of the flows in and out, one scale for all), at least `:pad` apart in a
+  column; every edge a band from its source's right side to its target's left side, as thick as its value on that
+  scale, stacked at both nodes in the order of the nodes at their other ends.
+
+  `opts`: `:align` - the column of a node: `:justify` (default; the longest path from a source, sinks in the last
+  column), `:left` (sinks where their path ends), `:right` (by the longest path to a sink), `:center`; `:layer` - an
+  accessor of the node rows giving the column (integers >= 0, every edge to a later one; wins over `:align`);
+  `:node-width` (default 0.03), `:pad` (default 0.02), `:iterations` - relaxation sweeps moving nodes towards their
+  links' ends (default 6; 0 - spread in the start order); `:node-sort` - `nil` (relaxation reorders a column) or
+  `:input` (input order kept).
+
+  Returns `{:nodes [node + :layer :x0 :x1 :y0 :y1 :value] :links [edge + :link :sy :ty :width] :rects [{:rect :node
+  :x :y}] :bands [edge + :link :x :y] :dropped {:edges n :nodes n}}` - nodes in column order, top to bottom; `:rect`
+  the node's index there, `:link` the edge's index (group keys of the polygons, whatever the ids); `:sy` / `:ty` the band's top at the source / target (y up); rect and band rows are polygon
+  points; edges of zero value and self-loops are left out, as are nodes without flow (counted).
+  Throws `ex-info` for a cycle (`:edges`), a bad option (its key), a `:pad` leaving no room in the fullest column
+  (`:pad`)."
+  ([g] (sankey-layout g {}))
+  ([{:keys [nodes edges loops]} opts]
+   (let [{:keys [align layer node-width pad iterations node-sort] :as opts}
+         (merge {:align :justify :node-width 0.03 :pad 0.02 :iterations 6} opts)
+         _ (sankey-options! opts)
+         flows (filterv #(pos? (double (:value %))) edges)
+         used (set (mapcat (juxt :from :to) flows))
+         all-count (count nodes)
+         nodes (filterv #(used (:id %)) nodes)
+         n (count nodes)
+         index (zipmap (map :id nodes) (range))
+         links (vec (map-indexed (fn [k e] {:link k :s (index (:from e)) :t (index (:to e)) :value (double (:value e)) :edge e}) flows))
+         by-node (fn [k] (let [g (group-by k links)] (object-array (map #(mapv :link (get g % [])) (range n)))))
+         ^objects outs (by-node :s)
+         ^objects ins (by-node :t)
+         dropped {:edges (+ (count loops) (- (count edges) (count flows))) :nodes (- all-count n)}]
+     (if (zero? n)
+       {:nodes [] :links [] :rects [] :bands [] :dropped dropped}
+       (let [values (mapv (fn [i] (max (double (reduce + 0.0 (map #(:value (links %)) (aget outs (long i)))))
+                                       (double (reduce + 0.0 (map #(:value (links %)) (aget ins (long i)))))))
+                          (range n))
+             layers (sankey-layers nodes links [(vec outs) (vec ins)] [align (some->> layer (data/row-accessor :layer))])
+             column-count (inc (long (reduce max 0 layers)))
+             column-cells (object-array (map (fn [c] (filterv #(= c (layers %)) (range n))) (range column-count)))
+             fullest (long (reduce max (map count column-cells)))
+             pad (double pad)
+             _ (when (>= (* (dec fullest) pad) 1.0)
+                 (schema/fail! "Sankey :pad leaves no room for the nodes of the fullest column." {:key :pad :value pad}))
+             ky (double (reduce min (map (fn [column] (/ (- 1.0 (* (dec (count column)) pad)) (double (reduce + 0.0 (map values column)))))
+                                         column-cells)))
+             y0s (double-array n) y1s (double-array n)
+             widths (double-array (map #(* ky (double (:value %))) links))
+             link-state [outs ins]]
+         ;; start: each column stacked from the top, the free room spread around its nodes
+         (doseq [column column-cells]
+           (let [bottom (reduce (fn [^double y i] (aset y0s (long i) y) (aset y1s (long i) (+ y (* ky (double (values i)))))
+                                  (+ (aget y1s (long i)) pad))
+                                0.0 column)
+                 spread (/ (+ (- 1.0 (double bottom)) pad) (double (inc (count column))))]
+             (doseq [[k i] (map-indexed vector column)]
+               (shift! y0s y1s (long i) (* spread (double (inc (long k))))))))
+         (reorder-links! (range n) link-state links y0s)
+         (let [state {:links links :layers layers :y0s y0s :y1s y1s :pad pad :link-state link-state :widths widths}
+               fixed? (= :input node-sort)]
+           (dotimes [i iterations]
+             (let [alpha (m/pow 0.99 (double i))
+                   beta (max (- 1.0 alpha) (/ (double (inc i)) (double iterations)))]
+               (relax! column-cells :right-to-left state [alpha beta fixed?])
+               (relax! column-cells :left-to-right state [alpha beta fixed?]))))
+         (reorder-links! (range n) link-state links y0s)
+         (let [kx (if (> column-count 1) (/ (- 1.0 (double node-width)) (double (dec column-count))) 0.0)
+               x0-of (fn [i] (* kx (double (layers i))))
+               ;; band tops (top-down) at the source and the target
+               tops (reduce (fn [acc i]
+                              (let [stack (fn [acc ls k]
+                                            (first (reduce (fn [[acc ^double y] l] [(assoc-in acc [l k] y) (+ y (aget widths (long l)))])
+                                                           [acc (aget y0s (long i))] ls)))]
+                                (-> acc (stack (aget outs (long i)) :sy) (stack (aget ins (long i)) :ty))))
+                            {} (range n))
+               up (fn ^double [^double y] (- 1.0 y))
+               placed (mapv (fn [{:keys [link s t edge]}]
+                              (let [w (aget widths (long link))
+                                    sy (up (double (get-in tops [link :sy])))
+                                    ty (up (double (get-in tops [link :ty])))]
+                                (assoc edge :link link :sy sy :ty ty :width w
+                                       ::source-x (+ (double (x0-of s)) (double node-width)) ::target-x (x0-of t))))
+                            links)
+               order (vec (mapcat (fn [column] (sort-by #(aget y0s (long %)) column)) column-cells))
+               node-of (fn [i] (let [x0 (double (x0-of i))]
+                                 (assoc (nodes i) :layer (layers i) :x0 x0 :x1 (+ x0 (double node-width))
+                                        :y0 (up (aget y1s (long i))) :y1 (up (aget y0s (long i))) :value (values i))))
+               laid (mapv node-of order)]
+           {:nodes laid
+            :links (mapv #(dissoc % ::source-x ::target-x) placed)
+            :rects (vec (for [[k {:keys [id x0 x1 y0 y1]}] (map-indexed vector laid) [x y] [[x0 y0] [x1 y0] [x1 y1] [x0 y1]]]
+                          {:rect k :node id :x x :y y}))
+            :bands (vec (for [{:keys [sy ty width] :as l} placed
+                              [x y] (band-points [(::source-x l) sy] [(::target-x l) ty] width)]
+                          (-> l (dissoc ::source-x ::target-x :sy :ty :width) (assoc :x x :y y))))
+            :dropped dropped}))))))
+
+;; alluvial
+
+(defn- level-order
+  "Distinct `values` in natural order, first-appearance order when they don't compare."
+  [values]
+  (let [vs (vec (distinct values))]
+    (try (vec (sort vs)) (catch ClassCastException _ vs))))
+
+(defn alluvial-graph
+  "Directed graph (see [[graph]]) of an alluvial diagram of `rows` over `:axes` (accessors, at least 2): a node per
+  level of every axis - `{:id [axis-index level] :name level :layer axis-index}`, levels in natural order (first
+  appearance when they don't compare) - and an edge per pair of levels of consecutive axes and `:fill` level (an
+  accessor, default the first axis) with the summed `:value` (an accessor; default 1 per row) and `:fill` set; edges
+  ordered by fill level, so strands of one level lie together at every node. For [[sankey-layout]] with
+  `{:layer :layer :node-sort :input}`. Throws `ex-info {:key :axes}` for fewer than 2 axes or a row without a value
+  of an axis."
+  [rows {:keys [axes value fill]}]
+  (when-not (and (sequential? axes) (<= 2 (count axes)))
+    (schema/fail! "An alluvial diagram needs at least 2 :axes." {:key :axes :value axes}))
+  (let [axis-of (mapv #(data/row-accessor :axes %) axes)
+        value-of (if value (data/row-accessor :value value) (constantly 1.0))
+        fill-of (data/row-accessor :fill (or fill (first axes)))
+        levels-of (fn [row] (let [ls (mapv #(% row) axis-of)]
+                              (when (some nil? ls)
+                                (schema/fail! "Every row needs a value of every alluvial axis." {:key :axes :value row}))
+                              ls))
+        keyed (mapv (fn [row] [(levels-of row) (fill-of row) (value-of row)]) rows)
+        fill-rank (zipmap (level-order (map second keyed)) (range))
+        nodes (vec (for [i (range (count axes)) level (level-order (map #(nth (first %) i) keyed))]
+                     {:id [i level] :name level :layer i}))
+        sums (reduce (fn [acc [ls f v]]
+                       (reduce (fn [acc i] (update acc [i (ls i) (ls (inc (long i))) f] (fnil + 0.0) (double v)))
+                               acc (range (dec (count axes)))))
+                     {} keyed)
+        edges (->> sums
+                   (sort-by (fn [[[i _ _ f] _]] [(fill-rank f) i]))
+                   (mapv (fn [[[i a b f] v]] {:from [i a] :to [(inc (long i)) b] :value v :fill f})))]
+    (graph edges {:nodes nodes :directed? true})))

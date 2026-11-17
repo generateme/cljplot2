@@ -16,7 +16,10 @@
   Colors: without a mapped `:color` each top-level node takes the next `[:palette :color]` color, its descendants
   share it, lighter by depth (each level a quarter of the way from its CIELAB lightness L* to 90 - light colors
   stay apart from white borders); a mapped `:color` colors the leaves (legend keys), groups and the root take
-  `[:palette :na]`. Style (theme `[:chart :partition]`): `:border-color`, `:border-width` (the cells' outlines),
+  `[:palette :na]`; `:color-by :name` (default `:top` - the above) colors every node by its name through the color
+  scale - a legend of the names, equal names alike at every depth (sequence sunbursts), the root and unnamed leaves
+  in `[:palette :na]`; it can't be combined with a mapped `:color` (`ex-info {:key :color-by}`). Style (theme
+  `[:chart :partition]`): `:border-color`, `:border-width` (the cells' outlines),
   `:pattern`, `:pattern-color`.
 
   Labels: `:group-labels` / `:leaf-labels` (default true - the node's name; `false` - none; a function of the node
@@ -30,6 +33,7 @@
             [cljplot2.data.rows :as data]
             [cljplot2.graphics.draw :as draw]
             [cljplot2.graphics.measure :as measure]
+            [cljplot2.scale.aesthetic :as aesthetic]
             [cljplot2.scale.coord :as coord]
             [cljplot2.scale.position :as scale]
             [cljplot2.schema :as schema])
@@ -50,6 +54,7 @@
                 (into style-entries)
                 (into data/common-options)
                 (conj (schema/optional :order [:enum :value :data])
+                      (schema/optional :color-by [:enum :top :name])
                       (schema/nilable :root schema/bool)
                       (schema/nilable :group-labels hierarchy/label-option)
                       (schema/nilable :leaf-labels hierarchy/label-option)))
@@ -72,7 +77,7 @@
                (let [leaf? (nil? (:children node))
                      x1 (+ (double x0) (/ (double (:value node)) total))]
                  {:x0 (double x0) :x1 x1 :y0 (+ (dec (double depth)) shift) :y1 (+ (double depth) shift)
-                  :depth depth :leaf? leaf? :color (:color node) :top-index top-index
+                  :depth depth :leaf? leaf? :color (:color node) :top-index top-index :name (:name node)
                   :label (hierarchy/label-text (if leaf? leaf-labels group-labels) node
                                                (hierarchy/node-info node depth path parent-value total))}))
         walk (fn walk [node depth path x0 top-index]
@@ -88,18 +93,41 @@
       root (cons (cell tree 0 [] total 0.0 nil))
       true vec)))
 
+(defn computed-aesthetics
+  "The partition's computed color with `:color-by :name` (no title); `nil` otherwise. Throws `ex-info {:key
+  :color-by}` when `:color` is mapped too."
+  [options mapping]
+  (when (= :name (:color-by options))
+    (when (some? (:color mapping))
+      (schema/fail! "Partition :color-by :name colors the nodes by name; it can't take a mapped :color too."
+                    {:key :color-by :value (:color mapping)}))
+    {:color nil}))
+
+(defn- name-extents
+  "`{panel {:color extent}}` of the node names of every panel's tree (`trees`) under the plot's color spec."
+  [trees plot-scales]
+  (into {} (keep (fn [[panel tree]]
+                   (when-let [e (aesthetic/value-extent :color (get plot-scales :color {})
+                                                        (keep :name (rest (tree-seq :children :children tree))))]
+                     [panel {:color e}])))
+        trees))
+
 (defn compute
-  "Per panel: `{:cells [..] :top-count n :style style :colored? bool}` (see [[cells]]); extents `:x` `[0 1]`, `:y`
-  `[0 levels]` (the deepest panel's), aesthetic extents, no padding, `:scale-defaults` hiding both axes and grids,
-  `:na`, `:dropped {:value n :color n}`."
-  [{:keys [options]} {:keys [groups mapping]} {:keys [theme] :as env}]
+  "Per panel: `{:cells [..] :top-count n :style style :colored? bool :named? bool}` (see [[cells]]; `:named?` -
+  `:color-by :name`); extents `:x` `[0 1]`, `:y` `[0 levels]` (the deepest panel's), aesthetic extents (the node
+  names' with `:color-by :name`), no padding, `:scale-defaults` hiding both axes and grids, `:na`, `:dropped {:value
+  n :color n}`."
+  [{:keys [options]} {:keys [groups mapping]} {:keys [theme plot-scales] :as env}]
   (let [{:keys [trees top-count extents na dropped]} (hierarchy/panel-trees groups mapping env)
+        named? (= :name (:color-by options))
+        extents (if named? (name-extents trees plot-scales) extents)
         opts (merge defaults (into {} (remove (comp nil? val)) (select-keys options (keys defaults))))
         st (style options theme)
         panel-cells (update-vals trees #(cells % opts))
         levels (reduce max 1.0 (map :y1 (mapcat val panel-cells)))
         position-extents {:x (data/extent :x [0.0 1.0]) :y (data/extent :y [0.0 levels])}]
-    {:data (update-vals panel-cells (fn [cs] {:cells cs :top-count top-count :style st :colored? (some? (:color mapping))}))
+    {:data (update-vals panel-cells (fn [cs] {:cells cs :top-count top-count :style st :colored? (some? (:color mapping))
+                                              :named? named?}))
      :extents (merge-with merge extents (update-vals panel-cells (constantly position-extents)))
      :padding {:x [0 0] :y [0 0]}
      :na na

@@ -8,7 +8,8 @@
 
   Node: a group `{:name :value :children}` or a leaf `{:name :value :color}`; `:value` is the sum of the leaves below.
   The root is always a group with `:name nil`; its children carry `:top-index` (see [[panel-trees]])."
-  (:require [clojure2d.color :as c]
+  (:require [clojure.string :as str]
+            [clojure2d.color :as c]
             [fastmath.core :as m]
             [cljplot2.scale.aesthetic :as aesthetic]
             [cljplot2.data.rows :as data]
@@ -138,15 +139,21 @@
         color))))
 
 (defn fill-fn
-  "Fill of a drawn node `{:depth :top-index :leaf? :color}` of a panel `{:top-count :colored?}` (`:colored?` - a
-  mapped `:color`): without a mapped color the top-level node's palette color (see [[top-color-fn]]) shaded by
-  depth ([[depth-shade]]), the root `[:palette :na]`; with one leaves take their mapped color, groups and the root
-  `[:palette :na]`."
-  [{:keys [top-count colored?]} scales theme]
+  "Fill of a drawn node `{:depth :top-index :leaf? :color :name}` of a panel `{:top-count :colored? :named?}`
+  (`:colored?` - a mapped `:color`, `:named?` - colors by node name): without a mapped color the top-level node's
+  palette color (see [[top-color-fn]]) shaded by depth ([[depth-shade]]), the root `[:palette :na]`; with one leaves
+  take their mapped color, groups and the root `[:palette :na]`; by name - every named node its name's color under
+  the color scale, the root and unnamed nodes `[:palette :na]`."
+  [{:keys [top-count colored? named?]} scales theme]
   (let [na (get-in theme [:palette :na])]
-    (if colored?
+    (cond
+      named?
+      (let [color-fn (aesthetic/attribute-fn :color (:color scales) na)]
+        (fn [{:keys [depth name]}] (if (or (zero? (long depth)) (nil? name)) na (or (color-fn name) na))))
+      colored?
       (let [color-fn (aesthetic/attribute-fn :color (:color scales) na)]
         (fn [{:keys [leaf? color]}] (if leaf? (color-fn color) na)))
+      :else
       (let [top-color (top-color-fn theme top-count)]
         (fn [{:keys [depth top-index]}]
           (if (zero? (long depth))
@@ -189,3 +196,37 @@
                   labels (:name node))]
       (when (and (some? t) (not= "" t))
         (str t)))))
+
+;; sequences
+
+(defn- sequence-steps
+  "Steps of sequence `s`: a string split at the literal `separator`, or the elements of a sequential value; empty
+  (`nil`, `\"\"`) steps and a final `end` marker removed."
+  [s separator end]
+  (let [steps (cond
+                (string? s) (str/split s (re-pattern (java.util.regex.Pattern/quote (str separator))))
+                (sequential? s) s
+                :else [])
+        steps (filterv #(not (or (nil? %) (= "" %))) steps)]
+    (if (and (seq steps) (= end (peek steps))) (pop steps) steps)))
+
+(defn sequence-levels
+  "Hierarchy rows of sequences (e.g. page visits) for a flow sunburst (`chart/partition` under polar, see
+  [[cljplot2.graphs/sequences]]): every row's `:sequence` (an accessor of a string split at `:separator`, default
+  `\"-\"`, or of a sequence of steps; empty steps left out; a final `:end` marker, default `\"end\"`, removed - a sequence ending
+  before others continue becomes its group's unnamed leaf) with `:value` (an accessor, default 1 per row; summed
+  over identical sequences). Returns `{:rows [{:step-1 s1 .. :step-k sk :value v}] :hierarchy [:step-1 ..
+  :step-k] :dropped n}` - `k` the longest sequence, shorter ones padded with `nil`, rows in first-appearance order;
+  `:dropped` - rows without steps."
+  [rows {:keys [sequence value separator end] :or {sequence :sequence separator "-" end "end"}}]
+  (let [sequence-of (data/row-accessor :sequence sequence)
+        value-of (if value (data/row-accessor :value value) (constantly 1.0))
+        keyed (map (fn [row] [(sequence-steps (sequence-of row) separator end) (value-of row)]) rows)
+        kept (filter (comp seq first) keyed)
+        sums (reduce (fn [acc [steps v]] (update acc steps (fnil + 0.0) (double v))) {} kept)
+        order (distinct (map first kept))
+        depth (long (reduce max 0 (map count order)))
+        ks (mapv #(keyword (str "step-" %)) (range 1 (inc depth)))]
+    {:rows (mapv (fn [steps] (assoc (zipmap ks (concat steps (repeat nil))) :value (sums steps))) order)
+     :hierarchy ks
+     :dropped (- (count keyed) (count kept))}))

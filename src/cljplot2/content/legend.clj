@@ -76,8 +76,10 @@
                                                     (when-some [a (f (:value (entries i)))] [dim a])))
                                          (map vector members attribute-fns))})
                     (range (count (:entries (first members)))))
+     ;; glyphs of the charts mapping a dimension or computing it (a categorical computed color, e.g. partition names)
      :charts (vec (keep-indexed (fn [i [chart mapping]]
-                                  (let [mapped (filterv #(some? (get mapping %)) dims)]
+                                  (let [computed (aesthetic/computed-aesthetics chart mapping)
+                                        mapped (filterv #(or (some? (get mapping %)) (contains? computed %)) dims)]
                                     (when (and (:legend chart) (seq mapped)) {:chart i :dims mapped})))
                                 (map vector charts mappings)))}))
 

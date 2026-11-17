@@ -54,6 +54,21 @@
   [edges options]
   (graphs/arc edges options))
 
+(defn sankey
+  "Sankey diagram of flow rows (nodes in columns, bands between them), see [[cljplot2.graphs/sankey]]."
+  [edges options]
+  (graphs/sankey edges options))
+
+(defn alluvial
+  "Alluvial diagram of rows over categorical axes (strata and strands), see [[cljplot2.graphs/alluvial]]."
+  [rows options]
+  (graphs/alluvial rows options))
+
+(defn sequences
+  "Flow sunburst of sequences (steps as rings coloured by name), see [[cljplot2.graphs/sequences]]."
+  [rows options]
+  (graphs/sequences rows options))
+
 (defn render
   "Build and draw `plot`, returning a clojure2d canvas, see [[cljplot2.render/render]]."
   ([plot] (render/render plot))

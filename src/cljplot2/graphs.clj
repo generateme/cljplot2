@@ -9,6 +9,7 @@
             [fastmath.ml.clustering :as cl]
             [cljplot2.chart :as chart]
             [cljplot2.data.graph :as graph]
+            [cljplot2.data.hierarchy :as hierarchy]
             [cljplot2.data.tree :as tree]
             [cljplot2.multiplot :as plot]
             [cljplot2.data.rows :as data]
@@ -414,3 +415,128 @@
              :labels {:title title :x nil :y nil}}
       labels? (assoc-in [:theme :axis :x :label-rotation] 90)
       user-theme (update :theme #(theme/deep-merge % user-theme)))))
+
+;; sankey, alluvial
+
+(def ^:private flow-grey [150 150 150])
+(def ^:private unit-axis
+  "An axis of the unit square of a sankey, hidden, with a little room around."
+  {:domain [-0.01 1.01] :nice false :expand [0.0 0.0] :axis false})
+
+(defn- node-label
+  "Label text of a laid-out node: its `:name`, else its id."
+  [node]
+  (str (if (contains? node :name) (:name node) (:id node))))
+
+(defn- side-labels
+  "Two text charts of the sankey node names at the middle of their sides: right of the nodes in the left half, left
+  of those in the right half (both inside the frame)."
+  [nodes]
+  (let [row (fn [x {:keys [y0 y1] :as node}] {:x x :y (* 0.5 (+ (double y0) (double y1))) :label (node-label node)})
+        [left right] ((juxt filter remove) #(< (double (:x0 %)) 0.5) nodes)]
+    (cond-> []
+      (seq left) (conj (chart/text {:data (mapv #(row (:x1 %) %) left) :mapping {:x :x :y :y :label :label}
+                                    :anchor [:left :middle] :offset [4 0] :size 9}))
+      (seq right) (conj (chart/text {:data (mapv #(row (:x0 %) %) right) :mapping {:x :x :y :y :label :label}
+                                     :anchor [:right :middle] :offset [-4 0] :size 9})))))
+
+(def ^:private sankey-layout-keys [:align :layer :node-width :pad :iterations :node-sort])
+
+(defn sankey
+  "Sankey diagram of `edges` (rows `{:from :to :value}`, flows; see [[cljplot2.data.graph/graph]]) as a plot map (see
+  [[cljplot2.data.graph/sankey-layout]] - a d3-sankey port): nodes as rectangles coloured by node (`chart/polygon`),
+  flows as bands at `:alpha` (default 0.5) in the colour of their `:link-color` end - `:source` (default),
+  `:target`, or `:none` (grey); node names beside the nodes, inside the frame (`:labels?`, default `true`); no axes.
+
+  `options`: graph - `:from`, `:to`, `:value`, `:nodes`, `:id`; layout - `:align`, `:layer`, `:node-width`, `:pad`,
+  `:iterations`, `:node-sort`; `:mapping {:color acc}` - the node colour (an accessor of node rows, default the id;
+  a legend unless it's the id); `:scales`, `:title`, `:theme`. Throws `ex-info {:key :link-color}` for another
+  `:link-color`.
+
+  Equivalents: d3-sankey, networkD3 `sankeyNetwork`, plotly sankey."
+  [edges {:keys [mapping link-color alpha scales title] user-theme :theme :or {link-color :source alpha 0.5} :as options}]
+  (when-not (#{:source :target :none} link-color)
+    (schema/fail! "Sankey :link-color should be :source, :target or :none." {:key :link-color :value link-color}))
+  (let [labels? (get options :labels? true)
+        {:keys [nodes rects bands]} (graph/sankey-layout (graph/graph edges (assoc options :directed? true))
+                                                         (select-keys options sankey-layout-keys))
+        color-of (data/row-accessor :color (or (:color mapping) :id))
+        node-color (into {} (map (juxt :id color-of)) nodes)
+        bands (cond->> bands
+                (not= :none link-color) (mapv #(assoc % ::color (node-color (if (= :source link-color) (:from %) (:to %))))))]
+    (cond-> {:charts (cond-> [(chart/polygon (cond-> {:data bands :alpha (double alpha) :mapping {:x :x :y :y :group :link}}
+                                               (= :none link-color) (assoc :color flow-grey)
+                                               (not= :none link-color) (assoc-in [:mapping :color] ::color)))
+                              (chart/polygon {:data (mapv #(assoc % ::color (node-color (:node %))) rects)
+                                              :mapping {:x :x :y :y :group :rect :color ::color}})]
+                       labels? (into (side-labels nodes)))
+             :scales (theme/deep-merge {:x unit-axis :y unit-axis
+                                        :color {:domain (vec (distinct (map color-of nodes)))
+                                                :legend (some? (:color mapping))}}
+                                       scales)
+             :labels {:title title :x nil :y nil}}
+      user-theme (assoc :theme user-theme))))
+
+(defn- axis-label
+  "Name of an alluvial axis accessor: a keyword's name, else its string."
+  [axis]
+  (if (keyword? axis) (name axis) (str axis)))
+
+(defn alluvial
+  "Alluvial diagram of `rows` over `:axes` (accessors, at least 2) as a plot map: a column per axis with a stratum
+  per level (grey, the level's name centred on a white box; levels in natural order), strands between consecutive
+  axes as bands coloured by the `:fill` level (an accessor, default the first axis) at `:alpha` (default 0.6) - see
+  [[cljplot2.data.graph/alluvial-graph]] and [[cljplot2.data.graph/sankey-layout]] (fixed columns, strata in level
+  order, spread evenly); axis names under the columns (`:axis-names`, default the accessors' names), no y axis.
+
+  `options`: `:value` (an accessor, default 1 per row), `:node-width` (default 0.12), `:pad` (default 0.03),
+  `:scales` (e.g. `:color`), `:title`, `:theme`.
+
+  Equivalents: ggalluvial `geom_alluvium` + `geom_stratum`, d3 parallel sets."
+  [rows {:keys [axes fill alpha node-width pad axis-names scales title] user-theme :theme
+         :or {alpha 0.6 node-width 0.12 pad 0.03} :as options}]
+  (let [g (graph/alluvial-graph rows (select-keys options [:axes :value :fill]))
+        {:keys [nodes rects bands]} (graph/sankey-layout g {:layer :layer :node-sort :input :iterations 0
+                                                            :node-width node-width :pad pad})
+        columns (count axes)
+        names (vec (or axis-names (map axis-label axes)))
+        centres (mapv #(+ (* (/ (- 1.0 (double node-width)) (double (dec columns))) (double %)) (* 0.5 (double node-width)))
+                      (range columns))
+        nearest (fn [v] (apply min-key #(Math/abs (- (double (centres %)) (double v))) (range columns)))]
+    (cond-> {:charts [(chart/polygon {:data bands :alpha (double alpha) :mapping {:x :x :y :y :group :link :color :fill}})
+                      (chart/polygon {:data rects :color flow-grey :stroke-color :white :mapping {:x :x :y :y :group :rect}})
+                      (chart/text {:data (mapv (fn [{:keys [x0 x1 y0 y1] :as node}]
+                                                 {:x (* 0.5 (+ (double x0) (double x1))) :y (* 0.5 (+ (double y0) (double y1)))
+                                                  :label (node-label node)})
+                                               nodes)
+                                   :mapping {:x :x :y :y :label :label} :size 9
+                                   :background [255 255 255 190] :padding 1})]
+             :scales (theme/deep-merge {:x (assoc (dissoc unit-axis :axis) :ticks centres :formatter #(get names (nearest %) ""))
+                                        :y unit-axis
+                                        :color {:title (axis-label (or fill (first axes)))}}
+                                       scales)
+             :labels {:title title :x nil :y nil}}
+      user-theme (assoc :theme user-theme))))
+
+;; sequences
+
+(defn sequences
+  "Flow (sequence) sunburst of `rows` as a plot map: the sequences' steps as rings from the centre (see
+  [[cljplot2.data.hierarchy/sequence-levels]]; `:sequence`, `:value`, `:separator`, `:end`), every step coloured by
+  its name wherever it occurs, with a legend of the names (`chart/partition` `:color-by :name` under polar); a
+  centre hole `:inner` (default 0.3); `:labels?` (step names in the cells that fit, default `false`); `:scales`,
+  `:title`, `:theme`.
+
+  Equivalents: d3 sequences sunburst (Kerry Rodden), sunburstR."
+  [rows {:keys [inner scales title] user-theme :theme :or {inner 0.3} :as options}]
+  (let [labels? (get options :labels? false)
+        {:keys [rows hierarchy]} (hierarchy/sequence-levels rows (select-keys options [:sequence :value :separator :end]))]
+    (cond-> {:data rows
+             :mapping {:value :value :hierarchy hierarchy}
+             ;; thin borders: deep rings have many narrow cells
+             :charts [(chart/partition {:color-by :name :order :value :group-labels labels? :leaf-labels labels?
+                                        :border-width 0.3})]
+             :coord {:kind :polar :inner (double inner)}
+             :scales (theme/deep-merge {:color {:title nil}} scales)
+             :labels {:title title}}
+      user-theme (assoc :theme user-theme))))

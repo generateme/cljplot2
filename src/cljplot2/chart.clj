@@ -210,7 +210,8 @@
   "Partition of `:value` over the `:hierarchy` levels: an icicle, a sunburst under a polar `:coord`, see
   [[cljplot2.chart.partition]]."
   ([] (partition {}))
-  ([options] (polar (chart-value :partition partition/compute partition/draw partition/legend partition/schemas options))))
+  ([options] (polar (assoc (chart-value :partition partition/compute partition/draw partition/legend partition/schemas options)
+                           :computed-aesthetics partition/computed-aesthetics))))
 
 (defn pack
   "Circle packing of `:value` over the `:hierarchy` levels, see [[cljplot2.chart.pack]]."
