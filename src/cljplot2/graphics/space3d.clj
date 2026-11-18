@@ -78,16 +78,41 @@
   (let [spacing (double (get-in env [:theme :axis (if (= k :z) :y :x) :tick-spacing]))]
     (long (m/max 3.0 (m/floor (/ length spacing))))))
 
+(defn level-text
+  "Tick label of a categorical level `v`: a keyword's name, else `(str v)`."
+  [v]
+  (if (keyword? v) (name v) (str v)))
+
+(defn- ends-ticked?
+  "Do the `ticks` include both ends of `domain` (within a billionth of its span)?"
+  [{:keys [ticks]} [lo hi]]
+  (let [tolerance (* 1.0e-9 (m/abs (- (double hi) (double lo))))
+        on? (fn [end] (some #(<= (m/abs (- (double %) (double end))) tolerance) ticks))]
+    (boolean (and (on? lo) (on? hi)))))
+
+(defn edge-ticks
+  "`{:ticks [..] :labels [..]}` of the axis `k` over `domain` for about `n` ticks: with `levels` (a categorical axis,
+  level i at i + 1) a tick per level, labelled by [[level-text]] - every level when they're at most `n`, else every
+  `ceil(levels / n)`-th from the first (the others `nil`); else the most ticks, at most `n`, that include both
+  domain ends (a nice domain, see [[cljplot2.data.space3d/nice-domain]]), or `n` ticks when no count does."
+  [k domain levels n]
+  (if levels
+    (let [every (long (m/ceil (/ (double (count levels)) (double (m/max 1 (long n))))))]
+      {:ticks (mapv double (range 1 (inc (count levels))))
+       :labels (vec (map-indexed (fn [i l] (when (zero? (long (mod (long i) every))) (level-text l))) levels))})
+    (or (first (filter #(ends-ticked? % domain) (map #(axis-ticks k domain %) (range (long n) 1 -1))))
+        (axis-ticks k domain n))))
+
 (defn frame-margin
-  "Pixels to keep around the box for the axes of `domains` with `titles` (`{:x t ..}`, `nil` - none) when `axes?`:
-  tick length, label gaps, the largest tick label (of the most ticks an edge in a `w` x `h` panel can ask for, see
-  [[tick-count]]) and a title line. `env` - `:canvas`, `:theme`."
-  [domains titles axes? [w h] env]
+  "Pixels to keep around the box for the axes of a `frame` (`:domains`, `:levels`, `:titles` - `{:x t ..}`, `nil` -
+  none) when `:axes?`: tick length, label gaps, the largest tick label (of the most ticks an edge in a `w` x `h` panel
+  can ask for, see [[tick-count]], [[edge-ticks]]) and a title line. `env` - `:canvas`, `:theme`."
+  [{:keys [domains levels titles axes?]} [w h] env]
   (if-not axes?
     4.0
     (let [{:keys [tick-length label-gap]} (get-in env [:theme :axis :x])
           longest (m/min (double w) (double h))
-          labels (mapcat #(:labels (axis-ticks % (domains %) (tick-count env % longest))) space/axes)
+          labels (remove nil? (mapcat #(:labels (edge-ticks % (domains %) (get levels %) (tick-count env % longest))) space/axes))
           widest (double (reduce max 0.0 (map #(let [^Vec2 s (text-size :tick-label % env)] (m/max (.x s) (.y s))) labels)))
           title (double (reduce max 0.0 (keep (fn [k] (when-some [t (get titles k)]
                                                          (.y (text-size :axis-title (str t) env))))
@@ -123,14 +148,30 @@
   ^double [tick-length gap widest ^Vec2 size]
   (+ (double tick-length) (* 2.0 (double gap)) (double widest) (* 0.5 (.y size))))
 
+(defn- label-box
+  "Box `[x0 y0 x1 y1]` of a label of `size` centred at `c`."
+  [^Vec2 c ^Vec2 size]
+  (let [hw (* 0.5 (.x size)) hh (* 0.5 (.y size))]
+    [(- (.x c) hw) (- (.y c) hh) (+ (.x c) hw) (+ (.y c) hh)]))
+
+(defn- boxes-overlap?
+  [[ax0 ay0 ax1 ay1] [bx0 by0 bx1 by1]]
+  (and (< (double ax0) (double bx1)) (< (double bx0) (double ax1)) (< (double ay0) (double by1)) (< (double by0) (double ay1))))
+
 (defn- draw-axis!
-  [canvas k {:keys [from to]} {:keys [corner centre]} domain title env]
+  "Draw the axis of `k` on its `edge` (ticks, labels, title; see the namespace doc); a tick label overlapping one of
+  the label boxes `taken` (`[x0 y0 x1 y1]`, drawn by the axes before, e.g. at a shared corner) is left out. Returns
+  the boxes of the labels this axis drew."
+  [canvas k {:keys [from to]} {:keys [corner centre]} {:keys [domains levels titles]} taken env]
   (let [{:keys [line-color tick-color tick-length tick-width label-gap]} (get-in env [:theme :axis :x])
         ^Vec2 a (corner from) ^Vec2 b (corner to)
         along (v/sub b a)
         o (outward (v/mult (v/add a b) 0.5) along centre)
-        {:keys [ticks labels]} (axis-ticks k domain (tick-count env k (v/mag along)))
+        domain (domains k)
+        title (get titles k)
+        {:keys [ticks labels]} (edge-ticks k domain (get levels k) (tick-count env k (v/mag along)))
         [lo hi] domain
+        labelled (atom [])
         at (fn [t] (v/add a (v/mult along (/ (- (double t) (double lo)) (- (double hi) (double lo))))))
         tick-length (double tick-length) gap (double label-gap)
         widest (atom 0.0)]
@@ -140,22 +181,28 @@
       (c2d/line canvas (.x a) (.y a) (.x b) (.y b)))
     (doseq [[t text] (map vector ticks labels)
             :let [^Vec2 p (at t)
-                  ^Vec2 q (v/add p (v/mult o tick-length))
-                  size (text-size :tick-label text env)
-                  e (extent-along size o)
-                  ^Vec2 c (v/add q (v/mult o (+ gap e)))]]
-      (swap! widest max (* 2.0 e))
+                  ^Vec2 q (v/add p (v/mult o tick-length))]]
       (when-not (theme/none? tick-color)
         (c2d/set-color canvas tick-color)
         (c2d/set-stroke-custom canvas {:size (double tick-width)})
         (c2d/line canvas (.x p) (.y p) (.x q) (.y q)))
-      (label/draw-at! canvas {:kind :label :role :tick-label :text text} [:center :middle] (.x c) (.y c) env))
+      ;; a thinned categorical axis has ticks without labels
+      (when (some? text)
+        (let [^Vec2 size (text-size :tick-label text env)
+              e (extent-along size o)
+              ^Vec2 c (v/add q (v/mult o (+ gap e)))
+              box (label-box c size)]
+          (swap! widest max (* 2.0 e))
+          (when-not (some #(boxes-overlap? box %) taken)
+            (swap! labelled conj box)
+            (label/draw-at! canvas {:kind :label :role :tick-label :text text} [:center :middle] (.x c) (.y c) env)))))
     (when (some? title)
       ;; the title runs along its edge, turned to read left to right (or bottom to top)
       (let [content {:kind :label :role :axis-title :text (str title) :rotation (edge-angle along)}
             ^Vec2 c (v/add (v/mult (v/add a b) 0.5)
                            (v/mult o (title-distance tick-length gap @widest (text-size :axis-title (str title) env))))]
-        (label/draw-at! canvas content [:center :middle] (.x c) (.y c) env)))))
+        (label/draw-at! canvas content [:center :middle] (.x c) (.y c) env)))
+    @labelled))
 
 (defn- line!
   [canvas ^Vec2 a ^Vec2 b]
@@ -178,7 +225,7 @@
 (defn- face-grid-lines
   "Grid lines `[[from to] ..]` (pixel `Vec2`s) on the box face of `axis` at `side` (0 low / 1 high): for each other
   axis `k` a line across the face at each tick of `k`'s domain, paired with `k` - `[k [from to]]`."
-  [{:keys [corner]} axis side domains env]
+  [{:keys [corner]} axis side {:keys [domains levels]} env]
   (let [i (.indexOf ^java.util.List space/axes axis)
         others (remove #{i} [0 1 2])]
     (for [a others
@@ -187,7 +234,7 @@
                 [lo hi] (domains k)
                 ^Vec2 a0 (corner (assoc [0 0 0] i side))
                 edge-px (v/mag (v/sub (corner (assoc (assoc [0 0 0] i side) a 1)) a0))]
-          t (:ticks (axis-ticks k (domains k) (tick-count env k edge-px)))
+          t (:ticks (edge-ticks k (domains k) (get levels k) (tick-count env k edge-px)))
           :let [f (/ (- (double t) (double lo)) (- (double hi) (double lo)))
                 at (fn [fb] (corner (-> [0 0 0] (assoc i side) (assoc a f) (assoc b fb))))]]
       [k [(at 0.0) (at 1.0)]])))
@@ -196,10 +243,10 @@
   "Grid lines behind the data at the ticks: on the floor (low z; x and y ticks) and on the two side walls turned away
   from the viewer (the x wall at y and z ticks, the y wall at x and z ticks). Lines at x / y ticks use theme
   `[:panel :grid :x]`, lines at z ticks `[:panel :grid :y]` (`:none` - none)."
-  [canvas proj view domains env]
+  [canvas proj {:keys [view] :as frame} env]
   (let [faces (cons [:z 0] (keep (fn [axis] (some->> (space/far-side view axis) (vector axis))) [:x :y]))]
     (doseq [[axis side] faces
-            [k [from to]] (face-grid-lines proj axis side domains env)
+            [k [from to]] (face-grid-lines proj axis side frame env)
             :when (set-grid-line! canvas (get-in env [:theme :panel :grid (if (= k :z) :y :x)]))]
       (line! canvas from to))))
 
@@ -207,11 +254,11 @@
   "Draw the box frame behind the data of `proj` (see [[cljplot2.data.space3d/projector]]) in `view`: with `box?` the
   grids of the floor and the back walls (see [[draw-box-grid!]]) and the hidden box edges (dashed,
   [[hidden-edge-dash]]), so back and front read apart."
-  [canvas proj {:keys [view domains box?]} env]
+  [canvas proj {:keys [view box?] :as frame} env]
   (when box?
     (let [env (assoc env :canvas canvas)
           corner (:corner proj)]
-      (draw-box-grid! canvas proj view domains env)
+      (draw-box-grid! canvas proj frame env)
       (c2d/set-color canvas (get-in env [:theme :axis :x :line-color]))
       (c2d/set-stroke-custom canvas {:size 1.0 :cap :butt :dash (polyline/dash-pattern hidden-edge-dash)})
       (doseq [{:keys [from to]} (space/hidden-edges view)]
@@ -223,17 +270,29 @@
 
 (declare draw-frame-front!)
 
+(defn scene-frame
+  "The box of one panel's `computeds` (the computed data of each 3D chart, in chart order): the first's `:frame` with
+  its `:domains` (several 3D charts share their explicit domains), the later charts' `:frame-overrides` (their
+  explicitly set frame options, see [[cljplot2.chart.cloud/frame-overrides]]) merged over it in order - `:view` and
+  `:titles` key by key, `:titles nil` clearing them."
+  [computeds]
+  (let [{:keys [frame domains]} (first computeds)]
+    (reduce (fn [f {o :frame-overrides}]
+              (cond-> (merge f (dissoc o :view :titles))
+                (:view o) (update :view merge (:view o))
+                (contains? o :titles) (assoc :titles (when-let [t (:titles o)] (merge (:titles f) t)))))
+            (assoc frame :domains domains)
+            (rest computeds))))
+
 (defn draw-scene!
-  "Draw the 3D charts `layers` - `[[chart computed] ..]`, one panel's computed data of each (`:domains`, `:frame` -
-  the box, see [[cljplot2.chart.cloud/frame-settings]]) - in one box in a `w` x `h` panel: the frame of the first
-  layer (several 3D charts share their explicit domains), the back of the frame, the primitives of every chart
-  (`((:primitives chart) chart computed point scales env)`, `point` - data -> `[pixel depth]`) sorted far to near
-  together, then the front of the frame."
+  "Draw the 3D charts `layers` - `[[chart computed] ..]`, one panel's computed data of each (`:domains`, `:frame`,
+  `:frame-overrides`) - in one box ([[scene-frame]]) in a `w` x `h` panel: the back of the frame, the primitives of
+  every chart (`((:primitives chart) chart computed point scales env)`, `point` - data -> `[pixel depth]`) sorted far
+  to near together, then the front of the frame."
   [canvas layers [w h] scales env]
-  (let [[_ {:keys [domains frame]}] (first layers)
-        env (assoc env :canvas canvas)
-        frame (assoc frame :domains domains)
-        margin (frame-margin domains (:titles frame) (:axes? frame) [w h] env)
+  (let [env (assoc env :canvas canvas)
+        frame (scene-frame (map second layers))
+        margin (frame-margin frame [w h] env)
         proj (space/projector frame {:w w :h h :margin margin})]
     (when (pos? (double (:scale proj)))
       (draw-frame-back! canvas proj frame env)
@@ -247,9 +306,10 @@
   (draw-scene! canvas [[chart computed]] [w h] scales env))
 
 (defn draw-frame-front!
-  "Draw the box frame in front of the data of `proj`: with `box?` the visible box edges, with `axes?` the axes of
-  `domains` with `titles`."
-  [canvas proj {:keys [view domains titles box? axes?]} env]
+  "Draw the box frame in front of the data of `proj`: with `box?` the visible box edges, with `axes?` the axes of the
+  `frame` (`:domains`, `:levels`, `:titles`), x, y, z in turn - a tick label overlapping an earlier axis's label
+  left out."
+  [canvas proj {:keys [view box? axes?] :as frame} env]
   (let [env (assoc env :canvas canvas)
         corner (:corner proj)]
     (when box?
@@ -258,7 +318,9 @@
       (doseq [{:keys [from to]} (space/visible-edges view)]
         (line! canvas (corner from) (corner to))))
     (when axes?
-      (doseq [[k {:keys [from to] :as edge}] (space/axis-edges view corner)
-              ;; an edge seen end-on (z from straight above) has no room for an axis
-              :when (>= (v/mag (v/sub (corner to) (corner from))) min-axis-length)]
-        (draw-axis! canvas k edge proj (domains k) (get titles k) env)))))
+      (reduce (fn [taken [k {:keys [from to] :as edge}]]
+                ;; an edge seen end-on (z from straight above) has no room for an axis
+                (if (>= (v/mag (v/sub (corner to) (corner from))) min-axis-length)
+                  (into taken (draw-axis! canvas k edge proj frame taken env))
+                  taken))
+              [] (space/axis-edges view corner)))))

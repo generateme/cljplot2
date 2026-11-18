@@ -7,21 +7,23 @@
 
   * gridded (default) - mapped `:x`, `:y`, `:z` on a full lattice (every distinct x with every distinct y, once; see
     [[cljplot2.data.field/lattice-values]], errors keyed `:z`): a node per row
-  * `:f` - a function of `x`, `y` returning `z`, or `[z c]` (`c` - the node's color value), sampled on a regular grid
-    of `:n` (default 30, or `[nx ny]`) points per axis over `:domain` `:x` / `:y` (required)
+  * `:f` - a function of a point `[x y]` returning its height `z`, or `[z c]` (height and color value `c`), sampled on a
+    regular grid of `:n` (default 30, or `[nx ny]`) points per axis over `:domain` `:x` / `:y` (required)
   * `:density true` - the 2D kernel density of mapped `:x`, `:y` (see [[cljplot2.data.field/density]], default
-    bandwidths), sampled as `:f` over the panels' density domains (or the explicit x / y domain)
-  * `:fu` - a parametric surface: a function of `u`, `v` returning `[x y z]`, sampled on `:n` points over the ranges
+    bandwidths) over the points' range widened by `:cut` bandwidths (default 3; 0 - the range), sampled as `:f` over
+    the panels' density domains (or the explicit x / y domain)
+  * `:fu` - a parametric surface: a function of `[u v]` returning `[x y z]`, sampled on `:n` points over the ranges
     `:u [lo hi]`, `:v [lo hi]` (both required with `:fu`, refused without it)
 
   Nodes with a non-finite coordinate, or outside an explicit `:domain`, are left out with every quad they touch.
-  Domains: explicit or the nodes' over all panels. Facets: a mesh per panel (gridded / density - the panel's rows; a
+  Domains: explicit or the nodes' over all panels, made nice ([[cljplot2.data.space3d/nice-domain]]). Facets: a mesh per panel (gridded / density - the panel's rows; a
   function - the same in every panel), domains shared.
 
   Colors: by default each quad's mean height (or `c` of `[z c]`) through the plot's color scale - a computed color
   with a color bar titled by the `:z` accessor's name (\"Density\" for a density, none for a function); option
   `:color` - one color for all quads (no color scale). A quad whose value is outside an explicit color domain isn't
-  drawn.
+  drawn. The computed color is the plot's color scale: another chart of the plot (e.g. a cloud over the surface)
+  can't map `:color` then - give the surface a fixed `:color`.
 
   Options (style defaults from theme `[:chart :surface]`: `:stroke-color`, `:stroke-width`):
 
@@ -68,10 +70,12 @@
                        (schema/optional :fu schema/function)
                        (schema/optional :u range-schema)
                        (schema/optional :v range-schema)
-                       (schema/optional :n field/n-schema)))
+                       (schema/optional :n field/n-schema)
+                       (schema/optional :cut [:and schema/finite [:>= 0]])))
              [#(when (> (count (filter % [:f :fu :density])) 1) "a surface takes one source: :f, :fu or :density true") nil]
              [#(when (and (:fu %) (not (and (:u %) (:v %)))) "a parametric surface needs :u and :v ranges") [:fu]]
-             [#(when (and (or (:u %) (:v %)) (not (:fu %))) ":u and :v are the ranges of a parametric :fu") [:u]])
+             [#(when (and (or (:u %) (:v %)) (not (:fu %))) ":u and :v are the ranges of a parametric :fu") [:u]]
+             [#(when (and (some? (:cut %)) (not (:density %))) ":cut widens a :density surface") [:cut]])
    :mapping [:maybe [:map]]})
 
 (defn source-kind
@@ -119,16 +123,17 @@
   (if (sequential? r) (let [[z c] r] [x y z c]) [x y r]))
 
 (defn function-mesh
-  "Mesh (see [[mesh]]) of the height function `f` (`z` or `[z c]`) over `[[x0 x1] [y0 y1]]` at `[nx ny]` points."
+  "Mesh (see [[mesh]]) of the height function `f` of a point `[x y]` (`z` or `[z c]`) over `[[x0 x1] [y0 y1]]` at
+  `[nx ny]` points."
   [f [xd yd] [nx ny]]
   (let [xs (axis-values xd nx) ys (axis-values yd ny)]
-    (mesh nx ny (fn [i j] (let [x (xs i) y (ys j)] (height-node x y (f x y)))))))
+    (mesh nx ny (fn [i j] (let [x (xs i) y (ys j)] (height-node x y (f [x y])))))))
 
 (defn parametric-mesh
-  "Mesh of the parametric function `fu` (`[x y z]` of `u`, `v`) over the ranges `u`, `v` at `[nu nv]` points."
+  "Mesh of the parametric function `fu` (`[x y z]` of a point `[u v]`) over the ranges `u`, `v` at `[nu nv]` points."
   [fu u v [nu nv]]
   (let [us (axis-values u nu) vs (axis-values v nv)]
-    (mesh nu nv (fn [i j] (let [r (fu (us i) (vs j))] (when (sequential? r) r))))))
+    (mesh nu nv (fn [i j] (let [r (fu [(us i) (vs j)])] (when (sequential? r) r))))))
 
 (defn gridded-mesh
   "Mesh of the gridded `rows` (accessors of `mapping` `:x`, `:y`, `:z`): a node per lattice point."
@@ -138,13 +143,15 @@
     (mesh (count xs) (count ys) (fn [i j] [(xs i) (ys j) (get-in vss [i j])]))))
 
 (defn- points-density
-  "`{:f :domain}` - the 2D KDE of the finite `:x`, `:y` of `rows` (see [[cljplot2.data.field/density]]); `nil` without
-  points."
-  [rows mapping]
+  "`{:f :domain}` - the 2D KDE of the finite `:x`, `:y` of `rows` (see [[cljplot2.data.field/density]], widened by
+  `cut` bandwidths), `f` a function of `[x y]`; `nil` without points."
+  [rows mapping cut]
   (let [x-of (data/row-accessor :x (:x mapping)) y-of (data/row-accessor :y (:y mapping))
         pts (filterv (fn [[x y]] (and (finite-number? x) (finite-number? y))) (map (juxt x-of y-of) rows))]
     (when (seq pts)
-      (field/density (map first pts) (map second pts) {} [(scale/stat-transform nil) (scale/stat-transform nil)]))))
+      (let [{:keys [f domain]} (field/density (map first pts) (map second pts) {:cut cut}
+                                              [(scale/stat-transform nil) (scale/stat-transform nil)])]
+        {:f (fn [[x y]] (f x y)) :domain domain}))))
 
 (defn- grid-size [n] (field/grid-size (or n 30)))
 
@@ -166,7 +173,7 @@
                   (let [m (function-mesh (:f options) [x y] size)] (update-vals groups (constantly m))))
       :parametric (let [m (parametric-mesh (:fu options) (:u options) (:v options) size)] (update-vals groups (constantly m)))
       :gridded (into {} (keep (fn [[panel rows]] (when (seq rows) [panel (gridded-mesh rows mapping)]))) groups)
-      :density (let [fields (into {} (keep (fn [[panel rows]] (some->> (points-density rows mapping) (vector panel)))) groups)
+      :density (let [fields (into {} (keep (fn [[panel rows]] (some->> (points-density rows mapping (:cut options)) (vector panel)))) groups)
                      xy (explicit-xy domain (field/union-domain (map :domain (vals fields))))]
                  (update-vals fields (fn [{:keys [f]}] (function-mesh f xy size)))))))
 
@@ -205,10 +212,11 @@
         nodes (mapcat #(remove nil? (:nodes %)) (vals meshes))
         domains (into {} (map-indexed (fn [i k] [k (or (get explicit k) (space/data-domain (map #(% i) nodes) 0.0))]) space/axes))
         frame (cond-> (cloud/frame-settings options mapping)
-                (and (= kind :density) (nil? (:axis-titles options))) (assoc-in [:titles :z] "Density"))
+                (and (= kind :density) (not (contains? options :axis-titles))) (assoc-in [:titles :z] "Density"))
         st (style options theme)
         colored? (nil? (:color options))]
-    {:data (update-vals meshes (fn [mesh] {:mesh mesh :domains domains :frame frame :style st}))
+    {:data (update-vals meshes (fn [mesh] {:mesh mesh :domains domains :frame frame
+                                           :frame-overrides (cloud/frame-overrides options) :style st}))
      :extents (update-vals meshes (fn [{:keys [tones]}]
                                     (let [ts (remove m/nan? tones)]
                                       (if (and colored? (seq ts))

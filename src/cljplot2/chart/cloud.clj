@@ -2,14 +2,17 @@
   "Cloud: a 3D scatter of rows at their mapped (x, y, z) in a box projected onto the panel (see
   [[cljplot2.data.space3d]]; a chart laying out its own panel: no x / y axes - the box carries three axes).
 
-  Mapping: `:x`, `:y`, `:z` (numbers - other values, or no `:z` without `:bins`, throw `ex-info {:key :mapping}`);
-  aesthetics `:color`, `:size`, `:shape` as in [[cljplot2.chart.scatter]] (scales, legends, NA). Rows with a non-finite coordinate, or a coordinate outside an explicit `:domain`, are
+  Mapping: `:x`, `:y`, `:z` - numbers (`:z` other values, or no `:z` without `:bins`, throw `ex-info {:key
+  :mapping}`); `:x` / `:y` may be categorical - text, keywords, intervals, or numbers marked
+  [[cljplot2.data.levels/categorical]] (levels as in [[axis-levels]], level i at position i + 1, domain `[0.5 n +
+  0.5]`, a tick per level; no explicit `:domain` - `{:key :domain}`, no `:bins` - `{:key :bins}`); aesthetics
+  `:color`, `:size`, `:shape` as in [[cljplot2.chart.scatter]] (scales, legends, NA). Rows with a non-finite coordinate, or a coordinate outside an explicit `:domain`, are
   dropped and counted (`:dropped {:x n :y n :z n ..}`).
 
   Options (point style defaults from theme `[:chart :cloud]`: `:size`, `:color`, `:stroke-color`, `:stroke-width`,
   `:shape`):
 
-  * `:type` - `:points` (default), `:spikes` (a line from z = `:base` - default the low z limit - to each point, width
+  * `:type` - `:points` (default), `:none` (no marks - only `:projections`), `:spikes` (a line from z = `:base` - default the low z limit - to each point, width
     `:stroke-width`, lattice `type = \"h\"`) or `:bars` (a box per row from `:base` to z, `:bar-size [fx fy]` (default
     `[0.8 0.8]`) of the x / y resolution - the smallest gap between distinct values; faces shaded, outlined by
     `:stroke-color`)
@@ -17,9 +20,10 @@
   * `:box` (default true - the box: hidden edges dashed and a floor grid behind the data, visible edges over it), `:axes` (default true - ticks, labels and titles), `:axis-titles
     {:x t :y t :z t}` (default the mapped column names; `nil` - none)
   * `:domain {:x [lo hi] :y .. :z ..}` - explicit data domains (each optional); otherwise the data's over all panels
-    (bars widen x / y by half a bar). Several 3D charts in one plot need every domain explicit, so their boxes match;
-    they're drawn in one box (the first chart's frame), all their marks sorted by depth together. `:base` is kept
-    within an explicit z domain.
+    (bars widen x / y by half a bar), made nice ([[cljplot2.data.space3d/nice-domain]]). Several 3D charts in one plot
+    need every domain explicit, so their boxes match; they're drawn in one box - the first chart's frame with the
+    frame options the later charts set merged over it (see [[cljplot2.graphics.space3d/scene-frame]]) - all their
+    marks sorted by depth together. `:base` is kept within an explicit z domain.
   * `:projections {:xy k :xz k :yz k}` (each optional) - side projections of the panel's points on the far wall of
     each plane (the wall across the third axis turned away from the viewer; none on a wall seen edge-on), drawn
     before the cloud: `k` - `:points` (each point faded), `:density` (bands of the points' 2D kernel density at
@@ -37,6 +41,7 @@
             [fastmath.vector :as v]
             [cljplot2.chart.scatter :as scatter]
             [cljplot2.chart.tile :as tile]
+            [cljplot2.data.accessor :as accessor]
             [cljplot2.data.contour :as contour]
             [cljplot2.data.field :as field]
             [cljplot2.data.rows :as data]
@@ -72,7 +77,7 @@
                  (into scatter/style-entries)
                  (into data/common-options)
                  (into frame-options)
-                 (conj (schema/optional :type [:enum :points :spikes :bars])
+                 (conj (schema/optional :type [:enum :points :spikes :bars :none])
                        (schema/optional :base schema/finite)
                        (schema/optional :bar-size [:tuple schema/fraction schema/fraction])
                        (schema/optional :projections [:map {:closed true}
@@ -98,8 +103,43 @@
    :aspect (or (:aspect options) [1.0 1.0 1.0])
    :box? (not (false? (:box options)))
    :axes? (not (false? (:axes options)))
-   :titles (or (:axis-titles options)
-               (into {} (keep (fn [k] (let [a (get mapping k)] (when (keyword? a) [k (name a)])))) position-dims))})
+   :titles (if (contains? options :axis-titles)
+             (:axis-titles options)
+             (into {} (keep (fn [k] (let [a (accessor/unwrap (get mapping k))] (when (keyword? a) [k (name a)])))) position-dims))})
+
+(defn frame-overrides
+  "The frame settings a 3D chart's `options` set explicitly (keys of [[frame-settings]]; `:view` as given, `:titles`
+  from `:axis-titles`): a later chart's are merged over the first chart's frame of a scene, see
+  [[cljplot2.graphics.space3d/scene-frame]]."
+  [options]
+  (cond-> {}
+    (:view options) (assoc :view (:view options))
+    (:aspect options) (assoc :aspect (:aspect options))
+    (some? (:box options)) (assoc :box? (:box options))
+    (some? (:axes options)) (assoc :axes? (:axes options))
+    (contains? options :axis-titles) (assoc :titles (:axis-titles options))))
+
+(defn axis-levels
+  "Levels of the position axis `k` (`:x` / `:y`) from its values `vs` over every panel (`nil`s ignored): `nil` for
+  numbers (a numeric axis) unless `accessor` is marked categorical ([[cljplot2.data.levels/categorical]]) - then the
+  distinct numbers sorted; other values distinct in first-appearance order, sorted when they have a natural order
+  (intervals, see [[cljplot2.data.rows/extent]]). Numbers mixed with other values throw `ex-info {:key :mapping}`."
+  [k accessor vs]
+  (let [vs (remove nil? vs)
+        numbers (filter number? vs)]
+    (cond
+      (accessor/categorical? accessor) (data/sorted-levels k vs :mapping)
+      (= (count numbers) (count vs)) nil
+      (seq numbers) (schema/fail! (str "3D coordinates of " k " must be all numbers or all categories.")
+                                  {:key :mapping :in [:mapping k] :value (first numbers)})
+      :else (:values (data/extent k vs)))))
+
+(defn- level-positions
+  "Rows of values `vs` (`[x y ..]`) with the levels of each categorical axis (`levels` - `{k [level ..]}`, `k` at
+  index `(index-of k)`) replaced by their positions 1, 2, .. (`nil` stays `nil`)."
+  [vs levels index-of]
+  (let [positions (update-vals levels (fn [ls] (zipmap ls (map #(double (inc (long %))) (range)))))]
+    (mapv (fn [row] (reduce (fn [row [k ps]] (let [i (index-of k)] (assoc row i (some-> (row i) ps)))) row positions)) vs)))
 
 (defn- check-mapping!
   "Throw `ex-info {:key :mapping}` for a cloud without a mapped `:z` (unless `bins`), `{:key :bins}` for `bins` with a
@@ -141,12 +181,12 @@
 
 (defn- plane-density
   "Grid (see [[cljplot2.data.field/sample]]) of the 2D kernel density of a panel's `points` on the axes `a`, `b`,
-  sampled over their box `domains`; `nil` for fewer than 2 points or points giving no density (e.g. all on a line)."
+  sampled over their box `domains`; `nil` without 2 distinct values on each axis (no spread to estimate a bandwidth
+  from)."
   [points domains [a b]]
-  (when (>= (count (points a)) 2)
-    (try (let [{:keys [f]} (field/density (points a) (points b) {} [(scale/stat-transform nil) (scale/stat-transform nil)])]
-           (field/sample f [(domains a) (domains b)] [projection-grid projection-grid]))
-         (catch clojure.lang.ExceptionInfo _ nil))))
+  (when (and (>= (count (distinct (points a))) 2) (>= (count (distinct (points b))) 2))
+    (let [{:keys [f]} (field/density (points a) (points b) {} [(scale/stat-transform nil) (scale/stat-transform nil)])]
+      (field/sample f [(domains a) (domains b)] [projection-grid projection-grid]))))
 
 (defn projection-layers
   "`{panel {plane {:kind k :grid g :levels [..]}}}` of the side `projections` (`{plane kind}`) of each panel's kept
@@ -176,6 +216,16 @@
         dims (into positions (aesthetic/mapped-dims mapping))
         accessors (mapv #(data/row-accessor % (mapping %)) dims)
         values (update-vals groups (fn [rows] (mapv (fn [row] (mapv #(% row) accessors)) rows)))
+        levels (into {} (keep (fn [[i k]] (when (#{:x :y} k)
+                                            (some->> (axis-levels k (mapping k) (mapcat #(map (fn [vs] (vs i)) %) (vals values)))
+                                                     (vector k)))))
+                     (map-indexed vector positions))
+        _ (when (and bins (seq levels))
+            (schema/fail! ":bins counts numeric x / y; an axis is categorical." {:key :bins :value (vec (keys levels))}))
+        _ (doseq [k (keys levels) :when (get explicit k)]
+            (schema/fail! (str "A categorical " k " axis has no explicit :domain (its levels are its domain).")
+                          {:key :domain :in [:domain k] :value (get explicit k)}))
+        values (if (seq levels) (update-vals values #(level-positions % levels {:x 0 :y 1})) values)
         all-values (apply concat (vals values))
         _ (doseq [[i k] (map-indexed vector positions)
                   :let [bad (first (remove #(or (nil? %) (number? %)) (map #(% i) all-values)))]
@@ -208,15 +258,17 @@
         base (double (or (:base options) (cond z-limits (first z-limits) bins 0.0 (seq z-values) (reduce min z-values) :else 0.0)))
         ;; spikes and bars stay inside an explicit z domain
         base (if z-limits (m/constrain base (double (first z-limits)) (double (second z-limits))) base)
-        domains {:x (or (:x explicit) (:x bin-domains) (space/data-domain (coords :x) (double (half :x))))
-                 :y (or (:y explicit) (:y bin-domains) (space/data-domain (coords :y) (double (half :y))))
-                 :z (or (:z explicit) (space/data-domain (cond-> (vec z-values) (and (seq z-values) (not= type :points)) (conj base)) 0.0))}
+        level-domain (fn [k] (when-let [ls (levels k)] [0.5 (+ 0.5 (count ls))]))
+        domains {:x (or (:x explicit) (:x bin-domains) (level-domain :x) (space/data-domain (coords :x) (double (half :x))))
+                 :y (or (:y explicit) (:y bin-domains) (level-domain :y) (space/data-domain (coords :y) (double (half :y))))
+                 :z (or (:z explicit) (space/data-domain (cond-> (vec z-values) (and (seq z-values) (#{:spikes :bars} type)) (conj base)) 0.0))}
         frame (cond-> (frame-settings options mapping)
-                (and bins (nil? (:axis-titles options))) (assoc-in [:titles :z] "Count"))
+                (and bins (not (contains? options :axis-titles))) (assoc-in [:titles :z] "Count")
+                (seq levels) (assoc :levels levels))
         layers (when-let [projections (not-empty (:projections options))] (projection-layers projections points domains))]
     {:data (into {} (map (fn [[panel p]]
-                           [panel (cond-> {:points p :domains domains :frame frame :style st :type type :base base
-                                           :half [(half :x) (half :y)]}
+                           [panel (cond-> {:points p :domains domains :frame frame :frame-overrides (frame-overrides options)
+                                           :style st :type type :base base :half [(half :x) (half :y)]}
                                     layers (assoc :projections (layers panel)))]))
                  points)
      :extents (update-vals points (fn [p] (into {} (map (fn [k] [k (aesthetic/value-extent k (get plot-scales k) (remove nil? (p k)))]))
@@ -265,6 +317,7 @@
                       [px depth] (point p)]
                   (case type
                     :points [{:kind :point :at px :depth depth :style st}]
+                    :none nil
                     ;; a spike sorts by where it stands, as a bar
                     :spikes (let [[b bd] (point [(x i) (y i) base])]
                               [{:kind :line :from b :to px :depth bd :color (:color st) :width (:stroke-width st)}])

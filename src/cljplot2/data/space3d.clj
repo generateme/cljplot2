@@ -13,6 +13,7 @@
   (:require [clojure2d.color :as c]
             [fastmath.core :as m]
             [fastmath.vector :as v]
+            [cljplot2.scale.position :as scale]
             [cljplot2.schema :as schema])
   (:import [fastmath.vector Vec3]))
 
@@ -49,13 +50,23 @@
   (let [lo (double lo) hi (double hi)]
     (if (< lo hi) [lo hi] [(- lo 0.5) (+ hi 0.5)])))
 
+(def ^:const nice-ticks
+  "Tick count a data-derived domain is made nice for (see [[data-domain]])."
+  5)
+
+(defn nice-domain
+  "`[lo hi]` (`lo` < `hi`) extended to the nearest ticks of about [[nice-ticks]] ticks over it (no extension limit),
+  so its ends can be labelled."
+  [[lo hi]]
+  (:domain (scale/finalize (scale/scale-spec :x {:domain [lo hi] :nice 1.0}) [0.0 1.0] nice-ticks)))
+
 (defn data-domain
-  "Domain of the numbers `vs` widened by `reach` on both sides (a single value widened, see [[widen]]); `[0 1]`
-  without values."
+  "Domain of the numbers `vs` widened by `reach` on both sides (a single value widened, see [[widen]]), made nice
+  ([[nice-domain]]); `[0 1]` without values."
   [vs ^double reach]
   (if (seq vs)
     (let [[lo hi] (widen [(reduce min vs) (reduce max vs)])]
-      [(- (double lo) reach) (+ (double hi) reach)])
+      (nice-domain [(- (double lo) reach) (+ (double hi) reach)]))
     [0.0 1.0]))
 
 (defn in-domain?

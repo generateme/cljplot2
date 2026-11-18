@@ -1,12 +1,14 @@
 (ns cljplot2.demo.lattice-3d
   "Lattice cycle 3 demo (3D): clouds - LMDVR Fig 6.1 (quakes by magnitude), Fig 6.3 (one cloud from four views), Fig
-  6.4 (spikes), Fig 6.15 (3D bars), side projections, a 2D histogram; surfaces - Fig 6.8 (faceted model surfaces),
-  Fig 6.11c / 13.7 (a shaded wireframe), Fig 6.18 (a parametric surface), a density surface and a cloud over a
-  fitted plane; on the datasets of `notebooks/data` and synthetic functions."
+  6.4 (spikes), Fig 6.15 (3D bars on categorical axes), side projections (also without the cloud), a 2D histogram;
+  surfaces - Fig 6.8 (faceted model surfaces), Fig 6.11c / 13.7 (a shaded wireframe), Fig 6.18 (a parametric
+  surface), height and color from one function, a density surface and a cloud over a fitted plane; on the datasets
+  of `notebooks/data` and synthetic functions."
   (:require [fastmath.core :as m]
             [fastmath.ml.regression :as regression]
             [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
+            [cljplot2.data.levels :as levels]
             [cljplot2.data.shingle :as shingle]
             [cljplot2.demo.data :as data]))
 
@@ -57,14 +59,24 @@
   (mapv (fn [row] {:score (parse-long (:score row)) :gender (:gender row) :gcsescore (parse-double (:gcsescore row))})
         (data/csv-rows "chem97.csv")))
 
+(def ^:private chem97-table
+  "Chem97 counts by A-level score, GCSE score decile (intervals, see [[cljplot2.data.levels/bin]]) and gender - every
+  combination, zeros included (R's `as.data.frame(xtabs(~ score + gcd + gender))`)."
+  (let [binned (levels/bin chem97 :gcsescore {:as :gcd :bins {:quantiles 10}})
+        counts (frequencies (map (juxt :score :gcd :gender) binned))]
+    (for [gender (sort (distinct (map :gender binned)))
+          score (sort (distinct (map :score binned)))
+          gcd (sort (distinct (map :gcd binned)))]
+      {:score score :gcd gcd :gender gender :count (get counts [score gcd gender] 0)})))
+
 (def fig-6-15
-  "Fig 6.15: Chem97 counts of A-level score by rounded GCSE score as 3D bars, a panel per gender."
-  {:data (for [[[score gcd gender] n] (frequencies (map (juxt :score #(m/round (double (:gcsescore %))) :gender) chem97))]
-           {:score score :gcd gcd :gender gender :count n})
-   :mapping {:x :score :y :gcd :z :count :facet :gender}
+  "Fig 6.15: Chem97 counts of A-level score by GCSE score decile as 3D bars on categorical axes (6 x 10 per panel), a
+  panel per gender."
+  {:data chem97-table
+   :mapping {:x (levels/categorical :score) :y :gcd :z :count :facet :gender}
    :charts [(chart/cloud {:type :bars :base 0 :color [150 190 230] :stroke-color [60 60 60] :stroke-width 1
                           :view {:azimuth 220 :elevation 42} :aspect [1 1.5 0.8]
-                          :axis-titles {:x "A-level score" :y "GCSE score" :z "Count"}})]
+                          :axis-titles {:x "A-level score" :y "GCSE score decile" :z "Count"}})]
    :facets {:columns 2}})
 
 (def projections
@@ -77,6 +89,15 @@
                           :axis-titles {:x "Longitude" :y "Latitude" :z "Depth"}})]
    :labels {:title "Side projections"}})
 
+(def projections-only
+  "Side projections without the cloud (`:type :none`): the quakes' density bands on all three walls."
+  {:data quakes
+   :mapping {:x :long :y :lat :z :depth}
+   :charts [(chart/cloud {:type :none :domain {:z [690 40]} :view {:azimuth 40 :elevation 25}
+                          :projections {:xy :density :xz :density :yz :density}
+                          :axis-titles {:x "Longitude" :y "Latitude" :z "Depth"}})]
+   :labels {:title "Projections only"}})
+
 (def histogram-2d
   "A 2D histogram: quakes counted on a 12 x 12 longitude-latitude grid, the counts as 3D bars."
   {:data quakes
@@ -87,23 +108,23 @@
 
 (def ^:private models
   "Synthetic model surfaces over [-2 2]^2 (Fig 6.8 shows four fitted models of one response)."
-  {"plane" (fn [x y] (+ (* 0.3 x) (* 0.2 y)))
-   "saddle" (fn [x y] (* 0.25 (- (* x x) (* y y))))
-   "bump" (fn [x y] (m/exp (- (* 0.8 (+ (* x x) (* y y))))))
-   "ripple" (fn [x y] (* 0.6 (m/sin (* 1.5 x)) (m/cos (* 1.5 y))))})
+  {"plane" (fn [[x y]] (+ (* 0.3 x) (* 0.2 y)))
+   "saddle" (fn [[x y]] (* 0.25 (- (* x x) (* y y))))
+   "bump" (fn [[x y]] (m/exp (- (* 0.8 (+ (* x x) (* y y))))))
+   "ripple" (fn [[x y]] (* 0.6 (m/sin (* 1.5 x)) (m/cos (* 1.5 y))))})
 
 (def fig-6-8
   "Fig 6.8 (synthetic): four model surfaces on one gridded table, a panel per model, one z domain; colored by height."
   {:data (for [[model f] models x (range -2.0 2.01 0.25) y (range -2.0 2.01 0.25)]
-           {:model model :x x :y y :z (f x y)})
+           {:model model :x x :y y :z (f [x y])})
    :mapping {:x :x :y :y :z :z :facet :model}
    :charts [(chart/surface {:style :both :view {:azimuth 35 :elevation 30}})]
    :facets {:columns 2}
    :scales {:color {:range [[40 90 160] [250 250 250] [190 60 40]]}}})
 
 (defn- volcano
-  "A volcano-like height: a ring ridge with a crater, a little east-west asymmetry."
-  [x y]
+  "A volcano-like height at `[x y]`: a ring ridge with a crater, a little east-west asymmetry."
+  [[x y]]
   (let [r (m/hypot x y)]
     (+ (* 1.2 (m/exp (- (/ (m/sq (- r 1.0)) 0.18)))) (* -0.5 (m/exp (- (/ (* r r) 0.08)))) (* 0.15 x (m/exp (- (* r r)))))))
 
@@ -115,10 +136,18 @@
 
 (def fig-6-18
   "Fig 6.18: a parametric surface - a torus from u, v angles, colored by height."
-  {:charts [(chart/surface {:fu (fn [u v] [(* (+ 2.0 (m/cos v)) (m/cos u)) (* (+ 2.0 (m/cos v)) (m/sin u)) (m/sin v)])
+  {:charts [(chart/surface {:fu (fn [[u v]] [(* (+ 2.0 (m/cos v)) (m/cos u)) (* (+ 2.0 (m/cos v)) (m/sin u)) (m/sin v)])
                             :u [0.0 m/TWO_PI] :v [0.0 m/TWO_PI] :n [48 24] :aspect [1 1 0.34] :view {:azimuth 30 :elevation 40}})]
    :scales {:color {:range [[40 70 140] [120 190 200] [250 240 200]]}}
    :labels {:title "Torus"}})
+
+(def height-and-color
+  "A function giving height and color value `[z c]`: ripples by the distance from the centre, colored by x·y (a
+  quad's color is its corners' mean - the color value should be continuous)."
+  {:charts [(chart/surface {:f (fn [[x y]] [(m/cos (* 2.0 (m/hypot x y))) (* x y)])
+                            :domain {:x [-3 3] :y [-3 3]} :n 40 :aspect [1 1 0.4] :view {:azimuth 30 :elevation 40}})]
+   :scales {:color {:range [[40 90 160] [245 245 235] [190 60 40]] :title "x·y"}}
+   :labels {:title "Height and color from one function"}})
 
 (def density-surface
   "The 2D kernel density of the quakes' locations as a surface."
@@ -139,7 +168,7 @@
     {:data quakes
      :mapping {:x :long :y :lat :z :depth}
      ;; the first 3D chart's frame (view, titles) is the box's
-     :charts [(chart/surface {:f (fn [x y] (slab [x y])) :domain domain :n 12 :color [200 200 200 160] :shade false
+     :charts [(chart/surface {:f #(slab %) :domain domain :n 12 :color [200 200 200 160] :shade false
                               :style :both :stroke-color [120 120 120] :view {:azimuth 50 :elevation 15}
                               :axis-titles {:x "Longitude" :y "Latitude" :z "Depth"}})
               (chart/cloud {:domain domain :size 2 :color [180 40 40 200]})]
@@ -150,12 +179,14 @@
   [["fig-6-1-quakes-800x700.png" fig-6-1 {:width 800 :height 700}]
    ["fig-6-3-views-800x700.png" fig-6-3 {:width 800 :height 700}]
    ["fig-6-4-spikes-600x500.png" fig-6-4 {:width 600 :height 500}]
-   ["fig-6-15-bars-900x450.png" fig-6-15 {:width 900 :height 450}]
+   ["fig-6-15-bars-1000x550.png" fig-6-15 {:width 1000 :height 550}]
    ["groups-700x550.png" groups {:width 700 :height 550}]
    ["projections-700x600.png" projections {:width 700 :height 600}]
+   ["projections-only-700x600.png" projections-only {:width 700 :height 600}]
    ["histogram-2d-700x600.png" histogram-2d {:width 700 :height 600}]
    ["fig-6-8-models-800x700.png" fig-6-8 {:width 800 :height 700}]
    ["fig-6-11c-volcano-700x550.png" fig-6-11c {:width 700 :height 550}]
    ["fig-6-18-torus-700x550.png" fig-6-18 {:width 700 :height 550}]
+   ["height-and-color-700x550.png" height-and-color {:width 700 :height 550}]
    ["density-surface-700x600.png" density-surface {:width 700 :height 600}]
    ["cloud-over-surface-700x600.png" cloud-over-surface {:width 700 :height 600}]])

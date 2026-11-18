@@ -1187,10 +1187,12 @@
 
 (defn- resolve-scale-types
   "Plot `scales` with every declared `:type` resolved to a kind (see [[type-kind]]); a categorical mapping marker
-  (`cljplot2.data.levels/categorical`) in any of the charts' `mappings` declares its dimension's scale categorical.
-  Throws `ex-info {:key :type}` for a marker on a dimension declared `:type :numeric`."
-  [scales mappings]
-  (let [scale-dim? #(or (position-scales %) (aesthetic/dim? %) (contains? facet/facet-keys %))
+  (`cljplot2.data.levels/categorical`) in any of the charts' `mappings` declares its dimension's scale categorical -
+  except a position marker in a plot of 3D charts (`three-d?`: no position scales; the charts read the marker, see
+  [[cljplot2.chart.cloud/axis-levels]]). Throws `ex-info {:key :type}` for a marker on a dimension declared `:type
+  :numeric`."
+  [scales mappings three-d?]
+  (let [scale-dim? #(or (and (position-scales %) (not three-d?)) (aesthetic/dim? %) (contains? facet/facet-keys %))
         marked (set (for [m mappings [k acc] m :when (and (scale-dim? k) (accessor/categorical? acc))] k))]
     (reduce (fn [acc k]
               (let [spec (get scales k {})
@@ -1223,5 +1225,5 @@
      (validate! plot theme (cond-> render-options (contains? options :until) (assoc :until (:until options))))
      (reduce (fn [plot stage] ((stage-fns stage) plot))
              (assoc plot :options render-options :theme theme
-                    :scales (resolve-scale-types (:scales plot) (merged-mappings plot)))
+                    :scales (resolve-scale-types (:scales plot) (merged-mappings plot) (boolean (some three-d? (:charts plot)))))
              (take (inc (.indexOf ^java.util.List stage-order (get options :until (peek stage-order)))) stage-order)))))

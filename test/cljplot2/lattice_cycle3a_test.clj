@@ -143,7 +143,7 @@
   (testing "2.2 bars widen x / y by half a bar and reach the base"
     (let [cp (get-in (built {:data cube :mapping {:x :x :y :y :z :z} :charts [(chart/cloud {:type :bars :base -1})]})
                      [:stats 0 :data :panel])]
-      (is (= [-0.4 1.4] (:x (:domains cp))))
+      (is (= [-0.5 1.5] (:x (:domains cp))) "[-0.4 1.4] made nice (cycle 3b)")
       (is (= [-1.0 1.0] (:z (:domains cp))))))
   (testing "2.3 facets share the domains"
     (let [b (built {:data cube :mapping {:x :x :y :y :z :z :facet :g} :charts [(chart/cloud)]})
@@ -192,15 +192,15 @@
         env {:theme cljplot2.theme/default-theme}
         draw (fn [f] (lines-in #(let [cv (c2d/canvas 400 300)] (c2d/with-canvas [c cv] (f c proj frame env)))))]
     (testing "U1 / U2 / V3 behind the data: grids of the floor and the two back walls, the 3 hidden edges"
-      (let [grid (fn [axis side] (count (#'space-draw/face-grid-lines proj axis side (:domains frame) (assoc env :canvas (c2d/canvas 10 10)))))
+      (let [grid (fn [axis side] (count (#'space-draw/face-grid-lines proj axis side frame (assoc env :canvas (c2d/canvas 10 10)))))
             back-x (space/far-side space/default-view :x)
             back-y (space/far-side space/default-view :y)
             back (draw space-draw/draw-frame-back!)]
         (is (some? back-x))
         (is (some? back-y))
         (is (= (+ 3 (grid :z 0) (grid :x back-x) (grid :y back-y)) (count back)))
-        (is (= #{:x :y} (set (map first (#'space-draw/face-grid-lines proj :z 0 (:domains frame) (assoc env :canvas (c2d/canvas 10 10)))))))
-        (is (= #{:y :z} (set (map first (#'space-draw/face-grid-lines proj :x back-x (:domains frame) (assoc env :canvas (c2d/canvas 10 10)))))))
+        (is (= #{:x :y} (set (map first (#'space-draw/face-grid-lines proj :z 0 frame (assoc env :canvas (c2d/canvas 10 10)))))))
+        (is (= #{:y :z} (set (map first (#'space-draw/face-grid-lines proj :x back-x frame (assoc env :canvas (c2d/canvas 10 10)))))))
         (is (empty? (draw (fn [c p f e] (space-draw/draw-frame-back! c p (assoc f :box? false) e)))))))
     (testing "U1 in front: the 9 visible edges (plus axis lines and ticks)"
       (is (>= (count (draw space-draw/draw-frame-front!)) 9))))
@@ -292,8 +292,8 @@
       (is (= (outline (proj 20 [1 1.3 0.8])) (outline (proj 380 [1 1.3 0.8])) (outline (proj -340 [1 1.3 0.8])))))))
 
 (deftest review4-fixes-test
-  (testing "Z1 text coordinates throw {:key :mapping}; nil and NaN are dropped and counted"
-    (is (= :mapping (:key (error #(built {:data [{:x "a" :y 1 :z 2}] :mapping {:x :x :y :y :z :z} :charts [(chart/cloud)]})))))
+  (testing "Z1 text z throws {:key :mapping} (text x / y - categorical axes, cycle 3b); nil and NaN are dropped and counted"
+    (is (= :mapping (:key (error #(built {:data [{:x 1 :y 1 :z "a"}] :mapping {:x :x :y :y :z :z} :charts [(chart/cloud)]})))))
     (is (= :mapping (:key (error #(built {:data [{:x 1 :y 1 :z (java.time.LocalDate/of 2020 1 1)}] :mapping {:x :x :y :y :z :z} :charts [(chart/cloud)]})))))
     (is (= {:x 0 :y 1 :z 1} (get-in (built {:data (conj cube {:x 0 :y nil :z 1} {:x 0 :y 0 :z ##Inf}) :mapping {:x :x :y :y :z :z}
                                             :charts [(chart/cloud)]})

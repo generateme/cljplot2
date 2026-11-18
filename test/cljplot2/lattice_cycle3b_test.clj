@@ -8,7 +8,10 @@
             [cljplot2.chart.cloud :as cloud]
             [cljplot2.chart.surface :as surface]
             [cljplot2.core :as plot]
+            [cljplot2.data.levels :as levels]
             [cljplot2.data.space3d :as space]
+            [cljplot2.graphics.space3d :as space-draw]
+            [cljplot2.theme]
             [cljplot2.test-util :refer [error error-ins]])
   (:import [java.awt.image BufferedImage]))
 
@@ -21,7 +24,7 @@
   "z = x + 10 y on x 0..2, y 0..1."
   (vec (for [x [0 1 2] y [0 1]] {:x x :y y :z (+ x (* 10 y))})))
 
-(def ^:private plane {:f (fn [x y] (+ x y)) :domain {:x [0 1] :y [0 1]}})
+(def ^:private plane {:f (fn [[x y]] (+ x y)) :domain {:x [0 1] :y [0 1]}})
 
 (defn- primitives
   "Primitives of one panel's computed data of `chart` in a 400 x 300 panel (default theme)."
@@ -53,7 +56,7 @@
   (testing "5.1 a function needs :x and :y domains"
     (is (= :domain (:key (error #(built {:charts [(chart/surface {:f + :domain {:x [0 1]}})]}))))))
   (testing "5.1 [z c]: c is the color value"
-    (let [cp (panel {:charts [(chart/surface {:f (fn [x y] [(+ x y) (* 100 x)]) :domain {:x [0 1] :y [0 1]} :n 2})]})]
+    (let [cp (panel {:charts [(chart/surface {:f (fn [[x y]] [(+ x y) (* 100 x)]) :domain {:x [0 1] :y [0 1]} :n 2})]})]
       (is (= [0.0 0.0 0.0] (first (:nodes (:mesh cp)))))
       (is (= [0.0 100.0 0.0 100.0] (:tones (:mesh cp))))))
   (testing "5.1 density: an n x n grid of non-negative heights over the points, z titled Density"
@@ -88,12 +91,12 @@
         (is (= {:color "z"} (surface/computed-aesthetics {} {:z :z})))
         (is (= {} (surface/computed-aesthetics {:color :red} {:z :z})))))
     (testing "5.2 a node left out takes its quads: a NaN interior node of a 4 x 4 grid leaves 5 of 9"
-      (let [ch (chart/surface {:f (fn [x y] (if (and (near? x (/ 1.0 3)) (near? y (/ 1.0 3))) ##NaN 0.0)) :domain {:x [0 1] :y [0 1]} :n 4})]
+      (let [ch (chart/surface {:f (fn [[x y]] (if (and (near? x (/ 1.0 3)) (near? y (/ 1.0 3))) ##NaN 0.0)) :domain {:x [0 1] :y [0 1]} :n 4})]
         (is (= 5 (count (primitives ch (panel {:charts [ch]})))))))))
 
 (deftest parametric-test
   (testing "5.3 the unit sphere spans ±1 on every axis"
-    (let [cp (panel {:charts [(chart/surface {:fu (fn [u v] [(* (m/cos u) (m/sin v)) (* (m/sin u) (m/sin v)) (m/cos v)])
+    (let [cp (panel {:charts [(chart/surface {:fu (fn [[u v]] [(* (m/cos u) (m/sin v)) (* (m/sin u) (m/sin v)) (m/cos v)])
                                                :u [0 m/TWO_PI] :v [0 m/PI] :n 13})]})]
       (doseq [k [:x :y :z]]
         (let [[lo hi] (get-in cp [:domains k])] (is (near? -1.0 lo) (str k)) (is (near? 1.0 hi) (str k))))))
@@ -101,7 +104,7 @@
     (is (seq (error-ins #(built {:charts [(chart/surface {:fu vector :u [0 1]})]}))))
     (is (seq (error-ins #(built {:charts [(chart/surface (assoc plane :u [0 1]))]})))))
   (testing "5.3 renders"
-    (is (instance? BufferedImage (image {:charts [(chart/surface {:fu (fn [u v] [u v (* u v)]) :u [0 1] :v [0 1] :n 5})]})))))
+    (is (instance? BufferedImage (image {:charts [(chart/surface {:fu (fn [[u v]] [u v (* u v)]) :u [0 1] :v [0 1] :n 5})]})))))
 
 (deftest surface-facets-and-domains-test
   (testing "5.4 a mesh per panel, one domain"
@@ -189,3 +192,110 @@
       (is (= :mapping (:key (error #(built {:data rows :mapping {:x :x :y :y} :charts [(chart/cloud)]}))))))
     (testing "6.2 renders"
       (is (instance? BufferedImage (image {:data rows :mapping {:x :x :y :y} :charts [(chart/cloud {:type :bars :bins [4 3]})]}))))))
+
+;; review fixes
+
+(deftest nice-domain-test
+  (testing "R1 data-derived domains made nice; explicit ones kept"
+    (is (= [-0.5 1.5] (space/data-domain [-0.4953 1.2551] 0.0)))
+    (is (= [165.0 190.0] (space/data-domain [165.67 188.13] 0.0)))
+    (is (= [0.0 1.0] (space/data-domain [] 0.0)) "no values")
+    (is (= [4.4 5.6] (space/data-domain [5 5] 0.0)) "one value: widened to [4.5 5.5], then nice")
+    (is (= [690 40] (:z (:domains (panel {:data cloud-rows :mapping {:x :x :y :y :z :z} :charts [(chart/cloud {:domain {:z [690 40]}})]}))))))
+  (testing "R1 axis ticks include both ends of a nice domain; else n ticks"
+    (let [{:keys [ticks]} (space-draw/edge-ticks :z [-0.5 1.5] nil 6)]
+      (is (= -0.5 (double (first ticks))))
+      (is (= 1.5 (double (peek ticks)))))
+    (is (= (space-draw/axis-ticks :z [690 40] 5) (space-draw/edge-ticks :z [690 40] nil 5)) "no count reaches both ends")))
+
+(deftest categorical-axes-test
+  (let [rows [{:x "b" :y 1 :z 1} {:x "a" :y 2 :z 2} {:x "b" :y 3 :z 3} {:x nil :y 4 :z 4}]
+        cp (panel {:data rows :mapping {:x :x :y :y :z :z} :charts [(chart/cloud {:type :bars})]})]
+    (testing "R2 text x: levels in first-appearance order at 1, 2, ..; domain [0.5 n + 0.5]; nil dropped"
+      (is (= ["b" "a"] (get-in cp [:frame :levels :x])))
+      (is (= [1.0 2.0 1.0] (get-in cp [:points :x])))
+      (is (= [0.5 2.5] (get-in cp [:domains :x])))
+      (is (near? 0.4 (first (:half cp))) "bars 0.8 of a level")
+      (is (nil? (get-in cp [:frame :levels :y]))))
+    (testing "R2 a categorical marker sorts numbers; intervals sort"
+      (is (= [0 2 10] (get-in (panel {:data [{:x 10 :y 1 :z 1} {:x 0 :y 1 :z 1} {:x 2 :y 1 :z 1}]
+                                      :mapping {:x (levels/categorical :x) :y :y :z :z} :charts [(chart/cloud)]})
+                              [:frame :levels :x])))
+      (let [binned (levels/bin (map (fn [i] {:v i :z i}) (range 20)) :v {:as :bin :bins 4})]
+        (is (= (sort (distinct (map :bin binned)))
+               (get-in (panel {:data binned :mapping {:x :bin :y :z :z :z} :charts [(chart/cloud)]}) [:frame :levels :x])))))
+    (testing "R2 rules: numbers mixed with text - :mapping; explicit domain - :domain; :bins - :bins"
+      (is (= :mapping (:key (error #(built {:data (conj rows {:x 1 :y 1 :z 1}) :mapping {:x :x :y :y :z :z} :charts [(chart/cloud)]})))))
+      (is (= :domain (:key (error #(built {:data rows :mapping {:x :x :y :y :z :z} :charts [(chart/cloud {:domain {:x [0 3]}})]})))))
+      (is (= :bins (:key (error #(built {:data rows :mapping {:x :x :y :y} :charts [(chart/cloud {:bins [2 2] :type :bars})]}))))))
+    (testing "R2 ticks: a tick per level; labels thinned to every ceil(levels / n)-th"
+      (let [ls (mapv str (range 10))]
+        (is (= ["0" nil nil nil "4" nil nil nil "8" nil] (:labels (space-draw/edge-ticks :y [0.5 10.5] ls 3))))
+        (is (= ls (:labels (space-draw/edge-ticks :y [0.5 10.5] ls 10))))
+        (is (= ["a"] (:labels (space-draw/edge-ticks :y [0.5 1.5] [:a] 3))) "one level, a keyword by name")
+        (is (= (mapv double (range 1 11)) (:ticks (space-draw/edge-ticks :y [0.5 10.5] ls 3))))))
+    (testing "R2 a positional categorical marker in a 3D plot declares no position scale; renders"
+      (is (instance? BufferedImage (image {:data rows :mapping {:x (levels/categorical :y) :y :x :z :z} :charts [(chart/cloud {:type :bars})]}))))))
+
+(deftest projections-only-test
+  (testing "R3 :type :none - no marks, projections kept"
+    (let [cp (panel {:data cloud-rows :mapping {:x :x :y :y :z :z} :charts [(chart/cloud {:type :none :projections {:xy :points}})]})]
+      (is (empty? (cloud/primitives cp (fn [p] [p 0.0]) (constantly (:style cp)))))
+      (is (= #{:point} (set (map first (wall-coords cp))))))))
+
+(deftest label-overlap-test
+  (testing "R4 an axis leaves out labels overlapping earlier axes' labels; returns the boxes it drew"
+    (let [proj (space/projector {:domains {:x [0 1] :y [0 1] :z [0 1]} :view space/default-view} {:w 400 :h 300 :margin 30})
+          frame {:domains {:x [0 1] :y [0 1] :z [0 1]} :titles {}}
+          env {:theme cljplot2.theme/default-theme}
+          edge (:x (space/axis-edges space/default-view (:corner proj)))
+          draw (fn [taken] (c2d/with-canvas [c (c2d/canvas 400 300)] (#'space-draw/draw-axis! c :x edge proj frame taken (assoc env :canvas c))))
+          drawn (draw [])]
+      (is (seq drawn))
+      (is (empty? (draw [[-1e6 -1e6 1e6 1e6]])) "everything taken")
+      (is (= drawn (draw [[-10 -10 -5 -5]])) "a box elsewhere"))))
+
+(deftest density-cut-test
+  (let [rows (for [i (range 30)] {:x (m/sin i) :y (m/cos (* 3 i))})
+        xs (fn [opts] (map first (remove nil? (:nodes (:mesh (panel {:data rows :mapping {:x :x :y :y} :charts [(chart/surface (merge {:density true :n 5} opts))]}))))))]
+    (testing "R5 :cut 0 - the points' range; default 3 bandwidths wider"
+      (is (near? (reduce min (map :x rows)) (reduce min (xs {:cut 0}))))
+      (is (< (reduce min (xs {})) (reduce min (map :x rows)))))
+    (testing "R5 :cut only with :density"
+      (is (seq (error-ins #(built {:charts [(chart/surface (assoc plane :cut 1))]})))))))
+
+(deftest scene-frame-test
+  (let [first-frame {:view {:azimuth 10 :elevation 20} :aspect [1 1 1] :box? true :axes? true :titles {:x "a" :y "b"}}
+        scene (fn [& overrides] (space-draw/scene-frame (cons {:frame first-frame :domains {:x [0 1]}}
+                                                              (map (fn [o] {:frame-overrides o}) overrides))))]
+    (testing "R7 later charts' explicit frame options merged over the first's, in order"
+      (is (= (assoc first-frame :domains {:x [0 1]}) (scene)))
+      (is (= {:azimuth 10 :elevation 50} (:view (scene {:view {:elevation 50}}))) "view key by key")
+      (is (= {:x "a" :y "B" :z "c"} (:titles (scene {:titles {:y "B"}} {:titles {:z "c"}}))))
+      (is (nil? (:titles (scene {:titles nil}))) "nil clears the titles")
+      (is (= [2 1 1] (:aspect (scene {:aspect [3 1 1]} {:aspect [2 1 1]}))) "the last wins")
+      (is (false? (:box? (scene {:box? false})))))
+    (testing "R7 overrides hold only the options set; :axis-titles nil - no titles"
+      (is (= {} (cloud/frame-overrides {:box nil :size 3})))
+      (is (= {:view {:azimuth 5} :box? false :titles nil} (cloud/frame-overrides {:view {:azimuth 5} :box false :axis-titles nil})))
+      (is (nil? (:titles (cloud/frame-settings {:axis-titles nil} {:x :x})))))
+    (testing "R7 a cloud's view over a surface's frame"
+      (let [domain {:x [0 2] :y [0 1] :z [0 12]}
+            b (built {:data lattice :mapping {:x :x :y :y :z :z}
+                      :charts [(chart/surface {:domain domain}) (chart/cloud {:domain domain :view {:azimuth 99}})]})]
+        (is (= 99 (get-in (space-draw/scene-frame [(get-in b [:stats 0 :data :panel]) (get-in b [:stats 1 :data :panel])])
+                          [:view :azimuth])))))))
+
+(deftest projection-density-precheck-test
+  (testing "R8 no density without 2 distinct values on each axis; a spread gives one"
+    (let [cp (fn [rows] (panel {:data rows :mapping {:x :x :y :y :z :z} :charts [(chart/cloud {:projections {:xy :density}})]}))]
+      (is (nil? (get-in (cp [{:x 1 :y 0 :z 0} {:x 1 :y 1 :z 1} {:x 1 :y 2 :z 2}]) [:projections :xy :grid])))
+      (is (some? (get-in (cp [{:x 0 :y 0 :z 0} {:x 1 :y 1 :z 1} {:x 2 :y 3 :z 2}]) [:projections :xy :grid]))))))
+
+(deftest vector-argument-test
+  (testing "surface :f and :fu take one vector argument"
+    (let [seen (atom nil)]
+      (panel {:charts [(chart/surface {:f (fn [p] (reset! seen p) 0.0) :domain {:x [0 1] :y [0 1]} :n 2})]})
+      (is (= [1.0 1.0] @seen)))
+    (is (thrown? clojure.lang.ArityException
+                 (panel {:charts [(chart/surface {:f (fn [_x _y] 0.0) :domain {:x [0 1] :y [0 1]} :n 2})]})))))
