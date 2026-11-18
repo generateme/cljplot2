@@ -39,6 +39,10 @@
   (let [one [:or [:and schema/finite [:> 0]] [:enum :nrd :nrd0 :nrd-adjust :sj :sj-dpi :rlcv :lcv :lscv :scott]]]
     [:or one [:tuple one one]]))
 
+(def n-schema
+  "Schema of `:n`, a grid size: an integer for both axes or a pair `[nx ny]`, each in [2 2000]."
+  [:or [:int {:min 2 :max 2000}] [:tuple [:int {:min 2 :max 2000}] [:int {:min 2 :max 2000}]]])
+
 (def options
   "Map entries of the field options shared by the field and contour charts."
   [(schema/optional :f schema/function)
@@ -48,7 +52,7 @@
    (schema/optional :binned? :boolean)
    (schema/optional :cut [:and schema/finite [:>= 0]])
    (schema/optional :interpolation [:enum :bilinear :bicubic :cubic-2d])
-   (schema/optional :n [:or [:int {:min 2 :max 2000}] [:tuple [:int {:min 2 :max 2000}] [:int {:min 2 :max 2000}]]])])
+   (schema/optional :n n-schema)])
 
 (defn source-kind
   "The source of a field chart: `:function` with option `:f`, `:gridded` with a mapped `:value`, else `:points`."
@@ -90,26 +94,34 @@
     {:f (fn [x y] (kde (fx (double x)) (fy (double y))))
      :domain [(widen us (double hx) (:inverse tx)) (widen vs (double hy) (:inverse ty))]}))
 
-(defn lattice
-  "`{:f f :domain [[x0 x1] [y0 y1]]}` - the interpolation (`interpolation`, see the namespace doc) of the gridded
-  `rows` (`x-of`, `y-of`, `value-of` - row accessors): every distinct x with every distinct y exactly once, at least 2
-  of each. Rows with a non-finite x or y are left out; a missing or repeated lattice point, or fewer than 2 x / y
-  values, throws `ex-info {:key :value}`."
-  [rows x-of y-of value-of interpolation]
+(defn lattice-values
+  "`{:xs [..] :ys [..] :vss [[..] ..]}` of the gridded `rows` (`x-of`, `y-of`, `value-of` - row accessors): the sorted
+  distinct x and y values and per x the values at every y (`##NaN` for a non-finite value); every distinct x with every
+  distinct y exactly once, at least 2 of each. Rows with a non-finite x or y are left out; a missing or repeated
+  lattice point, or fewer than 2 x / y values, throws `ex-info {:key value-key}`."
+  [rows x-of y-of value-of value-key]
   (let [points (filterv (fn [[x y]] (and (finite? x) (finite? y))) (map (juxt x-of y-of value-of) rows))
         xs (vec (sort (distinct (map #(double (first %)) points))))
         ys (vec (sort (distinct (map #(double (second %)) points))))
-        by-point (group-by (fn [[x y]] [(double x) (double y)]) points)]
+        by-point (group-by (fn [[x y]] [(double x) (double y)]) points)
+        accessor (name value-key)]
     (when (or (< (count xs) 2) (< (count ys) 2))
-      (schema/fail! "A gridded field needs at least 2 distinct x and 2 distinct y values." {:key :value :xs (count xs) :ys (count ys)}))
+      (schema/fail! "A gridded field needs at least 2 distinct x and 2 distinct y values." {:key value-key :xs (count xs) :ys (count ys)}))
     (when-let [[point] (first (filter #(> (count (val %)) 1) by-point))]
-      (schema/fail! "A gridded field has one :value per (x, y); a lattice point repeats." {:key :value :value point}))
+      (schema/fail! (str "A gridded field has one :" accessor " per (x, y); a lattice point repeats.") {:key value-key :value point}))
     (when-let [missing (first (for [x xs y ys :when (not (contains? by-point [x y]))] [x y]))]
-      (schema/fail! "A gridded field needs a :value at every (x, y) of its lattice; a point is missing." {:key :value :value missing}))
-    (let [value (fn [x y] (let [v (nth (first (by-point [x y])) 2)] (if (finite? v) (double v) ##NaN)))
-          vss (mapv (fn [x] (mapv (fn [y] (value x y)) ys)) xs)
-          make (case (or interpolation :bilinear) :bilinear interp/bilinear :bicubic interp/bicubic :cubic-2d interp/cubic-2d)]
-      {:f (make xs ys vss) :domain [[(first xs) (peek xs)] [(first ys) (peek ys)]]})))
+      (schema/fail! (str "A gridded field needs a :" accessor " at every (x, y) of its lattice; a point is missing.")
+                    {:key value-key :value missing}))
+    (let [value (fn [x y] (let [v (nth (first (by-point [x y])) 2)] (if (finite? v) (double v) ##NaN)))]
+      {:xs xs :ys ys :vss (mapv (fn [x] (mapv (fn [y] (value x y)) ys)) xs)})))
+
+(defn lattice
+  "`{:f f :domain [[x0 x1] [y0 y1]]}` - the interpolation (`interpolation`, see the namespace doc) of the gridded
+  `rows` (`x-of`, `y-of`, `value-of` - row accessors), see [[lattice-values]] (errors keyed `:value`)."
+  [rows x-of y-of value-of interpolation]
+  (let [{:keys [xs ys vss]} (lattice-values rows x-of y-of value-of :value)
+        make (case (or interpolation :bilinear) :bilinear interp/bilinear :bicubic interp/bicubic :cubic-2d interp/cubic-2d)]
+    {:f (make xs ys vss) :domain [[(first xs) (peek xs)] [(first ys) (peek ys)]]}))
 
 (defn function-domain
   "`[[x0 x1] [y0 y1]]` of a function field: option `domain` (`{:x [lo hi] :y [lo hi]}`), else the explicit numeric

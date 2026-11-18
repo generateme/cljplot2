@@ -11,7 +11,7 @@
 
   `:coords` (optional, default `#{:cartesian}`) - the coordinate systems the chart draws in (plot `:coord`, see
   [[cljplot2.scale.coord]]); polar charts: [[bar]], [[segment]], [[scatter]], [[line]], [[text]], [[rule]],
-  [[rect]], [[parallel]] (radar), [[partition]] (sunburst); `#{:three-d}` - 3D charts ([[cloud]]): only with other
+  [[rect]], [[parallel]] (radar), [[partition]] (sunburst); `#{:three-d}` - 3D charts ([[cloud]], [[surface]]): only with other
   3D charts, each with an explicit `:domain` when there are several, see [[cljplot2.data.space3d]]; a 3D chart value
   also has `:primitives` - `(fn [chart computed point scales env])` giving its primitives for one panel, which the
   panel draws with every 3D chart's in one scene ([[cljplot2.graphics.space3d/draw-scene!]]).
@@ -89,13 +89,15 @@
             [cljplot2.chart.segment :as segment]
             [cljplot2.chart.smooth :as smooth]
             [cljplot2.chart.stripplot :as stripplot]
+            [cljplot2.chart.surface :as surface]
             [cljplot2.chart.text :as text]
             [cljplot2.chart.tile :as tile]
             [cljplot2.chart.treemap :as treemap]
             [cljplot2.chart.venn :as venn]
             [cljplot2.chart.violin :as violin]
             [cljplot2.chart.waffle :as waffle]
-            [cljplot2.data.measure :as measure]))
+            [cljplot2.data.measure :as measure]
+            [cljplot2.graphics.space3d :as space-draw]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -114,6 +116,7 @@
    :partition (:style partition/schemas)
    :pack (:style pack/schemas)
    :cloud (:style cloud/schemas)
+   :surface (:style surface/schemas)
    :waffle (:style waffle/schemas)
    :venn (:style venn/schemas)
    :tile (:style tile/schemas)
@@ -225,10 +228,19 @@
                            :computed-aesthetics partition/computed-aesthetics))))
 
 (defn cloud
-  "3D scatter (points, spikes, bars) of `:x`, `:y`, `:z` in a projected box, see [[cljplot2.chart.cloud]]."
+  "3D scatter (points, spikes, bars; side projections; a 2D histogram with `:bins`) of `:x`, `:y`, `:z` in a projected
+  box, see [[cljplot2.chart.cloud]]."
   ([] (cloud {}))
-  ([options] (assoc (chart-value :cloud cloud/compute cloud/draw cloud/legend cloud/schemas options)
+  ([options] (assoc (chart-value :cloud cloud/compute space-draw/draw-chart cloud/legend cloud/schemas options)
                     :coords #{:three-d} :primitives cloud/chart-primitives)))
+
+(defn surface
+  "3D surface (gridded `:x :y :z`, a function `:f`, a density, a parametric `:fu`) of shaded quads or a wireframe in a
+  projected box, see [[cljplot2.chart.surface]]."
+  ([] (surface {}))
+  ([options] (assoc (chart-value :surface surface/compute space-draw/draw-chart nil surface/schemas options)
+                    :coords #{:three-d} :primitives surface/chart-primitives
+                    :computed-aesthetics surface/computed-aesthetics)))
 
 (defn pack
   "Circle packing of `:value` over the `:hierarchy` levels, see [[cljplot2.chart.pack]]."

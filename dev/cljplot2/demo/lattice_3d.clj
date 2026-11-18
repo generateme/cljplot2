@@ -1,7 +1,10 @@
 (ns cljplot2.demo.lattice-3d
-  "Lattice cycle 3a demo (3D clouds): LMDVR Fig 6.1 (quakes by magnitude), Fig 6.3 (one cloud from four views), Fig
-  6.4 (spikes) and Fig 6.15 (3D bars) on the datasets of `notebooks/data`."
+  "Lattice cycle 3 demo (3D): clouds - LMDVR Fig 6.1 (quakes by magnitude), Fig 6.3 (one cloud from four views), Fig
+  6.4 (spikes), Fig 6.15 (3D bars), side projections, a 2D histogram; surfaces - Fig 6.8 (faceted model surfaces),
+  Fig 6.11c / 13.7 (a shaded wireframe), Fig 6.18 (a parametric surface), a density surface and a cloud over a
+  fitted plane; on the datasets of `notebooks/data` and synthetic functions."
   (:require [fastmath.core :as m]
+            [fastmath.ml.regression :as regression]
             [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
             [cljplot2.data.shingle :as shingle]
@@ -64,10 +67,95 @@
                           :axis-titles {:x "A-level score" :y "GCSE score" :z "Count"}})]
    :facets {:columns 2}})
 
+(def projections
+  "The quakes cloud with its side projections: density bands on the floor, density lines on the longitude-depth
+  wall, points on the latitude-depth wall."
+  {:data quakes
+   :mapping {:x :long :y :lat :z :depth}
+   :charts [(chart/cloud {:domain {:z [690 40]} :size 2 :view {:azimuth 40 :elevation 25}
+                          :projections {:xy :density :xz :contour :yz :points}
+                          :axis-titles {:x "Longitude" :y "Latitude" :z "Depth"}})]
+   :labels {:title "Side projections"}})
+
+(def histogram-2d
+  "A 2D histogram: quakes counted on a 12 x 12 longitude-latitude grid, the counts as 3D bars."
+  {:data quakes
+   :mapping {:x :long :y :lat}
+   :charts [(chart/cloud {:bins [12 12] :type :bars :color [150 190 230] :stroke-color [60 60 60] :stroke-width 1
+                          :view {:azimuth 35 :elevation 35} :axis-titles {:x "Longitude" :y "Latitude" :z "Count"}})]
+   :labels {:title "Quakes per cell"}})
+
+(def ^:private models
+  "Synthetic model surfaces over [-2 2]^2 (Fig 6.8 shows four fitted models of one response)."
+  {"plane" (fn [x y] (+ (* 0.3 x) (* 0.2 y)))
+   "saddle" (fn [x y] (* 0.25 (- (* x x) (* y y))))
+   "bump" (fn [x y] (m/exp (- (* 0.8 (+ (* x x) (* y y))))))
+   "ripple" (fn [x y] (* 0.6 (m/sin (* 1.5 x)) (m/cos (* 1.5 y))))})
+
+(def fig-6-8
+  "Fig 6.8 (synthetic): four model surfaces on one gridded table, a panel per model, one z domain; colored by height."
+  {:data (for [[model f] models x (range -2.0 2.01 0.25) y (range -2.0 2.01 0.25)]
+           {:model model :x x :y y :z (f x y)})
+   :mapping {:x :x :y :y :z :z :facet :model}
+   :charts [(chart/surface {:style :both :view {:azimuth 35 :elevation 30}})]
+   :facets {:columns 2}
+   :scales {:color {:range [[40 90 160] [250 250 250] [190 60 40]]}}})
+
+(defn- volcano
+  "A volcano-like height: a ring ridge with a crater, a little east-west asymmetry."
+  [x y]
+  (let [r (m/hypot x y)]
+    (+ (* 1.2 (m/exp (- (/ (m/sq (- r 1.0)) 0.18)))) (* -0.5 (m/exp (- (/ (* r r) 0.08)))) (* 0.15 x (m/exp (- (* r r)))))))
+
+(def fig-6-11c
+  "Fig 6.11c / 13.7: a shaded wireframe - one color, faces lit by their slope, outlined."
+  {:charts [(chart/surface {:f volcano :domain {:x [-2 2] :y [-2 2]} :n 41 :style :both :color [120 170 110]
+                            :stroke-color [40 60 40] :aspect [1 1 0.5] :view {:azimuth 30 :elevation 35}})]
+   :labels {:title "Volcano-like surface"}})
+
+(def fig-6-18
+  "Fig 6.18: a parametric surface - a torus from u, v angles, colored by height."
+  {:charts [(chart/surface {:fu (fn [u v] [(* (+ 2.0 (m/cos v)) (m/cos u)) (* (+ 2.0 (m/cos v)) (m/sin u)) (m/sin v)])
+                            :u [0.0 m/TWO_PI] :v [0.0 m/TWO_PI] :n [48 24] :aspect [1 1 0.34] :view {:azimuth 30 :elevation 40}})]
+   :scales {:color {:range [[40 70 140] [120 190 200] [250 240 200]]}}
+   :labels {:title "Torus"}})
+
+(def density-surface
+  "The 2D kernel density of the quakes' locations as a surface."
+  {:data quakes
+   :mapping {:x :long :y :lat}
+   :charts [(chart/surface {:density true :n 40 :view {:azimuth 30 :elevation 35}
+                            :axis-titles {:x "Longitude" :y "Latitude" :z "Density"}})]
+   :scales {:color {:range [[250 250 220] [240 140 40] [120 20 20]]}}})
+
+(def ^:private slab
+  "Least-squares plane of quake depth on longitude and latitude."
+  (regression/lm (mapv :depth quakes) (mapv (juxt :long :lat) quakes)))
+
+(def cloud-over-surface
+  "A cloud over a surface in one box: the quakes and the least-squares plane of their depth (explicit domains on
+  both charts)."
+  (let [domain {:x [165 190] :y [-40 -10] :z [690 40]}]
+    {:data quakes
+     :mapping {:x :long :y :lat :z :depth}
+     ;; the first 3D chart's frame (view, titles) is the box's
+     :charts [(chart/surface {:f (fn [x y] (slab [x y])) :domain domain :n 12 :color [200 200 200 160] :shade false
+                              :style :both :stroke-color [120 120 120] :view {:azimuth 50 :elevation 15}
+                              :axis-titles {:x "Longitude" :y "Latitude" :z "Depth"}})
+              (chart/cloud {:domain domain :size 2 :color [180 40 40 200]})]
+     :labels {:title "Quakes and their least-squares plane"}}))
+
 (def images
   "Images of this demo: `[file-name plot options]`, saved to `results/lattice-3d/` by [[cljplot2.demo/render!]]."
   [["fig-6-1-quakes-800x700.png" fig-6-1 {:width 800 :height 700}]
    ["fig-6-3-views-800x700.png" fig-6-3 {:width 800 :height 700}]
    ["fig-6-4-spikes-600x500.png" fig-6-4 {:width 600 :height 500}]
    ["fig-6-15-bars-900x450.png" fig-6-15 {:width 900 :height 450}]
-   ["groups-700x550.png" groups {:width 700 :height 550}]])
+   ["groups-700x550.png" groups {:width 700 :height 550}]
+   ["projections-700x600.png" projections {:width 700 :height 600}]
+   ["histogram-2d-700x600.png" histogram-2d {:width 700 :height 600}]
+   ["fig-6-8-models-800x700.png" fig-6-8 {:width 800 :height 700}]
+   ["fig-6-11c-volcano-700x550.png" fig-6-11c {:width 700 :height 550}]
+   ["fig-6-18-torus-700x550.png" fig-6-18 {:width 700 :height 550}]
+   ["density-surface-700x600.png" density-surface {:width 700 :height 600}]
+   ["cloud-over-surface-700x600.png" cloud-over-surface {:width 700 :height 600}]])

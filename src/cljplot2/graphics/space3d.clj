@@ -6,6 +6,8 @@
   * `{:kind :point :at Vec2 :style st}` - a shape (`st` - `:shape :size :color :stroke-color :stroke-width`)
   * `{:kind :line :from Vec2 :to Vec2 :color c :width w}`
   * `{:kind :polygon :points [Vec2 ..] :fill c :stroke c :stroke-width w}` (`:stroke :none` - no outline)
+  * `{:kind :path :points [Vec2 ..] :closed? b :color c :width w}` - a polyline
+  * `{:kind :region :rings [[Vec2 ..] ..] :fill c}` - an even-odd filled region (holes open)
 
   [[frame-margin]] - the pixels the frame needs around the box. The frame is drawn in two parts around the data:
   [[draw-frame-back!]] - grids on the floor and the back walls (theme `[:panel :grid :x]`, z lines `[:panel :grid :y]`)
@@ -38,6 +40,11 @@
             (c2d/set-stroke-custom canvas {:size (double (:width p)) :cap :round})
             (c2d/set-color canvas (:color p))
             (c2d/line canvas (.x a) (.y a) (.x b) (.y b)))
+    :path (do (c2d/set-stroke-custom canvas {:size (double (:width p)) :cap :round :join :round})
+              (c2d/set-color canvas (:color p))
+              (c2d/path canvas (mapv (fn [^Vec2 q] [(.x q) (.y q)]) (:points p)) (boolean (:closed? p)) true))
+    :region (do (c2d/set-color canvas (:fill p))
+                (c2d/shape canvas (polyline/rings-path (map (fn [ring] (mapv (fn [^Vec2 q] [(.x q) (.y q)]) ring)) (:rings p))) false))
     :polygon (let [pts (mapv (fn [^Vec2 q] [(.x q) (.y q)]) (:points p))]
                (c2d/set-color canvas (:fill p))
                (c2d/path canvas pts true false)
@@ -185,17 +192,12 @@
                 at (fn [fb] (corner (-> [0 0 0] (assoc i side) (assoc a f) (assoc b fb))))]]
       [k [(at 0.0) (at 1.0)]])))
 
-(defn- back-wall-side
-  "Side (0 / 1) of the box face of `axis` turned away from the viewer in `view`, `nil` when neither is (edge-on)."
-  [view axis]
-  (first (filter #(> (.z ^fastmath.vector.Vec3 (first (space/face-normal view axis %))) 1.0e-9) [0 1])))
-
 (defn- draw-box-grid!
   "Grid lines behind the data at the ticks: on the floor (low z; x and y ticks) and on the two side walls turned away
   from the viewer (the x wall at y and z ticks, the y wall at x and z ticks). Lines at x / y ticks use theme
   `[:panel :grid :x]`, lines at z ticks `[:panel :grid :y]` (`:none` - none)."
   [canvas proj view domains env]
-  (let [faces (cons [:z 0] (keep (fn [axis] (some->> (back-wall-side view axis) (vector axis))) [:x :y]))]
+  (let [faces (cons [:z 0] (keep (fn [axis] (some->> (space/far-side view axis) (vector axis))) [:x :y]))]
     (doseq [[axis side] faces
             [k [from to]] (face-grid-lines proj axis side domains env)
             :when (set-grid-line! canvas (get-in env [:theme :panel :grid (if (= k :z) :y :x)]))]
@@ -237,6 +239,12 @@
       (draw-frame-back! canvas proj frame env)
       (draw-primitives! canvas (mapcat (fn [[chart computed]] ((:primitives chart) chart computed (:point proj) scales env)) layers))
       (draw-frame-front! canvas proj frame env))))
+
+(defn draw-chart
+  "Draw function of the 3D charts' contract (see [[cljplot2.chart]]): one panel's box with this chart alone (a plot's
+  panel draws all its 3D charts in one scene instead, see [[draw-scene!]])."
+  [chart computed canvas {:keys [w h]} scales env]
+  (draw-scene! canvas [[chart computed]] [w h] scales env))
 
 (defn draw-frame-front!
   "Draw the box frame in front of the data of `proj`: with `box?` the visible box edges, with `axes?` the axes of

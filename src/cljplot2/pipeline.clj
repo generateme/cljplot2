@@ -10,7 +10,7 @@
   * `:scales` - `{:x spec :y spec}`, position scales, see [[cljplot2.scale.position/data-scale-spec]]; facet scales, see
     [[cljplot2.data.facet]]; aesthetic scales `:color` `:shape` `:size` `:dash` `:pattern`, see [[cljplot2.scale.aesthetic]]
   * `:data`, `:mapping` - plot data and mapping, see [[cljplot2.data.rows]]
-  * `:charts` - vector of chart values, see [[cljplot2.chart]]; 3D charts (`:coords #{:three-d}`, e.g. `chart/cloud`)
+  * `:charts` - vector of chart values, see [[cljplot2.chart]]; 3D charts (`:coords #{:three-d}`: `chart/cloud`, `chart/surface`)
     only with other 3D charts - several each with an explicit `:domain {:x :y :z}` - and without `:flip`, `:aspect
     :iso`, `:margins`, polar `:coord` or free / sliced facet scales
   * `:facets` - `{:columns :rows :order :na-panel :scales :strips :widths :heights}` facet layout options, see

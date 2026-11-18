@@ -193,8 +193,8 @@
         draw (fn [f] (lines-in #(let [cv (c2d/canvas 400 300)] (c2d/with-canvas [c cv] (f c proj frame env)))))]
     (testing "U1 / U2 / V3 behind the data: grids of the floor and the two back walls, the 3 hidden edges"
       (let [grid (fn [axis side] (count (#'space-draw/face-grid-lines proj axis side (:domains frame) (assoc env :canvas (c2d/canvas 10 10)))))
-            back-x (#'space-draw/back-wall-side space/default-view :x)
-            back-y (#'space-draw/back-wall-side space/default-view :y)
+            back-x (space/far-side space/default-view :x)
+            back-y (space/far-side space/default-view :y)
             back (draw space-draw/draw-frame-back!)]
         (is (some? back-x))
         (is (some? back-y))
@@ -265,8 +265,8 @@
       (doseq [[p i] (map vector prims (range))]
         (is (near? (double (second ((:point proj) [(get-in cp [:points :x i]) (get-in cp [:points :y i]) 0]))) (double (:depth p)))))))
   (testing "V3 an edge-on side has no back wall"
-    (is (nil? (#'space-draw/back-wall-side {:azimuth 0 :elevation 0} :x)))
-    (is (= 1 (#'space-draw/back-wall-side {:azimuth 0 :elevation 0} :y))))
+    (is (nil? (space/far-side {:azimuth 0 :elevation 0} :x)))
+    (is (= 1 (space/far-side {:azimuth 0 :elevation 0} :y))))
   (testing "F4 z grid lines use the y grid style; :none turns them off"
     (let [proj (space/projector {:domains {:x [0 1] :y [0 1] :z [0 1]} :view space/default-view} {:w 400 :h 300 :margin 30})
           frame {:view space/default-view :domains {:x [0 1] :y [0 1] :z [0 1]} :box? true}

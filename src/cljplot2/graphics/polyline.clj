@@ -12,7 +12,8 @@
             [cljplot2.scale.position :as scale]
             [cljplot2.schema :as schema]
             [cljplot2.theme :as theme])
-  (:import [java.awt Color Graphics2D LinearGradientPaint]))
+  (:import [java.awt Color Graphics2D LinearGradientPaint]
+           [java.awt.geom Path2D Path2D$Double]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -127,6 +128,18 @@
          (draw/fill-with-pattern! canvas pattern-fill #(c2d/crect canvas cx cy side side))
          (when (set-style! canvas style)
            (c2d/crect canvas cx cy side side true)))))))
+
+(defn rings-path
+  "Even-odd `Path2D` of the pixel `rings` (`[[x y] ..]` each; rings of fewer than 3 points left out): a region with
+  its holes, filled by `c2d/shape`."
+  ^Path2D [rings]
+  (let [path (Path2D$Double. Path2D/WIND_EVEN_ODD)]
+    (doseq [ring rings :when (> (count ring) 2)]
+      (let [[[x y] & more] ring]
+        (.moveTo path (double x) (double y))
+        (doseq [[x y] more] (.lineTo path (double x) (double y)))
+        (.closePath path)))
+    path))
 
 (defn fill-polygons!
   "Fill `polygons` (`[x y]` pixel points each) in `color` (`:none` fills nothing), then the pattern of `pattern-fill`

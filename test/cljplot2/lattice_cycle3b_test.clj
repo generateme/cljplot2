@@ -1,0 +1,191 @@
+(ns cljplot2.lattice-cycle3b-test
+  "Lattice cycle 3b (3D): `chart/surface` (gridded, function, `[z c]`, density, parametric sources; styles, colors,
+  facets, explicit domains) and the cloud additions (side projections, `:bins`)."
+  (:require [clojure.test :refer [deftest testing is]]
+            [clojure2d.core :as c2d]
+            [fastmath.core :as m]
+            [cljplot2.chart :as chart]
+            [cljplot2.chart.cloud :as cloud]
+            [cljplot2.chart.surface :as surface]
+            [cljplot2.core :as plot]
+            [cljplot2.data.space3d :as space]
+            [cljplot2.test-util :refer [error error-ins]])
+  (:import [java.awt.image BufferedImage]))
+
+(defn- near? [a b] (< (m/abs (- (double a) (double b))) 1e-9))
+(defn- built [p] (plot/build p {:width 500 :height 400}))
+(defn- image ^BufferedImage [p] (c2d/get-image (plot/render p {:width 400 :height 300})))
+(defn- panel [p] (get-in (built p) [:stats 0 :data :panel]))
+
+(def ^:private lattice
+  "z = x + 10 y on x 0..2, y 0..1."
+  (vec (for [x [0 1 2] y [0 1]] {:x x :y y :z (+ x (* 10 y))})))
+
+(def ^:private plane {:f (fn [x y] (+ x y)) :domain {:x [0 1] :y [0 1]}})
+
+(defn- primitives
+  "Primitives of one panel's computed data of `chart` in a 400 x 300 panel (default theme)."
+  [chart cp]
+  (let [proj (space/projector (assoc (:frame cp) :domains (:domains cp)) {:w 400 :h 300 :margin 20})
+        b (built {:charts [chart]})]
+    ((:primitives chart) chart cp (:point proj) (:finalized-scales b) {:theme (:theme b)})))
+
+;; 5 surface
+
+(deftest surface-sources-test
+  (testing "5.1 gridded: a node per lattice point, row by row"
+    (let [{:keys [nu nv nodes]} (:mesh (panel {:data lattice :mapping {:x :x :y :y :z :z} :charts [(chart/surface)]}))]
+      (is (= [3 2] [nu nv]))
+      (is (= [[0.0 0.0 0.0] [1.0 0.0 1.0] [2.0 0.0 2.0] [0.0 1.0 10.0] [1.0 1.0 11.0] [2.0 1.0 12.0]] nodes))))
+  (testing "5.1 gridded: a missing or repeated lattice point is keyed :z; no :z mapping - :mapping"
+    (is (= :z (:key (error #(built {:data (pop lattice) :mapping {:x :x :y :y :z :z} :charts [(chart/surface)]})))))
+    (is (= :z (:key (error #(built {:data (conj lattice (first lattice)) :mapping {:x :x :y :y :z :z} :charts [(chart/surface)]})))))
+    (is (= :mapping (:key (error #(built {:data lattice :mapping {:x :x :y :y} :charts [(chart/surface)]}))))))
+  (testing "5.1 a function: :n points per axis end to end (default 30), z = f(x, y)"
+    (let [{:keys [nu nv nodes]} (:mesh (panel {:charts [(chart/surface (assoc plane :n [4 3]))]}))]
+      (is (= [4 3] [nu nv]))
+      (is (every? (fn [[x y z]] (near? z (+ x y))) nodes))
+      (is (= [0.0 0.0 0.0] (first nodes)))
+      (is (= [1.0 1.0 2.0] (peek nodes))))
+    (is (= [30 30] ((juxt :nu :nv) (:mesh (panel {:charts [(chart/surface plane)]}))))))
+  (testing "5.1 boundary: n = 2 - one quad"
+    (is (= 1 (count (let [c (chart/surface (assoc plane :n 2))] (primitives c (panel {:charts [c]})))))))
+  (testing "5.1 a function needs :x and :y domains"
+    (is (= :domain (:key (error #(built {:charts [(chart/surface {:f + :domain {:x [0 1]}})]}))))))
+  (testing "5.1 [z c]: c is the color value"
+    (let [cp (panel {:charts [(chart/surface {:f (fn [x y] [(+ x y) (* 100 x)]) :domain {:x [0 1] :y [0 1]} :n 2})]})]
+      (is (= [0.0 0.0 0.0] (first (:nodes (:mesh cp)))))
+      (is (= [0.0 100.0 0.0 100.0] (:tones (:mesh cp))))))
+  (testing "5.1 density: an n x n grid of non-negative heights over the points, z titled Density"
+    (let [rows (for [i (range 30)] {:x (m/sin i) :y (m/cos (* 3 i))})
+          cp (panel {:data rows :mapping {:x :x :y :y} :charts [(chart/surface {:density true :n 12})]})]
+      (is (= [12 12] ((juxt :nu :nv) (:mesh cp))))
+      (is (every? #(>= (double (% 2)) 0.0) (:nodes (:mesh cp))))
+      (is (= "Density" (get-in cp [:frame :titles :z])))
+      (is (= :mapping (:key (error #(built {:data rows :mapping {:x :x} :charts [(chart/surface {:density true})]})))))))
+  (testing "5.1 one source per chart"
+    (is (seq (error-ins #(built {:data lattice :mapping {:x :x :y :y} :charts [(chart/surface (assoc plane :density true))]}))))))
+
+(deftest surface-styles-test
+  (let [c (fn [opts] (chart/surface (merge plane {:n 4} opts)))
+        prims (fn [opts] (let [ch (c opts)] (primitives ch (panel {:charts [ch]}))))]
+    (testing "5.2 a polygon per quad in every style"
+      (doseq [s [:surface :wireframe :both]]
+        (is (= {:polygon 9} (frequencies (map :kind (prims {:style s})))) (str s))))
+    (testing "5.2 surface: outlined in its fill; both: by :stroke-color; wireframe: background fill, colored outline"
+      (is (every? #(= (:fill %) (:stroke %)) (prims {})))
+      (is (every? #(= [1 2 3] (:stroke %)) (prims {:style :both :stroke-color [1 2 3]})))
+      (let [ps (prims {:style :wireframe :color [9 9 9]})]
+        (is (every? #(= [9 9 9] (:stroke %)) ps))
+        (is (every? #(= 0xececf3 (:fill %)) ps) "the plot background")))
+    (testing "5.2 shading on by default; :shade false - the color itself"
+      (is (every? #(= [9 9 9] (:fill %)) (prims {:color [9 9 9] :shade false})))
+      (is (not-every? #(= [9 9 9] (:fill %)) (prims {:color [9 9 9]}))))
+    (testing "5.2 colored by height: a color bar; a fixed :color - none"
+      (let [legends (fn [p] (filter #(= :legends (get-in % [:content :kind])) (:items (:grid (built p)))))]
+        (is (= 1 (count (legends {:charts [(c {})]}))))
+        (is (empty? (legends {:charts [(c {:color [9 9 9]})]})))
+        (is (= {:color "z"} (surface/computed-aesthetics {} {:z :z})))
+        (is (= {} (surface/computed-aesthetics {:color :red} {:z :z})))))
+    (testing "5.2 a node left out takes its quads: a NaN interior node of a 4 x 4 grid leaves 5 of 9"
+      (let [ch (chart/surface {:f (fn [x y] (if (and (near? x (/ 1.0 3)) (near? y (/ 1.0 3))) ##NaN 0.0)) :domain {:x [0 1] :y [0 1]} :n 4})]
+        (is (= 5 (count (primitives ch (panel {:charts [ch]})))))))))
+
+(deftest parametric-test
+  (testing "5.3 the unit sphere spans ±1 on every axis"
+    (let [cp (panel {:charts [(chart/surface {:fu (fn [u v] [(* (m/cos u) (m/sin v)) (* (m/sin u) (m/sin v)) (m/cos v)])
+                                               :u [0 m/TWO_PI] :v [0 m/PI] :n 13})]})]
+      (doseq [k [:x :y :z]]
+        (let [[lo hi] (get-in cp [:domains k])] (is (near? -1.0 lo) (str k)) (is (near? 1.0 hi) (str k))))))
+  (testing "5.3 :fu needs :u and :v; :u / :v need :fu"
+    (is (seq (error-ins #(built {:charts [(chart/surface {:fu vector :u [0 1]})]}))))
+    (is (seq (error-ins #(built {:charts [(chart/surface (assoc plane :u [0 1]))]})))))
+  (testing "5.3 renders"
+    (is (instance? BufferedImage (image {:charts [(chart/surface {:fu (fn [u v] [u v (* u v)]) :u [0 1] :v [0 1] :n 5})]})))))
+
+(deftest surface-facets-and-domains-test
+  (testing "5.4 a mesh per panel, one domain"
+    (let [rows (for [g ["a" "b" "c" "d"] r lattice] (assoc r :g g :z (* (double (:z r)) (inc (int (first g))))))
+          ds (map :domains (vals (get-in (built {:data rows :mapping {:x :x :y :y :z :z :facet :g} :charts [(chart/surface)]})
+                                         [:stats 0 :data])))]
+      (is (= 4 (count ds)))
+      (is (apply = ds))))
+  (testing "5.5 a cloud and a surface with explicit domains share the box"
+    (let [domain {:x [0 2] :y [0 1] :z [0 12]}
+          b (built {:data lattice :mapping {:x :x :y :y :z :z}
+                    :charts [(chart/surface {:domain domain}) (chart/cloud {:domain domain})]})]
+      (is (= (get-in b [:stats 0 :data :panel :domains]) (get-in b [:stats 1 :data :panel :domains])))
+      (is (instance? BufferedImage (image {:data lattice :mapping {:x :x :y :y :z :z}
+                                           :charts [(chart/surface {:domain domain}) (chart/cloud {:domain domain})]})))))
+  (testing "5.5 nodes outside an explicit domain are left out"
+    (let [cp (panel {:data lattice :mapping {:x :x :y :y :z :z} :charts [(chart/surface {:domain {:z [0 10.5]}})]})]
+      (is (= 4 (count (remove nil? (:nodes (:mesh cp))))))
+      (is (= [0 10.5] (:z (:domains cp)))))))
+
+;; 6 cloud additions
+
+(def ^:private cloud-rows
+  (vec (for [i (range 40)] {:x (m/sin i) :y (m/cos (* 2 i)) :z (* 0.1 i)})))
+
+(defn- wall-coords
+  "Per projection primitive of `computed` its points in data units (the projection is the identity)."
+  [computed]
+  (let [identity-point (fn [p] [p 0.0])]
+    (for [p (cloud/projection-primitives computed identity-point (constantly (:style computed)))]
+      [(:kind p) (case (:kind p) :point [(:at p)] :path (:points p) :region (apply concat (:rings p)))])))
+
+(deftest projections-test
+  (let [cp (fn [view] (panel {:data cloud-rows :mapping {:x :x :y :y :z :z}
+                              :charts [(chart/cloud {:view view :projections {:xy :density :xz :contour :yz :points}})]}))
+        on-wall? (fn [{:keys [domains]} view]
+                   (fn [[kind pts]]
+                     (let [[i axis] (case kind :region [2 :z] :path [1 :y] :point [0 :x])
+                           wall (nth (domains axis) (space/far-side view axis))]
+                       (every? #(near? wall (% i)) pts))))]
+    (testing "6.1 every projection in its wall's plane, on the far wall; all three kinds"
+      (doseq [view [{:azimuth 40 :elevation 30} {:azimuth 220 :elevation 30}]]
+        (let [c (cp view) ws (wall-coords c)]
+          (is (= #{:region :path :point} (set (map first ws))))
+          (is (every? (on-wall? c view) ws)))))
+    (testing "6.1 the x / y walls switch under azimuth + 180"
+      (is (not= (space/far-side {:azimuth 40 :elevation 30} :x) (space/far-side {:azimuth 220 :elevation 30} :x)))
+      (is (not= (space/far-side {:azimuth 40 :elevation 30} :y) (space/far-side {:azimuth 220 :elevation 30} :y))))
+    (testing "6.1 projections drawn before the cloud (depth +Inf), inside the box"
+      (let [c (cp {:azimuth 40 :elevation 30})
+            ws (wall-coords c)]
+        (is (every? #(= ##Inf (:depth %)) (cloud/projection-primitives c (fn [p] [p 0.0]) (constantly (:style c)))))
+        (is (every? (fn [[_ pts]] (every? (fn [p] (every? (fn [i] (space/in-domain? ((:domains c) (space/axes i)) (p i))) [0 1 2])) pts)) ws))))
+    (testing "6.1 edge-on wall (elevation 0): no floor projection"
+      (is (empty? (filter #(= :region (first %)) (wall-coords (cp {:azimuth 40 :elevation 0}))))))
+    (testing "6.1 boundary: one point gives no density, only its point projection"
+      (is (= [:point] (map first (wall-coords (panel {:data [{:x 0 :y 0 :z 0}] :mapping {:x :x :y :y :z :z}
+                                                       :charts [(chart/cloud {:projections {:xy :density :yz :points}})]}))))))
+    (testing "6.1 renders"
+      (is (instance? BufferedImage (image {:data cloud-rows :mapping {:x :x :y :y :z :z}
+                                           :charts [(chart/cloud {:projections {:xy :density :xz :contour :yz :points}})]}))))))
+
+(deftest bins-test
+  (let [rows (conj cloud-rows {:x 1.0 :y 1.0 :z 0})
+        cp (fn [opts] (panel {:data rows :mapping {:x :x :y :y} :charts [(chart/cloud (merge {:type :bars :bins [4 3]} opts))]}))]
+    (testing "6.2 counts sum to the rows; a point at the far end counts in the last cell"
+      (let [{:keys [points]} (cp {})]
+        (is (= (count rows) (reduce + (:z points))))
+        (is (= 41 (reduce + (:z (cloud/bin-counts (map :x rows) (map :y rows) [[-1 1] [-1 1]] [1 1])))))
+        (is (= {:x [0.75] :y [0.5] :z [1]} (cloud/bin-counts [1.0] [1.0] [[-1 1] [-1 1]] [4 2])))))
+    (testing "6.2 bars sized to cells, the domain the binned range, base 0, z titled Count"
+      (let [{:keys [half domains base frame]} (cp {})
+            [x0 x1] (:x domains)]
+        (is (near? (* 0.5 0.8 (/ (- x1 x0) 4.0)) (first half)))
+        (is (= 0.0 base))
+        (is (= 0.0 (first (:z domains))))
+        (is (= "Count" (get-in frame [:titles :z])))))
+    (testing "6.2 spikes too; an explicit domain bins its range"
+      (is (= [-2 2] (:x (:domains (cp {:type :spikes :domain {:x [-2 2]}}))))))
+    (testing "6.2 rules: :bins needs bars / spikes, no aesthetic mapping, no projections; no :z without :bins"
+      (is (seq (error-ins #(built {:data rows :mapping {:x :x :y :y} :charts [(chart/cloud {:bins [2 2]})]}))))
+      (is (seq (error-ins #(built {:data rows :mapping {:x :x :y :y} :charts [(chart/cloud {:bins [2 2] :type :bars :projections {:xy :points}})]}))))
+      (is (= :bins (:key (error #(built {:data (map (fn [r] (assoc r :g "a")) rows) :mapping {:x :x :y :y :color :g}
+                                         :charts [(chart/cloud {:bins [2 2] :type :bars})]})))))
+      (is (= :mapping (:key (error #(built {:data rows :mapping {:x :x :y :y} :charts [(chart/cloud)]}))))))
+    (testing "6.2 renders"
+      (is (instance? BufferedImage (image {:data rows :mapping {:x :x :y :y} :charts [(chart/cloud {:type :bars :bins [4 3]})]}))))))

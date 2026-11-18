@@ -49,6 +49,20 @@
   (let [lo (double lo) hi (double hi)]
     (if (< lo hi) [lo hi] [(- lo 0.5) (+ hi 0.5)])))
 
+(defn data-domain
+  "Domain of the numbers `vs` widened by `reach` on both sides (a single value widened, see [[widen]]); `[0 1]`
+  without values."
+  [vs ^double reach]
+  (if (seq vs)
+    (let [[lo hi] (widen [(reduce min vs) (reduce max vs)])]
+      [(- (double lo) reach) (+ (double hi) reach)])
+    [0.0 1.0]))
+
+(defn in-domain?
+  "Is `v` within the explicit `domain` (`[a b]`, either direction; `nil` - none: everything is)?"
+  [domain v]
+  (or (nil? domain) (let [[a b] domain] (<= (m/min (double a) (double b)) (double v) (m/max (double a) (double b))))))
+
 (defn normalizer
   "Function of a data point `[x y z]` giving its position in the box of side `aspect` centred at the origin
   (`domains` - `{:x [a b] ..}`, `a` at the low box side, `b` at the high one; `a` > `b` reverses the axis)."
@@ -115,6 +129,12 @@
   [view axis side]
   (let [n (outward-normal (rotation view) axis side)]
     [n (< (.z n) -1.0e-9)]))
+
+(defn far-side
+  "Side (0 / 1) of the box face of `axis` turned away from the viewer in `view` - the far wall across that axis, `nil`
+  when both are edge-on."
+  [view axis]
+  (first (filter #(> (.z ^Vec3 (first (face-normal view axis %))) 1.0e-9) [0 1])))
 
 (defn- edge-faces
   "The two faces `[axis side]` an `edge` belongs to."

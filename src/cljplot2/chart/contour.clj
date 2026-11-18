@@ -38,8 +38,7 @@
             [cljplot2.graphics.draw :as draw]
             [cljplot2.scale.position :as scale]
             [cljplot2.schema :as schema]
-            [cljplot2.theme :as theme])
-  (:import [java.awt.geom Path2D Path2D$Double]))
+            [cljplot2.theme :as theme]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -158,17 +157,6 @@
   [color alpha]
   (if alpha (c/set-alpha (c/to-color color) (* (double alpha) (double (c/alpha (c/to-color color))))) color))
 
-(defn- rings-shape
-  "Even-odd `Path2D` of the pixel `rings`."
-  ^Path2D [rings]
-  (let [path (Path2D$Double. Path2D/WIND_EVEN_ODD)]
-    (doseq [ring rings :when (> (count ring) 2)]
-      (let [[[x y] & more] ring]
-        (.moveTo path (double x) (double y))
-        (doseq [[x y] more] (.lineTo path (double x) (double y)))
-        (.closePath path)))
-    path))
-
 (defn line-midpoint
   "`[point length]` of the pixel polyline `points` (`[x y]` pairs): the point halfway along it and its total length;
   `nil` for fewer than two points or a non-finite one."
@@ -237,7 +225,7 @@
     (doseq [[contour st] visible]
       (if fill?
         (do (c2d/set-color canvas (with-alpha (:color st) alpha))
-            (c2d/shape canvas (rings-shape (map to-pixels (:rings contour))) false))
+            (c2d/shape canvas (polyline/rings-path (map to-pixels (:rings contour))) false))
         (polyline/stroke-runs! canvas
                                (map (fn [{:keys [points closed?]}] (to-pixels (if closed? (conj points (first points)) points)))
                                     (:lines contour))
