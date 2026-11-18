@@ -22,9 +22,9 @@
 (set! *unchecked-math* :warn-on-boxed)
 
 (def mapping-keys
-  "Mapping keys of the built-in dimensions (accessors); `:hierarchy` (treemap) holds a vector of accessors; `:set` /
-  `:item` - set membership (Venn)."
-  [:x :y :ymin :ymax :xend :yend :open :high :low :close :color :shape :size :dash :pattern :group :facet :facet-col :facet-row :order :value :set :item])
+  "Mapping keys of the built-in dimensions (accessors); `:z` - the third coordinate of 3D charts; `:hierarchy` (treemap)
+  holds a vector of accessors; `:set` / `:item` - set membership (Venn)."
+  [:x :y :z :ymin :ymax :xend :yend :open :high :low :close :color :shape :size :dash :pattern :group :facet :facet-col :facet-row :order :value :set :item])
 
 (def mapping-schema
   "A plot or chart `:mapping`: accessors (keyword or function; `nil` - not mapped) of the built-in keys, `:hierarchy`

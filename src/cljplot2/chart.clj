@@ -11,7 +11,8 @@
 
   `:coords` (optional, default `#{:cartesian}`) - the coordinate systems the chart draws in (plot `:coord`, see
   [[cljplot2.scale.coord]]); polar charts: [[bar]], [[segment]], [[scatter]], [[line]], [[text]], [[rule]],
-  [[rect]], [[parallel]] (radar), [[partition]] (sunburst).
+  [[rect]], [[parallel]] (radar), [[partition]] (sunburst); `#{:three-d}` - 3D charts ([[cloud]]): only with other
+  3D charts, each with an explicit `:domain` when there are several, see [[cljplot2.data.space3d]].
 
   `:schema` (optional for user charts) - `{:options s :style s :mapping s}` malli schemas, checked by `build` before
   any stage runs: `:options` against the chart's options, `:mapping` against the plot mapping merged with the chart's,
@@ -73,6 +74,7 @@
             [cljplot2.chart.image :as image]
             [cljplot2.chart.line :as line]
             [cljplot2.chart.pack :as pack]
+            [cljplot2.chart.cloud :as cloud]
             [cljplot2.chart.parallel :as parallel]
             [cljplot2.chart.partition :as partition]
             [cljplot2.chart.polygon :as polygon]
@@ -109,6 +111,7 @@
    :treemap (:style treemap/schemas)
    :partition (:style partition/schemas)
    :pack (:style pack/schemas)
+   :cloud (:style cloud/schemas)
    :waffle (:style waffle/schemas)
    :venn (:style venn/schemas)
    :tile (:style tile/schemas)
@@ -218,6 +221,11 @@
   ([] (partition {}))
   ([options] (polar (assoc (chart-value :partition partition/compute partition/draw partition/legend partition/schemas options)
                            :computed-aesthetics partition/computed-aesthetics))))
+
+(defn cloud
+  "3D scatter (points, spikes, bars) of `:x`, `:y`, `:z` in a projected box, see [[cljplot2.chart.cloud]]."
+  ([] (cloud {}))
+  ([options] (assoc (chart-value :cloud cloud/compute cloud/draw cloud/legend cloud/schemas options) :coords #{:three-d})))
 
 (defn pack
   "Circle packing of `:value` over the `:hierarchy` levels, see [[cljplot2.chart.pack]]."

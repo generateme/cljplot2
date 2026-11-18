@@ -59,7 +59,7 @@
   [options theme]
   (merge (get-in theme [:chart :scatter]) (select-keys options [:size :color :stroke-color :stroke-width :shape])))
 
-(defn- kept?
+(defn kept?
   "Is `v` of dimension `k` kept: valid (for an aesthetic: kept by its plot scale, see
   [[cljplot2.scale.aesthetic/kept-value?]]), or `nil` (NA) for an aesthetic when `na-level?`."
   [k na-level? plot-scales v]

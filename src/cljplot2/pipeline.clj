@@ -10,7 +10,9 @@
   * `:scales` - `{:x spec :y spec}`, position scales, see [[cljplot2.scale.position/data-scale-spec]]; facet scales, see
     [[cljplot2.data.facet]]; aesthetic scales `:color` `:shape` `:size` `:dash` `:pattern`, see [[cljplot2.scale.aesthetic]]
   * `:data`, `:mapping` - plot data and mapping, see [[cljplot2.data.rows]]
-  * `:charts` - vector of chart values, see [[cljplot2.chart]]
+  * `:charts` - vector of chart values, see [[cljplot2.chart]]; 3D charts (`:coords #{:three-d}`, e.g. `chart/cloud`)
+    only with other 3D charts - several each with an explicit `:domain {:x :y :z}` - and without `:flip`, `:aspect
+    :iso`, `:margins`, polar `:coord` or free / sliced facet scales
   * `:facets` - `{:columns :rows :order :na-panel :scales :strips :widths :heights}` facet layout options, see
     [[cljplot2.data.facet]]: `:scales {:x r :y r}` - `:same` (default), `:free` (each panel's own data domain) or
     `:sliced` (each panel's own centre, the widest panel's span; numeric data) - panels sharing an axis share the
@@ -948,7 +950,7 @@
    [:draw schema/function]
    (schema/nilable :legend schema/function)
    (schema/optional :inherit-mapping [:enum :all :facets])
-   (schema/optional :coords [:set [:enum :cartesian :polar]])
+   (schema/optional :coords [:set [:enum :cartesian :polar :three-d]])
    (schema/nilable :schema chart-schemas)])
 
 (def scales-schema
@@ -1027,6 +1029,30 @@
                                 [:x :y]))]
       (when problem [(error [:facets] facets problem)]))))
 
+(defn- three-d?
+  "Is chart value `c` a 3D chart (`:coords` with `:three-d`)?"
+  [c]
+  (contains? (get c :coords) :three-d))
+
+(defn- three-d-errors
+  "Errors of a plot with 3D charts (see [[cljplot2.chart.cloud]]): only 3D charts; several of them each with an
+  explicit `:domain` of `:x`, `:y` and `:z` (their boxes must match); no `:flip`, `:aspect :iso`, `:margins` or free /
+  sliced facet scales (polar coordinates are refused by the charts' `:coords`). `error` - `(fn [in value message])`."
+  [{:keys [charts flip aspect margins facets]} error]
+  (let [three (filter three-d? charts)]
+    (when (seq three)
+      (concat
+       (when (not-every? three-d? charts)
+         [(error [:charts] (mapv :kind charts) "3D charts can't share a plot with 2D charts")])
+       (when (and (> (count three) 1)
+                  (not-every? #(every? (fn [k] (get-in % [:options :domain k])) [:x :y :z]) three))
+         [(error [:charts] (mapv :kind three) "several 3D charts need an explicit :domain {:x :y :z} each (their boxes must match)")])
+       (when flip [(error [:flip] flip "3D charts lay out their own panel: no :flip")])
+       (when (= :iso aspect) [(error [:aspect] aspect "3D charts lay out their own panel: use the charts' :aspect, not :aspect :iso")])
+       (when (seq margins) [(error [:margins] margins "3D charts can't have plot margins")])
+       (when (some #(not= :same (facet/scale-relation facets %)) [:x :y])
+         [(error [:facets] facets "3D charts share their domains across panels: no free / sliced facet scales")])))))
+
 (defn- rule-errors
   "Errors of the rules across plot keys (for a plot whose keys are valid): facet mappings, scales without a mapping,
   `:custom-grid` / `:arrange` combinations (with labels, `:aspect :iso` or `:flip`)."
@@ -1074,6 +1100,7 @@
                                   (error [:charts i] (:kind c) (str "chart " (:kind c) " doesn't support polar coordinates"))))
                       charts)))
      (facet-scale-errors plot (seq dim-sets) error)
+     (three-d-errors plot error)
      (when (or custom-grid arrange)
        (for [k (keys labels) :when (not= k :title)]
          (error [:labels k] (get labels k) "only :title is allowed with :custom-grid or :arrange")))

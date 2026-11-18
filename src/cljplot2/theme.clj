@@ -98,6 +98,7 @@
              :na [150 150 150]}
    :legend {:gap 5 :key-size 14 :fill :none :border-color :none :border-width 1 :bar-length :stretch :bar-width nil}
    :chart {:scatter {:size 4 :color [69 117 180 180] :stroke-color :none :stroke-width 1 :shape \O}
+           :cloud {:size 4 :color [69 117 180 180] :stroke-color :none :stroke-width 1 :shape \O}
            :histogram {:color [69 117 180] :stroke-color :darker :stroke-width 1 :alpha 0.6 :zero-line-color :black
                        :pattern :solid :pattern-color :darker
                        :zero-line-width 1}
