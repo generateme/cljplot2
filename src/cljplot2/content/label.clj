@@ -163,6 +163,17 @@
                                         (+ block-y (* idx line-height) ascent)))
                             widths))))))
 
+(defn value-text
+  "Text of a data value in a label (tile values, contour levels): a number to at most 2 decimals (whole numbers
+  without them), a keyword's name, other values as `str`; `nil` - none."
+  [value]
+  (cond
+    (nil? value) nil
+    (number? value) (let [r (m/approx (double value) 2)]
+                      (if (== r (m/round r)) (str (m/round r)) (str r)))
+    (keyword? value) (name value)
+    :else (str value)))
+
 (def ^:private anchor-fraction
   {:left 0.0 :center 0.5 :right 1.0 :top 0.0 :middle 0.5 :bottom 1.0})
 

@@ -1,7 +1,7 @@
 (ns cljplot2.theme
   "Plot theme: a nested map of defaults, deep-merged with the plot's `:theme`.
 
-  `:text` maps a role (`:title`, `:strip`, ..., `:annotation` - text charts and strip n labels) to a text style:
+  `:text` maps a role (`:title`, `:strip`, ..., `:contour-label` - contour level labels, `:annotation` - text charts and strip n labels) to a text style:
 
   * `:font` - font family name or `java.awt.Font`, see [[cljplot2.graphics.font/resolve-font]]
   * `:size` - points
@@ -166,6 +166,8 @@
           :venn-count {:font "DejaVu Sans Mono" :size 10 :font-style :plain :color :black :padding 2 :align centered}
           :tile-value {:font "DejaVu Sans Mono" :size 9 :font-style :plain :color :black :padding 1 :align centered}
           :correlation {:font "DejaVu Sans Mono" :size 12 :font-style :plain :color :black :padding 1 :align centered}
+          :contour-label {:font "DejaVu Sans Mono" :size 9 :font-style :plain :color :black :padding 1 :align centered
+                          :background [255 255 255 180]}
           :annotation {:font "DejaVu Sans Mono" :size 10 :font-style :plain :color :black :padding 2 :align centered}}})
 
 (defn deep-merge

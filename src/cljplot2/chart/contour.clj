@@ -16,12 +16,19 @@
     categorical values, `:group`, other ordinal aesthetics) - a field per group (points / gridded data of the group)
     with its lines in the group's style, levels shared by the groups
   * `:width`, `:dash`, `:alpha` (multiplies the colors' alpha, a fraction)
+  * `:labels` (line contours only; default none) - `true`: each line labelled with its level (a number to at most 2
+    decimals, see [[cljplot2.content.label/value-text]]), or a function of `{:level v}` returning the text (`nil` - no
+    label, e.g. every second level): horizontal text centred halfway along the line (by its pixel length), text role
+    `:contour-label` (a translucent background over the line, which isn't cut); a line shorter than twice its label
+    gets none, a label leaving the panel or overlapping one already drawn is skipped (lowest levels first); labels are drawn after all
+    lines. With `:fill true` - `ex-info {:key :labels}`.
 
   On a `:log` axis the field is sampled (a density estimated) in log10 coordinates, see [[cljplot2.data.field]]."
   (:require [clojure2d.color :as c]
             [clojure2d.core :as c2d]
             [fastmath.core :as m]
             [cljplot2.chart.field :as field-chart]
+            [cljplot2.content.label :as label]
             [cljplot2.data.contour :as contour]
             [cljplot2.data.field :as field]
             [cljplot2.data.group :as group]
@@ -43,12 +50,15 @@
 (def schemas
   "Schemas of the contour chart: `:style` (theme `[:chart :contour]`), `:options`, `:mapping` (merged)."
   {:style (into [:map {:closed true}] style-entries)
-   :options (-> [:map {:closed true}]
-                (into style-entries)
-                (into field/options)
-                (into data/common-options)
-                (conj (schema/optional :levels [:or [:int {:min 1 :max 1000}] [:vector {:min 1} schema/finite]])
-                      (schema/optional :fill :boolean)))
+   :options (schema/with-rules
+             (-> [:map {:closed true}]
+                 (into style-entries)
+                 (into field/options)
+                 (into data/common-options)
+                 (conj (schema/optional :levels [:or [:int {:min 1 :max 1000}] [:vector {:min 1} schema/finite]])
+                       (schema/optional :fill :boolean)
+                       (schema/nilable :labels [:or :boolean schema/function])))
+             [#(when (and (:labels %) (:fill %)) "labels need line contours, not :fill true") [:labels]])
    :mapping [:maybe [:map]]})
 
 (defn- style
@@ -120,7 +130,7 @@
                         (group/aesthetic-extents (update-vals (group-by first fields)
                                                               (fn [fs] (mapv (fn [[_ a]] {:aesthetics a}) fs)))
                                                  plot-scales))]
-    {:data (update-vals panels (fn [cs] {:contours cs :style st :fill? fill? :by-level? by-level?}))
+    {:data (update-vals panels (fn [cs] {:contours cs :style st :fill? fill? :by-level? by-level? :labels (:labels options)}))
      :extents (into {} (map (fn [panel]
                               [panel (cond-> {:x {:kind :numeric :min (double x0) :max (double x1)}
                                               :y {:kind :numeric :min (double y0) :max (double y1)}}
@@ -159,9 +169,63 @@
         (.closePath path)))
     path))
 
+(defn line-midpoint
+  "`[point length]` of the pixel polyline `points` (`[x y]` pairs): the point halfway along it and its total length;
+  `nil` for fewer than two points or a non-finite one."
+  [points]
+  (when (and (>= (count points) 2) (every? (fn [[x y]] (and (m/valid-double? (double x)) (m/valid-double? (double y)))) points))
+    (let [segments (mapv (fn [[x0 y0] [x1 y1]] (m/hypot (- (double x1) (double x0)) (- (double y1) (double y0))))
+                         points (rest points))
+          total (double (reduce + 0.0 segments))
+          half (* 0.5 total)]
+      (loop [i 0 walked 0.0]
+        (let [len (double (segments i))
+              [x0 y0] (points i) [x1 y1] (points (inc i))]
+          (if (or (>= (+ walked len) half) (= i (dec (count segments))))
+            (let [t (if (pos? len) (m/constrain (/ (- half walked) len) 0.0 1.0) 0.0)]
+              [[(+ (double x0) (* t (- (double x1) (double x0)))) (+ (double y0) (* t (- (double y1) (double y0))))] total])
+            (recur (inc i) (+ walked len))))))))
+
+(defn- level-text
+  "Label text of `level` for the `:labels` option `labels` (`true` or a function of `{:level v}`), `nil` - none."
+  [labels level]
+  (if (fn? labels) (some-> (labels {:level level}) str) (label/value-text level)))
+
+(defn- boxes-overlap?
+  [{ax :x ay :y aw :w ah :h} {bx :x by :y bw :w bh :h}]
+  (and (< (double ax) (+ (double bx) (double bw))) (< (double bx) (+ (double ax) (double aw)))
+       (< (double ay) (+ (double by) (double bh))) (< (double by) (+ (double ay) (double ah)))))
+
+(defn- inside?
+  "Is pixel box `b` within the panel box `{:w :h}` (at the origin)?"
+  [{:keys [x y w h]} panel]
+  (and (>= (double x) 0.0) (>= (double y) 0.0)
+       (<= (+ (double x) (double w)) (double (:w panel))) (<= (+ (double y) (double h)) (double (:h panel)))))
+
+(defn- draw-labels!
+  "Level labels of the line `contours` (pixel points by `to-pixels`), lowest level first: centred halfway along each
+  line long enough (twice the label width), skipped where they'd leave the `panel` box or overlap a label already
+  drawn."
+  [canvas contours to-pixels labels {:keys [panel] :as env}]
+  (reduce (fn [drawn {:keys [level lines]}]
+            (if-let [text (level-text labels level)]
+              (let [content {:kind :label :role :contour-label :text text}]
+                (reduce (fn [drawn {:keys [points closed?]}]
+                          (if-let [[[x y] length] (line-midpoint (to-pixels (if closed? (conj points (first points)) points)))]
+                            (let [box (label/box-at canvas content [:center :middle] x y env)]
+                              (if (or (< (double length) (* 2.0 (double (:w box)))) (not (inside? box panel))
+                                      (some #(boxes-overlap? box %) drawn))
+                                drawn
+                                (do (label/draw-at! canvas content [:center :middle] x y env)
+                                    (conj drawn box))))
+                            drawn))
+                        drawn lines))
+              drawn))
+          [] (sort-by :level contours)))
+
 (defn draw
-  "Draw one panel's contours: filled regions lowest level first, or lines."
-  [_chart {:keys [contours style fill? by-level?]} canvas _box scales env]
+  "Draw one panel's contours: filled regions lowest level first, or lines (then their `:labels`)."
+  [_chart {:keys [contours style fill? by-level? labels]} canvas box scales env]
   (let [projection (scale/projection scales)
         to-pixels (fn [points] (mapv (fn [[x y]] (let [^fastmath.vector.Vec2 p (projection x y)] [(.x p) (.y p)])) points))
         alpha (:alpha style)]
@@ -174,7 +238,9 @@
         (polyline/stroke-runs! canvas
                                (map (fn [{:keys [points closed?]}] (to-pixels (if closed? (conj points (first points)) points)))
                                     (:lines contour))
-                               (assoc st :color (with-alpha (:color st) alpha)))))))
+                               (assoc st :color (with-alpha (:color st) alpha)))))
+    (when (and labels (not fill?))
+      (draw-labels! canvas contours to-pixels labels (assoc env :panel box)))))
 
 (defn legend
   "Key glyph: a line in the key's color and the chart's line style; filled contours - a filled square."

@@ -14,11 +14,17 @@
   (outliers);
   `:outliers` (default true), `:mean` (a mean marker, default false), `:varwidth` (box width proportional to the
   square root of its count, relative to the largest, default false), `:padding {:x [lo hi]}` (default
-  `[0.05 0.05]`), plus the strip options and `:data` / `:mapping` (`:x` values, optional `:y` levels)."
+  `[0.05 0.05]`), plus the strip options and `:data` / `:mapping` (`:x` values, optional `:y` levels).
+
+  `:variant` - `:classic` (default, the box above) or `:tufte` (E. Tufte's quartile plot, lattice `panel.bwtufte`): no
+  box and no median line - the median a `:shape` point of `:size` in `:color`, a line from each whisker end to its
+  quartile (the inter-quartile gap left empty), no caps; outliers as above, the `:mean` marker a hollow circle in
+  `:color`; `:varwidth` has no effect (nothing has a width)."
   (:require [clojure2d.color :as c]
             [clojure2d.core :as c2d]
             [fastmath.core :as m]
             [fastmath.stats :as stats]
+            [fastmath.vector :as v]
             [cljplot2.data.group :as group]
             [cljplot2.data.rows :as data]
             [cljplot2.data.strip :as strip]
@@ -49,6 +55,7 @@
                 (conj (schema/nilable :outliers schema/bool)
                       (schema/nilable :mean schema/bool)
                       (schema/nilable :varwidth schema/bool)
+                      (schema/nilable :variant [:enum :classic :tufte])
                       (schema/optional :padding data/position-padding)))
    :mapping strip/values-mapping})
 
@@ -97,8 +104,26 @@
 
 (defn- finite? [^Vec2 p] (and (m/valid-double? (.x p)) (m/valid-double? (.y p))))
 
+(defn- draw-tufte!
+  "Draw a Tufte quartile item: whisker-end-to-quartile lines along the item's centre `c0` and the median point (`p` -
+  value, cross position -> pixel), outliers and the mean marker as asked."
+  [canvas p {:keys [q1 median q3 lav uav outliers mean]} c0 st outliers? mean?]
+  (let [fill (:color st)
+        stroke (draw/outline-color (:stroke-color st) fill)]
+    (c2d/set-stroke-custom canvas {:size (double (:stroke-width st)) :cap :butt})
+    (c2d/set-color canvas fill)
+    (line! canvas (p lav c0) (p q1 c0))
+    (line! canvas (p q3 c0) (p uav c0))
+    (shape/draw! canvas (:shape st) (p median c0) (assoc st :stroke-color stroke))
+    (when outliers?
+      (doseq [o outliers]
+        (shape/draw! canvas (:shape st) (p o c0) (assoc st :stroke-color stroke))))
+    (when mean?
+      (shape/draw! canvas \o (p mean c0) {:size (m/max 3.0 (* 0.5 (double (:size st)))) :color fill
+                                         :stroke-width (double (:stroke-width st))}))))
+
 (defn- draw-in-strip-frame
-  "Draw the boxes of one panel."
+  "Draw the boxes of one panel (classic boxes or Tufte quartile plots, see the namespace doc)."
   [_chart {:keys [items style place options]} canvas box scales env]
   (let [{:keys [point] :as pl} (strip/placement box scales options place)
         outliers? (data/option options :outliers true)
@@ -110,7 +135,12 @@
             hw (* (strip/slot-half slot) (double width-factor))
             p (fn [v cross] (point v level cross))
             a (p q1 (- c0 hw)) b (p q3 (+ c0 hw))]
-        (when (and (finite? a) (finite? b))
+        (cond
+          (not (and (finite? a) (finite? b))) nil
+          (= :tufte (:variant options)) (draw-tufte! canvas p {:q1 q1 :median median :q3 q3 :lav lav :uav uav
+                                                               :outliers outliers :mean mean}
+                                                     c0 st outliers? (:mean options))
+          :else
           (let [fill (:color st)
                 stroke (draw/outline-color (:stroke-color st) fill)
                 ;; whiskers stay visible without an outline: the darkened fill
@@ -154,11 +184,23 @@
   "Draw one panel (see [[cljplot2.data.strip/draw-oriented]]): [[draw-in-strip-frame]] in the strip frame."
   [chart computed canvas box scales env]
   (strip/draw-oriented draw-in-strip-frame chart computed canvas box scales env))
-(defn legend
-  "Key glyph: a small box with a median line, centred in `box`."
-  [{:keys [options]} attributes canvas {:keys [x y w h]} env]
-  (let [st (merge (style options (:theme env)) (select-keys attributes [:color :pattern]))
-        bw (* 0.7 (double w)) bh (* 0.5 (double h))
+(defn- tufte-key!
+  "Key glyph of the Tufte variant: a point between two short lines, centred in `box`."
+  [canvas st {:keys [x y w h]}]
+  (let [cx (+ (double x) (* 0.5 (double w))) cy (+ (double y) (* 0.5 (double h)))
+        reach (* 0.4 (double w)) gap (* 0.15 (double w))]
+    (c2d/set-stroke-custom canvas {:size (double (:stroke-width st)) :cap :butt})
+    (c2d/set-color canvas (:color st))
+    (c2d/line canvas (- cx reach) cy (- cx gap) cy)
+    (c2d/line canvas (+ cx gap) cy (+ cx reach) cy)
+    (shape/draw! canvas (:shape st) (v/vec2 cx cy)
+                 (assoc st :size (m/min (double (:size st)) (* 0.5 (double h)))
+                        :stroke-color (draw/outline-color (:stroke-color st) (:color st))))))
+
+(defn- classic-key!
+  "Key glyph of the classic box: a small box with a median line, centred in `box`."
+  [canvas st {:keys [x y w h]}]
+  (let [bw (* 0.7 (double w)) bh (* 0.5 (double h))
         bx (+ (double x) (* 0.5 (- (double w) bw))) by (+ (double y) (* 0.5 (- (double h) bh)))]
     (c2d/set-stroke-custom canvas {:size (double (:stroke-width st))})
     (c2d/set-color canvas (:color st))
@@ -170,3 +212,11 @@
         (c2d/rect canvas bx by bw bh true)))
     (c2d/set-color canvas (draw/contrast-color (:color st)))
     (c2d/line canvas (+ bx (* 0.5 bw)) by (+ bx (* 0.5 bw)) (+ by bh))))
+
+(defn legend
+  "Key glyph: a small box with a median line (Tufte variant: a point between two short lines), centred in `box`."
+  [{:keys [options]} attributes canvas box env]
+  (let [st (merge (style options (:theme env)) (select-keys attributes [:color :pattern]))]
+    (if (= :tufte (:variant options))
+      (tufte-key! canvas st box)
+      (classic-key! canvas st box))))

@@ -21,6 +21,12 @@
   text (`nil` - none), drawn centred in black or white by the color painted under it (translucent fills included;
   text role `:tile-value`).
 
+  Cell size (`:size` mapping, optional): each cell shrinks by `:cell-scale` × `size / s-max` - `size` the value's size
+  through the plot's size scale, `s-max` the largest size of that scale's `:range` (1 for an identity scale, whose
+  values are the fractions themselves); e.g. `:scales {:size {:range [7 10]}}` gives cells from 70 % to 100 % (lattice
+  `shrink`). A size of 0 draws no cell; rows with a `nil` size or one outside the size scale are dropped (`:dropped
+  {:size n}`). Sized cells are drawn antialiased (they don't abut); legend keys are cells scaled the same way.
+
   Colour bar beside a heatmap (pheatmap-style annotation): a one-row tile (`:y` constant, `:color` the annotation)
   above the heatmap in `(plot/arrange [bar heatmap] {:columns 1 :heights [1 6]})`, both plots with the same explicit
   x `:domain` (the bar's x axis hidden with `:axis false`) - the arranged panels align, so its cells sit over the
@@ -60,6 +66,27 @@
   [na-level? plot-scales v]
   (or (aesthetic/kept-value? :color (get plot-scales :color {}) v) (and na-level? (nil? v))))
 
+(defn- size-kept?
+  "Is `v` a kept size: not `nil` and valid under the plot's size scale (no NA level for cell sizes)."
+  [plot-scales v]
+  (and (some? v) (aesthetic/kept-value? :size (get plot-scales :size {}) v)))
+
+(defn largest-size
+  "Largest size of finalized / phase-1 size scale `spec`: the maximum of its `:range` (sizes or a level -> size map),
+  1.0 for an identity scale (or none)."
+  ^double [spec]
+  (let [range (:range spec)
+        sizes (if (map? range) (vals range) range)]
+    (if (and (not= :identity (:kind spec)) (seq sizes))
+      (double (reduce max (map double sizes)))
+      1.0)))
+
+(defn size-factor
+  "Shrink factor of a cell of `size` (an attribute of the size scale) under a scale whose largest size is `largest`:
+  `size / largest` within `[0 1]` (0 for a non-positive largest size)."
+  ^double [size ^double largest]
+  (if (pos? largest) (m/constrain (/ (double size) largest) 0.0 1.0) 0.0))
+
 (defn resolution
   "Smallest positive gap between the distinct numbers `vs` (1.0 for fewer than two)."
   ^double [vs]
@@ -82,7 +109,7 @@
       :categorical {:kind :categorical})))
 
 (defn- last-per-position
-  "Rows `[x y color]` of a panel, one per (x, y) - the last - in first-appearance order of the positions; and the
+  "Rows `[x y color]` (`[x y color size]` with a size mapping) of a panel, one per (x, y) - the last - in first-appearance order of the positions; and the
   count of the others."
   [rows]
   (let [key-of (fn [[x y]] [(if (number? x) (double x) x) (if (number? y) (double y) y)])
@@ -104,15 +131,17 @@
       (pos? total) (assoc :align-outer (/ (if vertical? last-side first-side) total)))))
 
 (defn compute
-  "Per panel: `{:cells [[x y color] ..] :axes {:x info :y info} :style st :value-label f}` (axis info - see
+  "Per panel: `{:cells [[x y color size?] ..] :axes {:x info :y info} :style st :value-label f}` (axis info - see
   [[axis-info]]); extents (numeric axes: the values widened by the cells' reach; categorical: the levels), color
-  value extents, no padding, `:scale-defaults` (categorical axes: see [[band-room]]; numeric axes: no nice domain - cells fill the panel), `:na`, `:dropped` (`:x`, `:y`, `:color`, `:duplicate`)."
+  value extents (and size values with a `:size` mapping), no padding, `:scale-defaults` (categorical axes: see [[band-room]]; numeric axes: no nice domain - cells fill the panel), `:na`, `:dropped` (`:x`, `:y`, `:color`, `:duplicate`; `:size` with a `:size` mapping)."
   [{:keys [options]} {:keys [groups mapping]} {:keys [theme na-level? plot-scales flip?] :or {na-level? true}}]
   (let [st (style options theme)
-        accessors (mapv #(data/row-accessor % (mapping %)) [:x :y :color])
+        sized? (some? (:size mapping))
+        accessors (mapv #(data/row-accessor % (mapping %)) (cond-> [:x :y :color] sized? (conj :size)))
         values (update-vals groups (fn [rows] (mapv (fn [row] (mapv #(% row) accessors)) rows)))
         all (apply concat (vals values))
-        keep? (fn [[x y c]] (and (position-ok? x) (position-ok? y) (color-kept? na-level? plot-scales c)))
+        size-ok? (fn [cell] (or (not sized?) (size-kept? plot-scales (nth cell 3))))
+        keep? (fn [[x y c :as cell]] (and (position-ok? x) (position-ok? y) (color-kept? na-level? plot-scales c) (size-ok? cell)))
         kept (update-vals values #(last-per-position (filterv keep? %)))
         cells-of (update-vals kept first)
         kept-all (apply concat (vals cells-of))
@@ -135,15 +164,19 @@
                                                    {:x (axis-extent :x (map first cs))
                                                     :y (axis-extent :y (map second cs))
                                                     :color (aesthetic/value-extent :color (get plot-scales :color)
-                                                                                   (remove nil? (map #(nth % 2) cs)))})))
+                                                                                   (remove nil? (map #(nth % 2) cs)))
+                                                    :size (when sized?
+                                                            (aesthetic/value-extent :size (get plot-scales :size)
+                                                                                    (map #(nth % 3) cs)))})))
      :padding {:x [0.0 0.0] :y [0.0 0.0]}
      :scale-defaults (into {} (for [k [:x :y]]
                                 [k (if (numeric? k) {:nice false} (band-room (overhang k) (= k (if flip? :x :y))))]))
      :na (if (some #(nil? (nth % 2)) kept-all) #{:color} #{})
-     :dropped {:x (count (remove #(position-ok? (first %)) all))
-               :y (count (remove #(position-ok? (second %)) all))
-               :color (count (remove #(color-kept? na-level? plot-scales (nth % 2)) all))
-               :duplicate (reduce + 0 (map second (vals kept)))}}))
+     :dropped (cond-> {:x (count (remove #(position-ok? (first %)) all))
+                       :y (count (remove #(position-ok? (second %)) all))
+                       :color (count (remove #(color-kept? na-level? plot-scales (nth % 2)) all))
+                       :duplicate (reduce + 0 (map second (vals kept)))}
+                sized? (assoc :size (count (remove size-ok? all))))}))
 
 ;; drawing
 
@@ -171,11 +204,7 @@
   [value-label value x y]
   (cond
     (fn? value-label) (some-> (value-label {:value value :x x :y y}) str)
-    (nil? value) nil
-    (number? value) (let [r (m/approx (double value) 2)]
-                      (if (== r (m/round r)) (str (m/round r)) (str r)))
-    (keyword? value) (name value)
-    :else (str value)))
+    :else (label/value-text value)))
 
 (defn draw
   "Draw one panel's cells (fills, then value labels on top)."
@@ -187,17 +216,25 @@
           centre-x? (= :numeric (:kind (:x axes)))
           centre-y? (= :numeric (:kind (:y axes)))
           color-of (aesthetic/attribute-fn :color (:color scales) (get-in env [:theme :palette :na]))
-          placed (keep (fn [[x y value]]
-                         (when-let [fill (color-of value)]
+          sized? (some #(> (count %) 3) cells)
+          factor-of (if sized?
+                      (let [size-of (aesthetic/attribute-fn :size (:size scales) nil)
+                            largest (largest-size (:size scales))]
+                        (fn [cell] (some-> (size-of (nth cell 3)) (size-factor largest))))
+                      (constantly 1.0))
+          placed (keep (fn [[x y value :as cell]]
+                         (when-let [fill (when (pos? (double (or (factor-of cell) 0.0))) (color-of value))]
                            (let [to-pixel (fn [[ox oy]]
                                             (let [a ((:pixel px) x ox) b ((:pixel py) y oy)]
                                               (if flipped? (v/vec2 b a) (v/vec2 a b))))]
                              {:x x :y y :value value :fill fill :to-pixel to-pixel
+                              :cell-scale (* (double (or (:cell-scale style) 1.0)) (double (factor-of cell)))
                               :offsets (cells/lattice-offsets (:cell style) ((:index px) x) ((:index py) y) centre-x? centre-y?)})))
                        cells)]
-      (cells/call-with-cell-rendering canvas style
-                                      (fn [c] (doseq [{:keys [to-pixel offsets fill]} placed]
-                                                (cells/draw-cell! c to-pixel offsets fill style))))
+      (let [draw-cells! (fn [c] (doseq [{:keys [to-pixel offsets fill cell-scale]} placed]
+                                  (cells/draw-cell! c to-pixel offsets fill (assoc style :cell-scale cell-scale))))]
+        ;; sized cells don't abut: antialiased edges
+        (if sized? (draw-cells! canvas) (cells/call-with-cell-rendering canvas style draw-cells!)))
       (when value-label
         (doseq [{:keys [x y value fill to-pixel offsets]} placed
                 :let [text (label-text value-label value x y)
@@ -209,13 +246,22 @@
                                   :color (draw/contrast-color (or (draw/painted-color canvas (.x centre) (.y centre)) fill))}
                           [:center :middle] (.x centre) (.y centre) env))))))
 
+(def ^:private size-key-fill
+  "Fill of a size legend key without a color attribute: a neutral grey."
+  [110 110 110])
+
 (defn legend
-  "Key glyph: the cell shape filled with the key's color, fitted in `box`."
+  "Key glyph: the cell shape filled with the key's color (grey for a size key), fitted in `box`; a size key's cell
+  scaled by its size factor (see [[size-factor]], the plot's size scale in `env` `:scales`)."
   [{:keys [options]} attributes canvas {:keys [x y w h]} env]
   (let [st (style options (:theme env))
         offsets (cells/lattice-offsets (:cell st) 0 0 true true)
         [rx ry] (cells/lattice-reach (:cell st) true true)
         k (/ (* 0.4 (m/min (double w) (double h))) (m/max (double rx) (double ry)))
-        cx (+ (double x) (* 0.5 (double w))) cy (+ (double y) (* 0.5 (double h)))]
-    (cells/draw-cell! canvas (fn [[ox oy]] (v/vec2 (+ cx (* k (double ox))) (- cy (* k (double oy)))))
-                      offsets (:color attributes) (assoc st :cell-scale 1.0))))
+        cx (+ (double x) (* 0.5 (double w))) cy (+ (double y) (* 0.5 (double h)))
+        factor (if-let [size (:size attributes)]
+                 (size-factor size (largest-size (get-in env [:scales :size])))
+                 1.0)]
+    (when (pos? factor)
+      (cells/draw-cell! canvas (fn [[ox oy]] (v/vec2 (+ cx (* k (double ox))) (- cy (* k (double oy)))))
+                        offsets (or (:color attributes) size-key-fill) (assoc st :cell-scale factor)))))
