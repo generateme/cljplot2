@@ -14,13 +14,14 @@
     `[0.8 0.8]`) of the x / y resolution - the smallest gap between distinct values; faces shaded, outlined by
     `:stroke-color`)
   * `:view {:azimuth deg :elevation deg}` (default 40 / 30), `:aspect [ax ay az]` (box proportions, default `[1 1 1]`)
-  * `:box` (default true - the visible box edges), `:axes` (default true - ticks, labels and titles), `:axis-titles
+  * `:box` (default true - the box: hidden edges dashed and a floor grid behind the data, visible edges over it), `:axes` (default true - ticks, labels and titles), `:axis-titles
     {:x t :y t :z t}` (default the mapped column names; `nil` - none)
   * `:domain {:x [lo hi] :y .. :z ..}` - explicit data domains (each optional); otherwise the data's over all panels
     (bars widen x / y by half a bar). Several 3D charts in one plot need every domain explicit, so their boxes match.
 
   Facets: a box per panel, domains shared by all panels. Points, spikes and bar faces are drawn far to near."
-  (:require [fastmath.core :as m]
+  (:require [clojure2d.core :as c2d]
+            [fastmath.core :as m]
             [fastmath.vector :as v]
             [cljplot2.chart.scatter :as scatter]
             [cljplot2.chart.tile :as tile]
@@ -170,20 +171,27 @@
             (range (count x)))))
 
 (defn draw
-  "Draw one panel's box: frame (visible edges, axes), then the points / spikes / bars far to near."
+  "Draw one panel's box: the frame behind the data (floor grid, hidden edges), the points / spikes / bars far to near,
+  then the frame in front (visible edges, axes)."
   [_chart {:keys [domains frame style] :as computed} canvas {:keys [w h]} scales env]
   (let [env (assoc env :canvas canvas)
-        margin (space-draw/frame-margin domains (:titles frame) (:axes? frame) env)
-        proj (space/projector (assoc frame :domains domains) {:w w :h h :margin margin})]
+        margin (space-draw/frame-margin domains (:titles frame) (:axes? frame) [w h] env)
+        proj (space/projector (assoc frame :domains domains) {:w w :h h :margin margin})
+        frame (assoc frame :domains domains)]
     (when (pos? (double (:scale proj)))
-      (space-draw/draw-frame! canvas proj (assoc frame :domains domains) env)
+      (space-draw/draw-frame-back! canvas proj frame env)
       (space-draw/draw-primitives! canvas (primitives computed (:point proj)
-                                                      (point-styles (:points computed) style scales env))))))
+                                                      (point-styles (:points computed) style scales env)))
+      (space-draw/draw-frame-front! canvas proj frame env))))
 
 (defn legend
-  "Key glyph: the point (points, spikes) or a filled square (bars), styled by the key's attributes."
+  "Key glyph: the point (points), a vertical line (spikes) or a filled square (bars), styled by the key's attributes."
   [{:keys [options]} attributes canvas {:keys [x y w h] :as box} env]
-  (let [st (merge (style options (:theme env)) attributes)]
-    (if (= :bars (:type options))
-      (draw/bar-key! canvas box {:color (:color st) :stroke-color (:stroke-color st) :stroke-width (:stroke-width st)} false)
-      (shape/draw! canvas (:shape st) (v/vec2 (+ (double x) (* 0.5 (double w))) (+ (double y) (* 0.5 (double h)))) st))))
+  (let [st (merge (style options (:theme env)) attributes)
+        cx (+ (double x) (* 0.5 (double w)))]
+    (case (get options :type :points)
+      :bars (draw/bar-key! canvas box {:color (:color st) :stroke-color (:stroke-color st) :stroke-width (:stroke-width st)} false)
+      :spikes (do (c2d/set-color canvas (:color st))
+                  (c2d/set-stroke-custom canvas {:size (double (:stroke-width st)) :cap :butt})
+                  (c2d/line canvas cx (+ (double y) (* 0.15 (double h))) cx (+ (double y) (* 0.85 (double h)))))
+      (shape/draw! canvas (:shape st) (v/vec2 cx (+ (double y) (* 0.5 (double h)))) st))))

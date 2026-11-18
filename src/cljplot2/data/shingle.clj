@@ -16,10 +16,24 @@
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
+(declare rounded-str)
+
+(def ^:private ^:const bound-digits
+  "Significant digits of an exact (shingle) bound's text: enough for any data value, few enough to drop the noise of
+  floating-point arithmetic (`4.6499999999999995` prints `4.65`)."
+  10)
+
 (defn- bound-str
+  "Text of an exact interval bound `v`: whole numbers without decimals, others at [[bound-digits]] significant digits
+  (trailing zeros dropped; scientific notation below 1e-4 or above 1e15 in magnitude); non-finite values as `str`."
   [v]
   (let [d (double v)]
-    (if (and (m/valid-double? d) (== d (m/floor d)) (< (m/abs d) 1.0e15)) (str (long d)) (str v))))
+    (cond
+      (not (m/valid-double? d)) (str v)
+      (and (== d (m/floor d)) (< (m/abs d) 1.0e15)) (str (long d))
+      ;; plain notation within [1e-4 1e15), scientific beyond (a 1e300 bound prints 1E+300, not 301 digits)
+      (<= 1.0e-4 (m/abs d) 1.0e15) (rounded-str d bound-digits)
+      :else (-> (java.math.BigDecimal. d) (.round (java.math.MathContext. (int bound-digits))) (.stripTrailingZeros) (.toString)))))
 
 (defn rounded-str
   "`v` rounded to `digits` significant digits, plain notation, trailing zeros dropped (bin bounds)."

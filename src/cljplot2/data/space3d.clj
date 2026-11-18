@@ -127,6 +127,12 @@
   (let [rotate (rotation view)]
     (filterv (fn [e] (some (fn [[k side]] (front-facing? rotate k side)) (edge-faces e))) edges)))
 
+(defn hidden-edges
+  "Box edges behind the box in `view` (both faces turned away): the complement of [[visible-edges]]."
+  [view]
+  (let [shown (set (visible-edges view))]
+    (filterv (complement shown) edges)))
+
 (defn- silhouette?
   "Is `edge` on the box outline in `view`: one of its faces front-facing, the other not?"
   [rotate edge]
@@ -152,11 +158,12 @@
 
 (defn projector
   "Projection of the data box (`domains`, `aspect`, `view`) fitted in a `w` x `h` panel with `margin` pixels on every
-  side for axes: `{:point (fn [[x y z]] [Vec2 depth]) :corner (fn [corner] Vec2) :centre Vec2 :scale k}` - the
-  projected box's bounding rectangle scaled (proportions kept) to the largest size within the panel less the
-  margins and centred in it; pixel y grows downward. A panel too small for the margins gets a scale of 0."
+  side for axes: `{:point (fn [[x y z]] [Vec2 depth]) :corner (fn [corner] Vec2) :centre Vec2 :scale k}` - pixels
+  per box unit `k` such that the box's diagonal (its largest extent from any view) spans the smaller side of the
+  panel less the margins, so a box keeps its size whatever the view; the projected box centred in the panel; pixel y
+  grows downward. A panel too small for the margins gets a scale of 0."
   [{:keys [domains aspect view]} {:keys [w h margin]}]
-  (let [aspect (or aspect [1.0 1.0 1.0])
+  (let [aspect (vec (or aspect [1.0 1.0 1.0]))
         normalize (normalizer domains aspect)
         rotate (rotation view)
         projected (map #(rotate (corner-point % aspect)) corners)
@@ -165,7 +172,8 @@
         v0 (double (reduce min vs)) v1 (double (reduce max vs))
         margin (double (or margin 0.0))
         free-w (- (double w) (* 2.0 margin)) free-h (- (double h) (* 2.0 margin))
-        k (m/max 0.0 (m/min (/ free-w (m/max 1.0e-9 (- u1 u0))) (/ free-h (m/max 1.0e-9 (- v1 v0)))))
+        diagonal (v/mag (v/vec3 (aspect 0) (aspect 1) (aspect 2)))
+        k (m/max 0.0 (/ (m/min free-w free-h) diagonal))
         cx (* 0.5 (double w)) cy (* 0.5 (double h))
         um (* 0.5 (+ u0 u1)) vm (* 0.5 (+ v0 v1))
         to-pixel (fn [^Vec3 q] (v/vec2 (+ cx (* k (- (.x q) um))) (- cy (* k (- (.y q) vm)))))]

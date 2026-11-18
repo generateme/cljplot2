@@ -12,7 +12,9 @@
             [cljplot2.core :as plot]
             [cljplot2.data.space3d :as space]
             [cljplot2.graphics.space3d :as space-draw]
-            [cljplot2.test-util :refer [error]])
+            [cljplot2.test-util :refer [error]]
+            [cljplot2.theme]
+            [cljplot2.data.shingle])
   (:import [fastmath.vector Vec2 Vec3]
            [java.awt.image BufferedImage]))
 
@@ -45,14 +47,17 @@
     (is (= [4.5 5.5] (space/widen [5 5])))))
 
 (deftest fit-test
-  (testing "1.2 the projected box fits in the panel less the margin, touching a side"
-    (doseq [view [space/default-view {:azimuth 0 :elevation 0} {:azimuth 200 :elevation 75}]]
-      (let [{:keys [corner]} (space/projector {:domains {:x [0 1] :y [0 1] :z [0 1]} :view view} {:w 400 :h 300 :margin 20})
+  (testing "1.2 the projected box fits in the panel less the margin, its diagonal spanning the smaller side"
+    (doseq [view [space/default-view {:azimuth 0 :elevation 0} {:azimuth 200 :elevation 75} {:azimuth 45 :elevation 35.26}]]
+      (let [{:keys [corner scale]} (space/projector {:domains {:x [0 1] :y [0 1] :z [0 1]} :view view} {:w 400 :h 300 :margin 20})
             ps (map corner space/corners)
             xs (map #(.x ^Vec2 %) ps) ys (map #(.y ^Vec2 %) ps)]
         (is (every? #(<= 19.999 (double %) 380.001) xs))
         (is (every? #(<= 19.999 (double %) 280.001) ys))
-        (is (or (near? 20.0 (reduce min xs)) (near? 20.0 (reduce min ys)))))))
+        (is (near? (/ 260.0 (m/sqrt 3.0)) (double scale))))))
+  (testing "U5 one box size whatever the view"
+    (is (apply = (map #(:scale (space/projector {:domains {:x [0 1] :y [0 1] :z [0 1]} :view %} {:w 400 :h 300 :margin 20}))
+                      [{:azimuth 20 :elevation 20} {:azimuth 70 :elevation 30} {:azimuth 200 :elevation 60}]))))
   (testing "1.2 a panel smaller than its margins gives scale 0"
     (is (zero? (double (:scale (space/projector {:domains {:x [0 1] :y [0 1] :z [0 1]} :view space/default-view}
                                                 {:w 30 :h 30 :margin 20})))))))
@@ -73,9 +78,11 @@
       (is (= 255.0 (c/alpha (space/shade [200 200 200] (Vec3. 0 0 0)))) "alpha kept; no normal - ambient only"))))
 
 (deftest frame-test
-  (testing "1.5 visible edges: 9 in a general view, 4 face-on"
+  (testing "1.5 visible edges: 9 in a general view, 4 face-on; hidden ones the rest"
     (is (= 9 (count (space/visible-edges space/default-view))))
-    (is (= 4 (count (space/visible-edges {:azimuth 0 :elevation 0})))))
+    (is (= 3 (count (space/hidden-edges space/default-view))))
+    (is (= 4 (count (space/visible-edges {:azimuth 0 :elevation 0}))))
+    (is (= 8 (count (space/hidden-edges {:azimuth 0 :elevation 0})))))
   (testing "1.5 an axis per dimension on an edge along it"
     (let [{:keys [corner]} (space/projector {:domains {:x [0 1] :y [0 1] :z [0 1]} :view space/default-view} {:w 400 :h 300 :margin 20})
           edges (space/axis-edges space/default-view corner)]
@@ -158,3 +165,58 @@
       (is (= :margins (:key (error #(built (assoc p :charts [(chart/cloud)] :margins {:top (chart/density)}))))))
       (is (= :facets (:key (error #(built (-> p (assoc :charts [(chart/cloud)] :facets {:scales {:x :free}}) (assoc-in [:mapping :facet] :g)))))))
       (is (= :charts (:key (error #(built (assoc p :charts [(chart/cloud)] :coord {:kind :polar})))))))))
+
+;; review fixes
+
+(defn- lines-in [f]
+  (let [log (atom []) line @#'c2d/line]
+    (with-redefs-fn {#'c2d/line (fn [& args] (swap! log conj (vec (rest args))) (apply line args))} f)
+    @log))
+
+(deftest review-fixes-test
+  (let [proj (space/projector {:domains {:x [0 1] :y [0 1] :z [0 1]} :view space/default-view} {:w 400 :h 300 :margin 30})
+        frame {:view space/default-view :domains {:x [0 1] :y [0 1] :z [0 1]} :box? true :axes? true :titles {}}
+        env {:theme cljplot2.theme/default-theme}
+        draw (fn [f] (lines-in #(let [cv (c2d/canvas 400 300)] (c2d/with-canvas [c cv] (f c proj frame env)))))]
+    (testing "U1 / U2 behind the data: the floor grid (x and y ticks) and the 3 hidden edges"
+      (let [ticks (fn [k] (count (:ticks (space-draw/axis-ticks k [0 1] 3))))
+            back (draw space-draw/draw-frame-back!)]
+        (is (= (+ 3 (ticks :x) (ticks :y)) (count back)))
+        (is (empty? (draw (fn [c p f e] (space-draw/draw-frame-back! c p (assoc f :box? false) e)))))))
+    (testing "U1 in front: the 9 visible edges (plus axis lines and ticks)"
+      (is (>= (count (draw space-draw/draw-frame-front!)) 9))))
+  (testing "U6 the frame behind the data, the data, then the frame in front"
+    (let [log (atom [])
+          wrap (fn [k v] (let [f @v] (fn [& args] (swap! log conj k) (apply f args))))]
+      (with-redefs-fn {#'space-draw/draw-frame-back! (wrap :back #'space-draw/draw-frame-back!)
+                       #'space-draw/draw-primitives! (wrap :data #'space-draw/draw-primitives!)
+                       #'space-draw/draw-frame-front! (wrap :front #'space-draw/draw-frame-front!)}
+        #(image {:data cube :mapping {:x :x :y :y :z :z} :charts [(chart/cloud {:type :bars})]}))
+      (is (= [:back :data :front] @log))))
+  (testing "U3 titles along their edges, readable: left to right, vertical bottom to top"
+    (is (near? 0.0 (space-draw/edge-angle (v/vec2 10 0))))
+    (is (near? 0.0 (space-draw/edge-angle (v/vec2 -10 0))))
+    (is (near? 30.0 (space-draw/edge-angle (v/vec2 (m/cos (m/radians 30)) (m/sin (m/radians 30))))))
+    (is (near? 330.0 (space-draw/edge-angle (v/vec2 (m/cos (m/radians 30)) (- (m/sin (m/radians 30)))))))
+    (is (near? 270.0 (space-draw/edge-angle (v/vec2 0 10))))
+    (is (near? 270.0 (space-draw/edge-angle (v/vec2 0 -10)))))
+  (testing "U4 shingle bounds without floating-point noise"
+    (is (= "[4.25, 4.65]" (str (cljplot2.data.shingle/->Interval 4.25 4.6499999999999995 nil nil nil))))
+    (is (= "[-3, 2.5]" (str (cljplot2.data.shingle/->Interval -3 2.5 nil nil nil))))
+    (is (= "[1E-12, 1E+300]" (str (cljplot2.data.shingle/->Interval 1e-12 1e300 nil nil nil))) "scientific at the extremes")
+    (is (= "[0.0001, 0]" (str (cljplot2.data.shingle/->Interval 1e-4 0.0 nil nil nil)))))
+  (testing "F7 tick labels and titles stay inside panels of any size"
+    (doseq [[w h] [[900 800] [250 220]]]
+      (let [log (atom []) draw-at @#'label/draw-at!]
+        (with-redefs-fn {#'label/draw-at! (fn [c content anchor x y env] (swap! log conj [x y]) (draw-at c content anchor x y env))}
+          #(c2d/get-image (plot/render {:data (for [i (range 50)] {:x (* i 1234.5) :y (- i) :z (* i i 0.001)})
+                                        :mapping {:x :x :y :y :z :z} :charts [(chart/cloud)]} {:width w :height h})))
+        (is (every? (fn [[x y]] (and (< 0 (double x) w) (< 0 (double y) h))) @log) (str w "x" h)))))
+  (testing "F8 a spikes legend key is a vertical line"
+    (let [lines (lines-in #(let [cv (c2d/canvas 20 20)]
+                             (c2d/with-canvas [c cv]
+                               (cloud/legend (chart/cloud {:type :spikes}) {:color [0 0 0]} c {:x 0 :y 0 :w 20 :h 20}
+                                             {:theme cljplot2.theme/default-theme}))))]
+      (is (= 1 (count lines)))
+      (is (= (first (first lines)) (nth (first lines) 2)) "vertical"))))
+
