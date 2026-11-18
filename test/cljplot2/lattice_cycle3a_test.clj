@@ -291,3 +291,57 @@
     (testing "Y3 a full turn and a turn by -340 are the same view"
       (is (= (outline (proj 20 [1 1.3 0.8])) (outline (proj 380 [1 1.3 0.8])) (outline (proj -340 [1 1.3 0.8])))))))
 
+(deftest review4-fixes-test
+  (testing "Z1 text coordinates throw {:key :mapping}; nil and NaN are dropped and counted"
+    (is (= :mapping (:key (error #(built {:data [{:x "a" :y 1 :z 2}] :mapping {:x :x :y :y :z :z} :charts [(chart/cloud)]})))))
+    (is (= :mapping (:key (error #(built {:data [{:x 1 :y 1 :z (java.time.LocalDate/of 2020 1 1)}] :mapping {:x :x :y :y :z :z} :charts [(chart/cloud)]})))))
+    (is (= {:x 0 :y 1 :z 1} (get-in (built {:data (conj cube {:x 0 :y nil :z 1} {:x 0 :y 0 :z ##Inf}) :mapping {:x :x :y :y :z :z}
+                                            :charts [(chart/cloud)]})
+                                    [:stats 0 :dropped]))))
+  (testing "Z2 several 3D charts: one frame, every chart's primitives in one depth sort"
+    (let [log (atom [])
+          wrap (fn [k v] (let [f @v] (fn [& args] (swap! log conj (if (= k :data) [k (count (second args))] k)) (apply f args))))
+          full {:x [0 1] :y [0 1] :z [0 1]}]
+      (with-redefs-fn {#'space-draw/draw-frame-back! (wrap :back #'space-draw/draw-frame-back!)
+                       #'space-draw/draw-primitives! (wrap :data #'space-draw/draw-primitives!)
+                       #'space-draw/draw-frame-front! (wrap :front #'space-draw/draw-frame-front!)}
+        #(image {:data cube :mapping {:x :x :y :y :z :z}
+                 :charts [(chart/cloud {:domain full}) (chart/cloud {:type :spikes :domain full})]}))
+      (is (= [:back [:data 16] :front] @log))))
+  (testing "Z2 a near point of one chart is drawn over a far spike of another"
+    (let [full {:x [0 1] :y [0 1] :z [0 1]}
+          p {:mapping {:x :x :y :y :z :z}
+             :charts [(chart/cloud {:data [{:x 0.5 :y 0.0 :z 0.5}] :domain full :size 30 :color [255 0 0] :axes false :box false})
+                      (chart/cloud {:data [{:x 0.5 :y 1.0 :z 1.0}] :type :spikes :stroke-width 30 :domain full :color [0 0 255]})]
+             :scales {} :legend false}
+          img (c2d/get-image (plot/render (assoc p :charts (vec (reverse (:charts p)))) {:width 300 :height 300}))
+          img2 (c2d/get-image (plot/render p {:width 300 :height 300}))
+          reds (fn [^BufferedImage im] (count (for [x (range 300) y (range 300) :let [cc (c/to-color (.getRGB im x y))]
+                                                     :when (and (> (c/red cc) 200) (< (c/blue cc) 80))] 1)))]
+      (is (= (reds img) (reds img2)) "chart order doesn't matter: depth does")
+      (is (pos? (reds img)))))
+  (testing "Z2 a 3D chart without :primitives is refused"
+    (is (= :primitives (:key (error #(built {:data cube :mapping {:x :x :y :y :z :z} :charts [(dissoc (chart/cloud) :primitives)]}))))))
+  (testing "Z3 a base outside an explicit z domain is kept inside it"
+    (is (= 0.0 (get-in (built {:data cube :mapping {:x :x :y :y :z :z} :charts [(chart/cloud {:type :bars :base -5 :domain {:z [0 1]}})]})
+                       [:stats 0 :data :panel :base])))
+    (is (= 1.0 (get-in (built {:data cube :mapping {:x :x :y :y :z :z} :charts [(chart/cloud {:type :spikes :base 9 :domain {:z [1 0]}})]})
+                       [:stats 0 :data :panel :base])))
+    (is (= -5.0 (get-in (built {:data cube :mapping {:x :x :y :y :z :z} :charts [(chart/cloud {:type :bars :base -5})]})
+                        [:stats 0 :data :panel :base])) "without an explicit domain the domain reaches the base"))
+  (testing "Z4 seen from straight above the z axis is left out"
+    (let [axes (atom [])
+          draw-axis @#'space-draw/draw-axis!]
+      (with-redefs-fn {#'space-draw/draw-axis! (fn [c k & args] (swap! axes conj k) (apply draw-axis c k args))}
+        #(image {:data cube :mapping {:x :x :y :y :z :z} :charts [(chart/cloud {:view {:azimuth 30 :elevation 90}})]}))
+      (is (= #{:x :y} (set @axes)))))
+  (testing "groups: color by a category and size by a number give varying point styles and two legends"
+    (let [p {:data cube :mapping {:x :x :y :y :z :z :color :g :size :v} :charts [(chart/cloud)]}
+          b (built p)
+          cp (get-in b [:stats 0 :data :panel])
+          proj (space/projector (assoc (:frame cp) :domains (:domains cp)) {:w 300 :h 300 :margin 20})
+          prims (cloud/chart-primitives (chart/cloud) cp (:point proj) (:finalized-scales b) {:theme (:theme b)})]
+      (is (= 2 (count (distinct (map #(get-in % [:style :color]) prims)))))
+      (is (= 4 (count (distinct (map #(get-in % [:style :size]) prims)))))
+      (is (= 1 (count (filter #(= :legends (get-in % [:content :kind])) (:items (:grid b)))))))))
+

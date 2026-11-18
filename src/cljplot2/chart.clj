@@ -12,7 +12,9 @@
   `:coords` (optional, default `#{:cartesian}`) - the coordinate systems the chart draws in (plot `:coord`, see
   [[cljplot2.scale.coord]]); polar charts: [[bar]], [[segment]], [[scatter]], [[line]], [[text]], [[rule]],
   [[rect]], [[parallel]] (radar), [[partition]] (sunburst); `#{:three-d}` - 3D charts ([[cloud]]): only with other
-  3D charts, each with an explicit `:domain` when there are several, see [[cljplot2.data.space3d]].
+  3D charts, each with an explicit `:domain` when there are several, see [[cljplot2.data.space3d]]; a 3D chart value
+  also has `:primitives` - `(fn [chart computed point scales env])` giving its primitives for one panel, which the
+  panel draws with every 3D chart's in one scene ([[cljplot2.graphics.space3d/draw-scene!]]).
 
   `:schema` (optional for user charts) - `{:options s :style s :mapping s}` malli schemas, checked by `build` before
   any stage runs: `:options` against the chart's options, `:mapping` against the plot mapping merged with the chart's,
@@ -225,7 +227,8 @@
 (defn cloud
   "3D scatter (points, spikes, bars) of `:x`, `:y`, `:z` in a projected box, see [[cljplot2.chart.cloud]]."
   ([] (cloud {}))
-  ([options] (assoc (chart-value :cloud cloud/compute cloud/draw cloud/legend cloud/schemas options) :coords #{:three-d})))
+  ([options] (assoc (chart-value :cloud cloud/compute cloud/draw cloud/legend cloud/schemas options)
+                    :coords #{:three-d} :primitives cloud/chart-primitives)))
 
 (defn pack
   "Circle packing of `:value` over the `:hierarchy` levels, see [[cljplot2.chart.pack]]."

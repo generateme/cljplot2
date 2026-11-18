@@ -215,6 +215,29 @@
       (doseq [{:keys [from to]} (space/hidden-edges view)]
         (line! canvas (corner from) (corner to))))))
 
+(def ^:const min-axis-length
+  "Pixels an axis edge needs to carry ticks; shorter (end-on) edges get no axis."
+  4.0)
+
+(declare draw-frame-front!)
+
+(defn draw-scene!
+  "Draw the 3D charts `layers` - `[[chart computed] ..]`, one panel's computed data of each (`:domains`, `:frame` -
+  the box, see [[cljplot2.chart.cloud/frame-settings]]) - in one box in a `w` x `h` panel: the frame of the first
+  layer (several 3D charts share their explicit domains), the back of the frame, the primitives of every chart
+  (`((:primitives chart) chart computed point scales env)`, `point` - data -> `[pixel depth]`) sorted far to near
+  together, then the front of the frame."
+  [canvas layers [w h] scales env]
+  (let [[_ {:keys [domains frame]}] (first layers)
+        env (assoc env :canvas canvas)
+        frame (assoc frame :domains domains)
+        margin (frame-margin domains (:titles frame) (:axes? frame) [w h] env)
+        proj (space/projector frame {:w w :h h :margin margin})]
+    (when (pos? (double (:scale proj)))
+      (draw-frame-back! canvas proj frame env)
+      (draw-primitives! canvas (mapcat (fn [[chart computed]] ((:primitives chart) chart computed (:point proj) scales env)) layers))
+      (draw-frame-front! canvas proj frame env))))
+
 (defn draw-frame-front!
   "Draw the box frame in front of the data of `proj`: with `box?` the visible box edges, with `axes?` the axes of
   `domains` with `titles`."
@@ -227,5 +250,7 @@
       (doseq [{:keys [from to]} (space/visible-edges view)]
         (line! canvas (corner from) (corner to))))
     (when axes?
-      (doseq [[k edge] (space/axis-edges view corner)]
+      (doseq [[k {:keys [from to] :as edge}] (space/axis-edges view corner)
+              ;; an edge seen end-on (z from straight above) has no room for an axis
+              :when (>= (v/mag (v/sub (corner to) (corner from))) min-axis-length)]
         (draw-axis! canvas k edge proj (domains k) (get titles k) env)))))

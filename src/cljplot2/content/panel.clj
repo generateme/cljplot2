@@ -19,6 +19,7 @@
             [cljplot2.data.facet :as facet]
             [cljplot2.graphics.measure :as measure]
             [cljplot2.graphics.polyline :as polyline]
+            [cljplot2.graphics.space3d :as space3d]
             [cljplot2.scale.coord :as coord]
             [cljplot2.scale.position :as scale]
             [cljplot2.theme :as theme])
@@ -31,16 +32,21 @@
 
 (defn- draw-charts!
   "Draw every chart's data for `panel-key` (and data of charts drawn in all panels) in panel-local coordinates; the
-  charts' `env` has the panel's `:panel-key`."
+  charts' `env` has the panel's `:panel-key`. 3D charts (`:coords #{:three-d}`) of the panel share one scene: one box
+  frame and one depth order of all their primitives (see [[cljplot2.graphics.space3d/draw-scene!]])."
   [c panel-key w h env]
-  (doseq [:let [env (assoc env :panel-key panel-key)]
-          [chart stats] (map vector (:charts env) (:stats env))
-          computed [(get-in stats [:data panel-key]) (get-in stats [:data facet/all-panels])]
-          :when (some? computed)]
-    (canvas/call-with-isolated-graphics
-     c (fn [c']
-         (.clip ^Graphics2D (:graphics c') (Rectangle. 0 0 (int w) (int h)))
-         ((:draw chart) chart computed c' {:x 0 :y 0 :w w :h h} (:scales env) env)))))
+  (let [env (assoc env :panel-key panel-key)
+        layers (for [[chart stats] (map vector (:charts env) (:stats env))
+                     computed [(get-in stats [:data panel-key]) (get-in stats [:data facet/all-panels])]
+                     :when (some? computed)]
+                 [chart computed])
+        clipped (fn [f] (canvas/call-with-isolated-graphics
+                         c (fn [c'] (.clip ^Graphics2D (:graphics c') (Rectangle. 0 0 (int w) (int h))) (f c'))))
+        three-d (filter #(contains? (:coords (first %)) :three-d) layers)]
+    (doseq [[chart computed] (remove #(contains? (:coords (first %)) :three-d) layers)]
+      (clipped #((:draw chart) chart computed % {:x 0 :y 0 :w w :h h} (:scales env) env)))
+    (when (seq three-d)
+      (clipped #(space3d/draw-scene! % three-d [w h] (:scales env) env)))))
 
 (defn- draw-band-fills!
   "Every second band (from the second level) of each bands scale filled with theme `[:panel :grid :bands-fill]`

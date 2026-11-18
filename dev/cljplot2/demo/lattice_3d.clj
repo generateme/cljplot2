@@ -41,6 +41,15 @@
    :charts [(chart/cloud {:type :spikes :stroke-width 2 :domain {:z [0 140]} :view {:azimuth 30 :elevation 25}
                           :axis-titles {:x "Longitude" :y "Latitude" :z "Stations"}})]})
 
+(def groups
+  "Groups in 3D: quakes colored by magnitude band (a legend) and sized by the number of stations reporting them."
+  {:data (mapv #(assoc % :band (cond (< (double (:mag %)) 4.5) "< 4.5" (< (double (:mag %)) 5.0) "4.5 - 5" :else ">= 5")) quakes)
+   :mapping {:x :long :y :lat :z :depth :color :band :size :stations}
+   :scales {:color {:domain ["< 4.5" "4.5 - 5" ">= 5"]} :size {:range [1 8]}}
+   :charts [(chart/cloud {:domain {:z [690 40]} :view {:azimuth 30 :elevation 25}
+                          :axis-titles {:x "Longitude" :y "Latitude" :z "Depth"}})]
+   :labels {:title "Magnitude band (color) and stations (size)"}})
+
 (def ^:private chem97
   (mapv (fn [row] {:score (parse-long (:score row)) :gender (:gender row) :gcsescore (parse-double (:gcsescore row))})
         (data/csv-rows "chem97.csv")))
@@ -60,4 +69,5 @@
   [["fig-6-1-quakes-800x700.png" fig-6-1 {:width 800 :height 700}]
    ["fig-6-3-views-800x700.png" fig-6-3 {:width 800 :height 700}]
    ["fig-6-4-spikes-600x500.png" fig-6-4 {:width 600 :height 500}]
-   ["fig-6-15-bars-900x450.png" fig-6-15 {:width 900 :height 450}]])
+   ["fig-6-15-bars-900x450.png" fig-6-15 {:width 900 :height 450}]
+   ["groups-700x550.png" groups {:width 700 :height 550}]])

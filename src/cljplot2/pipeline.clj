@@ -951,6 +951,7 @@
    (schema/nilable :legend schema/function)
    (schema/optional :inherit-mapping [:enum :all :facets])
    (schema/optional :coords [:set [:enum :cartesian :polar :three-d]])
+   (schema/nilable :primitives schema/function)
    (schema/nilable :schema chart-schemas)])
 
 (def scales-schema
@@ -1034,6 +1035,14 @@
   [c]
   (contains? (get c :coords) :three-d))
 
+(defn- three-d-contract-errors
+  "Errors of 3D charts without a `:primitives` function (the panel draws every 3D chart's primitives in one scene,
+  see [[cljplot2.graphics.space3d/draw-scene!]])."
+  [charts error]
+  (keep-indexed (fn [i c] (when (and (three-d? c) (not (fn? (:primitives c))))
+                            (error [:charts i :primitives] (:kind c) "a 3D chart needs a :primitives function")))
+                charts))
+
 (defn- three-d-errors
   "Errors of a plot with 3D charts (see [[cljplot2.chart.cloud]]): only 3D charts; several of them each with an
   explicit `:domain` of `:x`, `:y` and `:z` (their boxes must match); no `:flip`, `:aspect :iso`, `:margins` or free /
@@ -1101,6 +1110,7 @@
                       charts)))
      (facet-scale-errors plot (seq dim-sets) error)
      (three-d-errors plot error)
+     (three-d-contract-errors charts error)
      (when (or custom-grid arrange)
        (for [k (keys labels) :when (not= k :title)]
          (error [:labels k] (get labels k) "only :title is allowed with :custom-grid or :arrange")))

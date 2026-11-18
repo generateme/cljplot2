@@ -2,7 +2,7 @@
   "Cloud: a 3D scatter of rows at their mapped (x, y, z) in a box projected onto the panel (see
   [[cljplot2.data.space3d]]; a chart laying out its own panel: no x / y axes - the box carries three axes).
 
-  Mapping: `:x`, `:y`, `:z` (numbers); aesthetics `:color`, `:size`, `:shape` as in [[cljplot2.chart.scatter]]
+  Mapping: `:x`, `:y`, `:z` (numbers - other values throw `ex-info {:key :mapping}`); aesthetics `:color`, `:size`, `:shape` as in [[cljplot2.chart.scatter]]
   (scales, legends, NA). Rows with a non-finite coordinate, or a coordinate outside an explicit `:domain`, are
   dropped and counted (`:dropped {:x n :y n :z n ..}`).
 
@@ -17,7 +17,9 @@
   * `:box` (default true - the box: hidden edges dashed and a floor grid behind the data, visible edges over it), `:axes` (default true - ticks, labels and titles), `:axis-titles
     {:x t :y t :z t}` (default the mapped column names; `nil` - none)
   * `:domain {:x [lo hi] :y .. :z ..}` - explicit data domains (each optional); otherwise the data's over all panels
-    (bars widen x / y by half a bar). Several 3D charts in one plot need every domain explicit, so their boxes match.
+    (bars widen x / y by half a bar). Several 3D charts in one plot need every domain explicit, so their boxes match;
+    they're drawn in one box (the first chart's frame), all their marks sorted by depth together. `:base` is kept
+    within an explicit z domain.
 
   Facets: a box per panel, domains shared by all panels. Points, spikes and bar faces are drawn far to near."
   (:require [clojure2d.core :as c2d]
@@ -99,8 +101,14 @@
         accessors (mapv #(data/row-accessor % (mapping %)) dims)
         values (update-vals groups (fn [rows] (mapv (fn [row] (mapv #(% row) accessors)) rows)))
         all-values (apply concat (vals values))
-        kept-at? (fn [i k v] (and (scatter/kept? k na-level? plot-scales v)
-                                  (or (>= (long i) 3) (in-domain? (get explicit k) v))))
+        _ (doseq [[i k] (map-indexed vector position-dims)
+                  :let [bad (first (remove #(or (nil? %) (number? %)) (map #(% i) all-values)))]
+                  :when (some? bad)]
+            (schema/fail! (str "3D coordinates must be numbers; " k " has " (pr-str bad) ".")
+                          {:key :mapping :in [:mapping k] :value bad}))
+        kept-at? (fn [i k v] (if (< (long i) 3)
+                               (and (number? v) (m/valid-double? (double v)) (in-domain? (get explicit k) v))
+                               (scatter/kept? k na-level? plot-scales v)))
         keep-row? (fn [vs] (every? true? (map-indexed (fn [i k] (kept-at? i k (vs i))) dims)))
         dropped (into {} (map-indexed (fn [i k] [k (count (remove #(kept-at? i k (% i)) all-values))]) dims))
         points (update-vals values (fn [vs] (let [kept (filterv keep-row? vs)]
@@ -112,8 +120,10 @@
         half {:x (if bars? (* 0.5 (double fx) (tile/resolution (coords :x))) 0.0)
               :y (if bars? (* 0.5 (double fy) (tile/resolution (coords :y))) 0.0)}
         z-values (coords :z)
-        base (double (or (:base options) (if-let [[a b] (:z explicit)] (m/min (double a) (double b))
-                                                 (if (seq z-values) (reduce min z-values) 0.0))))
+        z-limits (when-let [[a b] (:z explicit)] [(m/min (double a) (double b)) (m/max (double a) (double b))])
+        base (double (or (:base options) (if z-limits (first z-limits) (if (seq z-values) (reduce min z-values) 0.0))))
+        ;; spikes and bars stay inside an explicit z domain
+        base (if z-limits (m/constrain base (double (first z-limits)) (double (second z-limits))) base)
         domains {:x (or (:x explicit) (data-domain (coords :x) (double (half :x))))
                  :y (or (:y explicit) (data-domain (coords :y) (double (half :y))))
                  :z (or (:z explicit) (data-domain (cond-> (vec z-values) (and (seq z-values) (not= type :points)) (conj base)) 0.0))}
@@ -172,19 +182,17 @@
                     :bars (bar-faces point (:view frame) p base half st)))))
             (range (count x)))))
 
+(defn chart-primitives
+  "The chart's primitives for one panel's `computed` data and the projection `point` (the 3D chart contract, see
+  [[cljplot2.graphics.space3d/draw-scene!]]): its points, spikes or bars styled by the aesthetic `scales`."
+  [_chart {:keys [points style] :as computed} point scales env]
+  (primitives computed point (point-styles points style scales env)))
+
 (defn draw
-  "Draw one panel's box: the frame behind the data (floor grid, hidden edges), the points / spikes / bars far to near,
-  then the frame in front (visible edges, axes)."
-  [_chart {:keys [domains frame style] :as computed} canvas {:keys [w h]} scales env]
-  (let [env (assoc env :canvas canvas)
-        margin (space-draw/frame-margin domains (:titles frame) (:axes? frame) [w h] env)
-        proj (space/projector (assoc frame :domains domains) {:w w :h h :margin margin})
-        frame (assoc frame :domains domains)]
-    (when (pos? (double (:scale proj)))
-      (space-draw/draw-frame-back! canvas proj frame env)
-      (space-draw/draw-primitives! canvas (primitives computed (:point proj)
-                                                      (point-styles (:points computed) style scales env)))
-      (space-draw/draw-frame-front! canvas proj frame env))))
+  "Draw one panel's box on its own (a plot's panel draws all its 3D charts in one scene instead, see
+  [[cljplot2.graphics.space3d/draw-scene!]])."
+  [chart computed canvas {:keys [w h]} scales env]
+  (space-draw/draw-scene! canvas [[chart computed]] [w h] scales env))
 
 (defn legend
   "Key glyph: the point (points), a vertical line (spikes) or a filled square (bars), styled by the key's attributes."
