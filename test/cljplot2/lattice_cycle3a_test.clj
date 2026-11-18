@@ -47,17 +47,30 @@
     (is (= [4.5 5.5] (space/widen [5 5])))))
 
 (deftest fit-test
-  (testing "1.2 the projected box fits in the panel less the margin, its diagonal spanning the smaller side"
+  (testing "1.2 the projected box fits in the panel less the margin, at the scale of its largest turned projection"
     (doseq [view [space/default-view {:azimuth 0 :elevation 0} {:azimuth 200 :elevation 75} {:azimuth 45 :elevation 35.26}]]
       (let [{:keys [corner scale]} (space/projector {:domains {:x [0 1] :y [0 1] :z [0 1]} :view view} {:w 400 :h 300 :margin 20})
             ps (map corner space/corners)
             xs (map #(.x ^Vec2 %) ps) ys (map #(.y ^Vec2 %) ps)]
         (is (every? #(<= 19.999 (double %) 380.001) xs))
         (is (every? #(<= 19.999 (double %) 280.001) ys))
-        (is (near? (/ 260.0 (m/sqrt 3.0)) (double scale))))))
-  (testing "U5 one box size whatever the view"
-    (is (apply = (map #(:scale (space/projector {:domains {:x [0 1] :y [0 1] :z [0 1]} :view %} {:w 400 :h 300 :margin 20}))
-                      [{:azimuth 20 :elevation 20} {:azimuth 70 :elevation 30} {:azimuth 200 :elevation 60}]))))
+        (let [[tw th] (space/turning-extent [1 1 1] (:elevation view))]
+          (is (near? (min (/ 360.0 (double tw)) (/ 260.0 (double th))) (double scale)))))))
+  (testing "W3 the turned extent: elevation 0 - floor diagonal by height; 90 - floor diagonal both ways"
+    (is (= [5.0 2.0] (mapv double (space/turning-extent [3 4 2] 0))))
+    (let [[w h] (space/turning-extent [3 4 2] 90)] (is (near? 5.0 (double w))) (is (near? 5.0 (double h))))
+    (let [[_ h] (space/turning-extent [3 4 2] -30)] (is (near? (+ (* 2 (m/cos (m/radians 30))) (* 5 0.5)) (double h))) "below as above"))
+  (testing "U5 / W3 one box size whatever the azimuth; the elevation may change it"
+    (let [scale #(:scale (space/projector {:domains {:x [0 1] :y [0 1] :z [0 1]} :view %} {:w 400 :h 300 :margin 20}))]
+      (is (apply = (map scale [{:azimuth 20 :elevation 30} {:azimuth 70 :elevation 30} {:azimuth 200 :elevation 30} {:azimuth -45 :elevation 30}])))
+      (is (not= (scale {:azimuth 20 :elevation 10}) (scale {:azimuth 20 :elevation 60})))))
+  (testing "W3 every azimuth's projection fits the panel"
+    (doseq [a (range 0 360 15)]
+      (let [{:keys [corner]} (space/projector {:domains {:x [0 1] :y [0 1] :z [0 1]} :view {:azimuth a :elevation 35} :aspect [1 1.5 0.8]}
+                                              {:w 400 :h 300 :margin 20})
+            ps (map corner space/corners)]
+        (is (every? #(<= 19.999 (.x ^Vec2 %) 380.001) ps) (str a))
+        (is (every? #(<= 19.999 (.y ^Vec2 %) 280.001) ps) (str a)))))
   (testing "1.2 a panel smaller than its margins gives scale 0"
     (is (zero? (double (:scale (space/projector {:domains {:x [0 1] :y [0 1] :z [0 1]} :view space/default-view}
                                                 {:w 30 :h 30 :margin 20})))))))

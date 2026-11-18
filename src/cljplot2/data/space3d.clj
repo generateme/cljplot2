@@ -156,12 +156,22 @@
 
 ;; projection onto a panel
 
+(defn turning-extent
+  "`[width height]` (box units) of the largest projection of a box of side `aspect` over every azimuth at `elevation`
+  (degrees): the floor diagonal `f` across, `az |cos e| + f |sin e|` up."
+  [aspect elevation]
+  (let [[ax ay az] aspect
+        e (m/radians (double elevation))
+        f (m/hypot (double ax) (double ay))]
+    [f (+ (* (double az) (m/abs (m/cos e))) (* f (m/abs (m/sin e))))]))
+
 (defn projector
   "Projection of the data box (`domains`, `aspect`, `view`) fitted in a `w` x `h` panel with `margin` pixels on every
   side for axes: `{:point (fn [[x y z]] [Vec2 depth]) :corner (fn [corner] Vec2) :centre Vec2 :scale k}` - pixels
-  per box unit `k` such that the box's diagonal (its largest extent from any view) spans the smaller side of the
-  panel less the margins, so a box keeps its size whatever the view; the projected box centred in the panel; pixel y
-  grows downward. A panel too small for the margins gets a scale of 0."
+  per box unit `k` fitting the box's largest projection over all azimuths at the view's elevation (see
+  [[turning-extent]]) in the panel less the margins, so a box turned about its vertical axis keeps its size (views of
+  different elevations may differ); the projected box centred in the panel; pixel y grows downward. A panel too
+  small for the margins gets a scale of 0."
   [{:keys [domains aspect view]} {:keys [w h margin]}]
   (let [aspect (vec (or aspect [1.0 1.0 1.0]))
         normalize (normalizer domains aspect)
@@ -172,8 +182,8 @@
         v0 (double (reduce min vs)) v1 (double (reduce max vs))
         margin (double (or margin 0.0))
         free-w (- (double w) (* 2.0 margin)) free-h (- (double h) (* 2.0 margin))
-        diagonal (v/mag (v/vec3 (aspect 0) (aspect 1) (aspect 2)))
-        k (m/max 0.0 (/ (m/min free-w free-h) diagonal))
+        [tw th] (turning-extent aspect (get view :elevation (:elevation default-view)))
+        k (m/max 0.0 (m/min (/ free-w (double tw)) (/ free-h (double th))))
         cx (* 0.5 (double w)) cy (* 0.5 (double h))
         um (* 0.5 (+ u0 u1)) vm (* 0.5 (+ v0 v1))
         to-pixel (fn [^Vec3 q] (v/vec2 (+ cx (* k (- (.x q) um))) (- cy (* k (- (.y q) vm)))))]

@@ -26,8 +26,8 @@
    :labels {:title (str "azimuth " azimuth ", elevation " elevation)}})
 
 (def fig-6-3
-  "Fig 6.3: one cloud from four views."
-  (plot/arrange [(view-panel 20 20) (view-panel 70 30) (view-panel 120 40) (view-panel 200 60)] {:columns 2}))
+  "Fig 6.3: one cloud turned about its vertical axis - four azimuths at one elevation, so the box keeps its size."
+  (plot/arrange [(view-panel 20 30) (view-panel 110 30) (view-panel 200 30) (view-panel 290 30)] {:columns 2}))
 
 (def fig-6-4
   "Fig 6.4 (quakes instead of US states): the number of stations reporting each of the strongest earthquakes as
@@ -47,8 +47,8 @@
   {:data (for [[[score gcd gender] n] (frequencies (map (juxt :score #(m/round (double (:gcsescore %))) :gender) chem97))]
            {:score score :gcd gcd :gender gender :count n})
    :mapping {:x :score :y :gcd :z :count :facet :gender}
-   :charts [(chart/cloud {:type :bars :base 0 :color [150 190 230] :stroke-color [60 60 60] :stroke-width 0.5
-                          :view {:azimuth 220 :elevation 30} :aspect [1.5 1.5 1]
+   :charts [(chart/cloud {:type :bars :base 0 :color [150 190 230] :stroke-color [60 60 60] :stroke-width 1
+                          :view {:azimuth 220 :elevation 42} :aspect [1 1.5 0.8]
                           :axis-titles {:x "A-level score" :y "GCSE score" :z "Count"}})]
    :facets {:columns 2}})
 
