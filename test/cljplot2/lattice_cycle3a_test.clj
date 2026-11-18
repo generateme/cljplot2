@@ -178,10 +178,16 @@
         frame {:view space/default-view :domains {:x [0 1] :y [0 1] :z [0 1]} :box? true :axes? true :titles {}}
         env {:theme cljplot2.theme/default-theme}
         draw (fn [f] (lines-in #(let [cv (c2d/canvas 400 300)] (c2d/with-canvas [c cv] (f c proj frame env)))))]
-    (testing "U1 / U2 behind the data: the floor grid (x and y ticks) and the 3 hidden edges"
-      (let [ticks (fn [k] (count (:ticks (space-draw/axis-ticks k [0 1] 3))))
+    (testing "U1 / U2 / V3 behind the data: grids of the floor and the two back walls, the 3 hidden edges"
+      (let [grid (fn [axis side] (count (#'space-draw/face-grid-lines proj axis side (:domains frame) (assoc env :canvas (c2d/canvas 10 10)))))
+            back-x (#'space-draw/back-wall-side space/default-view :x)
+            back-y (#'space-draw/back-wall-side space/default-view :y)
             back (draw space-draw/draw-frame-back!)]
-        (is (= (+ 3 (ticks :x) (ticks :y)) (count back)))
+        (is (some? back-x))
+        (is (some? back-y))
+        (is (= (+ 3 (grid :z 0) (grid :x back-x) (grid :y back-y)) (count back)))
+        (is (= #{:x :y} (set (map first (#'space-draw/face-grid-lines proj :z 0 (:domains frame) (assoc env :canvas (c2d/canvas 10 10)))))))
+        (is (= #{:y :z} (set (map first (#'space-draw/face-grid-lines proj :x back-x (:domains frame) (assoc env :canvas (c2d/canvas 10 10)))))))
         (is (empty? (draw (fn [c p f e] (space-draw/draw-frame-back! c p (assoc f :box? false) e)))))))
     (testing "U1 in front: the 9 visible edges (plus axis lines and ticks)"
       (is (>= (count (draw space-draw/draw-frame-front!)) 9))))
@@ -219,4 +225,41 @@
                                              {:theme cljplot2.theme/default-theme}))))]
       (is (= 1 (count lines)))
       (is (= (first (first lines)) (nth (first lines) 2)) "vertical"))))
+
+(deftest review2-fixes-test
+  (testing "V1 a title's distance from its edge: past ticks and labels, plus half its text height - not its length"
+    (is (= 27.0 (space-draw/title-distance 6 2 10 (v/vec2 300 14))) "6 + 2 gaps of 2 + 10 + 14 / 2")
+    (is (= (space-draw/title-distance 6 2 10 (v/vec2 30 14)) (space-draw/title-distance 6 2 10 (v/vec2 300 14)))))
+  (testing "V2 a short front bar is drawn over a tall bar behind it"
+    (let [rows [{:x 0 :y 0 :z 1 :c "front"} {:x 0 :y 1 :z 10 :c "back"}]
+          b (built {:data rows :mapping {:x :x :y :y :z :z :color :c} :charts [(chart/cloud {:type :bars :base 0 :view {:azimuth 0 :elevation 20}})]
+                    :scales {:color {:domain ["front" "back"] :range [[255 0 0] [0 0 255]]}}})
+          cp (get-in b [:stats 0 :data :panel])
+          proj (space/projector (assoc (:frame cp) :domains (:domains cp)) {:w 300 :h 300 :margin 20})
+          colors {"front" [255 0 0] "back" [0 0 255]}
+          prims (cloud/primitives cp (:point proj) (fn [i] (assoc (:style cp) :color (colors (get-in cp [:points :color i])))))
+          front-face (first (filter #(> (c/red (:fill %)) 100) prims))
+          centre (v/mult (reduce v/add (:points front-face)) (/ 1.0 (count (:points front-face))))
+          cv (c2d/canvas 300 300)]
+      (c2d/with-canvas [c cv] (space-draw/draw-primitives! c (shuffle prims)))
+      (let [px (c/to-color (.getRGB ^BufferedImage (c2d/get-image cv) (int (.x ^Vec2 centre)) (int (.y ^Vec2 centre))))]
+        (is (> (c/red px) (c/blue px)) "the front bar's color"))
+      (is (apply = (map :depth (filter #(> (c/red (:fill %)) 100) prims))) "a bar's faces share one depth")))
+  (testing "V2 a spike sorts by its base"
+    (let [cp (get-in (built {:data cube :mapping {:x :x :y :y :z :z} :charts [(chart/cloud {:type :spikes :base 0})]}) [:stats 0 :data :panel])
+          proj (space/projector (assoc (:frame cp) :domains (:domains cp)) {:w 300 :h 300 :margin 20})
+          prims (cloud/primitives cp (:point proj) (constantly (:style cp)))]
+      (doseq [[p i] (map vector prims (range))]
+        (is (near? (double (second ((:point proj) [(get-in cp [:points :x i]) (get-in cp [:points :y i]) 0]))) (double (:depth p)))))))
+  (testing "V3 an edge-on side has no back wall"
+    (is (nil? (#'space-draw/back-wall-side {:azimuth 0 :elevation 0} :x)))
+    (is (= 1 (#'space-draw/back-wall-side {:azimuth 0 :elevation 0} :y))))
+  (testing "F4 z grid lines use the y grid style; :none turns them off"
+    (let [proj (space/projector {:domains {:x [0 1] :y [0 1] :z [0 1]} :view space/default-view} {:w 400 :h 300 :margin 30})
+          frame {:view space/default-view :domains {:x [0 1] :y [0 1] :z [0 1]} :box? true}
+          count-lines (fn [theme] (count (lines-in #(c2d/with-canvas [c (c2d/canvas 400 300)]
+                                                      (space-draw/draw-frame-back! c proj frame {:theme theme})))))
+          t cljplot2.theme/default-theme]
+      (is (< (count-lines (assoc-in t [:panel :grid :y] :none)) (count-lines t)))
+      (is (= 3 (count-lines (-> t (assoc-in [:panel :grid :y] :none) (assoc-in [:panel :grid :x] :none)))) "only hidden edges"))))
 

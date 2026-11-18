@@ -139,18 +139,20 @@
 
 (defn- bar-faces
   "Visible faces of the bar at `x`, `y` from `base` to `z` (half sizes `hx`, `hy`) as polygon primitives: the box's
-  front-facing faces, each shaded by its normal."
+  front-facing faces, each shaded by its normal, all with the depth of the bar's footprint centre on the base - bars
+  sort as wholes by where they stand (a face's own depth would rise with its height and draw a tall back bar over a
+  short front one); a convex box's front faces never overlap, so their order within a bar doesn't matter."
   [point view [x y z] base [hx hy] st]
   (let [x (double x) y (double y) hx (double hx) hy (double hy)
         lo (m/min (double base) (double z)) hi (m/max (double base) (double z))
         at (fn [[ix iy iz]] [(if (zero? (long ix)) (- x hx) (+ x hx)) (if (zero? (long iy)) (- y hy) (+ y hy)) (if (zero? (long iz)) lo hi)])
-        stroke (draw/outline-color (:stroke-color st) (:color st))]
+        stroke (draw/outline-color (:stroke-color st) (:color st))
+        depth (second (point [x y base]))]
     (keep (fn [{:keys [axis side corners]}]
             (let [[normal front?] (space/face-normal view axis side)]
               (when front?
-                (let [projected (map #(point (at %)) corners)]
-                  {:kind :polygon :points (mapv first projected) :depth (/ (double (reduce + (map second projected))) 4.0)
-                   :fill (space/shade (:color st) normal) :stroke stroke :stroke-width (:stroke-width st)}))))
+                {:kind :polygon :points (mapv #(first (point (at %))) corners) :depth depth
+                 :fill (space/shade (:color st) normal) :stroke stroke :stroke-width (:stroke-width st)})))
           space/faces)))
 
 (defn primitives
@@ -164,9 +166,9 @@
                       [px depth] (point p)]
                   (case type
                     :points [{:kind :point :at px :depth depth :style st}]
+                    ;; a spike sorts by where it stands, as a bar
                     :spikes (let [[b bd] (point [(x i) (y i) base])]
-                              [{:kind :line :from b :to px :depth (* 0.5 (+ (double depth) (double bd)))
-                                :color (:color st) :width (:stroke-width st)}])
+                              [{:kind :line :from b :to px :depth bd :color (:color st) :width (:stroke-width st)}])
                     :bars (bar-faces point (:view frame) p base half st)))))
             (range (count x)))))
 

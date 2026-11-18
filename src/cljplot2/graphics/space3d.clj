@@ -8,7 +8,8 @@
   * `{:kind :polygon :points [Vec2 ..] :fill c :stroke c :stroke-width w}` (`:stroke :none` - no outline)
 
   [[frame-margin]] - the pixels the frame needs around the box. The frame is drawn in two parts around the data:
-  [[draw-frame-back!]] - the floor grid (theme `[:panel :grid :x]`) and the hidden box edges (dashed);
+  [[draw-frame-back!]] - grids on the floor and the back walls (theme `[:panel :grid :x]`, z lines `[:panel :grid :y]`)
+  and the hidden box edges (dashed);
   [[draw-frame-front!]] - the visible box edges and, per axis, ticks, horizontal tick labels and a title along its
   edge ([[cljplot2.data.space3d/axis-edges]]), styled by theme `[:axis :x]` (lines, tick length, label gap; tick
   spacing of `[:axis :x]` / `[:axis :y]` for z) and the `:tick-label` / `:axis-title` text roles."
@@ -108,6 +109,13 @@
         deg (double (cond (> deg 90.0) (- deg 180.0) (<= deg -90.0) (+ deg 180.0) :else deg))]
     (if (== deg 90.0) 270.0 (if (neg? deg) (+ deg 360.0) deg))))
 
+(defn title-distance
+  "Pixels from an axis edge to the centre of its title: past the ticks (`tick-length`), the tick labels (`widest` -
+  their largest extent away from the edge) with a `gap` on each side, and half the title's thickness - its
+  unrotated text height (`size`), as the title runs along the edge whatever its length."
+  ^double [tick-length gap widest ^Vec2 size]
+  (+ (double tick-length) (* 2.0 (double gap)) (double widest) (* 0.5 (.y size))))
+
 (defn- draw-axis!
   [canvas k {:keys [from to]} {:keys [corner centre]} domain title env]
   (let [{:keys [line-color tick-color tick-length tick-width label-gap]} (get-in env [:theme :axis :x])
@@ -138,45 +146,72 @@
     (when (some? title)
       ;; the title runs along its edge, turned to read left to right (or bottom to top)
       (let [content {:kind :label :role :axis-title :text (str title) :rotation (edge-angle along)}
-            ^Vec2 size (measure/natural-size content env)
             ^Vec2 c (v/add (v/mult (v/add a b) 0.5)
-                           (v/mult o (+ tick-length gap (double @widest) gap (extent-along size o))))]
+                           (v/mult o (title-distance tick-length gap @widest (text-size :axis-title (str title) env))))]
         (label/draw-at! canvas content [:center :middle] (.x c) (.y c) env)))))
 
 (defn- line!
   [canvas ^Vec2 a ^Vec2 b]
   (c2d/line canvas (.x a) (.y a) (.x b) (.y b)))
 
-(defn- draw-floor-grid!
-  "Grid lines on the box floor (low z) at the x and y ticks of `domains`, styled by theme `[:panel :grid :x]` (`:none` -
-  none)."
-  [canvas {:keys [corner]} domains env]
-  (let [{:keys [color width dash] :as line} (get-in env [:theme :panel :grid :x])]
-    (when-not (or (theme/none? line) (theme/none? color))
-      (c2d/set-color canvas color)
-      (c2d/set-stroke-custom canvas (cond-> {:size (double width) :cap :butt}
-                                      (polyline/dash-pattern dash) (assoc :dash (polyline/dash-pattern dash))))
-      (doseq [[i k] [[0 :x] [1 :y]]
-              :let [[lo hi] (domains k)
-                    ^Vec2 a0 (corner [0 0 0])
-                    along (v/sub (corner (assoc [0 0 0] i 1)) a0)
-                    across (v/sub (corner (assoc [0 0 0] (- 1 (long i)) 1)) a0)
-                    edge-px (v/mag along)]
-              t (:ticks (axis-ticks k (domains k) (tick-count env k edge-px)))
-              :let [f (/ (- (double t) (double lo)) (- (double hi) (double lo)))
-                    p (v/add a0 (v/mult along f))]]
-        (line! canvas p (v/add p across))))))
+(def hidden-edge-dash
+  "Dash pattern (pixels) of the hidden box edges."
+  [3.0 3.0])
+
+(defn- set-grid-line!
+  "Set the canvas stroke and color of grid line style `line` (a theme `[:panel :grid k]` value); `false` for `:none`."
+  [canvas {:keys [color width dash] :as line}]
+  (if (or (nil? line) (theme/none? line) (theme/none? color))
+    false
+    (do (c2d/set-color canvas color)
+        (c2d/set-stroke-custom canvas (cond-> {:size (double width) :cap :butt}
+                                        (polyline/dash-pattern dash) (assoc :dash (polyline/dash-pattern dash))))
+        true)))
+
+(defn- face-grid-lines
+  "Grid lines `[[from to] ..]` (pixel `Vec2`s) on the box face of `axis` at `side` (0 low / 1 high): for each other
+  axis `k` a line across the face at each tick of `k`'s domain, paired with `k` - `[k [from to]]`."
+  [{:keys [corner]} axis side domains env]
+  (let [i (.indexOf ^java.util.List space/axes axis)
+        others (remove #{i} [0 1 2])]
+    (for [a others
+          :let [b (first (remove #{a} others))
+                k (space/axes a)
+                [lo hi] (domains k)
+                ^Vec2 a0 (corner (assoc [0 0 0] i side))
+                edge-px (v/mag (v/sub (corner (assoc (assoc [0 0 0] i side) a 1)) a0))]
+          t (:ticks (axis-ticks k (domains k) (tick-count env k edge-px)))
+          :let [f (/ (- (double t) (double lo)) (- (double hi) (double lo)))
+                at (fn [fb] (corner (-> [0 0 0] (assoc i side) (assoc a f) (assoc b fb))))]]
+      [k [(at 0.0) (at 1.0)]])))
+
+(defn- back-wall-side
+  "Side (0 / 1) of the box face of `axis` turned away from the viewer in `view`, `nil` when neither is (edge-on)."
+  [view axis]
+  (first (filter #(> (.z ^fastmath.vector.Vec3 (first (space/face-normal view axis %))) 1.0e-9) [0 1])))
+
+(defn- draw-box-grid!
+  "Grid lines behind the data at the ticks: on the floor (low z; x and y ticks) and on the two side walls turned away
+  from the viewer (the x wall at y and z ticks, the y wall at x and z ticks). Lines at x / y ticks use theme
+  `[:panel :grid :x]`, lines at z ticks `[:panel :grid :y]` (`:none` - none)."
+  [canvas proj view domains env]
+  (let [faces (cons [:z 0] (keep (fn [axis] (some->> (back-wall-side view axis) (vector axis))) [:x :y]))]
+    (doseq [[axis side] faces
+            [k [from to]] (face-grid-lines proj axis side domains env)
+            :when (set-grid-line! canvas (get-in env [:theme :panel :grid (if (= k :z) :y :x)]))]
+      (line! canvas from to))))
 
 (defn draw-frame-back!
   "Draw the box frame behind the data of `proj` (see [[cljplot2.data.space3d/projector]]) in `view`: with `box?` the
-  floor grid (at the x / y ticks) and the hidden box edges (dashed), so back and front read apart."
+  grids of the floor and the back walls (see [[draw-box-grid!]]) and the hidden box edges (dashed,
+  [[hidden-edge-dash]]), so back and front read apart."
   [canvas proj {:keys [view domains box?]} env]
   (when box?
     (let [env (assoc env :canvas canvas)
           corner (:corner proj)]
-      (draw-floor-grid! canvas proj domains env)
+      (draw-box-grid! canvas proj view domains env)
       (c2d/set-color canvas (get-in env [:theme :axis :x :line-color]))
-      (c2d/set-stroke-custom canvas {:size 1.0 :cap :butt :dash (polyline/dash-pattern [3.0 3.0])})
+      (c2d/set-stroke-custom canvas {:size 1.0 :cap :butt :dash (polyline/dash-pattern hidden-edge-dash)})
       (doseq [{:keys [from to]} (space/hidden-edges view)]
         (line! canvas (corner from) (corner to))))))
 
