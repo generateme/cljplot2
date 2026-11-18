@@ -51,9 +51,11 @@
     (is (nil? (:panel-scales (built (scatter-plot {}))))))
   (testing "1.2 one resolver: a panel's scales from :panel-scales, else the shared ones"
     (let [env {:scales {:y :shared} :panel-scales {"a" {:y :local}}}]
-      (is (= {:y :local} (scale/panel-scales-of env "a")))
-      (is (= {:y :shared} (scale/panel-scales-of env "b")))
-      (is (= {:y :shared} (scale/panel-scales-of env nil)))))
+      (is (= {:y :local} (scale/panel-scales-of env {:panel "a"})))
+      (is (= {:y :shared} (scale/panel-scales-of env {:panel "b"})) "a panel without an entry")
+      (is (= {:y :shared} (scale/panel-scales-of env {})) "no :panel key")
+      (is (= {:y :na} (scale/panel-scales-of (assoc-in env [:panel-scales nil] {:y :na}) {:panel nil})) "the NA panel")
+      (is (= {:y :shared} (scale/panel-scales-of (assoc-in env [:panel-scales nil] {:y :na}) {})) "no key is not the NA panel")))
   (testing "1.2 every axis item names its panel; free axes match their panel's ticks"
     (let [b (built (scatter-plot {:facets {:scales {:y :free}}}))
           axes (filter #(= :y (get-in % [:content :scale])) (contents b :axis))]
@@ -211,6 +213,9 @@
                     :charts [(chart/scatter) (chart/scatter {:data [{:f "w" :v 0}] :mapping {:facet nil}})]
                     :facets {:scales {:y :free}} :scales {:y {:order-by #(stats/mean (map :v %))}}})]
       (is (= ["w" "u" "v"] (vec (y-domain b "p"))))))
+  (testing "G6 a minor tick equal to a major tick is left out, also at zero"
+    (is (= [-1.0 1.0] (scale/minor-tick-values :linear [-2 2] [-2 0 2] 2 10)))
+    (is (not-any? zero? (scale/minor-tick-values :linear [-1 1] [-1 0 1] 2 10))))
   (testing "F4 log minor ticks near a tiny major tick are kept"
     (let [vs (scale/minor-tick-values :log [1e-9 1e3] [1e-9 1e-6 1e-3 1 1e3] 1 10)]
       (is (some #(near? 2e-9 % 1e-18) vs))
@@ -238,6 +243,25 @@
                                                                            {:canvas canvas :theme (:theme b) :scales (:finalized-scales b)}))))))]
       (is (< (axis-height p) (axis-height (assoc p :theme {:axis {:x {:minor-tick-length 20}}}))))
       (is (= (axis-height (assoc p :theme {:axis {:x {:minor-tick-length 2}}})) (axis-height (dissoc p :scales)))))))
+
+(deftest na-panel-test
+  (testing "G1 the NA facet panel (key nil) keeps its own scales, axis and neighbour checks"
+    (let [rows (concat (for [i (range 5)] {:g "a" :x i :y (* 100 i)}) (for [i (range 5)] {:g nil :x (* 100 i) :y i}))
+          free (built {:data rows :mapping {:x :x :y :y :facet :g} :charts [(chart/scatter)] :facets {:scales {:x :free :y :free}}})
+          axes (contents free :axis)
+          na-y (first (filter #(and (= :y (get-in % [:content :scale])) (contains? (:content %) :panel) (nil? (get-in % [:content :panel]))) axes))]
+      (is (< (second (y-domain free nil)) 5.0))
+      (is (> (second (y-domain free "a")) 300.0))
+      (is (some? na-y) "the NA panel's y axis names it")
+      (is (= (y-domain free nil) (get-in (scale/panel-scales-of free (:content na-y)) [:y :domain])))
+      (is (some #(and (= "a" (get-in % [:content :panel])) (contains? (:content %) :next-panel) (nil? (get-in % [:content :next-panel])))
+                (filter #(= :x (get-in % [:content :scale])) axes))
+          "the axis before the NA panel compares its labels")))
+  (testing "G1 weighted panels with an NA level"
+    (let [rows (concat (for [i (range 5)] {:g "a" :x i :y i}) (for [i (range 5)] {:g nil :x i :y i}))
+          b (built {:data rows :mapping {:x :x :y :y :facet :g} :charts [(chart/scatter)] :facets {:widths [2 1]}})]
+      (is (contains? (:panel-scales b) nil))
+      (is (> (double (:w ((panel-boxes b) "a"))) (* 1.5 (double (:w ((panel-boxes b) nil)))))))))
 
 (deftest order-by-score-test
   (testing "ties keep the given order; unscored levels follow, sorted"

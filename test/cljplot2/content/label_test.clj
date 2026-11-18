@@ -130,8 +130,8 @@
 ;; 2.x fonts
 
 (deftest bundled-files-test
-  (doseq [path (concat (vals (font/bundled-fonts "Liberation Mono")) ["fonts/LICENSE-LiberationMono-OFL.txt"]
-                       (vals (font/bundled-fonts "DejaVu Sans Mono")) ["fonts/LICENSE-DejaVu.txt"])]
+  (is (= #{"DejaVu Sans Mono"} (set (keys font/bundled-fonts))))
+  (doseq [path (concat (vals (font/bundled-fonts "DejaVu Sans Mono")) ["fonts/LICENSE-DejaVu.txt"])]
     (is (some? (clojure.java.io/resource path)) path)))
 
 (deftest default-font-test
@@ -147,11 +147,11 @@
 
 (deftest font-resolution-test
   (testing "bundled styles are real faces from their files"
-    (doseq [[style path] (font/bundled-fonts "Liberation Mono")]
+    (doseq [[style path] (font/bundled-fonts "DejaVu Sans Mono")]
       (is (= (.getFontName (c2d/load-font (clojure.java.io/resource path)))
-             (.getFontName (font/resolve-font "Liberation Mono" style 12))) (str style))))
+             (.getFontName (font/resolve-font "DejaVu Sans Mono" style 12))) (str style))))
   (testing "size"
-    (is (= 17.0 (double (.getSize2D (font/resolve-font "Liberation Mono" :plain 17))))))
+    (is (= 17.0 (double (.getSize2D (font/resolve-font "DejaVu Sans Mono" :plain 17))))))
   (testing "system and logical family names, case-insensitive"
     (is (= 13.0 (double (.getSize2D (font/resolve-font "SansSerif" :bold 13)))))
     (is (.isBold (font/resolve-font "sansserif" :bold 13)))
@@ -162,9 +162,9 @@
       (is (= 13.0 (double (.getSize2D f))))))
   (testing "invalid"
     (are [f s z k] (= k (:key (error #(font/resolve-font f s z))))
-      "Liberation Mono" :heavy 12 :font-style
-      "Liberation Mono" :plain 0 :size
-      "Liberation Mono" :plain nil :size
+      "DejaVu Sans Mono" :heavy 12 :font-style
+      "DejaVu Sans Mono" :plain 0 :size
+      "DejaVu Sans Mono" :plain nil :size
       nil :plain 12 :font
       42 :plain 12 :font
       "Liberaton Mono" :plain 12 :font)))

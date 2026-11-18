@@ -235,5 +235,5 @@
   [content canvas box env]
   (let [env (if-let [side (:margin content)]
               (margin-env env side)
-              (assoc env :scales (scale/panel-scales-of env (:panel content))))]
+              (assoc env :scales (scale/panel-scales-of env content)))]
     (draw-panel! content canvas box env)))

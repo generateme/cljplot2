@@ -78,11 +78,14 @@
           (and (= kind :log) (not (every? #(pos? (double %)) domain))) "log domain should be positive")))))
 
 (defn panel-scales-of
-  "Finalized scales of the panel `panel-key` in a content `env`: its entry in `env` `:panel-scales` (panel-local scales
-  of free / sliced facet scales and weighted panels, see [[cljplot2.pipeline/panel-scales]]), else the shared
-  `:scales`."
-  [env panel-key]
-  (or (when (some? panel-key) (get-in env [:panel-scales panel-key])) (:scales env)))
+  "Finalized scales of grid content `item` in a content `env`: the entry of its panel in `env` `:panel-scales`
+  (panel-local scales of free / sliced facet scales and weighted panels, see [[cljplot2.pipeline/panel-scales]]) when
+  `item` has a `:panel` key - `nil` is a panel key too (the NA facet level); else, and for a panel without an entry,
+  the shared `:scales`."
+  [env item]
+  (if-let [[_ scales] (and (contains? item :panel) (find (:panel-scales env) (:panel item)))]
+    scales
+    (:scales env)))
 
 (def ^:private wadogo-attributes
   "wadogo scale attributes passed through to the scale (see wadogo's kinds)."
@@ -408,9 +411,9 @@
           (or stops (map #(/ (double %) (double (dec n))) (range n))))))
 
 (defn- near-any?
-  "Is `v` equal to one of `values` up to a relative 1e-9 (of the larger magnitude)?"
+  "Is `v` equal to one of `values` up to a relative 1e-9 (of the larger magnitude; two zeros are equal)?"
   [values v]
-  (some #(< (m/abs (- (double %) (double v))) (* 1.0e-9 (m/max (m/abs (double %)) (m/abs (double v))))) values))
+  (some #(<= (m/abs (- (double %) (double v))) (* 1.0e-9 (m/max (m/abs (double %)) (m/abs (double v))))) values))
 
 (defn minor-tick-values
   "Minor ticks (data values) inside the numeric `domain` of a scale of `kind` with major `ticks`: on `:log` the

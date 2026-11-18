@@ -299,20 +299,21 @@
   axis rows separate the panel rows). Overhang items reserve room for end labels as in the single-panel grid; the
   horizontal start overhang sits in the first y-axis column (`[:y-axis 0]` with `free-v?`)."
   [panels cols gap {:keys [h-key v-key h-shown? v-shown? free-h? free-v? local-h? local-v? stacked?]}]
-  (let [at (into {} (map (juxt (juxt :row :col) :key)) panels)
-        h-axis (fn [content next-key]
+  ;; panels are passed around as maps (`nil` - no panel): a panel's `:key` may itself be `nil` (the NA facet level)
+  (let [at (into {} (map (juxt (juxt :row :col) identity)) panels)
+        h-axis (fn [content next-panel]
                  (cond-> content
-                   (some? next-key) (assoc :next-panel-gap gap)
-                   (and local-h? (some? next-key)) (assoc :next-panel next-key)))
-        v-axis (fn [content next-key]
+                   next-panel (assoc :next-panel-gap gap)
+                   (and local-h? next-panel) (assoc :next-panel (:key next-panel))))
+        v-axis (fn [content next-panel]
                  (cond-> content
-                   (and local-v? (not stacked?) (some? next-key)) (assoc :next-panel-gap gap :next-panel next-key)))
-        bottom-of (fn [c] (:key (last (sort-by :row (filter #(= c (:col %)) panels)))))
-        first-of (fn [r] (:key (first (sort-by :col (filter #(= r (:row %)) panels)))))
+                   (and local-v? (not stacked?) next-panel) (assoc :next-panel-gap gap :next-panel (:key next-panel))))
+        bottom-of (fn [c] (last (sort-by :row (filter #(= c (:col %)) panels))))
+        first-of (fn [r] (first (sort-by :col (filter #(= r (:row %)) panels))))
         rows (sort (distinct (map :row panels)))
         last-row (peek (vec rows))
         next-row (fn [r] (second (drop-while #(not= r %) rows)))
-        with-panel (fn [item k] (cond-> item (some? k) (assoc-in [:content :panel] k)))
+        with-panel (fn [item panel] (cond-> item panel (assoc-in [:content :panel] (:key panel))))
         [x-start x-end] (rest (axis-items :bottom h-key))
         x-start (cond-> x-start free-v? (assoc :column [:y-axis 0]))
         [y-start y-end] (rest (axis-items :left v-key))]
@@ -320,13 +321,14 @@
      (when h-shown?
        (if free-h?
          (concat
-          (for [{:keys [key row col]} panels]
-            {:id [:x-axis row col] :column [:panel col] :row [:x-axis row]
-             :content (h-axis {:kind :axis :scale h-key :panel key} (at [row (inc (long col))]))})
+          (for [{:keys [row col] :as panel} panels]
+            (with-panel {:id [:x-axis row col] :column [:panel col] :row [:x-axis row]
+                         :content (h-axis {:kind :axis :scale h-key} (at [row (inc (long col))]))}
+              panel))
           (mapcat (fn [r]
                     (let [in-row (sort-by :col (filter #(= r (:row %)) panels))]
-                      [(-> (assoc x-start :id [:x-axis-start r] :row [:x-axis r]) (with-panel (:key (first in-row))))
-                       (-> (assoc x-end :id [:x-axis-end r] :row [:x-axis r]) (with-panel (:key (last in-row))))]))
+                      [(-> (assoc x-start :id [:x-axis-start r] :row [:x-axis r]) (with-panel (first in-row)))
+                       (-> (assoc x-end :id [:x-axis-end r] :row [:x-axis r]) (with-panel (last in-row)))]))
                   rows))
          (concat
           (for [c (range cols)]
@@ -338,9 +340,10 @@
      (when v-shown?
        (concat
         (if free-v?
-          (for [{:keys [key row col]} panels]
-            {:id [:y-axis row col] :column [:y-axis col] :row [:panel row]
-             :content (v-axis {:kind :axis :scale v-key :panel key} (at [(inc (long row)) col]))})
+          (for [{:keys [row col] :as panel} panels]
+            (with-panel {:id [:y-axis row col] :column [:y-axis col] :row [:panel row]
+                         :content (v-axis {:kind :axis :scale v-key} (at [(inc (long row)) col]))}
+              panel))
           (for [r rows]
             (with-panel {:id [:y-axis r] :column :y-axis :row [:panel r]
                          :content (v-axis {:kind :axis :scale v-key} (some-> (next-row r) first-of))}

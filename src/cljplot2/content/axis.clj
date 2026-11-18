@@ -25,8 +25,8 @@
   [[label-offset-fn]]), a vertical axis keeps labels centred on their ticks; natural sizes, thinning and overhangs use
   the rotated label boxes. An axis followed by another panel's axis `:next-panel-gap` pixels further (set by the facet
   grid: right of a horizontal axis, below a vertical one) skips its labels that would overlap the next panel's drawn
-  labels (the next panel keeps its own): those of the next panel's own scale with `:next-panel k` (panel-local scales,
-  see [[crossing-labels]]), else its identical axis."
+  labels (the next panel keeps its own): those of the next panel's own scale with `:next-panel k` (panel-local scales;
+  `k` may be `nil`, the NA facet level - see [[crossing-labels]]), else its identical axis."
   (:require [cljplot2.schema :as schema]
             [clojure2d.core :as c2d]
             [fastmath.core :as m]
@@ -52,8 +52,8 @@
   "Finalized scale of axis `content`: `:scale` of the scales of its `:panel` (see
   [[cljplot2.scale.position/panel-scales-of]]; the shared `env` `:scales` without one), or of the plot margin's scales
   (`env` `[:margins side :scales]`) for an axis with `:margin side`."
-  [{k :scale margin :margin panel :panel} env]
-  (if margin (get-in env [:margins margin :scales k]) (get (scale/panel-scales-of env panel) k)))
+  [{k :scale margin :margin :as content} env]
+  (if margin (get-in env [:margins margin :scales k]) (get (scale/panel-scales-of env content) k)))
 
 (def overhang-schema
   "`{:kind :axis-overhang}` content: `:scale` `:x` or `:y`, `:end` `:start` or `:end`."
@@ -265,7 +265,8 @@
           next-gap (:next-panel-gap content)
           skipped (if next-gap
                     (let [own (label-intervals k finalized sizes (label-padding env) offsets spans)
-                          next-finalized (when-some [panel (:next-panel content)] (get (scale/panel-scales-of env panel) k))
+                          next-finalized (when (contains? content :next-panel)
+                                           (get (scale/panel-scales-of env {:panel (:next-panel content)}) k))
                           [next-intervals next-drawn] (if next-finalized (drawn-labels k next-finalized env) [own drawn])]
                       (crossing-labels own drawn next-intervals next-drawn (+ (if horizontal? w h) (double next-gap))))
                     #{})

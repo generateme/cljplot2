@@ -86,3 +86,6 @@ Developed with the support of an LLM (Anthropic's Claude) - design, code, tests 
 by the author.
 
 Distributed under the [Eclipse Public License 2.0](LICENSE).
+
+The bundled font, DejaVu Sans Mono (`resources/fonts/`), keeps its own licence: Bitstream Vera Fonts licence, DejaVu
+changes in the public domain - see [LICENSE-DejaVu.txt](resources/fonts/LICENSE-DejaVu.txt).
