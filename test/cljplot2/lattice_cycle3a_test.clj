@@ -276,3 +276,18 @@
       (is (< (count-lines (assoc-in t [:panel :grid :y] :none)) (count-lines t)))
       (is (= 3 (count-lines (-> t (assoc-in [:panel :grid :y] :none) (assoc-in [:panel :grid :x] :none)))) "only hidden edges"))))
 
+(deftest turning-test
+  (let [proj (fn [azimuth aspect] (space/projector {:domains {:x [0 1] :y [0 1] :z [0 1]} :view {:azimuth azimuth :elevation 30} :aspect aspect}
+                                                   {:w 300 :h 300 :margin 20}))
+        px (fn [^Vec2 p] [(m/round (.x p)) (m/round (.y p))])
+        outline (fn [p] (set (map (comp px (:corner p)) space/corners)))
+        origin (fn [p] (px ((:corner p) [0 0 0])))]
+    (testing "Y3 a turn of 90 degrees moves the box's corners; a cube's outline maps onto itself"
+      (is (not= (origin (proj 20 [1 1 1])) (origin (proj 110 [1 1 1]))))
+      (is (= (outline (proj 20 [1 1 1])) (outline (proj 110 [1 1 1])))))
+    (testing "Y3 a box of unequal sides, or a turn other than 90 degrees, changes the outline"
+      (is (not= (outline (proj 20 [1 1.3 0.8])) (outline (proj 110 [1 1.3 0.8]))))
+      (is (not= (outline (proj 20 [1 1 1])) (outline (proj 60 [1 1 1])))))
+    (testing "Y3 a full turn and a turn by -340 are the same view"
+      (is (= (outline (proj 20 [1 1.3 0.8])) (outline (proj 380 [1 1.3 0.8])) (outline (proj -340 [1 1.3 0.8])))))))
+

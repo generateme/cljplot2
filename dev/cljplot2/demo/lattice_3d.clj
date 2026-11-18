@@ -18,16 +18,19 @@
    :facets {:columns 2}})
 
 (defn- view-panel
-  "The quakes cloud seen from `azimuth` / `elevation`."
+  "The quakes cloud seen from `azimuth` / `elevation`, axes labelled so the turn reads; the box wider east-west than
+  north-south (about the data's extent) - a cube looks the same every 90 degrees."
   [azimuth elevation]
   {:data quakes
    :mapping {:x :long :y :lat :z :depth}
-   :charts [(chart/cloud {:domain {:z [690 40]} :view {:azimuth azimuth :elevation elevation} :size 2 :axes false})]
+   :charts [(chart/cloud {:domain {:z [690 40]} :view {:azimuth azimuth :elevation elevation} :size 2 :aspect [1 1.3 0.8]
+                          :axis-titles {:x "Longitude" :y "Latitude" :z "Depth"}})]
    :labels {:title (str "azimuth " azimuth ", elevation " elevation)}})
 
 (def fig-6-3
-  "Fig 6.3: one cloud turned about its vertical axis - four azimuths at one elevation, so the box keeps its size."
-  (plot/arrange [(view-panel 20 30) (view-panel 110 30) (view-panel 200 30) (view-panel 290 30)] {:columns 2}))
+  "Fig 6.3: one cloud turned about its vertical axis - four azimuths 40 degrees apart at one elevation (one box size,
+  see [[cljplot2.data.space3d/projector]])."
+  (plot/arrange [(view-panel 20 30) (view-panel 60 30) (view-panel 100 30) (view-panel 140 30)] {:columns 2}))
 
 (def fig-6-4
   "Fig 6.4 (quakes instead of US states): the number of stations reporting each of the strongest earthquakes as
