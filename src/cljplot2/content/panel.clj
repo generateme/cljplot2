@@ -90,6 +90,25 @@
           (c2d/line c p 0 p h)
           (c2d/line c 0 p w p))))))
 
+(defn- draw-minor-grid-lines!
+  "Grid lines at the minor ticks (`:minor-ticks` of a finalized scale with a `:minor-ticks` spec) of the panel-local
+  scales, styled by theme `[:panel :grid :minor]` (default `:none` - none), for scales whose grid is drawn."
+  [c ^long w ^long h env]
+  (let [{:keys [color width dash] :as line} (get-in env [:theme :panel :grid :minor])]
+    (when-not (or (nil? line) (theme/none? line) (theme/none? color) (not (pos? (double width))))
+      (doseq [k [:x :y]
+              :let [finalized (get-in env [:scales k])]
+              :when (and (seq (:minor-ticks finalized)) (scale/grid-drawn? finalized))]
+        (c2d/set-color c color)
+        (c2d/set-stroke-custom c (cond-> {:size (double width) :cap :butt} (polyline/dash-pattern dash) (assoc :dash (polyline/dash-pattern dash))))
+        (let [forward (scale/forward-fn finalized)
+              horizontal? (scale/horizontal? k finalized)]
+          (doseq [tick (:minor-ticks finalized)
+                  :let [p (draw/pixel-center (forward tick))]]
+            (if horizontal?
+              (c2d/line c p 0 p h)
+              (c2d/line c 0 p w p))))))))
+
 (defn- grid-line-style
   "Line style of the grid of finalized scale `finalized` (key `k`) in `env`, `nil` when it draws nothing (theme `:none`,
   the scale's `:axis false`, zero width); bands scales draw the `[:panel :grid :bands]` line."
@@ -207,11 +226,14 @@
                     (draw-charts! c' (get content :panel facet/single-panel) w h env)
                     (draw-polar-labels! c' geometry env))
                 (do (draw-band-fills! c' w h env)
+                    (draw-minor-grid-lines! c' w h env)
                     (draw-grid-lines! c' w h env)
                     (draw-charts! c' (get content :panel facet/single-panel) w h env)))))
     (draw/inner-border! canvas {:x x :y y :w w :h h} border-color border-width)))
 
 (defmethod draw/draw-content :panel
   [content canvas box env]
-  (let [env (if-let [side (:margin content)] (margin-env env side) env)]
+  (let [env (if-let [side (:margin content)]
+              (margin-env env side)
+              (assoc env :scales (scale/panel-scales-of env (:panel content))))]
     (draw-panel! content canvas box env)))

@@ -174,6 +174,27 @@
 
 ;; order
 
+(defn- finite-score
+  "`s` as a double when it is a finite number, else `nil`."
+  [s]
+  (when (and (number? s) (m/valid-double? (double s))) (double s)))
+
+(defn order-by-score
+  "`levels` (distinct, no `nil`) ordered by `(score level)` - ascending, or descending with `descending?`. Ties keep
+  the order of `levels`; levels whose score isn't a finite number (or `nil`) follow the scored ones, sorted when they
+  compare (else in the order of `levels`)."
+  [levels score descending?]
+  (let [scored (keep (fn [l] (when-let [s (finite-score (score l))] [l s])) levels)
+        ordered (map first (sort-by second (if descending? #(compare %2 %1) compare) scored))
+        unscored (remove (set (map first scored)) levels)]
+    (into (vec ordered) (try (sort unscored) (catch ClassCastException _ unscored)))))
+
+(defn order-by-rows
+  "`levels` ordered by `(order-by rows)` over each level's rows (`rows-of` - level -> rows; a level without rows isn't
+  scored), see [[order-by-score]]: the `:order-by` / `:descending` of facet and categorical position scales."
+  [levels rows-of order-by descending?]
+  (order-by-score levels (fn [l] (when-let [rs (seq (rows-of l))] (order-by (vec rs)))) descending?))
+
 (defn order-levels
   "Levels of `level` (keyword or function) in the rows of `data` ordered by `(stat values)` - `values` the finite
   numbers of `value` in that level's rows; for a scale `:domain`. `stat`: a function of a non-empty sequence of
@@ -186,16 +207,10 @@
    (let [rs (rows/rows data)
          level-of (rows/row-accessor :level level)
          value-of (rows/row-accessor :value value)
-         levels (distinct (map level-of rs))
          by-level (group-by level-of rs)
-         score (fn [l] (let [vs (filterv #(and (number? %) (m/valid-double? (double %))) (map value-of (by-level l)))
-                             s (when (seq vs) (stat vs))]
-                         ;; a statistic without a finite value (e.g. NaN) leaves the level unordered
-                         (when (and (number? s) (m/valid-double? (double s))) (double s))))
-         scored (keep (fn [l] (when (some? l) (when-let [s (score l)] [l s]))) levels)
-         ordered (map first (sort-by second (if descending #(compare %2 %1) compare) scored))
-         unscored (remove (set (map first scored)) (remove nil? levels))]
-     (into (vec ordered) (try (sort unscored) (catch ClassCastException _ unscored))))))
+         score (fn [l] (let [vs (filterv #(and (number? %) (m/valid-double? (double %))) (map value-of (by-level l)))]
+                         (when (seq vs) (stat vs))))]
+     (order-by-score (remove nil? (distinct (map level-of rs))) score descending))))
 
 (def rank-ties
   "Tie strategies of [[rank-rows]] (`fastmath.core/rank`)."

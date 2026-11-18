@@ -5,14 +5,19 @@
   column per `:facet-col` value, one row per `:facet-row` value; either alone gives one row or one column).
 
   Levels (facet values in panel order) come from an explicit `:scales {k {:domain [...]}}` or from the data,
-  sorted. `nil` values go to an NA level placed last (`:facets {:na-panel false}` drops them instead). Values
+  sorted, or ordered by a statistic of each level's rows (`:scales {k {:order-by f :descending b}}`, see
+  [[ordered-levels]]). `nil` values go to an NA level placed last (`:facets {:na-panel false}` drops them instead). Values
   outside an explicit domain, NaN and infinite numbers are dropped (and counted). Strip text is `(str value)` (`\"NA\"` for the NA level) unless the
   facet scale has a `:formatter`.
 
   Group keys: the level for wrap, `[col-level row-level]` for grid. Charts whose mapping has no facet key, and
   charts whose own `:data` has no value for any of their facet keys (e.g. annotation rows), get the group key
-  [[all-panels]] and are drawn in every panel."
+  [[all-panels]] and are drawn in every panel.
+
+  Layout options (plot `:facets`, see [[facet-options]]): wrap shape and order, the NA panel, position scale
+  relations between panels ([[scale-relations]]), strips on / off, panel column / row weights."
   (:require [fastmath.core :as m]
+            [cljplot2.data.levels :as levels]
             [cljplot2.data.rows :as data]
             [cljplot2.schema :as schema]))
 
@@ -61,22 +66,66 @@
 
 (def scale-spec-schema
   "Facet scale spec (plot `:scales` of a facet key): `:domain` - distinct levels in panel order, `:formatter` - strip
-  text of a level."
-  [:map {:closed true}
-   (schema/nilable :domain (schema/with-rules [:sequential {:min 1} any?]
-                             [#(when-not (apply distinct? %) "facet domain values should be distinct")]))
-   (schema/optional :formatter schema/function)
-   ;; facets are always categorical; accepted for symmetry with the other scales
-   (schema/optional :type [:= :categorical])])
+  text of a level, `:order-by` - a function of a level's rows (every chart's rows of that level) to a number: levels
+  in ascending order of it (see [[cljplot2.data.levels/order-by-rows]]; not with `:domain`), `:descending` - `true`
+  reverses that order (needs `:order-by`)."
+  (schema/with-rules
+   [:map {:closed true}
+    (schema/nilable :domain (schema/with-rules [:sequential {:min 1} any?]
+                              [#(when-not (apply distinct? %) "facet domain values should be distinct")]))
+    (schema/optional :formatter schema/function)
+    (schema/nilable :order-by schema/function)
+    (schema/nilable :descending schema/bool)
+    ;; facets are always categorical; accepted for symmetry with the other scales
+    (schema/optional :type [:= :categorical])]
+   [#(when (and (:order-by %) (:domain %)) "give either :order-by or :domain, not both") [:order-by]]
+   [#(when (and (:descending %) (nil? (:order-by %))) ":descending needs :order-by") [:descending]]))
+
+(def scale-relations
+  "Values of plot `:facets {:scales {k relation}}`: `:same` - one domain for every panel, `:free` - each panel's own
+  data domain, `:sliced` - each panel's own centre with the span of the widest panel."
+  #{:same :free :sliced})
 
 (def facet-options
   "Plot `:facets`: `:columns` / `:rows` (wrap layout shape), `:order` (`:top-down` default or `:bottom-up`), `:na-panel`
-  (default true - `nil` facet values get a panel)."
+  (default true - `nil` facet values get a panel), `:scales {:x relation :y relation}` (see [[scale-relations]];
+  default `:same`), `:strips` (default true; `false` - no strips), `:widths` / `:heights` - relative sizes of the
+  panel columns / rows (positive numbers, one per column / row)."
   [:map {:closed true}
    (schema/nilable :columns schema/pos-int)
    (schema/nilable :rows schema/pos-int)
    (schema/nilable :order [:enum :top-down :bottom-up])
-   (schema/nilable :na-panel schema/bool)])
+   (schema/nilable :na-panel schema/bool)
+   (schema/nilable :scales [:map {:closed true}
+                            (schema/nilable :x (into [:enum] (sort scale-relations)))
+                            (schema/nilable :y (into [:enum] (sort scale-relations)))])
+   (schema/nilable :strips schema/bool)
+   (schema/nilable :widths [:sequential {:min 1} schema/pos])
+   (schema/nilable :heights [:sequential {:min 1} schema/pos])])
+
+(defn scale-relation
+  "Relation of position scale `k` in plot `facets` options: `:same` (default), `:free` or `:sliced`."
+  [facets k]
+  (or (get-in facets [:scales k]) :same))
+
+(defn panel-scales?
+  "Do plot `facets` options ask for panel-local position scales: a `:free` / `:sliced` relation or panel weights?"
+  [facets]
+  (boolean (or (some #(not= :same (scale-relation facets %)) [:x :y]) (:widths facets) (:heights facets))))
+
+(defn strips?
+  "Does a faceted plot with `facets` options draw strips (default true)?"
+  [facets]
+  (not (false? (:strips facets))))
+
+(defn ordered-levels
+  "`levels` of a facet dimension in the order of its scale `spec`'s `:order-by` / `:descending` (`rows-of` - level ->
+  rows); unchanged without `:order-by`. The NA level (`nil`) stays last."
+  [levels rows-of {:keys [order-by descending]}]
+  (if order-by
+    (cond-> (levels/order-by-rows (remove nil? levels) rows-of order-by descending)
+      (some nil? levels) (conj na-level))
+    levels))
 
 (defn label
   "Strip text of `level` of facet dimension `k` with facet scale `spec`."

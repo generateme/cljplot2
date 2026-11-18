@@ -16,12 +16,13 @@
   `:plot` - `:background` (fills the canvas), `:margin` (pixels on every side).
 
   `:panel` - `:fill`, `:border-color`, `:border-width` (pixels, rounded, drawn inside the panel box),
-  `:grid {:x line :y line}` - grid lines at tick positions, `line` is `{:color :width :dash}` or `:none`
+  `:grid {:x line :y line :minor line}` - grid lines at tick positions (`:minor` - at the minor ticks of scales with
+  `:minor-ticks`, default `:none`), `line` is `{:color :width :dash}` or `:none`
   (`:dash` - a sequence of positive dash lengths, a dash style name of [[cljplot2.schema/dash-styles]], or `:none`
   for a solid line).
 
   `:axis {:x axis :y axis}` - `axis` is `{:line-color :line-width :tick-color :tick-length :tick-width :label-gap
-  :tick-spacing :label-rotation}` (pixels; `:tick-spacing` > 0 is the target distance between ticks, a line or tick of
+  :tick-spacing :label-rotation :minor-tick-length}` (pixels; `:minor-tick-length` - ticks of a scale's `:minor-ticks`; `:tick-spacing` > 0 is the target distance between ticks, a line or tick of
   width 0 isn't drawn; `:label-rotation` - tick labels rotated clockwise by -90..90 degrees, see
   [[cljplot2.content.axis]]). Keyed by scale, also when a flipped plot draws `:x` vertically.
 
@@ -83,7 +84,8 @@
            :grid {:x {:color 0xb4b4b4 :width 0.5 :dash [4.0]}
                   :y {:color 0xb4b4b4 :width 0.5 :dash [4.0]}
                   :bands {:color 0xb4b4b4 :width 1 :dash [1.0 2.0]}
-                  :bands-fill [0 0 0 8]}}
+                  :bands-fill [0 0 0 8]
+                  :minor :none}}
    :strip {:fill [255 255 255 150] :border-color [0 0 0 100] :border-width 1 :shingle-fill [255 165 0 110]}
    :facet {:gap 5}
    :multiplot {:gap 10}
@@ -145,9 +147,9 @@
            :rect {:fill [0 0 0 30] :stroke-color :none :stroke-width 1
                   :pattern :solid :pattern-color :darker}}
    :axis {:x {:line-color :black :line-width 1 :tick-color :black :tick-length 6 :tick-width 1
-              :label-gap 2 :tick-spacing 80 :label-rotation 0}
+              :label-gap 2 :tick-spacing 80 :label-rotation 0 :minor-tick-length 3}
           :y {:line-color :black :line-width 1 :tick-color :black :tick-length 6 :tick-width 1
-              :label-gap 2 :tick-spacing 50 :label-rotation 0}}
+              :label-gap 2 :tick-spacing 50 :label-rotation 0 :minor-tick-length 3}}
    :text {:title {:font "Liberation Mono" :size 14 :font-style :bold :color :black :padding 4 :align centered}
           :strip {:font "Liberation Mono" :size 11 :font-style :plain :color :black :padding 2 :align centered}
           :axis-title {:font "Liberation Mono" :size 12 :font-style :plain :color :black :padding 4 :align centered}
@@ -197,7 +199,7 @@
   [:map {:closed true}
    [:line-color schema/color] [:line-width schema/non-neg] [:tick-color schema/color] [:tick-length schema/non-neg]
    [:tick-width schema/non-neg] [:label-gap schema/non-neg] [:tick-spacing schema/pos]
-   [:label-rotation [:and number? [:>= -90] [:<= 90]]]])
+   [:label-rotation [:and number? [:>= -90] [:<= 90]]] [:minor-tick-length schema/non-neg]])
 
 (def theme-schema
   "The merged theme (see [[default-theme]]). `:chart` subtrees are checked against the charts' style schemas by
@@ -206,7 +208,8 @@
    [:plot [:map {:closed true} [:background schema/color] [:margin schema/non-neg]]]
    [:panel [:map {:closed true}
             [:fill schema/color] [:alternate-fill schema/color] [:border-color schema/color] [:border-width schema/non-neg]
-            [:grid [:map {:closed true} [:x grid-line] [:y grid-line] [:bands grid-line] [:bands-fill schema/color]]]]]
+            [:grid [:map {:closed true} [:x grid-line] [:y grid-line] [:bands grid-line] [:bands-fill schema/color]
+                    [:minor grid-line]]]]]
    [:strip [:map {:closed true}
             [:fill schema/color] [:border-color schema/color] [:border-width schema/non-neg] [:shingle-fill schema/color]]]
    [:facet [:map {:closed true} [:gap schema/non-neg]]]

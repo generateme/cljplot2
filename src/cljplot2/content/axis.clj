@@ -7,6 +7,10 @@
   Geometry follows the scale's direction ([[cljplot2.scale.position/direction]]): a horizontal axis sits below the
   panel (line in its box's top pixel row), a vertical one left of it (line in its box's rightmost pixel column).
   `{:kind :axis ... :margin side}` - the magnitude axis of a plot margin: its scale from `env` `[:margins side :scales]`.
+  `{:kind :axis ... :panel k}` - the axis of facet panel `k` (its panel-local scale, see
+  [[cljplot2.scale.position/panel-scales-of]]); `:confine {:low gap :high gap}` - neighbouring axes across a panel gap
+  differ (free scales, weighted panels): labels reaching past the middle of that gap aren't drawn.
+  Minor ticks (a finalized scale's `:minor-ticks`) are drawn unlabelled, theme `[:axis k :minor-tick-length]` long.
   Natural size: horizontal - height = tick length + label gap + tallest label; vertical - width = tick length +
   label gap + widest label. Without a finalized scale in `env` the axis is empty.
 
@@ -41,17 +45,20 @@
   "`{:kind :axis}` content: `:scale` `:x` or `:y`; optional `:next-panel-gap` - pixels to the next panel's identical
   axis along a horizontal axis (facet columns): labels overlapping that axis's labels aren't drawn."
   [:map [:scale [:enum :x :y]] (schema/optional :next-panel-gap schema/non-neg)
-   (schema/optional :margin [:enum :top :right])])
+   (schema/optional :margin [:enum :top :right]) (schema/optional :panel any?)
+   (schema/optional :confine [:map {:closed true} (schema/optional :low schema/non-neg) (schema/optional :high schema/non-neg)])])
 
 (defn- axis-scale
-  "Finalized scale of axis `content`: `:scale` of `env` `:scales`, or of the plot margin's scales (`env`
-  `[:margins side :scales]`) for an axis with `:margin side`."
-  [{k :scale margin :margin} env]
-  (if margin (get-in env [:margins margin :scales k]) (get-in env [:scales k])))
+  "Finalized scale of axis `content`: `:scale` of the scales of its `:panel` (see
+  [[cljplot2.scale.position/panel-scales-of]]; the shared `env` `:scales` without one), or of the plot margin's scales
+  (`env` `[:margins side :scales]`) for an axis with `:margin side`."
+  [{k :scale margin :margin panel :panel} env]
+  (if margin (get-in env [:margins margin :scales k]) (get (scale/panel-scales-of env panel) k)))
 
 (def overhang-schema
   "`{:kind :axis-overhang}` content: `:scale` `:x` or `:y`, `:end` `:start` or `:end`."
-  [:map [:scale [:enum :x :y]] [:end [:enum :start :end]] (schema/optional :margin [:enum :top :right])])
+  [:map [:scale [:enum :x :y]] [:end [:enum :start :end]] (schema/optional :margin [:enum :top :right])
+   (schema/optional :panel any?)])
 
 (defmethod measure/validate-content :axis [content] (schema/explain! [[axis-schema content [:content]]]))
 (defmethod measure/validate-content :axis-overhang [content] (schema/explain! [[overhang-schema content [:content]]]))
@@ -154,6 +161,19 @@
                  (some (fn [j] (overlap? (centres i) (extents i) (+ shift (double (centres j))) (extents j))) drawn))
                drawn)))
 
+(defn- unconfined-labels
+  "Indices of labels reaching past the axis box ends shared with a neighbouring panel's different axis (`confine`
+  `{:low gap :high gap}` - the gap on the box's left / top (`:low`) or right / bottom (`:high`) side): a label whose box
+  goes beyond the middle of that gap isn't drawn, so neighbouring axes' labels never meet. `centres` - label centre
+  pixels along the axis, `extents` - label lengths along it; `[lo hi]` - the box's pixel interval along the axis."
+  [{:keys [low high]} centres extents [lo hi]]
+  (set (keep-indexed (fn [i c]
+                       (let [half (* 0.5 (double (nth extents i)))]
+                         (when (or (and low (< (- (double c) half) (- (double lo) (* 0.5 (double low)))))
+                                   (and high (> (+ (double c) half) (+ (double hi) (* 0.5 (double high))))))
+                           i)))
+                     centres)))
+
 (defn- drawn?
   "Is label `i` drawn with label step `step`?"
   [^long step i]
@@ -213,7 +233,7 @@
 (defmethod draw/draw-content :axis
   [{k :scale :as content} c {:keys [x y w h]} env]
   (when-let [finalized (axis-scale content env)]
-    (let [{:keys [line-color line-width tick-color tick-length tick-width label-gap]} (get-in env [:theme :axis k])
+    (let [{:keys [line-color line-width tick-color tick-length tick-width label-gap minor-tick-length]} (get-in env [:theme :axis k])
           x (double x) y (double y) w (double w) h (double h)
           tick-length (double tick-length)
           label-gap (double label-gap)
@@ -232,10 +252,15 @@
           step (label-step k finalized sizes (label-padding env) offsets spans)
           drawn (filterv #(drawn? step %) (range (count sizes)))
           next-gap (:next-panel-gap content)
-          skipped (if (and horizontal? next-gap)
-                    (crossing-labels (label-intervals k finalized sizes (label-padding env) offsets spans) drawn
-                                     (+ w (double next-gap)))
-                    #{})
+          skipped (into (if (and horizontal? next-gap)
+                          (crossing-labels (label-intervals k finalized sizes (label-padding env) offsets spans) drawn
+                                           (+ w (double next-gap)))
+                          #{})
+                        (when-let [confine (:confine content)]
+                          (unconfined-labels confine
+                                             (mapv (fn [^double p ^double off] (+ p off)) positions offsets)
+                                             (mapv (fn [^Vec2 size] (if horizontal? (.x size) (.y size))) sizes)
+                                             [(if horizontal? x y) (if horizontal? (+ x w) (+ y h))])))
           draw-label! (fn [text box] (canvas/call-with-isolated-graphics c #(draw/draw-content (tick-label text rotation) % box env)))]
       (when (draws? line-color line-width)
         (set-line-style! c line-color line-width)
@@ -248,7 +273,13 @@
                 :let [p (draw/pixel-center p)]]
           (if horizontal?
             (c2d/line c p y p (+ y tick-length))
-            (c2d/line c (+ x w) p (- (+ x w) tick-length) p))))
+            (c2d/line c (+ x w) p (- (+ x w) tick-length) p)))
+        (doseq [tick (:minor-ticks finalized)
+                :let [p (draw/pixel-center (+ offset (double (forward tick))))
+                      len (double minor-tick-length)]]
+          (if horizontal?
+            (c2d/line c p y p (+ y len))
+            (c2d/line c (+ x w) p (- (+ x w) len) p))))
       (doseq [[i ^double p text ^Vec2 size ^double off] (map vector (range) positions (:tick-labels finalized) sizes offsets)
               :when (and (drawn? step i) (not (skipped i)))
               :let [lw (.x size) lh (.y size)]]

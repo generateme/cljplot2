@@ -11,7 +11,13 @@
     [[cljplot2.data.facet]]; aesthetic scales `:color` `:shape` `:size` `:dash` `:pattern`, see [[cljplot2.scale.aesthetic]]
   * `:data`, `:mapping` - plot data and mapping, see [[cljplot2.data.rows]]
   * `:charts` - vector of chart values, see [[cljplot2.chart]]
-  * `:facets` - `{:columns :rows :order :na-panel}` facet layout options, see [[cljplot2.data.facet]]
+  * `:facets` - `{:columns :rows :order :na-panel :scales :strips :widths :heights}` facet layout options, see
+    [[cljplot2.data.facet]]: `:scales {:x r :y r}` - `:same` (default), `:free` (each panel's own data domain) or
+    `:sliced` (each panel's own centre, the widest panel's span; numeric data) - panels sharing an axis share the
+    scale (wrap: every panel has its own axis; grid: per column / row), see [[panel-scale-specs]]; `:strips false`;
+    `:widths` / `:heights` - relative panel column / row sizes. Such plots finalize their position scales per panel
+    (`:panel-scales`, see [[panel-scales]]); not with `:aspect :iso`, polar coordinates or explicit `:domain`s of
+    free / sliced scales
   * `:groups` - `{:na bool}`: `nil` aesthetic values form the NA level (default `true`) or are dropped
   * `:labels` - plot titles; charts may suggest axis titles (`:axis-titles` in their stats), `:labels` win
   * `:legend` - `false` hides all legends, see [[cljplot2.content.legend]]
@@ -57,6 +63,7 @@
             [cljplot2.data.rows :as data]
             [cljplot2.data.accessor :as accessor]
             [cljplot2.data.facet :as facet]
+            [cljplot2.data.levels :as levels]
             [cljplot2.layout.align :as align]
             [cljplot2.layout.grid :as grid]
             [cljplot2.graphics.measure :as measure]
@@ -104,8 +111,12 @@
         dims (vec (first (distinct (map (comp facet/facet-dims :mapping) faceted))))
         accessors (fn [mapping] (into {} (map (fn [d] [d (data/row-accessor d (mapping d))])) dims))
         levels (into {} (map (fn [d]
-                               (let [values (mapcat (fn [{:keys [rows mapping]}] (map (get (accessors mapping) d) rows)) faceted)]
-                                 [d (facet/levels d values (get scales d) na-panel?)])))
+                               (let [keyed (mapcat (fn [{:keys [rows mapping]}]
+                                                     (let [acc (get (accessors mapping) d)] (map (fn [r] [(acc r) r]) rows)))
+                                                   faceted)
+                                     rows-of (delay (update-vals (group-by first keyed) #(mapv second %)))]
+                                 [d (facet/ordered-levels (facet/levels d (map first keyed) (get scales d) na-panel?)
+                                                          #(get @rows-of %) (get scales d))])))
                      dims)
         active? (and (seq dims) (every? seq (vals levels)))]
     {:facets {:dims (if active? dims []) :levels (if active? levels {})}
@@ -252,7 +263,8 @@
              ;; measured on demand only (text measuring): charts needing the panel's shape before the layout
              :panel-size (delay (plot-grid/estimated-panel-size plot (legend/provisional-legends plot (:charts split))
                                                                 (plot-margins plot) (plot-grid/panel-layout (:facets split) facets)
-                                                                (boolean (seq facet-dims)) (not= [:facet] facet-dims)))}]
+                                                                (boolean (and (seq facet-dims) (facet/strips? facets)))
+                                                                (not= [:facet] facet-dims)))}]
     (assoc plot
            :stats (mapv (fn [chart chart-split] ((:compute chart) chart chart-split env)) charts (:charts split))
            :margin-stats (margin-stats plot env))))
@@ -333,6 +345,117 @@
       tick-format (assoc :tick-format tick-format)
       (some pos? padding-px) (assoc :padding-px padding-px))))
 
+(defn- level-rows
+  "Rows of every chart mapping position dimension `k`, by their `k` value, from the charts' split groups whose key is
+  in `group-keys` (every group when `nil`)."
+  [plot k group-keys]
+  (reduce (fn [acc {:keys [mapping groups]}]
+            (if-let [accessor (get mapping k)]
+              (let [value-of (data/row-accessor k accessor)]
+                (reduce (fn [acc [g rows]]
+                          (if (or (nil? group-keys) (contains? group-keys g))
+                            (reduce (fn [acc row] (update acc (value-of row) (fnil conj []) row)) acc rows)
+                            acc))
+                        acc groups))
+              acc))
+          {} (get-in plot [:split :charts])))
+
+(defn- ordered-domain
+  "`domain` (levels of a bands scale) ordered by the plot scale `user-spec`'s `:order-by` / `:descending` over the
+  rows of the split groups `group-keys` (all when `nil`), see [[cljplot2.data.levels/order-by-rows]]."
+  [plot k user-spec domain group-keys]
+  (let [rows-of (level-rows plot k group-keys)]
+    (levels/order-by-rows domain #(get rows-of %) (:order-by user-spec) (:descending user-spec))))
+
+(defn- ordered-position-spec
+  "Phase-1 position `spec` of `k` without the level-order options of the plot scale `user-spec`: a bands domain
+  ordered by `:order-by` (see [[ordered-domain]]); the options are consumed here."
+  [plot k user-spec spec]
+  (cond-> (dissoc spec :order-by :descending)
+    (and (:order-by user-spec) (= :bands (:kind spec))) (update :domain #(ordered-domain plot k user-spec % nil))))
+
+(defn- group-stats
+  "Charts' `stats` with extents only of the split groups `group-keys` and of data drawn in every panel."
+  [stats group-keys]
+  (let [ks (conj (vec group-keys) facet/all-panels)]
+    (mapv #(update % :extents select-keys ks) stats)))
+
+(defn- free-spec
+  "Phase-1 spec of position `k` for the panels `group-keys` under a `:free` relation: a bands scale - the shared
+  `shared` domain's levels present in those panels (ordered by `:order-by` over their rows when the plot scale
+  `user-spec` has it); a continuous one - built from those panels' extents as the shared spec is from all;
+  `shared` when the panels have no data."
+  [plot k user-spec shared group-keys]
+  (let [stats (:stats plot)
+        e (position-extent (group-stats stats group-keys) k)]
+    (cond
+      (nil? e) shared
+      (= :bands (:kind shared)) (let [present (set (get-in e [:extent :values]))
+                                      levels (filterv present (:domain shared))]
+                                  (cond
+                                    (empty? levels) shared
+                                    (:order-by user-spec) (assoc shared :domain (ordered-domain plot k user-spec levels (set group-keys)))
+                                    :else (assoc shared :domain levels)))
+      :else (ordered-position-spec plot k user-spec (position-spec stats k user-spec e)))))
+
+(defn- sliced-specs
+  "Phase-1 specs of position `k` for each of the panel groups `group-keysets` under a `:sliced` relation: every group
+  the span of the widest group's data (in log10 space on a `:log` scale), centred on the middle of its own data,
+  with the padding of the shared extent `shared-extent` and without `nice` (unless the plot scale `user-spec` sets
+  it), so spans stay equal (panels of single values get the span of all the data); `shared` for a group without data.
+  Only numeric data; else throws
+  `ex-info {:key :facets}`."
+  [plot k user-spec shared shared-extent group-keysets]
+  (when (= :bands (:kind shared))
+    (schema/fail! (str "A :sliced " k " scale needs numeric data, not categorical levels.")
+                  {:key :facets :in [:facets :scales k] :value :sliced}))
+  (let [stats (:stats plot)
+        log? (= :log (:kind shared))
+        to (if log? #(m/log10 (double %)) double)
+        from (if log? #(m/pow 10.0 (double %)) double)
+        extents (map #(:extent (position-extent (group-stats stats %) k)) group-keysets)
+        _ (when (some #(and % (not= :numeric (:kind %))) extents)
+            (schema/fail! (str "A :sliced " k " scale needs numeric data (not dates or times).")
+                          {:key :facets :in [:facets :scales k] :value :sliced}))
+        width (fn [e] (if e (- (double (to (:max e))) (double (to (:min e)))) 0.0))
+        ;; every panel a single value: the span of all panels' data (0 when that is one value too - then widened)
+        span (let [widest (double (reduce max 0.0 (map width extents)))]
+               (if (pos? widest) widest (double (width (:extent shared-extent)))))
+        spec (cond-> user-spec (not (contains? user-spec :nice)) (assoc :nice false))]
+    (map (fn [extent]
+           (if (nil? extent)
+             shared
+             (let [mid (* 0.5 (+ (double (to (:min extent))) (double (to (:max extent)))))
+                   half (* 0.5 span)]
+               (ordered-position-spec plot k user-spec
+                                      (position-spec stats k spec (assoc shared-extent :extent {:kind :numeric
+                                                                                                :min (from (- mid half))
+                                                                                                :max (from (+ mid half))}))))))
+         extents)))
+
+(defn- panel-scale-specs
+  "Per panel key, the phase-1 specs of the position scales with a `:free` / `:sliced` relation in plot `:facets` (see
+  [[cljplot2.data.facet/scale-relation]]): panels share a spec as they share an axis - in a wrap layout none, in a
+  facet grid the horizontal scale per column and the vertical one per row. `nil` without such relations."
+  [{:keys [facets split scales flip extents] :as plot} specs]
+  (when (and (facet/panel-scales? facets) (seq (get-in split [:facets :dims])))
+    (let [{:keys [panels wrap?]} (plot-grid/facet-panels (:facets split) scales facets)
+          horizontal (scale/horizontal-key flip)
+          group-of (fn [k panel] (cond wrap? (:key panel) (= k horizontal) (:col panel) :else (:row panel)))]
+      (reduce (fn [acc k]
+                (let [relation (facet/scale-relation facets k)
+                      shared (get specs k)
+                      user-spec (dissoc (get scales k {}) :type)]
+                  (if (or (= :same relation) (nil? shared))
+                    acc
+                    (let [keysets (mapv #(set (map :key %)) (vals (group-by #(group-of k %) panels)))
+                          group-specs (if (= :free relation)
+                                        (map #(free-spec plot k user-spec shared %) keysets)
+                                        (sliced-specs plot k user-spec shared (get extents k) keysets))]
+                      (reduce (fn [acc [ks spec]] (reduce #(assoc-in %1 [%2 k] spec) acc ks))
+                              acc (map vector keysets group-specs))))))
+              {} position-scales))))
+
 (defn- scale-specs-stage
   "Phase-1 specs of the position and aesthetic scales with a plot `:scales` entry or data extents. Aesthetic specs are final (no layout dependence).
   A tick format suggested by a chart (`:tick-format` in its stats, the first chart's) is added to the position spec;
@@ -360,8 +483,16 @@
                             (let [{:keys [extent na?] :as e} (get extents k)]
                               (if (aesthetic/dim? k)
                                 (some->> (aesthetic/scale-spec k (aesthetic-spec k) extent na? (:palette theme)) (vector k))
-                                [k (position-spec stats k (get scales k {}) e)]))))
+                                [k (ordered-position-spec plot k (get scales k {}) (position-spec stats k (get scales k {}) e))]))))
                  ks))))
+
+(defn- panel-scale-specs-stage
+  "Phase-1 position specs per panel for `:free` / `:sliced` facet scales (stored under `:panel-scale-specs`, see
+  [[panel-scale-specs]]); absent otherwise."
+  [plot]
+  (if-let [specs (panel-scale-specs plot (:scale-specs plot))]
+    (assoc plot :panel-scale-specs specs)
+    plot))
 
 (defn- effective-labels
   "Plot `labels` over the axis titles suggested by the charts in `stats` (per axis, the first suggestion wins);
@@ -427,7 +558,7 @@
   [content]
   (and (= :panel (:kind content)) (nil? (:margin content))))
 
-(declare cartesian-scales polar-scales)
+(declare cartesian-scales polar-scales panel-scales)
 
 (defn finalize-scales
   "Scales of `:scale-specs` finalized in panel-local coordinates for the reference panel of `layout` - the first
@@ -448,6 +579,22 @@
     (if (and panel (coord/polar? (:coord plot)))
       (into (into {} (filter (comp aesthetic/dim? key)) (:scale-specs plot)) (polar-scales plot specs horizontal panel))
       (cartesian-scales plot specs horizontal panel))))
+
+(defn panel-scales
+  "Per main panel of `layout` (by its `:panel` key): the finalized scales of [[finalize-scales]] with the position
+  scales finalized against that panel's own box - from its `:panel-scale-specs` (free / sliced facet scales), else
+  the shared specs. Only for plots whose `:facets` ask for panel-local scales (see
+  [[cljplot2.data.facet/panel-scales?]]) and with a `layout`; `nil` otherwise (every panel uses the shared scales).
+  `shared` - the plot's finalized scales."
+  [plot layout shared]
+  (when (and layout (facet/panel-scales? (:facets plot)) (not (:legend-only plot)) (not (coord/polar? (:coord plot))))
+    (let [specs (into {} (filter (comp position-scales key)) (:scale-specs plot))
+          horizontal (scale/horizontal-key (:flip plot))]
+      (when (seq specs)
+        (into {} (map (fn [{:keys [content box]}]
+                        (let [k (:panel content facet/single-panel)]
+                          [k (merge shared (cartesian-scales plot (merge specs (get-in plot [:panel-scale-specs k])) horizontal box))])))
+              (grid/content-items (:grid plot) layout panel-content?))))))
 
 (defn- cartesian-scales
   "Finalized scales of [[finalize-scales]] in cartesian coordinates (and provisional polar ones, `panel` `nil`)."
@@ -552,6 +699,7 @@
                       (grid/measure-items prepared
                                           (let [scales (finalize-scales plot layout)]
                                             {:canvas canvas :theme (:theme plot) :scales scales
+                                             :panel-scales (panel-scales plot layout scales)
                                              :margins (margin-env plot layout scales)})
                                           layout))]
     (loop [round 1
@@ -633,7 +781,8 @@
   "Scales finalized for the final layout (stored under `:finalized-scales`; the plot's `:scales` key is user input)."
   [plot]
   (let [scales (finalize-scales plot (:layout plot))]
-    (assoc plot :finalized-scales scales :margin-env (margin-env plot (:layout plot) scales))))
+    (cond-> (assoc plot :finalized-scales scales :margin-env (margin-env plot (:layout plot) scales))
+      (facet/panel-scales? (:facets plot)) (assoc :panel-scales (panel-scales plot (:layout plot) scales)))))
 
 (declare build)
 
@@ -717,13 +866,13 @@
 (def ^:private stage-extra-keys
   "Per stage, the plot keys it adds besides its own (each stage stores its result under its name): dropped with the
   stage keys before a rebuild, so a stage adding a key lists it here."
-  {:stats [:margin-stats] :finalized-scales [:margin-env]})
+  {:stats [:margin-stats] :scale-specs [:panel-scale-specs] :finalized-scales [:margin-env :panel-scales]})
 
 (def ^:private stage-fns
   {:split split-stage
    :stats stats-stage
    :extents extents-stage
-   :scale-specs scale-specs-stage
+   :scale-specs (comp panel-scale-specs-stage scale-specs-stage)
    :grid grid-stage
    :layout layout-stage
    :finalized-scales finalized-scales-stage
@@ -809,6 +958,22 @@
   [{:keys [mapping charts]}]
   (mapv #(chart-mapping mapping %) charts))
 
+(defn- facet-scale-errors
+  "Errors of the plot `:facets` options asking for panel-local scales (free / sliced relations, panel weights): they
+  need facets, the generated cartesian grid without `:aspect :iso`, and no explicit `:domain` on a free / sliced
+  scale. `faceted?` - some chart has facet keys; `error` - `(fn [in value message])`."
+  [{:keys [facets scales aspect custom-grid arrange] :as plot} faceted? error]
+  (when (facet/panel-scales? facets)
+    (let [problem (cond
+                    (not faceted?) "free / sliced scales and panel :widths / :heights need facets"
+                    (or custom-grid arrange) "free / sliced scales and panel :widths / :heights need the generated grid"
+                    (= :iso aspect) "free / sliced scales and panel :widths / :heights can't be combined with :aspect :iso"
+                    (coord/polar? (:coord plot)) "free / sliced scales and panel :widths / :heights can't be combined with polar coordinates"
+                    :else (some (fn [k] (when (and (not= :same (facet/scale-relation facets k)) (some? (get-in scales [k :domain])))
+                                          (str "a " (facet/scale-relation facets k) " " k " scale takes its domains from the data, it can't have a :domain")))
+                                [:x :y]))]
+      (when problem [(error [:facets] facets problem)]))))
+
 (defn- rule-errors
   "Errors of the rules across plot keys (for a plot whose keys are valid): facet mappings, scales without a mapping,
   `:custom-grid` / `:arrange` combinations (with labels, `:aspect :iso` or `:flip`)."
@@ -855,6 +1020,7 @@
         (keep-indexed (fn [i c] (when-not (contains? (get c :coords #{:cartesian}) :polar)
                                   (error [:charts i] (:kind c) (str "chart " (:kind c) " doesn't support polar coordinates"))))
                       charts)))
+     (facet-scale-errors plot (seq dim-sets) error)
      (when (or custom-grid arrange)
        (for [k (keys labels) :when (not= k :title)]
          (error [:labels k] (get labels k) "only :title is allowed with :custom-grid or :arrange")))

@@ -53,8 +53,8 @@
   (Bartlett's per lag for ACF, constant for PACF), a rule at 0.
 
   `options`: `:lags`, `:alpha` (see `acf-rows`); `:partial?` - `:both` (default; ACF above PACF, facet rows by
-  `:kind`, one y scale), `:acf` or `false` (ACF), `:pacf` or `true` (PACF); `:band` - `:smooth` (default, a ribbon
-  through the lags, as R's `ci.type \"ma\"` line) or `:stepped` (a block per lag); `:colors {:stem :band
+  `:kind`, each row its own y scale - `:facets {:scales {:y :free}}` - unless `:scales {:y {:domain ..}}` sets one), `:acf` or `false` (ACF), `:pacf` or `true`
+  (PACF); `:band` - `:smooth` (default, a ribbon through the lags, as R's `ci.type \"ma\"` line) or `:stepped` (a block per lag); `:colors {:stem :band
   :significant}`; `:scales`, `:title`, `:theme`. Throws `ex-info {:key k}` for an invalid `:partial?`, `:band`,
   `:colors` (`nil` options - the defaults).
 
@@ -78,4 +78,7 @@
                        (chart/scatter {:data (filterv :significant? rows) :color significant :size 5})]
               :scales (theme/deep-merge {} scales)
               :labels {:title title :x "Lag" :y (when-not both? (kind-names (first kinds)))}}
+       ;; ACF and PACF differ in range (lag 0 is 1 in the ACF): each panel row its own y domain, unless the caller
+       ;; fixes one
+       (and both? (nil? (get-in scales [:y :domain]))) (assoc :facets {:scales {:y :free}})
        user-theme (assoc :theme user-theme)))))

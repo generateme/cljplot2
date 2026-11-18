@@ -74,6 +74,7 @@
   (when debug?
     (draw-debug-items! canvas (get-in built [:layout :items]) 0))
   (draw-contents! canvas (:grid built) (:layout built) {:theme (:theme built) :scales (:finalized-scales built)
+                                                      :panel-scales (:panel-scales built)
                                                       :margins (:margin-env built)
                                                       :legend-charts (:charts (legend/legend-charts built))
                                                       :legend-stats (:stats (legend/legend-charts built))

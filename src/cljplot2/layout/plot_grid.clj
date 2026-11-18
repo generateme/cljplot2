@@ -178,11 +178,6 @@
 
 ;; facets
 
-(defn- interleave-gaps
-  "Tracks `[t0 gap t1 gap ...]` for `n` flexible tracks `[prefix i]` with fixed gaps `[gap-prefix i]`."
-  [n prefix gap-prefix gap]
-  (vec (butlast (mapcat (fn [i] [{:id [prefix i] :size [:flexible]} {:id [gap-prefix i] :size [:fixed gap]}]) (range n)))))
-
 (defn- strip-content
   "Strip content for facet `level` with `text`; when every one of `levels` is a shingle interval, also
   `:interval {:lo :hi :min :max}` - the level within the range of all levels (a shaded bar, see
@@ -193,7 +188,7 @@
     (assoc :interval {:lo (:lo level) :hi (:hi level)
                       :min (reduce min (map :lo levels)) :max (reduce max (map :hi levels))})))
 
-(defn- facet-panels
+(defn facet-panels
   "Panels `{:key :label :row :col}` and `[rows cols]` of the facets in `split-facets`."
   [{:keys [dims levels]} scales {:keys [order] :as facets}]
   (if (= dims [:facet])
@@ -271,27 +266,117 @@
                 (size-height (text-size :axis-title x)) (* gap (dec rows)) (if grid? strip (* strip rows)))]
        [(m/max 1.0 (/ w columns)) (m/max 1.0 (/ h rows))]))))
 
+(defn- panel-weights
+  "Weights of the `n` panel columns (`k` `:widths`) or rows (`:heights`) from plot `facets`: `nil` (equal) when not
+  given; a count other than `n` throws `ex-info {:key k}`."
+  [facets k ^long n]
+  (when-let [ws (get facets k)]
+    (when (not= n (count ws))
+      (schema/fail! (str "Facet " k " needs one weight per panel " (if (= k :widths) "column" "row") " (" n "), got "
+                         (count ws) ".")
+                    {:key k :in [:facets k] :value ws}))
+    (vec ws)))
+
+(defn- panel-track
+  "Flexible track `[:panel i]`, weighted by `(weights i)` when `weights` is given."
+  [weights i]
+  {:id [:panel i] :size (if weights [:flexible (weights i)] [:flexible])})
+
+(defn- facet-axis-items
+  "Axis items of a facet layout for the horizontal scale `h-key` (under the panels) and the vertical `v-key` (left of
+  them), each with the `:panel` key whose scales it draws (see [[cljplot2.scale.position/panel-scales-of]]):
+  `free-h?` / `free-v?` (wrap layout with a free / sliced relation) - an axis at every panel, in its own `[:x-axis r]`
+  row / `[:y-axis c]` column; otherwise an axis per panel column (`:x-axis` row) / row (`:y-axis` column) drawn with
+  that column's bottom / that row's first panel. Overhang items reserve room for end labels as in the single-panel grid.
+  `local-h?` / `local-v?` - neighbouring axes differ (panel-local scales): an axis next to another one across a panel
+  gap gets `:confine` (its labels stay within half the gap, see [[cljplot2.content.axis]]) instead of
+  `:next-panel-gap`; `stacked?` - vertical neighbours are separated by strips (wrap strips), so they aren't confined."
+  [panels cols gap {:keys [h-key v-key h-shown? v-shown? free-h? free-v? local-h? local-v? stacked?]}]
+  (let [at (into {} (map (juxt (juxt :row :col) :key)) panels)
+        confine (fn [low? high?] (cond-> {} low? (assoc :low gap) high? (assoc :high gap)))
+        h-axis (fn [content low? high?]
+                 (if local-h?
+                   (cond-> content (or low? high?) (assoc :confine (confine low? high?)))
+                   (cond-> content high? (assoc :next-panel-gap gap))))
+        v-axis (fn [content low? high?]
+                 (cond-> content (and local-v? (not stacked?) (or low? high?)) (assoc :confine (confine low? high?))))
+        bottom-of (fn [c] (:key (last (sort-by :row (filter #(= c (:col %)) panels)))))
+        first-of (fn [r] (:key (first (sort-by :col (filter #(= r (:row %)) panels)))))
+        rows (sort (distinct (map :row panels)))
+        last-row (peek (vec rows))
+        with-panel (fn [item k] (cond-> item (some? k) (assoc-in [:content :panel] k)))
+        [x-start x-end] (rest (axis-items :bottom h-key))
+        [y-start y-end] (rest (axis-items :left v-key))]
+    (concat
+     (when h-shown?
+       (if free-h?
+         (concat
+          (for [{:keys [key row col]} panels]
+            {:id [:x-axis row col] :column [:panel col] :row [:x-axis row]
+             :content (h-axis {:kind :axis :scale h-key :panel key}
+                              (contains? at [row (dec (long col))]) (contains? at [row (inc (long col))]))})
+          (mapcat (fn [r]
+                    (let [in-row (sort-by :col (filter #(= r (:row %)) panels))]
+                      [(-> (assoc x-start :id [:x-axis-start r] :row [:x-axis r]) (with-panel (:key (first in-row))))
+                       (-> (assoc x-end :id [:x-axis-end r] :row [:x-axis r]) (with-panel (:key (last in-row))))]))
+                  rows))
+         (concat
+          (for [c (range cols)]
+            (with-panel {:id [:x-axis c] :column [:panel c] :row :x-axis
+                         :content (h-axis {:kind :axis :scale h-key} (pos? (long c)) (< (long c) (dec (long cols))))}
+              (bottom-of c)))
+          [(with-panel x-start (bottom-of 0)) (with-panel x-end (bottom-of (dec (long cols))))])))
+     (when v-shown?
+       (concat
+        (if free-v?
+          (for [{:keys [key row col]} panels]
+            {:id [:y-axis row col] :column [:y-axis col] :row [:panel row]
+             :content (v-axis {:kind :axis :scale v-key :panel key}
+                              (contains? at [(dec (long row)) col]) (contains? at [(inc (long row)) col]))})
+          (for [r rows]
+            (with-panel {:id [:y-axis r] :column :y-axis :row [:panel r]
+                         :content (v-axis {:kind :axis :scale v-key} (not= r (first rows)) (not= r last-row))}
+              (first-of r))))
+        [(with-panel y-start (at [last-row 0])) (with-panel y-end (at [(first rows) 0]))])))))
+
 (defn facet-grid
   "Grid of a faceted plot (see [[cljplot2.data.facet]]): panels `[:panel r c]` in a `rows` x `cols` layout with gaps
   (theme `[:facet :gap]`), strips (wrap: above each panel; grid: column strips above the top row, row strips on
-  the right), an x axis under every panel column and a y axis beside every panel row, overhangs at the outer ends.
-  Panels with odd `r + c` are shaded (`:alternate`). Legends as in the single-panel grid."
+  the right; none with `:facets {:strips false}`), an x axis under every panel column and a y axis beside every panel
+  row, overhangs at the outer ends; a wrap layout with a free / sliced relation (`:facets {:scales ..}`) has an axis
+  at every panel instead (see [[facet-axis-items]]). Panel columns / rows are weighted by `:facets` `:widths` /
+  `:heights`. Panels with odd `r + c` are shaded (`:alternate`). Legends as in the single-panel grid."
   [{:keys [labels theme scale-specs scales facets split flip] :as plot}]
   (let [legends (legend/legends plot)
         [[_ h-key] [_ v-key]] (side-scales flip)
         gap (get-in theme [:facet :gap])
         margin-track (margin-track-fn plot)
         measured (fn [id] {:id id :size [:measured]})
+        strips? (facet/strips? facets)
         {:keys [rows cols wrap? panels col-labels row-labels levels col-levels row-levels]}
-        (facet-panels (:facets split) scales facets)
+        (cond-> (facet-panels (:facets split) scales facets)
+          (not strips?) (assoc :col-labels nil :row-labels nil))
         rows (long rows) cols (long cols)
+        widths (panel-weights facets :widths cols)
+        heights (panel-weights facets :heights rows)
+        free-h? (and wrap? (not= :same (facet/scale-relation facets h-key)))
+        free-v? (and wrap? (not= :same (facet/scale-relation facets v-key)))
+        wrap-strips? (and wrap? strips?)
         last-col [:panel (dec cols)]
         last-row [:panel (dec rows)]
-        row-tracks (vec (butlast (mapcat (fn [r] (cond-> [] wrap? (conj (measured [:strip r]))
-                                                     true (conj {:id [:panel r] :size [:flexible]} {:id [:gap r] :size [:fixed gap]})))
+        gap-track (fn [prefix i] {:id [prefix i] :size [:fixed gap]})
+        column-tracks (vec (butlast (mapcat (fn [c] (cond-> []
+                                                      free-v? (conj (measured [:y-axis c]))
+                                                      true (conj (panel-track widths c) (gap-track :gap c))))
+                                            (range cols))))
+        row-tracks (vec (butlast (mapcat (fn [r] (cond-> []
+                                                   wrap-strips? (conj (measured [:strip r]))
+                                                   true (conj (panel-track heights r))
+                                                   free-h? (conj (measured [:x-axis r]))
+                                                   true (conj (gap-track :gap r))))
                                          (range rows))))]
     {:columns (-> [(margin-track :margin-left) (measured :y-title) (measured :y-axis)]
-                  (into (interleave-gaps cols :panel :gap gap))
+                  (into column-tracks)
                   (cond-> row-labels (conj (measured :row-strip)))
                   (conj (measured :x-overhang))
                   (into (legend-tracks legends theme))
@@ -304,20 +389,16 @@
                         {:id [:panel row col] :column [:panel col] :row [:panel row]
                          :content {:kind :panel :panel key :alternate (odd? (+ (long row) (long col)))}})
                       panels)
-                (cond-> (axis-shown? scale-specs h-key)
-                  (into (concat (for [c (range cols)]
-                                  {:id [:x-axis c] :column [:panel c] :row :x-axis
-                                   :content (cond-> {:kind :axis :scale h-key}
-                                              (< (long c) (dec cols)) (assoc :next-panel-gap gap))})
-                                (rest (axis-items :bottom h-key)))))
-                (cond-> (axis-shown? scale-specs v-key)
-                  (into (concat (for [r (range rows)]
-                                  {:id [:y-axis r] :column :y-axis :row [:panel r] :content {:kind :axis :scale v-key}})
-                                (rest (axis-items :left v-key)))))
-                (cond-> wrap? (into (map (fn [{:keys [key label row col]}]
-                                           {:id [:strip row col] :column [:panel col] :row [:strip row]
-                                            :content (strip-content label key levels)})
-                                         panels)))
+                (into (facet-axis-items panels cols gap {:h-key h-key :v-key v-key :free-h? free-h? :free-v? free-v?
+                                                         :local-h? (or (not= :same (facet/scale-relation facets h-key)) (some? widths))
+                                                         :local-v? (or (not= :same (facet/scale-relation facets v-key)) (some? heights))
+                                                         :stacked? wrap-strips?
+                                                         :h-shown? (axis-shown? scale-specs h-key)
+                                                         :v-shown? (axis-shown? scale-specs v-key)}))
+                (cond-> wrap-strips? (into (map (fn [{:keys [key label row col]}]
+                                                  {:id [:strip row col] :column [:panel col] :row [:strip row]
+                                                   :content (strip-content label key levels)})
+                                                panels)))
                 (cond-> col-labels (into (map-indexed (fn [c text] {:id [:col-strip c] :column [:panel c] :row :col-strip
                                                                     :content (strip-content text (col-levels c) col-levels)})
                                                       col-labels)))
@@ -327,7 +408,7 @@
                                                       row-labels)))
                 (into (label-items (side-labels labels flip) {:x {:column {:from [:panel 0] :to last-col}}
                                            :y {:row {:from [:panel 0] :to last-row}}}))
-                (into (legend-items legends {:from (cond col-labels :col-strip wrap? [:strip 0] :else [:panel 0])
+                (into (legend-items legends {:from (cond col-labels :col-strip wrap-strips? [:strip 0] :else [:panel 0])
                                                    :to last-row})))}))
 
 (defn titled-custom-grid

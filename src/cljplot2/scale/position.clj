@@ -23,7 +23,11 @@
   with `:ticks-params` `{:min-n n}` (clamped to the tick count) and, for `:datetime` `:pretty`, calendar ticks
   `{:unit u :step s}` (a tick every s units: `:seconds` .. `:years`, see wadogo; more than wadogo's
   `max-calendar-ticks` over the domain - `ex-info {:key :ticks-params}`). `:formatter` - a function of a tick
-  value, or on `:datetime` a `java.time` pattern string (`\"MMM yyyy\"`)."
+  value, on `:datetime` a `java.time` pattern string (`\"MMM yyyy\"`), or on `:log` the preset `:power` (`2⁵`,
+  [[power-label]]). `:minor-ticks n` - unlabelled ticks between the major ones (continuous numeric kinds, see
+  [[minor-tick-values]]; finalized under `:minor-ticks`). Bands scales: `:order-by f` - levels ordered by `(f rows)`
+  over each level's rows (`:descending true` reverses; per panel under a `:free` facet scale), not with `:domain`
+  (consumed by the pipeline)."
   (:require [fastmath.core :as m]
             [wadogo.scale :as s]
             [wadogo.ticks.pretty-datetime :as pretty-datetime]
@@ -73,6 +77,13 @@
           (== (double (reduce min domain)) (double (reduce max domain))) "domain should not be a single value"
           (and (= kind :log) (not (every? #(pos? (double %)) domain))) "log domain should be positive")))))
 
+(defn panel-scales-of
+  "Finalized scales of the panel `panel-key` in a content `env`: its entry in `env` `:panel-scales` (panel-local scales
+  of free / sliced facet scales and weighted panels, see [[cljplot2.pipeline/panel-scales]]), else the shared
+  `:scales`."
+  [env panel-key]
+  (or (when (some? panel-key) (get-in env [:panel-scales panel-key])) (:scales env)))
+
 (def ^:private wadogo-attributes
   "wadogo scale attributes passed through to the scale (see wadogo's kinds)."
   [:clamp :unknown :round :base :exponent :padding-in :padding-out :align-outer :align :interpolator-params])
@@ -96,7 +107,11 @@
           (schema/nilable :ticks [:multi {:dispatch sequential?} [true [:sequential any?]] [false schema/pos-int]])
           (schema/nilable :nice [:multi {:dispatch boolean?} [true :boolean] [false [:and schema/finite schema/non-neg]]])
           (schema/optional :expand schema/padding)
-          (schema/optional :formatter [:multi {:dispatch string?} [true :string] [false schema/function]])
+          (schema/optional :formatter [:multi {:dispatch #(cond (string? %) :pattern (keyword? %) :preset :else :function)}
+                                       [:pattern :string] [:preset [:enum :power]] [:function schema/function]])
+          (schema/nilable :order-by schema/function)
+          (schema/nilable :descending schema/bool)
+          (schema/nilable :minor-ticks schema/pos-int)
           (schema/optional :axis [:or :boolean [:enum :grid :no-grid]])
           (schema/optional :stops [:sequential {:min 2} schema/finite])
           (schema/optional :interpolator schema/interpolator)
@@ -107,7 +122,9 @@
           (schema/optional :tick-format (schema/forbidden "is internal (set by charts); use :formatter"))]
          (map #(schema/optional % any?))
          wadogo-attributes)
-   [domain-problem [:domain]]))
+   [domain-problem [:domain]]
+   [#(when (and (:order-by %) (:domain %)) "give either :order-by or :domain, not both") [:order-by]]
+   [#(when (and (:descending %) (nil? (:order-by %))) ":descending needs :order-by") [:descending]]))
 
 (defn- validate-tick-list!
   [k kind domain ticks]
@@ -122,7 +139,8 @@
 (defn- kind-option-problem
   "`[key message]` of the first option of `spec` its resolved `kind` doesn't take, or `nil`: `:stops`,
   `:interpolator(-params)` and `:expand` (interpolated takes no padding); tick options on bands; calendar ticks off
-  `:datetime` `:pretty`; a string `:formatter` off `:datetime`; `:stops` not matching the domain."
+  `:datetime` `:pretty`; a string `:formatter` off `:datetime`; `:formatter :power` off `:log`; `:order-by` off `:bands`;
+  `:minor-ticks` on `:bands` or `:datetime`; `:stops` not matching the domain."
   [kind {:keys [stops domain ticks-method ticks-params formatter] :as spec}]
   (let [interpolated? (= :interpolated kind)]
     (cond
@@ -139,7 +157,29 @@
       (and (or (:unit ticks-params) (:step ticks-params)) (not (and (= :datetime kind) (not= :default ticks-method))))
       [:ticks-params "calendar ticks (:unit / :step) need a :datetime scale with :ticks-method :pretty"]
       (and (:step ticks-params) (nil? (:unit ticks-params))) [:ticks-params "calendar ticks :step needs a :unit"]
-      (and (string? formatter) (not= :datetime kind)) [:formatter "a pattern string :formatter needs a :datetime scale"])))
+      (and (string? formatter) (not= :datetime kind)) [:formatter "a pattern string :formatter needs a :datetime scale"]
+      (and (= :power formatter) (not= :log kind)) [:formatter ":formatter :power needs a :log scale"]
+      (and (some? (:order-by spec)) (not= :bands kind)) [:order-by ":order-by needs a categorical (:bands) scale"]
+      (and (some? (:minor-ticks spec)) (#{:bands :datetime} kind)) [:minor-ticks ":minor-ticks need a numeric continuous scale (not :bands or :datetime)"])))
+
+(def ^:private superscript-digits
+  {\0 \u2070 \1 \u00b9 \2 \u00b2 \3 \u00b3 \4 \u2074 \5 \u2075 \6 \u2076 \7 \u2077 \8 \u2078 \9 \u2079 \- \u207b})
+
+(defn- number-text
+  "`v` as text: a whole number without decimals, else Clojure's double text."
+  [v]
+  (let [d (double v)]
+    (if (and (== d (m/floor d)) (< (m/abs d) max-integral-label)) (str (long d)) (str d))))
+
+(defn power-label
+  "Label of tick `v` on a log scale with `base`: `base` followed by the exponent in Unicode superscript digits
+  (`2⁵`, `10⁻³`) when `v` is a whole power of `base` (within 1e-9 relative), else `v` as a number."
+  [base v]
+  (let [b (double base) x (double v)
+        k (when (pos? x) (m/round (/ (m/ln x) (m/ln b))))]
+    (if (and k (< (m/abs (- (m/pow b (double k)) x)) (* 1.0e-9 x)))
+      (str (number-text b) (apply str (map superscript-digits (str k))))
+      (number-text v))))
 
 (defn- check-calendar-span!
   "Throw `ex-info {:key :ticks-params}` when the calendar ticks of `ticks-params` over the datetime `domain` would
@@ -183,7 +223,8 @@
       (check-calendar-span! k domain (:ticks-params spec)))
     (cond-> (assoc spec :kind kind :nice (get spec :nice (not= :interpolated kind)))
       (and (= :datetime kind) (nil? (:ticks-method spec))) (assoc :ticks-method :pretty)
-      (string? (:formatter spec)) (update :formatter #(pattern-formatter k %)))))
+      (string? (:formatter spec)) (update :formatter #(pattern-formatter k %))
+      (= :power (:formatter spec)) (assoc :formatter (partial power-label (get spec :base 10.0))))))
 
 (def ^:private ^:const collapse-widening 0.1)
 
@@ -366,6 +407,44 @@
     (mapv (fn [f] (+ start (* (double f) (- end start))))
           (or stops (map #(/ (double %) (double (dec n))) (range n))))))
 
+(defn- near-any?
+  "Is `v` within 1e-9 of the span `span` from one of `values`?"
+  [values ^double span v]
+  (some #(< (m/abs (- (double %) (double v))) (* 1.0e-9 span)) values))
+
+(defn minor-tick-values
+  "Minor ticks (data values) inside the numeric `domain` of a scale of `kind` with major `ticks`: on `:log` the
+  multiples 2 .. base-1 of every power of `base` (none for a base below 3); on other kinds `n` subdivisions of each
+  interval between major ticks (`n - 1` ticks per interval; the first and last intervals repeated past the outer
+  ticks). Major ticks are left out; no minor ticks with fewer than two major ticks (other kinds)."
+  [kind domain ticks n base]
+  (let [lo (double (reduce min domain)) hi (double (reduce max domain))
+        span (- hi lo)
+        inside (fn [vs] (filterv #(and (<= lo (double %) hi) (not (near-any? ticks span %))) vs))]
+    (if (= :log kind)
+      (let [b (double base)
+            from (long (m/floor (/ (m/ln lo) (m/ln b))))
+            to (long (m/ceil (/ (m/ln hi) (m/ln b))))]
+        (inside (for [e (range from (inc to)) j (range 2 (long (m/ceil b)))
+                      :let [v (* (double j) (m/pow b (double e)))]
+                      :when (< (double j) b)]
+                  v)))
+      (let [ts (vec (sort (map double ticks)))
+            c (count ts)]
+        (if (< c 2)
+          []
+          (let [t0 (double (ts 0)) tn (double (ts (dec c)))
+                first-step (- (double (ts 1)) t0)
+                last-step (- tn (double (ts (- c 2))))
+                ;; [start step] of every interval: outer ones repeated while they still reach into the domain
+                before (map (fn [^long k] [(- t0 (* k first-step)) first-step])
+                            (take-while (fn [^long k] (> (- t0 (* (dec k) first-step)) lo)) (iterate inc 1)))
+                inner (map (fn [a b] [a (- (double b) (double a))]) ts (rest ts))
+                after (map (fn [^long k] [(+ tn (* k last-step)) last-step])
+                           (take-while (fn [^long k] (< (+ tn (* k last-step)) hi)) (iterate inc 0)))]
+            (inside (for [[start step] (concat before inner after) j (range 1 (long n))]
+                      (+ (double start) (/ (* (double j) (double step)) (double (long n))))))))))))
+
 (defn finalize
   "Finalized scale of phase-1 `spec` for the pixel `range` (`[start end]`) and `tick-hint` (the count used unless
   the spec has `:ticks`). Steps: the domain is extended by `nice` (limited, see `:nice` in [[scale-spec]]) with
@@ -379,7 +458,8 @@
   (let [kind (:kind spec)
         explicit (:ticks spec)
         nice-count (if (integer? explicit) explicit tick-hint)
-        base (cond-> (assoc (dissoc spec :kind :nice :expand :padding :padding-px :tick-format :axis :stops) :range (wadogo-range kind range))
+        base (cond-> (assoc (dissoc spec :kind :nice :expand :padding :padding-px :tick-format :axis :stops :minor-ticks)
+                            :range (wadogo-range kind range))
                (get-in spec [:ticks-params :min-n]) (update-in [:ticks-params :min-n] #(min (long %) (long nice-count)))
                (= :interpolated kind) (assoc :range (stop-pixels range (count (:domain spec)) (:stops spec))))
         niced (nice-domain (s/scale kind (assoc base :ticks nice-count)) kind (:nice spec))
@@ -392,8 +472,9 @@
         attributes (assoc base :domain domain :ticks (or explicit (if (= kind :bands) (vec domain) tick-hint)))
         scale (s/scale kind attributes)
         offset (pixel-offset kind range)
+        inside? #(inside-range? range (+ offset (double (scale %))))
         ticks (if (continuous-kinds kind)
-                (filterv #(inside-range? range (+ offset (double (scale %)))) (s/ticks scale))
+                (filterv inside? (s/ticks scale))
                 (vec (s/ticks scale)))]
     (cond-> {:kind kind
              :domain domain
@@ -401,7 +482,9 @@
              :ticks ticks
              :tick-labels (tick-labels scale spec ticks)
              :attributes attributes}
-      (contains? #{false :grid :no-grid} (:axis spec)) (assoc :axis (:axis spec)))))
+      (contains? #{false :grid :no-grid} (:axis spec)) (assoc :axis (:axis spec))
+      (:minor-ticks spec) (assoc :minor-ticks (filterv inside? (minor-tick-values kind domain ticks (:minor-ticks spec)
+                                                                                   (get attributes :base 10.0)))))))
 
 (def ^:private identity-transform
   {:forward (fn ^double [^double v] v) :inverse (fn ^double [^double v] v)})
