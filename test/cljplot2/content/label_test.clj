@@ -130,8 +130,20 @@
 ;; 2.x fonts
 
 (deftest bundled-files-test
-  (doseq [path (concat (vals (font/bundled-fonts "Liberation Mono")) ["fonts/LICENSE-LiberationMono-OFL.txt"])]
+  (doseq [path (concat (vals (font/bundled-fonts "Liberation Mono")) ["fonts/LICENSE-LiberationMono-OFL.txt"]
+                       (vals (font/bundled-fonts "DejaVu Sans Mono")) ["fonts/LICENSE-DejaVu.txt"])]
     (is (some? (clojure.java.io/resource path)) path)))
+
+(deftest default-font-test
+  (testing "every default text role uses the bundled DejaVu Sans Mono"
+    (is (= #{"DejaVu Sans Mono"} (set (map :font (vals (:text theme/default-theme)))))))
+  (testing "its faces are the bundled files, also with DejaVu Sans Mono installed"
+    (doseq [[style path] (font/bundled-fonts "DejaVu Sans Mono")]
+      (is (= (.getFontName (c2d/load-font (clojure.java.io/resource path)))
+             (.getFontName (font/resolve-font "DejaVu Sans Mono" style 12))) (str style))))
+  (testing "it displays power labels (superscript digits and minus) in every style"
+    (doseq [style (keys font/font-styles)]
+      (is (= -1 (.canDisplayUpTo (font/resolve-font "DejaVu Sans Mono" style 10) "2⁰¹²³⁴⁵⁶⁷⁸⁹⁻")) (str style)))))
 
 (deftest font-resolution-test
   (testing "bundled styles are real faces from their files"

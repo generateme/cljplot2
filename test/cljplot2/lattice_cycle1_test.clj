@@ -7,6 +7,10 @@
             [fastmath.core :as m]
             [fastmath.stats :as stats]
             [cljplot2.chart :as chart]
+            [cljplot2.content.axis :as axis]
+            [cljplot2.graphics.measure :as measure]
+            [cljplot2.layout.plot-grid :as plot-grid]
+            [cljplot2.theme :as theme]
             [cljplot2.core :as plot]
             [cljplot2.data.levels :as levels]
             [cljplot2.layout.grid :as grid]
@@ -106,12 +110,19 @@
       (is (every? ids (for [r [0 1] c [0 1]] [:x-axis r c])))
       (is (every? ids (for [r [0 1] c [0 1]] [:y-axis r c])))
       (is (some #{[:y-axis 1]} (map :id (:columns (:grid b)))))))
-  (testing "2.6 grid: free x shared down a column, differing across columns; neighbours confined"
+  (testing "2.6 grid: free x shared down a column, differing across columns; axes compare the next panel's labels"
     (let [b (built {:data groups :mapping {:x :x :y :y :facet-col :g :facet-row :h} :charts [(chart/scatter)]
                     :facets {:scales {:x :free}}})]
       (is (= (x-domain b ["a" "top"]) (x-domain b ["a" "bottom"])))
       (is (not= (x-domain b ["a" "top"]) (x-domain b ["d" "top"])))
-      (is (= {:low 5 :high 5} (get-in (first (filter #(= [:x-axis 1] (:id %)) (items b))) [:content :confine])))))
+      (is (= {:next-panel-gap 5 :next-panel ["c" "top"]}
+             (select-keys (:content (first (filter #(= [:x-axis 1] (:id %)) (items b)))) [:next-panel-gap :next-panel])))
+      (is (nil? (get-in (first (filter #(= [:x-axis 3] (:id %)) (items b))) [:content :next-panel-gap])) "last column")))
+  (testing "2.6 grid: sliced x - equal spans, shared down a column"
+    (let [b (built {:data groups :mapping {:x :x :y :y :facet-col :g :facet-row :h} :charts [(chart/scatter)]
+                    :facets {:scales {:x :sliced}}})]
+      (is (= (x-domain b ["b" "top"]) (x-domain b ["b" "bottom"])))
+      (is (near? (span (x-domain b ["a" "top"])) (span (x-domain b ["d" "bottom"])) 1e-9))))
   (testing "2.7 rejected combinations throw {:key :facets}"
     (doseq [p [{:data groups :mapping {:x :x :y :y} :charts [(chart/scatter)] :facets {:scales {:y :free}}}
                {:data groups :mapping {:x :x :y :y} :charts [(chart/scatter)] :facets {:widths [1]}}
@@ -181,6 +192,52 @@
     (is (= :order-by (:key (error #(built (scatter-plot {:scales {:y {:order-by count :domain [0 1]}}}))))))
     (is (= :order-by (:key (error #(built (scatter-plot {:scales {:y {:order-by count}}}))))))
     (is (= :descending (:key (error #(built (scatter-plot {:scales {:y {:descending true}}}))))))))
+
+(deftest review-fixes-test
+  (testing "F2 a label is skipped only where it meets the next panel's drawn label (the next panel keeps its own)"
+    (let [own [[0.0 50.0 100.0] [10.0 10.0 10.0]]]
+      (is (= #{2} (axis/crossing-labels own [0 1 2] [[0.0 50.0] [10.0 10.0]] [0 1] 105.0)) "100 meets the next 0")
+      (is (= #{} (axis/crossing-labels own [0 1 2] [[20.0 50.0] [10.0 10.0]] [0 1] 105.0)) "the next panel starts later")
+      (is (= #{} (axis/crossing-labels own [0 1] [[0.0 50.0] [10.0 10.0]] [0 1] 105.0)) "an undrawn label meets nothing")
+      (is (= #{2} (axis/crossing-labels own [0 1 2] 105.0)) "identical next axis")))
+  (testing "F2 vertical neighbours compared only without strips or axis rows between the panel rows"
+    (let [v-next (fn [p] (keep #(get-in % [:content :next-panel]) (filter #(= :y (get-in % [:content :scale])) (contents (built p) :axis))))]
+      (is (empty? (v-next (scatter-plot {:facets {:scales {:y :free}}}))))
+      (is (seq (v-next (scatter-plot {:facets {:scales {:y :free} :strips false}}))))
+      (is (empty? (v-next (scatter-plot {:facets {:scales {:x :free :y :free} :strips false}}))))))
+  (testing "F3 per-panel :order-by also scores levels of data drawn in every panel"
+    (let [rows [{:g "p" :f "u" :v 1} {:g "p" :f "v" :v 2}]
+          b (built {:data rows :mapping {:x :v :y :f :facet :g}
+                    :charts [(chart/scatter) (chart/scatter {:data [{:f "w" :v 0}] :mapping {:facet nil}})]
+                    :facets {:scales {:y :free}} :scales {:y {:order-by #(stats/mean (map :v %))}}})]
+      (is (= ["w" "u" "v"] (vec (y-domain b "p"))))))
+  (testing "F4 log minor ticks near a tiny major tick are kept"
+    (let [vs (scale/minor-tick-values :log [1e-9 1e3] [1e-9 1e-6 1e-3 1 1e3] 1 10)]
+      (is (some #(near? 2e-9 % 1e-18) vs))
+      (is (= 96 (count vs)))))
+  (testing "F5 the panel-size estimate leaves room for the axes of a free wrap layout"
+    (let [plot {:options {:width 600 :height 500 :hint :high} :theme theme/default-theme}
+          [w h] (plot-grid/estimated-panel-size plot [] nil {:columns 2 :rows 2} true false)
+          [fw fh] (plot-grid/estimated-panel-size (assoc plot :facets {:scales {:x :free :y :free}}) [] nil {:columns 2 :rows 2} true false)
+          grid (plot-grid/estimated-panel-size plot [] nil {:columns 2 :rows 2} true true)
+          free-grid (plot-grid/estimated-panel-size (assoc plot :facets {:scales {:x :free :y :free}}) [] nil {:columns 2 :rows 2} true true)]
+      (is (< fw w))
+      (is (< fh h))
+      (is (= grid free-grid) "grid layouts keep their outer axes")))
+  (testing "F6 the x start overhang shares the first y-axis column when y is free"
+    (let [b (built (scatter-plot {:facets {:scales {:x :free :y :free}}}))
+          starts (filter #(and (vector? (:id %)) (= :x-axis-start (first (:id %)))) (items b))]
+      (is (= 2 (count starts)))
+      (is (every? #(= [:y-axis 0] (:column %)) starts))))
+  (testing "F7 a longer minor tick widens the axis track"
+    (let [p {:data [{:x 0 :y 0} {:x 10 :y 1}] :mapping {:x :x :y :y} :charts [(chart/scatter)] :scales {:x {:minor-ticks 2}}}
+          axis-height (fn [p] (let [b (built p)]
+                                (measure/call-with-scratch-canvas
+                                 :high (fn [canvas] (.y ^fastmath.vector.Vec2
+                                                     (measure/natural-size {:kind :axis :scale :x}
+                                                                           {:canvas canvas :theme (:theme b) :scales (:finalized-scales b)}))))))]
+      (is (< (axis-height p) (axis-height (assoc p :theme {:axis {:x {:minor-tick-length 20}}}))))
+      (is (= (axis-height (assoc p :theme {:axis {:x {:minor-tick-length 2}}})) (axis-height (dissoc p :scales)))))))
 
 (deftest order-by-score-test
   (testing "ties keep the given order; unscored levels follow, sorted"

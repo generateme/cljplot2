@@ -347,13 +347,14 @@
 
 (defn- level-rows
   "Rows of every chart mapping position dimension `k`, by their `k` value, from the charts' split groups whose key is
-  in `group-keys` (every group when `nil`)."
+  in `group-keys` (every group when `nil`) and from data drawn in every panel - the rows behind the extents of
+  [[group-stats]]."
   [plot k group-keys]
   (reduce (fn [acc {:keys [mapping groups]}]
             (if-let [accessor (get mapping k)]
               (let [value-of (data/row-accessor k accessor)]
                 (reduce (fn [acc [g rows]]
-                          (if (or (nil? group-keys) (contains? group-keys g))
+                          (if (or (nil? group-keys) (contains? group-keys g) (= facet/all-panels g))
                             (reduce (fn [acc row] (update acc (value-of row) (fnil conj []) row)) acc rows)
                             acc))
                         acc groups))
@@ -402,7 +403,8 @@
   "Phase-1 specs of position `k` for each of the panel groups `group-keysets` under a `:sliced` relation: every group
   the span of the widest group's data (in log10 space on a `:log` scale), centred on the middle of its own data,
   with the padding of the shared extent `shared-extent` and without `nice` (unless the plot scale `user-spec` sets
-  it), so spans stay equal (panels of single values get the span of all the data); `shared` for a group without data.
+  it), so spans stay equal (panels of single values get the span of all the data; a plot scale `:nice` extends each
+  panel's domain separately, so spans may then differ); `shared` for a group without data.
   Only numeric data; else throws
   `ex-info {:key :facets}`."
   [plot k user-spec shared shared-extent group-keysets]

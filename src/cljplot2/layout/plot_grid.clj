@@ -237,9 +237,10 @@
   two-digit tick labels, no end overhangs), plot `margins` (`{side {:size px}}`), the `legends` (contents, e.g.
   [[cljplot2.content.legend/provisional-legends]]) and the facet strips and gaps of `panel-layout` (`{:columns
   :rows}`; `facets?` - strips present, `grid?` - facet-grid strips (one row, one column), else wrap strips over
-  every row), split among the panels. Measured on a scratch canvas; an estimate - real tick labels and wrapped
-  legends differ."
-  [{:keys [options theme labels flip]} legends margins {:keys [columns rows]} facets? grid?]
+  every row), split among the panels; a wrap layout with free / sliced scales (plot `:facets`) also loses the room of
+  an axis per panel row / column. Measured on a scratch canvas; an estimate - real tick labels and wrapped legends
+  differ."
+  [{:keys [options theme labels flip facets]} legends margins {:keys [columns rows]} facets? grid?]
   (measure/call-with-scratch-canvas
    (:hint options)
    (fn [canvas]
@@ -258,12 +259,16 @@
                          (+ (double (get-in theme [:legend :gap])) (size-width (size {:kind :legends :legends legends})))
                          0.0)
            columns (long columns) rows (long rows)
+           horizontal (scale/horizontal-key flip)
+           free? (fn [k] (and (not grid?) (not= :same (facet/scale-relation facets k))))
+           inner-y-axes (if (free? (if (= horizontal :x) :y :x)) (* (dec columns) (axis-room theme :y tick-w)) 0.0)
+           inner-x-axes (if (free? horizontal) (* (dec rows) (axis-room theme :x tick-h)) 0.0)
            w (- (double (:width options)) (* 2.0 margin) (size-height (text-size :axis-title y))
                 (axis-room theme :y tick-w) (double (margin-room :right)) legend-room
-                (* gap (dec columns)) (if grid? strip 0.0))
+                (* gap (dec columns)) (if grid? strip 0.0) inner-y-axes)
            h (- (double (:height options)) (* 2.0 margin) (size-height (text-size :title title))
                 (double (margin-room :top)) (axis-room theme :x tick-h)
-                (size-height (text-size :axis-title x)) (* gap (dec rows)) (if grid? strip (* strip rows)))]
+                (size-height (text-size :axis-title x)) (* gap (dec rows)) (if grid? strip (* strip rows)) inner-x-axes)]
        [(m/max 1.0 (/ w columns)) (m/max 1.0 (/ h rows))]))))
 
 (defn- panel-weights
@@ -287,25 +292,29 @@
   them), each with the `:panel` key whose scales it draws (see [[cljplot2.scale.position/panel-scales-of]]):
   `free-h?` / `free-v?` (wrap layout with a free / sliced relation) - an axis at every panel, in its own `[:x-axis r]`
   row / `[:y-axis c]` column; otherwise an axis per panel column (`:x-axis` row) / row (`:y-axis` column) drawn with
-  that column's bottom / that row's first panel. Overhang items reserve room for end labels as in the single-panel grid.
-  `local-h?` / `local-v?` - neighbouring axes differ (panel-local scales): an axis next to another one across a panel
-  gap gets `:confine` (its labels stay within half the gap, see [[cljplot2.content.axis]]) instead of
-  `:next-panel-gap`; `stacked?` - vertical neighbours are separated by strips (wrap strips), so they aren't confined."
+  that column's bottom / that row's first panel. An axis with another panel's axis right of it (horizontal) gets
+  `:next-panel-gap` (labels crossing the next axis's labels are skipped, see [[cljplot2.content.axis]]); with
+  panel-local scales (`local-h?` / `local-v?` - neighbouring axes may differ) also `:next-panel` - the next panel's key,
+  so its own labels are compared - and vertical axes get both towards the axis below unless `stacked?` (strips or
+  axis rows separate the panel rows). Overhang items reserve room for end labels as in the single-panel grid; the
+  horizontal start overhang sits in the first y-axis column (`[:y-axis 0]` with `free-v?`)."
   [panels cols gap {:keys [h-key v-key h-shown? v-shown? free-h? free-v? local-h? local-v? stacked?]}]
   (let [at (into {} (map (juxt (juxt :row :col) :key)) panels)
-        confine (fn [low? high?] (cond-> {} low? (assoc :low gap) high? (assoc :high gap)))
-        h-axis (fn [content low? high?]
-                 (if local-h?
-                   (cond-> content (or low? high?) (assoc :confine (confine low? high?)))
-                   (cond-> content high? (assoc :next-panel-gap gap))))
-        v-axis (fn [content low? high?]
-                 (cond-> content (and local-v? (not stacked?) (or low? high?)) (assoc :confine (confine low? high?))))
+        h-axis (fn [content next-key]
+                 (cond-> content
+                   (some? next-key) (assoc :next-panel-gap gap)
+                   (and local-h? (some? next-key)) (assoc :next-panel next-key)))
+        v-axis (fn [content next-key]
+                 (cond-> content
+                   (and local-v? (not stacked?) (some? next-key)) (assoc :next-panel-gap gap :next-panel next-key)))
         bottom-of (fn [c] (:key (last (sort-by :row (filter #(= c (:col %)) panels)))))
         first-of (fn [r] (:key (first (sort-by :col (filter #(= r (:row %)) panels)))))
         rows (sort (distinct (map :row panels)))
         last-row (peek (vec rows))
+        next-row (fn [r] (second (drop-while #(not= r %) rows)))
         with-panel (fn [item k] (cond-> item (some? k) (assoc-in [:content :panel] k)))
         [x-start x-end] (rest (axis-items :bottom h-key))
+        x-start (cond-> x-start free-v? (assoc :column [:y-axis 0]))
         [y-start y-end] (rest (axis-items :left v-key))]
     (concat
      (when h-shown?
@@ -313,8 +322,7 @@
          (concat
           (for [{:keys [key row col]} panels]
             {:id [:x-axis row col] :column [:panel col] :row [:x-axis row]
-             :content (h-axis {:kind :axis :scale h-key :panel key}
-                              (contains? at [row (dec (long col))]) (contains? at [row (inc (long col))]))})
+             :content (h-axis {:kind :axis :scale h-key :panel key} (at [row (inc (long col))]))})
           (mapcat (fn [r]
                     (let [in-row (sort-by :col (filter #(= r (:row %)) panels))]
                       [(-> (assoc x-start :id [:x-axis-start r] :row [:x-axis r]) (with-panel (:key (first in-row))))
@@ -323,7 +331,8 @@
          (concat
           (for [c (range cols)]
             (with-panel {:id [:x-axis c] :column [:panel c] :row :x-axis
-                         :content (h-axis {:kind :axis :scale h-key} (pos? (long c)) (< (long c) (dec (long cols))))}
+                         :content (h-axis {:kind :axis :scale h-key}
+                                          (when (< (long c) (dec (long cols))) (bottom-of (inc (long c)))))}
               (bottom-of c)))
           [(with-panel x-start (bottom-of 0)) (with-panel x-end (bottom-of (dec (long cols))))])))
      (when v-shown?
@@ -331,11 +340,10 @@
         (if free-v?
           (for [{:keys [key row col]} panels]
             {:id [:y-axis row col] :column [:y-axis col] :row [:panel row]
-             :content (v-axis {:kind :axis :scale v-key :panel key}
-                              (contains? at [(dec (long row)) col]) (contains? at [(inc (long row)) col]))})
+             :content (v-axis {:kind :axis :scale v-key :panel key} (at [(inc (long row)) col]))})
           (for [r rows]
             (with-panel {:id [:y-axis r] :column :y-axis :row [:panel r]
-                         :content (v-axis {:kind :axis :scale v-key} (not= r (first rows)) (not= r last-row))}
+                         :content (v-axis {:kind :axis :scale v-key} (some-> (next-row r) first-of))}
               (first-of r))))
         [(with-panel y-start (at [last-row 0])) (with-panel y-end (at [(first rows) 0]))])))))
 
@@ -392,7 +400,7 @@
                 (into (facet-axis-items panels cols gap {:h-key h-key :v-key v-key :free-h? free-h? :free-v? free-v?
                                                          :local-h? (or (not= :same (facet/scale-relation facets h-key)) (some? widths))
                                                          :local-v? (or (not= :same (facet/scale-relation facets v-key)) (some? heights))
-                                                         :stacked? wrap-strips?
+                                                         :stacked? (or wrap-strips? free-h?)
                                                          :h-shown? (axis-shown? scale-specs h-key)
                                                          :v-shown? (axis-shown? scale-specs v-key)}))
                 (cond-> wrap-strips? (into (map (fn [{:keys [key label row col]}]

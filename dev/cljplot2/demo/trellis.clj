@@ -54,7 +54,7 @@
    :mapping {:x :yield :y :variety :facet :site}
    :charts [(chart/scatter)]
    :scales {:y {:order-by #(stats/mean (map :yield %))}}
-   :facets {:columns 1 :scales {:y :free} :strips true}
+   :facets {:columns 1 :scales {:y :free}}
    :labels {:x "Yield (1932)" :y nil}})
 
 (def ^:private walk

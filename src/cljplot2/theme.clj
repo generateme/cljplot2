@@ -150,23 +150,23 @@
               :label-gap 2 :tick-spacing 80 :label-rotation 0 :minor-tick-length 3}
           :y {:line-color :black :line-width 1 :tick-color :black :tick-length 6 :tick-width 1
               :label-gap 2 :tick-spacing 50 :label-rotation 0 :minor-tick-length 3}}
-   :text {:title {:font "Liberation Mono" :size 14 :font-style :bold :color :black :padding 4 :align centered}
-          :strip {:font "Liberation Mono" :size 11 :font-style :plain :color :black :padding 2 :align centered}
-          :axis-title {:font "Liberation Mono" :size 12 :font-style :plain :color :black :padding 4 :align centered}
-          :tick-label {:font "Liberation Mono" :size 10 :font-style :plain :color :black :padding 2 :align centered}
-          :legend-title {:font "Liberation Mono" :size 11 :font-style :bold :color :black :padding 2 :align [:left :middle]}
-          :legend-label {:font "Liberation Mono" :size 10 :font-style :plain :color :black :padding 2 :align [:left :middle]}
-          :treemap-group {:font "Liberation Mono" :size 10 :font-style :bold :color :black :padding 2 :align [:left :middle]}
-          :treemap-leaf {:font "Liberation Mono" :size 9 :font-style :plain :color :black :padding 2 :align centered}
-          :partition-group {:font "Liberation Mono" :size 10 :font-style :bold :color :black :padding 2 :align centered}
-          :partition-leaf {:font "Liberation Mono" :size 9 :font-style :plain :color :black :padding 2 :align centered}
-          :pack-group {:font "Liberation Mono" :size 10 :font-style :bold :color :black :padding 2 :align centered}
-          :pack-leaf {:font "Liberation Mono" :size 9 :font-style :plain :color :black :padding 2 :align centered}
-          :venn-set {:font "Liberation Mono" :size 11 :font-style :bold :color :black :padding 2 :align centered}
-          :venn-count {:font "Liberation Mono" :size 10 :font-style :plain :color :black :padding 2 :align centered}
-          :tile-value {:font "Liberation Mono" :size 9 :font-style :plain :color :black :padding 1 :align centered}
-          :correlation {:font "Liberation Mono" :size 12 :font-style :plain :color :black :padding 1 :align centered}
-          :annotation {:font "Liberation Mono" :size 10 :font-style :plain :color :black :padding 2 :align centered}}})
+   :text {:title {:font "DejaVu Sans Mono" :size 14 :font-style :bold :color :black :padding 4 :align centered}
+          :strip {:font "DejaVu Sans Mono" :size 11 :font-style :plain :color :black :padding 2 :align centered}
+          :axis-title {:font "DejaVu Sans Mono" :size 12 :font-style :plain :color :black :padding 4 :align centered}
+          :tick-label {:font "DejaVu Sans Mono" :size 10 :font-style :plain :color :black :padding 2 :align centered}
+          :legend-title {:font "DejaVu Sans Mono" :size 11 :font-style :bold :color :black :padding 2 :align [:left :middle]}
+          :legend-label {:font "DejaVu Sans Mono" :size 10 :font-style :plain :color :black :padding 2 :align [:left :middle]}
+          :treemap-group {:font "DejaVu Sans Mono" :size 10 :font-style :bold :color :black :padding 2 :align [:left :middle]}
+          :treemap-leaf {:font "DejaVu Sans Mono" :size 9 :font-style :plain :color :black :padding 2 :align centered}
+          :partition-group {:font "DejaVu Sans Mono" :size 10 :font-style :bold :color :black :padding 2 :align centered}
+          :partition-leaf {:font "DejaVu Sans Mono" :size 9 :font-style :plain :color :black :padding 2 :align centered}
+          :pack-group {:font "DejaVu Sans Mono" :size 10 :font-style :bold :color :black :padding 2 :align centered}
+          :pack-leaf {:font "DejaVu Sans Mono" :size 9 :font-style :plain :color :black :padding 2 :align centered}
+          :venn-set {:font "DejaVu Sans Mono" :size 11 :font-style :bold :color :black :padding 2 :align centered}
+          :venn-count {:font "DejaVu Sans Mono" :size 10 :font-style :plain :color :black :padding 2 :align centered}
+          :tile-value {:font "DejaVu Sans Mono" :size 9 :font-style :plain :color :black :padding 1 :align centered}
+          :correlation {:font "DejaVu Sans Mono" :size 12 :font-style :plain :color :black :padding 1 :align centered}
+          :annotation {:font "DejaVu Sans Mono" :size 10 :font-style :plain :color :black :padding 2 :align centered}}})
 
 (defn deep-merge
   "Merge maps recursively; a non-map value replaces the value it's merged over, `nil` is ignored

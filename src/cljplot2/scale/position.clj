@@ -408,9 +408,9 @@
           (or stops (map #(/ (double %) (double (dec n))) (range n))))))
 
 (defn- near-any?
-  "Is `v` within 1e-9 of the span `span` from one of `values`?"
-  [values ^double span v]
-  (some #(< (m/abs (- (double %) (double v))) (* 1.0e-9 span)) values))
+  "Is `v` equal to one of `values` up to a relative 1e-9 (of the larger magnitude)?"
+  [values v]
+  (some #(< (m/abs (- (double %) (double v))) (* 1.0e-9 (m/max (m/abs (double %)) (m/abs (double v))))) values))
 
 (defn minor-tick-values
   "Minor ticks (data values) inside the numeric `domain` of a scale of `kind` with major `ticks`: on `:log` the
@@ -419,8 +419,7 @@
   ticks). Major ticks are left out; no minor ticks with fewer than two major ticks (other kinds)."
   [kind domain ticks n base]
   (let [lo (double (reduce min domain)) hi (double (reduce max domain))
-        span (- hi lo)
-        inside (fn [vs] (filterv #(and (<= lo (double %) hi) (not (near-any? ticks span %))) vs))]
+        inside (fn [vs] (filterv #(and (<= lo (double %) hi) (not (near-any? ticks %))) vs))]
     (if (= :log kind)
       (let [b (double base)
             from (long (m/floor (/ (m/ln lo) (m/ln b))))

@@ -1,8 +1,11 @@
 (ns cljplot2.graphics.font
   "Font resolution: bundled font families (loaded from resources), system font names or `java.awt.Font` objects.
 
-  Bundled: `\"Liberation Mono\"` (SIL OFL 1.1, see `resources/fonts/`), one TTF file per font style,
-  so bold and italic are real font faces, not synthesized ones."
+  Bundled: `\"DejaVu Sans Mono\"` (the default theme's font; Bitstream Vera licence, DejaVu changes public domain,
+  see `resources/fonts/LICENSE-DejaVu.txt` - it covers the superscript digits and minus of power labels) and
+  `\"Liberation Mono\"` (SIL OFL 1.1, the default up to lattice cycle 1), one TTF file per font style, so bold and
+  italic (oblique) are real font faces, not synthesized ones. A bundled name wins over an installed family of the same
+  name, so plots render alike on every platform."
   (:require [clojure.java.io :as io]
             [clojure2d.core :as c2d])
   (:import [java.awt Font]))
@@ -16,7 +19,11 @@
 
 (def bundled-fonts
   "Bundled font family name -> font style -> classpath resource of the TTF file."
-  {"Liberation Mono" {:plain "fonts/LiberationMono-Regular.ttf"
+  {"DejaVu Sans Mono" {:plain "fonts/DejaVuSansMono.ttf"
+                       :bold "fonts/DejaVuSansMono-Bold.ttf"
+                       :italic "fonts/DejaVuSansMono-Oblique.ttf"
+                       :bold-italic "fonts/DejaVuSansMono-BoldOblique.ttf"}
+   "Liberation Mono" {:plain "fonts/LiberationMono-Regular.ttf"
                       :bold "fonts/LiberationMono-Bold.ttf"
                       :italic "fonts/LiberationMono-Italic.ttf"
                       :bold-italic "fonts/LiberationMono-BoldItalic.ttf"}})

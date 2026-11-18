@@ -8,8 +8,7 @@
   panel (line in its box's top pixel row), a vertical one left of it (line in its box's rightmost pixel column).
   `{:kind :axis ... :margin side}` - the magnitude axis of a plot margin: its scale from `env` `[:margins side :scales]`.
   `{:kind :axis ... :panel k}` - the axis of facet panel `k` (its panel-local scale, see
-  [[cljplot2.scale.position/panel-scales-of]]); `:confine {:low gap :high gap}` - neighbouring axes across a panel gap
-  differ (free scales, weighted panels): labels reaching past the middle of that gap aren't drawn.
+  [[cljplot2.scale.position/panel-scales-of]]).
   Minor ticks (a finalized scale's `:minor-ticks`) are drawn unlabelled, theme `[:axis k :minor-tick-length]` long.
   Natural size: horizontal - height = tick length + label gap + tallest label; vertical - width = tick length +
   label gap + widest label. Without a finalized scale in `env` the axis is empty.
@@ -24,8 +23,10 @@
   Tick labels rotate by theme `[:axis k :label-rotation]` (clockwise degrees, -90..90; e.g. -90 or -45 for long
   bands labels): a horizontal axis puts the end of each rotated text nearest the axis at its tick (see
   [[label-offset-fn]]), a vertical axis keeps labels centred on their ticks; natural sizes, thinning and overhangs use
-  the rotated label boxes. A horizontal axis followed by another panel's axis (`:next-panel-gap`, set by the facet
-  grid for every column but the last) skips its labels that would overlap the next panel's labels."
+  the rotated label boxes. An axis followed by another panel's axis `:next-panel-gap` pixels further (set by the facet
+  grid: right of a horizontal axis, below a vertical one) skips its labels that would overlap the next panel's drawn
+  labels (the next panel keeps its own): those of the next panel's own scale with `:next-panel k` (panel-local scales,
+  see [[crossing-labels]]), else its identical axis."
   (:require [cljplot2.schema :as schema]
             [clojure2d.core :as c2d]
             [fastmath.core :as m]
@@ -45,8 +46,7 @@
   "`{:kind :axis}` content: `:scale` `:x` or `:y`; optional `:next-panel-gap` - pixels to the next panel's identical
   axis along a horizontal axis (facet columns): labels overlapping that axis's labels aren't drawn."
   [:map [:scale [:enum :x :y]] (schema/optional :next-panel-gap schema/non-neg)
-   (schema/optional :margin [:enum :top :right]) (schema/optional :panel any?)
-   (schema/optional :confine [:map {:closed true} (schema/optional :low schema/non-neg) (schema/optional :high schema/non-neg)])])
+   (schema/optional :margin [:enum :top :right]) (schema/optional :panel any?) (schema/optional :next-panel any?)])
 
 (defn- axis-scale
   "Finalized scale of axis `content`: `:scale` of the scales of its `:panel` (see
@@ -153,36 +153,46 @@
          (or (first (filter fits? (range 1 n))) n))))))
 
 (defn crossing-labels
-  "Indices of the `drawn` labels (with `[centres extents]` along the axis) that overlap a drawn label of the next
-  panel's identical axis, `shift` further along (panel length plus gap); these are skipped so labels never cross
-  into a neighbouring facet panel's labels (the next panel keeps its own)."
-  [[centres extents] drawn ^double shift]
-  (set (filter (fn [i]
-                 (some (fn [j] (overlap? (centres i) (extents i) (+ shift (double (centres j))) (extents j))) drawn))
-               drawn)))
-
-(defn- unconfined-labels
-  "Indices of labels reaching past the axis box ends shared with a neighbouring panel's different axis (`confine`
-  `{:low gap :high gap}` - the gap on the box's left / top (`:low`) or right / bottom (`:high`) side): a label whose box
-  goes beyond the middle of that gap isn't drawn, so neighbouring axes' labels never meet. `centres` - label centre
-  pixels along the axis, `extents` - label lengths along it; `[lo hi]` - the box's pixel interval along the axis."
-  [{:keys [low high]} centres extents [lo hi]]
-  (set (keep-indexed (fn [i c]
-                       (let [half (* 0.5 (double (nth extents i)))]
-                         (when (or (and low (< (- (double c) half) (- (double lo) (* 0.5 (double low)))))
-                                   (and high (> (+ (double c) half) (+ (double hi) (* 0.5 (double high))))))
-                           i)))
-                     centres)))
+  "Indices of the `drawn` labels (with `[centres extents]` along the axis) that overlap a drawn label (`next-drawn` of
+  `next-intervals`, panel-local) of the next panel's axis, `shift` further along (panel length plus gap); these are
+  skipped so labels never cross into a neighbouring facet panel's labels (the next panel keeps its own). Without
+  `next-intervals` the next axis is identical (the same labels)."
+  ([intervals drawn shift] (crossing-labels intervals drawn intervals drawn shift))
+  ([[centres extents] drawn [next-centres next-extents] next-drawn shift]
+   (set (filter (fn [i]
+                  (some (fn [j] (overlap? (centres i) (extents i) (+ (double shift) (double (next-centres j))) (next-extents j)))
+                        next-drawn))
+                drawn))))
 
 (defn- drawn?
   "Is label `i` drawn with label step `step`?"
   [^long step i]
   (zero? (rem (long i) step)))
 
+(defn- drawn-labels
+  "`[[centres extents] drawn]` of the tick labels of the axis of scale `k` with `finalized`: their intervals along the
+  axis (panel-local, see [[label-intervals]]) and the indices its label step draws."
+  [k finalized env]
+  (let [sizes (label-sizes k finalized env)
+        offsets (label-offsets k finalized env)
+        spans (label-spans k finalized env sizes)
+        padding (label-padding env)
+        step (label-step k finalized sizes padding offsets spans)]
+    [(label-intervals k finalized sizes padding offsets spans) (filterv #(drawn? step %) (range (count sizes)))]))
+
+(defn- tick-room
+  "Pixels the ticks of `finalized` take across the axis (theme axis style `style`): the tick length, or the minor tick
+  length when the scale has minor ticks and they are longer."
+  ^double [finalized {:keys [tick-length minor-tick-length]}]
+  (if (seq (:minor-ticks finalized))
+    (m/max (double tick-length) (double minor-tick-length))
+    (double tick-length)))
+
 (defmethod measure/natural-size :axis
   [{k :scale :as content} env]
   (let [finalized (axis-scale content env)
-        {:keys [tick-length label-gap]} (get-in env [:theme :axis k])
+        {:keys [label-gap] :as style} (get-in env [:theme :axis k])
+        room (when finalized (tick-room finalized style))
         all-sizes (when finalized (label-sizes k finalized env))
         step (if finalized
                (label-step k finalized all-sizes (label-padding env) (label-offsets k finalized env)
@@ -193,8 +203,8 @@
         tallest (double (reduce max 0.0 (map #(.y ^Vec2 %) sizes)))]
     (cond
       (nil? finalized) (v/vec2 0.0 0.0)
-      (scale/horizontal? k finalized) (v/vec2 0.0 (+ (double tick-length) (double label-gap) tallest))
-      :else (v/vec2 (+ (double tick-length) (double label-gap) widest) 0.0))))
+      (scale/horizontal? k finalized) (v/vec2 0.0 (+ (double room) (double label-gap) tallest))
+      :else (v/vec2 (+ (double room) (double label-gap) widest) 0.0))))
 
 (defmethod measure/natural-size :axis-overhang
   [{k :scale end :end :as content} env]
@@ -236,6 +246,7 @@
     (let [{:keys [line-color line-width tick-color tick-length tick-width label-gap minor-tick-length]} (get-in env [:theme :axis k])
           x (double x) y (double y) w (double w) h (double h)
           tick-length (double tick-length)
+          room (tick-room finalized (get-in env [:theme :axis k]))
           label-gap (double label-gap)
           horizontal? (scale/horizontal? k finalized)
           ;; panel-local positions; the axis box spans its panel column (horizontal) / row (vertical)
@@ -252,15 +263,12 @@
           step (label-step k finalized sizes (label-padding env) offsets spans)
           drawn (filterv #(drawn? step %) (range (count sizes)))
           next-gap (:next-panel-gap content)
-          skipped (into (if (and horizontal? next-gap)
-                          (crossing-labels (label-intervals k finalized sizes (label-padding env) offsets spans) drawn
-                                           (+ w (double next-gap)))
-                          #{})
-                        (when-let [confine (:confine content)]
-                          (unconfined-labels confine
-                                             (mapv (fn [^double p ^double off] (+ p off)) positions offsets)
-                                             (mapv (fn [^Vec2 size] (if horizontal? (.x size) (.y size))) sizes)
-                                             [(if horizontal? x y) (if horizontal? (+ x w) (+ y h))])))
+          skipped (if next-gap
+                    (let [own (label-intervals k finalized sizes (label-padding env) offsets spans)
+                          next-finalized (when-some [panel (:next-panel content)] (get (scale/panel-scales-of env panel) k))
+                          [next-intervals next-drawn] (if next-finalized (drawn-labels k next-finalized env) [own drawn])]
+                      (crossing-labels own drawn next-intervals next-drawn (+ (if horizontal? w h) (double next-gap))))
+                    #{})
           draw-label! (fn [text box] (canvas/call-with-isolated-graphics c #(draw/draw-content (tick-label text rotation) % box env)))]
       (when (draws? line-color line-width)
         (set-line-style! c line-color line-width)
@@ -284,5 +292,5 @@
               :when (and (drawn? step i) (not (skipped i)))
               :let [lw (.x size) lh (.y size)]]
         (if horizontal?
-          (draw-label! text {:x (- (+ p off) (* 0.5 lw)) :y (+ y tick-length label-gap) :w lw :h lh})
-          (draw-label! text {:x (- (+ x w) tick-length label-gap lw) :y (- p (* 0.5 lh)) :w lw :h lh}))))))
+          (draw-label! text {:x (- (+ p off) (* 0.5 lw)) :y (+ y room label-gap) :w lw :h lh})
+          (draw-label! text {:x (- (+ x w) room label-gap lw) :y (- p (* 0.5 lh)) :w lw :h lh}))))))
