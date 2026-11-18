@@ -19,7 +19,8 @@
   `:variant` - `:classic` (default, the box above) or `:tufte` (E. Tufte's quartile plot, lattice `panel.bwtufte`): no
   box and no median line - the median a `:shape` point of `:size` in `:color`, a line from each whisker end to its
   quartile (the inter-quartile gap left empty), no caps; outliers as above, the `:mean` marker a hollow circle in
-  `:color`; `:varwidth` has no effect (nothing has a width)."
+  `:color`; `:varwidth` and the fill patterns (`:pattern`, `:pattern-color`) have no effect (nothing has a width
+  or a fill)."
   (:require [clojure2d.color :as c]
             [clojure2d.core :as c2d]
             [fastmath.core :as m]

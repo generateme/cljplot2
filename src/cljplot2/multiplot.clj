@@ -97,8 +97,9 @@
 
   All cells of a column share the x domain of its variable, all cells of a row the y domain of its (the variable's
   range widened by 5 %, no nice extension, no chart padding). Tick labels and axis titles (the variable names) only on the outer cells
-  - x under the bottom row, y left of the left column - the inner sides keep grid lines (`:axis :grid`; the top-left
-  diagonal cell shows no y tick labels: its axis is the diagonal chart's own). The cells' legends are hidden; one
+  - x under the bottom row, y left of the left column - the inner sides keep grid lines (`:axis :grid`). Diagonal
+  charts draw in their own magnitude scale; their y axis and grid show the row variable (`:axis-domain`), so the
+  top-left cell labels the first variable as the rest of its row. The cells' legends are hidden; one
   column of `:legend-only` plots, sized to the legend, shows the mapped aesthetics (keys of the lower charts, a color
   bar for a continuous color - left out of the diagonal cells) or, without a mapping, the colors the lower / upper
   charts compute (e.g. the r color bar of correlation glyphs);
@@ -154,13 +155,15 @@
                           :charts charts
                           ;; exact domains (already padded): no chart padding on top
                           :scales {:x {:domain (domains vx) :nice false :expand [0.0 0.0] :axis (axis bottom?)}
-                                   :y (cond diag? {:axis :grid}
+                                   ;; the diagonal draws in its own magnitude scale, its axis and grid show the row variable
+                                   :y (cond diag? {:axis (axis left?) :axis-domain (domains vy)}
                                             :else {:domain (domains vy) :nice false :expand [0.0 0.0] :axis (axis left?)})}
                           :labels {:x (when bottom? (name-of vx)) :y (when left? (name-of vy))}
                           :legend false}
                    (odd? (+ i j)) (assoc :alternate-panel true)
                    ;; names or an empty diagonal: no data on y - a fixed unit domain
-                   (and diag? (or names? (empty? charts))) (assoc-in [:scales :y] {:domain [0 1] :expand [0.0 0.0] :axis :grid})
+                   (and diag? (or names? (empty? charts))) (assoc-in [:scales :y] {:domain [0 1] :expand [0.0 0.0] :axis (axis left?)
+                                                                                    :axis-domain (domains vx)})
                    names? (update :mapping dissoc :y)
                    true (assoc :theme cell-theme))))
         legend-cell (fn [^long i] (cond-> {:legend-only true :theme cell-theme}

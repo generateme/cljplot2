@@ -25,7 +25,9 @@
   `max-calendar-ticks` over the domain - `ex-info {:key :ticks-params}`). `:formatter` - a function of a tick
   value, on `:datetime` a `java.time` pattern string (`\"MMM yyyy\"`), or on `:log` the preset `:power` (`2⁵`,
   [[power-label]]). `:minor-ticks n` - unlabelled ticks between the major ones (continuous numeric kinds, see
-  [[minor-tick-values]]; finalized under `:minor-ticks`). Bands scales: `:order-by f` - levels ordered by `(f rows)`
+  [[minor-tick-values]]; finalized under `:minor-ticks`). `:axis-domain [lo hi]` (continuous numeric kinds) - display
+  only: axes and grid lines show the ticks of that linear domain over the panel instead (see [[display-scale]]), e.g.
+  a variable's values beside a density drawn in its own magnitude scale. Bands scales: `:order-by f` - levels ordered by `(f rows)`
   over each level's rows (`:descending true` reverses; per panel under a `:free` facet scale), not with `:domain`
   (consumed by the pipeline)."
   (:require [fastmath.core :as m]
@@ -115,6 +117,7 @@
           (schema/nilable :order-by schema/function)
           (schema/nilable :descending schema/bool)
           (schema/nilable :minor-ticks schema/pos-int)
+          (schema/nilable :axis-domain [:tuple schema/finite schema/finite])
           (schema/optional :axis [:or :boolean [:enum :grid :no-grid]])
           (schema/optional :stops [:sequential {:min 2} schema/finite])
           (schema/optional :interpolator schema/interpolator)
@@ -127,7 +130,9 @@
          wadogo-attributes)
    [domain-problem [:domain]]
    [#(when (and (:order-by %) (:domain %)) "give either :order-by or :domain, not both") [:order-by]]
-   [#(when (and (:descending %) (nil? (:order-by %))) ":descending needs :order-by") [:descending]]))
+   [#(when (and (:descending %) (nil? (:order-by %))) ":descending needs :order-by") [:descending]]
+   [#(when-let [[lo hi] (:axis-domain %)] (when (== (double lo) (double hi)) ":axis-domain should be two different numbers"))
+    [:axis-domain]]))
 
 (defn- validate-tick-list!
   [k kind domain ticks]
@@ -163,7 +168,8 @@
       (and (string? formatter) (not= :datetime kind)) [:formatter "a pattern string :formatter needs a :datetime scale"]
       (and (= :power formatter) (not= :log kind)) [:formatter ":formatter :power needs a :log scale"]
       (and (some? (:order-by spec)) (not= :bands kind)) [:order-by ":order-by needs a categorical (:bands) scale"]
-      (and (some? (:minor-ticks spec)) (#{:bands :datetime} kind)) [:minor-ticks ":minor-ticks need a numeric continuous scale (not :bands or :datetime)"])))
+      (and (some? (:minor-ticks spec)) (#{:bands :datetime} kind)) [:minor-ticks ":minor-ticks need a numeric continuous scale (not :bands or :datetime)"]
+      (and (some? (:axis-domain spec)) (#{:bands :datetime} kind)) [:axis-domain ":axis-domain needs a numeric continuous scale (not :bands or :datetime)"])))
 
 (def ^:private superscript-digits
   {\0 \u2070 \1 \u00b9 \2 \u00b2 \3 \u00b3 \4 \u2074 \5 \u2075 \6 \u2076 \7 \u2077 \8 \u2078 \9 \u2079 \- \u207b})
@@ -460,7 +466,8 @@
   (let [kind (:kind spec)
         explicit (:ticks spec)
         nice-count (if (integer? explicit) explicit tick-hint)
-        base (cond-> (assoc (dissoc spec :kind :nice :expand :padding :padding-px :tick-format :axis :stops :minor-ticks)
+        base (cond-> (assoc (dissoc spec :kind :nice :expand :padding :padding-px :tick-format :axis :stops :minor-ticks
+                                    :axis-domain)
                             :range (wadogo-range kind range))
                (get-in spec [:ticks-params :min-n]) (update-in [:ticks-params :min-n] #(min (long %) (long nice-count)))
                (= :interpolated kind) (assoc :range (stop-pixels range (count (:domain spec)) (:stops spec))))
@@ -486,7 +493,19 @@
              :attributes attributes}
       (contains? #{false :grid :no-grid} (:axis spec)) (assoc :axis (:axis spec))
       (:minor-ticks spec) (assoc :minor-ticks (filterv inside? (minor-tick-values kind domain ticks (:minor-ticks spec)
-                                                                                   (get attributes :base 10.0)))))))
+                                                                                   (get attributes :base 10.0))))
+      (:axis-domain spec) (assoc :axis-scale (finalize (merge (select-keys spec [:formatter :minor-ticks :ticks-method :ticks-params])
+                                                              {:kind :linear :domain (:axis-domain spec) :nice false})
+                                                       range tick-hint)))))
+
+(defn display-scale
+  "The scale an axis and the panel grid show for finalized scale `finalized`: its `:axis-scale` (from an
+  `:axis-domain` - display only: the ticks and labels of that linear domain over the same pixel range, the charts
+  still draw with `finalized`) carrying the scale's `:direction` and `:axis`, else `finalized` itself."
+  [finalized]
+  (if-let [shown (:axis-scale finalized)]
+    (merge shown (select-keys finalized [:direction :axis]))
+    finalized))
 
 (def ^:private identity-transform
   {:forward (fn ^double [^double v] v) :inverse (fn ^double [^double v] v)})

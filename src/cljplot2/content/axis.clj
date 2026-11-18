@@ -8,7 +8,8 @@
   panel (line in its box's top pixel row), a vertical one left of it (line in its box's rightmost pixel column).
   `{:kind :axis ... :margin side}` - the magnitude axis of a plot margin: its scale from `env` `[:margins side :scales]`.
   `{:kind :axis ... :panel k}` - the axis of facet panel `k` (its panel-local scale, see
-  [[cljplot2.scale.position/panel-scales-of]]).
+  [[cljplot2.scale.position/panel-scales-of]]). An axis shows a scale's display scale (its `:axis-domain`, see
+  [[cljplot2.scale.position/display-scale]]).
   Minor ticks (a finalized scale's `:minor-ticks`) are drawn unlabelled, theme `[:axis k :minor-tick-length]` long.
   Natural size: horizontal - height = tick length + label gap + tallest label; vertical - width = tick length +
   label gap + widest label. Without a finalized scale in `env` the axis is empty.
@@ -53,7 +54,8 @@
   [[cljplot2.scale.position/panel-scales-of]]; the shared `env` `:scales` without one), or of the plot margin's scales
   (`env` `[:margins side :scales]`) for an axis with `:margin side`."
   [{k :scale margin :margin :as content} env]
-  (if margin (get-in env [:margins margin :scales k]) (get (scale/panel-scales-of env content) k)))
+  (some-> (if margin (get-in env [:margins margin :scales k]) (get (scale/panel-scales-of env content) k))
+          scale/display-scale))
 
 (def overhang-schema
   "`{:kind :axis-overhang}` content: `:scale` `:x` or `:y`, `:end` `:start` or `:end`."
@@ -266,7 +268,8 @@
           skipped (if next-gap
                     (let [own (label-intervals k finalized sizes (label-padding env) offsets spans)
                           next-finalized (when (contains? content :next-panel)
-                                           (get (scale/panel-scales-of env {:panel (:next-panel content)}) k))
+                                           (some-> (get (scale/panel-scales-of env {:panel (:next-panel content)}) k)
+                                                   scale/display-scale))
                           [next-intervals next-drawn] (if next-finalized (drawn-labels k next-finalized env) [own drawn])]
                       (crossing-labels own drawn next-intervals next-drawn (+ (if horizontal? w h) (double next-gap))))
                     #{})

@@ -68,12 +68,13 @@
 
 (defn- draw-grid-lines!
   "Grid lines at the tick positions of the panel-local scales, `w` x `h` panel at the origin: a horizontal scale
-  (by its direction) draws vertical lines, a vertical one horizontal lines. `[:panel :grid k]` (by scale key)
+  (by its direction) draws vertical lines, a vertical one horizontal lines; a scale with an `:axis-domain` - at its
+  display scale's ticks (see [[cljplot2.scale.position/display-scale]]). `[:panel :grid k]` (by scale key)
   `:none` turns the lines of scale `k` off, as does the scale's `:axis false`; otherwise a bands scale draws the
   `[:panel :grid :bands]` line."
   [c ^long w ^long h env]
   (doseq [k [:x :y]
-          :let [finalized (get-in env [:scales k])
+          :let [finalized (some-> (get-in env [:scales k]) scale/display-scale)
                 axis-line (get-in env [:theme :panel :grid k])
                 {:keys [color width dash] :as line} (if (and (= :bands (:kind finalized)) (not (theme/none? axis-line)))
                                                       (get-in env [:theme :panel :grid :bands])
@@ -97,7 +98,7 @@
   (let [{:keys [color width dash] :as line} (get-in env [:theme :panel :grid :minor])]
     (when-not (or (nil? line) (theme/none? line) (theme/none? color) (not (pos? (double width))))
       (doseq [k [:x :y]
-              :let [finalized (get-in env [:scales k])]
+              :let [finalized (some-> (get-in env [:scales k]) scale/display-scale)]
               :when (and (seq (:minor-ticks finalized)) (scale/grid-drawn? finalized))]
         (c2d/set-color c color)
         (c2d/set-stroke-custom c (cond-> {:size (double width) :cap :butt} (polyline/dash-pattern dash) (assoc :dash (polyline/dash-pattern dash))))

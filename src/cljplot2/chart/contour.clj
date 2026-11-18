@@ -20,7 +20,7 @@
     decimals, see [[cljplot2.content.label/value-text]]), or a function of `{:level v}` returning the text (`nil` - no
     label, e.g. every second level): horizontal text centred halfway along the line (by its pixel length), text role
     `:contour-label` (a translucent background over the line, which isn't cut); a line shorter than twice its label
-    gets none, a label leaving the panel or overlapping one already drawn is skipped (lowest levels first); labels are drawn after all
+    gets none, a label leaving the panel or overlapping one already drawn is skipped, lines not drawn (no color) none (lowest levels first); labels are drawn after all
     lines. With `:fill true` - `ex-info {:key :labels}`.
 
   On a `:log` axis the field is sampled (a density estimated) in log10 coordinates, see [[cljplot2.data.field]]."
@@ -228,10 +228,13 @@
   [_chart {:keys [contours style fill? by-level? labels]} canvas box scales env]
   (let [projection (scale/projection scales)
         to-pixels (fn [points] (mapv (fn [[x y]] (let [^fastmath.vector.Vec2 p (projection x y)] [(.x p) (.y p)])) points))
-        alpha (:alpha style)]
-    (doseq [contour (sort-by :level contours)
-            :let [st (level-style contour style scales env by-level?)]
-            :when (and st (not (theme/none? (:color st))))]
+        alpha (:alpha style)
+        ;; contours with a drawn color, lowest level first: only their lines get labels
+        visible (keep (fn [contour]
+                        (let [st (level-style contour style scales env by-level?)]
+                          (when (and st (not (theme/none? (:color st)))) [contour st])))
+                      (sort-by :level contours))]
+    (doseq [[contour st] visible]
       (if fill?
         (do (c2d/set-color canvas (with-alpha (:color st) alpha))
             (c2d/shape canvas (rings-shape (map to-pixels (:rings contour))) false))
@@ -240,7 +243,7 @@
                                     (:lines contour))
                                (assoc st :color (with-alpha (:color st) alpha)))))
     (when (and labels (not fill?))
-      (draw-labels! canvas contours to-pixels labels (assoc env :panel box)))))
+      (draw-labels! canvas (map first visible) to-pixels labels (assoc env :panel box)))))
 
 (defn legend
   "Key glyph: a line in the key's color and the chart's line style; filled contours - a filled square."

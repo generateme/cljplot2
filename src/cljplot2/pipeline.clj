@@ -817,13 +817,18 @@
         panel (if (seq flexible) (m/max 1.0 (m/floor (/ free (count flexible)))) 0.0)]
     (mapv (fn [size inset] [:fixed (long (if inset (+ panel (double inset)) size))]) sizes insets)))
 
+(defn- arrange-columns
+  "Column count of an `:arrange` spec: `:columns`, else from `:rows` and the plot count, else 1."
+  ^long [{:keys [plots columns rows]}]
+  (long (or columns (if rows (long (m/ceil (/ (double (count plots)) (double rows)))) 1))))
+
 (defn- equal-panel-plot
   "The plot of an `:equal-panels` arrange (built once: `cells` `[{:id :box}]`, aligned `subplots` `{id built}`) with
   `[:fixed px]` widths / heights giving every panel one size (see [[equal-panel-tracks]]); `:equal-panels` dropped."
   [{:keys [arrange] :as plot} cells subplots]
   (let [{:keys [plots columns rows widths]} arrange
         n (count plots)
-        c (long (or columns (if rows (long (m/ceil (/ (double n) (double rows)))) 1)))
+        c (arrange-columns arrange)
         r (long (or rows (m/ceil (/ (double n) (double c)))))
         index (fn [[_ k]] [(quot (long k) c) (rem (long k) c)])
         by-cell (into {} (map (fn [{:keys [id box]}] [(index id) {:box box :insets (align/panel-insets (subplots id))}])) cells)
@@ -837,6 +842,51 @@
         (assoc-in [:arrange :widths] (equal-panel-tracks (mapv column-size (range c)) column-insets))
         (assoc-in [:arrange :heights] (equal-panel-tracks (mapv row-size (range r)) row-insets))
         (update :arrange dissoc :equal-panels))))
+
+(def ^:private ^:const max-equal-panel-rounds
+  "Upper bound on corrections of `:equal-panels` tracks (see [[equalized-arrange]])."
+  3)
+
+(defn- arranged-panel-sizes
+  "`{:columns {j [w ..]} :rows {i [h ..]}}` - the panel widths per column and heights per row of a built arrange plot
+  `built` with `columns` columns (cells `[:plot k]`; cells without a panel, e.g. legend-only, left out)."
+  [built ^long columns]
+  (reduce (fn [acc [[_ k] sub]]
+            (if-let [{:keys [w h]} (grid/find-content-box (:grid sub) (:layout sub) panel-content?)]
+              (let [i (quot (long k) columns) j (rem (long k) columns)]
+                (-> acc (update-in [:columns j] (fnil conj []) (long w)) (update-in [:rows i] (fnil conj []) (long h))))
+              acc))
+          {} (:subplots built)))
+
+(defn- corrected-tracks
+  "`[:fixed px]` `tracks` with each panel track `t` (a key of `sizes` - track -> panel sizes) grown or shrunk so its
+  panels reach the smallest panel size over all tracks; other tracks kept. `nil` when the panels are already equal."
+  [tracks sizes]
+  (let [target (reduce min (mapcat val sizes))]
+    (when-not (every? #(= target %) (mapcat val sizes))
+      (vec (map-indexed (fn [t [kind px]]
+                          (if-let [panel (some->> (get sizes t) (reduce min))]
+                            [kind (+ (long px) (- (long target) (long panel)))]
+                            [kind px]))
+                        tracks)))))
+
+(defn- equalized-arrange
+  "Built `:equal-panels` arrange `built` with every panel the same size: the fixed tracks of [[equal-panel-plot]] come
+  from the first layout's insets (alignment padding included), which a rebuild at the new sizes may change by a few
+  pixels; each round measures the panels and corrects the tracks, at most [[max-equal-panel-rounds]] times. `rebuild`
+  - a function of a plot map building it."
+  [built rebuild]
+  (let [columns (arrange-columns (:arrange built))]
+    (loop [built built round 1]
+      (let [{:keys [columns rows]} (arranged-panel-sizes built columns)
+            widths (when columns (corrected-tracks (get-in built [:arrange :widths]) columns))
+            heights (when rows (corrected-tracks (get-in built [:arrange :heights]) rows))]
+        (if (or (> round max-equal-panel-rounds) (and (nil? widths) (nil? heights)))
+          built
+          (recur (rebuild (cond-> (apply dissoc built (concat stage-order (mapcat val stage-extra-keys)))
+                            widths (assoc-in [:arrange :widths] widths)
+                            heights (assoc-in [:arrange :heights] heights)))
+                 (inc round)))))))
 
 (defn- subplots-stage
   "Every `{:kind :plot}` item of the grid (nested grids included) built at its box size with the plot's hint:
@@ -858,7 +908,8 @@
                                               (build-subplot (assoc p :alignment-padding padding) id box hint)))
                      (into {} (map (juxt :id :built)) cells))]
       (if (get-in plot [:arrange :equal-panels])
-        (build (equal-panel-plot plot cells subplots) (select-keys options [:width :height :hint]))
+        (let [rebuild #(build % (select-keys options [:width :height :hint]))]
+          (equalized-arrange (rebuild (equal-panel-plot plot cells subplots)) rebuild))
         (assoc plot :subplots subplots)))))
 
 (def stage-order

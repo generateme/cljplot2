@@ -23,7 +23,7 @@
 
   Cell size (`:size` mapping, optional): each cell shrinks by `:cell-scale` × `size / s-max` - `size` the value's size
   through the plot's size scale, `s-max` the largest size of that scale's `:range` (1 for an identity scale, whose
-  values are the fractions themselves); e.g. `:scales {:size {:range [7 10]}}` gives cells from 70 % to 100 % (lattice
+  values are the fractions themselves, larger ones clamped to 1); e.g. `:scales {:size {:range [7 10]}}` gives cells from 70 % to 100 % (lattice
   `shrink`). A size of 0 draws no cell; rows with a `nil` size or one outside the size scale are dropped (`:dropped
   {:size n}`). Sized cells are drawn antialiased (they don't abut); legend keys are cells scaled the same way.
 
@@ -83,7 +83,7 @@
 
 (defn size-factor
   "Shrink factor of a cell of `size` (an attribute of the size scale) under a scale whose largest size is `largest`:
-  `size / largest` within `[0 1]` (0 for a non-positive largest size)."
+  `size / largest` clamped to `[0 1]` (identity sizes above 1 give 1; 0 for a non-positive largest size)."
   ^double [size ^double largest]
   (if (pos? largest) (m/constrain (/ (double size) largest) 0.0 1.0) 0.0))
 
@@ -131,7 +131,7 @@
       (pos? total) (assoc :align-outer (/ (if vertical? last-side first-side) total)))))
 
 (defn compute
-  "Per panel: `{:cells [[x y color size?] ..] :axes {:x info :y info} :style st :value-label f}` (axis info - see
+  "Per panel: `{:cells [[x y color size?] ..] :axes {:x info :y info} :style st :value-label f :sized? b}` (axis info - see
   [[axis-info]]); extents (numeric axes: the values widened by the cells' reach; categorical: the levels), color
   value extents (and size values with a `:size` mapping), no padding, `:scale-defaults` (categorical axes: see [[band-room]]; numeric axes: no nice domain - cells fill the panel), `:na`, `:dropped` (`:x`, `:y`, `:color`, `:duplicate`; `:size` with a `:size` mapping)."
   [{:keys [options]} {:keys [groups mapping]} {:keys [theme na-level? plot-scales flip?] :or {na-level? true}}]
@@ -159,7 +159,7 @@
                           (if (every? number? vs) {:kind :categorical :values (vec (distinct vs))} (data/extent k vs)))))]
     (when (and (seq all) (not-any? #(aesthetic/valid-value? :color (get plot-scales :color) (nth % 2)) all))
       (schema/fail! "No valid values for a mapped dimension - check the mapping." {:key :mapping :value :color :rows (count all)}))
-    {:data (update-vals cells-of (fn [cs] {:cells cs :axes axes :style st :value-label (:value-label options)}))
+    {:data (update-vals cells-of (fn [cs] {:cells cs :axes axes :style st :value-label (:value-label options) :sized? sized?}))
      :extents (update-vals cells-of (fn [cs] (into {} (filter val)
                                                    {:x (axis-extent :x (map first cs))
                                                     :y (axis-extent :y (map second cs))
@@ -208,7 +208,7 @@
 
 (defn draw
   "Draw one panel's cells (fills, then value labels on top)."
-  [_chart {:keys [cells axes style value-label]} canvas _box scales env]
+  [_chart {:keys [cells axes style value-label sized?]} canvas _box scales env]
   (when (seq cells)
     (let [px (axis-placement (:x axes) (:x scales))
           py (axis-placement (:y axes) (:y scales))
@@ -216,7 +216,6 @@
           centre-x? (= :numeric (:kind (:x axes)))
           centre-y? (= :numeric (:kind (:y axes)))
           color-of (aesthetic/attribute-fn :color (:color scales) (get-in env [:theme :palette :na]))
-          sized? (some #(> (count %) 3) cells)
           factor-of (if sized?
                       (let [size-of (aesthetic/attribute-fn :size (:size scales) nil)
                             largest (largest-size (:size scales))]

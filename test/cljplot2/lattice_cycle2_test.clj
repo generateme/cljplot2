@@ -189,3 +189,41 @@
           (is (= 9 (count sizes)))
           (is (<= (- (reduce max (map first sizes)) (reduce min (map first sizes))) 3.0))
           (is (<= (- (reduce max (map second sizes)) (reduce min (map second sizes))) 3.0)))))))
+
+;; review fixes
+
+(deftest review-fixes-test
+  (testing "H1 axis-domain: display only - the axis shows the domain's ticks over the same pixels"
+    (let [f (scale/finalize (scale/scale-spec :y {:domain [0 1] :axis-domain [10 20]}) [100.0 0.0] 5)
+          shown (scale/display-scale (assoc f :direction :vertical))]
+      (is (= [0 1] (mapv long (:domain f))) "the chart's scale")
+      (is (= [10.0 20.0] (mapv double (:domain shown))))
+      (is (= :vertical (:direction shown)))
+      (is (every? #(<= 10.0 (double %) 20.0) (:ticks shown)))
+      (let [g (scale/finalize (scale/scale-spec :y {:domain [0 1]}) [100.0 0.0] 5)]
+        (is (= g (scale/display-scale g)) "unchanged without :axis-domain"))))
+  (testing "H1 axis-domain rules: two different numbers, numeric continuous scales"
+    (is (= :axis-domain (:key (error #(built {:data [{:x 0 :y 0} {:x 1 :y 1}] :mapping {:x :x :y :y} :charts [(chart/scatter)]
+                                               :scales {:y {:axis-domain [3 3]}}})))))
+    (is (= :axis-domain (:key (error #(built {:data [{:x "a" :y 0}] :mapping {:x :x :y :y} :charts [(chart/scatter)]
+                                               :scales {:x {:axis-domain [0 1]}}}))))))
+  (testing "H1 the splom's top-left cell shows the first variable on its y axis; other diagonals its grid"
+    (let [b (plot/build (plot/pairs iris-like {:variables [:a :b :c]}) {:width 500 :height 450})
+          y-of (fn [k] (get-in b [:subplots [:plot k] :finalized-scales :y]))
+          a-domain (get-in (y-of 1) [:domain])]
+      (is (= true (get-in b [:subplots [:plot 0] :scale-specs :y :axis])) "an axis, not only grid lines")
+      (is (= (mapv double a-domain) (mapv double (:domain (scale/display-scale (y-of 0))))) "the row's domain")
+      (is (= :grid (:axis (scale/display-scale (y-of 4)))) "an inner diagonal keeps grid lines only")))
+  (testing "H2 equal panels in a splom at any size"
+    (doseq [[w h] [[350 300] [301 257] [600 500]]]
+      (let [b (plot/build (plot/pairs iris-like {:variables [:a :b :c]}) {:width w :height h})]
+        (is (= 1 (count (distinct (panel-sizes b)))) (str w "x" h)))))
+  (testing "H2 an equal-panels arrange given by rows"
+    (let [cells (vec (for [i (range 4)] {:data [{:x 0 :y (* i 1000)} {:x 1 :y 1}] :mapping {:x :x :y :y} :charts [(chart/scatter)]}))
+          b (plot/build (plot/arrange cells {:rows 2 :equal-panels true}) {:width 400 :height 300})]
+      (is (= 1 (count (distinct (panel-sizes b)))))))
+  (testing "H3 only drawn lines get labels"
+    (is (= ["2"] (label-texts (assoc-in (circle-plot {:labels true}) [:scales :color :domain] [1.5 3.0])))))
+  (testing "H7 of two overlapping labels the lower level's is kept"
+    (is (= ["0"] (label-texts {:charts [(chart/contour {:f (fn [x _] x) :domain {:x [-1 1] :y [-1 1]} :levels [0.0 0.02] :labels true})]})))))
+
