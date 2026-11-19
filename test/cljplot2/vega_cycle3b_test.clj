@@ -89,6 +89,16 @@
       (is (= [0.0 0.05] (get-in (bullet-stats (assoc-in (bullet-plot [(assoc revenue :t "A")] {}) [:mapping :x] :t))
                                 [:padding :y]))
           "levels on x: the value padding on y")))
+  (testing "N1: one padding from all panels - free facet panels of opposite signs both get 0.05 on each side"
+    (let [p (-> (bullet-plot [{:t "pos" :ranges [10 20]} {:t "neg" :ranges [-20 -10]}] {})
+                (assoc-in [:mapping :facet] :t)
+                (assoc :facets {:columns 1 :scales {:x :free}}))]
+      (is (= [0.05 0.05] (get-in (bullet-stats p) [:padding :x])))
+      (is (some? (plot/render-image p {:width 300 :height 200})))))
+  (testing "N3: no aesthetic extents, no NA dimensions"
+    (let [stats (bullet-stats (bullet-plot [revenue] {}))]
+      (is (= #{:x} (set (keys (get-in stats [:extents :panel])))))
+      (is (not (contains? stats :na)))))
   (testing "M4: sequential collections only (a list is fine, a set isn't)"
     (is (= [2.0 1.0] (:measures (first (get-in (bullet-stats (bullet-plot [{:measures (list 2 1)}] {})) [:data :panel :items])))))
     (is (= :mapping (:key (error #(plot/build (bullet-plot [{:measures #{1 2}}] {}))))))))

@@ -6,10 +6,9 @@
 
   Mapping: `:ranges`, `:measures`, `:markers` (at least one) - each a finite number or a sequential collection of
   them (vector or list - the measures' order sets their colours; `nil` - none), read from exactly one row per level
-  and group (Vega-Lite `facet_bullet`: `{:ranges [150 225 300]
-  :measures [220 270] :markers [250]}`); `:x` isn't read; optional `:y` levels (without them one bullet, placed
-  `:center`). Give every measure its own value scale with facets: `{:mapping {:facet :title} :facets {:columns 1
-  :scales {:x :free}}}`.
+  and group (Vega-Lite `facet_bullet`: `{:ranges [150 225 300] :measures [220 270] :markers [250]}`); `:x` isn't
+  read; optional `:y` levels (without them one bullet, placed `:center`). Give every measure its own value scale
+  with facets: `{:mapping {:facet :title} :facets {:columns 1 :scales {:x :free}}}`.
 
   Drawn from 0 to each value: the ranges across the whole item slot, largest first, shaded from the first colour of
   `:range-colors` (the smallest range) to the second (the largest); the measures `:measure-width` of the slot
@@ -21,7 +20,9 @@
 
   Options (style defaults from theme `[:chart :bullet]`): `:range-colors`, `:measure-colors` (two colours each),
   `:measure-width`, `:marker-color`, `:marker-width`, `:marker-length`; `:padding {:x [lo hi]}` (default 0.05 on a
-  side holding values, 0 on the side of 0 - the bars start at the axis), plus the strip options (without `:n-label`,
+  side holding values, 0 on the side of 0 - the bars start at the axis; one padding for the chart, from the values
+  of all panels: with free facet scales a panel of positive values beside one of negative values gets 0.05 on both
+  sides too), plus the strip options (without `:n-label`,
   `:n-format`) and `:data` / `:mapping`. The x extent covers 0 and every value.
   Throws `ex-info {:key :mapping}` for two or more rows of one level and group or a value that isn't a finite number
   (or a sequential collection of them).
@@ -30,7 +31,6 @@
   (:require [clojure2d.color :as c]
             [clojure2d.core :as c2d]
             [fastmath.core :as m]
-            [cljplot2.data.group :as group]
             [cljplot2.data.rows :as data]
             [cljplot2.data.strip :as strip]
             [cljplot2.scale.aesthetic :as aesthetic]
@@ -100,8 +100,8 @@
                                {:key :mapping :level level :value raw}))))))
 
 (defn- zero-side-padding
-  "x padding `[lo hi]` of bullet `items` (panel -> items): 0.05 on a side holding values, 0 on the side of 0 - so the
-  bars start at the axis (`[0 0]` without values off 0)."
+  "x padding `[lo hi]` of bullet `items` (panel -> items, all panels together - a chart has one padding): 0.05 on a
+  side holding values, 0 on the side of 0 - so the bars start at the axis (`[0 0]` without values off 0)."
   [items]
   (let [vs (mapcat (fn [item] (mapcat item value-keys)) (mapcat val items))]
     [(if (some neg? vs) 0.05 0.0) (if (some pos? vs) 0.05 0.0)]))
@@ -114,17 +114,16 @@
 
 (defn- compute-in-strip-frame
   "Per panel: `{:items [item ...] :style st :place p :options o}`, items with [[bullet-values]]; extents (x - 0 and
-  every value), padding, `:na`, `:dropped`."
+  every value), padding, `:dropped` (no aesthetics - no aesthetic extents or NA dimensions)."
   [{:keys [options]} {:keys [mapping] :as chart-split} {:keys [theme] :as env}]
-  (let [{:keys [place items panels dropped]} (strip/split chart-split (assoc options ::strip/count-rows true ::strip/rows true)
+  (let [{:keys [place items dropped]} (strip/split chart-split (assoc options ::strip/count-rows true ::strip/rows true)
                                                           :center env)
         items (update-vals items (fn [its] (mapv #(dissoc (merge % (bullet-values % mapping)) :rows) its)))
         x-range (fn [item] (let [vs (into [0.0] (mapcat item value-keys))] [(reduce min vs) (reduce max vs)]))]
     {:data (update-vals items (fn [its] {:items its :style (style options theme) :place place :options options}))
-     :extents (merge-with merge (group/aesthetic-extents panels (:plot-scales env)) (strip/extents place items x-range))
+     :extents (strip/extents place items x-range)
      :padding (padding place options items)
      :padding-explicit (strip/explicit-padding place options)
-     :na (group/na-dims panels)
      :dropped dropped}))
 
 (defn shade
@@ -137,8 +136,10 @@
   [canvas p v level c0 c1]
   (let [^Vec2 a (p 0.0 level c0)
         ^Vec2 b (p v level c1)]
-    (when (and (m/valid-double? (.x a)) (m/valid-double? (.y a)) (m/valid-double? (.x b)) (m/valid-double? (.y b)))
-      (c2d/rect canvas (m/min (.x a) (.x b)) (m/min (.y a) (.y b)) (m/abs (- (.x b) (.x a))) (m/abs (- (.y b) (.y a)))))))
+    (when (and (m/valid-double? (.x a)) (m/valid-double? (.y a))
+               (m/valid-double? (.x b)) (m/valid-double? (.y b)))
+      (c2d/rect canvas (m/min (.x a) (.x b)) (m/min (.y a) (.y b))
+                (m/abs (- (.x b) (.x a))) (m/abs (- (.y b) (.y a)))))))
 
 (defn- draw-bars!
   "Fill the bars of `values` (largest magnitude first), the i-th coloured by [[shade]] of `colors` at its rank in
