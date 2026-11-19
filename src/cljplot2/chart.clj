@@ -65,6 +65,7 @@
             [cljplot2.chart.dotplot :as dotplot]
             [cljplot2.chart.bin2d :as bin2d]
             [cljplot2.chart.box :as box]
+            [cljplot2.chart.bullet :as bullet]
             [cljplot2.chart.candlestick :as candlestick]
             [cljplot2.chart.contour :as contour]
             [cljplot2.chart.correlation :as correlation]
@@ -127,6 +128,7 @@
    :correlation (:style correlation/schemas)
    :ecdf (:style ecdf/schemas)
    :box (:style box/schemas)
+   :bullet (:style bullet/schemas)
    :violin (:style violin/schemas)
    :stripplot (:style stripplot/schemas)
    :beeswarm (:style beeswarm/schemas)
@@ -298,6 +300,11 @@
   "Box plot of the values per level (the categorical axis, `:level-axis`) and group, see [[cljplot2.chart.box]] and [[cljplot2.data.strip]]."
   ([] (box {}))
   ([options] (chart-value :box box/compute box/draw box/legend box/schemas options)))
+
+(defn bullet
+  "Bullet chart of ranges, measures and markers per level (the categorical axis, `:level-axis`) and group, see [[cljplot2.chart.bullet]] and [[cljplot2.data.strip]]."
+  ([] (bullet {}))
+  ([options] (chart-value :bullet bullet/compute bullet/draw nil bullet/schemas options)))
 
 (defn violin
   "Violin plot of the values per level (the categorical axis, `:level-axis`) and group, see [[cljplot2.chart.violin]] and [[cljplot2.data.strip]]."

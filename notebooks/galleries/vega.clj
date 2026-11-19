@@ -1335,15 +1335,16 @@
 
 ;; ### Horizon Graph
 
-;; Values folded into two bands of height 50, the upper band darker over the lower (`plot/horizon`); the original
-;; layers the value and the value - 50 as translucent areas clipped at 50.
+;; Values folded into two bands of height 50, the upper band darker over the lower, translucent (`plot/horizon`
+;; `:alpha`); the bands follow one monotone curve through the values (`:interpolator :monotone`, as the Vega example);
+;; the original layers the value and the value - 50 as translucent areas clipped at 50.
 
 (nu/source-note {:source "Vega-Lite - Horizon Graph" :url [(vl-url "area_horizon") (vg-url "horizon-graph")]})
 
 (plot/render-image
  (plot/horizon (map (fn [x y] {:x x :y y}) (range 1 21)
                     [28 55 43 91 81 53 19 87 52 48 24 49 87 66 17 27 68 16 49 15])
-               {:bands 2 :band-height 50})
+               {:bands 2 :band-height 50 :interpolator :monotone :alpha 0.6})
  {:width 500 :height 120})
 
 ;; ## Table-based Plots
@@ -1366,7 +1367,8 @@
 
 ;; ### Annual Weather Heatmap
 
-;; The highest daily maximum temperature per day of the month and month (Seattle 2012-2015).
+;; The highest daily maximum temperature per day of the month and month (Seattle 2012-2015); below, the Vega example's
+;; hourly normals - a cell per day of the year and hour of the day.
 
 (nu/source-note {:source "Vega-Lite - Annual Weather Heatmap" :url [(vl-url "rect_heatmap_weather") (vg-url "heatmap")]
                  :dataset :seattle-weather-vega})
@@ -1379,6 +1381,19 @@
   :scales {:x {:domain (mapv str (range 1 32))} :y {:domain month-names :reverse true} :color {:title nil}}
   :labels {:title "Daily Max Temperatures (C) in Seattle, WA" :x "Day" :y "Month"}}
  {:width 900 :height 380})
+
+(nu/source-note {:dataset :seattle-weather-hourly-normals})
+
+(plot/render-image
+ {:data (for [{:keys [date temperature]} (nu/dataset :seattle-weather-hourly-normals)
+              :let [t (java.time.LocalDateTime/parse date) day (.toLocalDate t)]]
+          {:x0 day :x1 (.plusDays day 1) :hour (str (.getHour t)) :temperature temperature})
+  :charts [(chart/rect {:mapping {:x0 :x0 :x1 :x1 :y0 :hour :y1 :hour :color :temperature}})]
+  :scales {:y {:domain (mapv str (concat (range 6 24) (range 6))) :reverse true}
+           :x {:formatter #(.format (DateTimeFormatter/ofPattern "MMM" Locale/ENGLISH) ^TemporalAccessor %)}
+           :color {:title "Temperature (°C)"}}
+  :labels {:title "Seattle Annual Temperatures" :x nil :y "Hour"}}
+ {:width 900 :height 400})
 
 ;; ### Table Bubble Plot (Github Punch Card)
 
@@ -1462,8 +1477,9 @@
           {:x longitude :y latitude :xend (+ (double longitude) (* len (m/sin heading)))
            :yend (+ (double latitude) (* len (m/cos heading))) :dir dir})
   :mapping {:x :x :y :y :xend :xend :yend :yend :color :dir}
-  :charts [(chart/segment {:width 1.2 :arrow {:end true :size 2.5}})]
-  :scales {:color {:domain [0 360] :range (mapv (c/gradient :pals/kovesi.cyclic_mrybm_35_75_c68) (m/slice-range 0 1 13))
+  :charts [(chart/segment {:width 1.2 :arrow {:end true :size 2.5} :padding {:x [0.0 0.0] :y [0.0 0.0]}})]
+  :scales {:x {:nice false} :y {:nice false}
+           :color {:domain [0 360] :range (mapv (c/gradient :pals/kovesi.cyclic_mrybm_35_75_c68) (m/slice-range 0 1 13))
                    :legend false}}
   :aspect :iso
   :labels {:x "longitude" :y "latitude"}}
@@ -1534,12 +1550,12 @@
 
 ;; ### Radial Plot
 
-;; Slices with angles by value and radii by its square root, each labelled outside its arc (rects in polar
-;; coordinates).
+;; Slices with angles by value and radii by its square root, smallest to largest (the original stacks them in the
+;; order of its colour domain - the values sorted), each labelled outside its arc (rects in polar coordinates).
 
 (nu/source-note {:source "Vega-Lite - Radial Plot" :url [(vl-url "arc_radial") (vg-url "radial-plot")]})
 
-(let [values [12 23 47 6 52 19]
+(let [values (sort [12 23 47 6 52 19])
       ends (reductions + 0 values)
       rows (map (fn [v lo hi] {:label (str v) :x0 lo :x1 hi :xm (* 0.5 (+ lo hi)) :r (m/sqrt v)}) values ends (rest ends))]
   (plot/render-image
@@ -1731,7 +1747,7 @@
 ;; ### Parallel Coordinate Plot
 
 ;; Four penguin measurements, each axis scaled from its minimum to its maximum, a translucent line per penguin
-;; (`chart/parallel`; the Vega example draws the cars).
+;; (`chart/parallel`); below, the Vega example's seven car measurements.
 
 (nu/source-note {:source "Vega-Lite - Parallel Coordinate Plot"
                  :url [(vl-url "parallel_coordinate") (vg-url "parallel-coordinates")] :dataset :penguins})
@@ -1743,6 +1759,18 @@
                             :alpha 0.3})]
   :labels {:x nil :y nil}}
  {:width 700 :height 400})
+
+(nu/source-note {:dataset :cars})
+
+(plot/render-image
+ {:data (map #(update % :year (fn [y] (.getYear (local-date y)))) cars)
+  :charts [(chart/parallel {:variables [["Cylinders" :cylinders] ["Displacement" :displacement]
+                                        ["Weight_in_lbs" :weight-in-lbs] ["Horsepower" :horsepower]
+                                        ["Acceleration" :acceleration] ["Miles_per_Gallon" :miles-per-gallon]
+                                        ["Year" :year]]
+                            :color [70 130 180] :alpha 0.3})]
+  :labels {:x nil :y nil}}
+ {:width 900 :height 400})
 
 ;; ### Bar Chart Showing Argmax Value
 
@@ -2213,32 +2241,25 @@
 ;; ### Bullet Chart
 
 ;; Five measures against qualitative ranges (grey bands), each with its current and projected value (blue bars) and
-;; target (black tick); a panel per measure with its own x scale (a recipe: rects and a segment over facets).
+;; target (black tick) - `chart/bullet`; a panel per measure with its own x scale (facets, `:scales {:x :free}`).
 
 (nu/source-note {:source "Vega-Lite - Bullet Chart" :url (vl-url "facet_bullet")})
 
 (def bullets
-  [{:title "Revenue" :ranges [150 225 300] :measures [220 270] :marker 250}
-   {:title "Profit" :ranges [20 25 30] :measures [21 23] :marker 26}
-   {:title "Order Size" :ranges [350 500 600] :measures [100 320] :marker 550}
-   {:title "New Customers" :ranges [1400 2000 2500] :measures [1000 1650] :marker 2100}
-   {:title "Satisfaction" :ranges [3.5 4.25 5] :measures [3.2 4.7] :marker 4.4}])
+  [{:title "Revenue" :ranges [150 225 300] :measures [220 270] :markers [250]}
+   {:title "Profit" :ranges [20 25 30] :measures [21 23] :markers [26]}
+   {:title "Order Size" :ranges [350 500 600] :measures [100 320] :markers [550]}
+   {:title "New Customers" :ranges [1400 2000 2500] :measures [1000 1650] :markers [2100]}
+   {:title "Satisfaction" :ranges [3.5 4.25 5] :measures [3.2 4.7] :markers [4.4]}])
 
-(let [bars (fn [k i fill height]
-             (chart/rect {:data (map (fn [b] {:title (:title b) :x1 (get-in b [k i])}) bullets)
-                          :mapping {:x0 (constantly 0) :x1 :x1 :y0 (constantly (- 0.5 height)) :y1 (constantly (+ 0.5 height))}
-                          :fill fill}))]
-  (plot/render-image
-   {:data bullets :mapping {:facet :title}
-    :charts [(bars :ranges 2 [238 238 238] 0.5) (bars :ranges 1 [221 221 221] 0.5) (bars :ranges 0 [204 204 204] 0.5)
-             (bars :measures 1 [176 196 222] 0.15) (bars :measures 0 [70 130 180] 0.15)
-             (chart/segment {:mapping {:x :marker :xend :marker :y (constantly 0.2) :yend (constantly 0.8)}
-                             :color :black :width 2})]
-    :scales {:y {:domain [0 1] :axis false} :x {:nice false} :facet {:domain (mapv :title bullets)}}
-    :facets {:columns 1 :scales {:x :free}}
-    :theme {:panel {:grid {:x :none :y :none}}}
-    :labels {:x nil :y nil}}
-   {:width 600 :height 450}))
+(plot/render-image
+ {:data bullets :mapping {:facet :title :ranges :ranges :measures :measures :markers :markers}
+  :charts [(chart/bullet)]
+  :scales {:x {:nice false} :facet {:domain (mapv :title bullets)}}
+  :facets {:columns 1 :scales {:x :free}}
+  :theme {:panel {:grid {:x :none :y :none}}}
+  :labels {:x nil :y nil}}
+ {:width 600 :height 450})
 
 ;; ### Weekly Weather Plot
 
@@ -2271,7 +2292,8 @@
 ;; ### Wheat and Wages Example
 
 ;; W. Playfair's chart of the price of wheat (bars, shillings per quarter) and weekly wages (area) in England,
-;; 1565-1821, with the monarchs' reigns along the top (Cromwell's Commonwealth white).
+;; 1565-1821, with the monarchs' reigns along the top (Cromwell's Commonwealth white), the names above the upper
+;; reigns and below the lower ones.
 
 (nu/source-note {:source "Vega-Lite - Wheat and Wages Example" :url [(vl-url "wheat_wages") (vg-url "wheat-and-wages")]
                  :dataset :wheat})
@@ -2279,8 +2301,12 @@
 (let [wheat (map #(update % :year parse-long) (nu/dataset :wheat))
       monarchs (for [{:keys [index commonwealth start end] :as monarch} (nu/dataset :monarchs)
                      :let [low? (and (not commonwealth) (odd? (long index)))]]
-                 (assoc monarch :y0 95 :y1 (if low? 93 97) :label-y (if low? 92.4 97.6) :mid (* 0.5 (+ (long start) (long end)))
-                        :fill (if commonwealth "commonwealth" "crown")))]
+                 (assoc monarch :y0 95 :y1 (if low? 93 97) :low? low? :mid (* 0.5 (+ (long start) (long end)))
+                        :fill (if commonwealth "commonwealth" "crown")))
+      names (fn [low? y anchor dy]
+              (chart/text {:data (filter #(= low? (:low? %)) monarchs) :mapping {:x :mid :y (constantly y) :label :name}
+                           :size 9 :font-style :italic :anchor [:center anchor] :offset [0 dy] :background [255 255 255 170]
+                           :padding 1}))]
   (plot/render-image
    {:data wheat :mapping {:x :year :y :wages}
     :charts [(chart/rect {:mapping {:x0 :year :x1 #(+ 5 (long (:year %))) :y0 (constantly 0) :y1 :wheat}
@@ -2289,8 +2315,7 @@
              (chart/line {:fill [164 206 219 180] :color :black :alpha 0.7 :width 1})
              (chart/line {:color [238 129 130] :width 1.5})
              (chart/rect {:data monarchs :mapping {:x0 :start :x1 :end :y0 :y0 :y1 :y1 :color :fill} :stroke-color :black})
-             (chart/text {:data monarchs :mapping {:x :mid :y :label-y :label :name} :size 9 :font-style :italic
-                          :anchor [:center :middle]})]
+             (names false 97 :bottom 2) (names true 93 :top -2)]
     :scales {:color {:domain ["crown" "commonwealth"] :range [:black :white] :legend false}
              :x {:formatter #(str (m/round (double %)))} :y {:domain [0 100]}}
     :labels {:x nil :y nil}}

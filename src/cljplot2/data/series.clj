@@ -6,6 +6,7 @@
   A series is a sequence of numbers in time order (fastmath `acf-ci` / `pacf-ci`)."
   (:require [fastmath.core :as m]
             [fastmath.stats :as stats]
+            [cljplot2.data.interpolation :as fit]
             [cljplot2.schema :as schema]))
 
 (set! *warn-on-reflection* true)
@@ -110,6 +111,32 @@
   [^long n]
   (vec (concat (range 1 (inc n)) (map - (range 1 (inc n))))))
 
+(defn- resampled-run
+  "Points `[x y]` of `run` (valid points, x strictly increasing) on the curve `fit-of` fits through them: `steps`
+  points per gap between consecutive x, the data points kept; the run as is when it is too short for the method."
+  [fit-of run ^long steps]
+  (if-let [f (when (> (count run) 1) (fit/fitted fit-of (mapv first run) (mapv second run)))]
+    (conj (vec (for [[[x0 y0] [x1]] (partition 2 1 run)
+                     i (range steps)]
+                 (if (zero? (long i))
+                   [x0 y0]
+                   (let [x (+ (double x0) (* (- (double x1) (double x0)) (/ (double i) (double steps))))]
+                     [x (double (f x))]))))
+          (peek run))
+    run))
+
+(defn- interpolated-points
+  "Points `[x y]` of one series (x increasing, `y` `nil` where it breaks) with every run of valid points resampled
+  ([[resampled-run]]). Throws `ex-info {:key :interpolator}` for a repeated x inside a run."
+  [points fit-of steps]
+  (into [] (mapcat (fn [run]
+                     (cond
+                       (nil? (second (first run))) run
+                       (apply < (map first run)) (resampled-run fit-of (vec run) steps)
+                       :else (schema/fail! "Horizon :interpolator needs distinct x values in every run."
+                                           {:key :interpolator :value (mapv first run)}))))
+        (partition-by #(nil? (second %)) points)))
+
 (defn horizon-rows
   "Rows of a horizon chart of `rows` (maps): values `:y` over `:x` (option keys `:x`, `:y`, default `:x` / `:y`), one
   series per `:series` value (option key; first-appearance order; without it one series `nil`).
@@ -117,9 +144,19 @@
   `:band-height`, else the largest `|y|` of all series / n (1 when it is 0); band `k` (1..n) is `clamp(y - (k-1) h, 0,
   h)`, band `-k` the same of `-y` (negatives mirrored upward); every series' points sorted by x with the crossings of
   band edges inserted, so linear areas are exact; a `nil` `y` breaks the bands (a row with `:y nil` per band).
+  `:interpolator` (a fastmath 1D method of [[cljplot2.schema/interpolation-methods]], e.g. `:monotone`, or a function
+  `(fn [xs ys] f)`; default none - straight segments): every run of valid points is first resampled on that curve,
+  `:steps-per-gap` points (default 10) per gap between consecutive x, the data points kept, and the bands folded from
+  the resampled series - so all bands follow one curve (a run too short for the method stays straight).
   Throws `ex-info` `{:key :bands}` unless a positive integer, `{:key :band-height}` unless a positive finite number,
-  `{:key :x}` for a non-numeric x, `{:key :y}` for a `y` neither `nil` nor a finite number."
-  [rows {:keys [x y series bands band-height] :or {x :x y :y bands 2}}]
+  `{:key :x}` for a non-numeric x, `{:key :y}` for a `y` neither `nil` nor a finite number, `{:key :interpolator}`
+  for an unknown method or a repeated x in a run, `{:key :steps-per-gap}` unless a positive integer."
+  [rows {:keys [x y series bands band-height interpolator steps-per-gap] :or {x :x y :y bands 2 steps-per-gap 10}}]
+  (when-not (or (nil? interpolator) (fn? interpolator) (contains? schema/interpolation-methods interpolator))
+    (schema/fail! (str "Horizon :interpolator should be a function or one of " (vec (sort schema/interpolation-methods)) ".")
+                  {:key :interpolator :value interpolator}))
+  (when-not (and (integer? steps-per-gap) (pos? (long steps-per-gap)))
+    (schema/fail! "Horizon :steps-per-gap should be a positive integer." {:key :steps-per-gap :value steps-per-gap}))
   (when-not (and (integer? bands) (pos? (long bands)))
     (schema/fail! "Horizon :bands should be a positive integer." {:key :bands :value bands}))
   (when-not (or (nil? band-height) (and (number? band-height) (m/valid-double? (double band-height)) (pos? (double band-height))))
@@ -140,8 +177,12 @@
         labels (horizon-bands n)]
     {:band-height h
      :rows (vec (for [[s rs] groups
-                      :let [points (with-crossings (mapv (fn [r] [(double (get r x)) (some-> (get r y) double)])
-                                                         (sort-by #(double (get % x)) rs))
+                      :let [sorted (mapv (fn [r] [(double (get r x)) (some-> (get r y) double)])
+                                         (sort-by #(double (get % x)) rs))
+                            points (with-crossings (if interpolator
+                                                     (interpolated-points sorted (fit/fit-fn interpolator nil)
+                                                                          (long steps-per-gap))
+                                                     sorted)
                                                    levels)]
                       band labels
                       [px py] points]

@@ -2554,8 +2554,9 @@ Source: [Vega-Lite - Streamgraph](https://vega.github.io/vega-lite/examples/stac
 
 ### Horizon Graph
 
-Values folded into two bands of height 50, the upper band darker over the lower (`plot/horizon`); the original
-layers the value and the value - 50 as translucent areas clipped at 50.
+Values folded into two bands of height 50, the upper band darker over the lower, translucent (`plot/horizon`
+`:alpha`); the bands follow one monotone curve through the values (`:interpolator :monotone`, as the Vega example);
+the original layers the value and the value - 50 as translucent areas clipped at 50.
 
 Source: Vega-Lite - Horizon Graph ([1](https://vega.github.io/vega-lite/examples/area_horizon.html), [2](https://vega.github.io/vega/examples/horizon-graph/)).
 
@@ -2565,7 +2566,7 @@ Source: Vega-Lite - Horizon Graph ([1](https://vega.github.io/vega-lite/examples
 (plot/render-image
  (plot/horizon (map (fn [x y] {:x x :y y}) (range 1 21)
                     [28 55 43 91 81 53 19 87 52 48 24 49 87 66 17 27 68 16 49 15])
-               {:bands 2 :band-height 50})
+               {:bands 2 :band-height 50 :interpolator :monotone :alpha 0.6})
  {:width 500 :height 120})
 ```
 :::
@@ -2610,7 +2611,8 @@ Source: [Vega-Lite - Table Heatmap](https://vega.github.io/vega-lite/examples/re
 
 ### Annual Weather Heatmap
 
-The highest daily maximum temperature per day of the month and month (Seattle 2012-2015).
+The highest daily maximum temperature per day of the month and month (Seattle 2012-2015); below, the Vega example's
+hourly normals - a cell per day of the year and hour of the day.
 
 Source: Vega-Lite - Annual Weather Heatmap ([1](https://vega.github.io/vega-lite/examples/rect_heatmap_weather.html), [2](https://vega.github.io/vega/examples/heatmap/)). Data: Seattle daily weather from 2012–2015, vega-datasets 3.3.1 `seattle-weather.csv` (https://cdn.jsdelivr.net/npm/vega-datasets@3.3.1/data/seattle-weather.csv); original: NOAA National Climatic Data Center; licence: other-pd (vega-datasets `datapackage.json`).
 
@@ -2631,6 +2633,30 @@ Source: Vega-Lite - Annual Weather Heatmap ([1](https://vega.github.io/vega-lite
 
 ::: {.clay-image}
 ![](galleries.vega_files/image81.png)
+:::
+
+
+Data: Seattle hourly climate normals for 1981–2010, vega-datasets 3.3.1 `seattle-weather-hourly-normals.csv` (https://cdn.jsdelivr.net/npm/vega-datasets@3.3.1/data/seattle-weather-hourly-normals.csv); original: NOAA National Climatic Data Center (NCDC); licence: other-pd (vega-datasets `datapackage.json`).
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image
+ {:data (for [{:keys [date temperature]} (nu/dataset :seattle-weather-hourly-normals)
+              :let [t (java.time.LocalDateTime/parse date) day (.toLocalDate t)]]
+          {:x0 day :x1 (.plusDays day 1) :hour (str (.getHour t)) :temperature temperature})
+  :charts [(chart/rect {:mapping {:x0 :x0 :x1 :x1 :y0 :hour :y1 :hour :color :temperature}})]
+  :scales {:y {:domain (mapv str (concat (range 6 24) (range 6))) :reverse true}
+           :x {:formatter #(.format (DateTimeFormatter/ofPattern "MMM" Locale/ENGLISH) ^TemporalAccessor %)}
+           :color {:title "Temperature (°C)"}}
+  :labels {:title "Seattle Annual Temperatures" :x nil :y "Hour"}}
+ {:width 900 :height 400})
+```
+:::
+
+
+::: {.clay-image}
+![](galleries.vega_files/image82.png)
 :::
 
 
@@ -2668,7 +2694,7 @@ Source: [Vega-Lite - Table Bubble Plot (Github Punch Card)](https://vega.github.
 
 
 ::: {.clay-image}
-![](galleries.vega_files/image82.png)
+![](galleries.vega_files/image83.png)
 :::
 
 
@@ -2697,7 +2723,7 @@ Source: [Vega-Lite - Layering text over heatmap](https://vega.github.io/vega-lit
 
 
 ::: {.clay-image}
-![](galleries.vega_files/image83.png)
+![](galleries.vega_files/image84.png)
 :::
 
 
@@ -2723,7 +2749,7 @@ Source: [Vega-Lite - Lasagna Plot (Dense Time-Series Heatmap)](https://vega.gith
 
 
 ::: {.clay-image}
-![](galleries.vega_files/image84.png)
+![](galleries.vega_files/image85.png)
 :::
 
 
@@ -2750,7 +2776,7 @@ Source: [Vega-Lite - Mosaic Chart with Labels](https://vega.github.io/vega-lite/
 
 
 ::: {.clay-image}
-![](galleries.vega_files/image85.png)
+![](galleries.vega_files/image86.png)
 :::
 
 
@@ -2771,8 +2797,9 @@ Source: Vega-Lite - Wind Vector Map ([1](https://vega.github.io/vega-lite/exampl
           {:x longitude :y latitude :xend (+ (double longitude) (* len (m/sin heading)))
            :yend (+ (double latitude) (* len (m/cos heading))) :dir dir})
   :mapping {:x :x :y :y :xend :xend :yend :yend :color :dir}
-  :charts [(chart/segment {:width 1.2 :arrow {:end true :size 2.5}})]
-  :scales {:color {:domain [0 360] :range (mapv (c/gradient :pals/kovesi.cyclic_mrybm_35_75_c68) (m/slice-range 0 1 13))
+  :charts [(chart/segment {:width 1.2 :arrow {:end true :size 2.5} :padding {:x [0.0 0.0] :y [0.0 0.0]}})]
+  :scales {:x {:nice false} :y {:nice false}
+           :color {:domain [0 360] :range (mapv (c/gradient :pals/kovesi.cyclic_mrybm_35_75_c68) (m/slice-range 0 1 13))
                    :legend false}}
   :aspect :iso
   :labels {:x "longitude" :y "latitude"}}
@@ -2782,7 +2809,7 @@ Source: Vega-Lite - Wind Vector Map ([1](https://vega.github.io/vega-lite/exampl
 
 
 ::: {.clay-image}
-![](galleries.vega_files/image86.png)
+![](galleries.vega_files/image87.png)
 :::
 
 
@@ -2819,7 +2846,7 @@ Source: Vega-Lite - Pie Chart ([1](https://vega.github.io/vega-lite/examples/arc
 
 
 ::: {.clay-image}
-![](galleries.vega_files/image87.png)
+![](galleries.vega_files/image88.png)
 :::
 
 
@@ -2846,7 +2873,7 @@ Source: [Vega-Lite - Pie Chart with percentage_tooltip](https://vega.github.io/v
 
 
 ::: {.clay-image}
-![](galleries.vega_files/image88.png)
+![](galleries.vega_files/image89.png)
 :::
 
 
@@ -2872,7 +2899,7 @@ Source: Vega-Lite - Donut Chart ([1](https://vega.github.io/vega-lite/examples/a
 
 
 ::: {.clay-image}
-![](galleries.vega_files/image89.png)
+![](galleries.vega_files/image90.png)
 :::
 
 
@@ -2900,22 +2927,22 @@ Source: Vega-Lite - Pie Chart with Labels ([1](https://vega.github.io/vega-lite/
 
 
 ::: {.clay-image}
-![](galleries.vega_files/image90.png)
+![](galleries.vega_files/image91.png)
 :::
 
 
 
 ### Radial Plot
 
-Slices with angles by value and radii by its square root, each labelled outside its arc (rects in polar
-coordinates).
+Slices with angles by value and radii by its square root, smallest to largest (the original stacks them in the
+order of its colour domain - the values sorted), each labelled outside its arc (rects in polar coordinates).
 
 Source: Vega-Lite - Radial Plot ([1](https://vega.github.io/vega-lite/examples/arc_radial.html), [2](https://vega.github.io/vega/examples/radial-plot/)).
 
 
 ::: {.sourceClojure}
 ```clojure
-(let [values [12 23 47 6 52 19]
+(let [values (sort [12 23 47 6 52 19])
       ends (reductions + 0 values)
       rows (map (fn [v lo hi] {:label (str v) :x0 lo :x1 hi :xm (* 0.5 (+ lo hi)) :r (m/sqrt v)}) values ends (rest ends))]
   (plot/render-image
@@ -2935,7 +2962,7 @@ Source: Vega-Lite - Radial Plot ([1](https://vega.github.io/vega-lite/examples/a
 
 
 ::: {.clay-image}
-![](galleries.vega_files/image91.png)
+![](galleries.vega_files/image92.png)
 :::
 
 
@@ -2967,7 +2994,7 @@ Source: [Vega-Lite - Pyramid Pie Chart](https://vega.github.io/vega-lite/example
 
 
 ::: {.clay-image}
-![](galleries.vega_files/image92.png)
+![](galleries.vega_files/image93.png)
 :::
 
 
@@ -2997,7 +3024,7 @@ Source: [Vega-Lite - Calculate Difference from Average](https://vega.github.io/v
 
 
 ::: {.clay-image}
-![](galleries.vega_files/image93.png)
+![](galleries.vega_files/image94.png)
 :::
 
 
@@ -3029,7 +3056,7 @@ Source: [Vega-Lite - Calculate Difference from Annual Average](https://vega.gith
 
 
 ::: {.clay-image}
-![](galleries.vega_files/image94.png)
+![](galleries.vega_files/image95.png)
 :::
 
 
@@ -3058,7 +3085,7 @@ Source: [Vega-Lite - Calculate Residuals](https://vega.github.io/vega-lite/examp
 
 
 ::: {.clay-image}
-![](galleries.vega_files/image95.png)
+![](galleries.vega_files/image96.png)
 :::
 
 
@@ -3126,7 +3153,7 @@ Source: [Vega-Lite - Waterfall Chart of Monthly Profit and Loss](https://vega.gi
 
 
 ::: {.clay-image}
-![](galleries.vega_files/image96.png)
+![](galleries.vega_files/image97.png)
 :::
 
 
@@ -3155,7 +3182,7 @@ Source: Vega-Lite - Filtering Top-K Items ([1](https://vega.github.io/vega-lite/
 
 
 ::: {.clay-image}
-![](galleries.vega_files/image97.png)
+![](galleries.vega_files/image98.png)
 :::
 
 
@@ -3187,7 +3214,7 @@ Source: Vega-Lite - Top-K Plot with "Others" ([1](https://vega.github.io/vega-li
 
 
 ::: {.clay-image}
-![](galleries.vega_files/image98.png)
+![](galleries.vega_files/image99.png)
 :::
 
 
@@ -3213,7 +3240,7 @@ Source: [Vega-Lite - Using the lookup transform to combine data](https://vega.gi
 
 
 ::: {.clay-image}
-![](galleries.vega_files/image99.png)
+![](galleries.vega_files/image100.png)
 :::
 
 
@@ -3221,7 +3248,7 @@ Source: [Vega-Lite - Using the lookup transform to combine data](https://vega.gi
 ### Parallel Coordinate Plot
 
 Four penguin measurements, each axis scaled from its minimum to its maximum, a translucent line per penguin
-(`chart/parallel`; the Vega example draws the cars).
+(`chart/parallel`); below, the Vega example's seven car measurements.
 
 Source: Vega-Lite - Parallel Coordinate Plot ([1](https://vega.github.io/vega-lite/examples/parallel_coordinate.html), [2](https://vega.github.io/vega/examples/parallel-coordinates/)). Data: Palmer Archipelago penguin measurements, vega-datasets 3.3.1 `penguins.json` (https://cdn.jsdelivr.net/npm/vega-datasets@3.3.1/data/penguins.json); original: Palmer Station Antarctica LTER, Allison Horst's Penguins Repository; licence: CC0-1.0 (vega-datasets `datapackage.json`).
 
@@ -3240,7 +3267,30 @@ Source: Vega-Lite - Parallel Coordinate Plot ([1](https://vega.github.io/vega-li
 
 
 ::: {.clay-image}
-![](galleries.vega_files/image100.png)
+![](galleries.vega_files/image101.png)
+:::
+
+
+Data: Car specifications and fuel economy, vega-datasets 3.3.1 `cars.json` (https://cdn.jsdelivr.net/npm/vega-datasets@3.3.1/data/cars.json); original: StatLib Datasets Archive; licence: notspecified (vega-datasets `datapackage.json`).
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image
+ {:data (map #(update % :year (fn [y] (.getYear (local-date y)))) cars)
+  :charts [(chart/parallel {:variables [["Cylinders" :cylinders] ["Displacement" :displacement]
+                                        ["Weight_in_lbs" :weight-in-lbs] ["Horsepower" :horsepower]
+                                        ["Acceleration" :acceleration] ["Miles_per_Gallon" :miles-per-gallon]
+                                        ["Year" :year]]
+                            :color [70 130 180] :alpha 0.3})]
+  :labels {:x nil :y nil}}
+ {:width 900 :height 400})
+```
+:::
+
+
+::: {.clay-image}
+![](galleries.vega_files/image102.png)
 :::
 
 
@@ -3268,7 +3318,7 @@ Source: [Vega-Lite - Bar Chart Showing Argmax Value](https://vega.github.io/vega
 
 
 ::: {.clay-image}
-![](galleries.vega_files/image101.png)
+![](galleries.vega_files/image103.png)
 :::
 
 
@@ -3294,7 +3344,7 @@ Source: [Vega-Lite - Layering Averages over Raw Values](https://vega.github.io/v
 
 
 ::: {.clay-image}
-![](galleries.vega_files/image102.png)
+![](galleries.vega_files/image104.png)
 :::
 
 
@@ -3323,7 +3373,7 @@ Source: [Vega-Lite - Layering Rolling Averages over Raw Values](https://vega.git
 
 
 ::: {.clay-image}
-![](galleries.vega_files/image103.png)
+![](galleries.vega_files/image105.png)
 :::
 
 
@@ -3389,7 +3439,7 @@ Source: [Vega-Lite - Line Chart to Show Benchmarking Results](https://vega.githu
 
 
 ::: {.clay-image}
-![](galleries.vega_files/image104.png)
+![](galleries.vega_files/image106.png)
 :::
 
 
@@ -3418,7 +3468,7 @@ Source: Vega-Lite - Quantile-Quantile Plot (QQ Plot) ([1](https://vega.github.io
 
 
 ::: {.clay-image}
-![](galleries.vega_files/image105.png)
+![](galleries.vega_files/image107.png)
 :::
 
 
@@ -3446,7 +3496,7 @@ Source: Vega-Lite - Linear Regression ([1](https://vega.github.io/vega-lite/exam
 
 
 ::: {.clay-image}
-![](galleries.vega_files/image106.png)
+![](galleries.vega_files/image108.png)
 :::
 
 
@@ -3472,7 +3522,7 @@ Source: Vega-Lite - Loess Regression ([1](https://vega.github.io/vega-lite/examp
 
 
 ::: {.clay-image}
-![](galleries.vega_files/image107.png)
+![](galleries.vega_files/image109.png)
 :::
 
 
@@ -3500,7 +3550,7 @@ Source: [Vega-Lite - Using window transform to impute missing values by averagin
 
 
 ::: {.clay-image}
-![](galleries.vega_files/image108.png)
+![](galleries.vega_files/image110.png)
 :::
 
 
@@ -3537,7 +3587,7 @@ Source: Vega-Lite - Error Bars Showing Confidence Interval ([1](https://vega.git
 
 
 ::: {.clay-image}
-![](galleries.vega_files/image109.png)
+![](galleries.vega_files/image111.png)
 :::
 
 
@@ -3562,7 +3612,7 @@ Source: [Vega-Lite - Error Bars Showing Standard Deviation](https://vega.github.
 
 
 ::: {.clay-image}
-![](galleries.vega_files/image110.png)
+![](galleries.vega_files/image112.png)
 :::
 
 
@@ -3589,7 +3639,7 @@ Source: [Vega-Lite - Line Chart with Confidence Interval Band](https://vega.gith
 
 
 ::: {.clay-image}
-![](galleries.vega_files/image111.png)
+![](galleries.vega_files/image113.png)
 :::
 
 
@@ -3618,7 +3668,7 @@ Source: [Vega-Lite - Scatterplot with Mean and Standard Deviation Overlay](https
 
 
 ::: {.clay-image}
-![](galleries.vega_files/image112.png)
+![](galleries.vega_files/image114.png)
 :::
 
 
@@ -3651,7 +3701,7 @@ Source: [Vega-Lite - Box Plot with Min/Max Whiskers](https://vega.github.io/vega
 
 
 ::: {.clay-image}
-![](galleries.vega_files/image113.png)
+![](galleries.vega_files/image115.png)
 :::
 
 
@@ -3676,7 +3726,7 @@ Source: Vega-Lite - Tukey Box Plot (1.5 IQR) ([1](https://vega.github.io/vega-li
 
 
 ::: {.clay-image}
-![](galleries.vega_files/image114.png)
+![](galleries.vega_files/image116.png)
 :::
 
 
@@ -3705,7 +3755,7 @@ Source: [Vega-Lite - Box Plot with Pre-Calculated Summaries](https://vega.github
 
 
 ::: {.clay-image}
-![](galleries.vega_files/image115.png)
+![](galleries.vega_files/image117.png)
 :::
 
 
@@ -3742,7 +3792,7 @@ Source: [Vega-Lite - Simple Bar Chart with Labels and Emojis](https://vega.githu
 
 
 ::: {.clay-image}
-![](galleries.vega_files/image116.png)
+![](galleries.vega_files/image118.png)
 :::
 
 
@@ -3773,7 +3823,7 @@ Source: [Vega-Lite - Bar Chart Highlighting Values beyond a Threshold](https://v
 
 
 ::: {.clay-image}
-![](galleries.vega_files/image117.png)
+![](galleries.vega_files/image119.png)
 :::
 
 
@@ -3799,7 +3849,7 @@ Source: [Vega-Lite - Mean overlay over precipitation chart](https://vega.github.
 
 
 ::: {.clay-image}
-![](galleries.vega_files/image118.png)
+![](galleries.vega_files/image120.png)
 :::
 
 
@@ -3824,7 +3874,7 @@ Source: [Vega-Lite - Histogram with a Global Mean Overlay](https://vega.github.i
 
 
 ::: {.clay-image}
-![](galleries.vega_files/image119.png)
+![](galleries.vega_files/image121.png)
 :::
 
 
@@ -3859,7 +3909,7 @@ Source: Vega-Lite - Line Chart with Highlighted Rectangles ([1](https://vega.git
 
 
 ::: {.clay-image}
-![](galleries.vega_files/image120.png)
+![](galleries.vega_files/image122.png)
 :::
 
 
@@ -3908,7 +3958,7 @@ Source: [Vega-Lite - Distributions and Medians of Likert Scale Ratings](https://
 
 
 ::: {.clay-image}
-![](galleries.vega_files/image121.png)
+![](galleries.vega_files/image123.png)
 :::
 
 
@@ -3950,7 +4000,7 @@ Source: [Vega-Lite - Comparative Likert Scale Ratings](https://vega.github.io/ve
 
 
 ::: {.clay-image}
-![](galleries.vega_files/image122.png)
+![](galleries.vega_files/image124.png)
 :::
 
 
@@ -3979,7 +4029,7 @@ Source: [Vega-Lite - Candlestick Chart](https://vega.github.io/vega-lite/example
 
 
 ::: {.clay-image}
-![](galleries.vega_files/image123.png)
+![](galleries.vega_files/image125.png)
 :::
 
 
@@ -4008,7 +4058,7 @@ Source: [Vega-Lite - Ranged Dot Plot](https://vega.github.io/vega-lite/examples/
 
 
 ::: {.clay-image}
-![](galleries.vega_files/image124.png)
+![](galleries.vega_files/image126.png)
 :::
 
 
@@ -4016,7 +4066,7 @@ Source: [Vega-Lite - Ranged Dot Plot](https://vega.github.io/vega-lite/examples/
 ### Bullet Chart
 
 Five measures against qualitative ranges (grey bands), each with its current and projected value (blue bars) and
-target (black tick); a panel per measure with its own x scale (a recipe: rects and a segment over facets).
+target (black tick) - `chart/bullet`; a panel per measure with its own x scale (facets, `:scales {:x :free}`).
 
 Source: [Vega-Lite - Bullet Chart](https://vega.github.io/vega-lite/examples/facet_bullet.html).
 
@@ -4024,11 +4074,11 @@ Source: [Vega-Lite - Bullet Chart](https://vega.github.io/vega-lite/examples/fac
 ::: {.sourceClojure}
 ```clojure
 (def bullets
-  [{:title "Revenue" :ranges [150 225 300] :measures [220 270] :marker 250}
-   {:title "Profit" :ranges [20 25 30] :measures [21 23] :marker 26}
-   {:title "Order Size" :ranges [350 500 600] :measures [100 320] :marker 550}
-   {:title "New Customers" :ranges [1400 2000 2500] :measures [1000 1650] :marker 2100}
-   {:title "Satisfaction" :ranges [3.5 4.25 5] :measures [3.2 4.7] :marker 4.4}])
+  [{:title "Revenue" :ranges [150 225 300] :measures [220 270] :markers [250]}
+   {:title "Profit" :ranges [20 25 30] :measures [21 23] :markers [26]}
+   {:title "Order Size" :ranges [350 500 600] :measures [100 320] :markers [550]}
+   {:title "New Customers" :ranges [1400 2000 2500] :measures [1000 1650] :markers [2100]}
+   {:title "Satisfaction" :ranges [3.5 4.25 5] :measures [3.2 4.7] :markers [4.4]}])
 ```
 :::
 
@@ -4036,27 +4086,20 @@ Source: [Vega-Lite - Bullet Chart](https://vega.github.io/vega-lite/examples/fac
 
 ::: {.sourceClojure}
 ```clojure
-(let [bars (fn [k i fill height]
-             (chart/rect {:data (map (fn [b] {:title (:title b) :x1 (get-in b [k i])}) bullets)
-                          :mapping {:x0 (constantly 0) :x1 :x1 :y0 (constantly (- 0.5 height)) :y1 (constantly (+ 0.5 height))}
-                          :fill fill}))]
-  (plot/render-image
-   {:data bullets :mapping {:facet :title}
-    :charts [(bars :ranges 2 [238 238 238] 0.5) (bars :ranges 1 [221 221 221] 0.5) (bars :ranges 0 [204 204 204] 0.5)
-             (bars :measures 1 [176 196 222] 0.15) (bars :measures 0 [70 130 180] 0.15)
-             (chart/segment {:mapping {:x :marker :xend :marker :y (constantly 0.2) :yend (constantly 0.8)}
-                             :color :black :width 2})]
-    :scales {:y {:domain [0 1] :axis false} :x {:nice false} :facet {:domain (mapv :title bullets)}}
-    :facets {:columns 1 :scales {:x :free}}
-    :theme {:panel {:grid {:x :none :y :none}}}
-    :labels {:x nil :y nil}}
-   {:width 600 :height 450}))
+(plot/render-image
+ {:data bullets :mapping {:facet :title :ranges :ranges :measures :measures :markers :markers}
+  :charts [(chart/bullet)]
+  :scales {:x {:nice false} :facet {:domain (mapv :title bullets)}}
+  :facets {:columns 1 :scales {:x :free}}
+  :theme {:panel {:grid {:x :none :y :none}}}
+  :labels {:x nil :y nil}}
+ {:width 600 :height 450})
 ```
 :::
 
 
 ::: {.clay-image}
-![](galleries.vega_files/image125.png)
+![](galleries.vega_files/image127.png)
 :::
 
 
@@ -4095,7 +4138,7 @@ Source: Vega-Lite - Weekly Weather Plot ([1](https://vega.github.io/vega-lite/ex
 
 
 ::: {.clay-image}
-![](galleries.vega_files/image126.png)
+![](galleries.vega_files/image128.png)
 :::
 
 
@@ -4103,7 +4146,8 @@ Source: Vega-Lite - Weekly Weather Plot ([1](https://vega.github.io/vega-lite/ex
 ### Wheat and Wages Example
 
 W. Playfair's chart of the price of wheat (bars, shillings per quarter) and weekly wages (area) in England,
-1565-1821, with the monarchs' reigns along the top (Cromwell's Commonwealth white).
+1565-1821, with the monarchs' reigns along the top (Cromwell's Commonwealth white), the names above the upper
+reigns and below the lower ones.
 
 Source: Vega-Lite - Wheat and Wages Example ([1](https://vega.github.io/vega-lite/examples/wheat_wages.html), [2](https://vega.github.io/vega/examples/wheat-and-wages/)). Data: Playfair's wheat prices and wages from 1565–1820, vega-datasets 3.3.1 `wheat.json` (https://cdn.jsdelivr.net/npm/vega-datasets@3.3.1/data/wheat.json); original: 1822 Playfair Chart; licence: other-pd (vega-datasets `datapackage.json`).
 
@@ -4113,8 +4157,12 @@ Source: Vega-Lite - Wheat and Wages Example ([1](https://vega.github.io/vega-lit
 (let [wheat (map #(update % :year parse-long) (nu/dataset :wheat))
       monarchs (for [{:keys [index commonwealth start end] :as monarch} (nu/dataset :monarchs)
                      :let [low? (and (not commonwealth) (odd? (long index)))]]
-                 (assoc monarch :y0 95 :y1 (if low? 93 97) :label-y (if low? 92.4 97.6) :mid (* 0.5 (+ (long start) (long end)))
-                        :fill (if commonwealth "commonwealth" "crown")))]
+                 (assoc monarch :y0 95 :y1 (if low? 93 97) :low? low? :mid (* 0.5 (+ (long start) (long end)))
+                        :fill (if commonwealth "commonwealth" "crown")))
+      names (fn [low? y anchor dy]
+              (chart/text {:data (filter #(= low? (:low? %)) monarchs) :mapping {:x :mid :y (constantly y) :label :name}
+                           :size 9 :font-style :italic :anchor [:center anchor] :offset [0 dy] :background [255 255 255 170]
+                           :padding 1}))]
   (plot/render-image
    {:data wheat :mapping {:x :year :y :wages}
     :charts [(chart/rect {:mapping {:x0 :year :x1 #(+ 5 (long (:year %))) :y0 (constantly 0) :y1 :wheat}
@@ -4123,8 +4171,7 @@ Source: Vega-Lite - Wheat and Wages Example ([1](https://vega.github.io/vega-lit
              (chart/line {:fill [164 206 219 180] :color :black :alpha 0.7 :width 1})
              (chart/line {:color [238 129 130] :width 1.5})
              (chart/rect {:data monarchs :mapping {:x0 :start :x1 :end :y0 :y0 :y1 :y1 :color :fill} :stroke-color :black})
-             (chart/text {:data monarchs :mapping {:x :mid :y :label-y :label :name} :size 9 :font-style :italic
-                          :anchor [:center :middle]})]
+             (names false 97 :bottom 2) (names true 93 :top -2)]
     :scales {:color {:domain ["crown" "commonwealth"] :range [:black :white] :legend false}
              :x {:formatter #(str (m/round (double %)))} :y {:domain [0 100]}}
     :labels {:x nil :y nil}}
@@ -4134,7 +4181,7 @@ Source: Vega-Lite - Wheat and Wages Example ([1](https://vega.github.io/vega-lit
 
 
 ::: {.clay-image}
-![](galleries.vega_files/image127.png)
+![](galleries.vega_files/image129.png)
 :::
 
 

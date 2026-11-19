@@ -7,7 +7,7 @@
   Normalisation (every row kept, values as given):
 
   * keys kebab-case (`Miles_per_Gallon` -> `miles-per-gallon`, `Beak Length (mm)` -> `beak-length-mm`,
-    `budgetYear` -> `budget-year`), in the file's order
+    `budgetYear` -> `budget-year`), in the first object's order, then the keys only later objects carry, sorted
   * dates as ISO strings ([[date-columns]]: `Jan 1 2000` -> `2000-01-01`, `2001/01/01 00:47` -> `2001-01-01T00:47`),
     parsed in the notebook with `java.time`
   * nested files as rows: `weekly-weather` - a row per day and series (`record`, `normal`, `actual`, `forecast-low`,

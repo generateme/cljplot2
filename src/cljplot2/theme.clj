@@ -131,6 +131,8 @@
            :beeswarm {:size 6 :color [69 117 180 180] :stroke-color :none :stroke-width 1 :shape \O}
            :dotplot {:color [69 117 180] :stroke-color :none :stroke-width 1 :shape \O}
            :rug {:color [69 117 180 100] :line-width 1}
+           :bullet {:range-colors [[204 204 204] [238 238 238]] :measure-colors [[70 130 180] [176 196 222]]
+                    :measure-width 0.35 :marker-color :black :marker-width 2 :marker-length 0.7}
            :extent {:color [69 117 180] :line-width 2 :shape \O :size 7}
            :rule {:color [60 60 60] :width 1 :dash :none}
            :function {:color [69 117 180] :width 1 :dash :none :fill :none :bridge {:alpha 0.3}}

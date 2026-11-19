@@ -64,19 +64,6 @@
 
 ;; fitting
 
-(defn- fit
-  "`(fit xs ys)` - the fitted function, or `nil` when there are fewer points than the method needs. Other fastmath
-  input errors throw `ex-info {:key :interpolator}`."
-  [fit xs ys]
-  (try (fit xs ys)
-       (catch clojure.lang.ExceptionInfo e
-         (let [{:keys [type property]} (ex-data e)]
-           (cond
-             (= :too-few-points property) nil
-             (= :invalid-input type) (schema/fail! (str "Interpolation failed: " (ex-message e) ".")
-                                                   {:key :interpolator :value (:method (ex-data e))})
-             :else (throw e))))))
-
 (defn- strictly-monotone
   "`:increasing` / `:decreasing` when `vs` strictly increase / decrease, else `nil`."
   [vs]
@@ -102,7 +89,7 @@
                                  " in every run (no repeated x; with :sort false, x in order).")
                             {:key :interpolator :value (mapv #(nth % a) run)}))
           ordered (if (= direction :decreasing) (vec (rseq run)) run)
-          f (fit fit-of (mapv #(double (nth % a)) ordered) (mapv #(double (nth % b)) ordered))]
+          f (fit/fitted fit-of (mapv #(double (nth % a)) ordered) (mapv #(double (nth % b)) ordered))]
       (if (nil? f)
         run
         (let [ts (sample-grid (double (nth (first run) a)) (double (nth (peek run) a)) sample-step)]
@@ -125,8 +112,8 @@
     (if (< (count run) 2)
       run
       (let [ts (chord-lengths run)
-            fx (fit fit-of ts (mapv #(double (first %)) run))
-            fy (fit fit-of ts (mapv #(double (second %)) run))]
+            fx (fit/fitted fit-of ts (mapv #(double (first %)) run))
+            fy (fit/fitted fit-of ts (mapv #(double (second %)) run))]
         (if (or (nil? fx) (nil? fy))
           run
           (mapv (fn [t] [(double (fx t)) (double (fy t))]) (sample-grid 0.0 (double (peek ts)) sample-step)))))))
@@ -205,7 +192,7 @@
           linear (fit/fit-fn :linear nil)]
       [grid (mapv (fn [column]
                     (let [vs (mapv double (if rev? (rseq column) column))
-                          f (or (fit fit-of ps vs) (fit linear ps vs))]
+                          f (or (fit/fitted fit-of ps vs) (fit/fitted linear ps vs))]
                       (mapv (fn [t] (let [v (double (f t))] (if keep-sign? (keep-sign ps vs t v) v))) grid)))
                   columns)])))
 

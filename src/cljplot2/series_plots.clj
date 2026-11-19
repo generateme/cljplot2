@@ -114,19 +114,21 @@
   ones; the y scale `[0 band-height]` without an axis; with `:series` a panel per series in one column, in their
   first-appearance order (the series in the strip; one band height for all; a `nil` series - the NA panel, last).
 
-  `options`: `:x`, `:y`, `:series` (row keys), `:bands`, `:band-height` (see `horizon-rows`); `:colors {:positive
-  [..] :negative [..]}` (at least `:bands` colours each, lightest first; default blues / reds); `:scales`, `:title`,
-  `:theme`. Throws `ex-info {:key k}` for invalid `:bands`, `:band-height`, `:colors`, x or y values.
+  `options`: `:x`, `:y`, `:series` (row keys), `:bands`, `:band-height`, `:interpolator`, `:steps-per-gap` (see
+  `horizon-rows` - a curve through the values, e.g. `:monotone`); `:colors {:positive [..] :negative [..]}` (at least
+  `:bands` colours each, lightest first; default blues / reds); `:alpha` - the bands' fill alpha (default 1, opaque;
+  translucent bands show the ones beneath); `:scales`, `:title`, `:theme`. Throws `ex-info {:key k}` for invalid `:bands`, `:band-height`, `:colors`, x or y values.
 
   Equivalents: Vega-Lite `area_horizon`, Vega `horizon-graph`, latticeExtra `horizonplot`."
   ([rows] (horizon rows {}))
-  ([rows {:keys [x series bands colors scales title] user-theme :theme :or {x :x bands 2} :as options}]
-   (let [{band-rows :rows h :band-height} (series/horizon-rows rows (select-keys options [:x :y :series :bands :band-height]))
+  ([rows {:keys [x series bands colors scales title alpha] user-theme :theme :or {x :x bands 2 alpha 1.0} :as options}]
+   (let [{band-rows :rows h :band-height} (series/horizon-rows rows (select-keys options [:x :y :series :bands :band-height
+                                                                                         :interpolator :steps-per-gap]))
          n (long bands)
          palette (horizon-colors (or colors {}) n)]
      (cond-> {:data band-rows
               :mapping (cond-> {:x :x :y :y :color :band} series (assoc :facet :series))
-              :charts [(chart/line {:fill :color :alpha 1.0 :width 0 :padding {:x [0.0 0.0] :y [0.0 0.0]}})]
+              :charts [(chart/line {:fill :color :alpha alpha :width 0 :padding {:x [0.0 0.0] :y [0.0 0.0]}})]
               :scales (theme/deep-merge (cond-> {:x {:nice false}
                                                  :y {:domain [0.0 h] :nice false :axis false}
                                                  :color {:kind :ordinal :domain (series/horizon-bands n) :range palette

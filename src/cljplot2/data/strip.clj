@@ -1,5 +1,5 @@
 (ns cljplot2.data.strip
-  "1d strips: charts drawing the distribution of values (box, violin, stripplot, beeswarm, rug, extent) or one value
+  "1d strips: charts drawing the distribution of values (box, violin, stripplot, beeswarm, rug, extent), one value
   per item (bar) placed across the levels of a categorical axis.
 
   Orientation (see [[level-axis]]): the levels sit on the categorical mapping axis - `{:x level :y value}` draws
