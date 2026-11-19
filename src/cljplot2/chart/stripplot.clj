@@ -4,7 +4,7 @@
   Jitter: Gaussian offsets (fastmath `grandom` on the option `:rng`, a fastmath random generator; without it every
   build creates a fresh one, so builds differ - pass `:rng` for reproducible plots; it is copied per build, see
   [[cljplot2.data.rng/for-build]]) with standard deviation
-  `:jitter` / 4 of the item's cross range, clamped to ±`:jitter` / 2 (`:jitter` default 0.8; 0 - all points on the
+  `:jitter` / 4 of the item's cross range, clamped to ±`:jitter` / 2 (`:jitter` default 0.25; 0 - all points on the
   centre line). Offsets are drawn at compute and kept in the stats. Jitter of numeric x / y in data units (uniform):
   scatter `:jitter [dx dy]`, see [[cljplot2.chart.scatter]].
 
@@ -59,7 +59,7 @@
   [{:keys [options]} chart-split {:keys [theme] :as env}]
   (let [{:keys [place items panels dropped]} (strip/split chart-split options :center env)
         rng (rng/for-build (:rng options))
-        jitter (double (get options :jitter 0.8))
+        jitter (double (get options :jitter 0.25))
         items (update-vals items (fn [its] (mapv #(assoc % :offsets (jitter-offsets rng (count (:values %)) jitter)) its)))]
     {:data (update-vals items (fn [its] {:items its :style (style options theme) :place place :options options}))
      :extents (merge-with merge (group/aesthetic-extents panels (:plot-scales env))

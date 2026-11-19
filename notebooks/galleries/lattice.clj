@@ -285,7 +285,7 @@
 (plot/render-image
  {:data faithful
   :mapping {:x :eruptions}
-  :charts [(chart/density) (chart/stripplot {:place :edge :thickness 16 :jitter 0.3 :rng (r/rng :mersenne 31)})]
+  :charts [(chart/density) (chart/stripplot {:place :edge :thickness 16 :rng (r/rng :mersenne 31)})]
   :labels {:x "eruptions" :y "Density"}}
  {:width 600 :height 450})
 
@@ -497,7 +497,7 @@
 (plot/render-image
  {:data quakes
   :mapping {:x (levels/categorical :mag) :y :depth}
-  :charts [(chart/stripplot {:rng (r/rng :mersenne 316) :jitter 0.3})]
+  :charts [(chart/stripplot {:rng (r/rng :mersenne 316)})]
   :labels {:x "Magnitude (Richter)" :y "Depth (km)"}}
  {:width 800 :height 450})
 
@@ -1081,7 +1081,7 @@
 
 ;; ### Fig 6.6 Ozone by wind and temperature
 
-;; Cube root of ozone against wind speed and temperature, a panel per radiation interval.
+;; Cube root of ozone against temperature and wind speed, a panel per radiation interval.
 
 (nu/source-note {:source "Lattice Fig 6.6" :url (figure-url 6 6) :dataset :environmental})
 
@@ -1091,7 +1091,7 @@
 
 (plot/render-image
  {:data (shingle/shingle env :radiation {:count 4 :overlap 0.5 :as :radiation-cut :label "Radiation"})
-  :mapping {:x :wind :y :temperature :z :ozone :facet :radiation-cut}
+  :mapping {:x :temperature :y :wind :z :ozone :facet :radiation-cut}
   :charts [(chart/cloud {:size 4})]
   :facets {:columns 4}}
  {:width 1000 :height 350})
@@ -1108,8 +1108,8 @@
 
 ;; Ozone modelled on wind, temperature and radiation, evaluated on a wind x temperature grid at four radiation
 ;; levels: a linear model with all interactions (as the book), and - in place of the book's loess and locfit fits -
-;; a Gaussian process, a radial basis function fit and Shepard interpolation (fastmath, on the predictors scaled to
-;; [0, 1]).
+;; a Gaussian process (kernel sigma 0.25), a radial basis function fit and Shepard interpolation (fastmath, on the
+;; predictors scaled to [0, 1]). The view turned so the side along temperature, where ozone grows, faces us.
 
 (nu/source-note {:source "Lattice Fig 6.8" :url (figure-url 6 8) :dataset :environmental})
 
@@ -1122,7 +1122,7 @@
         ozone (mapv :ozone env)
         terms (fn [[w t r]] [r t w (* r t) (* r w) (* t w) (* r t w)])
         linear (regression/lm ozone (mapv terms points))
-        gp (interp/interpolation :gp (mapv unit points) ozone (k/kernel :gaussian {:sigma 0.5}) {:noise 0.2})
+        gp (interp/interpolation :gp (mapv unit points) ozone (k/kernel :gaussian {:sigma 0.25}) {:noise 0.2})
         rbf (interp/interpolation :rbf (mapv unit points) ozone (k/rbf :gaussian {:scale 0.4}) {:lambda 0.5})
         shepard (interp/interpolation :shepard (mapv unit points) ozone)
         models [["linear" #(linear (terms %))] ["Gaussian process" #(gp (unit %))]
@@ -1137,7 +1137,7 @@
  {:data env-fits
   :mapping {:x :wind :y :temperature :z :fit :facet-col :radiation :facet-row :model}
   :scales model-order
-  :charts [(chart/surface {:view {:azimuth 35 :elevation 30} :axes false})]}
+  :charts [(chart/surface {:view {:azimuth 15 :elevation 30} :axes false})]}
  {:width 900 :height 800})
 
 ;; ### Fig 6.9 The same models as level plots
@@ -1155,13 +1155,14 @@
 ;; ### Fig 6.10 Labelled contours
 
 ;; The Gaussian process fit (in place of the book's locfit) as contour lines with their levels, a panel per
-;; radiation level.
+;; radiation level - the highest on top, as the book's bottom-up panels.
 
 (nu/source-note {:source "Lattice Fig 6.10" :url (figure-url 6 10) :dataset :environmental})
 
 (plot/render-image
  {:data (filterv #(= "Gaussian process" (:model %)) env-fits)
   :mapping {:x :wind :y :temperature :value :fit :facet :radiation}
+  :scales {:facet {:order-by #(:radiation (first %)) :descending true}}
   :charts [(chart/contour {:levels 15 :labels true :color [40 40 40]})]
   :facets {:columns 1}
   :labels {:x "wind" :y "temperature"}}
@@ -1188,8 +1189,8 @@
                  :mapping {:x :row :y :column :z :height}
                  :charts [(chart/surface {:style :wireframe :color :black :stroke-width 0.3 :aspect [1 0.7 0.5]
                                           :axis-titles {:x "row" :y "column" :z "volcano"}})]}]
-               {:columns 1})
- {:width 500 :height 800})
+               {:columns 1 :heights [1 1 1.6]})
+ {:width 600 :height 800})
 
 ;; ### Fig 6.12 A correlation matrix
 
@@ -1325,14 +1326,14 @@
 ;; ### Fig 7.2 Changed settings
 
 ;; The book changes lattice's settings: no dotted guide lines, stems twice as wide. Here the same as plot options -
-;; no horizontal grid, `:width 2`.
+;; no grid, `:width 2`.
 
 (nu/source-note {:source "Lattice Fig 7.2" :url (figure-url 7 2) :dataset :va-deaths})
 
 (plot/render-image
  (assoc va-plot
         :charts [(chart/segment {:xend 0 :width 2}) (chart/scatter)]
-        :theme {:panel {:grid {:y :none}}})
+        :theme {:panel {:grid {:x :none :y :none}}})
  {:width 1000 :height 350})
 
 ;; ### Fig 7.3 Settings and their parameters
@@ -1367,7 +1368,7 @@
  {:data quakes
   :mapping {:x (levels/categorical :mag) :y :depth}
   :scales {:y {:domain [700 0]}}
-  :charts [(chart/stripplot {:rng (r/rng :mersenne 81) :jitter 0.5})]
+  :charts [(chart/stripplot {:rng (r/rng :mersenne 81)})]
   :labels {:x "Magnitude (Richter scale)" :y "depth"}}
  {:width 900 :height 400})
 
@@ -1385,7 +1386,7 @@
                                       (nu/dataset :bioc-access))
                          :hour-index {:count 9 :overlap 0.1 :as :slice})
   :mapping {:x :date :y :thousands :facet :slice}
-  :scales {:x {:nice false}}
+  :scales {:x {:nice false :formatter "MMM dd"}}
   :charts [(chart/line {:width 0.6 :padding {:x [0 0] :y [0.05 0.05]}})]
   :facets {:columns 1 :strips false :scales {:x :free}}
   :labels {:x nil :y "Number of accesses (thousands)"}}
@@ -1498,7 +1499,7 @@
       scalers (into {} (map (juxt identity scaled) columns))]
   (plot/render-image
    (plot/clustered-heatmap (for [row us-arrests, k columns] {:state (:state row) :variable (name k) :z ((scalers k) (k row))})
-                           {:row :state :col :variable :value :z :distance :canberra :col-tree? false
+                           {:row :state :col :variable :value :z :distance :canberra :col-tree? false :tree-size [0.3 0.2]
                             :scales {:color {:range :spectral-11}}})
    {:width 600 :height 800}))
 
@@ -1545,8 +1546,9 @@
 
 ;; ### Fig 10.3 Missing values on the margins
 
-;; GCSE written exam against coursework scores per gender, with a loess curve; rugs mark the scores of students
-;; missing the other one (coursework of a missing written score along the bottom).
+;; GCSE written exam against coursework scores per gender (slightly jittered), with a loess curve; rugs mark the
+;; scores of students missing the other one - coursework without a written score along the bottom, written scores
+;; without coursework along the left side.
 
 (nu/source-note {:source "Lattice Fig 10.3" :url (figure-url 10 3) :dataset :gcsemv})
 
@@ -1555,8 +1557,10 @@
 (plot/render-image
  {:data gcsemv
   :mapping {:x :course :y :written :facet :gender}
-  :charts [(chart/scatter {:shape \o :size 5}) (chart/smooth {:band :none})
-           (chart/rug {:data (filter #(nil? (:written %)) gcsemv) :mapping {:x :course :y nil}})]
+  :charts [(chart/scatter {:shape \o :size 5 :jitter [0.5 0.5] :rng (r/rng :mersenne 103)}) (chart/smooth {:band :none})
+           (chart/rug {:data (filter #(nil? (:written %)) gcsemv) :mapping {:x :course :y nil} :thickness 12})
+           (chart/rug {:data (filter #(nil? (:course %)) gcsemv) :mapping {:x nil :y :written} :level-axis :x
+                       :place :edge :thickness 12})]
   :facets {:columns 2}
   :labels {:x "Coursework score" :y "Written exam score"}}
  {:width 900 :height 450})
@@ -1710,6 +1714,7 @@
 (plot/render-image
  {:data (map #(assoc % :root-stations (m/sqrt (:stations %))) quakes-mag-10)
   :mapping {:y :root-stations :facet :magnitude}
+  :scales {:x {:ticks [-2 0 2]}}
   :charts [(chart/qq {:x-distribution [:normal] :size 3 :line false})]
   :facets {:columns 5}
   :labels {:x "Standard normal quantiles" :y "√Number of stations"}}
@@ -1765,18 +1770,25 @@
 
 ;; ### Fig 10.17 Cut and stacked
 
-;; The DAX index cut into six overlapping time slices, each with its own axes.
+;; The DAX index cut into six overlapping time slices (a shingle of the decimal year, shown as dates), each with its
+;; own axes.
 
 (nu/source-note {:source "Lattice Fig 10.17" :url (figure-url 10 17) :dataset :eu-stock-markets})
 
-(plot/render-image
- {:data (shingle/shingle (filter #(= "DAX" (:series %)) (nu/dataset :eu-stock-markets)) :time
-                         {:count 6 :overlap 0.1 :as :slice :label "Time"})
-  :mapping {:x :time :y :value :facet :slice}
-  :charts [(chart/line)]
-  :facets {:columns 1 :scales {:x :free :y :free}}
-  :labels {:x "Time" :y "DAX"}}
- {:width 800 :height 700})
+(let [date (fn [decimal-year]
+             (let [year (long (m/floor decimal-year))
+                   start (java.time.LocalDate/of (int year) 1 1)]
+               (.plusDays start (long (m/round (* (- decimal-year year) (.lengthOfYear start)))))))]
+  (plot/render-image
+   {:data (map #(assoc % :date (date (:time %)))
+               (shingle/shingle (filter #(= "DAX" (:series %)) (nu/dataset :eu-stock-markets)) :time
+                                {:count 6 :overlap 0.1 :as :slice}))
+    :mapping {:x :date :y :value :facet :slice}
+    :scales {:facet {:formatter (fn [slice] (str (date (:lo slice)) " - " (date (:hi slice))))}}
+    :charts [(chart/line)]
+    :facets {:columns 1 :scales {:x :free :y :free}}
+    :labels {:x "Time" :y "DAX"}}
+   {:width 800 :height 700}))
 
 ;; ### Fig 10.18 Level order matters
 
@@ -1855,7 +1867,7 @@
   :scales {:x {:kind :log :base 2 :ticks [75 150 300 600]} :y {:kind :log :base 2 :ticks [75 150 300 600]}
            :facet {:order-by #(stats/median (map (fn [row] (- (:rate-male row) (:rate-female row))) %)) :descending true}}
   :charts [(chart/scatter {:size 2}) (chart/function {:f identity :color :black})]
-  :facets {:columns 8}
+  :facets {:columns 7}
   :theme {:text {:strip {:size 8} :tick-label {:size 7}}}
   :labels {:x "rate.female" :y "rate.male"}}
  {:width 1000 :height 800})
@@ -1870,7 +1882,7 @@
 (plot/render-image
  {:data chem97
   :mapping {:y :gcsescore :color :gender :facet :score}
-  :scales {:color {:range two-colors}}
+  :scales {:color {:range two-colors} :x {:ticks [-2 0 2]}}
   :charts [(chart/qq {:x-distribution [:normal] :size 2 :line false})]
   :facets {:columns 3}
   :labels {:x "Standard normal quantiles" :y "Average GCSE score"}}
@@ -1885,6 +1897,7 @@
 (plot/render-image
  {:data chem97
   :mapping {:y :gcsescore :facet-col :score :facet-row :gender}
+  :scales {:x {:ticks [-2 0 2]}}
   :charts [(chart/qq {:x-distribution [:normal] :size 2 :line false})]
   :labels {:x "Standard normal quantiles" :y "Average GCSE score"}}
  {:width 1000 :height 450})
