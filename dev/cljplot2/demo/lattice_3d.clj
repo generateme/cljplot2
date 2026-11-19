@@ -2,8 +2,9 @@
   "Lattice cycle 3 demo (3D): clouds - LMDVR Fig 6.1 (quakes by magnitude), Fig 6.3 (one cloud from four views), Fig
   6.4 (spikes), Fig 6.15 (3D bars on categorical axes), side projections (also without the cloud), a 2D histogram;
   surfaces - Fig 6.8 (faceted model surfaces), Fig 6.11c / 13.7 (a shaded wireframe), Fig 6.18 (a parametric
-  surface), height and color from one function, a density surface and a cloud over a fitted plane; on the datasets
-  of `notebooks/data` and synthetic functions."
+  surface), height and color from one function, a density surface and a cloud over a fitted plane; perspective
+  (`:view {:distance 0.2}`, lattice's) - a turning cloud, 3D bars, a shaded wireframe; on the datasets of
+  `notebooks/data` and synthetic functions."
   (:require [fastmath.core :as m]
             [fastmath.ml.regression :as regression]
             [cljplot2.chart :as chart]
@@ -23,14 +24,17 @@
    :facets {:columns 2}})
 
 (defn- view-panel
-  "The quakes cloud seen from `azimuth` / `elevation`, axes labelled so the turn reads; the box wider east-west than
-  north-south (about the data's extent) - a cube looks the same every 90 degrees."
-  [azimuth elevation]
-  {:data quakes
-   :mapping {:x :long :y :lat :z :depth}
-   :charts [(chart/cloud {:domain {:z [690 40]} :view {:azimuth azimuth :elevation elevation} :size 2 :aspect [1 1.3 0.8]
-                          :axis-titles {:x "Longitude" :y "Latitude" :z "Depth"}})]
-   :labels {:title (str "azimuth " azimuth ", elevation " elevation)}})
+  "The quakes cloud seen from `azimuth` / `elevation` (perspective `distance`, default 0 - none), axes labelled so the
+  turn reads; the box wider east-west than north-south (about the data's extent) - a cube looks the same every 90
+  degrees."
+  ([azimuth elevation] (view-panel azimuth elevation 0))
+  ([azimuth elevation distance]
+   {:data quakes
+    :mapping {:x :long :y :lat :z :depth}
+    :charts [(chart/cloud {:domain {:z [690 40]} :view (cond-> {:azimuth azimuth :elevation elevation}
+                                                          (pos? (double distance)) (assoc :distance distance))
+                           :size 2 :aspect [1 1.3 0.8] :axis-titles {:x "Longitude" :y "Latitude" :z "Depth"}})]
+    :labels {:title (str "azimuth " azimuth ", elevation " elevation)}}))
 
 (def fig-6-3
   "Fig 6.3: one cloud turned about its vertical axis - four azimuths 40 degrees apart at one elevation (one box size,
@@ -175,6 +179,25 @@
               (chart/cloud {:domain domain :size 2 :color [180 40 40 200]})]
      :labels {:title "Quakes and their least-squares plane"}}))
 
+(def perspective-views
+  "Fig 6.3 in perspective (lattice's distance 0.2): one box size and place at every azimuth, near corners larger."
+  (plot/arrange (mapv #(view-panel % 30 0.2) [20 60 100 140]) {:columns 2}))
+
+(def perspective-bars
+  "The 2D histogram of quakes in perspective: bars nearer the eye larger, each showing the faces turned to the eye."
+  {:data quakes
+   :mapping {:x :long :y :lat}
+   :charts [(chart/cloud {:bins [12 12] :type :bars :color [150 190 230] :stroke-color [60 60 60] :stroke-width 1
+                          :view {:azimuth 35 :elevation 35 :distance 0.2}
+                          :axis-titles {:x "Longitude" :y "Latitude" :z "Count"}})]
+   :labels {:title "Quakes per cell, perspective"}})
+
+(def perspective-wireframe
+  "Fig 6.11c / 13.7 in perspective: the shaded volcano-like wireframe seen from distance 0.2."
+  {:charts [(chart/surface {:f volcano :domain {:x [-2 2] :y [-2 2]} :n 41 :style :both :color [120 170 110 150]
+                            :stroke-color [40 60 40] :aspect [1 1 0.5] :view {:azimuth 30 :elevation 35 :distance 0.2}})]
+   :labels {:title "Volcano-like surface, perspective"}})
+
 (def images
   "Images of this demo: `[file-name plot options]`, saved to `results/lattice-3d/` by [[cljplot2.demo/render!]]."
   [["fig-6-1-quakes-800x700.png" fig-6-1 {:width 800 :height 700}]
@@ -190,4 +213,7 @@
    ["fig-6-18-torus-700x550.png" fig-6-18 {:width 700 :height 550}]
    ["height-and-color-700x550.png" height-and-color {:width 700 :height 550}]
    ["density-surface-700x600.png" density-surface {:width 700 :height 600}]
-   ["cloud-over-surface-700x600.png" cloud-over-surface {:width 700 :height 600}]])
+   ["cloud-over-surface-700x600.png" cloud-over-surface {:width 700 :height 600}]
+   ["perspective-views-800x700.png" perspective-views {:width 800 :height 700}]
+   ["perspective-bars-700x600.png" perspective-bars {:width 700 :height 600}]
+   ["perspective-wireframe-700x550.png" perspective-wireframe {:width 700 :height 550}]])

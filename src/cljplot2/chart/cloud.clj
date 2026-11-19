@@ -16,7 +16,9 @@
     `:stroke-width`, lattice `type = \"h\"`) or `:bars` (a box per row from `:base` to z, `:bar-size [fx fy]` (default
     `[0.8 0.8]`) of the x / y resolution - the smallest gap between distinct values; faces shaded, outlined by
     `:stroke-color`)
-  * `:view {:azimuth deg :elevation deg}` (default 40 / 30), `:aspect [ax ay az]` (box proportions, default `[1 1 1]`)
+  * `:view {:azimuth deg :elevation deg :distance δ}` (default 40 / 30 / 0), `:aspect [ax ay az]` (box proportions,
+    default `[1 1 1]`); `:distance` > 0 - perspective as lattice's `distance` (0.2 there; the eye `1/δ` box units from
+    the centre, inside the box - `ex-info {:key :distance}`; see [[cljplot2.data.space3d]])
   * `:box` (default true - the box: hidden edges dashed and a floor grid behind the data, visible edges over it), `:axes` (default true - ticks, labels and titles), `:axis-titles
     {:x t :y t :z t}` (default the mapped column names; `nil` - none)
   * `:domain {:x [lo hi] :y .. :z ..}` - explicit data domains (each optional); otherwise the data's over all panels
@@ -97,15 +99,19 @@
 
 (defn frame-settings
   "Frame of a 3D chart from its `options` and merged `mapping`: `{:view :aspect :box? :axes? :titles}` - titles from
-  `:axis-titles`, else the names of keyword accessors."
+  `:axis-titles`, else the names of keyword accessors. Throws `{:key :distance}` for a view's eye inside the box
+  ([[cljplot2.data.space3d/check-distance!]]; a scene merging several charts' frames is checked when drawn)."
   [options mapping]
-  {:view (merge space/default-view (:view options))
-   :aspect (or (:aspect options) [1.0 1.0 1.0])
-   :box? (not (false? (:box options)))
-   :axes? (not (false? (:axes options)))
-   :titles (if (contains? options :axis-titles)
-             (:axis-titles options)
-             (into {} (keep (fn [k] (let [a (accessor/unwrap (get mapping k))] (when (keyword? a) [k (name a)])))) position-dims))})
+  (let [view (merge space/default-view (:view options))
+        aspect (or (:aspect options) [1.0 1.0 1.0])]
+    (space/check-distance! view aspect)
+    {:view view
+     :aspect aspect
+     :box? (not (false? (:box options)))
+     :axes? (not (false? (:axes options)))
+     :titles (if (contains? options :axis-titles)
+               (:axis-titles options)
+               (into {} (keep (fn [k] (let [a (accessor/unwrap (get mapping k))] (when (keyword? a) [k (name a)])))) position-dims))}))
 
 (defn frame-overrides
   "The frame settings a 3D chart's `options` set explicitly (keys of [[frame-settings]]; `:view` as given, `:titles`
@@ -292,27 +298,30 @@
 
 (defn- bar-faces
   "Visible faces of the bar at `x`, `y` from `base` to `z` (half sizes `hx`, `hy`) as polygon primitives: the box's
-  front-facing faces, each shaded by its normal, all with the depth of the bar's footprint centre on the base - bars
+  faces facing the eye (`orientation` - see [[cljplot2.data.space3d/face-orientation]], by each face's centre), each shaded by its normal, all with the depth of the bar's footprint centre on the base - bars
   sort as wholes by where they stand (a face's own depth would rise with its height and draw a tall back bar over a
   short front one); a convex box's front faces never overlap, so their order within a bar doesn't matter."
-  [point view [x y z] base [hx hy] st]
+  [point orientation [x y z] base [hx hy] st]
   (let [x (double x) y (double y) hx (double hx) hy (double hy)
         lo (m/min (double base) (double z)) hi (m/max (double base) (double z))
         at (fn [[ix iy iz]] [(if (zero? (long ix)) (- x hx) (+ x hx)) (if (zero? (long iy)) (- y hy) (+ y hy)) (if (zero? (long iz)) lo hi)])
         stroke (draw/outline-color (:stroke-color st) (:color st))
         depth (second (point [x y base]))]
     (keep (fn [{:keys [axis side corners]}]
-            (let [[normal front?] (space/face-normal view axis side)]
+            (let [face (mapv at corners)
+                  centre (mapv (fn [i] (* 0.25 (double (reduce + (map #(% i) face))))) [0 1 2])
+                  [normal front?] (orientation axis side centre)]
               (when front?
-                {:kind :polygon :points (mapv #(first (point (at %))) corners) :depth depth
+                {:kind :polygon :points (mapv #(first (point %)) face) :depth depth
                  :fill (space/shade (:color st) normal) :stroke stroke :stroke-width (:stroke-width st)})))
           space/faces)))
 
 (defn primitives
   "Primitives of one panel's points (see [[cljplot2.graphics.space3d]]) for the projection `point` (data -> `[pixel
   depth]`), by the chart `type`."
-  [{:keys [points type base half frame]} point styles]
-  (let [{:keys [x y z]} points]
+  [{:keys [points type base half frame domains]} point styles]
+  (let [{:keys [x y z]} points
+        orientation (when (= type :bars) (space/face-orientation (assoc frame :domains domains)))]
     (mapcat (fn [i]
               (when-let [st (styles i)]
                 (let [p [(x i) (y i) (z i)]
@@ -323,7 +332,7 @@
                     ;; a spike sorts by where it stands, as a bar
                     :spikes (let [[b bd] (point [(x i) (y i) base])]
                               [{:kind :line :from b :to px :depth bd :color (:color st) :width (:stroke-width st)}])
-                    :bars (bar-faces point (:view frame) p base half st)))))
+                    :bars (bar-faces point orientation p base half st)))))
             (range (count x)))))
 
 (def ^:const projection-alpha
@@ -346,7 +355,7 @@
   [{:keys [points projections domains frame style]} point styles]
   (mapcat (fn [[plane {:keys [kind grid levels]}]]
             (let [[a b across] (planes plane)]
-              (when-let [side (space/far-side (:view frame) across)]
+              (when-let [side (space/far-side (:view frame) (:aspect frame) across)]
                 (let [wall (nth (domains across) side)
                       clamp (fn [k v] (let [[lo hi] (domains k)] (m/constrain (double v) (m/min (double lo) (double hi)) (m/max (double lo) (double hi)))))
                       place (fn [[u w]] (first (point (mapv {a (clamp a u) b (clamp b w) across wall} space/axes))))]

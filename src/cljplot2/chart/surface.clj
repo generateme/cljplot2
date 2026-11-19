@@ -1,7 +1,7 @@
 (ns cljplot2.chart.surface
   "Surface: a mesh of quads in a 3D box (see [[cljplot2.data.space3d]]; a chart laying out its own panel, as
-  [[cljplot2.chart.cloud]], whose frame options it shares: `:view`, `:aspect`, `:box`, `:axes`, `:axis-titles`,
-  `:domain`).
+  [[cljplot2.chart.cloud]], whose frame options it shares: `:view` (with `:distance` - perspective), `:aspect`,
+  `:box`, `:axes`, `:axis-titles`, `:domain`).
 
   Sources (one per chart):
 

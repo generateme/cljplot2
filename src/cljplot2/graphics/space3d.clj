@@ -162,11 +162,18 @@
   [[ax0 ay0 ax1 ay1] [bx0 by0 bx1 by1]]
   (and (< (double ax0) (double bx1)) (< (double bx0) (double ax1)) (< (double ay0) (double by1)) (< (double by0) (double ay1))))
 
+(defn edge-point
+  "Pixel of the point at fraction `f` along the box `edge` (`{:axis :from}`) - the projected surface point (`corner`
+  of fractional bits, see [[cljplot2.data.space3d/projector]]): under perspective equal steps along an edge shrink
+  with depth, not equal on screen."
+  ^Vec2 [corner {:keys [axis from]} ^double f]
+  (corner (assoc from (space/axis-index axis) f)))
+
 (defn- draw-axis!
   "Draw the axis of `k` on its `edge` (ticks, labels, title; see the namespace doc); a tick label overlapping one of
   the label boxes `taken` (`[x0 y0 x1 y1]`, drawn by the axes before, e.g. at a shared corner) is left out. Returns
   the boxes of the labels this axis drew."
-  [canvas k {:keys [from to]} {:keys [corner centre]} {:keys [domains levels titles]} taken env]
+  [canvas k {:keys [from to] :as edge} {:keys [corner centre]} {:keys [domains levels titles]} taken env]
   (let [{:keys [line-color tick-color tick-length tick-width label-gap]} (get-in env [:theme :axis :x])
         ^Vec2 a (corner from) ^Vec2 b (corner to)
         along (v/sub b a)
@@ -176,7 +183,7 @@
         {:keys [ticks labels]} (edge-ticks k domain (get levels k) (tick-count env k (v/mag along)))
         [lo hi] domain
         labelled (atom [])
-        at (fn [t] (v/add a (v/mult along (/ (- (double t) (double lo)) (- (double hi) (double lo))))))
+        at (fn [t] (edge-point corner edge (/ (- (double t) (double lo)) (- (double hi) (double lo)))))
         tick-length (double tick-length) gap (double label-gap)
         widest (atom 0.0)]
     (when-not (theme/none? line-color)
@@ -230,7 +237,7 @@
   "Grid lines `[[from to] ..]` (pixel `Vec2`s) on the box face of `axis` at `side` (0 low / 1 high): for each other
   axis `k` a line across the face at each tick of `k`'s domain, paired with `k` - `[k [from to]]`."
   [{:keys [corner]} axis side {:keys [domains levels]} env]
-  (let [i (.indexOf ^java.util.List space/axes axis)
+  (let [i (space/axis-index axis)
         others (remove #{i} [0 1 2])]
     (for [a others
           :let [b (first (remove #{a} others))
@@ -247,8 +254,8 @@
   "Grid lines behind the data at the ticks: on the floor (low z; x and y ticks) and on the two side walls turned away
   from the viewer (the x wall at y and z ticks, the y wall at x and z ticks). Lines at x / y ticks use theme
   `[:panel :grid :x]`, lines at z ticks `[:panel :grid :y]` (`:none` - none)."
-  [canvas proj {:keys [view] :as frame} env]
-  (let [faces (cons [:z 0] (keep (fn [axis] (some->> (space/far-side view axis) (vector axis))) [:x :y]))]
+  [canvas proj {:keys [view aspect] :as frame} env]
+  (let [faces (cons [:z 0] (keep (fn [axis] (some->> (space/far-side view aspect axis) (vector axis))) [:x :y]))]
     (doseq [[axis side] faces
             [k [from to]] (face-grid-lines proj axis side frame env)
             :when (set-grid-line! canvas (get-in env [:theme :panel :grid (if (= k :z) :y :x)]))]
@@ -258,14 +265,14 @@
   "Draw the box frame behind the data of `proj` (see [[cljplot2.data.space3d/projector]]) in `view`: with `box?` the
   grids of the floor and the back walls (see [[draw-box-grid!]]) and the hidden box edges (dashed,
   [[hidden-edge-dash]]), so back and front read apart."
-  [canvas proj {:keys [view box?] :as frame} env]
+  [canvas proj {:keys [view aspect box?] :as frame} env]
   (when box?
     (let [env (assoc env :canvas canvas)
           corner (:corner proj)]
       (draw-box-grid! canvas proj frame env)
       (c2d/set-color canvas (get-in env [:theme :axis :x :line-color]))
       (c2d/set-stroke-custom canvas {:size 1.0 :cap :butt :dash (polyline/dash-pattern hidden-edge-dash)})
-      (doseq [{:keys [from to]} (space/hidden-edges view)]
+      (doseq [{:keys [from to]} (space/hidden-edges view aspect)]
         (line! canvas (corner from) (corner to))))))
 
 (def ^:const min-axis-length
@@ -291,8 +298,9 @@
 (defn draw-scene!
   "Draw the 3D charts `layers` - `[[chart computed] ..]`, one panel's computed data of each (`:domains`, `:frame`,
   `:frame-overrides`) - in one box ([[scene-frame]]) in a `w` x `h` panel: the back of the frame, the primitives of
-  every chart (`((:primitives chart) chart computed point scales env)`, `point` - data -> `[pixel depth]`) sorted far
-  to near together, then the front of the frame."
+  every chart (`((:primitives chart) chart computed point scales env)`, `point` - data -> `[pixel depth]`; the
+  computed `:frame` replaced by the scene's, so faces and walls turn by the box's view) sorted far to near together,
+  then the front of the frame."
   [canvas layers [w h] scales env]
   (let [env (assoc env :canvas canvas)
         frame (scene-frame (map second layers))
@@ -300,7 +308,9 @@
         proj (space/projector frame {:w w :h h :margin margin})]
     (when (pos? (double (:scale proj)))
       (draw-frame-back! canvas proj frame env)
-      (draw-primitives! canvas (mapcat (fn [[chart computed]] ((:primitives chart) chart computed (:point proj) scales env)) layers))
+      (draw-primitives! canvas (mapcat (fn [[chart computed]]
+                                         ((:primitives chart) chart (assoc computed :frame frame) (:point proj) scales env))
+                                       layers))
       (draw-frame-front! canvas proj frame env))))
 
 (defn draw-chart
@@ -313,13 +323,13 @@
   "Draw the box frame in front of the data of `proj`: with `box?` the visible box edges, with `axes?` the axes of the
   `frame` (`:domains`, `:levels`, `:titles`), x, y, z in turn - a tick label overlapping an earlier axis's label
   left out."
-  [canvas proj {:keys [view box? axes?] :as frame} env]
+  [canvas proj {:keys [view aspect box? axes?] :as frame} env]
   (let [env (assoc env :canvas canvas)
         corner (:corner proj)]
     (when box?
       (c2d/set-color canvas (get-in env [:theme :axis :x :line-color]))
       (c2d/set-stroke-custom canvas {:size 1.0})
-      (doseq [{:keys [from to]} (space/visible-edges view)]
+      (doseq [{:keys [from to]} (space/visible-edges view aspect)]
         (line! canvas (corner from) (corner to))))
     (when axes?
       (reduce (fn [taken [k {:keys [from to] :as edge}]]
@@ -327,4 +337,4 @@
                 (if (>= (v/mag (v/sub (corner to) (corner from))) min-axis-length)
                   (into taken (draw-axis! canvas k edge proj frame taken env))
                   taken))
-              [] (space/axis-edges view corner)))))
+              [] (space/axis-edges view aspect corner)))))

@@ -146,7 +146,7 @@
         on-wall? (fn [{:keys [domains]} view]
                    (fn [[kind pts]]
                      (let [[i axis] (case kind :region [2 :z] :path [1 :y] :point [0 :x])
-                           wall (nth (domains axis) (space/far-side view axis))]
+                           wall (nth (domains axis) (space/far-side view [1 1 1] axis))]
                        (every? #(near? wall (% i)) pts))))]
     (testing "6.1 every projection in its wall's plane, on the far wall; all three kinds"
       (doseq [view [{:azimuth 40 :elevation 30} {:azimuth 220 :elevation 30}]]
@@ -154,8 +154,8 @@
           (is (= #{:region :path :point} (set (map first ws))))
           (is (every? (on-wall? c view) ws)))))
     (testing "6.1 the x / y walls switch under azimuth + 180"
-      (is (not= (space/far-side {:azimuth 40 :elevation 30} :x) (space/far-side {:azimuth 220 :elevation 30} :x)))
-      (is (not= (space/far-side {:azimuth 40 :elevation 30} :y) (space/far-side {:azimuth 220 :elevation 30} :y))))
+      (is (not= (space/far-side {:azimuth 40 :elevation 30} [1 1 1] :x) (space/far-side {:azimuth 220 :elevation 30} [1 1 1] :x)))
+      (is (not= (space/far-side {:azimuth 40 :elevation 30} [1 1 1] :y) (space/far-side {:azimuth 220 :elevation 30} [1 1 1] :y))))
     (testing "6.1 projections drawn before the cloud (depth +Inf), inside the box"
       (let [c (cp {:azimuth 40 :elevation 30})
             ws (wall-coords c)]
@@ -251,7 +251,7 @@
     (let [proj (space/projector {:domains {:x [0 1] :y [0 1] :z [0 1]} :view space/default-view} {:w 400 :h 300 :margin 30})
           frame {:domains {:x [0 1] :y [0 1] :z [0 1]} :titles {}}
           env {:theme cljplot2.theme/default-theme}
-          edge (:x (space/axis-edges space/default-view (:corner proj)))
+          edge (:x (space/axis-edges space/default-view [1 1 1] (:corner proj)))
           draw (fn [taken] (c2d/with-canvas [c (c2d/canvas 400 300)] (#'space-draw/draw-axis! c :x edge proj frame taken (assoc env :canvas c))))
           drawn (draw [])]
       (is (seq drawn))

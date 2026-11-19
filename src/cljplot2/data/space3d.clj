@@ -6,6 +6,11 @@
   `v`, depth `d` (away from the viewer). Azimuth 0, elevation 0 looks along `+y`: x to the right, z up; azimuth turns
   the box about the vertical z axis (90 - y to the right), elevation tilts the view from above (positive) or below.
 
+  Perspective: the view's `:distance` δ (default 0 - orthographic) is lattice's `distance` - the eye sits `1/δ` box
+  units in front of the box centre, a point at depth `d` is scaled by `1 / (1 + δ d)` toward the centre ([[perspective]];
+  lattice's look is 0.2). The eye must stay outside the box ([[check-distance!]]); faces turn toward or away from the
+  eye by their position too ([[face-orientation]], [[visible-edges]]).
+
   [[projector]] fits the projected box (plus a margin for axes) in a panel and gives pixel positions with depths;
   primitives are drawn far to near by depth (painter's algorithm, see [[cljplot2.graphics.space3d]]). Faces are
   shaded by Lambert lighting ([[shade]]); [[visible-edges]] - box edges not hidden behind it, [[axis-edges]] - the box
@@ -15,7 +20,7 @@
             [fastmath.vector :as v]
             [cljplot2.scale.position :as scale]
             [cljplot2.schema :as schema])
-  (:import [fastmath.vector Vec3]))
+  (:import [fastmath.vector Vec2 Vec3]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -23,10 +28,11 @@
 (def default-view {:azimuth 40.0 :elevation 30.0})
 
 (def view-schema
-  "`:view {:azimuth deg :elevation deg}` (elevation in [-90 90])."
+  "`:view {:azimuth deg :elevation deg :distance δ}` (elevation in [-90 90]; δ >= 0, see the namespace doc)."
   [:map {:closed true}
    (schema/optional :azimuth schema/finite)
-   (schema/optional :elevation [:and schema/finite [:>= -90] [:<= 90]])])
+   (schema/optional :elevation [:and schema/finite [:>= -90] [:<= 90]])
+   (schema/optional :distance [:and schema/finite [:>= 0]])])
 
 (def aspect-schema
   "`:aspect [ax ay az]` - positive box proportions."
@@ -41,6 +47,16 @@
         [:x :y :z]))
 
 (def axes [:x :y :z])
+
+(defn box-aspect
+  "Box proportions `aspect` as a vector; `nil` - the default cube `[1 1 1]`."
+  [aspect]
+  (vec (or aspect [1.0 1.0 1.0])))
+
+(defn axis-index
+  "Position of axis `k` (`:x` / `:y` / `:z`) in a point or a corner."
+  ^long [k]
+  (case k :x 0 :y 1 :z 2))
 
 ;; normalization and rotation
 
@@ -97,6 +113,41 @@
             d0 (- (* y ca) (* x sa))]
         (Vec3. u (+ (* z ce) (* d0 se)) (- (* d0 ce) (* z se)))))))
 
+;; perspective
+
+(defn view-distance
+  "Perspective `:distance` δ of `view` (0 - orthographic)."
+  ^double [view]
+  (double (or (:distance view) 0.0)))
+
+(defn- half-diagonal
+  "Half the diagonal of a box of side `aspect` - the radius of its circumscribed sphere."
+  ^double [[ax ay az]]
+  (* 0.5 (m/sqrt (+ (m/sq (double ax)) (m/sq (double ay)) (m/sq (double az))))))
+
+(defn check-distance!
+  "Throw `ex-info {:key :distance}` unless the eye of `view` is outside the sphere around a box of side `aspect`
+  (`nil` - a cube; δ |aspect| / 2 < 1): every point of the box, in any view, is then in front of the eye. Returns
+  `nil`."
+  [view aspect]
+  (let [delta (view-distance view)
+        aspect (box-aspect aspect)
+        limit (/ 1.0 (half-diagonal aspect))]
+    (when (>= delta limit)
+      (schema/fail! (format "A :distance of %s puts the eye inside the box of :aspect %s - it should be below %.4f."
+                            delta (vec aspect) limit)
+                    {:key :distance :in [:view :distance] :value (:distance view)}))))
+
+(defn perspective
+  "Function of view coordinates `Vec3 (u v d)` giving the screen position `Vec2` (box units): `(u, v)` scaled by
+  `1 / (1 + δ d)` (δ - `view`'s `:distance`); `(u, v)` as they are for δ = 0. Points must be in front of the eye
+  (`1 + δ d > 0`, see [[check-distance!]])."
+  [view]
+  (let [delta (view-distance view)]
+    (if (zero? delta)
+      (fn [^Vec3 q] (v/vec2 (.x q) (.y q)))
+      (fn [^Vec3 q] (let [s (/ 1.0 (+ 1.0 (* delta (.z q))))] (v/vec2 (* s (.x q)) (* s (.y q))))))))
+
 ;; box geometry - corners as [ix iy iz] bits, 0 low / 1 high
 
 (def corners (vec (for [ix [0 1] iy [0 1] iz [0 1]] [ix iy iz])))
@@ -128,58 +179,87 @@
   (let [s (- (* 2.0 (double side)) 1.0)]
     (rotate (Vec3. (if (= axis :x) s 0.0) (if (= axis :y) s 0.0) (if (= axis :z) s 0.0)))))
 
-(defn- front-facing?
-  "Does the face of `axis` / `side` look toward the viewer (its outward normal has a negative depth, beyond a
-  tolerance - edge-on faces count as back)?"
-  [rotate axis side]
-  (< (.z (outward-normal rotate axis side)) -1.0e-9))
+(def ^:const ^:private facing-tolerance
+  "A face turns toward (away from) the eye beyond this; within it - edge-on, neither."
+  1.0e-9)
 
-(defn face-normal
-  "View-space outward unit normal of an axis-aligned face (of `axis`, low `side` 0 / high 1) in `view`, and whether
-  it faces the viewer: `[normal front?]` - for boxes drawn inside the data box (bars)."
-  [view axis side]
-  (let [n (outward-normal (rotation view) axis side)]
-    [n (< (.z n) -1.0e-9)]))
+(defn- turn-away
+  "How far a face of view-space outward unit normal `n` through the view-space point `c` turns from the eye at
+  distance `delta` (see [[perspective]]): `n.z + δ (n · c)` - `-δ (eye - c) · n`, so negative toward the eye, positive
+  away; `n.z` alone for δ = 0 (orthographic: the direction only)."
+  ^double [^double delta ^Vec3 n ^Vec3 c]
+  (+ (.z n) (* delta (v/dot n c))))
+
+(defn- box-face-turn
+  "Function of a box face `axis` / `side` of a box of side `aspect` (`nil` - a cube) giving how far it turns from the eye of `view`
+  ([[turn-away]]; its centre is its outward normal times half the box side across it)."
+  [view aspect]
+  (let [rotate (rotation view)
+        delta (view-distance view)
+        sides (box-aspect aspect)]
+    (fn ^double [axis side]
+      (let [^Vec3 n (outward-normal rotate axis side)]
+        (turn-away delta n (v/mult n (* 0.5 (double (nth sides (axis-index axis))))))))))
+
+(defn face-orientation
+  "Function of an axis-aligned face (of `axis`, data-low `side` 0 / data-high 1) through the data point `at` giving
+  `[normal front?]` - its view-space outward unit normal and whether it faces the eye of the `frame` (`:domains`,
+  `:aspect`, `:view`; a reversed domain turns its low side to the box's high side) - for boxes drawn inside the data
+  box (bars)."
+  [{:keys [domains aspect view]}]
+  (let [rotate (rotation view)
+        normalize (normalizer domains (box-aspect aspect))
+        delta (view-distance view)
+        reversed (into {} (map (fn [k] (let [[a b] (domains k)] [k (> (double a) (double b))]))) axes)]
+    (fn [axis side at]
+      (let [^Vec3 n (outward-normal rotate axis (if (reversed axis) (- 1 (long side)) side))]
+        [n (< (turn-away delta n (rotate (normalize at))) (- facing-tolerance))]))))
 
 (defn far-side
-  "Side (0 / 1) of the box face of `axis` turned away from the viewer in `view` - the far wall across that axis, `nil`
-  when both are edge-on."
-  [view axis]
-  (first (filter #(> (.z ^Vec3 (first (face-normal view axis %))) 1.0e-9) [0 1])))
+  "Side (0 / 1) of the box face of `axis` turned away from the eye of `view` (box of side `aspect`) - the far wall
+  across that axis; the farther-turned one when the eye is between both (perspective), `nil` when neither turns
+  away (edge-on)."
+  [view aspect axis]
+  (let [turn (box-face-turn view aspect)
+        low (double (turn axis 0)) high (double (turn axis 1))
+        [side t] (if (>= high low) [1 high] [0 low])]
+    (when (> (double t) facing-tolerance) side)))
 
 (defn- edge-faces
   "The two faces `[axis side]` an `edge` belongs to."
   [{:keys [axis from]}]
   (vec (for [[i k] (map-indexed vector axes) :when (not= k axis)] [k (from i)])))
 
+(defn- front-faces
+  "Predicate of a box face `[axis side]` facing the eye of `view` (box of side `aspect`; edge-on faces count as back)."
+  [view aspect]
+  (let [turn (box-face-turn view aspect)]
+    (fn [[k side]] (< (double (turn k side)) (- facing-tolerance)))))
+
 (defn visible-edges
-  "Box edges not hidden behind the box in `view`: those with a front-facing face (see [[faces]])."
-  [view]
-  (let [rotate (rotation view)]
-    (filterv (fn [e] (some (fn [[k side]] (front-facing? rotate k side)) (edge-faces e))) edges)))
+  "Box edges not hidden behind the box (side `aspect`) in `view`: those with a front-facing face (see [[faces]])."
+  [view aspect]
+  (let [front? (front-faces view aspect)]
+    (filterv (fn [e] (some front? (edge-faces e))) edges)))
 
 (defn hidden-edges
-  "Box edges behind the box in `view` (both faces turned away): the complement of [[visible-edges]]."
-  [view]
-  (let [shown (set (visible-edges view))]
+  "Box edges behind the box (side `aspect`) in `view` (both faces turned away): the complement of [[visible-edges]]."
+  [view aspect]
+  (let [shown (set (visible-edges view aspect))]
     (filterv (complement shown) edges)))
 
-(defn- silhouette?
-  "Is `edge` on the box outline in `view`: one of its faces front-facing, the other not?"
-  [rotate edge]
-  (let [[a b] (map (fn [[k side]] (front-facing? rotate k side)) (edge-faces edge))]
-    (not= a b)))
-
 (defn axis-edges
-  "Per axis the box edge `{:axis :from :to}` its ticks are drawn on, given `screen` - a function of a corner giving
-  its pixel `Vec2` (y down): x / y - the outline edge along that axis lowest on screen, z - the leftmost outline edge
-  along z (any edge along the axis when none is on the outline, e.g. a face-on view)."
-  [view screen]
-  (let [rotate (rotation view)
+  "Per axis the box edge `{:axis :from :to}` its ticks are drawn on in `view` (box of side `aspect`), given `screen` -
+  a function of a corner giving its pixel `Vec2` (y down): x / y - the outline edge along that axis lowest on screen,
+  z - the leftmost outline edge along z (any edge along the axis when none is on the outline, e.g. a face-on view).
+  An outline edge has one face toward the eye, the other not."
+  [view aspect screen]
+  (let [front? (front-faces view aspect)
+        silhouette? (fn [e] (let [[a b] (map front? (edge-faces e))] (not= a b)))
         mid (fn [{:keys [from to]}] (v/mult (v/add (screen from) (screen to)) 0.5))
         pick (fn [k better]
                (let [along (filter #(= k (:axis %)) edges)
-                     outline (filter #(silhouette? rotate %) along)]
+                     outline (filter silhouette? along)]
                  (first (sort-by better (if (seq outline) outline along)))))]
     {:x (pick :x #(- (.y ^fastmath.vector.Vec2 (mid %))))
      :y (pick :y #(- (.y ^fastmath.vector.Vec2 (mid %))))
@@ -196,31 +276,61 @@
         f (m/hypot (double ax) (double ay))]
     [f (+ (* (double az) (m/abs (m/cos e))) (* f (m/abs (m/sin e))))]))
 
+(defn- corner-bounds
+  "`[u0 u1 v0 v1]` (box units) of the screen positions of the corners of a box of side `aspect` in `view`."
+  [aspect view]
+  (let [rotate (rotation view)
+        project (perspective view)
+        ps (map #(project (rotate (corner-point % aspect))) corners)
+        us (map #(.x ^Vec2 %) ps) vs (map #(.y ^Vec2 %) ps)]
+    [(reduce min us) (reduce max us) (reduce min vs) (reduce max vs)]))
+
+(def ^:private turning-azimuths
+  "Azimuths a perspective box's turning bounds are sampled at (every degree)."
+  (range 0 360))
+
+(defn turning-fit
+  "Extent and centre of a box of side `aspect` turned about its vertical axis at `view`'s elevation and distance:
+  `{:width :height :u-mid :v-mid}` (box units) - a panel fitting `width` x `height` centred at `(u-mid, v-mid)`
+  holds the box in every azimuth. Orthographic (δ = 0): [[turning-extent]], centred on `view`'s own corners (the box
+  centre); perspective: the corners projected at every degree of azimuth - the largest `|u|` both ways, the `v`
+  range (near corners below grow more than far ones above shrink)."
+  [aspect view]
+  (if (zero? (view-distance view))
+    (let [[tw th] (turning-extent aspect (get view :elevation (:elevation default-view)))
+          [u0 u1 v0 v1] (corner-bounds aspect view)]
+      {:width tw :height th
+       :u-mid (* 0.5 (+ (double u0) (double u1))) :v-mid (* 0.5 (+ (double v0) (double v1)))})
+    (let [bounds (map #(corner-bounds aspect (assoc view :azimuth %)) turning-azimuths)
+          u (double (reduce max (mapcat (fn [[u0 u1]] [(m/abs (double u0)) (m/abs (double u1))]) bounds)))
+          v0 (double (reduce min (map #(nth % 2) bounds)))
+          v1 (double (reduce max (map #(nth % 3) bounds)))]
+      {:width (* 2.0 u) :height (- v1 v0) :u-mid 0.0 :v-mid (* 0.5 (+ v0 v1))})))
+
 (defn projector
   "Projection of the data box (`domains`, `aspect`, `view`) fitted in a `w` x `h` panel with `margin` pixels on every
   side for axes: `{:point (fn [[x y z]] [Vec2 depth]) :corner (fn [corner] Vec2) :centre Vec2 :scale k}` - pixels
-  per box unit `k` fitting the box's largest projection over all azimuths at the view's elevation (see
-  [[turning-extent]]) in the panel less the margins, so a box turned about its vertical axis keeps its size (views of
-  different elevations may differ); the projected box centred in the panel; pixel y grows downward. A panel too
-  small for the margins gets a scale of 0."
+  per box unit `k` fitting the box's largest projection over all azimuths at the view's elevation (and distance, see
+  [[turning-fit]]) in the panel less the margins, so a box turned about its vertical axis keeps its size and place
+  (views of different elevations may differ); `:centre` - the box centre's pixel; pixel y grows downward; `depth` -
+  the view depth (larger - farther). A corner may have fractional bits (a point on the box surface). A panel too
+  small for the margins gets a scale of 0. Throws `{:key :distance}` for an eye inside the box ([[check-distance!]])."
   [{:keys [domains aspect view]} {:keys [w h margin]}]
-  (let [aspect (vec (or aspect [1.0 1.0 1.0]))
+  (let [aspect (box-aspect aspect)
+        _ (check-distance! view aspect)
         normalize (normalizer domains aspect)
         rotate (rotation view)
-        projected (map #(rotate (corner-point % aspect)) corners)
-        us (map #(.x ^Vec3 %) projected) vs (map #(.y ^Vec3 %) projected)
-        u0 (double (reduce min us)) u1 (double (reduce max us))
-        v0 (double (reduce min vs)) v1 (double (reduce max vs))
+        project (perspective view)
         margin (double (or margin 0.0))
         free-w (- (double w) (* 2.0 margin)) free-h (- (double h) (* 2.0 margin))
-        [tw th] (turning-extent aspect (get view :elevation (:elevation default-view)))
-        k (m/max 0.0 (m/min (/ free-w (double tw)) (/ free-h (double th))))
+        {:keys [width height u-mid v-mid]} (turning-fit aspect view)
+        k (m/max 0.0 (m/min (/ free-w (double width)) (/ free-h (double height))))
         cx (* 0.5 (double w)) cy (* 0.5 (double h))
-        um (* 0.5 (+ u0 u1)) vm (* 0.5 (+ v0 v1))
-        to-pixel (fn [^Vec3 q] (v/vec2 (+ cx (* k (- (.x q) um))) (- cy (* k (- (.y q) vm)))))]
-    {:point (fn [p] (let [^Vec3 q (rotate (normalize p))] [(to-pixel q) (.z q)]))
-     :corner (fn [corner] (to-pixel (rotate (corner-point corner aspect))))
-     :centre (v/vec2 cx cy)
+        um (double u-mid) vm (double v-mid)
+        to-pixel (fn [^Vec2 q] (v/vec2 (+ cx (* k (- (.x q) um))) (- cy (* k (- (.y q) vm)))))]
+    {:point (fn [p] (let [^Vec3 q (rotate (normalize p))] [(to-pixel (project q)) (.z q)]))
+     :corner (fn [corner] (to-pixel (project (rotate (corner-point corner aspect)))))
+     :centre (to-pixel (v/vec2 0.0 0.0))
      :scale k}))
 
 ;; shading

@@ -92,13 +92,13 @@
 
 (deftest frame-test
   (testing "1.5 visible edges: 9 in a general view, 4 face-on; hidden ones the rest"
-    (is (= 9 (count (space/visible-edges space/default-view))))
-    (is (= 3 (count (space/hidden-edges space/default-view))))
-    (is (= 4 (count (space/visible-edges {:azimuth 0 :elevation 0}))))
-    (is (= 8 (count (space/hidden-edges {:azimuth 0 :elevation 0})))))
+    (is (= 9 (count (space/visible-edges space/default-view [1 1 1]))))
+    (is (= 3 (count (space/hidden-edges space/default-view [1 1 1]))))
+    (is (= 4 (count (space/visible-edges {:azimuth 0 :elevation 0} [1 1 1]))))
+    (is (= 8 (count (space/hidden-edges {:azimuth 0 :elevation 0} [1 1 1])))))
   (testing "1.5 an axis per dimension on an edge along it"
     (let [{:keys [corner]} (space/projector {:domains {:x [0 1] :y [0 1] :z [0 1]} :view space/default-view} {:w 400 :h 300 :margin 20})
-          edges (space/axis-edges space/default-view corner)]
+          edges (space/axis-edges space/default-view [1 1 1] corner)]
       (is (= #{:x :y :z} (set (keys edges))))
       (is (every? (fn [[k e]] (= k (:axis e))) edges))))
   (testing "1.5 tick labels and titles drawn inside the panel; none without axes"
@@ -193,8 +193,8 @@
         draw (fn [f] (lines-in #(let [cv (c2d/canvas 400 300)] (c2d/with-canvas [c cv] (f c proj frame env)))))]
     (testing "U1 / U2 / V3 behind the data: grids of the floor and the two back walls, the 3 hidden edges"
       (let [grid (fn [axis side] (count (#'space-draw/face-grid-lines proj axis side frame (assoc env :canvas (c2d/canvas 10 10)))))
-            back-x (space/far-side space/default-view :x)
-            back-y (space/far-side space/default-view :y)
+            back-x (space/far-side space/default-view [1 1 1] :x)
+            back-y (space/far-side space/default-view [1 1 1] :y)
             back (draw space-draw/draw-frame-back!)]
         (is (some? back-x))
         (is (some? back-y))
@@ -265,8 +265,8 @@
       (doseq [[p i] (map vector prims (range))]
         (is (near? (double (second ((:point proj) [(get-in cp [:points :x i]) (get-in cp [:points :y i]) 0]))) (double (:depth p)))))))
   (testing "V3 an edge-on side has no back wall"
-    (is (nil? (space/far-side {:azimuth 0 :elevation 0} :x)))
-    (is (= 1 (space/far-side {:azimuth 0 :elevation 0} :y))))
+    (is (nil? (space/far-side {:azimuth 0 :elevation 0} [1 1 1] :x)))
+    (is (= 1 (space/far-side {:azimuth 0 :elevation 0} [1 1 1] :y))))
   (testing "F4 z grid lines use the y grid style; :none turns them off"
     (let [proj (space/projector {:domains {:x [0 1] :y [0 1] :z [0 1]} :view space/default-view} {:w 400 :h 300 :margin 30})
           frame {:view space/default-view :domains {:x [0 1] :y [0 1] :z [0 1]} :box? true}
