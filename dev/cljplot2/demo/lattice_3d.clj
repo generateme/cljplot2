@@ -129,8 +129,9 @@
     (+ (* 1.2 (m/exp (- (/ (m/sq (- r 1.0)) 0.18)))) (* -0.5 (m/exp (- (/ (* r r) 0.08)))) (* 0.15 x (m/exp (- (* r r)))))))
 
 (def fig-6-11c
-  "Fig 6.11c / 13.7: a shaded wireframe - one color, faces lit by their slope, outlined."
-  {:charts [(chart/surface {:f volcano :domain {:x [-2 2] :y [-2 2]} :n 41 :style :both :color [120 170 110]
+  "Fig 6.11c / 13.7: a shaded wireframe - one translucent color, faces lit by their slope, outlined; the crater's cone
+  below the ground shows through the near slope."
+  {:charts [(chart/surface {:f volcano :domain {:x [-2 2] :y [-2 2]} :n 41 :style :both :color [120 170 110 150]
                             :stroke-color [40 60 40] :aspect [1 1 0.5] :view {:azimuth 30 :elevation 35}})]
    :labels {:title "Volcano-like surface"}})
 

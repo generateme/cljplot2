@@ -348,7 +348,7 @@
   ([options] (polar (annotation-value :text text/compute text/draw text/legend text/schemas options))))
 
 (defn field
-  "Raster of a 2D field - the density of points, interpolated gridded `:value`s or a function of `x`, `y` - colored by
+  "Raster of a 2D field - the density of points, interpolated gridded `:value`s or a function of a point `[x y]` - colored by
   value, see [[cljplot2.chart.field]]."
   ([] (field {}))
   ([options] (assoc (chart-value :field field/compute field/draw nil field/schemas options)

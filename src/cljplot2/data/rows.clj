@@ -137,6 +137,14 @@
   [v]
   (instance? OrderedLevel v))
 
+(defn as-coordinates
+  "A function's point-valued result `r` (e.g. `[z c]` of a surface, `[u v]` of a vector field) as a vector of its
+  values: any sequential value (a vector, list, `fastmath.vector` `Vec2` / `Vec3`) or a Java array; `nil` for
+  anything else (a number, `nil`, a map, a string)."
+  [r]
+  (cond (sequential? r) (vec r)
+        (and (some? r) (.isArray (class r))) (vec (seq r))))
+
 (defn valid-value?
   "Can `v` be plotted: a finite number, a string, a keyword, a `java.time` value or a level with a natural order
   ([[ordered-level?]], e.g. an interval)."

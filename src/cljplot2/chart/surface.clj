@@ -7,12 +7,13 @@
 
   * gridded (default) - mapped `:x`, `:y`, `:z` on a full lattice (every distinct x with every distinct y, once; see
     [[cljplot2.data.field/lattice-values]], errors keyed `:z`): a node per row
-  * `:f` - a function of a point `[x y]` returning its height `z`, or `[z c]` (height and color value `c`), sampled on a
+  * `:f` - a function of a point `[x y]` (a `fastmath.vector.Vec2`, see Points in [[cljplot2.data.field]]) returning
+    its height `z`, or `[z c]` (any sequential value or array) (height and color value `c`), sampled on a
     regular grid of `:n` (default 30, or `[nx ny]`) points per axis over `:domain` `:x` / `:y` (required)
   * `:density true` - the 2D kernel density of mapped `:x`, `:y` (see [[cljplot2.data.field/density]], default
     bandwidths) over the points' range widened by `:cut` bandwidths (default 3; 0 - the range), sampled as `:f` over
     the panels' density domains (or the explicit x / y domain)
-  * `:fu` - a parametric surface: a function of `[u v]` returning `[x y z]`, sampled on `:n` points over the ranges
+  * `:fu` - a parametric surface: a function of `[u v]` (a `Vec2`) returning `[x y z]` (any sequential value or array), sampled on `:n` points over the ranges
     `:u [lo hi]`, `:v [lo hi]` (both required with `:fu`, refused without it)
 
   Nodes with a non-finite coordinate, or outside an explicit `:domain`, are left out with every quad they touch.
@@ -33,7 +34,8 @@
 
   Quads are drawn far to near by their centroid depth, with the other 3D charts of the panel (a cloud over a surface:
   both with every `:domain` explicit)."
-  (:require [fastmath.core :as m]
+  (:require [clojure2d.color :as c]
+            [fastmath.core :as m]
             [fastmath.vector :as v]
             [cljplot2.chart.cloud :as cloud]
             [cljplot2.data.field :as field]
@@ -43,7 +45,7 @@
             [cljplot2.scale.position :as scale]
             [cljplot2.schema :as schema]
             [cljplot2.theme :as theme])
-  (:import [fastmath.vector Vec3]))
+  (:import [fastmath.vector Vec2 Vec3]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -118,22 +120,23 @@
   (vec (m/slice-range (double lo) (double hi) (long n))))
 
 (defn- height-node
-  "Node of a height function's result `r` at `x`, `y`: `z` or `[z c]`."
+  "Node of a height function's result `r` at `x`, `y`: `z`, or `[z c]` as any sequential value or array (see
+  [[cljplot2.data.rows/as-coordinates]])."
   [x y r]
-  (if (sequential? r) (let [[z c] r] [x y z c]) [x y r]))
+  (if-let [[z c] (data/as-coordinates r)] [x y z c] [x y r]))
 
 (defn function-mesh
-  "Mesh (see [[mesh]]) of the height function `f` of a point `[x y]` (`z` or `[z c]`) over `[[x0 x1] [y0 y1]]` at
+  "Mesh (see [[mesh]]) of the height function `f` of a point `[x y]` (a `Vec2`; `z` or `[z c]`) over `[[x0 x1] [y0 y1]]` at
   `[nx ny]` points."
   [f [xd yd] [nx ny]]
   (let [xs (axis-values xd nx) ys (axis-values yd ny)]
-    (mesh nx ny (fn [i j] (let [x (xs i) y (ys j)] (height-node x y (f [x y])))))))
+    (mesh nx ny (fn [i j] (let [x (xs i) y (ys j)] (height-node x y (f (Vec2. x y))))))))
 
 (defn parametric-mesh
-  "Mesh of the parametric function `fu` (`[x y z]` of a point `[u v]`) over the ranges `u`, `v` at `[nu nv]` points."
+  "Mesh of the parametric function `fu` (`[x y z]` - any sequential value or array - of a point `[u v]`, a `Vec2`) over the ranges `u`, `v` at `[nu nv]` points."
   [fu u v [nu nv]]
   (let [us (axis-values u nu) vs (axis-values v nv)]
-    (mesh nu nv (fn [i j] (let [r (fu [(us i) (vs j)])] (when (sequential? r) r))))))
+    (mesh nu nv (fn [i j] (data/as-coordinates (fu (Vec2. (us i) (vs j))))))))
 
 (defn gridded-mesh
   "Mesh of the gridded `rows` (accessors of `mapping` `:x`, `:y`, `:z`): a node per lattice point."
@@ -247,8 +250,12 @@
     (if (theme/none? fill) (get-in env [:theme :plot :background]) fill)))
 
 (def ^:const seam-width
-  "Pixels of the outline of a `:surface` quad in its own fill, covering the anti-aliased seams between quads."
+  "Pixels of the outline of an opaque `:surface` quad in its own fill, covering the anti-aliased seams between quads."
   1.0)
+
+(defn- opaque?
+  [color]
+  (>= (double (c/alpha (c/to-color color))) 255.0))
 
 (defn quad-corners
   "Node indices of the quad at `i`, `j` of a mesh `nu` nodes wide, in order around it."
@@ -281,7 +288,9 @@
       (if (= look :wireframe)
         {:kind :polygon :points pixels :depth depth :fill back :stroke col :stroke-width width}
         (let [fill (if (:shade? style) (space/shade col (quad-normal rotate (mapv normalize ps))) col)]
-          (if (= look :both)
-            {:kind :polygon :points pixels :depth depth :fill fill :stroke (:stroke-color style) :stroke-width width}
-            ;; outlined in its own fill: no anti-aliased seams between neighbours
-            {:kind :polygon :points pixels :depth depth :fill fill :stroke fill :stroke-width seam-width}))))))
+          (cond
+            (= look :both) {:kind :polygon :points pixels :depth depth :fill fill :stroke (:stroke-color style) :stroke-width width}
+            ;; outlined in its own fill: no anti-aliased seams between neighbours (an opaque fill only - a translucent
+            ;; outline would darken every edge where it overlaps the fill and the neighbour's)
+            (opaque? fill) {:kind :polygon :points pixels :depth depth :fill fill :stroke fill :stroke-width seam-width}
+            :else {:kind :polygon :points pixels :depth depth :fill fill :stroke :none}))))))

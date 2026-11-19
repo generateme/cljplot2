@@ -14,7 +14,7 @@
   low end of the gradient - pick a palette or `:alpha` accordingly. On a `:log` axis the field is sampled (and a
   density estimated) in log10 coordinates, see [[cljplot2.data.field]].
 
-  `:pixel-color` - a function of a point `[x y]` returning a clojure2d color (`nil` - transparent), called at every pixel's
+  `:pixel-color` - a function of a point `[x y]` (a `Vec2`, see [[cljplot2.data.field]]) returning a clojure2d color (`nil` - transparent), called at every pixel's
   data point (the pixel centre): a raster without a grid, a color scale or a legend (e.g. complex domain colouring,
   see [[cljplot2.data.field/domain-color]]); the domain as for `:f` (option `:domain`, else the plot's explicit x / y
   domains); not with `:f` (`ex-info {:key :pixel-color}`); the mapping and the other field options are ignored (as
@@ -29,7 +29,8 @@
             [cljplot2.data.rows :as data]
             [cljplot2.scale.aesthetic :as aesthetic]
             [cljplot2.scale.position :as scale]
-            [cljplot2.schema :as schema]))
+            [cljplot2.schema :as schema])
+  (:import [fastmath.vector Vec2]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -135,7 +136,7 @@
             pixel-color (fn [_ x y]
                           (let [a (double (inverse-h (+ 0.5 (double x))))
                                 b (double (inverse-v (+ 0.5 (double y))))]
-                            (if-let [col (color-at (if flipped? [b a] [a b]))]
+                            (if-let [col (color-at (if flipped? (Vec2. b a) (Vec2. a b)))]
                               (let [col (c/to-color col)]
                                 (if alpha (c/set-alpha col (* (double alpha) (double (c/alpha col)))) col))
                               transparent)))

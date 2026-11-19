@@ -4,27 +4,33 @@
   ([[traces]] - `chart/line` grouped by `:id`).
 
   A field is any function of a pair returning a pair: it receives a `fastmath.vector.Vec2` (so fastmath fields -
-  `(fastmath.fields/field :sinusoidal)` - and `(fn [[x y]] ..)` both work) and returns a `Vec2` or a vector `[u v]`.
+  `(fastmath.fields/field :sinusoidal)` - and `(fn [[x y]] ..)` both work, see Points in [[cljplot2.data.field]]) and returns a pair `[u v]` - any sequential value
+  or array (a `Vec2`, a vector, a list, a double array; see [[cljplot2.data.rows/as-coordinates]]).
   A result that isn't a pair throws `ex-info {:key :f}`; a pair with a non-finite coordinate is skipped (no row).
   Exceptions thrown by `f` propagate."
   (:require [fastmath.core :as m]
             [fastmath.vector :as v]
+            [cljplot2.data.rows :as data]
             [cljplot2.schema :as schema])
   (:import [fastmath.vector Vec2]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
-(defn- pair? [r] (or (instance? Vec2 r) (and (sequential? r) (= 2 (count r)))))
+(defn- pair?
+  "Is `r` a pair - any sequential value or array of 2 values (see [[cljplot2.data.rows/as-coordinates]])?"
+  [r]
+  (= 2 (count (data/as-coordinates r))))
 
 (defn field-value
   "`f` at `(x, y)` as a `Vec2`, `nil` when a coordinate isn't finite; throws `ex-info {:key :f}` when `f` doesn't
   return a pair."
   [f x y]
-  (let [r (f (v/vec2 x y))]
-    (when-not (pair? r)
+  (let [r (f (v/vec2 x y))
+        uv (data/as-coordinates r)]
+    (when-not (= 2 (count uv))
       (schema/fail! "A vector field should return a pair [u v]." {:key :f :value r}))
-    (let [u (nth r 0) w (nth r 1)]
+    (let [[u w] uv]
       (when (and (number? u) (number? w) (m/valid-double? (double u)) (m/valid-double? (double w)))
         (v/vec2 u w)))))
 

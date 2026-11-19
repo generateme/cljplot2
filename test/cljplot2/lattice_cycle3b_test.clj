@@ -10,6 +10,8 @@
             [cljplot2.core :as plot]
             [cljplot2.data.field :as field]
             [cljplot2.data.levels :as levels]
+            [cljplot2.data.rows]
+            [cljplot2.data.vector-field]
             [cljplot2.data.space3d :as space]
             [cljplot2.graphics.space3d :as space-draw]
             [cljplot2.theme]
@@ -330,3 +332,37 @@
     (is (thrown? clojure.lang.ArityException ((field/domain-color identity) 0.5 0.5)))
     (is (instance? BufferedImage (image {:charts [(chart/field {:pixel-color (fn [[x _]] (if (< (double x) 0.5) :black :white))
                                                                 :domain {:x [0 1] :y [0 1]}})]})))))
+
+;; review 3 fixes
+
+(deftest review3-fixes-test
+  (testing "W3 every 2D point function receives a Vec2"
+    (let [types (atom #{})
+          f (fn [p] (swap! types conj (type p)) 0.5)]
+      (built {:charts [(chart/field {:f f :domain {:x [0 1] :y [0 1]} :n 2})]})
+      (built {:charts [(chart/contour {:f f :domain {:x [0 1] :y [0 1]} :n 2})]})
+      (panel {:charts [(chart/surface {:f f :domain {:x [0 1] :y [0 1]} :n 2})]})
+      (panel {:charts [(chart/surface {:fu (fn [p] (swap! types conj (type p)) [0 0 0]) :u [0 1] :v [0 1] :n 2})]})
+      (image {:charts [(chart/field {:pixel-color (fn [p] (swap! types conj (type p)) :red) :domain {:x [0 1] :y [0 1]}})]})
+      (is (= #{fastmath.vector.Vec2} @types))))
+  (testing "W3 point-valued results: any sequential value or array"
+    (doseq [r [[1.0 2.0] '(1.0 2.0) (fastmath.vector/vec2 1.0 2.0) (double-array [1.0 2.0])]]
+      (is (= [1.0 2.0] (mapv double (cljplot2.data.rows/as-coordinates r))) (str (type r))))
+    (doseq [r [nil 1.0 {:a 1} "ab"]]
+      (is (nil? (cljplot2.data.rows/as-coordinates r)) (pr-str r)))
+    (let [{:keys [nodes tones]} (:mesh (panel {:charts [(chart/surface {:f (fn [_] (fastmath.vector/vec2 1.0 2.0)) :domain {:x [0 1] :y [0 1]} :n 2})]}))]
+      (is (= [0.0 0.0 1.0] (first nodes)) "[z c] as a Vec2 - z 1")
+      (is (= [2.0 2.0 2.0 2.0] tones) "c 2"))
+    (is (= [2.0 2.0 2.0 2.0] (:tones (:mesh (panel {:charts [(chart/surface {:f (fn [_] (list 1.0 2.0)) :domain {:x [0 1] :y [0 1]} :n 2})]}))))
+        "[z c] as a list")
+    (is (= [1.0 2.0 3.0] (first (:nodes (:mesh (panel {:charts [(chart/surface {:fu (fn [_] (fastmath.vector/vec3 1 2 3)) :u [0 1] :v [0 1] :n 2})]}))))))
+    (is (= [1.0 2.0 3.0] (first (:nodes (:mesh (panel {:charts [(chart/surface {:fu (fn [_] (double-array [1 2 3])) :u [0 1] :v [0 1] :n 2})]}))))))
+    (is (every? nil? (:nodes (:mesh (panel {:charts [(chart/surface {:fu (fn [_] {:x 1}) :u [0 1] :v [0 1] :n 2})]})))) "a map is no point")
+    (is (= 1 (count (cljplot2.data.vector-field/mapped-points (fn [[x y]] (double-array [y x])) [[1 2]]))) "an array pair")
+    (is (= 1 (count (cljplot2.data.vector-field/mapped-points (fn [[x y]] [y x]) [(double-array [1 2])]))) "an array seed")
+    (is (= :f (:key (error #(cljplot2.data.vector-field/mapped-points (fn [_] [1 2 3]) [[1 2]])))) "3 values - no pair"))
+  (testing "W1 a translucent :surface fill has no seam outline; an opaque one keeps it"
+    (let [prims (fn [color] (let [ch (chart/surface (merge plane {:n 3 :color color :shade false}))] (primitives ch (panel {:charts [ch]}))))]
+      (is (every? #(= :none (:stroke %)) (prims [10 20 30 254])))
+      (is (every? #(= (:fill %) (:stroke %)) (prims [10 20 30 255])))
+      (is (every? #(= (:fill %) (:stroke %)) (prims [10 20 30]))))))

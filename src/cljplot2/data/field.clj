@@ -11,7 +11,7 @@
   * `:gridded` - mapped `:x`, `:y`, `:value` on a full regular lattice (every x with every y, once):
     `fastmath.interpolation` `:interpolation` - `:bilinear` (default), `:bicubic`, `:cubic-2d`; the domain is the
     lattice
-  * `:function` - option `:f`, a function of a point `[x y]` returning a number; the domain - option `:domain {:x [lo hi] :y
+  * `:function` - option `:f`, a function of a point `[x y]` (see Points below) returning a number; the domain - option `:domain {:x [lo hi] :y
     [lo hi]}`, else the plot's explicit `:x` / `:y` scale domains
 
   A grid (see [[sample]]) holds `:n` x values by y values (option `:n`, default 100, or `[nx ny]`) spanning the
@@ -19,7 +19,12 @@
 
   Scales: on a `:log` axis the density is estimated, and every grid sampled, in log10 coordinates (see
   [[cljplot2.scale.position/stat-transform]]) - contours follow the points as the axis shows them, grid points are
-  even on screen; the density value is then per log10 unit of that axis."
+  even on screen; the density value is then per log10 unit of that axis.
+
+  Points: every function of a 2D point here (`:f`, `:pixel-color`, [[domain-color]]'s result, the 3D surfaces' `:f`
+  / `:fu`, vector fields) receives one argument, a `fastmath.vector.Vec2` - sequential and indexed, so `(fn [[x y]]
+  ..)`, `nth`, `seq` and fastmath vector functions all work; point-valued results may be any sequential value or array
+  (see [[cljplot2.data.rows/as-coordinates]])."
   (:require [clojure2d.color :as c]
             [fastmath.complex :as cx]
             [fastmath.core :as m]
@@ -173,7 +178,7 @@
          values (double-array (* nx ny))]
      (dotimes [j ny]
        (dotimes [i nx]
-         (let [v (f [(ix (Array/aget xs i)) (iy (Array/aget ys j))])]
+         (let [v (f (Vec2. (ix (Array/aget xs i)) (iy (Array/aget ys j))))]
            (Array/aset values (+ i (* j nx)) (if (finite? v) (double v) ##NaN)))))
      {:xs xs :ys ys :nx nx :ny ny :values values :transforms [tx ty]})))
 
