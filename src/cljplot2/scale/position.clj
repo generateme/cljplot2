@@ -29,7 +29,8 @@
   only: axes and grid lines show the ticks of that linear domain over the panel instead (see [[display-scale]]), e.g.
   a variable's values beside a density drawn in its own magnitude scale. Bands scales: `:order-by f` - levels ordered by `(f rows)`
   over each level's rows (`:descending true` reverses; per panel under a `:free` facet scale), not with `:domain`
-  (consumed by the pipeline)."
+  (consumed by the pipeline). `:reverse true` - the axis runs the other way: the final domain (data or explicit, after
+  nice and padding) reversed - bands in reverse level order (not `:interpolated`: reverse its `:stops`)."
   (:require [fastmath.core :as m]
             [wadogo.scale :as s]
             [wadogo.ticks.pretty-datetime :as pretty-datetime]
@@ -116,6 +117,7 @@
                                        [:pattern :string] [:preset [:enum :power]] [:function schema/function]])
           (schema/nilable :order-by schema/function)
           (schema/nilable :descending schema/bool)
+          (schema/nilable :reverse schema/bool)
           (schema/nilable :minor-ticks schema/pos-int)
           (schema/nilable :axis-domain [:tuple schema/finite schema/finite])
           (schema/optional :axis [:or :boolean [:enum :grid :no-grid]])
@@ -148,7 +150,7 @@
   "`[key message]` of the first option of `spec` its resolved `kind` doesn't take, or `nil`: `:stops`,
   `:interpolator(-params)` and `:expand` (interpolated takes no padding); tick options on bands; calendar ticks off
   `:datetime` `:pretty`; a string `:formatter` off `:datetime`; `:formatter :power` off `:log`; `:order-by` off `:bands`;
-  `:minor-ticks` on `:bands` or `:datetime`; `:stops` not matching the domain."
+  `:minor-ticks` on `:bands` or `:datetime`; `:stops` not matching the domain; `:reverse` on `:interpolated`."
   [kind {:keys [stops domain ticks-method ticks-params formatter] :as spec}]
   (let [interpolated? (= :interpolated kind)]
     (cond
@@ -169,7 +171,8 @@
       (and (= :power formatter) (not= :log kind)) [:formatter ":formatter :power needs a :log scale"]
       (and (some? (:order-by spec)) (not= :bands kind)) [:order-by ":order-by needs a categorical (:bands) scale"]
       (and (some? (:minor-ticks spec)) (#{:bands :datetime} kind)) [:minor-ticks ":minor-ticks need a numeric continuous scale (not :bands or :datetime)"]
-      (and (some? (:axis-domain spec)) (#{:bands :datetime} kind)) [:axis-domain ":axis-domain needs a numeric continuous scale (not :bands or :datetime)"])))
+      (and (some? (:axis-domain spec)) (#{:bands :datetime} kind)) [:axis-domain ":axis-domain needs a numeric continuous scale (not :bands or :datetime)"]
+      (and (:reverse spec) interpolated?) [:reverse "an :interpolated scale reverses by its :stops (decreasing fractions)"])))
 
 (def ^:private superscript-digits
   {\0 \u2070 \1 \u00b9 \2 \u00b2 \3 \u00b3 \4 \u2074 \5 \u2075 \6 \u2076 \7 \u2077 \8 \u2078 \9 \u2079 \- \u207b})
@@ -342,9 +345,10 @@
       (assoc :padding (vec padding)))))
 
 (defn tick-hint
-  "Tick count hint for an axis `length` pixels long with `spacing` pixels between ticks (at least 2)."
+  "Tick count hint for an axis `length` pixels long with `spacing` pixels between ticks: the nearest whole count
+  (rounded, so panels a few pixels apart around a whole multiple of `spacing` ask for the same count), at least 2."
   ^long [^double length ^double spacing]
-  (m/max 2 (long (m/floor (/ length spacing)))))
+  (m/max 2 (Math/round (/ length spacing))))
 
 (defn- integral-numbers?
   [ticks]
@@ -477,7 +481,7 @@
   the explicit tick count or the hint, then padded by `:padding` (see [[data-scale-spec]]), then by the pixel room
   `:padding-px` `[lo hi]` (charts' labels past the data; `:linear`, `:log` and `:datetime` - in epoch milliseconds,
   skipped when over half the range);
-  ticks outside the final domain are dropped - a continuous scale without `:ticks` gets more ticks until two are
+  `:reverse` reverses the final domain; ticks outside the final domain are dropped - a continuous scale without `:ticks` gets more ticks until two are
   inside (see [[ticks-inside]]; `:attributes` `:ticks` - the count used). A bands scale without `:ticks` has a tick
   at every band. A spec with
   `:axis false` gives a finalized scale with `:axis false` (no axis, no grid lines), `:axis :grid` one with
@@ -487,7 +491,7 @@
         explicit (:ticks spec)
         nice-count (if (integer? explicit) explicit tick-hint)
         base (cond-> (assoc (dissoc spec :kind :nice :expand :padding :padding-px :tick-format :axis :stops :minor-ticks
-                                    :axis-domain)
+                                    :axis-domain :reverse)
                             :range (wadogo-range kind range))
                (get-in spec [:ticks-params :min-n]) (update-in [:ticks-params :min-n] #(min (long %) (long nice-count)))
                (= :interpolated kind) (assoc :range (stop-pixels range (count (:domain spec)) (:stops spec))))
@@ -498,6 +502,7 @@
         domain (if-let [padding-px (when (#{:linear :log :datetime} kind) (:padding-px spec))]
                  (pad-domain-pixels kind domain padding-px (m/abs (- (double (second range)) (double (first range)))))
                  domain)
+        domain (cond-> domain (:reverse spec) (-> reverse vec))
         attributes (assoc base :domain domain :ticks (or explicit (if (= kind :bands) (vec domain) tick-hint)))
         offset (pixel-offset kind range)
         position (s/scale kind attributes)

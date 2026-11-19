@@ -22,6 +22,8 @@
     below 2/√3 is fine; see [[cljplot2.data.space3d]])
   * `:box` (default true - the box: hidden edges dashed and a floor grid behind the data, visible edges over it), `:axes` (default true - ticks, labels and titles), `:axis-titles
     {:x t :y t :z t}` (default the mapped column names; `nil` - none)
+  * `:reverse #{:x :y :z}` - axes running the other way (their final domains, data or explicit, reversed - see
+    [[cljplot2.data.space3d/reverse-domains]]); reversing one axis mirrors the scene (turning the `:view` doesn't)
   * `:domain {:x [lo hi] :y .. :z ..}` - explicit data domains (each optional); otherwise the data's over all panels
     (bars widen x / y by half a bar), made nice ([[cljplot2.data.space3d/nice-domain]]). Several 3D charts in one plot
     need every domain explicit, so their boxes match; they're drawn in one box - the first chart's frame with the
@@ -66,7 +68,8 @@
    (schema/nilable :box schema/bool)
    (schema/nilable :axes schema/bool)
    (schema/nilable :axis-titles [:map {:closed true} (schema/optional :x any?) (schema/optional :y any?) (schema/optional :z any?)])
-   (schema/optional :domain space/domains-schema)])
+   (schema/optional :domain space/domains-schema)
+   (schema/optional :reverse [:set [:enum :x :y :z]])])
 
 (def distance-rule
   "Rule (see [[cljplot2.schema/with-rules]]) of the 3D charts' options: a `:view` `:distance` putting the eye within
@@ -193,12 +196,13 @@
 
 (defn- plane-density
   "Grid (see [[cljplot2.data.field/sample]]) of the 2D kernel density of a panel's `points` on the axes `a`, `b`,
-  sampled over their box `domains`; `nil` without 2 distinct values on each axis (no spread to estimate a bandwidth
+  sampled over their box `domains` (low to high, either direction); `nil` without 2 distinct values on each axis (no spread to estimate a bandwidth
   from)."
   [points domains [a b]]
   (when (and (>= (count (distinct (points a))) 2) (>= (count (distinct (points b))) 2))
     (let [{:keys [f]} (field/density (points a) (points b) {} [(scale/stat-transform nil) (scale/stat-transform nil)])]
-      (field/sample f [(domains a) (domains b)] [projection-grid projection-grid]))))
+      ;; a reversed domain (explicit or :reverse) is sampled low to high, as the grid expects
+      (field/sample f [(vec (sort (domains a))) (vec (sort (domains b)))] [projection-grid projection-grid]))))
 
 (defn projection-layers
   "`{panel {plane {:kind k :grid g :levels [..]}}}` of the side `projections` (`{plane kind}`) of each panel's kept
@@ -271,9 +275,11 @@
         ;; spikes and bars stay inside an explicit z domain
         base (if z-limits (m/constrain base (double (first z-limits)) (double (second z-limits))) base)
         level-domain (fn [k] (when-let [ls (levels k)] [0.5 (+ 0.5 (count ls))]))
-        domains {:x (or (:x explicit) (:x bin-domains) (level-domain :x) (space/data-domain (coords :x) (double (half :x))))
-                 :y (or (:y explicit) (:y bin-domains) (level-domain :y) (space/data-domain (coords :y) (double (half :y))))
-                 :z (or (:z explicit) (space/data-domain (cond-> (vec z-values) (and (seq z-values) (#{:spikes :bars} type)) (conj base)) 0.0))}
+        domains (space/reverse-domains
+                 {:x (or (:x explicit) (:x bin-domains) (level-domain :x) (space/data-domain (coords :x) (double (half :x))))
+                  :y (or (:y explicit) (:y bin-domains) (level-domain :y) (space/data-domain (coords :y) (double (half :y))))
+                  :z (or (:z explicit) (space/data-domain (cond-> (vec z-values) (and (seq z-values) (#{:spikes :bars} type)) (conj base)) 0.0))}
+                 (:reverse options))
         frame (cond-> (frame-settings options mapping)
                 (and bins (not (contains? options :axis-titles))) (assoc-in [:titles :z] "Count")
                 (seq levels) (assoc :levels levels))

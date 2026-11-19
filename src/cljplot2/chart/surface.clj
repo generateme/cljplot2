@@ -1,7 +1,7 @@
 (ns cljplot2.chart.surface
   "Surface: a mesh of quads in a 3D box (see [[cljplot2.data.space3d]]; a chart laying out its own panel, as
   [[cljplot2.chart.cloud]], whose frame options it shares: `:view` (with `:distance` - perspective), `:aspect`,
-  `:box`, `:axes`, `:axis-titles`, `:domain`).
+  `:box`, `:axes`, `:axis-titles`, `:domain`, `:reverse`).
 
   Sources (one per chart):
 
@@ -212,7 +212,9 @@
         explicit (:domain options)
         meshes (update-vals (panel-meshes kind options mapping groups) #(clip-mesh % explicit))
         nodes (mapcat #(remove nil? (:nodes %)) (vals meshes))
-        domains (into {} (map-indexed (fn [i k] [k (or (get explicit k) (space/data-domain (map #(% i) nodes) 0.0))]) space/axes))
+        domains (space/reverse-domains
+                 (into {} (map-indexed (fn [i k] [k (or (get explicit k) (space/data-domain (map #(% i) nodes) 0.0))]) space/axes))
+                 (:reverse options))
         frame (cond-> (cloud/frame-settings options mapping)
                 (and (= kind :density) (not (contains? options :axis-titles))) (assoc-in [:titles :z] "Density"))
         st (style options theme)

@@ -8,7 +8,9 @@
 ;; plot maps, data prepared in Clojure). Lattice's banking (`aspect = "xy"`) is replaced by the image size, its
 ;; strips by cljplot2 facet strips. Lattice fills panels from the bottom row up; here they run top-down, so panels
 ;; stacked in rows and ordered by a statistic put the largest first to look the same. 3D boxes are drawn in
-;; perspective at lattice's `distance` of 0.2 (`:view {:distance 0.2}`; cljplot2's default is orthographic). Data
+;; perspective at lattice's `distance` of 0.2 (`:view {:distance 0.2}`; cljplot2's default is orthographic), from
+;; lattice's views: `screen = list(z = θ, x = φ)` is `:view {:azimuth -θ :elevation (90 + φ)}` (the default z = 40,
+;; x = -60 - azimuth -40, elevation 30). Data
 ;; are the book's, exported from R (see the dataset notes under each figure).
 ;;
 ;; Not here: chapter 12 (interactive displays) and a few figures outside the medium - each is listed in its chapter.
@@ -1031,7 +1033,7 @@
 (plot/render-image
  {:data quakes-magnitude-4
   :mapping {:x :lat :y :long :z :depth :facet :magnitude}
-  :charts [(chart/cloud {:domain {:z [680 40]} :view {:azimuth 105 :elevation 20 :distance 0.2} :size 3
+  :charts [(chart/cloud {:domain {:z [680 40]} :view {:azimuth -105 :elevation 20 :distance 0.2} :size 3
                          :axis-titles {:x "Latitude" :y "Longitude" :z "Depth"}})]
   :facets {:columns 2}}
  {:width 800 :height 700})
@@ -1043,22 +1045,23 @@
 (plot/render-image
  {:data quakes-magnitude-4
   :mapping {:x :lat :y :long :z :depth :facet :magnitude}
-  :charts [(chart/cloud {:domain {:z [680 40]} :view {:azimuth 80 :elevation 20 :distance 0.2} :size 3
+  :charts [(chart/cloud {:domain {:z [680 40]} :view {:azimuth -80 :elevation 20 :distance 0.2} :size 3
                          :axis-titles {:x "Latitude" :y "Longitude" :z "Depth (km)"}})]
   :facets {:columns 2}}
  {:width 800 :height 700})
 
 ;; ### Fig 6.3 Turning the cloud
 
-;; One cloud from eight directions: turned 30 degrees left to right down the rows, the second column slightly higher.
+;; One cloud from eight directions: turned by lattice's z = 30, 10, -10, -30 degrees down the rows (azimuth -z;
+;; lattice's rows run bottom-up), the first column slightly higher (in place of the book's 3-degree y turn).
 
 (nu/source-note {:source "Lattice Fig 6.3" :url (figure-url 6 3) :dataset :quakes})
 
 (plot/render-image
- (plot/arrange (for [turn [-30 -10 10 30], tilt [30 33]]
+ (plot/arrange (for [turn [30 10 -10 -30], tilt [33 30]]
                  {:data quakes
                   :mapping {:x :long :y :lat :z :depth}
-                  :charts [(chart/cloud {:domain {:z [690 30]} :view {:azimuth (+ 40 turn) :elevation tilt :distance 0.2}
+                  :charts [(chart/cloud {:domain {:z [690 30]} :view {:azimuth (- turn) :elevation tilt :distance 0.2}
                                          :axes false :size 2})]})
                {:columns 2})
  {:width 600 :height 800})
@@ -1077,7 +1080,7 @@
 (plot/render-image
  {:data state-density
   :mapping {:x :long :y :lat :z :density}
-  :charts [(chart/cloud {:type :spikes :stroke-width 2 :view {:distance 0.2}
+  :charts [(chart/cloud {:type :spikes :stroke-width 2 :view {:azimuth -40 :elevation 30 :distance 0.2}
                          :domain {:z [0 (reduce max (map :density state-density))]}
                          :axis-titles {:x "long" :y "lat" :z "density"}})]}
  {:width 600 :height 500})
@@ -1086,7 +1089,7 @@
 
 ;; ### Fig 6.6 Ozone by wind and temperature
 
-;; Cube root of ozone against temperature and wind speed, a panel per radiation interval.
+;; Cube root of ozone against wind speed and temperature, a panel per radiation interval.
 
 (nu/source-note {:source "Lattice Fig 6.6" :url (figure-url 6 6) :dataset :environmental})
 
@@ -1096,8 +1099,8 @@
 
 (plot/render-image
  {:data (shingle/shingle env :radiation {:count 4 :overlap 0.5 :as :radiation-cut :label "Radiation"})
-  :mapping {:x :temperature :y :wind :z :ozone :facet :radiation-cut}
-  :charts [(chart/cloud {:size 4 :view {:distance 0.2}})]
+  :mapping {:x :wind :y :temperature :z :ozone :facet :radiation-cut}
+  :charts [(chart/cloud {:size 4 :view {:azimuth -40 :elevation 30 :distance 0.2}})]
   :facets {:columns 4}}
  {:width 1000 :height 350})
 
@@ -1144,7 +1147,7 @@
  {:data env-fits
   :mapping {:x :wind :y :temperature :z :fit :facet-col :radiation :facet-row :model}
   :scales model-order
-  :charts [(chart/surface {:view {:azimuth 15 :elevation 30 :distance 0.2} :axes false})]}
+  :charts [(chart/surface {:view {:azimuth -40 :elevation 30 :distance 0.2} :axes false})]}
  {:width 900 :height 800})
 
 ;; ### Fig 6.9 The same models as level plots
@@ -1194,7 +1197,7 @@
                  :aspect :iso}
                 {:data volcano
                  :mapping {:x :row :y :column :z :height}
-                 :charts [(chart/surface {:style :wireframe :view {:distance 0.2}
+                 :charts [(chart/surface {:style :wireframe :view {:azimuth -40 :elevation 30 :distance 0.2}
                                           :color :black :stroke-width 0.3 :aspect [1 0.7 0.5]
                                           :axis-titles {:x "row" :y "column" :z "volcano"}})]}]
                {:columns 1 :heights [1 1 1.6]})
@@ -1272,7 +1275,7 @@
   :mapping {:x (levels/categorical :score) :y :gcd :z :count :facet :gender}
   :scales {:facet {:domain ["M" "F"]}}
   :charts [(chart/cloud {:type :bars :base 0 :color [180 180 180] :stroke-color [60 60 60] :stroke-width 1
-                         :view {:azimuth 220 :elevation 42 :distance 0.2} :aspect [1 1.5 0.8] :axis-titles {:x "score" :y "gcd" :z "Freq"}})]
+                         :view {:azimuth 40 :elevation 65 :distance 0.2} :aspect [1 1.5 0.75] :axis-titles {:x "score" :y "gcd" :z "Freq"}})]
   :facets {:columns 2}}
  {:width 1000 :height 550})
 
@@ -1281,7 +1284,8 @@
 ;; ### Fig 6.18 A parametric surface
 
 ;; A twisted band: x, y, z functions of angles u and v (the book's `kx`, `ky`, `kz` with r = 2, t = 1), shaded,
-;; translucent.
+;; translucent. Seen from the side opposite the book's view (its z = 170, azimuth -170), so x and y grow left to
+;; right without mirroring the band (`:reverse #{:x}` at the book's view would mirror it).
 
 (nu/source-note {:source "Lattice Fig 6.18" :url (figure-url 6 18)})
 
@@ -1291,7 +1295,7 @@
                                    [(* (m/cos u) band) (* (m/sin u) band)
                                     (+ (* (m/sin (/ u 2.0)) (m/sin v)) (* (m/cos (/ u 2.0)) (m/sin v)))]))
                            :u [(* 0.3 m/TWO_PI) (* 1.25 m/TWO_PI)] :v [0.0 m/TWO_PI] :n 50
-                           :aspect [1 1 0.4] :view {:azimuth 170 :elevation 30 :distance 0.2}
+                           :aspect [1 1 0.4] :view {:azimuth 10 :elevation 30 :distance 0.2}
                            :axis-titles {:x "kx(um, vm)" :y "ky(um, vm)" :z "kz(um, vm)"}})]
   :scales {:color {:range [[60 80 200 190] [80 200 200 190] [240 230 120 190] [220 80 160 190]]}}}
  {:width 800 :height 600})
@@ -1978,7 +1982,7 @@
                  {:data quakes
                   :mapping {:x :long :y :lat :z :depth}
                   :charts [(chart/cloud {:domain {:z [690 30]} :axes false :size 2
-                                         :view {:azimuth (* 30.0 (/ i 11.0)) :elevation (- 90.0 (* 80.0 (/ i 11.0))) :distance 0.2}})]})
+                                         :view {:azimuth (* -30.0 (/ i 11.0)) :elevation (- 90.0 (* 80.0 (/ i 11.0))) :distance 0.2}})]})
                {:columns 4})
  {:width 900 :height 700})
 
@@ -2191,7 +2195,7 @@
            {:row (+ x0 (* f (- x1 x0))) :column (+ y0 (* f (- y1 y0))) :height top}))))
 
 (let [domain {:x [1 87] :y [1 61] :z [90 250]}
-      view {:azimuth 20 :elevation 30 :distance 0.2}]
+      view {:azimuth -20 :elevation 30 :distance 0.2}]
   (plot/render-image
    {:data volcano
     :mapping {:x :row :y :column :z :height}

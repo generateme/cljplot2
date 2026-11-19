@@ -1,13 +1,15 @@
 (ns cljplot2.lattice-cycle4-test
   "Lattice cycle 4 (data and notebook): library gaps fixed while writing the lattice notebook - `chart/smooth` fitted
   in the coordinates of log axes (Fig 5.9, 5.10), color scale `:transform` (Fig 5.14), `:type :categorical` domains
-  (Fig 2.6), one default point size, at least two ticks on an axis (Fig 14.2)."
+  (Fig 2.6), one default point size, at least two ticks on an axis (Fig 14.2), the nearest tick count, reversed
+  axes - 2D `:reverse true`, 3D `:reverse #{..}` (Fig 6.18)."
   (:require [clojure.test :refer [deftest testing is]]
             [fastmath.core :as m]
             [wadogo.scale :as s]
             [cljplot2.chart :as chart]
             [cljplot2.chart.parallel :as parallel]
             [cljplot2.content.legend :as legend]
+            [cljplot2.data.space3d :as space]
             [cljplot2.core :as plot]
             [cljplot2.scale.aesthetic :as aesthetic]
             [cljplot2.scale.position :as position]
@@ -154,3 +156,93 @@
           y-ticks (map #(get-in % [:y :ticks]) (vals (:panel-scales b)))]
       (is (= 3 (count y-ticks)))
       (is (every? #(>= (count %) 2) y-ticks)))))
+
+(deftest tick-hint-test
+  (testing "the nearest whole count: panels a few pixels apart around a multiple of the spacing ask for the same (1.1 / 1.2)"
+    (is (= 3 (position/tick-hint 241.0 80.0) (position/tick-hint 239.0 80.0))))
+  (testing "boundary: the half rounds up; at least 2 (a short or empty axis)"
+    (is (= 2 (position/tick-hint 199.0 80.0)))
+    (is (= 3 (position/tick-hint 200.0 80.0)))
+    (is (= 2 (position/tick-hint 10.0 80.0)))
+    (is (= 2 (position/tick-hint 0.0 80.0))))
+  (testing "a histogram and a density of one column in one layout (panels a few px apart): the same tick count"
+    (let [rows (for [g ["a" "b" "c" "d" "e" "f"] i (range 200)] {:g g :v (+ 4.0 (* 2.0 (m/sin (* 0.37 i))))})
+          x-ticks (fn [c] (get-in (plot/build {:data rows :mapping {:x :v :facet :g} :charts [c] :facets {:columns 3}}
+                                              {:width 800 :height 500})
+                                  [:finalized-scales :x :ticks]))]
+      (is (= (x-ticks (chart/histogram)) (x-ticks (chart/density)))))))
+
+(defn- finalized
+  "`:x` scale of `options` finalized over 400 px (hint 5)."
+  [options]
+  (position/finalize (position/scale-spec :x options) [0.0 400.0] 5))
+
+(deftest reverse-2d-test
+  (testing ":reverse true: the domain the other way - the low end at the far pixel"
+    (let [f (finalized {:domain [0 10] :reverse true})
+          px (position/forward-fn f)]
+      (is (= [10.0 0.0] (mapv double (:domain f))))
+      (is (< (m/abs (- 400.0 (double (px 0.0)))) 1e-9))
+      (is (< (m/abs (double (px 10.0))) 1e-9))
+      (is (= #{0.0 2.0 4.0 6.0 8.0 10.0} (set (map double (:ticks f)))) "the same ticks")))
+  (testing "after nice and padding: the extended domain reversed"
+    (is (= [10.0 0.0] (mapv double (:domain (finalized {:domain [0.3 9.7] :reverse true}))))))
+  (testing "bands: levels in reverse order; log and datetime reverse too"
+    (is (= ["c" "b" "a"] (:domain (finalized {:domain ["a" "b" "c"] :reverse true}))))
+    (is (= [1000.0 1.0] (mapv double (:domain (finalized {:domain [1 1000] :kind :log :reverse true})))))
+    (let [a (java.time.LocalDateTime/of 2020 1 1 0 0) b (java.time.LocalDateTime/of 2021 1 1 0 0)]
+      (is (= [b a] (:domain (finalized {:domain [a b] :reverse true}))))))
+  (testing "boundary: an explicit reversed domain reversed again runs forward; false / nil - unchanged"
+    (is (= [0.0 10.0] (mapv double (:domain (finalized {:domain [10 0] :reverse true})))))
+    (is (= [0.0 10.0] (mapv double (:domain (finalized {:domain [0 10] :reverse false})))))
+    (is (= [0.0 10.0] (mapv double (:domain (finalized {:domain [0 10] :reverse nil}))))))
+  (testing "boundary: not on :interpolated (its :stops reverse it); not a boolean - a schema error"
+    (is (= :reverse (:key (error-data #(position/scale-spec :x {:kind :interpolated :domain [0 1 2] :reverse true})))))
+    (is (seq (error-ins #(plot/build {:data [{:x 1 :y 1}] :mapping {:x :x :y :y} :scales {:x {:reverse 1}}
+                                      :charts [(chart/scatter)]})))))
+  (testing "a plot's data scale: the x axis runs high to low"
+    (let [b (plot/build {:data (mapv (fn [i] {:x i :y i}) (range 11)) :mapping {:x :x :y :y}
+                         :scales {:x {:reverse true}} :charts [(chart/scatter)]}
+                        {:width 400 :height 300})
+          x (get-in b [:finalized-scales :x])
+          px (position/forward-fn x)]
+      (is (> (double (px 0)) (double (px 10))))))
+  (testing "facets with free scales reverse every panel"
+    (let [b (plot/build {:data (for [g ["a" "b"] i (range 5)] {:g g :x (if (= g "a") i (* 10 i)) :y i})
+                         :mapping {:x :x :y :y :facet :g} :scales {:x {:reverse true}}
+                         :facets {:scales {:x :free}} :charts [(chart/scatter)]}
+                        {:width 400 :height 300})]
+      (is (every? (fn [sc] (let [[a z] (get-in sc [:x :domain])] (> (double a) (double z)))) (vals (:panel-scales b)))))))
+
+(deftest reverse-3d-test
+  (let [rows (vec (for [x [0 1 2] y [0 1 2]] {:x x :y y :z (+ x y)}))
+        computed (fn [chart] (get-in (plot/build {:data rows :mapping {:x :x :y :y :z :z} :charts [chart]}
+                                                 {:width 400 :height 300})
+                                     [:stats 0 :data :panel]))]
+    (testing ":reverse #{..} reverses the final (data, nice) domains of the axes named"
+      (let [plain (:domains (computed (chart/cloud)))
+            reversed (:domains (computed (chart/cloud {:reverse #{:x :z}})))]
+        (is (= (vec (reverse (:x plain))) (:x reversed)))
+        (is (= (:y plain) (:y reversed)))
+        (is (= (vec (reverse (:z plain))) (:z reversed)))))
+    (testing "explicit domains, the surface too"
+      (is (= [4 0] (get-in (computed (chart/cloud {:domain {:x [0 4]} :reverse #{:x}})) [:domains :x])))
+      (is (= [1.0 -1.0] (mapv double (get-in (computed (chart/surface {:f (fn [[x y]] (* x y)) :domain {:x [-1 1] :y [-1 1]}
+                                                                     :reverse #{:x}}))
+                                             [:domains :x])))))
+    (testing "the projection of a reversed x runs right to left (azimuth 0: x to the right)"
+      (let [domains (space/reverse-domains {:x [0 1] :y [0 1] :z [0 1]} #{:x})
+            {:keys [point]} (space/projector {:domains domains :view {:azimuth 0 :elevation 0}} {:w 400 :h 300 :margin 20})]
+        (is (> (.x ^fastmath.vector.Vec2 (first (point [0 0.5 0.5]))) (.x ^fastmath.vector.Vec2 (first (point [1 0.5 0.5])))))))
+    (testing "boundary: an empty set / nil - unchanged; not x / y / z - a schema error"
+      (is (= {:x [0 1]} (space/reverse-domains {:x [0 1]} #{})))
+      (is (= {:x [0 1]} (space/reverse-domains {:x [0 1]} nil)))
+      (is (seq (error-ins #(plot/build {:data rows :mapping {:x :x :y :y :z :z} :charts [(chart/cloud {:reverse #{:w}})]})))))
+    (testing "renders: bars, projections (densities sampled low to high), a surface"
+      (is (some? (plot/render-image {:data rows :mapping {:x :x :y :y :z :z}
+                                     :charts [(chart/cloud {:type :bars :reverse #{:x :y}
+                                                            :projections {:xy :density :xz :contour}})]}
+                                    {:width 400 :height 300})))
+      (is (some? (plot/render-image {:charts [(chart/surface {:f (fn [[x y]] (* x y)) :domain {:x [-1 1] :y [-1 1]}
+                                                              :reverse #{:z}})]}
+                                    {:width 400 :height 300}))))))

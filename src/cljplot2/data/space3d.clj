@@ -87,6 +87,12 @@
       (nice-domain [(- (double lo) reach) (+ (double hi) reach)]))
     [0.0 1.0]))
 
+(defn reverse-domains
+  "`domains` (`{:x [a b] ..}`) with the domain of every axis in `reversed` (a set of `:x` / `:y` / `:z`, `nil` -
+  none) turned the other way: `[b a]` - the axis runs from its high end (a reversed domain, see [[normalizer]])."
+  [domains reversed]
+  (reduce (fn [ds k] (update ds k (comp vec reverse))) domains reversed))
+
 (defn in-domain?
   "Is `v` within the explicit `domain` (`[a b]`, either direction; `nil` - none: everything is)?"
   [domain v]
