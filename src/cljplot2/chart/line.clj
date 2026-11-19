@@ -35,8 +35,15 @@
   legend key stays opaque).
   Arrows (see [[cljplot2.graphics.arrow]]): `:arrow {:end :start :size :shape}`, `:start-gap` / `:end-gap` (pixels) -
   at the ends of every run of a plain stroked line (no fill, fill gradient, colour along the length or stacking -
-  `ex-info {:key :arrow}`; no bridges between the runs)."
+  `ex-info {:key :arrow}`; no bridges between the runs).
+  `:trail true` (Vega-Lite trail): a linear `:size` sets the width at every point - a filled shape, the width linear
+  between points, round ends and joins (see [[cljplot2.graphics.polyline/trail-area]]); rows without a size value
+  dropped (counted); without a linear size the group's width (`:width` or an ordinal size level). Size scale and
+  legend unchanged, one colour per group; polar trails join points with chords. A trail can't take `:fill`,
+  `:fill-gradient`, a stacked `:position`, `:arrow` / `:start-gap` / `:end-gap`, `:dash`, `:interpolator`, `:curve`,
+  `:gaps :bridge` or a colour along its length - `ex-info {:key :trail}`."
   (:require [clojure2d.color :as c]
+            [clojure2d.core :as c2d]
             [fastmath.core :as m]
             [cljplot2.data.rows :as data]
             [cljplot2.data.group :as group]
@@ -48,7 +55,8 @@
             [cljplot2.scale.coord :as coord]
             [cljplot2.scale.aesthetic :as aesthetic]
             [cljplot2.scale.position :as scale]
-            [cljplot2.schema :as schema])
+            [cljplot2.schema :as schema]
+            [cljplot2.theme :as theme])
   (:import [fastmath.vector Vec2]))
 
 (set! *warn-on-reflection* true)
@@ -84,7 +92,8 @@
                       (schema/optional :stroke-alpha schema/fraction)
                       (schema/optional :arrow arrow/schema)
                       (schema/optional :start-gap schema/non-neg)
-                      (schema/optional :end-gap schema/non-neg)))
+                      (schema/optional :end-gap schema/non-neg)
+                      (schema/nilable :trail schema/bool)))
    :mapping [:map [:x schema/accessor] [:y schema/accessor]]})
 
 (defn- style
@@ -172,15 +181,38 @@
         (schema/fail! (str "Polar lines are straight and unfilled: " problem " isn't supported with :coord :polar.")
                       {:key :coord :value problem})))))
 
+(defn- check-trail!
+  "Throw `ex-info {:key :trail}` for an option a trail (`:trail true`) can't take: an area (`:fill`, `:fill-gradient`),
+  a stacked `position`, arrows or end gaps, `:dash`, `:interpolator`, `:curve`, `:gaps :bridge`, a colour along the
+  length (`gradient?`)."
+  [options position gradient?]
+  (when (data/option options :trail false)
+    (let [problem (cond
+                    (not= :none (:fill options :none)) :fill
+                    (:fill-gradient options) :fill-gradient
+                    (stacked-positions position) :position
+                    (some options [:arrow :start-gap :end-gap]) :arrow
+                    (some? (:dash options)) :dash
+                    (:interpolator options) :interpolator
+                    (:curve options) :curve
+                    (= :bridge (:gaps options)) :gaps
+                    gradient? :color)]
+      (when problem
+        (schema/fail! (str "A trail (:trail true) is a filled shape of varying width: it can't take " problem ".")
+                      {:key :trail :value problem})))))
+
 (defn compute
   "Per panel: `{:lines [{:x [..] :y [..] :aesthetics}] :style style}` (`y` `nil` where the line breaks; a gradient
-  line also has `:colors` - the color value of every point); extents, padding, `:na`, `:dropped`."
+  line also has `:colors` - the color value of every point; a trail with a linear size `:sizes` - the size value of
+  every point); extents, padding, `:na`, `:dropped`."
   [{:keys [options]} {:keys [groups mapping]} {:keys [theme plot-scales] :as env}]
   (check-polar! options (:coord env))
   (let [st (style options theme)
         position (get options :position :overlay)
+        trail? (data/option options :trail false)
         continuous (group/continuous-color groups mapping env)
         gradient? (some? continuous)
+        _ (check-trail! options position gradient?)
         _ (check-stacking! position gradient? options)
         _ (when (and (:fill-gradient-axis options) (nil? (:fill-gradient options)))
             (schema/fail! ":fill-gradient-axis needs :fill-gradient." {:key :fill-gradient-axis :value (:fill-gradient-axis options)}))
@@ -188,8 +220,9 @@
             (schema/fail! "A line colored along its length can't take :fill-gradient." {:key :fill-gradient :value (:fill-gradient options)}))
         color-of (:color-of continuous)
         [groups mapping] (if continuous [(:groups continuous) (:mapping continuous)] [groups mapping])
-        sized (group/continuous :size groups mapping env)
+        sized (group/continuous :size groups mapping (cond-> env trail? (assoc :na-level? false)))
         size-of (:value-of sized)
+        sizes? (and trail? (some? sized))
         {:keys [panels dropped]} (if sized
                                    (group/split (:groups sized) (:mapping sized) env)
                                    (group/split groups mapping env))
@@ -205,14 +238,16 @@
                           (fn [gs]
                             {:lines (mapv (fn [g]
                                             (let [pts (->> (:rows g)
-                                                           (map (fn [r] [(x-of r) (y-of r) (when color-of (color-of r))]))
+                                                           (map (fn [r] [(x-of r) (y-of r) (when color-of (color-of r))
+                                                                         (when sizes? (size-of r))]))
                                                            (filter #(data/valid-value? (first %))))
                                                   pts (if (and sort? (sortable? (map first pts))) (sort-by first pts) pts)]
                                               (cond-> {:x (mapv first pts)
                                                        :y (mapv #(let [v (second %)] (when (data/valid-value? v) v)) pts)
                                                        :aesthetics (:aesthetics g)}
                                                 gradient? (assoc :colors (mapv #(nth % 2) pts))
-                                                sized (assoc :size-value (some-> (first (:rows g)) size-of)))))
+                                                sizes? (assoc :sizes (mapv #(nth % 3) pts))
+                                                (and sized (not sizes?)) (assoc :size-value (some-> (first (:rows g)) size-of)))))
                                           gs)
                              :style st}))
         data (if (stacked-positions position)
@@ -222,7 +257,9 @@
     (let [color-stats (when gradient?
                         (group/continuous-color-stats continuous (update-vals data #(mapcat :colors (:lines %))) plot-scales))
           size-stats (when sized
-                       (group/continuous-stats :size sized (update-vals data #(map :size-value (:lines %))) plot-scales))]
+                       (group/continuous-stats :size sized (update-vals data #(mapcat (fn [line] (or (:sizes line) [(:size-value line)]))
+                                                                                       (:lines %)))
+                                               plot-scales))]
     {:data data
      :extents (merge-with merge (group/aesthetic-extents panels (:plot-scales env))
                           (:extents color-stats)
@@ -415,6 +452,21 @@
     (doseq [[upper _ st] bands]
       (polyline/stroke-runs! canvas [upper] st))))
 
+(defn- draw-trail!
+  "Fill the trail of `line` (see [[cljplot2.graphics.polyline/trail-area]]) through pixel points `px` / `py`, one
+  shape per run of `index-runs`, in style `st`: the width at every point from its `:sizes` value under the finalized
+  size scale, else `:width`."
+  [canvas line px py index-runs st scales]
+  (let [width (double (:width st))
+        width-of (if-let [sc (and (:sizes line) (:size scales))]
+                   (let [f (aesthetic/attribute-fn :size sc width)] #(double (or (f %) width)))
+                   (constantly width))
+        widths (if (:sizes line) (mapv width-of (:sizes line)) (vec (repeat (count px) width)))]
+    (when-not (theme/none? (:color st))
+      (c2d/set-color canvas (:color st))
+      (doseq [run index-runs]
+        (c2d/shape canvas (polyline/trail-area (mapv px run) (mapv py run) (mapv widths run)) false)))))
+
 (defn- base-run
   "The base points of `run` on the area baseline `{:baseline px :horizontal? h}`."
   [run {:keys [baseline horizontal?]}]
@@ -468,6 +520,8 @@
                              :else (mapv (fn [run] (mapv (fn [i] (curve/drawn-point [(px i) (py i)])) run)) index-runs))
                 st (assoc st :fill (polyline/area-color st false))]
             (cond
+              (:trail options)
+              (draw-trail! canvas line px py index-runs st scales)
               colors
               (do (polyline/fill-runs-to-baseline! canvas point-runs (:baseline area) (:horizontal? area) (:fill st)
                                                    (draw/pattern-fill st (:fill st)))

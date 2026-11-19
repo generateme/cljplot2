@@ -130,8 +130,8 @@
 ;; 2.x fonts
 
 (deftest bundled-files-test
-  (is (= #{"DejaVu Sans Mono"} (set (keys font/bundled-fonts))))
-  (doseq [path (concat (vals (font/bundled-fonts "DejaVu Sans Mono")) ["fonts/LICENSE-DejaVu.txt"])]
+  (is (= #{"DejaVu Sans Mono" "Noto Emoji"} (set (keys font/bundled-fonts))))
+  (doseq [path (concat (mapcat vals (vals font/bundled-fonts)) ["fonts/LICENSE-DejaVu.txt" "fonts/LICENSE-NotoEmoji.txt"])]
     (is (some? (clojure.java.io/resource path)) path)))
 
 (deftest default-font-test

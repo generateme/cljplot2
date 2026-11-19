@@ -3,8 +3,10 @@
 
   Bundled: `\"DejaVu Sans Mono\"` (the default theme's font; Bitstream Vera licence, DejaVu changes public domain,
   see `resources/fonts/LICENSE-DejaVu.txt`; it covers the superscript digits and minus of power labels), one TTF file
-  per font style, so bold and italic (oblique) are real font faces, not synthesized ones. A bundled name wins over an
-  installed family of the same name, so plots render alike on every platform."
+  per font style, so bold and italic (oblique) are real font faces, not synthesized ones; `\"Noto Emoji\"` (monochrome
+  emoji outlines, SIL Open Font License 1.1, see `resources/fonts/LICENSE-NotoEmoji.txt`; one file - the variable
+  font's default Regular instance - for every style), the fallback of text shapes (see [[cljplot2.graphics.shape]]).
+  A bundled name wins over an installed family of the same name, so plots render alike on every platform."
   (:require [clojure.java.io :as io]
             [clojure2d.core :as c2d])
   (:import [java.awt Font]))
@@ -21,7 +23,11 @@
   {"DejaVu Sans Mono" {:plain "fonts/DejaVuSansMono.ttf"
                        :bold "fonts/DejaVuSansMono-Bold.ttf"
                        :italic "fonts/DejaVuSansMono-Oblique.ttf"
-                       :bold-italic "fonts/DejaVuSansMono-BoldOblique.ttf"}})
+                       :bold-italic "fonts/DejaVuSansMono-BoldOblique.ttf"}
+   "Noto Emoji" {:plain "fonts/NotoEmoji.ttf"
+                 :bold "fonts/NotoEmoji.ttf"
+                 :italic "fonts/NotoEmoji.ttf"
+                 :bold-italic "fonts/NotoEmoji.ttf"}})
 
 (defn- bundled-font-delays
   "Classpath resource -> delay of its loaded `Font` (size 1)."

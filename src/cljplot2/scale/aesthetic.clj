@@ -324,7 +324,7 @@
   [k v]
   (case k
     :color (schema/solid-color? v)
-    :shape (contains? shape/shapes v)
+    :shape (shape/shape? v)
     :size (and (schema/finite? v) (>= (double v) 0.0))
     :dash (schema/dash? v)
     :pattern (schema/pattern? v)))

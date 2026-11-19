@@ -13,7 +13,7 @@
             [cljplot2.schema :as schema]
             [cljplot2.theme :as theme])
   (:import [java.awt Color Graphics2D LinearGradientPaint]
-           [java.awt.geom Path2D Path2D$Double]))
+           [java.awt.geom Area Ellipse2D$Double Path2D Path2D$Double]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -111,6 +111,49 @@
                     (+ phase (path-length points))))
                 0.0
                 (partition-by (fn [[i _]] (segment-colors i)) (partition 2 1 run)))))))
+
+(defn- disc
+  "Area of the disc of radius `r` around `(x, y)`; empty for `r` 0."
+  ^Area [^double x ^double y ^double r]
+  (if (pos? r)
+    (Area. (Ellipse2D$Double. (- x r) (- y r) (* 2.0 r) (* 2.0 r)))
+    (Area.)))
+
+(defn- disc-hull
+  "Area between the discs `[x y r]` `a` and `b` bounded by their outer tangents (the discs themselves not included);
+  empty when one disc holds the other."
+  ^Area [[ax ay ar] [bx by br]]
+  (let [ax (double ax) ay (double ay) ar (double ar) bx (double bx) by (double by) br (double br)
+        dx (- bx ax) dy (- by ay)
+        d (m/hypot dx dy)]
+    (if (<= d (m/abs (- ar br)))
+      (Area.)
+      (let [ux (/ dx d) uy (/ dy d)
+            c (/ (- ar br) d)
+            s (m/sqrt (- 1.0 (* c c)))
+            ;; unit normals of the two tangent lines
+            px (- (* c ux) (* s uy)) py (+ (* c uy) (* s ux))
+            qx (+ (* c ux) (* s uy)) qy (- (* c uy) (* s ux))
+            path (Path2D$Double.)]
+        (.moveTo path (+ ax (* ar px)) (+ ay (* ar py)))
+        (.lineTo path (+ bx (* br px)) (+ by (* br py)))
+        (.lineTo path (+ bx (* br qx)) (+ by (* br qy)))
+        (.lineTo path (+ ax (* ar qx)) (+ ay (* ar qy)))
+        (.closePath path)
+        (Area. path)))))
+
+(defn trail-area
+  "Area of a trail through the pixel points `xs` / `ys` with widths `widths` (pixels, one per point): the width
+  changing linearly between points, round ends and joins - the union of a disc at every point and the hull between
+  consecutive discs. One point - its disc."
+  ^Area [xs ys widths]
+  (let [discs (mapv (fn [x y w] [(double x) (double y) (* 0.5 (double w))]) xs ys widths)
+        area (Area.)]
+    (doseq [[x y r] discs]
+      (.add area (disc x y r)))
+    (doseq [[a b] (partition 2 1 discs)]
+      (.add area (disc-hull a b)))
+    area))
 
 (defn key-glyph!
   "Legend key glyph of a line in `box` (`{:x :y :w :h}`): a horizontal line through the middle in line `style`; with

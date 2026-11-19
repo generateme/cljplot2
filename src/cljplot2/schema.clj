@@ -174,7 +174,11 @@
                            (try (some? (if (vector? v) (apply c/cvd-filter v) (c/cvd-filter v))) (catch Exception _ false))))
               "should be a clojure2d color vision deficiency: a keyword (:protanopia, :deuteranopia, :tritanopia, :achromatopsia) or [keyword severity] (:protanomaly, :deuteranomaly, :tritanomaly, :achromatomaly; severity in [0 1])"))
 (def solid-color (named-type ::solid-color solid-color? "should be a clojure2d color"))
-(def shape (named-type ::shape #(contains? shape/shapes %) (str "should be a shape, one of " (apply str (sort shape/shapes)))))
+(def shape
+  "A point shape: a built-in character or a shape map (see [[cljplot2.graphics.shape/shape-problem]], whose message is
+  the error)."
+  (malli/-simple-schema {:type ::shape :pred shape/shape?
+                         :type-properties {:error/fn (fn [{:keys [value]} _] (shape/shape-problem value))}}))
 (def font (named-type ::font font/known-font? "should be a bundled, installed or logical font name, or a java.awt.Font"))
 (def font-style (into [:enum] (sort (keys font/font-styles))))
 

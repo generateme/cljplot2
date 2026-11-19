@@ -41,6 +41,9 @@
     skipped when they overlap one placed before; a centred label is skipped unless its box lies inside its bar
   * `:color` (fill), `:stroke-color` (a color, `:none` or `:darker` - the darkened fill, default), `:stroke-width`,
     `:alpha`
+  * `:corner-radius` - pixels, every bar corner rounded (each stacked segment too; polar - the annular sector's
+    corners, see [[cljplot2.graphics.draw/rounded-sector-path]]); `:corner-radius-end` - only the corners at the value
+    end, wins over `:corner-radius`; clamped to half the shorter side; the legend key rounded alike (default 0)
   * `:padding {:x [lo hi]}` - default 5%, none at the baseline side the bars grow from (bars start on the axis)
 
   Error bars: `chart/extent` with the same mapping (and the same `:mirror`) takes the same slots and side (e.g.
@@ -103,7 +106,9 @@
                       (schema/optional :negative-order [:enum :forward :reverse])
                       (schema/nilable :label-leader schema/bool)
                       (schema/optional :value-format :string)
-                      (schema/optional :padding data/position-padding)))
+                      (schema/optional :padding data/position-padding)
+                      draw/corner-radius-option
+                      draw/corner-radius-end-option))
    :mapping [:map]})
 
 (defn- style
@@ -354,6 +359,7 @@
   (let [{:keys [range-point geometry] :as pl} (strip/placement box scales options place)
         stroke-width (double (:stroke-width style))
         pattern-fill (draw/pattern-fill-cache)
+        rounding (draw/corner-rounding options)
         styled (keep (fn [bar] (some->> (group/style style (:aesthetics bar) scales (:theme env)) (vector bar))) bars)]
     (doseq [[{:keys [level slot ^double y0 ^double y1 width-factor]} st] styled
             :when (not (== y0 y1))
@@ -361,7 +367,8 @@
                   hw (* (strip/slot-half slot) (double width-factor))
                   fill (if translucent? (c/set-alpha (:color st) (* 255.0 (double (:alpha style)))) (:color st))]]
       (draw/range-bar! canvas geometry (range-point y0 level (- c0 hw)) (range-point y1 level (+ c0 hw))
-                       fill (draw/outline-color (:stroke-color st) (:color st)) stroke-width (pattern-fill st fill)))
+                       fill (draw/outline-color (:stroke-color st) (:color st)) stroke-width (pattern-fill st fill)
+                       (draw/bar-rounding rounding (range-point y0 level c0) (range-point y1 level c0))))
     (when zero-line?
       (draw/zero-line! canvas box scales style :x))
     (let [labels (keep (fn [[{:keys [label] :as bar} st]]
@@ -391,4 +398,5 @@
   bars are (overlay groups sharing a level, see [[compute]] - env `:chart-stats`)."
   [{:keys [options]} attributes canvas box env]
   (draw/bar-key! canvas box (merge (style options (:theme env)) (select-keys attributes [:color :pattern]))
-                 (boolean (and (contains? attributes :color) (some :translucent? (vals (get-in env [:chart-stats :data])))))))
+                 (boolean (and (contains? attributes :color) (some :translucent? (vals (get-in env [:chart-stats :data])))))
+                 (draw/corner-rounding options)))

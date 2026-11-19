@@ -18,6 +18,9 @@
     over all panels, so the halves compare visually (default false)
   * `:color` (fill), `:stroke-color` (bar outline: a color, `:none` or `:darker` - the darkened fill, default),
     `:stroke-width`, `:alpha` (overlay fill opacity, 0..1)
+  * `:corner-radius` - pixels, every bar corner rounded; `:corner-radius-end` - only the corners at the bar's top
+    (value end), wins over `:corner-radius`; clamped to half the shorter side; the legend key rounded alike
+    (default 0)
   * `:padding {:x [lo hi] :y [lo hi]}` - default `{:x [0.05 0.05] :y [0 0.05]}` (mirror: y `[0.05 0.05]`); bars
     stand on the panel's bottom edge, x padding keeps end ticks off facet panel joints
 
@@ -68,7 +71,9 @@
                       (schema/optional :position (into [:enum] (sort position/positions)))
                       (schema/nilable :symmetric schema/bool)
                       (schema/nilable :zero-line schema/bool)
-                      (schema/optional :padding data/position-padding))
+                      (schema/optional :padding data/position-padding)
+                      draw/corner-radius-option
+                      draw/corner-radius-end-option)
                 (into strip/ridge-options))
    :mapping [:map [:x schema/accessor]]})
 
@@ -194,8 +199,9 @@
        :tick-format (when (= position :mirror) {:y :absolute})})))
 
 (defn- draw-ridges!
-  "Draw ridgeline histograms of one panel, farthest level first; empty bins skipped."
-  [{:keys [ridges top overlap style translucent?]} canvas box scales env]
+  "Draw ridgeline histograms of one panel, farthest level first; empty bins skipped; corners rounded by `rounding`
+  (see [[cljplot2.graphics.draw/corner-rounding]])."
+  [{:keys [ridges top overlap style translucent?]} canvas box scales env rounding]
   (let [pl (strip/placement box scales {} :band)
         point (strip/ridge-point pl (double overlap))
         top (double top)
@@ -213,19 +219,21 @@
               :when (pos? (double h))
               :let [a (point x0 level side 0.0) b (point x1 level side (/ (double h) top))]
               :when (and (ok? a) (ok? b))]
-        (draw/bar! canvas a b fill (draw/outline-color (:stroke-color st) fill) stroke-width (pattern-fill st fill))))))
+        (draw/bar! canvas a b fill (draw/outline-color (:stroke-color st) fill) stroke-width (pattern-fill st fill)
+                   (draw/bar-rounding rounding a (point x0 level side (/ (double h) top))))))))
 
 (defn draw
   "Draw the bars of one panel; grouped overlay bars get fill alpha `:alpha`; empty bins, bars under half a pixel and
   bars of groups outside an aesthetic domain are skipped; mirror with `:zero-line` (default on) - the y = 0 line on
   top."
-  [_chart {:keys [bars style translucent? ridges zero-line?] :as computed} canvas box scales env]
+  [{:keys [options]} {:keys [bars style translucent? ridges zero-line?] :as computed} canvas box scales env]
   (if ridges
-    (draw-ridges! computed canvas box scales env)
+    (draw-ridges! computed canvas box scales env (draw/corner-rounding options))
     (when (seq bars)
       (let [projection (scale/projection scales)
             stroke-width (double (:stroke-width style))
-            pattern-fill (draw/pattern-fill-cache)]
+            pattern-fill (draw/pattern-fill-cache)
+            rounding (draw/corner-rounding options)]
         (c2d/set-stroke-custom canvas {:size stroke-width :join :miter})
         (doseq [{:keys [x0 x1 y0 y1 aesthetics]} bars
                 :when (not (== (double y0) (double y1)))
@@ -235,13 +243,17 @@
                 fill (:color st)
                 stroke (draw/outline-color (:stroke-color st) fill)
                 drawn-fill (if translucent? (c/set-alpha fill (* 255.0 (double (:alpha style)))) fill)]
-            (when (draw/visible-bar? (double w) (double h))
-              (c2d/set-color canvas drawn-fill)
-              (c2d/rect canvas left top w h)
-              (draw/fill-with-pattern! canvas (pattern-fill st drawn-fill) #(c2d/rect canvas left top w h))
-              (when (and (pos? stroke-width) (not (theme/none? stroke)))
-                (c2d/set-color canvas stroke)
-                (c2d/rect canvas left top w h true)))))
+            (if rounding
+              (let [a (projection x0 y0)]
+                (draw/bar! canvas (draw/whole-pixel a) (draw/whole-pixel (projection x1 y1)) drawn-fill stroke stroke-width
+                           (pattern-fill st drawn-fill) (draw/bar-rounding rounding a (projection x0 y1))))
+              (when (draw/visible-bar? (double w) (double h))
+                (c2d/set-color canvas drawn-fill)
+                (c2d/rect canvas left top w h)
+                (draw/fill-with-pattern! canvas (pattern-fill st drawn-fill) #(c2d/rect canvas left top w h))
+                (when (and (pos? stroke-width) (not (theme/none? stroke)))
+                  (c2d/set-color canvas stroke)
+                  (c2d/rect canvas left top w h true))))))
         (when zero-line?
           (draw/zero-line! canvas box scales style))))))
 
@@ -250,4 +262,5 @@
   groups' bars are translucent) the fill gets `:alpha` too."
   [{:keys [options]} attributes canvas box env]
   (draw/bar-key! canvas box (merge (style options (:theme env)) (select-keys attributes [:color :pattern]))
-                 (and (contains? attributes :color) (= :overlay (get options :position :overlay)))))
+                 (and (contains? attributes :color) (= :overlay (get options :position :overlay)))
+                 (draw/corner-rounding options)))
