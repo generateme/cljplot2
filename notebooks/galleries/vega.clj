@@ -22,6 +22,7 @@
             [clojure2d.core :as c2d]
             [fastmath.core :as m]
             [fastmath.random :as r]
+            [fastmath.signal :as sig]
             [fastmath.stats :as stats]
             [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
@@ -1221,3 +1222,1076 @@
   :scales {:x {:domain ["A" "B" "D" "E" "G" "H"]}}
   :labels {:x "a" :y "b"}}
  {:width 500 :height 300})
+
+;; ## Area Charts & Streamgraphs
+
+;; ### Area Chart
+
+;; Unemployed people summed over all industries per month, 2000-2010 (the area from 0: an explicit y domain).
+
+(nu/source-note {:source "Vega-Lite - Area Chart" :url [(vl-url "area") (vg-url "area-chart")]
+                 :dataset :unemployment-across-industries})
+
+(def unemployment
+  "Unemployed per industry and month, `:date` a `LocalDate`."
+  (mapv #(update % :date local-date) (nu/dataset :unemployment-across-industries)))
+
+(let [totals (for [[date rows] (group-by :date unemployment)] {:date date :count (reduce + (map :count rows))})]
+  (plot/render-image
+   {:data totals :mapping {:x :date :y :count}
+    :charts [(chart/line {:fill :color})]
+    :scales {:y {:domain [0 (reduce max (map :count totals))]}}
+    :labels {:x "date (year-month)" :y "count"}}
+   {:width 600 :height 300}))
+
+;; ### Area Chart with Gradient
+
+;; Google's price over an area fading from white at the bottom to dark green (`:fill-gradient` along y).
+
+(nu/source-note {:source "Vega-Lite - Area Chart with Gradient" :url (vl-url "area_gradient") :dataset :stocks})
+
+(def goog-from-0 {:y {:domain [0 (reduce max (map :price goog))]}})
+
+(plot/render-image
+ {:data goog :mapping {:x :date :y :price}
+  :charts [(chart/line {:fill-gradient [:white [0 100 0]] :fill-gradient-axis :y :color [0 100 0]})]
+  :scales goog-from-0
+  :labels {:x "date" :y "price"}}
+ {:width 600 :height 300})
+
+;; ### Area Chart with Overlaying Lines and Point Markers
+
+;; The area of Google's price with its line and a point per month.
+
+(nu/source-note {:source "Vega-Lite - Area Chart with Overlaying Lines and Point Markers" :url (vl-url "area_overlay")
+                 :dataset :stocks})
+
+(plot/render-image
+ {:data goog :mapping {:x :date :y :price}
+  :charts [(chart/line {:fill [76 120 168 120] :color [76 120 168]}) (chart/scatter {:size 5 :color [76 120 168]})]
+  :scales goog-from-0
+  :labels {:x "date" :y "price"}}
+ {:width 600 :height 300})
+
+;; ### Stacked Area Chart
+
+;; Unemployed people per industry, stacked (20 colours, as the original's `category20b`).
+
+(nu/source-note {:source "Vega-Lite - Stacked Area Chart" :url [(vl-url "stacked_area") (vg-url "stacked-area-chart")]
+                 :dataset :unemployment-across-industries})
+
+(def industry-colors {:range (c/palette :category20b) :title "series"})
+
+(plot/render-image
+ {:data unemployment :mapping {:x :date :y :count :color :series}
+  :charts [(chart/line {:fill :color :position :stack :width 0})]
+  :scales {:color industry-colors}
+  :labels {:x "date (year-month)" :y "Sum of count"}}
+ {:width 800 :height 400})
+
+;; ### Horizontal Stacked Area Chart
+
+;; The share of clay and sand in a soil profile, depth growing downward (`:flip true`, the depth axis reversed).
+
+(nu/source-note {:source "Vega-Lite - Horizontal Stacked Area Chart" :url (vl-url "stacked_area_horizontal")})
+
+(plot/render-image
+ {:data (for [[depth clay] [[0 30] [1 20] [2 25] [4 40] [7 70] [10 60]]
+              [kind proportion] [["Clay" clay] ["Sand" (- 100 clay)]]]
+          {:depth depth :proportion proportion :type kind})
+  :mapping {:x :depth :y :proportion :color :type}
+  :flip true
+  :charts [(chart/line {:fill :color :position :stack :width 0 :alpha 1.0})]
+  :scales {:x {:reverse true :nice false} :color {:range [[166 118 29] [230 200 122]] :title "Soil type"}}
+  :labels {:x "Depth (m)" :y "Proportion (%)"}}
+ {:width 500 :height 400})
+
+;; ### Normalized Stacked Area Chart
+
+;; Each industry's share of the unemployed per month (no y axis, as the original).
+
+(nu/source-note {:source "Vega-Lite - Normalized Stacked Area Chart" :url (vl-url "stacked_area_normalize")
+                 :dataset :unemployment-across-industries})
+
+(plot/render-image
+ {:data unemployment :mapping {:x :date :y :count :color :series}
+  :charts [(chart/line {:fill :color :position :normalize :width 0})]
+  :scales {:color industry-colors :y {:axis false}}
+  :labels {:x "date (year-month)" :y nil}}
+ {:width 800 :height 400})
+
+;; ### Streamgraph
+
+;; The stacked industries centred on a middle line (`:position :silhouette`).
+
+(nu/source-note {:source "Vega-Lite - Streamgraph" :url (vl-url "stacked_area_stream") :dataset :unemployment-across-industries})
+
+(plot/render-image
+ {:data unemployment :mapping {:x :date :y :count :color :series}
+  :charts [(chart/line {:fill :color :position :silhouette :width 0})]
+  :scales {:color industry-colors :y {:axis false}}
+  :labels {:x "date (year-month)" :y nil}}
+ {:width 800 :height 400})
+
+;; ### Horizon Graph
+
+;; Values folded into two bands of height 50, the upper band darker over the lower (`plot/horizon`); the original
+;; layers the value and the value - 50 as translucent areas clipped at 50.
+
+(nu/source-note {:source "Vega-Lite - Horizon Graph" :url [(vl-url "area_horizon") (vg-url "horizon-graph")]})
+
+(plot/render-image
+ (plot/horizon (map (fn [x y] {:x x :y y}) (range 1 21)
+                    [28 55 43 91 81 53 19 87 52 48 24 49 87 66 17 27 68 16 49 15])
+               {:bands 2 :band-height 50})
+ {:width 500 :height 120})
+
+;; ## Table-based Plots
+
+;; ### Table Heatmap
+
+;; Mean horsepower per origin and number of cylinders.
+
+(nu/source-note {:source "Vega-Lite - Table Heatmap" :url (vl-url "rect_heatmap") :dataset :cars})
+
+(plot/render-image
+ {:data (for [[[origin cylinders] rows] (group-by (juxt :origin :cylinders) (filter :horsepower cars))]
+          {:origin origin :cylinders (str cylinders) :horsepower (stats/mean (map :horsepower rows))})
+  :mapping {:x :cylinders :y :origin :color :horsepower}
+  :charts [(chart/tile)]
+  :scales {:x {:domain ["3" "4" "5" "6" "8"]} :y {:domain ["Europe" "Japan" "USA"] :reverse true}
+           :color {:title "Mean of Horsepower"}}
+  :labels {:x "Cylinders" :y "Origin"}}
+ {:width 500 :height 250})
+
+;; ### Annual Weather Heatmap
+
+;; The highest daily maximum temperature per day of the month and month (Seattle 2012-2015).
+
+(nu/source-note {:source "Vega-Lite - Annual Weather Heatmap" :url [(vl-url "rect_heatmap_weather") (vg-url "heatmap")]
+                 :dataset :seattle-weather-vega})
+
+(plot/render-image
+ {:data (for [[[day month] rows] (group-by (juxt #(.getDayOfMonth (local-date (:date %))) :month) seattle-months)]
+          {:day (str day) :month month :temp (reduce max (map :temp-max rows))})
+  :mapping {:x :day :y :month :color :temp}
+  :charts [(chart/tile)]
+  :scales {:x {:domain (mapv str (range 1 32))} :y {:domain month-names :reverse true} :color {:title nil}}
+  :labels {:title "Daily Max Temperatures (C) in Seattle, WA" :x "Day" :y "Month"}}
+ {:width 900 :height 380})
+
+;; ### Table Bubble Plot (Github Punch Card)
+
+;; GitHub contributions summed per weekday and hour, a circle per cell sized by the sum.
+
+(nu/source-note {:source "Vega-Lite - Table Bubble Plot (Github Punch Card)" :url (vl-url "circle_github_punchcard")
+                 :dataset :github})
+
+(def weekdays ["Mon" "Tue" "Wed" "Thu" "Fri" "Sat" "Sun"])
+
+(plot/render-image
+ {:data (for [[[day hour] rows] (group-by (juxt #(weekdays (dec (.getValue (.getDayOfWeek (local-date (:time %))))))
+                                                #(subs (:time %) 11 13))
+                                          (nu/dataset :github))]
+          {:day day :hour hour :count (reduce + (map :count rows))})
+  :mapping {:x :hour :y :day :size :count}
+  :charts [(chart/scatter {:color [76 120 168]})]
+  :scales {:x {:domain (mapv #(format "%02d" %) (range 24))} :y {:domain weekdays :reverse true}
+           :size {:range [0 18] :area true :title "Sum of count"}}
+  :labels {:x "time (hours)" :y "time (day)"}}
+ {:width 800 :height 300})
+
+;; ### Layering text over heatmap
+
+;; Cars per origin and cylinders, each cell labelled with its count in black or white by the colour under it
+;; (tile `:value-label`).
+
+(nu/source-note {:source "Vega-Lite - Layering text over heatmap" :url (vl-url "layer_text_heatmap") :dataset :cars})
+
+(plot/render-image
+ {:data (for [[[origin cylinders] rows] (group-by (juxt :origin :cylinders) cars)]
+          {:origin origin :cylinders (str cylinders) :n (count rows)})
+  :mapping {:x :cylinders :y :origin :color :n}
+  :charts [(chart/tile {:value-label #(str (m/round (double (:value %))))})]
+  :scales {:x {:domain ["3" "4" "5" "6" "8"]} :y {:domain ["Europe" "Japan" "USA"] :reverse true}
+           :color {:title "Count of Records"}}
+  :labels {:x "Cylinders" :y "Origin"}}
+ {:width 500 :height 250})
+
+;; ### Lasagna Plot (Dense Time-Series Heatmap)
+
+;; Monthly prices of four companies as a row of cells each (rects a month wide).
+
+(nu/source-note {:source "Vega-Lite - Lasagna Plot (Dense Time-Series Heatmap)" :url (vl-url "rect_lasagna") :dataset :stocks})
+
+(plot/render-image
+ {:data (for [{:keys [symbol ^LocalDate date price]} stocks :when (not= "GOOG" symbol)]
+          {:symbol symbol :x0 date :x1 (.plusMonths date 1) :price price})
+  :charts [(chart/rect {:mapping {:x0 :x0 :x1 :x1 :y0 :symbol :y1 :symbol :color :price}})]
+  :scales {:y {:domain ["AAPL" "AMZN" "IBM" "MSFT"] :reverse true} :color {:title "Price"}}
+  :labels {:x "Time" :y nil}}
+ {:width 800 :height 250})
+
+;; ### Mosaic Chart with Labels
+
+;; Cars per origin (column widths) and cylinders within each origin (heights) - a treemap of `:layout :slice-dice`
+;; (the original builds the same with `stack` and `window` transforms). The treemap orders the parts by size, the
+;; original by name.
+
+(nu/source-note {:source "Vega-Lite - Mosaic Chart with Labels" :url (vl-url "rect_mosaic_labelled_with_offset")
+                 :dataset :cars})
+
+(plot/render-image
+ {:data (for [[[origin cylinders] rows] (group-by (juxt :origin :cylinders) cars)]
+          {:origin origin :cylinders (str cylinders) :n (count rows)})
+  :mapping {:value :n :hierarchy [:origin :cylinders]}
+  :charts [(chart/treemap {:layout :slice-dice :padding 2})]}
+ {:width 600 :height 450})
+
+;; ### Wind Vector Map
+
+;; Wind over western Europe on a 0.25° grid: an arrow per cell pointing where the wind blows, as long as its speed,
+;; coloured by its direction (longitude and latitude as plain axes - no map projection).
+
+(nu/source-note {:source "Vega-Lite - Wind Vector Map" :url [(vl-url "point_angle_windvector") (vg-url "wind-vectors")]
+                 :dataset :windvectors})
+
+(plot/render-image
+ {:data (for [{:keys [longitude latitude dir speed]} (nu/dataset :windvectors)
+              :let [heading (m/radians (+ 180.0 (double dir))) len (* 0.05 (double speed))]]
+          {:x longitude :y latitude :xend (+ (double longitude) (* len (m/sin heading)))
+           :yend (+ (double latitude) (* len (m/cos heading))) :dir dir})
+  :mapping {:x :x :y :y :xend :xend :yend :yend :color :dir}
+  :charts [(chart/segment {:width 1.2 :arrow {:end true :size 2.5}})]
+  :scales {:color {:domain [0 360] :range (mapv (c/gradient :pals/kovesi.cyclic_mrybm_35_75_c68) (m/slice-range 0 1 13))
+                   :legend false}}
+  :aspect :iso
+  :labels {:x "longitude" :y "latitude"}}
+ {:width 900 :height 700})
+
+;; ## Circular Plots
+
+;; ### Pie Chart
+
+;; Six values as slices of one stacked bar around the circle.
+
+(nu/source-note {:source "Vega-Lite - Pie Chart" :url [(vl-url "arc_pie") (vg-url "pie-chart")]})
+
+(def pie-values (map (fn [category value] {:category (str category) :value value}) (range 1 7) [4 6 10 3 7 8]))
+
+(plot/render-image
+ {:data pie-values :mapping {:x :value :color :category}
+  :coord {:kind :polar}
+  :charts [(chart/bar {:position :stack :width 1.0})]
+  :scales {:x {:axis false}}
+  :labels {:x nil :y nil}}
+ {:width 400 :height 350})
+
+;; ### Pie Chart with percentage_tooltip
+
+;; The slices labelled with their share of the whole (the original shows it in a tooltip).
+
+(nu/source-note {:source "Vega-Lite - Pie Chart with percentage_tooltip" :url (vl-url "arc_pie_normalize_tooltip")})
+
+(plot/render-image
+ {:data pie-values :mapping {:x :value :color :category}
+  :coord {:kind :polar}
+  :charts [(chart/bar {:position :normalize :width 1.0 :value-label #(format "%.1f%%" (* 100.0 (double (:share %))))
+                       :label-position :center})]
+  :scales {:x {:axis false}}
+  :labels {:x nil :y nil}}
+ {:width 400 :height 350})
+
+;; ### Donut Chart
+
+;; The pie with a hole (`:inner` of the polar coord).
+
+(nu/source-note {:source "Vega-Lite - Donut Chart" :url [(vl-url "arc_donut") (vg-url "donut-chart")]})
+
+(plot/render-image
+ {:data pie-values :mapping {:x :value :color :category}
+  :coord {:kind :polar :inner 0.5}
+  :charts [(chart/bar {:position :stack :width 1.0})]
+  :scales {:x {:axis false}}
+  :labels {:x nil :y nil}}
+ {:width 400 :height 350})
+
+;; ### Pie Chart with Labels
+
+;; Each slice named outside its arc, no legend.
+
+(nu/source-note {:source "Vega-Lite - Pie Chart with Labels" :url [(vl-url "layer_arc_label") (vg-url "donut-chart-labelled")]})
+
+(plot/render-image
+ {:data (map #(update % :category {"1" "a" "2" "b" "3" "c" "4" "d" "5" "e" "6" "f"}) pie-values)
+  :mapping {:x :value :color :category}
+  :coord {:kind :polar}
+  :legend false
+  :charts [(chart/bar {:position :stack :width 1.0 :value-label #(get-in % [:group :color]) :label-position :outer})]
+  :scales {:x {:axis false}}
+  :labels {:x nil :y nil}}
+ {:width 400 :height 350})
+
+;; ### Radial Plot
+
+;; Slices with angles by value and radii by its square root, each labelled outside its arc (rects in polar
+;; coordinates).
+
+(nu/source-note {:source "Vega-Lite - Radial Plot" :url [(vl-url "arc_radial") (vg-url "radial-plot")]})
+
+(let [values [12 23 47 6 52 19]
+      ends (reductions + 0 values)
+      rows (map (fn [v lo hi] {:label (str v) :x0 lo :x1 hi :xm (* 0.5 (+ lo hi)) :r (m/sqrt v)}) values ends (rest ends))]
+  (plot/render-image
+   {:data rows
+    :coord {:kind :polar :inner 0.15}
+    :legend false
+    :charts [(chart/rect {:mapping {:x0 :x0 :x1 :x1 :y0 (constantly 0.0) :y1 :r :color :label} :stroke-color :white
+                          :stroke-width 1})
+             (chart/text {:mapping {:x :xm :y #(+ 0.5 (double (:r %))) :label :label}})]
+    :scales {:x {:axis false :domain [0 (last ends)] :nice false} :y {:axis false :domain [0 8]}
+             :color {:domain (map :label rows)}}
+    :theme {:panel {:grid {:x :none :y :none}}}
+    :labels {:x nil :y nil}}
+   {:width 450 :height 450}))
+
+;; ### Pyramid Pie Chart
+
+;; A pie that looks like a pyramid: the slices start at 135° (the two pyramid sides first, then the sky); the legend
+;; in its usual place, ordered as the slices (the original places it inside the picture).
+
+(nu/source-note {:source "Vega-Lite - Pyramid Pie Chart" :url (vl-url "arc_pie_pyramid")})
+
+(plot/render-image
+ {:data [{:category "Shady side of a pyramid" :value 10} {:category "Sunny side of a pyramid" :value 15}
+         {:category "Sky" :value 75}]
+  :mapping {:x :value :color :category}
+  :coord {:kind :polar :start 135}
+  :charts [(chart/bar {:position :stack :width 1.0 :stroke-color :none})]
+  :scales {:x {:axis false}
+           :color {:domain ["Shady side of a pyramid" "Sunny side of a pyramid" "Sky"]
+                   :range [[103 64 40] [222 172 88] [65 109 157]] :title nil}}
+  :theme {:panel {:grid {:x :none :y :none}}}
+  :labels {:x nil :y nil}}
+ {:width 550 :height 350})
+
+;; ## Advanced Calculations
+
+;; ### Calculate Difference from Average
+
+;; Movies rated more than 2.5 above the mean IMDB rating, the mean as a red rule (Vega-Lite's `joinaggregate`).
+
+(nu/source-note {:source "Vega-Lite - Calculate Difference from Average" :url (vl-url "joinaggregate_mean_difference")
+                 :dataset :movies})
+
+(let [mean-rating (stats/mean (map :imdb-rating imdb))
+      best (filter #(> (- (double (:imdb-rating %)) mean-rating) 2.5) imdb)]
+  (plot/render-image
+   {:data best :mapping {:x :imdb-rating :y :title}
+    :charts [(chart/bar) (chart/rule {:x mean-rating :color :red})]
+    :scales {:y {:domain (vec (sort (distinct (map :title best)))) :reverse true}}
+    :labels {:x "IMDB Rating" :y "Title"}}
+   {:width 600 :height 450}))
+
+;; ### Calculate Difference from Annual Average
+
+;; Movies rated more than 2.5 above the mean of their release year, the year's mean as a red tick on each bar (a rug
+;; per title).
+
+(nu/source-note {:source "Vega-Lite - Calculate Difference from Annual Average"
+                 :url (vl-url "joinaggregate_mean_difference_by_year") :dataset :movies})
+
+(let [year #(.getYear (local-date (:release-date %)))
+      year-means (update-vals (group-by year imdb) #(stats/mean (map :imdb-rating %)))
+      best (for [movie imdb
+                 :let [year-mean (year-means (year movie))]
+                 :when (> (- (double (:imdb-rating movie)) (double year-mean)) 2.5)]
+             (assoc movie :year-mean year-mean))]
+  (plot/render-image
+   {:data best :mapping {:x :imdb-rating :y :title}
+    :charts [(chart/bar) (chart/rug {:mapping {:x :year-mean} :color :red :line-width 2})]
+    :scales {:y {:domain (vec (sort (distinct (map :title best)))) :reverse true}}
+    :labels {:x "IMDB Rating" :y "Title"}}
+   {:width 600 :height 600}))
+
+;; ### Calculate Residuals
+
+;; Each movie's IMDB rating minus the mean rating, over its release date, coloured on a diverging scale centred on 0
+;; (`:midpoint`).
+
+(nu/source-note {:source "Vega-Lite - Calculate Residuals" :url (vl-url "joinaggregate_residual_graph") :dataset :movies})
+
+(let [dated (filter #(<= (.getYear (local-date (:release-date %))) 2019) imdb)
+      mean-rating (stats/mean (map :imdb-rating dated))]
+  (plot/render-image
+   {:data (map #(assoc % :date (local-date (:release-date %)) :delta (- (double (:imdb-rating %)) mean-rating)) dated)
+    :mapping {:x :date :y :delta :color :delta}
+    :charts [(chart/scatter {:shape \o :size 6})]
+    :scales {:color {:range [[202 0 32] [247 247 247] [5 113 176]] :midpoint 0 :title "Rating Delta"}}
+    :labels {:x "Release Date" :y "Rating Delta"}}
+   {:width 700 :height 400}))
+
+;; ### Waterfall Chart of Monthly Profit and Loss
+
+;; Each month's change as a floating bar from the running total before it to the one after it, joined by rules;
+;; the totals written past the bars, the changes inside them (Vega-Lite's `window` sums as Clojure `reductions`).
+
+(nu/source-note {:source "Vega-Lite - Waterfall Chart of Monthly Profit and Loss" :url (vl-url "waterfall_chart")})
+
+(def waterfall
+  "Running totals of the monthly amounts: `:previous` and `:sum` - the total before and after the row, `:kind`
+  `total` (Begin, End), `increase` or `decrease`."
+  (let [amounts [["Begin" 4000] ["Jan" 1707] ["Feb" -1425] ["Mar" -1030] ["Apr" 1812] ["May" -1067] ["Jun" -1481]
+                 ["Jul" 1228] ["Aug" 1176] ["Sep" 1146] ["Oct" 1205] ["Nov" -1388] ["Dec" 1492]]
+        sums (reductions + (map second amounts))
+        rows (map (fn [[label amount] sum next-label]
+                    {:label label :amount amount :previous (- sum amount) :sum sum :next next-label
+                     :kind (cond (= "Begin" label) "total" (neg? amount) "decrease" :else "increase")})
+                  amounts sums (concat (map first (rest amounts)) ["End"]))]
+    (vec (concat rows [{:label "End" :amount (last sums) :previous 0 :sum (last sums) :next "End" :kind "total"}]))))
+
+(def waterfall-centres
+  "The waterfall rows with the bar centre `:center` and the change as text (`+` for increases)."
+  (map #(assoc % :center (* 0.5 (+ (long (:sum %)) (long (:previous %))))
+               :text (str (when (= "increase" (:kind %)) "+") (:amount %)))
+       waterfall))
+
+(plot/render-image
+ {:data waterfall
+  :charts [(chart/rect {:mapping {:x0 :label :x1 :label :y0 :previous :y1 :sum :color :kind} :band-width 0.8})
+           (chart/segment {:data (butlast waterfall) :mapping {:x :label :y :sum :xend :next :yend :sum}
+                           :color [64 64 64] :width 2})
+           (chart/text {:data (filter #(>= (long (:amount %)) 0) waterfall) :mapping {:x :label :y :sum :label :sum}
+                        :anchor [:center :bottom] :offset [0 4]})
+           (chart/text {:data (filter #(neg? (long (:amount %))) waterfall) :mapping {:x :label :y :sum :label :sum}
+                        :anchor [:center :top] :offset [0 -4]})
+           (chart/text {:data (filter #(= "total" (:kind %)) waterfall-centres)
+                        :mapping {:x :label :y :center :label :text} :font-style :bold :color [114 90 48]})
+           (chart/text {:data (remove #(= "total" (:kind %)) waterfall-centres)
+                        :mapping {:x :label :y :center :label :text} :font-style :bold :color :white})]
+  :scales {:x {:domain (mapv :label waterfall)}
+           :color {:domain ["total" "decrease" "increase"] :range [[247 224 182] [247 138 100] [147 196 170]]
+                   :legend false}}
+  :labels {:x "Months" :y "Amount"}}
+ {:width 950 :height 450})
+
+;; ### Filtering Top-K Items
+
+;; The five best students by score (Vega-Lite's `window` rank, then `filter`).
+
+(nu/source-note {:source "Vega-Lite - Filtering Top-K Items" :url [(vl-url "window_top_k") (vg-url "top-k-plot")]})
+
+(let [scores [["A" 100] ["B" 56] ["C" 88] ["D" 65] ["E" 45] ["F" 23] ["G" 66] ["H" 67] ["I" 13] ["J" 12] ["K" 50]
+              ["L" 78] ["M" 66] ["N" 30] ["O" 97] ["P" 75] ["Q" 24] ["R" 42] ["S" 76] ["T" 78] ["U" 21] ["V" 46]]
+      top (take 5 (sort-by (comp - second) scores))]
+  (plot/render-image
+   {:data (map (fn [[student score]] {:student student :score score}) top)
+    :mapping {:x :score :y :student}
+    :charts [(chart/bar)]
+    :scales {:y {:domain (mapv first top) :reverse true}}
+    :labels {:x "score" :y "student"}}
+   {:width 500 :height 250}))
+
+;; ### Top-K Plot with "Others"
+
+;; The nine directors with the highest mean worldwide gross, the rest averaged into "All Others".
+
+(nu/source-note {:source "Vega-Lite - Top-K Plot with \"Others\"" :url [(vl-url "window_top_k_others") (vg-url "top-k-plot-with-others")]
+                 :dataset :movies})
+
+(let [means (->> (filter #(and (:director %) (number? (:worldwide-gross %))) movies)
+                 (group-by :director)
+                 (map (fn [[director rows]] [director (stats/mean (map :worldwide-gross rows))]))
+                 (sort-by (comp - second)))
+      ranked (concat (take 9 means) [["All Others" (stats/mean (map second (drop 9 means)))]])]
+  (plot/render-image
+   {:data (map (fn [[director gross]] {:director director :gross gross}) ranked)
+    :mapping {:x :gross :y :director}
+    :charts [(chart/bar)]
+    :scales {:y {:domain (vec (map first (sort-by (comp - second) ranked))) :reverse true}
+             :x {:formatter #(str (m/round (/ (double %) 1.0e6)) "M")}}
+    :labels {:title "Top Directors by Average Worldwide Gross" :x nil :y nil}}
+   {:width 600 :height 350}))
+
+;; ### Using the lookup transform to combine data
+
+;; Mean age per group: people's ages joined into the group list by name (Vega-Lite's `lookup`).
+
+(nu/source-note {:source "Vega-Lite - Using the lookup transform to combine data" :url (vl-url "lookup")
+                 :dataset :lookup-groups})
+
+(let [people (into {} (map (juxt :name identity) (nu/dataset :lookup-people)))]
+  (plot/render-image
+   {:data (map #(merge % (select-keys (people (:person %)) [:age :height])) (nu/dataset :lookup-groups))
+    :mapping {:x (comp str :group) :y :age}
+    :charts [(chart/bar {:stat :mean})]
+    :labels {:x "group" :y "Mean of age"}}
+   {:width 400 :height 300}))
+
+;; ### Parallel Coordinate Plot
+
+;; Four penguin measurements, each axis scaled from its minimum to its maximum, a translucent line per penguin
+;; (`chart/parallel`; the Vega example draws the cars).
+
+(nu/source-note {:source "Vega-Lite - Parallel Coordinate Plot"
+                 :url [(vl-url "parallel_coordinate") (vg-url "parallel-coordinates")] :dataset :penguins})
+
+(plot/render-image
+ {:data (filter :beak-length-mm penguins) :mapping {:color :species}
+  :charts [(chart/parallel {:variables [["Beak Length (mm)" :beak-length-mm] ["Beak Depth (mm)" :beak-depth-mm]
+                                        ["Flipper Length (mm)" :flipper-length-mm] ["Body Mass (g)" :body-mass-g]]
+                            :alpha 0.3})]
+  :labels {:x nil :y nil}}
+ {:width 700 :height 400})
+
+;; ### Bar Chart Showing Argmax Value
+
+;; The production budget of each genre's highest-grossing movie (US gross).
+
+(nu/source-note {:source "Vega-Lite - Bar Chart Showing Argmax Value" :url (vl-url "bar_argmax") :dataset :movies})
+
+(let [top (for [[genre rows] (group-by :major-genre (filter #(and (:major-genre %) (number? (:us-gross %))) movies))]
+            (assoc (apply max-key :us-gross rows) :genre genre))]
+  (plot/render-image
+   {:data top :mapping {:x :production-budget :y :genre}
+    :charts [(chart/bar)]
+    :scales {:y {:domain (vec (sort (map :genre top))) :reverse true}
+             :x {:formatter #(str (m/round (/ (double %) 1.0e6)) "M")}}
+    :labels {:x "Production Budget of the movie with the highest US Gross" :y "Major Genre"}}
+   {:width 600 :height 400}))
+
+;; ### Layering Averages over Raw Values
+
+;; Google's monthly prices as translucent points per year, the yearly mean as a line.
+
+(nu/source-note {:source "Vega-Lite - Layering Averages over Raw Values" :url (vl-url "layer_line_mean_point_raw")
+                 :dataset :stocks})
+
+(plot/render-image
+ {:data (filter #(= "GOOG" (:symbol %)) yearly-stocks) :mapping {:x :date :y :price}
+  :charts [(chart/scatter {:data (map #(assoc % :date (LocalDate/of (.getYear ^LocalDate (:date %)) 1 1)) goog)
+                           :shape \o :size 6 :color [76 120 168 80]})
+           (chart/line)]
+  :labels {:x "date (year)" :y "price"}}
+ {:width 500 :height 350})
+
+;; ### Layering Rolling Averages over Raw Values
+
+;; Seattle's daily maximum temperature, its 31-day centred mean in red (fastmath's `moving-average-filter`). The
+;; filter pads the series with zeros, so the first and last 15 days - without a full window - are left out.
+
+(nu/source-note {:source "Vega-Lite - Layering Rolling Averages over Raw Values"
+                 :url (vl-url "layer_line_rolling_mean_point_raw") :dataset :seattle-weather-vega})
+
+(let [days (sort-by :date (map #(update % :date local-date) seattle))
+      rolling ((sig/moving-average-filter 31) (map :temp-max days))]
+  (plot/render-image
+   {:data days :mapping {:x :date :y :temp-max}
+    :charts [(chart/scatter {:shape \o :size 5 :color [76 120 168 80]})
+             (chart/line {:data (->> (map #(assoc %1 :rolling %2) days rolling) (drop 15) (drop-last 15))
+                          :mapping {:y :rolling} :color :red :width 3})]
+    :labels {:x "Date" :y "Max Temperature and Rolling Mean"}}
+   {:width 800 :height 350}))
+
+;; ### Line Chart to Show Benchmarking Results
+
+;; Frames per second (1000 / frame time) of two systems over 210 trials, on a log axis.
+
+(nu/source-note {:source "Vega-Lite - Line Chart to Show Benchmarking Results" :url (vl-url "layer_line_window")})
+
+(def falcon-ms
+  [16.82 19.76 16.08 19.58 16.42 16.2 16.02 15.94 16.28 16.12 16.16 16.12 16.14 16.1 16.2 16.26 19.36 19.7 15.94
+   19.14 16.2 16.12 19.52 19.7 16.2 20.98 16.3 16.42 16.82 16.5 16.56 16.18 16.08 16.24 16.04 16.3 19.4 15.7 16.24
+   15.92 16.26 16.22 16.52 16.46 16.36 15.72 16.06 15.96 16.48 16.6 16.24 16.94 16.22 15.96 15.9 16.48 16.32 15.76
+   16 16.18 16.22 15.8 16.14 16.3 16.36 16.26 15.96 15.94 16.54 16.14 16.26 16.2 15.9 16.08 16.08 15.7 15.66 16.14
+   23.1 16.6 16.42 16.02 15.62 16.36 15.72 15.92 15.56 16.34 22.82 15.66 15.56 16 16 15.82 16.4 16.46 16.06 16.24
+   15.8 16.16 16.36 19.7 16.1 16.14 15.82 16.44 16.14 16.02 15.86 16.06 16.02 15.92 15.82 16.58 15.88 16.58 15.7
+   19.38 19.24 16 15.98 15.96 16.2 15.98 16.34 16.32 16.26 15.92 15.54 16.14 16.46 16.34 15.82 19.72 15.76 16.5
+   15.72 16.08 16.44 16.2 15.96 16 16.1 19.32 16.1 16.18 15.96 22.64 15.9 16.28 16.1 15.92 16.08 16.26 15.9 15.82
+   15.7 15.98 16.38 16.04 19.42 15.94 16.16 15.96 16.26 15.78 15.88 15.98 16.06 16.12 23.02 15.62 15.92 16.06 14.78
+   16.26 19.52 16.32 16.6 16.22 19.74 19.46 15.94 15.84 16.1 16.46 16.18 16.1 15.94 16.06 15.86 15.82 16.04 16.18
+   15.82 17.3 15.94 15.74 15.72 15.68 15.62 15.6 16.04 15.5 15.6 19.44 15.96 16.24 16.04 16.24])
+(def square-ms
+  [24.2 17.9 15.8 58.4 151 2523.1 245.3 136 72.3 55.7 42.4 37.7 30.1 30.1 21.8 20.6 21.8 17.6 18.2 21 941.7 177.4
+   2821.8 359.2 318 217.1 126 69 57.8 45.3 35.6 29.1 23.8 44.2 17.7 17.7 15.7 27.8 22.8 3853.6 91.6 181.4 476.3
+   265.9 254.6 2583.2 124.8 73.2 56.4 48.7 41.6 21.1 20.3 21.3 18.3 17.1 19.5 828.2 162.2 217.9 205.5 197.6 2249.8
+   103.1 71.7 57.6 41.4 34.5 22 20.5 21.7 18.3 17.3 19.4 666.8 214.9 212.3 125.8 67.7 56.1 45.8 38.3 33 35.4 22.7
+   19.4 19.9 24.1 19.3 21.3 3508.7 204.1 125.4 65.3 60.8 44.1 36.3 30.5 28.6 16.5 18.6 23.7 22.3 17.6 19.2 448.8
+   124.4 66.6 53.5 51 45.2 28.4 29.2 26.7 25.9 18.1 17.6 20.1 25.2 3332 67.5 53.6 56.6 39.9 27.6 29.6 33.5 17.2
+   18.8 25.2 16.7 16.9 240.2 52.4 42.1 33.9 28 28.6 17.3 20 21 22.8 16.7 19.2 175.4 43.5 34.7 29.7 34.9 25.8 17.3
+   22.6 17.6 17.2 19.2 111.8 35.4 27.6 25.4 21.9 18.6 18.1 21.2 17.9 17 80.6 29.8 30.1 16 26.8 17.5 22.3 16.8 22.4
+   77.4 31 29.7 28.7 26 16.9 15.8 19 52.6 25.2 16.7 17.9 21 19.8 18.8 46.5 17.5 16.8 18.3 18.3 14.9 41 18.3 17.3 17
+   17.5 32.3 22.6 16.6 17.9 25.6 17.5 20.3 25.2 18.6 17.7])
+
+(plot/render-image
+ {:data (for [[system times] [["Falcon" falcon-ms] ["Square Crossfilter (3M)" square-ms]]
+              [i ms] (map-indexed vector times)]
+          {:system system :trial (inc i) :fps (/ 1000.0 (double ms))})
+  :mapping {:x :trial :y :fps :color :system}
+  :charts [(chart/line {:width 1})]
+  :scales {:y {:kind :log} :x {:nice false} :color {:title "System"}}
+  :theme {:panel {:grid {:x :none :y :none}}}
+  :labels {:x "Trial" :y "Frames Per Second (fps)"}}
+ {:width 700 :height 350})
+
+;; ### Quantile-Quantile Plot (QQ Plot)
+
+;; The quantiles of a sample (1% steps) against those of the uniform (left) and normal (right) distributions.
+
+(nu/source-note {:source "Vega-Lite - Quantile-Quantile Plot (QQ Plot)"
+                 :url [(vl-url "point_quantile_quantile") (vg-url "quantile-quantile-plot")] :dataset :normal-2d})
+
+(let [ps (map #(+ 0.005 (* 0.01 (double %))) (range 100))
+      vs (stats/quantiles (map :u normal-2d) ps)
+      normal (r/distribution :normal)
+      rows (map (fn [p v] {:p p :v v :norm (r/icdf normal p)}) ps vs)]
+  (plot/render-image
+   (plot/arrange
+    [{:data rows :mapping {:x :p :y :v} :charts [(chart/scatter {:shape \o :size 6})] :labels {:x "unif" :y "v"}}
+     {:data rows :mapping {:x :norm :y :v} :charts [(chart/scatter {:shape \o :size 6})] :labels {:x "norm" :y "v"}}]
+    {:columns 2})
+   {:width 800 :height 350}))
+
+;; ### Linear Regression
+
+;; IMDB against Rotten Tomatoes ratings with a least-squares line and its R² (the squared correlation).
+
+(nu/source-note {:source "Vega-Lite - Linear Regression" :url [(vl-url "layer_point_line_regression") (vg-url "regression")]
+                 :dataset :movies})
+
+(let [rated (filter #(and (number? (:imdb-rating %)) (number? (:rotten-tomatoes-rating %))) movies)
+      r2 (m/sq (stats/pearson-correlation (map :rotten-tomatoes-rating rated) (map :imdb-rating rated)))]
+  (plot/render-image
+   {:data rated :mapping {:x :rotten-tomatoes-rating :y :imdb-rating}
+    :charts [(chart/scatter {:size 5 :color [76 120 168]})
+             (chart/smooth {:method :lm :band :none :color [178 34 34] :width 2})
+             (chart/text {:x 100 :y 1.5 :text (format "R²: %.2f" r2) :anchor [:right :bottom] :color [178 34 34]})]
+    :labels {:x "Rotten Tomatoes Rating" :y "IMDB Rating"}}
+   {:width 600 :height 450}))
+
+;; ### Loess Regression
+
+;; The same ratings with a loess curve (bandwidth 0.3, as Vega-Lite's default).
+
+(nu/source-note {:source "Vega-Lite - Loess Regression" :url [(vl-url "layer_point_line_loess") (vg-url "loess-regression")]
+                 :dataset :movies})
+
+(plot/render-image
+ {:data (filter #(and (number? (:imdb-rating %)) (number? (:rotten-tomatoes-rating %))) movies)
+  :mapping {:x :rotten-tomatoes-rating :y :imdb-rating}
+  :charts [(chart/scatter {:size 5 :color [76 120 168]})
+           (chart/smooth {:band :none :method-params {:bandwidth 0.3} :color [178 34 34] :width 2})]
+  :labels {:x "Rotten Tomatoes Rating" :y "IMDB Rating"}}
+ {:width 600 :height 450})
+
+;; ### Using window transform to impute missing values by averaging the previous and next values.
+
+;; A missing value replaced by the mean of its neighbours (Vega-Lite's `window` `lag` / `lead`).
+
+(nu/source-note {:source "Vega-Lite - Using window transform to impute missing values by averaging the previous and next values."
+                 :url (vl-url "window_impute_null")})
+
+(let [bs [28 55 nil 65 43 nil 55 43]
+      imputed (map (fn [prev b next] (or b (* 0.5 (+ (double prev) (double next))))) (cons nil bs) bs (concat (rest bs) [nil]))]
+  (plot/render-image
+   {:data (map (fn [day b] {:date (LocalDate/of 2000 1 (int day)) :b b}) (range 1 9) imputed)
+    :mapping {:x :date :y :b}
+    :charts [(chart/line) (chart/scatter {:size 7})]
+    :scales {:x {:formatter #(.format (DateTimeFormatter/ofPattern "dd MMM" Locale/ENGLISH) ^TemporalAccessor %)}}
+    :labels {:x "a" :y "b"}}
+   {:width 500 :height 300}))
+
+;; ## Error Bars & Error Bands
+
+;; ### Error Bars Showing Confidence Interval
+
+;; Mean barley yield per variety with its 95% confidence interval (`chart/extent` `:method :ci` - Student's t; the
+;; original bootstraps it).
+
+(nu/source-note {:source "Vega-Lite - Error Bars Showing Confidence Interval"
+                 :url [(vl-url "layer_point_errorbar_ci") (vg-url "error-bars")] :dataset :barley-vega})
+
+(def barley-varieties (vec (sort (distinct (map :variety barley)))))
+
+(plot/render-image
+ {:data barley :mapping {:x :yield :y :variety}
+  :charts [(chart/extent {:method :ci :color :black :shape \O :size 6})]
+  :scales {:y {:domain barley-varieties :reverse true}}
+  :labels {:x "Barley Yield" :y "variety"}}
+ {:width 500 :height 350})
+
+;; ### Error Bars Showing Standard Deviation
+
+;; The means with one standard deviation either side.
+
+(nu/source-note {:source "Vega-Lite - Error Bars Showing Standard Deviation" :url (vl-url "layer_point_errorbar_stdev")
+                 :dataset :barley-vega})
+
+(plot/render-image
+ {:data barley :mapping {:x :yield :y :variety}
+  :charts [(chart/extent {:method :stddev :color :black :shape \O :size 6})]
+  :scales {:y {:domain barley-varieties :reverse true}}
+  :labels {:x "Barley Yield" :y "variety"}}
+ {:width 500 :height 350})
+
+;; ### Line Chart with Confidence Interval Band
+
+;; Mean miles per gallon per model year with its 95% confidence band (`fastmath.stats/ci` per year, a ribbon).
+
+(nu/source-note {:source "Vega-Lite - Line Chart with Confidence Interval Band" :url (vl-url "layer_line_errorband_ci")
+                 :dataset :cars})
+
+(plot/render-image
+ {:data (for [[year rows] (group-by #(local-date (:year %)) (filter :miles-per-gallon cars))
+              :let [[lo hi mean] (stats/ci (map :miles-per-gallon rows))]]
+          {:year year :lo lo :hi hi :mean mean})
+  :mapping {:x :year :y :mean}
+  :charts [(chart/ribbon {:mapping {:ymin :lo :ymax :hi} :color [76 120 168 80]}) (chart/line)]
+  :labels {:x "Year (year)" :y "Mean of Miles per Gallon (95% CIs)"}}
+ {:width 600 :height 350})
+
+;; ### Scatterplot with Mean and Standard Deviation Overlay
+
+;; Miles per gallon against horsepower; a band of one standard deviation around the mean, the mean as a rule.
+
+(nu/source-note {:source "Vega-Lite - Scatterplot with Mean and Standard Deviation Overlay"
+                 :url (vl-url "layer_scatter_errorband_1D_stdev_global_mean") :dataset :cars})
+
+(let [mpg (keep :miles-per-gallon cars)
+      mean (stats/mean mpg)
+      sd (stats/stddev mpg)]
+  (plot/render-image
+   {:data cars :mapping {:x :horsepower :y :miles-per-gallon}
+    :charts [(chart/rect {:y [(- mean sd) (+ mean sd)] :fill [76 120 168] :alpha 0.2})
+             (chart/scatter {:shape \o :size 6 :color [76 120 168]})
+             (chart/rule {:y mean :color :black})]
+    :labels {:x "Horsepower" :y "Miles per Gallon"}}
+   {:width 600 :height 400}))
+
+;; ## Box Plots
+
+;; ### Box Plot with Min/Max Whiskers
+
+;; Penguin body mass per species, whiskers to the minimum and maximum (`:stat :identity` over statistics computed
+;; in Clojure).
+
+(nu/source-note {:source "Vega-Lite - Box Plot with Min/Max Whiskers" :url (vl-url "boxplot_minmax_2D_vertical")
+                 :dataset :penguins})
+
+(plot/render-image
+ {:data (for [[species rows] (group-by :species (filter :body-mass-g penguins))
+              :let [mass (map :body-mass-g rows)
+                    [q1 median q3] (stats/quantiles mass [0.25 0.5 0.75])]]
+          {:species species :lower (reduce min mass) :q1 q1 :median median :q3 q3 :upper (reduce max mass)})
+  :mapping {:x :species :lower :lower :q1 :q1 :median :median :q3 :q3 :upper :upper :color :species}
+  :charts [(chart/box {:stat :identity})]
+  :legend false
+  :labels {:x "Species" :y "Body Mass (g)"}}
+ {:width 450 :height 400})
+
+;; ### Tukey Box Plot (1.5 IQR)
+
+;; The same with Tukey's whiskers (1.5 IQR) and outliers.
+
+(nu/source-note {:source "Vega-Lite - Tukey Box Plot (1.5 IQR)" :url [(vl-url "boxplot_2D_vertical") (vg-url "box-plot")]
+                 :dataset :penguins})
+
+(plot/render-image
+ {:data (filter :body-mass-g penguins) :mapping {:x :species :y :body-mass-g :color :species}
+  :charts [(chart/box)]
+  :legend false
+  :labels {:x "Species" :y "Body Mass (g)"}}
+ {:width 450 :height 400})
+
+;; ### Box Plot with Pre-Calculated Summaries
+
+;; Boxes from given statistics and outliers (`:stat :identity`).
+
+(nu/source-note {:source "Vega-Lite - Box Plot with Pre-Calculated Summaries" :url (vl-url "boxplot_preaggregated")})
+
+(plot/render-image
+ {:data [{:species "Adelie" :lower 2850 :q1 3350 :median 3700 :q3 4000 :upper 4775 :outliers []}
+         {:species "Chinstrap" :lower 2700 :q1 3487.5 :median 3700 :q3 3950 :upper 4800 :outliers [2700 4800]}
+         {:species "Gentoo" :lower 3950 :q1 4700 :median 5000 :q3 5500 :upper 6300 :outliers []}]
+  :mapping {:y :species :lower :lower :q1 :q1 :median :median :q3 :q3 :upper :upper :outliers :outliers :color :species}
+  :charts [(chart/box {:stat :identity})]
+  :scales {:y {:domain ["Adelie" "Chinstrap" "Gentoo"] :reverse true}}
+  :legend false
+  :labels {:title "Body Mass of Penguin Species (g)" :x nil :y nil}}
+ {:width 500 :height 250})
+
+;; ## Labeling & Annotation
+
+;; ### Simple Bar Chart with Labels and Emojis
+
+;; Fruit counts, bars coloured by count (rects - bars take only categorical colours), each labelled inside its end;
+;; the emoji names are text in the bundled Noto Emoji font (the y axis labels can't take a font of their own).
+
+(nu/source-note {:source "Vega-Lite - Simple Bar Chart with Labels and Emojis" :url (vl-url "layer_bar_fruit")})
+
+(let [fruit (map (fn [[name n]] {:name name :count n})
+                 [["🍊" 21] ["🍇" 13] ["🍏" 8] ["🍌" 5] ["🍐" 3] ["🍋" 2] ["🍎" 1] ["🍉" 1]])]
+  (plot/render-image
+   {:data fruit
+    :charts [(chart/rect {:mapping {:x0 (constantly 0) :x1 :count :y0 :name :y1 :name :color :count} :band-width 0.9})
+             (chart/text {:mapping {:x :count :y :name :label :count} :data (filter #(> (long (:count %)) 10) fruit)
+                          :anchor [:right :middle] :offset [-4 0] :color :white})
+             (chart/text {:mapping {:x :count :y :name :label :count} :data (remove #(> (long (:count %)) 10) fruit)
+                          :anchor [:right :middle] :offset [-4 0] :color :black})
+             (chart/text {:mapping {:x (constantly -1.2) :y :name :label :name} :font "Noto Emoji" :size 16})]
+    :scales {:y {:domain (mapv :name fruit) :reverse true :axis false} :x {:domain [-2.4 22]}
+             :color {:range [[222 238 238] [44 120 150]] :title "Number of fruit"}}
+    :labels {:x nil :y nil}}
+   {:width 500 :height 350}))
+
+;; ### Bar Chart Highlighting Values beyond a Threshold
+
+;; Daily PM2.5 values, the part of a bar above the hazardous level 300 in red, the level as a labelled rule.
+
+(nu/source-note {:source "Vega-Lite - Bar Chart Highlighting Values beyond a Threshold" :url (vl-url "layer_bar_annotations")})
+
+(let [days (map (fn [day value] {:day (str day) :value value}) (range 1 16)
+                [54.8 112.1 63.6 37.6 79.7 137.9 120.1 103.3 394.8 199.5 72.3 51.1 112.0 174.5 130.5])]
+  (plot/render-image
+   {:data days :mapping {:x :day :y :value}
+    :charts [(chart/bar {:stroke-color :none :alpha 1.0})
+             (chart/rect {:data (filter #(>= (double (:value %)) 300.0) days)
+                          :mapping {:x0 :day :x1 :day :y0 (constantly 300) :y1 :value} :fill [228 87 85] :band-width 0.9})
+             (chart/rule {:y 300 :color :black})
+             (chart/text {:x [:panel 1.0] :y 300 :text "hazardous" :anchor [:right :bottom] :offset [-2 2]})]
+    :scales {:x {:domain (mapv :day days)}}
+    :labels {:x "Day" :y "PM2.5 Value"}}
+   {:width 600 :height 350}))
+
+;; ### Mean overlay over precipitation chart
+
+;; Mean precipitation per month, the mean of all days as a red rule.
+
+(nu/source-note {:source "Vega-Lite - Mean overlay over precipitation chart" :url (vl-url "layer_precipitation_mean")
+                 :dataset :seattle-weather-vega})
+
+(plot/render-image
+ {:data seattle-months :mapping {:x :month :y :precipitation}
+  :charts [(chart/bar {:stat :mean})
+           (chart/rule {:y (stats/mean (map :precipitation seattle)) :color :red :width 3})]
+  :scales {:x {:domain month-names}}
+  :labels {:x "date (month)" :y "Mean of precipitation"}}
+ {:width 600 :height 350})
+
+;; ### Histogram with a Global Mean Overlay
+
+;; IMDB ratings binned, the mean rating as a red rule.
+
+(nu/source-note {:source "Vega-Lite - Histogram with a Global Mean Overlay" :url (vl-url "layer_histogram_global_mean")
+                 :dataset :movies})
+
+(plot/render-image
+ {:data imdb :mapping {:x :imdb-rating}
+  :charts [(chart/histogram {:bins (vec (range 1 11)) :y :count})
+           (chart/rule {:x (stats/mean (map :imdb-rating imdb)) :color :red :width 5})]
+  :labels {:x "IMDB Rating (binned)" :y "Count of Records"}}
+ {:width 500 :height 350})
+
+;; ### Line Chart with Highlighted Rectangles
+
+;; Falkensee's population, 1875-2014, with the Nazi and GDR periods as coloured rectangles behind the line.
+
+(nu/source-note {:source "Vega-Lite - Line Chart with Highlighted Rectangles"
+                 :url [(vl-url "layer_falkensee") (vg-url "falkensee-population")]})
+
+(plot/render-image
+ {:data (map (fn [[year population]] {:year year :population population})
+             [[1875 1309] [1890 1558] [1910 4512] [1925 8180] [1933 15915] [1939 24824] [1946 28275] [1950 29189]
+              [1964 29881] [1971 26007] [1981 24029] [1985 23340] [1989 22307] [1990 22087] [1991 22139] [1992 22105]
+              [1993 22242] [1994 22801] [1995 24273] [1996 25640] [1997 27393] [1998 29505] [1999 32124] [2000 33791]
+              [2001 35297] [2002 36179] [2003 36829] [2004 37493] [2005 38376] [2006 39008] [2007 39366] [2008 39821]
+              [2009 40179] [2010 40511] [2011 40465] [2012 40905] [2013 41258] [2014 41777]])
+  :mapping {:x :year :y :population}
+  :charts [(chart/rect {:data [{:start 1933 :end 1945 :event "Nazi Rule"} {:start 1948 :end 1989 :event "GDR (East Germany)"}]
+                        :mapping {:x0 :start :x1 :end :y0 (constantly nil) :y1 (constantly nil) :color :event}
+                        :alpha 0.6})
+           (chart/line {:color [51 51 51]})
+           (chart/scatter {:size 5 :color [51 51 51]})]
+  :scales {:x {:formatter #(str (m/round (double %)))} :color {:title "event"}}
+  :labels {:x "year (year)" :y "population"}}
+ {:width 700 :height 350})
+
+;; ### Distributions and Medians of Likert Scale Ratings
+
+;; Ratings of 17 participants per question: a circle per answer sized by its count, the median as a black tick,
+;; each scale's end labels beside it.
+
+(nu/source-note {:source "Vega-Lite - Distributions and Medians of Likert Scale Ratings" :url (vl-url "layer_likert")})
+
+(def likert
+  "Questions: name, the 17 ratings, the median and the scale's end labels."
+  [["Identify Errors:" [2 2 2 3 2 1 2 3 2 2 2 1 2 3 4 1 3] 2.0 "Easy" "Hard"]
+   ["Fix Errors:" [2 3 2 3 2 3 3 1 3 2 2 3 2 3 5 3 2] 2.0 "Easy" "Hard"]
+   ["Easier to Fix:" [3 4 2 2 4 3 4 2 2 1 1 2 1 2 1 2 2] 2.0 "Toolbar" "Gesture"]
+   ["Faster to Fix:" [4 5 1 2 4 4 5 4 4 1 1 3 1 2 1 2 2] 2.5 "Toolbar" "Gesture"]
+   ["Easier on Phone:" [2 5 2 4 4 4 3 2 1 1 1 1 1 1 1 1 1] 1.5 "Toolbar" "Gesture"]
+   ["Easier on Tablet:" [5 5 1 1 5 4 2 5 4 1 1 3 1 1 1 4 3] 3.0 "Toolbar" "Gesture"]
+   ["Device Preference:" [5 5 5 5 5 4 4 5 4 5 4 3 5 1 5 5 2] 4.5 "Phone" "Tablet"]])
+
+(let [questions (mapv first likert)
+      ends (for [[question _ median lo hi] likert] {:question question :median median :lo lo :hi hi})]
+  (plot/render-image
+   {:data (for [[question ratings] likert [rating n] (frequencies ratings)] {:question question :rating rating :n n})
+    :mapping {:x :rating :y :question :size :n}
+    :charts [(chart/scatter {:color [110 180 253]})
+             (chart/rug {:data ends :mapping {:x :median :size nil} :color :black :line-width 2 :thickness 0.4})
+             (chart/text {:data ends :mapping {:x (constantly 0.4) :y :question :label :lo :size nil} :anchor [:right :middle]})
+             (chart/text {:data ends :mapping {:x (constantly 5.6) :y :question :label :hi :size nil} :anchor [:left :middle]})]
+    :scales {:y {:domain questions :reverse true} :x {:domain [-1.2 7.2] :ticks [1 2 3 4 5] :nice false}
+             :size {:range [3 16] :area true :title "Number of Ratings"}}
+    :labels {:title "Questionnaire Ratings" :x nil :y nil}}
+   {:width 800 :height 350}))
+
+;; ### Comparative Likert Scale Ratings
+
+;; Mean ratings with 95% intervals of two measures in two studies (top), and what each side of 0 means (bottom).
+
+(nu/source-note {:source "Vega-Lite - Comparative Likert Scale Ratings" :url (vl-url "concat_layer_voyager_result")})
+
+(let [results [{:measure "Open Exploration" :mean 1.813 :lo 1.255 :hi 2.37 :study "PoleStar vs Voyager"}
+               {:measure "Focused Question Answering" :mean -1.688 :lo -2.325 :hi -1.05 :study "PoleStar vs Voyager"}
+               {:measure "Open Exploration" :mean 2.1875 :lo 1.665 :hi 2.71 :study "PoleStar vs Voyager 2"}
+               {:measure "Focused Question Answering" :mean -0.0625 :lo -0.474 :hi 0.349 :study "PoleStar vs Voyager 2"}]]
+  (plot/render-image
+   (plot/arrange
+    [{:data results :mapping {:x :lo :y :study}
+      :charts [(chart/rule {:x 0 :color [102 102 102]})
+               (chart/segment {:mapping {:xend :hi :yend :study} :color :black})
+               (chart/scatter {:mapping {:x :mean :color :measure} :size 10 :stroke-color :black})]
+      :scales {:x {:domain [-3 3]} :y {:domain ["PoleStar vs Voyager" "PoleStar vs Voyager 2"] :reverse true}
+               :color {:domain ["Focused Question Answering" "Open Exploration"] :range [:black :white] :legend false}}
+      :labels {:title "Mean of Subject Ratings (95% CIs)" :x nil :y nil}}
+     {:data [{:from -0.25 :to -2.9 :y 0} {:from 0.25 :to 2.9 :y 0}]
+      :mapping {:x :from :y :y :xend :to :yend :y}
+      :charts [(chart/segment {:color :black :arrow {:end true :size 6}})
+               (chart/text {:x -0.25 :y 0 :text "PoleStar\nMore Valuable" :anchor [:right :bottom] :offset [0 4]})
+               (chart/text {:x 0.25 :y 0 :text "Voyager / Voyager 2\nMore Valuable" :anchor [:left :bottom] :offset [0 4]})]
+      :scales {:x {:domain [-3 3] :axis false} :y {:axis false}}
+      :theme {:panel {:grid {:x :none :y :none}}}
+      :labels {:x nil :y nil}}]
+    {:columns 1 :heights [3 1.4]})
+   {:width 600 :height 320}))
+
+;; ## Other Layered Plots
+
+;; ### Candlestick Chart
+
+;; Daily open, high, low and close of a stock in June 2009 - green when it closed above the open.
+
+(nu/source-note {:source "Vega-Lite - Candlestick Chart" :url (vl-url "layer_candlestick") :dataset :ohlc})
+
+(plot/render-image
+ {:data (map #(update % :date local-date) (nu/dataset :ohlc))
+  :mapping {:x :date :open :open :high :high :low :low :close :close}
+  :charts [(chart/candlestick {:up-color [6 152 45] :down-color [174 19 37]})]
+  :scales {:x {:formatter #(.format (DateTimeFormatter/ofPattern "MM/dd") ^TemporalAccessor %)}}
+  :labels {:x "Date in 2009" :y "Price"}}
+ {:width 600 :height 400})
+
+;; ### Ranged Dot Plot
+
+;; Life expectancy of five countries in 1955 and 2000, joined by a line.
+
+(nu/source-note {:source "Vega-Lite - Ranged Dot Plot" :url (vl-url "layer_ranged_dot") :dataset :countries-vega})
+
+(let [countries #{"China" "India" "United States" "Indonesia" "Brazil"}
+      rows (filter #(and (countries (:country %)) (#{1955 2000} (:year %))) (nu/dataset :countries-vega))]
+  (plot/render-image
+   {:data (map #(update % :year str) rows) :mapping {:x :life-expect :y :country}
+    :charts [(chart/line {:mapping {:group :country} :color [219 100 111] :sort false})
+             (chart/scatter {:mapping {:color :year} :size 9})]
+    :scales {:y {:domain (vec (sort countries)) :reverse true}
+             :color {:domain ["1955" "2000"] :range [[230 149 156] [145 26 36]] :title "Year"}}
+    :labels {:x "Life Expectancy (years)" :y "Country"}}
+   {:width 600 :height 250}))
+
+;; ### Bullet Chart
+
+;; Five measures against qualitative ranges (grey bands), each with its current and projected value (blue bars) and
+;; target (black tick); a panel per measure with its own x scale (a recipe: rects and a segment over facets).
+
+(nu/source-note {:source "Vega-Lite - Bullet Chart" :url (vl-url "facet_bullet")})
+
+(def bullets
+  [{:title "Revenue" :ranges [150 225 300] :measures [220 270] :marker 250}
+   {:title "Profit" :ranges [20 25 30] :measures [21 23] :marker 26}
+   {:title "Order Size" :ranges [350 500 600] :measures [100 320] :marker 550}
+   {:title "New Customers" :ranges [1400 2000 2500] :measures [1000 1650] :marker 2100}
+   {:title "Satisfaction" :ranges [3.5 4.25 5] :measures [3.2 4.7] :marker 4.4}])
+
+(let [bars (fn [k i fill height]
+             (chart/rect {:data (map (fn [b] {:title (:title b) :x1 (get-in b [k i])}) bullets)
+                          :mapping {:x0 (constantly 0) :x1 :x1 :y0 (constantly (- 0.5 height)) :y1 (constantly (+ 0.5 height))}
+                          :fill fill}))]
+  (plot/render-image
+   {:data bullets :mapping {:facet :title}
+    :charts [(bars :ranges 2 [238 238 238] 0.5) (bars :ranges 1 [221 221 221] 0.5) (bars :ranges 0 [204 204 204] 0.5)
+             (bars :measures 1 [176 196 222] 0.15) (bars :measures 0 [70 130 180] 0.15)
+             (chart/segment {:mapping {:x :marker :xend :marker :y (constantly 0.2) :yend (constantly 0.8)}
+                             :color :black :width 2})]
+    :scales {:y {:domain [0 1] :axis false} :x {:nice false} :facet {:domain (mapv :title bullets)}}
+    :facets {:columns 1 :scales {:x :free}}
+    :theme {:panel {:grid {:x :none :y :none}}}
+    :labels {:x nil :y nil}}
+   {:width 600 :height 450}))
+
+;; ### Weekly Weather Plot
+
+;; Ten days of temperatures: record (light grey) and normal (dark grey) ranges, the observed range (black) for the
+;; past days and the forecast ranges of the low and high (black bars joined by a thin one) for the next days.
+
+(nu/source-note {:source "Vega-Lite - Weekly Weather Plot" :url [(vl-url "bar_layered_weather") (vg-url "weekly-temperature")]
+                 :dataset :weekly-weather})
+
+(let [weather (nu/dataset :weekly-weather)
+      series (fn [s] (filter #(and (= s (:series %)) (:low %)) weather))
+      bars (fn [rows lo hi half fill]
+             (chart/rect {:data rows :mapping {:x0 #(- (long (:id %)) half) :x1 #(+ (long (:id %)) half) :y0 lo :y1 hi}
+                          :fill fill}))
+      forecast (map (fn [l h] {:id (:id l) :low-high (:high l) :high-low (:low h)}) (series "forecast-low") (series "forecast-high"))]
+  (plot/render-image
+   {:data weather
+    :charts [(bars (series "record") :low :high 0.3 [204 204 204])
+             (bars (series "normal") :low :high 0.3 [153 153 153])
+             (bars (series "actual") :low :high 0.18 :black)
+             (bars (series "forecast-low") :low :high 0.18 :black)
+             (bars forecast :low-high :high-low 0.04 :black)
+             (bars (series "forecast-high") :low :high 0.18 :black)
+             (chart/text {:data (series "record") :mapping {:x :id :y (constantly 70) :label :day} :anchor [:center :bottom]})]
+    :scales {:y {:domain [10 72]} :x {:axis false}}
+    :theme {:panel {:grid {:x :none}}}
+    :labels {:title "Weekly Weather - Observations and Predictions" :x nil :y "Temperature (F)"}}
+   {:width 600 :height 400}))
+
+;; ### Wheat and Wages Example
+
+;; W. Playfair's chart of the price of wheat (bars, shillings per quarter) and weekly wages (area) in England,
+;; 1565-1821, with the monarchs' reigns along the top (Cromwell's Commonwealth white).
+
+(nu/source-note {:source "Vega-Lite - Wheat and Wages Example" :url [(vl-url "wheat_wages") (vg-url "wheat-and-wages")]
+                 :dataset :wheat})
+
+(let [wheat (map #(update % :year parse-long) (nu/dataset :wheat))
+      monarchs (for [{:keys [index commonwealth start end] :as monarch} (nu/dataset :monarchs)
+                     :let [low? (and (not commonwealth) (odd? (long index)))]]
+                 (assoc monarch :y0 95 :y1 (if low? 93 97) :label-y (if low? 92.4 97.6) :mid (* 0.5 (+ (long start) (long end)))
+                        :fill (if commonwealth "commonwealth" "crown")))]
+  (plot/render-image
+   {:data wheat :mapping {:x :year :y :wages}
+    :charts [(chart/rect {:mapping {:x0 :year :x1 #(+ 5 (long (:year %))) :y0 (constantly 0) :y1 :wheat}
+                          :fill [170 170 170] :stroke-color [153 153 153] :stroke-width 1})
+             (chart/rule {:x [1600 1650 1700 1750 1800] :color [0 0 0 128] :width 0.6})
+             (chart/line {:fill [164 206 219 180] :color :black :alpha 0.7 :width 1})
+             (chart/line {:color [238 129 130] :width 1.5})
+             (chart/rect {:data monarchs :mapping {:x0 :start :x1 :end :y0 :y0 :y1 :y1 :color :fill} :stroke-color :black})
+             (chart/text {:data monarchs :mapping {:x :mid :y :label-y :label :name} :size 9 :font-style :italic
+                          :anchor [:center :middle]})]
+    :scales {:color {:domain ["crown" "commonwealth"] :range [:black :white] :legend false}
+             :x {:formatter #(str (m/round (double %)))} :y {:domain [0 100]}}
+    :labels {:x nil :y nil}}
+   {:width 900 :height 450}))

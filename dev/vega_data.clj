@@ -10,8 +10,9 @@
     `budgetYear` -> `budget-year`), in the file's order
   * dates as ISO strings ([[date-columns]]: `Jan 1 2000` -> `2000-01-01`, `2001/01/01 00:47` -> `2001-01-01T00:47`),
     parsed in the notebook with `java.time`
-  * nested files as rows: `weekly-weather` - a row per day and series; `miserables` - nodes and links files;
-    `volcano` - a row per grid cell; `countries` without its `_comment`
+  * nested files as rows: `weekly-weather` - a row per day and series (`record`, `normal`, `actual`, `forecast-low`,
+    `forecast-high`); `miserables` - nodes and links files; `volcano` - a row per grid cell; `countries` without its
+    `_comment`
   * CSV stays CSV, JSON an array of objects (one per line), `null` kept
 
   A name already used in `notebooks/data` (a file or a `datasets.edn` key) gets the suffix `-vega` (`barley-vega.json`,
@@ -83,11 +84,17 @@
   (let [obj (re-find #"\{[^{}]*\}" text)]
     (mapv second (re-seq #"\"((?:[^\"\\]|\\.)*)\"\s*:" obj))))
 
+(defn- all-keys
+  "`first-keys` followed by the keys of `objects` missing from them, sorted (an object may carry a key the first one
+  lacks, e.g. monarchs' `commonwealth`)."
+  [first-keys objects]
+  (into first-keys (sort (remove (set first-keys) (distinct (mapcat keys objects))))))
+
 (defn- ordered-rows
-  "Rows of `objects` as ordered maps of kebab keys over the original `keys` (dropping `drop-keys`), dates of `dates`
-  (original column -> pattern) rewritten."
+  "Rows of `objects` as ordered maps of kebab keys over the original `keys` and any later object's extra keys
+  (dropping `drop-keys`; a missing value - `null`), dates of `dates` (original column -> pattern) rewritten."
   [objects keys dates drop-keys]
-  (let [keys (remove (set drop-keys) keys)]
+  (let [keys (remove (set drop-keys) (all-keys keys objects))]
     (mapv (fn [o] (apply array-map (mapcat (fn [k] [(kebab k) (if-let [p (dates k)] (iso-date p (get o k)) (get o k))]) keys)))
           objects)))
 
@@ -127,8 +134,9 @@
     "weekly-weather.json"
     [["weekly-weather.json"
       (json-text (vec (for [{:strs [day id] :as d} (json/read-str text)
-                            series ["record" "normal" "actual"]
-                            :let [{:strs [high low]} (get d series)]]
+                            [series path] [["record" ["record"]] ["normal" ["normal"]] ["actual" ["actual"]]
+                                           ["forecast-low" ["forecast" "low"]] ["forecast-high" ["forecast" "high"]]]
+                            :let [{:strs [high low]} (get-in d path)]]
                         (array-map "id" id "day" day "series" series "high" high "low" low))))]]
     "miserables.json"
     (let [{:strs [nodes links]} (json/read-str text)]
