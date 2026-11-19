@@ -183,6 +183,13 @@
   [[bh _] [eh _]]
   (if (== (double bh) (double eh)) :v :h))
 
+(defn value-ends
+  "`[base end]` of a bar spanning values `y0..y1` (any order): the value end is the one farther from 0 - stacked
+  segments `[below above]`, negative ones and a mirror's downward bars `[far near]` (see
+  [[cljplot2.data.position/stack-values]])."
+  [y0 y1]
+  (if (> (m/abs (double y0)) (m/abs (double y1))) [y1 y0] [y0 y1]))
+
 (defn bar-rounding
   "`rounding` (see [[corner-rounding]], may be `nil`) of one bar with its `:axis` (see [[value-axis]] of `base` and
   `end`)."
@@ -386,16 +393,24 @@
                  (c2d/set-color canvas stroke)
                  (c2d/path canvas polygon true true)))))))))
 
+(def ^:private ^:const key-radius-fraction
+  "Largest corner radius of a legend key square, as a fraction of its side: the key reads as a rounded square whatever
+  the bars' radius (pixels of a large bar would make a small key a circle)."
+  0.25)
+
 (defn key-rounding
-  "`rounding` (see [[corner-rounding]]) of a legend key square: end rounding at its top (an upright bar)."
-  [rounding]
-  (some-> rounding (assoc :axis :v)))
+  "`rounding` (see [[corner-rounding]], may be `nil`) of a legend key square of `side` pixels: the radius at most
+  [[key-radius-fraction]] of the side, end rounding at its top (an upright bar)."
+  [rounding side]
+  (some-> rounding
+          (assoc :axis :v)
+          (update :radius #(m/min (double %) (* key-radius-fraction (double side))))))
 
 (defn bar-key!
   "Legend key glyph of a bar chart (histogram, bar): a filled square inset in `box` with its pattern (see
   [[pattern-fill]]), outlined by `:stroke-color` (see [[outline-color]]) when `:stroke-width` is positive;
   `translucent?` - the fill gets `:alpha` (grouped overlay bars); `rounding` (see [[corner-rounding]], `nil` -
-  square) rounds its corners as an upright bar's, clamped to the square. `st` - `{:color :stroke-color :stroke-width
+  square) rounds its corners as an upright bar's (see [[key-rounding]]). `st` - `{:color :stroke-color :stroke-width
   :alpha :pattern :pattern-color}`."
   ([canvas box st translucent?] (bar-key! canvas box st translucent? nil))
   ([canvas {:keys [x y w h]} st translucent? rounding]
@@ -408,7 +423,7 @@
      (if rounding
        (let [half (* 0.5 side)]
          (bar! canvas (Vec2. (- cx half) (+ cy half)) (Vec2. (+ cx half) (- cy half)) fill stroke stroke-width
-               (pattern-fill st fill) (key-rounding rounding)))
+               (pattern-fill st fill) (key-rounding rounding side)))
        (do (c2d/set-color canvas fill)
            (c2d/crect canvas cx cy side side)
            (fill-with-pattern! canvas (pattern-fill st fill) #(c2d/crect canvas cx cy side side))

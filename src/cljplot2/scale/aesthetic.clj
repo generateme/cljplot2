@@ -189,9 +189,9 @@
 
 (defn- option-problems
   "`[[key message] ...]` - options of aesthetic `k`'s scale `spec` that its `kind` doesn't allow or that contradict
-  each other (a level map `:range`, `:spread`, `:midpoint`, `:reverse`, `:area`, `:bins`, identity's `:domain` /
-  `:range`)."
-  [k kind {:keys [range spread midpoint reverse area bins domain transform] :as spec}]
+  each other (a level map `:range`, `:spread`, `:midpoint`, `:reverse`, `:area`, `:bins`, `:ticks`, identity's
+  `:domain` / `:range`)."
+  [k kind {:keys [range spread midpoint reverse area bins domain transform ticks] :as spec}]
   (let [level-map? (map? range)
         bins-domain (when (and (vector? bins) (>= (count bins) 2)) [(double (first bins)) (double (peek bins))])]
     (cond-> []
@@ -214,6 +214,8 @@
       (and reverse level-map?) (conj [:reverse ":reverse can't be combined with a level map :range"])
       (and area level-map?) (conj [:area ":area can't be combined with a level map :range"])
       (and (some? bins) (not= kind :binned)) (conj [:bins ":bins needs :kind :binned"])
+      (and (some? ticks) (or (not (#{:color :size} k)) (not= kind :linear)))
+      (conj [:ticks ":ticks needs a linear :size or :color scale (its legend entries or color bar ticks)"])
       (and (= kind :binned) bins-domain (sequential? domain) (= 2 (count domain))
            (not= bins-domain (mapv double domain)))
       (conj [:bins "breaks should span the explicit :domain (first and last break = its ends)"]))))
@@ -248,10 +250,11 @@
           (schema/optional :area schema/bool)
           (schema/optional :bins levels/bins)
           (schema/optional :formatter schema/function)
+          (schema/nilable :ticks [:multi {:dispatch sequential?} [true [:sequential schema/finite]] [false schema/pos-int]])
           (schema/nilable :title string?)
           (schema/nilable :legend schema/bool)]
          [#(domain-problem k %) [:domain]]
-         (map #(option-rule k %) [:kind :domain :range :spread :midpoint :transform :reverse :area :bins])))
+         (map #(option-rule k %) [:kind :domain :range :spread :midpoint :transform :reverse :area :bins :ticks])))
 
 (defn- resolve-range
   "Concrete range of dimension `k` from the (validated) range value `r`: a level map or a function as given, the
@@ -420,8 +423,8 @@
   `nil` when there is neither an explicit domain nor data. Throws `ex-info` (`:key` - the offending option) for
   options the resolved kind doesn't allow.
   Returns `{:kind :domain :range :na?}` (identity: no `:domain` / `:range`; binned: also `:breaks`, the domain being
-  their ends) plus the spec's `:spread`, `:midpoint`, `:reverse`, `:area`, `:formatter`, `:title`, `:legend` when
-  given."
+  their ends) plus the spec's `:spread`, `:midpoint`, `:reverse`, `:area`, `:formatter`, `:ticks`, `:title`,
+  `:legend` when given."
   [k spec extent na? palette]
   (let [explicit (:domain spec)]
     (when (or explicit extent)
@@ -451,6 +454,7 @@
           (:reverse spec) (assoc :reverse true)
           (:area spec) (assoc :area true)
           (contains? spec :formatter) (assoc :formatter (:formatter spec))
+          (some? (:ticks spec)) (assoc :ticks (:ticks spec))
           (contains? spec :title) (assoc :title (:title spec))
           (contains? spec :legend) (assoc :legend (:legend spec)))))))
 
@@ -566,7 +570,8 @@
 (defn legend-entries
   "Legend entries `[{:label :value}]` of scale `spec` of dimension `k` (`:value nil` - the NA entry, last), or `nil`
   when it has no legend: `:legend false`, an identity scale, or linear / binned color (a color bar instead).
-  Ordinal: one per level (`(str level)` or `:formatter`); linear size: ticks of the domain (labels as axis ticks)."
+  Ordinal: one per level (`(str level)` or `:formatter`); linear size: ticks of the domain (labels as axis ticks) -
+  `:ticks` a count (default 5) or the values themselves (those inside the domain, sorted)."
   [k spec]
   (when-not (or (false? (:legend spec)) (= :identity (:kind spec))
                 (and (= k :color) (#{:linear :binned} (:kind spec))))
@@ -575,9 +580,15 @@
                     (mapv (fn [level] {:label (str (fmt level)) :value level}) (:domain spec))
                     (let [[lo hi] (:domain spec)
                           lo (double lo) hi (double hi)]
-                      (let [ws (s/scale :linear (cond-> {:domain (if (== lo hi) [lo (inc lo)] [lo hi]) :ticks size-legend-ticks}
+                      (let [explicit (:ticks spec)
+                            ws (s/scale :linear (cond-> {:domain (if (== lo hi) [lo (inc lo)] [lo hi])
+                                                         :ticks (if (integer? explicit) explicit size-legend-ticks)}
                                                   (:formatter spec) (assoc :formatter (:formatter spec))))
-                            ticks (if (== lo hi) [lo] (filterv #(<= lo (double %) hi) (s/ticks ws)))]
+                            in-domain #(<= lo (double %) hi)
+                            ticks (cond
+                                    (sequential? explicit) (vec (sort (distinct (filter in-domain explicit))))
+                                    (== lo hi) [lo]
+                                    :else (filterv in-domain (s/ticks ws)))]
                         (mapv (fn [t l] {:label l :value t}) ticks
                               (scale/tick-labels ws {:kind :linear :formatter (:formatter spec)} ticks)))))]
       (cond-> entries (:na? spec) (conj {:label "NA" :value nil})))))

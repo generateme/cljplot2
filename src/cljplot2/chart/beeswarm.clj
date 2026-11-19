@@ -142,7 +142,7 @@
   [chart computed canvas box scales env]
   (strip/draw-oriented draw-in-strip-frame chart computed canvas box scales env))
 (defn legend
-  "Key glyph: the chart's shape centred in `box`."
-  [{:keys [options]} attributes canvas {:keys [x y w h]} env]
+  "Key glyph: the chart's shape fitted and centred in `box` (see [[cljplot2.graphics.shape/draw-key!]])."
+  [{:keys [options]} attributes canvas box env]
   (let [st (merge (style options (:theme env)) attributes)]
-    (shape/draw! canvas (:shape st) (Vec2. (+ (double x) (* 0.5 (double w))) (+ (double y) (* 0.5 (double h)))) st)))
+    (shape/draw-key! canvas (:shape st) box st)))

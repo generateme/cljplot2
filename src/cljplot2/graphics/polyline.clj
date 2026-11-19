@@ -12,8 +12,8 @@
             [cljplot2.scale.position :as scale]
             [cljplot2.schema :as schema]
             [cljplot2.theme :as theme])
-  (:import [java.awt Color Graphics2D LinearGradientPaint]
-           [java.awt.geom Area Ellipse2D$Double Path2D Path2D$Double]))
+  (:import [java.awt Color Graphics2D LinearGradientPaint Shape]
+           [java.awt.geom Ellipse2D$Double Path2D Path2D$Double]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -112,48 +112,62 @@
                 0.0
                 (partition-by (fn [[i _]] (segment-colors i)) (partition 2 1 run)))))))
 
-(defn- disc
-  "Area of the disc of radius `r` around `(x, y)`; empty for `r` 0."
-  ^Area [^double x ^double y ^double r]
-  (if (pos? r)
-    (Area. (Ellipse2D$Double. (- x r) (- y r) (* 2.0 r) (* 2.0 r)))
-    (Area.)))
+(defn- signed-area
+  "Shoelace area of the closed polygon `points` (`[x y]`): its sign is the winding direction."
+  ^double [points]
+  (* 0.5 (double (reduce + 0.0 (map (fn [[x0 y0] [x1 y1]] (- (* (double x0) (double y1)) (* (double x1) (double y0))))
+                                    points (concat (rest points) [(first points)]))))))
 
-(defn- disc-hull
-  "Area between the discs `[x y r]` `a` and `b` bounded by their outer tangents (the discs themselves not included);
-  empty when one disc holds the other."
-  ^Area [[ax ay ar] [bx by br]]
+(def ^:private disc-winding
+  "Winding direction (sign of [[signed-area]]) of a java.awt ellipse's path, flattened."
+  (let [it (.getPathIterator (Ellipse2D$Double. 0.0 0.0 2.0 2.0) nil 0.01)
+        coords (double-array 6)]
+    (m/signum (signed-area (loop [pts []]
+                             (if (.isDone it)
+                               pts
+                               (let [kind (.currentSegment it coords)
+                                     pts (if (= kind java.awt.geom.PathIterator/SEG_CLOSE) pts (conj pts [(aget coords 0) (aget coords 1)]))]
+                                 (.next it)
+                                 (recur pts))))))))
+
+(defn- hull-points
+  "Corners of the quadrilateral between the discs `[x y r]` `a` and `b` bounded by their outer tangents (the discs
+  themselves not included), wound as [[disc-winding]]; `nil` when one disc holds the other."
+  [[ax ay ar] [bx by br]]
   (let [ax (double ax) ay (double ay) ar (double ar) bx (double bx) by (double by) br (double br)
         dx (- bx ax) dy (- by ay)
         d (m/hypot dx dy)]
-    (if (<= d (m/abs (- ar br)))
-      (Area.)
+    (when (> d (m/abs (- ar br)))
       (let [ux (/ dx d) uy (/ dy d)
             c (/ (- ar br) d)
             s (m/sqrt (- 1.0 (* c c)))
             ;; unit normals of the two tangent lines
             px (- (* c ux) (* s uy)) py (+ (* c uy) (* s ux))
             qx (+ (* c ux) (* s uy)) qy (- (* c uy) (* s ux))
-            path (Path2D$Double.)]
-        (.moveTo path (+ ax (* ar px)) (+ ay (* ar py)))
-        (.lineTo path (+ bx (* br px)) (+ by (* br py)))
-        (.lineTo path (+ bx (* br qx)) (+ by (* br qy)))
-        (.lineTo path (+ ax (* ar qx)) (+ ay (* ar qy)))
-        (.closePath path)
-        (Area. path)))))
+            pts [[(+ ax (* ar px)) (+ ay (* ar py))] [(+ bx (* br px)) (+ by (* br py))]
+                 [(+ bx (* br qx)) (+ by (* br qy))] [(+ ax (* ar qx)) (+ ay (* ar qy))]]]
+        (if (== (m/signum (signed-area pts)) (double disc-winding)) pts (vec (rseq pts)))))))
 
-(defn trail-area
-  "Area of a trail through the pixel points `xs` / `ys` with widths `widths` (pixels, one per point): the width
-  changing linearly between points, round ends and joins - the union of a disc at every point and the hull between
-  consecutive discs. One point - its disc."
-  ^Area [xs ys widths]
+(defn trail-shape
+  "Shape of a trail through the pixel points `xs` / `ys` with widths `widths` (pixels, one per point): the width
+  changing linearly between points, round ends and joins - a disc at every point and the hull between consecutive
+  discs, all wound one way in one non-zero path (filled once: no seams, translucent colours even). One point - its
+  disc; zero widths - nothing."
+  ^Shape [xs ys widths]
   (let [discs (mapv (fn [x y w] [(double x) (double y) (* 0.5 (double w))]) xs ys widths)
-        area (Area.)]
-    (doseq [[x y r] discs]
-      (.add area (disc x y r)))
-    (doseq [[a b] (partition 2 1 discs)]
-      (.add area (disc-hull a b)))
-    area))
+        path (Path2D$Double. Path2D/WIND_NON_ZERO)]
+    (doseq [[x y r] discs
+            :let [x (double x) y (double y) r (double r)]
+            :when (pos? r)]
+      (.append path (Ellipse2D$Double. (- x r) (- y r) (* 2.0 r) (* 2.0 r)) false))
+    (doseq [[a b] (partition 2 1 discs)
+            :let [pts (hull-points a b)]
+            :when pts]
+      (let [[[x0 y0] & more] pts]
+        (.moveTo path (double x0) (double y0))
+        (doseq [[x y] more] (.lineTo path (double x) (double y)))
+        (.closePath path)))
+    path))
 
 (defn key-glyph!
   "Legend key glyph of a line in `box` (`{:x :y :w :h}`): a horizontal line through the middle in line `style`; with

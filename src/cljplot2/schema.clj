@@ -1,6 +1,7 @@
 (ns cljplot2.schema
   "Input validation with malli: named types shared by the owners' schemas, [[explain!]] - every error of several
-  schemas in one `ex-info` - and [[fail!]] - the same error shape for checks done by hand.
+  schemas in one `ex-info` - and [[fail!]] - the same error shape for checks done by hand (built by
+  [[cljplot2.error]], which namespaces below this one - e.g. [[cljplot2.graphics.shape]] - use directly).
 
   Owners (theme, plot, scales, facets, labels, charts, shingles) declare their schemas as vars; `build` explains them
   once, before any stage runs (see [[cljplot2.pipeline/build]]).
@@ -17,6 +18,7 @@
             [malli.core :as malli]
             [malli.error :as me]
             [cljplot2.data.accessor :as accessor]
+            [cljplot2.error :as error]
             [cljplot2.graphics.font :as font]
             [cljplot2.graphics.shape :as shape])
   (:import [java.util IdentityHashMap]))
@@ -27,9 +29,13 @@
 ;; named types
 
 (defn named-type
-  "Schema type `type` (qualified keyword, printed in schema forms) of values satisfying `pred`, with error `message`."
+  "Schema type `type` (qualified keyword, printed in schema forms) of values satisfying `pred`, with error `message` -
+  a string, or a function of the invalid value giving the message."
   [type pred message]
-  (malli/-simple-schema {:type type :pred pred :type-properties {:error/message message}}))
+  (malli/-simple-schema {:type type :pred pred
+                         :type-properties (if (fn? message)
+                                            {:error/fn (fn [{:keys [value]} _] (message value))}
+                                            {:error/message message})}))
 
 (defn- non-neg-number? [v] (and (number? v) (>= (double v) 0.0)))
 (defn- pos-number? [v] (and (number? v) (pos? (double v))))
@@ -177,8 +183,7 @@
 (def shape
   "A point shape: a built-in character or a shape map (see [[cljplot2.graphics.shape/shape-problem]], whose message is
   the error)."
-  (malli/-simple-schema {:type ::shape :pred shape/shape?
-                         :type-properties {:error/fn (fn [{:keys [value]} _] (shape/shape-problem value))}}))
+  (named-type ::shape shape/shape? shape/shape-problem))
 (def font (named-type ::font font/known-font? "should be a bundled, installed or logical font name, or a java.awt.Font"))
 (def font-style (into [:enum] (sort (keys font/font-styles))))
 
@@ -235,11 +240,6 @@
           (.put explainers schema e)
           e))))
 
-(defn- value-str
-  [v]
-  (let [s (binding [*print-length* 5 *print-level* 3] (pr-str v))]
-    (if (> (count s) 60) (str (subs s 0 57) "...") s)))
-
 (defn- abbreviated-key
   "The only key among `known` whose name starts with the first three characters of `unknown`'s name (an
   abbreviation such as `:cols` for `:columns`), or `nil`."
@@ -271,31 +271,9 @@
                 (str "unknown key, should be spelled " (pr-str suggestion))
                 (or (me/error-message error) "is invalid"))}))
 
-(defn- error-line
-  "`in message, got value`; no path when `in` is unknown (`nil`), no value when the entry has none (or the key is
-  missing)."
-  [{:keys [in value message] :as entry}]
-  (str (when in (str (pr-str in) " "))
-       (str/replace message #"\.$" "")
-       (when (and (contains? entry :value) (not= "missing required key" message))
-         (str ", got " (value-str value)))))
-
-(defn- message-of
-  [errors]
-  (let [n (count errors)]
-    (str "Invalid input" (if (= 1 n) ": " (str " (" n " errors):\n  ")) (str/join "\n  " (map error-line errors)))))
-
-(defn- key-of
-  [in]
-  (or (last (filter keyword? in)) :input))
-
-(defn throw-errors!
-  "Throw one `ex-info` listing `errors` (`{:in :value :message}`, see the namespace doc for its data); `nil` when there
-  are none."
-  [errors]
-  (when (seq errors)
-    (let [{:keys [in value]} (first errors)]
-      (throw (ex-info (message-of errors) {:key (key-of in) :in in :value value :errors (vec errors)})))))
+(def ^{:arglists '([errors])} throw-errors!
+  "Throw one `ex-info` listing `errors` (see [[cljplot2.error/throw-errors!]])."
+  error/throw-errors!)
 
 (defn errors
   "Errors (`{:in :value :message}`) of `value` against `schema`, paths prefixed by `in`; empty when valid."
@@ -310,9 +288,6 @@
   [checks]
   (throw-errors! (into [] (mapcat (fn [[schema value in]] (errors schema value in))) checks)))
 
-(defn fail!
-  "Throw the error of a check done by hand, shaped and worded as [[explain!]]'s: `data` has `:key`, optionally `:in`
-  and `:value` (and anything else useful); `:errors` gets its one entry (`:in` `nil` when unknown)."
-  [message data]
-  (let [entry (assoc (select-keys data [:value]) :in (:in data) :message message)]
-    (throw (ex-info (message-of [entry]) (assoc data :errors [entry])))))
+(def ^{:arglists '([message data])} fail!
+  "Throw the error of a check done by hand, shaped and worded as [[explain!]]'s (see [[cljplot2.error/fail!]])."
+  error/fail!)

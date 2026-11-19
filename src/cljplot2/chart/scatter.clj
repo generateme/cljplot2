@@ -177,8 +177,8 @@
 
 (defn legend
   "Draw the key glyph: the chart's shape (style from options and theme, `attributes` - mapped color, shape, size -
-  merged over) centered in `box`."
-  [{:keys [options]} attributes canvas {:keys [x y w h]} env]
+  merged over) fitted and centred in `box` (see [[cljplot2.graphics.shape/draw-key!]])."
+  [{:keys [options]} attributes canvas box env]
   (let [st (merge (style options (:theme env)) attributes)]
     (c2d/set-stroke-custom canvas {:size (double (:stroke-width st))})
-    (shape/draw! canvas (:shape st) (v/vec2 (+ (double x) (* 0.5 (double w))) (+ (double y) (* 0.5 (double h)))) st)))
+    (shape/draw-key! canvas (:shape st) box st)))

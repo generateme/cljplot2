@@ -220,4 +220,4 @@
         left (m/round (+ (double x) (* 0.5 (- (double w) side))))
         top (m/round (+ (double y) (* 0.5 (- (double h) side))))]
     (draw-pixel-rect! canvas [left top (+ left side) (+ top side)] fill st [stroke sw] draw/pattern-fill
-                      (draw/corner-rounding options))))
+                      (draw/key-rounding (draw/corner-rounding options) side))))

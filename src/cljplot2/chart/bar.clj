@@ -366,9 +366,10 @@
             :let [c0 (strip/in-slot slot 0.0)
                   hw (* (strip/slot-half slot) (double width-factor))
                   fill (if translucent? (c/set-alpha (:color st) (* 255.0 (double (:alpha style)))) (:color st))]]
-      (draw/range-bar! canvas geometry (range-point y0 level (- c0 hw)) (range-point y1 level (+ c0 hw))
-                       fill (draw/outline-color (:stroke-color st) (:color st)) stroke-width (pattern-fill st fill)
-                       (draw/bar-rounding rounding (range-point y0 level c0) (range-point y1 level c0))))
+      (let [[base end] (if rounding (draw/value-ends y0 y1) [y0 y1])]
+        (draw/range-bar! canvas geometry (range-point base level (- c0 hw)) (range-point end level (+ c0 hw))
+                         fill (draw/outline-color (:stroke-color st) (:color st)) stroke-width (pattern-fill st fill)
+                         (draw/bar-rounding rounding (range-point base level c0) (range-point end level c0)))))
     (when zero-line?
       (draw/zero-line! canvas box scales style :x))
     (let [labels (keep (fn [[{:keys [label] :as bar} st]]

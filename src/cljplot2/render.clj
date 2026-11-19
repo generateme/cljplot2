@@ -9,6 +9,7 @@
             [clojure2d.pixels :as p]
             [cljplot2.graphics.canvas :as canvas]
             [cljplot2.graphics.draw :as draw]
+            [cljplot2.graphics.shape :as shape]
             [cljplot2.layout.grid :as grid]
             [cljplot2.pipeline :as pipeline]
             [cljplot2.content.legend :as legend]
@@ -69,17 +70,19 @@
       :else (canvas/call-with-isolated-graphics canvas #(draw/draw-content content % box env)))))
 
 (defn- draw-built!
-  "Draw a built plot's items (debug boxes first when `debug?`) onto `canvas` at the origin."
+  "Draw a built plot's items (debug boxes first when `debug?`) onto `canvas` at the origin; text shapes without a
+  `:font` in the plot theme's annotation font (see [[cljplot2.graphics.shape/*text-font*]])."
   [canvas built debug?]
   (when debug?
     (draw-debug-items! canvas (get-in built [:layout :items]) 0))
-  (draw-contents! canvas (:grid built) (:layout built) {:theme (:theme built) :scales (:finalized-scales built)
-                                                      :panel-scales (:panel-scales built)
-                                                      :margins (:margin-env built)
-                                                      :legend-charts (:charts (legend/legend-charts built))
-                                                      :legend-stats (:stats (legend/legend-charts built))
-                                                      :charts (:charts built) :stats (:stats built)
-                                                      :subplots (:subplots built) :debug? debug?}))
+  (binding [shape/*text-font* (get-in built [:theme :text :annotation :font] shape/*text-font*)]
+    (draw-contents! canvas (:grid built) (:layout built) {:theme (:theme built) :scales (:finalized-scales built)
+                                                        :panel-scales (:panel-scales built)
+                                                        :margins (:margin-env built)
+                                                        :legend-charts (:charts (legend/legend-charts built))
+                                                        :legend-stats (:stats (legend/legend-charts built))
+                                                        :charts (:charts built) :stats (:stats built)
+                                                        :subplots (:subplots built) :debug? debug?})))
 
 (defn- cvd-pixels
   "`pixels` with every color passed through the `deficiency` simulation (new pixels)."

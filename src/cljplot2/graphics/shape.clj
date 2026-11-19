@@ -13,8 +13,9 @@
   A shape may also be a map (see [[shape-problem]]), fitted into the size square (aspect kept, centred):
 
   * `{:path \"M0 0 L10 0 L5 8 Z\"}` - SVG path data, filled with the color, outlined like a filled shape
-  * `{:text \"🐄\"}` - a text outline filled with the color; `:font` (default the bundled `\"DejaVu Sans Mono\"`),
-    characters it lacks from the bundled monochrome `\"Noto Emoji\"` (see [[cljplot2.graphics.font]])
+  * `{:text \"🐄\"}` - a text outline filled with the color; `:font` (default [[*text-font*]] - the plot theme's
+    annotation font while a plot draws), characters it lacks from the bundled monochrome `\"Noto Emoji\"` (see
+    [[cljplot2.graphics.font]])
   * `{:svg source}` - an SVG file path, classpath resource or URL (string, `java.io.File`, `java.net.URL`), in its own
     colors; transcoded once per source and pixel size
   * `{:image img}` - a `BufferedImage` or clojure2d image, in its own colors"
@@ -23,6 +24,7 @@
             [clojure2d.protocols :as pr]
             [fastmath.core :as m]
             [fastmath.vector :as v]
+            [cljplot2.error :as error]
             [cljplot2.graphics.font :as font])
   (:import [fastmath.vector Vec2 Vec3]
            [java.awt Font Graphics2D RenderingHints Shape]
@@ -90,16 +92,23 @@
       (.addAttribute attributed TextAttribute/FONT f (int s) (int e)))
     (.getOutline (TextLayout. (.getIterator attributed) (FontRenderContext. nil RenderingHints/VALUE_TEXT_ANTIALIAS_ON RenderingHints/VALUE_FRACTIONALMETRICS_ON)) nil)))
 
-(def ^:private default-text-font
-  "Font of a text shape without `:font`: the default theme font."
+(def ^:dynamic *text-font*
+  "Font of a text shape without `:font`: the default theme's annotation font; while a plot draws, its theme's
+  `[:text :annotation :font]` (bound by [[cljplot2.render]])."
   "DejaVu Sans Mono")
 
-(def ^:private unit-outline
-  "Unit shape (see [[unit-shape]]) of a `:path` or `:text` shape map; `nil` when it draws nothing. Cached."
+(def ^:private outline-of
+  "Unit shape (see [[unit-shape]]) of a `:path` shape map or a `:text` one with its `:font`; `nil` when it draws
+  nothing. Cached."
   (memoize (fn [{:keys [path text font]}]
              (unit-shape (if path
                            (or (parse-path path) (Path2D$Double.))
-                           (text-outline text (or font default-text-font)))))))
+                           (text-outline text font))))))
+
+(defn- unit-outline
+  "[[outline-of]] `shape`, a text without `:font` in [[*text-font*]]."
+  [shape]
+  (outline-of (if (and (:text shape) (nil? (:font shape))) (assoc shape :font *text-font*) shape)))
 
 (defn- svg-uri
   "URI string of the SVG `source`: an existing file, a classpath resource or a URL (string with a scheme or
@@ -161,9 +170,7 @@
   ^BufferedImage [source ^long n]
   (try (c2d/transcode-svg (c2d/load-svg (svg-uri source)) n n)
        (catch Exception e
-         (throw (ex-info (str "Invalid input: the :svg shape can't be drawn: " (pr-str source) " (" (ex-message e) ")")
-                         {:key :shape :value source :errors [{:in nil :value source :message "the :svg shape can't be drawn"}]}
-                         e)))))
+         (error/fail! (str "the :svg shape can't be drawn (" (ex-message e) ")") {:key :shape :value source}))))
 
 (defn svg-image
   "The SVG `source` as an `n` x `n` image, transcoded once per source and size (see [[transcode]])."
@@ -237,6 +244,17 @@
                 (when (and (:path shape) (not= :none stroke-color) (pos? (double stroke-width)))
                   (c2d/set-color canvas stroke-color)
                   (c2d/shape canvas outline true)))))))
+
+(declare draw!)
+
+(defn draw-key!
+  "Draw `shape` as a legend key glyph centred in `box` (`{:x :y :w :h}`) in `style` (see [[draw!]]), its `:size`
+  fitted into the box: a size larger than the box (a constant chart `:size` above the key size) shrinks to the box's
+  shorter side, so glyphs don't cross into the next row."
+  [canvas shape {:keys [x y w h]} style]
+  (let [side (m/min (double w) (double h))]
+    (draw! canvas shape (Vec2. (+ (double x) (* 0.5 (double w))) (+ (double y) (* 0.5 (double h))))
+           (update style :size #(m/min (double %) side)))))
 
 (defn draw!
   "Draw `shape` centered at `center` (`Vec2`). `style` - `{:size :color :stroke-color :stroke-width}`, `:size` is

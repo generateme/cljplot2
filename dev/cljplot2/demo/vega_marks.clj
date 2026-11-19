@@ -118,9 +118,9 @@
     {:data (map #(assoc % :change (change [(:site %) (:variety %)])) (sort-by :year barley))
      :mapping {:x :yield :y :variety :size :year :color :change :group :variety :facet :site}
      :charts [(chart/line {:trail true :sort false})]
-     :scales {:size {:range [1 10] :legend false}}
+     :scales {:size {:range [1 10] :ticks [1931 1932] :title "year"}}
      :facets {:columns 3}
-     :labels {:title "Comet chart: barley yield from 1931 (thin) to 1932 (wide)" :x "yield" :y nil}}))
+     :labels {:title "Comet chart: barley yield 1931 to 1932" :x "yield" :y nil}}))
 
 (def images
   "Images of this demo: `[file-name plot options]`, saved to `results/vega-marks/` by [[cljplot2.demo/render!]]."

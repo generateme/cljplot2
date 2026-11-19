@@ -244,9 +244,10 @@
                 stroke (draw/outline-color (:stroke-color st) fill)
                 drawn-fill (if translucent? (c/set-alpha fill (* 255.0 (double (:alpha style)))) fill)]
             (if rounding
-              (let [a (projection x0 y0)]
-                (draw/bar! canvas (draw/whole-pixel a) (draw/whole-pixel (projection x1 y1)) drawn-fill stroke stroke-width
-                           (pattern-fill st drawn-fill) (draw/bar-rounding rounding a (projection x0 y1))))
+              (let [[base end] (draw/value-ends y0 y1)
+                    a (projection x0 base)]
+                (draw/bar! canvas (draw/whole-pixel a) (draw/whole-pixel (projection x1 end)) drawn-fill stroke stroke-width
+                           (pattern-fill st drawn-fill) (draw/bar-rounding rounding a (projection x0 end))))
               (when (draw/visible-bar? (double w) (double h))
                 (c2d/set-color canvas drawn-fill)
                 (c2d/rect canvas left top w h)

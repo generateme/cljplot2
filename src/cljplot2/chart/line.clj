@@ -37,9 +37,9 @@
   at the ends of every run of a plain stroked line (no fill, fill gradient, colour along the length or stacking -
   `ex-info {:key :arrow}`; no bridges between the runs).
   `:trail true` (Vega-Lite trail): a linear `:size` sets the width at every point - a filled shape, the width linear
-  between points, round ends and joins (see [[cljplot2.graphics.polyline/trail-area]]); rows without a size value
+  between points, round ends and joins (see [[cljplot2.graphics.polyline/trail-shape]]); rows without a size value
   dropped (counted); without a linear size the group's width (`:width` or an ordinal size level). Size scale and
-  legend unchanged, one colour per group; polar trails join points with chords. A trail can't take `:fill`,
+  legend unchanged, one colour per group; polar trails follow the circle with the plot's `:arcs`, else chords. A trail can't take `:fill`,
   `:fill-gradient`, a stacked `:position`, `:arrow` / `:start-gap` / `:end-gap`, `:dash`, `:interpolator`, `:curve`,
   `:gaps :bridge` or a colour along its length - `ex-info {:key :trail}`."
   (:require [clojure2d.color :as c]
@@ -452,11 +452,27 @@
     (doseq [[upper _ st] bands]
       (polyline/stroke-runs! canvas [upper] st))))
 
+(defn- arc-trail-run
+  "Pixel points `[xs ys widths]` of the trail run `run` (point indices) in polar `geometry` with `:arcs`: each segment
+  between consecutive range points `range-points` densified along the circle (see
+  [[cljplot2.scale.coord/line-path]]), the width linear along its points."
+  [geometry range-points widths run]
+  (let [start (coord/line-path geometry [(range-points (first run))] false)
+        pts (reduce (fn [acc [i j]]
+                      (let [seg (rest (coord/line-path geometry [(range-points i) (range-points j)] true))
+                            n (count seg)
+                            w0 (double (widths i)) w1 (double (widths j))]
+                        (into acc (map-indexed (fn [k [x y]] [x y (+ w0 (* (- w1 w0) (/ (double (inc (long k))) n)))]) seg))))
+                    [(conj (first start) (widths (first run)))]
+                    (partition 2 1 run))]
+    [(mapv first pts) (mapv second pts) (mapv #(nth % 2) pts)]))
+
 (defn- draw-trail!
-  "Fill the trail of `line` (see [[cljplot2.graphics.polyline/trail-area]]) through pixel points `px` / `py`, one
+  "Fill the trail of `line` (see [[cljplot2.graphics.polyline/trail-shape]]) through pixel points `px` / `py`, one
   shape per run of `index-runs`, in style `st`: the width at every point from its `:sizes` value under the finalized
-  size scale, else `:width`."
-  [canvas line px py index-runs st scales]
+  size scale, else `:width`. With `arcs` (`{:geometry g :range-points rp}` - a polar plot with `:arcs`) segments
+  follow the circle (see [[arc-trail-run]])."
+  [canvas {:keys [line px py index-runs arcs]} st scales]
   (let [width (double (:width st))
         width-of (if-let [sc (and (:sizes line) (:size scales))]
                    (let [f (aesthetic/attribute-fn :size sc width)] #(double (or (f %) width)))
@@ -464,8 +480,11 @@
         widths (if (:sizes line) (mapv width-of (:sizes line)) (vec (repeat (count px) width)))]
     (when-not (theme/none? (:color st))
       (c2d/set-color canvas (:color st))
-      (doseq [run index-runs]
-        (c2d/shape canvas (polyline/trail-area (mapv px run) (mapv py run) (mapv widths run)) false)))))
+      (doseq [run index-runs
+              :let [[xs ys ws] (if arcs
+                                 (arc-trail-run (:geometry arcs) (:range-points arcs) widths run)
+                                 [(mapv px run) (mapv py run) (mapv widths run)])]]
+        (c2d/shape canvas (polyline/trail-shape xs ys ws) false)))))
 
 (defn- base-run
   "The base points of `run` on the area baseline `{:baseline px :horizontal? h}`."
@@ -521,7 +540,9 @@
                 st (assoc st :fill (polyline/area-color st false))]
             (cond
               (:trail options)
-              (draw-trail! canvas line px py index-runs st scales)
+              (draw-trail! canvas {:line line :px px :py py :index-runs index-runs
+                                   :arcs (when range-points {:geometry geometry :range-points range-points})}
+                           st scales)
               colors
               (do (polyline/fill-runs-to-baseline! canvas point-runs (:baseline area) (:horizontal? area) (:fill st)
                                                    (draw/pattern-fill st (:fill st)))

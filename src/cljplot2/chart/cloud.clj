@@ -402,4 +402,4 @@
       :spikes (do (c2d/set-color canvas (:color st))
                   (c2d/set-stroke-custom canvas {:size (double (:stroke-width st)) :cap :butt})
                   (c2d/line canvas cx (+ (double y) (* 0.15 (double h))) cx (+ (double y) (* 0.85 (double h)))))
-      (shape/draw! canvas (:shape st) (v/vec2 cx (+ (double y) (* 0.5 (double h)))) st))))
+      (shape/draw-key! canvas (:shape st) box st))))

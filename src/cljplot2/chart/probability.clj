@@ -258,8 +258,8 @@
                   x y)))))
 
 (defn legend
-  "Key glyph: the chart's point shape centered in `box`."
-  [{:keys [kind options]} attributes canvas {:keys [x y w h]} env]
+  "Key glyph: the chart's point shape fitted and centred in `box` (see [[cljplot2.graphics.shape/draw-key!]])."
+  [{:keys [kind options]} attributes canvas box env]
   (let [st (merge (style kind options (:theme env)) attributes)]
     (c2d/set-stroke-custom canvas {:size (double (:stroke-width st))})
-    (shape/draw! canvas (:shape st) (v/vec2 (+ (double x) (* 0.5 (double w))) (+ (double y) (* 0.5 (double h)))) st)))
+    (shape/draw-key! canvas (:shape st) box st)))

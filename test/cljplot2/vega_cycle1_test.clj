@@ -10,8 +10,10 @@
             [cljplot2.graphics.font :as font]
             [cljplot2.graphics.polyline :as polyline]
             [cljplot2.graphics.shape :as shape]
+            [cljplot2.scale.aesthetic :as aesthetic]
             [cljplot2.scale.coord :as coord]
-            [cljplot2.test-util :refer [error]])
+            [cljplot2.test-util :refer [error]]
+            [cljplot2.theme :as theme])
   (:import [fastmath.vector Vec2]
            [java.awt.image BufferedImage]))
 
@@ -264,19 +266,33 @@
                                               (chart/beeswarm {:shape wide-path})]}
                                     {:width 300 :height 200}))))))
 
-(deftest trail-area-test
+(defn- filled?
+  "Does the drawn `shape` (non-zero rule) cover pixel `(x, y)` of a canvas it is filled on in red?"
+  [shape x y]
+  (= red (px (drawn 120 100 #(do (c2d/set-color % :red) (c2d/shape % shape false))) x y)))
+
+(deftest trail-shape-test
   (testing "widths 2 -> 20: thicker at the end"
-    (let [area (polyline/trail-area [10 90] [50 50] [2 20])]
-      (is (.contains area 88.0 58.0))
-      (is (not (.contains area 12.0 58.0)))
-      (is (.contains area 10.0 50.0))))
-  (testing "boundary: one point - its disc; size 0 everywhere - empty"
-    (let [b (.getBounds2D (polyline/trail-area [10] [10] [8]))]
+    (let [sh (polyline/trail-shape [10 90] [50 50] [2 20])]
+      (is (filled? sh 88 58))
+      (is (not (filled? sh 12 58)))
+      (is (filled? sh 10 50))
+      (is (filled? sh 50 50) "the hull between the discs")))
+  (testing "one fill: a translucent trail has no darker overlaps at the joins"
+    (let [img (drawn 120 100 #(do (c2d/set-color % [255 0 0 128])
+                                  (c2d/shape % (polyline/trail-shape [10 50 90] [50 20 50] [10 10 10]) false)))]
+      (is (= (px img 50 22) (px img 30 35)) "a joint pixel and a segment pixel alike")))
+  (testing "boundary: one point - its disc; size 0 everywhere - nothing"
+    (let [b (.getBounds2D (polyline/trail-shape [10] [10] [8]))]
       (is (= [6.0 6.0 8.0 8.0] [(.getX b) (.getY b) (.getWidth b) (.getHeight b)])))
-    (is (.isEmpty (polyline/trail-area [0 10 20] [0 0 0] [0 0 0]))))
+    (is (zero? (ink-count (drawn 30 10 #(do (c2d/set-color % :red)
+                                             (c2d/shape % (polyline/trail-shape [0 10 20] [5 5 5] [0 0 0]) false)))))))
   (testing "boundary: one disc inside the other - just the bigger disc"
-    (let [b (.getBounds2D (polyline/trail-area [10 11] [10 10] [20 2]))]
-      (is (< (m/abs (- 20.0 (.getWidth b))) 1e-9)))))
+    (let [b (.getBounds2D (polyline/trail-shape [10 11] [10 10] [20 2]))]
+      (is (< (m/abs (- 20.0 (.getWidth b))) 1e-9))))
+  (testing "a trail going right to left or up fills alike (one winding for discs and hulls)"
+    (is (filled? (polyline/trail-shape [90 10] [50 50] [20 2]) 50 50))
+    (is (filled? (polyline/trail-shape [50 50] [90 10] [20 2]) 50 50))))
 
 (def ^:private trail-rows
   [{:x 0 :y 0 :s 1} {:x 1 :y 1 :s 5} {:x 2 :y 0 :s nil} {:x 3 :y 1 :s 9}])
@@ -303,3 +319,120 @@
     (is (= :trail (:key (error #(plot/build {:data trail-rows :mapping {:x :x :y :y :color :s}
                                              :charts [(chart/line {:trail true})]}))))
         "colour along the length")))
+
+(deftest polar-trail-test
+  (testing "with :arcs a polar trail follows the circle: unlike the chords"
+    (let [rows [{:x 0 :y 1 :s 1} {:x 1 :y 1 :s 5} {:x 2 :y 1 :s 9}]
+          plot (fn [arcs] {:data rows :mapping {:x :x :y :y :size :s} :coord (cond-> {:kind :polar} arcs (assoc :arcs true))
+                           :scales {:x {:domain [0 3]} :y {:domain [0 1]}}
+                           :charts [(chart/line {:trail true :color :red})]})
+          chords (plot/render-image (plot false) {:width 200 :height 200})
+          arcs (plot/render-image (plot true) {:width 200 :height 200})]
+      (is (pos? (count-color arcs red)))
+      (is (not= (count-color chords red) (count-color arcs red))))))
+
+(deftest key-fit-test
+  (testing "a constant :size above the key box shrinks to the box (no crossing into the next row)"
+    (let [img (drawn 40 40 #(shape/draw-key! % wide-path {:x 13 :y 13 :w 14 :h 14} {:size 30 :color :red :stroke-width 0}))
+          [x0 _ x1 _] (color-bounds img)]
+      (is (= 14 (inc (- (long x1) (long x0)))))))
+  (testing "a size inside the box is unchanged"
+    (let [img (drawn 40 40 #(shape/draw-key! % wide-path {:x 0 :y 0 :w 40 :h 40} {:size 20 :color :red :stroke-width 0}))
+          [x0 _ x1 _] (color-bounds img)]
+      (is (= 20 (inc (- (long x1) (long x0))))))))
+
+(deftest key-rounding-test
+  (testing "the key radius is at most a quarter of its side; end rounding at the top"
+    (is (= {:radius 2.5 :end? false :axis :v} (draw/key-rounding {:radius 6.0 :end? false} 10.0)))
+    (is (= {:radius 1.0 :end? true :axis :v} (draw/key-rounding {:radius 1.0 :end? true} 10.0)))
+    (is (nil? (draw/key-rounding nil 10.0))))
+  (testing "a rect legend key is rounded too"
+    (let [rect-chart (chart/rect {:corner-radius 40})
+          img (drawn 20 20 #((:legend rect-chart) rect-chart {:color :red} % {:x 0 :y 0 :w 20 :h 20} {:theme theme/default-theme}))]
+      (is (= red (px img 10 10)))
+      (is (not= red (px img 3 3)) "corner of the 14 px key"))))
+
+(deftest polar-stacked-corners-test
+  (testing "every stacked segment of a polar bar is rounded"
+    (let [plot (fn [r] (assoc (stacked-plot (when r {:corner-radius r})) :coord {:kind :polar :inner 0.3}))
+          square (plot/render-image (plot nil) {:width 240 :height 240})
+          rounded (plot/render-image (plot 8) {:width 240 :height 240})]
+      (is (< 20 (- (count-color square red) (count-color rounded red))))
+      (is (< 20 (- (count-color square blue) (count-color rounded blue)))))))
+
+(deftest mirror-end-corners-test
+  (testing "a mirror histogram's downward bars round at the bottom (their value end), square at the baseline"
+    (let [rows (concat (repeat 5 {:x 1.0 :g "p"}) (repeat 5 {:x 1.0 :g "q"}))
+          img (plot/render-image {:data rows :mapping {:x :x :color :g}
+                                  :scales {:color {:range [[255 0 0] [0 0 255]] :legend false}}
+                                  :charts [(chart/histogram {:position :mirror :corner-radius-end 8 :stroke-width 0
+                                                             :zero-line false})]}
+                                 {:width 200 :height 200})
+          pts (for [x (range 200) y (range 200) :when (= blue (px img x y))] [x y])
+          x0 (reduce min (map first pts)) y0 (reduce min (map second pts)) y1 (reduce max (map second pts))]
+      (is (not= blue (px img x0 y1)) "bottom corner rounded")
+      (is (= blue (px img x0 y0)) "baseline corner square"))))
+
+(deftest text-font-test
+  (testing "a text shape without :font follows *text-font*; render binds the theme's annotation font"
+    (let [draw-a (fn [] (drawn 40 40 #(shape/draw! % {:text "Ag"} (Vec2. 20 20) {:size 30 :color :red})))
+          mono (draw-a)
+          serif (binding [shape/*text-font* "Serif"] (draw-a))]
+      (is (not= (ink-count mono) (ink-count serif))))
+    (let [plot (fn [theme] (cond-> {:data [{:x 1 :y 1}] :mapping {:x :x :y :y}
+                                    :charts [(chart/scatter {:shape {:text "Ag"} :size 60 :color :red})]}
+                             theme (assoc :theme theme)))]
+      (is (not= (count-color (plot/render-image (plot nil) {:width 150 :height 150}) red)
+                (count-color (plot/render-image (plot {:text {:annotation {:font "Serif"}}}) {:width 150 :height 150}) red))))))
+
+(deftest svg-draw-error-test
+  (testing "an SVG that exists but doesn't transcode fails at drawing as a schema-shaped {:key :shape}"
+    (let [file (svg-file "<svg xmlns='http://www.w3.org/2000/svg'><rect width='oops'")
+          data (try (drawn 20 20 #(shape/draw! % {:svg file} (Vec2. 10 10) {:size 9})) nil
+                    (catch clojure.lang.ExceptionInfo e (assoc (ex-data e) :message (ex-message e))))]
+      (is (= :shape (:key data)))
+      (is (= 1 (count (:errors data))))
+      (is (re-find #"^Invalid input: the :svg shape can't be drawn" (:message data))))))
+
+(deftest aesthetic-ticks-test
+  (testing "a linear size legend: :ticks values inside the domain, sorted and distinct, or a count"
+    (is (= [1931 1932] (mapv :value (aesthetic/legend-entries :size {:kind :linear :domain [1931 1932] :ticks [1932 1931 1932]}))))
+    (is (= [2] (mapv :value (aesthetic/legend-entries :size {:kind :linear :domain [0 5] :ticks [-1 2 9]}))))
+    (is (= [] (mapv :value (aesthetic/legend-entries :size {:kind :linear :domain [0 5] :ticks [9]}))) "none inside")
+    (is (= [0.0 5.0 10.0] (mapv #(double (:value %)) (aesthetic/legend-entries :size {:kind :linear :domain [0 10] :ticks 2}))))
+    (is (= 6 (count (aesthetic/legend-entries :size {:kind :linear :domain [0 10]}))) "default unchanged"))
+  (testing "boundary: a one-value domain with :ticks keeps the given values inside it"
+    (is (= [3] (mapv :value (aesthetic/legend-entries :size {:kind :linear :domain [3 3] :ticks [3 4]})))))
+  (testing ":ticks needs a linear :size or :color scale; values finite, a count positive"
+    (doseq [[k spec] [[:size {:kind :ordinal :ticks [1]}] [:color {:kind :binned :bins 3 :ticks 3}] [:shape {:ticks 2}]]]
+      (is (= :ticks (:key (error #(plot/build {:data [{:x 1 :y 1 :v 1}] :mapping {:x :x :y :y k :v}
+                                               :scales {k spec} :charts [(chart/scatter)]}))))
+          (pr-str k spec)))
+    (doseq [t [0 -2 [##NaN] ["a"]]]
+      (is (= :ticks (:key (error #(plot/build {:data [{:x 1 :y 1 :v 1}] :mapping {:x :x :y :y :size :v}
+                                               :scales {:size {:ticks t}} :charts [(chart/scatter)]}))))
+          (pr-str t))))
+  (testing "plots render with :ticks on a size legend and a color bar (also with none inside)"
+    (doseq [scales [{:size {:ticks [1931 1932]}} {:color {:ticks [1931.5]}} {:color {:ticks 3}} {:size {:ticks [0]}}]]
+      (is (some? (plot/render-image {:data [{:x 1 :y 1 :v 1931} {:x 2 :y 2 :v 1932}]
+                                     :mapping {:x :x :y :y (key (first scales)) :v} :scales scales
+                                     :charts [(chart/scatter)]}
+                                    {:width 300 :height 200}))
+          (pr-str scales)))))
+
+(deftest value-ends-test
+  (testing "the value end is the end farther from 0, whatever the order"
+    (is (= [0 5] (draw/value-ends 0 5)))
+    (is (= [3 5] (draw/value-ends 3 5)) "a stacked segment")
+    (is (= [0 -4] (draw/value-ends -4 0)) "a mirror's downward bar")
+    (is (= [-2 -6] (draw/value-ends -6 -2)) "a stacked negative segment")
+    (is (= [0 -3] (draw/value-ends 0 -3)) "a dodged negative bar"))
+  (testing "a stacked negative bar rounds at its far end (bottom), square toward 0"
+    (let [img (plot/render-image {:data [{:x "a" :y -4 :g "p"} {:x "a" :y -3 :g "q"}] :mapping {:x :x :y :y :color :g}
+                                  :scales {:color {:range [[255 0 0] [0 0 255]] :legend false}}
+                                  :charts [(chart/bar {:position :stack :stroke-width 0 :corner-radius-end 8})]}
+                                 {:width 200 :height 200})
+          pts (for [x (range 200) y (range 200) :when (= blue (px img x y))] [x y])
+          x0 (reduce min (map first pts)) y0 (reduce min (map second pts)) y1 (reduce max (map second pts))]
+      (is (not= blue (px img x0 y1)) "far corner rounded")
+      (is (= blue (px img x0 y0)) "corner toward 0 square"))))
