@@ -3,4 +3,4 @@
 ;; Parts without chapters are left out of the book.
 ["book/index.clj"
  {:part "Use cases" :chapters ["use_cases/distribution.clj" "use_cases/colors.clj" "use_cases/evolution.clj" "use_cases/ranking.clj" "use_cases/part_of_a_whole.clj" "use_cases/correlation.clj" "use_cases/flow.clj"]}
- {:part "Galleries" :chapters ["galleries/cljplot_extras.clj"]}]
+ {:part "Galleries" :chapters ["galleries/cljplot_extras.clj" "galleries/lattice.clj"]}]

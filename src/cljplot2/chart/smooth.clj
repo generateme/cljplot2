@@ -20,6 +20,10 @@
     0.3 - a colour or `:none`: no band, as `:band :none`)
   * `:padding {:x [lo hi] :y [lo hi]}` - default 5% each side
 
+  On a `:log` x or y axis the fit runs in log10 coordinates of that axis (see
+  [[cljplot2.scale.position/stat-transform]]; lattice's `type = \"smooth\"` on log scales) and the curve and bands are
+  taken back to data units; values the axis can't place (0, negatives) are left out of the fit.
+
   x is numeric or temporal (`java.time`, fitted in epoch milliseconds - see [[cljplot2.data.rows/x-key]]; parameters
   in x units, such as a `:gp` kernel's `:sigma`, are in milliseconds then); rows with an
   invalid x or y are left out (counted). Groups (see [[cljplot2.data.group]]) come from ordinal aesthetics (`:color`)
@@ -111,16 +115,21 @@
      :bootstrap (when (= :bootstrap band) (update (:bootstrap options) :rng rng/for-build))}))
 
 (defn- group-points
-  "`[[key x y] ..]` of the rows of group `g` with a valid x and a finite y (`key` - [[cljplot2.data.rows/x-key]]); a
-  valid x without a key (not numeric, not temporal) throws `ex-info {:key :x}`."
-  [g x-of y-of]
-  (into [] (keep (fn [r]
-                   (let [x (x-of r) y (y-of r)]
-                     (when (and (data/valid-value? x) (number? y) (m/valid-double? (double y)))
-                       [(or (data/x-key x)
-                            (schema/fail! "Smooth needs numeric or temporal (java.time) x." {:key :x :value x}))
-                        x (double y)]))))
-        (:rows g)))
+  "`[[key x y] ..]` of the rows of group `g` with a valid x and a finite y, `key` ([[cljplot2.data.rows/x-key]]) and
+  `y` in the fit coordinates of the axis transforms `[tx ty]` (see [[cljplot2.scale.position/stat-transform]]);
+  points a transform can't place (e.g. 0 on a log axis) are left out. A valid x without a key (not numeric, not
+  temporal) throws `ex-info {:key :x}`."
+  [g x-of y-of [tx ty]]
+  (let [fx (:forward tx) fy (:forward ty)]
+    (into [] (keep (fn [r]
+                     (let [x (x-of r) y (y-of r)]
+                       (when (and (data/valid-value? x) (number? y) (m/valid-double? (double y)))
+                         (let [k (fx (double (or (data/x-key x)
+                                                 (schema/fail! "Smooth needs numeric or temporal (java.time) x." {:key :x :value x}))))
+                               v (fy (double y))]
+                           (when (and (m/valid-double? k) (m/valid-double? v))
+                             [k x v]))))))
+          (:rows g))))
 
 (defn- ends
   "`[[lo-key lo-x] [hi-key hi-x]]` of `points` (`[key x ..]`)."
@@ -129,25 +138,31 @@
    (let [p (apply max-key first points)] [(first p) (second p)])])
 
 (defn- domain-ends
-  "`[[lo-key lo-x] [hi-key hi-x]]` of the plot's x `:domain` in `plot-scales` (numbers or `java.time` values), else
-  `nil`."
-  [plot-scales]
+  "`[[lo-key lo-x] [hi-key hi-x]]` of the plot's x `:domain` in `plot-scales` (numbers or `java.time` values; keys in
+  the x transform `tx`'s coordinates), else `nil`."
+  [plot-scales tx]
   (let [domain (get-in plot-scales [:x :domain])]
     (when (and (sequential? domain) (seq domain) (every? data/x-key domain))
-      (ends (map (fn [x] [(data/x-key x) x]) domain)))))
+      (ends (map (fn [x] [((:forward tx) (double (data/x-key x))) x]) domain)))))
 
 (defn- fitted-curve
-  "Curve of a group's `points` over the range `[[k0 x0] [k1 x1]]` for the fit `spec`: `{:x [..] :y [..] :bands
-  [..] :ends [x0 x1] :aesthetics}`; fit errors throw `ex-info {:key :method}` naming the group."
-  [points [[k0 x0] [k1 x1]] spec n aesthetics]
+  "Curve of a group's `points` (fit coordinates, see [[group-points]]) over the range `[[k0 x0] [k1 x1]]` for the
+  fit `spec`, taken back to data units by the transforms `[tx ty]`: `{:x [..] :y [..] :bands [..] :ends [x0 x1]
+  :aesthetics}`; fit errors throw `ex-info {:key :method}` naming the group."
+  [points [[k0 x0] [k1 x1]] spec n aesthetics [tx ty]]
   (let [like (second (first points))
+        ix (:inverse tx) iy (:inverse ty)
         keys (curve/sample-grid (double k0) (double k1) {:count n})
         {:keys [fit bands]} (try (smooth/fit-curve spec (mapv first points) (mapv #(nth % 2) points) keys)
                                  (catch Exception e
                                    (schema/fail! (str "Smooth fit failed: " (ex-message e)
                                                       (when (seq aesthetics) (str " Group: " (pr-str aesthetics) ".")))
                                                  {:key :method :value (:method spec) :group aesthetics :cause (ex-message e)})))]
-    {:x (mapv #(data/key->x % like) keys) :y fit :bands bands :ends [x0 x1] :aesthetics aesthetics}))
+    {:x (mapv #(data/key->x (ix (double %)) like) keys)
+     :y (mapv #(iy (double %)) fit)
+     :bands (mapv (fn [band] (-> band (update :lo #(mapv (fn [v] (iy (double v))) %)) (update :hi #(mapv (fn [v] (iy (double v))) %))))
+                  bands)
+     :ends [x0 x1] :aesthetics aesthetics}))
 
 (defn- finite [vs] (filter #(m/valid-double? (double %)) vs))
 
@@ -168,16 +183,17 @@
         _ (doseq [[k f] [[:x x-of] [:y y-of]]]
             (when (and (seq rows) (not-any? #(data/valid-value? (f %)) rows))
               (schema/fail! "No valid values for a mapped dimension - check the mapping." {:key :mapping :value k :rows (count rows)})))
-        points (update-vals panels (fn [gs] (mapv #(group-points % x-of y-of) gs)))
+        transforms [(scale/stat-transform (:x plot-scales)) (scale/stat-transform (:y plot-scales))]
+        points (update-vals panels (fn [gs] (mapv #(group-points % x-of y-of transforms) gs)))
         fittable? (fn [pts] (and (>= (count pts) (long required-rows)) (>= (count (distinct (map first pts))) (long required-x))))
         data (into {} (map (fn [[panel gs]]
                              (let [pts (points panel)
                                    panel-range (when full-range?
-                                                 (or (domain-ends plot-scales)
+                                                 (or (domain-ends plot-scales (first transforms))
                                                      (some->> (seq (apply concat (filter fittable? pts))) ends)))]
                                [panel {:curves (vec (keep (fn [[g p]]
                                                             (when (fittable? p)
-                                                              (fitted-curve p (or panel-range (ends p)) spec n (:aesthetics g))))
+                                                              (fitted-curve p (or panel-range (ends p)) spec n (:aesthetics g) transforms)))
                                                           (map vector gs pts)))
                                        :style st}])))
               panels)]

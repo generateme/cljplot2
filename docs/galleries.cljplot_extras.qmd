@@ -372,8 +372,9 @@ Source: [cljplot - Bayesian optimisation](https://github.com/generateme/cljplot/
 ::: {.sourceClojure}
 ```clojure
 (defn black-box
-  ^double [^double x ^double y]
-  (* (m/sinc (+ 2.0 x y)) (m/sin (+ x x)) (m/cos (+ y y)) (m/sin (* 2.0 x y))))
+  [[x y]]
+  (let [x (double x) y (double y)]
+    (* (m/sinc (+ 2.0 x y)) (m/sin (+ x x)) (m/cos (+ y y)) (m/sin (* 2.0 x y)))))
 ```
 :::
 
@@ -382,7 +383,7 @@ Source: [cljplot - Bayesian optimisation](https://github.com/generateme/cljplot/
 ::: {.sourceClojure}
 ```clojure
 (let [bounds {:x [-1.0 0.5] :y [-2.0 -0.5]}
-      {:keys [xs gp x]} (nth (opt/bayesian-optimization black-box {:bounds [(:x bounds) (:y bounds)] :vector-arg? false
+      {:keys [xs gp x]} (nth (opt/bayesian-optimization black-box {:bounds [(:x bounds) (:y bounds)] :vector-arg? true
                                                                    :rng (r/rng :mersenne 8)})
                              15)
       evaluated (map (fn [[a b]] {:x a :y b}) xs)
@@ -397,8 +398,8 @@ Source: [cljplot - Bayesian optimisation](https://github.com/generateme/cljplot/
                :labels {:title title}})]
   (plot/render-image
    (plot/arrange [(panel "black box and evaluations" black-box)
-                  (panel "process mean" (fn [a b] (gp/predict gp [a b])))
-                  (panel "process std dev" (fn [a b] (second (gp/predict gp [a b] true))))]
+                  (panel "process mean" (fn [p] (gp/predict gp p)))
+                  (panel "process std dev" (fn [p] (second (gp/predict gp p true))))]
                  {:columns 3})
    {:width 1000 :height 400}))
 ```
@@ -503,8 +504,9 @@ Source: [cljplot - ACF / PACF](https://github.com/generateme/cljplot/blob/master
 ::: {.sourceClojure}
 ```clojure
 (defn fn2d
-  ^double [^double x ^double y]
-  (* (- (+ (* x x) (* y y))) (m/sin x) (m/sin y) (m/sin (* x y))))
+  [[x y]]
+  (let [x (double x) y (double y)]
+    (* (- (+ (* x x) (* y y))) (m/sin x) (m/sin y) (m/sin (* x y)))))
 ```
 :::
 
@@ -570,7 +572,7 @@ Source: [cljplot - value noise](https://github.com/generateme/cljplot/blob/maste
 ::: {.sourceClojure}
 ```clojure
 (plot/render-image
- {:charts [(chart/field {:f (fn [x y] (r/vnoise x y)) :domain {:x [-6 6] :y [-6 6]} :n 400})]
+ {:charts [(chart/field {:f (fn [[x y]] (r/vnoise x y)) :domain {:x [-6 6] :y [-6 6]} :n 400})]
   :scales {:color {:range [:black :white]}}
   :aspect :iso
   :labels {:title "Value noise"}}
@@ -657,7 +659,7 @@ Source: [cljplot - vector field](https://github.com/generateme/cljplot/blob/mast
   (plot/render-image
    {:data (vf/arrows hyperbolic {:domain domain :n 24 :grid :shifted :scale 1.5})
     :mapping {:x :x :y :y :xend :xend :yend :yend}
-    :charts [(chart/field {:f (fn [x y] (m/sin (heading (v/vec2 x y)))) :domain domain :n 300})
+    :charts [(chart/field {:f (fn [[x y]] (m/sin (heading (v/vec2 x y)))) :domain domain :n 300})
              (chart/segment {:color [90 160 235] :width 1.5 :arrow {:end true :size 5}})]
     :scales {:color {:range [:black :white] :title "sin heading"}
              :x {:domain [-3 3] :expand [0 0]} :y {:domain [-3 3] :expand [0 0]}}

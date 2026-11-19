@@ -219,6 +219,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
  <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">cljplot extras</span></span></a>
   </div>
 </li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./galleries.lattice.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Lattice</span></span></a>
+  </div>
+</li>
       </ul>
   </li>
     </ul>
@@ -893,15 +899,16 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="functions" class="level2" data-number="6.7">
 <h2 data-number="6.7" class="anchored" data-anchor-id="functions"><span class="header-section-number">6.7</span> Functions</h2>
-<p><code>chart/field {:f f}</code> samples a function of x and y on a grid over a given domain (<code>:n</code> samples per axis) - no data needed. These examples have no gallery counterpart.</p>
+<p><code>chart/field {:f f}</code> samples a function of a point <code>[x y]</code> on a grid over a given domain (<code>:n</code> samples per axis) - no data needed. These examples have no gallery counterpart.</p>
 <section id="a-function-as-a-raster" class="level3" data-number="6.7.1">
 <h3 data-number="6.7.1" class="anchored" data-anchor-id="a-function-as-a-raster"><span class="header-section-number">6.7.1</span> A function as a raster</h3>
 <p>−(x² + y²) · sin x · sin y · sin xy on [−π, π]², white to black, 300 × 300 samples, square pixels (<code>:aspect :iso</code>).</p>
 <p>Source: cljplot2 - chart/field.</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb42"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">defn</span><span class="fu"> fn2d</span></span>
-<span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a>  [^<span class="kw">double</span> x ^<span class="kw">double</span> y]</span>
-<span id="cb42-3"><a href="#cb42-3" aria-hidden="true" tabindex="-1"></a>  (<span class="kw">*</span> (<span class="kw">-</span> (<span class="kw">+</span> (<span class="kw">*</span> x x) (<span class="kw">*</span> y y))) (m/sin x) (m/sin y) (m/sin (<span class="kw">*</span> x y))))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a>  [[x y]]</span>
+<span id="cb42-3"><a href="#cb42-3" aria-hidden="true" tabindex="-1"></a>  (<span class="kw">let</span> [x (<span class="kw">double</span> x) y (<span class="kw">double</span> y)]</span>
+<span id="cb42-4"><a href="#cb42-4" aria-hidden="true" tabindex="-1"></a>    (<span class="kw">*</span> (<span class="kw">-</span> (<span class="kw">+</span> (<span class="kw">*</span> x x) (<span class="kw">*</span> y y))) (m/sin x) (m/sin y) (m/sin (<span class="kw">*</span> x y)))))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb43"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
@@ -920,7 +927,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>sin x · cos y on a diverging palette centred at 0, with contour lines at fixed levels.</p>
 <p>Source: cljplot2 - chart/field, chart/contour.</p>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb44"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">let</span> [wave (<span class="kw">fn</span> [x y] (<span class="kw">*</span> (m/sin x) (m/cos y)))</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb44"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">let</span> [wave (<span class="kw">fn</span> [[x y]] (<span class="kw">*</span> (m/sin x) (m/cos y)))</span>
 <span id="cb44-2"><a href="#cb44-2" aria-hidden="true" tabindex="-1"></a>      domain {<span class="at">:x</span> [<span class="dv">0</span> (<span class="kw">*</span> <span class="dv">2</span> m/PI)] <span class="at">:y</span> [<span class="dv">0</span> <span class="dv">4</span>]}]</span>
 <span id="cb44-3"><a href="#cb44-3" aria-hidden="true" tabindex="-1"></a>  (plot/render-image</span>
 <span id="cb44-4"><a href="#cb44-4" aria-hidden="true" tabindex="-1"></a>   {<span class="at">:charts</span> [(chart/field {<span class="at">:f</span> wave <span class="at">:domain</span> domain})</span>

@@ -195,4 +195,155 @@
                    :source "vega-datasets `seattle-weather.csv` (NOAA daily observations)"
                    :licence "vega-datasets is BSD-3-Clause; NOAA data, public domain"
                    :via "old cljplot `data/seattle-weather.csv`"
-                   :notes "1461 rows: `date` (yyyy/MM/dd), `precipitation` (mm), `temp_max`, `temp_min` (°C), `wind` (m/s), `weather` (drizzle, rain, sun, snow, fog)."}}
+                   :notes "1461 rows: `date` (yyyy/MM/dd), `precipitation` (mm), `temp_max`, `temp_min` (°C), `wind` (m/s), `weather` (drizzle, rain, sun, snow, fog)."}
+ :oats {:file "oats.csv"
+       :format :csv
+       :title "Oats yields: split-plot field trial"
+       :source "R MEMSS package `Oats` (Yates 1935; Pinheiro & Bates 2000)"
+       :licence "GPL (>= 2) (MEMSS)"
+       :via "dev/lattice_data.R (Rscript)"
+       :notes "72 rows: `block` (I-VI), `variety`, `nitro` (cwt/acre), `yield` (1/4 lbs per sub-plot)."}
+ :gvhd10 {:file "gvhd10.csv"
+         :format :csv
+         :title "Flow cytometry of a GvHD patient, 10 days"
+         :source "R latticeExtra package `gvhd10` (Brinkman et al. 2007)"
+         :licence "GPL (>= 2) (latticeExtra)"
+         :via "dev/lattice_data.R (Rscript)"
+         :notes "113896 rows: `fsc-h`, `ssc-h`, `fl1-h`, `fl2-h`, `fl3-h`, `fl2-a`, `fl4-h` (channel intensities), `days` (-6 to 68)."}
+ :postdoc {:file "postdoc.csv"
+          :format :csv
+          :title "Reasons for taking a postdoc, by field"
+          :source "R latticeExtra package `postdoc` (NSF Survey of Doctorate Recipients 1999)"
+          :licence "GPL (>= 2) (latticeExtra)"
+          :via "dev/lattice_data.R (Rscript)"
+          :notes "40 rows: `field` (8 incl. All Postdoctorates), `reason` (5), `count` (people)."}
+ :va-deaths {:file "va-deaths.csv"
+            :format :csv
+            :title "Death rates in Virginia (1940)"
+            :source "R datasets package `VADeaths` (Molyneaux et al. 1947)"
+            :licence "Part of R (GPL-2 | GPL-3)"
+            :via "dev/lattice_data.R (Rscript)"
+            :notes "20 rows: `age` (50-54 ... 70-74), `group` (Rural / Urban Male / Female), `rate` (per 1000)."}
+ :earthquake {:file "earthquake.csv"
+             :format :csv
+             :title "Western US earthquakes: ground acceleration"
+             :source "R MEMSS package `Earthquake` (Joyner & Boore 1981)"
+             :licence "GPL (>= 2) (MEMSS)"
+             :via "dev/lattice_data.R (Rscript)"
+             :strings [:quake]
+             :notes "182 rows: `quake` (id), `richter` (magnitude), `distance` (km), `soil` (0 / 1), `accel` (g)."}
+ :seatac-weather {:file "seatac-weather.csv"
+                 :format :csv
+                 :title "Seattle-Tacoma airport weather, Jan-Mar 2007"
+                 :source "R latticeExtra package `SeatacWeather` (NOAA)"
+                 :licence "GPL (>= 2) (latticeExtra)"
+                 :via "dev/lattice_data.R (Rscript)"
+                 :notes "90 rows: `month`, `day`, `year`, `max-temp`, `record-max`, `normal-max`, `min-temp`, `record-min`, `normal-min` (degrees F), `precip`, `record-precip`, `normal-precip` (inches), `time-max`, `time-min`."}
+ :us-arrests {:file "us-arrests.csv"
+             :format :csv
+             :title "Violent crime rates by US state (1973)"
+             :source "R datasets package `USArrests` (McNeil 1977)"
+             :licence "Part of R (GPL-2 | GPL-3)"
+             :via "dev/lattice_data.R (Rscript)"
+             :notes "50 rows: `state`, `murder`, `assault`, `rape` (arrests per 100,000), `urban-pop` (percent)."}
+ :states {:file "states.csv"
+         :format :csv
+         :title "US state facts (1970s)"
+         :source "R datasets packages `state.x77`, `state.name`, `state.abb`, `state.region`, `state.division` (US Census)"
+         :licence "Part of R (GPL-2 | GPL-3)"
+         :via "dev/lattice_data.R (Rscript)"
+         :notes "50 rows: `name`, `abb`, `region`, `division`, `population` (thousands), `income` (dollars), `illiteracy` (percent), `life-exp` (years), `murder` (per 100,000), `hs-grad` (percent), `frost` (days), `area` (sq. miles)."}
+ :environmental {:file "environmental.csv"
+                :format :csv
+                :title "Ozone and weather, New York 1973"
+                :source "R lattice package `environmental` (Bruntz et al. 1974; Cleveland 1993)"
+                :licence "GPL (>= 2) (lattice)"
+                :via "dev/lattice_data.R (Rscript)"
+                :notes "111 rows: `ozone` (ppb), `radiation` (langleys), `temperature` (degrees F), `wind` (mph)."}
+ :volcano {:file "volcano.csv"
+          :format :csv
+          :title "Maunga Whau volcano topography"
+          :source "R datasets package `volcano` (Ross Ihaka)"
+          :licence "Part of R (GPL-2 | GPL-3)"
+          :via "dev/lattice_data.R (Rscript)"
+          :notes "5307 rows: `row` (1-87), `column` (1-61) - 10 m grid, `height` (m)."}
+ :cars93 {:file "cars93.csv"
+         :format :csv
+         :title "Cars on sale in the USA, 1993"
+         :source "R MASS package `Cars93` (Lock 1993)"
+         :licence "GPL-2 | GPL-3 (MASS)"
+         :via "dev/lattice_data.R (Rscript)"
+         :notes "93 rows, 27 columns: `manufacturer`, `model`, `type`, `min-price`, `price`, `max-price`, `mpg-city`, `mpg-highway`, `air-bags`, `drive-train`, `cylinders`, `engine-size`, `horsepower`, `rpm`, `rev-per-mile`, `man-trans-avail`, `fuel-tank-capacity`, `passengers`, `length`, `wheelbase`, `width`, `turn-circle`, `rear-seat-room`, `luggage-room`, `weight`, `origin`, `make`."}
+ :us-age {:file "us-age.csv"
+         :format :csv
+         :title "US population by age and sex, 1900-1979"
+         :source "R latticeExtra package `USAge.df` (US Census Bureau)"
+         :licence "GPL (>= 2) (latticeExtra)"
+         :via "dev/lattice_data.R (Rscript)"
+         :notes "12000 rows: `age` (0-74), `sex`, `year`, `population` (millions)."}
+ :bioc-access {:file "bioc-access.csv"
+              :format :csv
+              :title "Hourly accesses of the Bioconductor website, 2007"
+              :source "R latticeExtra package `biocAccess` (Bioconductor web logs)"
+              :licence "GPL (>= 2) (latticeExtra)"
+              :via "dev/lattice_data.R (Rscript)"
+              :strings [:time]
+              :notes "3623 rows: `counts`, `day`, `month`, `year`, `hour`, `weekday`, `time` (local, ISO)."}
+ :nhtemp {:file "nhtemp.csv"
+         :format :csv
+         :title "Mean annual temperature, New Haven 1912-1971"
+         :source "R datasets package `nhtemp` (Vaux 1972)"
+         :licence "Part of R (GPL-2 | GPL-3)"
+         :via "dev/lattice_data.R (Rscript)"
+         :notes "60 rows: `time` (year), `value` (degrees F)."}
+ :eu-stock-markets {:file "eu-stock-markets.csv"
+                   :format :csv
+                   :title "European stock indices, 1991-1998"
+                   :source "R datasets package `EuStockMarkets` (Erste Bank AG, Vienna)"
+                   :licence "Part of R (GPL-2 | GPL-3)"
+                   :via "dev/lattice_data.R (Rscript)"
+                   :notes "7440 rows: `time` (decimal year, 260 business days a year), `series` (DAX, SMI, CAC, FTSE), `value` (closing price)."}
+ :sunspot-year {:file "sunspot-year.csv"
+               :format :csv
+               :title "Yearly sunspot numbers, 1700-1988"
+               :source "R datasets package `sunspot.year` (WDC-SILSO, Royal Observatory of Belgium)"
+               :licence "Part of R (GPL-2 | GPL-3)"
+               :via "dev/lattice_data.R (Rscript)"
+               :notes "289 rows: `time` (year), `value` (sunspots)."}
+ :beavers {:file "beavers.csv"
+          :format :csv
+          :title "Body temperature of two beavers"
+          :source "R datasets packages `beaver1`, `beaver2` (Reynolds 1994)"
+          :licence "Part of R (GPL-2 | GPL-3)"
+          :via "dev/lattice_data.R (Rscript)"
+          :notes "214 rows: `beaver` (beaver1, beaver2), `day`, `time` (hhmm), `temp` (degrees C), `activ` (0 / 1, outside the retreat)."}
+ :gcsemv {:file "gcsemv.csv"
+         :format :csv
+         :title "GCSE coursework and written exam scores"
+         :source "R mlmRev package `Gcsemv` (Rasbash et al. 2000)"
+         :licence "GPL (>= 2) (mlmRev)"
+         :via "dev/lattice_data.R (Rscript)"
+         :strings [:school :student]
+         :notes "1905 rows: `school`, `student` (ids), `gender`, `written`, `course` (scores; missing as empty)."}
+ :us-cancer-rates {:file "us-cancer-rates.csv"
+                  :format :csv
+                  :title "Cancer death rates by US county, 1999-2003"
+                  :source "R latticeExtra package `USCancerRates` (National Cancer Institute)"
+                  :licence "GPL (>= 2) (latticeExtra)"
+                  :via "dev/lattice_data.R (Rscript)"
+                  :notes "3041 rows: `state`, `county`, `rate-male`, `lcl95-male`, `ucl95-male`, `rate-female`, `lcl95-female`, `ucl95-female` (per 100,000, 95% limits)."}
+ :gvhd {:file "gvhd.csv"
+       :format :csv
+       :title "Flow cytometry of GvHD patients (FSC-H)"
+       :source "R flowCore package `GvHD` (Brinkman et al. 2007)"
+       :licence "Artistic-2.0 (flowCore)"
+       :via "dev/lattice_data.R (Rscript)"
+       :strings [:patient]
+       :notes "585644 rows (every event of the 35 samples): `patient` (id), `visit`, `fsc-h` (forward scatter); other channels left out."}
+ :nhanes {:file "nhanes.csv"
+         :format :csv
+         :title "NHANES I: iron and anemia"
+         :source "R hexbin package `NHANES` (National Health and Nutrition Examination Survey)"
+         :licence "GPL-2 (hexbin)"
+         :via "dev/lattice_data.R (Rscript)"
+         :notes "9575 rows, 15 columns: `cancer-incidence`, `cancer-death`, `age`, `smoke`, `ed`, `race`, `weight`, `bmi`, `diet-iron`, `albumin`, `serum-iron`, `tibc`, `transferin`, `hemoglobin`, `sex`."}}

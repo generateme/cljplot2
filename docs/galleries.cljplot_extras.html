@@ -68,6 +68,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="site_libs/quarto-search/fuse.min.js"></script>
 <script src="site_libs/quarto-search/quarto-search.js"></script>
 <meta name="quarto:offset" content="./">
+<link href="./galleries.lattice.html" rel="next">
 <link href="./use_cases.flow.html" rel="prev">
 <script src="site_libs/quarto-html/quarto.js" type="module"></script>
 <script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
@@ -216,6 +217,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <div class="sidebar-item-container"> 
   <a href="./galleries.cljplot_extras.html" class="sidebar-item-text sidebar-link active">
  <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">cljplot extras</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./galleries.lattice.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Lattice</span></span></a>
   </div>
 </li>
       </ul>
@@ -559,12 +566,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Source: <a href="https://github.com/generateme/cljplot/blob/master/sketches/bayesian_optimisation.clj">cljplot - Bayesian optimisation</a>.</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">defn</span><span class="fu"> black-box</span></span>
-<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>  ^<span class="kw">double</span> [^<span class="kw">double</span> x ^<span class="kw">double</span> y]</span>
-<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>  (<span class="kw">*</span> (m/sinc (<span class="kw">+</span> <span class="fl">2.0</span> x y)) (m/sin (<span class="kw">+</span> x x)) (m/cos (<span class="kw">+</span> y y)) (m/sin (<span class="kw">*</span> <span class="fl">2.0</span> x y))))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>  [[x y]]</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>  (<span class="kw">let</span> [x (<span class="kw">double</span> x) y (<span class="kw">double</span> y)]</span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>    (<span class="kw">*</span> (m/sinc (<span class="kw">+</span> <span class="fl">2.0</span> x y)) (m/sin (<span class="kw">+</span> x x)) (m/cos (<span class="kw">+</span> y y)) (m/sin (<span class="kw">*</span> <span class="fl">2.0</span> x y)))))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">let</span> [bounds {<span class="at">:x</span> [-<span class="fl">1.0</span> <span class="fl">0.5</span>] <span class="at">:y</span> [-<span class="fl">2.0</span> -<span class="fl">0.5</span>]}</span>
-<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>      {<span class="at">:keys</span> [xs gp x]} (<span class="kw">nth</span> (opt/bayesian-optimization black-box {<span class="at">:bounds</span> [(<span class="at">:x</span> bounds) (<span class="at">:y</span> bounds)] <span class="at">:vector-arg</span>? <span class="va">false</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>      {<span class="at">:keys</span> [xs gp x]} (<span class="kw">nth</span> (opt/bayesian-optimization black-box {<span class="at">:bounds</span> [(<span class="at">:x</span> bounds) (<span class="at">:y</span> bounds)] <span class="at">:vector-arg</span>? <span class="va">true</span></span>
 <span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>                                                                   <span class="at">:rng</span> (r/rng <span class="at">:mersenne</span> <span class="dv">8</span>)})</span>
 <span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>                             <span class="dv">15</span>)</span>
 <span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>      evaluated (<span class="kw">map</span> (<span class="kw">fn</span> [[a b]] {<span class="at">:x</span> a <span class="at">:y</span> b}) xs)</span>
@@ -579,8 +587,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a>               <span class="at">:labels</span> {<span class="at">:title</span> title}})]</span>
 <span id="cb17-15"><a href="#cb17-15" aria-hidden="true" tabindex="-1"></a>  (plot/render-image</span>
 <span id="cb17-16"><a href="#cb17-16" aria-hidden="true" tabindex="-1"></a>   (plot/arrange [(panel <span class="st">"black box and evaluations"</span> black-box)</span>
-<span id="cb17-17"><a href="#cb17-17" aria-hidden="true" tabindex="-1"></a>                  (panel <span class="st">"process mean"</span> (<span class="kw">fn</span> [a b] (gp/predict gp [a b])))</span>
-<span id="cb17-18"><a href="#cb17-18" aria-hidden="true" tabindex="-1"></a>                  (panel <span class="st">"process std dev"</span> (<span class="kw">fn</span> [a b] (<span class="kw">second</span> (gp/predict gp [a b] <span class="va">true</span>))))]</span>
+<span id="cb17-17"><a href="#cb17-17" aria-hidden="true" tabindex="-1"></a>                  (panel <span class="st">"process mean"</span> (<span class="kw">fn</span> [p] (gp/predict gp p)))</span>
+<span id="cb17-18"><a href="#cb17-18" aria-hidden="true" tabindex="-1"></a>                  (panel <span class="st">"process std dev"</span> (<span class="kw">fn</span> [p] (<span class="kw">second</span> (gp/predict gp p <span class="va">true</span>))))]</span>
 <span id="cb17-19"><a href="#cb17-19" aria-hidden="true" tabindex="-1"></a>                 {<span class="at">:columns</span> <span class="dv">3</span>})</span>
 <span id="cb17-20"><a href="#cb17-20" aria-hidden="true" tabindex="-1"></a>   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">400</span>}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
@@ -646,8 +654,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h2 data-number="8.3" class="anchored" data-anchor-id="functions-and-fields"><span class="header-section-number">8.3</span> Functions and fields</h2>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">defn</span><span class="fu"> fn2d</span></span>
-<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>  ^<span class="kw">double</span> [^<span class="kw">double</span> x ^<span class="kw">double</span> y]</span>
-<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>  (<span class="kw">*</span> (<span class="kw">-</span> (<span class="kw">+</span> (<span class="kw">*</span> x x) (<span class="kw">*</span> y y))) (m/sin x) (m/sin y) (m/sin (<span class="kw">*</span> x y))))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>  [[x y]]</span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>  (<span class="kw">let</span> [x (<span class="kw">double</span> x) y (<span class="kw">double</span> y)]</span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>    (<span class="kw">*</span> (<span class="kw">-</span> (<span class="kw">+</span> (<span class="kw">*</span> x x) (<span class="kw">*</span> y y))) (m/sin x) (m/sin y) (m/sin (<span class="kw">*</span> x y)))))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb23"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> fn2d-domain </span>{<span class="at">:x</span> [(<span class="kw">-</span> m/PI) m/PI] <span class="at">:y</span> [(<span class="kw">-</span> m/PI) m/PI]})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -685,7 +694,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Source: <a href="https://github.com/generateme/cljplot/blob/master/sketches/examples.clj">cljplot - value noise</a>.</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb26"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
-<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a> {<span class="at">:charts</span> [(chart/field {<span class="at">:f</span> (<span class="kw">fn</span> [x y] (r/vnoise x y)) <span class="at">:domain</span> {<span class="at">:x</span> [-<span class="dv">6</span> <span class="dv">6</span>] <span class="at">:y</span> [-<span class="dv">6</span> <span class="dv">6</span>]} <span class="at">:n</span> <span class="dv">400</span>})]</span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a> {<span class="at">:charts</span> [(chart/field {<span class="at">:f</span> (<span class="kw">fn</span> [[x y]] (r/vnoise x y)) <span class="at">:domain</span> {<span class="at">:x</span> [-<span class="dv">6</span> <span class="dv">6</span>] <span class="at">:y</span> [-<span class="dv">6</span> <span class="dv">6</span>]} <span class="at">:n</span> <span class="dv">400</span>})]</span>
 <span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:range</span> [<span class="at">:black</span> <span class="at">:white</span>]}}</span>
 <span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">:aspect</span> <span class="at">:iso</span></span>
 <span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"Value noise"</span>}}</span>
@@ -744,7 +753,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a>  (plot/render-image</span>
 <span id="cb29-5"><a href="#cb29-5" aria-hidden="true" tabindex="-1"></a>   {<span class="at">:data</span> (vf/arrows hyperbolic {<span class="at">:domain</span> domain <span class="at">:n</span> <span class="dv">24</span> <span class="at">:grid</span> <span class="at">:shifted</span> <span class="at">:scale</span> <span class="fl">1.5</span>})</span>
 <span id="cb29-6"><a href="#cb29-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:y</span> <span class="at">:xend</span> <span class="at">:xend</span> <span class="at">:yend</span> <span class="at">:yend</span>}</span>
-<span id="cb29-7"><a href="#cb29-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">:charts</span> [(chart/field {<span class="at">:f</span> (<span class="kw">fn</span> [x y] (m/sin (heading (v/vec2 x y)))) <span class="at">:domain</span> domain <span class="at">:n</span> <span class="dv">300</span>})</span>
+<span id="cb29-7"><a href="#cb29-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">:charts</span> [(chart/field {<span class="at">:f</span> (<span class="kw">fn</span> [[x y]] (m/sin (heading (v/vec2 x y)))) <span class="at">:domain</span> domain <span class="at">:n</span> <span class="dv">300</span>})</span>
 <span id="cb29-8"><a href="#cb29-8" aria-hidden="true" tabindex="-1"></a>             (chart/segment {<span class="at">:color</span> [<span class="dv">90</span> <span class="dv">160</span> <span class="dv">235</span>] <span class="at">:width</span> <span class="fl">1.5</span> <span class="at">:arrow</span> {<span class="at">:end</span> <span class="va">true</span> <span class="at">:size</span> <span class="dv">5</span>}})]</span>
 <span id="cb29-9"><a href="#cb29-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:range</span> [<span class="at">:black</span> <span class="at">:white</span>] <span class="at">:title</span> <span class="st">"sin heading"</span>}</span>
 <span id="cb29-10"><a href="#cb29-10" aria-hidden="true" tabindex="-1"></a>             <span class="at">:x</span> {<span class="at">:domain</span> [-<span class="dv">3</span> <span class="dv">3</span>] <span class="at">:expand</span> [<span class="dv">0</span> <span class="dv">0</span>]} <span class="at">:y</span> {<span class="at">:domain</span> [-<span class="dv">3</span> <span class="dv">3</span>] <span class="at">:expand</span> [<span class="dv">0</span> <span class="dv">0</span>]}}</span>
@@ -1741,6 +1750,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       </a>          
   </div>
   <div class="nav-page nav-page-next">
+      <a href="./galleries.lattice.html" class="pagination-link" aria-label="Lattice">
+        <span class="nav-page-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Lattice</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
   </div>
 </nav>
 </div> <!-- /content -->

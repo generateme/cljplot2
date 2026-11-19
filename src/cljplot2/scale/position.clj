@@ -527,7 +527,7 @@
   (not (contains? #{false :no-grid} (:axis scale))))
 
 (defn stat-transform
-  "`{:forward f :inverse g}` - the coordinates a 2D stat (field, contour, bin2d) works in on an axis with the plot's
+  "`{:forward f :inverse g}` - the coordinates a stat (field, contour, bin2d, smooth) works in on an axis with the plot's
   scale spec `spec` (may be `nil`): `log10` for `:log` (a non-positive value maps to `##NaN`), the identity
   otherwise. Densities and bins are then even on screen. Other non-linear kinds are not transformed yet."
   [spec]

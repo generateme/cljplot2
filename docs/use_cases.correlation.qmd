@@ -917,7 +917,7 @@ Source: [R Graph Gallery - 2D density chart](https://r-graph-gallery.com/2d-dens
 
 ## Functions
 
-`chart/field {:f f}` samples a function of x and y on a grid over a given domain (`:n` samples per axis) - no
+`chart/field {:f f}` samples a function of a point `[x y]` on a grid over a given domain (`:n` samples per axis) - no
 data needed. These examples have no gallery counterpart.
 
 
@@ -931,8 +931,9 @@ Source: cljplot2 - chart/field.
 ::: {.sourceClojure}
 ```clojure
 (defn fn2d
-  [^double x ^double y]
-  (* (- (+ (* x x) (* y y))) (m/sin x) (m/sin y) (m/sin (* x y))))
+  [[x y]]
+  (let [x (double x) y (double y)]
+    (* (- (+ (* x x) (* y y))) (m/sin x) (m/sin y) (m/sin (* x y)))))
 ```
 :::
 
@@ -965,7 +966,7 @@ Source: cljplot2 - chart/field, chart/contour.
 
 ::: {.sourceClojure}
 ```clojure
-(let [wave (fn [x y] (* (m/sin x) (m/cos y)))
+(let [wave (fn [[x y]] (* (m/sin x) (m/cos y)))
       domain {:x [0 (* 2 m/PI)] :y [0 4]}]
   (plot/render-image
    {:charts [(chart/field {:f wave :domain domain})
