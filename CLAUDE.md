@@ -84,7 +84,8 @@ into the builder's. `cljplot2.core` is the public API (`build`, `render`, `rende
   silent. Functions with primitive type hints take at most 4 arguments.
 - Never mutate a caller's arrays.
 - Option schemas are closed; new options are off by default (existing images unchanged).
-- Errors: `cljplot2.schema/fail!` with `{:key option …}`.
+- Errors: `cljplot2.schema/fail!` with `{:key option …}`; namespaces `cljplot2.schema` itself requires (e.g.
+  `graphics.shape`) use `cljplot2.error/fail!` (the same function, no dependency cycle).
 
 ## Related repositories
 

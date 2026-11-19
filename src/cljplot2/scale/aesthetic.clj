@@ -40,6 +40,8 @@
   * `:area true` - linear / ordinal `:size`: the shape's area (∝ size²), not its size, linear in `t` - size
     `√(a² + t·(b² − a²))` for `:range [a b]` (ggplot `scale_size`); with `:domain [0 hi]` and `:range [0 max]` the
     area is proportional to the value (ggplot `scale_size_area`)
+  * `:ticks` - linear `:size` / `:color`: the legend's entries or color bar ticks - a count (nice ticks), or the
+    values themselves (see [[explicit-ticks]]; drawn as given - no added `:midpoint` tick)
   * `:formatter` - legend labels (function); `:title` - legend title (`nil` - no title); `:legend` - `false` hides it
 
   [[scale-spec]] gives plain data (with `:na?` - the scale has an NA level); it is also the finalized scale: no
@@ -567,11 +569,22 @@
   (attribute-fn :color (scale-spec :color {:kind :ordinal :domain (vec (range (max 1 (long n))))} nil false (:palette theme))
                 (get-in theme [:palette :na])))
 
+(defn explicit-ticks
+  "Legend ticks of an explicit `:ticks` vector `ticks` over the domain `[lo hi]`: the values inside it, sorted, equal
+  numbers once (`5` and `5.0` alike - the first given kept); `[]` when none is inside."
+  [ticks lo hi]
+  (let [lo (double lo) hi (double hi)]
+    (->> ticks
+         (filter #(<= lo (double %) hi))
+         (reduce (fn [acc t] (if (contains? acc (double t)) acc (assoc acc (double t) t))) (sorted-map))
+         vals
+         vec)))
+
 (defn legend-entries
   "Legend entries `[{:label :value}]` of scale `spec` of dimension `k` (`:value nil` - the NA entry, last), or `nil`
   when it has no legend: `:legend false`, an identity scale, or linear / binned color (a color bar instead).
   Ordinal: one per level (`(str level)` or `:formatter`); linear size: ticks of the domain (labels as axis ticks) -
-  `:ticks` a count (default 5) or the values themselves (those inside the domain, sorted)."
+  `:ticks` a count (default 5) or the values themselves (see [[explicit-ticks]])."
   [k spec]
   (when-not (or (false? (:legend spec)) (= :identity (:kind spec))
                 (and (= k :color) (#{:linear :binned} (:kind spec))))
@@ -586,7 +599,7 @@
                                                   (:formatter spec) (assoc :formatter (:formatter spec))))
                             in-domain #(<= lo (double %) hi)
                             ticks (cond
-                                    (sequential? explicit) (vec (sort (distinct (filter in-domain explicit))))
+                                    (sequential? explicit) (explicit-ticks explicit lo hi)
                                     (== lo hi) [lo]
                                     :else (filterv in-domain (s/ticks ws)))]
                         (mapv (fn [t l] {:label l :value t}) ticks

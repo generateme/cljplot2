@@ -436,3 +436,36 @@
           x0 (reduce min (map first pts)) y0 (reduce min (map second pts)) y1 (reduce max (map second pts))]
       (is (not= blue (px img x0 y1)) "far corner rounded")
       (is (= blue (px img x0 y0)) "corner toward 0 square"))))
+
+(deftest explicit-ticks-test
+  (testing "inside the domain, sorted, equal numbers once (the first given kept)"
+    (is (= [5] (aesthetic/explicit-ticks [5 5.0] 0 10)))
+    (is (= [5.0] (aesthetic/explicit-ticks [5.0 5] 0 10)))
+    (is (= [1 3 7] (aesthetic/explicit-ticks [7 -1 3 11 1 3] 0 10)))
+    (is (= [0 10] (aesthetic/explicit-ticks [10 0] 0 10)) "the domain ends are inside"))
+  (testing "boundary: empty, none inside, a one-value domain"
+    (is (= [] (aesthetic/explicit-ticks [] 0 10)))
+    (is (= [] (aesthetic/explicit-ticks [11 -1] 0 10)))
+    (is (= [3] (aesthetic/explicit-ticks [3 3.0 4] 3 3))))
+  (testing "a size legend lists one entry per number"
+    (is (= [5] (mapv :value (aesthetic/legend-entries :size {:kind :linear :domain [0 10] :ticks [5 5.0]}))))))
+
+(defn- colorbar
+  "The color bar content of a plot of :v 0 and 10 mapped to :color with `color-scale`."
+  [color-scale]
+  (let [items (get-in (plot/build {:data [{:x 1 :y 1 :v 0} {:x 2 :y 2 :v 10}] :mapping {:x :x :y :y :color :v}
+                                   :scales {:color color-scale} :charts [(chart/scatter)]}
+                                  {:width 400 :height 300})
+                      [:grid :items])]
+    (first (some #(when (= :legends (:id %)) (get-in % [:content :legends])) items))))
+
+(deftest colorbar-explicit-ticks-test
+  (testing "explicit :ticks are drawn as given: no added :midpoint tick"
+    (is (= [2 8] (:ticks (colorbar {:ticks [8 2] :midpoint 5}))))
+    (is (= [2 5 8] (:ticks (colorbar {:ticks [2 5 8] :midpoint 5}))) "the midpoint listed - a tick like the others"))
+  (testing "nice ticks (a count or none) still get the :midpoint"
+    (is (some #(== 5.5 (double %)) (:ticks (colorbar {:midpoint 5.5}))))
+    (is (some #(== 5.5 (double %)) (:ticks (colorbar {:ticks 3 :midpoint 5.5})))))
+  (testing "boundary: equal numbers once; none inside - no ticks"
+    (is (= [5] (:ticks (colorbar {:ticks [5 5.0]}))))
+    (is (= [] (:ticks (colorbar {:ticks [20]}))))))
