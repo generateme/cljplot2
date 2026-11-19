@@ -1,5 +1,6 @@
 (ns notebooks.notebook-utils-test
-  (:require [clojure.java.io :as io]
+  (:require [clojure.edn :as edn]
+            [clojure.java.io :as io]
             [clojure.string :as str]
             [clojure.test :refer [deftest testing is]]
             [notebook-utils :as nu]
@@ -105,3 +106,26 @@
     (testing "neither, or an unknown dataset, throws"
       (is (= {:key :source-note} (error-data #(nu/source-note {}))))
       (is (= :dataset (:key (error-data #(nu/source-note {:source "x" :dataset :nope}))))))))
+
+(deftest levels-test
+  (testing "R factor order, not alphabetical or first appearance"
+    (is (= ["Grand Rapids" "Duluth" "University Farm" "Morris" "Crookston" "Waseca"] (nu/levels :barley :site)))
+    (is (= ["Expected or Additional Training" "Work with Specific Person" "Training Outside PhD Field"
+            "Other Employment Not Available" "Other"]
+           (nu/levels :postdoc :reason))))
+  (testing "typed as the dataset loads the column: numbers, or strings for :strings columns"
+    (is (= [1932 1931] (nu/levels :barley :year)))
+    (is (every? number? (nu/levels :gvhd10 :days)))
+    (is (every? string? (nu/levels :gvhd :patient)) "patient is a :strings column"))
+  (testing "every recorded level column belongs to a manifest dataset; the loaded values are levels"
+    (let [recorded (edn/read-string (slurp (io/resource "data/levels.edn")))]
+      (doseq [[k columns] recorded
+              :let [rows (when (contains? #{:barley :titanic :postdoc :va-deaths :oats :states :seatac-weather} k)
+                           (nu/dataset k))]
+              [column _] columns]
+        (is (contains? (nu/datasets) k) (str k))
+        (when rows
+          (is (every? (set (nu/levels k column)) (keep column rows)) (str k " " column))))))
+  (testing "unknown dataset or column - {:key :levels}"
+    (is (= :levels (:key (ex-data (try (nu/levels :barley :nope) (catch clojure.lang.ExceptionInfo e e))))))
+    (is (= :levels (:key (ex-data (try (nu/levels :faithful :eruptions) (catch clojure.lang.ExceptionInfo e e))))))))

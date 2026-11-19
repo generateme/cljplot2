@@ -97,8 +97,8 @@
              :pattern [:hatch :back-hatch :horizontal :vertical :cross :diagonal-cross :dots :dense-dots]
              :na [150 150 150]}
    :legend {:gap 5 :key-size 14 :fill :none :border-color :none :border-width 1 :bar-length :stretch :bar-width nil}
-   :chart {:scatter {:size 4 :color [69 117 180 180] :stroke-color :none :stroke-width 1 :shape \O}
-           :cloud {:size 4 :color [69 117 180 180] :stroke-color :none :stroke-width 1 :shape \O}
+   :chart {:scatter {:size 6 :color [69 117 180 180] :stroke-color :none :stroke-width 1 :shape \O}
+           :cloud {:size 6 :color [69 117 180 180] :stroke-color :none :stroke-width 1 :shape \O}
            :surface {:stroke-color [60 60 60] :stroke-width 0.5}
            :histogram {:color [69 117 180] :stroke-color :darker :stroke-width 1 :alpha 0.6 :zero-line-color :black
                        :pattern :solid :pattern-color :darker
@@ -127,7 +127,7 @@
                  :pattern :solid :pattern-color :darker}
            :violin {:color [69 117 180] :stroke-color :darker :stroke-width 1 :inner-color :none
                     :pattern :solid :pattern-color :darker}
-           :stripplot {:size 10 :color [69 117 180 100] :stroke-color :none :stroke-width 1 :shape \O}
+           :stripplot {:size 6 :color [69 117 180 100] :stroke-color :none :stroke-width 1 :shape \O}
            :beeswarm {:size 6 :color [69 117 180 180] :stroke-color :none :stroke-width 1 :shape \O}
            :rug {:color [69 117 180 100] :line-width 1}
            :extent {:color [69 117 180] :line-width 2 :shape \O :size 7}
@@ -139,9 +139,9 @@
                     :pattern :solid :pattern-color :darker}
            :segment {:color [69 117 180] :width 1 :dash :none}
            :polygon {:color [69 117 180] :alpha 1.0 :stroke-color :none :stroke-width 1}
-           :qq {:size 4 :color [69 117 180 180] :stroke-color :none :stroke-width 1 :shape \O :line-width 1}
+           :qq {:size 6 :color [69 117 180 180] :stroke-color :none :stroke-width 1 :shape \O :line-width 1}
            :image {}
-           :pp {:size 4 :color [69 117 180 180] :stroke-color :none :stroke-width 1 :shape \O :line-width 1}
+           :pp {:size 6 :color [69 117 180 180] :stroke-color :none :stroke-width 1 :shape \O :line-width 1}
            :parallel {:color [69 117 180 140] :width 1 :dash :none :fill :none :alpha 0.25
                       :pattern :solid :pattern-color :darker}
            :candlestick {:up-color [26 152 80] :down-color [215 48 39] :body-width 0.7 :wick-width 1 :stroke-color :none

@@ -174,18 +174,23 @@
 
 ;; ### Fig 2.6 Dot plot
 
-;; Barley yield of each variety at six sites, the two years in two colours.
+;; Barley yield of each variety at six sites, the two years in two colours and shapes. Sites, varieties and years
+;; keep R's factor order (`nu/levels`); lattice fills panels from the bottom, so the sites run top-down reversed.
 
 (nu/source-note {:source "Lattice Fig 2.6" :url (figure-url 2 6) :dataset :barley})
 
 (plot/render-image
  {:data barley
-  :mapping {:x :yield :y :variety :color :year :facet :site}
-  :scales {:color {:type :categorical}}
+  :mapping {:x :yield :y :variety :color :year :shape :year :facet :site}
+  :scales {:y {:domain (nu/levels :barley :variety)}
+           :facet {:domain (vec (rseq (nu/levels :barley :site)))}
+           :color {:type :categorical :domain (nu/levels :barley :year)}
+           :shape {:domain (nu/levels :barley :year)}}
   :charts [(chart/scatter)]
-  :facets {:columns 2}
+  :facets {:columns 1}
+  :theme {:text {:tick-label {:size 8}}}
   :labels {:x "yield" :y nil}}
- {:width 900 :height 800})
+ {:width 600 :height 800})
 
 ;; ### Fig 2.7 Groups within panels
 
@@ -214,6 +219,7 @@
   :scales {:facet {:domain titanic-panels}}
   :charts [(chart/bar {:position :stack})]
   :facets {:columns 4}
+  :theme {:panel {:grid {:x :none :y :none}}}
   :labels {:x "Freq" :y nil}}
  {:width 900 :height 350})
 
@@ -265,14 +271,14 @@
 
 ;; ### Fig 3.1 Kernel density
 
-;; Old Faithful eruption times: a Gaussian kernel density, the values as a rug.
+;; Old Faithful eruption times: a Gaussian kernel density, the values as jittered points under it.
 
 (nu/source-note {:source "Lattice Fig 3.1" :url (figure-url 3 1) :dataset :faithful})
 
 (plot/render-image
  {:data faithful
   :mapping {:x :eruptions}
-  :charts [(chart/density) (chart/rug)]
+  :charts [(chart/density) (chart/stripplot {:place :bottom :rng (r/rng :mersenne 31)})]
   :labels {:x "eruptions" :y "Density"}}
  {:width 600 :height 450})
 
@@ -285,7 +291,7 @@
 (plot/render-image
  {:data faithful
   :mapping {:x :eruptions}
-  :charts [(chart/density {:kernel :uniform :bandwidth (* 0.2 (m/sqrt 3.0)) :n 200}) (chart/rug)]
+  :charts [(chart/density {:kernel :uniform :bandwidth (* 0.2 (m/sqrt 3.0)) :n 200}) (chart/rug {:thickness 16})]
   :labels {:x "eruptions" :y "Density"}}
  {:width 600 :height 450})
 
@@ -341,7 +347,7 @@
  {:data chem97
   :mapping {:y :gcsescore :color :score :facet :gender}
   :scales {:color {:type :categorical}}
-  :charts [(chart/qq {:x-distribution [:normal] :size 2 :line false})]
+  :charts [(chart/qq {:x-distribution [:normal] :size 3 :line false})]
   :facets {:columns 2}
   :labels {:x "Standard Normal Quantiles" :y "Average GCSE Score"}}
  {:width 800 :height 450})
@@ -360,7 +366,7 @@
  {:data chem97-trans
   :mapping {:y :gcsescore-trans :color :score :facet :gender}
   :scales {:color {:type :categorical :title "score"}}
-  :charts [(chart/qq {:x-distribution [:normal] :size 2 :line false})]
+  :charts [(chart/qq {:x-distribution [:normal] :size 3 :line false})]
   :facets {:columns 2}
   :labels {:x "Standard Normal Quantiles" :y "Transformed GCSE Score"}}
  {:width 800 :height 450})
@@ -388,14 +394,14 @@
 (plot/render-image
  {:data chem97-positive
   :mapping {:y :gcsescore :color :gender :facet :score}
-  :charts [(chart/qq {:x-distribution [:uniform-real] :size 1 :line false})]
-  :facets {:columns 3}
+  :charts [(chart/qq {:x-distribution [:uniform-real] :size 3 :line false})]
+  :facets {:columns 6}
   :labels {:x "Uniform quantiles" :y "Average GCSE Score"}}
- {:width 800 :height 500})
+ {:width 1000 :height 400})
 
 ;; ### Fig 3.10 Two-sample Q-Q plots
 
-;; 100 quantiles of the girls' scores against the boys', per A-level score (`ppoints(100)` probabilities), and the
+;; 100 quantiles of the boys' scores against the girls', per A-level score (`ppoints(100)` probabilities), and the
 ;; line y = x.
 
 (nu/source-note {:source "Lattice Fig 3.10" :url (figure-url 3 10) :dataset :chem97})
@@ -407,11 +413,11 @@
                 :let [by-gender (group-by :gender rows)]
                 [f m] (map vector (quantiles (by-gender "F")) (quantiles (by-gender "M")))]
             {:score score :f f :m m})
-    :mapping {:x :f :y :m :facet :score}
-    :charts [(chart/scatter {:size 3}) (chart/rule {:slope 1 :intercept 0 :color :grey})]
+    :mapping {:x :m :y :f :facet :score}
+    :charts [(chart/scatter) (chart/rule {:slope 1 :intercept 0 :color :grey})]
     :facets {:columns 3}
     :aspect :iso
-    :labels {:x "F" :y "M"}}
+    :labels {:x "M" :y "F"}}
    {:width 800 :height 600}))
 
 ;; ### Fig 3.11 Box plots
@@ -421,6 +427,7 @@
 (plot/render-image
  {:data chem97
   :mapping {:x :gcsescore :y (levels/categorical :score) :facet :gender}
+  :scales {:facet {:domain ["M" "F"]}}
   :charts [(chart/box)]
   :facets {:columns 2}
   :labels {:x "Average GCSE Score" :y "score"}}
@@ -433,6 +440,7 @@
 (plot/render-image
  {:data chem97-trans
   :mapping {:x :gender :y :gcsescore-trans :facet :score}
+  :scales {:x {:domain ["M" "F"]}}
   :charts [(chart/box {:varwidth true})]
   :facets {:columns 6}
   :labels {:x nil :y "Transformed GCSE score"}}
@@ -451,12 +459,14 @@
 
 ;; ### Fig 3.14 Violins
 
+;; Tails 3 bandwidths past the data (`:cut 3`, R's `density` default as lattice uses it).
+
 (nu/source-note {:source "Lattice Fig 3.14" :url (figure-url 3 14) :dataset :gvhd10})
 
 (plot/render-image
  {:data gvhd10-log
   :mapping {:x :log-fsc :y (levels/categorical :days)}
-  :charts [(chart/violin {:inner :none})]
+  :charts [(chart/violin {:inner :none :cut 3})]
   :labels {:x "log(Forward Scatter)" :y "Days Past Transplant"}}
  {:width 700 :height 500})
 
@@ -469,7 +479,7 @@
 (plot/render-image
  {:data quakes
   :mapping {:x :depth :y (levels/categorical :mag)}
-  :charts [(chart/stripplot {:jitter 0 :size 3})]
+  :charts [(chart/stripplot {:jitter 0})]
   :labels {:x "depth" :y "mag"}}
  {:width 600 :height 700})
 
@@ -480,14 +490,15 @@
 (plot/render-image
  {:data quakes
   :mapping {:x (levels/categorical :mag) :y :depth}
-  :charts [(chart/stripplot {:rng (r/rng :mersenne 316) :size 3 :color [69 117 180 150]})]
+  :charts [(chart/stripplot {:rng (r/rng :mersenne 316) :jitter 0.3})]
   :labels {:x "Magnitude (Richter)" :y "Depth (km)"}}
  {:width 800 :height 450})
 
 ;; ### Fig 3.17 Residuals and their medians
 
 ;; Square roots of the absolute residuals of an additive model of barley yield (variety + year + site, least
-;; squares on dummy-coded factors), jittered by site, a line through each year's medians.
+;; squares on dummy-coded factors), jittered by site (in R's order), a line through each year's medians; two
+;; contrasting colours for the years.
 
 (nu/source-note {:source "Lattice Fig 3.17" :url (figure-url 3 17) :dataset :barley})
 
@@ -498,13 +509,14 @@
       rows (mapv (fn [row residual] (assoc row :root-residual (m/sqrt (m/abs residual))))
                  barley (get-in model [:residuals :raw]))
       by-site-year (group-by (juxt :site :year) rows)
-      ;; in the axis's site order (first appearance), so each year's line runs left to right
-      medians (for [site (distinct (map :site barley)) year [1931 1932]]
+      ;; in the axis's site order, so each year's line runs left to right
+      sites (nu/levels :barley :site)
+      medians (for [site sites year [1931 1932]]
                 {:site site :year year :median (stats/median (map :root-residual (by-site-year [site year])))})]
   (plot/render-image
    {:data rows
     :mapping {:x :site :y :root-residual :color :year}
-    :scales {:color {:type :categorical}}
+    :scales {:x {:domain sites} :color {:type :categorical :range [[31 119 180] [214 39 40]]}}
     :charts [(chart/stripplot {:rng (r/rng :mersenne 317)})
              (chart/line {:data medians :mapping {:y :median}})]
     :labels {:x nil :y "√|Residual Barley Yield|"}}
@@ -565,13 +577,15 @@
 
 ;; ### Fig 4.5 Proportions as stacked bars
 
-;; Reasons for taking a postdoctoral position, as proportions of each field (`:position :normalize`).
+;; Reasons for taking a postdoctoral position, as proportions of each field (`:position :normalize`), in R's
+;; order.
 
 (nu/source-note {:source "Lattice Fig 4.5" :url (figure-url 4 5) :dataset :postdoc})
 
 (plot/render-image
  {:data postdoc
   :mapping {:x :count :y :field :color :reason}
+  :scales {:color {:domain (nu/levels :postdoc :reason)}}
   :charts [(chart/bar {:position :normalize})]
   :labels {:x "Proportion" :y nil}}
  {:width 900 :height 450})
@@ -661,7 +675,7 @@
 (plot/render-image
  {:data (levels/bin quakes :depth {:as :depth-cut :bins 3 :label "Depth"})
   :mapping {:x :long :y :lat :facet :depth-cut}
-  :charts [(chart/scatter {:size 2})]
+  :charts [(chart/scatter {:size 4})]
   :facets {:columns 3}
   :aspect :iso
   :labels {:x "Longitude" :y "Latitude"}}
@@ -677,7 +691,7 @@
  {:data (levels/bin quakes :depth {:as :depth-cut :bins {:quantiles 3}})
   :mapping {:x :long :y :lat :color :depth-cut}
   :scales {:color {:title "Depth"}}
-  :charts [(chart/scatter {:size 3})]
+  :charts [(chart/scatter {:size 4})]
   :aspect :iso
   :labels {:x "Longitude" :y "Latitude"}}
  {:width 650 :height 650})
@@ -904,14 +918,15 @@
 
 ;; ### Fig 5.14 Hexagonal binning
 
-;; Two fluorescence channels of the GvHD cells (asinh-transformed), counted in hexagons, a panel per day.
+;; Two fluorescence channels of the GvHD cells (asinh-transformed), counted in hexagons, a panel per day; grey
+;; levels by the square root of the count (`:transform :sqrt`, lattice's `trans = sqrt`).
 
 (nu/source-note {:source "Lattice Fig 5.14" :url (figure-url 5 14) :dataset :gvhd10})
 
 (plot/render-image
  {:data (mapv (fn [row] {:days (:days row) :ssc (m/asinh (:ssc-h row)) :fl2 (m/asinh (:fl2-h row))}) gvhd10)
   :mapping {:x :fl2 :y :ssc :facet :days}
-  :scales {:color {:range [[235 235 235] [0 0 0]]}}
+  :scales {:x {:domain [0 10.5]} :color {:range [[235 235 235] [0 0 0]] :transform :sqrt}}
   :charts [(chart/bin2d {:bins 30})]
   :facets {:columns 4}
   :aspect :iso
@@ -929,13 +944,14 @@
 
 ;; ### Fig 5.16 A matrix per region
 
-;; Arrest rates of the states of each census region (joined from the state facts): points and a loess curve.
+;; Arrest rates of the states of each census region (joined from the state facts): points and a loess curve with
+;; lattice's `panel.loess` settings (span 2/3, degree 1) - with a dozen states per region, ggplot2's degree 2 bends.
 
 (nu/source-note {:source "Lattice Fig 5.16" :url (figure-url 5 16) :dataset :us-arrests})
 
 (let [region (into {} (map (juxt :name :region) states))
       rows (map #(assoc % :region (region (:state %))) us-arrests)
-      cell [(chart/scatter {:size 3}) (chart/smooth {:band :none})]]
+      cell [(chart/scatter {:size 3}) (chart/smooth {:band :none :method-params {:bandwidth (/ 2.0 3.0) :degree 1}})]]
   (plot/render-image
    (plot/arrange (for [r ["Northeast" "South" "North Central" "West"]]
                    (plot/pairs (filterv #(= r (:region %)) rows)

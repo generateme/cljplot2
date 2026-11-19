@@ -587,17 +587,21 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="fig-2.6-dot-plot" class="level3" data-number="9.2.6">
 <h3 data-number="9.2.6" class="anchored" data-anchor-id="fig-2.6-dot-plot"><span class="header-section-number">9.2.6</span> Fig 2.6 Dot plot</h3>
-<p>Barley yield of each variety at six sites, the two years in two colours.</p>
+<p>Barley yield of each variety at six sites, the two years in two colours and shapes. Sites, varieties and years keep R’s factor order (<code>nu/levels</code>); lattice fills panels from the bottom, so the sites run top-down reversed.</p>
 <p>Source: <a href="http://lmdvr.r-forge.r-project.org/figures/figures.html?chapter=02;figure=02_06;theme=stdColor;code=right">Lattice Fig 2.6</a>. Data: Barley yields, Minnesota 1931-1932, R lattice package <code>barley</code> (Immer et al.&nbsp;1934; Fisher 1971; Cleveland 1993); licence: GPL (&gt;= 2) (lattice).</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb27"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
 <span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a> {<span class="at">:data</span> barley</span>
-<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:yield</span> <span class="at">:y</span> <span class="at">:variety</span> <span class="at">:color</span> <span class="at">:year</span> <span class="at">:facet</span> <span class="at">:site</span>}</span>
-<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:type</span> <span class="at">:categorical</span>}}</span>
-<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">:charts</span> [(chart/scatter)]</span>
-<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">:facets</span> {<span class="at">:columns</span> <span class="dv">2</span>}</span>
-<span id="cb27-7"><a href="#cb27-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">:labels</span> {<span class="at">:x</span> <span class="st">"yield"</span> <span class="at">:y</span> <span class="va">nil</span>}}</span>
-<span id="cb27-8"><a href="#cb27-8" aria-hidden="true" tabindex="-1"></a> {<span class="at">:width</span> <span class="dv">900</span> <span class="at">:height</span> <span class="dv">800</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:yield</span> <span class="at">:y</span> <span class="at">:variety</span> <span class="at">:color</span> <span class="at">:year</span> <span class="at">:shape</span> <span class="at">:year</span> <span class="at">:facet</span> <span class="at">:site</span>}</span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">:scales</span> {<span class="at">:y</span> {<span class="at">:domain</span> (nu/levels <span class="at">:barley</span> <span class="at">:variety</span>)}</span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a>           <span class="at">:facet</span> {<span class="at">:domain</span> (<span class="kw">vec</span> (<span class="kw">rseq</span> (nu/levels <span class="at">:barley</span> <span class="at">:site</span>)))}</span>
+<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a>           <span class="at">:color</span> {<span class="at">:type</span> <span class="at">:categorical</span> <span class="at">:domain</span> (nu/levels <span class="at">:barley</span> <span class="at">:year</span>)}</span>
+<span id="cb27-7"><a href="#cb27-7" aria-hidden="true" tabindex="-1"></a>           <span class="at">:shape</span> {<span class="at">:domain</span> (nu/levels <span class="at">:barley</span> <span class="at">:year</span>)}}</span>
+<span id="cb27-8"><a href="#cb27-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">:charts</span> [(chart/scatter)]</span>
+<span id="cb27-9"><a href="#cb27-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">:facets</span> {<span class="at">:columns</span> <span class="dv">1</span>}</span>
+<span id="cb27-10"><a href="#cb27-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">:theme</span> {<span class="at">:text</span> {<span class="at">:tick-label</span> {<span class="at">:size</span> <span class="dv">8</span>}}}</span>
+<span id="cb27-11"><a href="#cb27-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">:labels</span> {<span class="at">:x</span> <span class="st">"yield"</span> <span class="at">:y</span> <span class="va">nil</span>}}</span>
+<span id="cb27-12"><a href="#cb27-12" aria-hidden="true" tabindex="-1"></a> {<span class="at">:width</span> <span class="dv">600</span> <span class="at">:height</span> <span class="dv">800</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="clay-image">
 <p><img src="galleries.lattice_files/image9.png" class="img-fluid"></p>
@@ -634,8 +638,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">:scales</span> {<span class="at">:facet</span> {<span class="at">:domain</span> titanic-panels}}</span>
 <span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">:charts</span> [(chart/bar {<span class="at">:position</span> <span class="at">:stack</span>})]</span>
 <span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">:facets</span> {<span class="at">:columns</span> <span class="dv">4</span>}</span>
-<span id="cb30-7"><a href="#cb30-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">:labels</span> {<span class="at">:x</span> <span class="st">"Freq"</span> <span class="at">:y</span> <span class="va">nil</span>}}</span>
-<span id="cb30-8"><a href="#cb30-8" aria-hidden="true" tabindex="-1"></a> {<span class="at">:width</span> <span class="dv">900</span> <span class="at">:height</span> <span class="dv">350</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb30-7"><a href="#cb30-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">:theme</span> {<span class="at">:panel</span> {<span class="at">:grid</span> {<span class="at">:x</span> <span class="at">:none</span> <span class="at">:y</span> <span class="at">:none</span>}}}</span>
+<span id="cb30-8"><a href="#cb30-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">:labels</span> {<span class="at">:x</span> <span class="st">"Freq"</span> <span class="at">:y</span> <span class="va">nil</span>}}</span>
+<span id="cb30-9"><a href="#cb30-9" aria-hidden="true" tabindex="-1"></a> {<span class="at">:width</span> <span class="dv">900</span> <span class="at">:height</span> <span class="dv">350</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="clay-image">
 <p><img src="galleries.lattice_files/image11.png" class="img-fluid"></p>
@@ -701,13 +706,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h2 data-number="9.3" class="anchored" data-anchor-id="chapter-3---visualizing-univariate-distributions"><span class="header-section-number">9.3</span> Chapter 3 - Visualizing Univariate Distributions</h2>
 <section id="fig-3.1-kernel-density" class="level3" data-number="9.3.1">
 <h3 data-number="9.3.1" class="anchored" data-anchor-id="fig-3.1-kernel-density"><span class="header-section-number">9.3.1</span> Fig 3.1 Kernel density</h3>
-<p>Old Faithful eruption times: a Gaussian kernel density, the values as a rug.</p>
+<p>Old Faithful eruption times: a Gaussian kernel density, the values as jittered points under it.</p>
 <p>Source: <a href="http://lmdvr.r-forge.r-project.org/figures/figures.html?chapter=03;figure=03_01;theme=stdColor;code=right">Lattice Fig 3.1</a>. Data: Old Faithful geyser eruptions, R datasets package <code>faithful</code> (Härdle 1991; Azzalini &amp; Bowman 1990); licence: Part of R (GPL-2 | GPL-3).</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb34"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
 <span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a> {<span class="at">:data</span> faithful</span>
 <span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:eruptions</span>}</span>
-<span id="cb34-4"><a href="#cb34-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">:charts</span> [(chart/density) (chart/rug)]</span>
+<span id="cb34-4"><a href="#cb34-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">:charts</span> [(chart/density) (chart/stripplot {<span class="at">:place</span> <span class="at">:bottom</span> <span class="at">:rng</span> (r/rng <span class="at">:mersenne</span> <span class="dv">31</span>)})]</span>
 <span id="cb34-5"><a href="#cb34-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">:labels</span> {<span class="at">:x</span> <span class="st">"eruptions"</span> <span class="at">:y</span> <span class="st">"Density"</span>}}</span>
 <span id="cb34-6"><a href="#cb34-6" aria-hidden="true" tabindex="-1"></a> {<span class="at">:width</span> <span class="dv">600</span> <span class="at">:height</span> <span class="dv">450</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
@@ -723,7 +728,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb35"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
 <span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a> {<span class="at">:data</span> faithful</span>
 <span id="cb35-3"><a href="#cb35-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:eruptions</span>}</span>
-<span id="cb35-4"><a href="#cb35-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">:charts</span> [(chart/density {<span class="at">:kernel</span> <span class="at">:uniform</span> <span class="at">:bandwidth</span> (<span class="kw">*</span> <span class="fl">0.2</span> (m/sqrt <span class="fl">3.0</span>)) <span class="at">:n</span> <span class="dv">200</span>}) (chart/rug)]</span>
+<span id="cb35-4"><a href="#cb35-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">:charts</span> [(chart/density {<span class="at">:kernel</span> <span class="at">:uniform</span> <span class="at">:bandwidth</span> (<span class="kw">*</span> <span class="fl">0.2</span> (m/sqrt <span class="fl">3.0</span>)) <span class="at">:n</span> <span class="dv">200</span>}) (chart/rug {<span class="at">:thickness</span> <span class="dv">16</span>})]</span>
 <span id="cb35-5"><a href="#cb35-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">:labels</span> {<span class="at">:x</span> <span class="st">"eruptions"</span> <span class="at">:y</span> <span class="st">"Density"</span>}}</span>
 <span id="cb35-6"><a href="#cb35-6" aria-hidden="true" tabindex="-1"></a> {<span class="at">:width</span> <span class="dv">600</span> <span class="at">:height</span> <span class="dv">450</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
@@ -794,7 +799,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a> {<span class="at">:data</span> chem97</span>
 <span id="cb40-3"><a href="#cb40-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">:mapping</span> {<span class="at">:y</span> <span class="at">:gcsescore</span> <span class="at">:color</span> <span class="at">:score</span> <span class="at">:facet</span> <span class="at">:gender</span>}</span>
 <span id="cb40-4"><a href="#cb40-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:type</span> <span class="at">:categorical</span>}}</span>
-<span id="cb40-5"><a href="#cb40-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">:charts</span> [(chart/qq {<span class="at">:x-distribution</span> [<span class="at">:normal</span>] <span class="at">:size</span> <span class="dv">2</span> <span class="at">:line</span> <span class="va">false</span>})]</span>
+<span id="cb40-5"><a href="#cb40-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">:charts</span> [(chart/qq {<span class="at">:x-distribution</span> [<span class="at">:normal</span>] <span class="at">:size</span> <span class="dv">3</span> <span class="at">:line</span> <span class="va">false</span>})]</span>
 <span id="cb40-6"><a href="#cb40-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">:facets</span> {<span class="at">:columns</span> <span class="dv">2</span>}</span>
 <span id="cb40-7"><a href="#cb40-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">:labels</span> {<span class="at">:x</span> <span class="st">"Standard Normal Quantiles"</span> <span class="at">:y</span> <span class="st">"Average GCSE Score"</span>}}</span>
 <span id="cb40-8"><a href="#cb40-8" aria-hidden="true" tabindex="-1"></a> {<span class="at">:width</span> <span class="dv">800</span> <span class="at">:height</span> <span class="dv">450</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -817,7 +822,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a> {<span class="at">:data</span> chem97-trans</span>
 <span id="cb42-3"><a href="#cb42-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">:mapping</span> {<span class="at">:y</span> <span class="at">:gcsescore-trans</span> <span class="at">:color</span> <span class="at">:score</span> <span class="at">:facet</span> <span class="at">:gender</span>}</span>
 <span id="cb42-4"><a href="#cb42-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:type</span> <span class="at">:categorical</span> <span class="at">:title</span> <span class="st">"score"</span>}}</span>
-<span id="cb42-5"><a href="#cb42-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">:charts</span> [(chart/qq {<span class="at">:x-distribution</span> [<span class="at">:normal</span>] <span class="at">:size</span> <span class="dv">2</span> <span class="at">:line</span> <span class="va">false</span>})]</span>
+<span id="cb42-5"><a href="#cb42-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">:charts</span> [(chart/qq {<span class="at">:x-distribution</span> [<span class="at">:normal</span>] <span class="at">:size</span> <span class="dv">3</span> <span class="at">:line</span> <span class="va">false</span>})]</span>
 <span id="cb42-6"><a href="#cb42-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">:facets</span> {<span class="at">:columns</span> <span class="dv">2</span>}</span>
 <span id="cb42-7"><a href="#cb42-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">:labels</span> {<span class="at">:x</span> <span class="st">"Standard Normal Quantiles"</span> <span class="at">:y</span> <span class="st">"Transformed GCSE Score"</span>}}</span>
 <span id="cb42-8"><a href="#cb42-8" aria-hidden="true" tabindex="-1"></a> {<span class="at">:width</span> <span class="dv">800</span> <span class="at">:height</span> <span class="dv">450</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -853,10 +858,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb45"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
 <span id="cb45-2"><a href="#cb45-2" aria-hidden="true" tabindex="-1"></a> {<span class="at">:data</span> chem97-positive</span>
 <span id="cb45-3"><a href="#cb45-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">:mapping</span> {<span class="at">:y</span> <span class="at">:gcsescore</span> <span class="at">:color</span> <span class="at">:gender</span> <span class="at">:facet</span> <span class="at">:score</span>}</span>
-<span id="cb45-4"><a href="#cb45-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">:charts</span> [(chart/qq {<span class="at">:x-distribution</span> [<span class="at">:uniform-real</span>] <span class="at">:size</span> <span class="dv">1</span> <span class="at">:line</span> <span class="va">false</span>})]</span>
-<span id="cb45-5"><a href="#cb45-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">:facets</span> {<span class="at">:columns</span> <span class="dv">3</span>}</span>
+<span id="cb45-4"><a href="#cb45-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">:charts</span> [(chart/qq {<span class="at">:x-distribution</span> [<span class="at">:uniform-real</span>] <span class="at">:size</span> <span class="dv">3</span> <span class="at">:line</span> <span class="va">false</span>})]</span>
+<span id="cb45-5"><a href="#cb45-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">:facets</span> {<span class="at">:columns</span> <span class="dv">6</span>}</span>
 <span id="cb45-6"><a href="#cb45-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">:labels</span> {<span class="at">:x</span> <span class="st">"Uniform quantiles"</span> <span class="at">:y</span> <span class="st">"Average GCSE Score"</span>}}</span>
-<span id="cb45-7"><a href="#cb45-7" aria-hidden="true" tabindex="-1"></a> {<span class="at">:width</span> <span class="dv">800</span> <span class="at">:height</span> <span class="dv">500</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb45-7"><a href="#cb45-7" aria-hidden="true" tabindex="-1"></a> {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">400</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="clay-image">
 <p><img src="galleries.lattice_files/image23.png" class="img-fluid"></p>
@@ -864,7 +869,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="fig-3.10-two-sample-q-q-plots" class="level3" data-number="9.3.10">
 <h3 data-number="9.3.10" class="anchored" data-anchor-id="fig-3.10-two-sample-q-q-plots"><span class="header-section-number">9.3.10</span> Fig 3.10 Two-sample Q-Q plots</h3>
-<p>100 quantiles of the girls’ scores against the boys’, per A-level score (<code>ppoints(100)</code> probabilities), and the line y = x.</p>
+<p>100 quantiles of the boys’ scores against the girls’, per A-level score (<code>ppoints(100)</code> probabilities), and the line y = x.</p>
 <p>Source: <a href="http://lmdvr.r-forge.r-project.org/figures/figures.html?chapter=03;figure=03_10;theme=stdColor;code=right">Lattice Fig 3.10</a>. Data: A-level chemistry scores, England 1997, R mlmRev package <code>Chem97</code> (Yang et al.&nbsp;2002); licence: GPL (&gt;= 2) (mlmRev).</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb46"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">let</span> [ps (<span class="kw">mapv</span> #(<span class="kw">/</span> (<span class="kw">-</span> <span class="va">%</span> <span class="fl">0.5</span>) <span class="fl">100.0</span>) (<span class="kw">range</span> <span class="dv">1</span> <span class="dv">101</span>))</span>
@@ -874,11 +879,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb46-5"><a href="#cb46-5" aria-hidden="true" tabindex="-1"></a>                <span class="at">:let</span> [by-gender (<span class="kw">group-by</span> <span class="at">:gender</span> rows)]</span>
 <span id="cb46-6"><a href="#cb46-6" aria-hidden="true" tabindex="-1"></a>                [f m] (<span class="kw">map</span> <span class="kw">vector</span> (quantiles (by-gender <span class="st">"F"</span>)) (quantiles (by-gender <span class="st">"M"</span>)))]</span>
 <span id="cb46-7"><a href="#cb46-7" aria-hidden="true" tabindex="-1"></a>            {<span class="at">:score</span> score <span class="at">:f</span> f <span class="at">:m</span> m})</span>
-<span id="cb46-8"><a href="#cb46-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:f</span> <span class="at">:y</span> <span class="at">:m</span> <span class="at">:facet</span> <span class="at">:score</span>}</span>
-<span id="cb46-9"><a href="#cb46-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">:charts</span> [(chart/scatter {<span class="at">:size</span> <span class="dv">3</span>}) (chart/rule {<span class="at">:slope</span> <span class="dv">1</span> <span class="at">:intercept</span> <span class="dv">0</span> <span class="at">:color</span> <span class="at">:grey</span>})]</span>
+<span id="cb46-8"><a href="#cb46-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:m</span> <span class="at">:y</span> <span class="at">:f</span> <span class="at">:facet</span> <span class="at">:score</span>}</span>
+<span id="cb46-9"><a href="#cb46-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">:charts</span> [(chart/scatter) (chart/rule {<span class="at">:slope</span> <span class="dv">1</span> <span class="at">:intercept</span> <span class="dv">0</span> <span class="at">:color</span> <span class="at">:grey</span>})]</span>
 <span id="cb46-10"><a href="#cb46-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">:facets</span> {<span class="at">:columns</span> <span class="dv">3</span>}</span>
 <span id="cb46-11"><a href="#cb46-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">:aspect</span> <span class="at">:iso</span></span>
-<span id="cb46-12"><a href="#cb46-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">:labels</span> {<span class="at">:x</span> <span class="st">"F"</span> <span class="at">:y</span> <span class="st">"M"</span>}}</span>
+<span id="cb46-12"><a href="#cb46-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">:labels</span> {<span class="at">:x</span> <span class="st">"M"</span> <span class="at">:y</span> <span class="st">"F"</span>}}</span>
 <span id="cb46-13"><a href="#cb46-13" aria-hidden="true" tabindex="-1"></a>   {<span class="at">:width</span> <span class="dv">800</span> <span class="at">:height</span> <span class="dv">600</span>}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="clay-image">
@@ -892,10 +897,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb47"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
 <span id="cb47-2"><a href="#cb47-2" aria-hidden="true" tabindex="-1"></a> {<span class="at">:data</span> chem97</span>
 <span id="cb47-3"><a href="#cb47-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:gcsescore</span> <span class="at">:y</span> (levels/categorical <span class="at">:score</span>) <span class="at">:facet</span> <span class="at">:gender</span>}</span>
-<span id="cb47-4"><a href="#cb47-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">:charts</span> [(chart/box)]</span>
-<span id="cb47-5"><a href="#cb47-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">:facets</span> {<span class="at">:columns</span> <span class="dv">2</span>}</span>
-<span id="cb47-6"><a href="#cb47-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">:labels</span> {<span class="at">:x</span> <span class="st">"Average GCSE Score"</span> <span class="at">:y</span> <span class="st">"score"</span>}}</span>
-<span id="cb47-7"><a href="#cb47-7" aria-hidden="true" tabindex="-1"></a> {<span class="at">:width</span> <span class="dv">800</span> <span class="at">:height</span> <span class="dv">450</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb47-4"><a href="#cb47-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">:scales</span> {<span class="at">:facet</span> {<span class="at">:domain</span> [<span class="st">"M"</span> <span class="st">"F"</span>]}}</span>
+<span id="cb47-5"><a href="#cb47-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">:charts</span> [(chart/box)]</span>
+<span id="cb47-6"><a href="#cb47-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">:facets</span> {<span class="at">:columns</span> <span class="dv">2</span>}</span>
+<span id="cb47-7"><a href="#cb47-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">:labels</span> {<span class="at">:x</span> <span class="st">"Average GCSE Score"</span> <span class="at">:y</span> <span class="st">"score"</span>}}</span>
+<span id="cb47-8"><a href="#cb47-8" aria-hidden="true" tabindex="-1"></a> {<span class="at">:width</span> <span class="dv">800</span> <span class="at">:height</span> <span class="dv">450</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="clay-image">
 <p><img src="galleries.lattice_files/image25.png" class="img-fluid"></p>
@@ -908,10 +914,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb48"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb48-1"><a href="#cb48-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
 <span id="cb48-2"><a href="#cb48-2" aria-hidden="true" tabindex="-1"></a> {<span class="at">:data</span> chem97-trans</span>
 <span id="cb48-3"><a href="#cb48-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:gender</span> <span class="at">:y</span> <span class="at">:gcsescore-trans</span> <span class="at">:facet</span> <span class="at">:score</span>}</span>
-<span id="cb48-4"><a href="#cb48-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">:charts</span> [(chart/box {<span class="at">:varwidth</span> <span class="va">true</span>})]</span>
-<span id="cb48-5"><a href="#cb48-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">:facets</span> {<span class="at">:columns</span> <span class="dv">6</span>}</span>
-<span id="cb48-6"><a href="#cb48-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">:labels</span> {<span class="at">:x</span> <span class="va">nil</span> <span class="at">:y</span> <span class="st">"Transformed GCSE score"</span>}}</span>
-<span id="cb48-7"><a href="#cb48-7" aria-hidden="true" tabindex="-1"></a> {<span class="at">:width</span> <span class="dv">900</span> <span class="at">:height</span> <span class="dv">400</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb48-4"><a href="#cb48-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">:scales</span> {<span class="at">:x</span> {<span class="at">:domain</span> [<span class="st">"M"</span> <span class="st">"F"</span>]}}</span>
+<span id="cb48-5"><a href="#cb48-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">:charts</span> [(chart/box {<span class="at">:varwidth</span> <span class="va">true</span>})]</span>
+<span id="cb48-6"><a href="#cb48-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">:facets</span> {<span class="at">:columns</span> <span class="dv">6</span>}</span>
+<span id="cb48-7"><a href="#cb48-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">:labels</span> {<span class="at">:x</span> <span class="va">nil</span> <span class="at">:y</span> <span class="st">"Transformed GCSE score"</span>}}</span>
+<span id="cb48-8"><a href="#cb48-8" aria-hidden="true" tabindex="-1"></a> {<span class="at">:width</span> <span class="dv">900</span> <span class="at">:height</span> <span class="dv">400</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="clay-image">
 <p><img src="galleries.lattice_files/image26.png" class="img-fluid"></p>
@@ -934,12 +941,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="fig-3.14-violins" class="level3" data-number="9.3.14">
 <h3 data-number="9.3.14" class="anchored" data-anchor-id="fig-3.14-violins"><span class="header-section-number">9.3.14</span> Fig 3.14 Violins</h3>
+<p>Tails 3 bandwidths past the data (<code>:cut 3</code>, R’s <code>density</code> default as lattice uses it).</p>
 <p>Source: <a href="http://lmdvr.r-forge.r-project.org/figures/figures.html?chapter=03;figure=03_14;theme=stdColor;code=right">Lattice Fig 3.14</a>. Data: Flow cytometry of a GvHD patient, 10 days, R latticeExtra package <code>gvhd10</code> (Brinkman et al.&nbsp;2007); licence: GPL (&gt;= 2) (latticeExtra).</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb50"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb50-1"><a href="#cb50-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
 <span id="cb50-2"><a href="#cb50-2" aria-hidden="true" tabindex="-1"></a> {<span class="at">:data</span> gvhd10-log</span>
 <span id="cb50-3"><a href="#cb50-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:log-fsc</span> <span class="at">:y</span> (levels/categorical <span class="at">:days</span>)}</span>
-<span id="cb50-4"><a href="#cb50-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">:charts</span> [(chart/violin {<span class="at">:inner</span> <span class="at">:none</span>})]</span>
+<span id="cb50-4"><a href="#cb50-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">:charts</span> [(chart/violin {<span class="at">:inner</span> <span class="at">:none</span> <span class="at">:cut</span> <span class="dv">3</span>})]</span>
 <span id="cb50-5"><a href="#cb50-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">:labels</span> {<span class="at">:x</span> <span class="st">"log(Forward Scatter)"</span> <span class="at">:y</span> <span class="st">"Days Past Transplant"</span>}}</span>
 <span id="cb50-6"><a href="#cb50-6" aria-hidden="true" tabindex="-1"></a> {<span class="at">:width</span> <span class="dv">700</span> <span class="at">:height</span> <span class="dv">500</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
@@ -955,7 +963,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb51"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb51-1"><a href="#cb51-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
 <span id="cb51-2"><a href="#cb51-2" aria-hidden="true" tabindex="-1"></a> {<span class="at">:data</span> quakes</span>
 <span id="cb51-3"><a href="#cb51-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:depth</span> <span class="at">:y</span> (levels/categorical <span class="at">:mag</span>)}</span>
-<span id="cb51-4"><a href="#cb51-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">:charts</span> [(chart/stripplot {<span class="at">:jitter</span> <span class="dv">0</span> <span class="at">:size</span> <span class="dv">3</span>})]</span>
+<span id="cb51-4"><a href="#cb51-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">:charts</span> [(chart/stripplot {<span class="at">:jitter</span> <span class="dv">0</span>})]</span>
 <span id="cb51-5"><a href="#cb51-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">:labels</span> {<span class="at">:x</span> <span class="st">"depth"</span> <span class="at">:y</span> <span class="st">"mag"</span>}}</span>
 <span id="cb51-6"><a href="#cb51-6" aria-hidden="true" tabindex="-1"></a> {<span class="at">:width</span> <span class="dv">600</span> <span class="at">:height</span> <span class="dv">700</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
@@ -970,7 +978,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb52"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb52-1"><a href="#cb52-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
 <span id="cb52-2"><a href="#cb52-2" aria-hidden="true" tabindex="-1"></a> {<span class="at">:data</span> quakes</span>
 <span id="cb52-3"><a href="#cb52-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">:mapping</span> {<span class="at">:x</span> (levels/categorical <span class="at">:mag</span>) <span class="at">:y</span> <span class="at">:depth</span>}</span>
-<span id="cb52-4"><a href="#cb52-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">:charts</span> [(chart/stripplot {<span class="at">:rng</span> (r/rng <span class="at">:mersenne</span> <span class="dv">316</span>) <span class="at">:size</span> <span class="dv">3</span> <span class="at">:color</span> [<span class="dv">69</span> <span class="dv">117</span> <span class="dv">180</span> <span class="dv">150</span>]})]</span>
+<span id="cb52-4"><a href="#cb52-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">:charts</span> [(chart/stripplot {<span class="at">:rng</span> (r/rng <span class="at">:mersenne</span> <span class="dv">316</span>) <span class="at">:jitter</span> <span class="fl">0.3</span>})]</span>
 <span id="cb52-5"><a href="#cb52-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">:labels</span> {<span class="at">:x</span> <span class="st">"Magnitude (Richter)"</span> <span class="at">:y</span> <span class="st">"Depth (km)"</span>}}</span>
 <span id="cb52-6"><a href="#cb52-6" aria-hidden="true" tabindex="-1"></a> {<span class="at">:width</span> <span class="dv">800</span> <span class="at">:height</span> <span class="dv">450</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
@@ -980,7 +988,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="fig-3.17-residuals-and-their-medians" class="level3" data-number="9.3.17">
 <h3 data-number="9.3.17" class="anchored" data-anchor-id="fig-3.17-residuals-and-their-medians"><span class="header-section-number">9.3.17</span> Fig 3.17 Residuals and their medians</h3>
-<p>Square roots of the absolute residuals of an additive model of barley yield (variety + year + site, least squares on dummy-coded factors), jittered by site, a line through each year’s medians.</p>
+<p>Square roots of the absolute residuals of an additive model of barley yield (variety + year + site, least squares on dummy-coded factors), jittered by site (in R’s order), a line through each year’s medians; two contrasting colours for the years.</p>
 <p>Source: <a href="http://lmdvr.r-forge.r-project.org/figures/figures.html?chapter=03;figure=03_17;theme=stdColor;code=right">Lattice Fig 3.17</a>. Data: Barley yields, Minnesota 1931-1932, R lattice package <code>barley</code> (Immer et al.&nbsp;1934; Fisher 1971; Cleveland 1993); licence: GPL (&gt;= 2) (lattice).</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb53"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb53-1"><a href="#cb53-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">let</span> [factors [<span class="at">:variety</span> <span class="at">:year</span> <span class="at">:site</span>]</span>
@@ -990,17 +998,18 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb53-5"><a href="#cb53-5" aria-hidden="true" tabindex="-1"></a>      rows (<span class="kw">mapv</span> (<span class="kw">fn</span> [row residual] (<span class="kw">assoc</span> row <span class="at">:root-residual</span> (m/sqrt (m/abs residual))))</span>
 <span id="cb53-6"><a href="#cb53-6" aria-hidden="true" tabindex="-1"></a>                 barley (<span class="kw">get-in</span> model [<span class="at">:residuals</span> <span class="at">:raw</span>]))</span>
 <span id="cb53-7"><a href="#cb53-7" aria-hidden="true" tabindex="-1"></a>      by-site-year (<span class="kw">group-by</span> (<span class="kw">juxt</span> <span class="at">:site</span> <span class="at">:year</span>) rows)</span>
-<span id="cb53-8"><a href="#cb53-8" aria-hidden="true" tabindex="-1"></a>      <span class="co">;; in the axis's site order (first appearance), so each year's line runs left to right</span></span>
-<span id="cb53-9"><a href="#cb53-9" aria-hidden="true" tabindex="-1"></a>      medians (<span class="kw">for</span> [site (<span class="kw">distinct</span> (<span class="kw">map</span> <span class="at">:site</span> barley)) year [<span class="dv">1931</span> <span class="dv">1932</span>]]</span>
-<span id="cb53-10"><a href="#cb53-10" aria-hidden="true" tabindex="-1"></a>                {<span class="at">:site</span> site <span class="at">:year</span> year <span class="at">:median</span> (stats/median (<span class="kw">map</span> <span class="at">:root-residual</span> (by-site-year [site year])))})]</span>
-<span id="cb53-11"><a href="#cb53-11" aria-hidden="true" tabindex="-1"></a>  (plot/render-image</span>
-<span id="cb53-12"><a href="#cb53-12" aria-hidden="true" tabindex="-1"></a>   {<span class="at">:data</span> rows</span>
-<span id="cb53-13"><a href="#cb53-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:site</span> <span class="at">:y</span> <span class="at">:root-residual</span> <span class="at">:color</span> <span class="at">:year</span>}</span>
-<span id="cb53-14"><a href="#cb53-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:type</span> <span class="at">:categorical</span>}}</span>
-<span id="cb53-15"><a href="#cb53-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">:charts</span> [(chart/stripplot {<span class="at">:rng</span> (r/rng <span class="at">:mersenne</span> <span class="dv">317</span>)})</span>
-<span id="cb53-16"><a href="#cb53-16" aria-hidden="true" tabindex="-1"></a>             (chart/line {<span class="at">:data</span> medians <span class="at">:mapping</span> {<span class="at">:y</span> <span class="at">:median</span>}})]</span>
-<span id="cb53-17"><a href="#cb53-17" aria-hidden="true" tabindex="-1"></a>    <span class="at">:labels</span> {<span class="at">:x</span> <span class="va">nil</span> <span class="at">:y</span> <span class="st">"√|Residual Barley Yield|"</span>}}</span>
-<span id="cb53-18"><a href="#cb53-18" aria-hidden="true" tabindex="-1"></a>   {<span class="at">:width</span> <span class="dv">800</span> <span class="at">:height</span> <span class="dv">450</span>}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb53-8"><a href="#cb53-8" aria-hidden="true" tabindex="-1"></a>      <span class="co">;; in the axis's site order, so each year's line runs left to right</span></span>
+<span id="cb53-9"><a href="#cb53-9" aria-hidden="true" tabindex="-1"></a>      sites (nu/levels <span class="at">:barley</span> <span class="at">:site</span>)</span>
+<span id="cb53-10"><a href="#cb53-10" aria-hidden="true" tabindex="-1"></a>      medians (<span class="kw">for</span> [site sites year [<span class="dv">1931</span> <span class="dv">1932</span>]]</span>
+<span id="cb53-11"><a href="#cb53-11" aria-hidden="true" tabindex="-1"></a>                {<span class="at">:site</span> site <span class="at">:year</span> year <span class="at">:median</span> (stats/median (<span class="kw">map</span> <span class="at">:root-residual</span> (by-site-year [site year])))})]</span>
+<span id="cb53-12"><a href="#cb53-12" aria-hidden="true" tabindex="-1"></a>  (plot/render-image</span>
+<span id="cb53-13"><a href="#cb53-13" aria-hidden="true" tabindex="-1"></a>   {<span class="at">:data</span> rows</span>
+<span id="cb53-14"><a href="#cb53-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:site</span> <span class="at">:y</span> <span class="at">:root-residual</span> <span class="at">:color</span> <span class="at">:year</span>}</span>
+<span id="cb53-15"><a href="#cb53-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">:scales</span> {<span class="at">:x</span> {<span class="at">:domain</span> sites} <span class="at">:color</span> {<span class="at">:type</span> <span class="at">:categorical</span> <span class="at">:range</span> [[<span class="dv">31</span> <span class="dv">119</span> <span class="dv">180</span>] [<span class="dv">214</span> <span class="dv">39</span> <span class="dv">40</span>]]}}</span>
+<span id="cb53-16"><a href="#cb53-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">:charts</span> [(chart/stripplot {<span class="at">:rng</span> (r/rng <span class="at">:mersenne</span> <span class="dv">317</span>)})</span>
+<span id="cb53-17"><a href="#cb53-17" aria-hidden="true" tabindex="-1"></a>             (chart/line {<span class="at">:data</span> medians <span class="at">:mapping</span> {<span class="at">:y</span> <span class="at">:median</span>}})]</span>
+<span id="cb53-18"><a href="#cb53-18" aria-hidden="true" tabindex="-1"></a>    <span class="at">:labels</span> {<span class="at">:x</span> <span class="va">nil</span> <span class="at">:y</span> <span class="st">"√|Residual Barley Yield|"</span>}}</span>
+<span id="cb53-19"><a href="#cb53-19" aria-hidden="true" tabindex="-1"></a>   {<span class="at">:width</span> <span class="dv">800</span> <span class="at">:height</span> <span class="dv">450</span>}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="clay-image">
 <p><img src="galleries.lattice_files/image31.png" class="img-fluid"></p>
@@ -1076,15 +1085,16 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="fig-4.5-proportions-as-stacked-bars" class="level3" data-number="9.4.5">
 <h3 data-number="9.4.5" class="anchored" data-anchor-id="fig-4.5-proportions-as-stacked-bars"><span class="header-section-number">9.4.5</span> Fig 4.5 Proportions as stacked bars</h3>
-<p>Reasons for taking a postdoctoral position, as proportions of each field (<code>:position :normalize</code>).</p>
+<p>Reasons for taking a postdoctoral position, as proportions of each field (<code>:position :normalize</code>), in R’s order.</p>
 <p>Source: <a href="http://lmdvr.r-forge.r-project.org/figures/figures.html?chapter=04;figure=04_05;theme=stdColor;code=right">Lattice Fig 4.5</a>. Data: Reasons for taking a postdoc, by field, R latticeExtra package <code>postdoc</code> (NSF Survey of Doctorate Recipients 1999); licence: GPL (&gt;= 2) (latticeExtra).</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb58"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb58-1"><a href="#cb58-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
 <span id="cb58-2"><a href="#cb58-2" aria-hidden="true" tabindex="-1"></a> {<span class="at">:data</span> postdoc</span>
 <span id="cb58-3"><a href="#cb58-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:count</span> <span class="at">:y</span> <span class="at">:field</span> <span class="at">:color</span> <span class="at">:reason</span>}</span>
-<span id="cb58-4"><a href="#cb58-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">:charts</span> [(chart/bar {<span class="at">:position</span> <span class="at">:normalize</span>})]</span>
-<span id="cb58-5"><a href="#cb58-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">:labels</span> {<span class="at">:x</span> <span class="st">"Proportion"</span> <span class="at">:y</span> <span class="va">nil</span>}}</span>
-<span id="cb58-6"><a href="#cb58-6" aria-hidden="true" tabindex="-1"></a> {<span class="at">:width</span> <span class="dv">900</span> <span class="at">:height</span> <span class="dv">450</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb58-4"><a href="#cb58-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:domain</span> (nu/levels <span class="at">:postdoc</span> <span class="at">:reason</span>)}}</span>
+<span id="cb58-5"><a href="#cb58-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">:charts</span> [(chart/bar {<span class="at">:position</span> <span class="at">:normalize</span>})]</span>
+<span id="cb58-6"><a href="#cb58-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">:labels</span> {<span class="at">:x</span> <span class="st">"Proportion"</span> <span class="at">:y</span> <span class="va">nil</span>}}</span>
+<span id="cb58-7"><a href="#cb58-7" aria-hidden="true" tabindex="-1"></a> {<span class="at">:width</span> <span class="dv">900</span> <span class="at">:height</span> <span class="dv">450</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="clay-image">
 <p><img src="galleries.lattice_files/image36.png" class="img-fluid"></p>
@@ -1194,7 +1204,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb65"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb65-1"><a href="#cb65-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
 <span id="cb65-2"><a href="#cb65-2" aria-hidden="true" tabindex="-1"></a> {<span class="at">:data</span> (levels/bin quakes <span class="at">:depth</span> {<span class="at">:as</span> <span class="at">:depth-cut</span> <span class="at">:bins</span> <span class="dv">3</span> <span class="at">:label</span> <span class="st">"Depth"</span>})</span>
 <span id="cb65-3"><a href="#cb65-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:long</span> <span class="at">:y</span> <span class="at">:lat</span> <span class="at">:facet</span> <span class="at">:depth-cut</span>}</span>
-<span id="cb65-4"><a href="#cb65-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">:charts</span> [(chart/scatter {<span class="at">:size</span> <span class="dv">2</span>})]</span>
+<span id="cb65-4"><a href="#cb65-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">:charts</span> [(chart/scatter {<span class="at">:size</span> <span class="dv">4</span>})]</span>
 <span id="cb65-5"><a href="#cb65-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">:facets</span> {<span class="at">:columns</span> <span class="dv">3</span>}</span>
 <span id="cb65-6"><a href="#cb65-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">:aspect</span> <span class="at">:iso</span></span>
 <span id="cb65-7"><a href="#cb65-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">:labels</span> {<span class="at">:x</span> <span class="st">"Longitude"</span> <span class="at">:y</span> <span class="st">"Latitude"</span>}}</span>
@@ -1213,7 +1223,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb66-2"><a href="#cb66-2" aria-hidden="true" tabindex="-1"></a> {<span class="at">:data</span> (levels/bin quakes <span class="at">:depth</span> {<span class="at">:as</span> <span class="at">:depth-cut</span> <span class="at">:bins</span> {<span class="at">:quantiles</span> <span class="dv">3</span>}})</span>
 <span id="cb66-3"><a href="#cb66-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:long</span> <span class="at">:y</span> <span class="at">:lat</span> <span class="at">:color</span> <span class="at">:depth-cut</span>}</span>
 <span id="cb66-4"><a href="#cb66-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:title</span> <span class="st">"Depth"</span>}}</span>
-<span id="cb66-5"><a href="#cb66-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">:charts</span> [(chart/scatter {<span class="at">:size</span> <span class="dv">3</span>})]</span>
+<span id="cb66-5"><a href="#cb66-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">:charts</span> [(chart/scatter {<span class="at">:size</span> <span class="dv">4</span>})]</span>
 <span id="cb66-6"><a href="#cb66-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">:aspect</span> <span class="at">:iso</span></span>
 <span id="cb66-7"><a href="#cb66-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">:labels</span> {<span class="at">:x</span> <span class="st">"Longitude"</span> <span class="at">:y</span> <span class="st">"Latitude"</span>}}</span>
 <span id="cb66-8"><a href="#cb66-8" aria-hidden="true" tabindex="-1"></a> {<span class="at">:width</span> <span class="dv">650</span> <span class="at">:height</span> <span class="dv">650</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -1479,13 +1489,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="fig-5.14-hexagonal-binning" class="level3" data-number="9.5.14">
 <h3 data-number="9.5.14" class="anchored" data-anchor-id="fig-5.14-hexagonal-binning"><span class="header-section-number">9.5.14</span> Fig 5.14 Hexagonal binning</h3>
-<p>Two fluorescence channels of the GvHD cells (asinh-transformed), counted in hexagons, a panel per day.</p>
+<p>Two fluorescence channels of the GvHD cells (asinh-transformed), counted in hexagons, a panel per day; grey levels by the square root of the count (<code>:transform :sqrt</code>, lattice’s <code>trans = sqrt</code>).</p>
 <p>Source: <a href="http://lmdvr.r-forge.r-project.org/figures/figures.html?chapter=05;figure=05_14;theme=stdColor;code=right">Lattice Fig 5.14</a>. Data: Flow cytometry of a GvHD patient, 10 days, R latticeExtra package <code>gvhd10</code> (Brinkman et al.&nbsp;2007); licence: GPL (&gt;= 2) (latticeExtra).</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb85"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb85-1"><a href="#cb85-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
 <span id="cb85-2"><a href="#cb85-2" aria-hidden="true" tabindex="-1"></a> {<span class="at">:data</span> (<span class="kw">mapv</span> (<span class="kw">fn</span> [row] {<span class="at">:days</span> (<span class="at">:days</span> row) <span class="at">:ssc</span> (m/asinh (<span class="at">:ssc-h</span> row)) <span class="at">:fl2</span> (m/asinh (<span class="at">:fl2-h</span> row))}) gvhd10)</span>
 <span id="cb85-3"><a href="#cb85-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:fl2</span> <span class="at">:y</span> <span class="at">:ssc</span> <span class="at">:facet</span> <span class="at">:days</span>}</span>
-<span id="cb85-4"><a href="#cb85-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:range</span> [[<span class="dv">235</span> <span class="dv">235</span> <span class="dv">235</span>] [<span class="dv">0</span> <span class="dv">0</span> <span class="dv">0</span>]]}}</span>
+<span id="cb85-4"><a href="#cb85-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">:scales</span> {<span class="at">:x</span> {<span class="at">:domain</span> [<span class="dv">0</span> <span class="fl">10.5</span>]} <span class="at">:color</span> {<span class="at">:range</span> [[<span class="dv">235</span> <span class="dv">235</span> <span class="dv">235</span>] [<span class="dv">0</span> <span class="dv">0</span> <span class="dv">0</span>]] <span class="at">:transform</span> <span class="at">:sqrt</span>}}</span>
 <span id="cb85-5"><a href="#cb85-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">:charts</span> [(chart/bin2d {<span class="at">:bins</span> <span class="dv">30</span>})]</span>
 <span id="cb85-6"><a href="#cb85-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">:facets</span> {<span class="at">:columns</span> <span class="dv">4</span>}</span>
 <span id="cb85-7"><a href="#cb85-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">:aspect</span> <span class="at">:iso</span></span>
@@ -1511,12 +1521,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="fig-5.16-a-matrix-per-region" class="level3" data-number="9.5.16">
 <h3 data-number="9.5.16" class="anchored" data-anchor-id="fig-5.16-a-matrix-per-region"><span class="header-section-number">9.5.16</span> Fig 5.16 A matrix per region</h3>
-<p>Arrest rates of the states of each census region (joined from the state facts): points and a loess curve.</p>
+<p>Arrest rates of the states of each census region (joined from the state facts): points and a loess curve with lattice’s <code>panel.loess</code> settings (span 2/3, degree 1) - with a dozen states per region, ggplot2’s degree 2 bends.</p>
 <p>Source: <a href="http://lmdvr.r-forge.r-project.org/figures/figures.html?chapter=05;figure=05_16;theme=stdColor;code=right">Lattice Fig 5.16</a>. Data: Violent crime rates by US state (1973), R datasets package <code>USArrests</code> (McNeil 1977); licence: Part of R (GPL-2 | GPL-3).</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb87"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb87-1"><a href="#cb87-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">let</span> [region (<span class="kw">into</span> {} (<span class="kw">map</span> (<span class="kw">juxt</span> <span class="at">:name</span> <span class="at">:region</span>) states))</span>
 <span id="cb87-2"><a href="#cb87-2" aria-hidden="true" tabindex="-1"></a>      rows (<span class="kw">map</span> #(<span class="kw">assoc</span> <span class="va">%</span> <span class="at">:region</span> (region (<span class="at">:state</span> <span class="va">%</span>))) us-arrests)</span>
-<span id="cb87-3"><a href="#cb87-3" aria-hidden="true" tabindex="-1"></a>      cell [(chart/scatter {<span class="at">:size</span> <span class="dv">3</span>}) (chart/smooth {<span class="at">:band</span> <span class="at">:none</span>})]]</span>
+<span id="cb87-3"><a href="#cb87-3" aria-hidden="true" tabindex="-1"></a>      cell [(chart/scatter {<span class="at">:size</span> <span class="dv">3</span>}) (chart/smooth {<span class="at">:band</span> <span class="at">:none</span> <span class="at">:method-params</span> {<span class="at">:bandwidth</span> (<span class="kw">/</span> <span class="fl">2.0</span> <span class="fl">3.0</span>) <span class="at">:degree</span> <span class="dv">1</span>}})]]</span>
 <span id="cb87-4"><a href="#cb87-4" aria-hidden="true" tabindex="-1"></a>  (plot/render-image</span>
 <span id="cb87-5"><a href="#cb87-5" aria-hidden="true" tabindex="-1"></a>   (plot/arrange (<span class="kw">for</span> [r [<span class="st">"Northeast"</span> <span class="st">"South"</span> <span class="st">"North Central"</span> <span class="st">"West"</span>]]</span>
 <span id="cb87-6"><a href="#cb87-6" aria-hidden="true" tabindex="-1"></a>                   (plot/pairs (<span class="kw">filterv</span> #(<span class="kw">=</span> r (<span class="at">:region</span> <span class="va">%</span>)) rows)</span>

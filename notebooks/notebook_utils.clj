@@ -96,6 +96,21 @@
       (throw (ex-info (str "Dataset " (pr-str k) " has an unknown :format " (pr-str format) ", known: :json, :csv.")
                       {:key :format :value format :dataset k})))))
 
+(defn levels
+  "Level order of column `column` of dataset `k` - the R factor levels recorded in `data/levels.edn` (CSV and JSON keep
+  no factor order), for a categorical scale's `:domain`. Levels are typed as the dataset loads the column: numbers
+  when every level is one (unless the manifest lists the column under `:strings`), else strings.
+  Throws `ex-info {:key :levels}` for a dataset or column without recorded levels."
+  [k column]
+  (let [recorded (some-> (io/resource (str data-folder "levels.edn")) slurp edn/read-string)
+        ls (get-in recorded [k column])]
+    (when-not ls
+      (throw (ex-info (str "No recorded levels for " (pr-str k) " " (pr-str column) ".")
+                      {:key :levels :value [k column] :known (update-vals recorded (comp set keys))})))
+    (if (and (not (contains? (set (:strings (manifest-entry k))) column)) (every? parse-number ls))
+      (mapv parse-number ls)
+      ls)))
+
 (defn- source-text
   "Markdown of the source part: `source` linked to its single URL, or followed by numbered links to several; URLs
   alone are linked as they are."

@@ -3,6 +3,8 @@
 # Every file is CSV (write.csv, no row names) with kebab-case columns; missing values are empty fields; matrices and
 # tables become long rows, time series `time, value` rows (`time, series, value` for several series). All rows are
 # kept. Re-running reproduces the files byte for byte (fixed package versions).
+# levels.edn: the level order of every factor column (CSV keeps no factor levels) - {dataset {column ["level" ..]}},
+# read by notebook-utils/levels.
 
 suppressMessages({
   library(lattice)
@@ -15,7 +17,16 @@ out <- "notebooks/data"
 
 kebab <- function(names) gsub("[._ ]+", "-", tolower(gsub("([a-z])([A-Z])", "\\1-\\2", names)))
 
+factor_levels <- list()
+
+# remember the levels of `df`'s factor columns under dataset `key` (kebab-case column names)
+remember_levels <- function(df, key) {
+  fs <- Filter(is.factor, df)
+  if (length(fs) > 0) factor_levels[[key]] <<- setNames(lapply(fs, levels), kebab(names(fs)))
+}
+
 export <- function(df, file) {
+  remember_levels(df, sub("\\.csv$", "", file))
   names(df) <- kebab(names(df))
   write.csv(df, file.path(out, file), row.names = FALSE, na = "")
   cat(sprintf("%-26s %8d rows %3d columns\n", file, nrow(df), ncol(df)))
@@ -86,3 +97,22 @@ export(do.call(rbind, lapply(sampleNames(GvHD), function(s) {
 
 data(NHANES, package = "hexbin")
 export(NHANES, "nhanes.csv")
+
+# levels of the datasets kept from earlier sources (barley.json, titanic.csv)
+remember_levels(barley, "barley")
+remember_levels(as.data.frame(Titanic), "titanic")
+
+edn_string <- function(x) paste0('"', gsub('"', '\\\\"', gsub("\\\\", "\\\\\\\\", x)), '"')
+edn <- c(";; Level order of the factor columns of the lattice datasets (written by dev/lattice_data.R; CSV keeps no factor",
+         ";; levels): dataset -> column -> levels as strings; see notebook-utils/levels.",
+         "{")
+for (key in sort(names(factor_levels))) {
+  columns <- factor_levels[[key]]
+  edn <- c(edn, paste0(" :", key, " {"),
+           sapply(sort(names(columns)), function(column)
+             paste0("   :", column, " [", paste(edn_string(columns[[column]]), collapse = " "), "]")),
+           "  }")
+}
+edn <- c(edn, "}")
+writeLines(edn, file.path(out, "levels.edn"))
+cat(sprintf("%-26s %8d datasets\n", "levels.edn", length(factor_levels)))

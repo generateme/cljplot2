@@ -32,6 +32,10 @@
   * `:spread true` - ordinal `:color`: the range resampled to one color per level (instead of its first colors)
   * `:midpoint m` - linear / binned `:color`: `m` at the gradient's middle, both sides scaled by the larger distance
     to it (ggplot `gradient2`)
+  * `:transform` - linear `:color`: `:sqrt` or `:log` (base 10) - values placed along the gradient by their square
+    root / logarithm (lattice `trans`, ggplot `trans`), e.g. counts with a few large ones; the domain stays in data
+    units (`:sqrt` needs `lo >= 0`, `:log` `lo > 0`, else `ex-info {:key :transform}`), the color bar too (its ticks
+    in data units, spaced by the transform)
   * `:reverse true` - the attributes in reverse (linear `t` → `1 - t`, ordinal / binned attributes reversed)
   * `:area true` - linear / ordinal `:size`: the shape's area (∝ size²), not its size, linear in `t` - size
     `√(a² + t·(b² − a²))` for `:range [a b]` (ggplot `scale_size`); with `:domain [0 hi]` and `:range [0 max]` the
@@ -163,10 +167,13 @@
   (if (number? v) (double v) v))
 
 (defn- explicit-kind
-  "Kind of aesthetic `k` with an explicit domain in `spec`: the spec's `:kind`, else `:linear` for two numbers (not
-  `:shape` / `:dash` / `:pattern`), else `:ordinal`."
-  [k {:keys [kind domain]}]
-  (or kind (if (and (not (ordinal-only k)) (= 2 (count domain)) (every? number? domain)) :linear :ordinal)))
+  "Kind of aesthetic `k` with an explicit domain in `spec`: the spec's `:kind`; `:ordinal` with `:type :categorical`
+  (e.g. two years as levels); else `:linear` for two numbers (not `:shape` / `:dash` / `:pattern`), else
+  `:ordinal`."
+  [k {:keys [kind type domain]}]
+  (or kind
+      (when (= :categorical type) :ordinal)
+      (if (and (not (ordinal-only k)) (= 2 (count domain)) (every? number? domain)) :linear :ordinal)))
 
 (defn- domain-problem
   "Why the explicit `:domain` of aesthetic scale `spec` of `k` is invalid, or `nil`."
@@ -184,7 +191,7 @@
   "`[[key message] ...]` - options of aesthetic `k`'s scale `spec` that its `kind` doesn't allow or that contradict
   each other (a level map `:range`, `:spread`, `:midpoint`, `:reverse`, `:area`, `:bins`, identity's `:domain` /
   `:range`)."
-  [k kind {:keys [range spread midpoint reverse area bins domain] :as spec}]
+  [k kind {:keys [range spread midpoint reverse area bins domain transform] :as spec}]
   (let [level-map? (map? range)
         bins-domain (when (and (vector? bins) (>= (count bins) 2)) [(double (first bins)) (double (peek bins))])]
     (cond-> []
@@ -200,6 +207,8 @@
       (and spread level-map?) (conj [:spread ":spread can't be combined with a level map :range"])
       (and (some? midpoint) (or (not= k :color) (not (#{:linear :binned} kind))))
       (conj [:midpoint ":midpoint needs a linear or binned :color scale"])
+      (and (some? transform) (or (not= k :color) (not= kind :linear)))
+      (conj [:transform ":transform needs a linear :color scale"])
       (and reverse (= kind :identity)) (conj [:reverse "an identity scale can't be reversed"])
       (and area (or (not= k :size) (not (#{:linear :ordinal} kind)))) (conj [:area ":area needs a linear or ordinal :size scale"])
       (and reverse level-map?) (conj [:reverse ":reverse can't be combined with a level map :range"])
@@ -234,6 +243,7 @@
           (schema/optional :range (range-schema k))
           (schema/optional :spread schema/bool)
           (schema/optional :midpoint schema/finite)
+          (schema/optional :transform [:enum :sqrt :log])
           (schema/optional :reverse schema/bool)
           (schema/optional :area schema/bool)
           (schema/optional :bins levels/bins)
@@ -241,7 +251,7 @@
           (schema/nilable :title string?)
           (schema/nilable :legend schema/bool)]
          [#(domain-problem k %) [:domain]]
-         (map #(option-rule k %) [:kind :domain :range :spread :midpoint :reverse :area :bins])))
+         (map #(option-rule k %) [:kind :domain :range :spread :midpoint :transform :reverse :area :bins])))
 
 (defn- resolve-range
   "Concrete range of dimension `k` from the (validated) range value `r`: a level map or a function as given, the
@@ -381,6 +391,29 @@
             :else brks))
         (levels/breaks [lo hi] (or bins default-bins))))))
 
+(def ^:private value-transforms
+  "Linear color `:transform`s: `{:forward f :inverse g}`."
+  {:sqrt {:forward (fn ^double [^double v] (m/sqrt v)) :inverse (fn ^double [^double v] (* v v))}
+   :log {:forward (fn ^double [^double v] (m/log10 v)) :inverse (fn ^double [^double v] (m/pow 10.0 v))}})
+
+(def ^:private identity-transform {:forward (fn ^double [^double v] v) :inverse (fn ^double [^double v] v)})
+
+(defn value-transform
+  "`{:forward f :inverse g}` (functions of a double) of the linear scale `spec`'s `:transform` (see the namespace
+  doc); the identity without one."
+  [spec]
+  (get value-transforms (:transform spec) identity-transform))
+
+(defn- transformable!
+  "`transform` when the linear `domain` of aesthetic `k` suits it (`:sqrt` - from 0, `:log` - above 0), else throws
+  `ex-info {:key :transform}`."
+  [k transform [lo]]
+  (when (if (= :log transform) (<= (double lo) 0.0) (neg? (double lo)))
+    (schema/fail! (str "Scale :transform " transform " needs a domain " (if (= :log transform) "above 0" "from 0")
+                       ", got " lo " as its start.")
+                  {:key :transform :in [:scales k :transform] :value transform}))
+  transform)
+
 (defn scale-spec
   "Scale of aesthetic dimension `k` from the plot's scale `spec` (may be `{}`), the merged data `extent`
   (a [[cljplot2.data.rows/value-extent]], may be `nil`), `na?` (some mapped value is NA) and theme `palette`.
@@ -414,6 +447,7 @@
           breaks (assoc :breaks breaks)
           (:spread spec) (assoc :spread true)
           (some? (:midpoint spec)) (assoc :midpoint (double (:midpoint spec)))
+          (:transform spec) (assoc :transform (transformable! k (:transform spec) domain))
           (:reverse spec) (assoc :reverse true)
           (:area spec) (assoc :area true)
           (contains? spec :formatter) (assoc :formatter (:formatter spec))
@@ -496,7 +530,10 @@
     :linear (let [[lo hi] (:domain spec)
                   lo (double lo) hi (double hi)
                   range (:range spec)
-                  t-of (unit-fn lo hi (:midpoint spec))
+                  {:keys [forward]} (value-transform spec)
+                  mid (:midpoint spec)
+                  t-in (unit-fn (forward lo) (forward hi) (when (some? mid) (forward (double mid))))
+                  t-of (fn ^double [^double v] (double (t-in (double (forward v)))))
                   t-of (if (:reverse spec) (fn ^double [^double v] (- 1.0 (double (t-of v)))) t-of)
                   f (if (= k :color)
                       (let [g (gradient-of range)] (fn [^double t] (g t)))

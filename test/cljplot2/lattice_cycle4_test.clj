@@ -1,10 +1,15 @@
 (ns cljplot2.lattice-cycle4-test
   "Lattice cycle 4 (data and notebook): library gaps fixed while writing the lattice notebook - `chart/smooth` fitted
-  in the coordinates of log axes (Fig 5.9, 5.10)."
+  in the coordinates of log axes (Fig 5.9, 5.10), color scale `:transform` (Fig 5.14), `:type :categorical` domains
+  (Fig 2.6), one default point size."
   (:require [clojure.test :refer [deftest testing is]]
             [fastmath.core :as m]
             [cljplot2.chart :as chart]
-            [cljplot2.core :as plot]))
+            [cljplot2.content.legend :as legend]
+            [cljplot2.core :as plot]
+            [cljplot2.scale.aesthetic :as aesthetic]
+            [cljplot2.test-util :refer [error-data error-ins]]
+            [cljplot2.theme :as theme]))
 
 (defn- curve
   "The first fitted curve of the smooth (chart 0) of plot `p`."
@@ -53,3 +58,51 @@
     (is (some? (plot/render-image {:data power-rows :mapping {:x :x :y :y} :scales {:y {:kind :log}}
                                    :charts [(chart/scatter) (chart/smooth)]}
                                   {:width 300 :height 200})))))
+
+(deftest color-transform-test
+  (let [spec (fn [s] (aesthetic/scale-spec :color s {:kind :numeric :min 0.0 :max 100.0} false
+                                          (get-in theme/default-theme [:palette])))
+        t-of (fn [s v] (let [g (aesthetic/attribute-fn :color (assoc (spec s) :range (fn [t] t)) nil)] (g v)))]
+    (testing ":sqrt places values by their square root, :log by their logarithm; ends at 0 and 1"
+      (is (< (m/abs (- 0.5 (double (t-of {:transform :sqrt} 25.0)))) 1e-12))
+      (is (= 0.0 (double (t-of {:transform :sqrt} 0.0))))
+      (is (= 1.0 (double (t-of {:transform :sqrt} 100.0))))
+      (is (< (m/abs (- 0.5 (double (t-of {:transform :log :domain [1 100]} 10.0)))) 1e-12))
+      (is (< (m/abs (- 0.25 (double (t-of {} 25.0)))) 1e-12) "no transform: linear"))
+    (testing "boundary: :sqrt from 0, :log above 0 - else {:key :transform}"
+      (is (= :sqrt (:transform (spec {:transform :sqrt}))))
+      (is (= :transform (:key (error-data #(spec {:transform :log})))) "data from 0")
+      (is (= :transform (:key (error-data #(spec {:transform :sqrt :domain [-1 4]}))))))
+    (testing "only a linear :color scale takes :transform"
+      (is (seq (error-ins #(plot/build {:data [{:x 1 :y 1 :s 2}] :mapping {:x :x :y :y :size :s}
+                                        :scales {:size {:transform :sqrt}} :charts [(chart/scatter)]}))))
+      (is (seq (error-ins #(plot/build {:data [{:x 1 :y 1 :g "a"}] :mapping {:x :x :y :y :color :g}
+                                        :scales {:color {:transform :sqrt}} :charts [(chart/scatter)]})))))
+    (testing "color bar: positions and values follow the transform (sqrt: 25 halfway; log: 10 halfway of [1 100])"
+      (let [position (#'legend/bar-position-fn {:kind :linear :domain [0.0 100.0] :transform :sqrt})
+            value (#'legend/bar-value-fn {:kind :linear :domain [1.0 100.0] :transform :log})]
+        (is (< (m/abs (- 0.5 (double (position 25.0)))) 1e-12))
+        (is (< (m/abs (- 10.0 (double (value 0.5)))) 1e-9))))
+    (testing "the color bar keeps data-unit ticks, placed by the transform; renders"
+      (let [b (plot/build {:data (mapv (fn [i] {:x i :y i :c (* i i)}) (range 11)) :mapping {:x :x :y :y :color :c}
+                           :scales {:color {:transform :sqrt}} :charts [(chart/scatter)]}
+                          {:width 400 :height 300})]
+        (is (= :sqrt (get-in b [:scale-specs :color :transform])))
+        (is (some? (plot/render-image (select-keys b [:data :mapping :scales :charts]) {:width 400 :height 300})))))))
+
+(deftest categorical-type-domain-test
+  (testing "`:type :categorical` with two numbers is an ordinal domain (it was validated as linear)"
+    (let [b (plot/build {:data [{:x 1 :y 1 :year 1932} {:x 2 :y 2 :year 1931}] :mapping {:x :x :y :y :color :year}
+                         :scales {:color {:type :categorical :domain [1932 1931]}} :charts [(chart/scatter)]}
+                        {:width 300 :height 200})]
+      (is (= :ordinal (get-in b [:scale-specs :color :kind])))
+      (is (= [1932 1931] (get-in b [:scale-specs :color :domain])))))
+  (testing "without :type two numbers stay a linear domain; reversed throws"
+    (is (seq (error-ins #(plot/build {:data [{:x 1 :y 1 :c 5}] :mapping {:x :x :y :y :color :c}
+                                      :scales {:color {:domain [9 1]}} :charts [(chart/scatter)]}))))))
+
+(deftest default-point-size-test
+  (testing "one default point size, 6, for the point charts"
+    (is (= #{6} (set (map #(get-in theme/default-theme [:chart % :size]) [:scatter :cloud :qq :pp :beeswarm :stripplot])))))
+  (testing "the strip plot stays translucent"
+    (is (< (long (nth (get-in theme/default-theme [:chart :stripplot :color]) 3)) 255))))

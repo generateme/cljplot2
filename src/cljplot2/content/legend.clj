@@ -106,8 +106,10 @@
   (let [[lo hi] (:domain spec)
         lo (double lo) hi (double hi)
         formatter (:formatter spec)
-        ws (s/scale :linear (cond-> {:domain (if (== lo hi) [lo (inc lo)] [lo hi]) :ticks colorbar-ticks}
-                              formatter (assoc :formatter formatter)))
+        ;; a log transform ticks at powers of ten, as a log axis
+        ws (s/scale (if (= :log (:transform spec)) :log :linear)
+                    (cond-> {:domain (if (== lo hi) [lo (inc lo)] [lo hi]) :ticks colorbar-ticks}
+                      formatter (assoc :formatter formatter)))
         axis-labels (fn [ts] (position/tick-labels ws {:kind :linear :formatter formatter} ts))
         pairs (cond
                 (= :binned (:kind spec))
@@ -415,10 +417,12 @@
 
 (defn- bar-value-fn
   "Function of a position `t` along the color bar of scale `spec` (0 - bottom, 1 - top) giving the value drawn there:
-  linear - proportional over the domain; binned - every bin an equal block, proportional within it."
-  [{:keys [kind domain breaks]}]
+  linear - proportional over the domain (in the scale's `:transform` coordinates, see
+  [[cljplot2.scale.aesthetic/value-transform]]); binned - every bin an equal block, proportional within it."
+  [{:keys [kind domain breaks] :as spec}]
   (let [[lo hi] domain
-        lo (double lo) hi (double hi)]
+        {:keys [forward inverse]} (aesthetic/value-transform spec)
+        lo (double (forward (double lo))) hi (double (forward (double hi)))]
     (if (= :binned kind)
       (let [n (dec (count breaks))]
         (fn [^double t]
@@ -427,13 +431,14 @@
                 a (double (breaks i))
                 b (double (breaks (inc i)))]
             (+ a (* (- x i) (- b a))))))
-      (fn [^double t] (+ lo (* t (- hi lo)))))))
+      (fn [^double t] (inverse (+ lo (* t (- hi lo))))))))
 
 (defn- bar-position-fn
   "Inverse of [[bar-value-fn]]: function of a value within the domain giving its position along the bar."
-  [{:keys [kind domain breaks]}]
+  [{:keys [kind domain breaks] :as spec}]
   (let [[lo hi] domain
-        lo (double lo) hi (double hi)]
+        {:keys [forward]} (aesthetic/value-transform spec)
+        lo (double (forward (double lo))) hi (double (forward (double hi)))]
     (if (= :binned kind)
       (let [n (dec (count breaks))
             arr (double-array breaks)]
@@ -443,7 +448,7 @@
                 a (aget arr i)
                 b (aget arr (inc i))]
             (/ (+ i (/ (- v a) (- b a))) n))))
-      (fn [v] (if (== lo hi) 0.5 (/ (- (double v) lo) (- hi lo)))))))
+      (fn [v] (if (== lo hi) 0.5 (/ (- (double (forward (double v))) lo) (- hi lo)))))))
 
 (defn- draw-colorbar!
   "Draw color bar `content` with its `geometry` at top-left corner `origin` (`Vec2`)."
