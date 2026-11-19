@@ -26,7 +26,9 @@
     (`:zero-line-color`, `:zero-line-width`)
   * `:varwidth` - bar widths relative to the widest: `true` - by the square root of the count (as box plots), a
     keyword or function of a row - by the item's sum of its finite values (non-negative)
-  * `:value-label` - `true` writes each bar's length (`:value-format` - a format string of the number, default: whole
+  * `:value-label` - `true` writes each bar's length, signed as its value (negative bars negative - `(fn [l]
+    (Math/abs (:value l)))`-style functions drop the sign; a mirror's second group shows its positive value)
+    (`:value-format` - a format string of the number, default: whole
     numbers as integers, otherwise the fewest digits telling the labels apart), or a function of `{:value length :n
     count :share s :level l :group {dim value}}` (`:share` - of the absolute lengths of its level's bars; `:group` -
     the bar's aesthetic values) returning the text (`nil` / `\"\"` - none), e.g. pie labels
@@ -196,10 +198,12 @@
   (if (neg? (+ y0 y1)) [(m/min y0 y1) -1.0] [(m/max y0 y1) 1.0]))
 
 (defn- value-texts
-  "Bar -> value label text: the bar's length `|y1 - y0|` by `:value-format`, else [[cljplot2.data.levels/break-labels]]
-  over all `bars` (whole numbers as integers, else the fewest digits telling them apart)."
+  "Bar -> value label text: the bar's signed length - `|y1 - y0|` with the sign of its value `:length` (negative bars
+  negative; stacked and normalized segments their own length; a mirror's second group its value, positive) - by
+  `:value-format`, else [[cljplot2.data.levels/break-labels]] over all `bars` (whole numbers as integers, else the
+  fewest digits telling them apart)."
   [options bars]
-  (let [length (fn [{:keys [^double y0 ^double y1]}] (m/abs (- y1 y0)))]
+  (let [length (fn [{:keys [^double y0 ^double y1 length]}] (* (m/signum (double length)) (m/abs (- y1 y0))))]
     (if-let [fmt (:value-format options)]
       (fn [bar] (format fmt (length bar)))
       (let [ls (distinct (map length bars))]

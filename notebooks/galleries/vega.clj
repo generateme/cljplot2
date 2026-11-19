@@ -8,7 +8,8 @@
 ;; padding), and the code is cljplot2's own. Vega-Lite's transforms (`filter`, `calculate`, `aggregate`, `window`,
 ;; `fold`, `bin`, `timeUnit`, ...) become plain Clojure data preparation before the plot map; its layers are chart
 ;; vectors, its concatenations `plot/arrange`, its facets cljplot2 facets. Only static images: interactive, animated
-;; and geographic examples are listed under *Not reproduced* at the end.
+;; and geographic examples are left out. Categorical y axes list their levels top-down, as Vega-Lite does (`:reverse
+;; true` on the y scale - cljplot2's bands start at the bottom).
 ;;
 ;; Data are the [vega-datasets](https://github.com/vega/vega-datasets) files (version 3.3.1), exported by
 ;; `dev/vega_data.clj` with kebab-case keys and ISO dates (`"2000-01-01"`, parsed here with `java.time`); a dataset whose
@@ -129,7 +130,7 @@
 (plot/render-image
  {:data population-2000 :mapping {:y :age :x :people}
   :charts [(chart/bar)]
-  :scales {:y {:type :categorical} :x {:formatter millions}}
+  :scales {:y {:type :categorical :reverse true} :x {:formatter millions}}
   :labels {:x "population" :y "age"}}
  {:width 500 :height 450})
 
@@ -144,7 +145,8 @@
   (plot/render-image
    {:data population-2000 :mapping {:y :age :x :people}
     :charts [(chart/bar)]
-    :scales {:y {:type :categorical :domain (vec (sort-by totals (keys totals)))} :x {:formatter millions}}
+    :scales {:y {:type :categorical :domain (vec (sort-by (comp - totals) (keys totals))) :reverse true}
+             :x {:formatter millions}}
     :labels {:x "population" :y "age"}}
    {:width 500 :height 450}))
 
@@ -177,7 +179,7 @@
           {:genre (:major-genre movie) :gross (k movie) :measure measure})
   :mapping {:y :genre :x :gross :color :measure}
   :charts [(chart/bar {:position :dodge})]
-  :scales {:color {:title "Gross"} :x {:formatter billions}}
+  :scales {:color {:title "Gross"} :x {:formatter billions} :y {:reverse true}}
   :labels {:y "Major Genre" :x "Total Gross"}}
  {:width 800 :height 500})
 
@@ -223,6 +225,7 @@
 (plot/render-image
  {:data barley :mapping {:y :variety :x :yield :color :site}
   :charts [(chart/bar {:position :stack})]
+  :scales {:y {:domain (vec (sort (distinct (map :variety barley)))) :reverse true}}
   :labels {:x "Sum of yield" :y "variety"}}
  {:width 700 :height 400})
 
@@ -252,7 +255,7 @@
    {:data population-2000 :mapping {:y :age :x :people :color :gender}
     :charts [(chart/bar {:position :normalize :value-label #(str (sums [(:level %) (get-in % [:group :color])]))
                          :label-position :center})]
-    :scales {:y {:type :categorical} :color gender-colors}
+    :scales {:y {:type :categorical :reverse true} :color gender-colors}
     :labels {:x "population" :y "age"}}
    {:width 700 :height 600}))
 
@@ -264,8 +267,8 @@
 
 (plot/render-image
  {:data [{:task "A" :start 1 :end 3} {:task "B" :start 3 :end 8} {:task "C" :start 8 :end 10}]
-  :charts [(chart/rect {:mapping {:x0 :start :x1 :end :y0 :task :y1 :task} :fill [76 120 168] :stroke-color :white :stroke-width 6})]
-  :scales {:y {:padding-in 0.2}}
+  :charts [(chart/rect {:mapping {:x0 :start :x1 :end :y0 :task :y1 :task} :fill [76 120 168] :band-width 0.8})]
+  :scales {:y {:domain ["A" "B" "C"] :reverse true}}
   :labels {:x "start" :y "task"}}
  {:width 500 :height 200})
 
@@ -308,7 +311,8 @@
  {:data (map #(cond-> % (= "Female" (:gender %)) (update :people -)) population-2000)
   :mapping {:y :age :x :people :color :gender}
   :charts [(chart/bar {:position :stack})]
-  :scales {:y {:type :categorical} :x {:formatter millions} :color gender-colors}
+  :scales {:y {:type :categorical :domain (vec (sort > (distinct (map :age population-2000)))) :reverse true}
+           :x {:formatter millions} :color gender-colors}
   :labels {:x "population" :y "age"}}
  {:width 600 :height 450})
 
@@ -334,11 +338,10 @@
 
 (plot/render-image
  {:data survey
-  :charts [(chart/rect {:mapping {:x0 :x0 :x1 :x1 :y0 :question :y1 :question :color :answer}
-                        :stroke-color :white :stroke-width 4})]
+  :charts [(chart/rect {:mapping {:x0 :x0 :x1 :x1 :y0 :question :y1 :question :color :answer} :band-width 0.8})]
   :scales {:color {:domain survey-answers :range [[195 13 36] [243 165 131] [204 204 204] [148 198 218] [23 112 171]]
                    :title "Response"}
-           :y {:domain (vec (reverse (distinct (map :question survey)))) :padding-in 0.2}}
+           :y {:domain (vec (distinct (map :question survey))) :reverse true}}
   :labels {:x "Percentage" :y "Question"}}
  {:width 700 :height 350})
 
@@ -351,7 +354,7 @@
 (plot/render-image
  {:data (take 3 abc) :mapping {:y :a :x :b}
   :charts [(chart/bar {:value-label true})]
-  :scales {:x {:domain [0 60]}}
+  :scales {:x {:domain [0 60]} :y {:reverse true}}
   :labels {:x "b" :y "a"}}
  {:width 500 :height 200})
 
@@ -367,7 +370,7 @@
     :charts [(chart/bar {:stat :mean :color [221 221 221] :stroke-color :none})
              (chart/text {:data (map (fn [g] {:genre g :x 0.1}) (distinct (map :major-genre rated)))
                           :mapping {:x :x :y :genre :label :genre} :anchor [:left :middle]})]
-    :scales {:x {:domain [0 10]} :y {:axis false}}
+    :scales {:x {:domain [0 10]} :y {:axis false :domain (vec (sort (distinct (map :major-genre rated)))) :reverse true}}
     :labels {:x "Mean IMDB Ratings" :y nil}}
    {:width 500 :height 400}))
 
@@ -425,6 +428,7 @@
 (plot/render-image
  {:data abc-negative :mapping {:y :a :x :b}
   :charts [(chart/bar {:value-label true}) (chart/rule {:x 0 :color :black})]
+  :scales {:y {:reverse true}}
   :labels {:x "b" :y "a"}}
  {:width 500 :height 350})
 
@@ -441,7 +445,7 @@
   :charts [(chart/bar {:stat :count :width 0.45 :corner-radius-end 2})
            (chart/text {:data (map (fn [o] {:origin o :x 0}) (distinct (map :origin cars)))
                         :mapping {:x :x :y :origin :label :origin} :anchor [:left :bottom] :offset [2 12]})]
-  :scales {:y {:axis false}}
+  :scales {:y {:axis false :domain ["Europe" "Japan" "USA"] :reverse true}}
   :labels {:x "Number of Cars" :y nil}}
  {:width 500 :height 250})
 
@@ -457,7 +461,7 @@
   (plot/render-image
    {:data (map (fn [{:keys [lo n]}] {:x0 (+ lo 1) :x1 (+ lo 19) :y0 (- (/ n 2.0)) :y1 (/ n 2.0) :count n}) bins)
     :charts [(chart/rect {:mapping {:x0 :x0 :x1 :x1 :y0 :y0 :y1 :y1 :color :count} :corner-radius 3})]
-    :scales {:y {:axis false} :color {:range [[222 238 238] [44 120 150]] :title "count"}}
+    :scales {:x {:domain [0 240]} :y {:axis false} :color {:range [[222 238 238] [44 120 150]] :title "count"}}
     :labels {:title "Heat Lane of Horsepower" :x "Horsepower" :y nil}}
    {:width 700 :height 250}))
 
@@ -618,20 +622,17 @@
 
 ;; ### Layered Histogram and Cumulative Histogram
 
-;; Cumulative counts per rating bin, the bin counts over them in translucent yellow.
+;; Cumulative counts per rating bin (histogram `:y :cumulative`), the bin counts over them in translucent yellow.
 
 (nu/source-note {:source "Vega-Lite - Layered Histogram and Cumulative Histogram" :url (vl-url "layer_cumulative_histogram")
                  :dataset :movies})
 
-(let [counts (sort (frequencies (map #(bin-start 1 (:imdb-rating %)) imdb)))
-      bins (map (fn [[lo n] total] {:lo lo :hi (+ lo 1.0) :y0 0 :n n :total total})
-                counts (reductions + (map second counts)))]
-  (plot/render-image
-   {:data bins
-    :charts [(chart/rect {:mapping {:x0 :lo :x1 :hi :y0 :y0 :y1 :total} :fill [76 120 168] :stroke-color :white})
-             (chart/rect {:mapping {:x0 :lo :x1 :hi :y0 :y0 :y1 :n} :fill [255 255 0 128] :stroke-color :white})]
-    :labels {:x "IMDB Rating" :y "Cumulative Count"}}
-   {:width 600 :height 350}))
+(plot/render-image
+ {:data imdb :mapping {:x :imdb-rating}
+  :charts [(chart/histogram {:bins (vec (range 1 11)) :y :cumulative :stroke-color :white})
+           (chart/histogram {:bins (vec (range 1 11)) :y :count :color [255 255 0 128] :stroke-color :white})]
+  :labels {:x "IMDB Rating" :y "Cumulative Count"}}
+ {:width 600 :height 350})
 
 ;; ### Wilkinson Dot Plot
 
@@ -674,7 +675,7 @@
   :charts [(chart/scatter {:size 26})]
   :scales {:shape {:domain ["cattle" "pigs" "sheep"] :range (mapv animal-icons ["cattle" "pigs" "sheep"])}
            :color {:domain ["cattle" "pigs" "sheep"] :range [[118 43 131] [192 144 87] [91 160 87]]}
-           :x {:axis false} :y {:domain ["sheep" "pigs" "cattle"]}}
+           :x {:axis false} :y {:domain ["cattle" "pigs" "sheep"] :reverse true}}
   :facets {:columns 1}
   :labels {:x nil :y nil}}
  {:width 700 :height 400})
@@ -690,7 +691,7 @@
   :charts [(chart/scatter {:size 24 :color :black})]
   :scales {:shape {:domain ["cattle" "pigs" "sheep"]
                    :range [{:text "\uD83D\uDC04"} {:text "\uD83D\uDC16"} {:text "\uD83D\uDC11"}]}
-           :x {:axis false} :y {:domain ["sheep" "pigs" "cattle"]}}
+           :x {:axis false} :y {:domain ["cattle" "pigs" "sheep"] :reverse true}}
   :facets {:columns 1}
   :labels {:x nil :y nil}}
  {:width 700 :height 400})
@@ -707,7 +708,7 @@
    {:data (map (fn [[activity time]] {:activity activity :share (/ (double time) total)}) activities)
     :mapping {:y :activity :x :share}
     :charts [(chart/bar)]
-    :scales {:x {:formatter #(str (m/round (* 100.0 (double %))) "%")} :y {:domain (vec (reverse (map first activities)))}}
+    :scales {:x {:formatter #(str (m/round (* 100.0 (double %))) "%")} :y {:domain (vec (sort (map first activities))) :reverse true}}
     :labels {:x "% of total Time" :y "Activity"}}
    {:width 500 :height 250}))
 
@@ -727,26 +728,26 @@
 
 ;; ### 1D Strip Plot
 
-;; Daily precipitation as ticks along one axis.
+;; Daily precipitation as ticks along one axis (a rug - Vega-Lite's `tick` mark).
 
 (nu/source-note {:source "Vega-Lite - 1D Strip Plot" :url (vl-url "tick_dot") :dataset :seattle-weather-vega})
 
 (plot/render-image
  {:data seattle :mapping {:x :precipitation}
-  :charts [(chart/stripplot {:shape \| :size 16 :jitter 0 :color [76 120 168]})]
+  :charts [(chart/rug {:place :center :thickness 20 :color [76 120 168]})]
   :labels {:x "precipitation"}}
  {:width 600 :height 120})
 
 ;; ### Strip Plot
 
-;; Horsepower per number of cylinders, a tick per car.
+;; Horsepower per number of cylinders, a tick per car (a rug per level).
 
 (nu/source-note {:source "Vega-Lite - Strip Plot" :url (vl-url "tick_strip") :dataset :cars})
 
 (plot/render-image
  {:data cars :mapping {:x :horsepower :y :cylinders}
-  :charts [(chart/stripplot {:shape \| :size 14 :jitter 0 :color [76 120 168]})]
-  :scales {:y {:type :categorical}}
+  :charts [(chart/rug {:thickness 20 :color [76 120 168]})]
+  :scales {:y {:type :categorical :reverse true}}
   :labels {:x "Horsepower" :y "Cylinders"}}
  {:width 600 :height 300})
 
@@ -820,13 +821,15 @@
 (plot/render-image
  {:data (nu/dataset :gapminder-health-income) :mapping {:x :income :y :health :size :population}
   :charts [(chart/scatter {:color [0 0 0 160]})]
-  :scales {:x {:kind :log} :size {:range [2 40] :area true :title "population"}}
+  :scales {:x {:kind :log :minor-ticks 9} :size {:range [2 40] :area true :title "population"}}
+  :theme {:panel {:grid {:minor {:color [180 180 180] :width 0.5 :dash :none}}}}
   :labels {:x "income" :y "health"}}
  {:width 700 :height 450})
 
 ;; ### Bubble Plot (Natural Disasters)
 
-;; Annual deaths from each type of natural disaster, 1900-2017 - circle areas by deaths.
+;; Annual deaths from each type of natural disaster, 1900-2017 - circle areas by deaths. The circles stay inside their
+;; rows (largest 40 px); the original's (up to about 80 px across) spill over the neighbouring rows.
 
 (nu/source-note {:source "Vega-Lite - Bubble Plot (Natural Disasters)" :url (vl-url "circle_natural_disasters")
                  :dataset :disasters})
@@ -835,7 +838,7 @@
  {:data (remove #(= "All natural disasters" (:entity %)) (nu/dataset :disasters))
   :mapping {:x :year :y :entity :size :deaths :color :entity}
   :charts [(chart/scatter {:stroke-color :black :stroke-width 1})]
-  :scales {:size {:range [0 40] :area true :title "Annual Global Deaths"} :color {:legend false}}
+  :scales {:size {:range [0 40] :area true :title "Annual Global Deaths"} :color {:legend false} :y {:reverse true}}
   :labels {:x "Year" :y nil}}
  {:width 900 :height 500})
 
@@ -848,7 +851,7 @@
 (plot/render-image
  {:data cars :mapping {:x :horsepower :y :miles-per-gallon}
   :charts [(chart/text {:data (map #(assoc % :initial (subs (:origin %) 0 1)) cars)
-                        :mapping {:x :horsepower :y :miles-per-gallon :label :initial :color :origin}})]
+                        :mapping {:x :horsepower :y :miles-per-gallon :label :initial :color :origin} :size 13})]
   :labels {:x "Horsepower" :y "Miles_per_Gallon"}}
  {:width 600 :height 400})
 
@@ -894,7 +897,7 @@
     :mapping {:x :mean :y :genre}
     :charts [(chart/scatter {:size 10 :color [76 120 168]})]
     :scales {:x {:domain [0 10] :ticks [0 5 10] :formatter #(get {0 "Poor" 5 "Neutral" 10 "Great"} (m/round (double %)))}
-             :y {:domain (vec (sort-by means (keys means)))}}
+             :y {:domain (vec (sort-by means (keys means))) :reverse true}}
     :labels {:x nil :y nil}}
    {:width 500 :height 350}))
 
@@ -906,8 +909,8 @@
 
 (plot/render-image
  {:data cars :mapping {:x :horsepower :y :cylinders}
-  :charts [(chart/scatter {:shape \o :size 6 :color [76 120 168] :jitter [0 0.3] :rng (r/rng :mersenne 1)})]
-  :scales {:y {:ticks [3 4 5 6 8]}}
+  :charts [(chart/stripplot {:shape \o :size 6 :color [76 120 168] :jitter 0.8 :rng (r/rng :mersenne 1)})]
+  :scales {:y {:type :categorical :reverse true}}
   :labels {:x "Horsepower" :y "Cylinders"}}
  {:width 600 :height 350})
 
@@ -1076,7 +1079,7 @@
               "PASSED" "FAILED" "PASSED" "SKIPPED"])
   :mapping {:x :build :y :result}
   :charts [(chart/line) (chart/scatter {:size 7})]
-  :scales {:y {:domain ["SKIPPED" "FAILED" "PASSED"]}}
+  :scales {:y {:domain ["FAILED" "PASSED" "SKIPPED"] :reverse true}}
   :labels {:x "build" :y "result"}}
  {:width 600 :height 250})
 
@@ -1111,7 +1114,8 @@
     :charts [(chart/line {:trail true :sort false})]
     :scales {:size {:range [0 12] :ticks [20 60] :title "Barley Yield (bushels/acre)"}
              :x {:domain [1930.6 1932.4] :nice false :ticks [1931 1932] :formatter #(str (m/round (double %)))}
-             :color {:domain ["decrease" "increase"] :range [[202 0 32] [5 113 176]] :title "Yield Delta"}}
+             :color {:domain ["decrease" "increase"] :range [[202 0 32] [5 113 176]] :title "Yield Delta"}
+             :y {:domain (vec (sort (distinct (map :variety barley)))) :reverse true}}
     :facets {:columns 6}
     :labels {:title "Barley Yield comparison between 1932 and 1931" :x nil :y "Variety"}}
    {:width 1000 :height 450}))

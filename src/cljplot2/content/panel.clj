@@ -23,7 +23,7 @@
             [cljplot2.scale.coord :as coord]
             [cljplot2.scale.position :as scale]
             [cljplot2.theme :as theme])
-  (:import [java.awt Graphics2D Rectangle]))
+  (:import [java.awt BasicStroke Graphics2D Rectangle]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -32,7 +32,9 @@
 
 (defn- draw-charts!
   "Draw every chart's data for `panel-key` (and data of charts drawn in all panels) in panel-local coordinates; the
-  charts' `env` has the panel's `:panel-key`. 3D charts (`:coords #{:three-d}`) of the panel share one scene: one box
+  charts' `env` has the panel's `:panel-key`. Each chart draws on its own copy of the graphics, clipped to the panel,
+  with the default stroke (`java.awt.BasicStroke`: 1 px, solid) - no chart inherits the grid's or another chart's
+  stroke (a dashed grid made stripplot ticks dashed). 3D charts (`:coords #{:three-d}`) of the panel share one scene: one box
   frame and one depth order of all their primitives (see [[cljplot2.graphics.space3d/draw-scene!]])."
   [c panel-key w h env]
   (let [env (assoc env :panel-key panel-key)
@@ -41,7 +43,10 @@
                      :when (some? computed)]
                  [chart computed])
         clipped (fn [f] (canvas/call-with-isolated-graphics
-                         c (fn [c'] (.clip ^Graphics2D (:graphics c') (Rectangle. 0 0 (int w) (int h))) (f c'))))
+                         c (fn [c'] (let [^Graphics2D g (:graphics c')]
+                                      (.clip g (Rectangle. 0 0 (int w) (int h)))
+                                      (.setStroke g (BasicStroke.))
+                                      (f c')))))
         three-d (filter #(contains? (:coords (first %)) :three-d) layers)]
     (doseq [[chart computed] (remove #(contains? (:coords (first %)) :three-d) layers)]
       (clipped #((:draw chart) chart computed % {:x 0 :y 0 :w w :h h} (:scales env) env)))

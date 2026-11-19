@@ -17,7 +17,9 @@
 
   Options (style defaults from theme `[:chart :rect]`): `:fill`, `:stroke-color`, `:stroke-width`, `:alpha` (the
   fill's alpha, a fraction; default - colors as they are), `:corner-radius` (pixels, every corner rounded, clamped to
-  half the shorter side; polar - the annular sector's corners; default 0), `:extent`, plus `:data` / `:mapping`."
+  half the shorter side; polar - the annular sector's corners; default 0), `:band-width` (the fraction of its band step
+  a level end covers, centred, `(0 1]`; default 1 - the whole step, rects of neighbouring levels touch), `:extent`, plus
+  `:data` / `:mapping`."
   (:require [clojure2d.color :as c]
             [clojure2d.core :as c2d]
             [fastmath.core :as m]
@@ -58,7 +60,8 @@
                       (schema/optional :alpha schema/fraction)
                       (schema/nilable :x (annotation/positions-schema interval-schema))
                       (schema/nilable :y (annotation/positions-schema interval-schema))
-                      draw/corner-radius-option))
+                      draw/corner-radius-option
+                      (schema/optional :band-width [:and schema/finite [:> 0] [:<= 1]])))
    :mapping [:map]})
 
 (defn- style
@@ -151,7 +154,8 @@
         pattern-fill (draw/pattern-fill-cache)
         x-horizontal? (scale/horizontal? :x (:x scales))
         geometry (scale/coord-geometry scales)
-        interval-of {:x (annotation/interval-fn (:x scales)) :y (annotation/interval-fn (:y scales))}
+        band-width (double (get options :band-width 1.0))
+        interval-of {:x (annotation/interval-fn (:x scales) band-width) :y (annotation/interval-fn (:y scales) band-width)}
         ;; the whole extent along an axis: panel pixels, polar - the angular range or the radii
         panel-side (fn [horizontal?] (cond
                                        (and geometry horizontal?) (vec (sort (:theta geometry)))

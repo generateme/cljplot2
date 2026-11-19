@@ -7,7 +7,8 @@
     `:freedman-diaconis`; computed on all data), a positive integer (equal-width bins over the data range), or a
     vector of at least 2 increasing breaks (values outside are dropped and counted)
   * `:y` - bar height: `:percent` (default, of the panel's total, or the group's when grouped), `:count`, `:pmf`
-    (share of the total, sums to 1), `:density` (count / (n * width), area 1)
+    (share of the total, sums to 1), `:density` (count / (n * width), area 1), `:cumulative` (the count of the bin and
+    of every bin before it)
   * `:position` - grouped bars (see [[cljplot2.data.position]]): `:overlay` (default; full-width, fill alpha
     `:alpha`), `:dodge` (bins split among the groups), `:stack` (groups on top of each other), `:normalize` (stacked, each
     bin summing to 1; y title \"Proportion\"), `:mirror` (exactly two groups, the second drawn downward; y tick labels
@@ -67,7 +68,7 @@
                 (into style-entries)
                 (into data/common-options)
                 (conj (schema/optional :bins [:and levels/bins [:fn {:error/message "quantile bins aren't supported by histograms (give a breaks vector)"} (complement map?)]])
-                      (schema/optional :y (into [:enum] (keys measure/titles)))
+                      (schema/optional :y (into [:enum :cumulative] (keys measure/titles)))
                       (schema/optional :position (into [:enum] (sort position/positions)))
                       (schema/nilable :symmetric schema/bool)
                       (schema/nilable :zero-line schema/bool)
@@ -93,9 +94,17 @@
     {:counts (vec counts) :outside (- (count values) (long (reduce + 0 (vec counts))))}))
 
 (defn- heights
-  "Bar heights of `counts` (bins `brks`) for count measure `y` (see [[cljplot2.data.measure/heights]])."
+  "Bar heights of `counts` (bins `brks`, in order) for count measure `y` (see [[cljplot2.data.measure/heights]]);
+  `:cumulative` - the count of the bin and every bin before it (ggplot `after_stat(cumsum(count))`)."
   [y brks counts]
-  (measure/heights y counts (map (fn [[^double a ^double b]] (- b a)) (partition 2 1 brks))))
+  (if (= :cumulative y)
+    (vec (rest (reductions + 0.0 counts)))
+    (measure/heights y counts (map (fn [[^double a ^double b]] (- b a)) (partition 2 1 brks)))))
+
+(defn- measure-title
+  "Value axis title of measure `y`."
+  [y]
+  (if (= :cumulative y) "Cumulative Count" (measure/titles y)))
 
 (defn- ridge-compute
   "Ridgeline stats (categorical or bands `:y`): per panel `{:ridges [item ...] :top h :overlap o :style st :translucent? b}`, items
@@ -195,7 +204,7 @@
        :padding-explicit (data/explicit-padding (when-not (= position :mirror) {:y [0.0 nil]}) options)
        :na (group/na-dims panels)
        :dropped (assoc dropped :x (+ (long (reduce + 0 (map :dropped (mapcat identity (vals xs))))) (long outside)))
-       :axis-titles {:y (if (= position :normalize) "Proportion" (measure/titles y))}
+       :axis-titles {:y (if (= position :normalize) "Proportion" (measure-title y))}
        :tick-format (when (= position :mirror) {:y :absolute})})))
 
 (defn- draw-ridges!

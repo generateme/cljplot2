@@ -114,13 +114,15 @@
 
 (defn interval-fn
   "`(fn [a b] -> [lo hi])` (lo <= hi): the pixel interval covering positions `a` and `b` on the finalized scale - a
-  level covers its band step, `nil` is the scale's range end on that side (`a` - the low-value end, `b` - the
-  high-value end); `nil` when an end can't be placed or the scale is missing. Builds the scale once."
-  [finalized]
+  level covers its band step (`band-width` - that fraction of it, centred; default 1), `nil` is the scale's range end
+  on that side (`a` - the low-value end, `b` - the high-value end); `nil` when an end can't be placed or the scale is
+  missing. Builds the scale once."
+  ([finalized] (interval-fn finalized 1.0))
+  ([finalized band-width]
   (if-not finalized
     (constantly nil)
     (let [[r0 r1] (:range finalized)
-          half (* 0.5 (double (or (:step (scale/band-geometry finalized)) 0.0)))
+          half (* 0.5 (double band-width) (double (or (:step (scale/band-geometry finalized)) 0.0)))
           pixel (pixel-fn finalized)
           ends (fn [v range-end]
                  (cond
@@ -130,7 +132,7 @@
       (fn [a b]
         (let [ps (concat (ends a r0) (ends b r1))]
           (when (every? #(m/valid-double? (double %)) ps)
-            [(double (reduce min ps)) (double (reduce max ps))]))))))
+            [(double (reduce min ps)) (double (reduce max ps))])))))))
 
 (defn axis-pixel-fn
   "`(fn [v] -> px)` of text positions along the finalized scale's axis: `[:panel f]` - fraction `f` of the range from
