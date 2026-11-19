@@ -99,7 +99,7 @@
 
 (defn- colorbar-content
   "Color bar of the linear or binned color scale `spec` mapped with `accessors` (title rule as legends). Ticks:
-  linear - nice ticks of the domain, labelled as axis ticks, and the `:midpoint` (see [[with-midpoint-tick]];
+  linear - nice ticks of the domain (at least two), labelled as axis ticks, and the `:midpoint` (see [[with-midpoint-tick]];
   labelled by `:formatter` or [[cljplot2.data.levels/break-labels]]); binned - the inner breaks, labelled by
   `:formatter` or [[cljplot2.data.levels/break-labels]]."
   [spec accessors]
@@ -107,9 +107,13 @@
         lo (double lo) hi (double hi)
         formatter (:formatter spec)
         ;; a log transform ticks at powers of ten, as a log axis
-        ws (s/scale (if (= :log (:transform spec)) :log :linear)
-                    (cond-> {:domain (if (== lo hi) [lo (inc lo)] [lo hi]) :ticks colorbar-ticks}
-                      formatter (assoc :formatter formatter)))
+        scale-of (fn [n] (s/scale (if (= :log (:transform spec)) :log :linear)
+                                  (cond-> {:domain (if (== lo hi) [lo (inc lo)] [lo hi]) :ticks n}
+                                    formatter (assoc :formatter formatter))))
+        ;; at least two ticks inside the domain, as an axis (see position/ticks-inside)
+        {ws :scale nice :ticks} (if (== lo hi)
+                                  {:scale (scale-of colorbar-ticks)}
+                                  (position/ticks-inside scale-of colorbar-ticks #(<= lo (double %) hi)))
         axis-labels (fn [ts] (position/tick-labels ws {:kind :linear :formatter formatter} ts))
         pairs (cond
                 (= :binned (:kind spec))
@@ -120,8 +124,7 @@
                                (let [ls (levels/break-labels breaks)] (subvec ls 1 (dec (count ls)))))]
                   (mapv vector inner labels))
                 (== lo hi) (mapv vector [lo] (axis-labels [lo]))
-                :else (let [nice (filterv #(<= lo (double %) hi) (s/ticks ws))
-                            mid (:midpoint spec)]
+                :else (let [mid (:midpoint spec)]
                         (with-midpoint-tick (mapv vector nice (axis-labels nice)) mid
                           (when (some? mid) (if formatter (str (formatter mid)) (first (levels/break-labels [mid]))))
                           lo hi)))]

@@ -1,13 +1,16 @@
 (ns cljplot2.lattice-cycle4-test
   "Lattice cycle 4 (data and notebook): library gaps fixed while writing the lattice notebook - `chart/smooth` fitted
   in the coordinates of log axes (Fig 5.9, 5.10), color scale `:transform` (Fig 5.14), `:type :categorical` domains
-  (Fig 2.6), one default point size."
+  (Fig 2.6), one default point size, at least two ticks on an axis (Fig 14.2)."
   (:require [clojure.test :refer [deftest testing is]]
             [fastmath.core :as m]
+            [wadogo.scale :as s]
             [cljplot2.chart :as chart]
+            [cljplot2.chart.parallel :as parallel]
             [cljplot2.content.legend :as legend]
             [cljplot2.core :as plot]
             [cljplot2.scale.aesthetic :as aesthetic]
+            [cljplot2.scale.position :as position]
             [cljplot2.test-util :refer [error-data error-ins]]
             [cljplot2.theme :as theme]))
 
@@ -106,3 +109,48 @@
     (is (= #{6} (set (map #(get-in theme/default-theme [:chart % :size]) [:scatter :cloud :qq :pp :beeswarm :stripplot])))))
   (testing "the strip plot stays translucent"
     (is (< (long (nth (get-in theme/default-theme [:chart :stripplot :color]) 3)) 255))))
+
+(defn- finalized-ticks
+  "Ticks of a `:y` scale spec of `options` finalized over 70 px with tick hint 2 (a short facet panel)."
+  [options]
+  (:ticks (position/finalize (position/scale-spec :y (merge {:nice false} options)) [0.0 70.0] 2)))
+
+(deftest two-ticks-test
+  (testing "a short axis whose nice step is wider than its domain gets more ticks until two are inside (Fig 14.2)"
+    (is (>= (count (finalized-ticks {:domain [-2100 4500]})) 2))
+    (is (>= (count (finalized-ticks {:domain [-6650 7650]})) 2))
+    (is (>= (count (finalized-ticks {:domain [2330 3870]})) 2))
+    (is (>= (count (finalized-ticks {:domain [1.5 1.7] :kind :log})) 2) "log within one decade")
+    (is (>= (count (finalized-ticks {:domain [0.0001 0.00012]})) 2) "small numbers"))
+  (testing "the domain and the mapping stay; the count used is the scale's"
+    (let [spec (position/scale-spec :y {:domain [-2100 4500] :nice false})
+          f (position/finalize spec [70.0 0.0] 2)]
+      (is (= [-2100.0 4500.0] (mapv double (:domain f))))
+      (is (> (long (get-in f [:attributes :ticks])) 2))
+      (is (< (m/abs (- 70.0 (double ((position/forward-fn f) -2100.0)))) 1e-9))))
+  (testing "boundary: ticks the user set stay as given - a count, a vector"
+    (is (= [0.0] (mapv double (finalized-ticks {:domain [-2100 4500] :ticks 2}))))
+    (is (= [100.0] (mapv double (finalized-ticks {:domain [-2100 4500] :ticks [100 9000]})))))
+  (testing "boundary: a long axis keeps its count (unchanged ticks)"
+    (let [f (position/finalize (position/scale-spec :y {:domain [0 10] :nice false}) [0.0 500.0] 10)]
+      (is (= 10 (get-in f [:attributes :ticks])))))
+  (testing "ticks-inside: the first count giving two inside; the last count's ticks when none does"
+    (let [{:keys [count ticks]} (position/ticks-inside #(s/scale :linear {:domain [-2100 4500] :ticks %}) 2
+                                                       #(<= -2100.0 (double %) 4500.0))]
+      (is (= 3 count))
+      (is (= [-2000.0 0.0 2000.0 4000.0] (mapv double ticks))))
+    (let [{:keys [count ticks]} (position/ticks-inside #(s/scale :linear {:domain [0 1] :ticks %}) 3 (constantly false))]
+      (is (= position/max-tick-count count))
+      (is (empty? ticks))))
+  (testing "parallel axes and color bars follow the same rule; a zero-length parallel domain - one tick"
+    (is (>= (count (parallel/axis-ticks [-2100.0 4500.0] 70.0 50.0)) 2))
+    (is (= 1 (count (parallel/axis-ticks [3.0 3.0] 70.0 50.0))))
+    (is (>= (count (:ticks (#'legend/colorbar-content {:kind :linear :domain [2330.0 2390.0]} nil))) 2)))
+  (testing "a faceted plot of short panels: every y axis at least two ticks"
+    (let [rows (for [[g k] [["a" 1.0] ["b" 3000.0] ["c" 0.01]] i (range 20)] {:g g :x i :y (* k (m/sin i))})
+          b (plot/build {:data rows :mapping {:x :x :y :y :facet :g} :charts [(chart/line)]
+                         :facets {:columns 1 :scales {:y :free}}}
+                        {:width 400 :height 200})
+          y-ticks (map #(get-in % [:y :ticks]) (vals (:panel-scales b)))]
+      (is (= 3 (count y-ticks)))
+      (is (every? #(>= (count %) 2) y-ticks)))))

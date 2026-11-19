@@ -453,13 +453,33 @@
             (inside (for [[start step] (concat before inner after) j (range 1 (long n))]
                       (+ (double start) (/ (* (double j) (double step)) (double (long n))))))))))))
 
+(def ^:const max-tick-count
+  "Largest tick count [[ticks-inside]] asks for while looking for two ticks inside a domain."
+  12)
+
+(defn ticks-inside
+  "`{:count n :scale sc :ticks [..]}` - the wadogo scale `(scale-of n)` for tick count `n` and its ticks kept by
+  `inside?`; when fewer
+  than 2 are inside (a nice step wider than a short domain), counts `n + 1` ... [[max-tick-count]] are tried until 2
+  are - an axis shows at least two ticks to read its span; the last count's when none gives two (e.g. a log domain
+  within one step of its ticks)."
+  [scale-of ^long n inside?]
+  (loop [n n]
+    (let [scale (scale-of n)
+          ticks (filterv inside? (s/ticks scale))]
+      (if (or (>= (count ticks) 2) (>= n max-tick-count))
+        {:count n :scale scale :ticks ticks}
+        (recur (inc n))))))
+
 (defn finalize
   "Finalized scale of phase-1 `spec` for the pixel `range` (`[start end]`) and `tick-hint` (the count used unless
   the spec has `:ticks`). Steps: the domain is extended by `nice` (limited, see `:nice` in [[scale-spec]]) with
   the explicit tick count or the hint, then padded by `:padding` (see [[data-scale-spec]]), then by the pixel room
   `:padding-px` `[lo hi]` (charts' labels past the data; `:linear`, `:log` and `:datetime` - in epoch milliseconds,
   skipped when over half the range);
-  ticks outside the final domain are dropped. A bands scale without `:ticks` has a tick at every band. A spec with
+  ticks outside the final domain are dropped - a continuous scale without `:ticks` gets more ticks until two are
+  inside (see [[ticks-inside]]; `:attributes` `:ticks` - the count used). A bands scale without `:ticks` has a tick
+  at every band. A spec with
   `:axis false` gives a finalized scale with `:axis false` (no axis, no grid lines), `:axis :grid` one with
   `:axis :grid` (no axis, grid lines kept), `:axis :no-grid` one with `:axis :no-grid` (the axis, no grid lines)."
   [spec range tick-hint]
@@ -479,12 +499,15 @@
                  (pad-domain-pixels kind domain padding-px (m/abs (- (double (second range)) (double (first range)))))
                  domain)
         attributes (assoc base :domain domain :ticks (or explicit (if (= kind :bands) (vec domain) tick-hint)))
-        scale (s/scale kind attributes)
         offset (pixel-offset kind range)
-        inside? #(inside-range? range (+ offset (double (scale %))))
-        ticks (if (continuous-kinds kind)
-                (filterv inside? (s/ticks scale))
-                (vec (s/ticks scale)))]
+        position (s/scale kind attributes)
+        inside? #(inside-range? range (+ offset (double (position %))))
+        {scale :scale ticks :ticks tick-count :count}
+        (cond
+          (not (continuous-kinds kind)) {:scale position :ticks (vec (s/ticks position))}
+          explicit {:scale position :ticks (filterv inside? (s/ticks position))}
+          :else (ticks-inside #(s/scale kind (assoc attributes :ticks %)) tick-hint inside?))
+        attributes (cond-> attributes tick-count (assoc :ticks tick-count))]
     (cond-> {:kind kind
              :domain domain
              :range range

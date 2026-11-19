@@ -2119,11 +2119,18 @@
         matrix (mapv (fn [a] (mapv (fn [b] (r [a b])) names)) names)]
     (mapv (comp keyword :name) (tree/leaves (tree/from-hclust (cl/hclust matrix {:method :complete}) names)))))
 
+(def cars93-short-names
+  "Names of the numeric Cars93 columns short enough for a strip of the 18 x 18 grid."
+  {:min-price "min-price" :price "price" :max-price "max-price" :mpg-city "mpg-city" :mpg-highway "mpg-hwy"
+   :engine-size "engine" :horsepower "hp" :rpm "rpm" :rev-per-mile "rev/mile" :fuel-tank-capacity "tank"
+   :passengers "passengers" :length "length" :wheelbase "wheelbase" :width "width" :turn-circle "turn"
+   :rear-seat-room "rear-seat" :luggage-room "luggage" :weight "weight"})
+
 (def cars93-pairs
-  "Every ordered pair of the numeric Cars93 columns with every car's two values: `{:a :b :x :y}` (column names; a
-  missing value stays `nil` - the correlation glyph uses the complete pairs)."
+  "Every ordered pair of the numeric Cars93 columns with every car's two values: `{:a :b :x :y}` (short column
+  names; a missing value stays `nil` - the correlation glyph uses the complete pairs)."
   (vec (for [a cars93-cluster-order, b cars93-cluster-order, row cars93]
-         {:a (name a) :b (name b) :x (a row) :y (b row)})))
+         {:a (cars93-short-names a) :b (cars93-short-names b) :x (a row) :y (b row)})))
 
 ;; ### Fig 13.5 Correlation ellipses
 
@@ -2133,7 +2140,7 @@
 
 (nu/source-note {:source "Lattice Fig 13.5" :url (figure-url 13 5) :dataset :cars93})
 
-(let [names (mapv name cars93-cluster-order)]
+(let [names (mapv cars93-short-names cars93-cluster-order)]
   (plot/render-image
    {:data cars93-pairs
     :mapping {:x :x :y :y :facet-row :a :facet-col :b}
@@ -2151,7 +2158,7 @@
 
 (nu/source-note {:source "Lattice Fig 13.6" :url (figure-url 13 6) :dataset :cars93})
 
-(let [names (mapv name cars93-cluster-order)]
+(let [names (mapv cars93-short-names cars93-cluster-order)]
   (plot/render-image
    {:data cars93-pairs
     :mapping {:x :x :y :y :facet-row :a :facet-col :b}
@@ -2169,10 +2176,11 @@
 
 (nu/source-note {:source "Lattice Fig 13.7" :url (figure-url 13 7) :dataset :volcano})
 
-(def volcano-contour-points
+(defn- volcano-contour-points
   "Points every tenth of a grid step along the contour lines of the volcano heights at 100, 110, ... 190 m, at
-  height `top`: rows `{:row :column :height}`."
-  (let [nx 87 ny 61 top 250.0
+  height `top`: rows `{:row :column :height}` (the grid - every row x column of `volcano`)."
+  [top]
+  (let [nx (long (reduce max (map :row volcano))) ny (long (reduce max (map :column volcano)))
         heights (into {} (map (juxt (juxt :row :column) :height)) volcano)
         grid {:xs (double-array (range 1 (inc nx))) :ys (double-array (range 1 (inc ny))) :nx nx :ny ny
               :values (double-array (for [j (range 1 (inc ny)) i (range 1 (inc nx))] (heights [i j])))}]
@@ -2189,7 +2197,8 @@
     :mapping {:x :row :y :column :z :height}
     :scales {:color {:range [[0 166 0] [230 230 0] [236 177 118] [242 242 242]]}}
     :charts [(chart/surface {:domain domain :view view :aspect [1 (/ 61.0 87.0) 0.3] :axes false})
-             (chart/cloud {:data volcano-contour-points :domain domain :size 1.2 :color [40 40 40]})]
+             (chart/cloud {:data (volcano-contour-points (second (:z domain))) :domain domain :size 1.2
+                           :color [40 40 40]})]
     :labels {:x nil :y nil}}
    {:width 800 :height 550}))
 
@@ -2215,7 +2224,8 @@
 ;; ### Fig 14.2 Seasonal decomposition
 
 ;; Two months of hourly Bioconductor accesses as data = seasonal + trend + remainder: the seasonal part the mean
-;; daily profile, the trend a loess of the rest (a simple decomposition in place of the book's `stl`).
+;; daily profile, the trend a loess of the rest over 37 hours - `stl`'s trend window for a 24-hour period (a simple
+;; decomposition in place of the book's `stl`).
 
 (nu/source-note {:source "Lattice Fig 14.2" :url (figure-url 14 2) :dataset :bioc-access})
 
@@ -2274,7 +2284,8 @@
 
 ;; ### Fig 14.5 Pie charts
 
-;; Virginia death rates (1940) by age group as a pie per population group - stacked bars in polar coordinates.
+;; Virginia death rates (1940) by age group as a pie per population group - bars stacked to the group's whole
+;; (`:position :normalize`) in polar coordinates: panels share the angle scale, so each pie shows shares.
 
 (nu/source-note {:source "Lattice Fig 14.5" :url (figure-url 14 5) :dataset :va-deaths})
 
@@ -2283,7 +2294,7 @@
   :mapping {:x :rate :color :age :facet :group}
   :coord {:kind :polar}
   :scales {:x {:axis false} :facet {:domain ["Urban Male" "Urban Female" "Rural Male" "Rural Female"]}}
-  :charts [(chart/bar {:position :stack :width 1.0})]
+  :charts [(chart/bar {:position :normalize :width 1.0})]
   :facets {:columns 2}
   :labels {:x nil :y nil}}
  {:width 800 :height 800})

@@ -342,11 +342,16 @@
 
 (defn axis-ticks
   "Ticks (original units) and their labels `[[tick label] ..]` of an axis over `domain` `[lo hi]` about `length`
-  pixels long, with theme `spacing` pixels between ticks; a single tick for a zero-length domain."
+  pixels long, with theme `spacing` pixels between ticks - at least two (see
+  [[cljplot2.scale.position/ticks-inside]]); a single tick for a zero-length domain."
   [[^double lo ^double hi] ^double length ^double spacing]
-  (let [sc (s/scale :linear {:domain (if (== lo hi) [(- lo 1.0) (+ hi 1.0)] [lo hi]) :ticks (scale/tick-hint length spacing)})
-        ticks (if (== lo hi) [lo] (filterv #(<= lo (double %) hi) (s/ticks sc)))]
-    (mapv vector ticks (scale/tick-labels sc {:kind :linear} ticks))))
+  (if (== lo hi)
+    (let [sc (s/scale :linear {:domain [(- lo 1.0) (+ hi 1.0)] :ticks 2})]
+      [[lo (first (scale/tick-labels sc {:kind :linear} [lo]))]])
+    (let [{sc :scale ticks :ticks} (scale/ticks-inside #(s/scale :linear {:domain [lo hi] :ticks %})
+                                                       (scale/tick-hint length spacing)
+                                                       #(<= lo (double %) hi))]
+      (mapv vector ticks (scale/tick-labels sc {:kind :linear} ticks)))))
 
 (defn- pixel [geometry [h v]]
   (let [^fastmath.vector.Vec2 p (coord/to-pixel geometry (double h) (double v))] [(.x p) (.y p)]))
