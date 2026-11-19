@@ -174,17 +174,16 @@
 
 ;; ### Fig 2.6 Dot plot
 
-;; Barley yield of each variety at six sites, the two years in two colours and shapes. Sites, varieties and years
+;; Barley yield of each variety at six sites, the two years in two shapes. Sites, varieties and years
 ;; keep R's factor order (`nu/levels`); lattice fills panels from the bottom, so the sites run top-down reversed.
 
 (nu/source-note {:source "Lattice Fig 2.6" :url (figure-url 2 6) :dataset :barley})
 
 (plot/render-image
  {:data barley
-  :mapping {:x :yield :y :variety :color :year :shape :year :facet :site}
+  :mapping {:x :yield :y :variety :shape :year :facet :site}
   :scales {:y {:domain (nu/levels :barley :variety)}
            :facet {:domain (vec (rseq (nu/levels :barley :site)))}
-           :color {:type :categorical :domain (nu/levels :barley :year)}
            :shape {:domain (nu/levels :barley :year)}}
   :charts [(chart/scatter)]
   :facets {:columns 1}
@@ -271,14 +270,14 @@
 
 ;; ### Fig 3.1 Kernel density
 
-;; Old Faithful eruption times: a Gaussian kernel density, the values as jittered points under it.
+;; Old Faithful eruption times: a Gaussian kernel density, the values as jittered points along the bottom edge.
 
 (nu/source-note {:source "Lattice Fig 3.1" :url (figure-url 3 1) :dataset :faithful})
 
 (plot/render-image
  {:data faithful
   :mapping {:x :eruptions}
-  :charts [(chart/density) (chart/stripplot {:place :bottom :rng (r/rng :mersenne 31)})]
+  :charts [(chart/density) (chart/stripplot {:place :edge :thickness 16 :jitter 0.3 :rng (r/rng :mersenne 31)})]
   :labels {:x "eruptions" :y "Density"}}
  {:width 600 :height 450})
 
@@ -926,7 +925,7 @@
 (plot/render-image
  {:data (mapv (fn [row] {:days (:days row) :ssc (m/asinh (:ssc-h row)) :fl2 (m/asinh (:fl2-h row))}) gvhd10)
   :mapping {:x :fl2 :y :ssc :facet :days}
-  :scales {:x {:domain [0 10.5]} :color {:range [[235 235 235] [0 0 0]] :transform :sqrt}}
+  :scales {:x {:domain [0 10.5]} :color {:range [[200 200 200] [0 0 0]] :transform :sqrt}}
   :charts [(chart/bin2d {:bins 30})]
   :facets {:columns 4}
   :aspect :iso
