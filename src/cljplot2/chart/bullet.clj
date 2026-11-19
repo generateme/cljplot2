@@ -4,8 +4,9 @@
   placement `:place`, `:width`, `:thickness`, groups `:position`). Axes below are named in the strip frame - `:x`
   the values, `:y` the levels; exchange them for vertical bullets (levels on `:x`).
 
-  Mapping: `:ranges`, `:measures`, `:markers` (at least one) - each a finite number or a collection of them (`nil` -
-  none), read from exactly one row per level and group (Vega-Lite `facet_bullet`: `{:ranges [150 225 300]
+  Mapping: `:ranges`, `:measures`, `:markers` (at least one) - each a finite number or a sequential collection of
+  them (vector or list - the measures' order sets their colours; `nil` - none), read from exactly one row per level
+  and group (Vega-Lite `facet_bullet`: `{:ranges [150 225 300]
   :measures [220 270] :markers [250]}`); `:x` isn't read; optional `:y` levels (without them one bullet, placed
   `:center`). Give every measure its own value scale with facets: `{:mapping {:facet :title} :facets {:columns 1
   :scales {:x :free}}}`.
@@ -14,14 +15,16 @@
   `:range-colors` (the smallest range) to the second (the largest); the measures `:measure-width` of the slot
   (fraction), largest first so every one stays visible, coloured from the first colour of `:measure-colors` (the
   first measure - the current value) to the second (the last); the markers as lines of `:marker-width` pixels across
-  `:marker-length` of the slot in `:marker-color`. One value of a kind takes the first colour. Groups (`:group`,
-  ordinal aesthetics) are dodged as other strips; they don't change the colours (no legend key).
+  `:marker-length` of the slot in `:marker-color`. One value of a kind takes the first colour. Groups (`:group`) are
+  dodged as other strips. No aesthetics: a mapped `:color`, `:shape`, `:size`, `:dash` or `:pattern` is a schema
+  error (set it to `nil` when the plot maps it for other charts); no legend key, no n labels (`:n-label`).
 
   Options (style defaults from theme `[:chart :bullet]`): `:range-colors`, `:measure-colors` (two colours each),
-  `:measure-width`, `:marker-color`, `:marker-width`, `:marker-length`; `:padding {:x [lo hi]}` (default `[0 0.05]` -
-  the bars start at the axis), plus the strip options and `:data` / `:mapping`. The x extent covers 0 and every value.
+  `:measure-width`, `:marker-color`, `:marker-width`, `:marker-length`; `:padding {:x [lo hi]}` (default 0.05 on a
+  side holding values, 0 on the side of 0 - the bars start at the axis), plus the strip options (without `:n-label`,
+  `:n-format`) and `:data` / `:mapping`. The x extent covers 0 and every value.
   Throws `ex-info {:key :mapping}` for two or more rows of one level and group or a value that isn't a finite number
-  (or a collection of them).
+  (or a sequential collection of them).
 
   Equivalents: Vega-Lite `facet_bullet`, d3 bullet charts."
   (:require [clojure2d.color :as c]
@@ -30,6 +33,7 @@
             [cljplot2.data.group :as group]
             [cljplot2.data.rows :as data]
             [cljplot2.data.strip :as strip]
+            [cljplot2.scale.aesthetic :as aesthetic]
             [cljplot2.schema :as schema])
   (:import [fastmath.vector Vec2]))
 
@@ -54,11 +58,15 @@
    :options (-> [:map {:closed true}]
                 (into style-entries)
                 (into data/common-options)
-                (into strip/options)
+                (into (remove #(#{:n-label :n-format} (first %)) strip/options))
                 (conj (schema/optional :padding data/position-padding)))
    :mapping (schema/with-rules [:map]
               [#(when-not (some (fn [k] (some? (get % k))) value-keys)
                   "should map :ranges, :measures or :markers")
+               nil]
+              [#(when-let [mapped (seq (filter (fn [k] (some? (get % k))) aesthetic/dims))]
+                  (str "doesn't take aesthetics, got " (pr-str (vec mapped))
+                       " mapped (set them to nil when the plot maps them)"))
                nil])})
 
 (defn- style
@@ -66,17 +74,18 @@
   (merge (get-in theme [:chart :bullet]) (select-keys options (map first style-entries))))
 
 (defn- as-values
-  "`v` - `nil`, a finite number or a collection of them - as a vector of doubles; `nil` for anything else."
+  "`v` - `nil`, a finite number or a sequential collection of them - as a vector of doubles; `nil` for anything
+  else (a set, a map, a string ...)."
   [v]
   (cond
     (nil? v) []
     (schema/finite? v) [(double v)]
-    (and (coll? v) (every? schema/finite? v)) (mapv double v)))
+    (and (sequential? v) (every? schema/finite? v)) (mapv double v)))
 
 (defn bullet-values
   "`{:ranges [..] :measures [..] :markers [..]}` (doubles, in the given order) of a bullet item (`:rows` - exactly
   one) read through `mapping`. Throws `ex-info {:key :mapping}` for two or more rows of one level and group or a
-  value that isn't a finite number or a collection of them."
+  value that isn't a finite number or a sequential collection of them."
   [{:keys [rows level aesthetics]} mapping]
   (when (not= 1 (count rows))
     (schema/fail! "Bullet takes one row per level and group." {:key :mapping :level level :group aesthetics
@@ -87,14 +96,21 @@
                          vs (as-values raw)]]
                (if vs
                  [k vs]
-                 (schema/fail! (str "Bullet " k " should be a finite number or a collection of them.")
+                 (schema/fail! (str "Bullet " k " should be a finite number or a sequential collection of them.")
                                {:key :mapping :level level :value raw}))))))
 
+(defn- zero-side-padding
+  "x padding `[lo hi]` of bullet `items` (panel -> items): 0.05 on a side holding values, 0 on the side of 0 - so the
+  bars start at the axis (`[0 0]` without values off 0)."
+  [items]
+  (let [vs (mapcat (fn [item] (mapcat item value-keys)) (mapcat val items))]
+    [(if (some neg? vs) 0.05 0.0) (if (some pos? vs) 0.05 0.0)]))
+
 (defn- padding
-  "Position padding: the strip padding with x `[0 0.05]` unless the `:padding` option gives x."
-  [place options]
+  "Position padding: the strip padding with x from [[zero-side-padding]] unless the `:padding` option gives x."
+  [place options items]
   (cond-> (strip/padding place options)
-    (nil? (get-in options [:padding :x])) (assoc :x [0.0 0.05])))
+    (nil? (get-in options [:padding :x])) (assoc :x (zero-side-padding items))))
 
 (defn- compute-in-strip-frame
   "Per panel: `{:items [item ...] :style st :place p :options o}`, items with [[bullet-values]]; extents (x - 0 and
@@ -106,9 +122,8 @@
         x-range (fn [item] (let [vs (into [0.0] (mapcat item value-keys))] [(reduce min vs) (reduce max vs)]))]
     {:data (update-vals items (fn [its] {:items its :style (style options theme) :place place :options options}))
      :extents (merge-with merge (group/aesthetic-extents panels (:plot-scales env)) (strip/extents place items x-range))
-     :padding (padding place options)
+     :padding (padding place options items)
      :padding-explicit (strip/explicit-padding place options)
-     :padding-px (strip/n-label-room options items env)
      :na (group/na-dims panels)
      :dropped dropped}))
 

@@ -5,7 +5,7 @@
             [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
             [cljplot2.data.series :as series]
-            [cljplot2.test-util :refer [error]]))
+            [cljplot2.test-util :refer [error error-data]]))
 
 ;; bullet
 
@@ -65,6 +65,34 @@
       (is (seq reds))
       (is (<= (- (reduce max reds) (reduce min reds)) 5) "one vertical line"))))
 
+(deftest bullet-review-test
+  (testing "M1: aesthetics are schema errors; nil-ed plot aesthetics and :group are fine"
+    (is (= :mapping (:key (error #(plot/build (assoc-in (bullet-plot [(assoc revenue :g "a")] {}) [:mapping :color] :g))))))
+    (is (re-find #"doesn't take aesthetics"
+                 (pr-str (:errors (error-data #(plot/build (assoc-in (bullet-plot [(assoc revenue :g "a")] {}) [:mapping :size] :g)))))))
+    (is (some? (plot/build {:data [(assoc revenue :g "a")] :mapping {:color :g}
+                            :charts [(chart/bullet {:mapping {:color nil :ranges :ranges :measures :measures :markers :markers}})]})))
+    (is (= 2 (count (get-in (bullet-stats (-> (bullet-plot [(assoc revenue :g "a") (assoc revenue :g "b")] {})
+                                              (assoc-in [:mapping :group] :g)))
+                            [:data :panel :items])))))
+  (testing "M2: no n labels"
+    (is (some? (error #(plot/build (bullet-plot [revenue] {:n-label true})))))
+    (is (some? (error #(plot/build (bullet-plot [revenue] {:n-format "%d"}))))))
+  (testing "M3: 0.05 on the sides holding values, 0 on the side of 0; :padding wins"
+    (let [pad (fn [rows options] (get-in (bullet-stats (bullet-plot rows options)) [:padding :x]))]
+      (is (= [0.0 0.05] (pad [revenue] {})))
+      (is (= [0.05 0.0] (pad [{:ranges [-30 -10] :measures [-20]}] {})))
+      (is (= [0.05 0.05] (pad [{:ranges [-30 10]}] {})))
+      (is (= [0.0 0.0] (pad [{:ranges [0] :measures []}] {})))
+      (is (= [0.1 0.1] (pad [revenue] {:padding {:x [0.1 0.1]}})))
+      (is (some? (plot/render-image (bullet-plot [{:ranges [0]}] {}) {:width 200 :height 80})) "all zero renders")
+      (is (= [0.0 0.05] (get-in (bullet-stats (assoc-in (bullet-plot [(assoc revenue :t "A")] {}) [:mapping :x] :t))
+                                [:padding :y]))
+          "levels on x: the value padding on y")))
+  (testing "M4: sequential collections only (a list is fine, a set isn't)"
+    (is (= [2.0 1.0] (:measures (first (get-in (bullet-stats (bullet-plot [{:measures (list 2 1)}] {})) [:data :panel :items])))))
+    (is (= :mapping (:key (error #(plot/build (bullet-plot [{:measures #{1 2}}] {}))))))))
+
 ;; horizon
 
 (def ^:private wave (map (fn [x y] {:x x :y y}) (range 6) [10 60 20 90 40 5]))
@@ -94,6 +122,7 @@
       (is (= 11 (count (filter #(>= (double %) 2.0) xs))) "2 gaps × 5 steps + the last point")))
   (testing "errors: unknown method, repeated x, bad steps"
     (is (= :interpolator (:key (error #(series/horizon-rows wave {:interpolator :nope})))))
+    (is (re-find #":monotone" (pr-str (:errors (error-data #(series/horizon-rows wave {:interpolator "monotone"}))))) "M5: the schema's message")
     (is (= :interpolator (:key (error #(series/horizon-rows [{:x 0 :y 1} {:x 0 :y 2} {:x 1 :y 3}] {:interpolator :linear})))))
     (is (= :steps-per-gap (:key (error #(series/horizon-rows wave {:interpolator :monotone :steps-per-gap 0})))))
     (is (= :steps-per-gap (:key (error #(series/horizon-rows wave {:steps-per-gap 1.5})))))))

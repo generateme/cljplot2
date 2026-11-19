@@ -152,9 +152,7 @@
   `{:key :x}` for a non-numeric x, `{:key :y}` for a `y` neither `nil` nor a finite number, `{:key :interpolator}`
   for an unknown method or a repeated x in a run, `{:key :steps-per-gap}` unless a positive integer."
   [rows {:keys [x y series bands band-height interpolator steps-per-gap] :or {x :x y :y bands 2 steps-per-gap 10}}]
-  (when-not (or (nil? interpolator) (fn? interpolator) (contains? schema/interpolation-methods interpolator))
-    (schema/fail! (str "Horizon :interpolator should be a function or one of " (vec (sort schema/interpolation-methods)) ".")
-                  {:key :interpolator :value interpolator}))
+  (when (some? interpolator) (schema/explain! [[schema/interpolator interpolator [:interpolator]]]))
   (when-not (and (integer? steps-per-gap) (pos? (long steps-per-gap)))
     (schema/fail! "Horizon :steps-per-gap should be a positive integer." {:key :steps-per-gap :value steps-per-gap}))
   (when-not (and (integer? bands) (pos? (long bands)))
