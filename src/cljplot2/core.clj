@@ -75,6 +75,12 @@
   ([values] (series-plots/acf values {}))
   ([values options] (series-plots/acf values options)))
 
+(defn horizon
+  "Horizon chart of rows (bands of one height, negatives mirrored, a panel per series), see
+  [[cljplot2.series-plots/horizon]]."
+  ([rows] (series-plots/horizon rows {}))
+  ([rows options] (series-plots/horizon rows options)))
+
 (defn render
   "Build and draw `plot`, returning a clojure2d canvas, see [[cljplot2.render/render]]."
   ([plot] (render/render plot))

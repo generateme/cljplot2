@@ -1,6 +1,7 @@
 (ns cljplot2.data.series
-  "Time series rows: autocorrelations with their significance bands ([[acf-rows]]) and lagged pairs ([[lag-rows]]),
-  for ordinary charts (see [[cljplot2.series-plots/acf]]).
+  "Time series rows: autocorrelations with their significance bands ([[acf-rows]]), lagged pairs ([[lag-rows]]) and
+  horizon bands ([[horizon-rows]]), for ordinary charts (see [[cljplot2.series-plots/acf]],
+  [[cljplot2.series-plots/horizon]]).
 
   A series is a sequence of numbers in time order (fastmath `acf-ci` / `pacf-ci`)."
   (:require [fastmath.core :as m]
@@ -66,3 +67,83 @@
     (schema/fail! "Lag should be a positive integer." {:key :lag :value k}))
   (let [vs (vec values)]
     (mapv (fn [t] {:t t :x (vs t) :y (vs (+ (long t) (long k)))}) (range (max 0 (- (count vs) (long k)))))))
+
+(defn- band-levels
+  "The values where a horizon band of `n` bands of height `h` changes: `±k h` for `k` 0..n."
+  [^long n ^double h]
+  (sort (distinct (for [k (range (inc n)) s [1.0 -1.0]] (* (double s) (double k) h)))))
+
+(defn- crossings
+  "Points `[x y]` where the segment from `[x0 y0]` to `[x1 y1]` crosses one of `levels` strictly between its ends, in
+  order along it."
+  [[x0 y0] [x1 y1] levels]
+  (let [x0 (double x0) y0 (double y0) x1 (double x1) y1 (double y1)
+        lo (m/min y0 y1) hi (m/max y0 y1)]
+    (->> levels
+         (filter #(< lo (double %) hi))
+         (map (fn [l] (let [t (/ (- (double l) y0) (- y1 y0))] [t [(+ x0 (* t (- x1 x0))) (double l)]])))
+         (sort-by first)
+         (map second))))
+
+(defn- with-crossings
+  "Points `[x y]` of one series (x increasing, `y` `nil` where it breaks) with the band-edge crossings (`levels`) of
+  every segment between two valid points inserted."
+  [points levels]
+  (if (empty? points)
+    []
+    (into [(first points)]
+          (mapcat (fn [[p q]] (if (and (second p) (second q)) (concat (crossings p q levels) [q]) [q])))
+          (partition 2 1 points))))
+
+(defn- band-height-of
+  "Height of band `band` (1..n; negative - the mirrored negative bands) at value `y` with band height `h`:
+  `clamp(±y - (|band| - 1) h, 0, h)`; `nil` for `nil` `y`."
+  [band ^double h y]
+  (when (some? y)
+    (let [b (long band)
+          v (* (if (pos? b) 1.0 -1.0) (double y))]
+      (m/constrain (- v (* (double (dec (m/abs b))) h)) 0.0 h))))
+
+(defn horizon-bands
+  "Band labels of a horizon of `n` bands in drawing order: `1..n` (positive), then `-1..-n` (negative, mirrored) - each
+  band under the next, darker one."
+  [^long n]
+  (vec (concat (range 1 (inc n)) (map - (range 1 (inc n))))))
+
+(defn horizon-rows
+  "Rows of a horizon chart of `rows` (maps): values `:y` over `:x` (option keys `:x`, `:y`, default `:x` / `:y`), one
+  series per `:series` value (option key; first-appearance order; without it one series `nil`).
+  Returns `{:rows [{:x :y :band :series} ...] :band-height h}`: `:bands` n (default 2) bands of height `h` -
+  `:band-height`, else the largest `|y|` of all series / n (1 when it is 0); band `k` (1..n) is `clamp(y - (k-1) h, 0,
+  h)`, band `-k` the same of `-y` (negatives mirrored upward); every series' points sorted by x with the crossings of
+  band edges inserted, so linear areas are exact; a `nil` `y` breaks the bands (a row with `:y nil` per band).
+  Throws `ex-info` `{:key :bands}` unless a positive integer, `{:key :band-height}` unless a positive finite number,
+  `{:key :x}` for a non-numeric x, `{:key :y}` for a `y` neither `nil` nor a finite number."
+  [rows {:keys [x y series bands band-height] :or {x :x y :y bands 2}}]
+  (when-not (and (integer? bands) (pos? (long bands)))
+    (schema/fail! "Horizon :bands should be a positive integer." {:key :bands :value bands}))
+  (when-not (or (nil? band-height) (and (number? band-height) (m/valid-double? (double band-height)) (pos? (double band-height))))
+    (schema/fail! "Horizon :band-height should be a positive finite number." {:key :band-height :value band-height}))
+  (when-let [bad (first (remove #(number? (get % x)) rows))]
+    (schema/fail! "Horizon x values should be numbers." {:key :x :value (get bad x)}))
+  (when-let [bad (first (remove #(let [v (get % y)] (or (nil? v) (and (number? v) (m/valid-double? (double v))))) rows))]
+    (schema/fail! "Horizon y values should be finite numbers (nil breaks the bands)." {:key :y :value (get bad y)}))
+  (let [n (long bands)
+        groups (if series
+                 (let [order (distinct (map #(get % series) rows))
+                       by (group-by #(get % series) rows)]
+                   (mapv (fn [s] [s (by s)]) order))
+                 [[nil rows]])
+        top (double (reduce max 0.0 (keep #(when-let [v (get % y)] (m/abs (double v))) rows)))
+        h (double (or band-height (if (pos? top) (/ top (double n)) 1.0)))
+        levels (band-levels n h)
+        labels (horizon-bands n)]
+    {:band-height h
+     :rows (vec (for [[s rs] groups
+                      :let [points (with-crossings (mapv (fn [r] [(double (get r x)) (some-> (get r y) double)])
+                                                         (sort-by #(double (get % x)) rs))
+                                                   levels)]
+                      band labels
+                      [px py] points]
+                  (cond-> {:x px :y (band-height-of band h py) :band band}
+                    series (assoc :series s))))}))

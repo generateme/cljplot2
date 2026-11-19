@@ -4,7 +4,8 @@
 
   A builder's `:scales` option is merged into the builder's own scales key by key (see
   [[cljplot2.theme/deep-merge]])."
-  (:require [cljplot2.chart :as chart]
+  (:require [clojure2d.color :as c]
+            [cljplot2.chart :as chart]
             [cljplot2.data.series :as series]
             [cljplot2.schema :as schema]
             [cljplot2.theme :as theme]))
@@ -81,4 +82,54 @@
        ;; ACF and PACF differ in range (lag 0 is 1 in the ACF): each panel row its own y domain, unless the caller
        ;; fixes one
        (and both? (nil? (get-in scales [:y :domain]))) (assoc :facets {:scales {:y :free}})
+       user-theme (assoc :theme user-theme)))))
+
+(def ^:private horizon-ends
+  "Lightest and darkest colour of the default horizon band palettes: blues for positive, reds for negative values."
+  {:positive [[158 202 225] [8 69 148]] :negative [[252 174 145] [165 15 21]]})
+
+(defn- band-colors
+  "`n` colours from the lightest to the darkest of `[light dark]` (one band - the darkest)."
+  [[light dark] ^long n]
+  (if (= 1 n)
+    [(c/to-color dark)]
+    (mapv #(c/lerp light dark (/ (double %) (double (dec n)))) (range n))))
+
+(defn- horizon-colors
+  "Colours of the bands `1..n`, `-1..-n` (see [[cljplot2.data.series/horizon-bands]]): `colors` `:positive` /
+  `:negative` (at least `n` colours each, lightest first) or the default palettes. Throws `ex-info {:key :colors}`
+  for an unknown key, too few or invalid colours."
+  [colors ^long n]
+  (when-not (and (map? colors) (every? #{:positive :negative} (keys colors))
+                 (every? #(and (sequential? %) (>= (count %) n) (every? schema/color? %)) (vals colors)))
+    (schema/fail! (str "horizon :colors should be a map of :positive / :negative to at least " n " colors.")
+                  {:key :colors :value colors}))
+  (into (vec (take n (or (:positive colors) (band-colors (:positive horizon-ends) n))))
+        (take n (or (:negative colors) (band-colors (:negative horizon-ends) n)))))
+
+(defn horizon
+  "Horizon chart of `rows` as a plot map (see [[cljplot2.data.series/horizon-rows]]): values `:y` over `:x` folded
+  into `:bands` (default 2) bands of one height, negatives mirrored upward in a second hue; every band an area
+  (`chart/line {:fill :color}`) from 0, the darker bands over the lighter ones; the y scale `[0 band-height]` without
+  an axis; with `:series` a panel per series in one column (the series in the strip; one band height for all).
+
+  `options`: `:x`, `:y`, `:series` (row keys), `:bands`, `:band-height` (see `horizon-rows`); `:colors {:positive
+  [..] :negative [..]}` (at least `:bands` colours each, lightest first; default blues / reds); `:scales`, `:title`,
+  `:theme`. Throws `ex-info {:key k}` for invalid `:bands`, `:band-height`, `:colors`, x or y values.
+
+  Equivalents: Vega-Lite `area_horizon`, Vega `horizon-graph`, latticeExtra `horizonplot`."
+  ([rows] (horizon rows {}))
+  ([rows {:keys [x series bands colors scales title] user-theme :theme :or {x :x bands 2} :as options}]
+   (let [{band-rows :rows h :band-height} (series/horizon-rows rows (select-keys options [:x :y :series :bands :band-height]))
+         n (long bands)
+         palette (horizon-colors (or colors {}) n)]
+     (cond-> {:data band-rows
+              :mapping (cond-> {:x :x :y :y :color :band} series (assoc :facet :series))
+              :charts [(chart/line {:fill :color :alpha 1.0 :width 0 :padding {:y [0.0 0.0]}})]
+              :scales (theme/deep-merge {:y {:domain [0.0 h] :nice false :axis false}
+                                         :color {:kind :ordinal :domain (series/horizon-bands n) :range palette
+                                                 :legend false}}
+                                        scales)
+              :labels {:title title :x (name x) :y nil}}
+       series (assoc :facets {:columns 1})
        user-theme (assoc :theme user-theme)))))

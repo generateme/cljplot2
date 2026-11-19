@@ -62,6 +62,7 @@
   (:refer-clojure :exclude [partition])
   (:require [cljplot2.chart.bar :as bar]
             [cljplot2.chart.beeswarm :as beeswarm]
+            [cljplot2.chart.dotplot :as dotplot]
             [cljplot2.chart.bin2d :as bin2d]
             [cljplot2.chart.box :as box]
             [cljplot2.chart.candlestick :as candlestick]
@@ -129,6 +130,7 @@
    :violin (:style violin/schemas)
    :stripplot (:style stripplot/schemas)
    :beeswarm (:style beeswarm/schemas)
+   :dotplot (:style dotplot/schemas)
    :rug (:style rug/schemas)
    :extent (:style extent/schemas)
    :rule (:style rule/schemas)
@@ -312,6 +314,12 @@
   [[cljplot2.data.strip]]."
   ([] (beeswarm {}))
   ([options] (chart-value :beeswarm beeswarm/compute beeswarm/draw beeswarm/legend beeswarm/schemas options)))
+
+(defn dotplot
+  "Dot plot of the values per level (the categorical axis, `:level-axis`): binned values as stacks of dots (Wilkinson
+  dot density or fixed bins), see [[cljplot2.chart.dotplot]] and [[cljplot2.data.strip]]."
+  ([] (dotplot {}))
+  ([options] (chart-value :dotplot dotplot/compute dotplot/draw dotplot/legend dotplot/schemas options)))
 
 (defn rug
   "Rug of the values (per level of the categorical axis when one is mapped, `:level-axis`), see [[cljplot2.chart.rug]] and [[cljplot2.data.strip]]."

@@ -49,7 +49,7 @@
 
   `:chart` - per chart kind defaults: `:scatter`, `:histogram`, `:density`, `:line`, `:ecdf` (old cljplot blue
   `[69 117 180]` - clojure2d `(last (palette :rdylbu-9))` - with cljplot's alphas: scatter 180, stripplot 100, rug 100),
-  `:treemap` (`:padding`, `:border-color`, `:border-width`), `:partition` (`:border-color`, `:border-width`), `:pack` (`:padding`, `:border-color`, `:border-width`), `:waffle` (`:gap`, `:shape`, borders), `:venn` (`:alpha`, borders), `:tile` / `:bin2d` (`:cell`, `:cell-scale`, `:stroke-color`, `:stroke-width`), `:field` (`:alpha`), `:contour` (`:color`, `:width`, `:dash`, `:alpha`), `:correlation` (`:color`, `:stroke-color`, `:stroke-width`), strip charts `:box`, `:violin`, `:stripplot`, `:beeswarm`, `:rug`,
+  `:treemap` (`:padding`, `:border-color`, `:border-width`), `:partition` (`:border-color`, `:border-width`), `:pack` (`:padding`, `:border-color`, `:border-width`), `:waffle` (`:gap`, `:shape`, borders), `:venn` (`:alpha`, borders), `:tile` / `:bin2d` (`:cell`, `:cell-scale`, `:stroke-color`, `:stroke-width`), `:field` (`:alpha`), `:contour` (`:color`, `:width`, `:dash`, `:alpha`), `:correlation` (`:color`, `:stroke-color`, `:stroke-width`), strip charts `:box`, `:violin`, `:stripplot`, `:beeswarm`, `:dotplot`, `:rug`,
   `:extent`, `:bar`, annotations `:rule`, `:rect`, `:function`, bands `:ribbon`, `:smooth` (band `:alpha` 0.3), `:segment`, `:polygon`, probability plots `:qq` / `:pp` (scatter's point style, `:line-width`), `:image` (no style), `:candlestick` (green up, red down), `:parallel` (radar `:fill` `:alpha` 0.25); each checked against its chart's style schema; line and
   function `:bridge` - the style of bridges over gaps (`:alpha` multiplies the line alpha, optional `:width`, `:dash`);
   line `:alpha` - opacity of `:fill :color` and stacked areas.
@@ -129,6 +129,7 @@
                     :pattern :solid :pattern-color :darker}
            :stripplot {:size 6 :color [69 117 180 100] :stroke-color :none :stroke-width 1 :shape \O}
            :beeswarm {:size 6 :color [69 117 180 180] :stroke-color :none :stroke-width 1 :shape \O}
+           :dotplot {:color [69 117 180] :stroke-color :none :stroke-width 1 :shape \O}
            :rug {:color [69 117 180 100] :line-width 1}
            :extent {:color [69 117 180] :line-width 2 :shape \O :size 7}
            :rule {:color [60 60 60] :width 1 :dash :none}

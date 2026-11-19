@@ -239,8 +239,9 @@
               (let [t (AffineTransform/getTranslateInstance (.x center) (.y center))
                     _ (.scale t size size)
                     outline (.createTransformedShape t unit)]
-                (c2d/set-color canvas color)
-                (c2d/shape canvas outline false)
+                (when-not (= :none color)
+                  (c2d/set-color canvas color)
+                  (c2d/shape canvas outline false))
                 (when (and (:path shape) (not= :none stroke-color) (pos? (double stroke-width)))
                   (c2d/set-color canvas stroke-color)
                   (c2d/shape canvas outline true)))))))
@@ -258,19 +259,24 @@
 
 (defn draw!
   "Draw `shape` centered at `center` (`Vec2`). `style` - `{:size :color :stroke-color :stroke-width}`, `:size` is
-  the bounding box side: filled shapes are filled with `:color` and outlined with `:stroke-color` (`:none` or
-  `:stroke-width` 0 skips the outline); outlined shapes and strokes are drawn with `:color`. Lines use the canvas
+  the bounding box side: filled shapes are filled with `:color` (`:none` - no fill) and outlined with `:stroke-color`
+  (`:none` or `:stroke-width` 0 skips the outline); outlined shapes and strokes are drawn with `:color` (`:none` -
+  nothing). Lines use the canvas
   stroke - the caller sets it once (width `:stroke-width`) for many points. A shape map (see [[shape-problem]]) is
   fitted into the size square: `:path` filled and outlined as a filled shape, `:text` filled, `:svg` / `:image` in
   their own colors."
   [canvas shape ^Vec2 center {:keys [size color stroke-color stroke-width] :as style}]
   (if (map? shape)
     (draw-map! canvas shape center style)
-    (let [c (v/vec3 (.x center) (.y center) (* 0.5 (double size)))]
-    (c2d/set-color canvas color)
-    (if (filled-shapes shape)
-      (do (fill! canvas shape c)
-          (when (and (not= :none stroke-color) (pos? (double stroke-width)))
-            (c2d/set-color canvas stroke-color)
-            (outline! canvas shape c)))
-      (outline! canvas shape c)))))
+    (let [c (v/vec3 (.x center) (.y center) (* 0.5 (double size)))
+          ink? (not= :none color)]
+      (if (filled-shapes shape)
+        (do (when ink?
+              (c2d/set-color canvas color)
+              (fill! canvas shape c))
+            (when (and (not= :none stroke-color) (pos? (double stroke-width)))
+              (c2d/set-color canvas stroke-color)
+              (outline! canvas shape c)))
+        (when ink?
+          (c2d/set-color canvas color)
+          (outline! canvas shape c))))))

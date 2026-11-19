@@ -16,6 +16,12 @@
   square root of its count, relative to the largest, default false), `:padding {:x [lo hi]}` (default
   `[0.05 0.05]`), plus the strip options and `:data` / `:mapping` (`:x` values, optional `:y` levels).
 
+  `:stat` - `:tukey` (default, the statistics above) or `:identity` (pre-aggregated, Vega-Lite
+  `boxplot_preaggregated`): one row per level and group carries its statistics through the mapping keys `:lower :q1
+  :median :q3 :upper` (whisker ends, quartiles, median - finite and ordered), optional `:outliers` (a collection of
+  numbers), `:mean` (needed by the `:mean` marker) and `:n` (needed by `:varwidth` and `:n-label`); `:x` isn't read
+  (map the levels, or nothing for one box) - see [[identity-stats]].
+
   `:variant` - `:classic` (default, the box above) or `:tufte` (E. Tufte's quartile plot, lattice `panel.bwtufte`): no
   box and no median line - the median a `:shape` point of `:size` in `:color`, a line from each whisker end to its
   quartile (the inter-quartile gap left empty), no caps; outliers as above, the `:mean` marker a hollow circle in
@@ -53,12 +59,16 @@
                 (into style-entries)
                 (into data/common-options)
                 (into strip/options)
-                (conj (schema/nilable :outliers schema/bool)
+                (conj (schema/optional :stat [:enum :tukey :identity])
+                      (schema/nilable :outliers schema/bool)
                       (schema/nilable :mean schema/bool)
                       (schema/nilable :varwidth schema/bool)
                       (schema/nilable :variant [:enum :classic :tufte])
                       (schema/optional :padding data/position-padding)))
-   :mapping strip/values-mapping})
+   :mapping (schema/with-rules [:map]
+              [#(when-not (or (some? (:x %)) (some? (:y %)) (some? (:q1 %)))
+                  "should map :x or :y (the values), or the statistics (:q1 ... with :stat :identity)")
+               nil])})
 
 (defn- style
   [options theme]
@@ -74,6 +84,47 @@
      :mean (stats/mean values)
      :n (count values)}))
 
+(def ^:private identity-keys
+  "Mapping keys of the statistics a `:stat :identity` row carries, in their required order."
+  [:lower :q1 :median :q3 :upper])
+
+(defn- check-identity-mapping!
+  "Throw for a `:stat :identity` box whose `mapping` lacks a statistic (`{:key :mapping}`) or an option's input -
+  `:mean` without `:mean`, `:varwidth` / `:n-label` without `:n` mapped (`{:key option}`)."
+  [mapping options]
+  (when-let [missing (seq (remove #(some? (get mapping %)) identity-keys))]
+    (schema/fail! (str "Box :stat :identity needs the statistics mapped: " (pr-str (vec missing)) ".")
+                  {:key :mapping :value (vec missing)}))
+  (doseq [[option k] [[:mean :mean] [:varwidth :n] [:n-label :n]]
+          :when (and (get options option) (nil? (get mapping k)))]
+    (schema/fail! (str "Box " option " with :stat :identity needs " k " mapped.") {:key option :value k})))
+
+(defn identity-stats
+  "Box statistics (as [[box-stats]]) of a `:stat :identity` item (`:rows` - exactly one) read through `mapping`:
+  `:lower :q1 :median :q3 :upper` (finite, ordered), `:outliers` (finite numbers; absent - none), `:mean`, `:n`.
+  Throws `ex-info {:key :mapping}` for two or more rows of one level and group, a missing, non-finite or unordered
+  statistic, bad outliers or `:n`."
+  [{:keys [rows level aesthetics]} mapping]
+  (when (not= 1 (count rows))
+    (schema/fail! "Box :stat :identity takes one row per level and group." {:key :mapping :level level :group aesthetics
+                                                                            :value (count rows)}))
+  (let [row (first rows)
+        read (fn [k] (when-let [acc (get mapping k)] ((data/row-accessor k acc) row)))
+        [lower q1 median q3 upper :as vs] (mapv read identity-keys)
+        outliers (read :outliers)
+        mean (read :mean)
+        n (read :n)]
+    (when-not (and (every? schema/finite? vs) (apply <= (map double vs)))
+      (schema/fail! "Box :stat :identity needs finite statistics with :lower <= :q1 <= :median <= :q3 <= :upper."
+                    {:key :mapping :level level :value (zipmap identity-keys vs)}))
+    (when-not (or (nil? outliers) (and (coll? outliers) (every? schema/finite? outliers)))
+      (schema/fail! "Box :outliers should be a collection of finite numbers." {:key :mapping :level level :value outliers}))
+    (when-not (or (nil? mean) (schema/finite? mean))
+      (schema/fail! "Box :mean should be a finite number." {:key :mapping :level level :value mean}))
+    (when-not (or (nil? n) (and (integer? n) (pos? (long n))))
+      (schema/fail! "Box :n should be a positive integer." {:key :mapping :level level :value n}))
+    {:q1 q1 :median median :q3 q3 :lav lower :uav upper :outliers (vec outliers) :mean mean :n (or n 1)}))
+
 (defn width-factors
   "Item -> width factor: `sqrt(n / max n)` over all `items` with `varwidth?`, else 1."
   [items varwidth?]
@@ -81,12 +132,17 @@
     (fn ^double [item] (if varwidth? (m/sqrt (/ (double (:n item)) nmax)) 1.0))))
 
 (defn- compute-in-strip-frame
-  "Per panel: `{:items [item ...] :style st :place p :options o}`, items with [[box-stats]] and `:width-factor`;
+  "Per panel: `{:items [item ...] :style st :place p :options o}`, items with [[box-stats]] (`:stat :identity` -
+  [[identity-stats]]) and `:width-factor`;
   extents (x - whiskers and, with `:outliers`, outliers; y - see [[cljplot2.data.strip/extents]]), padding, `:na`,
   `:dropped`."
-  [{:keys [options]} chart-split {:keys [theme] :as env}]
-  (let [{:keys [place items panels dropped]} (strip/split chart-split options :center env)
-        items (update-vals items (fn [its] (mapv #(merge % (box-stats (:values %))) its)))
+  [{:keys [options]} {:keys [mapping] :as chart-split} {:keys [theme] :as env}]
+  (let [identity? (= :identity (:stat options))
+        _ (when identity? (check-identity-mapping! mapping options))
+        split-options (cond-> options identity? (assoc ::strip/count-rows true ::strip/rows true))
+        {:keys [place items panels dropped]} (strip/split chart-split split-options :center env)
+        stats-of (if identity? #(identity-stats % mapping) #(box-stats (:values %)))
+        items (update-vals items (fn [its] (mapv #(dissoc (merge % (stats-of %)) :rows) its)))
         factor (width-factors (mapcat val items) (:varwidth options))
         items (update-vals items (fn [its] (mapv #(assoc % :width-factor (factor %)) its)))
         outliers? (data/option options :outliers true)

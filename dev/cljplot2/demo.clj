@@ -11,7 +11,7 @@
 
 (def demos
   "Demo names (namespaces `cljplot2.demo.<name>`), in run order: build steps, then capability demos."
-  (into (mapv #(str "step" %) (range 1 12)) ["flip" "positions" "strips" "annotation" "helpers" "smooth" "evolution" "bar" "patterns" "polar" "parallel" "partition" "pack" "waffle" "venn" "cells" "fields" "pairs" "marks" "network" "trees" "flows" "sankeys" "extras" "logo" "trellis" "lattice-marks" "lattice-3d" "vega-marks"]))
+  (into (mapv #(str "step" %) (range 1 12)) ["flip" "positions" "strips" "annotation" "helpers" "smooth" "evolution" "bar" "patterns" "polar" "parallel" "partition" "pack" "waffle" "venn" "cells" "fields" "pairs" "marks" "network" "trees" "flows" "sankeys" "extras" "logo" "trellis" "lattice-marks" "lattice-3d" "vega-marks" "vega-distributions"]))
 
 (defn- demo-images
   "`images` of the demo `demo` (its namespace is loaded on first use)."
