@@ -6,10 +6,12 @@
   `v`, depth `d` (away from the viewer). Azimuth 0, elevation 0 looks along `+y`: x to the right, z up; azimuth turns
   the box about the vertical z axis (90 - y to the right), elevation tilts the view from above (positive) or below.
 
-  Perspective: the view's `:distance` δ (default 0 - orthographic) is lattice's `distance` - the eye sits `1/δ` box
-  units in front of the box centre, a point at depth `d` is scaled by `1 / (1 + δ d)` toward the centre ([[perspective]];
-  lattice's look is 0.2). The eye must stay outside the box ([[check-distance!]]); faces turn toward or away from the
-  eye by their position too ([[face-orientation]], [[visible-edges]]).
+  Perspective: the view's `:distance` δ (default 0 - orthographic) is lattice's `distance` - measured, as lattice
+  does, in a box scaled to a longest side of 1: the eye sits `L/δ` box units (`L` - the longest side of `aspect`) in
+  front of the box centre, a point at depth `d` is scaled by `1 / (1 + δ d / L)` toward the centre ([[perspective]];
+  lattice's look is 0.2), so only the box's proportions matter, as orthographically. The eye must stay outside the
+  sphere around the box ([[distance-problem]]); faces turn toward or away from the eye by their position too
+  ([[face-orientation]], [[visible-edges]]).
 
   [[projector]] fits the projected box (plus a margin for axes) in a panel and gives pixel positions with depths;
   primitives are drawn far to near by depth (painter's algorithm, see [[cljplot2.graphics.space3d]]). Faces are
@@ -115,35 +117,47 @@
 
 ;; perspective
 
-(defn view-distance
+(defn- view-distance
   "Perspective `:distance` δ of `view` (0 - orthographic)."
   ^double [view]
   (double (or (:distance view) 0.0)))
+
+(defn box-distance
+  "Perspective `:distance` of `view` in the units of a box of side `aspect` (`nil` - a cube): δ over the box's
+  longest side - lattice's `distance` applies to its box scaled to a longest side of 1. The eye sits at `1 /
+  box-distance` from the box centre; 0 - orthographic."
+  ^double [view aspect]
+  (/ (view-distance view) (double (reduce max (box-aspect aspect)))))
 
 (defn- half-diagonal
   "Half the diagonal of a box of side `aspect` - the radius of its circumscribed sphere."
   ^double [[ax ay az]]
   (* 0.5 (m/sqrt (+ (m/sq (double ax)) (m/sq (double ay)) (m/sq (double az))))))
 
-(defn check-distance!
-  "Throw `ex-info {:key :distance}` unless the eye of `view` is outside the sphere around a box of side `aspect`
-  (`nil` - a cube; δ |aspect| / 2 < 1): every point of the box, in any view, is then in front of the eye. Returns
-  `nil`."
+(defn distance-problem
+  "`nil` when the eye of `view` is outside the sphere circumscribing a box of side `aspect` (`nil` - a cube) - every
+  point of the box, in any view, is then in front of the eye; else the error message (the largest `:distance` the box
+  takes: its longest side over its half-diagonal, 2/√3 for a cube - any box takes a `:distance` below that)."
   [view aspect]
-  (let [delta (view-distance view)
-        aspect (box-aspect aspect)
-        limit (/ 1.0 (half-diagonal aspect))]
-    (when (>= delta limit)
-      (schema/fail! (format "A :distance of %s puts the eye inside the box of :aspect %s - it should be below %.4f."
-                            delta (vec aspect) limit)
-                    {:key :distance :in [:view :distance] :value (:distance view)}))))
+  (let [aspect (box-aspect aspect)]
+    (when (>= (* (box-distance view aspect) (half-diagonal aspect)) 1.0)
+      (format ":distance %s puts the eye within the sphere around the box of :aspect %s - it should be below %.4f"
+              (:distance view) aspect (/ (double (reduce max aspect)) (half-diagonal aspect))))))
+
+(defn check-distance!
+  "Throw `ex-info {:key :distance}` for the eye of `view` within the sphere around a box of side `aspect` (see
+  [[distance-problem]]; a chart's own options are checked by its schema - this checks the frame merged from several
+  charts). Returns `nil`."
+  [view aspect]
+  (when-let [problem (distance-problem view aspect)]
+    (schema/fail! (str "The 3D box: " problem ".") {:key :distance :in [:view :distance] :value (:distance view)})))
 
 (defn perspective
   "Function of view coordinates `Vec3 (u v d)` giving the screen position `Vec2` (box units): `(u, v)` scaled by
-  `1 / (1 + δ d)` (δ - `view`'s `:distance`); `(u, v)` as they are for δ = 0. Points must be in front of the eye
-  (`1 + δ d > 0`, see [[check-distance!]])."
-  [view]
-  (let [delta (view-distance view)]
+  `1 / (1 + δ d)` (δ - [[box-distance]] of `view` and `aspect`); `(u, v)` as they are for δ = 0. Points must be in
+  front of the eye (`1 + δ d > 0`, see [[distance-problem]])."
+  [view aspect]
+  (let [delta (box-distance view aspect)]
     (if (zero? delta)
       (fn [^Vec3 q] (v/vec2 (.x q) (.y q)))
       (fn [^Vec3 q] (let [s (/ 1.0 (+ 1.0 (* delta (.z q))))] (v/vec2 (* s (.x q)) (* s (.y q))))))))
@@ -195,8 +209,8 @@
   ([[turn-away]]; its centre is its outward normal times half the box side across it)."
   [view aspect]
   (let [rotate (rotation view)
-        delta (view-distance view)
-        sides (box-aspect aspect)]
+        sides (box-aspect aspect)
+        delta (box-distance view sides)]
     (fn ^double [axis side]
       (let [^Vec3 n (outward-normal rotate axis side)]
         (turn-away delta n (v/mult n (* 0.5 (double (nth sides (axis-index axis))))))))))
@@ -209,7 +223,7 @@
   [{:keys [domains aspect view]}]
   (let [rotate (rotation view)
         normalize (normalizer domains (box-aspect aspect))
-        delta (view-distance view)
+        delta (box-distance view aspect)
         reversed (into {} (map (fn [k] (let [[a b] (domains k)] [k (> (double a) (double b))]))) axes)]
     (fn [axis side at]
       (let [^Vec3 n (outward-normal rotate axis (if (reversed axis) (- 1 (long side)) side))]
@@ -280,21 +294,28 @@
   "`[u0 u1 v0 v1]` (box units) of the screen positions of the corners of a box of side `aspect` in `view`."
   [aspect view]
   (let [rotate (rotation view)
-        project (perspective view)
+        project (perspective view aspect)
         ps (map #(project (rotate (corner-point % aspect))) corners)
         us (map #(.x ^Vec2 %) ps) vs (map #(.y ^Vec2 %) ps)]
     [(reduce min us) (reduce max us) (reduce min vs) (reduce max vs)]))
 
 (def ^:private turning-azimuths
-  "Azimuths a perspective box's turning bounds are sampled at (every degree)."
-  (range 0 360))
+  "Azimuths a perspective box's turning bounds are sampled at (every half degree)."
+  (range 0.0 360.0 0.5))
+
+(def ^:const ^:private turning-pad
+  "Share a perspective box's sampled turning extent is widened by: more than the extent can grow between samples (a
+  corner's screen position is smooth in the azimuth: about `h²/8` of the extent at a step `h` - 1e-5 at half a degree,
+  more near the eye; the tests turn the box at fractional azimuths up to a `:distance` of 1.1)."
+  1.0e-3)
 
 (defn turning-fit
   "Extent and centre of a box of side `aspect` turned about its vertical axis at `view`'s elevation and distance:
   `{:width :height :u-mid :v-mid}` (box units) - a panel fitting `width` x `height` centred at `(u-mid, v-mid)`
   holds the box in every azimuth. Orthographic (δ = 0): [[turning-extent]], centred on `view`'s own corners (the box
-  centre); perspective: the corners projected at every degree of azimuth - the largest `|u|` both ways, the `v`
-  range (near corners below grow more than far ones above shrink)."
+  centre); perspective: the corners projected every half degree of azimuth - the largest `|u|` both ways, the `v`
+  range (near corners below grow more than far ones above shrink) - widened by [[turning-pad]] for the azimuths
+  between the samples."
   [aspect view]
   (if (zero? (view-distance view))
     (let [[tw th] (turning-extent aspect (get view :elevation (:elevation default-view)))
@@ -305,7 +326,7 @@
           u (double (reduce max (mapcat (fn [[u0 u1]] [(m/abs (double u0)) (m/abs (double u1))]) bounds)))
           v0 (double (reduce min (map #(nth % 2) bounds)))
           v1 (double (reduce max (map #(nth % 3) bounds)))]
-      {:width (* 2.0 u) :height (- v1 v0) :u-mid 0.0 :v-mid (* 0.5 (+ v0 v1))})))
+      {:width (* 2.0 u (+ 1.0 turning-pad)) :height (* (- v1 v0) (+ 1.0 turning-pad)) :u-mid 0.0 :v-mid (* 0.5 (+ v0 v1))})))
 
 (defn projector
   "Projection of the data box (`domains`, `aspect`, `view`) fitted in a `w` x `h` panel with `margin` pixels on every
@@ -314,13 +335,14 @@
   [[turning-fit]]) in the panel less the margins, so a box turned about its vertical axis keeps its size and place
   (views of different elevations may differ); `:centre` - the box centre's pixel; pixel y grows downward; `depth` -
   the view depth (larger - farther). A corner may have fractional bits (a point on the box surface). A panel too
-  small for the margins gets a scale of 0. Throws `{:key :distance}` for an eye inside the box ([[check-distance!]])."
+  small for the margins gets a scale of 0. Throws `{:key :distance}` for an eye within the sphere around the box
+  ([[check-distance!]])."
   [{:keys [domains aspect view]} {:keys [w h margin]}]
   (let [aspect (box-aspect aspect)
         _ (check-distance! view aspect)
         normalize (normalizer domains aspect)
         rotate (rotation view)
-        project (perspective view)
+        project (perspective view aspect)
         margin (double (or margin 0.0))
         free-w (- (double w) (* 2.0 margin)) free-h (- (double h) (* 2.0 margin))
         {:keys [width height u-mid v-mid]} (turning-fit aspect view)

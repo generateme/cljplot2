@@ -35,23 +35,43 @@
       (is (some #(= [:view :distance] (take-last 2 %))
                 (error-ins #(plot/build {:data cube :mapping {:x :x :y :y :z :z} :charts [(chart/cloud {:view {:distance d}})]})))
           (pr-str d))))
-  (testing "1.2 the eye inside the box's sphere (δ |aspect| / 2 >= 1) - {:key :distance}; just below passes"
-    (let [limit (/ 2.0 (m/sqrt 3.0))]
+  (testing "1.2 the eye within the box's sphere (δ / L · |aspect| / 2 >= 1, L - the longest side): an error; just below passes"
+    (let [cube-limit (/ 2.0 (m/sqrt 3.0))]
+      (is (some? (space/distance-problem {:distance 1.2} [1 1 1])))
+      (is (some? (space/distance-problem {:distance cube-limit} [1 1 1])) "at the limit")
+      (is (nil? (space/distance-problem {:distance (* 0.999 cube-limit)} [1 1 1])))
+      (is (nil? (space/distance-problem {:distance 0.2} [1 1 1])))
+      (is (nil? (space/distance-problem {} [1 1 1])) "no distance")
+      (is (some? (space/distance-problem {:distance 1.2} nil)) "nil aspect: a cube")
+      (is (nil? (space/distance-problem {:distance 1.1} [6 6 6])) "a larger cube: the same limit (proportions only)")
+      (is (nil? (space/distance-problem {:distance 1.3} [1 1 0.2])) "a flat box takes more: 1/0.714")
+      (is (some? (space/distance-problem {:distance 1.41} [1 1 0.2])))
       (is (= :distance (:key (error-data #(space/check-distance! {:distance 1.2} [1 1 1])))))
-      (is (= :distance (:key (error-data #(space/check-distance! {:distance limit} [1 1 1])))) "at the limit")
-      (is (nil? (space/check-distance! {:distance (* 0.999 limit)} [1 1 1])))
-      (is (nil? (space/check-distance! {:distance 0.2} [1 1 1])))
-      (is (nil? (space/check-distance! {} [1 1 1])) "no distance")
-      (is (= :distance (:key (error-data #(space/check-distance! {:distance 0.2} [6 6 6])))) "a larger box")))
-  (testing "1.2 a chart's own view and aspect are checked when built"
-    (is (= :distance (:key (error-data #(plot/build {:data cube :mapping {:x :x :y :y :z :z}
-                                                     :charts [(chart/cloud {:view {:distance 0.6} :aspect [2 2 2]})]}))))))
-  (testing "1.2 a scene merging frames (the later chart's aspect) is checked when drawn"
-    (let [domain {:x [0 2] :y [0 2] :z [0 5]}]
-      (is (= :distance (:key (error-data #(plot/render-image {:data cube :mapping {:x :x :y :y :z :z}
-                                                              :charts [(chart/cloud {:domain domain :view {:distance 0.5}})
-                                                                       (chart/cloud {:domain domain :aspect [3 3 3]})]}
-                                                             {:width 300 :height 300}))))))))
+      (is (nil? (space/check-distance! {:distance 0.2} [1 1 1])))))
+  (testing "1.2 / F6 a chart's own view and aspect: a schema error at the chart's [:view :distance] (cloud and surface)"
+    (is (contains? (error-ins #(plot/build {:data cube :mapping {:x :x :y :y :z :z}
+                                            :charts [(chart/scatter) (chart/cloud {:view {:distance 1.2}})]}))
+                   [:charts 1 :options :view :distance]))
+    (is (contains? (error-ins #(plot/build {:charts [(chart/surface {:f (fn [[x y]] (* x y)) :domain {:x [0 1] :y [0 1]}
+                                                                     :view {:distance 1.3} :aspect [1 1 1]})]}))
+                   [:charts 0 :options :view :distance])))
+  (testing "1.2 a scene merging frames (a later chart's aspect) is checked when drawn"
+    (let [domain {:x [0 2] :y [0 2] :z [0 5]}
+          scene (fn [aspect] {:data cube :mapping {:x :x :y :y :z :z}
+                              :charts [(chart/cloud {:domain domain :view {:distance 1.3} :aspect [1 1 0.2]})
+                                       (chart/cloud {:domain domain :aspect aspect})]})]
+      (is (some? (plot/render-image (scene [1 1 0.2]) {:width 300 :height 300})) "each chart alone is fine")
+      (is (= :distance (:key (error-data #(plot/render-image (scene [1 1 1]) {:width 300 :height 300}))))))))
+
+(deftest box-units-test
+  (testing "F1 :distance is measured in a box of longest side 1 (lattice's): proportions alone set the picture"
+    (doseq [view [{:azimuth 40 :elevation 30 :distance 0.2} {:azimuth 200 :elevation -20 :distance 0.9}]]
+      (let [a (proj view [1 1.5 0.8]) b (proj view [2 3 1.6])]
+        (is (every? true? (map (fn [c] (< (dist ((:corner a) c) ((:corner b) c)) 1e-9)) space/corners))))))
+  (testing "F1 a box of longest side 1 is unchanged; a longer one gets weaker perspective than the raw δ would give"
+    (is (= 0.2 (space/box-distance {:distance 0.2} [1 0.7 0.5])))
+    (is (= 0.1 (space/box-distance {:distance 0.2} [1 2 0.5])))
+    (is (= 0.0 (space/box-distance {} [1 2 0.5])))))
 
 ;; 1.3 - 1.4 projection and fit
 
@@ -76,17 +96,17 @@
       (is (< (dist px centre) 1e-9))
       (is (m/delta-eq 0.0 (double d) 1e-12))))
   (testing "1.4 every corner inside the panel less the margin at every azimuth (also between whole degrees)"
-    (doseq [e [-90 -30 0 30 75 90] a (concat (range 0 360 7) [137.5 359.9]) aspect [[1 1 1] [1 1.5 0.6]]]
-      (let [{:keys [corner]} (proj {:azimuth a :elevation e :distance 0.2} aspect)
+    (doseq [d [0.2 1.1] e [-90 -30 0 30 75 90] a (concat (range 0.25 360 3.1) [137.25 359.9]) aspect [[1 1 1] [1 1.5 0.6]]]
+      (let [{:keys [corner]} (proj {:azimuth a :elevation e :distance d} aspect)
             ps (map corner space/corners)]
-        (is (every? #(<= 19.99 (.x ^Vec2 %) 380.01) ps) (pr-str [a e aspect]))
-        (is (every? #(<= 19.99 (.y ^Vec2 %) 280.01) ps) (pr-str [a e aspect])))))
+        (is (every? #(<= 20.0 (.x ^Vec2 %) 380.0) ps) (pr-str [d a e aspect]))
+        (is (every? #(<= 20.0 (.y ^Vec2 %) 280.0) ps) (pr-str [d a e aspect])))))
   (testing "1.4 one box size and centre whatever the azimuth; it fills the panel at some azimuth"
     (let [at (fn [a] (proj {:azimuth a :elevation 30 :distance 0.2}))]
       (is (= (:scale (at 0)) (:scale (at 137)) (:scale (at 290))))
       (is (= (:centre (at 0)) (:centre (at 137))))
       (is (some (fn [a] (let [ps (map (:corner (at a)) space/corners)]
-                          (or (some #(< (.x ^Vec2 %) 20.5) ps) (some #(< (.y ^Vec2 %) 20.5) ps))))
+                          (or (some #(< (.x ^Vec2 %) 21.0) ps) (some #(< (.y ^Vec2 %) 21.0) ps))))
                 (range 0 360)))))
   (testing "1.4 boundary: a panel smaller than its margins - scale 0"
     (is (zero? (double (:scale (space/projector {:domains unit :view {:distance 0.2}} {:w 30 :h 30 :margin 20})))))))

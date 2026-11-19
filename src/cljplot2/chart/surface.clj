@@ -77,7 +77,8 @@
              [#(when (> (count (filter % [:f :fu :density])) 1) "a surface takes one source: :f, :fu or :density true") nil]
              [#(when (and (:fu %) (not (and (:u %) (:v %)))) "a parametric surface needs :u and :v ranges") [:fu]]
              [#(when (and (or (:u %) (:v %)) (not (:fu %))) ":u and :v are the ranges of a parametric :fu") [:u]]
-             [#(when (and (some? (:cut %)) (not (:density %))) ":cut widens a :density surface") [:cut]])
+             [#(when (and (some? (:cut %)) (not (:density %))) ":cut widens a :density surface") [:cut]]
+             cloud/distance-rule)
    :mapping [:maybe [:map]]})
 
 (defn source-kind

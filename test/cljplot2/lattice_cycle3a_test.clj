@@ -133,8 +133,9 @@
   (testing "2.2 primitives per type: a point, a spike line, the front faces of a bar"
     (let [computed (fn [opts] (get-in (built {:data cube :mapping {:x :x :y :y :z :z} :charts [(chart/cloud opts)]})
                                       [:stats 0 :data :panel]))
-          prims (fn [opts] (let [cp (computed opts)
-                                 proj (space/projector (assoc (:frame cp) :domains (:domains cp)) {:w 400 :h 300 :margin 20})]
+          ;; the scene's frame, as draw-scene! passes it: with the box's domains
+          prims (fn [opts] (let [cp (let [c (computed opts)] (assoc-in c [:frame :domains] (:domains c)))
+                                 proj (space/projector (:frame cp) {:w 400 :h 300 :margin 20})]
                              (cloud/primitives cp (:point proj) (constantly (:style cp)))))]
       (is (= {:point 8} (frequencies (map :kind (prims {})))))
       (is (= {:line 8} (frequencies (map :kind (prims {:type :spikes})))))
@@ -247,8 +248,8 @@
     (let [rows [{:x 0 :y 0 :z 1 :c "front"} {:x 0 :y 1 :z 10 :c "back"}]
           b (built {:data rows :mapping {:x :x :y :y :z :z :color :c} :charts [(chart/cloud {:type :bars :base 0 :view {:azimuth 0 :elevation 20}})]
                     :scales {:color {:domain ["front" "back"] :range [[255 0 0] [0 0 255]]}}})
-          cp (get-in b [:stats 0 :data :panel])
-          proj (space/projector (assoc (:frame cp) :domains (:domains cp)) {:w 300 :h 300 :margin 20})
+          cp (let [c (get-in b [:stats 0 :data :panel])] (assoc-in c [:frame :domains] (:domains c)))
+          proj (space/projector (:frame cp) {:w 300 :h 300 :margin 20})
           colors {"front" [255 0 0] "back" [0 0 255]}
           prims (cloud/primitives cp (:point proj) (fn [i] (assoc (:style cp) :color (colors (get-in cp [:points :color i])))))
           front-face (first (filter #(> (c/red (:fill %)) 100) prims))

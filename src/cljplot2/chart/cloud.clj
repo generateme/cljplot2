@@ -17,8 +17,9 @@
     `[0.8 0.8]`) of the x / y resolution - the smallest gap between distinct values; faces shaded, outlined by
     `:stroke-color`)
   * `:view {:azimuth deg :elevation deg :distance δ}` (default 40 / 30 / 0), `:aspect [ax ay az]` (box proportions,
-    default `[1 1 1]`); `:distance` > 0 - perspective as lattice's `distance` (0.2 there; the eye `1/δ` box units from
-    the centre, inside the box - `ex-info {:key :distance}`; see [[cljplot2.data.space3d]])
+    default `[1 1 1]`); `:distance` > 0 - perspective as lattice's `distance` (0.2 there; the eye `L/δ` from the box
+    centre, `L` the box's longest side; an eye within the sphere around the box - a schema error, any `:distance`
+    below 2/√3 is fine; see [[cljplot2.data.space3d]])
   * `:box` (default true - the box: hidden edges dashed and a floor grid behind the data, visible edges over it), `:axes` (default true - ticks, labels and titles), `:axis-titles
     {:x t :y t :z t}` (default the mapped column names; `nil` - none)
   * `:domain {:x [lo hi] :y .. :z ..}` - explicit data domains (each optional); otherwise the data's over all panels
@@ -67,6 +68,12 @@
    (schema/nilable :axis-titles [:map {:closed true} (schema/optional :x any?) (schema/optional :y any?) (schema/optional :z any?)])
    (schema/optional :domain space/domains-schema)])
 
+(def distance-rule
+  "Rule (see [[cljplot2.schema/with-rules]]) of the 3D charts' options: a `:view` `:distance` putting the eye within
+  the sphere around the box of `:aspect` is an error at `[:view :distance]`
+  ([[cljplot2.data.space3d/distance-problem]])."
+  [#(space/distance-problem (:view %) (:aspect %)) [:view :distance]])
+
 (def projection-kinds
   "Marks of a side projection: `:points`, `:density` (KDE bands), `:contour` (KDE lines)."
   [:enum :points :density :contour])
@@ -88,7 +95,8 @@
                                                       (schema/optional :yz projection-kinds)])
                        (schema/optional :bins [:tuple [:int {:min 1 :max 1000}] [:int {:min 1 :max 1000}]])))
              [#(when (and (:bins %) (not (#{:bars :spikes} (:type %)))) "counts of :bins are drawn as :type :bars or :spikes") [:bins]]
-             [#(when (and (:bins %) (seq (:projections %))) "side :projections show the rows, not :bins counts") [:projections]])
+             [#(when (and (:bins %) (seq (:projections %))) "side :projections show the rows, not :bins counts") [:projections]]
+             distance-rule)
    :mapping [:map [:x schema/accessor] [:y schema/accessor] [:z {:optional true} schema/accessor]]})
 
 (def ^:private position-dims [:x :y :z])
@@ -99,19 +107,15 @@
 
 (defn frame-settings
   "Frame of a 3D chart from its `options` and merged `mapping`: `{:view :aspect :box? :axes? :titles}` - titles from
-  `:axis-titles`, else the names of keyword accessors. Throws `{:key :distance}` for a view's eye inside the box
-  ([[cljplot2.data.space3d/check-distance!]]; a scene merging several charts' frames is checked when drawn)."
+  `:axis-titles`, else the names of keyword accessors."
   [options mapping]
-  (let [view (merge space/default-view (:view options))
-        aspect (or (:aspect options) [1.0 1.0 1.0])]
-    (space/check-distance! view aspect)
-    {:view view
-     :aspect aspect
-     :box? (not (false? (:box options)))
-     :axes? (not (false? (:axes options)))
-     :titles (if (contains? options :axis-titles)
-               (:axis-titles options)
-               (into {} (keep (fn [k] (let [a (accessor/unwrap (get mapping k))] (when (keyword? a) [k (name a)])))) position-dims))}))
+  {:view (merge space/default-view (:view options))
+   :aspect (or (:aspect options) [1.0 1.0 1.0])
+   :box? (not (false? (:box options)))
+   :axes? (not (false? (:axes options)))
+   :titles (if (contains? options :axis-titles)
+             (:axis-titles options)
+             (into {} (keep (fn [k] (let [a (accessor/unwrap (get mapping k))] (when (keyword? a) [k (name a)])))) position-dims))})
 
 (defn frame-overrides
   "The frame settings a 3D chart's `options` set explicitly (keys of [[frame-settings]]; `:view` as given, `:titles`
@@ -298,8 +302,8 @@
 
 (defn- bar-faces
   "Visible faces of the bar at `x`, `y` from `base` to `z` (half sizes `hx`, `hy`) as polygon primitives: the box's
-  faces facing the eye (`orientation` - see [[cljplot2.data.space3d/face-orientation]], by each face's centre), each shaded by its normal, all with the depth of the bar's footprint centre on the base - bars
-  sort as wholes by where they stand (a face's own depth would rise with its height and draw a tall back bar over a
+  faces facing the eye (`orientation` - see [[cljplot2.data.space3d/face-orientation]], by each face's centre), each
+  shaded by its normal, all with the depth of the bar's footprint centre on the base - bars sort as wholes by where they stand (a face's own depth would rise with its height and draw a tall back bar over a
   short front one); a convex box's front faces never overlap, so their order within a bar doesn't matter."
   [point orientation [x y z] base [hx hy] st]
   (let [x (double x) y (double y) hx (double hx) hy (double hy)
@@ -318,10 +322,11 @@
 
 (defn primitives
   "Primitives of one panel's points (see [[cljplot2.graphics.space3d]]) for the projection `point` (data -> `[pixel
-  depth]`), by the chart `type`."
-  [{:keys [points type base half frame domains]} point styles]
+  depth]`), by the chart `type`; bars turn their faces by `frame` - the scene's, with its `:domains` (see
+  [[cljplot2.graphics.space3d/draw-scene!]])."
+  [{:keys [points type base half frame]} point styles]
   (let [{:keys [x y z]} points
-        orientation (when (= type :bars) (space/face-orientation (assoc frame :domains domains)))]
+        orientation (when (= type :bars) (space/face-orientation frame))]
     (mapcat (fn [i]
               (when-let [st (styles i)]
                 (let [p [(x i) (y i) (z i)]
