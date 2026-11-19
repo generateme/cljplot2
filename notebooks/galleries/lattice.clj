@@ -18,13 +18,16 @@
             [fastmath.core :as m]
             [fastmath.interpolation :as interp]
             [fastmath.kernel :as k]
+            [fastmath.ml.clustering :as cl]
             [fastmath.ml.regression :as regression]
             [fastmath.random :as r]
             [fastmath.stats :as stats]
             [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
+            [cljplot2.data.contour :as contour]
             [cljplot2.data.levels :as levels]
             [cljplot2.data.shingle :as shingle]
+            [cljplot2.data.tree :as tree]
             [notebook-utils :as nu]))
 
 (def two-colors
@@ -2019,8 +2022,268 @@
     :labels {:x "hour" :y "log10(counts)"}}
    {:width 1000 :height 800}))
 
+;; ## Chapter 12 - Interactive Displays
+
+;; Not reproduced: the chapter's figures - they show interaction with a displayed plot (identifying points,
+;; editing it on screen); cljplot2 draws static images.
+
 ;; ## Chapter 13 - Advanced Panel Functions
+
+(defn- hypotrochoid
+  "Points `{:x :y}` of a hypotrochoid in the unit circle (lattice's `panel.hypotrochoid`): a circle of radius `r`
+  rolling inside it, the pen `d` from its centre, over `cycles` turns at `density` points per turn, in drawing order."
+  [r d cycles density]
+  (let [r (double r) d (double d) a (- 1.0 r)]
+    (for [i (range (inc (* (long cycles) (long density))))
+          :let [t (* m/TWO_PI (/ (double i) (double density)))]]
+      {:x (+ (* a (m/cos t)) (* d (m/cos (/ (* a t) r))))
+       :y (- (* a (m/sin t)) (* d (m/sin (/ (* a t) r))))})))
+
+;; ### Fig 13.1 Hypocycloids
+
+;; A panel per ratio k = p / 10 of the fixed to the rolling circle (p = 11 ... 30): the rolling circle of radius 1/k
+;; traced from its rim over 10 turns. Panels run top-down here (lattice fills them bottom-up).
+
+(nu/source-note {:source "Lattice Fig 13.1" :url (figure-url 13 1)})
+
+(let [ratio-text (fn [p] (let [k (/ (double p) 10.0)] (if (== k (m/floor k)) (str (long k)) (str k))))
+      ps (range 11 31)]
+  (plot/render-image
+   {:data (for [p ps, point (hypotrochoid (/ 10.0 p) (/ 10.0 p) 10 30)] (assoc point :k (ratio-text p)))
+    :mapping {:x :x :y :y :facet :k}
+    :scales {:facet {:domain (mapv ratio-text ps)}
+             :x {:domain [-1 1] :axis false} :y {:domain [-1 1] :axis false}}
+    :charts [(chart/line {:sort false :width 0.8})]
+    :facets {:columns 4}
+    :aspect :iso
+    :labels {:x nil :y nil}}
+   {:width 650 :height 800}))
+
+;; ### Fig 13.2 Random hypotrochoids
+
+;; 42 hypotrochoids of random rolling radius r in [0.25, 0.75] and pen distance d in [r/4, r], 15 turns each.
+
+(nu/source-note {:source "Lattice Fig 13.2" :url (figure-url 13 2)})
+
+(let [rng (r/rng :mersenne 20070706)]
+  (plot/render-image
+   (plot/arrange
+    (vec (repeatedly 42 (fn []
+                          (let [radius (r/drandom rng 0.25 0.75)
+                                d (r/drandom rng (* 0.25 radius) radius)]
+                            {:data (hypotrochoid radius d 15 30)
+                             :mapping {:x :x :y :y}
+                             :scales {:x {:domain [-1 1] :axis false} :y {:domain [-1 1] :axis false}}
+                             :charts [(chart/line {:sort false :width 0.5})]
+                             :theme {:panel {:grid {:x :none :y :none}}}
+                             :aspect :iso
+                             :labels {:x nil :y nil}}))))
+    {:columns 6})
+   {:width 800 :height 800}))
+
+;; ### Fig 13.3 Densities by eruption length
+
+;; Waiting time to the next Old Faithful eruption, a panel per eruption length interval (four equal-count,
+;; half-overlapping); a kernel density in place of the book's logspline fit.
+
+(nu/source-note {:source "Lattice Fig 13.3" :url (figure-url 13 3) :dataset :faithful})
+
+(plot/render-image
+ {:data (shingle/shingle faithful :eruptions {:count 4 :overlap 0.5 :as :eruption-length :label "Eruptions"})
+  :mapping {:x :waiting :facet :eruption-length}
+  :charts [(chart/density)]
+  :facets {:columns 4}
+  :labels {:x "waiting"}}
+ {:width 900 :height 350})
+
+;; ### Fig 13.4 Tufte's quartile plot
+
+;; Transformed GCSE score by gender, a panel per A-level score: the median as a point, the whiskers as lines, no box
+;; and no outliers (as the book's `panel.bwtufte`).
+
+(nu/source-note {:source "Lattice Fig 13.4" :url (figure-url 13 4) :dataset :chem97})
+
+(plot/render-image
+ {:data chem97-trans
+  :mapping {:x :gender :y :gcsescore-trans :facet :score}
+  :charts [(chart/box {:variant :tufte :outliers false})]
+  :facets {:columns 6}
+  :labels {:x nil :y "Transformed GCSE score"}}
+ {:width 900 :height 400})
+
+(def cars93-cluster-order
+  "The numeric Cars93 columns (keywords) in the order of a complete-linkage clustering of the rows of their
+  correlation matrix (euclidean distance; R `order.dendrogram(as.dendrogram(hclust(dist(cor))))`)."
+  (let [names (vec (distinct (map :row cars93-correlations)))
+        r (into {} (map (juxt (juxt :row :column) :r)) cars93-correlations)
+        matrix (mapv (fn [a] (mapv (fn [b] (r [a b])) names)) names)]
+    (mapv (comp keyword :name) (tree/leaves (tree/from-hclust (cl/hclust matrix {:method :complete}) names)))))
+
+(def cars93-pairs
+  "Every ordered pair of the numeric Cars93 columns with every car's two values: `{:a :b :x :y}` (column names; a
+  missing value stays `nil` - the correlation glyph uses the complete pairs)."
+  (vec (for [a cars93-cluster-order, b cars93-cluster-order, row cars93]
+         {:a (name a) :b (name b) :x (a row) :y (b row)})))
+
+;; ### Fig 13.5 Correlation ellipses
+
+;; The Cars93 correlations (6.12) in clustered order, each pair as the ellipse of a bivariate normal with that
+;; correlation, colored by it (the book also prints 100 r inside): a facet grid of correlation glyphs - `plot/pairs`
+;; needs larger cells for 18 variables.
+
+(nu/source-note {:source "Lattice Fig 13.5" :url (figure-url 13 5) :dataset :cars93})
+
+(let [names (mapv name cars93-cluster-order)]
+  (plot/render-image
+   {:data cars93-pairs
+    :mapping {:x :x :y :y :facet-row :a :facet-col :b}
+    :scales {:facet-row {:domain names} :facet-col {:domain names}
+             :x {:domain [0 1] :axis false} :y {:domain [0 1] :axis false}}
+    :charts [(chart/correlation {:glyph :ellipse})]
+    :theme {:text {:strip {:size 7}}}
+    :labels {:x nil :y nil}}
+   {:width 1000 :height 800}))
+
+;; ### Fig 13.6 Correlation pies
+
+;; The same matrix, each correlation as a filled share of a disk: clockwise for positive, counter-clockwise for
+;; negative.
+
+(nu/source-note {:source "Lattice Fig 13.6" :url (figure-url 13 6) :dataset :cars93})
+
+(let [names (mapv name cars93-cluster-order)]
+  (plot/render-image
+   {:data cars93-pairs
+    :mapping {:x :x :y :y :facet-row :a :facet-col :b}
+    :scales {:facet-row {:domain names} :facet-col {:domain names}
+             :x {:domain [0 1] :axis false} :y {:domain [0 1] :axis false}}
+    :charts [(chart/correlation {:glyph :pie})]
+    :theme {:text {:strip {:size 7}}}
+    :labels {:x nil :y nil}}
+   {:width 1000 :height 800}))
+
+;; ### Fig 13.7 Contours on a wireframe
+
+;; Maunga Whau's heights as a shaded surface with their contour lines (every 10 m) on the top of the box, as dense
+;; points of a cloud over the surface - cljplot2 has no 3D lines.
+
+(nu/source-note {:source "Lattice Fig 13.7" :url (figure-url 13 7) :dataset :volcano})
+
+(def volcano-contour-points
+  "Points every tenth of a grid step along the contour lines of the volcano heights at 100, 110, ... 190 m, at
+  height `top`: rows `{:row :column :height}`."
+  (let [nx 87 ny 61 top 250.0
+        heights (into {} (map (juxt (juxt :row :column) :height)) volcano)
+        grid {:xs (double-array (range 1 (inc nx))) :ys (double-array (range 1 (inc ny))) :nx nx :ny ny
+              :values (double-array (for [j (range 1 (inc ny)) i (range 1 (inc nx))] (heights [i j])))}]
+    (vec (for [level (range 100 200 10)
+               {:keys [points closed?]} (contour/isolines grid level)
+               [[x0 y0] [x1 y1]] (partition 2 1 (cond-> points closed? (conj (first points))))
+               f (range 0.0 1.0 0.1)]
+           {:row (+ x0 (* f (- x1 x0))) :column (+ y0 (* f (- y1 y0))) :height top}))))
+
+(let [domain {:x [1 87] :y [1 61] :z [90 250]}
+      view {:azimuth 20 :elevation 30 :distance 0.2}]
+  (plot/render-image
+   {:data volcano
+    :mapping {:x :row :y :column :z :height}
+    :scales {:color {:range [[0 166 0] [230 230 0] [236 177 118] [242 242 242]]}}
+    :charts [(chart/surface {:domain domain :view view :aspect [1 (/ 61.0 87.0) 0.3] :axes false})
+             (chart/cloud {:data volcano-contour-points :domain domain :size 1.2 :color [40 40 40]})]
+    :labels {:x nil :y nil}}
+   {:width 800 :height 550}))
 
 ;; Not reproduced: Figs 13.8 - 13.10 (maps).
 
 ;; ## Chapter 14 - New Trellis Displays
+
+;; ### Fig 14.1 A cut time series
+
+;; Yearly sunspot numbers cut into four slightly overlapping periods of equal length (sliced x scales, in place of
+;; banking), one above another; the strips on top (lattice puts them on the left).
+
+(nu/source-note {:source "Lattice Fig 14.1" :url (figure-url 14 1) :dataset :sunspot-year})
+
+(plot/render-image
+ {:data (shingle/shingle (nu/dataset :sunspot-year) :time {:count 4 :overlap 0.05 :as :period :label "Time"})
+  :mapping {:x :time :y :value :facet :period}
+  :charts [(chart/line)]
+  :facets {:columns 1 :scales {:x :sliced}}
+  :labels {:x "Time" :y "sunspot.year"}}
+ {:width 1000 :height 700})
+
+;; ### Fig 14.2 Seasonal decomposition
+
+;; Two months of hourly Bioconductor accesses as data = seasonal + trend + remainder: the seasonal part the mean
+;; daily profile, the trend a loess of the rest (a simple decomposition in place of the book's `stl`).
+
+(nu/source-note {:source "Lattice Fig 14.2" :url (figure-url 14 2) :dataset :bioc-access})
+
+(let [counts (mapv (comp double :counts) (take (* 24 30 2) (nu/dataset :bioc-access)))
+      n (count counts)
+      days (mapv #(+ 1.0 (/ (double %) 24.0)) (range n))
+      trend-of (fn [ys] (let [f (interp/loess days ys {:bandwidth (/ 37.0 n) :iters 0})] (mapv f days)))
+      profile (fn [ys] (let [by-hour (group-by #(mod (long %) 24) (range n))
+                             means (update-vals by-hour #(stats/mean (map ys %)))
+                             level (stats/mean (vals means))]
+                         (mapv #(- (double (means (mod (long %) 24))) level) (range n))))
+      seasonal (profile (mapv - counts (trend-of counts)))
+      trend (trend-of (mapv - counts seasonal))
+      remainder (mapv - counts seasonal trend)]
+  (plot/render-image
+   {:data (for [[component values] [["data" counts] ["seasonal" seasonal] ["trend" trend] ["remainder" remainder]]
+                i (range n)]
+            {:component component :day (days i) :value (values i)})
+    :mapping {:x :day :y :value :facet :component}
+    :scales {:facet {:domain ["data" "seasonal" "trend" "remainder"]}}
+    :charts [(chart/line {:width 0.6})]
+    :facets {:columns 1 :scales {:y :free}}
+    :labels {:x "Time (Days)" :y nil}}
+   {:width 1000 :height 700}))
+
+;; ### Fig 14.3 Densities by visit
+
+;; Forward scatter (FSC-H) of the GvHD cells, a ridge per visit, a panel per patient (flowViz's density plot).
+
+(nu/source-note {:source "Lattice Fig 14.3" :url (figure-url 14 3) :dataset :gvhd})
+
+(plot/render-image
+ {:data (nu/dataset :gvhd)
+  :mapping {:x :fsc-h :y (levels/categorical :visit) :color (levels/categorical :visit) :facet :patient}
+  :scales {:facet {:domain (nu/levels :gvhd :patient)}}
+  :charts [(chart/density)]
+  :facets {:columns 3}
+  :legend false
+  :labels {:x "FSC-H" :y "Visit"}}
+ {:width 900 :height 700})
+
+;; ### Fig 14.4 Hexagonal binning
+
+;; Hemoglobin by total iron-binding capacity in NHANES, counted in hexagons, a panel per sex.
+
+(nu/source-note {:source "Lattice Fig 14.4" :url (figure-url 14 4) :dataset :nhanes})
+
+(plot/render-image
+ {:data (nu/dataset :nhanes)
+  :mapping {:x :tibc :y :hemoglobin :facet :sex}
+  :scales {:color {:range [[200 200 200] [0 0 0]]}}
+  :charts [(chart/bin2d {:bins 30})]
+  :facets {:columns 2}
+  :labels {:x "TIBC" :y "Hemoglobin"}}
+ {:width 900 :height 450})
+
+;; ### Fig 14.5 Pie charts
+
+;; Virginia death rates (1940) by age group as a pie per population group - stacked bars in polar coordinates.
+
+(nu/source-note {:source "Lattice Fig 14.5" :url (figure-url 14 5) :dataset :va-deaths})
+
+(plot/render-image
+ {:data va-deaths
+  :mapping {:x :rate :color :age :facet :group}
+  :coord {:kind :polar}
+  :scales {:x {:axis false} :facet {:domain ["Urban Male" "Urban Female" "Rural Male" "Rural Female"]}}
+  :charts [(chart/bar {:position :stack :width 1.0})]
+  :facets {:columns 2}
+  :labels {:x nil :y nil}}
+ {:width 800 :height 800})
