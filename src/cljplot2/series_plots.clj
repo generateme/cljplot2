@@ -110,8 +110,9 @@
 (defn horizon
   "Horizon chart of `rows` as a plot map (see [[cljplot2.data.series/horizon-rows]]): values `:y` over `:x` folded
   into `:bands` (default 2) bands of one height, negatives mirrored upward in a second hue; every band an area
-  (`chart/line {:fill :color}`) from 0, the darker bands over the lighter ones; the y scale `[0 band-height]` without
-  an axis; with `:series` a panel per series in one column (the series in the strip; one band height for all).
+  (`chart/line {:fill :color}`) from 0 across the whole x range (no x padding, `:x {:nice false}`), the darker bands over the lighter
+  ones; the y scale `[0 band-height]` without an axis; with `:series` a panel per series in one column, in their
+  first-appearance order (the series in the strip; one band height for all; a `nil` series - the NA panel, last).
 
   `options`: `:x`, `:y`, `:series` (row keys), `:bands`, `:band-height` (see `horizon-rows`); `:colors {:positive
   [..] :negative [..]}` (at least `:bands` colours each, lightest first; default blues / reds); `:scales`, `:title`,
@@ -125,10 +126,13 @@
          palette (horizon-colors (or colors {}) n)]
      (cond-> {:data band-rows
               :mapping (cond-> {:x :x :y :y :color :band} series (assoc :facet :series))
-              :charts [(chart/line {:fill :color :alpha 1.0 :width 0 :padding {:y [0.0 0.0]}})]
-              :scales (theme/deep-merge {:y {:domain [0.0 h] :nice false :axis false}
-                                         :color {:kind :ordinal :domain (series/horizon-bands n) :range palette
-                                                 :legend false}}
+              :charts [(chart/line {:fill :color :alpha 1.0 :width 0 :padding {:x [0.0 0.0] :y [0.0 0.0]}})]
+              :scales (theme/deep-merge (cond-> {:x {:nice false}
+                                                 :y {:domain [0.0 h] :nice false :axis false}
+                                                 :color {:kind :ordinal :domain (series/horizon-bands n) :range palette
+                                                         :legend false}}
+                                          ;; panels in the series' first-appearance order (facets would sort them)
+                                          series (assoc :facet {:domain (vec (distinct (keep :series band-rows)))}))
                                         scales)
               :labels {:title title :x (name x) :y nil}}
        series (assoc :facets {:columns 1})

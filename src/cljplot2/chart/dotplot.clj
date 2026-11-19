@@ -10,7 +10,9 @@
   slot and stacks, `:mirror` stacks the two groups away from the level's centre line.
   Stacks (`:stack-dir`): `:up` (default) from the slot's low cross edge toward the next level, `:center` centred on
   the slot. Dot diameter: the bin width in pixels, shrunk so the tallest stack (over all panels) fits its slot; dots
-  one diameter apart. The stacking axis has no scale.
+  one diameter apart (dot density bins centred on their values may come closer than a bin width - neighbouring stacks
+  then overlap a little, as in ggplot). The stacking axis has no scale. `:n-label` sits past the farthest dot of the
+  item's slot.
 
   Options (style defaults from theme `[:chart :dotplot]`): `:color`, `:stroke-color`, `:stroke-width`, `:shape` (as
   scatter, see [[cljplot2.graphics.shape]]), `:size` (the drawn dot size; default the diameter above); `:method`,
@@ -91,6 +93,14 @@
   (vec (for [[[level slot] its] (group-by (juxt :level :slot) items)]
          {:level level :slot slot :stacks (stack-dots its options binwidth origin)})))
 
+(defn- with-label-x
+  "`items` of one panel with `:label-x` - the far edge (value units) of the farthest dot of their slot in `slots`
+  (see [[slot-stacks]]; `half` - half the bin width): where the n label goes."
+  [items slots ^double half]
+  (let [far (into {} (for [{:keys [level slot stacks]} slots]
+                       [[level slot] (+ half (double (reduce max (for [st stacks d (:dots st)] (:x d)))))]))]
+    (mapv #(assoc % :label-x (far [(:level %) (:slot %)])) items)))
+
 (defn- compute-in-strip-frame
   "Per panel: `{:slots [..] :items [..] :style st :place p :options o :binwidth w :max-count n}` (see
   [[slot-stacks]]; `:max-count` - the tallest stack over all panels); extents (x - the dots' positions widened by
@@ -105,8 +115,9 @@
         binwidth (if (seq all-values) (double (get options :binwidth (dots/default-binwidth all-values))) 1.0)
         origin (if (seq all-values) (double (reduce min all-values)) 0.0)
         slots (update-vals items #(slot-stacks % options binwidth origin))
-        max-count (long (reduce max 1 (for [ss (vals slots) s ss st (:stacks s)] (:n st))))
-        half (* 0.5 binwidth)]
+        half (* 0.5 binwidth)
+        items (into {} (map (fn [[panel its]] [panel (with-label-x its (slots panel) half)]) items))
+        max-count (long (reduce max 1 (for [ss (vals slots) s ss st (:stacks s)] (:n st))))]
     {:data (into {} (map (fn [[panel ss]]
                            [panel {:slots ss :items (items panel) :style (style options theme) :place place :options options
                                    :binwidth binwidth :max-count max-count :mirror? (= :mirror position)}])
@@ -165,7 +176,7 @@
                       ^Vec2 p (point x level (cross-of slot stacking [rank n] (/ d s)))]
                 :when (and st (m/valid-double? (.x p)) (m/valid-double? (.y p)))]
           (shape/draw! canvas (:shape st) p (update st :size #(if (some? %) % d))))))
-    (strip/draw-n-labels! canvas pl items (fn [{:keys [values]}] (reduce max values)) options scales env)))
+    (strip/draw-n-labels! canvas pl items :label-x options scales env)))
 
 (defn compute
   "Stats of the chart with its levels on the categorical axis (see [[cljplot2.data.strip/compute-oriented]]):

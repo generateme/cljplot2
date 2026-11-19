@@ -3,7 +3,8 @@
 
   * [[dot-density-bins]] - Wilkinson's dot density (ggplot `geom_dotplot` `method \"dotdensity\"`, Vega `dotbin`): a
     bin starts at the smallest value not yet binned and holds the values below `start + binwidth`; its centre is the
-    midpoint of its smallest and largest value
+    midpoint of its smallest and largest value - so neighbouring centres can be closer than one bin width (and dots
+    one bin wide overlap a little), as in ggplot
   * [[fixed-bins]] - histogram bins of one width from an origin (ggplot `method \"histodot\"`, Vega `bin` + `stack`)
 
   A bin is `{:center c :values [v ...]}` (values increasing)."

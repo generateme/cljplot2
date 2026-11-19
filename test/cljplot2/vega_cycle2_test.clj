@@ -90,14 +90,21 @@
       (is (= :mapping (:key (error #(plot/build (dot-plot [{:v "a"}] {:x :v} {})))))))))
 
 (deftest dotplot-draw-test
-  (testing "the tallest stack fits the panel: no dot outside the image's plot area, and stacks of neighbouring bins
-           don't overlap"
-    (let [rows (concat (repeat 40 {:v 1.0}) [{:v 2.0}])
-          img (plot/render-image (dot-plot rows {:x :v} {:binwidth 1 :color :red}) {:width 300 :height 200})
+  (testing "the tallest stack fits its slot: 40 dots no taller than the 200 px image's panel"
+    (let [img (plot/render-image (dot-plot (concat (repeat 40 {:v 1.0}) [{:v 2.0}]) {:x :v} {:binwidth 1 :color :red})
+                                 {:width 300 :height 200})
+          ys (map second (color-points img red))]
+      (is (pos? (count ys)))
+      (is (< (- (long (reduce max ys)) (long (reduce min ys))) 170) "inside the panel (the image minus the x axis)")))
+  (testing "fixed bins: neighbouring stacks don't overlap - a gap between them on the bottom row"
+    (let [img (plot/render-image (dot-plot (concat (repeat 30 {:v 1.0}) (repeat 30 {:v 2.0}))
+                                           {:x :v} {:method :histogram :binwidth 1 :origin 0.5 :color :red})
+                                 {:width 300 :height 200})
           pts (color-points img red)
-          ys (map second pts)]
-      (is (pos? (count pts)))
-      (is (< 0 (reduce min ys)) "top dot inside the image")))
+          bottom (reduce max (map second pts))
+          row (sort (map first (filter #(= (- (long bottom) 1) (second %)) pts)))
+          runs (count (filter (fn [[a b]] (> (- (long b) (long a)) 1)) (partition 2 1 row)))]
+      (is (= 1 runs) "two runs of red - one gap")))
   (testing "a centred stack is symmetric about the level's centre line; :up starts at the slot's low edge"
     (let [rows (concat (repeat 8 {:v 1.0}) (repeat 2 {:v 3.0}))
           mean-y (fn [pts] (/ (double (reduce + (map second pts))) (count pts)))
@@ -123,6 +130,23 @@
                                   {:width 300 :height 200})))
     (is (some? (plot/render-image (dot-plot [{:v 1 :s "p"} {:v 2 :s "q"}] {:y :v :x :s} {:binwidth 1})
                                   {:width 300 :height 200})))))
+
+(deftest n-label-test
+  (testing "the n label sits past the farthest dot edge of its slot: bin centre + half a bin with :at :center"
+    (let [d (stats (dot-plot [{:v 1.0} {:v 1.9}] {:x :v} {:binwidth 1 :n-label true}))]
+      (is (== 1.95 (:label-x (first (:items d)))) "centre 1.45 + 0.5, past the largest value 1.9"))
+    (let [d (stats (dot-plot [{:v 1.0} {:v 1.9}] {:x :v} {:binwidth 1 :at :value :n-label true}))]
+      (is (== 2.4 (:label-x (first (:items d)))) ":at :value - the largest value + half a bin")))
+  (testing "dodged groups: each item past its own slot's dots"
+    (let [d (stats (dot-plot [{:v 1.0 :g "a"} {:v 5.0 :g "b"}] {:x :v :color :g} {:binwidth 1 :position :dodge :n-label true}))]
+      (is (= [1.5 5.5] (sort (map :label-x (:items d)))))))
+  (testing "renders with n labels"
+    (is (some? (plot/render-image (dot-plot [{:v 1.0 :s "p"} {:v 2.0 :s "q"}] {:x :v :y :s} {:n-label true})
+                                  {:width 300 :height 200})))))
+
+(deftest overlap-test
+  (testing "dot density centres follow their values (ggplot): neighbouring centres may be closer than a bin width"
+    (is (= [0.45 1.0] (mapv :center (dots/dot-density-bins [0.0 0.9 1.0] 1.0))))))
 
 (deftest none-color-test
   (testing ":color :none draws no fill (only the outline) instead of failing"
@@ -220,14 +244,31 @@
       (is (= [1 2 3 -1 -2 -3] (get-in p [:scales :color :domain])))
       (is (= :series (get-in p [:mapping :facet])))
       (is (some? (plot/render-image p {:width 400 :height 300})))))
-  (testing "the darkest band lies where |y| is largest"
+  (testing "the darkest band lies only where |y| is above one band height (x in 2.5..7.5 of 0..10), the bands span
+           the whole width (no x padding)"
     (let [img (plot/render-image (plot/horizon [{:x 0 :y 0} {:x 5 :y 10} {:x 10 :y 0}]
                                                {:bands 2 :colors {:positive [[0 0 255] [255 0 0]]}})
                                  {:width 300 :height 120})
-          reds (color-points img red)
-          xs (map first reds)]
+          xs-of (fn [c] (map first (color-points img c)))
+          all (concat (xs-of blue) (xs-of red))
+          a (double (reduce min all)) b (double (reduce max all))
+          reds (xs-of red)]
       (is (pos? (count reds)))
-      (is (< (Math/abs (- (/ (double (reduce + xs)) (count xs)) 150.0)) 40.0) "around x = 5 (image middle)")))
+      (is (every? #(< (+ a (* 0.22 (- b a))) (double %) (- b (* 0.22 (- b a)))) reds))
+      (is (some #(> (double %) (+ a (* 0.3 (- b a)))) reds))
+      (is (some #(< (double %) (- b (* 0.3 (- b a)))) reds))))
+  (testing "panels in the series' first-appearance order (a nil series - the NA panel, left to facets)"
+    (is (= ["zeta" "alpha"] (get-in (plot/horizon [{:x 0 :y 1 :s "zeta"} {:x 0 :y 2 :s "alpha"}] {:series :s})
+                                    [:scales :facet :domain])))
+    (is (= ["a"] (get-in (plot/horizon [{:x 0 :y 1 :s "a"} {:x 0 :y 2 :s nil}] {:series :s}) [:scales :facet :domain])))
+    (is (some? (plot/render-image (plot/horizon [{:x 0 :y 1 :s "a"} {:x 1 :y 2 :s nil}] {:series :s}) {:width 300 :height 200})))
+    (is (nil? (get-in (plot/horizon [{:x 0 :y 1}]) [:scales :facet])) "no series - no facet scale"))
+  (testing "the band chart has no x or y padding"
+    (is (= {:x [0.0 0.0] :y [0.0 0.0]} (get-in (plot/horizon [{:x 0 :y 1}]) [:charts 0 :options :padding]))))
+  (testing "the x domain is the data's x range: no nice rounding (data from 1 to 20 stays 1..20)"
+    (let [b (plot/build (plot/horizon (map (fn [x] {:x x :y (mod x 3)}) (range 1 21))) {:width 300 :height 100})]
+      (is (= [1.0 20.0] (mapv double (get-in b [:finalized-scales :x :domain])))))
+    (is (true? (get-in (plot/horizon [{:x 0 :y 1}] {:scales {:x {:nice true}}}) [:scales :x :nice])) "overridable"))
   (testing ":scales merged; :colors validated"
     (is (= "v" (get-in (plot/horizon [{:x 0 :y 1}] {:scales {:color {:title "v"}}}) [:scales :color :title])))
     (is (= :colors (:key (error #(plot/horizon [{:x 0 :y 1}] {:colors {:positive [[0 0 255]]}})))) "fewer than :bands colours")
