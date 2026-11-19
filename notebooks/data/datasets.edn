@@ -249,10 +249,10 @@
  :states {:file "states.csv"
          :format :csv
          :title "US state facts (1970s)"
-         :source "R datasets packages `state.x77`, `state.name`, `state.abb`, `state.region`, `state.division` (US Census)"
+         :source "R datasets packages `state.x77`, `state.name`, `state.abb`, `state.region`, `state.division`, `state.center` (US Census)"
          :licence "Part of R (GPL-2 | GPL-3)"
          :via "dev/lattice_data.R (Rscript)"
-         :notes "50 rows: `name`, `abb`, `region`, `division`, `population` (thousands), `income` (dollars), `illiteracy` (percent), `life-exp` (years), `murder` (per 100,000), `hs-grad` (percent), `frost` (days), `area` (sq. miles)."}
+         :notes "50 rows: `name`, `abb`, `region`, `division`, `long`, `lat` (state centre, `state.center`), `population` (thousands), `income` (dollars), `illiteracy` (percent), `life-exp` (years), `murder` (per 100,000), `hs-grad` (percent), `frost` (days), `area` (sq. miles)."}
  :environmental {:file "environmental.csv"
                 :format :csv
                 :title "Ozone and weather, New York 1973"
@@ -346,4 +346,18 @@
          :source "R hexbin package `NHANES` (National Health and Nutrition Examination Survey)"
          :licence "GPL-2 (hexbin)"
          :via "dev/lattice_data.R (Rscript)"
-         :notes "9575 rows, 15 columns: `cancer-incidence`, `cancer-death`, `age`, `smoke`, `ed`, `race`, `weight`, `bmi`, `diet-iron`, `albumin`, `serum-iron`, `tibc`, `transferin`, `hemoglobin`, `sex`."}}
+         :notes "9575 rows, 15 columns: `cancer-incidence`, `cancer-death`, `age`, `smoke`, `ed`, `race`, `weight`, `bmi`, `diet-iron`, `albumin`, `serum-iron`, `tibc`, `transferin`, `hemoglobin`, `sex`."}
+ :us-personal-expenditure {:file "us-personal-expenditure.csv"
+                           :format :csv
+                           :title "US personal expenditure, 1940-1960"
+                           :source "R datasets package `USPersonalExpenditure` (The World Almanac and Book of Facts 1962)"
+                           :licence "Part of R (GPL-2 | GPL-3)"
+                           :via "dev/lattice_data.R (Rscript)"
+                           :notes "25 rows: `category` (5), `year` (1940, 1945, 1950, 1955, 1960), `expenditure` (billion dollars)."}
+ :lattice-settings {:file "lattice-settings.csv"
+                    :format :csv
+                    :title "lattice graphical settings and their parameters"
+                    :source "R lattice package `trellis.par.get()` (Sarkar 2008, Fig 7.3)"
+                    :licence "GPL (>= 2) (lattice)"
+                    :via "dev/lattice_data.R (Rscript)"
+                    :notes "124 rows: `setting` (a lattice setting name), `parameter` (a graphical parameter it has)."}}

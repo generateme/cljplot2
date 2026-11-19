@@ -55,7 +55,19 @@ export(SeatacWeather, "seatac-weather.csv")
 export(data.frame(state = rownames(USArrests), USArrests), "us-arrests.csv")
 
 export(data.frame(name = state.name, abb = state.abb, region = state.region, division = state.division,
-                  state.x77, check.names = FALSE), "states.csv")
+                  long = state.center$x, lat = state.center$y, state.x77, check.names = FALSE), "states.csv")
+
+export(as.data.frame.table(USPersonalExpenditure, responseName = "expenditure") |>
+         setNames(c("category", "year", "expenditure")), "us-personal-expenditure.csv")
+
+# Fig 7.3: which graphical parameters (columns) each lattice setting (row) has, as in the book's code
+pdf(NULL)  # trellis.par.get opens a device; a null one leaves no Rplots.pdf
+settings <- trellis.par.get()
+invisible(dev.off())
+for (u in c("grid.pars", "fontsize", "clip", "axis.components", "layout.heights", "layout.widths")) settings[[u]] <- NULL
+export(do.call(rbind, lapply(names(settings), function(n)
+  data.frame(setting = rep(n, length(names(settings[[n]]))), parameter = names(settings[[n]])))),
+  "lattice-settings.csv")
 
 export(environmental, "environmental.csv")
 
