@@ -367,13 +367,13 @@
       (is (= 0xff0000 (pixel img 5 95)))
       (is (nil? (get-in (built p) [:scales :color])))))
   (testing "4.1 a half-plane splits at x = 0.5"
-    (let [img (panel-image {:charts [(chart/field {:pixel-color (fn [x _] (if (< (double x) 0.5) :black :white)) :domain {:x [0 1] :y [0 1]}})]} 100 100)]
+    (let [img (panel-image {:charts [(chart/field {:pixel-color (fn [[x _]] (if (< (double x) 0.5) :black :white)) :domain {:x [0 1] :y [0 1]}})]} 100 100)]
       (is (= 0x000000 (pixel img 49 50)))
       (is (= 0xffffff (pixel img 50 50)))))
   (testing "4.1 nil - transparent; :alpha; the plot's explicit domains; with :f throws"
     (let [img (panel-image {:charts [(chart/field {:pixel-color (constantly nil)})] :scales {:x {:domain [0 1]} :y {:domain [0 1]}}} 60 60)]
       (is (not= 0 (pixel img 30 30)) "the panel fill shows"))
-    (is (= :pixel-color (:key (error #(built {:charts [(chart/field {:pixel-color (constantly :red) :f (fn [_ _] 1.0) :domain {:x [0 1] :y [0 1]}})]})))))
+    (is (= :pixel-color (:key (error #(built {:charts [(chart/field {:pixel-color (constantly :red) :f (fn [_] 1.0) :domain {:x [0 1] :y [0 1]}})]})))))
     (is (= :domain (:key (error #(built {:charts [(chart/field {:pixel-color (constantly :red)})]})))))
     (is (seq (error-ins #(built {:charts [(chart/field {:pixel-color :red :domain {:x [0 1] :y [0 1]}})]}))))))
 
@@ -381,23 +381,23 @@
   (let [hue (fn [col] (first (c/to-HSB* col)))
         dc (field/domain-color identity)]
     (testing "4.2 arg 0 and arg pi - opposite hues (|z| 0.5: not on a band edge)"
-      (is (< (m/abs (- 127.5 (m/abs (- (double (hue (dc 0.5 0.0))) (double (hue (dc -0.5 0.0))))))) 1.0)))
+      (is (< (m/abs (- 127.5 (m/abs (- (double (hue (dc [0.5 0.0]))) (double (hue (dc [-0.5 0.0]))))))) 1.0)))
     (testing "4.2 :log2 bands: the brightness wraps where |f| + 1 doubles"
       (let [bright (fn [col] (nth (c/to-HSB* col) 2))]
-        (is (> (double (bright (dc 0.99 0.0))) 240.0) "just below |f| = 1")
-        (is (< (double (bright (dc 1.01 0.0))) 10.0) "just above")
-        (is (< (double (bright (dc 3.0 0.0))) 1.0) "|f| = 3: log2 4")))
+        (is (> (double (bright (dc [0.99 0.0]))) 240.0) "just below |f| = 1")
+        (is (< (double (bright (dc [1.01 0.0]))) 10.0) "just above")
+        (is (< (double (bright (dc [3.0 0.0]))) 1.0) "|f| = 3: log2 4")))
     (testing "4.2 zeros and poles give a colour; unknown wrap throws"
-      (is (some? (dc 0.0 0.0)))
-      (is (some? ((field/domain-color cx/log) 0.0 0.0)))
-      (is (some? ((field/domain-color (fn [z] (cx/div cx/ONE z))) 0.0 0.0)))
+      (is (some? (dc [0.0 0.0])))
+      (is (some? ((field/domain-color cx/log) [0.0 0.0])))
+      (is (some? ((field/domain-color (fn [z] (cx/div cx/ONE z))) [0.0 0.0])))
       (is (= :wrap (:key (error #(field/domain-color identity {:wrap :log3})))))
-      (is (every? #(some? ((field/domain-color identity {:wrap %}) 0.3 0.4)) field/wrap-methods)))
+      (is (every? #(some? ((field/domain-color identity {:wrap %}) [0.3 0.4])) field/wrap-methods)))
     (testing "U2 :colorspace - hue-first spaces, default HSI (brighter than HSB)"
       (let [luma (fn [col] (c/luma col))]
-        (is (= (dc 0.5 0.3) ((field/domain-color identity {:colorspace :HSI}) 0.5 0.3)))
-        (is (> (double (luma (dc 0.5 0.3))) (double (luma ((field/domain-color identity {:colorspace :HSB}) 0.5 0.3))))))
-      (is (every? #(some? ((field/domain-color identity {:colorspace %}) 0.3 0.4)) field/hue-colorspaces))
+        (is (= (dc [0.5 0.3]) ((field/domain-color identity {:colorspace :HSI}) [0.5 0.3])))
+        (is (> (double (luma (dc [0.5 0.3]))) (double (luma ((field/domain-color identity {:colorspace :HSB}) [0.5 0.3]))))))
+      (is (every? #(some? ((field/domain-color identity {:colorspace %}) [0.3 0.4])) field/hue-colorspaces))
       (is (= :colorspace (:key (error #(field/domain-color identity {:colorspace :LAB})))))
       (is (= :colorspace (:key (error #(field/domain-color identity {:colorspace :hsi}))))))
     (testing "4.2 the cx/log raster renders"

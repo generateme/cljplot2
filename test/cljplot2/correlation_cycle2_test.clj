@@ -45,14 +45,14 @@
           {:keys [f domain]} (field/density xs ys {} identity-axes)
           {:keys [kde h]} (k/kernel-density-2d :gaussian xs ys :nrd true)
           [hx] h]
-      (is (m/delta-eq (kde 0.3 0.1) (f 0.3 0.1)))
+      (is (m/delta-eq (kde 0.3 0.1) (f [0.3 0.1])))
       (is (m/delta-eq (- (double (reduce min xs)) (* 3.0 (double hx))) (ffirst domain)))
       (is (m/delta-eq (double (reduce min xs)) (ffirst (:domain (field/density xs ys {:cut 0} identity-axes)))))))
   (testing "F1 a log axis: estimated in log10 x, domain in data units and positive"
     (let [xs (map #(m/exp (double (:x %))) cloud) ys (map :y cloud)
           {:keys [f domain]} (field/density xs ys {} log-x-axes)
           kde (k/kernel-density-2d :gaussian (map #(m/log10 (double %)) xs) ys)]
-      (is (m/delta-eq (kde (m/log10 2.0) 0.1) (f 2.0 0.1)))
+      (is (m/delta-eq (kde (m/log10 2.0) 0.1) (f [2.0 0.1])))
       (is (pos? (double (ffirst domain))))
       (is (= :x (:key (error #(field/density [-1 0] [1 2] {} log-x-axes)))) "nothing a log axis can place")))
   (testing "2.5 one point with a selector: {:key :bandwidth}; with a number it estimates"
@@ -66,8 +66,8 @@
         acc (fn [k] #(get % k))]
     (testing "2.2 interpolation through the lattice values"
       (let [{:keys [f domain]} (field/lattice rows (acc :x) (acc :y) (acc :v) nil)]
-        (is (m/delta-eq 11.0 (f 1.0 10.0)))
-        (is (m/delta-eq 6.5 (f 1.5 5.0)))
+        (is (m/delta-eq 11.0 (f [1.0 10.0])))
+        (is (m/delta-eq 6.5 (f [1.5 5.0])))
         (is (= [[0.0 2.0] [0.0 10.0]] domain))))
     (testing "2.2 lattice errors"
       (is (= :value (:key (error #(field/lattice (rest rows) (acc :x) (acc :y) (acc :v) nil)))) "missing point")
@@ -76,7 +76,7 @@
     (testing "non-finite values are NaN; non-finite positions left out"
       (let [{:keys [f]} (field/lattice (conj (vec (map #(if (= [1 0] [(:x %) (:y %)]) (assoc % :v nil) %) rows)) {:x nil :y 0 :v 1})
                                        (acc :x) (acc :y) (acc :v) :bilinear)]
-        (is (m/nan? (f 1.0 0.0)))))))
+        (is (m/nan? (f [1.0 0.0])))))))
 
 (deftest function-source-test
   (testing "2.3 domain from the option, then explicit scale domains, else an error"
@@ -92,19 +92,19 @@
       (is (= [3 5] [nx ny]))
       (is (every? #(== 2.0 %) values))))
   (testing "2.5 non-finite values are NaN"
-    (let [{:keys [values]} (field/sample (fn [x _] (if (pos? (double x)) (/ 1.0 0.0) nil)) [[0 1] [0 1]] [2 2])]
+    (let [{:keys [values]} (field/sample (fn [[x _]] (if (pos? (double x)) (/ 1.0 0.0) nil)) [[0 1] [0 1]] [2 2])]
       (is (every? m/nan? values))))
   (testing "grid-value: bilinear inside, NaN outside or next to NaN"
-    (let [g (field/sample (fn [x y] (+ (double x) (* 10.0 (double y)))) [[0 1] [0 1]] [3 3])]
+    (let [g (field/sample (fn [[x y]] (+ (double x) (* 10.0 (double y)))) [[0 1] [0 1]] [3 3])]
       (is (m/delta-eq 5.25 (field/grid-value g 0.25 0.5)))
       (is (m/delta-eq 11.0 (field/grid-value g 1.0 1.0)) "the far corner")
       (is (m/nan? (field/grid-value g 1.01 0.5)))
       (is (m/nan? (field/grid-value g -0.01 0.5)))
-      (is (m/nan? (field/grid-value (field/sample (fn [x _] (when (< (double x) 0.6) 1.0)) [[0 1] [0 1]] [3 3]) 0.75 0.5))))))
+      (is (m/nan? (field/grid-value (field/sample (fn [[x _]] (when (< (double x) 0.6) 1.0)) [[0 1] [0 1]] [3 3]) 0.75 0.5))))))
 
 ;; 4.1 / 4.2 marching squares
 
-(def ^:private cone (field/sample (fn [x y] (- 1.0 (m/hypot (double x) (double y)))) [[-1 1] [-1 1]] [41 41]))
+(def ^:private cone (field/sample (fn [[x y]] (- 1.0 (m/hypot (double x) (double y)))) [[-1 1] [-1 1]] [41 41]))
 
 (deftest isolines-test
   (testing "4.1 a cone: one closed ring per level, on the circle"
@@ -114,7 +114,7 @@
         (is (:closed? ring))
         (is (every? (fn [[x y]] (< (m/abs (- (m/hypot (double x) (double y)) (- 1.0 level))) 0.01)) (:points ring))))))
   (testing "4.1 a saddle resolved by the cell average"
-    (let [saddle (field/sample (fn [x y] (* (double x) (double y))) [[-1 1] [-1 1]] [2 2])]
+    (let [saddle (field/sample (fn [[x y]] (* (double x) (double y))) [[-1 1] [-1 1]] [2 2])]
       (is (= #{[[0.0 -1.0] [1.0 0.0]] [[0.0 1.0] [-1.0 0.0]]} (set (map :points (contour/isolines saddle 0.0)))) "centre on the level counts as above")
       (is (= #{[[-1.0 -0.5] [-0.5 -1.0]] [[0.5 1.0] [1.0 0.5]]}
              (set (map (comp vec sort :points) (contour/isolines saddle 0.5)))) "average below the level: the high corners cut off")))
@@ -122,7 +122,7 @@
     (is (= [] (contour/isolines (field/sample (constantly 1.0) [[0 1] [0 1]] [4 4]) 1.0)))
     (is (= [] (contour/isolines cone 2.0))))
   (testing "4.1 NaN cells break the lines"
-    (let [holed (field/sample (fn [x y] (when-not (and (< 0.4 (double x) 0.6)) (- 1.0 (m/hypot (double x) (double y))))) [[-1 1] [-1 1]] [41 41])
+    (let [holed (field/sample (fn [[x y]] (when-not (and (< 0.4 (double x) 0.6)) (- 1.0 (m/hypot (double x) (double y))))) [[-1 1] [-1 1]] [41 41])
           lines (contour/isolines holed 0.5)]
       (is (= 1 (count lines)))
       (is (not (:closed? (first lines)))))))
@@ -136,7 +136,7 @@
     (let [[ring] (contour/level-rings cone 0.5)]
       (is (< (m/abs (- 1.0 (/ (m/abs (shoelace ring)) (* m/PI 0.25)))) 0.02))))
   (testing "4.2 a ring field: the outer ring and the hole"
-    (let [annulus (field/sample (fn [x y] (- 1.0 (m/abs (- (m/hypot (double x) (double y)) 0.5)))) [[-1 1] [-1 1]] [61 61])
+    (let [annulus (field/sample (fn [[x y]] (- 1.0 (m/abs (- (m/hypot (double x) (double y)) 0.5)))) [[-1 1] [-1 1]] [61 61])
           rings (contour/level-rings annulus 0.8)
           areas (sort (map (comp m/abs shoelace) rings))]
       (is (= 2 (count rings)))
@@ -156,7 +156,7 @@
 
 ;; 3. field chart
 
-(def ^:private ramp {:charts [(chart/field {:f (fn [x _] x) :domain {:x [0 1] :y [0 1]}})]
+(def ^:private ramp {:charts [(chart/field {:f (fn [[x _]] x) :domain {:x [0 1] :y [0 1]}})]
                      :scales {:color {:range [[0 0 0] [255 255 255]]} :x {:domain [-0.5 1.5]}} :legend false})
 
 (deftest field-chart-test
@@ -173,10 +173,10 @@
           ^fastmath.vector.Vec2 p (proj 0.9 0.5)]
       (is (every? #(> (double %) 200.0) (rgb img (+ (long x) (long (.x p))) (+ (long y) (long (.y p))))))))
   (testing "3.2 log scale renders"
-    (is (instance? BufferedImage (plot/render-image {:charts [(chart/field {:f (fn [x y] (* x y)) :domain {:x [1 100] :y [0 1]}})]
+    (is (instance? BufferedImage (plot/render-image {:charts [(chart/field {:f (fn [[x y]] (* x y)) :domain {:x [1 100] :y [0 1]}})]
                                                      :scales {:x {:kind :log}}} {:width 300 :height 300}))))
   (testing "3.2 raster time after sampling: the draw of a 600 x 600 plot's panel"
-    (let [b (plot/build {:charts [(chart/field {:f (fn [x y] (* x y)) :domain {:x [0 1] :y [0 1]}})]} {:width 600 :height 600})
+    (let [b (plot/build {:charts [(chart/field {:f (fn [[x y]] (* x y)) :domain {:x [0 1] :y [0 1]}})]} {:width 600 :height 600})
           box (grid/item-box (:layout b) :panel)
           computed (get-in b [:stats 0 :data :panel])
           draw! #(c2d/with-canvas [c (c2d/canvas 600 600)] (field-chart/draw nil computed c box (:finalized-scales b) {:theme (:theme b)}))]
@@ -269,7 +269,7 @@
       (is (:fill? d))
       (is (every? :rings (:contours d)))))
   (testing "F3 filled bands colored by their middle; the color extent spans the values"
-    (let [s (stats {:charts [(chart/contour {:f (fn [x _] x) :domain {:x [0 1] :y [0 1]} :fill true :levels [0.2 0.6]})]})
+    (let [s (stats {:charts [(chart/contour {:f (fn [[x _]] x) :domain {:x [0 1] :y [0 1]} :fill true :levels [0.2 0.6]})]})
           cs (get-in s [:data :panel :contours])]
       (is (= [[0.2 0.4] [0.6 0.8]] (map (juxt :level :color-value) cs)))
       (is (= [0.0 1.0] ((juxt :min :max) (get-in s [:extents :panel :color]))))))
@@ -282,7 +282,7 @@
 
 (deftest contour-draw-test
   (testing "4.4 a fixed color line crosses the cone where expected"
-    (let [cone-f (fn [x y] (- 1.0 (m/hypot (double x) (double y))))
+    (let [cone-f (fn [[x y]] (- 1.0 (m/hypot (double x) (double y))))
           [built img {:keys [x y]}] (render {:charts [(chart/contour {:f cone-f :domain {:x [-1 1] :y [-1 1]} :levels [0.5] :color [255 0 0] :width 3})]
                                              :legend false}
                                             {:width 300 :height 300})
@@ -292,7 +292,7 @@
       (is (= [255 0 0] (rgb img (+ (long x) (long (m/round (.x on)))) (+ (long y) (long (m/round (.y on)))))))
       (is (= [250 250 250] (rgb img (+ (long x) (long (.x off))) (+ (long y) (long (.y off))))))))
   (testing "4.2 filled: the disk filled, the hole of an annulus open"
-    (let [annulus (fn [x y] (- 1.0 (m/abs (- (m/hypot (double x) (double y)) 0.5))))
+    (let [annulus (fn [[x y]] (- 1.0 (m/abs (- (m/hypot (double x) (double y)) 0.5))))
           [built img {:keys [x y]}] (render {:charts [(chart/contour {:f annulus :domain {:x [-1 1] :y [-1 1]} :levels [0.8] :fill true :n 81})]
                                              :scales {:color {:range [[0 0 200] [0 0 200]]}} :legend false}
                                             {:width 300 :height 300})
@@ -311,9 +311,9 @@
 
 (deftest theme-test
   (testing "theme entries validated"
-    (is (some? (error #(plot/build {:charts [(chart/field {:f + :domain {:x [0 1] :y [0 1]}})] :theme {:chart {:field {:alpha 2}}}}
+    (is (some? (error #(plot/build {:charts [(chart/field {:f (fn [[x y]] (+ x y)) :domain {:x [0 1] :y [0 1]}})] :theme {:chart {:field {:alpha 2}}}}
                                    {:width 200 :height 200}))))
-    (is (some? (error #(plot/build {:charts [(chart/contour {:f + :domain {:x [0 1] :y [0 1]}})] :theme {:chart {:contour {:bogus 1}}}}
+    (is (some? (error #(plot/build {:charts [(chart/contour {:f (fn [[x y]] (+ x y)) :domain {:x [0 1] :y [0 1]}})] :theme {:chart {:contour {:bogus 1}}}}
                                    {:width 200 :height 200}))))
     (is (some? (error #(stats {:charts [(chart/contour {:levels 0})]}))))
     (is (some? (error #(stats {:charts [(chart/field {:n 1})]}))))

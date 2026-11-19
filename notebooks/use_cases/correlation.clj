@@ -541,7 +541,7 @@
 
 ;; ## Functions
 
-;; `chart/field {:f f}` samples a function of x and y on a grid over a given domain (`:n` samples per axis) - no
+;; `chart/field {:f f}` samples a function of a point `[x y]` on a grid over a given domain (`:n` samples per axis) - no
 ;; data needed. These examples have no gallery counterpart.
 
 ;; ### A function as a raster
@@ -551,8 +551,9 @@
 (nu/source-note {:source "cljplot2 - chart/field"})
 
 (defn fn2d
-  [^double x ^double y]
-  (* (- (+ (* x x) (* y y))) (m/sin x) (m/sin y) (m/sin (* x y))))
+  [[x y]]
+  (let [x (double x) y (double y)]
+    (* (- (+ (* x x) (* y y))) (m/sin x) (m/sin y) (m/sin (* x y)))))
 
 (plot/render-image
  {:charts [(chart/field {:f fn2d :domain {:x [(- m/PI) m/PI] :y [(- m/PI) m/PI]} :n 300})]
@@ -567,7 +568,7 @@
 
 (nu/source-note {:source "cljplot2 - chart/field, chart/contour"})
 
-(let [wave (fn [x y] (* (m/sin x) (m/cos y)))
+(let [wave (fn [[x y]] (* (m/sin x) (m/cos y)))
       domain {:x [0 (* 2 m/PI)] :y [0 4]}]
   (plot/render-image
    {:charts [(chart/field {:f wave :domain domain})

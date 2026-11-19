@@ -95,7 +95,7 @@
         heading (f/heading hyperbolic)]
     {:data (vf/arrows hyperbolic {:domain {:x [-3 3] :y [-3 3]} :n 24 :grid :shifted :scale 1.5})
      :mapping {:x :x :y :y :xend :xend :yend :yend}
-     :charts [(chart/field {:f (fn [x y] (m/sin (heading (v/vec2 x y)))) :domain {:x [-3 3] :y [-3 3]} :n 300
+     :charts [(chart/field {:f (fn [[x y]] (m/sin (heading (v/vec2 x y)))) :domain {:x [-3 3] :y [-3 3]} :n 300
 })
               (chart/segment {:color [90 160 235] :width 1.5 :arrow {:end true :size 5}})]
      :scales {:color {:range [:black :white] :title "sin heading"}

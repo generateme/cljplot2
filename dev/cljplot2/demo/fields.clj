@@ -40,7 +40,7 @@
                   :labels {:title "smoothed: bicubic field and contours"}}]
                 {:columns 2}))
 
-(def ^:private wave (fn [x y] (* (Math/sin x) (Math/cos y))))
+(def ^:private wave (fn [[x y]] (* (Math/sin x) (Math/cos y))))
 
 (def function-field
   {:charts [(chart/field {:f wave :domain {:x [0 6.3] :y [0 4]}})
@@ -49,12 +49,13 @@
    :labels {:title "A function field with contours"}})
 
 (defn fn2d
-  [^double x ^double y]
-  (* (- (+ (* x x)
-           (* y y)))
-     (m/sin x)
-     (m/sin y)
-     (m/sin (* x y))))
+  [[x y]]
+  (let [x (double x) y (double y)]
+    (* (- (+ (* x x)
+             (* y y)))
+       (m/sin x)
+       (m/sin y)
+       (m/sin (* x y)))))
 
 (def fn2d-field
   {:charts [(chart/field {:f fn2d :domain {:x [(- m/PI) m/PI] :y [(- m/PI) m/PI]} :n 300})]

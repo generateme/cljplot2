@@ -25,8 +25,9 @@
 
 (defn- ozone
   "Synthetic smooth surface over wind and temperature (a stand-in for the fitted ozone of the environmental data)."
-  ^double [^double wind ^double temperature]
-  (* 4.0 (m/exp (- (* 0.045 (- temperature 60.0)) (* 0.08 wind)))))
+  [[wind temperature]]
+  (let [wind (double wind) temperature (double temperature)]
+    (* 4.0 (m/exp (- (* 0.045 (- temperature 60.0)) (* 0.08 wind))))))
 
 (def fig-6-10
   "Fig 6.10: contour lines of a smooth surface, each labelled with its level."

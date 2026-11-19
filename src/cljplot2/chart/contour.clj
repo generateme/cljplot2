@@ -1,6 +1,6 @@
 (ns cljplot2.chart.contour
   "Contour: lines (or filled regions) where a 2D field crosses levels - a kernel density of points, an interpolated
-  gridded `:value` or a function of `x`, `y` (see [[cljplot2.data.field]] for the sources and their options), sampled
+  gridded `:value` or a function of a point `[x y]` (see [[cljplot2.data.field]] for the sources and their options), sampled
   on a grid over the domain of every panel together (cartesian plots only; marching squares, see
   [[cljplot2.data.contour]]). Vertices are projected one by one: lines follow non-linear scales.
 

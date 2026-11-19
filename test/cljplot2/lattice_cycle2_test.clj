@@ -89,7 +89,7 @@
 ;; 2 contour labels
 
 (defn- circle-plot [opts]
-  {:charts [(chart/contour (merge {:f (fn [x y] (+ (* x x) (* y y))) :domain {:x [-2 2] :y [-2 2]} :levels [1.0 2.0]} opts))]})
+  {:charts [(chart/contour (merge {:f (fn [[x y]] (+ (* x x) (* y y))) :domain {:x [-2 2] :y [-2 2]} :levels [1.0 2.0]} opts))]})
 
 (defn- label-texts [p] (mapv #(get-in % [1 :text]) (calls #'label/draw-at! #(image p))))
 
@@ -225,5 +225,5 @@
   (testing "H3 only drawn lines get labels"
     (is (= ["2"] (label-texts (assoc-in (circle-plot {:labels true}) [:scales :color :domain] [1.5 3.0])))))
   (testing "H7 of two overlapping labels the lower level's is kept"
-    (is (= ["0"] (label-texts {:charts [(chart/contour {:f (fn [x _] x) :domain {:x [-1 1] :y [-1 1]} :levels [0.0 0.02] :labels true})]})))))
+    (is (= ["0"] (label-texts {:charts [(chart/contour {:f (fn [[x _]] x) :domain {:x [-1 1] :y [-1 1]} :levels [0.0 0.02] :labels true})]})))))
 

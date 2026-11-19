@@ -1,6 +1,6 @@
 (ns cljplot2.chart.field
-  "Field: a raster of a 2D field - a kernel density of points, an interpolated gridded `:value` or a function of `x`,
-  `y` (see [[cljplot2.data.field]] for the sources, `:n`, `:bandwidth`, `:cut`, `:interpolation`, `:domain`) - colored
+  "Field: a raster of a 2D field - a kernel density of points, an interpolated gridded `:value` or a function of a
+  point `[x y]` (see [[cljplot2.data.field]] for the sources, `:n`, `:bandwidth`, `:cut`, `:interpolation`, `:domain`) - colored
   through the plot's color scale (cartesian plots only).
 
   The field is sampled on a grid over the domain of every panel together; each panel pixel is inverse-projected to
@@ -14,7 +14,7 @@
   low end of the gradient - pick a palette or `:alpha` accordingly. On a `:log` axis the field is sampled (and a
   density estimated) in log10 coordinates, see [[cljplot2.data.field]].
 
-  `:pixel-color` - a function of `x`, `y` returning a clojure2d color (`nil` - transparent), called at every pixel's
+  `:pixel-color` - a function of a point `[x y]` returning a clojure2d color (`nil` - transparent), called at every pixel's
   data point (the pixel centre): a raster without a grid, a color scale or a legend (e.g. complex domain colouring,
   see [[cljplot2.data.field/domain-color]]); the domain as for `:f` (option `:domain`, else the plot's explicit x / y
   domains); not with `:f` (`ex-info {:key :pixel-color}`); the mapping and the other field options are ignored (as
@@ -117,7 +117,7 @@
   the scale's domain."
   [grid scales env]
   (let [color-of (aesthetic/attribute-fn :color (:color scales) (get-in env [:theme :palette :na]))]
-    (fn [x y] (let [v (field/grid-value grid x y)] (when-not (m/nan? v) (color-of v))))))
+    (fn [[x y]] (let [v (field/grid-value grid (double x) (double y))] (when-not (m/nan? v) (color-of v))))))
 
 (defn draw
   "Draw one panel's raster: a pixel image of the panel box (see the namespace doc); `:pixel-color` - its color at
@@ -135,7 +135,7 @@
             pixel-color (fn [_ x y]
                           (let [a (double (inverse-h (+ 0.5 (double x))))
                                 b (double (inverse-v (+ 0.5 (double y))))]
-                            (if-let [col (if flipped? (color-at b a) (color-at a b))]
+                            (if-let [col (color-at (if flipped? [b a] [a b]))]
                               (let [col (c/to-color col)]
                                 (if alpha (c/set-alpha col (* (double alpha) (double (c/alpha col)))) col))
                               transparent)))

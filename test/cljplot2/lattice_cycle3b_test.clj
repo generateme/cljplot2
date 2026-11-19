@@ -8,6 +8,7 @@
             [cljplot2.chart.cloud :as cloud]
             [cljplot2.chart.surface :as surface]
             [cljplot2.core :as plot]
+            [cljplot2.data.field :as field]
             [cljplot2.data.levels :as levels]
             [cljplot2.data.space3d :as space]
             [cljplot2.graphics.space3d :as space-draw]
@@ -299,3 +300,33 @@
       (is (= [1.0 1.0] @seen)))
     (is (thrown? clojure.lang.ArityException
                  (panel {:charts [(chart/surface {:f (fn [_x _y] 0.0) :domain {:x [0 1] :y [0 1]} :n 2})]})))))
+
+;; review 2 fixes
+
+(deftest review2-fixes-test
+  (testing "V1 the frame margin measures every level label, not the thinned ones"
+    (let [frame (fn [ls] {:domains {:x [0.5 (+ 0.5 (count ls))] :y [0 1] :z [0 1]} :levels {:x ls} :titles {} :axes? true})
+          margin (fn [ls] (c2d/with-canvas [c (c2d/canvas 10 10)]
+                            (space-draw/frame-margin (frame ls) [400 300] {:theme cljplot2.theme/default-theme :canvas c})))
+          short (mapv str (range 10))
+          long-second (assoc short 1 "a very long level label")]
+      (is (< (double (margin short)) (double (margin long-second))) "level 1 is never a thinned label, yet counts")))
+  (testing "V2 NaN under a categorical marker is no level; its row dropped"
+    (let [cp (panel {:data [{:x 1 :y 0 :z 0} {:x ##NaN :y 1 :z 1} {:x 2 :y 2 :z 2}]
+                     :mapping {:x (levels/categorical :x) :y :y :z :z} :charts [(chart/cloud)]})]
+      (is (= [1 2] (get-in cp [:frame :levels :x])))
+      (is (= 2 (count (get-in cp [:points :x]))))))
+  (testing "V3 a categorical marker on :z throws {:key :mapping}"
+    (is (= :mapping (:key (error #(built {:data cloud-rows :mapping {:x :x :y :y :z (levels/categorical :z)} :charts [(chart/cloud)]}))))))
+  (testing "vector contract: field / contour :f, :pixel-color, domain-color and field/sample take a point [x y]"
+    (let [seen (atom #{})
+          f (fn [p] (swap! seen conj (count p)) 0.5)]
+      (built {:charts [(chart/field {:f f :domain {:x [0 1] :y [0 1]} :n 3})]})
+      (built {:charts [(chart/contour {:f f :domain {:x [0 1] :y [0 1]} :n 3})]})
+      (is (= #{2} @seen)))
+    (is (= [[0.0 0.0] [1.0 0.0] [0.0 1.0] [1.0 1.0]]
+           (let [ps (atom [])] (field/sample (fn [p] (swap! ps conj p) 0.0) [[0 1] [0 1]] [2 2]) @ps)))
+    (is (some? ((field/domain-color identity) [0.5 0.5])))
+    (is (thrown? clojure.lang.ArityException ((field/domain-color identity) 0.5 0.5)))
+    (is (instance? BufferedImage (image {:charts [(chart/field {:pixel-color (fn [[x _]] (if (< (double x) 0.5) :black :white))
+                                                                :domain {:x [0 1] :y [0 1]}})]})))))

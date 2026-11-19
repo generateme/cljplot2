@@ -106,13 +106,17 @@
 (defn frame-margin
   "Pixels to keep around the box for the axes of a `frame` (`:domains`, `:levels`, `:titles` - `{:x t ..}`, `nil` -
   none) when `:axes?`: tick length, label gaps, the largest tick label (of the most ticks an edge in a `w` x `h` panel
-  can ask for, see [[tick-count]], [[edge-ticks]]) and a title line. `env` - `:canvas`, `:theme`."
+  can ask for, see [[tick-count]], [[edge-ticks]]; of every level of a categorical axis) and a title line. `env` - `:canvas`, `:theme`."
   [{:keys [domains levels titles axes?]} [w h] env]
   (if-not axes?
     4.0
     (let [{:keys [tick-length label-gap]} (get-in env [:theme :axis :x])
           longest (m/min (double w) (double h))
-          labels (remove nil? (mapcat #(:labels (edge-ticks % (domains %) (get levels %) (tick-count env % longest))) space/axes))
+          ;; every level label: an edge thins its own (see edge-ticks), any of them may be drawn
+          labels (mapcat #(if-let [ls (get levels %)]
+                            (map level-text ls)
+                            (:labels (edge-ticks % (domains %) nil (tick-count env % longest))))
+                         space/axes)
           widest (double (reduce max 0.0 (map #(let [^Vec2 s (text-size :tick-label % env)] (m/max (.x s) (.y s))) labels)))
           title (double (reduce max 0.0 (keep (fn [k] (when-some [t (get titles k)]
                                                          (.y (text-size :axis-title (str t) env))))

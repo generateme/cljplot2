@@ -149,9 +149,7 @@
   (let [x-of (data/row-accessor :x (:x mapping)) y-of (data/row-accessor :y (:y mapping))
         pts (filterv (fn [[x y]] (and (finite-number? x) (finite-number? y))) (map (juxt x-of y-of) rows))]
     (when (seq pts)
-      (let [{:keys [f domain]} (field/density (map first pts) (map second pts) {:cut cut}
-                                              [(scale/stat-transform nil) (scale/stat-transform nil)])]
-        {:f (fn [[x y]] (f x y)) :domain domain}))))
+      (field/density (map first pts) (map second pts) {:cut cut} [(scale/stat-transform nil) (scale/stat-transform nil)]))))
 
 (defn- grid-size [n] (field/grid-size (or n 30)))
 

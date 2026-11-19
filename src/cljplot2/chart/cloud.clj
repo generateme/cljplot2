@@ -2,8 +2,8 @@
   "Cloud: a 3D scatter of rows at their mapped (x, y, z) in a box projected onto the panel (see
   [[cljplot2.data.space3d]]; a chart laying out its own panel: no x / y axes - the box carries three axes).
 
-  Mapping: `:x`, `:y`, `:z` - numbers (`:z` other values, or no `:z` without `:bins`, throw `ex-info {:key
-  :mapping}`); `:x` / `:y` may be categorical - text, keywords, intervals, or numbers marked
+  Mapping: `:x`, `:y`, `:z` - numbers (`:z` other values or a categorical marker, or no `:z` without `:bins`, throw
+  `ex-info {:key :mapping}`); `:x` / `:y` may be categorical - text, keywords, intervals, or numbers marked
   [[cljplot2.data.levels/categorical]] (levels as in [[axis-levels]], level i at position i + 1, domain `[0.5 n +
   0.5]`, a tick per level; no explicit `:domain` - `{:key :domain}`, no `:bins` - `{:key :bins}`); aesthetics
   `:color`, `:size`, `:shape` as in [[cljplot2.chart.scatter]] (scales, legends, NA). Rows with a non-finite coordinate, or a coordinate outside an explicit `:domain`, are
@@ -30,7 +30,7 @@
     levels shared by the panels, in the chart's `:color`) or `:contour` (lines at those levels); a panel whose points
     give no density (fewer than 2, all on a line) gets no density marks
   * `:bins [nx ny]` - a 2D histogram: the rows counted on an `nx` x `ny` grid over the x / y domains (explicit or the
-    data's), each non-empty cell a bar or spike at its centre with its count as z (`:type :bars` or `:spikes` only;
+    data's made nice), each non-empty cell a bar or spike at its centre with its count as z (`:type :bars` or `:spikes` only;
     `:base` default 0; bars `:bar-size` of a cell; z titled \"Count\"); `:z` isn't read, no aesthetic mapping
     (`ex-info {:key :bins}`), no `:projections`
 
@@ -120,12 +120,12 @@
     (contains? options :axis-titles) (assoc :titles (:axis-titles options))))
 
 (defn axis-levels
-  "Levels of the position axis `k` (`:x` / `:y`) from its values `vs` over every panel (`nil`s ignored): `nil` for
-  numbers (a numeric axis) unless `accessor` is marked categorical ([[cljplot2.data.levels/categorical]]) - then the
-  distinct numbers sorted; other values distinct in first-appearance order, sorted when they have a natural order
+  "Levels of the position axis `k` (`:x` / `:y`) from its values `vs` over every panel (`nil`s and non-finite numbers
+  ignored - dropped rows): `nil` for numbers (a numeric axis) unless `accessor` is marked categorical
+  ([[cljplot2.data.levels/categorical]]) - then the distinct numbers sorted; other values distinct in first-appearance order, sorted when they have a natural order
   (intervals, see [[cljplot2.data.rows/extent]]). Numbers mixed with other values throw `ex-info {:key :mapping}`."
   [k accessor vs]
-  (let [vs (remove nil? vs)
+  (let [vs (remove #(or (nil? %) (and (number? %) (not (m/valid-double? (double %))))) vs)
         numbers (filter number? vs)]
     (cond
       (accessor/categorical? accessor) (data/sorted-levels k vs :mapping)
@@ -142,11 +142,13 @@
     (mapv (fn [row] (reduce (fn [row [k ps]] (let [i (index-of k)] (assoc row i (some-> (row i) ps)))) row positions)) vs)))
 
 (defn- check-mapping!
-  "Throw `ex-info {:key :mapping}` for a cloud without a mapped `:z` (unless `bins`), `{:key :bins}` for `bins` with a
-  mapped aesthetic (a count has no color, size or shape)."
+  "Throw `ex-info {:key :mapping}` for a cloud without a mapped `:z` (unless `bins`) or with a categorical marker on
+  `:z`, `{:key :bins}` for `bins` with a mapped aesthetic (a count has no color, size or shape)."
   [mapping bins]
   (when (and (not bins) (nil? (:z mapping)))
     (schema/fail! "A cloud needs a mapped :z (or :bins - row counts as z)." {:key :mapping :in [:mapping :z]}))
+  (when (accessor/categorical? (:z mapping))
+    (schema/fail! "A cloud's :z is numeric: no categorical marker." {:key :mapping :in [:mapping :z]}))
   (when-let [ks (and bins (seq (aesthetic/mapped-dims mapping)))]
     (schema/fail! (str ":bins counts rows per cell: no mapped " (vec ks) ".") {:key :bins :value (vec ks)})))
 

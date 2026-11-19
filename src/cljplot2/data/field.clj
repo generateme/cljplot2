@@ -11,7 +11,7 @@
   * `:gridded` - mapped `:x`, `:y`, `:value` on a full regular lattice (every x with every y, once):
     `fastmath.interpolation` `:interpolation` - `:bilinear` (default), `:bicubic`, `:cubic-2d`; the domain is the
     lattice
-  * `:function` - option `:f`, a function of `x`, `y` returning a number; the domain - option `:domain {:x [lo hi] :y
+  * `:function` - option `:f`, a function of a point `[x y]` returning a number; the domain - option `:domain {:x [lo hi] :y
     [lo hi]}`, else the plot's explicit `:x` / `:y` scale domains
 
   A grid (see [[sample]]) holds `:n` x values by y values (option `:n`, default 100, or `[nx ny]`) spanning the
@@ -72,7 +72,7 @@
   "`{:f f :domain [[x0 x1] [y0 y1]]}` - the 2D KDE of the points `xs`, `ys` (finite numbers, equal counts, at least
   one; see the namespace doc for `:kernel`, `:bandwidth`, `:binned?`, `:cut`), estimated in the coordinates of the
   axis `transforms` (`[tx ty]`, see [[cljplot2.scale.position/stat-transform]]; points a transform can't place left
-  out): `f` takes data units, the domain - the points' transformed range widened by `:cut` bandwidths - is in data
+  out): `f` takes a point `[x y]` in data units, the domain - the points' transformed range widened by `:cut` bandwidths - is in data
   units. On a log axis the density is per log10 unit. Throws `ex-info` keyed by the option fastmath blames (`:kernel`,
   `:binned?`, else `:bandwidth`) when it can't estimate (e.g. a selector on one point)."
   [xs ys {:keys [kernel bandwidth binned? cut]} [tx ty]]
@@ -91,7 +91,7 @@
         cut (double (if (nil? cut) 3.0 cut))
         widen (fn [ws ^double hw inverse]
                 [(inverse (- (double (reduce min ws)) (* cut hw))) (inverse (+ (double (reduce max ws)) (* cut hw)))])]
-    {:f (fn [x y] (kde (fx (double x)) (fy (double y))))
+    {:f (fn [[x y]] (kde (fx (double x)) (fy (double y))))
      :domain [(widen us (double hx) (:inverse tx)) (widen vs (double hy) (:inverse ty))]}))
 
 (defn lattice-values
@@ -116,12 +116,14 @@
       {:xs xs :ys ys :vss (mapv (fn [x] (mapv (fn [y] (value x y)) ys)) xs)})))
 
 (defn lattice
-  "`{:f f :domain [[x0 x1] [y0 y1]]}` - the interpolation (`interpolation`, see the namespace doc) of the gridded
+  "`{:f f :domain [[x0 x1] [y0 y1]]}` - the interpolation (`interpolation`, see the namespace doc; `f` of a point
+  `[x y]`) of the gridded
   `rows` (`x-of`, `y-of`, `value-of` - row accessors), see [[lattice-values]] (errors keyed `:value`)."
   [rows x-of y-of value-of interpolation]
   (let [{:keys [xs ys vss]} (lattice-values rows x-of y-of value-of :value)
         make (case (or interpolation :bilinear) :bilinear interp/bilinear :bicubic interp/bicubic :cubic-2d interp/cubic-2d)]
-    {:f (make xs ys vss) :domain [[(first xs) (peek xs)] [(first ys) (peek ys)]]}))
+    (let [g (make xs ys vss)]
+      {:f (fn [[x y]] (g x y)) :domain [[(first xs) (peek xs)] [(first ys) (peek ys)]]})))
 
 (defn function-domain
   "`[[x0 x1] [y0 y1]]` of a function field: option `domain` (`{:x [lo hi] :y [lo hi]}`), else the explicit numeric
@@ -156,7 +158,7 @@
     a))
 
 (defn sample
-  "The grid of field function `f` (data units) over `domain` (`[[x0 x1] [y0 y1]]`, data units) with `[nx ny]`
+  "The grid of field function `f` (of a point `[x y]`, data units) over `domain` (`[[x0 x1] [y0 y1]]`, data units) with `[nx ny]`
   points evenly spaced in the coordinates of the axis `transforms` (`[tx ty]`, see
   [[cljplot2.scale.position/stat-transform]]; `nil` - identity): `{:xs doubles :ys doubles :nx :ny :values doubles
   :transforms [tx ty]}` - `xs`, `ys` in transformed coordinates, `values` row by row (`i + j nx` for `xs[i]`,
@@ -171,7 +173,7 @@
          values (double-array (* nx ny))]
      (dotimes [j ny]
        (dotimes [i nx]
-         (let [v (f (ix (Array/aget xs i)) (iy (Array/aget ys j)))]
+         (let [v (f [(ix (Array/aget xs i)) (iy (Array/aget ys j))])]
            (Array/aset values (+ i (* j nx)) (if (finite? v) (double v) ##NaN)))))
      {:xs xs :ys ys :nx nx :ny ny :values values :transforms [tx ty]})))
 
@@ -281,7 +283,7 @@
 (defn domain-color
   "A `:pixel-color` function (see [[cljplot2.chart.field]]) colouring a complex function `f` (a `Vec2` -> `Vec2`
   function of `fastmath.complex`, e.g. `cx/log`) by domain colouring: the point `(x, y)` is `x + iy`, the hue the
-  argument of f there, the brightness its magnitude wrapped by `:wrap` (default `:log2`, see [[wrap]]), in
+  argument of f there (the returned function takes a point `[x y]`), the brightness its magnitude wrapped by `:wrap` (default `:log2`, see [[wrap]]), in
   `:colorspace` (default `:HSI` - old cljplot's example; one of [[hue-colorspaces]]). Zeros and poles get a colour.
   Throws `ex-info {:key :wrap}` / `{:key :colorspace}` for an unknown wrap / colour space."
   ([f] (domain-color f {}))
@@ -292,4 +294,4 @@
      (schema/fail! (str "Domain colouring :colorspace should be one of " (sort hue-colorspaces) ".")
                    {:key :colorspace :value colorspace}))
    (let [from-space (second (c/colorspaces* colorspace))]
-     (fn [x y] (complex-color from-space wrap (f (cx/complex x y)))))))
+     (fn [[x y]] (complex-color from-space wrap (f (cx/complex x y)))))))
