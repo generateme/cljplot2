@@ -7,5 +7,5 @@ book:
   - part: Use cases
     chapters: [use_cases.distribution.qmd, use_cases.colors.qmd, use_cases.evolution.qmd, use_cases.ranking.qmd, use_cases.part_of_a_whole.qmd, use_cases.correlation.qmd, use_cases.flow.qmd]
   - part: Galleries
-    chapters: [galleries.cljplot_extras.qmd, galleries.lattice.qmd]
+    chapters: [galleries.cljplot_extras.qmd, galleries.lattice.qmd, galleries.vega.qmd]
   title: cljplot2
