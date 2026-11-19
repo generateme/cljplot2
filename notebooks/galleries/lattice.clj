@@ -1109,7 +1109,9 @@
 ;; Ozone modelled on wind, temperature and radiation, evaluated on a wind x temperature grid at four radiation
 ;; levels: a linear model with all interactions (as the book), and - in place of the book's loess and locfit fits -
 ;; a Gaussian process (kernel sigma 0.25), a radial basis function fit and Shepard interpolation (fastmath, on the
-;; predictors scaled to [0, 1]). The view turned so the side along temperature, where ozone grows, faces us.
+;; predictors scaled to [0, 1]). Shepard's inverse-distance weights use power 1 (default 2) for a smoother surface;
+;; it still passes through every observation, so the slices show small dimples where they come close to one. The
+;; view turned so the side along temperature, where ozone grows, faces us.
 
 (nu/source-note {:source "Lattice Fig 6.8" :url (figure-url 6 8) :dataset :environmental})
 
@@ -1124,7 +1126,7 @@
         linear (regression/lm ozone (mapv terms points))
         gp (interp/interpolation :gp (mapv unit points) ozone (k/kernel :gaussian {:sigma 0.25}) {:noise 0.2})
         rbf (interp/interpolation :rbf (mapv unit points) ozone (k/rbf :gaussian {:scale 0.4}) {:lambda 0.5})
-        shepard (interp/interpolation :shepard (mapv unit points) ozone)
+        shepard (interp/interpolation :shepard (mapv unit points) ozone {:p 1.0})
         models [["linear" #(linear (terms %))] ["Gaussian process" #(gp (unit %))]
                 ["radial basis" #(rbf (unit %))] ["Shepard" #(shepard (unit %))]]
         mesh (fn [[lo hi] n] (mapv #(+ lo (* (- hi lo) (/ % (double n)))) (range (inc n))))]
