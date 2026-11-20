@@ -1,0 +1,366 @@
+---
+format:
+  html: {toc: true, toc-location: right, toc-depth: 4, theme: cosmo}
+code-block-background: true
+
+---
+<style></style><style>.printedClojure .sourceCode {
+  background-color: transparent;
+  border-style: none;
+}
+</style><style>.clay-limit-image-width .clay-image {max-width: 100%}
+.clay-side-by-side .sourceCode {margin: 0}
+.clay-side-by-side {margin: 1em 0}
+</style>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js" type="text/javascript"></script><script src="https://code.jquery.com/ui/1.13.1/jquery-ui.min.js" type="text/javascript"></script>
+
+# Charts: series
+
+Charts of values along x: a band between two bounds (`ribbon`), a fitted curve with its uncertainty band
+(`smooth`) and price candles (`candlestick`). Each chart lists the mapping keys it reads, its own options and the
+shared option groups it takes (documented once in the Shared options chapter).
+
+
+::: {.sourceClojure}
+```clojure
+(ns reference.charts-series
+  (:require [fastmath.random :as r]
+            [cljplot2.chart :as chart]
+            [cljplot2.core :as plot]
+            [cljplot2.describe :as describe]
+            [notebook-utils :as nu]))
+```
+:::
+
+
+Data: Old Faithful geyser eruptions, R datasets package `faithful` (Härdle 1991; Azzalini & Bowman 1990); licence: Part of R (GPL-2 | GPL-3).
+
+
+::: {.sourceClojure}
+```clojure
+(def faithful (nu/dataset :faithful))
+```
+:::
+
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>eruptions</th><th>waiting</th></tr></thead><tbody><tr><td>3.6</td><td>79</td></tr><tr><td>1.8</td><td>54</td></tr><tr><td>3.333</td><td>74</td></tr><tr><td>2.283</td><td>62</td></tr><tr><td>4.533</td><td>85</td></tr><tr><td>2.883</td><td>55</td></tr><tr><td>4.7</td><td>88</td></tr><tr><td>3.6</td><td>85</td></tr><tr><td>1.95</td><td>51</td></tr><tr><td>4.35</td><td>85</td></tr><tr><td>1.833</td><td>54</td></tr><tr><td>3.917</td><td>84</td></tr><tr><td>4.2</td><td>78</td></tr><tr><td>1.75</td><td>47</td></tr><tr><td>4.7</td><td>83</td></tr><tr><td>2.167</td><td>52</td></tr><tr><td>1.75</td><td>62</td></tr><tr><td>4.8</td><td>84</td></tr><tr><td>1.6</td><td>52</td></tr><tr><td>4.25</td><td>79</td></tr></tbody></table>
+```
+
+:::
+
+
+Data: VIX daily open, high, low and close values, vega-datasets 3.3.1 `ohlc.json` (https://cdn.jsdelivr.net/npm/vega-datasets@3.3.1/data/ohlc.json); original: Yahoo Finance VIX Data, CBOE - VIX Historical Data; licence: none listed - see vega-datasets (cite Vega as the source).
+
+
+::: {.sourceClojure}
+```clojure
+(def ohlc (nu/dataset :ohlc))
+```
+:::
+
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>date</th><th>open</th><th>high</th><th>low</th><th>close</th><th>signal</th><th>ret</th></tr></thead><tbody><tr><td>2009-06-01</td><td>28.7</td><td>30.05</td><td>28.45</td><td>30.04</td><td>short</td><td>-4.89396411092985</td></tr><tr><td>2009-06-02</td><td>30.04</td><td>30.13</td><td>28.3</td><td>29.63</td><td>short</td><td>-0.322580645161295</td></tr><tr><td>2009-06-03</td><td>29.62</td><td>31.79</td><td>29.62</td><td>31.02</td><td>short</td><td>3.68663594470045</td></tr><tr><td>2009-06-04</td><td>31.02</td><td>31.02</td><td>29.92</td><td>30.18</td><td>short</td><td>4.51010886469673</td></tr><tr><td>2009-06-05</td><td>29.39</td><td>30.81</td><td>28.85</td><td>29.62</td><td>short</td><td>6.08424336973478</td></tr><tr><td>2009-06-08</td><td>30.84</td><td>31.82</td><td>26.41</td><td>29.77</td><td>short</td><td>1.2539184952978</td></tr><tr><td>2009-06-09</td><td>29.77</td><td>29.77</td><td>27.79</td><td>28.27</td><td>short</td><td>-5.02431118314424</td></tr><tr><td>2009-06-10</td><td>26.9</td><td>29.74</td><td>26.9</td><td>28.46</td><td>short</td><td>-5.46623794212217</td></tr><tr><td>2009-06-11</td><td>27.36</td><td>28.11</td><td>26.81</td><td>28.11</td><td>short</td><td>-8.3743842364532</td></tr><tr><td>2009-06-12</td><td>28.08</td><td>28.5</td><td>27.73</td><td>28.15</td><td>short</td><td>-5.52763819095477</td></tr><tr><td>2009-06-15</td><td>29.7</td><td>31.09</td><td>29.64</td><td>30.81</td><td>long</td><td>3.4920634920635</td></tr><tr><td>2009-06-16</td><td>30.81</td><td>32.75</td><td>30.07</td><td>32.68</td><td>short</td><td>0.155038759689914</td></tr><tr><td>2009-06-17</td><td>31.19</td><td>32.77</td><td>30.64</td><td>31.54</td><td>short</td><td>5.82822085889571</td></tr><tr><td>2009-06-18</td><td>31.54</td><td>31.54</td><td>29.6</td><td>30.03</td><td>short</td><td>8.17610062893082</td></tr><tr><td>2009-06-19</td><td>29.16</td><td>29.32</td><td>27.56</td><td>27.99</td><td>short</td><td>8.59872611464968</td></tr><tr><td>2009-06-22</td><td>30.4</td><td>32.05</td><td>30.3</td><td>31.17</td><td>short</td><td>15.4907975460123</td></tr><tr><td>2009-06-23</td><td>31.3</td><td>31.54</td><td>27.83</td><td>30.58</td><td>short</td><td>11.7370892018779</td></tr><tr><td>2009-06-24</td><td>30.58</td><td>30.58</td><td>28.79</td><td>29.05</td><td>long</td><td>-10.4234527687296</td></tr><tr><td>2009-06-25</td><td>29.45</td><td>29.56</td><td>26.3</td><td>26.36</td><td>long</td><td>0</td></tr><tr><td>2009-06-26</td><td>27.09</td><td>27.22</td><td>25.76</td><td>25.93</td><td>long</td><td>0</td></tr></tbody></table>
+```
+
+:::
+
+
+
+## ribbon
+
+A band per group between a lower and an upper bound at each x - an interval, a range of values, an envelope.
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:x (required)</td><td>a keyword, a function or a categorical marker of one</td><td></td><td>x position (data units)</td></tr><tr><td>:ymin (required)</td><td>a keyword, a function or a categorical marker of one</td><td></td><td>lower bound of the band (data units)</td></tr><tr><td>:ymax (required)</td><td>a keyword, a function or a categorical marker of one</td><td></td><td>upper bound of the band (data units)</td></tr><tr><td>:color</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>band colour per group</td></tr><tr><td>:dash</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>edge dash style per group</td></tr><tr><td>:pattern</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>fill pattern per group</td></tr><tr><td>:group</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>groups without a visual aesthetic, each its own band</td></tr></tbody></table>
+```
+
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(def bands (for [g ["low" "high"] t (range 0 25)]
+             (let [c (+ (if (= g "low") 1.0 4.0) (Math/sin (* 0.3 t)))
+                   w (+ 0.4 (* 0.04 t))]
+               {:group g :t t :lo (- c w) :mid c :hi (+ c w)})))
+```
+:::
+
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>group</th><th>t</th><th>lo</th><th>mid</th><th>hi</th></tr></thead><tbody><tr><td>low</td><td>0</td><td>0.6</td><td>1.0</td><td>1.4</td></tr><tr><td>low</td><td>1</td><td>0.8555202066613397</td><td>1.2955202066613396</td><td>1.7355202066613395</td></tr><tr><td>low</td><td>2</td><td>1.0846424733950353</td><td>1.5646424733950353</td><td>2.0446424733950352</td></tr><tr><td>low</td><td>3</td><td>1.2633269096274833</td><td>1.7833269096274833</td><td>2.3033269096274833</td></tr><tr><td>low</td><td>4</td><td>1.3720390859672262</td><td>1.9320390859672263</td><td>2.4920390859672263</td></tr><tr><td>low</td><td>5</td><td>1.3974949866040545</td><td>1.9974949866040546</td><td>2.5974949866040546</td></tr><tr><td>low</td><td>6</td><td>1.333847630878195</td><td>1.9738476308781951</td><td>2.6138476308781953</td></tr><tr><td>low</td><td>7</td><td>1.1832093666488737</td><td>1.8632093666488738</td><td>2.543209366648874</td></tr><tr><td>low</td><td>8</td><td>0.9554631805511511</td><td>1.675463180551151</td><td>2.3954631805511513</td></tr><tr><td>low</td><td>9</td><td>0.6673798802338302</td><td>1.4273798802338302</td><td>2.1873798802338302</td></tr><tr><td>low</td><td>10</td><td>0.3411200080598671</td><td>1.1411200080598671</td><td>1.9411200080598672</td></tr><tr><td>low</td><td>11</td><td>0.0022543058567516816</td><td>0.8422543058567518</td><td>1.6822543058567518</td></tr><tr><td>low</td><td>12</td><td>-0.3225204432948521</td><td>0.5574795567051479</td><td>1.437479556705148</td></tr><tr><td>low</td><td>13</td><td>-0.6077661591839738</td><td>0.31223384081602623</td><td>1.2322338408160263</td></tr><tr><td>low</td><td>14</td><td>-0.8315757724135883</td><td>0.1284242275864118</td><td>1.0884242275864118</td></tr><tr><td>low</td><td>15</td><td>-0.977530117665097</td><td>0.02246988233490299</td><td>1.022469882334903</td></tr><tr><td>low</td><td>16</td><td>-1.0361646088358407</td><td>0.0038353911641593186</td><td>1.0438353911641594</td></tr><tr><td>low</td><td>17</td><td>-1.0058146823277325</td><td>0.07418531767226755</td><td>1.1541853176722676</td></tr><tr><td>low</td><td>18</td><td>-0.8927644875559878</td><td>0.2272355124440123</td><td>1.3472355124440125</td></tr><tr><td>low</td><td>19</td><td>-0.7106855425976377</td><td>0.4493144574023624</td><td>1.6093144574023626</td></tr></tbody></table>
+```
+
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image {:data bands
+                    :mapping {:x :t :ymin :lo :ymax :hi :color :group}
+                    :charts [(chart/ribbon) (chart/line {:mapping {:y :mid}})]}
+                   {:width 600 :height 340})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_series_files/image0.png)
+:::
+
+
+Its options: the band's colour and fill, its edges, and a gradient instead of a flat fill:
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:color</td><td>a clojure2d color or :none</td><td>[69 117 180]</td><td>band colour (a mapped :color wins)</td></tr><tr><td>:fill</td><td>:color or a clojure2d color or :none</td><td>:color</td><td>band fill: :color (the band colour at :alpha), a colour or :none</td></tr><tr><td>:alpha</td><td>a number in [0 1]</td><td>0.3</td><td>fill opacity of :fill :color</td></tr><tr><td>:stroke-color</td><td>:color or a clojure2d color or :none</td><td>:none</td><td>colour of both bounds' edges: a colour, :none or :color (the band colour)</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>edge width in pixels</td></tr><tr><td>:dash</td><td>:none, a dash style (:dashed :dot-dash :dot-dot-dash :dotted :long-dash :loose-dot :solid :two-dash) or a sequence of positive numbers or nil</td><td>:none</td><td>dash style of the edges (a mapped :dash wins)</td></tr><tr><td>:fill-gradient</td><td>a clojure2d gradient: a preset keyword, a colour list or a function</td><td></td><td>clojure2d gradient (preset, colours or function of t) filling the bands; wins over :fill</td></tr><tr><td>:fill-gradient-axis</td><td>one of :x :y</td><td>:x</td><td>axis the :fill-gradient runs along, over that scale's range (needs :fill-gradient)</td></tr><tr><td>:padding</td><td>map of one of :x :y to [lo hi], non-negative numbers</td><td>0.05 on every side</td><td>padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span</td></tr></tbody></table>
+```
+
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(def band (filter #(= "high" (:group %)) bands))
+```
+:::
+
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>group</th><th>t</th><th>lo</th><th>mid</th><th>hi</th></tr></thead><tbody><tr><td>high</td><td>0</td><td>3.6</td><td>4.0</td><td>4.4</td></tr><tr><td>high</td><td>1</td><td>3.8555202066613394</td><td>4.295520206661339</td><td>4.73552020666134</td></tr><tr><td>high</td><td>2</td><td>4.084642473395035</td><td>4.564642473395035</td><td>5.044642473395036</td></tr><tr><td>high</td><td>3</td><td>4.263326909627484</td><td>4.783326909627483</td><td>5.303326909627483</td></tr><tr><td>high</td><td>4</td><td>4.372039085967225</td><td>4.932039085967226</td><td>5.492039085967226</td></tr><tr><td>high</td><td>5</td><td>4.397494986604054</td><td>4.997494986604054</td><td>5.597494986604055</td></tr><tr><td>high</td><td>6</td><td>4.3338476308781955</td><td>4.973847630878195</td><td>5.613847630878195</td></tr><tr><td>high</td><td>7</td><td>4.183209366648874</td><td>4.863209366648873</td><td>5.543209366648873</td></tr><tr><td>high</td><td>8</td><td>3.955463180551151</td><td>4.675463180551151</td><td>5.39546318055115</td></tr><tr><td>high</td><td>9</td><td>3.66737988023383</td><td>4.42737988023383</td><td>5.18737988023383</td></tr><tr><td>high</td><td>10</td><td>3.3411200080598675</td><td>4.141120008059867</td><td>4.941120008059867</td></tr><tr><td>high</td><td>11</td><td>3.002254305856752</td><td>3.842254305856752</td><td>4.682254305856752</td></tr><tr><td>high</td><td>12</td><td>2.677479556705148</td><td>3.557479556705148</td><td>4.437479556705148</td></tr><tr><td>high</td><td>13</td><td>2.392233840816026</td><td>3.312233840816026</td><td>4.2322338408160265</td></tr><tr><td>high</td><td>14</td><td>2.168424227586412</td><td>3.128424227586412</td><td>4.088424227586412</td></tr><tr><td>high</td><td>15</td><td>2.022469882334903</td><td>3.022469882334903</td><td>4.022469882334903</td></tr><tr><td>high</td><td>16</td><td>1.9638353911641593</td><td>3.0038353911641593</td><td>4.043835391164159</td></tr><tr><td>high</td><td>17</td><td>1.9941853176722675</td><td>3.0741853176722675</td><td>4.154185317672267</td></tr><tr><td>high</td><td>18</td><td>2.1072355124440123</td><td>3.2272355124440124</td><td>4.347235512444012</td></tr><tr><td>high</td><td>19</td><td>2.2893144574023623</td><td>3.4493144574023624</td><td>4.609314457402363</td></tr></tbody></table>
+```
+
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange [{:data band :mapping {:x :t :ymin :lo :ymax :hi}
+                                   :charts [(chart/ribbon {:color [200 80 40] :alpha 0.5})]
+                                   :labels {:title ":color, :alpha 0.5"}}
+                                  {:data band :mapping {:x :t :ymin :lo :ymax :hi}
+                                   :charts [(chart/ribbon {:fill :none :stroke-color :color :stroke-width 2 :dash :dashed})]
+                                   :labels {:title ":fill :none, dashed edges"}}
+                                  {:data band :mapping {:x :t :ymin :lo :ymax :hi}
+                                   :charts [(chart/ribbon {:fill-gradient [:yellow :purple] :fill-gradient-axis :y})]
+                                   :labels {:title ":fill-gradient along y"}}]
+                                 {:columns 3})
+                   {:width 1000 :height 300})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_series_files/image1.png)
+:::
+
+
+Shared options: [Fill patterns](reference.shared_options.html#fill-patterns) (`:pattern` `:pattern-color`); [Data and mapping](reference.shared_options.html#data-and-mapping) (`:data` `:mapping`); [Curves](reference.shared_options.html#curves) (`:interpolator` `:interpolator-params` `:sample-step`).
+
+
+## smooth
+
+A curve fitted to the rows of each group, by default with a confidence band.
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:x (required)</td><td>a keyword, a function or a categorical marker of one</td><td></td><td>x position (data units)</td></tr><tr><td>:y (required)</td><td>a keyword, a function or a categorical marker of one</td><td></td><td>y value to fit (data units)</td></tr><tr><td>:color</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>curve and band colour per group</td></tr><tr><td>:dash</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>curve dash style per group</td></tr><tr><td>:pattern</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>band fill pattern per group</td></tr><tr><td>:group</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>groups without a visual aesthetic, each its own fit</td></tr></tbody></table>
+```
+
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image {:data faithful
+                    :mapping {:x :eruptions :y :waiting}
+                    :charts [(chart/scatter) (chart/smooth)]
+                    :labels {:x "eruptions [min]" :y "waiting [min]"}}
+                   {:width 600 :height 360})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_series_files/image2.png)
+:::
+
+
+
+### Fit
+
+The fit method and its parameters, the number of points the curve is evaluated at, and whether each group's fit
+spans only its own x range:
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:method</td><td>a function (fn [xs ys] f) or one of [:akima :b-spline :barycentric :cir :cubic :cubic-smoothing :divided-difference :glm :gp :kriging :linear :lm :loess :microsphere-projection :monotone :neville :pava :pchip :polynomial :rbf :shepard :sprague :step :step-after :step-before]</td><td>:loess</td><td>fit method: :loess, :lm, :glm, :gp, another fastmath 1D interpolation method or a function (fn [xs ys] f)</td></tr><tr><td>:method-params</td><td>map of keyword to any value or nil</td><td></td><td>options of the method (e.g. loess :bandwidth and :degree, lm :degree), else its extra argument</td></tr><tr><td>:n</td><td>integer, >= 2 or nil</td><td>200</td><td>number of grid points the curve is evaluated at</td></tr><tr><td>:full-range</td><td>true or false or nil</td><td>false</td><td>fit over the plot's x :domain when given, else the x range of all groups of the panel (false - each group's x range)</td></tr><tr><td>:padding</td><td>map of one of :x :y to [lo hi], non-negative numbers</td><td>0.05 on every side</td><td>padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span</td></tr></tbody></table>
+```
+
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange [{:data faithful :mapping {:x :eruptions :y :waiting}
+                                   :charts [(chart/scatter) (chart/smooth {:method :lm})]
+                                   :labels {:title ":method :lm"}}
+                                  {:data faithful :mapping {:x :eruptions :y :waiting}
+                                   :charts [(chart/scatter) (chart/smooth {:method :lm :method-params {:degree 3}})]
+                                   :labels {:title ":lm, :method-params {:degree 3}"}}
+                                  {:data faithful :mapping {:x :eruptions :y :waiting}
+                                   :charts [(chart/scatter) (chart/smooth {:method-params {:bandwidth 0.2}})]
+                                   :labels {:title ":loess, :bandwidth 0.2"}}]
+                                 {:columns 3})
+                   {:width 1000 :height 320})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_series_files/image3.png)
+:::
+
+
+
+### Band
+
+The band around the curve: confidence or prediction, nested levels, a bootstrap (seeded here), or none, and
+its fill:
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:fill</td><td>:color or a clojure2d color or :none</td><td>:color</td><td>band fill: :color (the line colour at :alpha), a colour or :none (no band, as :band :none)</td></tr><tr><td>:alpha</td><td>a number in [0 1]</td><td>0.3</td><td>band fill opacity of :fill :color</td></tr><tr><td>:band</td><td>one of :confidence :prediction :bootstrap :none</td><td>:confidence for :loess, :lm, :glm and :gp, else :none</td><td>band around the curve: :confidence, :prediction (:lm), :bootstrap or :none</td></tr><tr><td>:level</td><td>a number in (0 1) or vector of a number in (0 1) (at least 1)</td><td>0.95</td><td>confidence level of the band in (0, 1), or a vector of levels (nested bands)</td></tr><tr><td>:bootstrap</td><td>map</td><td></td><td>options of the :band :bootstrap (see fastmath.interpolation/bootstrap)</td></tr><tr><td>:bootstrap :samples</td><td>a positive integer</td><td>200</td><td>number of bootstrap samples</td></tr><tr><td>:bootstrap :rng</td><td>a fastmath random generator</td><td>an unseeded generator (builds differ)</td><td>random number generator of the samples (seeded for reproducible plots)</td></tr><tr><td>:bootstrap :ci</td><td>one of :basic :bc :normal :percentile</td><td>:percentile</td><td>confidence interval kind of a band point</td></tr><tr><td>:bootstrap :estimation</td><td>keyword</td><td>:legacy</td><td>quantile estimation strategy of the interval (not used by :normal)</td></tr></tbody></table>
+```
+
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange [{:data faithful :mapping {:x :eruptions :y :waiting}
+                                   :charts [(chart/scatter) (chart/smooth {:method :lm :band :prediction})]
+                                   :labels {:title ":band :prediction"}}
+                                  {:data faithful :mapping {:x :eruptions :y :waiting}
+                                   :charts [(chart/scatter) (chart/smooth {:level [0.5 0.95 0.999] :alpha 0.2})]
+                                   :labels {:title ":level [0.5 0.95 0.999]"}}
+                                  {:data faithful :mapping {:x :eruptions :y :waiting}
+                                   :charts [(chart/scatter)
+                                            (chart/smooth {:band :bootstrap :fill [200 80 40 90]
+                                                           :bootstrap {:samples 100 :rng (r/rng :mersenne 3)}})]
+                                   :labels {:title ":band :bootstrap"}}]
+                                 {:columns 3})
+                   {:width 1000 :height 320})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_series_files/image4.png)
+:::
+
+
+Shared options: [Line style](reference.shared_options.html#line-style) (`:color` `:width` `:dash`); [Fill patterns](reference.shared_options.html#fill-patterns) (`:pattern` `:pattern-color`); [Data and mapping](reference.shared_options.html#data-and-mapping) (`:data` `:mapping`).
+
+
+## candlestick
+
+A candle per row: a wick from low to high and a body from open to close, coloured by direction. The dates here
+are text, so each trading day gets a band (no gaps for weekends).
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:x (required)</td><td>a keyword, a function or a categorical marker of one</td><td></td><td>x position (data units)</td></tr><tr><td>:open (required)</td><td>a keyword, a function or a categorical marker of one</td><td></td><td>opening price</td></tr><tr><td>:high (required)</td><td>a keyword, a function or a categorical marker of one</td><td></td><td>highest price</td></tr><tr><td>:low (required)</td><td>a keyword, a function or a categorical marker of one</td><td></td><td>lowest price</td></tr><tr><td>:close (required)</td><td>a keyword, a function or a categorical marker of one</td><td></td><td>closing price</td></tr></tbody></table>
+```
+
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image {:data ohlc
+                    :mapping {:x :date :open :open :high :high :low :low :close :close}
+                    :charts [(chart/candlestick)]
+                    :labels {:y "VIX"}}
+                   {:width 700 :height 360})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_series_files/image5.png)
+:::
+
+
+Its options: the up and down colours and patterns, body and wick widths, and the OHLC bar style:
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:up-color</td><td>a clojure2d color or :none</td><td>[26 152 80]</td><td>colour of a candle closing at or above its open</td></tr><tr><td>:down-color</td><td>a clojure2d color or :none</td><td>[215 48 39]</td><td>colour of a candle closing below its open</td></tr><tr><td>:body-width</td><td>a number in [0 1]</td><td>0.7</td><td>body width, a fraction of the smallest pixel gap between distinct x (of a band's width on a bands scale)</td></tr><tr><td>:wick-width</td><td>a non-negative number</td><td>1</td><td>wick (and OHLC bar) width in pixels</td></tr><tr><td>:stroke-color</td><td>a clojure2d color or :none</td><td>:none</td><td>body outline colour: a colour or :none</td></tr><tr><td>:up-pattern</td><td>a pattern name (:back-hatch :cross :dense-dots :diagonal-cross :dots :hatch :horizontal :solid :vertical) or a pattern map</td><td>:solid</td><td>pattern drawn over the bodies of up candles</td></tr><tr><td>:down-pattern</td><td>a pattern name (:back-hatch :cross :dense-dots :diagonal-cross :dots :hatch :horizontal :solid :vertical) or a pattern map</td><td>:solid</td><td>pattern drawn over the bodies of down candles</td></tr><tr><td>:pattern-color</td><td>:darker or a clojure2d color or :none</td><td>:darker</td><td>pattern ink: a colour, :none or :darker (the darkened body colour)</td></tr><tr><td>:style</td><td>one of :candle :ohlc</td><td>:candle</td><td>:candle (wick and body) or :ohlc (a low-high bar with open and close ticks)</td></tr><tr><td>:padding</td><td>map of one of :x :y to [lo hi], non-negative numbers</td><td>0.05 on every side (the x extent also reaches half the smallest x gap beyond the data)</td><td>padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span</td></tr></tbody></table>
+```
+
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange [{:data ohlc :mapping {:x :date :open :open :high :high :low :low :close :close}
+                                   :charts [(chart/candlestick {:up-color [33 102 172] :down-color [240 140 30]
+                                                                :body-width 0.4 :stroke-color :black})]
+                                   :labels {:title "colours, :body-width 0.4"}}
+                                  {:data ohlc :mapping {:x :date :open :open :high :high :low :low :close :close}
+                                   :charts [(chart/candlestick {:down-pattern :hatch :pattern-color :black})]
+                                   :labels {:title ":down-pattern :hatch"}}
+                                  {:data ohlc :mapping {:x :date :open :open :high :high :low :low :close :close}
+                                   :charts [(chart/candlestick {:style :ohlc :wick-width 2})]
+                                   :labels {:title ":style :ohlc"}}]
+                                 {:columns 3})
+                   {:width 1000 :height 320})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_series_files/image6.png)
+:::
+
+
+Shared options: [Data and mapping](reference.shared_options.html#data-and-mapping) (`:data` `:mapping`).
+
+
+```{=html}
+<div style="background-color:grey;height:2px;width:100%;"></div>
+```
+
+
+
+```{=html}
+<div><pre><small><small>source: notebooks/reference/charts_series.clj</small></small></pre></div>
+```

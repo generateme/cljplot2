@@ -1,0 +1,420 @@
+---
+format:
+  html: {toc: true, toc-location: right, toc-depth: 4, theme: cosmo}
+code-block-background: true
+
+---
+<style></style><style>.printedClojure .sourceCode {
+  background-color: transparent;
+  border-style: none;
+}
+</style><style>.clay-limit-image-width .clay-image {max-width: 100%}
+.clay-side-by-side .sourceCode {margin: 0}
+.clay-side-by-side {margin: 1em 0}
+</style>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js" type="text/javascript"></script><script src="https://code.jquery.com/ui/1.13.1/jquery-ui.min.js" type="text/javascript"></script>
+
+# Charts: multivariate and 3D
+
+Many variables at once: a line per row across one axis per variable (`parallel`, a radar in polar
+coordinates), points in a 3D box (`cloud`) and surfaces over a grid (`surface`). Each chart lists the mapping keys
+it reads, its own options and the shared option groups it takes (documented once in the Shared options chapter).
+
+
+::: {.sourceClojure}
+```clojure
+(ns reference.charts-multivariate-3d
+  (:require [cljplot2.chart :as chart]
+            [cljplot2.core :as plot]
+            [cljplot2.describe :as describe]
+            [notebook-utils :as nu]))
+```
+:::
+
+
+Data: Edgar Anderson's iris measurements, R datasets package `iris` (Anderson 1935; Fisher 1936); licence: Part of R (GPL-2 | GPL-3).
+
+
+::: {.sourceClojure}
+```clojure
+(def iris (nu/dataset :iris))
+```
+:::
+
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>sepal-length</th><th>sepal-width</th><th>petal-length</th><th>petal-width</th><th>species</th></tr></thead><tbody><tr><td>5.1</td><td>3.5</td><td>1.4</td><td>0.2</td><td>setosa</td></tr><tr><td>4.9</td><td>3</td><td>1.4</td><td>0.2</td><td>setosa</td></tr><tr><td>4.7</td><td>3.2</td><td>1.3</td><td>0.2</td><td>setosa</td></tr><tr><td>4.6</td><td>3.1</td><td>1.5</td><td>0.2</td><td>setosa</td></tr><tr><td>5</td><td>3.6</td><td>1.4</td><td>0.2</td><td>setosa</td></tr><tr><td>5.4</td><td>3.9</td><td>1.7</td><td>0.4</td><td>setosa</td></tr><tr><td>4.6</td><td>3.4</td><td>1.4</td><td>0.3</td><td>setosa</td></tr><tr><td>5</td><td>3.4</td><td>1.5</td><td>0.2</td><td>setosa</td></tr><tr><td>4.4</td><td>2.9</td><td>1.4</td><td>0.2</td><td>setosa</td></tr><tr><td>4.9</td><td>3.1</td><td>1.5</td><td>0.1</td><td>setosa</td></tr><tr><td>5.4</td><td>3.7</td><td>1.5</td><td>0.2</td><td>setosa</td></tr><tr><td>4.8</td><td>3.4</td><td>1.6</td><td>0.2</td><td>setosa</td></tr><tr><td>4.8</td><td>3</td><td>1.4</td><td>0.1</td><td>setosa</td></tr><tr><td>4.3</td><td>3</td><td>1.1</td><td>0.1</td><td>setosa</td></tr><tr><td>5.8</td><td>4</td><td>1.2</td><td>0.2</td><td>setosa</td></tr><tr><td>5.7</td><td>4.4</td><td>1.5</td><td>0.4</td><td>setosa</td></tr><tr><td>5.4</td><td>3.9</td><td>1.3</td><td>0.4</td><td>setosa</td></tr><tr><td>5.1</td><td>3.5</td><td>1.4</td><td>0.3</td><td>setosa</td></tr><tr><td>5.7</td><td>3.8</td><td>1.7</td><td>0.3</td><td>setosa</td></tr><tr><td>5.1</td><td>3.8</td><td>1.5</td><td>0.3</td><td>setosa</td></tr></tbody></table>
+```
+
+:::
+
+
+Data: Earthquakes off Fiji since 1964, R datasets package `quakes` (Harvard PRIM-H project); licence: Part of R (GPL-2 | GPL-3).
+
+
+::: {.sourceClojure}
+```clojure
+(def quakes (nu/dataset :quakes))
+```
+:::
+
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>lat</th><th>long</th><th>depth</th><th>mag</th><th>stations</th></tr></thead><tbody><tr><td>-20.42</td><td>181.62</td><td>562</td><td>4.8</td><td>41</td></tr><tr><td>-20.62</td><td>181.03</td><td>650</td><td>4.2</td><td>15</td></tr><tr><td>-26</td><td>184.1</td><td>42</td><td>5.4</td><td>43</td></tr><tr><td>-17.97</td><td>181.66</td><td>626</td><td>4.1</td><td>19</td></tr><tr><td>-20.42</td><td>181.96</td><td>649</td><td>4</td><td>11</td></tr><tr><td>-19.68</td><td>184.31</td><td>195</td><td>4</td><td>12</td></tr><tr><td>-11.7</td><td>166.1</td><td>82</td><td>4.8</td><td>43</td></tr><tr><td>-28.11</td><td>181.93</td><td>194</td><td>4.4</td><td>15</td></tr><tr><td>-28.74</td><td>181.74</td><td>211</td><td>4.7</td><td>35</td></tr><tr><td>-17.47</td><td>179.59</td><td>622</td><td>4.3</td><td>19</td></tr><tr><td>-21.44</td><td>180.69</td><td>583</td><td>4.4</td><td>13</td></tr><tr><td>-12.26</td><td>167</td><td>249</td><td>4.6</td><td>16</td></tr><tr><td>-18.54</td><td>182.11</td><td>554</td><td>4.4</td><td>19</td></tr><tr><td>-21</td><td>181.66</td><td>600</td><td>4.4</td><td>10</td></tr><tr><td>-20.7</td><td>169.92</td><td>139</td><td>6.1</td><td>94</td></tr><tr><td>-15.94</td><td>184.95</td><td>306</td><td>4.3</td><td>11</td></tr><tr><td>-13.64</td><td>165.96</td><td>50</td><td>6</td><td>83</td></tr><tr><td>-17.83</td><td>181.5</td><td>590</td><td>4.5</td><td>21</td></tr><tr><td>-23.5</td><td>179.78</td><td>570</td><td>4.4</td><td>13</td></tr><tr><td>-22.63</td><td>180.31</td><td>598</td><td>4.4</td><td>18</td></tr></tbody></table>
+```
+
+:::
+
+
+
+## parallel
+
+A line per row across one vertical axis per variable, each axis scaled on its own; the variables come from the
+`:variables` option, the mapping only groups the rows.
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:color</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>line colour, grouping the rows</td></tr><tr><td>:dash</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>line dash style, grouping the rows</td></tr><tr><td>:pattern</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>radar fill pattern, grouping the rows</td></tr><tr><td>:group</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>groups without a visual aesthetic</td></tr></tbody></table>
+```
+
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image {:data iris
+                    :mapping {:color :species}
+                    :charts [(chart/parallel {:variables [:sepal-length :sepal-width :petal-length :petal-width]})]
+                    :labels {:x nil :y nil}}
+                   {:width 700 :height 400})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_multivariate_3d_files/image0.png)
+:::
+
+
+
+### Axes
+
+Which variables and in what order (a `[label accessor]` pair renames one), how each is scaled - every axis to
+0..1 (`:uniminmax`), to standard scores, robustly, centred, or all on one common range - explicit limits, the
+axes themselves and what a missing value does:
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:variables (required)</td><td>vector of a keyword or a [label accessor] pair (a string and a keyword or function)</td><td></td><td>the variables in axis order: keywords or [label accessor] pairs (2 or more)</td></tr><tr><td>:scaling</td><td>one of :center :globalminmax :robust :std :uniminmax</td><td>:uniminmax</td><td>per variable scaling: :uniminmax (0..1), :std, :robust, :center or :globalminmax</td></tr><tr><td>:limits</td><td>map of any value to [lo hi], finite numbers, lo < hi</td><td>each variable's finite data range</td><td>explicit variable domains {key [lo hi]}, key - the keyword or the pair's label</td></tr><tr><td>:axes</td><td>true or false or nil</td><td>true</td><td>draw each variable's axis with ticks and labels</td></tr><tr><td>:missing</td><td>one of :break :drop</td><td>:break</td><td>a missing value: :break (the line breaks there) or :drop (the row is dropped)</td></tr><tr><td>:robust-center</td><td>one of :median :mean</td><td>:median (only with :scaling :robust)</td><td>centre of :scaling :robust: :median or :mean</td></tr><tr><td>:robust-spread</td><td>one of [:biweight :gini :iqr :mad :meanad :qn :sn :stddev :tukey] or a quantile p, 0 < p < 0.5</td><td>:mad (only with :scaling :robust)</td><td>spread of :scaling :robust: a fastmath.stats/robust-stddev estimator (:mad, :iqr, :sn, :qn, ...) or a quantile p in (0 0.5)</td></tr><tr><td>:padding</td><td>map</td><td></td><td>padding of the scaled values' span, {:y [lo hi]} fractions of the span</td></tr><tr><td>:padding :y</td><td>[lo hi], non-negative numbers</td><td>[0.05 0.05]</td><td>padding of the value axis [lo hi], fractions of the span</td></tr></tbody></table>
+```
+
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange [{:data iris
+                                   :mapping {:color :species}
+                                   :charts [(chart/parallel {:variables [["petal L" :petal-length] ["petal W" :petal-width]
+                                                                         ["sepal L" :sepal-length]]
+                                                             :scaling :std})]
+                                   :labels {:title ":scaling :std, labelled variables" :x nil :y nil}
+                                   :legend false}
+                                  {:data iris
+                                   :mapping {:color :species}
+                                   :charts [(chart/parallel {:variables [:petal-length :petal-width :sepal-length]
+                                                             :scaling :globalminmax :limits {:petal-width [0 8]}})]
+                                   :labels {:title ":globalminmax, :limits {:petal-width [0 8]}" :x nil :y nil}}]
+                                 {:columns 2 :widths [1 1.25]})
+                   {:width 1000 :height 380})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_multivariate_3d_files/image1.png)
+:::
+
+
+
+### Style
+
+Smooth curves between the axes, and - in polar coordinates, where the axes become spokes of a radar - a fill of
+each row's polygon:
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:fill</td><td>:color or a clojure2d color or :none</td><td>:none</td><td>radar polygon fill (polar only): :none, :color (the line's colour at :alpha) or a colour</td></tr><tr><td>:alpha</td><td>a number in [0 1]</td><td>0.25</td><td>fill opacity</td></tr><tr><td>:curve</td><td>one of :smooth</td><td>straight segments</td><td>join consecutive axes with smooth curves (:smooth)</td></tr><tr><td>:smoothness</td><td>a finite number, > 0, <= 1</td><td>1 (only with :curve :smooth)</td><td>how far the smooth bend spreads over the gap between axes, (0 1]</td></tr></tbody></table>
+```
+
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(def athletes [{:name "Ann" :speed 8 :strength 5 :stamina 9 :skill 6 :reach 4}
+               {:name "Bo" :speed 5 :strength 9 :stamina 6 :skill 4 :reach 8}
+               {:name "Cy" :speed 6 :strength 6 :stamina 5 :skill 9 :reach 6}])
+```
+:::
+
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>name</th><th>speed</th><th>strength</th><th>stamina</th><th>skill</th><th>reach</th></tr></thead><tbody><tr><td>Ann</td><td>8</td><td>5</td><td>9</td><td>6</td><td>4</td></tr><tr><td>Bo</td><td>5</td><td>9</td><td>6</td><td>4</td><td>8</td></tr><tr><td>Cy</td><td>6</td><td>6</td><td>5</td><td>9</td><td>6</td></tr></tbody></table>
+```
+
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange [{:data iris
+                                   :mapping {:color :species}
+                                   :charts [(chart/parallel {:variables [:sepal-length :sepal-width :petal-length :petal-width]
+                                                             :curve :smooth :smoothness 0.6})]
+                                   :labels {:title ":curve :smooth" :x nil :y nil}
+                                   :legend false}
+                                  {:data athletes
+                                   :mapping {:color :name}
+                                   :charts [(chart/parallel {:variables [:speed :strength :stamina :skill :reach]
+                                                             :scaling :globalminmax :limits {:speed [0 10] :strength [0 10]
+                                                                                             :stamina [0 10] :skill [0 10]
+                                                                                             :reach [0 10]}
+                                                             :fill :color :alpha 0.2})]
+                                   :coord {:kind :polar}
+                                   :labels {:title "polar, :fill :color" :x nil :y nil}}]
+                                 {:columns 2 :widths [1.2 1]})
+                   {:width 1000 :height 420})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_multivariate_3d_files/image2.png)
+:::
+
+
+Shared options: [Line style](reference.shared_options.html#line-style) (`:color` `:width` `:dash`); [Fill patterns](reference.shared_options.html#fill-patterns) (`:pattern` `:pattern-color`); [Data and mapping](reference.shared_options.html#data-and-mapping) (`:data` `:mapping`).
+
+
+## cloud
+
+Points in a 3D box at their x, y and z, seen in perspective; colour, size and shape may come from the data.
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:x (required)</td><td>a keyword, a function or a categorical marker of one</td><td></td><td>x coordinate: numbers or categories</td></tr><tr><td>:y (required)</td><td>a keyword, a function or a categorical marker of one</td><td></td><td>y coordinate: numbers or categories</td></tr><tr><td>:z</td><td>a keyword, a function or a categorical marker of one</td><td></td><td>z coordinate, numeric (not read with :bins)</td></tr><tr><td>:color</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>point colour</td></tr><tr><td>:size</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>point size</td></tr><tr><td>:shape</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>point shape</td></tr></tbody></table>
+```
+
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image {:data iris
+                    :mapping {:x :sepal-length :y :sepal-width :z :petal-length :color :species}
+                    :charts [(chart/cloud)]}
+                   {:width 600 :height 480})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_multivariate_3d_files/image3.png)
+:::
+
+
+
+### Style
+
+The point style used when nothing is mapped:
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:size</td><td>a non-negative number</td><td>6</td><td>point size in pixels (a mapped :size wins)</td></tr><tr><td>:color</td><td>a clojure2d color or :none</td><td>[69 117 180 180]</td><td>point colour (a mapped :color wins)</td></tr><tr><td>:stroke-color</td><td>a clojure2d color or :none</td><td>:none</td><td>outline colour: a colour or :none</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>outline width in pixels</td></tr><tr><td>:shape</td><td>a shape character, keyword or shape map</td><td>\O</td><td>point shape (a mapped :shape wins)</td></tr></tbody></table>
+```
+
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image {:data quakes
+                    :mapping {:x :long :y :lat :z :depth}
+                    :charts [(chart/cloud {:size 5 :shape \s :color [200 80 40 220] :stroke-color :black
+                                           :stroke-width 0.3 :domain {:z [690 40]}
+                                           :axis-titles {:x "longitude" :y "latitude" :z "depth"}})]}
+                   {:width 600 :height 480})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_multivariate_3d_files/image4.png)
+:::
+
+
+
+### Marks
+
+Points, spikes from a base, bars, or nothing but the side projections of the points on the far walls; with
+`:bins` the rows are counted on an x / y grid and the counts are the heights - a 2D histogram:
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:type</td><td>one of :points :spikes :bars :none</td><td>:points</td><td>marks: :points, :spikes (a line from :base to each point), :bars (a box per row from :base to z) or :none (only :projections)</td></tr><tr><td>:base</td><td>a finite number</td><td>the low z limit (0 with :bins)</td><td>z where spikes and bars start (kept within an explicit z domain)</td></tr><tr><td>:bar-size</td><td>[a number in [0 1], a number in [0 1]]</td><td>[0.8 0.8]</td><td>bar footprint [fx fy], fractions of the x / y resolution (of a cell with :bins)</td></tr><tr><td>:projections</td><td>map</td><td></td><td>side projections of the points on the far walls, per plane</td></tr><tr><td>:projections :xy</td><td>one of :points :density :contour</td><td></td><td>xy wall: :points, :density (KDE bands) or :contour (KDE lines)</td></tr><tr><td>:projections :xz</td><td>one of :points :density :contour</td><td></td><td>xz wall: :points, :density (KDE bands) or :contour (KDE lines)</td></tr><tr><td>:projections :yz</td><td>one of :points :density :contour</td><td></td><td>yz wall: :points, :density (KDE bands) or :contour (KDE lines)</td></tr><tr><td>:bins</td><td>[integer (1..1000), integer (1..1000)]</td><td></td><td>a 2D histogram: rows counted on an [nx ny] grid over x / y, counts as z</td></tr></tbody></table>
+```
+
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange [{:data quakes
+                                   :mapping {:x :long :y :lat :z :mag}
+                                   :charts [(chart/cloud {:type :spikes :base 4 :size 3})]
+                                   :labels {:title ":type :spikes, :base 4"}}
+                                  {:data quakes
+                                   :mapping {:x :long :y :lat :z :depth}
+                                   :charts [(chart/cloud {:size 2 :domain {:z [690 40]}
+                                                          :projections {:xy :density :xz :contour :yz :points}})]
+                                   :labels {:title ":projections"}}
+                                  {:data quakes
+                                   :mapping {:x :long :y :lat}
+                                   :charts [(chart/cloud {:bins [10 10] :type :bars :bar-size [0.9 0.9]})]
+                                   :labels {:title ":bins [10 10], :type :bars"}}]
+                                 {:columns 3})
+                   {:width 1000 :height 380})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_multivariate_3d_files/image5.png)
+:::
+
+
+Shared options: [Data and mapping](reference.shared_options.html#data-and-mapping) (`:data` `:mapping`); [3D frame](reference.shared_options.html#d-frame) (`:view` `:aspect` `:box` `:axes` `:axis-titles` `:domain` `:reverse`).
+
+
+## surface
+
+A mesh of quads over a grid: gridded data (x, y, z per lattice node), a function of [x y] sampled over a domain,
+a parametric surface, or the 2D density of mapped points; heights coloured through the colour scale.
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:x</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>x of a lattice node (gridded) or of a point (:density)</td></tr><tr><td>:y</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>y of a lattice node (gridded) or of a point (:density)</td></tr><tr><td>:z</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>height of a lattice node (gridded source)</td></tr></tbody></table>
+```
+
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(def lattice (for [x (range -2 2.01 0.25) y (range -2 2.01 0.25)]
+               {:x x :y y :z (* x (Math/exp (- (+ (* x x) (* y y)))))}))
+```
+:::
+
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>x</th><th>y</th><th>z</th></tr></thead><tbody><tr><td>-2</td><td>-2</td><td>-6.709252558050237E-4</td></tr><tr><td>-2</td><td>-1.75</td><td>-0.001713267660371881</td></tr><tr><td>-2</td><td>-1.5</td><td>-0.0038609082724554186</td></tr><tr><td>-2</td><td>-1.25</td><td>-0.007678332948052327</td></tr><tr><td>-2</td><td>-1.0</td><td>-0.013475893998170934</td></tr><tr><td>-2</td><td>-0.75</td><td>-0.02087187292554901</td></tr><tr><td>-2</td><td>-0.5</td><td>-0.02852846781799851</td></tr><tr><td>-2</td><td>-0.25</td><td>-0.034411900851702766</td></tr><tr><td>-2</td><td>0.0</td><td>-0.03663127777746836</td></tr><tr><td>-2</td><td>0.25</td><td>-0.034411900851702766</td></tr><tr><td>-2</td><td>0.5</td><td>-0.02852846781799851</td></tr><tr><td>-2</td><td>0.75</td><td>-0.02087187292554901</td></tr><tr><td>-2</td><td>1.0</td><td>-0.013475893998170934</td></tr><tr><td>-2</td><td>1.25</td><td>-0.007678332948052327</td></tr><tr><td>-2</td><td>1.5</td><td>-0.0038609082724554186</td></tr><tr><td>-2</td><td>1.75</td><td>-0.001713267660371881</td></tr><tr><td>-2</td><td>2.0</td><td>-6.709252558050237E-4</td></tr><tr><td>-1.75</td><td>-2</td><td>-0.0014991092028253958</td></tr><tr><td>-1.75</td><td>-1.75</td><td>-0.003828109456820049</td></tr><tr><td>-1.75</td><td>-1.5</td><td>-0.00862677783020384</td></tr></tbody></table>
+```
+
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image {:data lattice
+                    :mapping {:x :x :y :y :z :z}
+                    :charts [(chart/surface)]}
+                   {:width 600 :height 480})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_multivariate_3d_files/image6.png)
+:::
+
+
+Its options: the source (`:f` with the 3D frame's `:domain`, `:fu` over `:u` / `:v`, or `:density`), the grid
+size, and the drawing - filled, wireframe or both, shaded, in one colour:
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:stroke-color</td><td>a clojure2d color or :none</td><td>[60 60 60]</td><td>quad outline colour of :style :both</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>0.5</td><td>quad outline width in pixels (:style :both and :wireframe)</td></tr><tr><td>:style</td><td>one of :surface :wireframe :both</td><td>:surface</td><td>mesh drawing: :surface (filled quads), :wireframe (quad outlines) or :both</td></tr><tr><td>:color</td><td>a clojure2d color or :none</td><td>each quad's mean height (or c of [z c]) through the plot's color scale</td><td>one colour for all quads (no color scale)</td></tr><tr><td>:shade</td><td>true or false or nil</td><td>true</td><td>shading of filled quads by their angle to the light (Lambert)</td></tr><tr><td>:f</td><td>a function</td><td></td><td>source: a function of [x y] returning z or [z c], sampled over :domain :x / :y</td></tr><tr><td>:density</td><td>true or false or nil</td><td>false</td><td>source: the 2D kernel density of the mapped :x, :y</td></tr><tr><td>:fu</td><td>a function</td><td></td><td>source: a parametric surface, a function of [u v] returning [x y z]</td></tr><tr><td>:u</td><td>[a finite number, a finite number]</td><td></td><td>the u range [lo hi] of :fu</td></tr><tr><td>:v</td><td>[a finite number, a finite number]</td><td></td><td>the v range [lo hi] of :fu</td></tr><tr><td>:n</td><td>integer (2..2000) or [integer (2..2000), integer (2..2000)]</td><td>30</td><td>grid points per axis of :f, :fu, :density: n or [nx ny]</td></tr><tr><td>:cut</td><td>a non-negative finite number</td><td>3 (only with :density)</td><td>how many bandwidths the density domain extends past the points on each side</td></tr></tbody></table>
+```
+
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange [{:charts [(chart/surface {:f (fn [[x y]] (Math/sin (Math/hypot x y)))
+                                                            :domain {:x [-6 6] :y [-6 6]} :n 25 :style :both})]
+                                   :labels {:title ":f, :style :both"}
+                                   :legend false}
+                                  {:charts [(chart/surface {:fu (fn [[u v]] [(* (+ 2.0 (Math/cos v)) (Math/cos u))
+                                                                             (* (+ 2.0 (Math/cos v)) (Math/sin u))
+                                                                             (Math/sin v)])
+                                                            :u [0.0 (* 2 Math/PI)] :v [0.0 (* 2 Math/PI)] :n [36 18]
+                                                            :aspect [1 1 0.35] :color [120 170 210] :shade true})]
+                                   :labels {:title ":fu (a torus), one colour"}}
+                                  {:data iris
+                                   :mapping {:x :sepal-length :y :sepal-width}
+                                   :charts [(chart/surface {:density true :n 30 :style :wireframe
+                                                            :stroke-color [40 40 40]})]
+                                   :labels {:title ":density, :wireframe"}
+                                   :legend false}]
+                                 {:columns 3})
+                   {:width 1000 :height 380})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_multivariate_3d_files/image7.png)
+:::
+
+
+Shared options: [Data and mapping](reference.shared_options.html#data-and-mapping) (`:data` `:mapping`); [3D frame](reference.shared_options.html#d-frame) (`:view` `:aspect` `:box` `:axes` `:axis-titles` `:domain` `:reverse`).
+
+
+```{=html}
+<div style="background-color:grey;height:2px;width:100%;"></div>
+```
+
+
+
+```{=html}
+<div><pre><small><small>source: notebooks/reference/charts_multivariate_3d.clj</small></small></pre></div>
+```

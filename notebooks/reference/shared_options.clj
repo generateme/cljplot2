@@ -1,7 +1,8 @@
 ;; # Shared options
 
-;; Option groups taken by several charts, builders or data functions, documented once here; other tables mark their
-;; rows with the group's title. A chart may take only part of a group - its own table lists what it accepts.
+;; Option groups taken by several charts, builders or data functions, documented once here. A chart's page lists the
+;; groups it takes and which of their keys (a chart may take only part of a group); builder tables mark the rows of a
+;; group with its title.
 
 (ns reference.shared-options
   (:require [fastmath.random :as r]
@@ -110,10 +111,14 @@
                     :charts [(chart/bar {:corner-radius-end 8})]}
                    {:width 500 :height 260})
 
-;; ### Strip placement
+;; ### Strip options
 
 ;; Strip charts (bar, box, violin, stripplot, beeswarm, dotplot, rug, bullet, extent) draw one item per level of a
-;; categorical axis. Where the items sit across the value axis, how wide, and which axis holds the levels:
+;; categorical axis.
+
+;; #### Placement
+
+;; Where the items sit across the value axis, how wide, and which axis holds the levels:
 
 (nu/options-table (describe/fragment-rows :strip) :placement)
 
@@ -122,7 +127,7 @@
                     :charts [(chart/violin {:width 0.9}) (chart/box {:width 0.15})]}
                    {:width 500 :height 280})
 
-;; ### Strip groups
+;; #### Groups
 
 ;; Groups of one level share its band: side by side (`:dodge`, with a gap), on top of each other, or one half each
 ;; (`:mirror`).
@@ -134,7 +139,7 @@
                     :charts [(chart/bar {:position :dodge :dodge-gap 0.3})]}
                    {:width 500 :height 260})
 
-;; ### Strip counts
+;; #### Counts
 
 ;; Each item's row count written past its largest value.
 
@@ -187,16 +192,20 @@
                                  {:columns 3})
                    {:width 900 :height 560})
 
-;; ### Field: a function
+;; ### Fields
 
-;; Raster and contour charts draw a scalar field: a function of a point over a domain ...
+;; Raster and contour charts draw a scalar field.
+
+;; #### A function
+
+;; The field as a function of a point over a domain ...
 
 (nu/options-table (describe/fragment-rows :field) :function)
 
 (plot/render-image {:charts [(chart/contour {:f (fn [[x y]] (+ (* x x) (* 2 y y))) :domain {:x [-2 2] :y [-2 2]}})]}
                    {:width 450 :height 350})
 
-;; ### Field: a density estimate
+;; #### A density estimate
 
 ;; ... or the kernel density estimate of mapped points ...
 
@@ -207,7 +216,7 @@
                     :charts [(chart/field {:kernel :epanechnikov :bandwidth 0.4}) (chart/scatter {:size 3})]}
                    {:width 450 :height 350})
 
-;; ### Field: the grid
+;; #### The grid
 
 ;; ... sampled on a grid of `:n` points per axis (interpolating gridded data with `:interpolation`).
 
@@ -233,10 +242,13 @@
                     :charts [(chart/treemap {:group-labels false :leaf-labels #(str (:name %) " " (:value %))})]}
                    {:width 500 :height 300})
 
-;; ### 3D view
+;; ### 3D frame
 
-;; 3D charts (cloud, surface) are seen from an eye at an azimuth and elevation, with perspective; the box has
-;; proportions and may mirror axes.
+;; 3D charts (cloud, surface) draw their data in a box seen in perspective.
+
+;; #### View
+
+;; The eye sits at an azimuth and elevation, at a perspective distance; the box has proportions and may mirror axes.
 
 (nu/options-table (describe/fragment-rows :frame-3d) :view)
 
@@ -245,7 +257,7 @@
                     :charts [(chart/cloud {:view {:azimuth 60 :elevation 20 :distance 0.3} :aspect [1 1 0.6]})]}
                    {:width 500 :height 400})
 
-;; ### 3D axes
+;; #### Axes
 
 ;; The box, the ticks and the axis titles.
 
@@ -256,7 +268,7 @@
                     :charts [(chart/cloud {:box false :axis-titles {:x "sepal L" :y "sepal W" :z "petal L"}})]}
                    {:width 500 :height 400})
 
-;; ### 3D domains
+;; #### Domains
 
 ;; Explicit domains - needed when several 3D charts share a plot.
 

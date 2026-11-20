@@ -26,7 +26,8 @@
   scaled `lo` to `hi`, ticks of a linear scale over the domain (original units; as many as theme
   `[:axis :y :tick-spacing]` allows along the axis's pixel length) with labels (text role `:tick-label`, styled by
   theme `[:axis :y]`): right of the axis, below it in a flipped plot, beside the spoke in a polar one (outside the
-  ring in a flipped polar one).
+  ring in a flipped polar one). A label overlapping one drawn before it (any axis, in axis and tick order) is
+  dropped - e.g. the 0 labels meeting at a radar's centre keep the first.
 
   `:curve :smooth` joins consecutive axes with smooth curves instead of straight segments: a cubic bezier in range
   space that meets every axis perpendicularly, at its value, and never leaves the range between the two values;
@@ -56,6 +57,7 @@
             [cljplot2.data.rows :as data]
             [cljplot2.graphics.curve :as curve]
             [cljplot2.graphics.draw :as draw]
+            [cljplot2.graphics.measure :as measure]
             [cljplot2.graphics.polyline :as polyline]
             [cljplot2.scale.coord :as coord]
             [cljplot2.scale.position :as scale]
@@ -108,9 +110,9 @@
 
 (def ^:private style-entries
   (into (conj polyline/style-entries
-              (schema/optional :fill {:description "radar polygon fill (polar only): :none, :color (the line's colour at :alpha) or a colour"}
+              (schema/optional :fill {:cljplot2/section :style :description "radar polygon fill (polar only): :none, :color (the line's colour at :alpha) or a colour"}
                                [:or [:= :color] schema/color])
-              (schema/optional :alpha {:description "fill opacity"} schema/fraction))
+              (schema/optional :alpha {:cljplot2/section :style :description "fill opacity"} schema/fraction))
         draw/pattern-style-entries))
 
 (defn- unknown-limits
@@ -133,32 +135,32 @@
               (-> [:map {:closed true}]
                   (into style-entries)
                   (into data/common-options)
-                  (conj [:variables {:description "the variables in axis order: keywords or [label accessor] pairs (2 or more)"}
+                  (conj [:variables {:cljplot2/section :axes :description "the variables in axis order: keywords or [label accessor] pairs (2 or more)"}
                          variables]
-                        (schema/optional :scaling {:description "per variable scaling: :uniminmax (0..1), :std, :robust, :center or :globalminmax"
+                        (schema/optional :scaling {:cljplot2/section :axes :description "per variable scaling: :uniminmax (0..1), :std, :robust, :center or :globalminmax"
                                                    :default :uniminmax}
                                          (into [:enum] (sort scalings)))
-                        (schema/optional :limits {:description "explicit variable domains {key [lo hi]}, key - the keyword or the pair's label"
+                        (schema/optional :limits {:cljplot2/section :axes :description "explicit variable domains {key [lo hi]}, key - the keyword or the pair's label"
                                                   :cljplot2/default-doc "each variable's finite data range"}
                                          [:map-of any? schema/finite-interval])
-                        (schema/nilable :axes {:description "draw each variable's axis with ticks and labels" :default true} schema/bool)
-                        (schema/optional :missing {:description "a missing value: :break (the line breaks there) or :drop (the row is dropped)"
+                        (schema/nilable :axes {:cljplot2/section :axes :description "draw each variable's axis with ticks and labels" :default true} schema/bool)
+                        (schema/optional :missing {:cljplot2/section :axes :description "a missing value: :break (the line breaks there) or :drop (the row is dropped)"
                                                    :default :break}
                                          [:enum :break :drop])
-                        (schema/optional :robust-center {:description "centre of :scaling :robust: :median or :mean"
+                        (schema/optional :robust-center {:cljplot2/section :axes :description "centre of :scaling :robust: :median or :mean"
                                                          :cljplot2/default-doc ":median (only with :scaling :robust)"}
                                          [:enum :median :mean])
-                        (schema/optional :robust-spread {:description (str "spread of :scaling :robust: a fastmath.stats/robust-stddev "
+                        (schema/optional :robust-spread {:cljplot2/section :axes :description (str "spread of :scaling :robust: a fastmath.stats/robust-stddev "
                                                                            "estimator (:mad, :iqr, :sn, :qn, ...) or a quantile p in (0 0.5)")
                                                          :cljplot2/default-doc ":mad (only with :scaling :robust)"}
                                          robust-spread)
-                        (schema/optional :curve {:description "join consecutive axes with smooth curves (:smooth)"
+                        (schema/optional :curve {:cljplot2/section :style :description "join consecutive axes with smooth curves (:smooth)"
                                                  :cljplot2/default-doc "straight segments"}
                                          [:enum :smooth])
-                        (schema/optional :smoothness {:description "how far the smooth bend spreads over the gap between axes, (0 1]"
+                        (schema/optional :smoothness {:cljplot2/section :style :description "how far the smooth bend spreads over the gap between axes, (0 1]"
                                                       :cljplot2/default-doc "1 (only with :curve :smooth)"}
                                          [:and schema/finite [:> 0] [:<= 1]])
-                        (schema/optional :padding {:description "padding of the scaled values' span, {:y [lo hi]} fractions of the span"}
+                        (schema/optional :padding {:cljplot2/section :axes :description "padding of the scaled values' span, {:y [lo hi]} fractions of the span"}
                                          [:map {:closed true}
                                           (schema/optional :y {:description "padding of the value axis [lo hi], fractions of the span"
                                                                :default [0.05 0.05]}
@@ -284,12 +286,6 @@
 
 ;; draw
 
-(defn- full-circle?
-  "Does polar `geometry` cover the whole circle?"
-  [geometry]
-  (let [[t0 t1] (:theta geometry)]
-    (< (m/abs (- (m/abs (- (double t1) (double t0))) m/TWO_PI)) 1.0e-9)))
-
 (defn- closed
   "Range points `pts` of a row, closed with its first point a turn further on when `closes?` (a radar with the
   variables on the angles of a full circle), so arcs and smooth curves to it run forward."
@@ -390,25 +386,41 @@
   [geometry start end]
   (coord/line-path geometry [start end] true))
 
+(defn- axis-labels
+  "Tick label placements `[[content anchor x y] ...]` of every variable's axis (`[[start end] ticks]` per axis, ticks
+  `[[tick text] ...]`), without collisions across all axes: each whose box overlaps no label kept before it
+  ([[cljplot2.graphics.measure/kept-box-indices]] - e.g. the 0 labels meeting at a radar's centre)."
+  [canvas placed env]
+  (let [labels (vec (for [{:keys [ticks]} placed, {:keys [label]} ticks] label))]
+    (mapv labels (measure/kept-box-indices (mapv (fn [[content anchor x y]] (label/box-at canvas content anchor x y env))
+                                                 labels)))))
+
 (defn- draw-axes!
-  "Each variable's axis: its line, ticks and tick labels (see the namespace doc)."
+  "Each variable's axis: its line, ticks and tick labels (see the namespace doc); colliding labels dropped (see
+  [[axis-labels]])."
   [canvas axes rp geometry flipped? env]
   (let [{:keys [line-color line-width tick-color tick-length tick-width label-gap tick-spacing]} (get-in env [:theme :axis :y])
         tick-length (double tick-length)
-        off (+ tick-length (double label-gap))]
-    (doseq [{:keys [label domain] :as axis} axes
-            :let [[start end] (axis-ends rp axis)]
-            :when start
-            :let [path (axis-path geometry start end)]]
+        off (+ tick-length (double label-gap))
+        placed (vec (for [{:keys [label domain] :as axis} axes
+                          :let [[start end] (axis-ends rp axis)]
+                          :when start
+                          :let [path (axis-path geometry start end)]]
+                      {:path path
+                       :ticks (vec (for [[tick text] (axis-ticks domain (polyline/path-length path) (double tick-spacing))
+                                         :let [tp (rp label (scaled axis (double tick)))
+                                               [px py] (pixel geometry tp)
+                                               {[nx ny] :normal anchor :anchor} (axis-frame geometry flipped? (first tp))
+                                               px (double px) py (double py) nx (double nx) ny (double ny)]]
+                                     {:mark [[px py] [(+ px (* nx tick-length)) (+ py (* ny tick-length))]]
+                                      :label [{:kind :label :role :tick-label :text text} anchor
+                                              (+ px (* nx off)) (+ py (* ny off))]}))}))]
+    (doseq [{:keys [path ticks]} placed]
       (polyline/stroke-runs! canvas [path] {:color line-color :width line-width})
-      (doseq [[tick text] (axis-ticks domain (polyline/path-length path) (double tick-spacing))
-              :let [tp (rp label (scaled axis (double tick)))
-                    [px py] (pixel geometry tp)
-                    {[nx ny] :normal anchor :anchor} (axis-frame geometry flipped? (first tp))
-                    px (double px) py (double py) nx (double nx) ny (double ny)]]
-        (polyline/stroke-runs! canvas [[[px py] [(+ px (* nx tick-length)) (+ py (* ny tick-length))]]]
-                               {:color tick-color :width tick-width})
-        (label/draw-at! canvas {:kind :label :role :tick-label :text text} anchor (+ px (* nx off)) (+ py (* ny off)) env)))))
+      (doseq [{:keys [mark]} ticks]
+        (polyline/stroke-runs! canvas [mark] {:color tick-color :width tick-width})))
+    (doseq [[content anchor x y] (axis-labels canvas placed env)]
+      (label/draw-at! canvas content anchor x y env))))
 
 (defn- draw-web!
   "Radar web: lines joining the axes at equal fractions of their length (ticks of 0..1 over the longest axis) -
@@ -430,7 +442,7 @@
   [{:keys [options]} {:keys [lines axes style]} canvas _box scales env]
   (let [geometry (scale/coord-geometry scales)
         flipped? (scale/flipped? scales)
-        closes? (and (some? geometry) (not flipped?) (full-circle? geometry))
+        closes? (and (some? geometry) (not flipped?) (coord/full-circle? geometry))
         rp (scale/range-projection scales)
         smooth (when (= :smooth (:curve options))
                  {:value-index (if flipped? 0 1) :smoothness (double (:smoothness options 1.0))})

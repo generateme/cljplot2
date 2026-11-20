@@ -76,20 +76,20 @@
   {:style (into [:map {:closed true}] scatter/style-entries)
    :options (schema/with-rules
              (-> [:map {:closed true}]
-                 (into scatter/style-entries)
+                 (into (schema/in-section :style scatter/style-entries))
                  (into data/common-options)
                  (into space/frame-options)
-                 (conj (schema/optional :type {:description (str "marks: :points, :spikes (a line from :base to each point), "
+                 (conj (schema/optional :type {:cljplot2/section :marks :description (str "marks: :points, :spikes (a line from :base to each point), "
                                                                  ":bars (a box per row from :base to z) or :none (only :projections)")
                                                :default :points}
                                         [:enum :points :spikes :bars :none])
-                       (schema/optional :base {:description "z where spikes and bars start (kept within an explicit z domain)"
+                       (schema/optional :base {:cljplot2/section :marks :description "z where spikes and bars start (kept within an explicit z domain)"
                                                :cljplot2/default-doc "the low z limit (0 with :bins)"}
                                         schema/finite)
-                       (schema/optional :bar-size {:description "bar footprint [fx fy], fractions of the x / y resolution (of a cell with :bins)"
+                       (schema/optional :bar-size {:cljplot2/section :marks :description "bar footprint [fx fy], fractions of the x / y resolution (of a cell with :bins)"
                                                    :default [0.8 0.8]}
                                         [:tuple schema/fraction schema/fraction])
-                       (schema/optional :projections {:description "side projections of the points on the far walls, per plane"}
+                       (schema/optional :projections {:cljplot2/section :marks :description "side projections of the points on the far walls, per plane"}
                                         [:map {:closed true}
                                          (schema/optional :xy {:description "xy wall: :points, :density (KDE bands) or :contour (KDE lines)"}
                                                           projection-kinds)
@@ -97,7 +97,7 @@
                                                           projection-kinds)
                                          (schema/optional :yz {:description "yz wall: :points, :density (KDE bands) or :contour (KDE lines)"}
                                                           projection-kinds)])
-                       (schema/optional :bins {:description "a 2D histogram: rows counted on an [nx ny] grid over x / y, counts as z"}
+                       (schema/optional :bins {:cljplot2/section :marks :description "a 2D histogram: rows counted on an [nx ny] grid over x / y, counts as z"}
                                         [:tuple [:int {:min 1 :max 1000}] [:int {:min 1 :max 1000}]])))
              [#(when (and (:bins %) (not (#{:bars :spikes} (:type %)))) "counts of :bins are drawn as :type :bars or :spikes") [:bins]]
              [#(when (and (:bins %) (seq (:projections %))) "side :projections show the rows, not :bins counts") [:projections]]

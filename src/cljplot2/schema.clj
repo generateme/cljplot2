@@ -230,15 +230,26 @@
   ([k schema] (nilable k nil schema))
   ([k props schema] [k (assoc props :optional true) [:maybe schema]]))
 
+(defn- with-entry-property
+  "Map `entries` (`[k props schema]` or `[k schema]`) with entry property `k` set to `v` in each."
+  [prop v entries]
+  (mapv (fn [[k a b :as entry]]
+          (if (= 3 (count entry))
+            [k (assoc a prop v) b]
+            [k {prop v} a]))
+        entries))
+
 (defn in-fragment
   "Map `entries` (`[k props schema]` or `[k schema]`) tagged `:cljplot2/fragment fragment` - the shared group of
   options they belong to (see [[cljplot2.describe/fragments]])."
   [fragment entries]
-  (mapv (fn [[k a b :as entry]]
-          (if (= 3 (count entry))
-            [k (assoc a :cljplot2/fragment fragment) b]
-            [k {:cljplot2/fragment fragment} a]))
-        entries))
+  (with-entry-property :cljplot2/fragment fragment entries))
+
+(defn in-section
+  "Map `entries` (`[k props schema]` or `[k schema]`) in table slice `section` (`:cljplot2/section`) - for entries
+  shared by maps sliced differently (e.g. a point style: one table of scatter, a section of cloud)."
+  [section entries]
+  (with-entry-property :cljplot2/section section entries))
 
 (defn with-rules
   "`schema` with rules over the whole value. Each rule is `[problem path]`: `problem` returns `nil` for a valid value,

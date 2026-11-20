@@ -16,8 +16,9 @@ code-block-background: true
 
 # Shared options
 
-Option groups taken by several charts, builders or data functions, documented once here; other tables mark their
-rows with the group's title. A chart may take only part of a group - its own table lists what it accepts.
+Option groups taken by several charts, builders or data functions, documented once here. A chart's page lists the
+groups it takes and which of their keys (a chart may take only part of a group); builder tables mark the rows of a
+group with its title.
 
 
 ::: {.sourceClojure}
@@ -300,10 +301,15 @@ Rounded bar corners: all of them, or only the end away from the baseline.
 
 
 
-### Strip placement
+### Strip options
 
 Strip charts (bar, box, violin, stripplot, beeswarm, dotplot, rug, bullet, extent) draw one item per level of a
-categorical axis. Where the items sit across the value axis, how wide, and which axis holds the levels:
+categorical axis.
+
+
+#### Placement
+
+Where the items sit across the value axis, how wide, and which axis holds the levels:
 
 ::: {.clay-table}
 
@@ -331,7 +337,7 @@ categorical axis. Where the items sit across the value axis, how wide, and which
 
 
 
-### Strip groups
+#### Groups
 
 Groups of one level share its band: side by side (`:dodge`, with a gap), on top of each other, or one half each
 (`:mirror`).
@@ -362,7 +368,7 @@ Groups of one level share its band: side by side (`:dodge`, with a gap), on top 
 
 
 
-### Strip counts
+#### Counts
 
 Each item's row count written past its largest value.
 
@@ -491,9 +497,14 @@ binning the same points:
 
 
 
-### Field: a function
+### Fields
 
-Raster and contour charts draw a scalar field: a function of a point over a domain ...
+Raster and contour charts draw a scalar field.
+
+
+#### A function
+
+The field as a function of a point over a domain ...
 
 ::: {.clay-table}
 
@@ -519,7 +530,7 @@ Raster and contour charts draw a scalar field: a function of a point over a doma
 
 
 
-### Field: a density estimate
+#### A density estimate
 
 ... or the kernel density estimate of mapped points ...
 
@@ -549,7 +560,7 @@ Raster and contour charts draw a scalar field: a function of a point over a doma
 
 
 
-### Field: the grid
+#### The grid
 
 ... sampled on a grid of `:n` points per axis (interpolating gridded data with `:interpolation`).
 
@@ -626,10 +637,14 @@ Group and leaf labels of treemaps, partitions and circle packings: off, on, or a
 
 
 
-### 3D view
+### 3D frame
 
-3D charts (cloud, surface) are seen from an eye at an azimuth and elevation, with perspective; the box has
-proportions and may mirror axes.
+3D charts (cloud, surface) draw their data in a box seen in perspective.
+
+
+#### View
+
+The eye sits at an azimuth and elevation, at a perspective distance; the box has proportions and may mirror axes.
 
 ::: {.clay-table}
 
@@ -657,7 +672,7 @@ proportions and may mirror axes.
 
 
 
-### 3D axes
+#### Axes
 
 The box, the ticks and the axis titles.
 
@@ -687,7 +702,7 @@ The box, the ticks and the axis titles.
 
 
 
-### 3D domains
+#### Domains
 
 Explicit domains - needed when several 3D charts share a plot.
 

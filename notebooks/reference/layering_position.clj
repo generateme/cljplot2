@@ -51,8 +51,8 @@
 ;; takes): `:dodge`, `:stack`, `:normalize`, `:overlay`, and for densities and lines the streamgraph `:silhouette` /
 ;; `:wiggle`; histograms and densities also `:mirror`.
 
-(def sales (for [q ["Q1" "Q2" "Q3" "Q4"] [i product] (map-indexed vector ["apples" "pears" "plums"])]
-             {:quarter q :product product :amount (+ 10 (* 7 i) (* 3 (count (str q product))))}))
+(def sales (for [[qi q] (map-indexed vector ["Q1" "Q2" "Q3" "Q4"]) [i product] (map-indexed vector ["apples" "pears" "plums"])]
+             {:quarter q :product product :amount (+ 10 (* 7 i) (* 5 qi) (* 4 (mod (+ qi (* 2 i)) 3)))}))
 
 (nu/data-table sales)
 

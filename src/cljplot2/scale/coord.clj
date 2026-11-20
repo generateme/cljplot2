@@ -162,6 +162,28 @@
         inner (if (pos? lo) (line-path geometry [[h1 lo] [h0 lo]] true) (line-path geometry [[h1 0.0]] false))]
     (into outer inner)))
 
+(defn full-circle?
+  "Does polar `geometry` cover the whole circle?"
+  [geometry]
+  (let [[t0 t1] (:theta geometry)]
+    (< (m/abs (- (m/abs (- (double t1) (double t0))) m/TWO_PI)) 1.0e-9)))
+
+(defn full-turn?
+  "Does the angular range `h0..h1` go once around polar `geometry` covering the whole circle - a sector without radial
+  edges?"
+  [geometry h0 h1]
+  (let [[t0 t1] (:theta geometry)]
+    (and (full-circle? geometry)
+         (< (m/abs (- (m/abs (- (double h1) (double h0))) (m/abs (- (double t1) (double t0))))) 1.0e-9))))
+
+(defn full-turn-circles
+  "Pixel paths (open) outlining the [[full-turn?]] range rectangle `h0..h1` x `v0..v1` in polar `geometry`: its outer
+  circle and, for a positive inner radius, its inner one - the ring's outline without a seam along the start spoke."
+  [geometry h0 v0 h1 v1]
+  (let [lo (m/min (double v0) (double v1)) hi (m/max (double v0) (double v1))]
+    (cond-> [(line-path geometry [[h0 hi] [h1 hi]] true)]
+      (pos? lo) (conj (line-path geometry [[h0 lo] [h1 lo]] true)))))
+
 (defn circle-path
   "Pixel points of the whole circle (over the angular range) of radius `v` in polar `geometry`."
   [geometry v]

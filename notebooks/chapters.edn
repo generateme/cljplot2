@@ -7,6 +7,11 @@
                                 "reference/aesthetics_legends.clj" "reference/scales_axes_coords.clj"
                                 "reference/layering_position.clj" "reference/labels_text.clj"
                                 "reference/facets_arrange.clj" "reference/theme.clj" "reference/shared_options.clj"
-                                "reference/errors.clj" "reference/limits.clj"]}
+                                "reference/errors.clj" "reference/limits.clj"
+                                "reference/charts_points_paths.clj" "reference/charts_series.clj"
+                                "reference/charts_annotations.clj" "reference/charts_bars_ranges.clj"
+                                "reference/charts_strip_distributions.clj" "reference/charts_distribution_stats.clj"
+                                "reference/charts_grids_fields.clj" "reference/charts_part_of_whole.clj"
+                                "reference/charts_multivariate_3d.clj"]}
  {:part "Use cases" :chapters ["use_cases/distribution.clj" "use_cases/colors.clj" "use_cases/evolution.clj" "use_cases/ranking.clj" "use_cases/part_of_a_whole.clj" "use_cases/correlation.clj" "use_cases/flow.clj"]}
  {:part "Galleries" :chapters ["galleries/cljplot_extras.clj" "galleries/lattice.clj" "galleries/vega.clj"]}]

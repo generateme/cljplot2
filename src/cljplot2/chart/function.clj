@@ -79,9 +79,9 @@
 
 (def ^:private style-entries
   (conj polyline/style-entries
-        (schema/optional :fill {:description "fill colour (or :none) of the area to y = 0 (:f) or of the polygon the curve closes (:parametric)"}
+        (schema/optional :fill {:cljplot2/section :curve :description "fill colour (or :none) of the area to y = 0 (:f) or of the polygon the curve closes (:parametric)"}
                          schema/color)
-        (schema/optional :bridge {:description "style of the segments bridging gaps with :gaps :bridge: :alpha (a fraction of the line alpha), optional :width and :dash"}
+        (schema/optional :bridge {:cljplot2/section :gaps :description "style of the segments bridging gaps with :gaps :bridge: :alpha (a fraction of the line alpha), optional :width and :dash"}
                          polyline/bridge-schema)))
 
 (def schemas
@@ -90,27 +90,27 @@
    :options (-> [:map {:closed true}]
                 (into style-entries)
                 (conj (schema/optional :data (schema/forbidden "isn't used: a function chart samples its functions"))
-                      (schema/optional :mapping {:description "the chart's own mapping of the function labels (e.g. {:color :function}); only facet keys come from the plot"}
+                      (schema/optional :mapping {:cljplot2/section :curve :description "the chart's own mapping of the function labels (e.g. {:color :function}); only facet keys come from the plot"}
                                        data/mapping-schema)
-                      (schema/optional :f {:description "y = f(x): a function, a vector of functions or of [label function] pairs, or a map label -> function (this or :parametric)"}
+                      (schema/optional :f {:cljplot2/section :curve :description "y = f(x): a function, a vector of functions or of [label function] pairs, or a map label -> function (this or :parametric)"}
                                        functions)
-                      (schema/optional :parametric {:description "[x y] = f(t): functions given as for :f (this or :f)"} functions)
-                      (schema/optional :domain {:description "x span [lo hi] the :f functions are sampled over: numbers or java.time values"
+                      (schema/optional :parametric {:cljplot2/section :curve :description "[x y] = f(t): functions given as for :f (this or :f)"} functions)
+                      (schema/optional :domain {:cljplot2/section :curve :description "x span [lo hi] the :f functions are sampled over: numbers or java.time values"
                                                 :cljplot2/default-doc "the plot's explicit x domain, else the x scale's domain at drawing"}
                                        span)
-                      (schema/optional :t {:description "t span [lo hi] of :parametric (required there): numbers or java.time values"} span)
-                      (schema/optional :sample-step {:description "distance between samples: pixels along x or {:count n} (:parametric - only {:count n})"
+                      (schema/optional :t {:cljplot2/section :curve :description "t span [lo hi] of :parametric (required there): numbers or java.time values"} span)
+                      (schema/optional :sample-step {:cljplot2/section :curve :description "distance between samples: pixels along x or {:count n} (:parametric - only {:count n})"
                                                      :cljplot2/default-doc "1 pixel for :f, {:count 500} for :parametric"}
                                        curve/sample-step)
-                      (schema/optional :y-limits {:description "[lo hi] - samples outside don't count for the y extent (the curve is only clipped)"}
+                      (schema/optional :y-limits {:cljplot2/section :extent :description "[lo hi] - samples outside don't count for the y extent (the curve is only clipped)"}
                                        schema/finite-interval)
-                      (schema/optional :y-extent {:description "y extent of the samples without :y-limits or an explicit y domain: :quantiles (1% and 99%), {:quantiles [p q]}, :min-max or :none"
+                      (schema/optional :y-extent {:cljplot2/section :extent :description "y extent of the samples without :y-limits or an explicit y domain: :quantiles (1% and 99%), {:quantiles [p q]}, :min-max or :none"
                                                   :default :quantiles}
                                        y-extent)
-                      (schema/optional :gaps {:description "nil or non-finite results break the curve: :break (empty space) or :bridge (a straight segment in the :bridge style)"
+                      (schema/optional :gaps {:cljplot2/section :gaps :description "nil or non-finite results break the curve: :break (empty space) or :bridge (a straight segment in the :bridge style)"
                                               :default :break}
                                        [:enum :break :bridge])
-                      (schema/optional :padding {:description "padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span"
+                      (schema/optional :padding {:cljplot2/section :extent :description "padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span"
                                                  :cljplot2/default-doc "0.05 on every side"}
                                        data/position-padding)))
    :mapping [:map

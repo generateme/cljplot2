@@ -327,9 +327,9 @@
                     :charts [(chart/bar {:position :stack :width 1.0})]})]
       (is (= [0.0 4.0] (mapv double (get-in b [:finalized-scales :x :domain]))))))
   (testing "S2 only a full circle closes rows"
-    (is (#'parallel/full-circle? {:theta [0.0 (* 2.0 Math/PI)]}))
-    (is (#'parallel/full-circle? {:theta [1.0 (- 1.0 (* 2.0 Math/PI))]}) "counter-clockwise")
-    (is (not (#'parallel/full-circle? {:theta [0.0 Math/PI]})))
+    (is (coord/full-circle? {:theta [0.0 (* 2.0 Math/PI)]}))
+    (is (coord/full-circle? {:theta [1.0 (- 1.0 (* 2.0 Math/PI))]}) "counter-clockwise")
+    (is (not (coord/full-circle? {:theta [0.0 Math/PI]})))
     (let [p {:data [{:a 0 :b 0 :c 0 :d 0} {:a 1 :b 1 :c 1 :d 1}] :coord {:kind :polar :span 180 :start -90} :legend false
              :theme plain :charts [(chart/parallel {:variables [:a :b :c :d] :color red :width 2 :axes false :curve :smooth})]}
           b (build p) img (plot/render-image p size)

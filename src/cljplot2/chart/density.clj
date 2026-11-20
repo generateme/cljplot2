@@ -47,11 +47,11 @@
 
 (def ^:private style-entries
   (into (conj polyline/style-entries
-              (schema/optional :fill {:description "area under the curve: a colour, :color (the curve's colour with opacity :alpha) or :none; stacked positions and ridgelines fill with the curve's colour unless set"}
+              (schema/optional :fill {:cljplot2/section :style :description "area under the curve: a colour, :color (the curve's colour with opacity :alpha) or :none; stacked positions and ridgelines fill with the curve's colour unless set"}
                                [:or [:= :color] schema/color])
-              (schema/optional :alpha {:description "fill opacity of areas in the curve's colour"} schema/fraction)
-              (schema/optional :zero-line-color {:description "colour of the y = 0 line drawn with :position :mirror"} schema/color)
-              (schema/optional :zero-line-width {:description "width in pixels of the y = 0 line drawn with :position :mirror"} schema/non-neg))
+              (schema/optional :alpha {:cljplot2/section :style :description "fill opacity of areas in the curve's colour"} schema/fraction)
+              (schema/optional :zero-line-color {:cljplot2/section :style :description "colour of the y = 0 line drawn with :position :mirror"} schema/color)
+              (schema/optional :zero-line-width {:cljplot2/section :style :description "width in pixels of the y = 0 line drawn with :position :mirror"} schema/non-neg))
         draw/pattern-style-entries))
 
 (def ^:private positions (into (disj position/positions :dodge) position/stream-positions))
@@ -64,29 +64,29 @@
    :options (-> [:map {:closed true}]
                 (into style-entries)
                 (into data/common-options)
-                (conj (schema/optional :kernel {:description "fastmath KDE kernel" :default :gaussian} keyword?)
-                      (schema/optional :bandwidth {:description "kernel bandwidth in data units, or a fastmath bandwidth selector"
+                (conj (schema/optional :kernel {:cljplot2/section :estimate :description "fastmath KDE kernel" :default :gaussian} keyword?)
+                      (schema/optional :bandwidth {:cljplot2/section :estimate :description "kernel bandwidth in data units, or a fastmath bandwidth selector"
                                                    :default :nrd0}
                                        [:or schema/pos keyword?])
-                      (schema/nilable :n {:description "number of evaluation points of each curve" :default 512} [:and :int [:>= 2]])
-                      (schema/nilable :cut {:description "how many bandwidths the curve extends past the extreme values on each side"
+                      (schema/nilable :n {:cljplot2/section :estimate :description "number of evaluation points of each curve" :default 512} [:and :int [:>= 2]])
+                      (schema/nilable :cut {:cljplot2/section :estimate :description "how many bandwidths the curve extends past the extreme values on each side"
                                             :default 3}
                                       schema/non-neg)
-                      (schema/optional :position {:description "grouped curves: :overlay, :stack, :normalize (stacked, summing to 1), streamgraphs :silhouette and :wiggle, or :mirror (two groups, the second drawn downward); ridgelines take :overlay or :mirror"
+                      (schema/optional :position {:cljplot2/section :position :description "grouped curves: :overlay, :stack, :normalize (stacked, summing to 1), streamgraphs :silhouette and :wiggle, or :mirror (two groups, the second drawn downward); ridgelines take :overlay or :mirror"
                                                   :default :overlay}
                                        (into [:enum] (sort positions)))
-                      (schema/nilable :symmetric {:description "with :position :mirror, tie both halves to one y range [-M M], M the tallest curve over all panels"
+                      (schema/nilable :symmetric {:cljplot2/section :position :description "with :position :mirror, tie both halves to one y range [-M M], M the tallest curve over all panels"
                                                   :default false}
                                       schema/bool)
-                      (schema/nilable :zero-line {:description "with :position :mirror, draw the y = 0 line over the curves"
+                      (schema/nilable :zero-line {:cljplot2/section :position :description "with :position :mirror, draw the y = 0 line over the curves"
                                                   :default true}
                                       schema/bool)
-                      (schema/optional :fill-gradient {:description "ridgelines only: fill colour along :fill-gradient-axis, a clojure2d gradient (preset keyword, colour list or function of t in [0 1]) (wins over :fill)"}
+                      (schema/optional :fill-gradient {:cljplot2/section :style :description "ridgelines only: fill colour along :fill-gradient-axis, a clojure2d gradient (preset keyword, colour list or function of t in [0 1]) (wins over :fill)"}
                                        polyline/fill-gradient-schema)
-                      (schema/optional :fill-gradient-axis {:description "axis of the :fill-gradient: :x (over the x scale's domain) or :y (from each ridge's baseline to the top of the tallest curve)"
+                      (schema/optional :fill-gradient-axis {:cljplot2/section :style :description "axis of the :fill-gradient: :x (over the x scale's domain) or :y (from each ridge's baseline to the top of the tallest curve)"
                                                             :cljplot2/default-doc ":x; only with ridgelines and :fill-gradient"}
                                        [:enum :x :y])
-                      (schema/optional :padding {:description "padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span"
+                      (schema/optional :padding {:cljplot2/section :position :description "padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span"
                                                  :cljplot2/default-doc "{:x [0.05 0.05] :y [0 0.05]} (curves stand on the panel's bottom edge); y [0.05 0.05] with :mirror, :silhouette and :wiggle"}
                                        data/position-padding))
                 (into strip/ridge-options))

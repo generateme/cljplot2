@@ -1,0 +1,150 @@
+;; # Charts: series
+
+;; Charts of values along x: a band between two bounds (`ribbon`), a fitted curve with its uncertainty band
+;; (`smooth`) and price candles (`candlestick`). Each chart lists the mapping keys it reads, its own options and the
+;; shared option groups it takes (documented once in the Shared options chapter).
+
+(ns reference.charts-series
+  (:require [fastmath.random :as r]
+            [cljplot2.chart :as chart]
+            [cljplot2.core :as plot]
+            [cljplot2.describe :as describe]
+            [notebook-utils :as nu]))
+
+(nu/source-note {:dataset :faithful})
+
+(def faithful (nu/dataset :faithful))
+
+(nu/data-table faithful)
+
+(nu/source-note {:dataset :ohlc})
+
+(def ohlc (nu/dataset :ohlc))
+
+(nu/data-table ohlc)
+
+;; ## ribbon
+
+;; A band per group between a lower and an upper bound at each x - an interval, a range of values, an envelope.
+
+(nu/options-table (describe/mapping (chart/ribbon)))
+
+(def bands (for [g ["low" "high"] t (range 0 25)]
+             (let [c (+ (if (= g "low") 1.0 4.0) (Math/sin (* 0.3 t)))
+                   w (+ 0.4 (* 0.04 t))]
+               {:group g :t t :lo (- c w) :mid c :hi (+ c w)})))
+
+(nu/data-table bands)
+
+(plot/render-image {:data bands
+                    :mapping {:x :t :ymin :lo :ymax :hi :color :group}
+                    :charts [(chart/ribbon) (chart/line {:mapping {:y :mid}})]}
+                   {:width 600 :height 340})
+
+;; Its options: the band's colour and fill, its edges, and a gradient instead of a flat fill:
+
+(nu/options-table (describe/own-rows (describe/options (chart/ribbon))))
+
+(def band (filter #(= "high" (:group %)) bands))
+
+(nu/data-table band)
+
+(plot/render-image (plot/arrange [{:data band :mapping {:x :t :ymin :lo :ymax :hi}
+                                   :charts [(chart/ribbon {:color [200 80 40] :alpha 0.5})]
+                                   :labels {:title ":color, :alpha 0.5"}}
+                                  {:data band :mapping {:x :t :ymin :lo :ymax :hi}
+                                   :charts [(chart/ribbon {:fill :none :stroke-color :color :stroke-width 2 :dash :dashed})]
+                                   :labels {:title ":fill :none, dashed edges"}}
+                                  {:data band :mapping {:x :t :ymin :lo :ymax :hi}
+                                   :charts [(chart/ribbon {:fill-gradient [:yellow :purple] :fill-gradient-axis :y})]
+                                   :labels {:title ":fill-gradient along y"}}]
+                                 {:columns 3})
+                   {:width 1000 :height 300})
+
+(nu/shared-groups (describe/options (chart/ribbon)))
+
+;; ## smooth
+
+;; A curve fitted to the rows of each group, by default with a confidence band.
+
+(nu/options-table (describe/mapping (chart/smooth)))
+
+(plot/render-image {:data faithful
+                    :mapping {:x :eruptions :y :waiting}
+                    :charts [(chart/scatter) (chart/smooth)]
+                    :labels {:x "eruptions [min]" :y "waiting [min]"}}
+                   {:width 600 :height 360})
+
+;; ### Fit
+
+;; The fit method and its parameters, the number of points the curve is evaluated at, and whether each group's fit
+;; spans only its own x range:
+
+(nu/options-table (describe/own-rows (describe/options (chart/smooth))) :fit)
+
+(plot/render-image (plot/arrange [{:data faithful :mapping {:x :eruptions :y :waiting}
+                                   :charts [(chart/scatter) (chart/smooth {:method :lm})]
+                                   :labels {:title ":method :lm"}}
+                                  {:data faithful :mapping {:x :eruptions :y :waiting}
+                                   :charts [(chart/scatter) (chart/smooth {:method :lm :method-params {:degree 3}})]
+                                   :labels {:title ":lm, :method-params {:degree 3}"}}
+                                  {:data faithful :mapping {:x :eruptions :y :waiting}
+                                   :charts [(chart/scatter) (chart/smooth {:method-params {:bandwidth 0.2}})]
+                                   :labels {:title ":loess, :bandwidth 0.2"}}]
+                                 {:columns 3})
+                   {:width 1000 :height 320})
+
+;; ### Band
+
+;; The band around the curve: confidence or prediction, nested levels, a bootstrap (seeded here), or none, and
+;; its fill:
+
+(nu/options-table (describe/own-rows (describe/options (chart/smooth))) :band)
+
+(plot/render-image (plot/arrange [{:data faithful :mapping {:x :eruptions :y :waiting}
+                                   :charts [(chart/scatter) (chart/smooth {:method :lm :band :prediction})]
+                                   :labels {:title ":band :prediction"}}
+                                  {:data faithful :mapping {:x :eruptions :y :waiting}
+                                   :charts [(chart/scatter) (chart/smooth {:level [0.5 0.95 0.999] :alpha 0.2})]
+                                   :labels {:title ":level [0.5 0.95 0.999]"}}
+                                  {:data faithful :mapping {:x :eruptions :y :waiting}
+                                   :charts [(chart/scatter)
+                                            (chart/smooth {:band :bootstrap :fill [200 80 40 90]
+                                                           :bootstrap {:samples 100 :rng (r/rng :mersenne 3)}})]
+                                   :labels {:title ":band :bootstrap"}}]
+                                 {:columns 3})
+                   {:width 1000 :height 320})
+
+(nu/shared-groups (describe/options (chart/smooth)))
+
+;; ## candlestick
+
+;; A candle per row: a wick from low to high and a body from open to close, coloured by direction. The dates here
+;; are text, so each trading day gets a band (no gaps for weekends).
+
+(nu/options-table (describe/mapping (chart/candlestick)))
+
+(plot/render-image {:data ohlc
+                    :mapping {:x :date :open :open :high :high :low :low :close :close}
+                    :charts [(chart/candlestick)]
+                    :labels {:y "VIX"}}
+                   {:width 700 :height 360})
+
+;; Its options: the up and down colours and patterns, body and wick widths, and the OHLC bar style:
+
+(nu/options-table (describe/own-rows (describe/options (chart/candlestick))))
+
+(plot/render-image (plot/arrange [{:data ohlc :mapping {:x :date :open :open :high :high :low :low :close :close}
+                                   :charts [(chart/candlestick {:up-color [33 102 172] :down-color [240 140 30]
+                                                                :body-width 0.4 :stroke-color :black})]
+                                   :labels {:title "colours, :body-width 0.4"}}
+                                  {:data ohlc :mapping {:x :date :open :open :high :high :low :low :close :close}
+                                   :charts [(chart/candlestick {:down-pattern :hatch :pattern-color :black})]
+                                   :labels {:title ":down-pattern :hatch"}}
+                                  {:data ohlc :mapping {:x :date :open :open :high :high :low :low :close :close}
+                                   :charts [(chart/candlestick {:style :ohlc :wick-width 2})]
+                                   :labels {:title ":style :ohlc"}}]
+                                 {:columns 3})
+                   {:width 1000 :height 320})
+
+(nu/shared-groups (describe/options (chart/candlestick)))

@@ -319,6 +319,26 @@
   (let [n (count path)]
     (filterv #(and (< n (count (:path %))) (= path (subvec (:path %) 0 n))) rows)))
 
+(defn- under-path?
+  "Is `path` the key path `root` or nested under it?"
+  [root path]
+  (and (<= (count root) (count path)) (= root (subvec path 0 (count root)))))
+
+(defn own-rows
+  "The rows of `rows` outside the shared groups - without the rows of entries with a `:fragment` and the rows nested
+  under them: a chart's own table (the groups have tables in the Shared options chapter, see [[fragment-keys]])."
+  [rows]
+  (let [roots (keep #(when (:fragment %) (:path %)) rows)]
+    (filterv (fn [{:keys [path]}] (not-any? #(under-path? % path) roots)) rows)))
+
+(defn fragment-keys
+  "The shared groups of `rows`: `[[fragment [key ...]] ...]` - each group with the keys of its entries `rows` holds
+  (a chart may take only some of a group's entries), groups in the order of their first row; empty without groups."
+  [rows]
+  (let [tagged (filter :fragment rows)]
+    (mapv (fn [fragment] [fragment (into [] (comp (filter #(= fragment (:fragment %))) (map :key)) tagged)])
+          (distinct (map :fragment tagged)))))
+
 (defn options
   "Option rows (see the namespace doc) of `x`: a chart value, a var with `:cljplot2/options` metadata (a builder or
   API function) or a map schema."

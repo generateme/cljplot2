@@ -84,22 +84,22 @@
                       padding-entry))
    :mapping (schema/with-rules
               [:map
-               (schema/nilable :x {:description "values (data units) on the value axis (not read with :stat :identity), or levels for vertical boxes"}
+               (schema/nilable :x {:cljplot2/section :values :description "values (data units) on the value axis (not read with :stat :identity), or levels for vertical boxes"}
                                schema/accessor)
-               (schema/nilable :y {:description "levels on the categorical axis (absent - one box), or values for vertical boxes"} schema/accessor)
-               (schema/nilable :color {:description "groups, each a box in its own fill colour"} schema/accessor)
-               (schema/nilable :pattern {:description "groups, each a box with its own fill pattern"} schema/accessor)
-               (schema/nilable :shape {:description "groups, each with its own outlier shape"} schema/accessor)
-               (schema/nilable :size {:description "groups, each with its own outlier size"} schema/accessor)
-               (schema/nilable :group {:description "groups without a visual aesthetic, each its own box"} schema/accessor)
-               (schema/nilable :lower {:description (str stat-keys-doc ": the lower whisker end")} schema/accessor)
-               (schema/nilable :q1 {:description (str stat-keys-doc ": the first quartile")} schema/accessor)
-               (schema/nilable :median {:description (str stat-keys-doc ": the median")} schema/accessor)
-               (schema/nilable :q3 {:description (str stat-keys-doc ": the third quartile")} schema/accessor)
-               (schema/nilable :upper {:description (str stat-keys-doc ": the upper whisker end")} schema/accessor)
-               (schema/nilable :outliers {:description (str stat-keys-doc ": a collection of outlier values (optional)")} schema/accessor)
-               (schema/nilable :mean {:description (str stat-keys-doc ": the mean (needed by the :mean option)")} schema/accessor)
-               (schema/nilable :n {:description (str stat-keys-doc ": the count (needed by :varwidth and :n-label)")} schema/accessor)]
+               (schema/nilable :y {:cljplot2/section :values :description "levels on the categorical axis (absent - one box), or values for vertical boxes"} schema/accessor)
+               (schema/nilable :color {:cljplot2/section :values :description "groups, each a box in its own fill colour"} schema/accessor)
+               (schema/nilable :pattern {:cljplot2/section :values :description "groups, each a box with its own fill pattern"} schema/accessor)
+               (schema/nilable :shape {:cljplot2/section :values :description "groups, each with its own outlier shape"} schema/accessor)
+               (schema/nilable :size {:cljplot2/section :values :description "groups, each with its own outlier size"} schema/accessor)
+               (schema/nilable :group {:cljplot2/section :values :description "groups without a visual aesthetic, each its own box"} schema/accessor)
+               (schema/nilable :lower {:cljplot2/section :summary :description (str stat-keys-doc ": the lower whisker end")} schema/accessor)
+               (schema/nilable :q1 {:cljplot2/section :summary :description (str stat-keys-doc ": the first quartile")} schema/accessor)
+               (schema/nilable :median {:cljplot2/section :summary :description (str stat-keys-doc ": the median")} schema/accessor)
+               (schema/nilable :q3 {:cljplot2/section :summary :description (str stat-keys-doc ": the third quartile")} schema/accessor)
+               (schema/nilable :upper {:cljplot2/section :summary :description (str stat-keys-doc ": the upper whisker end")} schema/accessor)
+               (schema/nilable :outliers {:cljplot2/section :summary :description (str stat-keys-doc ": a collection of outlier values (optional)")} schema/accessor)
+               (schema/nilable :mean {:cljplot2/section :summary :description (str stat-keys-doc ": the mean (needed by the :mean option)")} schema/accessor)
+               (schema/nilable :n {:cljplot2/section :summary :description (str stat-keys-doc ": the count (needed by :varwidth and :n-label)")} schema/accessor)]
               [#(when-not (or (some? (:x %)) (some? (:y %)) (some? (:q1 %)))
                   "should map :x or :y (the values), or the statistics (:q1 ... with :stat :identity)")
                nil])})

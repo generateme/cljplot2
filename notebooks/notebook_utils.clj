@@ -233,6 +233,35 @@
   ([rows section]
    (options-table (section-rows rows section))))
 
+(def ^:private shared-options-page
+  "The book page of the Shared options chapter (Clay names a page by its notebook namespace)."
+  "reference.shared_options.html")
+
+(defn- heading-anchor
+  "The id Quarto (pandoc) gives a heading of text `title`: lowercase, characters other than letters, digits, `_`, `-`,
+  `.` and spaces removed, spaces as `-`, everything before the first letter dropped (`\"3D view\"` -> `d-view`)."
+  [title]
+  (-> (str/lower-case title)
+      (str/replace #"[^\p{L}\p{N}_\-. ]" "")
+      (str/replace #"\s+" "-")
+      (str/replace #"^[^\p{L}]+" "")))
+
+(defn shared-groups
+  "Markdown, its code hidden, naming the shared groups option `rows` take (`cljplot2.describe/fragment-keys`), each
+  linked to its section of the Shared options chapter, with the keys of the group the rows hold.
+  Throws `ex-info {:key :rows}` for rows without groups."
+  [rows]
+  (let [groups (describe/fragment-keys rows)]
+    (when (empty? groups)
+      (throw (ex-info "shared-groups needs rows of shared groups." {:key :rows :value rows})))
+    (kindly/hide-code
+     (kind/md (str "Shared options: "
+                   (str/join "; " (for [[fragment ks] groups
+                                        :let [title (get-in describe/fragments [fragment :title])]]
+                                    (format "[%s](%s#%s) (%s)" title shared-options-page (heading-anchor title)
+                                            (str/join " " (map #(str "`" (pr-str %) "`") ks)))))
+                   ".")))))
+
 (defn scale-kind-doc
   "wadogo's description of position scale kind `k` (`wadogo.scale/kind-info`, Markdown), its code hidden."
   [k]

@@ -64,10 +64,10 @@
 
 (def ^:private style-entries
   (into (conj polyline/style-entries
-              (schema/optional :fill {:description "area between the line and y = 0: :color (the line colour at :alpha), a colour or :none"}
+              (schema/optional :fill {:cljplot2/section :style :description "area between the line and y = 0: :color (the line colour at :alpha), a colour or :none"}
                                [:or [:= :color] schema/color])
-              (schema/optional :alpha {:description "area fill opacity of :fill :color and of stacked areas"} schema/fraction)
-              (schema/optional :bridge {:description "style of the segments bridging gaps with :gaps :bridge: :alpha (a fraction of the line alpha), optional :width and :dash"}
+              (schema/optional :alpha {:cljplot2/section :style :description "area fill opacity of :fill :color and of stacked areas"} schema/fraction)
+              (schema/optional :bridge {:cljplot2/section :path :description "style of the segments bridging gaps with :gaps :bridge: :alpha (a fraction of the line alpha), optional :width and :dash"}
                                polyline/bridge-schema))
         draw/pattern-style-entries))
 
@@ -85,28 +85,28 @@
                 (into style-entries)
                 (into data/common-options)
                 (into curve/options)
-                (conj (schema/nilable :sort {:description "order the points by numeric or temporal x (false - data order)" :default true}
+                (conj (schema/nilable :sort {:cljplot2/section :path :description "order the points by numeric or temporal x (false - data order)" :default true}
                                       schema/bool)
-                      (schema/optional :gaps {:description "an invalid y breaks the line: :break (empty space) or :bridge (a straight segment in the :bridge style)"
+                      (schema/optional :gaps {:cljplot2/section :path :description "an invalid y breaks the line: :break (empty space) or :bridge (a straight segment in the :bridge style)"
                                               :cljplot2/default-doc ":break (stacked lines take no :gaps)"}
                                        [:enum :break :bridge])
-                      (schema/optional :position {:description "how groups combine: :overlay, stacked :stack / :normalize, or streamgraph :silhouette / :wiggle"
+                      (schema/optional :position {:cljplot2/section :path :description "how groups combine: :overlay, stacked :stack / :normalize, or streamgraph :silhouette / :wiggle"
                                                   :default :overlay}
                                        (into [:enum] (sort positions)))
-                      (schema/optional :fill-gradient {:description "clojure2d gradient (preset, colours or function of t) colouring the areas; wins over :fill"}
+                      (schema/optional :fill-gradient {:cljplot2/section :style :description "clojure2d gradient (preset, colours or function of t) colouring the areas; wins over :fill"}
                                        polyline/fill-gradient-schema)
-                      (schema/optional :fill-gradient-axis {:description "axis the :fill-gradient runs along, over that scale's range (needs :fill-gradient)"
+                      (schema/optional :fill-gradient-axis {:cljplot2/section :style :description "axis the :fill-gradient runs along, over that scale's range (needs :fill-gradient)"
                                                             :cljplot2/default-doc ":x"}
                                        [:enum :x :y])
-                      (schema/optional :padding {:description "padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span"
+                      (schema/optional :padding {:cljplot2/section :path :description "padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span"
                                                  :cljplot2/default-doc "0.05 on every side; y [0 0.05] when stacked without negative values"}
                                        data/position-padding)
-                      (schema/optional :stroke-alpha {:description "multiplies the stroke colour's opacity of unstacked lines (the legend key stays opaque)"}
+                      (schema/optional :stroke-alpha {:cljplot2/section :style :description "multiplies the stroke colour's opacity of unstacked lines (the legend key stays opaque)"}
                                        schema/fraction)
-                      (schema/optional :arrow {:description "arrowheads at the ends of every run of a plain stroked line"} arrow/schema)
-                      (schema/optional :start-gap {:description "shortens every run at its start, in pixels"} schema/non-neg)
-                      (schema/optional :end-gap {:description "shortens every run at its end, in pixels"} schema/non-neg)
-                      (schema/nilable :trail {:description "draw a filled trail whose width follows a linear mapped :size at every point"
+                      (schema/optional :arrow {:cljplot2/section :ends :description "arrowheads at the ends of every run of a plain stroked line"} arrow/schema)
+                      (schema/optional :start-gap {:cljplot2/section :ends :description "shortens every run at its start, in pixels"} schema/non-neg)
+                      (schema/optional :end-gap {:cljplot2/section :ends :description "shortens every run at its end, in pixels"} schema/non-neg)
+                      (schema/nilable :trail {:cljplot2/section :style :description "draw a filled trail whose width follows a linear mapped :size at every point"
                                               :default false}
                                       schema/bool)))
    :mapping [:map

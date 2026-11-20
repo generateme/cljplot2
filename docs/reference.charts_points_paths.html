@@ -1,0 +1,2427 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.37">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>13&nbsp; Charts: points and paths – cljplot2</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./reference.charts_series.html" rel="next">
+<link href="./reference.limits.html" rel="prev">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-7f8f88aac4f3542376d5c11b86a4c14d.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-0d7f492f10755a5ae24b960b9550d083.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+
+</head>
+
+<body class="nav-sidebar floating quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./reference.intro.html">Reference</a></li><li class="breadcrumb-item"><a href="./reference.charts_points_paths.html"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Charts: points and paths</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="./">cljplot2</a> 
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">cljplot2</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text">Reference</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.intro.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">Reference</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.render.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Render</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.data_mapping.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Data and mapping</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.aesthetics_legends.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Aesthetics and legends</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.scales_axes_coords.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Scales, axes and coordinates</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.layering_position.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Layering and position</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.labels_text.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Labels and text</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.facets_arrange.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Facets, multiplots and margins</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.theme.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Theme</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.shared_options.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Shared options</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.errors.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Errors</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.limits.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">Limits</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.charts_points_paths.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Charts: points and paths</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.charts_series.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Charts: series</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.charts_annotations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Charts: annotations</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.charts_bars_ranges.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Charts: bars and ranges</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.charts_strip_distributions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Charts: strip distributions</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.charts_distribution_stats.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Charts: distribution statistics</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.charts_grids_fields.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Charts: grids and fields</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.charts_part_of_whole.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Charts: part of a whole</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.charts_multivariate_3d.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">Charts: multivariate and 3D</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
+ <span class="menu-text">Use cases</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./use_cases.distribution.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Distribution</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./use_cases.colors.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">Colors</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./use_cases.evolution.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">Evolution</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./use_cases.ranking.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Ranking</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./use_cases.part_of_a_whole.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">Part of a whole</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./use_cases.correlation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">Correlation</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./use_cases.flow.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">Flow</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
+ <span class="menu-text">Galleries</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./galleries.cljplot_extras.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">cljplot extras</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./galleries.lattice.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">Lattice</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./galleries.vega.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">Vega</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#scatter" id="toc-scatter" class="nav-link active" data-scroll-target="#scatter"><span class="header-section-number">13.1</span> scatter</a></li>
+  <li><a href="#line" id="toc-line" class="nav-link" data-scroll-target="#line"><span class="header-section-number">13.2</span> line</a>
+  <ul>
+  <li><a href="#style" id="toc-style" class="nav-link" data-scroll-target="#style"><span class="header-section-number">13.2.1</span> Style</a></li>
+  <li><a href="#path" id="toc-path" class="nav-link" data-scroll-target="#path"><span class="header-section-number">13.2.2</span> Path</a></li>
+  <li><a href="#ends" id="toc-ends" class="nav-link" data-scroll-target="#ends"><span class="header-section-number">13.2.3</span> Ends</a></li>
+  </ul></li>
+  <li><a href="#segment" id="toc-segment" class="nav-link" data-scroll-target="#segment"><span class="header-section-number">13.3</span> segment</a></li>
+  <li><a href="#polygon" id="toc-polygon" class="nav-link" data-scroll-target="#polygon"><span class="header-section-number">13.4</span> polygon</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./reference.intro.html">Reference</a></li><li class="breadcrumb-item"><a href="./reference.charts_points_paths.html"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Charts: points and paths</span></a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Charts: points and paths</span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<style></style>
+<style>.printedClojure .sourceCode {
+  background-color: transparent;
+  border-style: none;
+}
+</style>
+<style>.clay-limit-image-width .clay-image {max-width: 100%}
+.clay-side-by-side .sourceCode {margin: 0}
+.clay-side-by-side {margin: 1em 0}
+</style>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js" type="text/javascript"></script>
+<script src="https://code.jquery.com/ui/1.13.1/jquery-ui.min.js" type="text/javascript"></script>
+<p>Marks placed at data positions: points (<code>scatter</code>), lines through them (<code>line</code>), straight pieces between two positions (<code>segment</code>) and filled shapes (<code>polygon</code>). Each chart lists the mapping keys it reads, its own options and the shared option groups it takes (documented once in the Shared options chapter).</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">ns</span> reference.charts-points-paths</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  (<span class="at">:require</span> [fastmath.random <span class="at">:as</span> r]</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>            [cljplot2.chart <span class="at">:as</span> chart]</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>            [cljplot2.core <span class="at">:as</span> plot]</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>            [cljplot2.data.levels <span class="at">:as</span> levels]</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>            [cljplot2.describe <span class="at">:as</span> describe]</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>            [notebook-utils <span class="at">:as</span> nu]))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>Data: Motor Trend car road tests (1974), R datasets package <code>mtcars</code> (Henderson &amp; Velleman 1981); licence: Part of R (GPL-2 | GPL-3).</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> mtcars </span>(nu/dataset <span class="at">:mtcars</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">model</th>
+<th data-quarto-table-cell-role="th">mpg</th>
+<th data-quarto-table-cell-role="th">cyl</th>
+<th data-quarto-table-cell-role="th">disp</th>
+<th data-quarto-table-cell-role="th">hp</th>
+<th data-quarto-table-cell-role="th">drat</th>
+<th data-quarto-table-cell-role="th">wt</th>
+<th data-quarto-table-cell-role="th">qsec</th>
+<th data-quarto-table-cell-role="th">vs</th>
+<th data-quarto-table-cell-role="th">am</th>
+<th data-quarto-table-cell-role="th">gear</th>
+<th data-quarto-table-cell-role="th">carb</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Mazda RX4</td>
+<td>21</td>
+<td>6</td>
+<td>160</td>
+<td>110</td>
+<td>3.9</td>
+<td>2.62</td>
+<td>16.46</td>
+<td>0</td>
+<td>1</td>
+<td>4</td>
+<td>4</td>
+</tr>
+<tr class="even">
+<td>Mazda RX4 Wag</td>
+<td>21</td>
+<td>6</td>
+<td>160</td>
+<td>110</td>
+<td>3.9</td>
+<td>2.875</td>
+<td>17.02</td>
+<td>0</td>
+<td>1</td>
+<td>4</td>
+<td>4</td>
+</tr>
+<tr class="odd">
+<td>Datsun 710</td>
+<td>22.8</td>
+<td>4</td>
+<td>108</td>
+<td>93</td>
+<td>3.85</td>
+<td>2.32</td>
+<td>18.61</td>
+<td>1</td>
+<td>1</td>
+<td>4</td>
+<td>1</td>
+</tr>
+<tr class="even">
+<td>Hornet 4 Drive</td>
+<td>21.4</td>
+<td>6</td>
+<td>258</td>
+<td>110</td>
+<td>3.08</td>
+<td>3.215</td>
+<td>19.44</td>
+<td>1</td>
+<td>0</td>
+<td>3</td>
+<td>1</td>
+</tr>
+<tr class="odd">
+<td>Hornet Sportabout</td>
+<td>18.7</td>
+<td>8</td>
+<td>360</td>
+<td>175</td>
+<td>3.15</td>
+<td>3.44</td>
+<td>17.02</td>
+<td>0</td>
+<td>0</td>
+<td>3</td>
+<td>2</td>
+</tr>
+<tr class="even">
+<td>Valiant</td>
+<td>18.1</td>
+<td>6</td>
+<td>225</td>
+<td>105</td>
+<td>2.76</td>
+<td>3.46</td>
+<td>20.22</td>
+<td>1</td>
+<td>0</td>
+<td>3</td>
+<td>1</td>
+</tr>
+<tr class="odd">
+<td>Duster 360</td>
+<td>14.3</td>
+<td>8</td>
+<td>360</td>
+<td>245</td>
+<td>3.21</td>
+<td>3.57</td>
+<td>15.84</td>
+<td>0</td>
+<td>0</td>
+<td>3</td>
+<td>4</td>
+</tr>
+<tr class="even">
+<td>Merc 240D</td>
+<td>24.4</td>
+<td>4</td>
+<td>146.7</td>
+<td>62</td>
+<td>3.69</td>
+<td>3.19</td>
+<td>20</td>
+<td>1</td>
+<td>0</td>
+<td>4</td>
+<td>2</td>
+</tr>
+<tr class="odd">
+<td>Merc 230</td>
+<td>22.8</td>
+<td>4</td>
+<td>140.8</td>
+<td>95</td>
+<td>3.92</td>
+<td>3.15</td>
+<td>22.9</td>
+<td>1</td>
+<td>0</td>
+<td>4</td>
+<td>2</td>
+</tr>
+<tr class="even">
+<td>Merc 280</td>
+<td>19.2</td>
+<td>6</td>
+<td>167.6</td>
+<td>123</td>
+<td>3.92</td>
+<td>3.44</td>
+<td>18.3</td>
+<td>1</td>
+<td>0</td>
+<td>4</td>
+<td>4</td>
+</tr>
+<tr class="odd">
+<td>Merc 280C</td>
+<td>17.8</td>
+<td>6</td>
+<td>167.6</td>
+<td>123</td>
+<td>3.92</td>
+<td>3.44</td>
+<td>18.9</td>
+<td>1</td>
+<td>0</td>
+<td>4</td>
+<td>4</td>
+</tr>
+<tr class="even">
+<td>Merc 450SE</td>
+<td>16.4</td>
+<td>8</td>
+<td>275.8</td>
+<td>180</td>
+<td>3.07</td>
+<td>4.07</td>
+<td>17.4</td>
+<td>0</td>
+<td>0</td>
+<td>3</td>
+<td>3</td>
+</tr>
+<tr class="odd">
+<td>Merc 450SL</td>
+<td>17.3</td>
+<td>8</td>
+<td>275.8</td>
+<td>180</td>
+<td>3.07</td>
+<td>3.73</td>
+<td>17.6</td>
+<td>0</td>
+<td>0</td>
+<td>3</td>
+<td>3</td>
+</tr>
+<tr class="even">
+<td>Merc 450SLC</td>
+<td>15.2</td>
+<td>8</td>
+<td>275.8</td>
+<td>180</td>
+<td>3.07</td>
+<td>3.78</td>
+<td>18</td>
+<td>0</td>
+<td>0</td>
+<td>3</td>
+<td>3</td>
+</tr>
+<tr class="odd">
+<td>Cadillac Fleetwood</td>
+<td>10.4</td>
+<td>8</td>
+<td>472</td>
+<td>205</td>
+<td>2.93</td>
+<td>5.25</td>
+<td>17.98</td>
+<td>0</td>
+<td>0</td>
+<td>3</td>
+<td>4</td>
+</tr>
+<tr class="even">
+<td>Lincoln Continental</td>
+<td>10.4</td>
+<td>8</td>
+<td>460</td>
+<td>215</td>
+<td>3</td>
+<td>5.424</td>
+<td>17.82</td>
+<td>0</td>
+<td>0</td>
+<td>3</td>
+<td>4</td>
+</tr>
+<tr class="odd">
+<td>Chrysler Imperial</td>
+<td>14.7</td>
+<td>8</td>
+<td>440</td>
+<td>230</td>
+<td>3.23</td>
+<td>5.345</td>
+<td>17.42</td>
+<td>0</td>
+<td>0</td>
+<td>3</td>
+<td>4</td>
+</tr>
+<tr class="even">
+<td>Fiat 128</td>
+<td>32.4</td>
+<td>4</td>
+<td>78.7</td>
+<td>66</td>
+<td>4.08</td>
+<td>2.2</td>
+<td>19.47</td>
+<td>1</td>
+<td>1</td>
+<td>4</td>
+<td>1</td>
+</tr>
+<tr class="odd">
+<td>Honda Civic</td>
+<td>30.4</td>
+<td>4</td>
+<td>75.7</td>
+<td>52</td>
+<td>4.93</td>
+<td>1.615</td>
+<td>18.52</td>
+<td>1</td>
+<td>1</td>
+<td>4</td>
+<td>2</td>
+</tr>
+<tr class="even">
+<td>Toyota Corolla</td>
+<td>33.9</td>
+<td>4</td>
+<td>71.1</td>
+<td>65</td>
+<td>4.22</td>
+<td>1.835</td>
+<td>19.9</td>
+<td>1</td>
+<td>1</td>
+<td>4</td>
+<td>1</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p>Data: Monthly stock prices for five companies, vega-datasets 3.3.1 <code>stocks.csv</code> (https://cdn.jsdelivr.net/npm/vega-datasets@3.3.1/data/stocks.csv); licence: none listed - see vega-datasets (cite Vega as the source).</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> stocks </span>(nu/dataset <span class="at">:stocks</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">symbol</th>
+<th data-quarto-table-cell-role="th">date</th>
+<th data-quarto-table-cell-role="th">price</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>MSFT</td>
+<td>2000-01-01</td>
+<td>39.81</td>
+</tr>
+<tr class="even">
+<td>MSFT</td>
+<td>2000-02-01</td>
+<td>36.35</td>
+</tr>
+<tr class="odd">
+<td>MSFT</td>
+<td>2000-03-01</td>
+<td>43.22</td>
+</tr>
+<tr class="even">
+<td>MSFT</td>
+<td>2000-04-01</td>
+<td>28.37</td>
+</tr>
+<tr class="odd">
+<td>MSFT</td>
+<td>2000-05-01</td>
+<td>25.45</td>
+</tr>
+<tr class="even">
+<td>MSFT</td>
+<td>2000-06-01</td>
+<td>32.54</td>
+</tr>
+<tr class="odd">
+<td>MSFT</td>
+<td>2000-07-01</td>
+<td>28.4</td>
+</tr>
+<tr class="even">
+<td>MSFT</td>
+<td>2000-08-01</td>
+<td>28.4</td>
+</tr>
+<tr class="odd">
+<td>MSFT</td>
+<td>2000-09-01</td>
+<td>24.53</td>
+</tr>
+<tr class="even">
+<td>MSFT</td>
+<td>2000-10-01</td>
+<td>28.02</td>
+</tr>
+<tr class="odd">
+<td>MSFT</td>
+<td>2000-11-01</td>
+<td>23.34</td>
+</tr>
+<tr class="even">
+<td>MSFT</td>
+<td>2000-12-01</td>
+<td>17.65</td>
+</tr>
+<tr class="odd">
+<td>MSFT</td>
+<td>2001-01-01</td>
+<td>24.84</td>
+</tr>
+<tr class="even">
+<td>MSFT</td>
+<td>2001-02-01</td>
+<td>24</td>
+</tr>
+<tr class="odd">
+<td>MSFT</td>
+<td>2001-03-01</td>
+<td>22.25</td>
+</tr>
+<tr class="even">
+<td>MSFT</td>
+<td>2001-04-01</td>
+<td>27.56</td>
+</tr>
+<tr class="odd">
+<td>MSFT</td>
+<td>2001-05-01</td>
+<td>28.14</td>
+</tr>
+<tr class="even">
+<td>MSFT</td>
+<td>2001-06-01</td>
+<td>29.7</td>
+</tr>
+<tr class="odd">
+<td>MSFT</td>
+<td>2001-07-01</td>
+<td>26.93</td>
+</tr>
+<tr class="even">
+<td>MSFT</td>
+<td>2001-08-01</td>
+<td>23.21</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<section id="scatter" class="level2" data-number="13.1">
+<h2 data-number="13.1" class="anchored" data-anchor-id="scatter"><span class="header-section-number">13.1</span> scatter</h2>
+<p>A point per row at its x and y; colour, shape and size may come from the data, and <code>:order</code> sets which points are drawn on top.</p>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">Option</th>
+<th data-quarto-table-cell-role="th">Type</th>
+<th data-quarto-table-cell-role="th">Default</th>
+<th data-quarto-table-cell-role="th">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>:x (required)</td>
+<td>a keyword, a function or a categorical marker of one</td>
+<td></td>
+<td>x position (data units)</td>
+</tr>
+<tr class="even">
+<td>:y (required)</td>
+<td>a keyword, a function or a categorical marker of one</td>
+<td></td>
+<td>y position (data units)</td>
+</tr>
+<tr class="odd">
+<td>:color</td>
+<td>a keyword, a function or a categorical marker of one or nil</td>
+<td></td>
+<td>point colour per row</td>
+</tr>
+<tr class="even">
+<td>:shape</td>
+<td>a keyword, a function or a categorical marker of one or nil</td>
+<td></td>
+<td>point shape per row</td>
+</tr>
+<tr class="odd">
+<td>:size</td>
+<td>a keyword, a function or a categorical marker of one or nil</td>
+<td></td>
+<td>point size per row</td>
+</tr>
+<tr class="even">
+<td>:order</td>
+<td>a keyword, a function or a categorical marker of one or nil</td>
+<td></td>
+<td>draw order: points drawn by its values (see :order-direction), else in data order</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> mtcars</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:wt</span> <span class="at">:y</span> <span class="at">:mpg</span> <span class="at">:color</span> (levels/categorical <span class="at">:cyl</span>) <span class="at">:size</span> <span class="at">:hp</span>}</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:charts</span> [(chart/scatter)]</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:title</span> <span class="st">"cylinders"</span>}}</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:labels</span> {<span class="at">:x</span> <span class="st">"weight [1000 lbs]"</span> <span class="at">:y</span> <span class="st">"miles per gallon"</span>}}</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">600</span> <span class="at">:height</span> <span class="dv">380</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.charts_points_paths_files/image0.png" class="img-fluid"></p>
+</div>
+<p>Its options: the point style used when nothing is mapped, the draw order of a mapped <code>:order</code>, and jitter - random offsets separating points on a grid of values (seeded here, so the image is the same on every build):</p>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">Option</th>
+<th data-quarto-table-cell-role="th">Type</th>
+<th data-quarto-table-cell-role="th">Default</th>
+<th data-quarto-table-cell-role="th">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>:size</td>
+<td>a non-negative number</td>
+<td>6</td>
+<td>point size in pixels (a mapped :size wins)</td>
+</tr>
+<tr class="even">
+<td>:color</td>
+<td>a clojure2d color or :none</td>
+<td>[69 117 180 180]</td>
+<td>point colour (a mapped :color wins)</td>
+</tr>
+<tr class="odd">
+<td>:stroke-color</td>
+<td>a clojure2d color or :none</td>
+<td>:none</td>
+<td>outline colour: a colour or :none</td>
+</tr>
+<tr class="even">
+<td>:stroke-width</td>
+<td>a non-negative number</td>
+<td>1</td>
+<td>outline width in pixels</td>
+</tr>
+<tr class="odd">
+<td>:shape</td>
+<td>a shape character, keyword or shape map</td>
+<td>\O</td>
+<td>point shape (a mapped :shape wins)</td>
+</tr>
+<tr class="even">
+<td>:padding</td>
+<td>map of one of :x :y to [lo hi], non-negative numbers</td>
+<td>0.05 on every side</td>
+<td>padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span</td>
+</tr>
+<tr class="odd">
+<td>:order-direction</td>
+<td>one of :ascending :descending</td>
+<td>:ascending</td>
+<td>draw order of the values of a mapped :order (later points on top)</td>
+</tr>
+<tr class="even">
+<td>:jitter</td>
+<td>[a non-negative number, a non-negative number]</td>
+<td></td>
+<td>[dx dy] - uniform random offsets within ±dx / ±dy data units added to the positions</td>
+</tr>
+<tr class="odd">
+<td>:rng</td>
+<td>a fastmath random generator or nil</td>
+<td>an unseeded generator (builds differ)</td>
+<td>random number generator for jitter (seeded for reproducible plots)</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> mtcars</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:cyl</span> <span class="at">:y</span> <span class="at">:gear</span>}</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/scatter {<span class="at">:size</span> <span class="dv">10</span> <span class="at">:shape</span> <span class="ch">\s</span> <span class="at">:color</span> [<span class="dv">200</span> <span class="dv">80</span> <span class="dv">40</span> <span class="dv">150</span>]})]</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"overplotted"</span>}}</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> mtcars</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:cyl</span> <span class="at">:y</span> <span class="at">:gear</span>}</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/scatter {<span class="at">:size</span> <span class="dv">10</span> <span class="at">:shape</span> <span class="ch">\s</span> <span class="at">:color</span> [<span class="dv">200</span> <span class="dv">80</span> <span class="dv">40</span> <span class="dv">150</span>]</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>                                                           <span class="at">:stroke-color</span> <span class="at">:black</span> <span class="at">:stroke-width</span> <span class="fl">0.5</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>                                                           <span class="at">:jitter</span> [<span class="fl">0.3</span> <span class="fl">0.2</span>] <span class="at">:rng</span> (r/rng <span class="at">:mersenne</span> <span class="dv">7</span>)})]</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":jitter [0.3 0.2]"</span>}}]</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">2</span>})</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">900</span> <span class="at">:height</span> <span class="dv">330</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.charts_points_paths_files/image1.png" class="img-fluid"></p>
+</div>
+<p>Shared options: <a href="reference.shared_options.html#data-and-mapping">Data and mapping</a> (<code>:data</code> <code>:mapping</code>).</p>
+</section>
+<section id="line" class="level2" data-number="13.2">
+<h2 data-number="13.2" class="anchored" data-anchor-id="line"><span class="header-section-number">13.2</span> line</h2>
+<p>A polyline per group through the rows ordered by x; it may fill the area below, stack with other groups, or carry a colour or width along its length. (The dataset’s dates are text: the mapping parses them.)</p>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">Option</th>
+<th data-quarto-table-cell-role="th">Type</th>
+<th data-quarto-table-cell-role="th">Default</th>
+<th data-quarto-table-cell-role="th">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>:x (required)</td>
+<td>a keyword, a function or a categorical marker of one</td>
+<td></td>
+<td>x position (data units)</td>
+</tr>
+<tr class="even">
+<td>:y (required)</td>
+<td>a keyword, a function or a categorical marker of one</td>
+<td></td>
+<td>y position (data units)</td>
+</tr>
+<tr class="odd">
+<td>:color</td>
+<td>a keyword, a function or a categorical marker of one or nil</td>
+<td></td>
+<td>line colour: per group (ordinal) or along the line (linear or binned)</td>
+</tr>
+<tr class="even">
+<td>:size</td>
+<td>a keyword, a function or a categorical marker of one or nil</td>
+<td></td>
+<td>line width: per group, or per point with :trail</td>
+</tr>
+<tr class="odd">
+<td>:dash</td>
+<td>a keyword, a function or a categorical marker of one or nil</td>
+<td></td>
+<td>dash style per group</td>
+</tr>
+<tr class="even">
+<td>:pattern</td>
+<td>a keyword, a function or a categorical marker of one or nil</td>
+<td></td>
+<td>area fill pattern per group</td>
+</tr>
+<tr class="odd">
+<td>:group</td>
+<td>a keyword, a function or a categorical marker of one or nil</td>
+<td></td>
+<td>groups without a visual aesthetic, each its own line</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> stocks</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> #(java.<span class="kw">time</span>.LocalDate/parse (<span class="at">:date</span> <span class="va">%</span>)) <span class="at">:y</span> <span class="at">:price</span> <span class="at">:color</span> <span class="at">:symbol</span>}</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:charts</span> [(chart/line)]</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:labels</span> {<span class="at">:x</span> <span class="st">"date"</span> <span class="at">:y</span> <span class="st">"price [USD]"</span>}}</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">700</span> <span class="at">:height</span> <span class="dv">380</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.charts_points_paths_files/image2.png" class="img-fluid"></p>
+</div>
+<section id="style" class="level3" data-number="13.2.1">
+<h3 data-number="13.2.1" class="anchored" data-anchor-id="style"><span class="header-section-number">13.2.1</span> Style</h3>
+<p>The area under a line (<code>:fill</code>), its gradient, the stroke’s opacity and the trail - a filled band whose width follows a mapped <code>:size</code>:</p>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">Option</th>
+<th data-quarto-table-cell-role="th">Type</th>
+<th data-quarto-table-cell-role="th">Default</th>
+<th data-quarto-table-cell-role="th">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>:fill</td>
+<td>:color or a clojure2d color or :none</td>
+<td>:none</td>
+<td>area between the line and y = 0: :color (the line colour at :alpha), a colour or :none</td>
+</tr>
+<tr class="even">
+<td>:alpha</td>
+<td>a number in [0 1]</td>
+<td>0.6</td>
+<td>area fill opacity of :fill :color and of stacked areas</td>
+</tr>
+<tr class="odd">
+<td>:fill-gradient</td>
+<td>a clojure2d gradient: a preset keyword, a colour list or a function</td>
+<td></td>
+<td>clojure2d gradient (preset, colours or function of t) colouring the areas; wins over :fill</td>
+</tr>
+<tr class="even">
+<td>:fill-gradient-axis</td>
+<td>one of :x :y</td>
+<td>:x</td>
+<td>axis the :fill-gradient runs along, over that scale's range (needs :fill-gradient)</td>
+</tr>
+<tr class="odd">
+<td>:stroke-alpha</td>
+<td>a number in [0 1]</td>
+<td></td>
+<td>multiplies the stroke colour's opacity of unstacked lines (the legend key stays opaque)</td>
+</tr>
+<tr class="even">
+<td>:trail</td>
+<td>true or false or nil</td>
+<td>false</td>
+<td>draw a filled trail whose width follows a linear mapped :size at every point</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> wave </span>(<span class="kw">for</span> [t (<span class="kw">range</span> <span class="dv">40</span>)] {<span class="at">:t</span> t <span class="at">:v</span> (<span class="kw">+</span> <span class="fl">1.5</span> (Math/sin (<span class="kw">*</span> <span class="fl">0.25</span> t))) <span class="at">:w</span> (<span class="kw">+</span> <span class="dv">1</span> (<span class="kw">mod</span> t <span class="dv">10</span>))}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">t</th>
+<th data-quarto-table-cell-role="th">v</th>
+<th data-quarto-table-cell-role="th">w</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>0</td>
+<td>1.5</td>
+<td>1</td>
+</tr>
+<tr class="even">
+<td>1</td>
+<td>1.747403959254523</td>
+<td>2</td>
+</tr>
+<tr class="odd">
+<td>2</td>
+<td>1.979425538604203</td>
+<td>3</td>
+</tr>
+<tr class="even">
+<td>3</td>
+<td>2.181638760023334</td>
+<td>4</td>
+</tr>
+<tr class="odd">
+<td>4</td>
+<td>2.3414709848078967</td>
+<td>5</td>
+</tr>
+<tr class="even">
+<td>5</td>
+<td>2.448984619355586</td>
+<td>6</td>
+</tr>
+<tr class="odd">
+<td>6</td>
+<td>2.4974949866040546</td>
+<td>7</td>
+</tr>
+<tr class="even">
+<td>7</td>
+<td>2.483985946873937</td>
+<td>8</td>
+</tr>
+<tr class="odd">
+<td>8</td>
+<td>2.409297426825682</td>
+<td>9</td>
+</tr>
+<tr class="even">
+<td>9</td>
+<td>2.278073196887921</td>
+<td>10</td>
+</tr>
+<tr class="odd">
+<td>10</td>
+<td>2.0984721441039564</td>
+<td>1</td>
+</tr>
+<tr class="even">
+<td>11</td>
+<td>1.8816609920523317</td>
+<td>2</td>
+</tr>
+<tr class="odd">
+<td>12</td>
+<td>1.6411200080598671</td>
+<td>3</td>
+</tr>
+<tr class="even">
+<td>13</td>
+<td>1.3918048654698916</td>
+<td>4</td>
+</tr>
+<tr class="odd">
+<td>14</td>
+<td>1.14921677231038</td>
+<td>5</td>
+</tr>
+<tr class="even">
+<td>15</td>
+<td>0.9284386812576563</td>
+<td>6</td>
+</tr>
+<tr class="odd">
+<td>16</td>
+<td>0.7431975046920718</td>
+<td>7</td>
+</tr>
+<tr class="even">
+<td>17</td>
+<td>0.6050106417714165</td>
+<td>8</td>
+</tr>
+<tr class="odd">
+<td>18</td>
+<td>0.522469882334903</td>
+<td>9</td>
+</tr>
+<tr class="even">
+<td>19</td>
+<td>0.500707211024622</td>
+<td>10</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> wave <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:t</span> <span class="at">:y</span> <span class="at">:v</span>}</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/line {<span class="at">:fill</span> <span class="at">:color</span> <span class="at">:alpha</span> <span class="fl">0.3</span>})]</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":fill :color"</span>}}</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> wave <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:t</span> <span class="at">:y</span> <span class="at">:v</span>}</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/line {<span class="at">:fill-gradient</span> <span class="at">:mpl/viridis</span> <span class="at">:fill-gradient-axis</span> <span class="at">:y</span>})]</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":fill-gradient"</span>}}</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> wave <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:t</span> <span class="at">:y</span> <span class="at">:v</span> <span class="at">:size</span> <span class="at">:w</span>}</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/line {<span class="at">:trail</span> <span class="va">true</span>})]</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":trail true"</span>}</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:legend</span> <span class="va">false</span>}]</span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">3</span>})</span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">300</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.charts_points_paths_files/image3.png" class="img-fluid"></p>
+</div>
+</section>
+<section id="path" class="level3" data-number="13.2.2">
+<h3 data-number="13.2.2" class="anchored" data-anchor-id="path"><span class="header-section-number">13.2.2</span> Path</h3>
+<p>How points are joined: sorted by x or in data order, what a missing value does (a break or a bridge), how groups combine (the Layering and position chapter shows <code>:stack</code> and the streamgraphs), and the padding:</p>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">Option</th>
+<th data-quarto-table-cell-role="th">Type</th>
+<th data-quarto-table-cell-role="th">Default</th>
+<th data-quarto-table-cell-role="th">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>:bridge</td>
+<td>map</td>
+<td>{:alpha 0.3}</td>
+<td>style of the segments bridging gaps with :gaps :bridge: :alpha (a fraction of the line alpha), optional :width and :dash</td>
+</tr>
+<tr class="even">
+<td>:bridge :alpha (required)</td>
+<td>a number in [0 1]</td>
+<td>0.3 in the theme's :bridge (a given :bridge replaces it whole)</td>
+<td>bridge opacity, a fraction of the line's alpha</td>
+</tr>
+<tr class="odd">
+<td>:bridge :width</td>
+<td>a non-negative number</td>
+<td>the line's width</td>
+<td>bridge width in pixels</td>
+</tr>
+<tr class="even">
+<td>:bridge :dash</td>
+<td>:none, a dash style (:dashed :dot-dash :dot-dot-dash :dotted :long-dash :loose-dot :solid :two-dash) or a sequence of positive numbers or nil</td>
+<td>the line's dash</td>
+<td>dash style of the bridge</td>
+</tr>
+<tr class="odd">
+<td>:sort</td>
+<td>true or false or nil</td>
+<td>true</td>
+<td>order the points by numeric or temporal x (false - data order)</td>
+</tr>
+<tr class="even">
+<td>:gaps</td>
+<td>one of :break :bridge</td>
+<td>:break (stacked lines take no :gaps)</td>
+<td>an invalid y breaks the line: :break (empty space) or :bridge (a straight segment in the :bridge style)</td>
+</tr>
+<tr class="odd">
+<td>:position</td>
+<td>one of :normalize :overlay :silhouette :stack :wiggle</td>
+<td>:overlay</td>
+<td>how groups combine: :overlay, stacked :stack / :normalize, or streamgraph :silhouette / :wiggle</td>
+</tr>
+<tr class="even">
+<td>:padding</td>
+<td>map of one of :x :y to [lo hi], non-negative numbers</td>
+<td>0.05 on every side; y [0 0.05] when stacked without negative values</td>
+<td>padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> spiral </span>(<span class="kw">for</span> [t (<span class="kw">range</span> <span class="dv">0</span> <span class="dv">12</span> <span class="fl">0.25</span>)] {<span class="at">:x</span> (<span class="kw">*</span> t (Math/cos t)) <span class="at">:y</span> (<span class="kw">*</span> t (Math/sin t)) <span class="at">:v</span> (<span class="kw">when-not</span> (<span class="kw">&lt;</span> <span class="dv">5</span> t <span class="dv">6</span>) t)}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">x</th>
+<th data-quarto-table-cell-role="th">y</th>
+<th data-quarto-table-cell-role="th">v</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>0.0</td>
+<td>0.0</td>
+<td>0</td>
+</tr>
+<tr class="even">
+<td>0.24222810542766118</td>
+<td>0.061850989813630734</td>
+<td>0.25</td>
+</tr>
+<tr class="odd">
+<td>0.4387912809451864</td>
+<td>0.2397127693021015</td>
+<td>0.5</td>
+</tr>
+<tr class="even">
+<td>0.5487666516553656</td>
+<td>0.5112290700175006</td>
+<td>0.75</td>
+</tr>
+<tr class="odd">
+<td>0.5403023058681398</td>
+<td>0.8414709848078965</td>
+<td>1.0</td>
+</tr>
+<tr class="even">
+<td>0.3941529529940858</td>
+<td>1.1862307741944829</td>
+<td>1.25</td>
+</tr>
+<tr class="odd">
+<td>0.10610580250155435</td>
+<td>1.4962424799060816</td>
+<td>1.5</td>
+</tr>
+<tr class="even">
+<td>-0.31193059738661116</td>
+<td>1.7219754070293896</td>
+<td>1.75</td>
+</tr>
+<tr class="odd">
+<td>-0.8322936730942848</td>
+<td>1.8185948536513634</td>
+<td>2.0</td>
+</tr>
+<tr class="even">
+<td>-1.4133906511261631</td>
+<td>1.7506646929978227</td>
+<td>2.25</td>
+</tr>
+<tr class="odd">
+<td>-2.002859038867334</td>
+<td>1.496180360259891</td>
+<td>2.5</td>
+</tr>
+<tr class="even">
+<td>-2.541831541239275</td>
+<td>1.0495677281439122</td>
+<td>2.75</td>
+</tr>
+<tr class="odd">
+<td>-2.9699774898013365</td>
+<td>0.4233600241796016</td>
+<td>3.0</td>
+</tr>
+<tr class="even">
+<td>-3.2309214472617755</td>
+<td>-0.3516341872228522</td>
+<td>3.25</td>
+</tr>
+<tr class="odd">
+<td>-3.277598405517787</td>
+<td>-1.2277412969136694</td>
+<td>3.5</td>
+</tr>
+<tr class="even">
+<td>-3.077097590023353</td>
+<td>-2.143354945283789</td>
+<td>3.75</td>
+</tr>
+<tr class="odd">
+<td>-2.6145744834544478</td>
+<td>-3.027209981231713</td>
+<td>4.0</td>
+</tr>
+<tr class="even">
+<td>-1.8958718321336194</td>
+<td>-3.80370477247148</td>
+<td>4.25</td>
+</tr>
+<tr class="odd">
+<td>-0.9485810974385086</td>
+<td>-4.3988855294929365</td>
+<td>4.5</td>
+</tr>
+<tr class="even">
+<td>0.17861022621788863</td>
+<td>-4.746640747633045</td>
+<td>4.75</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> spiral <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:y</span>}</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/line)]</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":sort true (default)"</span>}}</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> spiral <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:y</span>}</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/line {<span class="at">:sort</span> <span class="va">false</span>})]</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":sort false"</span>}}</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> spiral <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:v</span>}</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/line {<span class="at">:sort</span> <span class="va">false</span> <span class="at">:gaps</span> <span class="at">:bridge</span> <span class="at">:bridge</span> {<span class="at">:alpha</span> <span class="fl">0.5</span> <span class="at">:dash</span> <span class="at">:dotted</span>}})]</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":gaps :bridge"</span>}}]</span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">3</span>})</span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">320</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.charts_points_paths_files/image4.png" class="img-fluid"></p>
+</div>
+</section>
+<section id="ends" class="level3" data-number="13.2.3">
+<h3 data-number="13.2.3" class="anchored" data-anchor-id="ends"><span class="header-section-number">13.2.3</span> Ends</h3>
+<p>Arrowheads at the ends of each run and gaps shortening it - e.g.&nbsp;to stop short of a marker:</p>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">Option</th>
+<th data-quarto-table-cell-role="th">Type</th>
+<th data-quarto-table-cell-role="th">Default</th>
+<th data-quarto-table-cell-role="th">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>:arrow</td>
+<td>map</td>
+<td></td>
+<td>arrowheads at the ends of every run of a plain stroked line</td>
+</tr>
+<tr class="even">
+<td>:arrow :end</td>
+<td>true or false</td>
+<td>true</td>
+<td>a head at the run's end</td>
+</tr>
+<tr class="odd">
+<td>:arrow :start</td>
+<td>true or false</td>
+<td>false</td>
+<td>a head at the run's start</td>
+</tr>
+<tr class="even">
+<td>:arrow :size</td>
+<td>a positive number</td>
+<td>8.0</td>
+<td>head length in pixels</td>
+</tr>
+<tr class="odd">
+<td>:arrow :angle</td>
+<td>number, &gt; 0, &lt; 90</td>
+<td>20.0</td>
+<td>angle in degrees between each side of the head and the line</td>
+</tr>
+<tr class="even">
+<td>:arrow :shape</td>
+<td>one of :closed :open</td>
+<td>:closed</td>
+<td>:closed (a filled triangle) or :open (two strokes)</td>
+</tr>
+<tr class="odd">
+<td>:start-gap</td>
+<td>a non-negative number</td>
+<td></td>
+<td>shortens every run at its start, in pixels</td>
+</tr>
+<tr class="even">
+<td>:end-gap</td>
+<td>a non-negative number</td>
+<td></td>
+<td>shortens every run at its end, in pixels</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> path-points </span>[{<span class="at">:x</span> <span class="dv">0</span> <span class="at">:y</span> <span class="dv">0</span>} {<span class="at">:x</span> <span class="dv">1</span> <span class="at">:y</span> <span class="dv">2</span>} {<span class="at">:x</span> <span class="dv">2</span> <span class="at">:y</span> <span class="dv">1</span>} {<span class="at">:x</span> <span class="dv">3</span> <span class="at">:y</span> <span class="dv">3</span>}])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">x</th>
+<th data-quarto-table-cell-role="th">y</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>0</td>
+<td>0</td>
+</tr>
+<tr class="even">
+<td>1</td>
+<td>2</td>
+</tr>
+<tr class="odd">
+<td>2</td>
+<td>1</td>
+</tr>
+<tr class="even">
+<td>3</td>
+<td>3</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> path-points <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:y</span>}</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/line {<span class="at">:arrow</span> {<span class="at">:end</span> <span class="va">true</span>}})]</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":arrow {:end true}"</span>}}</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> path-points <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:y</span>}</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/scatter {<span class="at">:size</span> <span class="dv">14</span>})</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>                                            (chart/line {<span class="at">:arrow</span> {<span class="at">:start</span> <span class="va">true</span> <span class="at">:end</span> <span class="va">true</span> <span class="at">:shape</span> <span class="at">:open</span> <span class="at">:size</span> <span class="dv">12</span>}</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>                                                         <span class="at">:start-gap</span> <span class="dv">9</span> <span class="at">:end-gap</span> <span class="dv">9</span>})]</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"open heads, gaps 9 px"</span>}}]</span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">2</span>})</span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">800</span> <span class="at">:height</span> <span class="dv">300</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.charts_points_paths_files/image5.png" class="img-fluid"></p>
+</div>
+<p>Shared options: <a href="reference.shared_options.html#line-style">Line style</a> (<code>:color</code> <code>:width</code> <code>:dash</code>); <a href="reference.shared_options.html#fill-patterns">Fill patterns</a> (<code>:pattern</code> <code>:pattern-color</code>); <a href="reference.shared_options.html#data-and-mapping">Data and mapping</a> (<code>:data</code> <code>:mapping</code>); <a href="reference.shared_options.html#curves">Curves</a> (<code>:interpolator</code> <code>:interpolator-params</code> <code>:curve</code> <code>:sample-step</code>).</p>
+</section>
+</section>
+<section id="segment" class="level2" data-number="13.3">
+<h2 data-number="13.3" class="anchored" data-anchor-id="segment"><span class="header-section-number">13.3</span> segment</h2>
+<p>A straight piece per row from (x, y) to (xend, yend); the ends may be mapped or given as literals, with arrowheads and gaps as on lines.</p>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">Option</th>
+<th data-quarto-table-cell-role="th">Type</th>
+<th data-quarto-table-cell-role="th">Default</th>
+<th data-quarto-table-cell-role="th">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>:x (required)</td>
+<td>a keyword, a function or a categorical marker of one</td>
+<td></td>
+<td>start x position (data units)</td>
+</tr>
+<tr class="even">
+<td>:y (required)</td>
+<td>a keyword, a function or a categorical marker of one</td>
+<td></td>
+<td>start y position (data units)</td>
+</tr>
+<tr class="odd">
+<td>:xend</td>
+<td>a keyword, a function or a categorical marker of one or nil</td>
+<td></td>
+<td>end x position (data units)</td>
+</tr>
+<tr class="even">
+<td>:yend</td>
+<td>a keyword, a function or a categorical marker of one or nil</td>
+<td></td>
+<td>end y position (data units)</td>
+</tr>
+<tr class="odd">
+<td>:end-gap</td>
+<td>a keyword, a function or a categorical marker of one or nil</td>
+<td></td>
+<td>end gap per row in pixels (e.g. the radius of the node an edge points at)</td>
+</tr>
+<tr class="even">
+<td>:color</td>
+<td>a keyword, a function or a categorical marker of one or nil</td>
+<td></td>
+<td>segment colour: per group (ordinal) or per row (linear or binned)</td>
+</tr>
+<tr class="odd">
+<td>:size</td>
+<td>a keyword, a function or a categorical marker of one or nil</td>
+<td></td>
+<td>line width: per row (linear) or per group (ordinal)</td>
+</tr>
+<tr class="even">
+<td>:dash</td>
+<td>a keyword, a function or a categorical marker of one or nil</td>
+<td></td>
+<td>dash style per group</td>
+</tr>
+<tr class="odd">
+<td>:group</td>
+<td>a keyword, a function or a categorical marker of one or nil</td>
+<td></td>
+<td>groups without a visual aesthetic (one stroke setup per group)</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> moves </span>[{<span class="at">:from</span> <span class="st">"a"</span> <span class="at">:x</span> <span class="dv">1</span> <span class="at">:y</span> <span class="dv">1</span> <span class="at">:x2</span> <span class="dv">3</span> <span class="at">:y2</span> <span class="dv">2</span>} {<span class="at">:from</span> <span class="st">"b"</span> <span class="at">:x</span> <span class="dv">2</span> <span class="at">:y</span> <span class="dv">4</span> <span class="at">:x2</span> <span class="dv">4</span> <span class="at">:y2</span> <span class="dv">3</span>} {<span class="at">:from</span> <span class="st">"c"</span> <span class="at">:x</span> <span class="dv">3</span> <span class="at">:y</span> <span class="fl">0.5</span> <span class="at">:x2</span> <span class="fl">1.5</span> <span class="at">:y2</span> <span class="dv">3</span>}])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">from</th>
+<th data-quarto-table-cell-role="th">x</th>
+<th data-quarto-table-cell-role="th">y</th>
+<th data-quarto-table-cell-role="th">x2</th>
+<th data-quarto-table-cell-role="th">y2</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>a</td>
+<td>1</td>
+<td>1</td>
+<td>3</td>
+<td>2</td>
+</tr>
+<tr class="even">
+<td>b</td>
+<td>2</td>
+<td>4</td>
+<td>4</td>
+<td>3</td>
+</tr>
+<tr class="odd">
+<td>c</td>
+<td>3</td>
+<td>0.5</td>
+<td>1.5</td>
+<td>3</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> moves</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:y</span> <span class="at">:xend</span> <span class="at">:x2</span> <span class="at">:yend</span> <span class="at">:y2</span> <span class="at">:color</span> <span class="at">:from</span>}</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:charts</span> [(chart/segment {<span class="at">:width</span> <span class="dv">2</span>})]}</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">500</span> <span class="at">:height</span> <span class="dv">320</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.charts_points_paths_files/image6.png" class="img-fluid"></p>
+</div>
+<p>Its options: literal ends (here every segment starts at x = 0, a lollipop stem), arrows and gaps:</p>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">Option</th>
+<th data-quarto-table-cell-role="th">Type</th>
+<th data-quarto-table-cell-role="th">Default</th>
+<th data-quarto-table-cell-role="th">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>:xend</td>
+<td>a finite number, a java.time value or a level (string / keyword) or nil</td>
+<td>the mapped :xend, else the start x</td>
+<td>literal end x of every segment: a number, a java.time value or a level (wins over a mapped :xend)</td>
+</tr>
+<tr class="even">
+<td>:yend</td>
+<td>a finite number, a java.time value or a level (string / keyword) or nil</td>
+<td>the mapped :yend, else the start y</td>
+<td>literal end y of every segment: a number, a java.time value or a level (wins over a mapped :yend)</td>
+</tr>
+<tr class="odd">
+<td>:padding</td>
+<td>map of one of :x :y to [lo hi], non-negative numbers</td>
+<td>0.05 on every side; 0 on a side where a literal :xend / :yend is the end of the axis extent</td>
+<td>padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span</td>
+</tr>
+<tr class="even">
+<td>:arrow</td>
+<td>map</td>
+<td></td>
+<td>arrowheads at the ends of every segment</td>
+</tr>
+<tr class="odd">
+<td>:arrow :end</td>
+<td>true or false</td>
+<td>true</td>
+<td>a head at the run's end</td>
+</tr>
+<tr class="even">
+<td>:arrow :start</td>
+<td>true or false</td>
+<td>false</td>
+<td>a head at the run's start</td>
+</tr>
+<tr class="odd">
+<td>:arrow :size</td>
+<td>a positive number</td>
+<td>8.0</td>
+<td>head length in pixels</td>
+</tr>
+<tr class="even">
+<td>:arrow :angle</td>
+<td>number, &gt; 0, &lt; 90</td>
+<td>20.0</td>
+<td>angle in degrees between each side of the head and the line</td>
+</tr>
+<tr class="odd">
+<td>:arrow :shape</td>
+<td>one of :closed :open</td>
+<td>:closed</td>
+<td>:closed (a filled triangle) or :open (two strokes)</td>
+</tr>
+<tr class="even">
+<td>:start-gap</td>
+<td>a non-negative number</td>
+<td></td>
+<td>shortens every segment at its start, in pixels</td>
+</tr>
+<tr class="odd">
+<td>:end-gap</td>
+<td>a non-negative number</td>
+<td></td>
+<td>shortens every segment at its end, in pixels (a mapped :end-gap wins)</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> mtcars</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:mpg</span> <span class="at">:y</span> <span class="at">:model</span>}</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/segment {<span class="at">:xend</span> <span class="dv">0</span>}) (chart/scatter)]</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:scales</span> {<span class="at">:y</span> {<span class="at">:reverse</span> <span class="va">true</span>}}</span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":xend 0"</span>}}</span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> moves</span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:y</span> <span class="at">:xend</span> <span class="at">:x2</span> <span class="at">:yend</span> <span class="at">:y2</span>}</span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/scatter {<span class="at">:size</span> <span class="dv">10</span>})</span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>                                            (chart/segment {<span class="at">:arrow</span> {<span class="at">:end</span> <span class="va">true</span> <span class="at">:size</span> <span class="dv">10</span>} <span class="at">:end-gap</span> <span class="dv">4</span>})]</span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":arrow, :end-gap 4"</span>}}]</span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">2</span> <span class="at">:widths</span> [<span class="fl">1.3</span> <span class="dv">1</span>]})</span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">620</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.charts_points_paths_files/image7.png" class="img-fluid"></p>
+</div>
+<p>Shared options: <a href="reference.shared_options.html#line-style">Line style</a> (<code>:color</code> <code>:width</code> <code>:dash</code>); <a href="reference.shared_options.html#data-and-mapping">Data and mapping</a> (<code>:data</code> <code>:mapping</code>).</p>
+</section>
+<section id="polygon" class="level2" data-number="13.4">
+<h2 data-number="13.4" class="anchored" data-anchor-id="polygon"><span class="header-section-number">13.4</span> polygon</h2>
+<p>A filled shape per group through its rows in data order.</p>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">Option</th>
+<th data-quarto-table-cell-role="th">Type</th>
+<th data-quarto-table-cell-role="th">Default</th>
+<th data-quarto-table-cell-role="th">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>:x (required)</td>
+<td>a keyword, a function or a categorical marker of one</td>
+<td></td>
+<td>x position of a vertex (data units)</td>
+</tr>
+<tr class="even">
+<td>:y (required)</td>
+<td>a keyword, a function or a categorical marker of one</td>
+<td></td>
+<td>y position of a vertex (data units)</td>
+</tr>
+<tr class="odd">
+<td>:color</td>
+<td>a keyword, a function or a categorical marker of one or nil</td>
+<td></td>
+<td>fill colour: per group (ordinal), or by the group's first row (linear or binned)</td>
+</tr>
+<tr class="even">
+<td>:group</td>
+<td>a keyword, a function or a categorical marker of one or nil</td>
+<td></td>
+<td>groups without a visual aesthetic, each its own polygon</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> shapes </span>(<span class="kw">concat</span> (<span class="kw">for</span> [a (<span class="kw">range</span> <span class="dv">0</span> <span class="dv">360</span> <span class="dv">60</span>)]</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>                      {<span class="at">:shape</span> <span class="st">"hexagon"</span> <span class="at">:x</span> (Math/cos (Math/toRadians a)) <span class="at">:y</span> (Math/sin (Math/toRadians a))})</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>                    (<span class="kw">for</span> [[x y] [[<span class="fl">1.5</span> -<span class="dv">1</span>] [<span class="dv">3</span> -<span class="dv">1</span>] [<span class="fl">2.25</span> <span class="dv">1</span>]]] {<span class="at">:shape</span> <span class="st">"triangle"</span> <span class="at">:x</span> x <span class="at">:y</span> y})))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">shape</th>
+<th data-quarto-table-cell-role="th">x</th>
+<th data-quarto-table-cell-role="th">y</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>hexagon</td>
+<td>1.0</td>
+<td>0.0</td>
+</tr>
+<tr class="even">
+<td>hexagon</td>
+<td>0.5000000000000001</td>
+<td>0.8660254037844386</td>
+</tr>
+<tr class="odd">
+<td>hexagon</td>
+<td>-0.4999999999999998</td>
+<td>0.8660254037844387</td>
+</tr>
+<tr class="even">
+<td>hexagon</td>
+<td>-1.0</td>
+<td>1.2246467991473532E-16</td>
+</tr>
+<tr class="odd">
+<td>hexagon</td>
+<td>-0.5000000000000004</td>
+<td>-0.8660254037844384</td>
+</tr>
+<tr class="even">
+<td>hexagon</td>
+<td>0.5000000000000001</td>
+<td>-0.8660254037844386</td>
+</tr>
+<tr class="odd">
+<td>triangle</td>
+<td>1.5</td>
+<td>-1</td>
+</tr>
+<tr class="even">
+<td>triangle</td>
+<td>3</td>
+<td>-1</td>
+</tr>
+<tr class="odd">
+<td>triangle</td>
+<td>2.25</td>
+<td>1</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> shapes</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:y</span> <span class="at">:color</span> <span class="at">:shape</span>}</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:charts</span> [(chart/polygon)]}</span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">500</span> <span class="at">:height</span> <span class="dv">260</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.charts_points_paths_files/image8.png" class="img-fluid"></p>
+</div>
+<p>Its options: the fill, its opacity and the outline (<code>:color</code> - the group’s colour, opaque):</p>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">Option</th>
+<th data-quarto-table-cell-role="th">Type</th>
+<th data-quarto-table-cell-role="th">Default</th>
+<th data-quarto-table-cell-role="th">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>:color</td>
+<td>a clojure2d color or :none</td>
+<td>[69 117 180]</td>
+<td>fill colour (a mapped :color wins)</td>
+</tr>
+<tr class="even">
+<td>:alpha</td>
+<td>a number in [0 1]</td>
+<td>1.0</td>
+<td>fill opacity</td>
+</tr>
+<tr class="odd">
+<td>:stroke-color</td>
+<td>:color or a clojure2d color or :none</td>
+<td>:none</td>
+<td>outline colour: a colour, :none or :color (the group colour, opaque)</td>
+</tr>
+<tr class="even">
+<td>:stroke-width</td>
+<td>a non-negative number</td>
+<td>1</td>
+<td>outline width in pixels</td>
+</tr>
+<tr class="odd">
+<td>:padding</td>
+<td>map of one of :x :y to [lo hi], non-negative numbers</td>
+<td>0.05 on every side</td>
+<td>padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> shapes</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:y</span> <span class="at">:color</span> <span class="at">:shape</span>}</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:charts</span> [(chart/polygon {<span class="at">:alpha</span> <span class="fl">0.35</span> <span class="at">:stroke-color</span> <span class="at">:color</span> <span class="at">:stroke-width</span> <span class="dv">2</span>})]}</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">500</span> <span class="at">:height</span> <span class="dv">260</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.charts_points_paths_files/image9.png" class="img-fluid"></p>
+</div>
+<p>Shared options: <a href="reference.shared_options.html#data-and-mapping">Data and mapping</a> (<code>:data</code> <code>:mapping</code>).</p>
+<div style="background-color:grey;height:2px;width:100%;"></div>
+<div><pre><small><small>source: notebooks/reference/charts_points_paths.clj</small></small></pre></div>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="./reference.limits.html" class="pagination-link" aria-label="Limits">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">Limits</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./reference.charts_series.html" class="pagination-link" aria-label="Charts: series">
+        <span class="nav-page-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Charts: series</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

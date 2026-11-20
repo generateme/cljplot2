@@ -120,8 +120,8 @@ takes): `:dodge`, `:stack`, `:normalize`, `:overlay`, and for densities and line
 
 ::: {.sourceClojure}
 ```clojure
-(def sales (for [q ["Q1" "Q2" "Q3" "Q4"] [i product] (map-indexed vector ["apples" "pears" "plums"])]
-             {:quarter q :product product :amount (+ 10 (* 7 i) (* 3 (count (str q product))))}))
+(def sales (for [[qi q] (map-indexed vector ["Q1" "Q2" "Q3" "Q4"]) [i product] (map-indexed vector ["apples" "pears" "plums"])]
+             {:quarter q :product product :amount (+ 10 (* 7 i) (* 5 qi) (* 4 (mod (+ qi (* 2 i)) 3)))}))
 ```
 :::
 
@@ -129,7 +129,7 @@ takes): `:dodge`, `:stack`, `:normalize`, `:overlay`, and for densities and line
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>quarter</th><th>product</th><th>amount</th></tr></thead><tbody><tr><td>Q1</td><td>apples</td><td>34</td></tr><tr><td>Q1</td><td>pears</td><td>38</td></tr><tr><td>Q1</td><td>plums</td><td>45</td></tr><tr><td>Q2</td><td>apples</td><td>34</td></tr><tr><td>Q2</td><td>pears</td><td>38</td></tr><tr><td>Q2</td><td>plums</td><td>45</td></tr><tr><td>Q3</td><td>apples</td><td>34</td></tr><tr><td>Q3</td><td>pears</td><td>38</td></tr><tr><td>Q3</td><td>plums</td><td>45</td></tr><tr><td>Q4</td><td>apples</td><td>34</td></tr><tr><td>Q4</td><td>pears</td><td>38</td></tr><tr><td>Q4</td><td>plums</td><td>45</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>quarter</th><th>product</th><th>amount</th></tr></thead><tbody><tr><td>Q1</td><td>apples</td><td>10</td></tr><tr><td>Q1</td><td>pears</td><td>25</td></tr><tr><td>Q1</td><td>plums</td><td>28</td></tr><tr><td>Q2</td><td>apples</td><td>19</td></tr><tr><td>Q2</td><td>pears</td><td>22</td></tr><tr><td>Q2</td><td>plums</td><td>37</td></tr><tr><td>Q3</td><td>apples</td><td>28</td></tr><tr><td>Q3</td><td>pears</td><td>31</td></tr><tr><td>Q3</td><td>plums</td><td>34</td></tr><tr><td>Q4</td><td>apples</td><td>25</td></tr><tr><td>Q4</td><td>pears</td><td>40</td></tr><tr><td>Q4</td><td>plums</td><td>43</td></tr></tbody></table>
 ```
 
 :::

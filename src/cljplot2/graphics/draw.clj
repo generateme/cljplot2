@@ -395,7 +395,8 @@
   "[[bar!]] of the range rectangle with corners `[h0 v0]` and `[h1 v1]` (see [[cljplot2.scale.coord]]): in cartesian
   plots (`geometry` `nil`) the pixel rectangle itself; in polar ones (`geometry` - the panel's polar geometry) the
   annular sector, filled with `fill` and the pattern of `pattern-fill`, outlined with `stroke` when `stroke-width`
-  is positive. `rounding` (see [[corner-rounding]], `nil` - square) rounds the corners (polar - see
+  is positive (a sector going once around the whole circle - a disc or ring - without the seam along its start
+  spoke, [[cljplot2.scale.coord/full-turn-circles]]). `rounding` (see [[corner-rounding]], `nil` - square) rounds the corners (polar - see
   [[rounded-sector-path]]); end rounding needs the second corner at the value end."
   ([canvas geometry a b fill stroke stroke-width pattern-fill]
    (range-bar! canvas geometry a b fill stroke stroke-width pattern-fill nil))
@@ -416,7 +417,9 @@
                (when (and (pos? stroke-width) (not (theme/none? stroke)))
                  (c2d/set-stroke-custom canvas {:size stroke-width :join :miter})
                  (c2d/set-color canvas stroke)
-                 (c2d/path canvas polygon true true)))))))))
+                 (if (coord/full-turn? geometry h0 h1)
+                   (doseq [circle (coord/full-turn-circles geometry h0 v0 h1 v1)] (c2d/path canvas circle false true))
+                   (c2d/path canvas polygon true true))))))))))
 
 (def ^:private ^:const key-radius-fraction
   "Largest corner radius of a legend key square, as a fraction of its side: the key reads as a rounded square whatever

@@ -51,9 +51,9 @@
 
 (def ^:private style-entries
   (into (conj polyline/style-entries
-              (schema/optional :fill {:description "band fill: :color (the line colour at :alpha), a colour or :none (no band, as :band :none)"}
+              (schema/optional :fill {:cljplot2/section :band :description "band fill: :color (the line colour at :alpha), a colour or :none (no band, as :band :none)"}
                                [:or [:= :color] schema/color])
-              (schema/optional :alpha {:description "band fill opacity of :fill :color"} schema/fraction))
+              (schema/optional :alpha {:cljplot2/section :band :description "band fill opacity of :fill :color"} schema/fraction))
         draw/pattern-style-entries))
 
 (def ^:private method-schema
@@ -66,18 +66,18 @@
    :options (-> [:map {:closed true}]
                 (into style-entries)
                 (into data/common-options)
-                (conj (schema/optional :method {:description "fit method: :loess, :lm, :glm, :gp, another fastmath 1D interpolation method or a function (fn [xs ys] f)"
+                (conj (schema/optional :method {:cljplot2/section :fit :description "fit method: :loess, :lm, :glm, :gp, another fastmath 1D interpolation method or a function (fn [xs ys] f)"
                                                 :default :loess}
                                        method-schema)
-                      (schema/nilable :method-params {:description "options of the method (e.g. loess :bandwidth and :degree, lm :degree), else its extra argument"}
+                      (schema/nilable :method-params {:cljplot2/section :fit :description "options of the method (e.g. loess :bandwidth and :degree, lm :degree), else its extra argument"}
                                       [:map-of keyword? any?])
-                      (schema/optional :band {:description "band around the curve: :confidence, :prediction (:lm), :bootstrap or :none"
+                      (schema/optional :band {:cljplot2/section :band :description "band around the curve: :confidence, :prediction (:lm), :bootstrap or :none"
                                               :cljplot2/default-doc ":confidence for :loess, :lm, :glm and :gp, else :none"}
                                        (into [:enum] smooth/band-kinds))
-                      (schema/optional :level {:description "confidence level of the band in (0, 1), or a vector of levels (nested bands)"
+                      (schema/optional :level {:cljplot2/section :band :description "confidence level of the band in (0, 1), or a vector of levels (nested bands)"
                                                :default 0.95}
                                        [:or schema/open-fraction [:vector {:min 1} schema/open-fraction]])
-                      (schema/nilable :bootstrap {:description "options of the :band :bootstrap (see fastmath.interpolation/bootstrap)"}
+                      (schema/nilable :bootstrap {:cljplot2/section :band :description "options of the :band :bootstrap (see fastmath.interpolation/bootstrap)"}
                                       [:map {:closed true}
                                        (schema/optional :samples {:description "number of bootstrap samples" :default 200} schema/pos-int)
                                        (schema/optional :rng {:description "random number generator of the samples (seeded for reproducible plots)"
@@ -88,11 +88,11 @@
                                        (schema/optional :estimation {:description "quantile estimation strategy of the interval (not used by :normal)"
                                                                      :default :legacy}
                                                         keyword?)])
-                      (schema/nilable :n {:description "number of grid points the curve is evaluated at" :default 200} [:and :int [:>= 2]])
-                      (schema/nilable :full-range {:description "fit over the plot's x :domain when given, else the x range of all groups of the panel (false - each group's x range)"
+                      (schema/nilable :n {:cljplot2/section :fit :description "number of grid points the curve is evaluated at" :default 200} [:and :int [:>= 2]])
+                      (schema/nilable :full-range {:cljplot2/section :fit :description "fit over the plot's x :domain when given, else the x range of all groups of the panel (false - each group's x range)"
                                                    :default false}
                                       schema/bool)
-                      (schema/optional :padding {:description "padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span"
+                      (schema/optional :padding {:cljplot2/section :fit :description "padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span"
                                                  :cljplot2/default-doc "0.05 on every side"}
                                        data/position-padding)))
    :mapping [:map

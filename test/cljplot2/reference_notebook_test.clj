@@ -2,9 +2,10 @@
   "Reference part notebooks (`notebooks/reference/`): the part's chapters in the book; every non-chart schema, shared
   group and theme section shown by options tables - a sliced table (rows with `:section`) one slice at a time, every
   slice shown, no table longer than [[max-table-rows]]; tables and Markdown through `notebook-utils` (code hidden);
-  the notebook conventions (image size, seeded rng, dataset credits). Notebooks are read as forms, their aliases
-  resolved - a page names an item by calling or referring to it; a table's rows form is evaluated here. Charts,
-  builders and data functions get their pages in R4 / R5 (spec 7.2)."
+  the notebook conventions (image size, seeded rng, dataset credits); every chart kind on its chart page (R4) - a
+  heading, its mapping table, its own options table and its shared groups. Notebooks are read as forms, their
+  aliases resolved - a page names an item by calling or referring to it; a table's rows form is evaluated here.
+  Builders and data functions get their pages in R5 (spec 7.2)."
   (:require [clojure.edn :as edn]
             [clojure.java.io :as io]
             [clojure.test :refer [deftest testing is]]
@@ -25,6 +26,18 @@
   "The concept chapters (R3), in reading order."
   ["intro" "render" "data_mapping" "aesthetics_legends" "scales_axes_coords" "layering_position" "labels_text"
    "facets_arrange" "theme" "shared_options" "errors" "limits"])
+
+(def ^:private chart-chapters
+  "The chart chapters (R4), in reading order: page -> the chart kinds it documents (spec 6.3)."
+  (array-map "charts_points_paths" [:scatter :line :segment :polygon]
+             "charts_series" [:ribbon :smooth :candlestick]
+             "charts_annotations" [:rule :rect :text :image :function]
+             "charts_bars_ranges" [:bar :extent :bullet]
+             "charts_strip_distributions" [:box :violin :stripplot :beeswarm :dotplot :rug]
+             "charts_distribution_stats" [:histogram :density :ecdf :qq :pp]
+             "charts_grids_fields" [:tile :bin2d :field :contour :correlation]
+             "charts_part_of_whole" [:treemap :partition :pack :waffle :venn]
+             "charts_multivariate_3d" [:parallel :cloud :surface]))
 
 (defn- book-parts
   "Parts of `notebooks/chapters.edn`: title -> chapter paths, and the titles in order (`:order`)."
@@ -119,8 +132,9 @@
          (second call))))
 
 (deftest chapters-test
-  (testing "the Reference part lists the concept chapters, before Use cases"
-    (is (= (map #(str "reference/" % ".clj") concept-chapters) (take (count concept-chapters) (reference-paths))))
+  (testing "the Reference part lists the concept chapters, then the chart chapters, before Use cases"
+    (is (= (map #(str "reference/" % ".clj") (concat concept-chapters (keys chart-chapters)))
+           (take (+ (count concept-chapters) (count chart-chapters)) (reference-paths))))
     (is (= ["Reference" "Use cases"] (take 2 (:order (book-parts))))))
   (testing "every chapter exists and starts with a heading"
     (doseq [p (reference-paths)]
@@ -208,8 +222,9 @@
 
 (def ^:private setup-heads
   "Heads of top-level forms that show nothing of an option: namespace, definitions, source notes, wadogo kind docs,
-  data tables and option tables."
-  #{'ns 'def 'defn 'notebook-utils/source-note 'notebook-utils/scale-kind-doc 'notebook-utils/data-table options-table})
+  data tables, option tables and shared group lists."
+  #{'ns 'def 'defn 'notebook-utils/source-note 'notebook-utils/scale-kind-doc 'notebook-utils/data-table
+    'notebook-utils/shared-groups options-table})
 
 (defn- illustration?
   "Is top-level `form` an example - a call rendering a chart or computing a value shown - rather than setup (see
@@ -297,3 +312,39 @@
       (let [read (set (map second (calls forms 'notebook-utils/dataset)))
             credited (set (keep #(:dataset (second %)) (calls forms 'notebook-utils/source-note)))]
         (is (= read credited) page)))))
+
+(defn- row-keys
+  "What identifies option `rows` when comparing tables: each row's path and description."
+  [rows]
+  (mapv (juxt :path :description) rows))
+
+(defn- page-tables
+  "Row keys (see [[row-keys]]) of every options table of the page forms `forms`, and of every shared group list
+  (`:groups`)."
+  [forms]
+  {:tables (set (map #(row-keys (eval-rows (normalized (second %)))) (calls forms options-table)))
+   :groups (set (map #(row-keys (eval-rows (second %))) (calls forms 'notebook-utils/shared-groups)))})
+
+(deftest chart-pages-test
+  (let [forms (notebook-forms)
+        constructors (describe/chart-constructors)]
+    (testing "the chart chapters document every chart kind once"
+      (is (= (set (keys constructors)) (set (mapcat val chart-chapters))))
+      (is (apply distinct? (mapcat val chart-chapters))))
+    (doseq [[page kinds] chart-chapters
+            :let [{:keys [tables groups]} (page-tables (get forms page))
+                  text (slurp (str "notebooks/reference/" page ".clj"))]
+            kind kinds
+            :let [rows (describe/options (@(constructors kind)))
+                  mapping (describe/mapping (@(constructors kind)))
+                  own (describe/own-rows rows)]]
+      (testing (str page " " kind ": a heading, the mapping table, the own options table, the shared groups")
+        (is (re-find (re-pattern (str "(?m)^;; ## " (name kind) "$")) text))
+        (when (seq mapping) (is (tables (row-keys mapping))))
+        (when (seq own) (is (tables (row-keys own))))
+        (when (seq (describe/fragment-keys rows)) (is (groups (row-keys rows))))))))
+
+(deftest shared-group-headings-test
+  (testing "every shared group has a heading of its title in the Shared options chapter (chart pages link to it)"
+    (let [headings (set (map second (re-seq #"(?m)^;; ### (.+)$" (slurp "notebooks/reference/shared_options.clj"))))]
+      (is (= #{} (into (sorted-set) (remove headings) (map :title (vals describe/fragments))))))))
