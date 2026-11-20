@@ -44,6 +44,15 @@ Data: Motor Trend car road tests (1974), R datasets package `mtcars` (Henderson 
 :::
 
 
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>qsec</th><th>cyl</th><th>am</th><th>gear</th><th>disp</th><th>wt</th><th>drat</th><th>hp</th><th>mpg</th><th>vs</th><th>carb</th><th>model</th></tr></thead><tbody><tr><td>16.46</td><td>6</td><td>1</td><td>4</td><td>160</td><td>2.62</td><td>3.9</td><td>110</td><td>21</td><td>0</td><td>4</td><td>Mazda RX4</td></tr><tr><td>17.02</td><td>6</td><td>1</td><td>4</td><td>160</td><td>2.875</td><td>3.9</td><td>110</td><td>21</td><td>0</td><td>4</td><td>Mazda RX4 Wag</td></tr><tr><td>18.61</td><td>4</td><td>1</td><td>4</td><td>108</td><td>2.32</td><td>3.85</td><td>93</td><td>22.8</td><td>1</td><td>1</td><td>Datsun 710</td></tr><tr><td>19.44</td><td>6</td><td>0</td><td>3</td><td>258</td><td>3.215</td><td>3.08</td><td>110</td><td>21.4</td><td>1</td><td>1</td><td>Hornet 4 Drive</td></tr><tr><td>17.02</td><td>8</td><td>0</td><td>3</td><td>360</td><td>3.44</td><td>3.15</td><td>175</td><td>18.7</td><td>0</td><td>2</td><td>Hornet Sportabout</td></tr><tr><td>20.22</td><td>6</td><td>0</td><td>3</td><td>225</td><td>3.46</td><td>2.76</td><td>105</td><td>18.1</td><td>1</td><td>1</td><td>Valiant</td></tr><tr><td>15.84</td><td>8</td><td>0</td><td>3</td><td>360</td><td>3.57</td><td>3.21</td><td>245</td><td>14.3</td><td>0</td><td>4</td><td>Duster 360</td></tr><tr><td>20</td><td>4</td><td>0</td><td>4</td><td>146.7</td><td>3.19</td><td>3.69</td><td>62</td><td>24.4</td><td>1</td><td>2</td><td>Merc 240D</td></tr><tr><td>22.9</td><td>4</td><td>0</td><td>4</td><td>140.8</td><td>3.15</td><td>3.92</td><td>95</td><td>22.8</td><td>1</td><td>2</td><td>Merc 230</td></tr><tr><td>18.3</td><td>6</td><td>0</td><td>4</td><td>167.6</td><td>3.44</td><td>3.92</td><td>123</td><td>19.2</td><td>1</td><td>4</td><td>Merc 280</td></tr><tr><td>18.9</td><td>6</td><td>0</td><td>4</td><td>167.6</td><td>3.44</td><td>3.92</td><td>123</td><td>17.8</td><td>1</td><td>4</td><td>Merc 280C</td></tr><tr><td>17.4</td><td>8</td><td>0</td><td>3</td><td>275.8</td><td>4.07</td><td>3.07</td><td>180</td><td>16.4</td><td>0</td><td>3</td><td>Merc 450SE</td></tr><tr><td>17.6</td><td>8</td><td>0</td><td>3</td><td>275.8</td><td>3.73</td><td>3.07</td><td>180</td><td>17.3</td><td>0</td><td>3</td><td>Merc 450SL</td></tr><tr><td>18</td><td>8</td><td>0</td><td>3</td><td>275.8</td><td>3.78</td><td>3.07</td><td>180</td><td>15.2</td><td>0</td><td>3</td><td>Merc 450SLC</td></tr><tr><td>17.98</td><td>8</td><td>0</td><td>3</td><td>472</td><td>5.25</td><td>2.93</td><td>205</td><td>10.4</td><td>0</td><td>4</td><td>Cadillac Fleetwood</td></tr><tr><td>17.82</td><td>8</td><td>0</td><td>3</td><td>460</td><td>5.424</td><td>3</td><td>215</td><td>10.4</td><td>0</td><td>4</td><td>Lincoln Continental</td></tr><tr><td>17.42</td><td>8</td><td>0</td><td>3</td><td>440</td><td>5.345</td><td>3.23</td><td>230</td><td>14.7</td><td>0</td><td>4</td><td>Chrysler Imperial</td></tr><tr><td>19.47</td><td>4</td><td>1</td><td>4</td><td>78.7</td><td>2.2</td><td>4.08</td><td>66</td><td>32.4</td><td>1</td><td>1</td><td>Fiat 128</td></tr><tr><td>18.52</td><td>4</td><td>1</td><td>4</td><td>75.7</td><td>1.615</td><td>4.93</td><td>52</td><td>30.4</td><td>1</td><td>2</td><td>Honda Civic</td></tr><tr><td>19.9</td><td>4</td><td>1</td><td>4</td><td>71.1</td><td>1.835</td><td>4.22</td><td>65</td><td>33.9</td><td>1</td><td>1</td><td>Toyota Corolla</td></tr></tbody></table>
+```
+
+:::
+
+
 
 ## Facet shape
 
@@ -108,6 +117,26 @@ panel its centre, the widest span); `nil` facet values get a panel of their own;
 :::
 
 
+`:sliced`: every panel spans as much as the widest one, around its own data - the panels' y ranges are
+comparable in size although they sit at different heights:
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image {:data mtcars
+                    :mapping {:x :wt :y :mpg :facet :cyl}
+                    :charts [(chart/scatter)]
+                    :facets {:scales {:y :sliced} :columns 3}}
+                   {:width 800 :height 300})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.facets_arrange_files/image2.png)
+:::
+
+
 
 ## Facet levels
 
@@ -136,7 +165,7 @@ write the strip texts.
 
 
 ::: {.clay-image}
-![](reference.facets_arrange_files/image2.png)
+![](reference.facets_arrange_files/image3.png)
 :::
 
 
@@ -167,12 +196,14 @@ write the strip texts.
 
 
 ::: {.clay-image}
-![](reference.facets_arrange_files/image3.png)
+![](reference.facets_arrange_files/image4.png)
 :::
 
 
 It returns a plot whose `:arrange` key holds the plots and the layout - also written by hand. Here a legend
-shown once, in its own cell sized to fit (`:measured`):
+shown once, in its own cell: the two plots hide their legends (`:legend false`), a third plot draws only its
+legend (`:legend-only true` - no panel or axes, plot keys in the intro's Legend slice) in a column sized to fit
+(`:measured`):
 
 ::: {.clay-table}
 
@@ -199,7 +230,7 @@ shown once, in its own cell sized to fit (`:measured`):
 
 
 ::: {.clay-image}
-![](reference.facets_arrange_files/image4.png)
+![](reference.facets_arrange_files/image5.png)
 :::
 
 
@@ -229,7 +260,7 @@ the diagonal take any charts.
 
 
 ::: {.clay-image}
-![](reference.facets_arrange_files/image5.png)
+![](reference.facets_arrange_files/image6.png)
 :::
 
 
@@ -262,7 +293,7 @@ vector of charts ...
 
 
 ::: {.clay-image}
-![](reference.facets_arrange_files/image6.png)
+![](reference.facets_arrange_files/image7.png)
 :::
 
 
@@ -290,7 +321,7 @@ vector of charts ...
 
 
 ::: {.clay-image}
-![](reference.facets_arrange_files/image7.png)
+![](reference.facets_arrange_files/image8.png)
 :::
 
 
@@ -326,7 +357,7 @@ items placed on them - labels (`{:kind :label :text t :role r}`, the role requir
 
 
 ::: {.clay-image}
-![](reference.facets_arrange_files/image8.png)
+![](reference.facets_arrange_files/image9.png)
 :::
 
 

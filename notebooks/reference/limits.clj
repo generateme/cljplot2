@@ -4,7 +4,8 @@
 
 (ns reference.limits
   (:require [cljplot2.chart :as chart]
-            [cljplot2.core :as plot]))
+            [cljplot2.core :as plot]
+            [notebook-utils :as nu]))
 
 ;; ## Output
 
@@ -23,6 +24,8 @@
 
 (def rows (for [[i g] (map-indexed vector ["a" "b" "c"]) x (range 12)]
             {:g g :x x :y (+ (* x (inc i)) (mod (* x 7) 5))}))
+
+(nu/data-table rows)
 
 (plot/render-image (plot/arrange [{:data rows
                                    :mapping {:x :x :y :y :color :g}

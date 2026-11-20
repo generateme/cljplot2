@@ -4,7 +4,8 @@
 ;; rows with the group's title. A chart may take only part of a group - its own table lists what it accepts.
 
 (ns reference.shared-options
-  (:require [fastmath.random :as r]
+  (:require [fastmath.grid :as grid]
+            [fastmath.random :as r]
             [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
             [cljplot2.data.tree :as tree]
@@ -13,12 +14,18 @@
 
 (def wave (for [t (range 30)] {:t t :v (Math/sin (* 0.3 t)) :g (if (< t 15) "early" "late")}))
 
+(nu/data-table wave)
+
 (def counts [{:k "a" :g "x" :v 3} {:k "a" :g "y" :v 2} {:k "b" :g "x" :v 5}
              {:k "b" :g "y" :v 4} {:k "c" :g "x" :v 4} {:k "c" :g "y" :v 1}])
+
+(nu/data-table counts)
 
 (nu/source-note {:dataset :iris})
 
 (def iris (nu/dataset :iris))
+
+(nu/data-table iris)
 
 ;; ## Charts
 
@@ -70,6 +77,8 @@
 (nu/options-table (describe/fragment-rows :curve))
 
 (def points (for [x (range 8)] {:x x :y (nth [1 3 2 5 4 4.5 2 3] x)}))
+
+(nu/data-table points)
 
 (plot/render-image (plot/arrange (for [interpolator [:linear :monotone :cubic :step]]
                                    {:data points
@@ -165,14 +174,19 @@
 
 ;; ### Cell style
 
-;; The cell shape and outline of grid-cell charts (tile, bin2d): squares or hexagons, scaled.
+;; The cell shape and outline of grid-cell charts (tile, bin2d): any fastmath grid type, scaled. Every cell type
+;; binning the same points:
 
 (nu/options-table (describe/fragment-rows :cell))
 
-(plot/render-image {:data iris
-                    :mapping {:x :sepal-length :y :sepal-width}
-                    :charts [(chart/bin2d {:cell :pointy-hex :stroke-color :white})]}
-                   {:width 500 :height 300})
+(plot/render-image (plot/arrange (for [cell (sort grid/cell-names)]
+                                   {:data iris
+                                    :mapping {:x :sepal-length :y :sepal-width}
+                                    :charts [(chart/bin2d {:cell cell :stroke-color :white})]
+                                    :labels {:title (str ":cell " cell)}
+                                    :legend false})
+                                 {:columns 3})
+                   {:width 900 :height 560})
 
 ;; ### Field: a function
 
@@ -212,6 +226,8 @@
 (def budget [{:dept "science" :team "physics" :cost 40} {:dept "science" :team "biology" :cost 25}
              {:dept "arts" :team "music" :cost 15} {:dept "arts" :team "theatre" :cost 10}
              {:dept "sport" :team "football" :cost 20}])
+
+(nu/data-table budget)
 
 (plot/render-image {:data budget
                     :mapping {:hierarchy [:dept :team] :value :cost}
@@ -277,6 +293,8 @@
 (def flows [{:from "coal" :to "power" :value 30} {:from "gas" :to "power" :value 20} {:from "gas" :to "homes" :value 15}
             {:from "power" :to "homes" :value 25} {:from "power" :to "industry" :value 25}])
 
+(nu/data-table flows)
+
 (plot/render-image (plot/sankey flows {:title "Energy flows" :theme {:plot {:background :white}}})
                    {:width 500 :height 300})
 
@@ -302,6 +320,8 @@
 (nu/options-table (describe/fragment-rows :graph/graph))
 
 (def edges [{:a "x" :b "y" :w 3} {:a "y" :b "z" :w 1} {:a "z" :b "x" :w 2} {:a "z" :b "u" :w 2}])
+
+(nu/data-table edges)
 
 (plot/render-image (plot/network edges {:from :a :to :b :value :w :directed? true :labels true :rng (r/rng :mersenne 1)})
                    {:width 450 :height 300})

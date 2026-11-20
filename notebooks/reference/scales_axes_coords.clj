@@ -18,7 +18,11 @@
 
 (def gapminder (nu/dataset :gapminder-2007))
 
+(nu/data-table gapminder)
+
 (def counts (for [[continent rs] (group-by :continent gapminder)] {:continent continent :n (count rs)}))
+
+(nu/data-table counts)
 
 ;; ## Kind and domain
 
@@ -33,6 +37,8 @@
 
 (def mtcars (nu/dataset :mtcars))
 
+(nu/data-table mtcars)
+
 (plot/render-image (plot/arrange [{:data mtcars
                                    :mapping {:x :cyl :y :mpg}
                                    :charts [(chart/box)]
@@ -44,10 +50,18 @@
                                  {:columns 2})
                    {:width 800 :height 320})
 
+;; Which kind a plot's scales get - from the data and what the charts compute - is in the built plot's
+;; `:scale-specs`: here a bar chart's levels on x, a histogram's bins and counts:
+
+(into {} (for [[title p] {"bar" {:data mtcars :mapping {:x #(str (:cyl %) " cyl") :y :mpg} :charts [(chart/bar)]}
+                          "histogram" {:data mtcars :mapping {:x :mpg} :charts [(chart/histogram)]}}]
+           [title (update-vals (select-keys (:scale-specs (plot/build p)) [:x :y]) :kind)]))
+
 ;; ## Ticks and labels
 
 ;; Where ticks go and how they read: a tick count hint or the tick values, a formatter (a function, a date
-;; pattern, `:power` for powers of ten), minor ticks and the tick algorithm.
+;; pattern, `:power` for powers of ten), minor ticks and the tick algorithm. Minor ticks get grid lines only when
+;; the theme draws them (`[:panel :grid :minor]`, `:none` by default) - turned on here:
 
 (nu/options-table (describe/options position/scale-spec-schema) :ticks)
 
@@ -55,7 +69,8 @@
                     :mapping {:x :gdp-per-cap :y :life-exp}
                     :charts [(chart/scatter)]
                     :scales {:x {:kind :log :formatter :power :minor-ticks 9}
-                             :y {:ticks [40 50 60 70 80] :formatter #(str % " y")}}}
+                             :y {:ticks [40 50 60 70 80] :formatter #(str % " y")}}
+                    :theme {:panel {:grid {:minor {:color [200 200 215] :width 0.5 :dash :none}}}}}
                    {:width 600 :height 350})
 
 ;; ## Order and direction
@@ -248,9 +263,33 @@
                                  {:columns 2})
                    {:width 900 :height 400})
 
+;; In polar coordinates `:flip true` swaps the roles - the vertical scale on angles, the horizontal on radii
+;; (left); `:arcs true` makes data lines between points follow the circle instead of chords (right):
+
+(def spiral (for [t (range 0 13)] {:t t :r (+ 1 t)}))
+
+(nu/data-table spiral)
+
+(plot/render-image (plot/arrange [{:data counts
+                                   :mapping {:x :continent :y :n :color :continent}
+                                   :charts [(chart/bar {:width 0.8})]
+                                   :coord {:kind :polar}
+                                   :flip true
+                                   :labels {:title "polar, :flip true"}
+                                   :legend false}
+                                  {:data spiral
+                                   :mapping {:x :t :y :r}
+                                   :charts [(chart/line) (chart/scatter)]
+                                   :coord {:kind :polar :arcs true}
+                                   :labels {:title "polar, :arcs true"}}]
+                                 {:columns 2})
+                   {:width 900 :height 420})
+
+;; `:aspect :iso` - the same pixels per data unit on both axes, so an ellipse twice as wide as high looks it:
+
 (plot/render-image {:data (for [t (range 0 63)] {:x (Math/cos (* 0.1 t)) :y (* 0.5 (Math/sin (* 0.1 t)))})
                     :mapping {:x :x :y :y}
                     :charts [(chart/line)]
                     :aspect :iso
-                    :labels {:title ":aspect :iso - an ellipse twice as wide as high"}}
+                    :labels {:title ":aspect :iso"}}
                    {:width 500 :height 400})

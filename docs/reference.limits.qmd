@@ -23,7 +23,8 @@ What cljplot2 doesn't do, and the nearest way around it.
 ```clojure
 (ns reference.limits
   (:require [cljplot2.chart :as chart]
-            [cljplot2.core :as plot]))
+            [cljplot2.core :as plot]
+            [notebook-utils :as nu]))
 ```
 :::
 
@@ -54,6 +55,15 @@ A caption written by a `text` chart, a legend moved below by `:legend-only`:
 (def rows (for [[i g] (map-indexed vector ["a" "b" "c"]) x (range 12)]
             {:g g :x x :y (+ (* x (inc i)) (mod (* x 7) 5))}))
 ```
+:::
+
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>g</th><th>x</th><th>y</th></tr></thead><tbody><tr><td>a</td><td>0</td><td>0</td></tr><tr><td>a</td><td>1</td><td>3</td></tr><tr><td>a</td><td>2</td><td>6</td></tr><tr><td>a</td><td>3</td><td>4</td></tr><tr><td>a</td><td>4</td><td>7</td></tr><tr><td>a</td><td>5</td><td>5</td></tr><tr><td>a</td><td>6</td><td>8</td></tr><tr><td>a</td><td>7</td><td>11</td></tr><tr><td>a</td><td>8</td><td>9</td></tr><tr><td>a</td><td>9</td><td>12</td></tr><tr><td>a</td><td>10</td><td>10</td></tr><tr><td>a</td><td>11</td><td>13</td></tr><tr><td>b</td><td>0</td><td>0</td></tr><tr><td>b</td><td>1</td><td>4</td></tr><tr><td>b</td><td>2</td><td>8</td></tr><tr><td>b</td><td>3</td><td>7</td></tr><tr><td>b</td><td>4</td><td>11</td></tr><tr><td>b</td><td>5</td><td>10</td></tr><tr><td>b</td><td>6</td><td>14</td></tr><tr><td>b</td><td>7</td><td>18</td></tr></tbody></table>
+```
+
 :::
 
 

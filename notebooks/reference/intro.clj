@@ -18,7 +18,7 @@
 ;;   and coordinates, layering, labels and text, facets and multiplots, the theme, the shared option groups, errors
 ;;   and what the library doesn't do.
 ;; * **Charts**, **builders** and **data functions** - the options of each chart kind, builder and user-facing
-;;   function, with examples.
+;;   function, with examples (to come; until then the use cases and galleries show them).
 
 ;; ## How to read a table
 
@@ -47,8 +47,17 @@
 
 (def points [{:x 1 :y 2 :g "a"} {:x 2 :y 3 :g "a"} {:x 3 :y 1 :g "b"} {:x 4 :y 4 :g "b"}])
 
+(nu/data-table points)
+
 (plot/render-image {:data points
                     :mapping {:x :x :y :y}
+                    :charts [(chart/line) (chart/scatter)]}
+                   {:width 500 :height 300})
+
+;; The same rows under another mapping - `:x` and `:y` swapped - give another plot:
+
+(plot/render-image {:data points
+                    :mapping {:x :y :y :x}
                     :charts [(chart/line) (chart/scatter)]}
                    {:width 500 :height 300})
 
@@ -65,6 +74,14 @@
                              :color {:range [:darkorange :teal] :title "group"}}}
                    {:width 500 :height 300})
 
+;; A logarithmic x scale spreads the small values:
+
+(plot/render-image {:data (for [i (range 1 30)] {:x (* i i i) :y i})
+                    :mapping {:x :x :y :y}
+                    :charts [(chart/scatter)]
+                    :scales {:x {:kind :log :formatter :power}}}
+                   {:width 500 :height 300})
+
 ;; ### Coordinates
 
 ;; Cartesian (optionally flipped or with equal units) or polar (Scales chapter).
@@ -78,6 +95,15 @@
                     :flip true}
                    {:width 500 :height 300})
 
+;; The same bars in polar coordinates - a rose:
+
+(plot/render-image {:data [{:fruit "apples" :n 3} {:fruit "pears" :n 5} {:fruit "plums" :n 2}]
+                    :mapping {:x :fruit :y :n :color :fruit}
+                    :charts [(chart/bar {:width 1.0})]
+                    :coord {:kind :polar}
+                    :legend false}
+                   {:width 350 :height 350})
+
 ;; ### Layout
 
 ;; Panels split by data, several plots in a grid, charts beside the panel (Facets chapter).
@@ -88,6 +114,20 @@
                     :mapping {:x :x :y :y :facet :g}
                     :charts [(chart/line) (chart/scatter)]}
                    {:width 500 :height 300})
+
+;; A hand-written grid of plots and a note (`:custom-grid`, Facets chapter):
+
+(plot/render-image {:custom-grid {:columns [{:size [:flexible 2]} {:size [:flexible 1]}]
+                                  :rows [{:size [:flexible 1]} {:size [:measured]}]
+                                  :items [{:id :lines :column 0 :row 0
+                                           :content {:kind :plot :plot {:data points :mapping {:x :x :y :y}
+                                                                        :charts [(chart/line)]}}}
+                                          {:id :bars :column 1 :row 0
+                                           :content {:kind :plot :plot {:data points :mapping {:x :g :y :y}
+                                                                        :charts [(chart/bar {:stat :sum})]}}}
+                                          {:id :note :column {:from 0 :to 1} :row 1
+                                           :content {:kind :label :role :axis-title :text "two plots, 2 : 1"}}]}}
+                   {:width 600 :height 320})
 
 ;; ### Titles
 

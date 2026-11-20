@@ -103,24 +103,29 @@
   `:midpoint` (see [[with-midpoint-tick]]; labelled by `:formatter` or [[cljplot2.data.levels/break-labels]]) - or
   an explicit `:ticks` vector exactly as given (see [[cljplot2.scale.aesthetic/explicit-ticks]], no added midpoint);
   binned - the inner breaks, labelled by
-  `:formatter` or [[cljplot2.data.levels/break-labels]]."
+  `:formatter` or [[cljplot2.data.levels/break-labels]]. A linear scale over dates (`:temporal-sample`) ticks at dates
+  (a wadogo `:datetime` scale), placed by their epoch milliseconds."
   [spec accessors]
   (let [[lo hi] (:domain spec)
         lo (double lo) hi (double hi)
         formatter (:formatter spec)
-        ;; a log transform ticks at powers of ten, as a log axis
-        scale-of (fn [n] (s/scale (if (= :log (:transform spec)) :log :linear)
-                                  (cond-> {:domain (if (== lo hi) [lo (inc lo)] [lo hi]) :ticks n}
-                                    formatter (assoc :formatter formatter))))
+        temporal (:temporal-sample spec)
+        tick-kind (cond temporal :datetime (= :log (:transform spec)) :log :else :linear)
+        ;; a log transform ticks at powers of ten, as a log axis; dates at calendar dates
+        scale-of (fn [n] (let [[a b] (if (== lo hi) [lo (inc lo)] [lo hi])]
+                           (s/scale tick-kind
+                                    (cond-> {:domain (if temporal [(data/key->x a temporal) (data/key->x b temporal)] [a b])
+                                             :ticks n}
+                                      formatter (assoc :formatter formatter)))))
         explicit (:ticks spec)
-        in-domain #(<= lo (double %) hi)
+        in-domain #(<= lo (double (data/x-key %)) hi)
         ;; at least two ticks inside the domain, as an axis (see position/ticks-inside), unless given
         {ws :scale nice :ticks} (cond
                                   (sequential? explicit) {:scale (scale-of colorbar-ticks)
                                                           :ticks (aesthetic/explicit-ticks explicit lo hi)}
                                   (== lo hi) {:scale (scale-of colorbar-ticks)}
                                   :else (position/ticks-inside scale-of (or explicit colorbar-ticks) in-domain))
-        axis-labels (fn [ts] (position/tick-labels ws {:kind :linear :formatter formatter} ts))
+        axis-labels (fn [ts] (position/tick-labels ws {:kind (if temporal :datetime :linear) :formatter formatter} ts))
         pairs (cond
                 (= :binned (:kind spec))
                 (let [breaks (:breaks spec)
@@ -138,7 +143,7 @@
     {:kind :colorbar
      :title (title [{:spec spec :accessors accessors}])
      :scale spec
-     :ticks (mapv first pairs)
+     :ticks (mapv (if temporal (comp data/x-key first) first) pairs)
      :labels (mapv second pairs)}))
 
 (defn legend-charts
@@ -199,8 +204,8 @@
                                                      (map (data/row-accessor k (mapping k)) (mapcat val groups))))
                                            (remove nil?) (distinct) (take provisional-values))
                                   mapped)
-                     numeric? (or (some? computed) (and (seq values) (every? number? values)))
-                     kind (when (or computed (seq mapped)) (aesthetic/inferred-kind k spec numeric?))
+                     continuous? (or (some? computed) (aesthetic/continuous-values? k values))
+                     kind (when (or computed (seq mapped)) (aesthetic/inferred-kind k spec continuous?))
                      suggested (when computed (aesthetic/computed-scale-attributes (get computed k)))
                      spec (merge suggested spec)
                      title (cond

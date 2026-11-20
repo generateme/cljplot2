@@ -409,23 +409,341 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Option groups taken by several charts, builders or data functions, documented once here; other tables mark their rows with the group’s title. A chart may take only part of a group - its own table lists what it accepts.</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">ns</span> reference.shared-options</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  (<span class="at">:require</span> [fastmath.random <span class="at">:as</span> r]</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>            [cljplot2.chart <span class="at">:as</span> chart]</span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>            [cljplot2.core <span class="at">:as</span> plot]</span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>            [cljplot2.data.tree <span class="at">:as</span> tree]</span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>            [cljplot2.describe <span class="at">:as</span> describe]</span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>            [notebook-utils <span class="at">:as</span> nu]))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  (<span class="at">:require</span> [fastmath.grid <span class="at">:as</span> grid]</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>            [fastmath.random <span class="at">:as</span> r]</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>            [cljplot2.chart <span class="at">:as</span> chart]</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>            [cljplot2.core <span class="at">:as</span> plot]</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>            [cljplot2.data.tree <span class="at">:as</span> tree]</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>            [cljplot2.describe <span class="at">:as</span> describe]</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>            [notebook-utils <span class="at">:as</span> nu]))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> wave </span>(<span class="kw">for</span> [t (<span class="kw">range</span> <span class="dv">30</span>)] {<span class="at">:t</span> t <span class="at">:v</span> (Math/sin (<span class="kw">*</span> <span class="fl">0.3</span> t)) <span class="at">:g</span> (<span class="kw">if</span> (<span class="kw">&lt;</span> t <span class="dv">15</span>) <span class="st">"early"</span> <span class="st">"late"</span>)}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">t</th>
+<th data-quarto-table-cell-role="th">v</th>
+<th data-quarto-table-cell-role="th">g</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>0</td>
+<td>0.0</td>
+<td>early</td>
+</tr>
+<tr class="even">
+<td>1</td>
+<td>0.29552020666133955</td>
+<td>early</td>
+</tr>
+<tr class="odd">
+<td>2</td>
+<td>0.5646424733950354</td>
+<td>early</td>
+</tr>
+<tr class="even">
+<td>3</td>
+<td>0.7833269096274833</td>
+<td>early</td>
+</tr>
+<tr class="odd">
+<td>4</td>
+<td>0.9320390859672263</td>
+<td>early</td>
+</tr>
+<tr class="even">
+<td>5</td>
+<td>0.9974949866040544</td>
+<td>early</td>
+</tr>
+<tr class="odd">
+<td>6</td>
+<td>0.9738476308781953</td>
+<td>early</td>
+</tr>
+<tr class="even">
+<td>7</td>
+<td>0.8632093666488737</td>
+<td>early</td>
+</tr>
+<tr class="odd">
+<td>8</td>
+<td>0.675463180551151</td>
+<td>early</td>
+</tr>
+<tr class="even">
+<td>9</td>
+<td>0.42737988023383017</td>
+<td>early</td>
+</tr>
+<tr class="odd">
+<td>10</td>
+<td>0.1411200080598672</td>
+<td>early</td>
+</tr>
+<tr class="even">
+<td>11</td>
+<td>-0.1577456941432482</td>
+<td>early</td>
+</tr>
+<tr class="odd">
+<td>12</td>
+<td>-0.4425204432948521</td>
+<td>early</td>
+</tr>
+<tr class="even">
+<td>13</td>
+<td>-0.6877661591839738</td>
+<td>early</td>
+</tr>
+<tr class="odd">
+<td>14</td>
+<td>-0.8715757724135882</td>
+<td>early</td>
+</tr>
+<tr class="even">
+<td>15</td>
+<td>-0.977530117665097</td>
+<td>late</td>
+</tr>
+<tr class="odd">
+<td>16</td>
+<td>-0.9961646088358407</td>
+<td>late</td>
+</tr>
+<tr class="even">
+<td>17</td>
+<td>-0.9258146823277325</td>
+<td>late</td>
+</tr>
+<tr class="odd">
+<td>18</td>
+<td>-0.7727644875559877</td>
+<td>late</td>
+</tr>
+<tr class="even">
+<td>19</td>
+<td>-0.5506855425976376</td>
+<td>late</td>
+</tr>
+</tbody>
+</table>
+</div>
 </div>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> counts </span>[{<span class="at">:k</span> <span class="st">"a"</span> <span class="at">:g</span> <span class="st">"x"</span> <span class="at">:v</span> <span class="dv">3</span>} {<span class="at">:k</span> <span class="st">"a"</span> <span class="at">:g</span> <span class="st">"y"</span> <span class="at">:v</span> <span class="dv">2</span>} {<span class="at">:k</span> <span class="st">"b"</span> <span class="at">:g</span> <span class="st">"x"</span> <span class="at">:v</span> <span class="dv">5</span>}</span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>             {<span class="at">:k</span> <span class="st">"b"</span> <span class="at">:g</span> <span class="st">"y"</span> <span class="at">:v</span> <span class="dv">4</span>} {<span class="at">:k</span> <span class="st">"c"</span> <span class="at">:g</span> <span class="st">"x"</span> <span class="at">:v</span> <span class="dv">4</span>} {<span class="at">:k</span> <span class="st">"c"</span> <span class="at">:g</span> <span class="st">"y"</span> <span class="at">:v</span> <span class="dv">1</span>}])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">k</th>
+<th data-quarto-table-cell-role="th">g</th>
+<th data-quarto-table-cell-role="th">v</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>a</td>
+<td>x</td>
+<td>3</td>
+</tr>
+<tr class="even">
+<td>a</td>
+<td>y</td>
+<td>2</td>
+</tr>
+<tr class="odd">
+<td>b</td>
+<td>x</td>
+<td>5</td>
+</tr>
+<tr class="even">
+<td>b</td>
+<td>y</td>
+<td>4</td>
+</tr>
+<tr class="odd">
+<td>c</td>
+<td>x</td>
+<td>4</td>
+</tr>
+<tr class="even">
+<td>c</td>
+<td>y</td>
+<td>1</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 <p>Data: Edgar Anderson’s iris measurements, R datasets package <code>iris</code> (Anderson 1935; Fisher 1936); licence: Part of R (GPL-2 | GPL-3).</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> iris </span>(nu/dataset <span class="at">:iris</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">sepal-length</th>
+<th data-quarto-table-cell-role="th">sepal-width</th>
+<th data-quarto-table-cell-role="th">petal-length</th>
+<th data-quarto-table-cell-role="th">petal-width</th>
+<th data-quarto-table-cell-role="th">species</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>5.1</td>
+<td>3.5</td>
+<td>1.4</td>
+<td>0.2</td>
+<td>setosa</td>
+</tr>
+<tr class="even">
+<td>4.9</td>
+<td>3</td>
+<td>1.4</td>
+<td>0.2</td>
+<td>setosa</td>
+</tr>
+<tr class="odd">
+<td>4.7</td>
+<td>3.2</td>
+<td>1.3</td>
+<td>0.2</td>
+<td>setosa</td>
+</tr>
+<tr class="even">
+<td>4.6</td>
+<td>3.1</td>
+<td>1.5</td>
+<td>0.2</td>
+<td>setosa</td>
+</tr>
+<tr class="odd">
+<td>5</td>
+<td>3.6</td>
+<td>1.4</td>
+<td>0.2</td>
+<td>setosa</td>
+</tr>
+<tr class="even">
+<td>5.4</td>
+<td>3.9</td>
+<td>1.7</td>
+<td>0.4</td>
+<td>setosa</td>
+</tr>
+<tr class="odd">
+<td>4.6</td>
+<td>3.4</td>
+<td>1.4</td>
+<td>0.3</td>
+<td>setosa</td>
+</tr>
+<tr class="even">
+<td>5</td>
+<td>3.4</td>
+<td>1.5</td>
+<td>0.2</td>
+<td>setosa</td>
+</tr>
+<tr class="odd">
+<td>4.4</td>
+<td>2.9</td>
+<td>1.4</td>
+<td>0.2</td>
+<td>setosa</td>
+</tr>
+<tr class="even">
+<td>4.9</td>
+<td>3.1</td>
+<td>1.5</td>
+<td>0.1</td>
+<td>setosa</td>
+</tr>
+<tr class="odd">
+<td>5.4</td>
+<td>3.7</td>
+<td>1.5</td>
+<td>0.2</td>
+<td>setosa</td>
+</tr>
+<tr class="even">
+<td>4.8</td>
+<td>3.4</td>
+<td>1.6</td>
+<td>0.2</td>
+<td>setosa</td>
+</tr>
+<tr class="odd">
+<td>4.8</td>
+<td>3</td>
+<td>1.4</td>
+<td>0.1</td>
+<td>setosa</td>
+</tr>
+<tr class="even">
+<td>4.3</td>
+<td>3</td>
+<td>1.1</td>
+<td>0.1</td>
+<td>setosa</td>
+</tr>
+<tr class="odd">
+<td>5.8</td>
+<td>4</td>
+<td>1.2</td>
+<td>0.2</td>
+<td>setosa</td>
+</tr>
+<tr class="even">
+<td>5.7</td>
+<td>4.4</td>
+<td>1.5</td>
+<td>0.4</td>
+<td>setosa</td>
+</tr>
+<tr class="odd">
+<td>5.4</td>
+<td>3.9</td>
+<td>1.3</td>
+<td>0.4</td>
+<td>setosa</td>
+</tr>
+<tr class="even">
+<td>5.1</td>
+<td>3.5</td>
+<td>1.4</td>
+<td>0.3</td>
+<td>setosa</td>
+</tr>
+<tr class="odd">
+<td>5.7</td>
+<td>3.8</td>
+<td>1.7</td>
+<td>0.3</td>
+<td>setosa</td>
+</tr>
+<tr class="even">
+<td>5.1</td>
+<td>3.8</td>
+<td>1.5</td>
+<td>0.3</td>
+<td>setosa</td>
+</tr>
+</tbody>
+</table>
+</div>
 </div>
 <section id="charts" class="level2" data-number="10.1">
 <h2 data-number="10.1" class="anchored" data-anchor-id="charts"><span class="header-section-number">10.1</span> Charts</h2>
@@ -601,6 +919,52 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> points </span>(<span class="kw">for</span> [x (<span class="kw">range</span> <span class="dv">8</span>)] {<span class="at">:x</span> x <span class="at">:y</span> (<span class="kw">nth</span> [<span class="dv">1</span> <span class="dv">3</span> <span class="dv">2</span> <span class="dv">5</span> <span class="dv">4</span> <span class="fl">4.5</span> <span class="dv">2</span> <span class="dv">3</span>] x)}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">x</th>
+<th data-quarto-table-cell-role="th">y</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>0</td>
+<td>1</td>
+</tr>
+<tr class="even">
+<td>1</td>
+<td>3</td>
+</tr>
+<tr class="odd">
+<td>2</td>
+<td>2</td>
+</tr>
+<tr class="even">
+<td>3</td>
+<td>5</td>
+</tr>
+<tr class="odd">
+<td>4</td>
+<td>4</td>
+</tr>
+<tr class="even">
+<td>5</td>
+<td>4.5</td>
+</tr>
+<tr class="odd">
+<td>6</td>
+<td>2</td>
+</tr>
+<tr class="even">
+<td>7</td>
+<td>3</td>
+</tr>
+</tbody>
+</table>
+</div>
 </div>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange (<span class="kw">for</span> [interpolator [<span class="at">:linear</span> <span class="at">:monotone</span> <span class="at">:cubic</span> <span class="at">:step</span>]]</span>
@@ -915,7 +1279,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="cell-style" class="level3" data-number="10.1.12">
 <h3 data-number="10.1.12" class="anchored" data-anchor-id="cell-style"><span class="header-section-number">10.1.12</span> Cell style</h3>
-<p>The cell shape and outline of grid-cell charts (tile, bin2d): squares or hexagons, scaled.</p>
+<p>The cell shape and outline of grid-cell charts (tile, bin2d): any fastmath grid type, scaled. Every cell type binning the same points:</p>
 <div class="clay-table">
 <div class="table-responsive">
 <table class="table table-hover clay-table caption-top">
@@ -963,10 +1327,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> iris</span>
-<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:sepal-length</span> <span class="at">:y</span> <span class="at">:sepal-width</span>}</span>
-<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:charts</span> [(chart/bin2d {<span class="at">:cell</span> <span class="at">:pointy-hex</span> <span class="at">:stroke-color</span> <span class="at">:white</span>})]}</span>
-<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">500</span> <span class="at">:height</span> <span class="dv">300</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange (<span class="kw">for</span> [cell (<span class="kw">sort</span> grid/cell-names)]</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>                                   {<span class="at">:data</span> iris</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>                                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:sepal-length</span> <span class="at">:y</span> <span class="at">:sepal-width</span>}</span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>                                    <span class="at">:charts</span> [(chart/bin2d {<span class="at">:cell</span> cell <span class="at">:stroke-color</span> <span class="at">:white</span>})]</span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>                                    <span class="at">:labels</span> {<span class="at">:title</span> (<span class="kw">str</span> <span class="st">":cell "</span> cell)}</span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>                                    <span class="at">:legend</span> <span class="va">false</span>})</span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">3</span>})</span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">900</span> <span class="at">:height</span> <span class="dv">560</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="clay-image">
 <p><img src="reference.shared_options_files/image11.png" class="img-fluid"></p>
@@ -1155,6 +1523,46 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb21"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> budget </span>[{<span class="at">:dept</span> <span class="st">"science"</span> <span class="at">:team</span> <span class="st">"physics"</span> <span class="at">:cost</span> <span class="dv">40</span>} {<span class="at">:dept</span> <span class="st">"science"</span> <span class="at">:team</span> <span class="st">"biology"</span> <span class="at">:cost</span> <span class="dv">25</span>}</span>
 <span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>             {<span class="at">:dept</span> <span class="st">"arts"</span> <span class="at">:team</span> <span class="st">"music"</span> <span class="at">:cost</span> <span class="dv">15</span>} {<span class="at">:dept</span> <span class="st">"arts"</span> <span class="at">:team</span> <span class="st">"theatre"</span> <span class="at">:cost</span> <span class="dv">10</span>}</span>
 <span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>             {<span class="at">:dept</span> <span class="st">"sport"</span> <span class="at">:team</span> <span class="st">"football"</span> <span class="at">:cost</span> <span class="dv">20</span>}])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">dept</th>
+<th data-quarto-table-cell-role="th">team</th>
+<th data-quarto-table-cell-role="th">cost</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>science</td>
+<td>physics</td>
+<td>40</td>
+</tr>
+<tr class="even">
+<td>science</td>
+<td>biology</td>
+<td>25</td>
+</tr>
+<tr class="odd">
+<td>arts</td>
+<td>music</td>
+<td>15</td>
+</tr>
+<tr class="even">
+<td>arts</td>
+<td>theatre</td>
+<td>10</td>
+</tr>
+<tr class="odd">
+<td>sport</td>
+<td>football</td>
+<td>20</td>
+</tr>
+</tbody>
+</table>
+</div>
 </div>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> budget</span>
@@ -1485,6 +1893,46 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb27"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> flows </span>[{<span class="at">:from</span> <span class="st">"coal"</span> <span class="at">:to</span> <span class="st">"power"</span> <span class="at">:value</span> <span class="dv">30</span>} {<span class="at">:from</span> <span class="st">"gas"</span> <span class="at">:to</span> <span class="st">"power"</span> <span class="at">:value</span> <span class="dv">20</span>} {<span class="at">:from</span> <span class="st">"gas"</span> <span class="at">:to</span> <span class="st">"homes"</span> <span class="at">:value</span> <span class="dv">15</span>}</span>
 <span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>            {<span class="at">:from</span> <span class="st">"power"</span> <span class="at">:to</span> <span class="st">"homes"</span> <span class="at">:value</span> <span class="dv">25</span>} {<span class="at">:from</span> <span class="st">"power"</span> <span class="at">:to</span> <span class="st">"industry"</span> <span class="at">:value</span> <span class="dv">25</span>}])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">from</th>
+<th data-quarto-table-cell-role="th">to</th>
+<th data-quarto-table-cell-role="th">value</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>coal</td>
+<td>power</td>
+<td>30</td>
+</tr>
+<tr class="even">
+<td>gas</td>
+<td>power</td>
+<td>20</td>
+</tr>
+<tr class="odd">
+<td>gas</td>
+<td>homes</td>
+<td>15</td>
+</tr>
+<tr class="even">
+<td>power</td>
+<td>homes</td>
+<td>25</td>
+</tr>
+<tr class="odd">
+<td>power</td>
+<td>industry</td>
+<td>25</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb28"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/sankey flows {<span class="at">:title</span> <span class="st">"Energy flows"</span> <span class="at">:theme</span> {<span class="at">:plot</span> {<span class="at">:background</span> <span class="at">:white</span>}}})</span>
 <span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">500</span> <span class="at">:height</span> <span class="dv">300</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -1625,6 +2073,41 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb30"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> edges </span>[{<span class="at">:a</span> <span class="st">"x"</span> <span class="at">:b</span> <span class="st">"y"</span> <span class="at">:w</span> <span class="dv">3</span>} {<span class="at">:a</span> <span class="st">"y"</span> <span class="at">:b</span> <span class="st">"z"</span> <span class="at">:w</span> <span class="dv">1</span>} {<span class="at">:a</span> <span class="st">"z"</span> <span class="at">:b</span> <span class="st">"x"</span> <span class="at">:w</span> <span class="dv">2</span>} {<span class="at">:a</span> <span class="st">"z"</span> <span class="at">:b</span> <span class="st">"u"</span> <span class="at">:w</span> <span class="dv">2</span>}])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">a</th>
+<th data-quarto-table-cell-role="th">b</th>
+<th data-quarto-table-cell-role="th">w</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>x</td>
+<td>y</td>
+<td>3</td>
+</tr>
+<tr class="even">
+<td>y</td>
+<td>z</td>
+<td>1</td>
+</tr>
+<tr class="odd">
+<td>z</td>
+<td>x</td>
+<td>2</td>
+</tr>
+<tr class="even">
+<td>z</td>
+<td>u</td>
+<td>2</td>
+</tr>
+</tbody>
+</table>
+</div>
 </div>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb31"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/network edges {<span class="at">:from</span> <span class="at">:a</span> <span class="at">:to</span> <span class="at">:b</span> <span class="at">:value</span> <span class="at">:w</span> <span class="at">:directed</span>? <span class="va">true</span> <span class="at">:labels</span> <span class="va">true</span> <span class="at">:rng</span> (r/rng <span class="at">:mersenne</span> <span class="dv">1</span>)})</span>

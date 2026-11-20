@@ -25,12 +25,14 @@ scale uses every key, the others differ only in their `:range`.
 ::: {.sourceClojure}
 ```clojure
 (ns reference.aesthetics-legends
-  (:require [clojure2d.color :as c]
-            [cljplot2.chart :as chart]
+  (:require [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
             [cljplot2.describe :as describe]
+            [cljplot2.graphics.shape :as shape]
             [cljplot2.scale.aesthetic :as aesthetic]
-            [notebook-utils :as nu]))
+            [cljplot2.schema :as schema]
+            [notebook-utils :as nu])
+  (:import [java.time LocalDate]))
 ```
 :::
 
@@ -45,12 +47,23 @@ Data: Gapminder 2007: life expectancy, population and GDP per capita, data-to-vi
 :::
 
 
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>country</th><th>continent</th><th>life-exp</th><th>pop</th><th>gdp-per-cap</th></tr></thead><tbody><tr><td>Afghanistan</td><td>Asia</td><td>43.828</td><td>31889923</td><td>974.5803384</td></tr><tr><td>Albania</td><td>Europe</td><td>76.423</td><td>3600523</td><td>5937.029526</td></tr><tr><td>Algeria</td><td>Africa</td><td>72.301</td><td>33333216</td><td>6223.367465</td></tr><tr><td>Angola</td><td>Africa</td><td>42.731</td><td>12420476</td><td>4797.231267</td></tr><tr><td>Argentina</td><td>Americas</td><td>75.32</td><td>40301927</td><td>12779.37964</td></tr><tr><td>Australia</td><td>Oceania</td><td>81.235</td><td>20434176</td><td>34435.36744</td></tr><tr><td>Austria</td><td>Europe</td><td>79.829</td><td>8199783</td><td>36126.4927</td></tr><tr><td>Bahrain</td><td>Asia</td><td>75.635</td><td>708573</td><td>29796.04834</td></tr><tr><td>Bangladesh</td><td>Asia</td><td>64.062</td><td>150448339</td><td>1391.253792</td></tr><tr><td>Belgium</td><td>Europe</td><td>79.441</td><td>10392226</td><td>33692.60508</td></tr><tr><td>Benin</td><td>Africa</td><td>56.728</td><td>8078314</td><td>1441.284873</td></tr><tr><td>Bolivia</td><td>Americas</td><td>65.554</td><td>9119152</td><td>3822.137084</td></tr><tr><td>Bosnia and Herzegovina</td><td>Europe</td><td>74.852</td><td>4552198</td><td>7446.298803</td></tr><tr><td>Botswana</td><td>Africa</td><td>50.728</td><td>1639131</td><td>12569.85177</td></tr><tr><td>Brazil</td><td>Americas</td><td>72.39</td><td>190010647</td><td>9065.800825</td></tr><tr><td>Bulgaria</td><td>Europe</td><td>73.005</td><td>7322858</td><td>10680.79282</td></tr><tr><td>Burkina Faso</td><td>Africa</td><td>52.295</td><td>14326203</td><td>1217.032994</td></tr><tr><td>Burundi</td><td>Africa</td><td>49.58</td><td>8390505</td><td>430.0706916</td></tr><tr><td>Cambodia</td><td>Asia</td><td>59.723</td><td>14131858</td><td>1713.778686</td></tr><tr><td>Cameroon</td><td>Africa</td><td>50.43</td><td>17696293</td><td>2042.09524</td></tr></tbody></table>
+```
+
+:::
+
+
 
 ## Levels or numbers
 
-The scale kind follows the data: levels (strings, keywords) get an `:ordinal` scale - one attribute per level, in
-`:domain` order - numbers a `:linear` one - a gradient or a size range. `:type :categorical` treats numbers as
-levels; `:identity` reads the attributes from the data.
+An aesthetic scale has its own kinds - not those of the position scales (`:log`, `:datetime` ... in the
+examples below are the x axis's, Scales chapter). The kind follows the data: levels (strings, keywords) get an
+`:ordinal` scale - one attribute per level, in `:domain` order - numbers a `:linear` one - a gradient or a size
+range; `:binned` cuts numbers into classes; `:type :categorical` treats numbers as levels; `:identity` reads the
+attributes from the data.
 
 ::: {.clay-table}
 
@@ -84,6 +97,42 @@ levels; `:identity` reads the attributes from the data.
 :::
 
 
+Dates (`java.time` values) mapped to `:color` get a linear gradient over time, the colour bar ticked at dates:
+
+
+::: {.sourceClojure}
+```clojure
+(def readings (for [i (range 40)]
+                {:day (.plusDays (LocalDate/of 2024 1 1) (* 9 i)) :x (mod (* i 7) 13) :y (mod (* i 5) 11)}))
+```
+:::
+
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>day</th><th>x</th><th>y</th></tr></thead><tbody><tr><td>2024-01-01</td><td>0</td><td>0</td></tr><tr><td>2024-01-10</td><td>7</td><td>5</td></tr><tr><td>2024-01-19</td><td>1</td><td>10</td></tr><tr><td>2024-01-28</td><td>8</td><td>4</td></tr><tr><td>2024-02-06</td><td>2</td><td>9</td></tr><tr><td>2024-02-15</td><td>9</td><td>3</td></tr><tr><td>2024-02-24</td><td>3</td><td>8</td></tr><tr><td>2024-03-04</td><td>10</td><td>2</td></tr><tr><td>2024-03-13</td><td>4</td><td>7</td></tr><tr><td>2024-03-22</td><td>11</td><td>1</td></tr><tr><td>2024-03-31</td><td>5</td><td>6</td></tr><tr><td>2024-04-09</td><td>12</td><td>0</td></tr><tr><td>2024-04-18</td><td>6</td><td>5</td></tr><tr><td>2024-04-27</td><td>0</td><td>10</td></tr><tr><td>2024-05-06</td><td>7</td><td>4</td></tr><tr><td>2024-05-15</td><td>1</td><td>9</td></tr><tr><td>2024-05-24</td><td>8</td><td>3</td></tr><tr><td>2024-06-02</td><td>2</td><td>8</td></tr><tr><td>2024-06-11</td><td>9</td><td>2</td></tr><tr><td>2024-06-20</td><td>3</td><td>7</td></tr></tbody></table>
+```
+
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image {:data readings
+                    :mapping {:x :x :y :y :color :day}
+                    :charts [(chart/scatter {:size 12})]}
+                   {:width 600 :height 320})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.aesthetics_legends_files/image1.png)
+:::
+
+
 
 ## Colour range
 
@@ -99,12 +148,13 @@ gradient name - 7339 palettes and 5009 gradients. Without `:range` the theme `:p
 :::
 
 
-Search palettes and gradients by name with `clojure2d.color/find-palette` and `find-gradient`:
+Search palettes and gradients by name with `plot/find-palette` and `plot/find-gradient` (a regular expression,
+or a namespace and one); `plot/palette` gives a palette's colours, `plot/gradient` a gradient function:
 
 
 ::: {.sourceClojure}
 ```clojure
-(c/find-palette #"tableau")
+(plot/find-palette #"tableau")
 ```
 :::
 
@@ -130,7 +180,7 @@ Swatches of a few palettes (an `:identity` colour scale reads the colours from t
 
 ::: {.sourceClojure}
 ```clojure
-(def palettes (c/find-palette #"^:(rcartocolor/(Bold|Pastel|Vivid|Prism)|tableau-10)$"))
+(def palettes (plot/find-palette #"^:(rcartocolor/(Bold|Pastel|Vivid|Prism)|tableau-10)$"))
 ```
 :::
 
@@ -138,8 +188,25 @@ Swatches of a few palettes (an `:identity` colour scale reads the colours from t
 
 ::: {.sourceClojure}
 ```clojure
-(plot/render-image {:data (for [p palettes [i col] (map-indexed vector (c/palette p))]
-                            {:palette (str p) :i i :color col})
+(def palette-swatches (for [p palettes [i col] (map-indexed vector (plot/palette p))]
+                        {:palette (str p) :i i :color col}))
+```
+:::
+
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>palette</th><th>i</th><th>color</th></tr></thead><tbody><tr><td>:tableau-10</td><td>0</td><td>[31.0 119.0 180.0 255.0]</td></tr><tr><td>:tableau-10</td><td>1</td><td>[255.0 127.0 14.0 255.0]</td></tr><tr><td>:tableau-10</td><td>2</td><td>[44.0 160.0 44.0 255.0]</td></tr><tr><td>:tableau-10</td><td>3</td><td>[214.0 39.0 40.0 255.0]</td></tr><tr><td>:tableau-10</td><td>4</td><td>[148.0 103.0 189.0 255.0]</td></tr><tr><td>:tableau-10</td><td>5</td><td>[140.0 86.0 75.0 255.0]</td></tr><tr><td>:tableau-10</td><td>6</td><td>[227.0 119.0 194.0 255.0]</td></tr><tr><td>:tableau-10</td><td>7</td><td>[127.0 127.0 127.0 255.0]</td></tr><tr><td>:tableau-10</td><td>8</td><td>[188.0 189.0 34.0 255.0]</td></tr><tr><td>:tableau-10</td><td>9</td><td>[23.0 190.0 207.0 255.0]</td></tr><tr><td>:rcartocolor/Bold</td><td>0</td><td>[127.0 60.0 141.0 255.0]</td></tr><tr><td>:rcartocolor/Bold</td><td>1</td><td>[17.0 165.0 121.0 255.0]</td></tr><tr><td>:rcartocolor/Bold</td><td>2</td><td>[57.0 105.0 172.0 255.0]</td></tr><tr><td>:rcartocolor/Bold</td><td>3</td><td>[242.0 183.0 1.0 255.0]</td></tr><tr><td>:rcartocolor/Bold</td><td>4</td><td>[231.0 63.0 116.0 255.0]</td></tr><tr><td>:rcartocolor/Bold</td><td>5</td><td>[128.0 186.0 90.0 255.0]</td></tr><tr><td>:rcartocolor/Bold</td><td>6</td><td>[230.0 131.0 16.0 255.0]</td></tr><tr><td>:rcartocolor/Bold</td><td>7</td><td>[0.0 134.0 149.0 255.0]</td></tr><tr><td>:rcartocolor/Bold</td><td>8</td><td>[207.0 28.0 144.0 255.0]</td></tr><tr><td>:rcartocolor/Bold</td><td>9</td><td>[249.0 123.0 114.0 255.0]</td></tr></tbody></table>
+```
+
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image {:data palette-swatches
                     :mapping {:x :i :y :palette :color :color}
                     :charts [(chart/tile)]
                     :scales {:color {:kind :identity :legend false}
@@ -151,16 +218,16 @@ Swatches of a few palettes (an `:identity` colour scale reads the colours from t
 
 
 ::: {.clay-image}
-![](reference.aesthetics_legends_files/image1.png)
+![](reference.aesthetics_legends_files/image2.png)
 :::
 
 
-Gradients, sampled the same way:
+Gradients, each sampled at 32 points:
 
 
 ::: {.sourceClojure}
 ```clojure
-(def gradients (c/find-gradient #"^:viridis/"))
+(def gradients (plot/find-gradient "viridis" #".*"))
 ```
 :::
 
@@ -168,8 +235,27 @@ Gradients, sampled the same way:
 
 ::: {.sourceClojure}
 ```clojure
-(plot/render-image {:data (for [g gradients i (range 32)]
-                            {:gradient (str g) :i i :color ((c/gradient g) (/ i 31.0))})
+(def gradient-swatches (for [g gradients
+                             :let [gradient (plot/gradient g)]
+                             i (range 32)]
+                         {:gradient (str g) :i i :color (gradient (/ i 31.0))}))
+```
+:::
+
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>gradient</th><th>i</th><th>color</th></tr></thead><tbody><tr><td>:viridis/cividis</td><td>0</td><td>[0.0 32.0 77.0 255.0]</td></tr><tr><td>:viridis/cividis</td><td>1</td><td>[0.0 38.096774193548384 90.38709677419355 255.0]</td></tr><tr><td>:viridis/cividis</td><td>2</td><td>[0.0 44.193548387096776 105.58064516129032 255.0]</td></tr><tr><td>:viridis/cividis</td><td>3</td><td>[0.0 48.58064516129032 111.0 255.0]</td></tr><tr><td>:viridis/cividis</td><td>4</td><td>[10.09677419354838 54.774193548387096 110.0 255.0]</td></tr><tr><td>:viridis/cividis</td><td>5</td><td>[32.93548387096774 60.96774193548387 108.51612903225806 255.0]</td></tr><tr><td>:viridis/cividis</td><td>6</td><td>[46.74193548387096 66.58064516129032 108.0 255.0]</td></tr><tr><td>:viridis/cividis</td><td>7</td><td>[57.354838709677416 72.6774193548387 107.0 255.0]</td></tr><tr><td>:viridis/cividis</td><td>8</td><td>[66.54838709677419 78.54838709677419 107.0 255.0]</td></tr><tr><td>:viridis/cividis</td><td>9</td><td>[75.74193548387098 83.87096774193549 107.87096774193549 255.0]</td></tr><tr><td>:viridis/cividis</td><td>10</td><td>[83.93548387096774 89.96774193548387 108.0 255.0]</td></tr><tr><td>:viridis/cividis</td><td>11</td><td>[91.12903225806453 96.06451612903226 110.0 255.0]</td></tr><tr><td>:viridis/cividis</td><td>12</td><td>[99.16129032258064 102.16129032258064 111.16129032258064 255.0]</td></tr><tr><td>:viridis/cividis</td><td>13</td><td>[106.51612903225806 108.51612903225806 113.25806451612904 255.0]</td></tr><tr><td>:viridis/cividis</td><td>14</td><td>[114.0 114.06451612903226 116.0 255.0]</td></tr><tr><td>:viridis/cividis</td><td>15</td><td>[120.90322580645162 120.35483870967742 119.0 255.0]</td></tr><tr><td>:viridis/cividis</td><td>16</td><td>[129.09677419354838 126.64516129032259 121.0 255.0]</td></tr><tr><td>:viridis/cividis</td><td>17</td><td>[136.29032258064515 132.93548387096772 121.0 255.0]</td></tr><tr><td>:viridis/cividis</td><td>18</td><td>[144.48387096774195 139.48387096774195 120.25806451612902 255.0]</td></tr><tr><td>:viridis/cividis</td><td>19</td><td>[152.67741935483872 145.83870967741936 120.0 255.0]</td></tr></tbody></table>
+```
+
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image {:data gradient-swatches
                     :mapping {:x :i :y :gradient :color :color}
                     :charts [(chart/tile {:stroke-color :none})]
                     :scales {:color {:kind :identity :legend false}
@@ -181,20 +267,20 @@ Gradients, sampled the same way:
 
 
 ::: {.clay-image}
-![](reference.aesthetics_legends_files/image2.png)
+![](reference.aesthetics_legends_files/image3.png)
 :::
 
 
 
 ## Placing values on the range
 
-How values spread over the attributes: a diverging gradient around `:midpoint`, values placed by their square
-root or logarithm (`:transform`), the range reversed, size by area.
+How values spread over the attributes: a diverging gradient around `:midpoint`, values placed by a transform,
+the range reversed, size by area.
 
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:spread</td><td>true or false</td><td>false</td><td>ordinal :color: the range resampled to one colour per level</td></tr><tr><td>:midpoint</td><td>a finite number</td><td></td><td>linear / binned :color: the value at the gradient's middle (a diverging scale)</td></tr><tr><td>:transform</td><td>one of :sqrt :log</td><td></td><td>linear :color: values placed along the gradient by their square root or logarithm</td></tr><tr><td>:reverse</td><td>true or false</td><td>false</td><td>the attributes in reverse order</td></tr><tr><td>:area</td><td>true or false</td><td>false</td><td>:size: the mark's area, not its size, grows linearly with the value</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:spread</td><td>true or false</td><td>false</td><td>ordinal :color: the range resampled to one colour per level</td></tr><tr><td>:midpoint</td><td>a finite number</td><td></td><td>linear / binned :color: the value at the gradient's middle (a diverging scale)</td></tr><tr><td>:transform</td><td>one of :exp :log :sq :sqrt or a function</td><td></td><td>linear :color: values placed along the gradient by their square root, logarithm, square, exponential or a monotonic function</td></tr><tr><td>:reverse</td><td>true or false</td><td>false</td><td>the attributes in reverse order</td></tr><tr><td>:area</td><td>true or false</td><td>false</td><td>:size: the mark's area, not its size, grows linearly with the value</td></tr></tbody></table>
 ```
 
 :::
@@ -222,15 +308,80 @@ root or logarithm (`:transform`), the range reversed, size by area.
 
 
 ::: {.clay-image}
-![](reference.aesthetics_legends_files/image3.png)
+![](reference.aesthetics_legends_files/image4.png)
+:::
+
+
+`:transform` places values along the gradient by `:sqrt`, `:log`, `:sq`, `:exp` or a function of the value; the
+function must be monotonic over the domain (the colour bar inverts it numerically) and finite at its ends. The
+values 1 to 20 under each (`:exp` - the values 0.1 to 2, the exponential of 20 dwarfs everything):
+
+
+::: {.sourceClojure}
+```clojure
+(def ramp (for [i (range 1 21)] {:i i :tenth (* 0.1 i) :row "value"}))
+```
+:::
+
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>i</th><th>tenth</th><th>row</th></tr></thead><tbody><tr><td>1</td><td>0.1</td><td>value</td></tr><tr><td>2</td><td>0.2</td><td>value</td></tr><tr><td>3</td><td>0.30000000000000004</td><td>value</td></tr><tr><td>4</td><td>0.4</td><td>value</td></tr><tr><td>5</td><td>0.5</td><td>value</td></tr><tr><td>6</td><td>0.6000000000000001</td><td>value</td></tr><tr><td>7</td><td>0.7000000000000001</td><td>value</td></tr><tr><td>8</td><td>0.8</td><td>value</td></tr><tr><td>9</td><td>0.9</td><td>value</td></tr><tr><td>10</td><td>1.0</td><td>value</td></tr><tr><td>11</td><td>1.1</td><td>value</td></tr><tr><td>12</td><td>1.2000000000000002</td><td>value</td></tr><tr><td>13</td><td>1.3</td><td>value</td></tr><tr><td>14</td><td>1.4000000000000001</td><td>value</td></tr><tr><td>15</td><td>1.5</td><td>value</td></tr><tr><td>16</td><td>1.6</td><td>value</td></tr><tr><td>17</td><td>1.7000000000000002</td><td>value</td></tr><tr><td>18</td><td>1.8</td><td>value</td></tr><tr><td>19</td><td>1.9000000000000001</td><td>value</td></tr><tr><td>20</td><td>2.0</td><td>value</td></tr></tbody></table>
+```
+
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange (for [[title transform] [["none" nil] [":sqrt" :sqrt] [":log" :log]
+                                                         [":sq" :sq] [":exp" :exp] ["cube root (fn)" #(Math/cbrt %)]]]
+                                   {:data ramp
+                                    :mapping {:x :i :y :row :color (if (= :exp transform) :tenth :i)}
+                                    :charts [(chart/tile)]
+                                    :scales (cond-> {:color {:title nil}} transform (assoc-in [:color :transform] transform))
+                                    :labels {:title title :y nil}})
+                                 {:columns 3})
+                   {:width 900 :height 330})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.aesthetics_legends_files/image5.png)
+:::
+
+
+`:area true` grows a size scale's marks by area, not diameter - the right one reads as proportional:
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange (for [area [false true]]
+                                   {:data ramp
+                                    :mapping {:x :i :y :row :size :i}
+                                    :charts [(chart/scatter)]
+                                    :scales {:size {:range [2 26] :area area :legend false}}
+                                    :labels {:title (str ":area " area) :y nil}})
+                                 {:columns 2})
+                   {:width 900 :height 200})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.aesthetics_legends_files/image6.png)
 :::
 
 
 
 ## Bins
 
-A `:binned` colour scale cuts numbers into classes - a count of equal bins, breaks, a binning method or
-quantile bins - and draws a key per class.
+A `:binned` colour scale cuts numbers into classes and draws a key per class. `:bins` takes a count of equal
+bins, the breaks themselves, a binning method (`:sturges`, `:sqrt`, `:rice`, `:doane`, `:scott` ...) or quantile
+bins:
 
 ::: {.clay-table}
 
@@ -244,18 +395,22 @@ quantile bins - and draws a key per class.
 
 ::: {.sourceClojure}
 ```clojure
-(plot/render-image {:data gapminder
-                    :mapping {:x :gdp-per-cap :y :life-exp :color :life-exp}
-                    :charts [(chart/scatter)]
-                    :scales {:x {:kind :log :formatter :power}
-                             :color {:kind :binned :bins {:quantiles 5} :range :viridis/viridis}}}
-                   {:width 600 :height 350})
+(plot/render-image (plot/arrange (for [[title bins] [["3 equal bins" 3] ["breaks [39 50 60 70 83]" [39 50 60 70 83]]
+                                                    ["method :sturges" :sturges] ["{:quantiles 4}" {:quantiles 4}]]]
+                                   {:data gapminder
+                                    :mapping {:x :gdp-per-cap :y :life-exp :color :life-exp}
+                                    :charts [(chart/scatter)]
+                                    :scales {:x {:kind :log :formatter :power}
+                                             :color {:kind :binned :bins bins :range :viridis/viridis :title nil}}
+                                    :labels {:title title}})
+                                 {:columns 2})
+                   {:width 900 :height 600})
 ```
 :::
 
 
 ::: {.clay-image}
-![](reference.aesthetics_legends_files/image4.png)
+![](reference.aesthetics_legends_files/image7.png)
 :::
 
 
@@ -292,14 +447,35 @@ panels; their sizes and frame are in the theme `:legend` section (Theme chapter)
 
 
 ::: {.clay-image}
-![](reference.aesthetics_legends_files/image5.png)
+![](reference.aesthetics_legends_files/image8.png)
+:::
+
+
+A colour bar takes `:ticks` and `:formatter` too:
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image {:data gapminder
+                    :mapping {:x :gdp-per-cap :y :life-exp :color :life-exp}
+                    :charts [(chart/scatter)]
+                    :scales {:x {:kind :log :formatter :power}
+                             :color {:ticks [45 55 65 75] :formatter #(str % " years") :title "life expectancy"}}}
+                   {:width 600 :height 350})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.aesthetics_legends_files/image9.png)
 :::
 
 
 
 ## Shape
 
-Point shapes: characters (`\O` circle, `\s` square, `\A` triangle ...), keywords or shape maps.
+Point shapes: characters - filled and outlined circles, squares, triangles, strokes, plus and cross - or shape
+maps (an SVG path, a text, an SVG file, an image).
 
 ::: {.clay-table}
 
@@ -310,11 +486,60 @@ Point shapes: characters (`\O` circle, `\s` square, `\A` triangle ...), keywords
 :::
 
 
+Every built-in shape (an `:identity` scale draws the data's shapes):
+
 
 ::: {.sourceClojure}
 ```clojure
-(def groups (for [g ["a" "b" "c"] i (range 8)] {:g g :x i :y (+ (* 2 (count (str g i))) (mod (* i 7) 5))}))
+(def shapes (map-indexed (fn [i s] {:i i :shape s :name (str s)}) (sort-by str shape/shapes)))
 ```
+:::
+
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>i</th><th>shape</th><th>name</th></tr></thead><tbody><tr><td>0</td><td>\+</td><td>+</td></tr><tr><td>1</td><td>\-</td><td>-</td></tr><tr><td>2</td><td>\/</td><td>/</td></tr><tr><td>3</td><td>\<</td><td><</td></tr><tr><td>4</td><td>\></td><td>></td></tr><tr><td>5</td><td>\A</td><td>A</td></tr><tr><td>6</td><td>\O</td><td>O</td></tr><tr><td>7</td><td>\S</td><td>S</td></tr><tr><td>8</td><td>\V</td><td>V</td></tr><tr><td>9</td><td>\\</td><td>\</td></tr><tr><td>10</td><td>\^</td><td>^</td></tr><tr><td>11</td><td>\o</td><td>o</td></tr><tr><td>12</td><td>\s</td><td>s</td></tr><tr><td>13</td><td>\v</td><td>v</td></tr><tr><td>14</td><td>\x</td><td>x</td></tr><tr><td>15</td><td>\{</td><td>{</td></tr><tr><td>16</td><td>\|</td><td>|</td></tr><tr><td>17</td><td>\}</td><td>}</td></tr></tbody></table>
+```
+
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image {:data shapes
+                    :mapping {:x :i :y (constantly 1) :shape :shape}
+                    :charts [(chart/scatter {:size 18 :color [69 117 180]})
+                             (chart/text {:mapping {:x :i :y (constantly 0.4) :label :name}})]
+                    :scales {:shape {:kind :identity :legend false} :y {:domain [0 1.5] :axis false}}}
+                   {:width 800 :height 200})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.aesthetics_legends_files/image10.png)
+:::
+
+
+A shape range of characters and shape maps:
+
+
+::: {.sourceClojure}
+```clojure
+(def groups (for [[gi g] (map-indexed vector ["a" "b" "c"]) i (range 8)]
+              {:g g :x i :y (+ (* 3 gi) (mod (* i 7) 3))}))
+```
+:::
+
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>g</th><th>x</th><th>y</th></tr></thead><tbody><tr><td>a</td><td>0</td><td>0</td></tr><tr><td>a</td><td>1</td><td>1</td></tr><tr><td>a</td><td>2</td><td>2</td></tr><tr><td>a</td><td>3</td><td>0</td></tr><tr><td>a</td><td>4</td><td>1</td></tr><tr><td>a</td><td>5</td><td>2</td></tr><tr><td>a</td><td>6</td><td>0</td></tr><tr><td>a</td><td>7</td><td>1</td></tr><tr><td>b</td><td>0</td><td>3</td></tr><tr><td>b</td><td>1</td><td>4</td></tr><tr><td>b</td><td>2</td><td>5</td></tr><tr><td>b</td><td>3</td><td>3</td></tr><tr><td>b</td><td>4</td><td>4</td></tr><tr><td>b</td><td>5</td><td>5</td></tr><tr><td>b</td><td>6</td><td>3</td></tr><tr><td>b</td><td>7</td><td>4</td></tr><tr><td>c</td><td>0</td><td>6</td></tr><tr><td>c</td><td>1</td><td>7</td></tr><tr><td>c</td><td>2</td><td>8</td></tr><tr><td>c</td><td>3</td><td>6</td></tr></tbody></table>
+```
+
 :::
 
 
@@ -323,23 +548,22 @@ Point shapes: characters (`\O` circle, `\s` square, `\A` triangle ...), keywords
 ```clojure
 (plot/render-image {:data groups
                     :mapping {:x :x :y :y :shape :g}
-                    :charts [(chart/scatter {:size 10})]
-                    :scales {:shape {:range [\s \A \x]}}}
+                    :charts [(chart/scatter {:size 14})]
+                    :scales {:shape {:range [\s {:path "M0 0 L10 0 L5 9 Z"} {:text "★"}]}}}
                    {:width 500 :height 280})
 ```
 :::
 
 
 ::: {.clay-image}
-![](reference.aesthetics_legends_files/image6.png)
+![](reference.aesthetics_legends_files/image11.png)
 :::
 
 
 
 ## Size
 
-Sizes `[min max]` for numbers (a level map or a list for levels); `:area true` grows the area, not the
-diameter, with the value.
+Sizes `[min max]` in pixels for numbers (a level map or a list for levels).
 
 ::: {.clay-table}
 
@@ -357,21 +581,22 @@ diameter, with the value.
                     :mapping {:x :gdp-per-cap :y :life-exp :size :pop}
                     :charts [(chart/scatter)]
                     :scales {:x {:kind :log :formatter :power}
-                             :size {:range [2 30] :area true :legend false}}}
-                   {:width 500 :height 300})
+                             :size {:range [4 50] :area true :legend false}}}
+                   {:width 600 :height 350})
 ```
 :::
 
 
 ::: {.clay-image}
-![](reference.aesthetics_legends_files/image7.png)
+![](reference.aesthetics_legends_files/image12.png)
 :::
 
 
 
 ## Dash
 
-Line dashes: named styles or dash arrays.
+Line dashes: a named style or a dash array - lengths in pixels of a dash, a gap, a dash, ... repeated along the
+line.
 
 ::: {.clay-table}
 
@@ -381,6 +606,50 @@ Line dashes: named styles or dash arrays.
 
 :::
 
+
+Every named style, and two dash arrays (an `:identity` scale draws the data's dashes):
+
+
+::: {.sourceClojure}
+```clojure
+(def dashes (concat (for [[i d] (map-indexed vector (sort (keys schema/dash-styles))) x [0 10]]
+                      {:i i :x x :dash d :name (str d)})
+                    (for [[i d] [[8 [12 4]] [9 [2 2 8 2]]] x [0 10]]
+                      {:i i :x x :dash d :name (pr-str d)})))
+```
+:::
+
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>i</th><th>x</th><th>dash</th><th>name</th></tr></thead><tbody><tr><td>0</td><td>0</td><td>:dashed</td><td>:dashed</td></tr><tr><td>0</td><td>10</td><td>:dashed</td><td>:dashed</td></tr><tr><td>1</td><td>0</td><td>:dot-dash</td><td>:dot-dash</td></tr><tr><td>1</td><td>10</td><td>:dot-dash</td><td>:dot-dash</td></tr><tr><td>2</td><td>0</td><td>:dot-dot-dash</td><td>:dot-dot-dash</td></tr><tr><td>2</td><td>10</td><td>:dot-dot-dash</td><td>:dot-dot-dash</td></tr><tr><td>3</td><td>0</td><td>:dotted</td><td>:dotted</td></tr><tr><td>3</td><td>10</td><td>:dotted</td><td>:dotted</td></tr><tr><td>4</td><td>0</td><td>:long-dash</td><td>:long-dash</td></tr><tr><td>4</td><td>10</td><td>:long-dash</td><td>:long-dash</td></tr><tr><td>5</td><td>0</td><td>:loose-dot</td><td>:loose-dot</td></tr><tr><td>5</td><td>10</td><td>:loose-dot</td><td>:loose-dot</td></tr><tr><td>6</td><td>0</td><td>:solid</td><td>:solid</td></tr><tr><td>6</td><td>10</td><td>:solid</td><td>:solid</td></tr><tr><td>7</td><td>0</td><td>:two-dash</td><td>:two-dash</td></tr><tr><td>7</td><td>10</td><td>:two-dash</td><td>:two-dash</td></tr><tr><td>8</td><td>0</td><td>[12 4]</td><td>[12 4]</td></tr><tr><td>8</td><td>10</td><td>[12 4]</td><td>[12 4]</td></tr><tr><td>9</td><td>0</td><td>[2 2 8 2]</td><td>[2 2 8 2]</td></tr><tr><td>9</td><td>10</td><td>[2 2 8 2]</td><td>[2 2 8 2]</td></tr></tbody></table>
+```
+
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image {:data dashes
+                    :mapping {:x :x :y :i :dash :dash :group :i}
+                    :charts [(chart/line {:width 2 :color :black})
+                             (chart/text {:data (filter #(zero? (long (:x %))) dashes)
+                                          :mapping {:x :x :y :i :label :name} :anchor [:right :middle] :offset [-8 0]})]
+                    :scales {:dash {:kind :identity :legend false}
+                             :x {:domain [-6 10] :axis false} :y {:axis false :reverse true}}}
+                   {:width 600 :height 380})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.aesthetics_legends_files/image13.png)
+:::
+
+
+A dash range by group:
 
 
 ::: {.sourceClojure}
@@ -395,14 +664,15 @@ Line dashes: named styles or dash arrays.
 
 
 ::: {.clay-image}
-![](reference.aesthetics_legends_files/image8.png)
+![](reference.aesthetics_legends_files/image14.png)
 :::
 
 
 
 ## Pattern
 
-Fill patterns of areas and bars: names or pattern maps.
+Fill patterns of areas and bars: a named pattern or your own as a pattern map - lines or crosses
+`{:kind :lines :angle a :spacing s :width w}` (`a` 0, 45, 90 or 135) or dots `{:kind :dots :spacing s :size d}`.
 
 ::: {.clay-table}
 
@@ -413,20 +683,42 @@ Fill patterns of areas and bars: names or pattern maps.
 :::
 
 
+Every named pattern and two pattern maps:
+
 
 ::: {.sourceClojure}
 ```clojure
-(plot/render-image {:data [{:k "a" :v 3} {:k "b" :v 5} {:k "c" :v 4}]
-                    :mapping {:x :k :y :v :pattern :k}
-                    :charts [(chart/bar {:color :white :stroke-color :black :pattern-color :black})]
-                    :scales {:pattern {:range [:dots :cross {:kind :lines :angle 45 :spacing 4 :width 1}]}}}
-                   {:width 500 :height 280})
+(def patterns (concat (for [p (sort (keys schema/pattern-styles))] {:name (name p) :pattern p :v 1})
+                      [{:name "lines 135, spacing 8" :pattern {:kind :lines :angle 135 :spacing 8 :width 2} :v 1}
+                       {:name "dots, spacing 5" :pattern {:kind :dots :spacing 5 :size 3} :v 1}]))
+```
+:::
+
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>name</th><th>pattern</th><th>v</th></tr></thead><tbody><tr><td>back-hatch</td><td>:back-hatch</td><td>1</td></tr><tr><td>cross</td><td>:cross</td><td>1</td></tr><tr><td>dense-dots</td><td>:dense-dots</td><td>1</td></tr><tr><td>diagonal-cross</td><td>:diagonal-cross</td><td>1</td></tr><tr><td>dots</td><td>:dots</td><td>1</td></tr><tr><td>hatch</td><td>:hatch</td><td>1</td></tr><tr><td>horizontal</td><td>:horizontal</td><td>1</td></tr><tr><td>solid</td><td>:solid</td><td>1</td></tr><tr><td>vertical</td><td>:vertical</td><td>1</td></tr><tr><td>lines 135, spacing 8</td><td>{:kind :lines, :angle 135, :spacing 8, :width 2}</td><td>1</td></tr><tr><td>dots, spacing 5</td><td>{:kind :dots, :spacing 5, :size 3}</td><td>1</td></tr></tbody></table>
+```
+
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image {:data patterns
+                    :mapping {:x :name :y :v :pattern :pattern}
+                    :charts [(chart/bar {:color :white :stroke-color :black :pattern-color :black :width 0.9})]
+                    :scales {:pattern {:kind :identity :legend false} :y {:axis false}}
+                    :theme {:axis {:x {:label-rotation 45}}}}
+                   {:width 800 :height 320})
 ```
 :::
 
 
 ::: {.clay-image}
-![](reference.aesthetics_legends_files/image9.png)
+![](reference.aesthetics_legends_files/image15.png)
 :::
 
 

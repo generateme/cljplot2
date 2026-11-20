@@ -24,14 +24,12 @@
   (cond-> (aesthetic/mapped-dims mapping) (some? (:group mapping)) (conj :group)))
 
 (defn- check-groupable!
-  "Throw when aesthetic `k` would get a linear or binned scale (numeric values without an ordinal spec)."
+  "Throw when aesthetic `k` would get a linear or binned scale (numeric or date values without an ordinal spec)."
   [k values plot-scales]
   (when (aesthetic/dim? k)
-    (let [present (remove nil? values)
-          numeric? (and (seq present) (every? number? present))]
-      (when (#{:linear :binned} (aesthetic/inferred-kind k (get plot-scales k {}) numeric?))
-        (schema/fail! "This chart groups by aesthetics; numeric values must be declared categorical ({:scales {k {:type :categorical}}} or {:mapping {k (levels/categorical acc)}})."
-                        {:key :mapping :value k})))))
+    (when (#{:linear :binned} (aesthetic/inferred-kind k (get plot-scales k {}) (aesthetic/continuous-values? k values)))
+      (schema/fail! "This chart groups by aesthetics; numeric (or date) values must be declared categorical ({:scales {k {:type :categorical}}} or {:mapping {k (levels/categorical acc)}})."
+                    {:key :mapping :value k}))))
 
 (defn- kept-value?
   "Is grouping value `v` of dimension `k` kept: valid (aesthetics: kept by the plot scale, see
@@ -107,9 +105,8 @@
   (when-let [acc (get mapping k)]
     (let [value-of (data/row-accessor k acc)
           spec (get plot-scales k {})
-          present (keep value-of (mapcat val groups))
-          numeric? (and (seq present) (every? number? present))]
-      (when (#{:linear :binned} (aesthetic/inferred-kind k spec numeric?))
+          present (keep value-of (mapcat val groups))]
+      (when (#{:linear :binned} (aesthetic/inferred-kind k spec (aesthetic/continuous-values? k present)))
         (let [kept? (fn [row] (let [v (value-of row)] (if (nil? v) na-level? (aesthetic/kept-value? k spec v))))]
           {:groups (update-vals groups #(filterv kept? %))
            :mapping (dissoc mapping k)

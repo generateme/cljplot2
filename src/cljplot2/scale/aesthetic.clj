@@ -32,10 +32,12 @@
   * `:spread true` - ordinal `:color`: the range resampled to one color per level (instead of its first colors)
   * `:midpoint m` - linear / binned `:color`: `m` at the gradient's middle, both sides scaled by the larger distance
     to it (ggplot `gradient2`)
-  * `:transform` - linear `:color`: `:sqrt` or `:log` (base 10) - values placed along the gradient by their square
-    root / logarithm (lattice `trans`, ggplot `trans`), e.g. counts with a few large ones; the domain stays in data
-    units (`:sqrt` needs `lo >= 0`, `:log` `lo > 0`, else `ex-info {:key :transform}`), the color bar too (its ticks
-    in data units, spaced by the transform)
+  * `:transform` - linear `:color`: values placed along the gradient by `:sqrt`, `:log` (base 10), `:sq` (square) or
+    `:exp`, or by a function of the value (lattice `trans`, ggplot `trans`), e.g. counts with a few large ones; the
+    domain stays in data units (`:sqrt` and `:sq` need `lo >= 0`, `:log` `lo > 0`; any transform must be finite at
+    the domain ends - else `ex-info {:key :transform}`), the color bar too (its ticks in data units, spaced by the
+    transform). A function must be monotonic over the domain (the caller's responsibility): the color bar inverts it
+    numerically
   * `:reverse true` - the attributes in reverse (linear `t` → `1 - t`, ordinal / binned attributes reversed)
   * `:area true` - linear / ordinal `:size`: the shape's area (∝ size²), not its size, linear in `t` - size
     `√(a² + t·(b² − a²))` for `:range [a b]` (ggplot `scale_size`); with `:domain [0 hi]` and `:range [0 max]` the
@@ -43,6 +45,9 @@
   * `:ticks` - linear `:size` / `:color`: the legend's entries or color bar ticks - a count (nice ticks), or the
     values themselves (see [[explicit-ticks]]; drawn as given - no added `:midpoint` tick)
   * `:formatter` - legend labels (function); `:title` - legend title (`nil` - no title); `:legend` - `false` hides it
+  * dates - `:color` mapped to `java.time` values gets a `:linear` scale over time, as numbers do (domain in epoch
+    milliseconds, see [[cljplot2.data.rows/x-key]]; an explicit `:domain` of two dates; color bar ticks are dates);
+    `:midpoint`, `:transform` and `:binned` need numbers
 
   [[scale-spec]] gives plain data (with `:na?` - the scale has an NA level); it is also the finalized scale: no
   pixel range, `nice` or padding. [[attribute-fn]] maps data values to style attributes: NA (`nil`) to the NA
@@ -72,6 +77,10 @@
 (def dim? (set dims))
 
 (def kinds #{:ordinal :linear :binned :identity})
+
+(def transform-names
+  "The named linear color `:transform`s."
+  #{:sqrt :log :sq :exp})
 
 (def ^:private ^:const default-bins 5)
 
@@ -168,14 +177,30 @@
   [v]
   (if (number? v) (double v) v))
 
+(defn continuous-value?
+  "Can value `v` of aesthetic `k` sit on a linear scale: a number, or a `java.time` value for `:color`?"
+  [k v]
+  (or (number? v) (and (= :color k) (data/temporal? v))))
+
+(defn continuous-values?
+  "Are the non-`nil` `values` of aesthetic `k` some, and all [[continuous-value?]]?"
+  [k values]
+  (let [present (remove nil? values)]
+    (boolean (and (seq present) (every? #(continuous-value? k %) present)))))
+
+(defn- continuous-extent?
+  "Is the data `extent` of aesthetic `k` continuous: numeric, or temporal for `:color`?"
+  [k extent]
+  (or (= :numeric (:kind extent)) (and (= :color k) (= :temporal (:kind extent)))))
+
 (defn- explicit-kind
   "Kind of aesthetic `k` with an explicit domain in `spec`: the spec's `:kind`; `:ordinal` with `:type :categorical`
-  (e.g. two years as levels); else `:linear` for two numbers (not `:shape` / `:dash` / `:pattern`), else
-  `:ordinal`."
+  (e.g. two years as levels); else `:linear` for two numbers (not `:shape` / `:dash` / `:pattern`) or two dates
+  (`:color`), else `:ordinal`."
   [k {:keys [kind type domain]}]
   (or kind
       (when (= :categorical type) :ordinal)
-      (if (and (not (ordinal-only k)) (= 2 (count domain)) (every? number? domain)) :linear :ordinal)))
+      (if (and (not (ordinal-only k)) (= 2 (count domain)) (every? #(continuous-value? k %) domain)) :linear :ordinal)))
 
 (defn- domain-problem
   "Why the explicit `:domain` of aesthetic scale `spec` of `k` is invalid, or `nil`."
@@ -184,9 +209,10 @@
     (case (explicit-kind k spec)
       :ordinal (when-not (and (seq domain) (not-any? nil? domain) (apply distinct? (map level-key domain)))
                  "ordinal domain should be a non-empty sequence of distinct non-nil values")
-      (:linear :binned) (when-not (and (= 2 (count domain)) (every? schema/finite? domain)
-                                       (< (double (first domain)) (double (second domain))))
-                          "linear domain should be [lo hi], finite numbers, lo < hi")
+      (:linear :binned) (let [[lo hi] (map data/x-key domain)]
+                          (when-not (and (= 2 (count domain)) (every? #(continuous-value? k %) domain)
+                                         (schema/finite? lo) (schema/finite? hi) (< (double lo) (double hi)))
+                            "linear domain should be [lo hi], finite numbers (or dates for :color), lo < hi"))
       :identity nil)))
 
 (defn- option-problems
@@ -256,8 +282,8 @@
                            schema/bool)
           (schema/optional :midpoint {:cljplot2/section :range-mapping :description "linear / binned :color: the value at the gradient's middle (a diverging scale)"}
                            schema/finite)
-          (schema/optional :transform {:cljplot2/section :range-mapping :description "linear :color: values placed along the gradient by their square root or logarithm"}
-                           [:enum :sqrt :log])
+          (schema/optional :transform {:cljplot2/section :range-mapping :description "linear :color: values placed along the gradient by their square root, logarithm, square, exponential or a monotonic function"}
+                           [:or (into [:enum] (sort transform-names)) schema/function])
           (schema/optional :reverse {:cljplot2/section :range-mapping :description "the attributes in reverse order" :default false} schema/bool)
           (schema/optional :area {:cljplot2/section :range-mapping :description ":size: the mark's area, not its size, grows linearly with the value" :default false}
                            schema/bool)
@@ -298,20 +324,23 @@
                         {:key :domain :in [:scales k :domain]})))
 
 (defn- linear-domain
+  "`[lo hi]` of a linear scale of `k`: the explicit domain or the data `extent`, numbers or dates as
+  [[cljplot2.data.rows/x-key]] numbers (epoch milliseconds)."
   [k explicit extent]
   (cond
-    explicit [(double (first explicit)) (double (second explicit))]
-    (= :numeric (:kind extent)) [(double (:min extent)) (double (:max extent))]
-    :else (schema/fail! "A :linear aesthetic scale needs numeric data." {:key :kind :in [:scales k :kind]})))
+    explicit [(data/x-key (first explicit)) (data/x-key (second explicit))]
+    (continuous-extent? k extent) [(data/x-key (:min extent)) (data/x-key (:max extent))]
+    :else (schema/fail! "A :linear aesthetic scale needs numeric data (or dates for :color)." {:key :kind :in [:scales k :kind]})))
 
 (defn inferred-kind
-  "Scale kind of aesthetic `k` with plot scale `spec` (may be `{}`) for data that is numeric (`data-numeric?`) or not:
-  the spec's `:kind`; else `:linear` for a numeric two-value explicit domain or, without a domain, numeric data
-  (`:color`, `:size`); else `:ordinal`. `:shape`, `:dash` and `:pattern` are always ordinal (or identity)."
-  [k spec data-numeric?]
+  "Scale kind of aesthetic `k` with plot scale `spec` (may be `{}`) for data that is continuous (`continuous-data?` -
+  numbers, or dates for `:color`, see [[continuous-values?]]) or not: the spec's `:kind`; else `:linear` for a
+  continuous two-value explicit domain or, without a domain, continuous data (`:color`, `:size`); else `:ordinal`.
+  `:shape`, `:dash` and `:pattern` are always ordinal (or identity)."
+  [k spec continuous-data?]
   (if (sequential? (:domain spec))
     (explicit-kind k spec)
-    (or (:kind spec) (if (and data-numeric? (not (ordinal-only k))) :linear :ordinal))))
+    (or (:kind spec) (if (and continuous-data? (not (ordinal-only k))) :linear :ordinal))))
 
 (defn- spec-domain
   "Explicit domain of scale `spec`: its `:domain` (non-empty), else a binned scale's breaks ends `[first last]`."
@@ -331,11 +360,12 @@
   (let [domain (spec-domain spec)]
     (if (or (nil? v) (nil? domain))
       true
-      (case (inferred-kind k spec (number? v))
+      (case (inferred-kind k spec (continuous-value? k v))
         :ordinal (boolean (some #(= (level-key %) (level-key v)) domain))
-        (:linear :binned) (let [[lo hi] domain]
-                            (if (and (= 2 (count domain)) (number? lo) (number? hi))
-                              (and (number? v) (<= (double lo) (double v) (double hi)))
+        (:linear :binned) (let [[lo hi] (map data/x-key domain)
+                                x (data/x-key v)]
+                            (if (and (= 2 (count domain)) lo hi)
+                              (boolean (and x (<= (double lo) (double x) (double hi))))
                               true))))))
 
 (defn valid-attribute?
@@ -390,9 +420,12 @@
                                (schema/fail! (str "An identity " (name k) " scale needs " (name k) " values.")
                                              {:key :mapping :in [:mapping k] :value v}))
     :else (and (data/valid-value? v)
-               (do (when (and (not (number? v)) (#{:linear :binned} (inferred-kind k spec false)))
-                     (schema/fail! (str "A " (inferred-kind k spec false) " aesthetic scale needs numeric data.")
-                                   {:key :kind :in [:scales k :kind] :value v}))
+               (do (let [kind (inferred-kind k spec false)]
+                     (when (or (and (= :linear kind) (not (continuous-value? k v)))
+                               (and (= :binned kind) (not (number? v))))
+                       (schema/fail! (str "A " kind " aesthetic scale needs numeric data"
+                                          (when (= :linear kind) " (or dates for :color)") ".")
+                                     {:key :kind :in [:scales k :kind] :value v})))
                    (in-domain? k spec v)))))
 
 (defn- binned-breaks
@@ -412,27 +445,57 @@
         (levels/breaks [lo hi] (or bins default-bins))))))
 
 (def ^:private value-transforms
-  "Linear color `:transform`s: `{:forward f :inverse g}`."
+  "Named linear color `:transform`s: `{:forward f :inverse g}`."
   {:sqrt {:forward (fn ^double [^double v] (m/sqrt v)) :inverse (fn ^double [^double v] (* v v))}
-   :log {:forward (fn ^double [^double v] (m/log10 v)) :inverse (fn ^double [^double v] (m/pow 10.0 v))}})
+   :log {:forward (fn ^double [^double v] (m/log10 v)) :inverse (fn ^double [^double v] (m/pow 10.0 v))}
+   :sq {:forward (fn ^double [^double v] (* v v)) :inverse (fn ^double [^double v] (m/sqrt v))}
+   :exp {:forward (fn ^double [^double v] (m/exp v)) :inverse (fn ^double [^double v] (m/log v))}})
 
 (def ^:private identity-transform {:forward (fn ^double [^double v] v) :inverse (fn ^double [^double v] v)})
 
+(def ^:private ^:const inverse-steps
+  "Bisection steps of a numerically inverted transform (the interval shrinks 2^steps times)."
+  64)
+
+(defn- monotonic-inverse
+  "Inverse of `forward` - a function monotonic over `[lo hi]` - by bisection: a function of a transformed value giving
+  the value in `[lo hi]` mapped to it (the nearest end for values outside the transformed range)."
+  [forward ^double lo ^double hi]
+  (let [f #(double (forward %))
+        increasing? (<= (double (f lo)) (double (f hi)))]
+    (fn ^double [^double y]
+      (loop [a lo b hi i 0]
+        (let [mid (* 0.5 (+ a b))]
+          (if (>= i (long inverse-steps))
+            mid
+            (if (= increasing? (< (double (f mid)) y))
+              (recur mid b (inc i))
+              (recur a mid (inc i)))))))))
+
 (defn value-transform
   "`{:forward f :inverse g}` (functions of a double) of the linear scale `spec`'s `:transform` (see the namespace
-  doc); the identity without one."
-  [spec]
-  (get value-transforms (:transform spec) identity-transform))
+  doc): a named one, a user function (its inverse numeric over the spec's `:domain`, see [[monotonic-inverse]]), or
+  the identity without one."
+  [{:keys [transform domain]}]
+  (if (fn? transform)
+    (let [[lo hi] domain]
+      {:forward (fn ^double [^double v] (double (transform v)))
+       :inverse (monotonic-inverse transform (double lo) (double hi))})
+    (get value-transforms transform identity-transform)))
 
 (defn- transformable!
-  "`transform` when the linear `domain` of aesthetic `k` suits it (`:sqrt` - from 0, `:log` - above 0), else throws
-  `ex-info {:key :transform}`."
-  [k transform [lo]]
-  (when (if (= :log transform) (<= (double lo) 0.0) (neg? (double lo)))
-    (schema/fail! (str "Scale :transform " transform " needs a domain " (if (= :log transform) "above 0" "from 0")
-                       ", got " lo " as its start.")
-                  {:key :transform :in [:scales k :transform] :value transform}))
-  transform)
+  "`transform` when the linear `domain` of aesthetic `k` suits it (`:sqrt` and `:sq` - from 0, `:log` - above 0) and
+  it is finite at both domain ends, else throws `ex-info {:key :transform}`."
+  [k transform [lo hi :as domain]]
+  (let [fail! #(schema/fail! (str "Scale :transform " (if (fn? transform) "function" transform) " " %)
+                             {:key :transform :in [:scales k :transform] :value transform})
+        {:keys [forward]} (value-transform {:transform transform :domain domain})]
+    (cond
+      (and (= :log transform) (<= (double lo) 0.0)) (fail! (str "needs a domain above 0, got " lo " as its start."))
+      (and (#{:sqrt :sq} transform) (neg? (double lo))) (fail! (str "needs a domain from 0, got " lo " as its start."))
+      (not (and (m/valid-double? (double (forward (double lo)))) (m/valid-double? (double (forward (double hi))))))
+      (fail! (str "should give finite values at the domain ends " lo " and " hi "."))
+      :else transform)))
 
 (defn scale-spec
   "Scale of aesthetic dimension `k` from the plot's scale `spec` (may be `{}`), the merged data `extent`
@@ -440,12 +503,20 @@
   `nil` when there is neither an explicit domain nor data. Throws `ex-info` (`:key` - the offending option) for
   options the resolved kind doesn't allow.
   Returns `{:kind :domain :range :na?}` (identity: no `:domain` / `:range`; binned: also `:breaks`, the domain being
-  their ends) plus the spec's `:spread`, `:midpoint`, `:reverse`, `:area`, `:formatter`, `:ticks`, `:title`,
+  their ends; a linear scale over dates: the domain in epoch milliseconds and `:temporal-sample` - a date of the
+  data's type, for the color bar's labels) plus the spec's `:spread`, `:midpoint`, `:reverse`, `:area`, `:formatter`, `:ticks`, `:title`,
   `:legend` when given."
   [k spec extent na? palette]
   (let [explicit (:domain spec)]
     (when (or explicit extent)
-      (let [kind (inferred-kind k spec (= :numeric (:kind extent)))
+      (let [kind (inferred-kind k spec (continuous-extent? k extent))
+            explicit-date (when (data/temporal? (first explicit)) (first explicit))
+            temporal? (and (or (= :temporal (:kind extent)) explicit-date) (not= kind :ordinal) (not= kind :identity))
+            _ (when temporal?
+                (when-let [key (some #(when (some? (get spec %)) %) [:midpoint :transform])]
+                  (schema/fail! (str key " needs numeric data, not dates.") {:key key :in [:scales k key] :value (get spec key)}))
+                (when (= :binned kind)
+                  (schema/fail! "A :binned aesthetic scale needs numeric data, not dates." {:key :kind :in [:scales k :kind]})))
             _ (when-let [[key message] (first (option-problems k kind spec))]
                 (schema/fail! (str message ".") {:key key :in [:scales k key] :value (get spec key)}))
             breaks (when (= kind :binned)
@@ -468,6 +539,7 @@
           (:spread spec) (assoc :spread true)
           (some? (:midpoint spec)) (assoc :midpoint (double (:midpoint spec)))
           (:transform spec) (assoc :transform (transformable! k (:transform spec) domain))
+          temporal? (assoc :temporal-sample (or explicit-date (:min extent)))
           (:reverse spec) (assoc :reverse true)
           (:area spec) (assoc :area true)
           (contains? spec :formatter) (assoc :formatter (:formatter spec))
@@ -562,8 +634,8 @@
               (fn [v]
                 (cond
                   (nil? v) na
-                  (and (number? v) (<= lo (double v) hi)) (f (t-of (double v)))
-                  :else nil)))
+                  :else (let [x (data/x-key v)]
+                          (when (and x (<= lo (double x) hi)) (f (t-of (double x))))))))
     :binned (let [arr (double-array (:breaks spec))
                   colors (bin-colors spec)]
               (fn [v]

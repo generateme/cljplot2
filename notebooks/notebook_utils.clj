@@ -1,6 +1,6 @@
 (ns notebook-utils
-  "Notebook helpers: datasets read through the manifest `data/datasets.edn`, the attribution line of an example and
-  the option tables of the reference part ([[options-table]]).
+  "Notebook helpers: datasets read through the manifest `data/datasets.edn`, the attribution line of an example, the
+  option tables of the reference part ([[options-table]]) and data tables ([[data-table]]).
   No plotting helpers - examples use the plain cljplot2 API."
   (:require [clojure.data.csv :as csv]
             [clojure.data.json :as json]
@@ -218,3 +218,42 @@
   "wadogo's description of position scale kind `k` (`wadogo.scale/kind-info`, Markdown), its code hidden."
   [k]
   (kindly/hide-code (kind/md (ws/kind-info k))))
+
+;; data tables
+
+(def ^:private data-table-rows
+  "The most rows [[data-table]] shows."
+  20)
+
+(defn- data-rows
+  "Rows of `data`: rows (a non-empty sequence of maps) as they are, columns (a map of equal-length non-empty
+  sequences) as rows; `nil` for anything else."
+  [data]
+  (cond
+    (and (sequential? data) (seq data) (every? map? (take data-table-rows data))) data
+    (and (map? data) (seq data) (every? sequential? (vals data)) (pos? (count (first (vals data))))
+         (apply = (map count (vals data))))
+    (let [ks (keys data)] (apply map (fn [& vs] (zipmap ks vs)) (map data ks)))
+    :else nil))
+
+(defn- cell-text
+  "Text of a table cell: a string as it is, a `java.time` value as its ISO text, else printed (colours and functions
+  readable, see [[readable-value]])."
+  [v]
+  (cond
+    (string? v) v
+    (instance? java.time.temporal.Temporal v) (str v)
+    :else (pr-str (readable-value v))))
+
+(defn data-table
+  "The first 20 rows of `data` - rows (maps) or columns (a map of equal-length sequences) - as a table, its code
+  hidden: a column per key of the shown rows (first-appearance order), cells as [[cell-text]].
+  Throws `ex-info {:key :data}` for empty data or data that isn't rows or columns."
+  [data]
+  (let [rows (some->> (data-rows data) (take data-table-rows) vec)]
+    (when (empty? rows)
+      (throw (ex-info "data-table needs rows (maps) or columns (a map of sequences)." {:key :data :value data})))
+    (let [ks (vec (distinct (mapcat keys rows)))]
+      (kindly/hide-code
+       (kind/table {:column-names (mapv #(if (keyword? %) (name %) (str %)) ks)
+                    :row-vectors (mapv (fn [row] (mapv #(cell-text (get row %)) ks)) rows)})))))

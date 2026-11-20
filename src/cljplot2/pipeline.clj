@@ -190,9 +190,9 @@
   [mapping plot-scales rows]
   (filterv (fn [k]
              (when-let [acc (get mapping k)]
-               (let [present (keep (data/row-accessor k acc) rows)
-                     numeric? (and (seq present) (every? number? present))]
-                 (#{:ordinal :identity} (aesthetic/inferred-kind k (get plot-scales k {}) numeric?)))))
+               (let [present (keep (data/row-accessor k acc) rows)]
+                 (#{:ordinal :identity}
+                  (aesthetic/inferred-kind k (get plot-scales k {}) (aesthetic/continuous-values? k present))))))
            aesthetic/dims))
 
 (defn- margin-stats

@@ -16,6 +16,8 @@
 
 (def iris (nu/dataset :iris))
 
+(nu/data-table iris)
+
 (def iris-plot
   {:data iris
    :mapping {:x :sepal-length :y :petal-length :color :species}
@@ -30,6 +32,10 @@
 (nu/options-table (describe/options pipeline/options-schema) :image)
 
 (plot/render-image iris-plot {:width 500 :height 300 :hint :low})
+
+;; ... against `:highest` - smooth edges and text:
+
+(plot/render-image iris-plot {:width 500 :height 300 :hint :highest})
 
 ;; ## Inspection
 
@@ -59,6 +65,10 @@
 ;; ... and as seen with deuteranopia - setosa and versicolor turn into similar olive tones, virginica stays blue:
 
 (plot/render-image red-green-plot {:width 500 :height 300 :cvd :deuteranopia})
+
+;; A partial deficiency takes a severity in `[0 1]` - here deuteranomaly at half strength:
+
+(plot/render-image red-green-plot {:width 500 :height 300 :cvd [:deuteranomaly 0.5]})
 
 ;; ## Saving
 

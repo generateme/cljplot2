@@ -14,6 +14,8 @@
 
 (def iris (nu/dataset :iris))
 
+(nu/data-table iris)
+
 (def iris-plot
   {:data iris
    :mapping {:x :sepal-length :y :petal-length :color :species}
@@ -60,6 +62,8 @@
 (nu/options-table (describe/theme-rows :axis) :x-axis)
 
 (def long-levels [{:k "a long level" :v 3} {:k "another long level" :v 5} {:k "the last level" :v 4}])
+
+(nu/data-table long-levels)
 
 (plot/render-image {:data long-levels
                     :mapping {:x :k :y :v}
@@ -159,6 +163,8 @@
 
 (def budget [{:dept "science" :team "physics" :cost 40} {:dept "science" :team "biology" :cost 25}
              {:dept "arts" :team "music" :cost 15} {:dept "arts" :team "theatre" :cost 10}])
+
+(nu/data-table budget)
 
 (plot/render-image {:data budget
                     :mapping {:hierarchy [:dept :team] :value :cost}

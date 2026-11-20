@@ -66,7 +66,8 @@ hold a whole plot (`:arrange`, `plot/pairs`, `:margins`).
 `data.graph`, `data.tree`, `data.series`, `data.vector-field`), `scale/`, `layout/`, `content/` (panel, axis, legend,
 strip, label), `graphics/` (canvas, fonts, polylines, shapes). Builders (`graphs.clj`, `series_plots.clj`,
 `multiplot.clj`) turn layout rows into ordinary plot maps; their `:scales` option is deep-merged (`theme/deep-merge`)
-into the builder's. `cljplot2.core` is the public API (`build`, `render`, `render-image`, `cvd-image`, `save`, builders).
+into the builder's. `cljplot2.core` is the public API (`build`, `render`, `render-image`, `cvd-image`, `save`, `find-palette`,
+`find-gradient`, `palette`, `gradient` - the last five calls to clojure2d - and the builders).
 
 ## Notebooks, demos, data
 
@@ -75,7 +76,8 @@ into the builder's. `cljplot2.core` is the public API (`build`, `render`, `rende
   only from `nu/options-table` over `cljplot2.describe` rows (never hand-written; code hidden), one section at a
   time for sliced rows, each table with a sentence or two and followed by its example (a chart or a value);
   `reference-notebook-test` checks every schema of `describe/plot-level-schemas`, shared group, theme key and section
-  has a table of at most 12 rows, each followed by an example.
+  has a table of at most 12 rows, each followed by an example; every dataset or data a reference page defines is shown
+  right after its `def` with `nu/data-table` (first 20 rows, code hidden).
   Conventions: a heading, 1-3 lines, `nu/source-note` with `:url`, code ending in `plot/render-image` at most
   1000×800; every random value from a seeded rng (`(r/rng :mersenne n)`); no notebook plotting helpers.
 - `docs/` holds only Clay output (wiped on every build); the `:clay` classpath is `notebooks/` only, so notebooks

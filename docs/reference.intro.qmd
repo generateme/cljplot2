@@ -43,7 +43,7 @@ part says what exists.
   and what the library doesn't do.
 
 * **Charts**, **builders** and **data functions** - the options of each chart kind, builder and user-facing
-  function, with examples.
+  function, with examples (to come; until then the use cases and galleries show them).
 
 
 ## How to read a table
@@ -91,6 +91,15 @@ The rows, how their values map to dimensions, and the charts drawing them (Data 
 :::
 
 
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>x</th><th>y</th><th>g</th></tr></thead><tbody><tr><td>1</td><td>2</td><td>a</td></tr><tr><td>2</td><td>3</td><td>a</td></tr><tr><td>3</td><td>1</td><td>b</td></tr><tr><td>4</td><td>4</td><td>b</td></tr></tbody></table>
+```
+
+:::
+
+
 
 ::: {.sourceClojure}
 ```clojure
@@ -104,6 +113,24 @@ The rows, how their values map to dimensions, and the charts drawing them (Data 
 
 ::: {.clay-image}
 ![](reference.intro_files/image0.png)
+:::
+
+
+The same rows under another mapping - `:x` and `:y` swapped - give another plot:
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image {:data points
+                    :mapping {:x :y :y :x}
+                    :charts [(chart/line) (chart/scatter)]}
+                   {:width 500 :height 300})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.intro_files/image1.png)
 :::
 
 
@@ -135,7 +162,26 @@ How data values become positions, colours, shapes ... (Scales and Aesthetics cha
 
 
 ::: {.clay-image}
-![](reference.intro_files/image1.png)
+![](reference.intro_files/image2.png)
+:::
+
+
+A logarithmic x scale spreads the small values:
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image {:data (for [i (range 1 30)] {:x (* i i i) :y i})
+                    :mapping {:x :x :y :y}
+                    :charts [(chart/scatter)]
+                    :scales {:x {:kind :log :formatter :power}}}
+                   {:width 500 :height 300})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.intro_files/image3.png)
 :::
 
 
@@ -167,7 +213,27 @@ Cartesian (optionally flipped or with equal units) or polar (Scales chapter).
 
 
 ::: {.clay-image}
-![](reference.intro_files/image2.png)
+![](reference.intro_files/image4.png)
+:::
+
+
+The same bars in polar coordinates - a rose:
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image {:data [{:fruit "apples" :n 3} {:fruit "pears" :n 5} {:fruit "plums" :n 2}]
+                    :mapping {:x :fruit :y :n :color :fruit}
+                    :charts [(chart/bar {:width 1.0})]
+                    :coord {:kind :polar}
+                    :legend false}
+                   {:width 350 :height 350})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.intro_files/image5.png)
 :::
 
 
@@ -197,7 +263,32 @@ Panels split by data, several plots in a grid, charts beside the panel (Facets c
 
 
 ::: {.clay-image}
-![](reference.intro_files/image3.png)
+![](reference.intro_files/image6.png)
+:::
+
+
+A hand-written grid of plots and a note (`:custom-grid`, Facets chapter):
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image {:custom-grid {:columns [{:size [:flexible 2]} {:size [:flexible 1]}]
+                                  :rows [{:size [:flexible 1]} {:size [:measured]}]
+                                  :items [{:id :lines :column 0 :row 0
+                                           :content {:kind :plot :plot {:data points :mapping {:x :x :y :y}
+                                                                        :charts [(chart/line)]}}}
+                                          {:id :bars :column 1 :row 0
+                                           :content {:kind :plot :plot {:data points :mapping {:x :g :y :y}
+                                                                        :charts [(chart/bar {:stat :sum})]}}}
+                                          {:id :note :column {:from 0 :to 1} :row 1
+                                           :content {:kind :label :role :axis-title :text "two plots, 2 : 1"}}]}}
+                   {:width 600 :height 320})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.intro_files/image7.png)
 :::
 
 
@@ -228,7 +319,7 @@ The plot title and the axis titles (Labels chapter).
 
 
 ::: {.clay-image}
-![](reference.intro_files/image4.png)
+![](reference.intro_files/image8.png)
 :::
 
 
@@ -259,7 +350,7 @@ Legends are drawn for mapped aesthetics; these keys hide them or draw only them 
 
 
 ::: {.clay-image}
-![](reference.intro_files/image5.png)
+![](reference.intro_files/image9.png)
 :::
 
 
@@ -291,7 +382,7 @@ The theme holds every style default; a plot overrides parts of it (Theme chapter
 
 
 ::: {.clay-image}
-![](reference.intro_files/image6.png)
+![](reference.intro_files/image10.png)
 :::
 
 
@@ -321,7 +412,7 @@ Render options travel with the plot under `:options`; those given to `render-ima
 
 
 ::: {.clay-image}
-![](reference.intro_files/image7.png)
+![](reference.intro_files/image11.png)
 :::
 
 

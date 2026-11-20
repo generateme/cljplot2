@@ -16,6 +16,8 @@
 
 (def mtcars (nu/dataset :mtcars))
 
+(nu/data-table mtcars)
+
 ;; ## Facet shape
 
 ;; Mapping `:facet` wraps one panel per level into rows and columns; `:facet-col` / `:facet-row` make a grid of
@@ -41,6 +43,15 @@
                     :charts [(chart/scatter)]
                     :facets {:scales {:x :free} :widths [1 1 2]}}
                    {:width 800 :height 450})
+
+;; `:sliced`: every panel spans as much as the widest one, around its own data - the panels' y ranges are
+;; comparable in size although they sit at different heights:
+
+(plot/render-image {:data mtcars
+                    :mapping {:x :wt :y :mpg :facet :cyl}
+                    :charts [(chart/scatter)]
+                    :facets {:scales {:y :sliced} :columns 3}}
+                   {:width 800 :height 300})
 
 ;; ## Facet levels
 
@@ -68,7 +79,9 @@
                    {:width 900 :height 350})
 
 ;; It returns a plot whose `:arrange` key holds the plots and the layout - also written by hand. Here a legend
-;; shown once, in its own cell sized to fit (`:measured`):
+;; shown once, in its own cell: the two plots hide their legends (`:legend false`), a third plot draws only its
+;; legend (`:legend-only true` - no panel or axes, plot keys in the intro's Legend slice) in a column sized to fit
+;; (`:measured`):
 
 (nu/options-table (describe/options plot-grid/arrange-schema))
 

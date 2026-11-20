@@ -1,6 +1,7 @@
 (ns cljplot2.core
   "Public API."
-  (:require [clojure2d.core :as c2d]
+  (:require [clojure2d.color :as c]
+            [clojure2d.core :as c2d]
             [cljplot2.graphs :as graphs]
             [cljplot2.pipeline :as pipeline]
             [cljplot2.multiplot :as multiplot]
@@ -117,6 +118,36 @@
   [[cljplot2.render/cvd-image]]."
   ^java.awt.image.BufferedImage [image deficiency]
   (render/cvd-image image deficiency))
+
+(defn find-palette
+  "Palette names (keywords, sorted): all of them, those whose name (with the colon and namespace) matches `regex`, or
+  those of namespace `group` (a string) matching it - `clojure2d.color/find-palette`; for a colour scale's `:range`."
+  ([] (c/find-palette))
+  ([regex] (c/find-palette regex))
+  ([group regex] (c/find-palette group regex)))
+
+(defn find-gradient
+  "Gradient names (keywords, sorted): all of them, those whose name (with the colon and namespace) matches `regex`, or
+  those of namespace `group` (a string) matching it - `clojure2d.color/find-gradient`; for a colour scale's `:range`."
+  ([] (c/find-gradient))
+  ([regex] (c/find-gradient regex))
+  ([group regex] (c/find-gradient group regex)))
+
+(defn palette
+  "A palette - a vector of colours - of `p` (a palette name, a colourlovers number, a gradient or colours), resampled
+  to `number-of-colors` (with `gradient-params`) when given; without arguments a random palette -
+  `clojure2d.color/palette`."
+  ([] (c/palette))
+  ([p] (c/palette p))
+  ([p number-of-colors] (c/palette p number-of-colors))
+  ([p number-of-colors gradient-params] (c/palette p number-of-colors gradient-params)))
+
+(defn gradient
+  "A gradient - a function of `t` in [0 1] returning a colour - of a gradient name or a palette (with interpolation
+  `options` for a palette); without arguments a random gradient - `clojure2d.color/gradient`."
+  ([] (c/gradient))
+  ([palette-or-gradient-name] (c/gradient palette-or-gradient-name))
+  ([palette-or-gradient-name options] (c/gradient palette-or-gradient-name options)))
 
 (defn save
   "Save `image` - a `java.awt.image.BufferedImage` ([[render-image]], [[cvd-image]]) or a clojure2d canvas ([[render]])

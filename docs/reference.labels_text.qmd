@@ -58,6 +58,15 @@ Data: Edgar Anderson's iris measurements, R datasets package `iris` (Anderson 19
 :::
 
 
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>sepal-length</th><th>sepal-width</th><th>petal-length</th><th>petal-width</th><th>species</th></tr></thead><tbody><tr><td>5.1</td><td>3.5</td><td>1.4</td><td>0.2</td><td>setosa</td></tr><tr><td>4.9</td><td>3</td><td>1.4</td><td>0.2</td><td>setosa</td></tr><tr><td>4.7</td><td>3.2</td><td>1.3</td><td>0.2</td><td>setosa</td></tr><tr><td>4.6</td><td>3.1</td><td>1.5</td><td>0.2</td><td>setosa</td></tr><tr><td>5</td><td>3.6</td><td>1.4</td><td>0.2</td><td>setosa</td></tr><tr><td>5.4</td><td>3.9</td><td>1.7</td><td>0.4</td><td>setosa</td></tr><tr><td>4.6</td><td>3.4</td><td>1.4</td><td>0.3</td><td>setosa</td></tr><tr><td>5</td><td>3.4</td><td>1.5</td><td>0.2</td><td>setosa</td></tr><tr><td>4.4</td><td>2.9</td><td>1.4</td><td>0.2</td><td>setosa</td></tr><tr><td>4.9</td><td>3.1</td><td>1.5</td><td>0.1</td><td>setosa</td></tr><tr><td>5.4</td><td>3.7</td><td>1.5</td><td>0.2</td><td>setosa</td></tr><tr><td>4.8</td><td>3.4</td><td>1.6</td><td>0.2</td><td>setosa</td></tr><tr><td>4.8</td><td>3</td><td>1.4</td><td>0.1</td><td>setosa</td></tr><tr><td>4.3</td><td>3</td><td>1.1</td><td>0.1</td><td>setosa</td></tr><tr><td>5.8</td><td>4</td><td>1.2</td><td>0.2</td><td>setosa</td></tr><tr><td>5.7</td><td>4.4</td><td>1.5</td><td>0.4</td><td>setosa</td></tr><tr><td>5.4</td><td>3.9</td><td>1.3</td><td>0.4</td><td>setosa</td></tr><tr><td>5.1</td><td>3.5</td><td>1.4</td><td>0.3</td><td>setosa</td></tr><tr><td>5.7</td><td>3.8</td><td>1.7</td><td>0.3</td><td>setosa</td></tr><tr><td>5.1</td><td>3.8</td><td>1.5</td><td>0.3</td><td>setosa</td></tr></tbody></table>
+```
+
+:::
+
+
 
 ::: {.sourceClojure}
 ```clojure
@@ -155,6 +164,15 @@ The `text` chart writes literal text or a mapped `:label`; `:anchor`, `:offset` 
 (def series (for [[i g] (map-indexed vector ["alpha" "beta" "gamma"]) t (range 10)]
               {:g g :t t :v (+ (* t (inc i) 0.5) (* 3 i))}))
 ```
+:::
+
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>g</th><th>t</th><th>v</th></tr></thead><tbody><tr><td>alpha</td><td>0</td><td>0.0</td></tr><tr><td>alpha</td><td>1</td><td>0.5</td></tr><tr><td>alpha</td><td>2</td><td>1.0</td></tr><tr><td>alpha</td><td>3</td><td>1.5</td></tr><tr><td>alpha</td><td>4</td><td>2.0</td></tr><tr><td>alpha</td><td>5</td><td>2.5</td></tr><tr><td>alpha</td><td>6</td><td>3.0</td></tr><tr><td>alpha</td><td>7</td><td>3.5</td></tr><tr><td>alpha</td><td>8</td><td>4.0</td></tr><tr><td>alpha</td><td>9</td><td>4.5</td></tr><tr><td>beta</td><td>0</td><td>3.0</td></tr><tr><td>beta</td><td>1</td><td>4.0</td></tr><tr><td>beta</td><td>2</td><td>5.0</td></tr><tr><td>beta</td><td>3</td><td>6.0</td></tr><tr><td>beta</td><td>4</td><td>7.0</td></tr><tr><td>beta</td><td>5</td><td>8.0</td></tr><tr><td>beta</td><td>6</td><td>9.0</td></tr><tr><td>beta</td><td>7</td><td>10.0</td></tr><tr><td>beta</td><td>8</td><td>11.0</td></tr><tr><td>beta</td><td>9</td><td>12.0</td></tr></tbody></table>
+```
+
 :::
 
 

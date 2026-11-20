@@ -22,6 +22,8 @@
 
 (def iris (nu/dataset :iris))
 
+(nu/data-table iris)
+
 (plot/render-image {:data iris
                     :mapping {:x :sepal-length :y :sepal-width :color :species}
                     :charts [(chart/scatter)]
@@ -65,6 +67,8 @@
 
 (def series (for [[i g] (map-indexed vector ["alpha" "beta" "gamma"]) t (range 10)]
               {:g g :t t :v (+ (* t (inc i) 0.5) (* 3 i))}))
+
+(nu/data-table series)
 
 (plot/render-image {:data series
                     :mapping {:x :t :y :v :color :g}

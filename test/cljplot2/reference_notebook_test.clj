@@ -207,9 +207,9 @@
     (merge (when (map? plot) (:options plot)) (nth call 2 nil))))
 
 (def ^:private setup-heads
-  "Heads of top-level forms that show nothing of an option: namespace, definitions, source notes, wadogo kind docs and
-  tables."
-  #{'ns 'def 'defn 'notebook-utils/source-note 'notebook-utils/scale-kind-doc options-table})
+  "Heads of top-level forms that show nothing of an option: namespace, definitions, source notes, wadogo kind docs,
+  data tables and option tables."
+  #{'ns 'def 'defn 'notebook-utils/source-note 'notebook-utils/scale-kind-doc 'notebook-utils/data-table options-table})
 
 (defn- illustration?
   "Is top-level `form` an example - a call rendering a chart or computing a value shown - rather than setup (see
@@ -240,6 +240,48 @@
     (is (= [] (tables-without-example []))))
   (testing "boundary: a literal or a bare symbol isn't an example"
     (is (= [:a] (tables-without-example [(list options-table :a) :kw "text" 42 'sym])))))
+
+(defn- data-value?
+  "Is `v` data a page shows - rows (a non-empty sequence of maps) or columns (a map of equal-length non-empty
+  sequences)?"
+  [v]
+  (or (and (sequential? v) (seq v) (every? map? (take 20 v)))
+      (and (map? v) (seq v) (every? sequential? (vals v)) (pos? (count (first (vals v))))
+           (apply = (map count (vals v))))))
+
+(defn- data-vars
+  "Names (symbols) of the vars of notebook namespace `ns-sym` (loaded here) holding data."
+  [ns-sym]
+  (require ns-sym)
+  (set (for [[n v] (ns-publics ns-sym) :when (data-value? @v)] n)))
+
+(defn- defs-without-table
+  "Names of the `defs` among top-level `forms` not immediately followed by `(nu/data-table name)`."
+  [forms defs]
+  (vec (for [[form next-form] (partition 2 1 (concat forms [nil]))
+             :when (and (seq? form) (= 'def (first form)) (contains? defs (second form)))
+             :when (not (and (seq? next-form) (= 'notebook-utils/data-table (first next-form))
+                             (= (second form) (second next-form))))]
+         (second form))))
+
+(deftest data-tables-test
+  (doseq [[page forms] (notebook-forms)
+          :let [ns-sym (second (first (filter #(and (seq? %) (= 'ns (first %))) forms)))]]
+    (testing (str page ": every dataset or data defined is shown right after its definition (nu/data-table)")
+      (is (= [] (defs-without-table forms (data-vars ns-sym)))))))
+
+(deftest data-tables-rule-test
+  (testing "boundary: a table right after the def; a table later; none; a non-data def"
+    (is (= [] (defs-without-table ['(def d [{:a 1}]) '(notebook-utils/data-table d)] #{'d})))
+    (is (= ['d] (defs-without-table ['(def d [{:a 1}]) '(f) '(notebook-utils/data-table d)] #{'d})))
+    (is (= ['d] (defs-without-table ['(def d [{:a 1}])] #{'d})))
+    (is (= [] (defs-without-table ['(def p {:charts []})] #{}))))
+  (testing "data values: rows, columns; not plots, keyword lists or empty data"
+    (is (data-value? [{:a 1}]))
+    (is (data-value? {:t (range 3) :v [1 2 3]}))
+    (is (not (data-value? {:data [{:a 1}] :charts []})))
+    (is (not (data-value? [:a :b])))
+    (is (not (data-value? [])))))
 
 (deftest conventions-test
   (doseq [[page forms] (notebook-forms)]
