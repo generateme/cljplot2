@@ -10,16 +10,18 @@
 
   A row: `{:key k :path [k ...] :type text :required? bool :default v :default-doc text :description text
   :fragment kw}` - `:path` is longer than `[k]` for the entries of nested closed maps (each nested map also has its
-  own row); `:default` / `:default-doc` / `:description` / `:fragment` are `nil` when absent. Entries rejecting every
+  own row); `:default` / `:default-doc` / `:description` / `:fragment` are `nil` when absent. `:default` is the value
+  used when the option is absent (a style row's comes from the theme), `:default-doc` the text of a computed default;
+  only a style row may have both - the theme value and how the chart applies it (e.g. only to grouped lines). Entries rejecting every
   value ([[cljplot2.schema/forbidden]]) aren't options and have no row."
   (:require [clojure.string :as str]
             [malli.core :as malli]
-            [cljplot2.chart.cloud :as cloud]
             [cljplot2.data.annotation :as annotation]
             [cljplot2.data.cells :as cells]
             [cljplot2.data.field :as field]
             [cljplot2.data.hierarchy :as hierarchy]
             [cljplot2.data.rows :as rows]
+            [cljplot2.data.space3d :as space]
             [cljplot2.data.strip :as strip]
             [cljplot2.graphics.curve :as curve]
             [cljplot2.graphics.draw :as draw]
@@ -59,7 +61,7 @@
            :entries field/options}
    :hierarchy-labels {:title "Hierarchy labels" :doc "group and leaf labels of the hierarchy charts (treemap, partition, pack)"
                       :entries hierarchy/label-entries}
-   :frame-3d {:title "3D frame" :doc "view, proportions, frame and domains of a 3D chart" :entries cloud/frame-options}
+   :frame-3d {:title "3D frame" :doc "view, proportions, frame and domains of a 3D chart" :entries space/frame-options}
    :line-style {:title "Line style" :doc "colour, width and dash of a line" :entries polyline/style-entries}
    :pattern {:title "Fill patterns" :doc "the pattern drawn over a filled mark" :entries draw/pattern-style-entries}
    :text-style {:title "Text style" :doc "font, size, colour, padding, alignment and background of a text"

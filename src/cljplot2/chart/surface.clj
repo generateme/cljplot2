@@ -63,7 +63,7 @@
              (-> [:map {:closed true}]
                  (into style-entries)
                  (into data/common-options)
-                 (into cloud/frame-options)
+                 (into space/frame-options)
                  (conj (schema/optional :style {:description "mesh drawing: :surface (filled quads), :wireframe (quad outlines) or :both"
                                                 :default :surface}
                                         [:enum :surface :wireframe :both])

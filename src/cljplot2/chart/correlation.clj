@@ -46,8 +46,8 @@
 
 (def ^:private style-entries
   [(schema/optional :color {:description "one fixed glyph colour, the :number text's too"
-                             :cljplot2/default-doc (str "r on a diverging colour scale; the :number text in the :correlation text role's "
-                                                        "colour; group lines in their group colours")}
+                             :cljplot2/default-doc (str "the theme's, for the glyphs of a grouped chart; ungrouped glyphs show r on a "
+                                                        "diverging colour scale, the :number text takes the :correlation text role's colour")}
                     schema/color)
    (schema/optional :stroke-color {:description "outline colour: a colour, :none or :darker (the darkened fill)"} draw/stroke-color)
    (schema/optional :stroke-width {:description "outline width in pixels"} schema/non-neg)])

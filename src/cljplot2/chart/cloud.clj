@@ -61,26 +61,6 @@
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
-(def frame-options
-  "Option entries shared by the 3D charts: view, box proportions, frame, axis titles, explicit domains."
-  (schema/in-fragment
-   :frame-3d
-   [(schema/optional :view {:description "the eye's position: azimuth, elevation and perspective distance"} space/view-schema)
-    (schema/optional :aspect {:description "box proportions [ax ay az]" :default [1 1 1]} space/aspect-schema)
-    (schema/nilable :box {:description "draw the box: hidden edges dashed and a floor grid behind the data, visible edges over it"
-                          :default true}
-                    schema/bool)
-    (schema/nilable :axes {:description "draw ticks, tick labels and axis titles" :default true} schema/bool)
-    (schema/nilable :axis-titles {:description "axis titles (nil - none)" :cljplot2/default-doc "the mapped column names"}
-                    [:map {:closed true}
-                     (schema/optional :x {:description "x axis title"} any?)
-                     (schema/optional :y {:description "y axis title"} any?)
-                     (schema/optional :z {:description "z axis title"} any?)])
-    (schema/optional :domain {:description "explicit data domains (needed for each of several 3D charts in one plot)"
-                              :cljplot2/default-doc "the data's domains"}
-                     space/domains-schema)
-    (schema/optional :reverse {:description "axes running the other way (mirrors the scene)"} [:set [:enum :x :y :z]])]))
-
 (def distance-rule
   "Rule (see [[cljplot2.schema/with-rules]]) of the 3D charts' options: a `:view` `:distance` putting the eye within
   the sphere around the box of `:aspect` is an error at `[:view :distance]`
@@ -98,7 +78,7 @@
              (-> [:map {:closed true}]
                  (into scatter/style-entries)
                  (into data/common-options)
-                 (into frame-options)
+                 (into space/frame-options)
                  (conj (schema/optional :type {:description (str "marks: :points, :spikes (a line from :base to each point), "
                                                                  ":bars (a box per row from :base to z) or :none (only :projections)")
                                                :default :points}

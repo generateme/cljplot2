@@ -71,6 +71,10 @@
       (let [style-keys (set (map :key (describe/schema-rows style)))]
         (is (= [] (vec (keep #(when (and (contains? style-keys (:key %)) (nil? (:default %)) (nil? (:default-doc %))) (:key %))
                              (describe/options (ctor))))))))
+    (testing (str kind ": only style rows have both a default and a default text (the theme value and how it applies)")
+      (let [style-keys (set (map :key (describe/schema-rows style)))]
+        (is (every? #(and (= 1 (count (:path %))) (contains? style-keys (:key %)))
+                    (filter #(and (some? (:default %)) (:default-doc %)) (describe/options (ctor)))))))
     (testing (str kind ": fragments are registered")
       (is (every? #(contains? describe/fragments %) (keep :fragment (describe/options (ctor))))))))
 

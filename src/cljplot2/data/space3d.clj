@@ -52,6 +52,26 @@
                                    [(fn [[a b]] (when (== (double a) (double b)) "domain should be two different numbers"))])))
         [:x :y :z]))
 
+(def frame-options
+  "Option entries shared by the 3D charts: view, box proportions, frame, axis titles, explicit domains."
+  (schema/in-fragment
+   :frame-3d
+   [(schema/optional :view {:description "the eye's position: azimuth, elevation and perspective distance"} view-schema)
+    (schema/optional :aspect {:description "box proportions [ax ay az]" :default [1 1 1]} aspect-schema)
+    (schema/nilable :box {:description "draw the box: hidden edges dashed and a floor grid behind the data, visible edges over it"
+                          :default true}
+                    schema/bool)
+    (schema/nilable :axes {:description "draw ticks, tick labels and axis titles" :default true} schema/bool)
+    (schema/nilable :axis-titles {:description "axis titles (nil - none)" :cljplot2/default-doc "the mapped column names"}
+                    [:map {:closed true}
+                     (schema/optional :x {:description "x axis title"} any?)
+                     (schema/optional :y {:description "y axis title"} any?)
+                     (schema/optional :z {:description "z axis title"} any?)])
+    (schema/optional :domain {:description "explicit data domains (needed for each of several 3D charts in one plot)"
+                              :cljplot2/default-doc "the data's domains"}
+                     domains-schema)
+    (schema/optional :reverse {:description "axes running the other way (mirrors the scene)"} [:set [:enum :x :y :z]])]))
+
 (def axes [:x :y :z])
 
 (defn box-aspect

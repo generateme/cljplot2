@@ -15,9 +15,9 @@
   (as for `chart/rule`): a mapped `:color` is the fill (any color scale kind, e.g. identity colors for swatches) and
   gives legend keys; `:shape` / `:size` only group.
 
-  Options (style defaults from theme `[:chart :rect]`): `:fill`, `:stroke-color` (a color, `:none` or
-  `:darker` - the darkened fill), `:stroke-width`, `:alpha` (the fill's alpha, a fraction; default - colors as they
-  are), `:corner-radius` (pixels, every corner rounded, clamped to half the shorter side; polar - the annular
+  Options (style defaults from theme `[:chart :rect]`): `:fill`, `:stroke-color` (a color, `:none` or `:darker` -
+  the darkened fill, none without a fill), `:stroke-width`, `:alpha` (the fill's alpha, a fraction; default - colors
+  as they are), `:corner-radius` (pixels, every corner rounded, clamped to half the shorter side; polar - the annular
   sector's corners; default 0), `:band-width` (the fraction of its band step a level end covers, centred, `(0 1]`;
   default 1 - the whole step, rects of neighbouring levels touch), `:extent`, plus `:data` / `:mapping`."
   (:require [clojure2d.color :as c]
@@ -38,7 +38,8 @@
 
 (def ^:private style-entries
   (into [(schema/optional :fill {:description "rect fill colour (a mapped :color wins)"} schema/color)
-         (schema/optional :stroke-color {:description "outline colour: a colour, :none or :darker (the darkened fill)"} draw/stroke-color)
+         (schema/optional :stroke-color {:description "outline colour: a colour, :none or :darker (the darkened fill; no outline without a fill)"}
+                          draw/stroke-color)
          (schema/optional :stroke-width {:description "outline width in pixels"} schema/non-neg)]
         draw/pattern-style-entries))
 
