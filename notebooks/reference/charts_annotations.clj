@@ -43,7 +43,7 @@
                     :labels {:x "eruptions [min]" :y "waiting [min]"}}
                    {:width 600 :height 360})
 
-;; Its options: literal positions - one or a vector of them - and sloped lines:
+;; Its options: literal positions - one or a vector of them, across x (`:x`) or along it (`:y`) - and sloped lines:
 
 (nu/options-table (describe/own-rows (describe/options (chart/rule))))
 
@@ -54,9 +54,12 @@
                                    :charts [(chart/scatter)
                                             (chart/rule {:slope [10.7 12] :intercept [33.5 25] :width 2
                                                          :color [200 80 40]})]
-                                   :labels {:title ":slope [10.7 12] :intercept [33.5 25]"}}]
-                                 {:columns 2})
-                   {:width 900 :height 330})
+                                   :labels {:title ":slope, :intercept (two lines)"}}
+                                  {:data faithful :mapping {:x :eruptions :y :waiting}
+                                   :charts [(chart/scatter) (chart/rule {:y [55 80] :width 2 :color [40 140 60]})]
+                                   :labels {:title ":y [55 80]"}}]
+                                 {:columns 3})
+                   {:width 1000 :height 330})
 
 (nu/shared-groups (describe/options (chart/rule)))
 
@@ -93,9 +96,9 @@
 
 (plot/render-image (plot/arrange [{:data faithful :mapping {:x :eruptions :y :waiting}
                                    :charts [(chart/rect {:y [[nil 60] [75 nil]] :fill [[69 117 180] [200 80 40]] :alpha 0.2
-                                                         :stroke-color :darker})
+                                                         :stroke-color :darker :stroke-width 2})
                                             (chart/scatter)]
-                                   :labels {:title ":y intervals, :fill per interval"}}
+                                   :labels {:title ":y intervals, :fill per interval, :stroke-width 2"}}
                                   {:data levels-data :mapping {:x :k :y :v}
                                    :charts [(chart/rect {:x ["b" "c"] :band-width 0.6 :fill [255 200 0 110]})
                                             (chart/bar)]
@@ -131,7 +134,7 @@
 (nu/options-table (describe/own-rows (describe/options (chart/text))))
 
 (def growth (for [g ["alpha" "beta" "gamma"] t (range 10)]
-              {:g g :t t :v (* t (case g "alpha" 1.0 "beta" 1.6 "gamma" 0.6))}))
+              {:g g :t t :v (+ (case g "alpha" 2.0 "beta" 0.0 "gamma" 9.0) (* t (case g "alpha" 1.0 "beta" 1.6 "gamma" 0.4)))}))
 
 (nu/data-table growth)
 
@@ -149,6 +152,38 @@
                                    :legend false}]
                                  {:columns 2})
                    {:width 900 :height 330})
+
+
+;; End labels of the first row per group instead (`:select :first`), and what a rotated label's `:anchor` points
+;; into: the rotated label's bounding box (`:box`, the default) or the text itself, turned about the anchor point
+;; (`:text`) - each label turned upright, anchored at its left top on the red point: the box's top left corner,
+;; or the start of the text's top edge:
+
+(def anchor-points [{:x 1 :y 1 :label "frame"}])
+
+(nu/data-table anchor-points)
+
+(plot/render-image (plot/arrange [{:data growth :mapping {:x :t :y :v :color :g}
+                                   :charts [(chart/line)
+                                            (chart/text {:mapping {:x :t :y :v :color :g :label :g}
+                                                         :select :first :anchor [:right :middle] :offset [-5 0]
+                                                         :reserve-room :anchor})]
+                                   :labels {:title ":select :first"}
+                                   :legend false}
+                                  {:data anchor-points :mapping {:x :x :y :y}
+                                   :charts [(chart/scatter {:color :red})
+                                            (chart/text {:mapping {:x :x :y :y :label :label} :rotation -90 :size 18
+                                                         :anchor [:left :top] :anchor-frame :box})]
+                                   :scales {:x {:domain [0 2]} :y {:domain [0 2]}}
+                                   :labels {:title ":anchor-frame :box"}}
+                                  {:data anchor-points :mapping {:x :x :y :y}
+                                   :charts [(chart/scatter {:color :red})
+                                            (chart/text {:mapping {:x :x :y :y :label :label} :rotation -90 :size 18
+                                                         :anchor [:left :top] :anchor-frame :text})]
+                                   :scales {:x {:domain [0 2]} :y {:domain [0 2]}}
+                                   :labels {:title ":anchor-frame :text"}}]
+                                 {:columns 3})
+                   {:width 1000 :height 320})
 
 (nu/shared-groups (describe/options (chart/text)))
 
@@ -244,5 +279,12 @@
                                    :labels {:title ":y-limits [-5 5]"}}]
                                  {:columns 3})
                    {:width 1000 :height 300})
+
+
+;; The padding of the sampled span: none on x (the curve meets the panel's sides), a quarter of the span on y:
+
+(plot/render-image {:charts [(chart/function {:f #(Math/sin %) :domain [0 6.3] :padding {:x [0 0] :y [0.25 0.25]}})]
+                    :labels {:title ":padding {:x [0 0] :y [0.25 0.25]}"}}
+                   {:width 500 :height 280})
 
 (nu/shared-groups (describe/options (chart/function)))

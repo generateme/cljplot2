@@ -194,6 +194,30 @@ or each by its name) and whether the root is drawn:
 :::
 
 
+The borders in an icicle: the default thin white lines, and thick dark ones:
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange [{:data budget
+                                   :mapping {:hierarchy [:dept :team] :value :cost}
+                                   :charts [(chart/partition {:order :value})]
+                                   :labels {:title ":order :value (default)"}}
+                                  {:data budget
+                                   :mapping {:hierarchy [:dept :team] :value :cost}
+                                   :charts [(chart/partition {:border-color [40 40 40] :border-width 3})]
+                                   :labels {:title ":border-color, :border-width 3"}}]
+                                 {:columns 2})
+                   {:width 1000 :height 360})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_part_of_whole_files/image4.png)
+:::
+
+
 Shared options: [Fill patterns](reference.shared_options.html#fill-patterns) (`:pattern` `:pattern-color`); [Data and mapping](reference.shared_options.html#data-and-mapping) (`:data` `:mapping`); [Hierarchy labels](reference.shared_options.html#hierarchy-labels) (`:group-labels` `:leaf-labels`).
 
 
@@ -222,7 +246,7 @@ Each leaf a circle of area proportional to its value, packed inside the circle o
 
 
 ::: {.clay-image}
-![](reference.charts_part_of_whole_files/image4.png)
+![](reference.charts_part_of_whole_files/image5.png)
 :::
 
 
@@ -256,7 +280,36 @@ drawing (the layout unchanged - here the group circles, depth 1):
 
 
 ::: {.clay-image}
-![](reference.charts_part_of_whole_files/image5.png)
+![](reference.charts_part_of_whole_files/image6.png)
+:::
+
+
+The packing order, here of the budget rows reversed (smallest first): siblings by value (largest first) or in
+data order; and wider borders:
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange [{:data (reverse budget)
+                                   :mapping {:hierarchy [:dept :team] :value :cost}
+                                   :charts [(chart/pack {:order :value})]
+                                   :labels {:title ":order :value (default)"}}
+                                  {:data (reverse budget)
+                                   :mapping {:hierarchy [:dept :team] :value :cost}
+                                   :charts [(chart/pack {:order :data})]
+                                   :labels {:title ":order :data"}}
+                                  {:data budget
+                                   :mapping {:hierarchy [:dept :team] :value :cost}
+                                   :charts [(chart/pack {:border-color [40 40 40] :border-width 3})]
+                                   :labels {:title ":border-width 3"}}]
+                                 {:columns 3})
+                   {:width 1000 :height 360})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_part_of_whole_files/image7.png)
 :::
 
 
@@ -306,7 +359,7 @@ A grid of cells (10 × 10 by default), each category taking a share of the cells
 
 
 ::: {.clay-image}
-![](reference.charts_part_of_whole_files/image6.png)
+![](reference.charts_part_of_whole_files/image8.png)
 :::
 
 
@@ -347,7 +400,7 @@ so the cell count follows the values (here one cell per 2 units, 5 columns wide)
 
 
 ::: {.clay-image}
-![](reference.charts_part_of_whole_files/image7.png)
+![](reference.charts_part_of_whole_files/image9.png)
 :::
 
 
@@ -399,7 +452,7 @@ an item and a set it belongs to.
 
 
 ::: {.clay-image}
-![](reference.charts_part_of_whole_files/image8.png)
+![](reference.charts_part_of_whole_files/image10.png)
 :::
 
 
@@ -438,7 +491,31 @@ labels - a function of `{:sets :size :share}` writes a region's text:
 
 
 ::: {.clay-image}
-![](reference.charts_part_of_whole_files/image9.png)
+![](reference.charts_part_of_whole_files/image11.png)
+:::
+
+
+Without set names, and with thick outlines in the darkened set colours:
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange [{:data memberships
+                                   :mapping {:set :club :item :member}
+                                   :charts [(chart/venn {:set-labels false})]
+                                   :labels {:title ":set-labels false"}}
+                                  {:data memberships
+                                   :mapping {:set :club :item :member}
+                                   :charts [(chart/venn {:border-width 4})]
+                                   :labels {:title ":border-width 4"}}]
+                                 {:columns 2})
+                   {:width 900 :height 380})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_part_of_whole_files/image12.png)
 :::
 
 

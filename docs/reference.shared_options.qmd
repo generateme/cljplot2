@@ -27,8 +27,10 @@ group with its title.
   (:require [fastmath.random :as r]
             [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
+            [cljplot2.data.levels :as levels]
             [cljplot2.data.tree :as tree]
             [cljplot2.describe :as describe]
+            [cljplot2.schema :as schema]
             [notebook-utils :as nu]))
 ```
 :::
@@ -83,6 +85,25 @@ Data: Edgar Anderson's iris measurements, R datasets package `iris` (Anderson 19
 
 ```{=html}
 <table class="table table-hover table-responsive clay-table"><thead><tr><th>sepal-length</th><th>sepal-width</th><th>petal-length</th><th>petal-width</th><th>species</th></tr></thead><tbody><tr><td>5.1</td><td>3.5</td><td>1.4</td><td>0.2</td><td>setosa</td></tr><tr><td>4.9</td><td>3</td><td>1.4</td><td>0.2</td><td>setosa</td></tr><tr><td>4.7</td><td>3.2</td><td>1.3</td><td>0.2</td><td>setosa</td></tr><tr><td>4.6</td><td>3.1</td><td>1.5</td><td>0.2</td><td>setosa</td></tr><tr><td>5</td><td>3.6</td><td>1.4</td><td>0.2</td><td>setosa</td></tr><tr><td>5.4</td><td>3.9</td><td>1.7</td><td>0.4</td><td>setosa</td></tr><tr><td>4.6</td><td>3.4</td><td>1.4</td><td>0.3</td><td>setosa</td></tr><tr><td>5</td><td>3.4</td><td>1.5</td><td>0.2</td><td>setosa</td></tr><tr><td>4.4</td><td>2.9</td><td>1.4</td><td>0.2</td><td>setosa</td></tr><tr><td>4.9</td><td>3.1</td><td>1.5</td><td>0.1</td><td>setosa</td></tr><tr><td>5.4</td><td>3.7</td><td>1.5</td><td>0.2</td><td>setosa</td></tr><tr><td>4.8</td><td>3.4</td><td>1.6</td><td>0.2</td><td>setosa</td></tr><tr><td>4.8</td><td>3</td><td>1.4</td><td>0.1</td><td>setosa</td></tr><tr><td>4.3</td><td>3</td><td>1.1</td><td>0.1</td><td>setosa</td></tr><tr><td>5.8</td><td>4</td><td>1.2</td><td>0.2</td><td>setosa</td></tr><tr><td>5.7</td><td>4.4</td><td>1.5</td><td>0.4</td><td>setosa</td></tr><tr><td>5.4</td><td>3.9</td><td>1.3</td><td>0.4</td><td>setosa</td></tr><tr><td>5.1</td><td>3.5</td><td>1.4</td><td>0.3</td><td>setosa</td></tr><tr><td>5.7</td><td>3.8</td><td>1.7</td><td>0.3</td><td>setosa</td></tr><tr><td>5.1</td><td>3.8</td><td>1.5</td><td>0.3</td><td>setosa</td></tr></tbody></table>
+```
+
+:::
+
+
+Data: Old Faithful geyser eruptions, R datasets package `faithful` (Härdle 1991; Azzalini & Bowman 1990); licence: Part of R (GPL-2 | GPL-3).
+
+
+::: {.sourceClojure}
+```clojure
+(def faithful (nu/dataset :faithful))
+```
+:::
+
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>eruptions</th><th>waiting</th></tr></thead><tbody><tr><td>3.6</td><td>79</td></tr><tr><td>1.8</td><td>54</td></tr><tr><td>3.333</td><td>74</td></tr><tr><td>2.283</td><td>62</td></tr><tr><td>4.533</td><td>85</td></tr><tr><td>2.883</td><td>55</td></tr><tr><td>4.7</td><td>88</td></tr><tr><td>3.6</td><td>85</td></tr><tr><td>1.95</td><td>51</td></tr><tr><td>4.35</td><td>85</td></tr><tr><td>1.833</td><td>54</td></tr><tr><td>3.917</td><td>84</td></tr><tr><td>4.2</td><td>78</td></tr><tr><td>1.75</td><td>47</td></tr><tr><td>4.7</td><td>83</td></tr><tr><td>2.167</td><td>52</td></tr><tr><td>1.75</td><td>62</td></tr><tr><td>4.8</td><td>84</td></tr><tr><td>1.6</td><td>52</td></tr><tr><td>4.25</td><td>79</td></tr></tbody></table>
 ```
 
 :::
@@ -188,6 +209,26 @@ mapped aesthetic wins over the fixed value.
 :::
 
 
+Every built-in dash style (a dash may also be a vector of dash and gap lengths, as above):
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image {:charts (vec (mapcat (fn [i d]
+                                           [(chart/rule {:y i :dash d :width 2})
+                                            (chart/text {:x 0 :y i :text (str d) :anchor [:left :bottom]})])
+                                         (range 1 100) (:dash describe/attribute-values)))
+                    :scales {:x {:domain [0 1] :axis false} :y {:domain [0 9] :reverse true :axis false}}}
+                   {:width 500 :height 320})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.shared_options_files/image3.png)
+:::
+
+
 
 ### Curves
 
@@ -235,7 +276,55 @@ drawing.
 
 
 ::: {.clay-image}
-![](reference.shared_options_files/image3.png)
+![](reference.shared_options_files/image4.png)
+:::
+
+
+Every interpolation method (`schema/interpolation-methods`) through the same points, with default parameters -
+most pass through them or smooth them; `:cir` and `:pava` fit a monotone step, `:kriging` a constant, and `:gp` /
+`:rbf` use a kernel too narrow for points this far apart (their `:interpolator-params` set it):
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange (for [interpolator (sort schema/interpolation-methods)]
+                                   {:data points
+                                    :mapping {:x :x :y :y}
+                                    :charts [(chart/line {:interpolator interpolator}) (chart/scatter {:size 4})]
+                                    :labels {:title (str interpolator)}})
+                                 {:columns 4})
+                   {:width 1000 :height 800})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.shared_options_files/image5.png)
+:::
+
+
+Without an interpolator, `:curve` draws a smooth path through the points in their order - also a closed or
+looping one (`:parametric`, a Catmull-Rom curve; `:bezier`, bezier pieces); `:sample-step` sets how densely a
+curve is sampled (here coarse, to show the samples):
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange (for [[title opts] [[":curve :parametric" {:curve :parametric}]
+                                                     [":curve :bezier" {:curve :bezier}]
+                                                     [":sample-step 25 (cubic)" {:interpolator :cubic :sample-step 25}]]]
+                                   {:data points
+                                    :mapping {:x :x :y :y}
+                                    :charts [(chart/line opts) (chart/scatter {:size 4})]
+                                    :labels {:title title}})
+                                 {:columns 3})
+                   {:width 1000 :height 260})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.shared_options_files/image6.png)
 :::
 
 
@@ -266,7 +355,7 @@ A pattern drawn over filled marks (bars, areas, boxes, tiles of hierarchies ...)
 
 
 ::: {.clay-image}
-![](reference.shared_options_files/image4.png)
+![](reference.shared_options_files/image7.png)
 :::
 
 
@@ -296,7 +385,7 @@ Rounded bar corners: all of them, or only the end away from the baseline.
 
 
 ::: {.clay-image}
-![](reference.shared_options_files/image5.png)
+![](reference.shared_options_files/image8.png)
 :::
 
 
@@ -332,7 +421,50 @@ Where the items sit across the value axis, how wide, and which axis holds the le
 
 
 ::: {.clay-image}
-![](reference.shared_options_files/image6.png)
+![](reference.shared_options_files/image9.png)
+:::
+
+
+Without levels an item sits by `:place`: across the panel's middle, below the data (`:bottom`), at the panel's
+edge, or at a value of the other axis (`{:at v}`) - here a box of the eruption times over the scatter, `:width`
+0.15 of the panel:
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange (for [place [:center :bottom :edge {:at 60}]]
+                                   {:data faithful
+                                    :mapping {:x :eruptions :y :waiting}
+                                    :charts [(chart/scatter {:size 4}) (chart/box {:place place :width 0.15 :mapping {:y nil}})]
+                                    :labels {:title (str ":place " place)}})
+                                 {:columns 2})
+                   {:width 900 :height 600})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.shared_options_files/image10.png)
+:::
+
+
+`:level-axis` names the axis of the levels - needed when both axes or neither are categorical; here the rounded
+petal widths on y (0 to 3), declared categorical, are the levels, a strip of sepal lengths at each:
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image {:data iris
+                    :mapping {:x :sepal-length :y (levels/categorical #(Math/round (double (:petal-width %))))}
+                    :charts [(chart/stripplot {:level-axis :y :jitter 0.3 :rng (r/rng :mersenne 5)})]
+                    :labels {:x "sepal length" :y "petal width, rounded"}}
+                   {:width 500 :height 280})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.shared_options_files/image11.png)
 :::
 
 
@@ -363,7 +495,7 @@ Groups of one level share its band: side by side (`:dodge`, with a gap), on top 
 
 
 ::: {.clay-image}
-![](reference.shared_options_files/image7.png)
+![](reference.shared_options_files/image12.png)
 :::
 
 
@@ -393,7 +525,7 @@ Each item's row count written past its largest value.
 
 
 ::: {.clay-image}
-![](reference.shared_options_files/image8.png)
+![](reference.shared_options_files/image13.png)
 :::
 
 
@@ -425,7 +557,31 @@ Two groups on the two sides of the value axis, e.g. a population pyramid.
 
 
 ::: {.clay-image}
-![](reference.shared_options_files/image9.png)
+![](reference.shared_options_files/image14.png)
+:::
+
+
+The same mirroring upright, and on a range chart (the second group's intervals below the axis):
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange [{:data counts
+                                   :mapping {:x :k :y :v :color :g}
+                                   :charts [(chart/bar {:mirror :color})]
+                                   :labels {:title "bar, :mirror :color"}}
+                                  {:data iris
+                                   :mapping {:x :species :y :sepal-length :color #(if (< (:petal-width %) 1.3) "narrow" "wide")}
+                                   :charts [(chart/extent {:mirror :color})]
+                                   :labels {:title "extent, :mirror :color"}}]
+                                 {:columns 2})
+                   {:width 900 :height 300})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.shared_options_files/image15.png)
 :::
 
 
@@ -457,7 +613,7 @@ Histograms and densities over a categorical axis - one row per level, overlappin
 
 
 ::: {.clay-image}
-![](reference.shared_options_files/image10.png)
+![](reference.shared_options_files/image16.png)
 :::
 
 
@@ -492,7 +648,7 @@ binning the same points:
 
 
 ::: {.clay-image}
-![](reference.shared_options_files/image11.png)
+![](reference.shared_options_files/image17.png)
 :::
 
 
@@ -525,7 +681,7 @@ The field as a function of a point over a domain ...
 
 
 ::: {.clay-image}
-![](reference.shared_options_files/image12.png)
+![](reference.shared_options_files/image18.png)
 :::
 
 
@@ -555,7 +711,7 @@ The field as a function of a point over a domain ...
 
 
 ::: {.clay-image}
-![](reference.shared_options_files/image13.png)
+![](reference.shared_options_files/image19.png)
 :::
 
 
@@ -583,7 +739,7 @@ The field as a function of a point over a domain ...
 
 
 ::: {.clay-image}
-![](reference.shared_options_files/image14.png)
+![](reference.shared_options_files/image20.png)
 :::
 
 
@@ -632,7 +788,7 @@ Group and leaf labels of treemaps, partitions and circle packings: off, on, or a
 
 
 ::: {.clay-image}
-![](reference.shared_options_files/image15.png)
+![](reference.shared_options_files/image21.png)
 :::
 
 
@@ -667,7 +823,7 @@ The eye sits at an azimuth and elevation, at a perspective distance; the box has
 
 
 ::: {.clay-image}
-![](reference.shared_options_files/image16.png)
+![](reference.shared_options_files/image22.png)
 :::
 
 
@@ -697,7 +853,7 @@ The box, the ticks and the axis titles.
 
 
 ::: {.clay-image}
-![](reference.shared_options_files/image17.png)
+![](reference.shared_options_files/image23.png)
 :::
 
 
@@ -727,7 +883,7 @@ Explicit domains - needed when several 3D charts share a plot.
 
 
 ::: {.clay-image}
-![](reference.shared_options_files/image18.png)
+![](reference.shared_options_files/image24.png)
 :::
 
 
@@ -760,7 +916,7 @@ role (Theme chapter).
 
 
 ::: {.clay-image}
-![](reference.shared_options_files/image19.png)
+![](reference.shared_options_files/image25.png)
 :::
 
 
@@ -809,7 +965,7 @@ Title, scales and theme of the plot a builder returns.
 
 
 ::: {.clay-image}
-![](reference.shared_options_files/image20.png)
+![](reference.shared_options_files/image26.png)
 :::
 
 
@@ -839,7 +995,7 @@ The grid of `plot/arrange` (and of a plot's `:arrange`): shape, weights, panel a
 
 
 ::: {.clay-image}
-![](reference.shared_options_files/image21.png)
+![](reference.shared_options_files/image27.png)
 :::
 
 
@@ -889,7 +1045,7 @@ The edge rows' ends, weight and node ids, optional node rows, directedness.
 
 
 ::: {.clay-image}
-![](reference.shared_options_files/image22.png)
+![](reference.shared_options_files/image28.png)
 :::
 
 
@@ -916,7 +1072,7 @@ Node positions of a network: force-directed, a circle, or random.
 
 
 ::: {.clay-image}
-![](reference.shared_options_files/image23.png)
+![](reference.shared_options_files/image29.png)
 :::
 
 
@@ -943,7 +1099,7 @@ Node order, gaps between sectors, the ring's inner radius and the smallest drawn
 
 
 ::: {.clay-image}
-![](reference.shared_options_files/image24.png)
+![](reference.shared_options_files/image30.png)
 :::
 
 
@@ -970,7 +1126,7 @@ Node order along the line.
 
 
 ::: {.clay-image}
-![](reference.shared_options_files/image25.png)
+![](reference.shared_options_files/image31.png)
 :::
 
 
@@ -997,7 +1153,7 @@ Columns, node width, gaps and relaxation of a sankey diagram.
 
 
 ::: {.clay-image}
-![](reference.shared_options_files/image26.png)
+![](reference.shared_options_files/image32.png)
 :::
 
 
@@ -1027,7 +1183,7 @@ The axes (categorical columns) the strands cross, their weights and which axis c
 
 
 ::: {.clay-image}
-![](reference.shared_options_files/image27.png)
+![](reference.shared_options_files/image33.png)
 :::
 
 
@@ -1064,7 +1220,7 @@ A cut into `:k` clusters and a circular layout.
 
 
 ::: {.clay-image}
-![](reference.shared_options_files/image28.png)
+![](reference.shared_options_files/image34.png)
 :::
 
 
@@ -1091,7 +1247,7 @@ Tidy or cluster placement, diagonal or straight (`:line`) links, circular.
 
 
 ::: {.clay-image}
-![](reference.shared_options_files/image29.png)
+![](reference.shared_options_files/image35.png)
 :::
 
 
@@ -1119,7 +1275,7 @@ Edges between the tree's leaves, bent along the tree with strength `:beta`.
 
 
 ::: {.clay-image}
-![](reference.shared_options_files/image30.png)
+![](reference.shared_options_files/image36.png)
 :::
 
 
@@ -1149,7 +1305,7 @@ Step sequences as text (`"home-search-end"`) split into rings of a flow sunburst
 
 
 ::: {.clay-image}
-![](reference.shared_options_files/image31.png)
+![](reference.shared_options_files/image37.png)
 :::
 
 
@@ -1177,7 +1333,7 @@ The lags of the correlogram, the significance level of its bands and which of AC
 
 
 ::: {.clay-image}
-![](reference.shared_options_files/image32.png)
+![](reference.shared_options_files/image38.png)
 :::
 
 
@@ -1207,7 +1363,7 @@ The keys of the series rows, the number and height of the bands and resampling b
 
 
 ::: {.clay-image}
-![](reference.shared_options_files/image33.png)
+![](reference.shared_options_files/image39.png)
 :::
 
 

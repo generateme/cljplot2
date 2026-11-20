@@ -63,7 +63,8 @@
 
 (plot/render-image (plot/arrange [{:data mtcars
                                    :mapping {:x :mpg :y :cyl}
-                                   :charts [(chart/box {:color [230 160 60] :stroke-color :black :shape \x :size 9 :mean true})]
+                                   :charts [(chart/box {:color [230 160 60] :stroke-color :black :stroke-width 2 :shape \x :size 9
+                                                        :mean true})]
                                    :scales {:y {:type :categorical :reverse true}}
                                    :labels {:title "style, :mean true"}}
                                   {:data mtcars
@@ -78,6 +79,21 @@
                                    :labels {:title ":variant :tufte"}}]
                                  {:columns 3})
                    {:width 1000 :height 300})
+
+;; `:padding` - space past the values along the value axis, fractions of their span (default 5% each side):
+
+(plot/render-image (plot/arrange [{:data mtcars
+                                   :mapping {:x :mpg :y :cyl}
+                                   :charts [(chart/box)]
+                                   :scales {:y {:type :categorical :reverse true}}
+                                   :labels {:title "default padding"}}
+                                  {:data mtcars
+                                   :mapping {:x :mpg :y :cyl}
+                                   :charts [(chart/box {:padding {:x [0.4 0.4]}})]
+                                   :scales {:y {:type :categorical :reverse true}}
+                                   :labels {:title ":padding {:x [0.4 0.4]}"}}]
+                                 {:columns 2})
+                   {:width 900 :height 280})
 
 (nu/shared-groups (describe/options (chart/box)))
 
@@ -114,6 +130,61 @@
                                  {:columns 3})
                    {:width 1000 :height 320})
 
+;; The fill and outline, and the density estimate: another kernel, few evaluation points (a coarse outline),
+;; widths by count (`:varwidth`) and the padding:
+
+(plot/render-image (plot/arrange [{:data iris
+                                   :mapping {:x :species :y :petal-length}
+                                   :charts [(chart/violin {:color [230 160 60] :stroke-color :black :stroke-width 2})]
+                                   :labels {:title "fill and outline"}}
+                                  {:data iris
+                                   :mapping {:x :species :y :petal-length}
+                                   :charts [(chart/violin {:kernel :epanechnikov :n 8})]
+                                   :labels {:title ":kernel :epanechnikov, :n 8"}}
+                                  {:data mtcars
+                                   :mapping {:x :cyl :y :mpg}
+                                   :charts [(chart/violin {:varwidth true :padding {:y [0.3 0.3]}})]
+                                   :scales {:x {:type :categorical}}
+                                   :labels {:title ":varwidth, :padding"}}]
+                                 {:columns 3})
+                   {:width 1000 :height 320})
+
+;; Every `:scale` - violins as wide as their slots, of equal areas, or of areas by count (mtcars by gears: 15, 12
+;; and 5 cars - the five-gear violin shrinks):
+
+(plot/render-image (plot/arrange [{:data mtcars
+                                   :mapping {:x :gear :y :mpg}
+                                   :charts [(chart/violin {:scale :width})]
+                                   :scales {:x {:type :categorical}}
+                                   :labels {:title ":scale :width"}}
+                                  {:data mtcars
+                                   :mapping {:x :gear :y :mpg}
+                                   :charts [(chart/violin {:scale :area})]
+                                   :scales {:x {:type :categorical}}
+                                   :labels {:title ":scale :area"}}
+                                  {:data mtcars
+                                   :mapping {:x :gear :y :mpg}
+                                   :charts [(chart/violin {:scale :count})]
+                                   :scales {:x {:type :categorical}}
+                                   :labels {:title ":scale :count"}}]
+                                 {:columns 3})
+                   {:width 1000 :height 300})
+
+;; Every `:inner` mark:
+
+(plot/render-image (plot/arrange [{:data iris :mapping {:x :species :y :petal-length}
+                                   :charts [(chart/violin {:inner :box})] :labels {:title ":inner :box"}}
+                                  {:data iris :mapping {:x :species :y :petal-length}
+                                   :charts [(chart/violin {:inner :quartiles})] :labels {:title ":quartiles"}}
+                                  {:data iris :mapping {:x :species :y :petal-length}
+                                   :charts [(chart/violin {:inner :rug})] :labels {:title ":rug"}}
+                                  {:data iris :mapping {:x :species :y :petal-length}
+                                   :charts [(chart/violin {:inner :points})] :labels {:title ":points"}}
+                                  {:data iris :mapping {:x :species :y :petal-length}
+                                   :charts [(chart/violin {:inner :none})] :labels {:title ":none"}}]
+                                 {:columns 5})
+                   {:width 1000 :height 300})
+
 (nu/shared-groups (describe/options (chart/violin)))
 
 ;; ## stripplot
@@ -141,11 +212,17 @@
                                   {:data iris
                                    :mapping {:x :sepal-length :y :species}
                                    :charts [(chart/stripplot {:jitter 0.8 :size 8 :shape \s :color [200 80 40 90]
+                                                              :stroke-color [120 40 20] :stroke-width 1.5
                                                               :rng (r/rng :mersenne 1)})]
                                    :scales {:y {:reverse true}}
-                                   :labels {:title ":jitter 0.8, squares"}}]
-                                 {:columns 2})
-                   {:width 900 :height 280})
+                                   :labels {:title ":jitter 0.8, outlined squares"}}
+                                  {:data iris
+                                   :mapping {:x :sepal-length :y :species}
+                                   :charts [(chart/stripplot {:padding {:x [0.3 0.3]} :rng (r/rng :mersenne 1)})]
+                                   :scales {:y {:reverse true}}
+                                   :labels {:title ":padding {:x [0.3 0.3]}"}}]
+                                 {:columns 3})
+                   {:width 1000 :height 280})
 
 (nu/shared-groups (describe/options (chart/stripplot)))
 
@@ -161,8 +238,8 @@
                     :legend false}
                    {:width 600 :height 320})
 
-;; Its options: the point style (the size is also the packing diameter), squeezing a wide swarm into its slot and
-;; the packing direction:
+;; Its options: the point style (the size is also the packing diameter), squeezing a wide swarm into its slot,
+;; the packing direction and the padding:
 
 (nu/options-table (describe/own-rows (describe/options (chart/beeswarm))))
 
@@ -181,6 +258,20 @@
                                  {:columns 3})
                    {:width 1000 :height 320})
 
+;; The point style, the default packing (`:across` - points move only across the value axis) and the padding:
+
+(plot/render-image (plot/arrange [{:data iris
+                                   :mapping {:x :species :y :sepal-width}
+                                   :charts [(chart/beeswarm {:color [200 80 40 160] :shape \^ :stroke-color :black
+                                                             :stroke-width 0.5 :pack :across})]
+                                   :labels {:title "triangles, outlined, :pack :across"}}
+                                  {:data iris
+                                   :mapping {:x :species :y :sepal-width}
+                                   :charts [(chart/beeswarm {:padding {:y [0.4 0.4]}})]
+                                   :labels {:title ":padding {:y [0.4 0.4]}"}}]
+                                 {:columns 2})
+                   {:width 900 :height 320})
+
 (nu/shared-groups (describe/options (chart/beeswarm)))
 
 ;; ## dotplot
@@ -194,8 +285,8 @@
                     :charts [(chart/dotplot {:binwidth 1.5})]}
                    {:width 600 :height 280})
 
-;; Its options: the dot style, the binning (density or fixed bins from an origin), where dots sit and how they
-;; stack:
+;; Its options: the dot style, the binning (density or fixed bins from an origin), where dots sit, how they
+;; stack and the padding:
 
 (nu/options-table (describe/own-rows (describe/options (chart/dotplot))))
 
@@ -211,6 +302,25 @@
                                    :mapping {:x :mpg}
                                    :charts [(chart/dotplot {:binwidth 1.5 :at :value})]
                                    :labels {:title ":at :value"}}]
+                                 {:columns 3})
+                   {:width 1000 :height 280})
+
+;; The defaults spelled out (`:dot-density` binning, dots at the bin `:center`, stacked `:up`), then a style - a
+;; fixed dot size, outlined squares - and the padding:
+
+(plot/render-image (plot/arrange [{:data mtcars
+                                   :mapping {:x :mpg}
+                                   :charts [(chart/dotplot {:binwidth 1.5 :method :dot-density :at :center :stack-dir :up})]
+                                   :labels {:title "defaults"}}
+                                  {:data mtcars
+                                   :mapping {:x :mpg}
+                                   :charts [(chart/dotplot {:binwidth 1.5 :size 7 :shape \s :color [230 160 60]
+                                                            :stroke-color :black :stroke-width 1})]
+                                   :labels {:title ":size 7, outlined squares"}}
+                                  {:data mtcars
+                                   :mapping {:x :mpg}
+                                   :charts [(chart/dotplot {:binwidth 1.5 :padding {:x [0.3 0.3]}})]
+                                   :labels {:title ":padding {:x [0.3 0.3]}"}}]
                                  {:columns 3})
                    {:width 1000 :height 280})
 
@@ -240,8 +350,13 @@
                                    :mapping {:x :petal-length :y :species}
                                    :charts [(chart/rug {:color [200 40 40 60] :line-width 3})]
                                    :scales {:y {:reverse true}}
-                                   :labels {:title ":line-width 3"}}]
-                                 {:columns 2})
-                   {:width 900 :height 260})
+                                   :labels {:title ":line-width 3"}}
+                                  {:data iris
+                                   :mapping {:x :petal-length :y :species}
+                                   :charts [(chart/rug {:padding {:x [0.3 0.3]}})]
+                                   :scales {:y {:reverse true}}
+                                   :labels {:title ":padding {:x [0.3 0.3]}"}}]
+                                 {:columns 3})
+                   {:width 1000 :height 260})
 
 (nu/shared-groups (describe/options (chart/rug)))

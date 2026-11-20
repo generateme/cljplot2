@@ -93,7 +93,7 @@ are drawn on top.
 (plot/render-image {:data mtcars
                     :mapping {:x :wt :y :mpg :color (levels/categorical :cyl) :size :hp}
                     :charts [(chart/scatter)]
-                    :scales {:color {:title "cylinders"}}
+                    :scales {:color {:title "cylinders"} :size {:range [5 18]}}
                     :labels {:x "weight [1000 lbs]" :y "miles per gallon"}}
                    {:width 600 :height 380})
 ```
@@ -141,6 +141,33 @@ random offsets separating points on a grid of values (seeded here, so the image 
 :::
 
 
+A mapped `:order` draws points by its values, later ones on top: the most powerful cars over the others
+(ascending) or under them (descending); `:padding` is the room around the data, here none on x:
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange [{:data mtcars
+                                   :mapping {:x :wt :y :mpg :color :hp :order :hp}
+                                   :charts [(chart/scatter {:size 26 :stroke-color :white})]
+                                   :labels {:title ":order :hp, :order-direction :ascending"}
+                                   :legend false}
+                                  {:data mtcars
+                                   :mapping {:x :wt :y :mpg :color :hp :order :hp}
+                                   :charts [(chart/scatter {:size 26 :stroke-color :white :order-direction :descending
+                                                           :padding {:x [0 0] :y [0.05 0.05]}})]
+                                   :labels {:title ":order-direction :descending, :padding x 0"}}]
+                                 {:columns 2 :widths [1 1.2]})
+                   {:width 1000 :height 360})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_points_paths_files/image2.png)
+:::
+
+
 Shared options: [Data and mapping](reference.shared_options.html#data-and-mapping) (`:data` `:mapping`).
 
 
@@ -171,7 +198,7 @@ carry a colour or width along its length. (The dataset's dates are text: the map
 
 
 ::: {.clay-image}
-![](reference.charts_points_paths_files/image2.png)
+![](reference.charts_points_paths_files/image3.png)
 :::
 
 
@@ -227,7 +254,30 @@ follows a mapped `:size`:
 
 
 ::: {.clay-image}
-![](reference.charts_points_paths_files/image3.png)
+![](reference.charts_points_paths_files/image4.png)
+:::
+
+
+The gradient along x instead, and `:stroke-alpha` fading the strokes of overlapping lines:
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange [{:data wave :mapping {:x :t :y :v}
+                                   :charts [(chart/line {:fill-gradient :mpl/viridis :fill-gradient-axis :x})]
+                                   :labels {:title ":fill-gradient-axis :x"}}
+                                  {:data stocks
+                                   :mapping {:x #(java.time.LocalDate/parse (:date %)) :y :price :color :symbol}
+                                   :charts [(chart/line {:width 3 :stroke-alpha 0.4})]
+                                   :labels {:title ":stroke-alpha 0.4"}}]
+                                 {:columns 2 :widths [1 1.4]})
+                   {:width 1000 :height 300})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_points_paths_files/image5.png)
 :::
 
 
@@ -273,16 +323,61 @@ groups combine (the Layering and position chapter shows `:stack` and the streamg
                                    :charts [(chart/line {:sort false})]
                                    :labels {:title ":sort false"}}
                                   {:data spiral :mapping {:x :x :y :v}
+                                   :charts [(chart/line {:sort false :gaps :break :padding {:x [0 0] :y [0 0]}})]
+                                   :labels {:title ":gaps :break, no padding"}}
+                                  {:data spiral :mapping {:x :x :y :v}
                                    :charts [(chart/line {:sort false :gaps :bridge :bridge {:alpha 0.5 :dash :dotted}})]
                                    :labels {:title ":gaps :bridge"}}]
-                                 {:columns 3})
-                   {:width 1000 :height 320})
+                                 {:columns 2})
+                   {:width 900 :height 600})
 ```
 :::
 
 
 ::: {.clay-image}
-![](reference.charts_points_paths_files/image4.png)
+![](reference.charts_points_paths_files/image6.png)
+:::
+
+
+Groups combined by `:position` (`:overlay`, the default, draws each line on its own):
+
+
+::: {.sourceClojure}
+```clojure
+(def streams (for [series ["a" "b" "c"] t (range 25)]
+               {:series series :t t :v (+ 1.5 (Math/sin (+ (* 0.3 t) (* 2 (count series)) (int (first series)))))}))
+```
+:::
+
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>series</th><th>t</th><th>v</th></tr></thead><tbody><tr><td>a</td><td>0</td><td>0.5007931658136463</td></tr><tr><td>a</td><td>1</td><td>0.5571891259213132</td></tr><tr><td>a</td><td>2</td><td>0.6978035734827992</td></tr><tr><td>a</td><td>3</td><td>0.9100758386825973</td></tr><tr><td>a</td><td>4</td><td>1.175044272270521</td></tr><tr><td>a</td><td>5</td><td>1.4690400332167286</td></tr><tr><td>a</td><td>6</td><td>1.7658013557891272</td></tr><tr><td>a</td><td>7</td><td>2.0388194348720936</td></tr><tr><td>a</td><td>8</td><td>2.263706378577581</td></tr><tr><td>a</td><td>9</td><td>2.4203737059941695</td></tr><tr><td>a</td><td>10</td><td>2.494826791358406</td></tr><tr><td>a</td><td>11</td><td>2.4804149622946956</td></tr><tr><td>a</td><td>12</td><td>2.378425584571251</td></tr><tr><td>a</td><td>13</td><td>2.1979690655501094</td></tr><tr><td>a</td><td>14</td><td>1.9551650486306003</td></tr><tr><td>a</td><td>15</td><td>1.6717024935127782</td></tr><tr><td>a</td><td>16</td><td>1.3729022660226193</td></tr><tr><td>a</td><td>17</td><td>1.0854553005796792</td></tr><tr><td>a</td><td>18</td><td>0.8350383785176917</td></tr><tr><td>a</td><td>19</td><td>0.6440204976799755</td></tr></tbody></table>
+```
+
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange [{:data streams :mapping {:x :t :y :v :color :series}
+                                   :charts [(chart/line {:position :stack})] :labels {:title ":stack"} :legend false}
+                                  {:data streams :mapping {:x :t :y :v :color :series}
+                                   :charts [(chart/line {:position :normalize})] :labels {:title ":normalize"} :legend false}
+                                  {:data streams :mapping {:x :t :y :v :color :series}
+                                   :charts [(chart/line {:position :silhouette})] :labels {:title ":silhouette"} :legend false}
+                                  {:data streams :mapping {:x :t :y :v :color :series}
+                                   :charts [(chart/line {:position :wiggle})] :labels {:title ":wiggle"}}]
+                                 {:columns 4 :widths [1 1 1 1.3]})
+                   {:width 1000 :height 280})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_points_paths_files/image7.png)
 :::
 
 
@@ -335,7 +430,7 @@ Arrowheads at the ends of each run and gaps shortening it - e.g. to stop short o
 
 
 ::: {.clay-image}
-![](reference.charts_points_paths_files/image5.png)
+![](reference.charts_points_paths_files/image8.png)
 :::
 
 
@@ -385,7 +480,7 @@ arrowheads and gaps as on lines.
 
 
 ::: {.clay-image}
-![](reference.charts_points_paths_files/image6.png)
+![](reference.charts_points_paths_files/image9.png)
 :::
 
 
@@ -420,7 +515,30 @@ Its options: literal ends (here every segment starts at x = 0, a lollipop stem),
 
 
 ::: {.clay-image}
-![](reference.charts_points_paths_files/image7.png)
+![](reference.charts_points_paths_files/image10.png)
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange [{:data moves
+                                   :mapping {:x :x :y :y :xend :x2}
+                                   :charts [(chart/segment {:yend 4.5 :dash :dashed}) (chart/scatter)]
+                                   :labels {:title ":yend 4.5 (one end for all)"}}
+                                  {:data moves
+                                   :mapping {:x :x :y :y :xend :x2 :yend :y2}
+                                   :charts [(chart/scatter {:size 14})
+                                            (chart/segment {:start-gap 10 :end-gap 10 :padding {:x [0.2 0.2] :y [0.2 0.2]}})]
+                                   :labels {:title ":start-gap 10, :padding 0.2"}}]
+                                 {:columns 2})
+                   {:width 800 :height 320})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_points_paths_files/image11.png)
 :::
 
 
@@ -471,7 +589,7 @@ A filled shape per group through its rows in data order.
 
 
 ::: {.clay-image}
-![](reference.charts_points_paths_files/image8.png)
+![](reference.charts_points_paths_files/image12.png)
 :::
 
 
@@ -498,7 +616,25 @@ Its options: the fill, its opacity and the outline (`:color` - the group's colou
 
 
 ::: {.clay-image}
-![](reference.charts_points_paths_files/image9.png)
+![](reference.charts_points_paths_files/image13.png)
+:::
+
+
+Without a mapped colour every polygon takes `:color`; `:padding` 0 lets the shapes touch the panel's edges:
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image {:data shapes
+                    :mapping {:x :x :y :y :group :shape}
+                    :charts [(chart/polygon {:color [120 160 90] :stroke-color :black :padding {:x [0 0] :y [0 0]}})]}
+                   {:width 500 :height 260})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_points_paths_files/image14.png)
 :::
 
 

@@ -144,6 +144,91 @@ axes themselves and what a missing value does:
 :::
 
 
+The scalings side by side: centred values (`:center`, original units less each variable's mean) and the robust
+scaling - values less a centre over a spread, the median over the median absolute deviation by default, here also
+the mean over a quantile spread (`:robust-spread 0.25` - the interquartile half-range):
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange [{:data iris
+                                   :mapping {:color :species}
+                                   :charts [(chart/parallel {:variables [:sepal-length :sepal-width :petal-length :petal-width]
+                                                             :scaling :center})]
+                                   :labels {:title ":scaling :center" :x nil :y nil}
+                                   :legend false}
+                                  {:data iris
+                                   :mapping {:color :species}
+                                   :charts [(chart/parallel {:variables [:sepal-length :sepal-width :petal-length :petal-width]
+                                                             :scaling :robust :robust-center :median :robust-spread :mad})]
+                                   :labels {:title ":robust, :median / :mad" :x nil :y nil}
+                                   :legend false}
+                                  {:data iris
+                                   :mapping {:color :species}
+                                   :charts [(chart/parallel {:variables [:sepal-length :sepal-width :petal-length :petal-width]
+                                                             :scaling :robust :robust-center :mean :robust-spread 0.25})]
+                                   :labels {:title ":robust, :mean / 0.25" :x nil :y nil}}]
+                                 {:columns 3 :widths [1 1 1.3]})
+                   {:width 1000 :height 340})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_multivariate_3d_files/image2.png)
+:::
+
+
+A missing value breaks a row's line there (`:break`) or drops the row (`:drop`); without `:axes` only the lines
+are drawn, here also without padding:
+
+
+::: {.sourceClojure}
+```clojure
+(def readings [{:id "a" :t1 3 :t2 5 :t3 4 :t4 6} {:id "b" :t1 4 :t2 nil :t3 6 :t4 5}
+               {:id "c" :t1 6 :t2 4 :t3 nil :t4 3} {:id "d" :t1 5 :t2 6 :t3 5 :t4 4}])
+```
+:::
+
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>id</th><th>t1</th><th>t2</th><th>t3</th><th>t4</th></tr></thead><tbody><tr><td>a</td><td>3</td><td>5</td><td>4</td><td>6</td></tr><tr><td>b</td><td>4</td><td></td><td>6</td><td>5</td></tr><tr><td>c</td><td>6</td><td>4</td><td></td><td>3</td></tr><tr><td>d</td><td>5</td><td>6</td><td>5</td><td>4</td></tr></tbody></table>
+```
+
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange [{:data readings
+                                   :mapping {:color :id}
+                                   :charts [(chart/parallel {:variables [:t1 :t2 :t3 :t4] :missing :break :width 2})]
+                                   :labels {:title ":missing :break" :x nil :y nil}
+                                   :legend false}
+                                  {:data readings
+                                   :mapping {:color :id}
+                                   :charts [(chart/parallel {:variables [:t1 :t2 :t3 :t4] :missing :drop :width 2})]
+                                   :labels {:title ":missing :drop" :x nil :y nil}
+                                   :legend false}
+                                  {:data readings
+                                   :mapping {:color :id}
+                                   :charts [(chart/parallel {:variables [:t1 :t2 :t3 :t4] :axes false :padding {:y [0 0]}
+                                                             :width 2})]
+                                   :labels {:title ":axes false, :padding {:y [0 0]}" :x nil :y nil}}]
+                                 {:columns 3 :widths [1 1 1.2]})
+                   {:width 1000 :height 320})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_multivariate_3d_files/image3.png)
+:::
+
+
 
 ### Style
 
@@ -203,7 +288,7 @@ each row's polygon:
 
 
 ::: {.clay-image}
-![](reference.charts_multivariate_3d_files/image2.png)
+![](reference.charts_multivariate_3d_files/image4.png)
 :::
 
 
@@ -235,7 +320,7 @@ Points in a 3D box at their x, y and z, seen in perspective; colour, size and sh
 
 
 ::: {.clay-image}
-![](reference.charts_multivariate_3d_files/image3.png)
+![](reference.charts_multivariate_3d_files/image5.png)
 :::
 
 
@@ -267,7 +352,7 @@ The point style used when nothing is mapped:
 
 
 ::: {.clay-image}
-![](reference.charts_multivariate_3d_files/image4.png)
+![](reference.charts_multivariate_3d_files/image6.png)
 :::
 
 
@@ -309,7 +394,56 @@ Points, spikes from a base, bars, or nothing but the side projections of the poi
 
 
 ::: {.clay-image}
-![](reference.charts_multivariate_3d_files/image5.png)
+![](reference.charts_multivariate_3d_files/image7.png)
+:::
+
+
+`:type :none` leaves only the projections - the point cloud's shadows on the three walls:
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image {:data iris
+                    :mapping {:x :sepal-length :y :sepal-width :z :petal-length :color :species}
+                    :charts [(chart/cloud {:type :none :projections {:xy :points :xz :points :yz :points}})]}
+                   {:width 600 :height 480})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_multivariate_3d_files/image8.png)
+:::
+
+
+The 3D frame (Shared options) on the same points: the eye moved round and up, the box flattened and the x axis
+reversed, the box and axes left out:
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange [{:data iris
+                                   :mapping {:x :sepal-length :y :sepal-width :z :petal-length :color :species}
+                                   :charts [(chart/cloud {:view {:azimuth 120 :elevation 45}})]
+                                   :labels {:title ":azimuth 120 :elevation 45"}
+                                   :legend false}
+                                  {:data iris
+                                   :mapping {:x :sepal-length :y :sepal-width :z :petal-length :color :species}
+                                   :charts [(chart/cloud {:aspect [1 1 0.4] :reverse #{:x}})]
+                                   :labels {:title ":aspect, :reverse #{:x}"}
+                                   :legend false}
+                                  {:data iris
+                                   :mapping {:x :sepal-length :y :sepal-width :z :petal-length :color :species}
+                                   :charts [(chart/cloud {:box false :axes false})]
+                                   :labels {:title ":box false, :axes false"}}]
+                                 {:columns 3 :widths [1 1 1.3]})
+                   {:width 1000 :height 360})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_multivariate_3d_files/image9.png)
 :::
 
 
@@ -360,7 +494,7 @@ a parametric surface, or the 2D density of mapped points; heights coloured throu
 
 
 ::: {.clay-image}
-![](reference.charts_multivariate_3d_files/image6.png)
+![](reference.charts_multivariate_3d_files/image10.png)
 :::
 
 
@@ -402,7 +536,64 @@ size, and the drawing - filled, wireframe or both, shaded, in one colour:
 
 
 ::: {.clay-image}
-![](reference.charts_multivariate_3d_files/image7.png)
+![](reference.charts_multivariate_3d_files/image11.png)
+:::
+
+
+A density surface reaching past the points by `:cut` bandwidths (0 - the points' range only, the edges cut off
+high), and the quad outlines' width:
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange [{:data iris
+                                   :mapping {:x :sepal-length :y :sepal-width}
+                                   :charts [(chart/surface {:density true :cut 0})]
+                                   :labels {:title ":density, :cut 0"}
+                                   :legend false}
+                                  {:data iris
+                                   :mapping {:x :sepal-length :y :sepal-width}
+                                   :charts [(chart/surface {:density true :cut 3})]
+                                   :labels {:title ":cut 3 (default)"}
+                                   :legend false}
+                                  {:data lattice
+                                   :mapping {:x :x :y :y :z :z}
+                                   :charts [(chart/surface {:style :both :stroke-width 2})]
+                                   :labels {:title ":style :both, :stroke-width 2"}}]
+                                 {:columns 3 :widths [1 1 1.25]})
+                   {:width 1000 :height 360})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_multivariate_3d_files/image12.png)
+:::
+
+
+The 3D frame (Shared options) on a surface: seen from another side and from above, and with y reversed:
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange [{:data lattice
+                                   :mapping {:x :x :y :y :z :z}
+                                   :charts [(chart/surface {:view {:azimuth -60 :elevation 60}})]
+                                   :labels {:title ":view {:azimuth -60 :elevation 60}"}
+                                   :legend false}
+                                  {:data lattice
+                                   :mapping {:x :x :y :y :z :z}
+                                   :charts [(chart/surface {:reverse #{:y} :axis-titles {:x "x" :y "y (reversed)" :z "height"}})]
+                                   :labels {:title ":reverse #{:y}"}
+                                   :legend false}]
+                                 {:columns 2})
+                   {:width 900 :height 380})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_multivariate_3d_files/image13.png)
 :::
 
 

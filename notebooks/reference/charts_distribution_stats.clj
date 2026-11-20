@@ -65,6 +65,67 @@
                                  {:columns 3})
                    {:width 1000 :height 320})
 
+;; What a bar's height measures - the same bins as shares summing to 1 (`:pmf`, the default `:percent` scaled to
+;; 100), and the running count (`:cumulative`):
+
+(plot/render-image (plot/arrange [{:data faithful
+                                   :mapping {:x :eruptions}
+                                   :charts [(chart/histogram {:bins 20 :y :pmf})]
+                                   :labels {:title ":y :pmf"}}
+                                  {:data faithful
+                                   :mapping {:x :eruptions}
+                                   :charts [(chart/histogram {:bins 20 :y :cumulative})]
+                                   :labels {:title ":y :cumulative"}}]
+                                 {:columns 2})
+                   {:width 900 :height 300})
+
+;; How groups share the bins: translucent over each other (`:alpha` of `:overlay`), side by side, stacked, or
+;; stacked to 1 - the share of each species in every bin:
+
+(plot/render-image (plot/arrange [{:data iris
+                                   :mapping {:x :petal-length :color :species}
+                                   :charts [(chart/histogram {:position :overlay :alpha 0.4 :bins 20})]
+                                   :labels {:title ":position :overlay :alpha 0.4"}
+                                   :legend false}
+                                  {:data iris
+                                   :mapping {:x :petal-length :color :species}
+                                   :charts [(chart/histogram {:position :dodge :bins 12})]
+                                   :labels {:title ":position :dodge"}
+                                   :legend false}
+                                  {:data iris
+                                   :mapping {:x :petal-length :color :species}
+                                   :charts [(chart/histogram {:position :stack :bins 20})]
+                                   :labels {:title ":position :stack"}
+                                   :legend false}
+                                  {:data iris
+                                   :mapping {:x :petal-length :color :species}
+                                   :charts [(chart/histogram {:position :normalize :bins 20})]
+                                   :labels {:title ":position :normalize"}
+                                   :legend false}]
+                                 {:columns 2})
+                   {:width 900 :height 560})
+
+;; Mirrored groups: halves tied to one y range [-M M] (`:symmetric`) or each fitted to its own tallest bar, the zero
+;; line off; thick outlines and no padding above the bars:
+
+(plot/render-image (plot/arrange [{:data two-species
+                                   :mapping {:x :sepal-length :color :species}
+                                   :charts [(chart/histogram {:position :mirror :bins 12 :symmetric true})]
+                                   :labels {:title ":symmetric true"}
+                                   :legend false}
+                                  {:data two-species
+                                   :mapping {:x :sepal-length :color :species}
+                                   :charts [(chart/histogram {:position :mirror :bins 12 :symmetric false :zero-line false})]
+                                   :labels {:title ":symmetric false :zero-line false"}
+                                   :legend false}
+                                  {:data faithful
+                                   :mapping {:x :eruptions}
+                                   :charts [(chart/histogram {:bins 15 :stroke-color :black :stroke-width 2
+                                                              :padding {:y [0 0]}})]
+                                   :labels {:title ":stroke-width 2 :padding {:y [0 0]}"}}]
+                                 {:columns 3})
+                   {:width 1000 :height 320})
+
 (nu/shared-groups (describe/options (chart/histogram)))
 
 ;; ## density
@@ -105,6 +166,21 @@
                                  {:columns 3})
                    {:width 1000 :height 320})
 
+;; The ridgelines' gradient along x (over the x domain) or along y (from each ridge's baseline up):
+
+(plot/render-image (plot/arrange [{:data iris
+                                   :mapping {:x :sepal-length :y :species}
+                                   :charts [(chart/density {:fill-gradient :mpl/plasma :fill-gradient-axis :x})]
+                                   :scales {:y {:reverse true}}
+                                   :labels {:title ":fill-gradient-axis :x"}}
+                                  {:data iris
+                                   :mapping {:x :sepal-length :y :species}
+                                   :charts [(chart/density {:fill-gradient :mpl/plasma :fill-gradient-axis :y})]
+                                   :scales {:y {:reverse true}}
+                                   :labels {:title ":fill-gradient-axis :y"}}]
+                                 {:columns 2})
+                   {:width 900 :height 320})
+
 ;; ### Estimate
 
 ;; The kernel, its bandwidth (in data units or a selector), the number of evaluation points and how far a curve
@@ -112,13 +188,36 @@
 
 (nu/options-table (describe/own-rows (describe/options (chart/density))) :estimate)
 
-(plot/render-image (plot/arrange (for [[title opts] [["default (:gaussian, :nrd0)" {}]
-                                                     [":bandwidth 0.1" {:bandwidth 0.1}]
-                                                     [":kernel :uniform :cut 0" {:kernel :uniform :cut 0}]]]
-                                   {:data faithful
-                                    :mapping {:x :eruptions}
-                                    :charts [(chart/density opts)]
-                                    :labels {:title title}})
+(plot/render-image (plot/arrange [{:data faithful
+                                   :mapping {:x :eruptions}
+                                   :charts [(chart/density)]
+                                   :labels {:title "default (:gaussian, :nrd0)"}}
+                                  {:data faithful
+                                   :mapping {:x :eruptions}
+                                   :charts [(chart/density {:bandwidth 0.1})]
+                                   :labels {:title ":bandwidth 0.1"}}
+                                  {:data faithful
+                                   :mapping {:x :eruptions}
+                                   :charts [(chart/density {:kernel :uniform :cut 0})]
+                                   :labels {:title ":kernel :uniform :cut 0"}}]
+                                 {:columns 3})
+                   {:width 1000 :height 300})
+
+;; A bandwidth selector instead of a number, few evaluation points (the curve drawn through 8 points), and a curve
+;; reaching 3 bandwidths past the data:
+
+(plot/render-image (plot/arrange [{:data faithful
+                                   :mapping {:x :eruptions}
+                                   :charts [(chart/density {:bandwidth :sj})]
+                                   :labels {:title ":bandwidth :sj"}}
+                                  {:data faithful
+                                   :mapping {:x :eruptions}
+                                   :charts [(chart/density {:n 8})]
+                                   :labels {:title ":n 8"}}
+                                  {:data faithful
+                                   :mapping {:x :eruptions}
+                                   :charts [(chart/density {:cut 3})]
+                                   :labels {:title ":cut 3"}}]
                                  {:columns 3})
                    {:width 1000 :height 300})
 
@@ -145,6 +244,33 @@
                                    :labels {:title ":symmetric true"}}]
                                  {:columns 3 :widths [1 1 1.4]})
                    {:width 1000 :height 320})
+
+;; Stacked to 1 (each species' share of the density at every x), the streamgraphs, and a mirrored pair without the
+;; zero line and with no padding:
+
+(plot/render-image (plot/arrange [{:data iris
+                                   :mapping {:x :petal-length :color :species}
+                                   :charts [(chart/density {:position :normalize})]
+                                   :labels {:title ":position :normalize"}
+                                   :legend false}
+                                  {:data iris
+                                   :mapping {:x :petal-length :color :species}
+                                   :charts [(chart/density {:position :silhouette})]
+                                   :labels {:title ":position :silhouette"}
+                                   :legend false}
+                                  {:data iris
+                                   :mapping {:x :petal-length :color :species}
+                                   :charts [(chart/density {:position :wiggle})]
+                                   :labels {:title ":position :wiggle"}
+                                   :legend false}
+                                  {:data two-species
+                                   :mapping {:x :petal-length :color :species}
+                                   :charts [(chart/density {:position :mirror :fill :color :zero-line false
+                                                            :padding {:x [0 0] :y [0 0]}})]
+                                   :labels {:title ":zero-line false, no padding"}
+                                   :legend false}]
+                                 {:columns 2})
+                   {:width 900 :height 560})
 
 (nu/shared-groups (describe/options (chart/density)))
 
@@ -208,7 +334,8 @@
 ;; ### Distributions
 
 ;; Either side may be a distribution instead of data; with both sides distributions the chart draws `:points`
-;; quantile pairs labelled by `:label`. The reference line through the quartiles may be turned off:
+;; quantile pairs labelled by `:label`. The reference line through the quartiles may be turned off, and the padding
+;; set (none on the right):
 
 (nu/options-table (describe/own-rows (describe/options (chart/qq))) :distributions)
 
@@ -219,8 +346,9 @@
                                    :labels {:title "both sides distributions"}}
                                   {:data faithful
                                    :mapping {:y :eruptions}
-                                   :charts [(chart/qq {:x-distribution [:uniform-real {:lower 0 :upper 1}] :line false})]
-                                   :labels {:title "eruptions against uniform, :line false"}}]
+                                   :charts [(chart/qq {:x-distribution [:uniform-real {:lower 0 :upper 1}] :line false
+                                                       :padding {:x [0 0] :y [0 0]}})]
+                                   :labels {:title "uniform, no line, no padding"}}]
                                  {:columns 2 :widths [1.25 1]})
                    {:width 1000 :height 380})
 
@@ -247,15 +375,15 @@
 
 (plot/render-image {:data (filter #(= "t(3)" (:sample %)) samples)
                     :mapping {:y :v}
-                    :charts [(chart/pp {:x-distribution [:normal] :size 5 :shape \x :color [200 80 40]
-                                        :line-width 3})]
-                    :labels {:title "crosses, :line-width 3"}}
+                    :charts [(chart/pp {:x-distribution [:normal] :size 8 :shape \O :color [200 80 40 140]
+                                        :stroke-color :black :stroke-width 1 :line-width 3})]
+                    :labels {:title "outlined points, :line-width 3"}}
                    {:width 500 :height 350})
 
 ;; ### Distributions
 
 ;; Either side may be a distribution; with both sides distributions the chart evaluates both CDFs at `:points`
-;; values over `:domain` (required then):
+;; values over `:domain` (required then); the right panel has no line and wide padding:
 
 (nu/options-table (describe/own-rows (describe/options (chart/pp))) :distributions)
 
@@ -266,8 +394,9 @@
                                    :labels {:title "both sides distributions, :domain [-5 5]" :y "probabilities"}}
                                   {:data faithful
                                    :mapping {:y :waiting}
-                                   :charts [(chart/pp {:x-distribution [:normal {:mu 71 :sd 13.6}] :line false :size 3})]
-                                   :labels {:title "waiting against normal(71, 13.6), :line false"}}]
+                                   :charts [(chart/pp {:x-distribution [:normal {:mu 71 :sd 13.6}] :line false :size 3
+                                                       :padding {:x [0.2 0.2] :y [0.2 0.2]}})]
+                                   :labels {:title "normal(71, 13.6), no line, padding 0.2"}}]
                                  {:columns 2 :widths [1.25 1]})
                    {:width 1000 :height 380})
 

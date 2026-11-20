@@ -10,6 +10,7 @@
             [clojure.java.io :as io]
             [clojure.test :refer [deftest testing is]]
             [clojure.walk :as walk]
+            [malli.core :as malli]
             [cljplot2.content.label]
             [cljplot2.core]
             [cljplot2.data.facet]
@@ -348,3 +349,79 @@
   (testing "every shared group has a heading of its title in the Shared options chapter (chart pages link to it)"
     (let [headings (set (map second (re-seq #"(?m)^;; ### (.+)$" (slurp "notebooks/reference/shared_options.clj"))))]
       (is (= #{} (into (sorted-set) (remove headings) (map :title (vals describe/fragments))))))))
+
+(def ^:private max-enum-values
+  "Enums of at most this many values have every value shown on a chart page (AK7 b)."
+  6)
+
+(defn- literal-option-maps
+  "The literal option maps of the calls of chart constructor `kind` in (resolved) `forms` - `(chart/kind {...})`."
+  [forms kind]
+  (let [ctor (symbol "cljplot2.chart" (name kind))]
+    (filter map? (map second (calls forms ctor)))))
+
+(defn- enum-values
+  "The values of the enums in entry schema `s` - an `:enum`, also under `:maybe` / `:or` - or `nil` for no enum."
+  [s]
+  (let [s (malli/schema s)]
+    (case (malli/type s)
+      :enum (vec (malli/children s))
+      (:maybe :or) (seq (mapcat enum-values (malli/children s)))
+      nil)))
+
+(defn- short-enums
+  "Own top-level option key -> its enum values, of chart value `chart`, for enums of at most [[max-enum-values]]."
+  [chart]
+  (let [own (set (map :key (filter #(= 1 (count (:path %))) (describe/own-rows (describe/options chart)))))
+        options (malli/schema (get-in chart [:schema :options]))
+        m (if (= :map (malli/type options)) options (first (malli/children options)))]
+    (into {} (for [[k _ s] (malli/children m)
+                   :when (own k)
+                   :let [vs (enum-values s)]
+                   :when (and vs (<= (count vs) max-enum-values))]
+               [k vs]))))
+
+(defn- coverage-gaps
+  "What the literal option maps `maps` of a chart leave unshown: `{:options [k ...] :values [[k v] ...]}` - own
+  top-level option keys `own-keys` never set, values of `enums` (key -> values) never given. A value equal to the
+  option's default `defaults` (key -> value) is shown by a call without the option (the basic example)."
+  [maps own-keys enums defaults]
+  (let [set-keys (set (mapcat keys maps))
+        given (set (mapcat seq maps))
+        bare? (some #(empty? %) maps)]
+    {:options (vec (remove set-keys own-keys))
+     :values (vec (for [[k vs] enums, v vs
+                        :when (not (given [k v]))
+                        :when (not (and (= v (get defaults k)) (or bare? (some #(not (contains? % k)) maps))))]
+                    [k v]))}))
+
+(defn- chart-coverage-gaps
+  "[[coverage-gaps]] of chart `kind` on the page of resolved `forms`; a chart called without options counts as a bare
+  call (its defaults shown)."
+  [forms kind]
+  (let [chart (@((describe/chart-constructors) kind))
+        own (filter #(= 1 (count (:path %))) (describe/own-rows (describe/options chart)))
+        ctor (symbol "cljplot2.chart" (name kind))
+        bare (when (some #(= 1 (count %)) (calls forms ctor)) [{}])]
+    (coverage-gaps (concat bare (literal-option-maps forms kind)) (map :key own) (short-enums chart)
+                   (into {} (keep #(when (some? (:default %)) [(:key %) (:default %)])) own))))
+
+(deftest chart-coverage-test
+  (let [forms (notebook-forms)]
+    (doseq [[page kinds] chart-chapters, kind kinds]
+      (testing (str page " " kind ": every own option set in an example, every value of a short enum given")
+        (is (= {:options [] :values []} (chart-coverage-gaps (get forms page) kind)))))))
+
+(deftest coverage-rule-test
+  (testing "options set or not; enum values given, or the default shown by a call without the option"
+    (is (= {:options [:b] :values [[:e :x] [:e :y]]}
+           (coverage-gaps [{:a 1 :e :z}] [:a :b] {:e [:x :y :z]} {:e :x})) "the default needs a call without the option")
+    (is (= {:options [] :values []} (coverage-gaps [{:a 1} {:e :y}] [:a :e] {:e [:x :y]} {:e :x})) "a call without it")
+    (is (= {:options [] :values []} (coverage-gaps [{} {:e :y}] [:e] {:e [:x :y]} {:e :x})) "default by the bare call"))
+  (testing "boundary: no maps; no options; no enums"
+    (is (= {:options [:a] :values [[:e :x]]} (coverage-gaps [] [:a] {:e [:x]} {})))
+    (is (= {:options [] :values []} (coverage-gaps [{:a 1}] [] {} {}))))
+  (testing "enum values: plain, under :maybe and :or; none"
+    (is (= [:a :b] (enum-values [:enum :a :b])))
+    (is (= [:a] (enum-values [:maybe [:or [:enum :a] :int]])))
+    (is (nil? (enum-values :int)))))

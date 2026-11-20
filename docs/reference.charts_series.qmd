@@ -172,6 +172,29 @@ Its options: the band's colour and fill, its edges, and a gradient instead of a 
 :::
 
 
+A gradient along x instead (over the x scale's range), and the padding of the data span - none on x, a third of
+the span on y:
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange [{:data band :mapping {:x :t :ymin :lo :ymax :hi}
+                                   :charts [(chart/ribbon {:fill-gradient [:yellow :purple] :fill-gradient-axis :x})]
+                                   :labels {:title ":fill-gradient-axis :x"}}
+                                  {:data band :mapping {:x :t :ymin :lo :ymax :hi}
+                                   :charts [(chart/ribbon {:padding {:x [0 0] :y [0.33 0.33]}})]
+                                   :labels {:title ":padding {:x [0 0] :y [0.33 0.33]}"}}]
+                                 {:columns 2})
+                   {:width 800 :height 300})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_series_files/image2.png)
+:::
+
+
 Shared options: [Fill patterns](reference.shared_options.html#fill-patterns) (`:pattern` `:pattern-color`); [Data and mapping](reference.shared_options.html#data-and-mapping) (`:data` `:mapping`); [Curves](reference.shared_options.html#curves) (`:interpolator` `:interpolator-params` `:sample-step`).
 
 
@@ -201,7 +224,7 @@ A curve fitted to the rows of each group, by default with a confidence band.
 
 
 ::: {.clay-image}
-![](reference.charts_series_files/image2.png)
+![](reference.charts_series_files/image3.png)
 :::
 
 
@@ -239,7 +262,37 @@ spans only its own x range:
 
 
 ::: {.clay-image}
-![](reference.charts_series_files/image3.png)
+![](reference.charts_series_files/image4.png)
+:::
+
+
+The curve sampled at only `:n 6` points (a polyline), and two groups - short and long eruptions - fitted over
+their own x ranges or, with `:full-range true`, over the range of both (and the panel without padding on x):
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange [{:data faithful :mapping {:x :eruptions :y :waiting}
+                                   :charts [(chart/scatter) (chart/smooth {:n 6})]
+                                   :labels {:title ":n 6"}}
+                                  {:data faithful
+                                   :mapping {:x :eruptions :y :waiting :color #(if (> (:eruptions %) 3) "long" "short")}
+                                   :charts [(chart/scatter) (chart/smooth {:method :lm})]
+                                   :labels {:title ":full-range false (default)"}
+                                   :legend false}
+                                  {:data faithful
+                                   :mapping {:x :eruptions :y :waiting :color #(if (> (:eruptions %) 3) "long" "short")}
+                                   :charts [(chart/scatter) (chart/smooth {:method :lm :full-range true :padding {:x [0 0]}})]
+                                   :labels {:title ":full-range true, :padding x 0"}
+                                   :legend false}]
+                                 {:columns 3})
+                   {:width 1000 :height 320})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_series_files/image5.png)
 :::
 
 
@@ -279,7 +332,29 @@ its fill:
 
 
 ::: {.clay-image}
-![](reference.charts_series_files/image4.png)
+![](reference.charts_series_files/image6.png)
+:::
+
+
+The default band of a fitted method, given explicitly (`:band :confidence`), and no band (`:band :none`):
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange [{:data faithful :mapping {:x :eruptions :y :waiting}
+                                   :charts [(chart/scatter) (chart/smooth {:method :lm :band :confidence})]
+                                   :labels {:title ":band :confidence"}}
+                                  {:data faithful :mapping {:x :eruptions :y :waiting}
+                                   :charts [(chart/scatter) (chart/smooth {:band :none})]
+                                   :labels {:title ":band :none"}}]
+                                 {:columns 2})
+                   {:width 800 :height 300})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_series_files/image7.png)
 :::
 
 
@@ -313,7 +388,7 @@ are text, so each trading day gets a band (no gaps for weekends).
 
 
 ::: {.clay-image}
-![](reference.charts_series_files/image5.png)
+![](reference.charts_series_files/image8.png)
 :::
 
 
@@ -348,7 +423,25 @@ Its options: the up and down colours and patterns, body and wick widths, and the
 
 
 ::: {.clay-image}
-![](reference.charts_series_files/image6.png)
+![](reference.charts_series_files/image9.png)
+:::
+
+
+A pattern on the up candles and more room above and below the prices (`:padding`):
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image {:data ohlc :mapping {:x :date :open :open :high :high :low :low :close :close}
+                    :charts [(chart/candlestick {:up-pattern :dots :pattern-color :black :padding {:y [0.3 0.3]}})]
+                    :labels {:title ":up-pattern :dots, :padding {:y [0.3 0.3]}"}}
+                   {:width 700 :height 340})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_series_files/image10.png)
 :::
 
 

@@ -85,6 +85,19 @@
                                  {:columns 2})
                    {:width 1000 :height 460})
 
+;; The borders in an icicle: the default thin white lines, and thick dark ones:
+
+(plot/render-image (plot/arrange [{:data budget
+                                   :mapping {:hierarchy [:dept :team] :value :cost}
+                                   :charts [(chart/partition {:order :value})]
+                                   :labels {:title ":order :value (default)"}}
+                                  {:data budget
+                                   :mapping {:hierarchy [:dept :team] :value :cost}
+                                   :charts [(chart/partition {:border-color [40 40 40] :border-width 3})]
+                                   :labels {:title ":border-color, :border-width 3"}}]
+                                 {:columns 2})
+                   {:width 1000 :height 360})
+
 (nu/shared-groups (describe/options (chart/partition)))
 
 ;; ## pack
@@ -113,6 +126,24 @@
                                    :labels {:title ":hidden-levels #{1}"}}]
                                  {:columns 2})
                    {:width 1000 :height 480})
+
+;; The packing order, here of the budget rows reversed (smallest first): siblings by value (largest first) or in
+;; data order; and wider borders:
+
+(plot/render-image (plot/arrange [{:data (reverse budget)
+                                   :mapping {:hierarchy [:dept :team] :value :cost}
+                                   :charts [(chart/pack {:order :value})]
+                                   :labels {:title ":order :value (default)"}}
+                                  {:data (reverse budget)
+                                   :mapping {:hierarchy [:dept :team] :value :cost}
+                                   :charts [(chart/pack {:order :data})]
+                                   :labels {:title ":order :data"}}
+                                  {:data budget
+                                   :mapping {:hierarchy [:dept :team] :value :cost}
+                                   :charts [(chart/pack {:border-color [40 40 40] :border-width 3})]
+                                   :labels {:title ":border-width 3"}}]
+                                 {:columns 3})
+                   {:width 1000 :height 360})
 
 (nu/shared-groups (describe/options (chart/pack)))
 
@@ -195,5 +226,18 @@
                                    :labels {:title ":region-labels - shares"}}]
                                  {:columns 3})
                    {:width 1000 :height 380})
+
+;; Without set names, and with thick outlines in the darkened set colours:
+
+(plot/render-image (plot/arrange [{:data memberships
+                                   :mapping {:set :club :item :member}
+                                   :charts [(chart/venn {:set-labels false})]
+                                   :labels {:title ":set-labels false"}}
+                                  {:data memberships
+                                   :mapping {:set :club :item :member}
+                                   :charts [(chart/venn {:border-width 4})]
+                                   :labels {:title ":border-width 4"}}]
+                                 {:columns 2})
+                   {:width 900 :height 380})
 
 (nu/shared-groups (describe/options (chart/venn)))

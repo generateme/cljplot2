@@ -8,8 +8,10 @@
   (:require [fastmath.random :as r]
             [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
+            [cljplot2.data.levels :as levels]
             [cljplot2.data.tree :as tree]
             [cljplot2.describe :as describe]
+            [cljplot2.schema :as schema]
             [notebook-utils :as nu]))
 
 (def wave (for [t (range 30)] {:t t :v (Math/sin (* 0.3 t)) :g (if (< t 15) "early" "late")}))
@@ -26,6 +28,12 @@
 (def iris (nu/dataset :iris))
 
 (nu/data-table iris)
+
+(nu/source-note {:dataset :faithful})
+
+(def faithful (nu/dataset :faithful))
+
+(nu/data-table faithful)
 
 ;; ## Charts
 
@@ -69,6 +77,15 @@
                     :charts [(chart/line {:color [178 34 34] :width 3 :dash [6 2]})]}
                    {:width 500 :height 250})
 
+;; Every built-in dash style (a dash may also be a vector of dash and gap lengths, as above):
+
+(plot/render-image {:charts (vec (mapcat (fn [i d]
+                                           [(chart/rule {:y i :dash d :width 2})
+                                            (chart/text {:x 0 :y i :text (str d) :anchor [:left :bottom]})])
+                                         (range 1 100) (:dash describe/attribute-values)))
+                    :scales {:x {:domain [0 1] :axis false} :y {:domain [0 9] :reverse true :axis false}}}
+                   {:width 500 :height 320})
+
 ;; ### Curves
 
 ;; The line between data points of lines and ribbons: straight, a fastmath interpolation or a step, sampled for
@@ -86,6 +103,32 @@
                                     :charts [(chart/line {:interpolator interpolator}) (chart/scatter)]
                                     :labels {:title (str ":interpolator " interpolator)}})
                                  {:columns 4})
+                   {:width 1000 :height 260})
+
+;; Every interpolation method (`schema/interpolation-methods`) through the same points, with default parameters -
+;; most pass through them or smooth them; `:cir` and `:pava` fit a monotone step, `:kriging` a constant, and `:gp` /
+;; `:rbf` use a kernel too narrow for points this far apart (their `:interpolator-params` set it):
+
+(plot/render-image (plot/arrange (for [interpolator (sort schema/interpolation-methods)]
+                                   {:data points
+                                    :mapping {:x :x :y :y}
+                                    :charts [(chart/line {:interpolator interpolator}) (chart/scatter {:size 4})]
+                                    :labels {:title (str interpolator)}})
+                                 {:columns 4})
+                   {:width 1000 :height 800})
+
+;; Without an interpolator, `:curve` draws a smooth path through the points in their order - also a closed or
+;; looping one (`:parametric`, a Catmull-Rom curve; `:bezier`, bezier pieces); `:sample-step` sets how densely a
+;; curve is sampled (here coarse, to show the samples):
+
+(plot/render-image (plot/arrange (for [[title opts] [[":curve :parametric" {:curve :parametric}]
+                                                     [":curve :bezier" {:curve :bezier}]
+                                                     [":sample-step 25 (cubic)" {:interpolator :cubic :sample-step 25}]]]
+                                   {:data points
+                                    :mapping {:x :x :y :y}
+                                    :charts [(chart/line opts) (chart/scatter {:size 4})]
+                                    :labels {:title title}})
+                                 {:columns 3})
                    {:width 1000 :height 260})
 
 ;; ### Fill patterns
@@ -127,6 +170,27 @@
                     :charts [(chart/violin {:width 0.9}) (chart/box {:width 0.15})]}
                    {:width 500 :height 280})
 
+;; Without levels an item sits by `:place`: across the panel's middle, below the data (`:bottom`), at the panel's
+;; edge, or at a value of the other axis (`{:at v}`) - here a box of the eruption times over the scatter, `:width`
+;; 0.15 of the panel:
+
+(plot/render-image (plot/arrange (for [place [:center :bottom :edge {:at 60}]]
+                                   {:data faithful
+                                    :mapping {:x :eruptions :y :waiting}
+                                    :charts [(chart/scatter {:size 4}) (chart/box {:place place :width 0.15 :mapping {:y nil}})]
+                                    :labels {:title (str ":place " place)}})
+                                 {:columns 2})
+                   {:width 900 :height 600})
+
+;; `:level-axis` names the axis of the levels - needed when both axes or neither are categorical; here the rounded
+;; petal widths on y (0 to 3), declared categorical, are the levels, a strip of sepal lengths at each:
+
+(plot/render-image {:data iris
+                    :mapping {:x :sepal-length :y (levels/categorical #(Math/round (double (:petal-width %))))}
+                    :charts [(chart/stripplot {:level-axis :y :jitter 0.3 :rng (r/rng :mersenne 5)})]
+                    :labels {:x "sepal length" :y "petal width, rounded"}}
+                   {:width 500 :height 280})
+
 ;; #### Groups
 
 ;; Groups of one level share its band: side by side (`:dodge`, with a gap), on top of each other, or one half each
@@ -162,6 +226,19 @@
                     :flip true
                     :scales {:x {:reverse true}}}
                    {:width 500 :height 260})
+
+;; The same mirroring upright, and on a range chart (the second group's intervals below the axis):
+
+(plot/render-image (plot/arrange [{:data counts
+                                   :mapping {:x :k :y :v :color :g}
+                                   :charts [(chart/bar {:mirror :color})]
+                                   :labels {:title "bar, :mirror :color"}}
+                                  {:data iris
+                                   :mapping {:x :species :y :sepal-length :color #(if (< (:petal-width %) 1.3) "narrow" "wide")}
+                                   :charts [(chart/extent {:mirror :color})]
+                                   :labels {:title "extent, :mirror :color"}}]
+                                 {:columns 2})
+                   {:width 900 :height 300})
 
 ;; ### Ridgelines
 

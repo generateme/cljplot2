@@ -61,6 +61,19 @@
                                  {:columns 3})
                    {:width 1000 :height 300})
 
+
+;; A gradient along x instead (over the x scale's range), and the padding of the data span - none on x, a third of
+;; the span on y:
+
+(plot/render-image (plot/arrange [{:data band :mapping {:x :t :ymin :lo :ymax :hi}
+                                   :charts [(chart/ribbon {:fill-gradient [:yellow :purple] :fill-gradient-axis :x})]
+                                   :labels {:title ":fill-gradient-axis :x"}}
+                                  {:data band :mapping {:x :t :ymin :lo :ymax :hi}
+                                   :charts [(chart/ribbon {:padding {:x [0 0] :y [0.33 0.33]}})]
+                                   :labels {:title ":padding {:x [0 0] :y [0.33 0.33]}"}}]
+                                 {:columns 2})
+                   {:width 800 :height 300})
+
 (nu/shared-groups (describe/options (chart/ribbon)))
 
 ;; ## smooth
@@ -94,6 +107,25 @@
                                  {:columns 3})
                    {:width 1000 :height 320})
 
+;; The curve sampled at only `:n 6` points (a polyline), and two groups - short and long eruptions - fitted over
+;; their own x ranges or, with `:full-range true`, over the range of both (and the panel without padding on x):
+
+(plot/render-image (plot/arrange [{:data faithful :mapping {:x :eruptions :y :waiting}
+                                   :charts [(chart/scatter) (chart/smooth {:n 6})]
+                                   :labels {:title ":n 6"}}
+                                  {:data faithful
+                                   :mapping {:x :eruptions :y :waiting :color #(if (> (:eruptions %) 3) "long" "short")}
+                                   :charts [(chart/scatter) (chart/smooth {:method :lm})]
+                                   :labels {:title ":full-range false (default)"}
+                                   :legend false}
+                                  {:data faithful
+                                   :mapping {:x :eruptions :y :waiting :color #(if (> (:eruptions %) 3) "long" "short")}
+                                   :charts [(chart/scatter) (chart/smooth {:method :lm :full-range true :padding {:x [0 0]}})]
+                                   :labels {:title ":full-range true, :padding x 0"}
+                                   :legend false}]
+                                 {:columns 3})
+                   {:width 1000 :height 320})
+
 ;; ### Band
 
 ;; The band around the curve: confidence or prediction, nested levels, a bootstrap (seeded here), or none, and
@@ -114,6 +146,18 @@
                                    :labels {:title ":band :bootstrap"}}]
                                  {:columns 3})
                    {:width 1000 :height 320})
+
+
+;; The default band of a fitted method, given explicitly (`:band :confidence`), and no band (`:band :none`):
+
+(plot/render-image (plot/arrange [{:data faithful :mapping {:x :eruptions :y :waiting}
+                                   :charts [(chart/scatter) (chart/smooth {:method :lm :band :confidence})]
+                                   :labels {:title ":band :confidence"}}
+                                  {:data faithful :mapping {:x :eruptions :y :waiting}
+                                   :charts [(chart/scatter) (chart/smooth {:band :none})]
+                                   :labels {:title ":band :none"}}]
+                                 {:columns 2})
+                   {:width 800 :height 300})
 
 (nu/shared-groups (describe/options (chart/smooth)))
 
@@ -146,5 +190,13 @@
                                    :labels {:title ":style :ohlc"}}]
                                  {:columns 3})
                    {:width 1000 :height 320})
+
+
+;; A pattern on the up candles and more room above and below the prices (`:padding`):
+
+(plot/render-image {:data ohlc :mapping {:x :date :open :open :high :high :low :low :close :close}
+                    :charts [(chart/candlestick {:up-pattern :dots :pattern-color :black :padding {:y [0.3 0.3]}})]
+                    :labels {:title ":up-pattern :dots, :padding {:y [0.3 0.3]}"}}
+                   {:width 700 :height 340})
 
 (nu/shared-groups (describe/options (chart/candlestick)))

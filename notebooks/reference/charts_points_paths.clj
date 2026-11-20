@@ -34,7 +34,7 @@
 (plot/render-image {:data mtcars
                     :mapping {:x :wt :y :mpg :color (levels/categorical :cyl) :size :hp}
                     :charts [(chart/scatter)]
-                    :scales {:color {:title "cylinders"}}
+                    :scales {:color {:title "cylinders"} :size {:range [5 18]}}
                     :labels {:x "weight [1000 lbs]" :y "miles per gallon"}}
                    {:width 600 :height 380})
 
@@ -55,6 +55,22 @@
                                    :labels {:title ":jitter [0.3 0.2]"}}]
                                  {:columns 2})
                    {:width 900 :height 330})
+
+;; A mapped `:order` draws points by its values, later ones on top: the most powerful cars over the others
+;; (ascending) or under them (descending); `:padding` is the room around the data, here none on x:
+
+(plot/render-image (plot/arrange [{:data mtcars
+                                   :mapping {:x :wt :y :mpg :color :hp :order :hp}
+                                   :charts [(chart/scatter {:size 26 :stroke-color :white})]
+                                   :labels {:title ":order :hp, :order-direction :ascending"}
+                                   :legend false}
+                                  {:data mtcars
+                                   :mapping {:x :wt :y :mpg :color :hp :order :hp}
+                                   :charts [(chart/scatter {:size 26 :stroke-color :white :order-direction :descending
+                                                           :padding {:x [0 0] :y [0.05 0.05]}})]
+                                   :labels {:title ":order-direction :descending, :padding x 0"}}]
+                                 {:columns 2 :widths [1 1.2]})
+                   {:width 1000 :height 360})
 
 (nu/shared-groups (describe/options (chart/scatter)))
 
@@ -95,6 +111,18 @@
                                  {:columns 3})
                    {:width 1000 :height 300})
 
+;; The gradient along x instead, and `:stroke-alpha` fading the strokes of overlapping lines:
+
+(plot/render-image (plot/arrange [{:data wave :mapping {:x :t :y :v}
+                                   :charts [(chart/line {:fill-gradient :mpl/viridis :fill-gradient-axis :x})]
+                                   :labels {:title ":fill-gradient-axis :x"}}
+                                  {:data stocks
+                                   :mapping {:x #(java.time.LocalDate/parse (:date %)) :y :price :color :symbol}
+                                   :charts [(chart/line {:width 3 :stroke-alpha 0.4})]
+                                   :labels {:title ":stroke-alpha 0.4"}}]
+                                 {:columns 2 :widths [1 1.4]})
+                   {:width 1000 :height 300})
+
 ;; ### Path
 
 ;; How points are joined: sorted by x or in data order, what a missing value does (a break or a bridge), how
@@ -113,10 +141,31 @@
                                    :charts [(chart/line {:sort false})]
                                    :labels {:title ":sort false"}}
                                   {:data spiral :mapping {:x :x :y :v}
+                                   :charts [(chart/line {:sort false :gaps :break :padding {:x [0 0] :y [0 0]}})]
+                                   :labels {:title ":gaps :break, no padding"}}
+                                  {:data spiral :mapping {:x :x :y :v}
                                    :charts [(chart/line {:sort false :gaps :bridge :bridge {:alpha 0.5 :dash :dotted}})]
                                    :labels {:title ":gaps :bridge"}}]
-                                 {:columns 3})
-                   {:width 1000 :height 320})
+                                 {:columns 2})
+                   {:width 900 :height 600})
+
+;; Groups combined by `:position` (`:overlay`, the default, draws each line on its own):
+
+(def streams (for [series ["a" "b" "c"] t (range 25)]
+               {:series series :t t :v (+ 1.5 (Math/sin (+ (* 0.3 t) (* 2 (count series)) (int (first series)))))}))
+
+(nu/data-table streams)
+
+(plot/render-image (plot/arrange [{:data streams :mapping {:x :t :y :v :color :series}
+                                   :charts [(chart/line {:position :stack})] :labels {:title ":stack"} :legend false}
+                                  {:data streams :mapping {:x :t :y :v :color :series}
+                                   :charts [(chart/line {:position :normalize})] :labels {:title ":normalize"} :legend false}
+                                  {:data streams :mapping {:x :t :y :v :color :series}
+                                   :charts [(chart/line {:position :silhouette})] :labels {:title ":silhouette"} :legend false}
+                                  {:data streams :mapping {:x :t :y :v :color :series}
+                                   :charts [(chart/line {:position :wiggle})] :labels {:title ":wiggle"}}]
+                                 {:columns 4 :widths [1 1 1 1.3]})
+                   {:width 1000 :height 280})
 
 ;; ### Ends
 
@@ -174,6 +223,18 @@
                                  {:columns 2 :widths [1.3 1]})
                    {:width 1000 :height 620})
 
+(plot/render-image (plot/arrange [{:data moves
+                                   :mapping {:x :x :y :y :xend :x2}
+                                   :charts [(chart/segment {:yend 4.5 :dash :dashed}) (chart/scatter)]
+                                   :labels {:title ":yend 4.5 (one end for all)"}}
+                                  {:data moves
+                                   :mapping {:x :x :y :y :xend :x2 :yend :y2}
+                                   :charts [(chart/scatter {:size 14})
+                                            (chart/segment {:start-gap 10 :end-gap 10 :padding {:x [0.2 0.2] :y [0.2 0.2]}})]
+                                   :labels {:title ":start-gap 10, :padding 0.2"}}]
+                                 {:columns 2})
+                   {:width 800 :height 320})
+
 (nu/shared-groups (describe/options (chart/segment)))
 
 ;; ## polygon
@@ -200,6 +261,13 @@
 (plot/render-image {:data shapes
                     :mapping {:x :x :y :y :color :shape}
                     :charts [(chart/polygon {:alpha 0.35 :stroke-color :color :stroke-width 2})]}
+                   {:width 500 :height 260})
+
+;; Without a mapped colour every polygon takes `:color`; `:padding` 0 lets the shapes touch the panel's edges:
+
+(plot/render-image {:data shapes
+                    :mapping {:x :x :y :y :group :shape}
+                    :charts [(chart/polygon {:color [120 160 90] :stroke-color :black :padding {:x [0 0] :y [0 0]}})]}
                    {:width 500 :height 260})
 
 (nu/shared-groups (describe/options (chart/polygon)))

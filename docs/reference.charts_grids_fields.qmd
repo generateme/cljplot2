@@ -248,6 +248,67 @@ ratio and what the colour measures:
 :::
 
 
+The fastmath estimates of the grid (the default `:scott-correlated` above) - each picks its own cell count:
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange [{:data faithful
+                                   :mapping {:x :eruptions :y :waiting}
+                                   :charts [(chart/bin2d {:bins :scott})]
+                                   :labels {:title ":bins :scott"}
+                                   :legend false}
+                                  {:data faithful
+                                   :mapping {:x :eruptions :y :waiting}
+                                   :charts [(chart/bin2d {:bins :freedman-diaconis})]
+                                   :labels {:title ":bins :freedman-diaconis"}
+                                   :legend false}
+                                  {:data faithful
+                                   :mapping {:x :eruptions :y :waiting}
+                                   :charts [(chart/bin2d {:bins :cross-validation})]
+                                   :labels {:title ":bins :cross-validation"}
+                                   :legend false}
+                                  {:data faithful
+                                   :mapping {:x :eruptions :y :waiting}
+                                   :charts [(chart/bin2d {:bins :shimazaki-shinomoto})]
+                                   :labels {:title ":bins :shimazaki-shinomoto"}
+                                   :legend false}]
+                                 {:columns 2})
+                   {:width 900 :height 600})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_grids_fields_files/image4.png)
+:::
+
+
+The other measures: the share of the panel's points (`:pmf`) and the density - the count over n times the cell
+area (the legend shows the scale):
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange [{:data faithful
+                                   :mapping {:x :eruptions :y :waiting}
+                                   :charts [(chart/bin2d {:measure :pmf})]
+                                   :labels {:title ":measure :pmf"}}
+                                  {:data faithful
+                                   :mapping {:x :eruptions :y :waiting}
+                                   :charts [(chart/bin2d {:measure :density})]
+                                   :labels {:title ":measure :density"}}]
+                                 {:columns 2})
+                   {:width 900 :height 340})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_grids_fields_files/image5.png)
+:::
+
+
 Shared options: [Cell style](reference.shared_options.html#cell-style) (`:cell` `:cell-scale` `:stroke-color` `:stroke-width` `:alpha`); [Data and mapping](reference.shared_options.html#data-and-mapping) (`:data` `:mapping`).
 
 
@@ -284,7 +345,7 @@ point (the Fields group).
 
 
 ::: {.clay-image}
-![](reference.charts_grids_fields_files/image4.png)
+![](reference.charts_grids_fields_files/image6.png)
 :::
 
 
@@ -319,7 +380,113 @@ Its options: the raster's opacity, or a colour per pixel computed by a function 
 
 
 ::: {.clay-image}
-![](reference.charts_grids_fields_files/image5.png)
+![](reference.charts_grids_fields_files/image7.png)
+:::
+
+
+
+### Field sources
+
+The Fields group gives the field. A function of a point `[x y]` sampled over a `:domain` on a grid of `:n`
+points per axis (a coarse grid shows its cells):
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange [{:charts [(chart/field {:f (fn [[x y]] (Math/sin (+ (* x x) (* y y))))
+                                                          :domain {:x [-2 2] :y [-2 2]}})]
+                                   :labels {:title ":f over :domain"}
+                                   :legend false}
+                                  {:charts [(chart/field {:f (fn [[x y]] (Math/sin (+ (* x x) (* y y))))
+                                                          :domain {:x [-2 2] :y [-2 2]} :n 12})]
+                                   :labels {:title ":n 12"}}]
+                                 {:columns 2 :widths [1 1.2]})
+                   {:width 900 :height 380})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_grids_fields_files/image8.png)
+:::
+
+
+Gridded values are interpolated between the lattice points - here a 5 x 5 lattice:
+
+
+::: {.sourceClojure}
+```clojure
+(def lattice (for [x (range 5) y (range 5)] {:x x :y y :z (* (Math/sin x) (Math/cos (* 0.8 y)))}))
+```
+:::
+
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>x</th><th>y</th><th>z</th></tr></thead><tbody><tr><td>0</td><td>0</td><td>0.0</td></tr><tr><td>0</td><td>1</td><td>0.0</td></tr><tr><td>0</td><td>2</td><td>-0.0</td></tr><tr><td>0</td><td>3</td><td>-0.0</td></tr><tr><td>0</td><td>4</td><td>-0.0</td></tr><tr><td>1</td><td>0</td><td>0.8414709848078965</td></tr><tr><td>1</td><td>1</td><td>0.5862584808366281</td></tr><tr><td>1</td><td>2</td><td>-0.024570550786785637</td></tr><tr><td>1</td><td>3</td><td>-0.620495416007646</td></tr><tr><td>1</td><td>4</td><td>-0.8400360881165891</td></tr><tr><td>2</td><td>0</td><td>0.9092974268256817</td></tr><tr><td>2</td><td>1</td><td>0.6335136180615656</td></tr><tr><td>2</td><td>2</td><td>-0.02655105049310103</td></tr><tr><td>2</td><td>3</td><td>-0.6705102080990835</td></tr><tr><td>2</td><td>4</td><td>-0.9077468708436899</td></tr><tr><td>3</td><td>0</td><td>0.1411200080598672</td></tr><tr><td>3</td><td>1</td><td>0.09831925643843555</td></tr><tr><td>3</td><td>2</td><td>-0.00412063682250215</td></tr><tr><td>3</td><td>3</td><td>-0.10406100708047604</td></tr><tr><td>3</td><td>4</td><td>-0.14087936680627888</td></tr></tbody></table>
+```
+
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange [{:data lattice
+                                   :mapping {:x :x :y :y :value :z}
+                                   :charts [(chart/field {:interpolation :bilinear})]
+                                   :labels {:title ":interpolation :bilinear"}
+                                   :legend false}
+                                  {:data lattice
+                                   :mapping {:x :x :y :y :value :z}
+                                   :charts [(chart/field {:interpolation :bicubic})]
+                                   :labels {:title ":interpolation :bicubic"}
+                                   :legend false}
+                                  {:data lattice
+                                   :mapping {:x :x :y :y :value :z}
+                                   :charts [(chart/field {:interpolation :cubic-2d})]
+                                   :labels {:title ":interpolation :cubic-2d"}}]
+                                 {:columns 3 :widths [1 1 1.25]})
+                   {:width 1000 :height 320})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_grids_fields_files/image9.png)
+:::
+
+
+The density of mapped points: its kernel and bandwidth, a binned estimate (faster on many points), and how far
+the domain reaches past the points (`:cut`, in bandwidths):
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange [{:data faithful
+                                   :mapping {:x :eruptions :y :waiting}
+                                   :charts [(chart/field {:kernel :epanechnikov :bandwidth [0.2 4]})]
+                                   :labels {:title "epanechnikov, bandwidth [0.2 4]"}
+                                   :legend false}
+                                  {:data faithful
+                                   :mapping {:x :eruptions :y :waiting}
+                                   :charts [(chart/field {:binned? true})]
+                                   :labels {:title ":binned? true"}
+                                   :legend false}
+                                  {:data faithful
+                                   :mapping {:x :eruptions :y :waiting}
+                                   :charts [(chart/field {:cut 0})]
+                                   :labels {:title ":cut 0"}
+                                   :legend false}]
+                                 {:columns 3})
+                   {:width 1000 :height 320})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_grids_fields_files/image10.png)
 :::
 
 
@@ -359,7 +526,7 @@ each.
 
 
 ::: {.clay-image}
-![](reference.charts_grids_fields_files/image6.png)
+![](reference.charts_grids_fields_files/image11.png)
 :::
 
 
@@ -394,7 +561,45 @@ colour and the opacity:
 
 
 ::: {.clay-image}
-![](reference.charts_grids_fields_files/image7.png)
+![](reference.charts_grids_fields_files/image12.png)
+:::
+
+
+
+### Field sources
+
+The same sources as `field`: a function over a domain (lines on a coarse grid are angular), interpolated gridded
+values and a density with its own bandwidth:
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange [{:charts [(chart/contour {:f (fn [[x y]] (+ (* x x) (* 2 y y) (* x y)))
+                                                            :domain {:x [-2 2] :y [-2 2]} :labels true})]
+                                   :labels {:title ":f over :domain"}
+                                   :legend false}
+                                  {:charts [(chart/contour {:f (fn [[x y]] (+ (* x x) (* 2 y y) (* x y)))
+                                                            :domain {:x [-2 2] :y [-2 2]} :n 6})]
+                                   :labels {:title ":n 6"}
+                                   :legend false}
+                                  {:data lattice
+                                   :mapping {:x :x :y :y :value :z}
+                                   :charts [(chart/contour {:interpolation :bicubic :levels 8})]
+                                   :labels {:title "5 x 5 lattice, :bicubic"}
+                                   :legend false}
+                                  {:data faithful
+                                   :mapping {:x :eruptions :y :waiting}
+                                   :charts [(chart/scatter {:size 3 :color [0 0 0 80]})
+                                            (chart/contour {:bandwidth [0.15 3] :cut 1})]
+                                   :labels {:title ":bandwidth [0.15 3] :cut 1"}}]
+                                 {:columns 2 :widths [1 1.25]})
+                   {:width 900 :height 640})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_grids_fields_files/image13.png)
 :::
 
 
@@ -427,7 +632,7 @@ The correlation coefficient r of two variables drawn as one glyph filling the pa
 
 
 ::: {.clay-image}
-![](reference.charts_grids_fields_files/image8.png)
+![](reference.charts_grids_fields_files/image14.png)
 :::
 
 
@@ -441,6 +646,63 @@ Its options: the coefficient, the glyph and its colours (by default r on a diver
 
 :::
 
+
+Every glyph, for one pair of variables (r about 0.82):
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange [{:data iris :mapping {:x :sepal-length :y :petal-width}
+                                   :charts [(chart/correlation {:glyph :number})] :labels {:title ":glyph :number"}}
+                                  {:data iris :mapping {:x :sepal-length :y :petal-width}
+                                   :charts [(chart/correlation {:glyph :shade})] :labels {:title ":glyph :shade"}}
+                                  {:data iris :mapping {:x :sepal-length :y :petal-width}
+                                   :charts [(chart/correlation {:glyph :square})] :labels {:title ":glyph :square"}}
+                                  {:data iris :mapping {:x :sepal-length :y :petal-width}
+                                   :charts [(chart/correlation {:glyph :circle})] :labels {:title ":glyph :circle"}}
+                                  {:data iris :mapping {:x :sepal-length :y :petal-width}
+                                   :charts [(chart/correlation {:glyph :ellipse})] :labels {:title ":glyph :ellipse"}}
+                                  {:data iris :mapping {:x :sepal-length :y :petal-width}
+                                   :charts [(chart/correlation {:glyph :pie})] :labels {:title ":glyph :pie"}}]
+                                 {:columns 3})
+                   {:width 900 :height 560})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_grids_fields_files/image15.png)
+:::
+
+
+The three coefficients of the same pair (Kendall's tau, counting concordant pairs, is the lowest), and one fixed
+glyph colour with a thick outline:
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange [{:data iris :mapping {:x :sepal-length :y :petal-width}
+                                   :charts [(chart/correlation {:method :pearson})] :labels {:title ":method :pearson"}}
+                                  {:data iris :mapping {:x :sepal-length :y :petal-width}
+                                   :charts [(chart/correlation {:method :spearman})] :labels {:title ":method :spearman"}}
+                                  {:data iris :mapping {:x :sepal-length :y :petal-width}
+                                   :charts [(chart/correlation {:method :kendall})] :labels {:title ":method :kendall"}}
+                                  {:data iris :mapping {:x :sepal-length :y :petal-width}
+                                   :charts [(chart/correlation {:glyph :circle :color [120 160 90] :stroke-color :black
+                                                                :stroke-width 3})]
+                                   :labels {:title ":color, :stroke-width 3"}}]
+                                 {:columns 4})
+                   {:width 1000 :height 280})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_grids_fields_files/image16.png)
+:::
+
+
+In a correlogram:
 
 
 ::: {.sourceClojure}
@@ -456,7 +718,7 @@ Its options: the coefficient, the glyph and its colours (by default r on a diver
 
 
 ::: {.clay-image}
-![](reference.charts_grids_fields_files/image9.png)
+![](reference.charts_grids_fields_files/image17.png)
 :::
 
 

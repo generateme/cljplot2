@@ -58,6 +58,56 @@
                                  {:columns 2 :widths [1 1.25]})
                    {:width 1000 :height 380})
 
+;; The scalings side by side: centred values (`:center`, original units less each variable's mean) and the robust
+;; scaling - values less a centre over a spread, the median over the median absolute deviation by default, here also
+;; the mean over a quantile spread (`:robust-spread 0.25` - the interquartile half-range):
+
+(plot/render-image (plot/arrange [{:data iris
+                                   :mapping {:color :species}
+                                   :charts [(chart/parallel {:variables [:sepal-length :sepal-width :petal-length :petal-width]
+                                                             :scaling :center})]
+                                   :labels {:title ":scaling :center" :x nil :y nil}
+                                   :legend false}
+                                  {:data iris
+                                   :mapping {:color :species}
+                                   :charts [(chart/parallel {:variables [:sepal-length :sepal-width :petal-length :petal-width]
+                                                             :scaling :robust :robust-center :median :robust-spread :mad})]
+                                   :labels {:title ":robust, :median / :mad" :x nil :y nil}
+                                   :legend false}
+                                  {:data iris
+                                   :mapping {:color :species}
+                                   :charts [(chart/parallel {:variables [:sepal-length :sepal-width :petal-length :petal-width]
+                                                             :scaling :robust :robust-center :mean :robust-spread 0.25})]
+                                   :labels {:title ":robust, :mean / 0.25" :x nil :y nil}}]
+                                 {:columns 3 :widths [1 1 1.3]})
+                   {:width 1000 :height 340})
+
+;; A missing value breaks a row's line there (`:break`) or drops the row (`:drop`); without `:axes` only the lines
+;; are drawn, here also without padding:
+
+(def readings [{:id "a" :t1 3 :t2 5 :t3 4 :t4 6} {:id "b" :t1 4 :t2 nil :t3 6 :t4 5}
+               {:id "c" :t1 6 :t2 4 :t3 nil :t4 3} {:id "d" :t1 5 :t2 6 :t3 5 :t4 4}])
+
+(nu/data-table readings)
+
+(plot/render-image (plot/arrange [{:data readings
+                                   :mapping {:color :id}
+                                   :charts [(chart/parallel {:variables [:t1 :t2 :t3 :t4] :missing :break :width 2})]
+                                   :labels {:title ":missing :break" :x nil :y nil}
+                                   :legend false}
+                                  {:data readings
+                                   :mapping {:color :id}
+                                   :charts [(chart/parallel {:variables [:t1 :t2 :t3 :t4] :missing :drop :width 2})]
+                                   :labels {:title ":missing :drop" :x nil :y nil}
+                                   :legend false}
+                                  {:data readings
+                                   :mapping {:color :id}
+                                   :charts [(chart/parallel {:variables [:t1 :t2 :t3 :t4] :axes false :padding {:y [0 0]}
+                                                             :width 2})]
+                                   :labels {:title ":axes false, :padding {:y [0 0]}" :x nil :y nil}}]
+                                 {:columns 3 :widths [1 1 1.2]})
+                   {:width 1000 :height 320})
+
 ;; ### Style
 
 ;; Smooth curves between the axes, and - in polar coordinates, where the axes become spokes of a radar - a fill of
@@ -138,6 +188,33 @@
                                  {:columns 3})
                    {:width 1000 :height 380})
 
+;; `:type :none` leaves only the projections - the point cloud's shadows on the three walls:
+
+(plot/render-image {:data iris
+                    :mapping {:x :sepal-length :y :sepal-width :z :petal-length :color :species}
+                    :charts [(chart/cloud {:type :none :projections {:xy :points :xz :points :yz :points}})]}
+                   {:width 600 :height 480})
+
+;; The 3D frame (Shared options) on the same points: the eye moved round and up, the box flattened and the x axis
+;; reversed, the box and axes left out:
+
+(plot/render-image (plot/arrange [{:data iris
+                                   :mapping {:x :sepal-length :y :sepal-width :z :petal-length :color :species}
+                                   :charts [(chart/cloud {:view {:azimuth 120 :elevation 45}})]
+                                   :labels {:title ":azimuth 120 :elevation 45"}
+                                   :legend false}
+                                  {:data iris
+                                   :mapping {:x :sepal-length :y :sepal-width :z :petal-length :color :species}
+                                   :charts [(chart/cloud {:aspect [1 1 0.4] :reverse #{:x}})]
+                                   :labels {:title ":aspect, :reverse #{:x}"}
+                                   :legend false}
+                                  {:data iris
+                                   :mapping {:x :sepal-length :y :sepal-width :z :petal-length :color :species}
+                                   :charts [(chart/cloud {:box false :axes false})]
+                                   :labels {:title ":box false, :axes false"}}]
+                                 {:columns 3 :widths [1 1 1.3]})
+                   {:width 1000 :height 360})
+
 (nu/shared-groups (describe/options (chart/cloud)))
 
 ;; ## surface
@@ -180,5 +257,40 @@
                                    :legend false}]
                                  {:columns 3})
                    {:width 1000 :height 380})
+
+;; A density surface reaching past the points by `:cut` bandwidths (0 - the points' range only, the edges cut off
+;; high), and the quad outlines' width:
+
+(plot/render-image (plot/arrange [{:data iris
+                                   :mapping {:x :sepal-length :y :sepal-width}
+                                   :charts [(chart/surface {:density true :cut 0})]
+                                   :labels {:title ":density, :cut 0"}
+                                   :legend false}
+                                  {:data iris
+                                   :mapping {:x :sepal-length :y :sepal-width}
+                                   :charts [(chart/surface {:density true :cut 3})]
+                                   :labels {:title ":cut 3 (default)"}
+                                   :legend false}
+                                  {:data lattice
+                                   :mapping {:x :x :y :y :z :z}
+                                   :charts [(chart/surface {:style :both :stroke-width 2})]
+                                   :labels {:title ":style :both, :stroke-width 2"}}]
+                                 {:columns 3 :widths [1 1 1.25]})
+                   {:width 1000 :height 360})
+
+;; The 3D frame (Shared options) on a surface: seen from another side and from above, and with y reversed:
+
+(plot/render-image (plot/arrange [{:data lattice
+                                   :mapping {:x :x :y :y :z :z}
+                                   :charts [(chart/surface {:view {:azimuth -60 :elevation 60}})]
+                                   :labels {:title ":view {:azimuth -60 :elevation 60}"}
+                                   :legend false}
+                                  {:data lattice
+                                   :mapping {:x :x :y :y :z :z}
+                                   :charts [(chart/surface {:reverse #{:y} :axis-titles {:x "x" :y "y (reversed)" :z "height"}})]
+                                   :labels {:title ":reverse #{:y}"}
+                                   :legend false}]
+                                 {:columns 2})
+                   {:width 900 :height 380})
 
 (nu/shared-groups (describe/options (chart/surface)))
