@@ -12,7 +12,13 @@
             [cljplot2.schema :as schema]
             [cljplot2.content.legend :as legend]
             [cljplot2.data.rows :as rows]
+            [cljplot2.content.axis :as axis]
+            [cljplot2.data.tree :as tree]
+            [cljplot2.scale.position :as position]
             [cljplot2.graphics.draw :as draw]
+            [cljplot2.graphics.measure :as measure]
+            [fastmath.vector]
+            [cljplot2.graphics.shape]
             [cljplot2.scale.aesthetic :as aesthetic]
             [cljplot2.test-util :refer [error-data same-pixels?]]
             [cljplot2.theme])
@@ -288,7 +294,7 @@
     (testing "rows: a column per key (first appearance), cells as text; the code hidden"
       (let [t (table [{:a 1 :b "x"} {:a 2 :c (java.time.LocalDate/of 2024 1 2)}])]
         (is (= ["a" "b" "c"] (:column-names t)))
-        (is (= [["1" "x" "nil"] ["2" "nil" "2024-01-02"]] (:row-vectors t)))
+        (is (= [["1" "x" ""] ["2" "" "2024-01-02"]] (:row-vectors t)) "a missing value - an empty cell")
         (is (:kindly/hide-code (meta t)))))
     (testing "columns become rows"
       (is (= [["0" "1"] ["1" "2"]] (:row-vectors (table {:t [0 1] :v [1 2]})))))
@@ -298,3 +304,127 @@
     (testing "boundary: empty, not data, unequal columns - errors keyed :data"
       (doseq [bad [[] nil {} [:a :b] {:t [0 1] :v [1]} "rows"]]
         (is (= :data (:key (error-data #(table bad)))) (pr-str bad))))))
+
+;; CSV column order
+
+(deftest csv-order-test
+  (testing "rows keep the header's column order, also past 8 columns (hash maps would scramble it)"
+    (let [header (mapv #(str "c" %) (range 12))
+          text (str (clojure.string/join "," header) "\n" (clojure.string/join "," (range 12)) "\n")
+          rows (nu/parse-csv text)]
+      (is (= (map keyword header) (keys (first rows))))
+      (is (= ["c0" "c1"] (take 2 (:column-names (nu/data-table rows)))))))
+  (testing "boundary: one column; a dataset of the book (mtcars - model first)"
+    (is (= [:a] (keys (first (nu/parse-csv "a\n1\n")))))
+    (is (= :model (first (keys (first (nu/dataset :mtcars))))))))
+
+;; colliding labels
+
+(deftest kept-label-indices-test
+  (testing "the first label, then each not overlapping the last kept one"
+    (is (= [0 2 4] (measure/kept-label-indices [0 5 10 15 20] [8 8 8 8 8])))
+    (is (= [0 1 2] (measure/kept-label-indices [0 10 20] [8 8 8]))))
+  (testing "boundary: no labels; one; touching or 1 px overlap kept, more dropped; reversed positions"
+    (is (= [] (measure/kept-label-indices [] [])))
+    (is (= [0] (measure/kept-label-indices [5] [100])))
+    (is (= [0 1] (measure/kept-label-indices [0 10] [10 10])) "touching")
+    (is (= [0 1] (measure/kept-label-indices [0 9] [10 10])) "1 px")
+    (is (= [0] (measure/kept-label-indices [0 8.5] [10 10])) "1.5 px")
+    (is (= [0 2] (measure/kept-label-indices [100 95 80] [8 8 8])) "pixels decreasing (a vertical axis)")))
+
+(deftest axis-label-collisions-test
+  (let [sizes (fn [n w] (vec (repeat n (fastmath.vector/vec2 w 10))))]
+    (testing "continuous axes drop labels colliding with the last drawn one; bands axes keep every s-th label"
+      (let [finalized (get-in (plot/build {:data [{:x 0 :y 0} {:x 4 :y 1}] :mapping {:x :x :y :y} :charts [(chart/scatter)]
+                                           :scales {:x {:ticks [0 1 2 3 4] :expand [0 0]}}}
+                                          {:width 300 :height 200})
+                              [:finalized-scales :x])
+            n (count (:ticks finalized))
+            step (/ (Math/abs (- (double (second (:range finalized))) (double (first (:range finalized))))) (dec n))]
+        (is (= (vec (range n)) (axis/drawn-label-indices :x finalized (sizes n (* 0.5 step)) 2 nil nil)) "room for all")
+        (is (= (vec (range 0 n 2)) (axis/drawn-label-indices :x finalized (sizes n (* 1.5 step)) 2 nil nil)) "every other fits")))
+    (testing "a symlog axis crowded near 0: fewer labels drawn than ticks, none overlapping"
+      (let [built (plot/build {:data (for [i (range -40 41)] {:x (* i i i) :y i}) :mapping {:x :x :y :y}
+                               :charts [(chart/scatter)] :scales {:x {:kind :symlog :ticks 15}}}
+                              {:width 300 :height 200})]
+        (is (instance? BufferedImage (plot/render-image (dissoc built :subplots) {:width 300 :height 200})))))))
+
+;; dates as colour bar ticks
+
+(deftest date-ticks-test
+  (let [p {:data dated :mapping {:x :x :y :y :color :d} :charts [(chart/scatter)]}
+        d (fn [m] (java.time.LocalDate/of 2024 m 1))
+        colorbar (fn [plot] (first (filter #(= :colorbar (:kind %))
+                                           (legend/legends (plot/build plot {:width 300 :height 200 :until :scale-specs})))))]
+    (testing "explicit date ticks: those inside the domain, placed by their epoch milliseconds"
+      (let [cb (colorbar (assoc p :scales {:color {:ticks [(d 3) (d 6) (d 12) (java.time.LocalDate/of 2030 1 1)]}}))]
+        (is (= (mapv #(rows/x-key (d %)) [3 6 12]) (:ticks cb)))))
+    (testing "the formatter gets values of the data's type (LocalDate), computed ticks too"
+      (is (every? #{"java.time.LocalDate"}
+                  (:labels (colorbar (assoc p :scales {:color {:formatter #(.getName (class %))}}))))))
+    (testing "boundary: numbers on a date scale, dates on a numeric one - errors at :ticks"
+      (is (= :ticks (:key (error-data #(plot/build (assoc p :scales {:color {:ticks [1 2]}}))))))
+      (is (= :ticks (:key (error-data #(plot/build (assoc p :mapping {:x :x :y :y :color :y}
+                                                          :scales {:color {:ticks [(d 3)]}})))))))))
+
+;; legend texts with :contrast
+
+(deftest legend-contrast-test
+  (testing "legend titles and labels resolve :contrast over the legend backdrop - no failure, black on the default"
+    (doseq [p [{:data dated :mapping {:x :x :y :y :color :y} :charts [(chart/scatter)]}
+               {:data [{:x 1 :y 1 :g "a"} {:x 2 :y 2 :g "b"}] :mapping {:x :x :y :y :color :g} :charts [(chart/scatter)]}]
+            :let [o {:width 300 :height 200}
+                  with (fn [p color] (-> p (assoc-in [:theme :text :legend-label :color] color)
+                                         (assoc-in [:theme :text :legend-title :color] color)))]]
+      (is (same-pixels? (with p :contrast) (with p :black) o))
+      (is (same-pixels? (-> p (with :contrast) (assoc-in [:theme :legend :fill] :black))
+                        (-> p (with :white) (assoc-in [:theme :legend :fill] :black)) o)))))
+
+(deftest throwing-transform-test
+  (testing "a transform function throwing at a domain end: the keyed error, not the raw exception"
+    (is (= :transform (:key (error-data #(plot/build {:data [{:x 1 :y 0} {:x 2 :y 3}] :mapping {:x :x :y :y :color :y}
+                                                       :charts [(chart/scatter)]
+                                                       :scales {:color {:transform (fn [v] (if (zero? (double v)) (throw (ex-info "no" {})) v))}}})))))))
+
+(deftest attribute-values-test
+  (testing "every built-in shape, dash style, pattern and cell type, sorted"
+    (is (= (set cljplot2.graphics.shape/shapes) (set (:shape describe/attribute-values))))
+    (is (= (sort (keys schema/dash-styles)) (:dash describe/attribute-values)))
+    (is (some #{:hatch} (:pattern describe/attribute-values)))
+    (is (some #{:pointy-hex} (:cell describe/attribute-values)))))
+
+;; :overlapping-labels
+
+(defn- crowded-axis-drawn
+  "Indices of tick labels drawn on a crowded continuous x axis with position scale `spec` merged in."
+  [spec]
+  (let [finalized (get-in (plot/build {:data [{:x 0 :y 0} {:x 40 :y 1}] :mapping {:x :x :y :y} :charts [(chart/scatter)]
+                                       :scales {:x (merge {:ticks (vec (range 0 41)) :expand [0 0]} spec)}}
+                                      {:width 300 :height 200})
+                              [:finalized-scales :x])
+        sizes (vec (repeat (count (:ticks finalized)) (fastmath.vector/vec2 30 10)))]
+    [(count sizes) (axis/drawn-label-indices :x finalized sizes 2 nil nil)]))
+
+(deftest overlapping-labels-test
+  (testing "default :drop - colliding labels dropped; :keep - every label drawn"
+    (let [[n drawn] (crowded-axis-drawn {})]
+      (is (< (count drawn) n)))
+    (let [[n drawn] (crowded-axis-drawn {:overlapping-labels :drop})]
+      (is (< (count drawn) n)))
+    (let [[n drawn] (crowded-axis-drawn {:overlapping-labels :keep})]
+      (is (= (vec (range n)) drawn))))
+  (testing "the finalized scale carries :keep only; an :axis-domain display scale carries it too"
+    (is (= :keep (:overlapping-labels (position/finalize {:kind :linear :domain [0 1] :overlapping-labels :keep} [0 100] 5))))
+    (is (nil? (:overlapping-labels (position/finalize {:kind :linear :domain [0 1] :overlapping-labels :drop} [0 100] 5))))
+    (is (= :keep (:overlapping-labels (position/display-scale
+                                       (position/finalize {:kind :linear :domain [0 1] :axis-domain [0 10] :overlapping-labels :keep}
+                                                          [0 100] 5))))))
+  (testing "builders naming data items on an axis keep every name: arc, dendrogram leaves, alluvial axes"
+    (is (= :keep (get-in (plot/arc [{:from "a" :to "b"}] {}) [:scales :x :overlapping-labels])))
+    (is (= :keep (get-in (plot/dendrogram (tree/from-parents [{:id 1} {:id 2 :parent 1} {:id 3 :parent 1}] {}) {})
+                         [:scales :x :overlapping-labels])))
+    (is (= :keep (get-in (plot/alluvial [{:a "p" :b "q"} {:a "r" :b "q"}] {:axes [:a :b]}) [:scales :x :overlapping-labels]))))
+  (testing "boundary: a builder's :scales override it; other values rejected"
+    (is (= :drop (get-in (plot/arc [{:from "a" :to "b"}] {:scales {:x {:overlapping-labels :drop}}})
+                         [:scales :x :overlapping-labels])))
+    (is (= :overlapping-labels (:key (error-data #(plot/build (assoc small-plot :scales {:x {:overlapping-labels :all}}))))))))

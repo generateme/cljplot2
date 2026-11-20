@@ -22,6 +22,7 @@
   from the theme), `:default-doc` the text of a computed default; only a style row may have both - the theme value
   and how the chart applies it (e.g. only to grouped lines)."
   (:require [clojure.string :as str]
+            [fastmath.grid :as grid]
             [malli.core :as malli]
             [cljplot2.chart]
             [cljplot2.content.label :as label]
@@ -36,6 +37,7 @@
             [cljplot2.graphics.curve :as curve]
             [cljplot2.graphics.draw :as draw]
             [cljplot2.graphics.polyline :as polyline]
+            [cljplot2.graphics.shape :as shape]
             [cljplot2.layout.plot-grid :as plot-grid]
             [cljplot2.multiplot :as multiplot]
             [cljplot2.pipeline :as pipeline]
@@ -340,6 +342,15 @@
               :let [c (try (@v) (catch Exception _ nil))]
               :when (chart-value? c)]
           [(:kind c) v])))
+
+(def attribute-values
+  "The built-in values of attribute options, sorted: `:shape` - point shape characters (shape maps are open), `:dash`
+  - dash style names (dash arrays are open), `:pattern` - fill pattern names (pattern maps are open), `:cell` - grid
+  cell types."
+  {:shape (vec (sort-by str shape/shapes))
+   :dash (vec (sort (keys schema/dash-styles)))
+   :pattern (vec (sort (keys schema/pattern-styles)))
+   :cell (vec (sort grid/cell-names))})
 
 (def plot-level-schemas
   "Every non-chart schema users write: name -> schema (the aesthetic scale specs one per dimension; margins also as

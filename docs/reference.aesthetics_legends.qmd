@@ -28,9 +28,7 @@ scale uses every key, the others differ only in their `:range`.
   (:require [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
             [cljplot2.describe :as describe]
-            [cljplot2.graphics.shape :as shape]
             [cljplot2.scale.aesthetic :as aesthetic]
-            [cljplot2.schema :as schema]
             [notebook-utils :as nu])
   (:import [java.time LocalDate]))
 ```
@@ -133,6 +131,26 @@ Dates (`java.time` values) mapped to `:color` get a linear gradient over time, t
 :::
 
 
+Its `:ticks` take dates, and `:formatter` gets ticks in the data's type (here `LocalDate`s):
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image {:data readings
+                    :mapping {:x :x :y :y :color :day}
+                    :charts [(chart/scatter {:size 12})]
+                    :scales {:color {:ticks [(LocalDate/of 2024 3 1) (LocalDate/of 2024 6 1) (LocalDate/of 2024 9 1)]
+                                     :formatter #(str "Q" (inc (quot (dec (.getMonthValue ^LocalDate %)) 3)) " " (.getYear ^LocalDate %))}}}
+                   {:width 600 :height 320})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.aesthetics_legends_files/image2.png)
+:::
+
+
 
 ## Colour range
 
@@ -218,7 +236,7 @@ Swatches of a few palettes (an `:identity` colour scale reads the colours from t
 
 
 ::: {.clay-image}
-![](reference.aesthetics_legends_files/image2.png)
+![](reference.aesthetics_legends_files/image3.png)
 :::
 
 
@@ -267,7 +285,7 @@ Gradients, each sampled at 32 points:
 
 
 ::: {.clay-image}
-![](reference.aesthetics_legends_files/image3.png)
+![](reference.aesthetics_legends_files/image4.png)
 :::
 
 
@@ -308,7 +326,7 @@ the range reversed, size by area.
 
 
 ::: {.clay-image}
-![](reference.aesthetics_legends_files/image4.png)
+![](reference.aesthetics_legends_files/image5.png)
 :::
 
 
@@ -350,7 +368,7 @@ values 1 to 20 under each (`:exp` - the values 0.1 to 2, the exponential of 20 d
 
 
 ::: {.clay-image}
-![](reference.aesthetics_legends_files/image5.png)
+![](reference.aesthetics_legends_files/image6.png)
 :::
 
 
@@ -372,7 +390,7 @@ values 1 to 20 under each (`:exp` - the values 0.1 to 2, the exponential of 20 d
 
 
 ::: {.clay-image}
-![](reference.aesthetics_legends_files/image6.png)
+![](reference.aesthetics_legends_files/image7.png)
 :::
 
 
@@ -410,7 +428,7 @@ bins:
 
 
 ::: {.clay-image}
-![](reference.aesthetics_legends_files/image7.png)
+![](reference.aesthetics_legends_files/image8.png)
 :::
 
 
@@ -425,7 +443,7 @@ panels; their sizes and frame are in the theme `:legend` section (Theme chapter)
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:formatter</td><td>a function</td><td></td><td>legend labels, a function of the level or value</td></tr><tr><td>:ticks</td><td>sequential of a finite number or a positive integer or nil</td><td></td><td>linear :size / :color: the legend entries or colour bar ticks - a count or the values</td></tr><tr><td>:title</td><td>string or nil</td><td>the mapped column's name</td><td>legend title (nil - none)</td></tr><tr><td>:legend</td><td>true or false or nil</td><td>true</td><td>show the scale's legend</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:formatter</td><td>a function</td><td></td><td>legend labels, a function of the level or value</td></tr><tr><td>:ticks</td><td>sequential of a finite number or a java.time value or a positive integer or nil</td><td></td><td>linear :size / :color: the legend entries or colour bar ticks - a count or the values (dates for a :color scale over dates)</td></tr><tr><td>:title</td><td>string or nil</td><td>the mapped column's name</td><td>legend title (nil - none)</td></tr><tr><td>:legend</td><td>true or false or nil</td><td>true</td><td>show the scale's legend</td></tr></tbody></table>
 ```
 
 :::
@@ -447,7 +465,7 @@ panels; their sizes and frame are in the theme `:legend` section (Theme chapter)
 
 
 ::: {.clay-image}
-![](reference.aesthetics_legends_files/image8.png)
+![](reference.aesthetics_legends_files/image9.png)
 :::
 
 
@@ -467,7 +485,7 @@ A colour bar takes `:ticks` and `:formatter` too:
 
 
 ::: {.clay-image}
-![](reference.aesthetics_legends_files/image9.png)
+![](reference.aesthetics_legends_files/image10.png)
 :::
 
 
@@ -486,12 +504,13 @@ maps (an SVG path, a text, an SVG file, an image).
 :::
 
 
-Every built-in shape (an `:identity` scale draws the data's shapes):
+Every built-in shape (`describe/attribute-values` lists the built-in shapes, dashes, patterns and cells; an
+`:identity` scale draws the data's shapes):
 
 
 ::: {.sourceClojure}
 ```clojure
-(def shapes (map-indexed (fn [i s] {:i i :shape s :name (str s)}) (sort-by str shape/shapes)))
+(def shapes (map-indexed (fn [i s] {:i i :shape s :name (str s)}) (:shape describe/attribute-values)))
 ```
 :::
 
@@ -519,7 +538,7 @@ Every built-in shape (an `:identity` scale draws the data's shapes):
 
 
 ::: {.clay-image}
-![](reference.aesthetics_legends_files/image10.png)
+![](reference.aesthetics_legends_files/image11.png)
 :::
 
 
@@ -556,7 +575,7 @@ A shape range of characters and shape maps:
 
 
 ::: {.clay-image}
-![](reference.aesthetics_legends_files/image11.png)
+![](reference.aesthetics_legends_files/image12.png)
 :::
 
 
@@ -588,7 +607,7 @@ Sizes `[min max]` in pixels for numbers (a level map or a list for levels).
 
 
 ::: {.clay-image}
-![](reference.aesthetics_legends_files/image12.png)
+![](reference.aesthetics_legends_files/image13.png)
 :::
 
 
@@ -612,7 +631,7 @@ Every named style, and two dash arrays (an `:identity` scale draws the data's da
 
 ::: {.sourceClojure}
 ```clojure
-(def dashes (concat (for [[i d] (map-indexed vector (sort (keys schema/dash-styles))) x [0 10]]
+(def dashes (concat (for [[i d] (map-indexed vector (:dash describe/attribute-values)) x [0 10]]
                       {:i i :x x :dash d :name (str d)})
                     (for [[i d] [[8 [12 4]] [9 [2 2 8 2]]] x [0 10]]
                       {:i i :x x :dash d :name (pr-str d)})))
@@ -645,7 +664,7 @@ Every named style, and two dash arrays (an `:identity` scale draws the data's da
 
 
 ::: {.clay-image}
-![](reference.aesthetics_legends_files/image13.png)
+![](reference.aesthetics_legends_files/image14.png)
 :::
 
 
@@ -664,7 +683,7 @@ A dash range by group:
 
 
 ::: {.clay-image}
-![](reference.aesthetics_legends_files/image14.png)
+![](reference.aesthetics_legends_files/image15.png)
 :::
 
 
@@ -688,7 +707,7 @@ Every named pattern and two pattern maps:
 
 ::: {.sourceClojure}
 ```clojure
-(def patterns (concat (for [p (sort (keys schema/pattern-styles))] {:name (name p) :pattern p :v 1})
+(def patterns (concat (for [p (:pattern describe/attribute-values)] {:name (name p) :pattern p :v 1})
                       [{:name "lines 135, spacing 8" :pattern {:kind :lines :angle 135 :spacing 8 :width 2} :v 1}
                        {:name "dots, spacing 5" :pattern {:kind :dots :spacing 5 :size 3} :v 1}]))
 ```
@@ -718,7 +737,7 @@ Every named pattern and two pattern maps:
 
 
 ::: {.clay-image}
-![](reference.aesthetics_legends_files/image15.png)
+![](reference.aesthetics_legends_files/image16.png)
 :::
 
 

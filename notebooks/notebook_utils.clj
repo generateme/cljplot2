@@ -59,7 +59,7 @@
       (vec (remove blank? rows)))))
 
 (defn parse-csv
-  "Rows (maps with keyword keys from the header row) of CSV `text`. Empty values become `nil`; a column whose every
+  "Rows (maps with keyword keys from the header row, in the header's order) of CSV `text`. Empty values become `nil`; a column whose every
   non-empty value is a number holds numbers (long or double), other columns and the columns named in `:strings`
   (keywords; e.g. ids with leading zeros) hold strings. Blank lines are skipped (with a single column only trailing
   ones; inner ones are missing values).
@@ -78,11 +78,11 @@
                                       (numeric-column? (map (fn [row] (nth row %)) rows)))
                                 (range (count ks))))]
        (mapv (fn [row]
-               (into {} (map-indexed (fn [i v]
-                                       [(ks i) (cond (str/blank? v) nil
-                                                     (numeric i) (parse-number v)
-                                                     :else v)])
-                                     row)))
+               (apply array-map (mapcat (fn [i v]
+                                          [(ks i) (cond (str/blank? v) nil
+                                                        (numeric i) (parse-number v)
+                                                        :else v)])
+                                        (range) row)))
              rows)))))
 
 (defn dataset
@@ -237,10 +237,11 @@
     :else nil))
 
 (defn- cell-text
-  "Text of a table cell: a string as it is, a `java.time` value as its ISO text, else printed (colours and functions
-  readable, see [[readable-value]])."
+  "Text of a table cell: empty for a missing value, a string as it is, a `java.time` value as its ISO text, else
+  printed (colours and functions readable, see [[readable-value]])."
   [v]
   (cond
+    (nil? v) ""
     (string? v) v
     (instance? java.time.temporal.Temporal v) (str v)
     :else (pr-str (readable-value v))))

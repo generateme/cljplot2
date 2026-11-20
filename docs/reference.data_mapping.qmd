@@ -138,8 +138,8 @@ Data: Edgar Anderson's iris measurements, R datasets package `iris` (Anderson 19
 :::
 
 
-The categorical marker: petal widths rounded to whole numbers, read as numbers (left - a continuous axis) and as
-levels (right - one band each):
+The categorical marker: petal lengths rounded to whole numbers, read as numbers (left - a continuous axis) and
+as levels (right - one band each):
 
 
 ::: {.sourceClojure}
@@ -324,7 +324,7 @@ densities ...) draw each separately; any aesthetic groups too. `:order` sets the
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>walk</th><th>t</th><th>v</th></tr></thead><tbody><tr><td>nil</td><td>0</td><td>0.0</td></tr><tr><td>nil</td><td>1</td><td>0.3</td></tr><tr><td>nil</td><td>2</td><td>0.6</td></tr><tr><td>nil</td><td>3</td><td>0.8999999999999999</td></tr><tr><td>nil</td><td>4</td><td>1.2</td></tr><tr><td>nil</td><td>5</td><td>1.5</td></tr><tr><td>nil</td><td>6</td><td>1.7999999999999998</td></tr><tr><td>nil</td><td>7</td><td>2.1</td></tr><tr><td>nil</td><td>8</td><td>2.4</td></tr><tr><td>nil</td><td>9</td><td>2.6999999999999997</td></tr><tr><td>nil</td><td>10</td><td>3.0</td></tr><tr><td>nil</td><td>11</td><td>3.3</td></tr><tr><td>1</td><td>0</td><td>1.0</td></tr><tr><td>1</td><td>1</td><td>2.6</td></tr><tr><td>1</td><td>2</td><td>4.2</td></tr><tr><td>1</td><td>3</td><td>2.8</td></tr><tr><td>1</td><td>4</td><td>4.4</td></tr><tr><td>1</td><td>5</td><td>6.0</td></tr><tr><td>1</td><td>6</td><td>4.6</td></tr><tr><td>1</td><td>7</td><td>6.2</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>walk</th><th>t</th><th>v</th></tr></thead><tbody><tr><td></td><td>0</td><td>0.0</td></tr><tr><td></td><td>1</td><td>0.3</td></tr><tr><td></td><td>2</td><td>0.6</td></tr><tr><td></td><td>3</td><td>0.8999999999999999</td></tr><tr><td></td><td>4</td><td>1.2</td></tr><tr><td></td><td>5</td><td>1.5</td></tr><tr><td></td><td>6</td><td>1.7999999999999998</td></tr><tr><td></td><td>7</td><td>2.1</td></tr><tr><td></td><td>8</td><td>2.4</td></tr><tr><td></td><td>9</td><td>2.6999999999999997</td></tr><tr><td></td><td>10</td><td>3.0</td></tr><tr><td></td><td>11</td><td>3.3</td></tr><tr><td>1</td><td>0</td><td>1.0</td></tr><tr><td>1</td><td>1</td><td>2.6</td></tr><tr><td>1</td><td>2</td><td>4.2</td></tr><tr><td>1</td><td>3</td><td>2.8</td></tr><tr><td>1</td><td>4</td><td>4.4</td></tr><tr><td>1</td><td>5</td><td>6.0</td></tr><tr><td>1</td><td>6</td><td>4.6</td></tr><tr><td>1</td><td>7</td><td>6.2</td></tr></tbody></table>
 ```
 
 :::

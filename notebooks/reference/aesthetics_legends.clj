@@ -9,9 +9,7 @@
   (:require [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
             [cljplot2.describe :as describe]
-            [cljplot2.graphics.shape :as shape]
             [cljplot2.scale.aesthetic :as aesthetic]
-            [cljplot2.schema :as schema]
             [notebook-utils :as nu])
   (:import [java.time LocalDate]))
 
@@ -53,6 +51,15 @@
 (plot/render-image {:data readings
                     :mapping {:x :x :y :y :color :day}
                     :charts [(chart/scatter {:size 12})]}
+                   {:width 600 :height 320})
+
+;; Its `:ticks` take dates, and `:formatter` gets ticks in the data's type (here `LocalDate`s):
+
+(plot/render-image {:data readings
+                    :mapping {:x :x :y :y :color :day}
+                    :charts [(chart/scatter {:size 12})]
+                    :scales {:color {:ticks [(LocalDate/of 2024 3 1) (LocalDate/of 2024 6 1) (LocalDate/of 2024 9 1)]
+                                     :formatter #(str "Q" (inc (quot (dec (.getMonthValue ^LocalDate %)) 3)) " " (.getYear ^LocalDate %))}}}
                    {:width 600 :height 320})
 
 ;; ## Colour range
@@ -207,9 +214,10 @@
 
 (nu/options-table (describe/options (aesthetic/scale-spec-schema :shape)) :range)
 
-;; Every built-in shape (an `:identity` scale draws the data's shapes):
+;; Every built-in shape (`describe/attribute-values` lists the built-in shapes, dashes, patterns and cells; an
+;; `:identity` scale draws the data's shapes):
 
-(def shapes (map-indexed (fn [i s] {:i i :shape s :name (str s)}) (sort-by str shape/shapes)))
+(def shapes (map-indexed (fn [i s] {:i i :shape s :name (str s)}) (:shape describe/attribute-values)))
 
 (nu/data-table shapes)
 
@@ -255,7 +263,7 @@
 
 ;; Every named style, and two dash arrays (an `:identity` scale draws the data's dashes):
 
-(def dashes (concat (for [[i d] (map-indexed vector (sort (keys schema/dash-styles))) x [0 10]]
+(def dashes (concat (for [[i d] (map-indexed vector (:dash describe/attribute-values)) x [0 10]]
                       {:i i :x x :dash d :name (str d)})
                     (for [[i d] [[8 [12 4]] [9 [2 2 8 2]]] x [0 10]]
                       {:i i :x x :dash d :name (pr-str d)})))
@@ -288,7 +296,7 @@
 
 ;; Every named pattern and two pattern maps:
 
-(def patterns (concat (for [p (sort (keys schema/pattern-styles))] {:name (name p) :pattern p :v 1})
+(def patterns (concat (for [p (:pattern describe/attribute-values)] {:name (name p) :pattern p :v 1})
                       [{:name "lines 135, spacing 8" :pattern {:kind :lines :angle 135 :spacing 8 :width 2} :v 1}
                        {:name "dots, spacing 5" :pattern {:kind :dots :spacing 5 :size 3} :v 1}]))
 

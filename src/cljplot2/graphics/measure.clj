@@ -26,6 +26,24 @@
   [hint f]
   (canvas/call-with-graphics (scratch-canvas hint) f))
 
+(defn spans-overlap?
+  "Do two labels with centres `ci`, `cj` and extents `ei`, `ej` along one axis overlap by more than 1 px (natural sizes
+  are rounded up)?"
+  [^double ci ^double ei ^double cj ^double ej]
+  (< (Math/abs (- cj ci)) (- (* 0.5 (+ ei ej)) 1.0)))
+
+(defn kept-label-indices
+  "Indices of labels (`centres`, `extents` along one axis, in tick order) to draw without collisions: the first, then
+  each label not overlapping the last kept one ([[spans-overlap?]]); empty for no labels."
+  [centres extents]
+  (loop [i 0 last-kept nil kept []]
+    (if (>= i (count centres))
+      kept
+      (if (and last-kept (spans-overlap? (double (centres last-kept)) (double (extents last-kept))
+                                         (double (centres i)) (double (extents i))))
+        (recur (inc i) last-kept kept)
+        (recur (inc i) i (conj kept i))))))
+
 (defn content-kind
   "Dispatch value of item content: `::empty` for `nil` (an empty box), otherwise its `:kind`."
   [content]

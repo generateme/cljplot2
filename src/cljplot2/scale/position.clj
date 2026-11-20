@@ -144,6 +144,9 @@
           (schema/nilable :minor-ticks {:cljplot2/section :ticks :description "unlabelled ticks between two major ticks (continuous numeric kinds)"} schema/pos-int)
           (schema/nilable :axis-domain {:cljplot2/section :axis :description "display only: axis and grid show the ticks of this linear domain over the panel"}
                           [:tuple schema/finite schema/finite])
+          (schema/optional :overlapping-labels {:cljplot2/section :axis :description "tick labels overlapping the last drawn one: :drop (not drawn) or :keep (all drawn - axes naming data items)"
+                                                :default :drop}
+                           [:enum :drop :keep])
           (schema/optional :axis {:cljplot2/section :axis :description "true - axis and grid, false - neither, :grid - grid lines only, :no-grid - axis only"
                                   :default true}
                            [:or :boolean [:enum :grid :no-grid]])
@@ -518,13 +521,14 @@
   inside (see [[ticks-inside]]; `:attributes` `:ticks` - the count used). A bands scale without `:ticks` has a tick
   at every band. A spec with
   `:axis false` gives a finalized scale with `:axis false` (no axis, no grid lines), `:axis :grid` one with
-  `:axis :grid` (no axis, grid lines kept), `:axis :no-grid` one with `:axis :no-grid` (the axis, no grid lines)."
+  `:axis :grid` (no axis, grid lines kept), `:axis :no-grid` one with `:axis :no-grid` (the axis, no grid lines);
+  `:overlapping-labels :keep` one with `:overlapping-labels :keep` (the axis draws every tick label)."
   [spec range tick-hint]
   (let [kind (:kind spec)
         explicit (:ticks spec)
         nice-count (if (integer? explicit) explicit tick-hint)
         base (cond-> (assoc (dissoc spec :kind :nice :expand :padding :padding-px :tick-format :axis :stops :minor-ticks
-                                    :axis-domain :reverse)
+                                    :axis-domain :reverse :overlapping-labels)
                             :range (wadogo-range kind range))
                (get-in spec [:ticks-params :min-n]) (update-in [:ticks-params :min-n] #(min (long %) (long nice-count)))
                (= :interpolated kind) (assoc :range (stop-pixels range (count (:domain spec)) (:stops spec))))
@@ -553,6 +557,7 @@
              :tick-labels (tick-labels scale spec ticks)
              :attributes attributes}
       (contains? #{false :grid :no-grid} (:axis spec)) (assoc :axis (:axis spec))
+      (= :keep (:overlapping-labels spec)) (assoc :overlapping-labels :keep)
       (:minor-ticks spec) (assoc :minor-ticks (filterv inside? (minor-tick-values kind domain ticks (:minor-ticks spec)
                                                                                    (get attributes :base 10.0))))
       (:axis-domain spec) (assoc :axis-scale (finalize (merge (select-keys spec [:formatter :minor-ticks :ticks-method :ticks-params])
@@ -562,10 +567,11 @@
 (defn display-scale
   "The scale an axis and the panel grid show for finalized scale `finalized`: its `:axis-scale` (from an
   `:axis-domain` - display only: the ticks and labels of that linear domain over the same pixel range, the charts
-  still draw with `finalized`) carrying the scale's `:direction` and `:axis`, else `finalized` itself."
+  still draw with `finalized`) carrying the scale's `:direction`, `:axis` and `:overlapping-labels`, else `finalized`
+  itself."
   [finalized]
   (if-let [shown (:axis-scale finalized)]
-    (merge shown (select-keys finalized [:direction :axis]))
+    (merge shown (select-keys finalized [:direction :axis :overlapping-labels]))
     finalized))
 
 (def ^:private identity-transform

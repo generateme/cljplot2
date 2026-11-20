@@ -430,7 +430,8 @@ passes through pure stages, each adding one key: `:split` (rows split per facet 
 The tables come from `cljplot2.describe`, usable at the REPL too: `describe/options` takes a chart value, a
 builder or data function var or a schema; `describe/mapping` the mapping keys a chart reads; `describe/theme-rows`
 the theme; `describe/fragment-rows` a shared group; `describe/api-vars` lists the user-facing data functions,
-`describe/chart-constructors` the charts. A row is a plain map; `:section` names its table slice:
+`describe/chart-constructors` the charts, `describe/attribute-values` the built-in shapes, dashes, patterns and
+cells. A row is a plain map; `:section` names its table slice:
 
 
 ::: {.sourceClojure}

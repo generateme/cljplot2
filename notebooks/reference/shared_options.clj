@@ -4,8 +4,7 @@
 ;; rows with the group's title. A chart may take only part of a group - its own table lists what it accepts.
 
 (ns reference.shared-options
-  (:require [fastmath.grid :as grid]
-            [fastmath.random :as r]
+  (:require [fastmath.random :as r]
             [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
             [cljplot2.data.tree :as tree]
@@ -179,7 +178,7 @@
 
 (nu/options-table (describe/fragment-rows :cell))
 
-(plot/render-image (plot/arrange (for [cell (sort grid/cell-names)]
+(plot/render-image (plot/arrange (for [cell (:cell describe/attribute-values)]
                                    {:data iris
                                     :mapping {:x :sepal-length :y :sepal-width}
                                     :charts [(chart/bin2d {:cell cell :stroke-color :white})]

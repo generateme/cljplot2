@@ -291,8 +291,8 @@
                                   :cljplot2/default-doc "5 equal bins"}
                            levels/bins)
           (schema/optional :formatter {:cljplot2/section :legend :description "legend labels, a function of the level or value"} schema/function)
-          (schema/nilable :ticks {:cljplot2/section :legend :description "linear :size / :color: the legend entries or colour bar ticks - a count or the values"}
-                          [:multi {:dispatch sequential?} [true [:sequential schema/finite]] [false schema/pos-int]])
+          (schema/nilable :ticks {:cljplot2/section :legend :description "linear :size / :color: the legend entries or colour bar ticks - a count or the values (dates for a :color scale over dates)"}
+                          [:multi {:dispatch sequential?} [true [:sequential [:or schema/finite schema/temporal]]] [false schema/pos-int]])
           (schema/nilable :title {:cljplot2/section :legend :description "legend title (nil - none)" :cljplot2/default-doc "the mapped column's name"}
                           string?)
           (schema/nilable :legend {:cljplot2/section :legend :description "show the scale's legend" :default true} schema/bool)]
@@ -462,13 +462,14 @@
   the value in `[lo hi]` mapped to it (the nearest end for values outside the transformed range)."
   [forward ^double lo ^double hi]
   (let [f #(double (forward %))
-        increasing? (<= (double (f lo)) (double (f hi)))]
+        ;; evaluated on first use: building the inverse never calls `forward` (see transformable!)
+        increasing? (delay (<= (double (f lo)) (double (f hi))))]
     (fn ^double [^double y]
       (loop [a lo b hi i 0]
         (let [mid (* 0.5 (+ a b))]
           (if (>= i (long inverse-steps))
             mid
-            (if (= increasing? (< (double (f mid)) y))
+            (if (= @increasing? (< (double (f mid)) y))
               (recur mid b (inc i))
               (recur a mid (inc i)))))))))
 
@@ -485,15 +486,18 @@
 
 (defn- transformable!
   "`transform` when the linear `domain` of aesthetic `k` suits it (`:sqrt` and `:sq` - from 0, `:log` - above 0) and
-  it is finite at both domain ends, else throws `ex-info {:key :transform}`."
+  it gives finite values at both domain ends (a function that throws there doesn't), else throws
+  `ex-info {:key :transform}`."
   [k transform [lo hi :as domain]]
   (let [fail! #(schema/fail! (str "Scale :transform " (if (fn? transform) "function" transform) " " %)
                              {:key :transform :in [:scales k :transform] :value transform})
-        {:keys [forward]} (value-transform {:transform transform :domain domain})]
+        {:keys [forward]} (value-transform {:transform transform :domain domain})
+        finite-at? (fn [v] (try (m/valid-double? (double (forward (double v))))
+                                (catch Exception _ false)))]
     (cond
       (and (= :log transform) (<= (double lo) 0.0)) (fail! (str "needs a domain above 0, got " lo " as its start."))
       (and (#{:sqrt :sq} transform) (neg? (double lo))) (fail! (str "needs a domain from 0, got " lo " as its start."))
-      (not (and (m/valid-double? (double (forward (double lo)))) (m/valid-double? (double (forward (double hi))))))
+      (not (and (finite-at? lo) (finite-at? hi)))
       (fail! (str "should give finite values at the domain ends " lo " and " hi "."))
       :else transform)))
 
@@ -504,14 +508,19 @@
   options the resolved kind doesn't allow.
   Returns `{:kind :domain :range :na?}` (identity: no `:domain` / `:range`; binned: also `:breaks`, the domain being
   their ends; a linear scale over dates: the domain in epoch milliseconds and `:temporal-sample` - a date of the
-  data's type, for the color bar's labels) plus the spec's `:spread`, `:midpoint`, `:reverse`, `:area`, `:formatter`, `:ticks`, `:title`,
-  `:legend` when given."
+  data's type, for the color bar's labels) plus the spec's `:spread`, `:midpoint`, `:reverse`, `:area`,
+  `:formatter`, `:ticks`, `:title`, `:legend` when given."
   [k spec extent na? palette]
   (let [explicit (:domain spec)]
     (when (or explicit extent)
       (let [kind (inferred-kind k spec (continuous-extent? k extent))
             explicit-date (when (data/temporal? (first explicit)) (first explicit))
             temporal? (and (or (= :temporal (:kind extent)) explicit-date) (not= kind :ordinal) (not= kind :identity))
+            ticks (:ticks spec)
+            _ (when (and (sequential? ticks) (not= kind :ordinal) (not= kind :identity))
+                (when-not (every? (if temporal? data/temporal? number?) ticks)
+                  (schema/fail! (str ":ticks of a scale over " (if temporal? "dates should be dates" "numbers should be numbers") ".")
+                                {:key :ticks :in [:scales k :ticks] :value ticks})))
             _ (when temporal?
                 (when-let [key (some #(when (some? (get spec %)) %) [:midpoint :transform])]
                   (schema/fail! (str key " needs numeric data, not dates.") {:key key :in [:scales k key] :value (get spec key)}))
@@ -657,13 +666,14 @@
                 (get-in theme [:palette :na])))
 
 (defn explicit-ticks
-  "Legend ticks of an explicit `:ticks` vector `ticks` over the domain `[lo hi]`: the values inside it, sorted, equal
-  numbers once (`5` and `5.0` alike - the first given kept); `[]` when none is inside."
+  "Legend ticks of an explicit `:ticks` vector `ticks` (numbers, or dates of a scale over dates) over the domain
+  `[lo hi]` (numbers - epoch milliseconds for dates, see [[cljplot2.data.rows/x-key]]): the values inside it, sorted,
+  equal ones once (`5` and `5.0` alike - the first given kept); `[]` when none is inside."
   [ticks lo hi]
   (let [lo (double lo) hi (double hi)]
     (->> ticks
-         (filter #(<= lo (double %) hi))
-         (reduce (fn [acc t] (if (contains? acc (double t)) acc (assoc acc (double t) t))) (sorted-map))
+         (filter #(<= lo (double (data/x-key %)) hi))
+         (reduce (fn [acc t] (let [key (double (data/x-key t))] (if (contains? acc key) acc (assoc acc key t)))) (sorted-map))
          vals
          vec)))
 

@@ -180,12 +180,14 @@
 
 (defn- leaf-axis
   "Position scale of the leaf axis: leaves at 0..n-1 with half a step around, ticks at the leaves labelled by their
-  names without grid lines (`labels?` false - no axis)."
+  names without grid lines, every name drawn even when crowded (`:overlapping-labels :keep`; `labels?` false - no
+  axis)."
   [leaves labels?]
   (let [n (count leaves)
         names (mapv #(str (:name %)) leaves)]
     (cond-> {:domain [-0.5 (- (double n) 0.5)] :nice false :expand [0.0 0.0]}
-      labels? (assoc :ticks (vec (range n)) :formatter #(get names (long (Math/round (double %))) "") :axis :no-grid)
+      labels? (assoc :ticks (vec (range n)) :formatter #(get names (long (Math/round (double %))) "") :axis :no-grid
+                     :overlapping-labels :keep)
       (not labels?) (assoc :axis false))))
 
 (defn- branch-chart
@@ -774,7 +776,8 @@
                                                nodes)
                                    :mapping {:x :x :y :y :label :label} :size 9
                                    :background [255 255 255 190] :padding 1})]
-             :scales (theme/deep-merge {:x (assoc (dissoc unit-axis :axis) :ticks centres :formatter #(get names (nearest %) ""))
+             :scales (theme/deep-merge {:x (assoc (dissoc unit-axis :axis) :ticks centres :formatter #(get names (nearest %) "")
+                                                  :overlapping-labels :keep)
                                         :y unit-axis
                                         :color {:title (axis-label (or fill (first axes)))}}
                                        scales)

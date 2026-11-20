@@ -19,7 +19,9 @@
   range sticks out beyond it (0 when it doesn't).
 
   Bands axes tick every band; when tick labels would overlap, only every `s`-th label is drawn (`s` the smallest step
-  without overlap, starting at the first band) - see [[label-step]].
+  without overlap, starting at the first band) - see [[label-step]]. Other axes (linear, log, symlog, dates ...) draw
+  the first label, then each label not overlapping the last drawn one - see [[drawn-label-indices]]; a scale with
+  `:overlapping-labels :keep` draws them all (axes naming data items, e.g. the leaves of a dendrogram).
 
   Tick labels rotate by theme `[:axis k :label-rotation]` (clockwise degrees, -90..90; e.g. -90 or -45 for long
   bands labels): a horizontal axis puts the end of each rotated text nearest the axis at its tick (see
@@ -132,11 +134,6 @@
        (mapv #(- (double %) inset) spans)
        (mapv (fn [^Vec2 size] (- (if horizontal? (.x size) (.y size)) inset)) sizes))]))
 
-(defn- overlap?
-  "Do labels with centres `ci`, `cj` and extents `ei`, `ej` overlap by more than 1 px (natural sizes are rounded up)?"
-  [^double ci ^double ei ^double cj ^double ej]
-  (< (m/abs (- cj ci)) (- (* 0.5 (+ ei ej)) 1.0)))
-
 (defn label-step
   "Step `s` between drawn tick labels of the axis of scale `k`: 1 unless `finalized` is a bands scale whose labels would overlap;
   then the smallest `s` such that labels `0, s, 2s, ...` don't overlap along the axis (at most the label count).
@@ -150,7 +147,7 @@
        (let [[centres extents] (label-intervals k finalized sizes padding offsets spans)
              fits? (fn [^long step]
                      (every? (fn [i] (let [i (long i) j (+ i step)]
-                                       (not (overlap? (centres i) (extents i) (centres j) (extents j)))))
+                                       (not (measure/spans-overlap? (centres i) (extents i) (centres j) (extents j)))))
                              (range 0 (- n step) step)))]
          (or (first (filter fits? (range 1 n))) n))))))
 
@@ -162,25 +159,34 @@
   ([intervals drawn shift] (crossing-labels intervals drawn intervals drawn shift))
   ([[centres extents] drawn [next-centres next-extents] next-drawn shift]
    (set (filter (fn [i]
-                  (some (fn [j] (overlap? (centres i) (extents i) (+ (double shift) (double (next-centres j))) (next-extents j)))
+                  (some (fn [j] (measure/spans-overlap? (centres i) (extents i) (+ (double shift) (double (next-centres j))) (next-extents j)))
                         next-drawn))
                 drawn))))
 
-(defn- drawn?
-  "Is label `i` drawn with label step `step`?"
-  [^long step i]
-  (zero? (rem (long i) step)))
+(defn drawn-label-indices
+  "Indices of the tick labels the axis of scale `k` (`finalized`, label `sizes`, `padding`, `offsets`, `spans` - see
+  [[label-intervals]]) draws: all with `:overlapping-labels :keep` (axes naming data items); else a bands scale every
+  [[label-step]]-th label, other scales the labels kept by [[cljplot2.graphics.measure/kept-label-indices]] (the
+  first, then each not overlapping the last drawn one)."
+  [k finalized sizes padding offsets spans]
+  (cond
+    (= :keep (:overlapping-labels finalized)) (vec (range (count sizes)))
+    (= :bands (:kind finalized))
+    (let [step (long (label-step k finalized sizes padding offsets spans))]
+      (filterv #(zero? (rem (long %) step)) (range (count sizes))))
+    :else (let [[centres extents] (label-intervals k finalized sizes padding offsets spans)]
+            (measure/kept-label-indices centres extents))))
 
 (defn- drawn-labels
   "`[[centres extents] drawn]` of the tick labels of the axis of scale `k` with `finalized`: their intervals along the
-  axis (panel-local, see [[label-intervals]]) and the indices its label step draws."
+  axis (panel-local, see [[label-intervals]]) and the indices it draws ([[drawn-label-indices]])."
   [k finalized env]
   (let [sizes (label-sizes k finalized env)
         offsets (label-offsets k finalized env)
         spans (label-spans k finalized env sizes)
-        padding (label-padding env)
-        step (label-step k finalized sizes padding offsets spans)]
-    [(label-intervals k finalized sizes padding offsets spans) (filterv #(drawn? step %) (range (count sizes)))]))
+        padding (label-padding env)]
+    [(label-intervals k finalized sizes padding offsets spans)
+     (drawn-label-indices k finalized sizes padding offsets spans)]))
 
 (defn- tick-room
   "Pixels the ticks of `finalized` take across the axis (theme axis style `style`): the tick length, or the minor tick
@@ -196,11 +202,10 @@
         {:keys [label-gap] :as style} (get-in env [:theme :axis k])
         room (when finalized (tick-room finalized style))
         all-sizes (when finalized (label-sizes k finalized env))
-        step (if finalized
-               (label-step k finalized all-sizes (label-padding env) (label-offsets k finalized env)
-                           (label-spans k finalized env all-sizes))
-               1)
-        sizes (keep-indexed (fn [i size] (when (drawn? step i) size)) all-sizes)
+        drawn (when finalized
+                (set (drawn-label-indices k finalized all-sizes (label-padding env) (label-offsets k finalized env)
+                                          (label-spans k finalized env all-sizes))))
+        sizes (keep-indexed (fn [i size] (when (contains? drawn i) size)) all-sizes)
         widest (double (reduce max 0.0 (map #(.x ^Vec2 %) sizes)))
         tallest (double (reduce max 0.0 (map #(.y ^Vec2 %) sizes)))]
     (cond
@@ -262,8 +267,8 @@
           sizes (label-sizes k finalized env)
           offsets (label-offsets k finalized env)
           spans (label-spans k finalized env sizes)
-          step (label-step k finalized sizes (label-padding env) offsets spans)
-          drawn (filterv #(drawn? step %) (range (count sizes)))
+          drawn (drawn-label-indices k finalized sizes (label-padding env) offsets spans)
+          drawn-set (set drawn)
           next-gap (:next-panel-gap content)
           skipped (if next-gap
                     (let [own (label-intervals k finalized sizes (label-padding env) offsets spans)
@@ -293,7 +298,7 @@
             (c2d/line c p y p (+ y len))
             (c2d/line c (+ x w) p (- (+ x w) len) p))))
       (doseq [[i ^double p text ^Vec2 size ^double off] (map vector (range) positions (:tick-labels finalized) sizes offsets)
-              :when (and (drawn? step i) (not (skipped i)))
+              :when (and (contains? drawn-set i) (not (skipped i)))
               :let [lw (.x size) lh (.y size)]]
         (if horizontal?
           (draw-label! text {:x (- (+ p off) (* 0.5 lw)) :y (+ y room label-gap) :w lw :h lh})

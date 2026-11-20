@@ -94,8 +94,9 @@
 
 ;; ## Axis
 
-;; What the axis draws (`:grid` - grid lines only, `:no-grid` - the axis only, `false` - nothing) and a
-;; display-only domain for its ticks.
+;; What the axis draws (`:grid` - grid lines only, `:no-grid` - the axis only, `false` - nothing), a display-only
+;; domain for its ticks, and whether tick labels overlapping the last drawn one are dropped (`:drop`) or all drawn
+;; (`:keep` - the builders naming data items on an axis, such as dendrogram leaves, set it).
 
 (nu/options-table (describe/options position/scale-spec-schema) :axis)
 

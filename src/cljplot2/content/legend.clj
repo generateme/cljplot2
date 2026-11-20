@@ -38,7 +38,8 @@
             [cljplot2.graphics.measure :as measure]
             [cljplot2.theme :as theme])
   (:import [fastmath.vector Vec2]
-           [java.awt Graphics2D Rectangle]))
+           [java.awt Graphics2D Rectangle]
+           [java.time LocalDate LocalDateTime]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -97,36 +98,55 @@
                                 [mid midpoint-label]))))
     ticks))
 
+(defn- date-colorbar-pairs
+  "`[[key label] ...]` ticks of the color bar of a linear color scale over dates (`spec` with `:temporal-sample`,
+  domain `[lo hi]` in epoch milliseconds): an explicit `:ticks` vector of dates (those inside the domain), else nice
+  dates of a wadogo `:datetime` scale (at least two inside, as an axis; a count from `:ticks`). Ticks are in the
+  data's type - `LocalDate` data gets dates (sub-day ticks of a short domain collapse to their day) - labelled by
+  `:formatter` (a function of such a value) or as wadogo labels them; `key` - the tick's epoch milliseconds."
+  [{:keys [temporal-sample formatter ticks]} ^double lo ^double hi]
+  (let [as-time #(data/key->x % temporal-sample)
+        as-data (if (instance? LocalDate temporal-sample) #(.toLocalDate ^LocalDateTime %) identity)
+        scale-of (fn [n] (s/scale :datetime {:domain [(as-time lo) (as-time (if (== lo hi) (inc hi) hi))] :ticks n}))
+        in-domain #(<= lo (double (data/x-key %)) hi)
+        {ws :scale times :ticks} (cond
+                                   (sequential? ticks) {:scale (scale-of colorbar-ticks)
+                                                        :ticks (mapv (comp as-time data/x-key) (aesthetic/explicit-ticks ticks lo hi))}
+                                   (== lo hi) {:scale (scale-of colorbar-ticks) :ticks [(as-time lo)]}
+                                   :else (position/ticks-inside scale-of (or ticks colorbar-ticks) in-domain))
+        values (into [] (comp (map as-data) (distinct)) times)
+        labels (if formatter
+                 (mapv #(str (formatter %)) values)
+                 (position/tick-labels ws {:kind :datetime} (mapv (comp as-time data/x-key) values)))]
+    (mapv vector (map data/x-key values) labels)))
+
 (defn- colorbar-content
   "Color bar of the linear or binned color scale `spec` mapped with `accessors` (title rule as legends). Ticks:
   linear - nice ticks of the domain (at least two; scale `:ticks` a count of them), labelled as axis ticks, and the
   `:midpoint` (see [[with-midpoint-tick]]; labelled by `:formatter` or [[cljplot2.data.levels/break-labels]]) - or
   an explicit `:ticks` vector exactly as given (see [[cljplot2.scale.aesthetic/explicit-ticks]], no added midpoint);
-  binned - the inner breaks, labelled by
-  `:formatter` or [[cljplot2.data.levels/break-labels]]. A linear scale over dates (`:temporal-sample`) ticks at dates
-  (a wadogo `:datetime` scale), placed by their epoch milliseconds."
+  binned - the inner breaks, labelled by `:formatter` or [[cljplot2.data.levels/break-labels]]; a linear scale over
+  dates - see [[date-colorbar-pairs]]."
   [spec accessors]
   (let [[lo hi] (:domain spec)
         lo (double lo) hi (double hi)
         formatter (:formatter spec)
-        temporal (:temporal-sample spec)
-        tick-kind (cond temporal :datetime (= :log (:transform spec)) :log :else :linear)
-        ;; a log transform ticks at powers of ten, as a log axis; dates at calendar dates
-        scale-of (fn [n] (let [[a b] (if (== lo hi) [lo (inc lo)] [lo hi])]
-                           (s/scale tick-kind
-                                    (cond-> {:domain (if temporal [(data/key->x a temporal) (data/key->x b temporal)] [a b])
-                                             :ticks n}
-                                      formatter (assoc :formatter formatter)))))
+        ;; a log transform ticks at powers of ten, as a log axis
+        scale-of (fn [n] (s/scale (if (= :log (:transform spec)) :log :linear)
+                                  (cond-> {:domain (if (== lo hi) [lo (inc lo)] [lo hi]) :ticks n}
+                                    formatter (assoc :formatter formatter))))
         explicit (:ticks spec)
-        in-domain #(<= lo (double (data/x-key %)) hi)
+        in-domain #(<= lo (double %) hi)
         ;; at least two ticks inside the domain, as an axis (see position/ticks-inside), unless given
         {ws :scale nice :ticks} (cond
+                                  (:temporal-sample spec) nil
                                   (sequential? explicit) {:scale (scale-of colorbar-ticks)
                                                           :ticks (aesthetic/explicit-ticks explicit lo hi)}
                                   (== lo hi) {:scale (scale-of colorbar-ticks)}
                                   :else (position/ticks-inside scale-of (or explicit colorbar-ticks) in-domain))
-        axis-labels (fn [ts] (position/tick-labels ws {:kind (if temporal :datetime :linear) :formatter formatter} ts))
+        axis-labels (fn [ts] (position/tick-labels ws {:kind :linear :formatter formatter} ts))
         pairs (cond
+                (:temporal-sample spec) (date-colorbar-pairs spec lo hi)
                 (= :binned (:kind spec))
                 (let [breaks (:breaks spec)
                       inner (subvec breaks 1 (dec (count breaks)))
@@ -143,7 +163,7 @@
     {:kind :colorbar
      :title (title [{:spec spec :accessors accessors}])
      :scale spec
-     :ticks (mapv (if temporal (comp data/x-key first) first) pairs)
+     :ticks (mapv first pairs)
      :labels (mapv second pairs)}))
 
 (defn legend-charts
@@ -250,6 +270,17 @@
 
 (defn- title-label [text] {:kind :label :role :legend-title :text text})
 (defn- entry-label [text] {:kind :label :role :legend-label :text text})
+
+(defn- legend-backdrop
+  "What legend texts are drawn over: theme `[:legend :fill]`, else the plot background (for `:contrast` role colours)."
+  [theme]
+  (let [fill (get-in theme [:legend :fill])]
+    (if (theme/none? fill) (draw/plot-backdrop theme) fill)))
+
+(defn- legend-text
+  "Label `content` of a legend text in its role's colour resolved over the legend backdrop."
+  [content theme]
+  (assoc content :color (draw/text-color theme (:role content) (legend-backdrop theme))))
 
 (defn- glyph-extent
   "Key box side needed by `attributes`: the mapped `:size` (0 when not mapped)."
@@ -408,7 +439,7 @@
          ((:legend chart) chart (select-keys attributes dims) c' box (assoc env :chart-stats (get-in env [:legend-stats i])))))))
 
 (defn- draw-legend!
-  "Draw legend `content` with its `geometry` at top-left corner `origin` (`Vec2`)."
+  "Draw legend `content` with its `geometry` at top-left corner `origin` (`Vec2`); texts by [[legend-text]]."
   [{:keys [title entries charts]} geometry c ^Vec2 origin env]
   (let [x (.x origin)
         y (.y origin)
@@ -417,7 +448,9 @@
         gap (double (get-in env [:theme :legend :gap]))
         x0 (+ x border)
         y0 (+ y border)
-        label! (fn [label-content box] (canvas/call-with-isolated-graphics c #(draw/draw-content label-content % box env)))]
+        label! (fn [label-content box]
+                 (canvas/call-with-isolated-graphics
+                  c #(draw/draw-content (legend-text label-content (:theme env)) % box env)))]
     (when-not (theme/none? fill)
       (c2d/set-color c fill)
       (c2d/rect c (m/round x) (m/round y) (m/round w) (m/round h)))
@@ -469,7 +502,10 @@
       (fn [v] (if (== lo hi) 0.5 (/ (- (double (forward (double v))) lo) (- hi lo)))))))
 
 (defn- draw-colorbar!
-  "Draw color bar `content` with its `geometry` at top-left corner `origin` (`Vec2`)."
+  "Draw color bar `content` with its `geometry` at top-left corner `origin` (`Vec2`): the bar, a mark per tick and the
+  tick labels - from the lowest, each label not overlapping the last drawn one (see
+  [[cljplot2.graphics.measure/kept-label-indices]]); texts in their roles' colours over the legend backdrop (see
+  [[legend-text]])."
   [{:keys [title scale ticks labels]} geometry c ^Vec2 origin env]
   (let [x (.x origin)
         y (.y origin)
@@ -487,29 +523,31 @@
         bar-w-px (m/round bar-w)
         len (long (m/round bar-len))
         tick-y (fn ^double [t] (+ bar-top (if (== lo hi) (* 0.5 bar-len) (* (- 1.0 (double (position-of t))) bar-len))))
-        label-color (get-in env [:theme :text :legend-label :color])]
+        label-color (draw/text-color (:theme env) :legend-label (legend-backdrop (:theme env)))
+        kept (set (measure/kept-label-indices (mapv #(tick-y %) ticks) (mapv #(.y ^Vec2 %) sizes)))]
     (when-not (theme/none? fill)
       (c2d/set-color c fill)
       (c2d/rect c (m/round x) (m/round y) (m/round w) (m/round h)))
     (draw/inner-border! c {:x (m/round x) :y (m/round y) :w (m/round w) :h (m/round h)} border-color border-width)
     (when title
       (canvas/call-with-isolated-graphics
-       c #(draw/draw-content (title-label title) % {:x x0 :y (+ y border) :w (- w (* 2.0 border)) :h title-h} env)))
+       c #(draw/draw-content (legend-text (title-label title) (:theme env)) % {:x x0 :y (+ y border) :w (- w (* 2.0 border)) :h title-h} env)))
     ;; the bar: one pixel row per value, top = domain maximum
     (dotimes [i len]
       (let [t (if (== lo hi) 0.5 (- 1.0 (/ (+ (double i) 0.5) (double len))))]
         (c2d/set-color c (color-of (value-at t)))
         (c2d/rect c bar-x (+ (m/round bar-top) i) bar-w-px 1)))
     (c2d/set-stroke-custom c {:size 1.0 :cap :butt})
-    (doseq [[t text ^Vec2 size] (map vector ticks labels sizes)
+    (doseq [[i t text ^Vec2 size] (map vector (range) ticks labels sizes)
             :let [ty (draw/pixel-center (tick-y t))
                   bar-right (+ (double bar-x) (double bar-w-px))]]
       (c2d/set-color c label-color)
       (c2d/line c bar-right ty (+ bar-right tick-length) ty)
-      (canvas/call-with-isolated-graphics
-       c #(draw/draw-content (entry-label text) %
-                             {:x (+ bar-right tick-length (double gap)) :y (- ty (* 0.5 (.y size))) :w (.x size) :h (.y size)}
-                             env)))))
+      (when (contains? kept i)
+        (canvas/call-with-isolated-graphics
+         c #(draw/draw-content (assoc (entry-label text) :color label-color) %
+                               {:x (+ bar-right tick-length (double gap)) :y (- ty (* 0.5 (.y size))) :w (.x size) :h (.y size)}
+                               env))))))
 
 (defn- draw-content-at!
   [content geometry c origin env]

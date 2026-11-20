@@ -52,8 +52,8 @@
                     :labels {:y "petal width / length"}}
                    {:width 500 :height 300})
 
-;; The categorical marker: petal widths rounded to whole numbers, read as numbers (left - a continuous axis) and as
-;; levels (right - one band each):
+;; The categorical marker: petal lengths rounded to whole numbers, read as numbers (left - a continuous axis) and
+;; as levels (right - one band each):
 
 (plot/render-image (plot/arrange [{:data iris
                                    :mapping {:x #(Math/round (double (:petal-length %))) :y :sepal-length}

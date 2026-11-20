@@ -205,6 +205,9 @@
                            (try (some? (if (vector? v) (apply c/cvd-filter v) (c/cvd-filter v))) (catch Exception _ false))))
               "should be a clojure2d color vision deficiency: a keyword (:protanopia, :deuteranopia, :tritanopia, :achromatopsia) or [keyword severity] (:protanomaly, :deuteranomaly, :tritanomaly, :achromatomaly; severity in [0 1])"))
 (def solid-color (named-type ::solid-color solid-color? "should be a clojure2d color"))
+(def temporal
+  "A `java.time` value (a date, a date-time, an instant, a time)."
+  (named-type ::temporal #(instance? java.time.temporal.Temporal %) "should be a java.time value" "a java.time value"))
 (def text-color
   "A text colour: a clojure2d color or `:contrast` - black or white, whichever reads on what's behind the text (see
   `cljplot2.graphics.draw/text-color`)."
