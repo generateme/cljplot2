@@ -8,8 +8,9 @@
 ;; padding), and the code is cljplot2's own. Vega-Lite's transforms (`filter`, `calculate`, `aggregate`, `window`,
 ;; `fold`, `bin`, `timeUnit`, ...) become plain Clojure data preparation before the plot map; its layers are chart
 ;; vectors, its concatenations `plot/arrange`, its facets cljplot2 facets. Only static images: interactive, animated
-;; and geographic examples are left out. Categorical y axes list their levels top-down, as Vega-Lite does (`:reverse
-;; true` on the y scale - cljplot2's bands start at the bottom).
+;; and geographic examples are left out - the closing "Not reproduced" table lists them with the reason (two
+;; interactive examples appear as static variants). Categorical y axes list their levels top-down, as Vega-Lite does
+;; (`:reverse true` on the y scale - cljplot2's bands start at the bottom).
 ;;
 ;; Data are the [vega-datasets](https://github.com/vega/vega-datasets) files (version 3.3.1), exported by
 ;; `dev/vega_data.clj` with kebab-case keys and ISO dates (`"2000-01-01"`, parsed here with `java.time`); a dataset whose
@@ -26,6 +27,7 @@
             [fastmath.stats :as stats]
             [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
+            [cljplot2.data.tree :as tree]
             [notebook-utils :as nu])
   (:import [java.time LocalDate]
            [java.time.format DateTimeFormatter]
@@ -2320,3 +2322,965 @@
              :x {:formatter #(str (m/round (double %)))} :y {:domain [0 100]}}
     :labels {:x nil :y nil}}
    {:width 900 :height 450}))
+
+;; ## Faceting (Trellis Plot / Small Multiples)
+
+;; ### Trellis Bar Chart
+
+;; The 2000 population per age group, a row of panels per gender.
+
+(nu/source-note {:source "Vega-Lite - Trellis Bar Chart" :url (vl-url "trellis_bar") :dataset :population})
+
+(plot/render-image
+ {:data population-2000 :mapping {:x :age :y :people :color :gender :facet-row :gender}
+  :charts [(chart/bar)]
+  :scales {:x {:type :categorical} :y {:formatter millions} :color gender-colors}
+  :labels {:x "age" :y "population"}}
+ {:width 700 :height 450})
+
+;; ### Trellis Stacked Bar Chart
+
+;; Barley yields per variety stacked by site, a column of panels per year.
+
+(nu/source-note {:source "Vega-Lite - Trellis Stacked Bar Chart" :url (vl-url "trellis_stacked_bar") :dataset :barley-vega})
+
+(plot/render-image
+ {:data barley :mapping {:y :variety :x :yield :color :site :facet-col :year}
+  :charts [(chart/bar {:position :stack})]
+  :scales {:y {:domain barley-varieties :reverse true}}
+  :labels {:x "Sum of yield" :y "variety"}}
+ {:width 900 :height 400})
+
+;; ### Trellis Scatter Plot (wrapped)
+
+;; US DVD sales against worldwide gross, a panel per MPAA rating wrapped in two columns (the movies without a rating
+;; in the NA panel).
+
+(nu/source-note {:source "Vega-Lite - Trellis Scatter Plot (wrapped)" :url (vl-url "trellis_scatter") :dataset :movies})
+
+(plot/render-image
+ {:data (filter #(and (number? (:worldwide-gross %)) (number? (:us-dvd-sales %))) movies)
+  :mapping {:x :worldwide-gross :y :us-dvd-sales :facet :mpaa-rating}
+  :charts [(chart/scatter {:shape \o :size 5 :color [76 120 168]})]
+  :scales {:x {:formatter billions} :y {:formatter #(str (m/round (/ (double %) 1.0e6)) "M")}}
+  :facets {:columns 2}
+  :labels {:x "Worldwide Gross" :y "US DVD Sales"}}
+ {:width 700 :height 800})
+
+;; ### Trellis Histograms
+
+;; Horsepower in bins of 10, a row of panels per origin.
+
+(nu/source-note {:source "Vega-Lite - Trellis Histograms" :url (vl-url "trellis_bar_histogram") :dataset :cars})
+
+(plot/render-image
+ {:data (filter :horsepower cars) :mapping {:x :horsepower :facet-row :origin}
+  :charts [(chart/histogram {:bins (vec (range 40 241 10)) :y :count})]
+  :labels {:x "Horsepower (binned)" :y "Count of Records"}}
+ {:width 600 :height 500})
+
+;; ### Trellis Scatter Plot Showing Anscombe's Quartet
+
+;; Four series with the same summary statistics and different shapes.
+
+(nu/source-note {:source "Vega-Lite - Trellis Scatter Plot Showing Anscombe's Quartet" :url (vl-url "trellis_anscombe")
+                 :dataset :anscombe})
+
+(plot/render-image
+ {:data (nu/dataset :anscombe) :mapping {:x :x :y :y :facet-col :series}
+  :charts [(chart/scatter {:size 7 :color [76 120 168]})]
+  :labels {:x "X" :y "Y"}}
+ {:width 900 :height 300})
+
+;; ### Becker's Barley Trellis Plot
+
+;; Median yield per variety, year and site; sites ordered by median yield, varieties by their overall median (largest
+;; on top) - Becker's Morris, where 1931 and 1932 seem swapped.
+
+(nu/source-note {:source "Vega-Lite - Becker's Barley Trellis Plot" :url [(vl-url "trellis_barley") (vg-url "barley-trellis-plot")]
+                 :dataset :barley-vega})
+
+(let [median-of (fn [k] (update-vals (group-by k barley) #(stats/median (map :yield %))))
+      site-medians (median-of :site)
+      variety-medians (median-of :variety)]
+  (plot/render-image
+   {:data (for [[[site variety year] rows] (group-by (juxt :site :variety :year) barley)]
+            {:site site :variety variety :year (str year) :yield (stats/median (map :yield rows))})
+    :mapping {:x :yield :y :variety :color :year :facet :site}
+    :charts [(chart/scatter {:shape \o :size 7 :stroke-width 1.5})]
+    :scales {:facet {:domain (vec (sort-by site-medians (keys site-medians)))} :color {:range (c/palette :category10)}
+             :y {:domain (vec (sort-by (comp - variety-medians) (keys variety-medians))) :reverse true}}
+    :facets {:columns 2}
+    :labels {:x "Median of yield" :y "variety"}}
+   {:width 700 :height 700}))
+
+;; ### Trellis Area
+
+;; The prices of four companies as areas, a row of panels per symbol (no grid, as the original).
+
+(nu/source-note {:source "Vega-Lite - Trellis Area" :url (vl-url "trellis_area") :dataset :stocks})
+
+(let [rows (remove #(= "GOOG" (:symbol %)) stocks)]
+  (plot/render-image
+   {:data rows :mapping {:x :date :y :price :color :symbol :facet-row :symbol}
+    :charts [(chart/line {:fill :color})]
+    :scales {:y {:domain [0 (reduce max (map :price rows))]} :color {:range (c/palette :category10) :legend false}}
+    :theme {:panel {:grid {:x :none :y :none}}}
+    :labels {:x "Time" :y "Price"}}
+   {:width 600 :height 500}))
+
+;; ### Trellis Area Plot Showing Annual Temperatures in Seattle
+
+;; Hourly temperature normals over the year, a thin panel per hour from 6 AM, each labelled inside at its left
+;; (strips off), the y range per panel's data (no zero, no y axis - as the original).
+
+(nu/source-note {:source "Vega-Lite - Trellis Area Plot Showing Annual Temperatures in Seattle"
+                 :url (vl-url "trellis_area_seattle") :dataset :seattle-weather-hourly-normals})
+
+(let [hour-label (fn [h] (case (long h) 0 "Midnight" 12 "Noon" (format "%02d:00 %s" (if (zero? (mod h 12)) 12 (mod h 12)) (if (< h 12) "AM" "PM"))))
+      hours (map #(mod (+ 6 %) 24) (range 24))
+      rows (for [{:keys [date temperature]} (nu/dataset :seattle-weather-hourly-normals)
+                 :let [t (java.time.LocalDateTime/parse date)]]
+             {:date (.toLocalDate t) :hour (hour-label (.getHour t)) :temperature temperature})]
+  (plot/render-image
+   {:data rows :mapping {:x :date :y :temperature :facet-row :hour}
+    :charts [(chart/line {:fill [76 120 168 160] :color [76 120 168] :width 0.5})
+             (chart/text {:data (for [[hour rs] (group-by :hour rows)
+                                      :let [ts (map :temperature rs)]]
+                                  {:hour hour :date (reduce #(if (neg? (compare %1 %2)) %1 %2) (map :date rs))
+                                   :mid (* 0.5 (+ (double (reduce min ts)) (double (reduce max ts))))})
+                          :mapping {:x :date :y :mid :label :hour :facet-row :hour} :anchor [:left :middle] :offset [4 0]
+                          :size 9})]
+    :scales {:facet-row {:domain (mapv hour-label hours)} :y {:axis false}
+             :x {:formatter #(.format (DateTimeFormatter/ofPattern "MMM" Locale/ENGLISH) ^TemporalAccessor %)}}
+    :facets {:strips false :scales {:y :free}}
+    :theme {:panel {:grid {:x :none :y :none}} :facet {:gap 1}}
+    :labels {:title "Seattle Temperature Normals" :x "Month" :y nil}}
+   {:width 800 :height 800}))
+
+;; ### Faceted Density Plot
+
+;; Penguin body mass densities from 2500 to 6500 g, a row of panels per species.
+
+(nu/source-note {:source "Vega-Lite - Faceted Density Plot" :url (vl-url "area_density_facet") :dataset :penguins})
+
+(plot/render-image
+ {:data (filter :body-mass-g penguins) :mapping {:x :body-mass-g :facet-row :species}
+  :charts [(chart/density {:fill :color})]
+  :scales {:x {:domain [2500 6500]}}
+  :labels {:title "Distribution of Body Mass of Penguins" :x "Body Mass (g)" :y "density"}}
+ {:width 600 :height 450})
+
+;; ### Compact Trellis Grid of Bar Charts
+
+;; Three settings' values per combination of two factors: a grid of panels (`:facet-row` / `:facet-col`), no y axis,
+;; the legend naming the bars.
+
+(nu/source-note {:source "Vega-Lite - Compact Trellis Grid of Bar Charts" :url (vl-url "facet_grid_bar")})
+
+(plot/render-image
+ {:data (for [[a b ps] [["a1" "b1" [0.14 0.60 0.03]] ["a1" "b2" [0.80 0.38 0.55]] ["a1" "b3" [0.11 0.58 0.79]]
+                        ["a2" "b1" [0.83 0.87 0.67]] ["a2" "b2" [0.97 0.84 0.90]] ["a2" "b3" [0.74 0.64 0.19]]
+                        ["a3" "b1" [0.57 0.35 0.49]] ["a3" "b2" [0.91 0.38 0.91]] ["a3" "b3" [0.99 0.80 0.37]]]
+              [c p] (map vector ["x" "y" "z"] ps)]
+          {:a a :b b :c c :p p})
+  :mapping {:y :c :x :p :color :c :facet-row :a :facet-col :b}
+  :charts [(chart/bar)]
+  :scales {:y {:axis false :reverse true} :x {:formatter #(str (m/round (* 100.0 (double %))) "%")}
+           :color {:title "settings"}}
+  :labels {:x nil :y nil}}
+ {:width 700 :height 400})
+
+;; ## Repeat & Concatenation
+
+;; ### Vertical Concatenation
+
+;; Seattle's mean precipitation per month (top); days counted per bin of minimum and maximum temperature (bottom).
+
+(nu/source-note {:source "Vega-Lite - Vertical Concatenation" :url (vl-url "vconcat_weather") :dataset :weather})
+
+(let [seattle-days (filter #(= "Seattle" (:location %)) (nu/dataset :weather))]
+  (plot/render-image
+   (plot/arrange
+    [{:data (map #(assoc % :month (month-name (:date %))) seattle-days) :mapping {:x :month :y :precipitation}
+      :charts [(chart/bar {:stat :mean})]
+      :scales {:x {:domain month-names}}
+      :labels {:x "date (month)" :y "Mean of precipitation"}}
+     {:data (map (fn [[[lo-min lo-max] n]] {:x (+ lo-min 2.5) :y (+ lo-max 2.5) :n n})
+                 (frequencies (map (juxt #(bin-start 5 (:temp-min %)) #(bin-start 5 (:temp-max %))) seattle-days)))
+      :mapping {:x :x :y :y :size :n}
+      :charts [(chart/scatter {:shape \o :color [76 120 168] :stroke-width 1.5})]
+      :scales {:size {:range [2 20] :area true :title "Count of Records"}}
+      :labels {:x "temp_min (binned)" :y "temp_max (binned)"}}]
+    {:columns 1})
+   {:width 600 :height 650}))
+
+;; ### Horizontally Repeated Charts
+
+;; Histograms of four car measurements, stacked by origin, in two columns (Vega-Lite's `repeat`).
+
+(nu/source-note {:source "Vega-Lite - Horizontally Repeated Charts" :url (vl-url "repeat_histogram") :dataset :cars})
+
+(plot/render-image
+ (plot/arrange
+  (vec (for [[k title bins] [[:horsepower "Horsepower" (range 40 241 20)] [:miles-per-gallon "Miles_per_Gallon" (range 5 51 5)]
+                             [:acceleration "Acceleration" (range 8 27 2)] [:displacement "Displacement" (range 50 501 50)]]]
+         {:data (filter k cars) :mapping {:x k :color :origin}
+          :charts [(chart/histogram {:bins (vec bins) :y :count :position :stack})]
+          :scales {:color {:range (c/palette :category10)}}
+          :labels {:x (str title " (binned)") :y "Count of Records"}}))
+  {:columns 2})
+ {:width 900 :height 600})
+
+;; ### Interactive Scatterplot Matrix
+
+;; Horsepower, acceleration and miles per gallon against each other, coloured by origin - the matrix without its
+;; brushing and panning (static). The rows run in the opposite order to the columns, as the original's.
+
+(nu/source-note {:source "Vega-Lite - Interactive Scatterplot Matrix" :url (vl-url "interactive_splom") :dataset :cars})
+
+(let [columns [[:miles-per-gallon "Miles_per_Gallon"] [:acceleration "Acceleration"] [:horsepower "Horsepower"]]]
+  (plot/render-image
+   (plot/arrange
+    (vec (for [[row-k row-title] (reverse columns) [col-k col-title] columns]
+           {:data (filter #(and (row-k %) (col-k %)) cars) :mapping {:x col-k :y row-k :color :origin}
+            :charts [(chart/scatter {:shape \o :size 5})]
+            :scales {:color {:range (c/palette :category10)}}
+            :legend (= [row-k col-k] [:horsepower :horsepower])
+            :labels {:x col-title :y row-title}}))
+    {:columns 3 :equal-panels true})
+   {:width 900 :height 750}))
+
+;; ### Marginal Histograms
+
+;; Movies counted per IMDB and Rotten Tomatoes rating bin (centre), with each rating's histogram on the top and right
+;; margins.
+
+(nu/source-note {:source "Vega-Lite - Marginal Histograms" :url (vl-url "concat_marginal_histograms") :dataset :movies})
+
+(let [rated (filter #(and (number? (:imdb-rating %)) (number? (:rotten-tomatoes-rating %))) movies)
+      counts (frequencies (map (juxt #(bin-start 1 (:imdb-rating %)) #(bin-start 10 (:rotten-tomatoes-rating %))) rated))]
+  (plot/render-image
+   {:data (map (fn [[[x y] n]] {:x (+ x 0.5) :y (+ y 5.0) :n n}) counts)
+    :mapping {:x :x :y :y :color :n}
+    :charts [(chart/tile)]
+    :margins {:top {:charts [(chart/histogram {:data (filter #(number? (:imdb-rating %)) movies) :mapping {:x :imdb-rating}
+                                               :bins (vec (range 1 11)) :y :count})]
+                    :size 120}
+              :right {:charts [(chart/histogram {:data (filter #(number? (:rotten-tomatoes-rating %)) movies)
+                                                 :mapping {:x :rotten-tomatoes-rating} :bins (vec (range 0 101 10)) :y :count})]
+                      :size 120}}
+    :scales {:color {:title "Count of Records"}}
+    :labels {:x "IMDB Rating (binned)" :y "Rotten Tomatoes Rating (binned)"}}
+   {:width 700 :height 600}))
+
+;; ### Discretizing scales
+
+;; Nine values as circles with sizes and colours in classes: equal-width bins (quantize), quantiles (quantile) and
+;; given breaks 30 and 70 (threshold) - colours through binned colour scales, the size classes computed in Clojure
+;; (cljplot2 has no binned size scale).
+
+(nu/source-note {:source "Vega-Lite - Discretizing scales" :url (vl-url "concat_bar_scales_discretize")})
+
+(let [values [["A" 28] ["B" 55] ["C" 43] ["D" 91] ["E" 81] ["F" 53] ["G" 19] ["H" 87] ["I" 52]]
+      class-of (fn [breaks v] (count (filter #(>= (double v) (double %)) breaks)))
+      panel (fn [title breaks color-bins gradient]
+              {:data (map (fn [[a b]] {:a a :b b :class (str (class-of breaks b))}) values)
+               :mapping {:y :a :x (constantly 0) :color :b :size :class}
+               :charts [(chart/scatter)]
+               :scales {:y {:domain (mapv first values) :reverse true} :x {:axis false}
+                        :color {:kind :binned :bins color-bins :range gradient :title title}
+                        :size {:domain (mapv str (range (inc (count breaks)))) :range [4 16] :legend false}}
+               :labels {:x nil :y nil}})
+      quartiles (stats/quantiles (map second values) [0.25 0.5 0.75])]
+  (plot/render-image
+   (plot/arrange
+    [(panel "Quantize" [22.75 45.5 68.25] [0 22.75 45.5 68.25 91] [[222 235 247] [8 81 156]])
+     (panel "Quantile" quartiles {:quantiles 4} :viridis/magma)
+     (panel "Threshold" [30 70] [0 30 70 100] :viridis/viridis)]
+    {:columns 3})
+   {:width 900 :height 350}))
+
+;; ### Nested View Concatenation Aligned with Axis `minExtent`
+
+;; Histograms of two ratings (top) and two grosses (bottom), up to 20 bins each, the panels aligned across rows.
+
+(nu/source-note {:source "Vega-Lite - Nested View Concatenation Aligned with Axis minExtent"
+                 :url (vl-url "nested_concat_align") :dataset :movies})
+
+(let [histogram (fn [k title bins formatter]
+                  {:data (filter #(number? (k %)) movies) :mapping {:x k}
+                   :charts [(chart/histogram {:bins bins :y :count})]
+                   :scales (if formatter {:x {:formatter formatter}} {})
+                   :labels {:x (str title " (binned)") :y "Count of Records"}})]
+  (plot/render-image
+   (plot/arrange
+    [(plot/arrange [(histogram :rotten-tomatoes-rating "Rotten Tomatoes Rating" (vec (range 0 101 5)) nil)
+                    (histogram :imdb-rating "IMDB Rating" (vec (range 1 10.01 0.5)) nil)]
+                   {:columns 2 :title "Ratings"})
+     (plot/arrange [(histogram :us-gross "US Gross" (vec (range 0 8.01e8 5e7)) #(str (m/round (/ (double %) 1.0e6)) "M"))
+                    (histogram :worldwide-gross "Worldwide Gross" (vec (range 0 2.81e9 2e8)) billions)]
+                   {:columns 2 :title "Gross"})]
+    {:columns 1})
+   {:width 900 :height 650}))
+
+;; ### Population Pyramid
+
+;; Women (left, the axis running leftward) and men (right) per age group in 2000, the ages written between the halves.
+
+(nu/source-note {:source "Vega-Lite - Population Pyramid" :url (vl-url "concat_population_pyramid") :dataset :population})
+
+(let [ages (vec (sort > (distinct (map :age population-2000))))
+      half (fn [gender reverse?]
+             {:data (filter #(= gender (:gender %)) population-2000) :mapping {:y :age :x :people :color :gender}
+              :charts [(chart/bar)]
+              :scales {:y {:type :categorical :domain ages :reverse true :axis false}
+                       :x {:formatter millions :reverse reverse?} :color gender-colors}
+              :legend false
+              :labels {:title gender :x "population" :y nil}})]
+  (plot/render-image
+   (plot/arrange
+    [(half "Female" true)
+     {:data (map (fn [age] {:age age :x 0}) ages) :mapping {:y :age :x :x}
+      :charts [(chart/text {:mapping {:x :x :y :age :label :age}})]
+      :scales {:y {:type :categorical :domain ages :reverse true :axis false} :x {:axis false}}
+      :theme {:panel {:grid {:x :none :y :none}}}
+      :labels {:title " " :x " " :y nil}}
+     (half "Male" false)]
+    {:columns 3 :widths [5 1 5]})
+   {:width 900 :height 450}))
+
+;; ## Interactive Charts (static variants)
+
+;; ### Interactive Legend
+
+;; The streamgraph of unemployment per industry with one series selected - Finance at full colour, the others faded
+;; toward the background (the original selects by clicking the legend and dims the rest with opacity).
+
+(nu/source-note {:source "Vega-Lite - Interactive Legend" :url [(vl-url "interactive_legend") (vg-url "interactive-legend")]
+                 :dataset :unemployment-across-industries})
+
+(let [industries (vec (sort (distinct (map :series unemployment))))
+      colors (map (fn [industry color] (if (= "Finance" industry) color (c/lerp color [236 236 243] 0.8)))
+                  industries (cycle (c/palette :category20b)))]
+  (plot/render-image
+   {:data unemployment :mapping {:x :date :y :count :color :series}
+    :charts [(chart/line {:fill :color :position :silhouette :width 0 :alpha 1.0})]
+    :scales {:color {:domain industries :range (vec colors) :title "series"} :y {:axis false}}
+    :labels {:x "date (year-month)" :y nil}}
+   {:width 800 :height 400}))
+
+;; ## Bar Charts (Vega)
+
+;; ### Nested bar chart
+
+;; Mean values per inner category (`b`) nested in outer groups (`a`): a row of panels per group, each as tall as its
+;; number of bars (free y scales, facet `:heights`).
+
+(nu/source-note {:source "Vega - Nested bar chart" :url (vg-url "nested-bar-chart")})
+
+(plot/render-image
+ {:data (for [[[a b] rows] (group-by (juxt :a :b) [{:a 0 :b "a" :c 6.3} {:a 0 :b "a" :c 4.2} {:a 0 :b "b" :c 6.8}
+                                                  {:a 0 :b "c" :c 5.1} {:a 1 :b "b" :c 4.4} {:a 2 :b "b" :c 3.5}
+                                                  {:a 2 :b "c" :c 6.2}])]
+          {:a (str a) :b b :c (stats/mean (map :c rows))})
+  :mapping {:y :b :x :c :color :a :facet-row :a}
+  :charts [(chart/bar)]
+  :scales {:y {:reverse true}}
+  :facets {:scales {:y :free} :heights [3 1 2]}
+  :legend false
+  :labels {:x "c" :y "b"}}
+ {:width 500 :height 300})
+
+;; ## Line & Area Charts (Vega)
+
+;; ### Job voyager
+
+;; Each occupation's share of the US labour force, 1850-2000, men (blue) and women (red) stacked (the original's search
+;; box and its labels of the largest jobs are left out).
+
+(nu/source-note {:source "Vega - Job voyager" :url (vg-url "job-voyager") :dataset :jobs})
+
+(plot/render-image
+ {:data (nu/dataset :jobs) :mapping {:x :year :y :perc :color :sex :group :job}
+  :charts [(chart/line {:fill :color :position :stack :alpha 0.6 :color :white :width 0.2})]
+  :scales {:color {:domain ["men" "women"] :range [[51 51 255] [255 51 51]] :title nil}
+           :x {:formatter #(str (m/round (double %)))} :y {:formatter #(str (m/round (* 100.0 (double %))) "%")}}
+  :labels {:x "year" :y "share of the labour force"}}
+ {:width 900 :height 500})
+
+;; ## Circular Charts (Vega)
+
+;; ### Radar chart
+
+;; Seven values of two categories as filled polygons on spokes (parallel coordinates in polar coordinates, one scale
+;; for all spokes; no value axes, as the original).
+
+(nu/source-note {:source "Vega - Radar chart" :url (vg-url "radar-chart")})
+
+(plot/render-image
+ {:data [{:category "0" :key-0 19 :key-1 22 :key-2 14 :key-3 38 :key-4 23 :key-5 5 :key-6 27}
+         {:category "1" :key-0 13 :key-1 12 :key-2 42 :key-3 13 :key-4 6 :key-5 15 :key-6 8}]
+  :mapping {:color :category}
+  :coord {:kind :polar}
+  :charts [(chart/parallel {:variables [:key-0 :key-1 :key-2 :key-3 :key-4 :key-5 :key-6] :scaling :globalminmax
+                            :fill :color :alpha 0.5 :axes false})]
+  :scales {:color {:range (c/palette :category10)}}
+  :labels {:x nil :y nil}}
+ {:width 500 :height 450})
+
+;; ## Distributions (Vega)
+
+;; ### Histogram null values
+
+;; IMDB ratings in bins of 1, the movies without a rating as a separate grey bar on the left (a second plot sharing the
+;; count axis - cljplot2 has no null bin).
+
+(nu/source-note {:source "Vega - Histogram null values" :url (vg-url "histogram-null-values") :dataset :movies})
+
+(let [nulls (count (remove #(number? (:imdb-rating %)) movies))
+      y {:domain [0 (max nulls 1000)]}]
+  (plot/render-image
+   (plot/arrange
+    [{:data [{:x "null" :n nulls}] :mapping {:x :x :y :n}
+      :charts [(chart/bar {:color [170 170 170] :width 0.9})]
+      :scales {:y y} :labels {:x " " :y "count"}}
+     {:data imdb :mapping {:x :imdb-rating}
+      :charts [(chart/histogram {:bins (vec (range 1 11)) :y :count})]
+      :scales {:y (assoc y :axis false)} :labels {:x "IMDB Rating" :y nil}}]
+    {:columns 2 :widths [2 9]})
+   {:width 700 :height 350}))
+
+;; ### Violin plot
+
+;; Penguin body mass per species as violins with the quartile box: trimmed to the data (top) and estimated over 2000 -
+;; 6500 g (bottom), at three bandwidths (the original has a checkbox and a slider).
+
+(nu/source-note {:source "Vega - Violin plot" :url (vg-url "violin-plot") :dataset :penguins})
+
+(let [rows (filter :body-mass-g penguins)]
+  (plot/render-image
+   (plot/arrange
+    (vec (for [trimmed? [true false] bandwidth [:nrd0 100 250]]
+           {:data rows :mapping {:x :body-mass-g :y :species :color :species}
+            :charts [(chart/violin (cond-> {:bandwidth bandwidth :inner :box}
+                                     trimmed? (assoc :cut 0)
+                                     (not trimmed?) (assoc :cut 10)))]
+            :scales {:y {:reverse true} :x {:domain [2000 6500]}}
+            :legend false
+            :labels {:title (str (if trimmed? "trimmed" "2000 - 6500 g") ", bandwidth " (if (keyword? bandwidth) "auto" bandwidth))
+                     :x "Body Mass (g)" :y nil}}))
+    {:columns 3})
+   {:width 1000 :height 550}))
+
+;; ### Contour plot
+
+;; Cars by horsepower and miles per gallon with three density contours per origin.
+
+(nu/source-note {:source "Vega - Contour plot" :url (vg-url "contour-plot") :dataset :cars})
+
+(plot/render-image
+ {:data (filter #(and (:horsepower %) (:miles-per-gallon %)) cars)
+  :mapping {:x :horsepower :y :miles-per-gallon :color :origin}
+  :charts [(chart/scatter {:size 4}) (chart/contour {:levels 3 :width 1.5})]
+  :scales {:color {:range (c/palette :category10)}}
+  :labels {:x "Horsepower" :y "Miles_per_Gallon"}}
+ {:width 600 :height 450})
+
+;; ### Wheat plot
+
+;; A sample stacked as dots in bins of 0.075 from -1 (dot plot `:method :histogram`).
+
+(nu/source-note {:source "Vega - Wheat plot" :url (vg-url "wheat-plot") :dataset :normal-2d})
+
+(plot/render-image
+ {:data normal-2d :mapping {:x :u}
+  :charts [(chart/dotplot {:method :histogram :binwidth 0.075 :origin -1})]
+  :scales {:x {:domain [-1 1]}}
+  :labels {:x "u" :y nil}}
+ {:width 900 :height 600})
+
+;; ### Quantile dot plot
+
+;; A bus arrival time as 20 equally likely outcomes - the quantiles of a log-normal distribution (median 11.4 min) as
+;; dots in bins of 1.25 min; the red band marks arrivals within 10 minutes and their probability (the original selects
+;; the time by a click).
+
+(nu/source-note {:source "Vega - Quantile dot plot" :url (vg-url "quantile-dot-plot")})
+
+(let [arrival (r/distribution :log-normal {:scale (m/log 11.4) :shape 0.2})
+      select 10.0]
+  (plot/render-image
+   {:data (map (fn [i] {:minutes (r/icdf arrival (/ (+ 0.5 (double i)) 20.0))}) (range 20))
+    :mapping {:x :minutes}
+    :charts [(chart/rect {:x [0 select] :fill [178 34 34] :alpha 0.2})
+             (chart/dotplot {:method :histogram :binwidth 1.25 :origin 0 :color [70 130 180]})
+             (chart/text {:x select :y [:panel 0.95] :text (format "%.1f%%" (* 100.0 (r/cdf arrival select)))
+                          :anchor [:left :top] :offset [3 0]})]
+    :scales {:x {:domain [0 30]}}
+    :labels {:x "Minutes until the bus arrives" :y nil}}
+   {:width 600 :height 250}))
+
+;; ### Time units
+
+;; 20,000 flights (January - March 2001) per month, day of the month, weekday and hour: the number of flights (left)
+;; and the mean delay (right) - every unit and measure of the original's selectors (its year is a single bar, left
+;; out).
+
+(nu/source-note {:source "Vega - Time units" :url (vg-url "time-units") :dataset :flights-20k})
+
+(let [flights (map #(assoc % :t (java.time.LocalDateTime/parse (:date %))) (nu/dataset :flights-20k))
+      units [["month" #(month-names (dec (.getMonthValue ^java.time.LocalDateTime (:t %)))) (subvec month-names 0 3)]
+             ["date" #(str (.getDayOfMonth ^java.time.LocalDateTime (:t %))) (mapv str (range 1 32))]
+             ["day" #(weekdays (dec (.getValue (.getDayOfWeek ^java.time.LocalDateTime (:t %))))) weekdays]
+             ["hours" #(str (.getHour ^java.time.LocalDateTime (:t %))) (mapv str (range 24))]]]
+  (plot/render-image
+   (plot/arrange
+    (vec (for [[unit f domain] units
+               [stat title] [[:count "flights"] [:mean "mean delay (min)"]]]
+           {:data (map #(assoc % :unit (f %)) flights) :mapping {:x :unit :y :delay}
+            :charts [(chart/bar {:stat stat})]
+            :scales {:x {:domain domain}}
+            :labels {:x unit :y title}}))
+    {:columns 2})
+   {:width 1000 :height 800}))
+
+;; ## Geographic Maps (Vega)
+
+;; ### Volcano contours
+
+;; The Maunga Whau volcano's heights on a 10 m grid as filled contours (a gridded `:value`), north up.
+
+(nu/source-note {:source "Vega - Volcano contours" :url (vg-url "volcano-contours") :dataset :volcano-vega})
+
+(plot/render-image
+ {:data (nu/dataset :volcano-vega) :mapping {:x :col :y :row :value :value}
+  :charts [(chart/contour {:fill true :levels 10})]
+  :scales {:y {:reverse true :axis false} :x {:axis false} :color {:range :viridis/viridis :title "height (m)"}}
+  :aspect :iso
+  :labels {:x nil :y nil}}
+ {:width 700 :height 500})
+
+;; ## Tree Diagrams (Vega)
+
+;; ### Tree layout
+
+;; The Flare class hierarchy as a tree, the root on the left and the leaves on the right (a horizontal dendrogram of
+;; the parent links, its height axis reversed), groups named (the original also names the 220 leaves on a 1600 px tall
+;; canvas; its tidy layout places groups by depth, the dendrogram aligns all leaves).
+
+(nu/source-note {:source "Vega - Tree layout" :url (vg-url "tree-layout") :dataset :flare-vega})
+
+(def flare (nu/dataset :flare-vega))
+
+(def flare-tree (tree/from-parents flare {:id :id :parent :parent :name :name}))
+
+(plot/render-image
+ (assoc-in (plot/dendrogram flare-tree {:horizontal true :labels? false :group-labels? true}) [:scales :y :reverse] true)
+ {:width 900 :height 800})
+
+;; ### Radial tree layout
+
+;; The same tree around a circle, every leaf named.
+
+(nu/source-note {:source "Vega - Radial tree layout" :url (vg-url "radial-tree-layout") :dataset :flare-vega})
+
+(plot/render-image
+ (plot/dendrogram flare-tree {:circular true})
+ {:width 900 :height 900})
+
+;; ### Treemap
+
+;; The Flare classes as nested rectangles, areas by code size (levels below the root as the hierarchy).
+
+(nu/source-note {:source "Vega - Treemap" :url (vg-url "treemap") :dataset :flare-vega})
+
+(def flare-leaves
+  "Flare classes (rows with a size) with `:path` - the names from below the root down to the class."
+  (let [by-id (into {} (map (juxt :id identity) flare))
+        path-of (fn [row] (->> (iterate (comp by-id :parent) row) (take-while some?) (map :name) reverse rest vec))]
+    (mapv #(assoc % :path (path-of %)) (filter :size flare))))
+
+(def flare-levels
+  "Hierarchy accessors of `flare-leaves`: one per path level."
+  (mapv (fn [i] #(get (:path %) i)) (range (reduce max (map (comp count :path) flare-leaves)))))
+
+(plot/render-image
+ {:data flare-leaves :mapping {:value :size :hierarchy flare-levels}
+  :charts [(chart/treemap {:padding 1})]}
+ {:width 1000 :height 700})
+
+;; ### Circle packing
+
+;; The same hierarchy as nested circles.
+
+(nu/source-note {:source "Vega - Circle packing" :url (vg-url "circle-packing") :dataset :flare-vega})
+
+(plot/render-image
+ {:data flare-leaves :mapping {:value :size :hierarchy flare-levels}
+  :charts [(chart/pack {:padding 2})]}
+ {:width 800 :height 800})
+
+;; ### Sunburst
+
+;; The same hierarchy as rings around the root (a partition in polar coordinates).
+
+(nu/source-note {:source "Vega - Sunburst" :url (vg-url "sunburst") :dataset :flare-vega})
+
+(plot/render-image
+ {:data flare-leaves :mapping {:value :size :hierarchy flare-levels}
+  :coord {:kind :polar}
+  :charts [(chart/partition {:root true :leaf-labels false})]}
+ {:width 800 :height 800})
+
+;; ## Network Diagrams (Vega)
+
+;; ### Edge bundling
+
+;; Dependencies between Flare classes routed along the class tree (hierarchical edge bundling), coloured by the
+;; source's top-level package.
+
+(nu/source-note {:source "Vega - Edge bundling" :url (vg-url "edge-bundling") :dataset :flare-dependencies-vega})
+
+(plot/render-image
+ (plot/bundle (nu/dataset :flare-dependencies-vega) flare-tree {:from :source :to :target :scales {:color {:legend false}}})
+ {:width 900 :height 900})
+
+;; ### Force directed layout
+
+;; Les Misérables characters linked by co-occurrence, laid out by forces (seeded), coloured by group, edge widths by
+;; the number of shared chapters.
+
+(nu/source-note {:source "Vega - Force directed layout" :url (vg-url "force-directed-layout") :dataset :miserables-nodes})
+
+(def miserables-nodes (map #(update % :group str) (nu/dataset :miserables-nodes)))
+
+(def miserables-links (nu/dataset :miserables-links-vega))
+
+(plot/render-image
+ (plot/network miserables-links {:from :source :to :target :nodes miserables-nodes :id :index :rng (r/rng :mersenne 7)
+                                 :mapping {:color :group} :edge-mapping {:size :value}
+                                 :scales {:size {:range [0.5 4] :legend false} :color {:legend false}}})
+ {:width 800 :height 700})
+
+;; ### Reorderable matrix
+
+;; The co-occurrence matrix of the characters ordered by group: a cell per pair of characters who meet, coloured by
+;; their group when both share it (grey across groups) - the original reorders by dragging.
+
+(nu/source-note {:source "Vega - Reorderable matrix" :url (vg-url "reorderable-matrix") :dataset :miserables-links-vega})
+
+(let [by-index (into {} (map (juxt :index identity) miserables-nodes))
+      order (mapv :name (sort-by (juxt #(parse-long (:group %)) :index) miserables-nodes))]
+  (plot/render-image
+   {:data (for [{:keys [source target]} miserables-links
+                :let [s (by-index source) t (by-index target)]
+                [a b] [[s t] [t s]]]
+            {:x (:name a) :y (:name b) :group (if (= (:group a) (:group b)) (:group a) "across")})
+    :mapping {:x :x :y :y :color :group}
+    :charts [(chart/tile {:stroke-color :white :stroke-width 0.5})]
+    :scales {:x {:domain order} :y {:domain order :reverse true}
+             :color {:domain (conj (vec (sort-by parse-long (distinct (map :group miserables-nodes)))) "across")
+                     :range (conj (vec (take 11 (cycle (c/palette :category10)))) [190 190 190]) :legend false}}
+    :theme {:text {:tick-label {:size 6}}}
+    :labels {:x nil :y nil}}
+   {:width 900 :height 900}))
+
+;; ### Arc diagram
+
+;; The same co-occurrences as arcs above the characters, ordered by group.
+
+(nu/source-note {:source "Vega - Arc diagram" :url (vg-url "arc-diagram") :dataset :miserables-links-vega})
+
+(plot/render-image
+ (plot/arc miserables-links {:from :source :to :target :nodes miserables-nodes :id :index
+                             :order (mapv :index (sort-by (juxt #(parse-long (:group %)) :index) miserables-nodes))
+                             :mapping {:color :group} :scales {:color {:legend false}}})
+ {:width 1000 :height 450})
+
+;; ## Other Chart Types (Vega)
+
+;; ### Density heatmaps
+
+;; Miles per gallon against acceleration as a kernel density raster per origin (each panel its own density).
+
+(nu/source-note {:source "Vega - Density heatmaps" :url (vg-url "density-heatmaps") :dataset :cars})
+
+(plot/render-image
+ {:data (filter #(and (:acceleration %) (:miles-per-gallon %)) cars)
+  :mapping {:x :acceleration :y :miles-per-gallon :facet-col :origin}
+  :charts [(chart/field)]
+  :scales {:color {:range :viridis/viridis}}
+  :labels {:x "Acceleration" :y "Miles_per_Gallon"}}
+ {:width 1000 :height 350})
+
+;; ### Beeswarm plot
+
+;; Les Misérables characters per group, packed without overlap (a beeswarm; the original simulates forces).
+
+(nu/source-note {:source "Vega - Beeswarm plot" :url (vg-url "beeswarm-plot") :dataset :miserables-nodes})
+
+(plot/render-image
+ {:data (map #(assoc % :g (parse-long (:group %))) miserables-nodes) :mapping {:x :g :color :group}
+  :charts [(chart/beeswarm {:size 18})]
+  :scales {:x {:ticks (vec (range 11))} :color {:legend false}}
+  :labels {:x "group" :y nil}}
+ {:width 800 :height 350})
+
+;; ### Calendar view
+
+;; Daily change of the S&P 500 close, 2000-2020: a row of panels per year, a cell per trading day (week of the year ×
+;; weekday), diverging around 0.
+
+(nu/source-note {:source "Vega - Calendar view" :url (vg-url "calendar-view") :dataset :sp500-2000})
+
+(let [days (map #(update % :date local-date) (nu/dataset :sp500-2000))
+      week-fields (java.time.temporal.WeekFields/of java.time.DayOfWeek/SUNDAY 1)]
+  (plot/render-image
+   {:data (map (fn [prev {:keys [^LocalDate date close]}]
+                 {:year (str (.getYear date)) :week (.get date (.weekOfYear week-fields))
+                  :day (weekdays (dec (.getValue (.getDayOfWeek date))))
+                  :change (/ (- (double close) (double (:close prev))) (double (:close prev)))})
+               days (rest days))
+    :mapping {:x :week :y :day :color :change :facet-row :year}
+    :charts [(chart/tile)]
+    :scales {:y {:domain (subvec weekdays 0 5) :reverse true :axis false} :x {:axis false}
+             :color {:range [[197 27 125] [247 247 247] [77 146 33]] :midpoint 0 :domain [-0.06 0.06]
+                     :formatter #(format "%.0f%%" (* 100.0 (double %))) :title "change"}}
+    :theme {:facet {:gap 2} :text {:strip {:size 8}}}
+    :labels {:x nil :y nil}}
+   {:width 900 :height 800}))
+
+;; ### Packed bubble chart
+
+;; Sixteen amounts as packed circles (the original packs them by forces).
+
+(nu/source-note {:source "Vega - Packed bubble chart" :url (vg-url "packed-bubble-chart")})
+
+(plot/render-image
+ {:data (map (fn [k v] {:category (str k) :amount v}) "ABCDEFGHIJKLMNOP"
+             [0.28 0.55 0.43 0.91 0.81 0.53 0.19 0.87 0.28 0.55 0.43 0.91 0.81 0.53 0.19 0.87])
+  :mapping {:value :amount :hierarchy [:category] :color :category}
+  :charts [(chart/pack {:padding 3})]
+  :legend false}
+ {:width 500 :height 500})
+
+;; ## Custom Designs (Vega)
+
+;; ### Budget forecasts
+
+;; Each year's budget forecast of the surplus / deficit (% of GDP, grey lines) against the actual balance (black).
+
+(nu/source-note {:source "Vega - Budget forecasts" :url (vg-url "budget-forecasts") :dataset :budgets})
+
+(let [budgets (nu/dataset :budgets)]
+  (plot/render-image
+   {:data budgets :mapping {:x :forecast-year :y :value :group :budget-year}
+    :charts [(chart/rule {:y 0 :color :black})
+             (chart/line {:color [170 170 170] :width 1})
+             (chart/line {:data (filter #(= (:forecast-year %) (dec (long (:budget-year %)))) budgets) :mapping {:group nil}
+                          :color :black :width 3})]
+    :scales {:x {:formatter #(str (m/round (double %)))}}
+    :labels {:x nil :y "Surplus / deficit (% of GDP)"}}
+   {:width 800 :height 400}))
+
+;; ### Annual temperature
+
+;; Seattle's hourly temperature normals over the year, each hour of the day a row from 6 AM, its area scaled into the
+;; row (ribbons from the row's base).
+
+(nu/source-note {:source "Vega - Annual temperature" :url (vg-url "annual-temperature") :dataset :seattle-weather-hourly-normals})
+
+(let [hours (map #(mod (+ 6 %) 24) (range 24))
+      row-of (zipmap hours (range 23 -1 -1))
+      rows (for [{:keys [date temperature]} (nu/dataset :seattle-weather-hourly-normals)
+                 :let [t (java.time.LocalDateTime/parse date)]]
+             {:date (.toLocalDate t) :hour (.getHour t) :temperature temperature})
+      [lo hi] ((juxt #(reduce min %) #(reduce max %)) (map :temperature rows))]
+  (plot/render-image
+   {:data (map (fn [{:keys [hour temperature] :as r}]
+                 (let [base (double (row-of hour))]
+                   (assoc r :base base :top (+ base (* 0.95 (/ (- (double temperature) lo) (- hi lo)))))))
+               rows)
+    :mapping {:x :date :group :hour}
+    :charts [(chart/ribbon {:mapping {:ymin :base :ymax :top} :color [70 130 180] :stroke-color [40 80 120] :stroke-width 0.5})]
+    :scales {:y {:ticks (mapv #(+ 0.5 (double (row-of %))) hours)
+                 :formatter (let [label (into {} (map (fn [h] [(+ 0.5 (double (row-of h))) (format "%02d:00" h)]) hours))]
+                              #(label (double %) ""))}
+             :x {:formatter #(.format (DateTimeFormatter/ofPattern "MMM" Locale/ENGLISH) ^TemporalAccessor %)}}
+    :labels {:title "Seattle Annual Temperatures" :x nil :y nil}}
+   {:width 800 :height 650}))
+
+;; ### Flight passengers
+
+;; Passenger traffic at Seattle-Tacoma airport compared with the same month a year before, October 2019 - April 2020.
+
+(nu/source-note {:source "Vega - Flight passengers" :url (vg-url "flight-passengers")})
+
+(plot/render-image
+ {:data (map (fn [[date curr prev]] {:date (LocalDate/parse date) :change (- (/ (double curr) (double prev)) 1.0)})
+             [["2019-10-01" 4292562 4044655] ["2019-11-01" 3892767 3817267] ["2019-12-01" 4320042 3937790]
+              ["2020-01-01" 3764192 3560276] ["2020-02-01" 3620083 3192656] ["2020-03-01" 1824676 4111729]
+              ["2020-04-01" 259153 4033516]])
+  :mapping {:x :date :y :change}
+  :charts [(chart/rule {:y 0 :color [120 120 120]}) (chart/line {:color [70 130 180] :width 3})
+           (chart/scatter {:color [70 130 180] :size 8})]
+  :scales {:y {:formatter #(format "%+.0f%%" (* 100.0 (double %)))}
+           :x {:formatter #(.format (DateTimeFormatter/ofPattern "MMM yyyy" Locale/ENGLISH) ^TemporalAccessor %)}}
+  :labels {:title "Passenger Traffic at Seattle-Tacoma International Airport, One Year to the Next" :x nil
+           :y "change from the prior year"}}
+ {:width 800 :height 350})
+
+;; ### Timelines
+
+;; The first five US presidents: their lives (thin) and terms (thick, red), with four events as labelled rules (labels
+;; staggered in an empty top row; the original tilts them above the chart).
+
+(nu/source-note {:source "Vega - Timelines" :url (vg-url "timelines")})
+
+(let [day (fn [ms] (.toLocalDate (.atZone (java.time.Instant/ofEpochMilli ms) java.time.ZoneOffset/UTC)))
+      people (map (fn [[label born died enter leave]]
+                    {:label label :born (day born) :died (day died) :enter (day enter) :leave (day leave)})
+                  [["Washington" -7506057600000 -5366196000000 -5701424400000 -5453884800000]
+                   ["Adams" -7389766800000 -4528285200000 -5453884800000 -5327740800000]
+                   ["Jefferson" -7154586000000 -4528285200000 -5327740800000 -5075280000000]
+                   ["Madison" -6904544400000 -4213184400000 -5075280000000 -4822819200000]
+                   ["Monroe" -6679904400000 -4370518800000 -4822819200000 -4570358400000]])
+      events [["Decl. of Independence" (LocalDate/of 1776 7 4)] ["U.S. Constitution" (LocalDate/of 1789 3 4)]
+              ["Louisiana Purchase" (LocalDate/of 1803 4 30)] ["Monroe Doctrine" (LocalDate/of 1823 12 2)]]
+      names (mapv :label people)]
+  (plot/render-image
+   {:data people
+    :charts [(chart/rule {:x (mapv second events) :color [136 136 136]})
+             (chart/text {:x (mapv second events) :y [[:panel 1.0] [:panel 0.93] [:panel 1.0] [:panel 0.93]]
+                          :text (mapv first events) :anchor [:left :top] :offset [3 -2] :size 10})
+             (chart/rect {:mapping {:x0 :born :x1 :died :y0 :label :y1 :label} :fill [85 85 119] :band-width 0.08})
+             (chart/rect {:mapping {:x0 :enter :x1 :leave :y0 :label :y1 :label} :fill [238 68 68] :band-width 0.25})
+             (chart/text {:mapping {:x :born :y :label :label :label} :anchor [:left :bottom] :offset [0 6] :size 10})]
+    :scales {:y {:domain (into [" "] names) :reverse true :axis false}}
+    :labels {:x nil :y nil}}
+   {:width 800 :height 380}))
+
+;; ### U district cuisine
+
+;; Restaurants of Seattle's University District by latitude (south to north), a density ridge per cuisine coloured by
+;; kind, the cross streets as rules.
+
+(nu/source-note {:source "Vega - U district cuisine" :url (vg-url "u-district-cuisine") :dataset :udistrict})
+
+(let [categories ["coffee" "drinks" "bubbletea" "vietnamese" "thai" "chinese" "japanese" "korean" "mideastern" "indian"
+                  "burgers" "pizza" "american" "breakfast" "bakeries" "seafood" "hawaiian" "veg" "latin"]
+      names ["Coffee" "Pubs, Lounges" "Bubble Tea, Juice" "Vietnamese" "Thai" "Chinese" "Japanese" "Korean"
+             "Middle Eastern" "Indian, Pakistani" "Pizza" "Burgers" "American" "Breakfast, Brunch" "Bakeries" "Seafood"
+             "Hawaiian" "Vegetarian, Vegan" "Mexican, Latin American"]
+      colors ["#7f7f7f" "#7f7f7f" "#7f7f7f" "#1f77b4" "#1f77b4" "#1f77b4" "#1f77b4" "#1f77b4" "#2ca02c" "#2ca02c"
+              "#ff7f0e" "#ff7f0e" "#ff7f0e" "#8c564b" "#8c564b" "#e377c2" "#e377c2" "#bcbd22" "#17becf"]
+      name-of (zipmap categories names)
+      streets [["Boat St." 47.6516] ["40th St." 47.655363] ["42nd St." 47.6584] ["45th St." 47.6614]
+               ["50th St." 47.664924] ["55th St." 47.668519]]]
+  (plot/render-image
+   {:data (keep #(when-let [n (name-of (:key %))] (assoc % :cuisine n)) (nu/dataset :udistrict))
+    :mapping {:x :lat :y :cuisine :color :cuisine}
+    :charts [(chart/rule {:x (mapv second streets) :color [200 200 200]})
+             (chart/text {:x (mapv second streets) :y [:panel 1.0] :text (mapv first streets) :anchor [:center :top]
+                          :offset [0 -2] :size 9 :background [236 236 243 200]})
+             (chart/density {:bandwidth 0.0005 :fill :color :alpha 0.8 :overlap 2.3})]
+    :scales {:y {:domain names :reverse true} :color {:domain names :range (mapv c/to-color colors) :legend false}}
+    :labels {:x "latitude" :y nil}}
+   {:width 800 :height 800}))
+
+;; ### Warming stripes
+
+;; Global temperature anomaly per year, 1880 onward, as stripes from blue (cold) to red (warm) - E. Hawkins' design.
+
+(nu/source-note {:source "Vega - Warming stripes" :url (vg-url "warming-stripes") :dataset :global-temp})
+
+(plot/render-image
+ {:data (nu/dataset :global-temp) :mapping {:x :year :y (constantly "1") :color :temp}
+  :charts [(chart/tile)]
+  :scales {:y {:axis false}
+           :color {:range (mapv c/to-color (reverse ["#67000D" "#A50F15" "#CB181D" "#EF3B2C" "#FB6A4A" "#FC9272" "#FCBBA1"
+                                                     "#FEE0D2" "#FFFFFF" "#DEEBF7" "#C6DBEF" "#9ECAE1" "#6BAED6" "#4292C6"
+                                                     "#2171B5" "#08519C" "#08306B"]))
+                   :title "°C"}
+           :x {:formatter #(str (m/round (double %)))}}
+  :labels {:title "Global temperature change (1880 onward)" :x nil :y nil}}
+ {:width 900 :height 300})
+
+;; ## Not reproduced
+
+;; The gallery examples left out - interactive (selection, brushing, tooltips, widgets; two are shown above as static
+;; variants), geographic, animated, or needing a feature cljplot2 doesn't have.
+
+;; | Example | Reason |
+;; |---|---|
+;; | [Ternary chart](https://vega.github.io/vega-lite/examples/ternary.html) | not supported: ternary coordinates |
+;; | [Layered Plot with Dual-Axis](https://vega.github.io/vega-lite/examples/layer_dual_axis.html) | not supported: dual y axis |
+;; | [Choropleth of Unemployment Rate per County](https://vega.github.io/vega-lite/examples/geo_choropleth.html) | geographic (no maps in cljplot2) |
+;; | [One Dot per Zipcode in the U.S.](https://vega.github.io/vega-lite/examples/geo_circle.html) | geographic (no maps in cljplot2) |
+;; | [One Dot per Airport in the U.S. Overlayed on Geoshape](https://vega.github.io/vega-lite/examples/geo_layer.html) | geographic (no maps in cljplot2) |
+;; | [Rules (line segments) Connecting SEA to every Airport Reachable via Direct Flights](https://vega.github.io/vega-lite/examples/geo_rule.html) | geographic (no maps in cljplot2) |
+;; | [Three Choropleths Representing Disjoint Data from the Same Table](https://vega.github.io/vega-lite/examples/geo_repeat.html) | geographic (no maps in cljplot2) |
+;; | [U.S. State Capitals Overlayed on a Map of U.S.](https://vega.github.io/vega-lite/examples/geo_text.html) | geographic (no maps in cljplot2) |
+;; | [Line between Airports in the U.S.](https://vega.github.io/vega-lite/examples/geo_line.html) | geographic (no maps in cljplot2) |
+;; | [Income in the U.S. by State, Faceted over Income Brackets](https://vega.github.io/vega-lite/examples/geo_trellis.html) | geographic (no maps in cljplot2) |
+;; | [London Tube Lines](https://vega.github.io/vega-lite/examples/geo_layer_line_london.html) | geographic (no maps in cljplot2) |
+;; | [Projection explorer](https://vega.github.io/vega-lite/examples/geo_params_projections.html) | geographic (no maps in cljplot2) |
+;; | [Earthquakes Example](https://vega.github.io/vega-lite/examples/interactive_geo_earthquakes.html) | geographic (no maps in cljplot2) |
+;; | [Faceted County-Level Species Habitat Maps](https://vega.github.io/vega-lite/examples/interactive_geo_facet_species.html) | geographic (no maps in cljplot2) |
+;; | [Bar Chart with Highlighting on Hover and Selection on Click](https://vega.github.io/vega-lite/examples/interactive_bar_select_highlight.html) | interactive |
+;; | [Histogram with Full-Height Hover Targets for Tooltip](https://vega.github.io/vega-lite/examples/interactive_histogram_full_height_hover.html) | interactive |
+;; | [Scatterplot with External Links and Tooltips](https://vega.github.io/vega-lite/examples/point_href.html) | interactive |
+;; | [Rectangular Brush](https://vega.github.io/vega-lite/examples/interactive_brush.html) | interactive |
+;; | [Area Chart with Rectangular Brush](https://vega.github.io/vega-lite/examples/interactive_area_brush.html) | interactive |
+;; | [Paintbrush Highlight](https://vega.github.io/vega-lite/examples/interactive_paintbrush.html) | interactive |
+;; | [Scatterplot Pan & Zoom](https://vega.github.io/vega-lite/examples/selection_translate_scatterplot_drag.html) | interactive |
+;; | [Query Widgets](https://vega.github.io/vega-lite/examples/interactive_query_widgets.html) | interactive |
+;; | [Interactive Average](https://vega.github.io/vega-lite/examples/selection_layer_bar_month.html) | interactive |
+;; | [Multi Series Line Chart with an Interactive Line Highlight](https://vega.github.io/vega-lite/examples/interactive_line_hover.html) | interactive |
+;; | [Multi Series Line Chart with an Interactive Point Highlight](https://vega.github.io/vega-lite/examples/interactive_line_point_hover.html) | interactive |
+;; | [Multi Series Line Chart with Labels](https://vega.github.io/vega-lite/examples/interactive_multi_line_label.html) | interactive |
+;; | [Multi Series Line Chart with Tooltip via Pivot](https://vega.github.io/vega-lite/examples/interactive_multi_line_pivot_tooltip.html) | interactive |
+;; | [Multi Series Line Chart with Tooltip](https://vega.github.io/vega-lite/examples/interactive_multi_line_tooltip.html) | interactive |
+;; | [Isotype Grid](https://vega.github.io/vega-lite/examples/isotype_grid.html) | interactive |
+;; | [Brushing Scatter Plot to show data on a table](https://vega.github.io/vega-lite/examples/brush_table.html) | interactive |
+;; | [Selectable Heatmap](https://vega.github.io/vega-lite/examples/selection_heatmap.html) | interactive |
+;; | [Bar Chart with a Minimap](https://vega.github.io/vega-lite/examples/bar_count_minimap.html) | interactive |
+;; | [Interactive Index Chart](https://vega.github.io/vega-lite/examples/interactive_index_chart.html) ([Vega](https://vega.github.io/vega/examples/stock-index-chart/)) | interactive |
+;; | [Focus + Context - Smooth Histogram Zooming](https://vega.github.io/vega-lite/examples/interactive_bin_extent.html) | interactive |
+;; | [Dynamic Color Legend](https://vega.github.io/vega-lite/examples/dynamic_color_legend.html) | interactive |
+;; | [Search Input](https://vega.github.io/vega-lite/examples/param_search_input.html) | interactive |
+;; | [Change zorder on hover](https://vega.github.io/vega-lite/examples/selection_type_point_zorder.html) | interactive |
+;; | [Overview and Detail](https://vega.github.io/vega-lite/examples/interactive_overview_detail.html) ([Vega](https://vega.github.io/vega/examples/overview-plus-detail/)) | interactive |
+;; | [Crossfilter (Filter)](https://vega.github.io/vega-lite/examples/interactive_crossfilter.html) ([Vega](https://vega.github.io/vega/examples/crossfilter-flights/)) | interactive |
+;; | [Crossfilter (Highlight)](https://vega.github.io/vega-lite/examples/interactive_layered_crossfilter.html) | interactive |
+;; | [Interactive Dashboard with Cross Highlight](https://vega.github.io/vega-lite/examples/interactive_concat_layer.html) | interactive |
+;; | [Seattle Weather Exploration](https://vega.github.io/vega-lite/examples/interactive_seattle_weather.html) | interactive |
+;; | [Connections among Major U.S. Airports.](https://vega.github.io/vega-lite/examples/airport_connections.html) ([Vega](https://vega.github.io/vega/examples/airport-connections/)) | interactive |
+;; | [An interactive scatter plot of global health statistics by country and year.](https://vega.github.io/vega-lite/examples/interactive_global_development.html) ([Vega](https://vega.github.io/vega/examples/global-development/)) | interactive |
+;; | [Labeled scatter plot](https://vega.github.io/vega/examples/labeled-scatter-plot/) (Vega) | not supported: label placement |
+;; | [Hypothetical outcome plots](https://vega.github.io/vega/examples/hypothetical-outcome-plots/) (Vega) | animated |
+;; | [County unemployment](https://vega.github.io/vega/examples/county-unemployment/) (Vega) | geographic (no maps in cljplot2) |
+;; | [Dorling cartogram](https://vega.github.io/vega/examples/dorling-cartogram/) (Vega) | geographic (no maps in cljplot2) |
+;; | [World map](https://vega.github.io/vega/examples/world-map/) (Vega) | geographic (no maps in cljplot2) |
+;; | [Earthquakes](https://vega.github.io/vega/examples/earthquakes/) (Vega) | geographic (no maps in cljplot2) |
+;; | [Projections](https://vega.github.io/vega/examples/projections/) (Vega) | geographic (no maps in cljplot2) |
+;; | [Zoomable world map](https://vega.github.io/vega/examples/zoomable-world-map/) (Vega) | geographic (no maps in cljplot2) |
+;; | [Distortion comparison](https://vega.github.io/vega/examples/distortion-comparison/) (Vega) | geographic (no maps in cljplot2) |
+;; | [Annual precipitation](https://vega.github.io/vega/examples/annual-precipitation/) (Vega) | geographic (no maps in cljplot2) |
+;; | [Parallel coordinates interactive](https://vega.github.io/vega/examples/parallel-coordinates-interactive/) (Vega) | interactive |
+;; | [Word cloud](https://vega.github.io/vega/examples/word-cloud/) (Vega) | not supported: word cloud layout |
+;; | [Clock](https://vega.github.io/vega/examples/clock/) (Vega) | animated |
+;; | [Watch](https://vega.github.io/vega/examples/watch/) (Vega) | animated |
+;; | [Earthquakes globe](https://vega.github.io/vega/examples/earthquakes-globe/) (Vega) | geographic (no maps in cljplot2) |
+;; | [Serpentine timeline](https://vega.github.io/vega/examples/serpentine-timeline/) (Vega) | not supported: serpentine path |
+;; | [Brushing scatter plots](https://vega.github.io/vega/examples/brushing-scatter-plots/) (Vega) | interactive |
+;; | [Zoomable scatter plot](https://vega.github.io/vega/examples/zoomable-scatter-plot/) (Vega) | interactive |
+;; | [Zoomable binned plot](https://vega.github.io/vega/examples/zoomable-binned-plot/) (Vega) | interactive |
+;; | [Pi monte carlo](https://vega.github.io/vega/examples/pi-monte-carlo/) (Vega) | animated |
+;; | [Zoomable circle packing](https://vega.github.io/vega/examples/zoomable-circle-packing/) (Vega) | interactive |
+;; | [Table scrollbar](https://vega.github.io/vega/examples/table-scrollbar/) (Vega) | interactive |
+;; | [Bar line toggle](https://vega.github.io/vega/examples/bar-line-toggle/) (Vega) | interactive |
+;; | [Map with tooltip](https://vega.github.io/vega/examples/map-with-tooltip/) (Vega) | interactive |
+;; | [Pacman](https://vega.github.io/vega/examples/pacman/) (Vega) | animated |
+;; | [Platformer](https://vega.github.io/vega/examples/platformer/) (Vega) | animated |

@@ -53,3 +53,11 @@
       (is (= (present "forecast-low") (present "forecast-high")))
       (is (empty? (filter (present "actual") (present "forecast-low"))))
       (is (= (set (range 10)) (into (present "actual") (present "forecast-low")))))))
+
+(deftest notebook-completeness-test
+  (testing "175 entries (the triage report's in / optional rows) and a Not reproduced row per excluded example (70)"
+    (is (= 175 (count (re-seq #"(?m)^;; ### " notebook))))
+    (is (= 70 (count (re-seq #"(?m)^;; \| \[" notebook))))
+    (is (re-find #"(?m)^;; ## Not reproduced$" notebook)))
+  (testing "every entry has a source note"
+    (is (<= 175 (count (re-seq #"nu/source-note \{:source" notebook))))))
