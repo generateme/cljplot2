@@ -376,9 +376,14 @@
                 (let [kind (or (:kind spec) (extent-kinds (:kind extent)))
                       domain (case (:kind extent)
                                :categorical (:values extent)
-                               :temporal (if (= :datetime kind)
-                                           (widen-temporal (:min extent) (:max extent))
-                                           [(:min extent) (:max extent)])
+                               :temporal (cond
+                                           (= :datetime kind) (widen-temporal (:min extent) (:max extent))
+                                           ;; dates declared categorical: one band per distinct date, in time order
+                                           (= :bands kind) (if (:values extent)
+                                                             (vec (sort (:values extent)))
+                                                             (schema/fail! "Dates declared categorical (or on a bands scale) have too many distinct values; give an explicit :domain."
+                                                                           {:key :domain :in [:scales k :domain]}))
+                                           :else [(:min extent) (:max extent)])
                                :numeric (cond
                                           (not= :bands kind) (widen (double (:min extent)) (double (:max extent)))
                                           ;; levels reported by the charts (strip charts' numeric :y levels)

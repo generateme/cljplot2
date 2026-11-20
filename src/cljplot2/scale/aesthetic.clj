@@ -514,6 +514,12 @@
   (let [explicit (:domain spec)]
     (when (or explicit extent)
       (let [kind (inferred-kind k spec (continuous-extent? k extent))
+            ;; a linear scale reads a Year / YearMonth in its :domain and :ticks as data values are read: the date
+            ;; its period starts (cljplot2.data.rows/period-start); ordinal levels stay as given
+            spec (cond-> spec
+                   (and (= :linear kind) (sequential? explicit)) (update :domain #(mapv data/period-start %))
+                   (and (= :linear kind) (sequential? (:ticks spec))) (update :ticks #(mapv data/period-start %)))
+            explicit (:domain spec)
             explicit-date (when (data/temporal? (first explicit)) (first explicit))
             temporal? (and (or (= :temporal (:kind extent)) explicit-date) (not= kind :ordinal) (not= kind :identity))
             ticks (:ticks spec)

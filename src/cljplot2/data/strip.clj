@@ -143,12 +143,12 @@
   (or (string? v) (keyword? v) (shingle/interval? v)))
 
 (defn- check-levels!
-  "Throw `ex-info {:key :place}` unless the `:y` `levels` can be bands: strings / keywords / intervals, or numbers
-  with an explicit `:bands` plot scale."
+  "Throw `ex-info {:key :place}` unless the `:y` `levels` can be bands: strings / keywords / intervals, or numbers or
+  dates (`java.time` values) with an explicit `:bands` plot scale (declared categorical or a categorical marker)."
   [levels plot-scales]
   (let [bands? (= :bands (get-in plot-scales [:y :kind]))]
-    (when-not (every? #(or (categorical-level? %) (and bands? (number? %))) levels)
-      (schema/fail! "Strip levels (the level axis, see :level-axis) must be categorical (strings / keywords / intervals), or numbers declared categorical (:scales {:y {:type :categorical}} or :mapping {:y (levels/categorical k)})."
+    (when-not (every? #(or (categorical-level? %) (and bands? (or (number? %) (data/temporal? %)))) levels)
+      (schema/fail! "Strip levels (the level axis, see :level-axis) must be categorical (strings / keywords / intervals), or numbers or dates declared categorical (:scales {:y {:type :categorical}} or :mapping {:y (levels/categorical k)})."
                     {:key :place :value (first (remove categorical-level? levels))}))))
 
 (defn- slots
@@ -296,8 +296,8 @@
   (cond
     (= :band place) (let [levels (distinct (map :level items))
                           e (data/extent :y levels)]
-                      ;; numeric levels (on an explicit :bands scale) travel as the extent's :values
-                      (cond-> e (= :numeric (:kind e)) (assoc :values (vec levels))))
+                      ;; numeric and date levels (on an explicit :bands scale) travel as the extent's :values
+                      (cond-> e (#{:numeric :temporal} (:kind e)) (assoc :values (vec levels))))
     (map? place) {:kind :numeric :min (double (:at place)) :max (double (:at place))}
     (= :bottom place) {:kind :numeric :min 0.0 :max 0.0 :companion? true}
     :else nil))
@@ -706,7 +706,7 @@
           x-categorical? :x
           y-categorical? :y
           (and (numeric-axis? :x mapping rows) (numeric-axis? :y mapping rows))
-          (schema/fail! (str "Strip levels must be categorical (strings / keywords / intervals) on :x or :y, or numbers "
+          (schema/fail! (str "Strip levels must be categorical (strings / keywords / intervals) on :x or :y, or numbers or dates "
                              "declared categorical (:scales {:y {:type :categorical}} or :mapping {:y (levels/categorical k)}); "
                              "or set :level-axis.")
                         {:key :level-axis :value [:x :y]})
