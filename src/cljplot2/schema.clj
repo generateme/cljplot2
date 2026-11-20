@@ -78,6 +78,9 @@
 (def open-fraction (named-type ::open-fraction #(and (number? %) (< 0.0 (double %) 1.0)) "should be a number in (0 1)"))
 (def finite-pos (named-type ::finite-pos #(and (finite? %) (pos? (double %))) "should be a positive finite number"))
 (def finite-non-neg (named-type ::finite-non-neg #(and (finite? %) (>= (double %) 0.0)) "should be a non-negative finite number"))
+(def finite-interval
+  (named-type ::finite-interval #(and (vector? %) (= 2 (count %)) (every? finite? %) (< (double (% 0)) (double (% 1))))
+              "should be [lo hi], finite numbers, lo < hi"))
 (def bool (named-type ::boolean boolean? "should be true or false"))
 (def malli-schema
   (named-type ::malli-schema #(try (some? (malli/schema %)) (catch Exception _ false)) "should be a malli schema"))

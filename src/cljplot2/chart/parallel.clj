@@ -94,10 +94,6 @@
     [#(when (< (count %) 2) "should have at least 2 variables") nil]
     [duplicate-labels nil]))
 
-(def ^:private limits
-  (schema/named-type ::limits #(and (vector? %) (= 2 (count %)) (every? schema/finite? %) (< (double (% 0)) (double (% 1))))
-                     "should be [lo hi], finite numbers, lo < hi"))
-
 (def scalings
   "Values of `:scaling`."
   #{:uniminmax :std :robust :center :globalminmax})
@@ -144,7 +140,7 @@
                                          (into [:enum] (sort scalings)))
                         (schema/optional :limits {:description "explicit variable domains {key [lo hi]}, key - the keyword or the pair's label"
                                                   :cljplot2/default-doc "each variable's finite data range"}
-                                         [:map-of any? limits])
+                                         [:map-of any? schema/finite-interval])
                         (schema/nilable :axes {:description "draw each variable's axis with ticks and labels" :default true} schema/bool)
                         (schema/optional :missing {:description "a missing value: :break (the line breaks there) or :drop (the row is dropped)"
                                                    :default :break}

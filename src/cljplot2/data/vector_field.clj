@@ -50,18 +50,13 @@
                  {:x (.x p) :y (.y p) :x0 x0 :y0 y0}))
              seeds)))
 
-(def ^:private axis-range
-  "`[lo hi]`, finite numbers, `lo < hi`."
-  (schema/with-rules [:tuple schema/finite schema/finite]
-    [(fn [[lo hi]] (when-not (< (double lo) (double hi)) "should be [lo hi] with lo < hi"))]))
-
 (def arrows-options
   "Options of [[arrows]]."
   [:map {:closed true}
    [:domain {:description "the domain of the arrow grid {:x [lo hi] :y [lo hi]} (required)"}
     [:map {:closed true}
-     [:x {:description "x domain [lo hi], lo < hi"} axis-range]
-     [:y {:description "y domain [lo hi], lo < hi"} axis-range]]]
+     [:x {:description "x domain [lo hi], lo < hi"} schema/finite-interval]
+     [:y {:description "y domain [lo hi], lo < hi"} schema/finite-interval]]]
    (schema/optional :n {:description "grid cells per axis, or [nx ny]" :default 20}
                     [:or schema/pos-int [:tuple schema/pos-int schema/pos-int]])
    (schema/optional :grid {:description "arrow starts: cell centres (:square) or every second row moved half a cell along x (:shifted)"

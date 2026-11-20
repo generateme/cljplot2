@@ -68,10 +68,6 @@
                            (if (every? number? %) (< (double (% 0)) (double (% 1))) (not= (% 0) (% 1))))
                      "should be [lo hi]: finite numbers lo < hi, or two different java.time values"))
 
-(def ^:private limits
-  (schema/named-type ::limits #(and (vector? %) (= 2 (count %)) (every? schema/finite? %) (< (double (% 0)) (double (% 1))))
-                     "should be [lo hi], finite numbers, lo < hi"))
-
 (def ^:private y-extent
   (schema/named-type ::y-extent
                      #(or (contains? #{:quantiles :min-max :none} %)
@@ -107,7 +103,7 @@
                                                      :cljplot2/default-doc "1 pixel for :f, {:count 500} for :parametric"}
                                        curve/sample-step)
                       (schema/optional :y-limits {:description "[lo hi] - samples outside don't count for the y extent (the curve is only clipped)"}
-                                       limits)
+                                       schema/finite-interval)
                       (schema/optional :y-extent {:description "y extent of the samples without :y-limits or an explicit y domain: :quantiles (1% and 99%), {:quantiles [p q]}, :min-max or :none"
                                                   :default :quantiles}
                                        y-extent)

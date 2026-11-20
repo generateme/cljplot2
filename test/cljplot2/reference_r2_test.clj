@@ -140,7 +140,10 @@
   (testing "finite-pos: > 0 and finite"
     (is (= [false true false false] (map #(malli/validate schema/finite-pos %) [0 1e-9 ##Inf ##NaN]))))
   (testing "finite-non-neg: >= 0 and finite"
-    (is (= [true true false false] (map #(malli/validate schema/finite-non-neg %) [0 2.5 -0.1 ##Inf])))))
+    (is (= [true true false false] (map #(malli/validate schema/finite-non-neg %) [0 2.5 -0.1 ##Inf]))))
+  (testing "finite-interval: a vector [lo hi] of finite numbers, lo < hi"
+    (is (= [true false false false false false false]
+           (map #(malli/validate schema/finite-interval %) [[0 1] [1 1] [1 0] [0 ##Inf] (list 0 1) [0] [0 1 2]])))))
 
 (deftest options-map-test
   (let [own [(schema/optional :a {:description "own a"} :int)]
