@@ -150,7 +150,9 @@
       nil)))
 
 (defn- nested-map
-  "The closed `:map` of an entry's schema `s` (also under `:maybe`), whose entries get rows of their own, or `nil`."
+  "The closed `:map` of an entry's schema `s` (also under `:maybe`), whose entries get rows of their own - flattened
+  under the entry's row - or `nil`. Every such entry is a [[container?]]; not the reverse: a map under validation
+  rules (`:and`, e.g. a scale spec) or a map of entries isn't flattened (it has a table of its own)."
   [s]
   (let [s (malli/schema s)]
     (case (malli/type s)
@@ -159,7 +161,8 @@
       nil)))
 
 (defn- container?
-  "Does entry schema `s` hold entries of its own - a map or a map of entries (also under `:maybe` / `:and`)?"
+  "Does entry schema `s` hold entries of its own - a map or a map of entries (also under `:maybe` / `:and`)? Its row
+  takes no default value (see [[with-defaults]]); its entries' rows do, when [[nested-map]] flattens them."
   [s]
   (let [s (malli/schema s)]
     (case (malli/type s)
@@ -217,17 +220,20 @@
             (cond-> row (and (nil? (:default row)) (some? v) (not (::container? (meta row)))) (assoc :default v))))
         rows))
 
-(defn theme-rows
-  "Rows of the theme ([[cljplot2.theme/theme-schema]]) with their defaults from [[cljplot2.theme/default-theme]],
-  then one row `[:text role]` per text role of [[cljplot2.theme/text-roles]] (sorted), its default the role's style."
+(defn- text-roles-schema
+  "The theme's `:text` as a merged map of the roles of [[cljplot2.theme/text-roles]] (sorted), each a text style -
+  rows for the roles the theme's `map-of` can't give."
   []
-  (let [style-type (type-text theme/text-style-schema)]
-    (into (with-defaults (schema-rows theme/theme-schema) theme/default-theme)
-          (map (fn [role]
-                 {:key role :path [:text role] :type style-type :required? false
-                  :default (get-in theme/default-theme [:text role]) :default-doc nil
-                  :description (theme/text-roles role) :fragment nil}))
-          (sort (keys theme/text-roles)))))
+  (into [:map {:closed true :cljplot2/merged true}]
+        (map (fn [role] [role {:description (theme/text-roles role)} theme/text-style-schema]))
+        (sort (keys theme/text-roles))))
+
+(defn theme-rows
+  "Rows of the theme ([[cljplot2.theme/theme-schema]]), then of every text role of [[cljplot2.theme/text-roles]]
+  (`[:text role]` and its style entries `[:text role k]`), with their defaults from [[cljplot2.theme/default-theme]]."
+  []
+  (with-defaults (into (schema-rows theme/theme-schema) (map-rows (malli/schema (text-roles-schema)) [:text] false))
+                 theme/default-theme))
 
 (defn fragment-rows
   "Rows of the entries of shared group `fragment` (a key of [[fragments]]); empty for an unknown group."

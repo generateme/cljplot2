@@ -466,7 +466,8 @@
       (and heights (not= r (count heights))) (str ":heights should have one weight per row (" r ")"))))
 
 (def arrange-entries
-  "Map entries of a multiplot layout (plot `:arrange`, the `plot/arrange` builder): a shared group (`:arrange`)."
+  "Map entries of a multiplot layout (plot `:arrange`): a shared group (`:arrange`), so other multiplot options can
+  reuse them."
   (schema/in-fragment
    :arrange
    [[:plots {:description "the sub-plots, filling the grid row by row"} [:sequential {:min 1} :map]]

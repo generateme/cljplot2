@@ -164,8 +164,15 @@
       (is (nil? (:default (by-path [:panel]))))
       (is (nil? (:default (by-path [:chart]))))
       (is (nil? (:default (by-path [:text])))))
-    (testing "one row per text role, sorted, with its style as default"
+    (testing "one row per text role, sorted, then its style entries with the role's defaults"
       (let [roles (filter #(= :text (first (:path %))) (filter #(= 2 (count (:path %))) rows))]
         (is (= (sort (keys theme/text-roles)) (map :key roles)))
-        (is (= (get-in theme/default-theme [:text :title]) (:default (by-path [:text :title]))))
-        (is (every? :description roles))))))
+        (is (every? :description roles))
+        (is (nil? (:default (by-path [:text :title]))) "a role is a container")
+        (is (= 14 (:default (by-path [:text :title :size]))))
+        (is (= [255 255 255 180] (:default (by-path [:text :contour-label :background]))))
+        (is (nil? (:default (by-path [:text :title :background]))) "boundary: a key the role's style leaves out")
+        (is (every? #(some? (by-path [:text % :font])) (keys theme/text-roles)) "every role has its style rows")))
+    (testing "role rows go through the common row code: merged (not required), with the text style's entries"
+      (is (not-any? :required? (filter #(= :text (first (:path %))) rows)))
+      (is (= 7 (count (filter #(= [:text :title] (pop (:path %))) rows)))))))
