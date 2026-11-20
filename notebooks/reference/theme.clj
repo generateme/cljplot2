@@ -128,7 +128,9 @@
 ;; ## Text
 
 ;; Every text the library draws has a role; each role is a text style (the keys of the Text style group, last in this
-;; section). A label's `:role` may also name a role of your own added under `:text`.
+;; section). A label's `:role` may also name a role of your own added under `:text`. A role's `:color` may be
+;; `:contrast` - black or white, whichever reads on what's behind: the fill under a chart's label, else the plot
+;; background. Labels drawn over fills (hierarchies, Venn counts, tile and bar values) default to it.
 
 ;; Titles, strips and axis texts:
 
@@ -149,8 +151,9 @@
                                                    :legend-label {:font-style :italic}}})
                    {:width 500 :height 300})
 
-;; Labels of treemaps, partitions and circle packings (their colour contrasts with the fill - the role's `:color`
-;; isn't used):
+;; Labels of treemaps, partitions and circle packings - by default in the contrast colour of their cell; a colour
+;; given wins, on every cell alike (here the leaves - hard to read on the light ones, which is why `:contrast` is
+;; the default):
 
 (nu/options-table (describe/theme-rows :text) :hierarchy-text)
 
@@ -161,17 +164,24 @@
                     :mapping {:hierarchy [:dept :team] :value :cost}
                     :charts [(chart/treemap)]
                     :theme {:text {:treemap-group {:size 13 :font-style :bold-italic}
-                                   :treemap-leaf {:font-style :italic}}}}
+                                   :treemap-leaf {:font-style :italic :color [255 220 120]}}}}
                    {:width 500 :height 300})
 
-;; Texts of other charts (text annotations, Venn diagrams, tiles, correlations, contours):
+;; Texts of other charts - text annotations, bar values, Venn diagrams, tiles, correlations, contours (bar values,
+;; Venn counts and tile values in the contrast colour of what's behind them by default):
 
 (nu/options-table (describe/theme-rows :text) :chart-text)
 
-(plot/render-image (assoc iris-plot
-                          :charts [(chart/scatter) (chart/text {:x 6.5 :y 2 :text "an annotation"})]
-                          :theme {:text {:annotation {:size 14 :color [178 34 34] :background [255 255 255 200]}}})
-                   {:width 500 :height 300})
+(plot/render-image (plot/arrange [(assoc iris-plot
+                                          :charts [(chart/scatter) (chart/text {:x 6.5 :y 2 :text "an annotation"})]
+                                          :theme {:text {:annotation {:size 14 :color [178 34 34]
+                                                                      :background [255 255 255 200]}}})
+                                  {:data [{:k "a" :v 3} {:k "b" :v 5} {:k "c" :v 4}]
+                                   :mapping {:x :k :y :v}
+                                   :charts [(chart/bar {:value-label true :label-position :center})]
+                                   :theme {:text {:bar-value {:size 12 :font-style :bold}}}}]
+                                 {:columns 2 :widths [3 2]})
+                   {:width 800 :height 300})
 
 ;; The keys of a text style:
 

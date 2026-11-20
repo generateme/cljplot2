@@ -84,10 +84,11 @@
   (measure/natural-size {:kind :label :role role :text text} env))
 
 (defn- draw-label!
-  "Draw `text` in the `role` style inside `box`, in black or white by the `fill` under it."
+  "Draw `text` in the `role` style inside `box`, its colour the role's (`:contrast` - by the `fill` under it, see
+  [[cljplot2.graphics.draw/text-color]])."
   [c role text fill box env]
   (canvas/call-with-isolated-graphics
-   c #(draw/draw-content {:kind :label :role role :text text :color (draw/contrast-color fill)} % box env)))
+   c #(draw/draw-content {:kind :label :role role :text text :color (draw/text-color (:theme env) role fill)} % box env)))
 
 (defn- fill-box!
   "Fill `box` with `color` and the pattern of style `st` (`pattern-fill` - see

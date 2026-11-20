@@ -184,7 +184,7 @@
                   size (measure/natural-size content {:canvas canvas :theme (:theme env)})
                   [x y rotation] (label-fit geometry a b size)]
             :when x]
-      (label/draw-at! canvas (assoc content :rotation rotation :color (draw/contrast-color (fill-of cell)))
+      (label/draw-at! canvas (assoc content :rotation rotation :color (draw/text-color (:theme env) role (fill-of cell)))
                       [:center :middle] x y env))))
 
 (defn legend

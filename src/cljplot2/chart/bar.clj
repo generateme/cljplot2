@@ -35,8 +35,8 @@
     `#(format \"%s\\n%.0f%%\" (get-in % [:group :color]) (* 100 (:share %)))`; zero-length bars get none. With `:n-label`
     too, both texts form one label - `:label-stack` `:horizontal` (side by side) or `:vertical` (one above the
     other), default along the bars (horizontal bars side by side, vertical ones stacked)
-  * `:label-position` - `:end` (past the bar's end; the default), `:center` (centred in the bar, in black or white by
-    its fill; the default for `:stack` / `:normalize`) or `:outer` (polar plots only: past the outer radius at the
+  * `:label-position` - `:end` (past the bar's end; the default), `:center` (centred in the bar; the default for
+    `:stack` / `:normalize`) or `:outer` (polar plots only: past the outer radius at the
     bar's middle angle, anchored outward - pie labels; the circle shrinks to keep room for them; the angle axis is
     hidden by default, its labels would sit under them (`:scales {k {:axis true}}` brings it back); `:label-leader
     true` draws a line from the bar's outer edge, the labels further out). Labels are placed largest bar first and
@@ -257,9 +257,10 @@
 (defn- end-label
   "Label (see [[cljplot2.data.strip/draw-end-labels!]]) of `bar`: its value text (`:value-label`, see
   [[value-label-text]]) and count (`:n-label`, `:n-format`), joined by `separator`; placed by `label-position` -
-  `:end` past the bar's end, `:center` centred in it (`:side 0`, drawn in the fill's contrast colour), `:outer` past
+  `:end` past the bar's end, `:center` centred in it (`:side 0`), `:outer` past
   a polar plot's outer radius (`:outer?`, `:leader?` from `:label-leader`); every label carries its bar's `:span
-  [y0 y1]`; `nil` without text."
+  [y0 y1]` and the text role `:bar-value` (its `:contrast` colour by the fill inside a bar, else by the plot
+  background); `nil` without text."
   [options separator label-position value-text level-total {:keys [level slot n ^double y0 ^double y1] :as bar}]
   (let [value (value-label-text (data/option options :value-label false) value-text level-total bar)
         texts (cond-> []
@@ -267,7 +268,7 @@
                 (data/option options :n-label false) (conj (format (get options :n-format "n=%d") n)))]
     (when (seq texts)
       (let [[at side] (if (= :end label-position) (end-of bar) [(* 0.5 (+ y0 y1)) 0.0])]
-        (cond-> {:level level :slot slot :at at :side side :text (str/join separator texts) :span [y0 y1]}
+        (cond-> {:level level :slot slot :at at :side side :text (str/join separator texts) :span [y0 y1] :role :bar-value}
           (= :outer label-position) (assoc :outer? true :leader? (data/option options :label-leader false)))))))
 
 (defn- label-separator
@@ -408,9 +409,11 @@
       (draw/zero-line! canvas box scales style :x))
     (let [labels (keep (fn [[{:keys [label] :as bar} st]]
                          (when label
-                           (cond-> (assoc label :bar bar)
-                             (and (zero? (double (:side label))) (not (:outer? label)))
-                             (assoc :color (draw/contrast-color (:color st))))))
+                           (assoc label :bar bar
+                                  :color (draw/text-color (:theme env) :bar-value
+                                                          (if (and (zero? (double (:side label))) (not (:outer? label)))
+                                                            (:color st)
+                                                            (draw/plot-backdrop (:theme env)))))))
                        styled)
           ;; largest bars first: their labels win collisions
           ordered (sort-by (fn [{{:keys [^double y0 ^double y1]} :bar}] (- (m/abs (- y1 y0)))) labels)

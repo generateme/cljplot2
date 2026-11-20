@@ -120,8 +120,9 @@
 
 ;; `:custom-grid` replaces the generated layout with a hand-written track grid (see the `cljplot2.layout.grid`
 ;; namespace doc): columns and rows of `[:fixed px]`, `[:fraction f]`, `[:measured]` or `[:flexible w]` tracks and
-;; items placed on them - labels, or whole plots (`{:kind :plot :plot p}`). Only `:labels {:title t}` may
-;; accompany it; plots in a regular grid are simpler with `plot/arrange`.
+;; items placed on them - labels (`{:kind :label :text t :role r}`, the role required), or whole plots
+;; (`{:kind :plot :plot p}`). Only `:labels {:title t}` may accompany it; plots in a regular grid are simpler with
+;; `plot/arrange`.
 
 (plot/render-image {:custom-grid {:columns [{:size [:flexible 2]} {:size [:flexible 1]}]
                                   :rows [{:size [:flexible 1]} {:size [:measured]}]

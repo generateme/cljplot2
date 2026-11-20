@@ -13,12 +13,14 @@
   A row: `{:key k :path [k ...] :type text :required? bool :default v :default-doc text :description text
   :fragment kw :section kw}` - `:path` is longer than `[k]` for the entries of nested closed maps (each nested map also
   has its own row); `:section` - the slice of a long table the entry belongs to (`:cljplot2/section`, else its
-  enclosing entry's): a section slices the table of the map holding the entry, so a flattened nested map with sections
-  of its own (plot `:facets`) slices its own table - show such a schema's own table with [[top-level-rows]]; `:default` / `:default-doc` / `:description` / `:fragment` / `:section` are `nil` when absent; `:required?` is false in a
-  merged map (`:cljplot2/merged` - the theme, render options: users give partial overrides). Entries rejecting every
-  value ([[cljplot2.schema/forbidden]]) and internal entries (`:cljplot2/internal`) have no row. `:default` is the value
-  used when the option is absent (a style row's comes from the theme), `:default-doc` the text of a computed default;
-  only a style row may have both - the theme value and how the chart applies it (e.g. only to grouped lines)."
+  enclosing entry's): a section slices the table of the map holding the entry, so a flattened nested map with
+  sections of its own (plot `:facets`) slices its own table - show a schema's own table with [[top-level-rows]], a
+  nested map's with [[rows-under]]; `:default` / `:default-doc` / `:description` / `:fragment` / `:section` are `nil`
+  when absent; `:required?` is false in a merged map (`:cljplot2/merged` - the theme, render options: users give
+  partial overrides). Entries rejecting every value ([[cljplot2.schema/forbidden]]) and internal entries
+  (`:cljplot2/internal`) have no row. `:default` is the value used when the option is absent (a style row's comes
+  from the theme), `:default-doc` the text of a computed default; only a style row may have both - the theme value
+  and how the chart applies it (e.g. only to grouped lines)."
   (:require [clojure.string :as str]
             [malli.core :as malli]
             [cljplot2.chart]
@@ -307,6 +309,13 @@
   entries (those have tables, and sections, of their own)."
   [rows]
   (filterv #(= 1 (count (:path %))) rows))
+
+(defn rows-under
+  "The rows of `rows` nested under the key path `path` (e.g. `[:groups]` - the entries of the plot's `:groups` map),
+  without the row of `path` itself; empty when nothing is nested there."
+  [rows path]
+  (let [n (count path)]
+    (filterv #(and (< n (count (:path %))) (= path (subvec (:path %) 0 n))) rows)))
 
 (defn options
   "Option rows (see the namespace doc) of `x`: a chart value, a var with `:cljplot2/options` metadata (a builder or

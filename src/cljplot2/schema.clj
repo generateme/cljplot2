@@ -205,6 +205,11 @@
                            (try (some? (if (vector? v) (apply c/cvd-filter v) (c/cvd-filter v))) (catch Exception _ false))))
               "should be a clojure2d color vision deficiency: a keyword (:protanopia, :deuteranopia, :tritanopia, :achromatopsia) or [keyword severity] (:protanomaly, :deuteranomaly, :tritanomaly, :achromatomaly; severity in [0 1])"))
 (def solid-color (named-type ::solid-color solid-color? "should be a clojure2d color"))
+(def text-color
+  "A text colour: a clojure2d color or `:contrast` - black or white, whichever reads on what's behind the text (see
+  `cljplot2.graphics.draw/text-color`)."
+  (named-type ::text-color #(or (= :contrast %) (solid-color? %)) "should be a clojure2d color or :contrast"
+              "a clojure2d color or :contrast"))
 (def shape
   "A point shape: a built-in character or a shape map (see [[cljplot2.graphics.shape/shape-problem]], whose message is
   the error)."

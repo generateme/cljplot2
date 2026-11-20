@@ -31,7 +31,8 @@
 ;; ## Label maps
 
 ;; A label is a string or a label map: the text, the theme text role whose style is the base (`:title` for the
-;; title, `:axis-title` for axis titles, or a role of your theme) and a rotation. Here the y title is horizontal and
+;; title, `:axis-title` for axis titles, or a role of your theme) and a rotation. Plot labels get their role from
+;; their place; a label in a custom grid (Facets chapter) must name one. Here the y title is horizontal and
 ;; styled as a tick label.
 
 (nu/options-table (describe/options label/label-options) :label)

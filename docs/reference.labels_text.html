@@ -431,7 +431,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="label-maps" class="level2" data-number="7.2">
 <h2 data-number="7.2" class="anchored" data-anchor-id="label-maps"><span class="header-section-number">7.2</span> Label maps</h2>
-<p>A label is a string or a label map: the text, the theme text role whose style is the base (<code>:title</code> for the title, <code>:axis-title</code> for axis titles, or a role of your theme) and a rotation. Here the y title is horizontal and styled as a tick label.</p>
+<p>A label is a string or a label map: the text, the theme text role whose style is the base (<code>:title</code> for the title, <code>:axis-title</code> for axis titles, or a role of your theme) and a rotation. Plot labels get their role from their place; a label in a custom grid (Facets chapter) must name one. Here the y title is horizontal and styled as a tick label.</p>
 <div class="clay-table">
 <div class="table-responsive">
 <table class="table table-hover clay-table caption-top">
@@ -519,9 +519,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </tr>
 <tr class="even">
 <td>:color</td>
-<td>a clojure2d color</td>
+<td>a clojure2d color or :contrast</td>
 <td></td>
-<td>text colour</td>
+<td>text colour; :contrast - black or white by what is behind (a chart's fill under its labels, else the plot background)</td>
 </tr>
 <tr class="odd">
 <td>:padding</td>

@@ -252,7 +252,8 @@
                                                                 (/ (double (reduce + (map second offsets))) n)]))]
                 :when (and text (not (m/nan? (.x centre))) (not (m/nan? (.y centre))))]
           (label/draw-at! canvas {:kind :label :role :tile-value :text text
-                                  :color (draw/contrast-color (or (draw/painted-color canvas (.x centre) (.y centre)) fill))}
+                                  :color (draw/text-color (:theme env) :tile-value
+                                                          (or (draw/painted-color canvas (.x centre) (.y centre)) fill))}
                           [:center :middle] (.x centre) (.y centre) env))))))
 
 (def ^:private size-key-fill

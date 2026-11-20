@@ -217,6 +217,14 @@
     (testing "boundary: no rows; only nested rows"
       (is (= [] (describe/top-level-rows [])))
       (is (= [] (describe/top-level-rows (filter #(< 1 (count (:path %))) rows)))))
+    (testing "rows under a path: the nested map's entries, not its own row"
+      (is (= [[:groups :na]] (map :path (describe/rows-under rows [:groups]))))
+      (is (= (filter #(and (= :facets (first (:path %))) (< 1 (count (:path %)))) rows)
+             (describe/rows-under rows [:facets]))))
+    (testing "boundary: a leaf, an unknown path - no rows; the empty path - every row"
+      (is (= [] (describe/rows-under rows [:legend])))
+      (is (= [] (describe/rows-under rows [:no-such-key])))
+      (is (= rows (describe/rows-under rows []))))
     (testing "container rows: maps holding options, not the options"
       (is (describe/container-row? (row rows :facets)))
       (is (not (describe/container-row? (row rows :legend))))

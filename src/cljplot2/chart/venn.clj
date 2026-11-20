@@ -176,7 +176,7 @@
               :when (and (some? text) (not= "" text))
               :let [[px py] (to-pixel point)]]
         (label/draw-at! canvas {:kind :label :role :venn-count :text (str text)
-                                :color (draw/contrast-color (or (draw/painted-color canvas px py) :white))}
+                                :color (draw/text-color (:theme env) :venn-count (or (draw/painted-color canvas px py) :white))}
                         [:center :middle] px py env)))))
 
 (defn legend

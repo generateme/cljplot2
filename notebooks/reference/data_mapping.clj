@@ -121,7 +121,7 @@
 ;; A `nil` group value forms its own NA level - the bottom line above is the walk without a number. The plot's
 ;; `:groups {:na false}` drops such rows instead:
 
-(nu/options-table (filter #(= :groups (first (:path %))) (describe/options pipeline/plot-schema)))
+(nu/options-table (describe/rows-under (describe/options pipeline/plot-schema) [:groups]))
 
 (plot/render-image {:data walks
                     :mapping {:x :t :y :v :group :walk}

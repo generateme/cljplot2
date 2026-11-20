@@ -60,6 +60,7 @@
             [cljplot2.data.rows :as data]
             [cljplot2.data.shingle :as shingle]
             [cljplot2.scale.aesthetic :as aesthetic]
+            [cljplot2.graphics.draw :as draw]
             [cljplot2.graphics.measure :as measure]
             [cljplot2.scale.coord :as coord]
             [cljplot2.scale.position :as scale]
@@ -420,10 +421,15 @@
 
 (defn- n-label-text [options item] (format (get options :n-format "n=%d") (:n item)))
 
+(defn- label-content
+  "Label content of end label `label`: its text in its `:role` (default `:annotation`), its `:color` when given."
+  [{:keys [text color role]}]
+  (cond-> {:kind :label :role (or role :annotation) :text text} color (assoc :color color)))
+
 (defn end-label-room
-  "`:padding-px` `{:x [lo hi]}` for end labels `labels` (`[{:text t :side s} ...]`, see [[draw-end-labels!]]): per
-  side of the value axis the largest label's size along it (its height when the plot is flipped, env `:flip?`) plus
-  the gap, measured with the `:annotation` role (env `:theme`, `:hint`); 0 on a side without labels; `nil` without
+  "`:padding-px` `{:x [lo hi]}` for end labels `labels` (`[{:text t :side s :role r} ...]`, see [[draw-end-labels!]]):
+  per side of the value axis the largest label's size along it (its height when the plot is flipped, env `:flip?`)
+  plus the gap, measured in each label's role (env `:theme`, `:hint`); 0 on a side without labels; `nil` without
   labels."
   [labels {:keys [theme flip? hint]}]
   (when (seq labels)
@@ -431,12 +437,13 @@
      hint
      (fn [c]
        (let [room (fn [^double side]
-                    (let [texts (distinct (keep #(when (== side (double (:side %))) (:text %)) labels))]
-                      (if (seq texts)
-                        (+ (double (reduce max (map (fn [t] (let [^Vec2 size (measure/natural-size {:kind :label :role :annotation :text t}
-                                                                                                     {:canvas c :theme theme})]
-                                                              (if flip? (.y size) (.x size))))
-                                                    texts)))
+                    (let [contents (distinct (keep #(when (== side (double (:side %))) (label-content (dissoc % :color)))
+                                                   labels))]
+                      (if (seq contents)
+                        (+ (double (reduce max (map (fn [content] (let [^Vec2 size (measure/natural-size content
+                                                                                                           {:canvas c :theme theme})]
+                                                                    (if flip? (.y size) (.x size))))
+                                                    contents)))
                            n-label-gap)
                         0.0)))]
          {:x [(room -1.0) (room 1.0)]})))))
@@ -463,10 +470,6 @@
   (if geometry
     (polar-end-label-placements pl labels scales)
     (cartesian-end-label-placements pl labels scales)))
-
-(defn- label-content
-  [{:keys [text color]}]
-  (cond-> {:kind :label :role :annotation :text text} color (assoc :color color)))
 
 (defn- cartesian-end-label-placements
   [{:keys [point]} labels scales]
@@ -543,13 +546,14 @@
           placements))
 
 (defn draw-label-placements!
-  "Draw end-label `placements` (see [[end-label-placements]]): leader lines (1 pixel, the label's color or the
-  `:annotation` role's), then the labels."
+  "Draw end-label `placements` (see [[end-label-placements]]): leader lines (1 pixel, the label's colour - else its
+  role's over the plot background), then the labels."
   [canvas placements env]
   (doseq [{:keys [leader content]} placements
           :when leader
           :let [[[x0 y0] [x1 y1]] leader]]
-    (c2d/set-color canvas (or (:color content) (get-in env [:theme :text :annotation :color])))
+    (c2d/set-color canvas (or (:color content)
+                              (draw/text-color (:theme env) (:role content) (draw/plot-backdrop (:theme env)))))
     (c2d/set-stroke-custom canvas {:size 1.0})
     (c2d/line canvas (double x0) (double y0) (double x1) (double y1)))
   (doseq [{:keys [content anchor x y]} placements]
@@ -558,7 +562,8 @@
 (defn draw-end-labels!
   "Draw end labels `labels` - `[{:level l :slot s :at v :side d :text t} ...]` - each just past value `v` along the
   value axis, toward increasing values (`d` 1) or decreasing ones (`d` -1), or centred on `v` (`d` 0, e.g. inside a
-  stacked bar; no room needed), centred on its slot (text role `:annotation`; optional `:color` overrides the role's).
+  stacked bar; no room needed), centred on its slot (text role `:role`, default `:annotation`; optional `:color`
+  overrides the role's).
   `pl` - the chart's [[placement]]; [[end-label-room]] keeps room for them past the data. Polar plots: past the value
   along the radius (anchored away from the centre) or along the angle (centred), see [[cljplot2.scale.coord]]; an
   `:outer?` label (`:span [v0 v1]` - its segment's values, `:leader?` - a leader line) past the outer radius at its
@@ -570,14 +575,14 @@
 (defn outer-label-room
   "`[horizontal vertical]` pixels `:outer?` end labels `labels` need around a polar plot's circle (the widest and
   the tallest label plus the gap - [[leader-label-gap]] when some label has a leader, else [[outer-label-gap]]),
-  measured with the `:annotation` role (env `:theme`, `:hint`); `nil` without such labels."
+  measured in each label's role (env `:theme`, `:hint`); `nil` without such labels."
   [labels {:keys [theme hint]}]
   (let [outer (filter :outer? labels)]
-    (when-let [texts (seq (distinct (map :text outer)))]
+    (when-let [contents (seq (distinct (map #(label-content (dissoc % :color)) outer)))]
       (measure/call-with-scratch-canvas
        hint
        (fn [c]
-         (let [sizes (map #(measure/natural-size {:kind :label :role :annotation :text %} {:canvas c :theme theme}) texts)
+         (let [sizes (map #(measure/natural-size % {:canvas c :theme theme}) contents)
                gap (double (reduce max (map outer-gap outer)))]
            [(+ gap (double (reduce max (map (fn [^Vec2 s] (.x s)) sizes))))
             (+ gap (double (reduce max (map (fn [^Vec2 s] (.y s)) sizes))))]))))))

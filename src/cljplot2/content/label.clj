@@ -75,7 +75,7 @@
      :h-align (align 0)
      :v-align (align 1)
      :padding (double padding)
-     :color (:color style)
+     :color (draw/resolved-text-color (:color style) (draw/plot-backdrop theme))
      :background (:background style)
      :font (font/resolve-font (:font style) (:font-style style) (:size style))}))
 

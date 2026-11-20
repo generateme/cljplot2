@@ -290,7 +290,7 @@ A `nil` group value forms its own NA level - the bottom line above is the walk w
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:groups</td><td>map</td><td></td><td>grouping options</td></tr><tr><td>:groups :na</td><td>true or false or nil</td><td>true</td><td>nil aesthetic values form the NA level (false - such rows are dropped)</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:groups :na</td><td>true or false or nil</td><td>true</td><td>nil aesthetic values form the NA level (false - such rows are dropped)</td></tr></tbody></table>
 ```
 
 :::

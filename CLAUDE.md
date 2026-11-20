@@ -52,6 +52,8 @@ charts don't validate their own input.
   `:inherit-mapping :facets` (annotation charts inherit only facet keys; data under `facet/all-panels` is drawn in
   every panel).
 - Every built-in kind has a theme entry `[:chart kind]` checked against `chart/builtin-styles`.
+- Text drawn over a fill takes its colour from its text role through `draw/text-color` (role `:color` `:contrast` -
+  black or white by the fill; never a hard-coded contrast colour), so a theme colour always wins.
 
 **Scales** are two-phase: phase 1 specs from merged extents + user `:scales`; phase 2 (after layout measurement)
 finalized, panel-local position scales. Aesthetic scales (`:color :shape :size :dash :pattern`) are final at

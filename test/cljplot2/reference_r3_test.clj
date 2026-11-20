@@ -9,7 +9,9 @@
             [cljplot2.core :as plot]
             [cljplot2.describe :as describe]
             [cljplot2.schema :as schema]
-            [cljplot2.test-util :refer [error-data]])
+            [cljplot2.graphics.draw :as draw]
+            [cljplot2.test-util :refer [error-data same-pixels?]]
+            [cljplot2.theme])
   (:import [java.awt.image BufferedImage]
            [javax.imageio ImageIO]))
 
@@ -146,3 +148,52 @@
   (testing "boundary: plot :labels need no role (the layout gives title / axis-title)"
     (is (instance? BufferedImage (plot/render-image (assoc small-plot :labels {:title {:text "t"} :x {:text "x"}})
                                                     {:width 200 :height 150})))))
+
+;; text role colours (:contrast)
+
+(def ^:private fill-label-plots
+  "Role -> a plot drawing labels of that role over fills."
+  (let [budget [{:a "x" :b "p" :v 4} {:a "x" :b "q" :v 3} {:a "y" :b "r" :v 2}]]
+    {:treemap-leaf {:data budget :mapping {:hierarchy [:a :b] :value :v} :charts [(chart/treemap)]}
+     :treemap-group {:data budget :mapping {:hierarchy [:a :b] :value :v} :charts [(chart/treemap)]}
+     :partition-leaf {:data budget :mapping {:hierarchy [:a :b] :value :v} :charts [(chart/partition)]}
+     :pack-leaf {:data budget :mapping {:hierarchy [:a :b] :value :v} :charts [(chart/pack)]}
+     :venn-count {:data [{:s "a" :i 1} {:s "a" :i 2} {:s "b" :i 2} {:s "b" :i 3}] :mapping {:set :s :item :i}
+                  :charts [(chart/venn)]}
+     :tile-value {:data [{:x "a" :y "u" :v 1} {:x "b" :y "u" :v 9}] :mapping {:x :x :y :y :color :v}
+                  :charts [(chart/tile {:value-label true})]}
+     :bar-value {:data [{:k "a" :v 3} {:k "b" :v 5}] :mapping {:x :k :y :v}
+                 :charts [(chart/bar {:value-label true :label-position :center})]}}))
+
+(defn- with-role-color [p role color] (assoc-in p [:theme :text role :color] color))
+
+(deftest role-color-test
+  (let [o {:width 240 :height 180}]
+    (doseq [[role p] fill-label-plots]
+      (testing (str role ": the default is :contrast; an explicit colour wins over it")
+        (is (= :contrast (get-in cljplot2.theme/default-theme [:text role :color])))
+        (is (same-pixels? p (with-role-color p role :contrast) o))
+        (is (not (same-pixels? p (with-role-color p role [255 0 255]) o)))))
+    (testing "bar labels past the bar's end: :contrast by the plot background - black on the default one, white on black"
+      (let [p {:data [{:k "a" :v 3}] :mapping {:x :k :y :v} :charts [(chart/bar {:value-label true})]}]
+        (is (same-pixels? p (with-role-color p :bar-value :black) o))
+        (is (same-pixels? (assoc-in p [:theme :plot :background] :black)
+                          (-> p (assoc-in [:theme :plot :background] :black) (with-role-color :bar-value :white)) o))))
+    (testing "the :annotation role styles strip n labels and text charts, not bar values"
+      (let [bars (:bar-value fill-label-plots)
+            box {:data [{:k "a" :v 1} {:k "a" :v 2}] :mapping {:x :k :y :v} :charts [(chart/box {:n-label true})]}]
+        (is (same-pixels? bars (with-role-color bars :annotation [255 0 255]) o))
+        (is (not (same-pixels? box (with-role-color box :annotation [255 0 255]) o)))))
+    (testing "boundary: :contrast on a role with no fill behind - by the plot background (:none - white)"
+      (let [p (assoc small-plot :labels {:title "T"})]
+        (is (same-pixels? (with-role-color p :title :contrast) (with-role-color p :title :black) o))
+        (is (same-pixels? (-> p (assoc-in [:theme :plot :background] :black) (with-role-color :title :contrast))
+                          (-> p (assoc-in [:theme :plot :background] :black) (with-role-color :title :white)) o))
+        (is (= :white (draw/plot-backdrop {:plot {:background :none}})))))
+    (testing "the text colour type: a colour or :contrast; anything else fails at the role"
+      (is (= :color (peek (:in (first (:errors (error-data #(plot/build (with-role-color small-plot :title :contrastt)))))))))
+      (is (nil? (error-data #(plot/build (with-role-color small-plot :title [10 20 30]))))))
+    (testing "resolution: a colour stays; :contrast is white on dark, black on light"
+      (is (= [10 20 30] (draw/resolved-text-color [10 20 30] :black)))
+      (is (= :white (draw/resolved-text-color :contrast :black)))
+      (is (= :black (draw/resolved-text-color :contrast :white))))))

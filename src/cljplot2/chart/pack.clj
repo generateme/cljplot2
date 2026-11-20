@@ -151,9 +151,9 @@
        (< (double (:y a)) (+ (double (:y b)) (double (:h b)))) (< (double (:y b)) (+ (double (:y a)) (double (:h a))))))
 
 (defn- label-placements
-  "Labels of the drawn `nodes` (parents first) to draw: `[{:content c :x px :y py :box b} ..]` - each fitting its
-  circle (see [[label-position]]) and overlapping no label placed before it (an ancestor's label wins), in black or
-  white by the circle painted under its centre. `size-of` - natural size of a label content, `fill-of` - a node's
+  "Labels of the drawn `nodes` (parents first) to draw: `[{:content c :x px :y py :box b :backdrop f} ..]` - each
+  fitting its circle (see [[label-position]]) and overlapping no label placed before it (an ancestor's label wins);
+  `:backdrop` - the fill of the circle painted under its centre (for the role's `:contrast` colour). `size-of` - natural size of a label content, `fill-of` - a node's
   fill, `line-size` - a role's font size (circles narrower than one line aren't measured)."
   [nodes size-of fill-of line-size]
   (reduce (fn [placed {:keys [label leaf? r] :as node}]
@@ -167,8 +167,8 @@
                                     :w (.x size) :h (.y size)})]
                   (if (or (nil? box) (some #(boxes-overlap? box (:box %)) placed))
                     placed
-                    (conj placed {:content (assoc content :color (draw/contrast-color (fill-of (covering-node nodes px py))))
-                                  :x px :y py :box box}))))))
+                    (conj placed {:content content :x px :y py :box box
+                                  :backdrop (fill-of (covering-node nodes px py))}))))))
           []
           nodes))
 
@@ -186,9 +186,10 @@
       (doseq [node nodes
               :let [fill (fill-of node)]]
         (circle! canvas node fill stroke sw (pattern-fill style fill)))
-      (doseq [{:keys [content x y]} (label-placements nodes #(measure/natural-size % {:canvas canvas :theme theme}) fill-of
-                                                      #(get-in theme [:text % :size]))]
-        (label/draw-at! canvas content [:center :middle] x y env)))))
+      (doseq [{:keys [content x y backdrop]} (label-placements nodes #(measure/natural-size % {:canvas canvas :theme theme})
+                                                               fill-of #(get-in theme [:text % :size]))]
+        (label/draw-at! canvas (assoc content :color (draw/text-color theme (:role content) backdrop))
+                        [:center :middle] x y env)))))
 
 (defn legend
   "Key glyph: a filled circle inset in `box`, with the chart's `:pattern`."

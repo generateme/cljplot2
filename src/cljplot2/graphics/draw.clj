@@ -33,6 +33,24 @@
   [color]
   (if (> 127.5 (double (c/luma color))) :white :black))
 
+(defn plot-backdrop
+  "What text outside any chart fill is drawn over: the theme's plot background, white when it is `:none`."
+  [theme]
+  (let [background (get-in theme [:plot :background])]
+    (if (theme/none? background) :white background)))
+
+(defn resolved-text-color
+  "Text colour `color` (see `cljplot2.schema/text-color`) drawn over the colour `backdrop`: `color` itself, or for
+  `:contrast` black or white by `backdrop` ([[contrast-color]])."
+  [color backdrop]
+  (if (= :contrast color) (contrast-color backdrop) color))
+
+(defn text-color
+  "Colour of text in the `theme` role `role` drawn over the colour `backdrop` (e.g. the fill under a label): the
+  role's `:color`, resolved by [[resolved-text-color]]."
+  [theme role backdrop]
+  (resolved-text-color (get-in theme [:text role :color]) backdrop))
+
 (defn painted-color
   "Color already painted on `canvas` at user-space point `(x, y)` (through the canvas transform, e.g. a panel's
   translation); `nil` outside the image."

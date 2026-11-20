@@ -161,19 +161,20 @@
           :tick-label {:font "DejaVu Sans Mono" :size 10 :font-style :plain :color :black :padding 2 :align centered}
           :legend-title {:font "DejaVu Sans Mono" :size 11 :font-style :bold :color :black :padding 2 :align [:left :middle]}
           :legend-label {:font "DejaVu Sans Mono" :size 10 :font-style :plain :color :black :padding 2 :align [:left :middle]}
-          :treemap-group {:font "DejaVu Sans Mono" :size 10 :font-style :bold :color :black :padding 2 :align [:left :middle]}
-          :treemap-leaf {:font "DejaVu Sans Mono" :size 9 :font-style :plain :color :black :padding 2 :align centered}
-          :partition-group {:font "DejaVu Sans Mono" :size 10 :font-style :bold :color :black :padding 2 :align centered}
-          :partition-leaf {:font "DejaVu Sans Mono" :size 9 :font-style :plain :color :black :padding 2 :align centered}
-          :pack-group {:font "DejaVu Sans Mono" :size 10 :font-style :bold :color :black :padding 2 :align centered}
-          :pack-leaf {:font "DejaVu Sans Mono" :size 9 :font-style :plain :color :black :padding 2 :align centered}
+          :treemap-group {:font "DejaVu Sans Mono" :size 10 :font-style :bold :color :contrast :padding 2 :align [:left :middle]}
+          :treemap-leaf {:font "DejaVu Sans Mono" :size 9 :font-style :plain :color :contrast :padding 2 :align centered}
+          :partition-group {:font "DejaVu Sans Mono" :size 10 :font-style :bold :color :contrast :padding 2 :align centered}
+          :partition-leaf {:font "DejaVu Sans Mono" :size 9 :font-style :plain :color :contrast :padding 2 :align centered}
+          :pack-group {:font "DejaVu Sans Mono" :size 10 :font-style :bold :color :contrast :padding 2 :align centered}
+          :pack-leaf {:font "DejaVu Sans Mono" :size 9 :font-style :plain :color :contrast :padding 2 :align centered}
           :venn-set {:font "DejaVu Sans Mono" :size 11 :font-style :bold :color :black :padding 2 :align centered}
-          :venn-count {:font "DejaVu Sans Mono" :size 10 :font-style :plain :color :black :padding 2 :align centered}
-          :tile-value {:font "DejaVu Sans Mono" :size 9 :font-style :plain :color :black :padding 1 :align centered}
+          :venn-count {:font "DejaVu Sans Mono" :size 10 :font-style :plain :color :contrast :padding 2 :align centered}
+          :tile-value {:font "DejaVu Sans Mono" :size 9 :font-style :plain :color :contrast :padding 1 :align centered}
           :correlation {:font "DejaVu Sans Mono" :size 12 :font-style :plain :color :black :padding 1 :align centered}
           :contour-label {:font "DejaVu Sans Mono" :size 9 :font-style :plain :color :black :padding 1 :align centered
                           :background [255 255 255 180]}
-          :annotation {:font "DejaVu Sans Mono" :size 10 :font-style :plain :color :black :padding 2 :align centered}}})
+          :annotation {:font "DejaVu Sans Mono" :size 10 :font-style :plain :color :black :padding 2 :align centered}
+          :bar-value {:font "DejaVu Sans Mono" :size 10 :font-style :plain :color :contrast :padding 2 :align centered}}})
 
 (defn deep-merge
   "Merge maps recursively; a non-map value replaces the value it's merged over, `nil` is ignored
@@ -187,14 +188,14 @@
 ;; schema
 
 (def ^:private text-style-entries
-  [[:font schema/font] [:size schema/pos] [:font-style schema/font-style] [:color schema/solid-color]
+  [[:font schema/font] [:size schema/pos] [:font-style schema/font-style] [:color schema/text-color]
    [:padding schema/non-neg]])
 
 (def ^:private text-style-descriptions
   {:font "font name (bundled, installed or logical) or a java.awt.Font"
    :size "font size in points"
    :font-style "font style"
-   :color "text colour"
+   :color "text colour; :contrast - black or white by what is behind (a chart's fill under its labels, else the plot background)"
    :padding "space around the text in pixels"
    :align "alignment [horizontal vertical] of the text at its anchor"
    :background "box colour behind the text (:none - no box)"})
@@ -234,7 +235,8 @@
    :tile-value {:section :chart-text :description "tile value labels"}
    :correlation {:section :chart-text :description "correlation numbers"}
    :contour-label {:section :chart-text :description "contour level labels"}
-   :annotation {:section :chart-text :description "text charts and strip n labels"}})
+   :annotation {:section :chart-text :description "text charts and strip n labels"}
+   :bar-value {:section :chart-text :description "bar value and count labels"}})
 
 (def ^:private grid-line
   (schema/keyword-or :none [:map {:closed true :cljplot2/type-doc "a line {:color :width :dash}"}

@@ -206,12 +206,16 @@
   (let [plot (second call)]
     (merge (when (map? plot) (:options plot)) (nth call 2 nil))))
 
+(def ^:private setup-heads
+  "Heads of top-level forms that show nothing of an option: namespace, definitions, source notes, wadogo kind docs and
+  tables."
+  #{'ns 'def 'defn 'notebook-utils/source-note 'notebook-utils/scale-kind-doc options-table})
+
 (defn- illustration?
-  "Is top-level `form` an example - a chart or a value shown - rather than setup (`ns`, `def`, a source note, a wadogo
-  kind doc) or a table?"
+  "Is top-level `form` an example - a call rendering a chart or computing a value shown - rather than setup (see
+  [[setup-heads]]), a table or a bare literal / symbol (which show nothing computed)?"
   [form]
-  (not (and (seq? form)
-            (#{'ns 'def 'defn 'notebook-utils/source-note 'notebook-utils/scale-kind-doc options-table} (first form)))))
+  (and (seq? form) (not (setup-heads (first form)))))
 
 (defn- tables-without-example
   "Rows forms of the tables in top-level `forms` not followed by an example before the next table or the page end."
@@ -233,7 +237,9 @@
     (is (= [:a] (tables-without-example [(list options-table :a)])))
     (is (= [:a] (tables-without-example [(list options-table :a) (list options-table :b) '(f)])))
     (is (= [] (tables-without-example [(list options-table :a) '(def x 1) '(notebook-utils/source-note {}) '(f)])))
-    (is (= [] (tables-without-example [])))))
+    (is (= [] (tables-without-example []))))
+  (testing "boundary: a literal or a bare symbol isn't an example"
+    (is (= [:a] (tables-without-example [(list options-table :a) :kw "text" 42 'sym])))))
 
 (deftest conventions-test
   (doseq [[page forms] (notebook-forms)]
