@@ -336,7 +336,7 @@
   (let [sizes (fn [n w] (vec (repeat n (fastmath.vector/vec2 w 10))))]
     (testing "continuous axes drop labels colliding with the last drawn one; bands axes keep every s-th label"
       (let [finalized (get-in (plot/build {:data [{:x 0 :y 0} {:x 4 :y 1}] :mapping {:x :x :y :y} :charts [(chart/scatter)]
-                                           :scales {:x {:ticks [0 1 2 3 4] :expand [0 0]}}}
+                                           :scales {:x {:ticks [0 1 2 3 4] :expand [0 0] :overlapping-labels :drop}}}
                                           {:width 300 :height 200})
                               [:finalized-scales :x])
             n (count (:ticks finalized))
@@ -396,7 +396,8 @@
 ;; :overlapping-labels
 
 (defn- crowded-axis-drawn
-  "Indices of tick labels drawn on a crowded continuous x axis with position scale `spec` merged in."
+  "`[tick-count drawn-indices]` of a crowded continuous x axis of explicit `:ticks` 0..40, position scale `spec` merged
+  in."
   [spec]
   (let [finalized (get-in (plot/build {:data [{:x 0 :y 0} {:x 40 :y 1}] :mapping {:x :x :y :y} :charts [(chart/scatter)]
                                        :scales {:x (merge {:ticks (vec (range 0 41)) :expand [0 0]} spec)}}
@@ -406,9 +407,8 @@
     [(count sizes) (axis/drawn-label-indices :x finalized sizes 2 nil nil)]))
 
 (deftest overlapping-labels-test
-  (testing "default :drop - colliding labels dropped; :keep - every label drawn"
-    (let [[n drawn] (crowded-axis-drawn {})]
-      (is (< (count drawn) n)))
+  (testing ":drop - colliding labels dropped; :keep - every label drawn (the default for explicit ticks: see
+            explicit-ticks-keep-test)"
     (let [[n drawn] (crowded-axis-drawn {:overlapping-labels :drop})]
       (is (< (count drawn) n)))
     (let [[n drawn] (crowded-axis-drawn {:overlapping-labels :keep})]
@@ -428,3 +428,97 @@
     (is (= :drop (get-in (plot/arc [{:from "a" :to "b"}] {:scales {:x {:overlapping-labels :drop}}})
                          [:scales :x :overlapping-labels])))
     (is (= :overlapping-labels (:key (error-data #(plot/build (assoc small-plot :scales {:x {:overlapping-labels :all}}))))))))
+
+;; label boxes (polar labels)
+
+(deftest kept-box-indices-test
+  (let [box (fn [x y] {:x x :y y :w 10 :h 10})]
+    (testing "a box is kept when it overlaps no kept box; 1 px overlap tolerated"
+      (is (= [0 2] (measure/kept-box-indices [(box 0 0) (box 5 0) (box 20 0)])))
+      (is (= [0 1] (measure/kept-box-indices [(box 0 0) (box 9 0)])) "1 px")
+      (is (= [0 1] (measure/kept-box-indices [(box 0 0) (box 5 20)])) "apart across"))
+    (testing "boundary: no boxes; one; the last checked against the first (a circle of labels)"
+      (is (= [] (measure/kept-box-indices [])))
+      (is (= [0] (measure/kept-box-indices [(box 0 0)])))
+      (is (= [0 1] (measure/kept-box-indices [(box 0 0) (box 30 0) (box 3 2)]))))))
+
+(deftest polar-label-collisions-test
+  (let [placements #'cljplot2.content.panel/polar-label-placements
+        polar-x (fn [spec] (get-in (plot/build {:data (for [i (range 60)] {:x i :y 1}) :mapping {:x :x :y :y}
+                                                :charts [(chart/scatter)] :coord {:kind :polar}
+                                                :scales {:x (merge {:ticks 30} spec)}}
+                                               {:width 200 :height 200})
+                                   [:finalized-scales :x]))
+        ;; every label at one point: all collide
+        same-place (fn [_] [50.0 50.0 [:center :middle]])
+        count-placed (fn [finalized] (measure/call-with-scratch-canvas
+                                      :high #(count (placements % finalized same-place {:theme cljplot2.theme/default-theme}))))]
+    (testing "colliding polar labels: only the first kept"
+      (is (= 1 (count-placed (polar-x {})))))
+    (testing ":overlapping-labels :keep and explicit ticks keep every label"
+      (let [kept (polar-x {:overlapping-labels :keep})]
+        (is (= (count (:ticks kept)) (count-placed kept))))
+      (let [explicit (polar-x {:ticks [0 10 20 30]})]
+        (is (= (count (:ticks explicit)) (count-placed explicit))))
+      (is (= 1 (count-placed (polar-x {:ticks [0 10 20 30] :overlapping-labels :drop})))))))
+
+(deftest explicit-ticks-keep-test
+  (testing "explicit :ticks keep their labels unless :drop is asked; computed ticks drop"
+    (is (position/keep-labels? {:ticks [1 2]}))
+    (is (not (position/keep-labels? {:ticks [1 2] :overlapping-labels :drop})))
+    (is (position/keep-labels? {:ticks 5 :overlapping-labels :keep}))
+    (is (not (position/keep-labels? {:ticks 5})))
+    (is (not (position/keep-labels? {}))))
+  (testing "a finalized scale of explicit ticks keeps; its crowded axis draws every label"
+    (let [[n drawn] (crowded-axis-drawn {})]
+      (is (= (vec (range n)) drawn) "the crowded helper gives explicit :ticks"))
+    (let [[n drawn] (crowded-axis-drawn {:overlapping-labels :drop})]
+      (is (< (count drawn) n)))))
+
+;; other java.time types on colour
+
+(deftest temporal-types-color-test
+  (doseq [[label values] {"LocalTime" (for [h (range 8 20)] (java.time.LocalTime/of h 30))
+                          "Instant" (for [d (range 12)] (.plusSeconds (java.time.Instant/parse "2024-01-01T00:00:00Z") (* d 86400 30)))
+                          "ZonedDateTime" (for [d (range 12)] (.plusDays (java.time.ZonedDateTime/of 2024 1 1 0 0 0 0 (java.time.ZoneId/of "Europe/Warsaw")) (* 30 d)))
+                          "LocalDateTime" (for [d (range 12)] (.plusHours (java.time.LocalDateTime/of 2024 1 1 0 0) (* 7 d)))}
+          :let [rows (map-indexed (fn [i v] {:x i :y i :t v}) values)
+                p {:data rows :mapping {:x :x :y :y :color :t} :charts [(chart/scatter)]}
+                built (plot/build p {:width 300 :height 200 :until :scale-specs})
+                colorbar (first (filter #(= :colorbar (:kind %)) (legend/legends built)))
+                with-formatter (first (filter #(= :colorbar (:kind %))
+                                              (legend/legends (plot/build (assoc p :scales {:color {:formatter #(.getName (class %))}})
+                                                                          {:width 300 :height 200 :until :scale-specs}))))]]
+    (testing (str label ": a linear colour scale with tick labels; the formatter gets the data's type; it renders")
+      (is (= :linear (get-in built [:scale-specs :color :kind])))
+      (is (<= 2 (count (:labels colorbar))))
+      (is (every? #{(.getName (class (first values)))} (:labels with-formatter)))
+      (is (instance? BufferedImage (plot/render-image p {:width 300 :height 200}))))))
+
+;; JSON column order
+
+(deftest json-order-test
+  (testing "rows of a JSON dataset keep the file's key order, also past 8 keys"
+    (is (= [:name :miles-per-gallon :cylinders :displacement :horsepower :weight-in-lbs :acceleration :year :origin]
+           (keys (first (nu/dataset :cars))))))
+  (testing "boundary: a row missing some keys keeps the order of those it has"
+    (is (every? #(apply < (map (into {} (map-indexed (fn [i k] [k i]) (keys (first (nu/dataset :movies))))) (filter (set (keys (first (nu/dataset :movies)))) (keys %))))
+                (take 50 (nu/dataset :movies))))))
+
+(deftest local-date-time-conversions-test
+  (let [zone (java.time.ZoneId/of "Europe/Warsaw")
+        values [(java.time.LocalDate/of 2024 2 29) (java.time.LocalDateTime/of 2024 2 29 13 45)
+                (java.time.LocalTime/of 23 59 59) (java.time.Instant/parse "2024-02-29T13:45:00Z")
+                (java.time.ZonedDateTime/of 2024 2 29 13 45 0 0 zone)
+                (java.time.OffsetDateTime/of 2024 2 29 13 45 0 0 (java.time.ZoneOffset/ofHours -5))]]
+    (testing "every java.time type round-trips through a local date-time"
+      (doseq [v values]
+        (is (= v (rows/local-date-time->like (rows/->local-date-time v) v)) (str (class v)))))
+    (testing "how each reads: a date at its start, a time on 1970-01-01, an instant in UTC, zoned in its zone"
+      (is (= (java.time.LocalDateTime/of 2024 2 29 0 0) (rows/->local-date-time (values 0))))
+      (is (= (java.time.LocalDateTime/of 1970 1 1 23 59 59) (rows/->local-date-time (values 2))))
+      (is (= (java.time.LocalDateTime/of 2024 2 29 13 45) (rows/->local-date-time (values 3))))
+      (is (= (java.time.LocalDateTime/of 2024 2 29 13 45) (rows/->local-date-time (values 4)))))
+    (testing "boundary: a date-time back to a date drops the time; to a time drops the date"
+      (is (= (java.time.LocalDate/of 2024 2 29) (rows/local-date-time->like (java.time.LocalDateTime/of 2024 2 29 18 0) (values 0))))
+      (is (= (java.time.LocalTime/of 18 0) (rows/local-date-time->like (java.time.LocalDateTime/of 2024 2 29 18 0) (values 2)))))))

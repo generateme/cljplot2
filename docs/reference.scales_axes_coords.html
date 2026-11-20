@@ -1109,7 +1109,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="axis" class="level2" data-number="5.4">
 <h2 data-number="5.4" class="anchored" data-anchor-id="axis"><span class="header-section-number">5.4</span> Axis</h2>
-<p>What the axis draws (<code>:grid</code> - grid lines only, <code>:no-grid</code> - the axis only, <code>false</code> - nothing), a display-only domain for its ticks, and whether tick labels overlapping the last drawn one are dropped (<code>:drop</code>) or all drawn (<code>:keep</code> - the builders naming data items on an axis, such as dendrogram leaves, set it).</p>
+<p>What the axis draws (<code>:grid</code> - grid lines only, <code>:no-grid</code> - the axis only, <code>false</code> - nothing), a display-only domain for its ticks, and whether tick labels overlapping a drawn one are dropped (<code>:drop</code>, the default for computed ticks) or all drawn (<code>:keep</code>, the default for an explicit <code>:ticks</code> vector; builders naming data items on an axis, such as dendrogram leaves, set it).</p>
 <div class="clay-table">
 <div class="table-responsive">
 <table class="table table-hover clay-table caption-top">
@@ -1131,8 +1131,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="even">
 <td>:overlapping-labels</td>
 <td>one of :drop :keep</td>
-<td>:drop</td>
-<td>tick labels overlapping the last drawn one: :drop (not drawn) or :keep (all drawn - axes naming data items)</td>
+<td>:keep with an explicit :ticks vector (the values asked for), else :drop</td>
+<td>tick labels overlapping a drawn one: :drop (not drawn) or :keep (all drawn - axes naming data items)</td>
 </tr>
 <tr class="odd">
 <td>:axis</td>

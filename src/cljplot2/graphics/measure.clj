@@ -44,6 +44,23 @@
         (recur (inc i) last-kept kept)
         (recur (inc i) i (conj kept i))))))
 
+(defn label-boxes-overlap?
+  "Do pixel boxes `a` and `b` (`{:x :y :w :h}`) overlap by more than 1 px both across and along (natural sizes are
+  rounded up)?"
+  [a b]
+  (let [over (fn [a0 aw b0 bw] (- (min (+ (double a0) (double aw)) (+ (double b0) (double bw))) (max (double a0) (double b0))))]
+    (and (> (double (over (:x a) (:w a) (:x b) (:w b))) 1.0)
+         (> (double (over (:y a) (:h a) (:y b) (:h b))) 1.0))))
+
+(defn kept-box-indices
+  "Indices of label `boxes` (`{:x :y :w :h}`, in tick order) to draw without collisions: each box overlapping no box
+  kept before it ([[label-boxes-overlap?]]) - around a circle the last label is checked against the first too; empty
+  for no boxes."
+  [boxes]
+  (reduce (fn [kept i]
+            (if (some #(label-boxes-overlap? (boxes i) (boxes %)) kept) kept (conj kept i)))
+          [] (range (count boxes))))
+
 (defn content-kind
   "Dispatch value of item content: `::empty` for `nil` (an empty box), otherwise its `:kind`."
   [content]

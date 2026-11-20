@@ -85,6 +85,25 @@
                                         (range) row)))
              rows)))))
 
+(defn- json-key-order
+  "Object keys (keywords) of JSON `text` in order of first appearance."
+  [text]
+  (distinct (map (comp keyword second) (re-seq #"\"((?:[^\"\\]|\\.)*)\"\s*:" text))))
+
+(defn- json-rows
+  "Data of JSON `text`; a sequence of objects as rows whose keys follow the text's order (`clojure.data.json` builds
+  hash maps, which scramble more than 8 keys)."
+  [text]
+  (let [data (json/read-str text :key-fn keyword)]
+    (if (and (sequential? data) (every? map? data))
+      (let [order (json-key-order text)
+            ordered? (set order)]
+        (mapv (fn [row]
+                (let [ks (concat (filter #(contains? row %) order) (remove ordered? (keys row)))]
+                  (apply array-map (mapcat (fn [k] [k (get row k)]) ks))))
+              data))
+      data)))
+
 (defn dataset
   "Rows (maps with keyword keys) of dataset `k` from the manifest, see [[datasets]]; a CSV entry's `:strings`
   (column keywords) keep those columns as strings, see [[parse-csv]].
@@ -96,7 +115,7 @@
       (throw (ex-info (str "File of dataset " (pr-str k) " not found: " (pr-str file) ".")
                       {:key :file :value file :dataset k})))
     (case format
-      :json (json/read-str (slurp resource) :key-fn keyword)
+      :json (json-rows (slurp resource))
       :csv (parse-csv (slurp resource) {:strings strings})
       (throw (ex-info (str "Dataset " (pr-str k) " has an unknown :format " (pr-str format) ", known: :json, :csv.")
                       {:key :format :value format :dataset k})))))

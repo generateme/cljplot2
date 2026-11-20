@@ -181,35 +181,55 @@
                         (coord/circle-path geometry p))
                     false true))))))
 
+(defn- polar-label-placements
+  "`[[content anchor x y] ...]` of the tick labels of polar scale `k` (`finalized`) placed by `place` (a function of a
+  tick's pixel coordinate along the scale giving `[x y anchor]`), without collisions: all of them for a scale keeping
+  its labels (`:overlapping-labels :keep`), else each whose box overlaps no label kept before it
+  ([[cljplot2.graphics.measure/kept-box-indices]])."
+  [c finalized place env]
+  (let [forward (scale/forward-fn finalized)
+        placed (vec (for [[tick text] (map vector (:ticks finalized) (:tick-labels finalized))
+                          :let [v (double (forward tick))]
+                          :when (m/valid-double? v)
+                          :let [[x y anchor] (place v)]]
+                      [{:kind :label :role :tick-label :text text} anchor x y]))]
+    (if (= :keep (:overlapping-labels finalized))
+      placed
+      (mapv placed (measure/kept-box-indices
+                    (mapv (fn [[content anchor x y]] (label/box-at c content anchor x y env)) placed))))))
+
 (defn- draw-polar-labels!
   "Tick labels of a polar panel (role `:tick-label`): the angular scale's around the circle, just outside the outer
   radius (theme `[:axis k :tick-length]` + `:label-gap`), anchored away from the centre; the radial scale's along the
-  start spoke, beside it. Scales with `:axis false` or `:axis :grid` have none."
+  start spoke, beside it. Scales with `:axis false` or `:axis :grid` have none; colliding labels are dropped (see
+  [[polar-label-placements]])."
   [c geometry env]
   (let [scales (:scales env)
         akey (angular-key scales)
         rkey (if (= akey :x) :y :x)
         t0 (double (first (:theta geometry)))
         radius (double (:radius geometry))
-        labels (fn [k] (let [finalized (get scales k)]
-                         (when (and finalized (scale/axis-drawn? finalized))
-                           (map vector (:ticks finalized) (:tick-labels finalized) (repeat (scale/forward-fn finalized))))))]
-    (doseq [[tick text forward] (labels akey)
-            :let [theta (double (forward tick))
-                  gap (+ (double (get-in env [:theme :axis akey :tick-length])) (double (get-in env [:theme :axis akey :label-gap])))
-                  ^fastmath.vector.Vec2 p (coord/to-pixel geometry theta (+ radius gap))]
-            :when (m/valid-double? theta)]
-      (label/draw-at! c {:kind :label :role :tick-label :text text} (coord/outward-anchor theta) (.x p) (.y p) env))
-    ;; beside the start spoke: a small step perpendicular to it, toward decreasing angles
-    (let [gap (double (get-in env [:theme :axis rkey :label-gap]))
-          side (- t0 m/HALF_PI)]
-      (doseq [[tick text forward] (labels rkey)
-              :let [r (double (forward tick))
-                    ^fastmath.vector.Vec2 p (coord/to-pixel geometry t0 r)
-                    dx (* gap (m/sin side)) dy (- (* gap (m/cos side)))]
-              :when (m/valid-double? r)]
-        (label/draw-at! c {:kind :label :role :tick-label :text text} (coord/outward-anchor side)
-                        (+ (.x p) dx) (+ (.y p) dy) env)))))
+        drawn (fn [k] (let [finalized (get scales k)] (when (and finalized (scale/axis-drawn? finalized)) finalized)))
+        agap (+ (double (get-in env [:theme :axis akey :tick-length])) (double (get-in env [:theme :axis akey :label-gap])))
+        rgap (double (get-in env [:theme :axis rkey :label-gap]))
+        ;; beside the start spoke: a small step perpendicular to it, toward decreasing angles
+        side (- t0 m/HALF_PI)
+        dx (* rgap (m/sin side))
+        dy (- (* rgap (m/cos side)))]
+    (when-let [finalized (drawn akey)]
+      (doseq [[content anchor x y] (polar-label-placements
+                                    c finalized
+                                    (fn [^double theta] (let [^fastmath.vector.Vec2 p (coord/to-pixel geometry theta (+ radius agap))]
+                                                          [(.x p) (.y p) (coord/outward-anchor theta)]))
+                                    env)]
+        (label/draw-at! c content anchor x y env)))
+    (when-let [finalized (drawn rkey)]
+      (doseq [[content anchor x y] (polar-label-placements
+                                    c finalized
+                                    (fn [^double r] (let [^fastmath.vector.Vec2 p (coord/to-pixel geometry t0 r)]
+                                                      [(+ (.x p) dx) (+ (.y p) dy) (coord/outward-anchor side)]))
+                                    env)]
+        (label/draw-at! c content anchor x y env)))))
 
 (defn- margin-env
   "`env` for the panel of plot margin `side`: the margin's charts, stats and scales, no grid lines across the shared

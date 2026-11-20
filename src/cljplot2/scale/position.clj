@@ -144,8 +144,8 @@
           (schema/nilable :minor-ticks {:cljplot2/section :ticks :description "unlabelled ticks between two major ticks (continuous numeric kinds)"} schema/pos-int)
           (schema/nilable :axis-domain {:cljplot2/section :axis :description "display only: axis and grid show the ticks of this linear domain over the panel"}
                           [:tuple schema/finite schema/finite])
-          (schema/optional :overlapping-labels {:cljplot2/section :axis :description "tick labels overlapping the last drawn one: :drop (not drawn) or :keep (all drawn - axes naming data items)"
-                                                :default :drop}
+          (schema/optional :overlapping-labels {:cljplot2/section :axis :description "tick labels overlapping a drawn one: :drop (not drawn) or :keep (all drawn - axes naming data items)"
+                                                :cljplot2/default-doc ":keep with an explicit :ticks vector (the values asked for), else :drop"}
                            [:enum :drop :keep])
           (schema/optional :axis {:cljplot2/section :axis :description "true - axis and grid, false - neither, :grid - grid lines only, :no-grid - axis only"
                                   :default true}
@@ -511,6 +511,15 @@
         {:count n :scale scale :ticks ticks}
         (recur (inc n))))))
 
+(defn keep-labels?
+  "Does an axis of scale `spec` draw every tick label, overlapping or not: `:overlapping-labels :keep`, or an explicit
+  `:ticks` vector (the values asked for) without `:overlapping-labels :drop`?"
+  [{:keys [overlapping-labels ticks]}]
+  (case overlapping-labels
+    :keep true
+    :drop false
+    (sequential? ticks)))
+
 (defn finalize
   "Finalized scale of phase-1 `spec` for the pixel `range` (`[start end]`) and `tick-hint` (the count used unless
   the spec has `:ticks`). Steps: the domain is extended by `nice` (limited, see `:nice` in [[scale-spec]]) with
@@ -522,7 +531,7 @@
   at every band. A spec with
   `:axis false` gives a finalized scale with `:axis false` (no axis, no grid lines), `:axis :grid` one with
   `:axis :grid` (no axis, grid lines kept), `:axis :no-grid` one with `:axis :no-grid` (the axis, no grid lines);
-  `:overlapping-labels :keep` one with `:overlapping-labels :keep` (the axis draws every tick label)."
+  one keeping its labels (see [[keep-labels?]]) carries `:overlapping-labels :keep` (the axis draws every tick label)."
   [spec range tick-hint]
   (let [kind (:kind spec)
         explicit (:ticks spec)
@@ -557,7 +566,7 @@
              :tick-labels (tick-labels scale spec ticks)
              :attributes attributes}
       (contains? #{false :grid :no-grid} (:axis spec)) (assoc :axis (:axis spec))
-      (= :keep (:overlapping-labels spec)) (assoc :overlapping-labels :keep)
+      (keep-labels? spec) (assoc :overlapping-labels :keep)
       (:minor-ticks spec) (assoc :minor-ticks (filterv inside? (minor-tick-values kind domain ticks (:minor-ticks spec)
                                                                                    (get attributes :base 10.0))))
       (:axis-domain spec) (assoc :axis-scale (finalize (merge (select-keys spec [:formatter :minor-ticks :ticks-method :ticks-params])

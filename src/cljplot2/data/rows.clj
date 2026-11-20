@@ -165,6 +165,30 @@
           (instance? OffsetDateTime like) (OffsetDateTime/ofInstant instant (.getOffset ^OffsetDateTime like))
           (instance? LocalTime like) (LocalTime/ofNanoOfDay (* 1000000 (m/constrain (Math/round k) 0 86399999))))))))
 
+(defn ->local-date-time
+  "`java.time` value `t` as the `LocalDateTime` wadogo `:datetime` scales tick in: a date at its start, a date-time as
+  it is, a time on 1970-01-01, an instant in UTC, a zoned or offset date-time as it reads in its own zone / offset."
+  ^LocalDateTime [t]
+  (cond
+    (instance? LocalDate t) (.atStartOfDay ^LocalDate t)
+    (instance? LocalDateTime t) t
+    (instance? LocalTime t) (LocalDateTime/of LocalDate/EPOCH ^LocalTime t)
+    (instance? Instant t) (LocalDateTime/ofInstant ^Instant t ZoneOffset/UTC)
+    (instance? ZonedDateTime t) (.toLocalDateTime ^ZonedDateTime t)
+    (instance? OffsetDateTime t) (.toLocalDateTime ^OffsetDateTime t)))
+
+(defn local-date-time->like
+  "Inverse of [[->local-date-time]]: `LocalDateTime` `ldt` as a value of the type of `like` (a date - its day, a time -
+  its time of day, a zoned / offset date-time in the zone / offset of `like`)."
+  [^LocalDateTime ldt like]
+  (cond
+    (instance? LocalDate like) (.toLocalDate ldt)
+    (instance? LocalDateTime like) ldt
+    (instance? LocalTime like) (.toLocalTime ldt)
+    (instance? Instant like) (.toInstant ldt ZoneOffset/UTC)
+    (instance? ZonedDateTime like) (.atZone ldt (.getZone ^ZonedDateTime like))
+    (instance? OffsetDateTime like) (.atOffset ldt (.getOffset ^OffsetDateTime like))))
+
 (definterface OrderedLevel)
 ;; Marker of categorical level types with a natural order (they also implement `Comparable`), e.g. shingle / bin
 ;; intervals: valid plot values, sorted ascending wherever they are levels.

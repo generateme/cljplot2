@@ -229,13 +229,14 @@ The order of bands - by a function of each level's rows, optionally descending -
 ## Axis
 
 What the axis draws (`:grid` - grid lines only, `:no-grid` - the axis only, `false` - nothing), a display-only
-domain for its ticks, and whether tick labels overlapping the last drawn one are dropped (`:drop`) or all drawn
-(`:keep` - the builders naming data items on an axis, such as dendrogram leaves, set it).
+domain for its ticks, and whether tick labels overlapping a drawn one are dropped (`:drop`, the default for
+computed ticks) or all drawn (`:keep`, the default for an explicit `:ticks` vector; builders naming data items on
+an axis, such as dendrogram leaves, set it).
 
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:axis-domain</td><td>[a finite number, a finite number] or nil</td><td></td><td>display only: axis and grid show the ticks of this linear domain over the panel</td></tr><tr><td>:overlapping-labels</td><td>one of :drop :keep</td><td>:drop</td><td>tick labels overlapping the last drawn one: :drop (not drawn) or :keep (all drawn - axes naming data items)</td></tr><tr><td>:axis</td><td>true or false or one of :grid :no-grid</td><td>true</td><td>true - axis and grid, false - neither, :grid - grid lines only, :no-grid - axis only</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:axis-domain</td><td>[a finite number, a finite number] or nil</td><td></td><td>display only: axis and grid show the ticks of this linear domain over the panel</td></tr><tr><td>:overlapping-labels</td><td>one of :drop :keep</td><td>:keep with an explicit :ticks vector (the values asked for), else :drop</td><td>tick labels overlapping a drawn one: :drop (not drawn) or :keep (all drawn - axes naming data items)</td></tr><tr><td>:axis</td><td>true or false or one of :grid :no-grid</td><td>true</td><td>true - axis and grid, false - neither, :grid - grid lines only, :no-grid - axis only</td></tr></tbody></table>
 ```
 
 :::

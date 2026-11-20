@@ -204,7 +204,8 @@
               ^Vec2 c (v/add q (v/mult o (+ gap e)))
               box (label-box c size)]
           (swap! widest max (* 2.0 e))
-          (when-not (some #(boxes-overlap? box %) taken)
+          ;; skipped when it collides with another axis's label or one drawn before it on this axis
+          (when-not (or (some #(boxes-overlap? box %) taken) (some #(boxes-overlap? box %) @labelled))
             (swap! labelled conj box)
             (label/draw-at! canvas {:kind :label :role :tick-label :text text} [:center :middle] (.x c) (.y c) env)))))
     (when (some? title)
