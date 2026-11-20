@@ -35,14 +35,6 @@
 
 ;; option schemas
 
-(def open-fraction
-  "Schema of a number in the open interval (0, 1)."
-  (schema/named-type ::open-fraction #(and (number? %) (< 0.0 (double %) 1.0)) "should be a number in (0 1)"))
-
-(def finite-non-neg
-  "Schema of a finite number >= 0."
-  (schema/named-type ::finite-non-neg #(and (schema/finite? %) (>= (double %) 0.0)) "should be a finite number >= 0"))
-
 (def graph-entries
   "Option entries of [[graph]] (a shared group, `:graph/graph`; the graph builders of [[cljplot2.graphs]] forward
   them)."
@@ -310,7 +302,7 @@
     (schema/optional :iterations {:description "steps of the force layout" :default 500} [:int {:min 0}])
     (schema/optional :gravity {:description "pull of the force layout to each component's centroid, in units of the ideal edge length (0 - none)"
                                :default 1.0}
-                     finite-non-neg)
+                     schema/finite-non-neg)
     (schema/nilable :rng {:description "fastmath random generator of the force and random layouts, copied per call (seeded - the same layout every time)"
                           :cljplot2/default-doc "a fresh unseeded generator every call"}
                     rng/schema)]))
@@ -470,11 +462,11 @@
    :graph/chord-layout
    [order-entry
     (schema/optional :pad {:description "gap after every ring sector in degrees (must leave room for the sectors)" :default 2.0}
-                     finite-non-neg)
+                     schema/finite-non-neg)
     (schema/optional :inner {:description "inner radius of the ring, where the ribbons end (the outer one is 1)" :default 0.92}
-                     open-fraction)
+                     schema/open-fraction)
     (schema/nilable :min-value {:description "flows of a pair (summed) below it are left out and counted in :dropped (nil - none)"}
-                    finite-non-neg)]))
+                    schema/finite-non-neg)]))
 
 (def chord-layout-options
   "Options schema of [[chord-layout]]."
@@ -563,10 +555,10 @@
                             :cljplot2/default-doc "columns from :align"}
                     schema/accessor)
     (schema/optional :node-width {:description "node width, a fraction of the unit square's width" :default 0.03}
-                     open-fraction)
+                     schema/open-fraction)
     (schema/optional :pad {:description "least gap between the nodes of a column, a fraction of the unit square's height"
                            :default 0.02}
-                     finite-non-neg)
+                     schema/finite-non-neg)
     (schema/optional :iterations {:description "relaxation sweeps moving the nodes towards their links' ends (0 - spread in the start order)"
                                   :default 6}
                      [:int {:min 0}])

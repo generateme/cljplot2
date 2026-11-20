@@ -133,3 +133,32 @@
     (is (= :variables (:key (error-data #(plot/pairs nil {:variables (vec (map (comp keyword str) (range 21)))})))))
     (is (nil? (:key (error-data #(plot/pairs [{:a 1 :b 2} {:a 2 :b 1}] {:variables [:a :b]})))))
     (is (= :axes (:key (error-data #(plot/alluvial nil {:axes [:a]})))))))
+
+(deftest shared-types-test
+  (testing "open-fraction: (0 1), ends excluded"
+    (is (= [false true false false] (map #(malli/validate schema/open-fraction %) [0 0.5 1 "0.5"]))))
+  (testing "finite-pos: > 0 and finite"
+    (is (= [false true false false] (map #(malli/validate schema/finite-pos %) [0 1e-9 ##Inf ##NaN]))))
+  (testing "finite-non-neg: >= 0 and finite"
+    (is (= [true true false false] (map #(malli/validate schema/finite-non-neg %) [0 2.5 -0.1 ##Inf])))))
+
+(deftest options-map-test
+  (let [own [(schema/optional :a {:description "own a"} :int)]
+        forwarded [(schema/optional :a {:description "forwarded a"} :string) (schema/optional :b {:description "b"} :int)]]
+    (testing "groups in order, an earlier entry wins over a later one with its key"
+      (is (= [[:a "own a"] [:b "b"]] (map (juxt :key :description) (describe/schema-rows (schema/options-map own forwarded))))))
+    (testing "boundary: no groups, empty groups - an empty closed map"
+      (is (= [:map {:closed true}] (schema/options-map)))
+      (is (= [:map {:closed true}] (schema/options-map [] []))))
+    (testing "acf: its own :partial? wins over acf-rows', no duplicate key"
+      (let [rows (filter #(= [:partial?] (:path %)) (describe/options #'plot/acf))]
+        (is (= 1 (count rows)))
+        (is (nil? (:fragment (first rows))))))))
+
+(deftest style-defaults-test
+  (testing "style options merged over a default show it as a default text"
+    (doseq [[v k] [[#'plot/network :node-style] [#'plot/network :edge-style] [#'plot/dendrogram :line-style]
+                   [#'plot/tree :node-style] [#'plot/tree :link-style] [#'plot/arc :node-style] [#'plot/arc :edge-style]]]
+      (let [row (first (filter #(= [k] (:path %)) (describe/options v)))]
+        (is (re-find #"^\{" (str (:default-doc row))) [(var-name v) k])
+        (is (not (re-find #"\{:" (:description row))) [(var-name v) k])))))

@@ -23,32 +23,27 @@
 
 (def ^:private kind-names {false "ACF" true "PACF"})
 
-(defn- forwarded
-  "`entries` without the keys `ks`."
-  [entries ks]
-  (filterv #(not (contains? ks (first %))) entries))
-
 (def acf-options
   "Options schema of [[acf]]: its own entries, `:lags` / `:alpha` forwarded to
   [[cljplot2.data.series/acf-rows]] and the builder entries."
-  (-> [:map {:closed true}
-       (schema/nilable :partial? {:description "the correlograms drawn: :both (ACF above PACF), :acf or false (ACF), :pacf or true (PACF)"
-                                  :default :both}
-                       [:enum :both :acf :pacf false true])
-       (schema/nilable :band {:description "significance band: :smooth (a ribbon through the lags) or :stepped (a block per lag)"
-                              :default :smooth}
-                       [:enum :smooth :stepped])
-       (schema/nilable :colors {:description "colours of the stems and points, the band and the significant lags' points"}
-                       [:map {:closed true}
-                        (schema/optional :stem {:description "colour of the stems and points" :default (:stem default-colors)}
-                                         schema/color)
-                        (schema/optional :band {:description "colour of the significance band" :default (:band default-colors)}
-                                         schema/color)
-                        (schema/optional :significant {:description "colour of the points of lags outside the band"
-                                                       :default (:significant default-colors)}
-                                         schema/color)])]
-      (into (forwarded series/acf-rows-entries #{:partial?}))
-      (into multiplot/builder-entries)))
+  (schema/options-map
+   [(schema/nilable :partial? {:description "the correlograms drawn: :both (ACF above PACF), :acf or false (ACF), :pacf or true (PACF)"
+                               :default :both}
+                    [:enum :both :acf :pacf false true])
+    (schema/nilable :band {:description "significance band: :smooth (a ribbon through the lags) or :stepped (a block per lag)"
+                           :default :smooth}
+                    [:enum :smooth :stepped])
+    (schema/nilable :colors {:description "colours of the stems and points, the band and the significant lags' points"}
+                    [:map {:closed true}
+                     (schema/optional :stem {:description "colour of the stems and points" :default (:stem default-colors)}
+                                      schema/color)
+                     (schema/optional :band {:description "colour of the significance band" :default (:band default-colors)}
+                                      schema/color)
+                     (schema/optional :significant {:description "colour of the points of lags outside the band"
+                                                    :default (:significant default-colors)}
+                                      schema/color)])]
+   series/acf-rows-entries
+   multiplot/builder-entries))
 
 (defn- stepped-band
   "Rows `{:x :lo :hi :lag :kind}` of a stepped band: each lag's band from `lag - 0.5` to `lag + 0.5` (a ribbon group
@@ -128,19 +123,19 @@
 (def horizon-options
   "Options schema of [[horizon]]: its own entries, those forwarded to [[cljplot2.data.series/horizon-rows]] and the
   builder entries."
-  (-> [:map {:closed true}
-       (schema/nilable :colors {:description "band colours per sign, lightest first, at least :bands colours each"}
-                       [:map {:closed true}
-                        (schema/optional :positive {:description "colours of the positive bands, lightest first"
-                                                    :cljplot2/default-doc ":bands blues from [158 202 225] to [8 69 148]"}
-                                         [:sequential schema/color])
-                        (schema/optional :negative {:description "colours of the negative (mirrored) bands, lightest first"
-                                                    :cljplot2/default-doc ":bands reds from [252 174 145] to [165 15 21]"}
-                                         [:sequential schema/color])])
-       (schema/optional :alpha {:description "fill alpha of the bands (translucent bands show the ones beneath)" :default 1.0}
-                        schema/fraction)]
-      (into series/horizon-rows-entries)
-      (into multiplot/builder-entries)))
+  (schema/options-map
+   [(schema/nilable :colors {:description "band colours per sign, lightest first, at least :bands colours each"}
+                    [:map {:closed true}
+                     (schema/optional :positive {:description "colours of the positive bands, lightest first"
+                                                 :cljplot2/default-doc ":bands blues from [158 202 225] to [8 69 148]"}
+                                      [:sequential schema/color])
+                     (schema/optional :negative {:description "colours of the negative (mirrored) bands, lightest first"
+                                                 :cljplot2/default-doc ":bands reds from [252 174 145] to [165 15 21]"}
+                                      [:sequential schema/color])])
+    (schema/optional :alpha {:description "fill alpha of the bands (translucent bands show the ones beneath)" :default 1.0}
+                     schema/fraction)]
+   series/horizon-rows-entries
+   multiplot/builder-entries))
 
 (defn horizon
   "Horizon chart of `rows` as a plot map (see [[cljplot2.data.series/horizon-rows]]): values `:y` over `:x` folded

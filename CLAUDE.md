@@ -95,6 +95,12 @@ into the builder's. `cljplot2.core` is the public API (`build`, `render`, `rende
   `schema-metadata-test` checks every chart and plot-level entry (plot, scales, facets, labels, coord, theme ...) is
   described and every `:default` is the real one (pixel-equal renders); theme entries take their defaults from
   `default-theme`, text roles their descriptions from `theme/text-roles`.
+- Builders (`cljplot2.core` - `graphs`, `series_plots`, `multiplot`) and user-facing data functions (var metadata
+  `:cljplot2/api true`) take a closed options schema in var metadata `:cljplot2/options` (also on the `plot/…`
+  var) and check it first - `(schema/check-options! schema options)` before reading their data; a builder's schema
+  is `(schema/options-map own forwarded... multiplot/builder-entries)` (own entries win), a forwarded function's
+  entries a shared group (`:graph/sankey-layout` ...) registered in `cljplot2.describe/fragments`; data checks stay
+  `fail!`. `reference-r2-test` checks every builder and API function.
 - Errors: `cljplot2.schema/fail!` with `{:key option …}`; namespaces `cljplot2.schema` itself requires (e.g.
   `graphics.shape`) use `cljplot2.error/fail!` (the same function, no dependency cycle).
 

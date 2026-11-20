@@ -38,12 +38,6 @@
 
 ;; options
 
-(def ^:private significance
-  (schema/named-type ::significance #(and (number? %) (< 0.0 (double %) 1.0)) "should be a number in (0 1)"))
-
-(def ^:private positive-finite
-  (schema/named-type ::positive-finite #(and (schema/finite? %) (pos? (double %))) "should be a positive finite number"))
-
 (def ^:private row-key [:or :keyword :string])
 
 (def acf-rows-entries
@@ -55,7 +49,7 @@
                            :cljplot2/default-doc "floor(10 log10 n), at most n - 1 (R acf)"}
                     schema/pos-int)
     (schema/nilable :alpha {:description "significance level of the band (0.05 - a 95% band)" :default 0.05}
-                    significance)
+                    schema/open-fraction)
     (schema/nilable :partial? {:description "the partial autocorrelation (lags from 1, a constant band) instead of the autocorrelation"
                                :default false}
                     schema/bool)]))
@@ -184,7 +178,7 @@
                      schema/pos-int)
     (schema/nilable :band-height {:description "height of one band in y units"
                                   :cljplot2/default-doc "the largest |y| of all series / :bands (1 when it is 0)"}
-                    positive-finite)
+                    schema/finite-pos)
     (schema/nilable :interpolator {:description "a curve the valid points of every run are resampled on before folding"
                                    :cljplot2/default-doc "none - straight segments"}
                     schema/interpolator)

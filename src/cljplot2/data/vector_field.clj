@@ -55,9 +55,6 @@
   (schema/with-rules [:tuple schema/finite schema/finite]
     [(fn [[lo hi]] (when-not (< (double lo) (double hi)) "should be [lo hi] with lo < hi"))]))
 
-(def ^:private positive-finite
-  [:and schema/finite [:> 0]])
-
 (def arrows-options
   "Options of [[arrows]]."
   [:map {:closed true}
@@ -71,7 +68,7 @@
                            :default :square}
                     [:enum :square :shifted])
    (schema/optional :scale {:description "arrow length factor: an arrow is scale * cell * (1 - e^-|f|) long" :default 1.0}
-                    positive-finite)])
+                    schema/finite-pos)])
 
 (defn- grid-counts
   "`[nx ny]` of `:n` (a positive integer or a pair of them)."
@@ -126,7 +123,7 @@
   [:map {:closed true}
    (schema/optional :steps {:description "the number of steps of every trace" :default 100} schema/pos-int)
    (schema/optional :step {:description "the step factor: each step moves p by f(p) * (1 - e^-|f(p)|) * step" :default 0.01}
-                    positive-finite)])
+                    schema/finite-pos)])
 
 (defn traces
   "Rows `{:id :i :x :y}` of paths following the field `f` from `seeds` (pairs `[x y]`; `:id` - the seed's index, `:i`

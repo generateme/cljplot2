@@ -75,6 +75,9 @@
 (def pos-int (named-type ::pos-int #(and (integer? %) (pos? (long %))) "should be a positive integer"))
 (def finite (named-type ::finite finite? "should be a finite number"))
 (def fraction (named-type ::fraction #(and (number? %) (<= 0.0 (double %) 1.0)) "should be a number in [0 1]"))
+(def open-fraction (named-type ::open-fraction #(and (number? %) (< 0.0 (double %) 1.0)) "should be a number in (0 1)"))
+(def finite-pos (named-type ::finite-pos #(and (finite? %) (pos? (double %))) "should be a positive finite number"))
+(def finite-non-neg (named-type ::finite-non-neg #(and (finite? %) (>= (double %) 0.0)) "should be a non-negative finite number"))
 (def bool (named-type ::boolean boolean? "should be true or false"))
 (def malli-schema
   (named-type ::malli-schema #(try (some? (malli/schema %)) (catch Exception _ false)) "should be a malli schema"))
@@ -324,6 +327,15 @@
   listing all errors (see the namespace doc for its data), or return `nil`."
   [checks]
   (throw-errors! (into [] (mapcat (fn [[schema value in]] (errors schema value in))) checks)))
+
+(defn options-map
+  "Closed map schema of the entry `groups` in order - a builder's own entries first, then those of the functions it
+  forwards its options to, then the shared ones: an entry whose key an earlier group already has is left out (the
+  earlier - the builder's own - entry wins)."
+  [& groups]
+  (first (reduce (fn [[schema seen] entry]
+                   (if (seen (first entry)) [schema seen] [(conj schema entry) (conj seen (first entry))]))
+                 [[:map {:closed true}] #{}] (apply concat groups))))
 
 (defn check-options!
   "Validate the `options` map (`nil` - none) of a builder or user-facing function against its `schema` (the var's
