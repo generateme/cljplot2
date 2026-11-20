@@ -1,0 +1,134 @@
+---
+format:
+  html: {toc: true, toc-location: right, toc-depth: 4, theme: cosmo}
+code-block-background: true
+
+---
+<style></style><style>.printedClojure .sourceCode {
+  background-color: transparent;
+  border-style: none;
+}
+</style><style>.clay-limit-image-width .clay-image {max-width: 100%}
+.clay-side-by-side .sourceCode {margin: 0}
+.clay-side-by-side {margin: 1em 0}
+</style>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js" type="text/javascript"></script><script src="https://code.jquery.com/ui/1.13.1/jquery-ui.min.js" type="text/javascript"></script>
+
+# Layering and position
+
+Charts are drawn in the order of `:charts`, each over the previous ones, and all of them share the plot's scales.
+Grouped marks of one chart are placed by its `:position` option: side by side, stacked, normalized or overlaid.
+
+
+::: {.sourceClojure}
+```clojure
+(ns reference.layering-position
+  (:require [cljplot2.chart :as chart]
+            [cljplot2.core :as plot]
+            [cljplot2.describe :as describe]
+            [notebook-utils :as nu]))
+```
+:::
+
+
+
+## Layers
+
+A layer is any chart; annotation charts (`rule`, `rect`, `text`, `function`, `image`) take literal positions
+instead of data and inherit only the plot's facet keys. Their extent counts for the scales unless
+`:extent false` (the Annotation options group):
+
+
+::: {.sourceClojure}
+```clojure
+(nu/options-table (describe/fragment-rows :annotation))
+```
+:::
+
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th><th>Group</th></tr></thead><tbody><tr><td>:extent</td><td>true or false or nil</td><td>true</td><td>include the positions in the scale extents</td><td>Annotation options</td></tr></tbody></table>
+```
+
+:::
+
+
+Data: Old Faithful geyser eruptions, R datasets package `faithful` (Härdle 1991; Azzalini & Bowman 1990); licence: Part of R (GPL-2 | GPL-3).
+
+
+::: {.sourceClojure}
+```clojure
+(def faithful (nu/dataset :faithful))
+```
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image {:data faithful
+                    :mapping {:x :eruptions :y :waiting}
+                    :charts [(chart/rect {:x [3.5 5.5] :fill [69 117 180 30]})
+                             (chart/scatter)
+                             (chart/smooth)
+                             (chart/rule {:y 70 :dash :dashed})
+                             (chart/text {:x 4.5 :y 97 :text "long eruptions"})]
+                    :labels {:x "eruptions [min]" :y "waiting [min]"}}
+                   {:width 600 :height 400})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.layering_position_files/image0.png)
+:::
+
+
+
+## Position of groups
+
+Bars, histograms, densities and lines combine groups through `:position` (each chart's page lists the values it
+takes): `:dodge`, `:stack`, `:normalize`, `:overlay`, and for densities and lines the streamgraph `:silhouette` /
+`:wiggle`; histograms and densities also `:mirror`.
+
+
+::: {.sourceClojure}
+```clojure
+(def sales (for [q ["Q1" "Q2" "Q3" "Q4"] [i product] (map-indexed vector ["apples" "pears" "plums"])]
+             {:quarter q :product product :amount (+ 10 (* 7 i) (* 3 (count (str q product))))}))
+```
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange (for [position [:dodge :stack :normalize]]
+                                   {:data sales
+                                    :mapping {:x :quarter :y :amount :color :product}
+                                    :charts [(chart/bar {:position position})]
+                                    :labels {:title (str ":position " position)}
+                                    :legend (= position :normalize)})
+                                 {:columns 3 :widths [1 1 1.4]})
+                   {:width 1000 :height 350})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.layering_position_files/image1.png)
+:::
+
+
+
+```{=html}
+<div style="background-color:grey;height:2px;width:100%;"></div>
+```
+
+
+
+```{=html}
+<div><pre><small><small>source: notebooks/reference/layering_position.clj</small></small></pre></div>
+```

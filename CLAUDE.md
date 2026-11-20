@@ -67,7 +67,10 @@ into the builder's. `cljplot2.core` is the public API (`build`, `render`, `rende
 
 ## Notebooks, demos, data
 
-- `notebooks/use_cases/*.clj` and `notebooks/galleries/*.clj` are Clay notebooks; order in `notebooks/chapters.edn`.
+- `notebooks/reference/*.clj` (the Reference part, before Use cases), `notebooks/use_cases/*.clj` and
+  `notebooks/galleries/*.clj` are Clay notebooks; order in `notebooks/chapters.edn`. Reference option tables come
+  only from `nu/options-table` over `cljplot2.describe` rows (never hand-written); `reference-notebook-test` checks
+  every plot-level schema, shared group and theme section has a table.
   Conventions: a heading, 1-3 lines, `nu/source-note` with `:url`, code ending in `plot/render-image` at most
   1000×800; every random value from a seeded rng (`(r/rng :mersenne n)`); no notebook plotting helpers.
 - `docs/` holds only Clay output (wiped on every build); the `:clay` classpath is `notebooks/` only, so notebooks

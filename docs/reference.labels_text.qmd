@@ -1,0 +1,171 @@
+---
+format:
+  html: {toc: true, toc-location: right, toc-depth: 4, theme: cosmo}
+code-block-background: true
+
+---
+<style></style><style>.printedClojure .sourceCode {
+  background-color: transparent;
+  border-style: none;
+}
+</style><style>.clay-limit-image-width .clay-image {max-width: 100%}
+.clay-side-by-side .sourceCode {margin: 0}
+.clay-side-by-side {margin: 1em 0}
+</style>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js" type="text/javascript"></script><script src="https://code.jquery.com/ui/1.13.1/jquery-ui.min.js" type="text/javascript"></script>
+
+# Labels and text
+
+A plot has a title and two axis titles (`:labels`), each a string or a label map with its own text style. Text
+drawn by charts (the `text` chart, value labels, strip and legend texts) takes its style from a theme text role.
+
+
+::: {.sourceClojure}
+```clojure
+(ns reference.labels-text
+  (:require [cljplot2.chart :as chart]
+            [cljplot2.content.label :as label]
+            [cljplot2.core :as plot]
+            [cljplot2.describe :as describe]
+            [cljplot2.layout.plot-grid :as plot-grid]
+            [notebook-utils :as nu]))
+```
+:::
+
+
+
+## Plot labels
+
+
+::: {.sourceClojure}
+```clojure
+(nu/options-table (describe/options plot-grid/labels-schema))
+```
+:::
+
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:title</td><td>a label options map (:text, :role, :rotation, text style keys) or any value or nil</td><td></td><td>plot title above the panels (role :title)</td></tr><tr><td>:x</td><td>a label options map (:text, :role, :rotation, text style keys) or any value or nil</td><td>the first chart's suggested title (histogram, density, ecdf, qq, pp ...), else none</td><td>x axis title (role :axis-title)</td></tr><tr><td>:y</td><td>a label options map (:text, :role, :rotation, text style keys) or any value or nil</td><td>the first chart's suggested title (histogram, density, ecdf, qq, pp ...), else none</td><td>y axis title (role :axis-title, rotated 270)</td></tr></tbody></table>
+```
+
+:::
+
+
+A label map: the text, a theme text role (`:title` for the title, `:axis-title` for axis titles - its style is the
+base), a rotation and text style keys overriding the role's.
+
+
+::: {.sourceClojure}
+```clojure
+(nu/options-table (describe/options label/label-options))
+```
+:::
+
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th><th>Group</th></tr></thead><tbody><tr><td>:kind</td><td>:label</td><td></td><td>content kind (labels only)</td><td></td></tr><tr><td>:text</td><td>any value</td><td></td><td>the text (converted with str; \n breaks lines)</td><td></td></tr><tr><td>:role</td><td>keyword</td><td></td><td>theme text role styling the label (:title, :axis-title, ... or a role of your theme)</td><td></td></tr><tr><td>:rotation</td><td>one of 0 90 270</td><td>0</td><td>clockwise degrees (270 reads bottom to top)</td><td></td></tr><tr><td>:font</td><td>a bundled, installed or logical font name, or a java.awt.Font</td><td></td><td>font name (bundled, installed or logical) or a java.awt.Font</td><td>Text style</td></tr><tr><td>:size</td><td>a positive number</td><td></td><td>font size in points</td><td>Text style</td></tr><tr><td>:font-style</td><td>one of :bold :bold-italic :italic :plain</td><td></td><td>font style</td><td>Text style</td></tr><tr><td>:color</td><td>a clojure2d color</td><td></td><td>text colour</td><td>Text style</td></tr><tr><td>:padding</td><td>a non-negative number</td><td></td><td>space around the text in pixels</td><td>Text style</td></tr><tr><td>:align</td><td>[h v], h one of :left :center :right, v one of :top :middle :bottom</td><td></td><td>alignment [horizontal vertical] of the text at its anchor</td><td>Text style</td></tr><tr><td>:background</td><td>a clojure2d color or :none</td><td></td><td>box colour behind the text (:none - no box)</td><td>Text style</td></tr></tbody></table>
+```
+
+:::
+
+
+Data: Edgar Anderson's iris measurements, R datasets package `iris` (Anderson 1935; Fisher 1936); licence: Part of R (GPL-2 | GPL-3).
+
+
+::: {.sourceClojure}
+```clojure
+(def iris (nu/dataset :iris))
+```
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image {:data iris
+                    :mapping {:x :sepal-length :y :sepal-width :color :species}
+                    :charts [(chart/scatter)]
+                    :labels {:title {:text "Iris sepals" :size 18 :align [:left :middle] :color [40 40 120]}
+                             :x "sepal length [cm]"
+                             :y {:text "sepal width [cm]" :font-style :italic}}}
+                   {:width 600 :height 400})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.labels_text_files/image0.png)
+:::
+
+
+
+## Text style
+
+The style keys of a label, a text role and the `text` chart (the Text style group):
+
+
+::: {.sourceClojure}
+```clojure
+(nu/options-table (describe/fragment-rows :text-style))
+```
+:::
+
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th><th>Group</th></tr></thead><tbody><tr><td>:font</td><td>a bundled, installed or logical font name, or a java.awt.Font</td><td></td><td>font name (bundled, installed or logical) or a java.awt.Font</td><td>Text style</td></tr><tr><td>:size</td><td>a positive number</td><td></td><td>font size in points</td><td>Text style</td></tr><tr><td>:font-style</td><td>one of :bold :bold-italic :italic :plain</td><td></td><td>font style</td><td>Text style</td></tr><tr><td>:color</td><td>a clojure2d color</td><td></td><td>text colour</td><td>Text style</td></tr><tr><td>:padding</td><td>a non-negative number</td><td></td><td>space around the text in pixels</td><td>Text style</td></tr><tr><td>:align</td><td>[h v], h one of :left :center :right, v one of :top :middle :bottom</td><td></td><td>alignment [horizontal vertical] of the text at its anchor</td><td>Text style</td></tr><tr><td>:background</td><td>a clojure2d color or :none</td><td></td><td>box colour behind the text (:none - no box)</td><td>Text style</td></tr></tbody></table>
+```
+
+:::
+
+
+
+## Text in the panel
+
+The `text` chart writes literal text or a mapped `:label`; `:anchor`, `:offset` and `:rotation` place it,
+`:select :last` labels the end of each group (e.g. line ends). Its full table is on the chart's page.
+
+
+::: {.sourceClojure}
+```clojure
+(def series (for [[i g] (map-indexed vector ["alpha" "beta" "gamma"]) t (range 10)]
+              {:g g :t t :v (+ (* t (inc i) 0.5) (* 3 i))}))
+```
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image {:data series
+                    :mapping {:x :t :y :v :color :g}
+                    :charts [(chart/line)
+                             (chart/text {:mapping {:x :t :y :v :label :g} :select :last :anchor [:left :middle]})
+                             (chart/text {:x [:panel 0.02] :y [:panel 0.95] :text "literal text in panel units"
+                                          :anchor [:left :middle] :font-style :italic})]
+                    :legend false}
+                   {:width 600 :height 350})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.labels_text_files/image1.png)
+:::
+
+
+
+```{=html}
+<div style="background-color:grey;height:2px;width:100%;"></div>
+```
+
+
+
+```{=html}
+<div><pre><small><small>source: notebooks/reference/labels_text.clj</small></small></pre></div>
+```

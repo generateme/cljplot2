@@ -1,0 +1,112 @@
+---
+format:
+  html: {toc: true, toc-location: right, toc-depth: 4, theme: cosmo}
+code-block-background: true
+
+---
+<style></style><style>.printedClojure .sourceCode {
+  background-color: transparent;
+  border-style: none;
+}
+</style><style>.clay-limit-image-width .clay-image {max-width: 100%}
+.clay-side-by-side .sourceCode {margin: 0}
+.clay-side-by-side {margin: 1em 0}
+</style>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js" type="text/javascript"></script><script src="https://code.jquery.com/ui/1.13.1/jquery-ui.min.js" type="text/javascript"></script>
+
+# Limits
+
+What cljplot2 doesn't do, and the nearest way around it.
+
+
+::: {.sourceClojure}
+```clojure
+(ns reference.limits
+  (:require [cljplot2.chart :as chart]
+            [cljplot2.core :as plot]))
+```
+:::
+
+
+
+## Output
+
+
+* Static raster images only (`BufferedImage`, a clojure2d canvas): no interactivity, no SVG or PDF.
+* No save function - `clojure2d.core/save` writes an image (Render chapter).
+
+
+## Layout
+
+
+* Legends sit right of the panels; there is no placement option. A legend can go elsewhere as its own plot:
+  `:legend-only true` in an `:arrange` cell (and `:legend false` on the plot beside it).
+
+* No subtitle or caption: write them with the `text` chart in panel units, or as a title of an `:arrange`.
+* `:margins` need a single panel (no facets, `:arrange` or `:custom-grid`); `:aspect :iso` and `:flip` need the
+  generated grid; free or sliced facet scales don't combine with explicit domains or `:aspect :iso`.
+
+A caption written by a `text` chart, a legend moved below by `:legend-only`:
+
+
+::: {.sourceClojure}
+```clojure
+(def rows (for [[i g] (map-indexed vector ["a" "b" "c"]) x (range 12)]
+            {:g g :x x :y (+ (* x (inc i)) (mod (* x 7) 5))}))
+```
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange [{:data rows
+                                   :mapping {:x :x :y :y :color :g}
+                                   :charts [(chart/line)
+                                            (chart/text {:x [:panel 1.0] :y [:panel 0.02] :anchor [:right :bottom]
+                                                         :text "caption: synthetic data" :size 9 :extent false})]
+                                   :legend false}
+                                  {:data rows
+                                   :mapping {:x :x :y :y :color :g}
+                                   :charts [(chart/line)]
+                                   :legend-only true}]
+                                 {:rows 2 :heights [6 1]})
+                   {:width 600 :height 450})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.limits_files/image0.png)
+:::
+
+
+
+## Coordinates
+
+
+* Polar coordinates only with the charts declaring them (Scales, axes and coordinates chapter); no polar
+  `:aspect :iso`, `:margins` or `:custom-grid`.
+
+* 3D charts (`cloud`, `surface`) only with other 3D charts, without `:flip`, `:aspect :iso`, `:margins`, polar
+  coordinates or free facet scales.
+
+* No map projections or geographic shapes.
+
+
+## Data
+
+
+* Data is rows (maps) or columns (equal-length sequences); other tables are converted by the caller.
+* Dates are `java.time` values; date strings stay levels.
+
+
+```{=html}
+<div style="background-color:grey;height:2px;width:100%;"></div>
+```
+
+
+
+```{=html}
+<div><pre><small><small>source: notebooks/reference/limits.clj</small></small></pre></div>
+```

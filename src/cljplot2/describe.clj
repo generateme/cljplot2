@@ -266,10 +266,13 @@
 (defn theme-rows
   "Rows of the theme ([[cljplot2.theme/theme-schema]]), then one row `[:text role]` per text role of
   [[cljplot2.theme/text-roles]] (sorted; its default the role's style), with their defaults from
-  [[cljplot2.theme/default-theme]]. The style keys are one shared table: `(fragment-rows :text-style)`."
-  []
-  (with-defaults (into (schema-rows theme/theme-schema) (map-rows (malli/schema (text-roles-schema)) [:text] false))
-                 theme/default-theme))
+  [[cljplot2.theme/default-theme]]. The style keys are one shared table: `(fragment-rows :text-style)`.
+  With `section` (a top-level theme key, e.g. `:legend`) only the rows under it; empty for an unknown section."
+  ([]
+   (with-defaults (into (schema-rows theme/theme-schema) (map-rows (malli/schema (text-roles-schema)) [:text] false))
+                  theme/default-theme))
+  ([section]
+   (filterv #(= section (first (:path %))) (theme-rows))))
 
 (defn fragment-rows
   "Rows of the entries of shared group `fragment` (a key of [[fragments]]); empty for an unknown group."

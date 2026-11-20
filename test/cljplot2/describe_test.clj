@@ -174,7 +174,14 @@
       (is (not-any? #(= 3 (count (:path %))) (filter #(= :text (first (:path %))) rows)))
       (is (= [:font :size :font-style :color :padding :align :background] (map :key (describe/fragment-rows :text-style)))))
     (testing "role rows go through the common row code: merged, not required"
-      (is (not-any? :required? (filter #(= :text (first (:path %))) rows))))))
+      (is (not-any? :required? (filter #(= :text (first (:path %))) rows))))
+    (testing "a section's rows: the rows under it, in order; together every row"
+      (is (= (filter #(= :legend (first (:path %))) rows) (describe/theme-rows :legend)))
+      (is (= [:legend] (:path (first (describe/theme-rows :legend)))))
+      (is (= (count rows) (reduce + (map (comp count describe/theme-rows) (distinct (map (comp first :path) rows)))))))
+    (testing "boundary: an unknown section, nil - no rows"
+      (is (= [] (describe/theme-rows :no-such-section)))
+      (is (= [] (describe/theme-rows nil))))))
 
 (deftest entries-fragment-test
   (let [style [:map {:closed true} [:w {:description "w"} :int]]

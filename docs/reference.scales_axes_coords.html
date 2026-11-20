@@ -1,0 +1,1330 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.37">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>5&nbsp; Scales, axes and coordinates – cljplot2</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./reference.layering_position.html" rel="next">
+<link href="./reference.aesthetics_legends.html" rel="prev">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-7f8f88aac4f3542376d5c11b86a4c14d.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-0d7f492f10755a5ae24b960b9550d083.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+
+</head>
+
+<body class="nav-sidebar floating quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./reference.intro.html">Reference</a></li><li class="breadcrumb-item"><a href="./reference.scales_axes_coords.html"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Scales, axes and coordinates</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="./">cljplot2</a> 
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">cljplot2</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text">Reference</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.intro.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">Reference</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.render.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Render</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.data_mapping.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Data and mapping</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.aesthetics_legends.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Aesthetics and legends</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.scales_axes_coords.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Scales, axes and coordinates</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.layering_position.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Layering and position</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.labels_text.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Labels and text</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.facets_arrange.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Facets, multiplots and margins</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.theme.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Theme</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.shared_options.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Shared options</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.errors.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Errors</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.limits.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">Limits</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
+ <span class="menu-text">Use cases</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./use_cases.distribution.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Distribution</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./use_cases.colors.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Colors</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./use_cases.evolution.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Evolution</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./use_cases.ranking.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Ranking</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./use_cases.part_of_a_whole.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Part of a whole</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./use_cases.correlation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Correlation</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./use_cases.flow.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Flow</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
+ <span class="menu-text">Galleries</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./galleries.cljplot_extras.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">cljplot extras</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./galleries.lattice.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">Lattice</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./galleries.vega.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Vega</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#position-scale" id="toc-position-scale" class="nav-link active" data-scroll-target="#position-scale"><span class="header-section-number">5.1</span> Position scale</a></li>
+  <li><a href="#scale-kinds" id="toc-scale-kinds" class="nav-link" data-scroll-target="#scale-kinds"><span class="header-section-number">5.2</span> Scale kinds</a></li>
+  <li><a href="#interpolated-scales" id="toc-interpolated-scales" class="nav-link" data-scroll-target="#interpolated-scales"><span class="header-section-number">5.3</span> Interpolated scales</a></li>
+  <li><a href="#coordinates-flip-and-aspect" id="toc-coordinates-flip-and-aspect" class="nav-link" data-scroll-target="#coordinates-flip-and-aspect"><span class="header-section-number">5.4</span> Coordinates, flip and aspect</a></li>
+  <li><a href="#facet-scales" id="toc-facet-scales" class="nav-link" data-scroll-target="#facet-scales"><span class="header-section-number">5.5</span> Facet scales</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./reference.intro.html">Reference</a></li><li class="breadcrumb-item"><a href="./reference.scales_axes_coords.html"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Scales, axes and coordinates</span></a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Scales, axes and coordinates</span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<style></style>
+<style>.printedClojure .sourceCode {
+  background-color: transparent;
+  border-style: none;
+}
+</style>
+<style>.clay-limit-image-width .clay-image {max-width: 100%}
+.clay-side-by-side .sourceCode {margin: 0}
+.clay-side-by-side {margin: 1em 0}
+</style>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js" type="text/javascript"></script>
+<script src="https://code.jquery.com/ui/1.13.1/jquery-ui.min.js" type="text/javascript"></script>
+<p>Position scales map <code>:x</code> and <code>:y</code> to the panel; their kind follows the data (numbers, levels, dates) unless set. Each position scale draws an axis and grid lines. A plot is cartesian unless <code>:coord</code> is polar; <code>:flip</code> swaps the directions and <code>:aspect :iso</code> keeps data units square.</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">ns</span> reference.scales-axes-coords</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  (<span class="at">:require</span> [scicloj.kindly.v4.kind <span class="at">:as</span> kind]</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>            [wadogo.scale <span class="at">:as</span> ws]</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>            [cljplot2.chart <span class="at">:as</span> chart]</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>            [cljplot2.core <span class="at">:as</span> plot]</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>            [cljplot2.data.facet <span class="at">:as</span> facet]</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>            [cljplot2.describe <span class="at">:as</span> describe]</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>            [cljplot2.scale.coord <span class="at">:as</span> coord]</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>            [cljplot2.scale.position <span class="at">:as</span> position]</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>            [cljplot2.schema <span class="at">:as</span> schema]</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>            [notebook-utils <span class="at">:as</span> nu]))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<section id="position-scale" class="level2" data-number="5.1">
+<h2 data-number="5.1" class="anchored" data-anchor-id="position-scale"><span class="header-section-number">5.1</span> Position scale</h2>
+<p>Keys marked “wadogo:” pass through to the <a href="https://github.com/scicloj/wadogo">wadogo</a> scale of the kind (see the kinds below).</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>(nu/options-table (describe/options position/scale-spec-schema))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">Option</th>
+<th data-quarto-table-cell-role="th">Type</th>
+<th data-quarto-table-cell-role="th">Default</th>
+<th data-quarto-table-cell-role="th">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>:kind</td>
+<td>one of :bands :datetime :interpolated :linear :log :pow :radial :symlog</td>
+<td>from the data: :linear for numbers, :bands for levels, :datetime for java.time values</td>
+<td>scale kind: :linear, :log, :pow, :symlog, :radial, :interpolated, :datetime or :bands</td>
+</tr>
+<tr class="even">
+<td>:type</td>
+<td>one of :categorical :numeric</td>
+<td></td>
+<td>declare numbers categorical (one band per value) or force a numeric scale</td>
+</tr>
+<tr class="odd">
+<td>:domain</td>
+<td>sequential of any value (at least 1) or nil</td>
+<td>the charts' data extent</td>
+<td>explicit domain: [lo hi] for continuous kinds, the levels in order for :bands</td>
+</tr>
+<tr class="even">
+<td>:ticks</td>
+<td>sequential of any value or a positive integer or nil</td>
+<td>a count from the panel size and theme :tick-spacing</td>
+<td>a tick count hint, or the tick values themselves</td>
+</tr>
+<tr class="odd">
+<td>:nice</td>
+<td>true or false or a finite number, a non-negative number or nil</td>
+<td>true (false for :interpolated)</td>
+<td>extend a continuous domain to nice tick values (a number - the most it may grow, a fraction of the span)</td>
+</tr>
+<tr class="even">
+<td>:expand</td>
+<td>[lo hi], non-negative numbers</td>
+<td>the charts' padding</td>
+<td>padding [lo hi] of a continuous domain, fractions of the span (wins over the charts')</td>
+</tr>
+<tr class="odd">
+<td>:formatter</td>
+<td>string or one of :power or a function</td>
+<td>the charts' suggested format, else plain numbers, levels or dates</td>
+<td>tick label text: a function of the value, a java.time pattern (:datetime) or :power (:log)</td>
+</tr>
+<tr class="even">
+<td>:order-by</td>
+<td>a function or nil</td>
+<td></td>
+<td>bands ordered by a function of each level's rows (not with :domain)</td>
+</tr>
+<tr class="odd">
+<td>:descending</td>
+<td>true or false or nil</td>
+<td>false</td>
+<td>reverse the :order-by order (needs :order-by)</td>
+</tr>
+<tr class="even">
+<td>:reverse</td>
+<td>true or false or nil</td>
+<td>false</td>
+<td>the axis runs the other way (the final domain reversed)</td>
+</tr>
+<tr class="odd">
+<td>:minor-ticks</td>
+<td>a positive integer or nil</td>
+<td></td>
+<td>unlabelled ticks between two major ticks (continuous numeric kinds)</td>
+</tr>
+<tr class="even">
+<td>:axis-domain</td>
+<td>[a finite number, a finite number] or nil</td>
+<td></td>
+<td>display only: axis and grid show the ticks of this linear domain over the panel</td>
+</tr>
+<tr class="odd">
+<td>:axis</td>
+<td>true or false or one of :grid :no-grid</td>
+<td>true</td>
+<td>true - axis and grid, false - neither, :grid - grid lines only, :no-grid - axis only</td>
+</tr>
+<tr class="even">
+<td>:stops</td>
+<td>sequential of a finite number (at least 2)</td>
+<td>evenly spaced</td>
+<td>panel fractions the :interpolated domain values map to (increasing, or decreasing - reversed)</td>
+</tr>
+<tr class="odd">
+<td>:interpolator</td>
+<td>a fastmath 1D interpolation method keyword or a function (fn [xs ys &amp; params] f)</td>
+<td>:linear</td>
+<td>interpolation between the :stops of an :interpolated scale (only there)</td>
+</tr>
+<tr class="even">
+<td>:ticks-method</td>
+<td>one of :default :pretty</td>
+<td>:pretty for :datetime, else :default</td>
+<td>tick algorithm of continuous kinds: :default (d3) or :pretty (R pretty())</td>
+</tr>
+<tr class="odd">
+<td>:ticks-params</td>
+<td>map</td>
+<td></td>
+<td>tick algorithm parameters: {:min-n n}, calendar ticks {:unit u :step s}</td>
+</tr>
+<tr class="even">
+<td>:ticks-params :min-n</td>
+<td>integer, &gt;= 0</td>
+<td></td>
+<td>the fewest ticks (clamped to the tick count)</td>
+</tr>
+<tr class="odd">
+<td>:ticks-params :unit</td>
+<td>one of :days :hours :minutes :months :seconds :weeks :years</td>
+<td></td>
+<td>calendar tick unit (:datetime with :pretty ticks)</td>
+</tr>
+<tr class="even">
+<td>:ticks-params :step</td>
+<td>a positive integer</td>
+<td>1</td>
+<td>a calendar tick every :step units</td>
+</tr>
+<tr class="odd">
+<td>:clamp</td>
+<td>any value</td>
+<td></td>
+<td>wadogo: clamp values outside the domain to its ends</td>
+</tr>
+<tr class="even">
+<td>:unknown</td>
+<td>any value</td>
+<td></td>
+<td>wadogo: the value returned for values outside a bands domain</td>
+</tr>
+<tr class="odd">
+<td>:round</td>
+<td>any value</td>
+<td></td>
+<td>wadogo: round band starts and widths to whole pixels</td>
+</tr>
+<tr class="even">
+<td>:base</td>
+<td>any value</td>
+<td></td>
+<td>wadogo: logarithm base of a :log scale (ticks and nice only)</td>
+</tr>
+<tr class="odd">
+<td>:exponent</td>
+<td>any value</td>
+<td></td>
+<td>wadogo: exponent of a :pow scale</td>
+</tr>
+<tr class="even">
+<td>:padding-in</td>
+<td>any value</td>
+<td></td>
+<td>wadogo: space between bands, a fraction of the step</td>
+</tr>
+<tr class="odd">
+<td>:padding-out</td>
+<td>any value</td>
+<td></td>
+<td>wadogo: space before the first and after the last band, a fraction of the step</td>
+</tr>
+<tr class="even">
+<td>:align-outer</td>
+<td>any value</td>
+<td></td>
+<td>wadogo: how the outer band space is split, 0 - all after the last band, 1 - all before the first</td>
+</tr>
+<tr class="odd">
+<td>:align</td>
+<td>any value</td>
+<td></td>
+<td>wadogo: position of a point inside its band, 0 - band start, 1 - band end</td>
+</tr>
+<tr class="even">
+<td>:interpolator-params</td>
+<td>any value</td>
+<td></td>
+<td>wadogo: parameters of the :interpolated scale's :interpolator</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p>Data: Gapminder 2007: life expectancy, population and GDP per capita, data-to-viz example dataset <code>4_ThreeNum</code> (Yan Holtz; Gapminder via the R gapminder package); licence: MIT (data_to_viz repository).</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> gapminder </span>(nu/dataset <span class="at">:gapminder-2007</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>A log scale with powers of ten as tick labels and minor ticks; a reversed linear scale with a fixed domain:</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> gapminder</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:gdp-per-cap</span> <span class="at">:y</span> <span class="at">:life-exp</span>}</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:charts</span> [(chart/scatter)]</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:scales</span> {<span class="at">:x</span> {<span class="at">:kind</span> <span class="at">:log</span> <span class="at">:formatter</span> <span class="at">:power</span> <span class="at">:minor-ticks</span> <span class="dv">9</span>}</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>                             <span class="at">:y</span> {<span class="at">:domain</span> [<span class="dv">30</span> <span class="dv">90</span>] <span class="at">:reverse</span> <span class="va">true</span> <span class="at">:ticks</span> <span class="dv">7</span>}}}</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">600</span> <span class="at">:height</span> <span class="dv">400</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.scales_axes_coords_files/image0.png" class="img-fluid"></p>
+</div>
+</section>
+<section id="scale-kinds" class="level2" data-number="5.2">
+<h2 data-number="5.2" class="anchored" data-anchor-id="scale-kinds"><span class="header-section-number">5.2</span> Scale kinds</h2>
+<p>The position scale kinds and their wadogo attributes (from <code>wadogo.scale/kind-info</code>):</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>(kind/md (ws/kind-info <span class="at">:linear</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p><code>:linear</code> kind: continuous numerical domain mapped linearly to a continuous numerical range (d3 <code>scaleLinear</code>).</p>
+<p>Attributes:</p>
+<ul>
+<li><code>:domain</code> (default <code>[0.0 1.0]</code>): two numbers in any order; a longer sequence is reduced to its minimum and maximum (use the <code>:interpolated</code> kind for piecewise mappings).</li>
+<li><code>:range</code> (default <code>[0.0 1.0]</code>): two numbers, reduced the same way.</li>
+<li><code>:clamp</code> (default <code>false</code>): when truthy, values outside the domain are constrained to it, and the inverse returns values inside the domain.</li>
+<li><code>:unknown</code> (default <code>nil</code>): returned for <code>nil</code> and <code>NaN</code> input.</li>
+<li><code>:round</code> (default <code>false</code>): when truthy, the result is rounded half up (d3 <code>rangeRound</code>).</li>
+</ul>
+<p>Forward maps the domain ends to the range ends and extrapolates outside; inverse maps back.</p>
+<p>Ticks are d3 style (<code>:ticks-method :default</code>, 10 ticks) or R <code>pretty()</code> style (<code>:pretty</code>, 5 ticks); <code>nice</code> extends the domain to multiples of the tick step.</p>
+<p>A degenerate domain (equal ends) maps values below it to the range start, above it to the range end and the value itself to the middle of the range (d3 maps every value to the middle). A degenerate range behaves the same way in the inverse.</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>(kind/md (ws/kind-info <span class="at">:log</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p><code>:log</code> kind: logarithmic mapping of a positive or negative numerical domain to a continuous numerical range (d3 <code>scaleLog</code>).</p>
+<p>Attributes:</p>
+<ul>
+<li><code>:domain</code> (default <code>[1.0 10.0]</code>): two numbers of the same sign; a longer sequence is reduced to its minimum and maximum. A one-value domain <code>[x]</code> together with <code>:base</code> becomes <code>[x base]</code>.</li>
+<li><code>:range</code> (default <code>[0.0 1.0]</code>).</li>
+<li><code>:base</code> (default <code>10.0</code>): base of the logarithm, greater than <code>1.0</code>, used only by ticks and <code>nice</code> (the mapping doesn’t depend on it).</li>
+<li><code>:clamp</code>, <code>:unknown</code>, <code>:round</code>: as for the <code>:linear</code> kind.</li>
+</ul>
+<p>Forward is linear in the logarithm of the absolute value; values of the other sign than the domain (and zero) give <code>NaN</code>.</p>
+<p>Ticks are powers of the base and their subdivisions (d3 style, one tick per power by default) or, with <code>:ticks-method :pretty</code>, the grid with the tick count closest to the requested one (5 by default). <code>nice</code> extends the domain to the outer ticks.</p>
+<p>A domain containing or crossing zero throws <code>ex-info</code> with <code>{:domain domain}</code>. A degenerate domain behaves as for the <code>:linear</code> kind.</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>(kind/md (ws/kind-info <span class="at">:pow</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p><code>:pow</code> kind: power mapping of a continuous numerical domain to a continuous numerical range (d3 <code>scalePow</code>).</p>
+<p>Attributes:</p>
+<ul>
+<li><code>:domain</code> (default <code>[0.0 1.0]</code>), <code>:range</code> (default <code>[0.0 1.0]</code>): as for the <code>:linear</code> kind.</li>
+<li><code>:exponent</code> (default <code>0.5</code>, square root).</li>
+<li><code>:clamp</code>, <code>:unknown</code>, <code>:round</code>: as for the <code>:linear</code> kind.</li>
+</ul>
+<p>Forward is linear in <code>sign(x) * |x|^exponent</code>, so negative values are mirrored. A negative exponent gives a decreasing transform, normalised back to the range ends. Exponent <code>0.0</code> maps every value, zero included, to <code>1.0</code>, so the transformed domain is degenerate and every value maps to the middle of the range. Ticks and <code>nice</code> are linear in the domain. A degenerate domain behaves as for the <code>:linear</code> kind.</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>(kind/md (ws/kind-info <span class="at">:symlog</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p><code>:symlog</code> kind: bi-symmetric logarithmic mapping of a continuous numerical domain (any sign, zero included) to a continuous numerical range (d3 <code>scaleSymlog</code>).</p>
+<p>Attributes:</p>
+<ul>
+<li><code>:domain</code> (default <code>[0.0 1.0]</code>), <code>:range</code> (default <code>[0.0 1.0]</code>): as for the <code>:linear</code> kind.</li>
+<li><code>:C</code> (default <code>1.0</code>, also for <code>nil</code>): the positive constant of the transform <code>sign(x) * log(1 + |x|/C)</code>; values with <code>|x|</code> much smaller than <code>C</code> are mapped almost linearly. <code>0.0</code> gives <code>NaN</code> for every value, a negative <code>C</code> isn’t meaningful.</li>
+<li><code>:base</code>: deprecated and ignored (the base of the logarithm cancels in the mapping); kept for compatibility.</li>
+<li><code>:clamp</code>, <code>:unknown</code>, <code>:round</code>: as for the <code>:linear</code> kind.</li>
+</ul>
+<p>Ticks and <code>nice</code> are linear in the domain. A degenerate domain behaves as for the <code>:linear</code> kind.</p>
+<p>See: Webber, A bi-symmetric log transformation for wide-range data, Measurement Science and Technology (2013).</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>(kind/md (ws/kind-info <span class="at">:bands</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p><code>:bands</code> kind: discrete values mapped to evenly distributed bands (intervals) of a continuous numerical range (d3 <code>scaleBand</code>).</p>
+<p>Attributes:</p>
+<ul>
+<li><code>:domain</code> (default <code>1</code>): the domain values (repeated values removed, first occurrences kept) or their count <code>n</code> (values <code>0..n-1</code>).</li>
+<li><code>:range</code> (default <code>[0.0 1.0]</code>): two numbers in any order; a longer sequence is reduced to its minimum and maximum.</li>
+<li><code>:padding-in</code> (default <code>0.0</code>): space between bands as a proportion of the step, constrained to <code>[0, 1]</code> (d3 <code>paddingInner</code>).</li>
+<li><code>:padding-out</code> (default <code>0.0</code>): space before the first and after the last band as a proportion of the step (d3 <code>paddingOuter</code>), non-negative.</li>
+<li><code>:align-outer</code> (default <code>0.5</code>): how the outer space is distributed: <code>0.0</code> all after the last band, <code>1.0</code> all before the first band (d3 <code>align</code>).</li>
+<li><code>:align</code> (default <code>0.5</code>): position of the point inside every band, from <code>0.0</code> (band start) to <code>1.0</code> (band end); also <code>:spread</code> (positions spread from <code>0.0</code> to <code>1.0</code> over the bands) or a sequence of positions (cycled).</li>
+<li><code>:round</code> (default <code>false</code>): when truthy, the step is floored and the band start and width are rounded, as d3 <code>round</code>.</li>
+<li><code>:unknown</code> (default <code>nil</code>): returned for values outside the domain.</li>
+</ul>
+<p>Forward returns the point of a band; with a second truthy argument it returns the band map:</p>
+<ul>
+<li><code>:value</code>: the domain value.</li>
+<li><code>:rstart</code>, <code>:rend</code>: the band ends; <code>:rstart</code> is the end nearer the range start, so for a reversed range <code>:rstart</code> is larger than <code>:rend</code>.</li>
+<li><code>:point</code>: the point at <code>:align</code> from <code>:rstart</code> to <code>:rend</code>.</li>
+</ul>
+<p>The band width and the step (distance between band starts) are stored under <code>:bandwidth</code> and <code>:step</code>, the band maps under <code>:bands</code> in [[data]]. The inverse returns the domain value of the band containing a number (ends included), <code>:unknown</code> for padding and values outside the range. <code>:padding-in</code> is constrained to <code>[0, 1]</code>; <code>1.0</code> gives bands of zero width (as the <code>:point</code> kind). An empty domain gives no bands.</p>
+<p>Ticks are the domain values; <code>nice</code> returns the scale unchanged.</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>(kind/md (ws/kind-info <span class="at">:datetime</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p><code>:datetime</code> kind: a datetime domain mapped linearly to a continuous numerical range (d3 <code>scaleUtc</code>).</p>
+<p>Attributes:</p>
+<ul>
+<li><code>:domain</code> (default: the year before the moment <code>wadogo.config</code> was loaded): two datetimes in any order, a map with <code>:start</code> and <code>:end</code>, or a longer sequence (reduced to its earliest and latest value). Accepted types: <code>LocalDateTime</code>, <code>LocalDate</code> (start of the day), <code>LocalTime</code> (today), <code>java.util.Date</code>, and <code>Instant</code>, <code>ZonedDateTime</code> and <code>OffsetDateTime</code> (converted to the UTC local datetime).</li>
+<li><code>:range</code> (default <code>[0.0 1.0]</code>): as for the <code>:linear</code> kind.</li>
+<li><code>:clamp</code>, <code>:unknown</code>, <code>:round</code>: as for the <code>:linear</code> kind.</li>
+</ul>
+<p>A degenerate domain (equal ends) maps earlier datetimes to the range start, later ones to the range end and the domain datetime to the middle; it has no default ticks. A degenerate range behaves the same way in the inverse. <code>LocalTime</code> values are placed on the current date at each conversion, so a scale built from times shouldn’t outlive the day.</p>
+<p>The domain is stored as <code>LocalDateTime</code> values. Forward accepts the same types as the domain and is linear in the elapsed time (millisecond precision with the nanosecond fraction); the inverse returns a <code>LocalDateTime</code> rounded to the millisecond. The domain length in milliseconds (<code>BigDecimal</code>, negative for a reversed domain) is stored under <code>:millis</code> in [[data]].</p>
+<p>Default ticks (<code>:ticks-method :default</code>, 10 ticks) are spaced by a whole number of the time unit nearest to the tick step, starting at the domain start truncated to that unit, strictly inside the domain (not aligned to calendar units); <code>:pretty</code> ticks (5 ticks) follow R’s <code>pretty()</code> for date-times. Ticks of a reversed domain are reversed. Values outside the domain are extrapolated (unless clamped). <code>nice</code> extends the domain to whole time units (<code>:default</code>) or to the outer pretty ticks (<code>:pretty</code>).</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>(kind/md (ws/kind-info <span class="at">:interpolated</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p><code>:interpolated</code> kind: piecewise mapping through <code>(domain, range)</code> pairs with an interpolation method.</p>
+<p>Attributes:</p>
+<ul>
+<li><code>:domain</code> (default <code>[0.0 0.5 1.0]</code>), <code>:range</code> (default <code>[0.0 0.5 1.0]</code>): sequences of numbers of equal length, paired by position; the pairs are sorted by the domain value. Extra values of the longer sequence are dropped (also from the stored domain and range). Repeated domain values are rejected by most <code>fastmath</code> interpolators with <code>ex-info</code> when the scale is created.</li>
+<li><code>:interpolator</code> (default <code>:linear</code>): a <code>fastmath.interpolation/interpolation</code> method keyword (as <code>:linear</code>, <code>:pchip</code>, <code>:monotone</code>, <code>:step</code>) or a function of <code>xs</code>, <code>ys</code> and the parameters returning a function of one number.</li>
+<li><code>:interpolator-params</code> (default <code>nil</code>): a sequence of extra arguments of the interpolator, as <code>[{:bandwidth 0.7}]</code> for <code>:loess</code>.</li>
+<li><code>:clamp</code>, <code>:unknown</code>, <code>:round</code>: as for the <code>:linear</code> kind; the clamping interval is spanned by the smallest and the largest domain value.</li>
+</ul>
+<p>A scale should be monotone: use monotone data with a monotonicity preserving method (<code>:linear</code>, <code>:pchip</code>, <code>:monotone</code>, step methods). <code>:cubic</code>, <code>:loess</code>, <code>:shepard</code> and similar can overshoot between the points.</p>
+<p>The inverse solves <code>forward(x) = y</code> by bisection, so it’s the inverse of the forward curve for any monotone method. The direction (increasing or decreasing) is given by the forward values at the smallest and the largest domain value. The inverse returns the smallest domain value when <code>forward</code> gives <code>y</code> there, otherwise the smallest <code>x</code> with <code>forward(x)</code> at or beyond <code>y</code> (in the direction of the curve), so a plateau of a step method gives its start, and a value inside a jump gives the jump position.</p>
+<p>Values beyond the forward values at the domain ends are searched outside the domain with growing steps, as long as the extrapolated curve keeps moving toward the value; <code>NaN</code> when it turns back (smooth methods extrapolate with turning polynomials), stays constant (step methods), gives <code>NaN</code>, or doesn’t reach the value. With <code>:clamp</code> such values give the nearer domain end instead.</p>
+<p>Ticks and <code>nice</code> use the first and last domain value; <code>nice</code> replaces only these two.</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>(kind/md (ws/kind-info <span class="at">:radial</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p><code>:radial</code> kind: linear mapping of a continuous numerical domain to the squared range, so that the range values are radii of areas proportional to the domain values (d3 <code>scaleRadial</code>).</p>
+<p>Attributes:</p>
+<ul>
+<li><code>:domain</code> (default <code>[0.0 1.0]</code>), <code>:range</code> (default <code>[0.0 1.0]</code>): as for the <code>:linear</code> kind.</li>
+<li><code>:clamp</code>, <code>:unknown</code>, <code>:round</code>: as for the <code>:linear</code> kind (rounding is applied to the radius).</li>
+</ul>
+<p>Forward is <code>sign(y) * sqrt(|y|)</code> of the linear mapping of the domain to the signed squares of the range ends; inverse is its inverse. Ticks and <code>nice</code> are linear in the domain. Range ends of different signs are allowed (squares keep the sign). A degenerate domain maps values below it to the range start, above it to the range end and the value itself to the signed square root of the middle of the squared range.</p>
+</section>
+<section id="interpolated-scales" class="level2" data-number="5.3">
+<h2 data-number="5.3" class="anchored" data-anchor-id="interpolated-scales"><span class="header-section-number">5.3</span> Interpolated scales</h2>
+<p>An <code>:interpolated</code> scale maps the domain piecewise onto evenly spaced (or given) <code>:stops</code>; <code>:interpolator</code> is one of the fastmath 1D interpolation methods (or a function):</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">sort</span> schema/interpolation-methods)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="printedClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>(<span class="at">:akima</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a> <span class="at">:b-spline</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a> <span class="at">:barycentric</span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a> <span class="at">:cir</span></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a> <span class="at">:cubic</span></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a> <span class="at">:cubic-smoothing</span></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a> <span class="at">:divided-difference</span></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a> <span class="at">:gp</span></span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a> <span class="at">:kriging</span></span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a> <span class="at">:linear</span></span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a> <span class="at">:loess</span></span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a> <span class="at">:microsphere-projection</span></span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a> <span class="at">:monotone</span></span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a> <span class="at">:neville</span></span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a> <span class="at">:pava</span></span>
+<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a> <span class="at">:pchip</span></span>
+<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a> <span class="at">:polynomial</span></span>
+<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a> <span class="at">:rbf</span></span>
+<span id="cb14-19"><a href="#cb14-19" aria-hidden="true" tabindex="-1"></a> <span class="at">:shepard</span></span>
+<span id="cb14-20"><a href="#cb14-20" aria-hidden="true" tabindex="-1"></a> <span class="at">:sprague</span></span>
+<span id="cb14-21"><a href="#cb14-21" aria-hidden="true" tabindex="-1"></a> <span class="at">:step</span></span>
+<span id="cb14-22"><a href="#cb14-22" aria-hidden="true" tabindex="-1"></a> <span class="at">:step-after</span></span>
+<span id="cb14-23"><a href="#cb14-23" aria-hidden="true" tabindex="-1"></a> <span class="at">:step-before</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>Here the middle of the domain gets half of the axis:</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> (<span class="kw">for</span> [i (<span class="kw">range</span> <span class="dv">1</span> <span class="dv">101</span>)] {<span class="at">:x</span> i <span class="at">:y</span> (Math/log i)})</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:y</span>}</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:charts</span> [(chart/line)]</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:scales</span> {<span class="at">:x</span> {<span class="at">:kind</span> <span class="at">:interpolated</span> <span class="at">:domain</span> [<span class="dv">1</span> <span class="dv">40</span> <span class="dv">60</span> <span class="dv">100</span>] <span class="at">:ticks</span> [<span class="dv">1</span> <span class="dv">20</span> <span class="dv">40</span> <span class="dv">50</span> <span class="dv">60</span> <span class="dv">80</span> <span class="dv">100</span>]}}}</span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">600</span> <span class="at">:height</span> <span class="dv">300</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.scales_axes_coords_files/image1.png" class="img-fluid"></p>
+</div>
+</section>
+<section id="coordinates-flip-and-aspect" class="level2" data-number="5.4">
+<h2 data-number="5.4" class="anchored" data-anchor-id="coordinates-flip-and-aspect"><span class="header-section-number">5.4</span> Coordinates, flip and aspect</h2>
+<p><code>:flip true</code> draws <code>:x</code> vertically; scales, labels and theme keys keep their names. Polar coordinates map the horizontal scale to angles and the vertical one to radii - only some charts draw in them:</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">sort</span> (<span class="kw">for</span> [v (<span class="kw">vals</span> (<span class="kw">ns-publics</span> <span class="at">'cljplot2.chart</span>))</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>            <span class="at">:let</span> [c (<span class="kw">try</span> (v) (<span class="kw">catch</span> Exception _ <span class="va">nil</span>))]</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>            <span class="at">:when</span> (<span class="kw">contains?</span> (<span class="at">:coords</span> c) <span class="at">:polar</span>)]</span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>        (<span class="at">:kind</span> c)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="printedClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>(<span class="at">:bar</span> <span class="at">:line</span> <span class="at">:parallel</span> <span class="at">:partition</span> <span class="at">:rect</span> <span class="at">:rule</span> <span class="at">:scatter</span> <span class="at">:segment</span> <span class="at">:text</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>(nu/options-table (describe/options coord/polar-schema))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">Option</th>
+<th data-quarto-table-cell-role="th">Type</th>
+<th data-quarto-table-cell-role="th">Default</th>
+<th data-quarto-table-cell-role="th">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>:kind (required)</td>
+<td>:polar</td>
+<td></td>
+<td>polar coordinates: the horizontal scale maps to angles, the vertical one to radii</td>
+</tr>
+<tr class="even">
+<td>:start</td>
+<td>a finite number</td>
+<td>0.0</td>
+<td>angle of the horizontal scale's range start, degrees (0 - 12 o'clock)</td>
+</tr>
+<tr class="odd">
+<td>:direction</td>
+<td>one of :clockwise :counter-clockwise</td>
+<td>:clockwise</td>
+<td>direction of growing angles</td>
+</tr>
+<tr class="even">
+<td>:span</td>
+<td>a finite number, &gt; 0, &lt;= 360</td>
+<td>360.0</td>
+<td>degrees covered (e.g. 180 for a half circle)</td>
+</tr>
+<tr class="odd">
+<td>:inner</td>
+<td>a finite number, &gt;= 0, &lt; 1</td>
+<td>0.0</td>
+<td>inner radius as a fraction of the outer one (a hole for donuts)</td>
+</tr>
+<tr class="even">
+<td>:arcs</td>
+<td>true or false or nil</td>
+<td>false</td>
+<td>data lines between points follow the circle instead of chords</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> counts </span>(<span class="kw">for</span> [[continent rs] (<span class="kw">group-by</span> <span class="at">:continent</span> gapminder)] {<span class="at">:continent</span> continent <span class="at">:n</span> (<span class="kw">count</span> rs)}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> counts</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:continent</span> <span class="at">:y</span> <span class="at">:n</span>}</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/bar)]</span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:flip</span> <span class="va">true</span></span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:scales</span> {<span class="at">:x</span> {<span class="at">:reverse</span> <span class="va">true</span>}}}</span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> counts</span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:continent</span> <span class="at">:y</span> <span class="at">:n</span> <span class="at">:color</span> <span class="at">:continent</span>}</span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/bar {<span class="at">:width</span> <span class="fl">1.0</span>})]</span>
+<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:coord</span> {<span class="at">:kind</span> <span class="at">:polar</span> <span class="at">:inner</span> <span class="fl">0.2</span>}</span>
+<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:legend</span> <span class="va">false</span>}]</span>
+<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">2</span>})</span>
+<span id="cb20-12"><a href="#cb20-12" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">900</span> <span class="at">:height</span> <span class="dv">400</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.scales_axes_coords_files/image2.png" class="img-fluid"></p>
+</div>
+<p><code>:aspect :iso</code> gives both linear axes the same pixels per data unit (the panel shrinks to fit).</p>
+</section>
+<section id="facet-scales" class="level2" data-number="5.5">
+<h2 data-number="5.5" class="anchored" data-anchor-id="facet-scales"><span class="header-section-number">5.5</span> Facet scales</h2>
+<p>The facet levels have scales too: <code>:scales {:facet spec}</code> (and <code>:facet-col</code> / <code>:facet-row</code>) order the panels and format the strip text (Facets chapter).</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb21"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>(nu/options-table (describe/options facet/scale-spec-schema))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">Option</th>
+<th data-quarto-table-cell-role="th">Type</th>
+<th data-quarto-table-cell-role="th">Default</th>
+<th data-quarto-table-cell-role="th">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>:domain</td>
+<td>sequential of any value (at least 1) or nil</td>
+<td>the data's levels, sorted (NA last)</td>
+<td>the facet levels in panel order (values outside are dropped)</td>
+</tr>
+<tr class="even">
+<td>:formatter</td>
+<td>a function</td>
+<td>(str level), "NA" for the NA level</td>
+<td>strip text of a level, a function of the level</td>
+</tr>
+<tr class="odd">
+<td>:order-by</td>
+<td>a function or nil</td>
+<td></td>
+<td>levels in ascending order of a function of each level's rows (not with :domain)</td>
+</tr>
+<tr class="even">
+<td>:descending</td>
+<td>true or false or nil</td>
+<td>false</td>
+<td>reverse the :order-by order (needs :order-by)</td>
+</tr>
+<tr class="odd">
+<td>:type</td>
+<td>:categorical</td>
+<td></td>
+<td>facets are always categorical (accepted for symmetry with other scales)</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div style="background-color:grey;height:2px;width:100%;"></div>
+<div><pre><small><small>source: notebooks/reference/scales_axes_coords.clj</small></small></pre></div>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="./reference.aesthetics_legends.html" class="pagination-link" aria-label="Aesthetics and legends">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Aesthetics and legends</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./reference.layering_position.html" class="pagination-link" aria-label="Layering and position">
+        <span class="nav-page-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Layering and position</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

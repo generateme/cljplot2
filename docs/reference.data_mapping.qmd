@@ -1,0 +1,192 @@
+---
+format:
+  html: {toc: true, toc-location: right, toc-depth: 4, theme: cosmo}
+code-block-background: true
+
+---
+<style></style><style>.printedClojure .sourceCode {
+  background-color: transparent;
+  border-style: none;
+}
+</style><style>.clay-limit-image-width .clay-image {max-width: 100%}
+.clay-side-by-side .sourceCode {margin: 0}
+.clay-side-by-side {margin: 1em 0}
+</style>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js" type="text/javascript"></script><script src="https://code.jquery.com/ui/1.13.1/jquery-ui.min.js" type="text/javascript"></script>
+
+# Data and mapping
+
+Plot data is a sequence of maps (rows) or a map of equal-length sequences (columns). A mapping says which value
+of a row each dimension reads: a keyword or a function of the row.
+
+
+::: {.sourceClojure}
+```clojure
+(ns reference.data-mapping
+  (:require [cljplot2.chart :as chart]
+            [cljplot2.core :as plot]
+            [cljplot2.data.rows :as rows]
+            [cljplot2.describe :as describe]
+            [cljplot2.pipeline :as pipeline]
+            [notebook-utils :as nu]))
+```
+:::
+
+
+
+## Mapping keys
+
+The built-in dimensions; a chart reads only some of them (each chart's page lists its keys, e.g.
+`(describe/mapping (chart/bar))`). The mapping is open: a chart of your own may read other keys.
+
+
+::: {.sourceClojure}
+```clojure
+(nu/options-table (describe/options rows/mapping-schema))
+```
+:::
+
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:x</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>x position (or the values of a strip chart with levels on y)</td></tr><tr><td>:y</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>y position (or the levels of a strip chart)</td></tr><tr><td>:z</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>third coordinate of 3D charts</td></tr><tr><td>:ymin</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>lower end of an interval (ribbons, error bars)</td></tr><tr><td>:ymax</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>upper end of an interval</td></tr><tr><td>:xend</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>x of a segment's end</td></tr><tr><td>:yend</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>y of a segment's end</td></tr><tr><td>:open</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>opening value (candlesticks)</td></tr><tr><td>:high</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>highest value (candlesticks)</td></tr><tr><td>:low</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>lowest value (candlesticks)</td></tr><tr><td>:close</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>closing value (candlesticks)</td></tr><tr><td>:color</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>colour aesthetic: groups, or values on a colour scale</td></tr><tr><td>:shape</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>point shape aesthetic</td></tr><tr><td>:size</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>size aesthetic</td></tr><tr><td>:dash</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>line dash aesthetic</td></tr><tr><td>:pattern</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>fill pattern aesthetic</td></tr><tr><td>:group</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>groups without a visual aesthetic</td></tr><tr><td>:facet</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>wrap facets: one panel per value</td></tr><tr><td>:facet-col</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>grid facets: one column per value</td></tr><tr><td>:facet-row</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>grid facets: one row per value</td></tr><tr><td>:order</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>drawing order of points</td></tr><tr><td>:value</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>a value: cell values, weights, sizes of hierarchy leaves</td></tr><tr><td>:set</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>set name of a membership row (Venn)</td></tr><tr><td>:item</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>item of a membership row (Venn)</td></tr><tr><td>:hierarchy</td><td>vector of a keyword, a function or a categorical marker of one (at least 1) or nil</td><td></td><td>levels of a hierarchy, root first (treemap, partition, pack)</td></tr></tbody></table>
+```
+
+:::
+
+
+
+## Rows or columns
+
+Columns become rows; both plots below are the same.
+
+
+::: {.sourceClojure}
+```clojure
+(def columns {:t (range 20) :v (map #(Math/sin (* 0.4 (double %))) (range 20))})
+```
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image {:data columns
+                    :mapping {:x :t :y :v}
+                    :charts [(chart/line) (chart/scatter)]}
+                   {:width 500 :height 300})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.data_mapping_files/image0.png)
+:::
+
+
+
+## Accessors
+
+A function accessor computes the value from the row - here the y value is a ratio of two columns and the colour
+a derived level.
+
+Data: Edgar Anderson's iris measurements, R datasets package `iris` (Anderson 1935; Fisher 1936); licence: Part of R (GPL-2 | GPL-3).
+
+
+::: {.sourceClojure}
+```clojure
+(def iris (nu/dataset :iris))
+```
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image {:data iris
+                    :mapping {:x :petal-length
+                              :y #(/ (double (:petal-width %)) (double (:petal-length %)))
+                              :color #(if (> (double (:sepal-width %)) 3.0) "wide sepal" "narrow sepal")}
+                    :charts [(chart/scatter)]
+                    :labels {:y "petal width / length"}}
+                   {:width 600 :height 400})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.data_mapping_files/image1.png)
+:::
+
+
+
+## Plot and chart mappings
+
+Each chart merges its own `:mapping` over the plot's and may bring its own `:data` (the Data and mapping group,
+taken by every chart). Here the line reads a second data set. A key mapped to `nil` is unmapped for that chart.
+
+
+::: {.sourceClojure}
+```clojure
+(def means (for [[species rs] (group-by :species iris)]
+             {:species species
+              :x (/ (reduce + (map :petal-length rs)) (count rs))
+              :y (/ (reduce + (map :petal-width rs)) (count rs))}))
+```
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image {:data iris
+                    :mapping {:x :petal-length :y :petal-width :color :species}
+                    :charts [(chart/scatter)
+                             (chart/line {:data (sort-by :x means) :mapping {:x :x :y :y :color nil}})
+                             (chart/text {:data means :mapping {:x :x :y :y :label :species :color nil}
+                                          :offset [0 -14]})]}
+                   {:width 600 :height 400})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.data_mapping_files/image2.png)
+:::
+
+
+
+## Groups and missing values
+
+Aesthetic keys (`:color`, `:shape`, `:size`, `:dash`, `:pattern`) and `:group` split rows into groups; charts
+drawing one mark per group (lines, areas, densities ...) draw each group separately. A `nil` aesthetic value
+forms its own NA level unless the plot says `:groups {:na false}` (such rows are dropped).
+
+
+::: {.sourceClojure}
+```clojure
+(nu/options-table (filter #(= :groups (first (:path %))) (describe/options pipeline/plot-schema)))
+```
+:::
+
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:groups</td><td>map</td><td></td><td>grouping options</td></tr><tr><td>:groups :na</td><td>true or false or nil</td><td>true</td><td>nil aesthetic values form the NA level (false - such rows are dropped)</td></tr></tbody></table>
+```
+
+:::
+
+
+
+```{=html}
+<div style="background-color:grey;height:2px;width:100%;"></div>
+```
+
+
+
+```{=html}
+<div><pre><small><small>source: notebooks/reference/data_mapping.clj</small></small></pre></div>
+```

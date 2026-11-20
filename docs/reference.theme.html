@@ -1,0 +1,1618 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.37">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>9&nbsp; Theme – cljplot2</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./reference.shared_options.html" rel="next">
+<link href="./reference.facets_arrange.html" rel="prev">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-7f8f88aac4f3542376d5c11b86a4c14d.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-0d7f492f10755a5ae24b960b9550d083.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+
+</head>
+
+<body class="nav-sidebar floating quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./reference.intro.html">Reference</a></li><li class="breadcrumb-item"><a href="./reference.theme.html"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Theme</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="./">cljplot2</a> 
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">cljplot2</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text">Reference</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.intro.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">Reference</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.render.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Render</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.data_mapping.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Data and mapping</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.aesthetics_legends.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Aesthetics and legends</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.scales_axes_coords.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Scales, axes and coordinates</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.layering_position.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Layering and position</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.labels_text.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Labels and text</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.facets_arrange.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Facets, multiplots and margins</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.theme.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Theme</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.shared_options.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Shared options</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.errors.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Errors</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.limits.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">Limits</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
+ <span class="menu-text">Use cases</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./use_cases.distribution.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Distribution</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./use_cases.colors.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Colors</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./use_cases.evolution.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Evolution</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./use_cases.ranking.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Ranking</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./use_cases.part_of_a_whole.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Part of a whole</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./use_cases.correlation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Correlation</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./use_cases.flow.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Flow</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
+ <span class="menu-text">Galleries</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./galleries.cljplot_extras.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">cljplot extras</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./galleries.lattice.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">Lattice</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./galleries.vega.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Vega</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#plot" id="toc-plot" class="nav-link active" data-scroll-target="#plot"><span class="header-section-number">9.1</span> Plot</a></li>
+  <li><a href="#panel" id="toc-panel" class="nav-link" data-scroll-target="#panel"><span class="header-section-number">9.2</span> Panel</a></li>
+  <li><a href="#axis" id="toc-axis" class="nav-link" data-scroll-target="#axis"><span class="header-section-number">9.3</span> Axis</a></li>
+  <li><a href="#strip" id="toc-strip" class="nav-link" data-scroll-target="#strip"><span class="header-section-number">9.4</span> Strip</a></li>
+  <li><a href="#facet" id="toc-facet" class="nav-link" data-scroll-target="#facet"><span class="header-section-number">9.5</span> Facet</a></li>
+  <li><a href="#multiplot" id="toc-multiplot" class="nav-link" data-scroll-target="#multiplot"><span class="header-section-number">9.6</span> Multiplot</a></li>
+  <li><a href="#legend" id="toc-legend" class="nav-link" data-scroll-target="#legend"><span class="header-section-number">9.7</span> Legend</a></li>
+  <li><a href="#palette" id="toc-palette" class="nav-link" data-scroll-target="#palette"><span class="header-section-number">9.8</span> Palette</a></li>
+  <li><a href="#text" id="toc-text" class="nav-link" data-scroll-target="#text"><span class="header-section-number">9.9</span> Text</a></li>
+  <li><a href="#chart" id="toc-chart" class="nav-link" data-scroll-target="#chart"><span class="header-section-number">9.10</span> Chart</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./reference.intro.html">Reference</a></li><li class="breadcrumb-item"><a href="./reference.theme.html"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Theme</span></a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Theme</span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<style></style>
+<style>.printedClojure .sourceCode {
+  background-color: transparent;
+  border-style: none;
+}
+</style>
+<style>.clay-limit-image-width .clay-image {max-width: 100%}
+.clay-side-by-side .sourceCode {margin: 0}
+.clay-side-by-side {margin: 1em 0}
+</style>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js" type="text/javascript"></script>
+<script src="https://code.jquery.com/ui/1.13.1/jquery-ui.min.js" type="text/javascript"></script>
+<p>The theme holds every style default: backgrounds, grid lines, axes, legends, palettes, text roles and each chart kind’s style. A plot’s <code>:theme</code> is deep-merged over the default theme, so it names only what changes.</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">ns</span> reference.theme</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  (<span class="at">:require</span> [cljplot2.chart <span class="at">:as</span> chart]</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>            [cljplot2.core <span class="at">:as</span> plot]</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>            [cljplot2.describe <span class="at">:as</span> describe]</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>            [notebook-utils <span class="at">:as</span> nu]))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>Data: Edgar Anderson’s iris measurements, R datasets package <code>iris</code> (Anderson 1935; Fisher 1936); licence: Part of R (GPL-2 | GPL-3).</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> iris </span>(nu/dataset <span class="at">:iris</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> iris</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:sepal-length</span> <span class="at">:y</span> <span class="at">:petal-length</span> <span class="at">:color</span> <span class="at">:species</span> <span class="at">:facet</span> <span class="at">:species</span>}</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:charts</span> [(chart/scatter)]</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:facets</span> {<span class="at">:columns</span> <span class="dv">3</span>}</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"A darker theme"</span>}</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:theme</span> {<span class="at">:plot</span> {<span class="at">:background</span> [<span class="dv">40</span> <span class="dv">44</span> <span class="dv">52</span>]}</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>                            <span class="at">:panel</span> {<span class="at">:fill</span> [<span class="dv">55</span> <span class="dv">60</span> <span class="dv">70</span>] <span class="at">:grid</span> {<span class="at">:x</span> {<span class="at">:color</span> [<span class="dv">90</span> <span class="dv">96</span> <span class="dv">110</span>] <span class="at">:width</span> <span class="fl">0.5</span> <span class="at">:dash</span> <span class="at">:none</span>}</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>                                                            <span class="at">:y</span> {<span class="at">:color</span> [<span class="dv">90</span> <span class="dv">96</span> <span class="dv">110</span>] <span class="at">:width</span> <span class="fl">0.5</span> <span class="at">:dash</span> <span class="at">:none</span>}}}</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>                            <span class="at">:strip</span> {<span class="at">:fill</span> [<span class="dv">70</span> <span class="dv">76</span> <span class="dv">88</span>] <span class="at">:border-color</span> <span class="at">:none</span>}</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>                            <span class="at">:axis</span> {<span class="at">:x</span> {<span class="at">:line-color</span> <span class="at">:none</span> <span class="at">:tick-color</span> [<span class="dv">150</span> <span class="dv">150</span> <span class="dv">150</span>]}</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:y</span> {<span class="at">:line-color</span> <span class="at">:none</span> <span class="at">:tick-color</span> [<span class="dv">150</span> <span class="dv">150</span> <span class="dv">150</span>]}}</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>                            <span class="at">:palette</span> {<span class="at">:color</span> <span class="at">:tableau-10</span>}</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>                            <span class="at">:text</span> {<span class="at">:title</span> {<span class="at">:color</span> <span class="at">:white</span>}</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:axis-title</span> {<span class="at">:color</span> [<span class="dv">220</span> <span class="dv">220</span> <span class="dv">220</span>]}</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:tick-label</span> {<span class="at">:color</span> [<span class="dv">200</span> <span class="dv">200</span> <span class="dv">200</span>]}</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:strip</span> {<span class="at">:color</span> <span class="at">:white</span>}</span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:legend-title</span> {<span class="at">:color</span> <span class="at">:white</span>}</span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:legend-label</span> {<span class="at">:color</span> [<span class="dv">220</span> <span class="dv">220</span> <span class="dv">220</span>]}}}}</span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">900</span> <span class="at">:height</span> <span class="dv">400</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.theme_files/image0.png" class="img-fluid"></p>
+</div>
+<section id="plot" class="level2" data-number="9.1">
+<h2 data-number="9.1" class="anchored" data-anchor-id="plot"><span class="header-section-number">9.1</span> Plot</h2>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>(nu/options-table (describe/theme-rows <span class="at">:plot</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">Option</th>
+<th data-quarto-table-cell-role="th">Type</th>
+<th data-quarto-table-cell-role="th">Default</th>
+<th data-quarto-table-cell-role="th">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>:plot</td>
+<td>map</td>
+<td></td>
+<td>the whole canvas</td>
+</tr>
+<tr class="even">
+<td>:plot :background</td>
+<td>a clojure2d color or :none</td>
+<td>0xececf3</td>
+<td>canvas background colour</td>
+</tr>
+<tr class="odd">
+<td>:plot :margin</td>
+<td>a non-negative number</td>
+<td>10</td>
+<td>pixels around the plot on every side</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<section id="panel" class="level2" data-number="9.2">
+<h2 data-number="9.2" class="anchored" data-anchor-id="panel"><span class="header-section-number">9.2</span> Panel</h2>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>(nu/options-table (describe/theme-rows <span class="at">:panel</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">Option</th>
+<th data-quarto-table-cell-role="th">Type</th>
+<th data-quarto-table-cell-role="th">Default</th>
+<th data-quarto-table-cell-role="th">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>:panel</td>
+<td>map</td>
+<td></td>
+<td>the data panels</td>
+</tr>
+<tr class="even">
+<td>:panel :fill</td>
+<td>a clojure2d color or :none</td>
+<td>:none</td>
+<td>panel background colour</td>
+</tr>
+<tr class="odd">
+<td>:panel :alternate-fill</td>
+<td>a clojure2d color or :none</td>
+<td>[0 0 0 12]</td>
+<td>drawn over odd facet panels (row + column odd); :none - off</td>
+</tr>
+<tr class="even">
+<td>:panel :border-color</td>
+<td>a clojure2d color or :none</td>
+<td>:none</td>
+<td>panel border colour</td>
+</tr>
+<tr class="odd">
+<td>:panel :border-width</td>
+<td>a non-negative number</td>
+<td>1</td>
+<td>panel border width in pixels (drawn inside the panel)</td>
+</tr>
+<tr class="even">
+<td>:panel :grid</td>
+<td>map</td>
+<td></td>
+<td>grid lines at the ticks</td>
+</tr>
+<tr class="odd">
+<td>:panel :grid :x</td>
+<td>:none or a line {:color :width :dash}</td>
+<td>{:color 0xb4b4b4, :width 0.5, :dash [4.0]}</td>
+<td>grid lines of the x scale</td>
+</tr>
+<tr class="even">
+<td>:panel :grid :y</td>
+<td>:none or a line {:color :width :dash}</td>
+<td>{:color 0xb4b4b4, :width 0.5, :dash [4.0]}</td>
+<td>grid lines of the y scale</td>
+</tr>
+<tr class="odd">
+<td>:panel :grid :bands</td>
+<td>:none or a line {:color :width :dash}</td>
+<td>{:color 0xb4b4b4, :width 1, :dash [1.0 2.0]}</td>
+<td>grid lines of a bands scale, instead of :x / :y</td>
+</tr>
+<tr class="even">
+<td>:panel :grid :bands-fill</td>
+<td>a clojure2d color or :none</td>
+<td>[0 0 0 8]</td>
+<td>fill of every second band of a bands scale; :none - off</td>
+</tr>
+<tr class="odd">
+<td>:panel :grid :minor</td>
+<td>:none or a line {:color :width :dash}</td>
+<td>:none</td>
+<td>grid lines at minor ticks</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<section id="axis" class="level2" data-number="9.3">
+<h2 data-number="9.3" class="anchored" data-anchor-id="axis"><span class="header-section-number">9.3</span> Axis</h2>
+<p>Per position scale key (<code>:x</code>, <code>:y</code>), also when <code>:flip</code> draws <code>:x</code> vertically.</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>(nu/options-table (describe/theme-rows <span class="at">:axis</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">Option</th>
+<th data-quarto-table-cell-role="th">Type</th>
+<th data-quarto-table-cell-role="th">Default</th>
+<th data-quarto-table-cell-role="th">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>:axis</td>
+<td>map</td>
+<td></td>
+<td>axes per scale (kept by scale also when a flipped plot draws :x vertically)</td>
+</tr>
+<tr class="even">
+<td>:axis :x</td>
+<td>map</td>
+<td></td>
+<td>x axis style</td>
+</tr>
+<tr class="odd">
+<td>:axis :x :line-color</td>
+<td>a clojure2d color or :none</td>
+<td>:black</td>
+<td>axis line colour</td>
+</tr>
+<tr class="even">
+<td>:axis :x :line-width</td>
+<td>a non-negative number</td>
+<td>1</td>
+<td>axis line width in pixels (0 - not drawn)</td>
+</tr>
+<tr class="odd">
+<td>:axis :x :tick-color</td>
+<td>a clojure2d color or :none</td>
+<td>:black</td>
+<td>tick colour</td>
+</tr>
+<tr class="even">
+<td>:axis :x :tick-length</td>
+<td>a non-negative number</td>
+<td>6</td>
+<td>tick length in pixels</td>
+</tr>
+<tr class="odd">
+<td>:axis :x :tick-width</td>
+<td>a non-negative number</td>
+<td>1</td>
+<td>tick width in pixels (0 - not drawn)</td>
+</tr>
+<tr class="even">
+<td>:axis :x :label-gap</td>
+<td>a non-negative number</td>
+<td>2</td>
+<td>gap between ticks and tick labels in pixels</td>
+</tr>
+<tr class="odd">
+<td>:axis :x :tick-spacing</td>
+<td>a positive number</td>
+<td>80</td>
+<td>target distance between ticks in pixels (sets the tick count)</td>
+</tr>
+<tr class="even">
+<td>:axis :x :label-rotation</td>
+<td>number, &gt;= -90, &lt;= 90</td>
+<td>0</td>
+<td>tick labels rotated clockwise, degrees</td>
+</tr>
+<tr class="odd">
+<td>:axis :x :minor-tick-length</td>
+<td>a non-negative number</td>
+<td>3</td>
+<td>minor tick length in pixels</td>
+</tr>
+<tr class="even">
+<td>:axis :y</td>
+<td>map</td>
+<td></td>
+<td>y axis style</td>
+</tr>
+<tr class="odd">
+<td>:axis :y :line-color</td>
+<td>a clojure2d color or :none</td>
+<td>:black</td>
+<td>axis line colour</td>
+</tr>
+<tr class="even">
+<td>:axis :y :line-width</td>
+<td>a non-negative number</td>
+<td>1</td>
+<td>axis line width in pixels (0 - not drawn)</td>
+</tr>
+<tr class="odd">
+<td>:axis :y :tick-color</td>
+<td>a clojure2d color or :none</td>
+<td>:black</td>
+<td>tick colour</td>
+</tr>
+<tr class="even">
+<td>:axis :y :tick-length</td>
+<td>a non-negative number</td>
+<td>6</td>
+<td>tick length in pixels</td>
+</tr>
+<tr class="odd">
+<td>:axis :y :tick-width</td>
+<td>a non-negative number</td>
+<td>1</td>
+<td>tick width in pixels (0 - not drawn)</td>
+</tr>
+<tr class="even">
+<td>:axis :y :label-gap</td>
+<td>a non-negative number</td>
+<td>2</td>
+<td>gap between ticks and tick labels in pixels</td>
+</tr>
+<tr class="odd">
+<td>:axis :y :tick-spacing</td>
+<td>a positive number</td>
+<td>50</td>
+<td>target distance between ticks in pixels (sets the tick count)</td>
+</tr>
+<tr class="even">
+<td>:axis :y :label-rotation</td>
+<td>number, &gt;= -90, &lt;= 90</td>
+<td>0</td>
+<td>tick labels rotated clockwise, degrees</td>
+</tr>
+<tr class="odd">
+<td>:axis :y :minor-tick-length</td>
+<td>a non-negative number</td>
+<td>3</td>
+<td>minor tick length in pixels</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<section id="strip" class="level2" data-number="9.4">
+<h2 data-number="9.4" class="anchored" data-anchor-id="strip"><span class="header-section-number">9.4</span> Strip</h2>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>(nu/options-table (describe/theme-rows <span class="at">:strip</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">Option</th>
+<th data-quarto-table-cell-role="th">Type</th>
+<th data-quarto-table-cell-role="th">Default</th>
+<th data-quarto-table-cell-role="th">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>:strip</td>
+<td>map</td>
+<td></td>
+<td>facet strips</td>
+</tr>
+<tr class="even">
+<td>:strip :fill</td>
+<td>a clojure2d color or :none</td>
+<td>[255 255 255 150]</td>
+<td>strip background colour</td>
+</tr>
+<tr class="odd">
+<td>:strip :border-color</td>
+<td>a clojure2d color or :none</td>
+<td>[0 0 0 100]</td>
+<td>strip border colour</td>
+</tr>
+<tr class="even">
+<td>:strip :border-width</td>
+<td>a non-negative number</td>
+<td>1</td>
+<td>strip border width in pixels</td>
+</tr>
+<tr class="odd">
+<td>:strip :shingle-fill</td>
+<td>a clojure2d color or :none</td>
+<td>[255 165 0 110]</td>
+<td>colour of the bar marking a shingle level</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<section id="facet" class="level2" data-number="9.5">
+<h2 data-number="9.5" class="anchored" data-anchor-id="facet"><span class="header-section-number">9.5</span> Facet</h2>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>(nu/options-table (describe/theme-rows <span class="at">:facet</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">Option</th>
+<th data-quarto-table-cell-role="th">Type</th>
+<th data-quarto-table-cell-role="th">Default</th>
+<th data-quarto-table-cell-role="th">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>:facet</td>
+<td>map</td>
+<td></td>
+<td>facet layout</td>
+</tr>
+<tr class="even">
+<td>:facet :gap</td>
+<td>a non-negative number</td>
+<td>5</td>
+<td>pixels between facet panels</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<section id="multiplot" class="level2" data-number="9.6">
+<h2 data-number="9.6" class="anchored" data-anchor-id="multiplot"><span class="header-section-number">9.6</span> Multiplot</h2>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>(nu/options-table (describe/theme-rows <span class="at">:multiplot</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">Option</th>
+<th data-quarto-table-cell-role="th">Type</th>
+<th data-quarto-table-cell-role="th">Default</th>
+<th data-quarto-table-cell-role="th">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>:multiplot</td>
+<td>map</td>
+<td></td>
+<td>arranged plots</td>
+</tr>
+<tr class="even">
+<td>:multiplot :gap</td>
+<td>a non-negative number</td>
+<td>10</td>
+<td>pixels between arranged plots</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<section id="legend" class="level2" data-number="9.7">
+<h2 data-number="9.7" class="anchored" data-anchor-id="legend"><span class="header-section-number">9.7</span> Legend</h2>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>(nu/options-table (describe/theme-rows <span class="at">:legend</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">Option</th>
+<th data-quarto-table-cell-role="th">Type</th>
+<th data-quarto-table-cell-role="th">Default</th>
+<th data-quarto-table-cell-role="th">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>:legend</td>
+<td>map</td>
+<td></td>
+<td>legends and colour bars</td>
+</tr>
+<tr class="even">
+<td>:legend :gap</td>
+<td>a non-negative number</td>
+<td>5</td>
+<td>pixels between key and label and between legends</td>
+</tr>
+<tr class="odd">
+<td>:legend :key-size</td>
+<td>a non-negative number</td>
+<td>14</td>
+<td>side of a legend key box in pixels</td>
+</tr>
+<tr class="even">
+<td>:legend :fill</td>
+<td>a clojure2d color or :none</td>
+<td>:none</td>
+<td>legend box fill</td>
+</tr>
+<tr class="odd">
+<td>:legend :border-color</td>
+<td>a clojure2d color or :none</td>
+<td>:none</td>
+<td>legend box border colour</td>
+</tr>
+<tr class="even">
+<td>:legend :border-width</td>
+<td>a non-negative number</td>
+<td>1</td>
+<td>legend box border width in pixels</td>
+</tr>
+<tr class="odd">
+<td>:legend :bar-length</td>
+<td>:stretch or a positive number</td>
+<td>:stretch</td>
+<td>colour bar length: :stretch (the space left) or pixels</td>
+</tr>
+<tr class="even">
+<td>:legend :bar-width</td>
+<td>a positive number or nil</td>
+<td></td>
+<td>colour bar width in pixels (nil - the key size)</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<section id="palette" class="level2" data-number="9.8">
+<h2 data-number="9.8" class="anchored" data-anchor-id="palette"><span class="header-section-number">9.8</span> Palette</h2>
+<p>The default ranges of the aesthetic scales (Aesthetics and legends chapter).</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>(nu/options-table (describe/theme-rows <span class="at">:palette</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">Option</th>
+<th data-quarto-table-cell-role="th">Type</th>
+<th data-quarto-table-cell-role="th">Default</th>
+<th data-quarto-table-cell-role="th">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>:palette</td>
+<td>map</td>
+<td></td>
+<td>default aesthetic ranges</td>
+</tr>
+<tr class="even">
+<td>:palette :color</td>
+<td>a palette name or a non-empty sequence of colors</td>
+<td>:category20</td>
+<td>ordinal colours: a palette name or colours</td>
+</tr>
+<tr class="odd">
+<td>:palette :gradient</td>
+<td>a function or a palette name or a non-empty sequence of colors</td>
+<td>[[255.0 255.0 255.0 255.0] [127.0 192.0 236.0 255.0] [56.0 133.0 201.0 255.0] [14.0 83.0 161.0 255.0] [0.0 63.0 143.0 255.0] [0.0 1.0 11.0 255.0]]</td>
+<td>linear and binned colours: colours or a palette name</td>
+</tr>
+<tr class="even">
+<td>:palette :shape</td>
+<td>sequential of a shape character, keyword or shape map (at least 1)</td>
+<td>[\O \s \A \x \+ \V \o \S \^ \v \{ \} \&lt; \&gt;]</td>
+<td>point shapes, cycled</td>
+</tr>
+<tr class="odd">
+<td>:palette :size</td>
+<td>[min max], non-negative numbers, min &lt;= max</td>
+<td>[2 10]</td>
+<td>size range [min max] in pixels</td>
+</tr>
+<tr class="even">
+<td>:palette :dash</td>
+<td>sequential of :none, a dash style (:dashed :dot-dash :dot-dot-dash :dotted :long-dash :loose-dot :solid :two-dash) or a sequence of positive numbers (at least 1)</td>
+<td>[:solid :dashed :dotted :dot-dash :long-dash :dot-dot-dash :two-dash :loose-dot]</td>
+<td>dash styles, cycled</td>
+</tr>
+<tr class="odd">
+<td>:palette :pattern</td>
+<td>sequential of a pattern name (:back-hatch :cross :dense-dots :diagonal-cross :dots :hatch :horizontal :solid :vertical) or a pattern map (at least 1)</td>
+<td>[:hatch :back-hatch :horizontal :vertical :cross :diagonal-cross :dots :dense-dots]</td>
+<td>fill patterns, cycled</td>
+</tr>
+<tr class="even">
+<td>:palette :na</td>
+<td>a clojure2d color</td>
+<td>[150 150 150]</td>
+<td>colour of NA values</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<section id="text" class="level2" data-number="9.9">
+<h2 data-number="9.9" class="anchored" data-anchor-id="text"><span class="header-section-number">9.9</span> Text</h2>
+<p>Each text the library draws has a role; a label’s <code>:role</code> may also name a role of your own added here. Every role is a text style - the keys of the Text style group:</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>(nu/options-table (describe/theme-rows <span class="at">:text</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">Option</th>
+<th data-quarto-table-cell-role="th">Type</th>
+<th data-quarto-table-cell-role="th">Default</th>
+<th data-quarto-table-cell-role="th">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>:text</td>
+<td>map of keyword to a text style (:font :size :font-style :color :padding :align :background)</td>
+<td></td>
+<td>text styles by role (see text-roles)</td>
+</tr>
+<tr class="even">
+<td>:text :annotation</td>
+<td>a text style (:font :size :font-style :color :padding :align :background)</td>
+<td>{:font "DejaVu Sans Mono", :size 10, :font-style :plain, :color :black, :padding 2, :align [:center :middle]}</td>
+<td>text charts and strip n labels</td>
+</tr>
+<tr class="odd">
+<td>:text :axis-title</td>
+<td>a text style (:font :size :font-style :color :padding :align :background)</td>
+<td>{:font "DejaVu Sans Mono", :size 12, :font-style :plain, :color :black, :padding 4, :align [:center :middle]}</td>
+<td>axis titles</td>
+</tr>
+<tr class="even">
+<td>:text :contour-label</td>
+<td>a text style (:font :size :font-style :color :padding :align :background)</td>
+<td>{:font "DejaVu Sans Mono", :size 9, :font-style :plain, :color :black, :padding 1, :align [:center :middle], :background [255 255 255 180]}</td>
+<td>contour level labels</td>
+</tr>
+<tr class="odd">
+<td>:text :correlation</td>
+<td>a text style (:font :size :font-style :color :padding :align :background)</td>
+<td>{:font "DejaVu Sans Mono", :size 12, :font-style :plain, :color :black, :padding 1, :align [:center :middle]}</td>
+<td>correlation numbers</td>
+</tr>
+<tr class="even">
+<td>:text :legend-label</td>
+<td>a text style (:font :size :font-style :color :padding :align :background)</td>
+<td>{:font "DejaVu Sans Mono", :size 10, :font-style :plain, :color :black, :padding 2, :align [:left :middle]}</td>
+<td>legend entry labels and colour bar ticks</td>
+</tr>
+<tr class="odd">
+<td>:text :legend-title</td>
+<td>a text style (:font :size :font-style :color :padding :align :background)</td>
+<td>{:font "DejaVu Sans Mono", :size 11, :font-style :bold, :color :black, :padding 2, :align [:left :middle]}</td>
+<td>legend titles</td>
+</tr>
+<tr class="even">
+<td>:text :pack-group</td>
+<td>a text style (:font :size :font-style :color :padding :align :background)</td>
+<td>{:font "DejaVu Sans Mono", :size 10, :font-style :bold, :color :black, :padding 2, :align [:center :middle]}</td>
+<td>circle packing group labels</td>
+</tr>
+<tr class="odd">
+<td>:text :pack-leaf</td>
+<td>a text style (:font :size :font-style :color :padding :align :background)</td>
+<td>{:font "DejaVu Sans Mono", :size 9, :font-style :plain, :color :black, :padding 2, :align [:center :middle]}</td>
+<td>circle packing leaf labels</td>
+</tr>
+<tr class="even">
+<td>:text :partition-group</td>
+<td>a text style (:font :size :font-style :color :padding :align :background)</td>
+<td>{:font "DejaVu Sans Mono", :size 10, :font-style :bold, :color :black, :padding 2, :align [:center :middle]}</td>
+<td>partition (icicle, sunburst) group labels</td>
+</tr>
+<tr class="odd">
+<td>:text :partition-leaf</td>
+<td>a text style (:font :size :font-style :color :padding :align :background)</td>
+<td>{:font "DejaVu Sans Mono", :size 9, :font-style :plain, :color :black, :padding 2, :align [:center :middle]}</td>
+<td>partition leaf labels</td>
+</tr>
+<tr class="even">
+<td>:text :strip</td>
+<td>a text style (:font :size :font-style :color :padding :align :background)</td>
+<td>{:font "DejaVu Sans Mono", :size 11, :font-style :plain, :color :black, :padding 2, :align [:center :middle]}</td>
+<td>facet strip texts</td>
+</tr>
+<tr class="odd">
+<td>:text :tick-label</td>
+<td>a text style (:font :size :font-style :color :padding :align :background)</td>
+<td>{:font "DejaVu Sans Mono", :size 10, :font-style :plain, :color :black, :padding 2, :align [:center :middle]}</td>
+<td>tick labels</td>
+</tr>
+<tr class="even">
+<td>:text :tile-value</td>
+<td>a text style (:font :size :font-style :color :padding :align :background)</td>
+<td>{:font "DejaVu Sans Mono", :size 9, :font-style :plain, :color :black, :padding 1, :align [:center :middle]}</td>
+<td>tile value labels</td>
+</tr>
+<tr class="odd">
+<td>:text :title</td>
+<td>a text style (:font :size :font-style :color :padding :align :background)</td>
+<td>{:font "DejaVu Sans Mono", :size 14, :font-style :bold, :color :black, :padding 4, :align [:center :middle]}</td>
+<td>plot and multiplot titles</td>
+</tr>
+<tr class="even">
+<td>:text :treemap-group</td>
+<td>a text style (:font :size :font-style :color :padding :align :background)</td>
+<td>{:font "DejaVu Sans Mono", :size 10, :font-style :bold, :color :black, :padding 2, :align [:left :middle]}</td>
+<td>treemap group headers</td>
+</tr>
+<tr class="odd">
+<td>:text :treemap-leaf</td>
+<td>a text style (:font :size :font-style :color :padding :align :background)</td>
+<td>{:font "DejaVu Sans Mono", :size 9, :font-style :plain, :color :black, :padding 2, :align [:center :middle]}</td>
+<td>treemap leaf labels</td>
+</tr>
+<tr class="even">
+<td>:text :venn-count</td>
+<td>a text style (:font :size :font-style :color :padding :align :background)</td>
+<td>{:font "DejaVu Sans Mono", :size 10, :font-style :plain, :color :black, :padding 2, :align [:center :middle]}</td>
+<td>Venn diagram region counts</td>
+</tr>
+<tr class="odd">
+<td>:text :venn-set</td>
+<td>a text style (:font :size :font-style :color :padding :align :background)</td>
+<td>{:font "DejaVu Sans Mono", :size 11, :font-style :bold, :color :black, :padding 2, :align [:center :middle]}</td>
+<td>Venn diagram set names</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>(nu/options-table (describe/fragment-rows <span class="at">:text-style</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">Option</th>
+<th data-quarto-table-cell-role="th">Type</th>
+<th data-quarto-table-cell-role="th">Default</th>
+<th data-quarto-table-cell-role="th">Description</th>
+<th data-quarto-table-cell-role="th">Group</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>:font</td>
+<td>a bundled, installed or logical font name, or a java.awt.Font</td>
+<td></td>
+<td>font name (bundled, installed or logical) or a java.awt.Font</td>
+<td>Text style</td>
+</tr>
+<tr class="even">
+<td>:size</td>
+<td>a positive number</td>
+<td></td>
+<td>font size in points</td>
+<td>Text style</td>
+</tr>
+<tr class="odd">
+<td>:font-style</td>
+<td>one of :bold :bold-italic :italic :plain</td>
+<td></td>
+<td>font style</td>
+<td>Text style</td>
+</tr>
+<tr class="even">
+<td>:color</td>
+<td>a clojure2d color</td>
+<td></td>
+<td>text colour</td>
+<td>Text style</td>
+</tr>
+<tr class="odd">
+<td>:padding</td>
+<td>a non-negative number</td>
+<td></td>
+<td>space around the text in pixels</td>
+<td>Text style</td>
+</tr>
+<tr class="even">
+<td>:align</td>
+<td>[h v], h one of :left :center :right, v one of :top :middle :bottom</td>
+<td></td>
+<td>alignment [horizontal vertical] of the text at its anchor</td>
+<td>Text style</td>
+</tr>
+<tr class="odd">
+<td>:background</td>
+<td>a clojure2d color or :none</td>
+<td></td>
+<td>box colour behind the text (:none - no box)</td>
+<td>Text style</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<section id="chart" class="level2" data-number="9.10">
+<h2 data-number="9.10" class="anchored" data-anchor-id="chart"><span class="header-section-number">9.10</span> Chart</h2>
+<p>The style of each chart kind, <code>[:chart kind]</code> - its style keys and defaults are in the chart’s table (the rows with a theme default). Chart options given to the chart override the theme.</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>(nu/options-table (describe/theme-rows <span class="at">:chart</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">Option</th>
+<th data-quarto-table-cell-role="th">Type</th>
+<th data-quarto-table-cell-role="th">Default</th>
+<th data-quarto-table-cell-role="th">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>:chart</td>
+<td>map of chart kind to its style</td>
+<td></td>
+<td>per chart kind styles, see each chart's style options</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> iris</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:sepal-length</span> <span class="at">:y</span> <span class="at">:petal-length</span>}</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:charts</span> [(chart/scatter)]</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:theme</span> {<span class="at">:chart</span> {<span class="at">:scatter</span> {<span class="at">:shape</span> <span class="ch">\s</span> <span class="at">:size</span> <span class="dv">8</span> <span class="at">:color</span> [<span class="dv">178</span> <span class="dv">34</span> <span class="dv">34</span> <span class="dv">120</span>]}}}}</span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">500</span> <span class="at">:height</span> <span class="dv">350</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.theme_files/image1.png" class="img-fluid"></p>
+</div>
+<div style="background-color:grey;height:2px;width:100%;"></div>
+<div><pre><small><small>source: notebooks/reference/theme.clj</small></small></pre></div>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="./reference.facets_arrange.html" class="pagination-link" aria-label="Facets, multiplots and margins">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Facets, multiplots and margins</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./reference.shared_options.html" class="pagination-link" aria-label="Shared options">
+        <span class="nav-page-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Shared options</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

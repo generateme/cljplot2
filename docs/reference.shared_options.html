@@ -1,0 +1,2385 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.37">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>10&nbsp; Shared options – cljplot2</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./reference.errors.html" rel="next">
+<link href="./reference.theme.html" rel="prev">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-7f8f88aac4f3542376d5c11b86a4c14d.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-0d7f492f10755a5ae24b960b9550d083.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+
+</head>
+
+<body class="nav-sidebar floating quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./reference.intro.html">Reference</a></li><li class="breadcrumb-item"><a href="./reference.shared_options.html"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Shared options</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="./">cljplot2</a> 
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">cljplot2</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text">Reference</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.intro.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">Reference</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.render.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Render</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.data_mapping.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Data and mapping</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.aesthetics_legends.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Aesthetics and legends</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.scales_axes_coords.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Scales, axes and coordinates</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.layering_position.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Layering and position</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.labels_text.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Labels and text</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.facets_arrange.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Facets, multiplots and margins</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.theme.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Theme</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.shared_options.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Shared options</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.errors.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Errors</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.limits.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">Limits</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
+ <span class="menu-text">Use cases</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./use_cases.distribution.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Distribution</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./use_cases.colors.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Colors</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./use_cases.evolution.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Evolution</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./use_cases.ranking.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Ranking</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./use_cases.part_of_a_whole.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Part of a whole</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./use_cases.correlation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Correlation</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./use_cases.flow.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Flow</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
+ <span class="menu-text">Galleries</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./galleries.cljplot_extras.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">cljplot extras</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./galleries.lattice.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">Lattice</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./galleries.vega.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Vega</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#charts" id="toc-charts" class="nav-link active" data-scroll-target="#charts"><span class="header-section-number">10.1</span> Charts</a>
+  <ul>
+  <li><a href="#data-and-mapping" id="toc-data-and-mapping" class="nav-link" data-scroll-target="#data-and-mapping"><span class="header-section-number">10.1.1</span> Data and mapping</a></li>
+  <li><a href="#annotation-options" id="toc-annotation-options" class="nav-link" data-scroll-target="#annotation-options"><span class="header-section-number">10.1.2</span> Annotation options</a></li>
+  <li><a href="#line-style" id="toc-line-style" class="nav-link" data-scroll-target="#line-style"><span class="header-section-number">10.1.3</span> Line style</a></li>
+  <li><a href="#curves" id="toc-curves" class="nav-link" data-scroll-target="#curves"><span class="header-section-number">10.1.4</span> Curves</a></li>
+  <li><a href="#fill-patterns" id="toc-fill-patterns" class="nav-link" data-scroll-target="#fill-patterns"><span class="header-section-number">10.1.5</span> Fill patterns</a></li>
+  <li><a href="#rounded-corners" id="toc-rounded-corners" class="nav-link" data-scroll-target="#rounded-corners"><span class="header-section-number">10.1.6</span> Rounded corners</a></li>
+  <li><a href="#strip-options" id="toc-strip-options" class="nav-link" data-scroll-target="#strip-options"><span class="header-section-number">10.1.7</span> Strip options</a></li>
+  <li><a href="#mirrored-strips" id="toc-mirrored-strips" class="nav-link" data-scroll-target="#mirrored-strips"><span class="header-section-number">10.1.8</span> Mirrored strips</a></li>
+  <li><a href="#ridgelines" id="toc-ridgelines" class="nav-link" data-scroll-target="#ridgelines"><span class="header-section-number">10.1.9</span> Ridgelines</a></li>
+  <li><a href="#cell-style" id="toc-cell-style" class="nav-link" data-scroll-target="#cell-style"><span class="header-section-number">10.1.10</span> Cell style</a></li>
+  <li><a href="#fields" id="toc-fields" class="nav-link" data-scroll-target="#fields"><span class="header-section-number">10.1.11</span> Fields</a></li>
+  <li><a href="#hierarchy-labels" id="toc-hierarchy-labels" class="nav-link" data-scroll-target="#hierarchy-labels"><span class="header-section-number">10.1.12</span> Hierarchy labels</a></li>
+  <li><a href="#d-frame" id="toc-d-frame" class="nav-link" data-scroll-target="#d-frame"><span class="header-section-number">10.1.13</span> 3D frame</a></li>
+  <li><a href="#text-style" id="toc-text-style" class="nav-link" data-scroll-target="#text-style"><span class="header-section-number">10.1.14</span> Text style</a></li>
+  </ul></li>
+  <li><a href="#builders" id="toc-builders" class="nav-link" data-scroll-target="#builders"><span class="header-section-number">10.2</span> Builders</a>
+  <ul>
+  <li><a href="#builder-options" id="toc-builder-options" class="nav-link" data-scroll-target="#builder-options"><span class="header-section-number">10.2.1</span> Builder options</a></li>
+  <li><a href="#multiplot-layout" id="toc-multiplot-layout" class="nav-link" data-scroll-target="#multiplot-layout"><span class="header-section-number">10.2.2</span> Multiplot layout</a></li>
+  </ul></li>
+  <li><a href="#builders-and-data-functions" id="toc-builders-and-data-functions" class="nav-link" data-scroll-target="#builders-and-data-functions"><span class="header-section-number">10.3</span> Builders and data functions</a>
+  <ul>
+  <li><a href="#graph" id="toc-graph" class="nav-link" data-scroll-target="#graph"><span class="header-section-number">10.3.1</span> Graph</a></li>
+  <li><a href="#graph-layout" id="toc-graph-layout" class="nav-link" data-scroll-target="#graph-layout"><span class="header-section-number">10.3.2</span> Graph layout</a></li>
+  <li><a href="#chord-layout" id="toc-chord-layout" class="nav-link" data-scroll-target="#chord-layout"><span class="header-section-number">10.3.3</span> Chord layout</a></li>
+  <li><a href="#arc-layout" id="toc-arc-layout" class="nav-link" data-scroll-target="#arc-layout"><span class="header-section-number">10.3.4</span> Arc layout</a></li>
+  <li><a href="#sankey-layout" id="toc-sankey-layout" class="nav-link" data-scroll-target="#sankey-layout"><span class="header-section-number">10.3.5</span> Sankey layout</a></li>
+  <li><a href="#alluvial-graph" id="toc-alluvial-graph" class="nav-link" data-scroll-target="#alluvial-graph"><span class="header-section-number">10.3.6</span> Alluvial graph</a></li>
+  <li><a href="#dendrogram-layout" id="toc-dendrogram-layout" class="nav-link" data-scroll-target="#dendrogram-layout"><span class="header-section-number">10.3.7</span> Dendrogram layout</a></li>
+  <li><a href="#node-link-tree-layout" id="toc-node-link-tree-layout" class="nav-link" data-scroll-target="#node-link-tree-layout"><span class="header-section-number">10.3.8</span> Node-link tree layout</a></li>
+  <li><a href="#edge-bundling" id="toc-edge-bundling" class="nav-link" data-scroll-target="#edge-bundling"><span class="header-section-number">10.3.9</span> Edge bundling</a></li>
+  <li><a href="#sequences" id="toc-sequences" class="nav-link" data-scroll-target="#sequences"><span class="header-section-number">10.3.10</span> Sequences</a></li>
+  <li><a href="#autocorrelation-rows" id="toc-autocorrelation-rows" class="nav-link" data-scroll-target="#autocorrelation-rows"><span class="header-section-number">10.3.11</span> Autocorrelation rows</a></li>
+  <li><a href="#horizon-rows" id="toc-horizon-rows" class="nav-link" data-scroll-target="#horizon-rows"><span class="header-section-number">10.3.12</span> Horizon rows</a></li>
+  </ul></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./reference.intro.html">Reference</a></li><li class="breadcrumb-item"><a href="./reference.shared_options.html"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Shared options</span></a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Shared options</span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<style></style>
+<style>.printedClojure .sourceCode {
+  background-color: transparent;
+  border-style: none;
+}
+</style>
+<style>.clay-limit-image-width .clay-image {max-width: 100%}
+.clay-side-by-side .sourceCode {margin: 0}
+.clay-side-by-side {margin: 1em 0}
+</style>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js" type="text/javascript"></script>
+<script src="https://code.jquery.com/ui/1.13.1/jquery-ui.min.js" type="text/javascript"></script>
+<p>Option groups taken by several charts, builders or data functions, documented once here; other tables mark their rows with the group’s title. A chart may take only part of a group - its own table lists what it accepts.</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">ns</span> reference.shared-options</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  (<span class="at">:require</span> [cljplot2.chart <span class="at">:as</span> chart]</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>            [cljplot2.core <span class="at">:as</span> plot]</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>            [cljplot2.describe <span class="at">:as</span> describe]</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>            [notebook-utils <span class="at">:as</span> nu]))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<section id="charts" class="level2" data-number="10.1">
+<h2 data-number="10.1" class="anchored" data-anchor-id="charts"><span class="header-section-number">10.1</span> Charts</h2>
+<section id="data-and-mapping" class="level3" data-number="10.1.1">
+<h3 data-number="10.1.1" class="anchored" data-anchor-id="data-and-mapping"><span class="header-section-number">10.1.1</span> Data and mapping</h3>
+<p>Every chart’s own data and mapping (merged over the plot’s, Data and mapping chapter).</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>(nu/options-table (describe/fragment-rows <span class="at">:common</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">Option</th>
+<th data-quarto-table-cell-role="th">Type</th>
+<th data-quarto-table-cell-role="th">Default</th>
+<th data-quarto-table-cell-role="th">Description</th>
+<th data-quarto-table-cell-role="th">Group</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>:data</td>
+<td>a sequence of rows (maps) or a map of columns (sequences) or nil</td>
+<td>the plot's :data</td>
+<td>the chart's own data instead of the plot's</td>
+<td>Data and mapping</td>
+</tr>
+<tr class="even">
+<td>:mapping</td>
+<td>a mapping: key -&gt; accessor (a keyword or a function of a row)</td>
+<td></td>
+<td>the chart's mapping, merged over the plot's mapping (a key set to nil removes it)</td>
+<td>Data and mapping</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<section id="annotation-options" class="level3" data-number="10.1.2">
+<h3 data-number="10.1.2" class="anchored" data-anchor-id="annotation-options"><span class="header-section-number">10.1.2</span> Annotation options</h3>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>(nu/options-table (describe/fragment-rows <span class="at">:annotation</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">Option</th>
+<th data-quarto-table-cell-role="th">Type</th>
+<th data-quarto-table-cell-role="th">Default</th>
+<th data-quarto-table-cell-role="th">Description</th>
+<th data-quarto-table-cell-role="th">Group</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>:extent</td>
+<td>true or false or nil</td>
+<td>true</td>
+<td>include the positions in the scale extents</td>
+<td>Annotation options</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<section id="line-style" class="level3" data-number="10.1.3">
+<h3 data-number="10.1.3" class="anchored" data-anchor-id="line-style"><span class="header-section-number">10.1.3</span> Line style</h3>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>(nu/options-table (describe/fragment-rows <span class="at">:line-style</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">Option</th>
+<th data-quarto-table-cell-role="th">Type</th>
+<th data-quarto-table-cell-role="th">Default</th>
+<th data-quarto-table-cell-role="th">Description</th>
+<th data-quarto-table-cell-role="th">Group</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>:color</td>
+<td>a clojure2d color or :none</td>
+<td></td>
+<td>line colour (a mapped :color wins)</td>
+<td>Line style</td>
+</tr>
+<tr class="even">
+<td>:width</td>
+<td>a non-negative number</td>
+<td></td>
+<td>line width in pixels</td>
+<td>Line style</td>
+</tr>
+<tr class="odd">
+<td>:dash</td>
+<td>:none, a dash style (:dashed :dot-dash :dot-dot-dash :dotted :long-dash :loose-dot :solid :two-dash) or a sequence of positive numbers or nil</td>
+<td></td>
+<td>dash style of the line (a mapped :dash wins)</td>
+<td>Line style</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<section id="curves" class="level3" data-number="10.1.4">
+<h3 data-number="10.1.4" class="anchored" data-anchor-id="curves"><span class="header-section-number">10.1.4</span> Curves</h3>
+<p>The line between data points: straight, a fastmath interpolation or a step, sampled for drawing.</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>(nu/options-table (describe/fragment-rows <span class="at">:curve</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">Option</th>
+<th data-quarto-table-cell-role="th">Type</th>
+<th data-quarto-table-cell-role="th">Default</th>
+<th data-quarto-table-cell-role="th">Description</th>
+<th data-quarto-table-cell-role="th">Group</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>:interpolator</td>
+<td>a fastmath 1D interpolation method keyword or a function (fn [xs ys &amp; params] f)</td>
+<td></td>
+<td>interpolation of the line between data points (none - straight segments)</td>
+<td>Curves</td>
+</tr>
+<tr class="even">
+<td>:interpolator-params</td>
+<td>vector of any value</td>
+<td></td>
+<td>extra parameters passed to the interpolation method</td>
+<td>Curves</td>
+</tr>
+<tr class="odd">
+<td>:curve</td>
+<td>one of :parametric :bezier</td>
+<td></td>
+<td>path curve instead of a function of x: :parametric (x(t), y(t) over the chord length) or :bezier</td>
+<td>Curves</td>
+</tr>
+<tr class="even">
+<td>:sample-step</td>
+<td>a positive number of pixels or {:count n}, n &gt;= 2</td>
+<td>1.0</td>
+<td>distance between evaluated positions: pixels or {:count n} per run</td>
+<td>Curves</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> points </span>(<span class="kw">for</span> [x (<span class="kw">range</span> <span class="dv">8</span>)] {<span class="at">:x</span> x <span class="at">:y</span> (<span class="kw">nth</span> [<span class="dv">1</span> <span class="dv">3</span> <span class="dv">2</span> <span class="dv">5</span> <span class="dv">4</span> <span class="fl">4.5</span> <span class="dv">2</span> <span class="dv">3</span>] x)}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange (<span class="kw">for</span> [interpolator [<span class="at">:linear</span> <span class="at">:monotone</span> <span class="at">:cubic</span> <span class="at">:step</span>]]</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>                                   {<span class="at">:data</span> points</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>                                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:y</span>}</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>                                    <span class="at">:charts</span> [(chart/line {<span class="at">:interpolator</span> interpolator}) (chart/scatter)]</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>                                    <span class="at">:labels</span> {<span class="at">:title</span> (<span class="kw">str</span> <span class="st">":interpolator "</span> interpolator)}})</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">4</span>})</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">300</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.shared_options_files/image0.png" class="img-fluid"></p>
+</div>
+</section>
+<section id="fill-patterns" class="level3" data-number="10.1.5">
+<h3 data-number="10.1.5" class="anchored" data-anchor-id="fill-patterns"><span class="header-section-number">10.1.5</span> Fill patterns</h3>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>(nu/options-table (describe/fragment-rows <span class="at">:pattern</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">Option</th>
+<th data-quarto-table-cell-role="th">Type</th>
+<th data-quarto-table-cell-role="th">Default</th>
+<th data-quarto-table-cell-role="th">Description</th>
+<th data-quarto-table-cell-role="th">Group</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>:pattern</td>
+<td>a pattern name (:back-hatch :cross :dense-dots :diagonal-cross :dots :hatch :horizontal :solid :vertical) or a pattern map</td>
+<td></td>
+<td>pattern drawn over the fill (a mapped :pattern wins)</td>
+<td>Fill patterns</td>
+</tr>
+<tr class="even">
+<td>:pattern-color</td>
+<td>:darker or a clojure2d color or :none</td>
+<td></td>
+<td>pattern ink: a colour, :none or :darker (the darkened fill)</td>
+<td>Fill patterns</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> (<span class="kw">for</span> [[i p] (map-indexed <span class="kw">vector</span> [<span class="at">:hatch</span> <span class="at">:back-hatch</span> <span class="at">:cross</span> <span class="at">:dots</span>])] {<span class="at">:p</span> (<span class="kw">name</span> p) <span class="at">:v</span> (<span class="kw">+</span> <span class="dv">3</span> i)})</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:p</span> <span class="at">:y</span> <span class="at">:v</span> <span class="at">:pattern</span> <span class="at">:p</span>}</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:charts</span> [(chart/bar {<span class="at">:color</span> <span class="at">:white</span> <span class="at">:stroke-color</span> <span class="at">:black</span> <span class="at">:pattern-color</span> <span class="at">:black</span>})]</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:legend</span> <span class="va">false</span>}</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">500</span> <span class="at">:height</span> <span class="dv">300</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.shared_options_files/image1.png" class="img-fluid"></p>
+</div>
+</section>
+<section id="rounded-corners" class="level3" data-number="10.1.6">
+<h3 data-number="10.1.6" class="anchored" data-anchor-id="rounded-corners"><span class="header-section-number">10.1.6</span> Rounded corners</h3>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>(nu/options-table (describe/fragment-rows <span class="at">:corner-radius</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">Option</th>
+<th data-quarto-table-cell-role="th">Type</th>
+<th data-quarto-table-cell-role="th">Default</th>
+<th data-quarto-table-cell-role="th">Description</th>
+<th data-quarto-table-cell-role="th">Group</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>:corner-radius</td>
+<td>a non-negative number</td>
+<td>0</td>
+<td>radius in pixels of every bar corner</td>
+<td>Rounded corners</td>
+</tr>
+<tr class="even">
+<td>:corner-radius-end</td>
+<td>a non-negative number</td>
+<td></td>
+<td>radius in pixels of the corners at the bar's value end only (wins over :corner-radius)</td>
+<td>Rounded corners</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<section id="strip-options" class="level3" data-number="10.1.7">
+<h3 data-number="10.1.7" class="anchored" data-anchor-id="strip-options"><span class="header-section-number">10.1.7</span> Strip options</h3>
+<p>Strip charts (box, violin, stripplot, beeswarm, dotplot, bar, error bars …) draw one item per level of a categorical axis.</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>(nu/options-table (describe/fragment-rows <span class="at">:strip</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">Option</th>
+<th data-quarto-table-cell-role="th">Type</th>
+<th data-quarto-table-cell-role="th">Default</th>
+<th data-quarto-table-cell-role="th">Description</th>
+<th data-quarto-table-cell-role="th">Group</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>:place</td>
+<td>{:at a finite number} or one of :band :bottom :center :edge</td>
+<td>:band with a level mapping, else the chart's own (:center for most, :edge for the rug)</td>
+<td>where the items sit across the value axis: :band (one band per level), {:at v} (centred on v of a numeric scale), :center, :edge or :bottom (between the panel edge and 0)</td>
+<td>Strip options</td>
+</tr>
+<tr class="even">
+<td>:width</td>
+<td>a non-negative number</td>
+<td>0.8</td>
+<td>fraction of the level's band (or of the panel for :center and :bottom) an item spans across the value axis</td>
+<td>Strip options</td>
+</tr>
+<tr class="odd">
+<td>:thickness</td>
+<td>a non-negative number</td>
+<td>20 pixels for {:at v}, 8 for :edge</td>
+<td>item thickness in pixels for :place {:at v} and :edge</td>
+<td>Strip options</td>
+</tr>
+<tr class="even">
+<td>:position</td>
+<td>one of :dodge :mirror :overlay</td>
+<td>:dodge when a level holds two or more groups, else :overlay (dotplot: always :overlay)</td>
+<td>how groups of one level share its band: :dodge (side by side), :overlay (on top of each other) or :mirror (two groups, one half each)</td>
+<td>Strip options</td>
+</tr>
+<tr class="odd">
+<td>:dodge-gap</td>
+<td>a number in [0 1]</td>
+<td>0.1</td>
+<td>gap between dodged groups, a fraction of a group's part of the band</td>
+<td>Strip options</td>
+</tr>
+<tr class="even">
+<td>:bottom-share</td>
+<td>a number in [0 1]</td>
+<td>0.15 with :place :bottom</td>
+<td>padding below the data asked for with :place :bottom (only there), a fraction of the y data span</td>
+<td>Strip options</td>
+</tr>
+<tr class="odd">
+<td>:n-label</td>
+<td>true or false or nil</td>
+<td>false</td>
+<td>draw each item's row count just past its largest value</td>
+<td>Strip options</td>
+</tr>
+<tr class="even">
+<td>:n-format</td>
+<td>string</td>
+<td>"n=%d"</td>
+<td>format string of the n labels</td>
+<td>Strip options</td>
+</tr>
+<tr class="odd">
+<td>:level-axis</td>
+<td>one of :x :y</td>
+<td>the categorical axis of the mapping; with neither, :x when only :y is mapped, else :y</td>
+<td>the mapping axis holding the levels (decides when both or neither of :x and :y are categorical)</td>
+<td>Strip options</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<section id="mirrored-strips" class="level3" data-number="10.1.8">
+<h3 data-number="10.1.8" class="anchored" data-anchor-id="mirrored-strips"><span class="header-section-number">10.1.8</span> Mirrored strips</h3>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>(nu/options-table (describe/fragment-rows <span class="at">:mirror</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">Option</th>
+<th data-quarto-table-cell-role="th">Type</th>
+<th data-quarto-table-cell-role="th">Default</th>
+<th data-quarto-table-cell-role="th">Description</th>
+<th data-quarto-table-cell-role="th">Group</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>:mirror</td>
+<td>one of :color :shape :size :dash :pattern :group</td>
+<td></td>
+<td>a grouping dimension with exactly two levels; the second level's items are drawn on the negative side</td>
+<td>Mirrored strips</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<section id="ridgelines" class="level3" data-number="10.1.9">
+<h3 data-number="10.1.9" class="anchored" data-anchor-id="ridgelines"><span class="header-section-number">10.1.9</span> Ridgelines</h3>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>(nu/options-table (describe/fragment-rows <span class="at">:ridge</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">Option</th>
+<th data-quarto-table-cell-role="th">Type</th>
+<th data-quarto-table-cell-role="th">Default</th>
+<th data-quarto-table-cell-role="th">Description</th>
+<th data-quarto-table-cell-role="th">Group</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>:overlap</td>
+<td>a non-negative number</td>
+<td>0.9</td>
+<td>height of the tallest ridge in band steps (above 1 - ridges overlap the next level)</td>
+<td>Ridgelines</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<section id="cell-style" class="level3" data-number="10.1.10">
+<h3 data-number="10.1.10" class="anchored" data-anchor-id="cell-style"><span class="header-section-number">10.1.10</span> Cell style</h3>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>(nu/options-table (describe/fragment-rows <span class="at">:cell</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">Option</th>
+<th data-quarto-table-cell-role="th">Type</th>
+<th data-quarto-table-cell-role="th">Default</th>
+<th data-quarto-table-cell-role="th">Description</th>
+<th data-quarto-table-cell-role="th">Group</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>:cell</td>
+<td>one of :square :shifted-square :triangle :rhombus :flat-hex :pointy-hex</td>
+<td></td>
+<td>cell shape of the grid (a fastmath grid cell type)</td>
+<td>Cell style</td>
+</tr>
+<tr class="even">
+<td>:cell-scale</td>
+<td>a finite number, &gt; 0, &lt;= 1</td>
+<td></td>
+<td>cell polygon size relative to its grid cell, in (0 1]</td>
+<td>Cell style</td>
+</tr>
+<tr class="odd">
+<td>:stroke-color</td>
+<td>:darker or a clojure2d color or :none</td>
+<td></td>
+<td>cell outline: a colour, :none or :darker (the darkened fill)</td>
+<td>Cell style</td>
+</tr>
+<tr class="even">
+<td>:stroke-width</td>
+<td>a non-negative number</td>
+<td></td>
+<td>cell outline width in pixels</td>
+<td>Cell style</td>
+</tr>
+<tr class="odd">
+<td>:alpha</td>
+<td>a number in [0 1]</td>
+<td></td>
+<td>fill opacity multiplier</td>
+<td>Cell style</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<section id="fields" class="level3" data-number="10.1.11">
+<h3 data-number="10.1.11" class="anchored" data-anchor-id="fields"><span class="header-section-number">10.1.11</span> Fields</h3>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>(nu/options-table (describe/fragment-rows <span class="at">:field</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">Option</th>
+<th data-quarto-table-cell-role="th">Type</th>
+<th data-quarto-table-cell-role="th">Default</th>
+<th data-quarto-table-cell-role="th">Description</th>
+<th data-quarto-table-cell-role="th">Group</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>:f</td>
+<td>a function</td>
+<td></td>
+<td>the field as a function of a point [x y] returning a number (instead of mapped data)</td>
+<td>Fields</td>
+</tr>
+<tr class="even">
+<td>:domain</td>
+<td>map</td>
+<td>the plot's explicit :x and :y scale domains</td>
+<td>the domain of a function field</td>
+<td>Fields</td>
+</tr>
+<tr class="odd">
+<td>:domain :x (required)</td>
+<td>[a finite number, a finite number]</td>
+<td></td>
+<td>x domain [lo hi]</td>
+<td></td>
+</tr>
+<tr class="even">
+<td>:domain :y (required)</td>
+<td>[a finite number, a finite number]</td>
+<td></td>
+<td>y domain [lo hi]</td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>:kernel</td>
+<td>keyword</td>
+<td>:gaussian</td>
+<td>fastmath kernel of the 2D density estimate of mapped points</td>
+<td>Fields</td>
+</tr>
+<tr class="even">
+<td>:bandwidth</td>
+<td>a positive finite number or one of :nrd :nrd0 :nrd-adjust :sj :sj-dpi :rlcv :lcv :lscv :scott or [a positive finite number or one of :nrd :nrd0 :nrd-adjust :sj :sj-dpi :rlcv :lcv :lscv :scott, a positive finite number or one of :nrd :nrd0 :nrd-adjust :sj :sj-dpi :rlcv :lcv :lscv :scott]</td>
+<td>:nrd per axis (MASS::kde2d, as ggplot2)</td>
+<td>bandwidth of the density estimate: a number, a fastmath selector or :scott, or a pair [hx hy] of them</td>
+<td>Fields</td>
+</tr>
+<tr class="odd">
+<td>:binned?</td>
+<td>true or false</td>
+<td>false</td>
+<td>estimate the density from binned points (faster for many points)</td>
+<td>Fields</td>
+</tr>
+<tr class="even">
+<td>:cut</td>
+<td>a non-negative finite number</td>
+<td>3</td>
+<td>how many bandwidths the density domain extends past the points on each side</td>
+<td>Fields</td>
+</tr>
+<tr class="odd">
+<td>:interpolation</td>
+<td>one of :bilinear :bicubic :cubic-2d</td>
+<td>:bilinear</td>
+<td>interpolation of gridded data (mapped :x, :y, :value on a full lattice)</td>
+<td>Fields</td>
+</tr>
+<tr class="even">
+<td>:n</td>
+<td>integer (2..2000) or [integer (2..2000), integer (2..2000)]</td>
+<td>100</td>
+<td>grid size: values sampled along each axis, or [nx ny]</td>
+<td>Fields</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<section id="hierarchy-labels" class="level3" data-number="10.1.12">
+<h3 data-number="10.1.12" class="anchored" data-anchor-id="hierarchy-labels"><span class="header-section-number">10.1.12</span> Hierarchy labels</h3>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>(nu/options-table (describe/fragment-rows <span class="at">:hierarchy-labels</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">Option</th>
+<th data-quarto-table-cell-role="th">Type</th>
+<th data-quarto-table-cell-role="th">Default</th>
+<th data-quarto-table-cell-role="th">Description</th>
+<th data-quarto-table-cell-role="th">Group</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>:group-labels</td>
+<td>true or false or a function or nil</td>
+<td>true</td>
+<td>group labels: true - the node's name, false - none, or a function of the node info {:name :value :depth :path :share :parent-share} returning the text</td>
+<td>Hierarchy labels</td>
+</tr>
+<tr class="even">
+<td>:leaf-labels</td>
+<td>true or false or a function or nil</td>
+<td>true</td>
+<td>leaf labels: as :group-labels, for the leaves</td>
+<td>Hierarchy labels</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<section id="d-frame" class="level3" data-number="10.1.13">
+<h3 data-number="10.1.13" class="anchored" data-anchor-id="d-frame"><span class="header-section-number">10.1.13</span> 3D frame</h3>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>(nu/options-table (describe/fragment-rows <span class="at">:frame-3d</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">Option</th>
+<th data-quarto-table-cell-role="th">Type</th>
+<th data-quarto-table-cell-role="th">Default</th>
+<th data-quarto-table-cell-role="th">Description</th>
+<th data-quarto-table-cell-role="th">Group</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>:view</td>
+<td>map</td>
+<td></td>
+<td>the eye's position: azimuth, elevation and perspective distance</td>
+<td>3D frame</td>
+</tr>
+<tr class="even">
+<td>:view :azimuth</td>
+<td>a finite number</td>
+<td>40.0</td>
+<td>rotation around the vertical axis, degrees</td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>:view :elevation</td>
+<td>a finite number, &gt;= -90, &lt;= 90</td>
+<td>30.0</td>
+<td>angle of the eye above the floor, degrees</td>
+<td></td>
+</tr>
+<tr class="even">
+<td>:view :distance</td>
+<td>a non-negative finite number</td>
+<td>0.0</td>
+<td>perspective: 0 - parallel projection, larger - stronger perspective (lattice distance)</td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>:aspect</td>
+<td>[a positive number, a positive number, a positive number]</td>
+<td>[1 1 1]</td>
+<td>box proportions [ax ay az]</td>
+<td>3D frame</td>
+</tr>
+<tr class="even">
+<td>:box</td>
+<td>true or false or nil</td>
+<td>true</td>
+<td>draw the box: hidden edges dashed and a floor grid behind the data, visible edges over it</td>
+<td>3D frame</td>
+</tr>
+<tr class="odd">
+<td>:axes</td>
+<td>true or false or nil</td>
+<td>true</td>
+<td>draw ticks, tick labels and axis titles</td>
+<td>3D frame</td>
+</tr>
+<tr class="even">
+<td>:axis-titles</td>
+<td>map</td>
+<td>the mapped column names</td>
+<td>axis titles (nil - none)</td>
+<td>3D frame</td>
+</tr>
+<tr class="odd">
+<td>:axis-titles :x</td>
+<td>any value</td>
+<td></td>
+<td>x axis title</td>
+<td></td>
+</tr>
+<tr class="even">
+<td>:axis-titles :y</td>
+<td>any value</td>
+<td></td>
+<td>y axis title</td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>:axis-titles :z</td>
+<td>any value</td>
+<td></td>
+<td>z axis title</td>
+<td></td>
+</tr>
+<tr class="even">
+<td>:domain</td>
+<td>map</td>
+<td>the data's domains</td>
+<td>explicit data domains (needed for each of several 3D charts in one plot)</td>
+<td>3D frame</td>
+</tr>
+<tr class="odd">
+<td>:domain :x</td>
+<td>[a finite number, a finite number]</td>
+<td></td>
+<td>explicit x domain [a b] (a &gt; b reverses the axis)</td>
+<td></td>
+</tr>
+<tr class="even">
+<td>:domain :y</td>
+<td>[a finite number, a finite number]</td>
+<td></td>
+<td>explicit y domain [a b] (a &gt; b reverses the axis)</td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>:domain :z</td>
+<td>[a finite number, a finite number]</td>
+<td></td>
+<td>explicit z domain [a b] (a &gt; b reverses the axis)</td>
+<td></td>
+</tr>
+<tr class="even">
+<td>:reverse</td>
+<td>set of one of :x :y :z</td>
+<td></td>
+<td>axes running the other way (mirrors the scene)</td>
+<td>3D frame</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<section id="text-style" class="level3" data-number="10.1.14">
+<h3 data-number="10.1.14" class="anchored" data-anchor-id="text-style"><span class="header-section-number">10.1.14</span> Text style</h3>
+<p>Also the style of every theme text role (Theme chapter).</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>(nu/options-table (describe/fragment-rows <span class="at">:text-style</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">Option</th>
+<th data-quarto-table-cell-role="th">Type</th>
+<th data-quarto-table-cell-role="th">Default</th>
+<th data-quarto-table-cell-role="th">Description</th>
+<th data-quarto-table-cell-role="th">Group</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>:font</td>
+<td>a bundled, installed or logical font name, or a java.awt.Font</td>
+<td></td>
+<td>font name (bundled, installed or logical) or a java.awt.Font</td>
+<td>Text style</td>
+</tr>
+<tr class="even">
+<td>:size</td>
+<td>a positive number</td>
+<td></td>
+<td>font size in points</td>
+<td>Text style</td>
+</tr>
+<tr class="odd">
+<td>:font-style</td>
+<td>one of :bold :bold-italic :italic :plain</td>
+<td></td>
+<td>font style</td>
+<td>Text style</td>
+</tr>
+<tr class="even">
+<td>:color</td>
+<td>a clojure2d color</td>
+<td></td>
+<td>text colour</td>
+<td>Text style</td>
+</tr>
+<tr class="odd">
+<td>:padding</td>
+<td>a non-negative number</td>
+<td></td>
+<td>space around the text in pixels</td>
+<td>Text style</td>
+</tr>
+<tr class="even">
+<td>:align</td>
+<td>[h v], h one of :left :center :right, v one of :top :middle :bottom</td>
+<td></td>
+<td>alignment [horizontal vertical] of the text at its anchor</td>
+<td>Text style</td>
+</tr>
+<tr class="odd">
+<td>:background</td>
+<td>a clojure2d color or :none</td>
+<td></td>
+<td>box colour behind the text (:none - no box)</td>
+<td>Text style</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+</section>
+<section id="builders" class="level2" data-number="10.2">
+<h2 data-number="10.2" class="anchored" data-anchor-id="builders"><span class="header-section-number">10.2</span> Builders</h2>
+<section id="builder-options" class="level3" data-number="10.2.1">
+<h3 data-number="10.2.1" class="anchored" data-anchor-id="builder-options"><span class="header-section-number">10.2.1</span> Builder options</h3>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>(nu/options-table (describe/fragment-rows <span class="at">:builder</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">Option</th>
+<th data-quarto-table-cell-role="th">Type</th>
+<th data-quarto-table-cell-role="th">Default</th>
+<th data-quarto-table-cell-role="th">Description</th>
+<th data-quarto-table-cell-role="th">Group</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>:title</td>
+<td>any value</td>
+<td></td>
+<td>plot title (a text or label options)</td>
+<td>Builder options</td>
+</tr>
+<tr class="even">
+<td>:scales</td>
+<td>any value</td>
+<td></td>
+<td>scale specs deep-merged into the builder's (validated with the plot)</td>
+<td>Builder options</td>
+</tr>
+<tr class="odd">
+<td>:theme</td>
+<td>any value</td>
+<td></td>
+<td>theme overrides of the built plot</td>
+<td>Builder options</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<section id="multiplot-layout" class="level3" data-number="10.2.2">
+<h3 data-number="10.2.2" class="anchored" data-anchor-id="multiplot-layout"><span class="header-section-number">10.2.2</span> Multiplot layout</h3>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>(nu/options-table (describe/fragment-rows <span class="at">:arrange</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">Option</th>
+<th data-quarto-table-cell-role="th">Type</th>
+<th data-quarto-table-cell-role="th">Default</th>
+<th data-quarto-table-cell-role="th">Description</th>
+<th data-quarto-table-cell-role="th">Group</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>:plots (required)</td>
+<td>sequential of map (at least 1)</td>
+<td></td>
+<td>the sub-plots, filling the grid row by row</td>
+<td>Multiplot layout</td>
+</tr>
+<tr class="even">
+<td>:columns</td>
+<td>a positive integer or nil</td>
+<td>one column (from :rows when given)</td>
+<td>grid columns</td>
+<td>Multiplot layout</td>
+</tr>
+<tr class="odd">
+<td>:rows</td>
+<td>a positive integer or nil</td>
+<td>from the plot count and :columns</td>
+<td>grid rows</td>
+<td>Multiplot layout</td>
+</tr>
+<tr class="even">
+<td>:widths</td>
+<td>sequential of a positive number or :measured or [:fixed, a non-negative number] or nil</td>
+<td>equal</td>
+<td>relative column weights; :measured sizes a column of legend-only plots, [:fixed px] a fixed width</td>
+<td>Multiplot layout</td>
+</tr>
+<tr class="odd">
+<td>:heights</td>
+<td>sequential of a positive number or [:fixed, a non-negative number] or nil</td>
+<td>equal</td>
+<td>relative row weights; [:fixed px] a fixed height</td>
+<td>Multiplot layout</td>
+</tr>
+<tr class="even">
+<td>:align</td>
+<td>true or false or nil</td>
+<td>true</td>
+<td>align the sub-plots' panels in rows and columns</td>
+<td>Multiplot layout</td>
+</tr>
+<tr class="odd">
+<td>:equal-panels</td>
+<td>true or false or nil</td>
+<td>false</td>
+<td>resize columns and rows so every aligned panel has the same size (builds twice)</td>
+<td>Multiplot layout</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+</section>
+<section id="builders-and-data-functions" class="level2" data-number="10.3">
+<h2 data-number="10.3" class="anchored" data-anchor-id="builders-and-data-functions"><span class="header-section-number">10.3</span> Builders and data functions</h2>
+<p>The options a builder forwards to the data function computing its layout; the function takes them directly too.</p>
+<section id="graph" class="level3" data-number="10.3.1">
+<h3 data-number="10.3.1" class="anchored" data-anchor-id="graph"><span class="header-section-number">10.3.1</span> Graph</h3>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb21"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>(nu/options-table (describe/fragment-rows <span class="at">:graph/graph</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">Option</th>
+<th data-quarto-table-cell-role="th">Type</th>
+<th data-quarto-table-cell-role="th">Default</th>
+<th data-quarto-table-cell-role="th">Description</th>
+<th data-quarto-table-cell-role="th">Group</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>:from</td>
+<td>a keyword, a function or a categorical marker of one</td>
+<td>:from</td>
+<td>accessor of an edge row's source node id</td>
+<td>Graph</td>
+</tr>
+<tr class="even">
+<td>:to</td>
+<td>a keyword, a function or a categorical marker of one</td>
+<td>:to</td>
+<td>accessor of an edge row's target node id</td>
+<td>Graph</td>
+</tr>
+<tr class="odd">
+<td>:value</td>
+<td>a keyword, a function or a categorical marker of one</td>
+<td>:value</td>
+<td>accessor of an edge row's weight, a finite number &gt;= 0 (nil - 1)</td>
+<td>Graph</td>
+</tr>
+<tr class="even">
+<td>:nodes</td>
+<td>sequential of map or nil</td>
+<td></td>
+<td>node rows (each with an id), placed first in their order; ids seen only in edges follow</td>
+<td>Graph</td>
+</tr>
+<tr class="odd">
+<td>:id</td>
+<td>a keyword, a function or a categorical marker of one</td>
+<td>:id</td>
+<td>accessor of a node row's id</td>
+<td>Graph</td>
+</tr>
+<tr class="even">
+<td>:directed?</td>
+<td>true or false or nil</td>
+<td>false</td>
+<td>a directed graph: degrees split into :in and :out</td>
+<td>Graph</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<section id="graph-layout" class="level3" data-number="10.3.2">
+<h3 data-number="10.3.2" class="anchored" data-anchor-id="graph-layout"><span class="header-section-number">10.3.2</span> Graph layout</h3>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>(nu/options-table (describe/fragment-rows <span class="at">:graph/layout</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">Option</th>
+<th data-quarto-table-cell-role="th">Type</th>
+<th data-quarto-table-cell-role="th">Default</th>
+<th data-quarto-table-cell-role="th">Description</th>
+<th data-quarto-table-cell-role="th">Group</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>:layout</td>
+<td>one of :circle :force :random</td>
+<td>:force</td>
+<td>node placement: :force (Fruchterman-Reingold), :circle or :random</td>
+<td>Graph layout</td>
+</tr>
+<tr class="even">
+<td>:iterations</td>
+<td>integer (at least 0)</td>
+<td>500</td>
+<td>steps of the force layout</td>
+<td>Graph layout</td>
+</tr>
+<tr class="odd">
+<td>:gravity</td>
+<td>a non-negative finite number</td>
+<td>1.0</td>
+<td>pull of the force layout to each component's centroid, in units of the ideal edge length (0 - none)</td>
+<td>Graph layout</td>
+</tr>
+<tr class="even">
+<td>:rng</td>
+<td>a fastmath random generator or nil</td>
+<td>a fresh unseeded generator every call</td>
+<td>fastmath random generator of the force and random layouts, copied per call (seeded - the same layout every time)</td>
+<td>Graph layout</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<section id="chord-layout" class="level3" data-number="10.3.3">
+<h3 data-number="10.3.3" class="anchored" data-anchor-id="chord-layout"><span class="header-section-number">10.3.3</span> Chord layout</h3>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb23"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>(nu/options-table (describe/fragment-rows <span class="at">:graph/chord-layout</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">Option</th>
+<th data-quarto-table-cell-role="th">Type</th>
+<th data-quarto-table-cell-role="th">Default</th>
+<th data-quarto-table-cell-role="th">Description</th>
+<th data-quarto-table-cell-role="th">Group</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>:order</td>
+<td>:cluster or sequential of any value or nil</td>
+<td>the nodes' input order</td>
+<td>node order: a sequence of ids (those first, the rest after them in input order) or :cluster (nodes linked to the same others side by side)</td>
+<td>Chord layout</td>
+</tr>
+<tr class="even">
+<td>:pad</td>
+<td>a non-negative finite number</td>
+<td>2.0</td>
+<td>gap after every ring sector in degrees (must leave room for the sectors)</td>
+<td>Chord layout</td>
+</tr>
+<tr class="odd">
+<td>:inner</td>
+<td>a number in (0 1)</td>
+<td>0.92</td>
+<td>inner radius of the ring, where the ribbons end (the outer one is 1)</td>
+<td>Chord layout</td>
+</tr>
+<tr class="even">
+<td>:min-value</td>
+<td>a non-negative finite number or nil</td>
+<td></td>
+<td>flows of a pair (summed) below it are left out and counted in :dropped (nil - none)</td>
+<td>Chord layout</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<section id="arc-layout" class="level3" data-number="10.3.4">
+<h3 data-number="10.3.4" class="anchored" data-anchor-id="arc-layout"><span class="header-section-number">10.3.4</span> Arc layout</h3>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb24"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>(nu/options-table (describe/fragment-rows <span class="at">:graph/arc-layout</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">Option</th>
+<th data-quarto-table-cell-role="th">Type</th>
+<th data-quarto-table-cell-role="th">Default</th>
+<th data-quarto-table-cell-role="th">Description</th>
+<th data-quarto-table-cell-role="th">Group</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>:order</td>
+<td>:cluster or sequential of any value or nil</td>
+<td>the nodes' input order</td>
+<td>node order: a sequence of ids (those first, the rest after them in input order) or :cluster (nodes linked to the same others side by side)</td>
+<td>Arc layout</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<section id="sankey-layout" class="level3" data-number="10.3.5">
+<h3 data-number="10.3.5" class="anchored" data-anchor-id="sankey-layout"><span class="header-section-number">10.3.5</span> Sankey layout</h3>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb25"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>(nu/options-table (describe/fragment-rows <span class="at">:graph/sankey-layout</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">Option</th>
+<th data-quarto-table-cell-role="th">Type</th>
+<th data-quarto-table-cell-role="th">Default</th>
+<th data-quarto-table-cell-role="th">Description</th>
+<th data-quarto-table-cell-role="th">Group</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>:align</td>
+<td>one of :center :justify :left :right</td>
+<td>:justify</td>
+<td>the column of a node: :justify (sinks in the last column), :left, :right (by the longest path to a sink) or :center</td>
+<td>Sankey layout</td>
+</tr>
+<tr class="even">
+<td>:layer</td>
+<td>a keyword, a function or a categorical marker of one or nil</td>
+<td>columns from :align</td>
+<td>accessor of the node rows giving the column (integers &gt;= 0, every edge to a later one; wins over :align)</td>
+<td>Sankey layout</td>
+</tr>
+<tr class="odd">
+<td>:node-width</td>
+<td>a number in (0 1)</td>
+<td>0.03</td>
+<td>node width, a fraction of the unit square's width</td>
+<td>Sankey layout</td>
+</tr>
+<tr class="even">
+<td>:pad</td>
+<td>a non-negative finite number</td>
+<td>0.02</td>
+<td>least gap between the nodes of a column, a fraction of the unit square's height</td>
+<td>Sankey layout</td>
+</tr>
+<tr class="odd">
+<td>:iterations</td>
+<td>integer (at least 0)</td>
+<td>6</td>
+<td>relaxation sweeps moving the nodes towards their links' ends (0 - spread in the start order)</td>
+<td>Sankey layout</td>
+</tr>
+<tr class="even">
+<td>:node-sort</td>
+<td>one of :input or nil</td>
+<td></td>
+<td>nil - relaxation reorders a column, :input - the input order kept</td>
+<td>Sankey layout</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<section id="alluvial-graph" class="level3" data-number="10.3.6">
+<h3 data-number="10.3.6" class="anchored" data-anchor-id="alluvial-graph"><span class="header-section-number">10.3.6</span> Alluvial graph</h3>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb26"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>(nu/options-table (describe/fragment-rows <span class="at">:graph/alluvial-graph</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">Option</th>
+<th data-quarto-table-cell-role="th">Type</th>
+<th data-quarto-table-cell-role="th">Default</th>
+<th data-quarto-table-cell-role="th">Description</th>
+<th data-quarto-table-cell-role="th">Group</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>:axes (required)</td>
+<td>sequential of a keyword, a function or a categorical marker of one (at least 2)</td>
+<td></td>
+<td>accessors of the axes, in column order (at least 2)</td>
+<td>Alluvial graph</td>
+</tr>
+<tr class="even">
+<td>:value</td>
+<td>a keyword, a function or a categorical marker of one or nil</td>
+<td>1 per row</td>
+<td>accessor of a row's weight, a finite number &gt;= 0 (nil - 1)</td>
+<td>Alluvial graph</td>
+</tr>
+<tr class="odd">
+<td>:fill</td>
+<td>a keyword, a function or a categorical marker of one or nil</td>
+<td>the first axis</td>
+<td>accessor of the level the strands are grouped (and coloured) by</td>
+<td>Alluvial graph</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<section id="dendrogram-layout" class="level3" data-number="10.3.7">
+<h3 data-number="10.3.7" class="anchored" data-anchor-id="dendrogram-layout"><span class="header-section-number">10.3.7</span> Dendrogram layout</h3>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb27"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>(nu/options-table (describe/fragment-rows <span class="at">:tree/layout</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">Option</th>
+<th data-quarto-table-cell-role="th">Type</th>
+<th data-quarto-table-cell-role="th">Default</th>
+<th data-quarto-table-cell-role="th">Description</th>
+<th data-quarto-table-cell-role="th">Group</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>:k</td>
+<td>a positive integer or nil</td>
+<td>no clusters (every :cluster nil)</td>
+<td>cluster count: cutting the k - 1 highest groups leaves k subtrees, clusters 1..k in leaf order (at most the leaf count)</td>
+<td>Dendrogram layout</td>
+</tr>
+<tr class="even">
+<td>:circular</td>
+<td>true or false or nil</td>
+<td>false</td>
+<td>radial: breadth as the angle over :span degrees, height (or depth) as the radius; points in [-1, 1]</td>
+<td>Dendrogram layout</td>
+</tr>
+<tr class="odd">
+<td>:span</td>
+<td>a positive finite number</td>
+<td>360.0</td>
+<td>degrees a circular layout covers, clockwise from the top</td>
+<td>Dendrogram layout</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<section id="node-link-tree-layout" class="level3" data-number="10.3.8">
+<h3 data-number="10.3.8" class="anchored" data-anchor-id="node-link-tree-layout"><span class="header-section-number">10.3.8</span> Node-link tree layout</h3>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb28"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>(nu/options-table (describe/fragment-rows <span class="at">:tree/node-link-layout</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">Option</th>
+<th data-quarto-table-cell-role="th">Type</th>
+<th data-quarto-table-cell-role="th">Default</th>
+<th data-quarto-table-cell-role="th">Description</th>
+<th data-quarto-table-cell-role="th">Group</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>:layout</td>
+<td>one of :tidy :cluster</td>
+<td>:tidy</td>
+<td>node placement: :tidy (every node at its depth, d3 tree) or :cluster (leaves at the deepest depth, d3 cluster)</td>
+<td>Node-link tree layout</td>
+</tr>
+<tr class="even">
+<td>:links</td>
+<td>one of :diagonal :line</td>
+<td>:diagonal</td>
+<td>link shape: :diagonal (curves along the depth axis) or :line</td>
+<td>Node-link tree layout</td>
+</tr>
+<tr class="odd">
+<td>:circular</td>
+<td>true or false or nil</td>
+<td>false</td>
+<td>radial: breadth as the angle over :span degrees, height (or depth) as the radius; points in [-1, 1]</td>
+<td>Node-link tree layout</td>
+</tr>
+<tr class="even">
+<td>:span</td>
+<td>a positive finite number</td>
+<td>360.0</td>
+<td>degrees a circular layout covers, clockwise from the top</td>
+<td>Node-link tree layout</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<section id="edge-bundling" class="level3" data-number="10.3.9">
+<h3 data-number="10.3.9" class="anchored" data-anchor-id="edge-bundling"><span class="header-section-number">10.3.9</span> Edge bundling</h3>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb29"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a>(nu/options-table (describe/fragment-rows <span class="at">:tree/bundle-paths</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">Option</th>
+<th data-quarto-table-cell-role="th">Type</th>
+<th data-quarto-table-cell-role="th">Default</th>
+<th data-quarto-table-cell-role="th">Description</th>
+<th data-quarto-table-cell-role="th">Group</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>:from</td>
+<td>a keyword, a function or a categorical marker of one</td>
+<td>:from</td>
+<td>accessor of an edge row's source leaf id</td>
+<td>Edge bundling</td>
+</tr>
+<tr class="even">
+<td>:to</td>
+<td>a keyword, a function or a categorical marker of one</td>
+<td>:to</td>
+<td>accessor of an edge row's target leaf id</td>
+<td>Edge bundling</td>
+</tr>
+<tr class="odd">
+<td>:beta</td>
+<td>a number in [0 1]</td>
+<td>0.85</td>
+<td>bundling strength: 1 - along the tree path, 0 - a straight line</td>
+<td>Edge bundling</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<section id="sequences" class="level3" data-number="10.3.10">
+<h3 data-number="10.3.10" class="anchored" data-anchor-id="sequences"><span class="header-section-number">10.3.10</span> Sequences</h3>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb30"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a>(nu/options-table (describe/fragment-rows <span class="at">:hierarchy/sequence-levels</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">Option</th>
+<th data-quarto-table-cell-role="th">Type</th>
+<th data-quarto-table-cell-role="th">Default</th>
+<th data-quarto-table-cell-role="th">Description</th>
+<th data-quarto-table-cell-role="th">Group</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>:sequence</td>
+<td>a keyword, a function or a categorical marker of one</td>
+<td>:sequence</td>
+<td>accessor of a row's sequence: a string split at :separator or a sequence of steps</td>
+<td>Sequences</td>
+</tr>
+<tr class="even">
+<td>:value</td>
+<td>a keyword, a function or a categorical marker of one or nil</td>
+<td>1 per row</td>
+<td>accessor of a row's weight, a finite number &gt;= 0 (nil - 1; identical sequences summed)</td>
+<td>Sequences</td>
+</tr>
+<tr class="odd">
+<td>:separator</td>
+<td>string</td>
+<td>"-"</td>
+<td>literal text splitting a string sequence into steps</td>
+<td>Sequences</td>
+</tr>
+<tr class="even">
+<td>:end</td>
+<td>any value</td>
+<td>"end"</td>
+<td>the end marker (nil - none): a final step equal to it is removed unless :keep-end?</td>
+<td>Sequences</td>
+</tr>
+<tr class="odd">
+<td>:keep-end?</td>
+<td>true or false or nil</td>
+<td>false</td>
+<td>keep a final end marker as a step of its own (false - a sequence ending before others continue is its group's unnamed leaf)</td>
+<td>Sequences</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<section id="autocorrelation-rows" class="level3" data-number="10.3.11">
+<h3 data-number="10.3.11" class="anchored" data-anchor-id="autocorrelation-rows"><span class="header-section-number">10.3.11</span> Autocorrelation rows</h3>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb31"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a>(nu/options-table (describe/fragment-rows <span class="at">:series/acf-rows</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">Option</th>
+<th data-quarto-table-cell-role="th">Type</th>
+<th data-quarto-table-cell-role="th">Default</th>
+<th data-quarto-table-cell-role="th">Description</th>
+<th data-quarto-table-cell-role="th">Group</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>:lags</td>
+<td>a positive integer or nil</td>
+<td>floor(10 log10 n), at most n - 1 (R acf)</td>
+<td>the largest lag, from 1 to n - 1 for n values</td>
+<td>Autocorrelation rows</td>
+</tr>
+<tr class="even">
+<td>:alpha</td>
+<td>a number in (0 1) or nil</td>
+<td>0.05</td>
+<td>significance level of the band (0.05 - a 95% band)</td>
+<td>Autocorrelation rows</td>
+</tr>
+<tr class="odd">
+<td>:partial?</td>
+<td>true or false or nil</td>
+<td>false</td>
+<td>the partial autocorrelation (lags from 1, a constant band) instead of the autocorrelation</td>
+<td>Autocorrelation rows</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<section id="horizon-rows" class="level3" data-number="10.3.12">
+<h3 data-number="10.3.12" class="anchored" data-anchor-id="horizon-rows"><span class="header-section-number">10.3.12</span> Horizon rows</h3>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb32"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a>(nu/options-table (describe/fragment-rows <span class="at">:series/horizon-rows</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">Option</th>
+<th data-quarto-table-cell-role="th">Type</th>
+<th data-quarto-table-cell-role="th">Default</th>
+<th data-quarto-table-cell-role="th">Description</th>
+<th data-quarto-table-cell-role="th">Group</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>:x</td>
+<td>keyword or string</td>
+<td>:x</td>
+<td>row key of the x values (numbers)</td>
+<td>Horizon rows</td>
+</tr>
+<tr class="even">
+<td>:y</td>
+<td>keyword or string</td>
+<td>:y</td>
+<td>row key of the y values (finite numbers, nil breaks the bands)</td>
+<td>Horizon rows</td>
+</tr>
+<tr class="odd">
+<td>:series</td>
+<td>keyword or string or nil</td>
+<td>none - one series</td>
+<td>row key of the series, one horizon per value in first-appearance order</td>
+<td>Horizon rows</td>
+</tr>
+<tr class="even">
+<td>:bands</td>
+<td>a positive integer</td>
+<td>2</td>
+<td>number of bands each sign of the values is folded into</td>
+<td>Horizon rows</td>
+</tr>
+<tr class="odd">
+<td>:band-height</td>
+<td>a positive finite number or nil</td>
+<td>the largest |y| of all series / :bands (1 when it is 0)</td>
+<td>height of one band in y units</td>
+<td>Horizon rows</td>
+</tr>
+<tr class="even">
+<td>:interpolator</td>
+<td>a fastmath 1D interpolation method keyword or a function (fn [xs ys &amp; params] f) or nil</td>
+<td>none - straight segments</td>
+<td>a curve the valid points of every run are resampled on before folding</td>
+<td>Horizon rows</td>
+</tr>
+<tr class="odd">
+<td>:steps-per-gap</td>
+<td>a positive integer</td>
+<td>10</td>
+<td>resampled points per gap between consecutive x (with :interpolator)</td>
+<td>Horizon rows</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div style="background-color:grey;height:2px;width:100%;"></div>
+<div><pre><small><small>source: notebooks/reference/shared_options.clj</small></small></pre></div>
+
+
+</section>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="./reference.theme.html" class="pagination-link" aria-label="Theme">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Theme</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./reference.errors.html" class="pagination-link" aria-label="Errors">
+        <span class="nav-page-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Errors</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

@@ -1,0 +1,154 @@
+---
+format:
+  html: {toc: true, toc-location: right, toc-depth: 4, theme: cosmo}
+code-block-background: true
+
+---
+<style></style><style>.printedClojure .sourceCode {
+  background-color: transparent;
+  border-style: none;
+}
+</style><style>.clay-limit-image-width .clay-image {max-width: 100%}
+.clay-side-by-side .sourceCode {margin: 0}
+.clay-side-by-side {margin: 1em 0}
+</style>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js" type="text/javascript"></script><script src="https://code.jquery.com/ui/1.13.1/jquery-ui.min.js" type="text/javascript"></script>
+
+# Reference
+
+The reference lists every option of cljplot2: the plot map, render options, scales, facets, labels, the theme,
+every chart, builder and user-facing data function. The tables are generated from the library's validating
+schemas, so they name exactly what `plot/build` accepts. Use cases and galleries show the options at work; this
+part says what exists.
+
+
+::: {.sourceClojure}
+```clojure
+(ns reference.intro
+  (:require [cljplot2.chart :as chart]
+            [cljplot2.core :as plot]
+            [cljplot2.describe :as describe]
+            [cljplot2.pipeline :as pipeline]
+            [notebook-utils :as nu]))
+```
+:::
+
+
+
+## How the part is organised
+
+
+* **Concepts** (this chapter and the next eleven) - rendering, data and mapping, aesthetics and legends, scales
+  and coordinates, layering, labels and text, facets and multiplots, the theme, the shared option groups, errors
+  and what the library doesn't do.
+
+* **Charts**, **builders** and **data functions** - one table per chart kind, builder and user-facing function,
+  with a few images each.
+
+
+## How to read a table
+
+
+* **Option** - the key; a nested key is listed after its map, with its full path (`:scales :x`). `(required)`
+  marks a key that must be given.
+
+* **Type** - the values the schema accepts.
+* **Default** - the value used when the key is absent (style defaults come from the theme), or how a computed
+  default is found; empty when absent means "off" or "not drawn".
+
+* **Description** - what the key does.
+* **Group** - shown when some keys belong to a shared group (data and mapping, curves, strips ...); a group is
+  described once, in the Shared options chapter.
+
+
+## A plot is a map
+
+`plot/render-image` takes a plot map and render options and returns a `java.awt.image.BufferedImage`. The plot
+keys (nested maps have their own chapters):
+
+
+::: {.sourceClojure}
+```clojure
+(nu/options-table (filter #(= 1 (count (:path %))) (describe/options pipeline/plot-schema)))
+```
+:::
+
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:data</td><td>a sequence of rows (maps) or a map of columns (sequences) or nil</td><td></td><td>rows (a sequence of maps) or columns (a map of sequences) the charts read</td></tr><tr><td>:mapping</td><td>a mapping: key -> accessor (a keyword or a function of a row) or nil</td><td></td><td>accessors of the dimensions the charts read (keywords or functions), merged under each chart's</td></tr><tr><td>:charts</td><td>vector of a chart value (see cljplot2.chart) or nil</td><td></td><td>the charts, drawn in order</td></tr><tr><td>:scales</td><td>map</td><td></td><td>position, facet and aesthetic scale specs</td></tr><tr><td>:facets</td><td>map</td><td></td><td>facet layout: wrap shape, order, NA panel, scale relations, strips, panel weights</td></tr><tr><td>:groups</td><td>map</td><td></td><td>grouping options</td></tr><tr><td>:legend</td><td>true or false or nil</td><td>true</td><td>draw the legends (false hides all)</td></tr><tr><td>:legend-only</td><td>true or false or nil</td><td>false</td><td>draw only the legends (a legend cell of an :arrange)</td></tr><tr><td>:alternate-panel</td><td>true or false or nil</td><td>false</td><td>shade a single panel as an odd facet panel (theme [:panel :alternate-fill])</td></tr><tr><td>:aspect</td><td>one of :iso or nil</td><td></td><td>:iso - equal pixels per data unit on x and y (linear scales)</td></tr><tr><td>:flip</td><td>true or false or nil</td><td>false</td><td>draw the :x scale vertically and :y horizontally</td></tr><tr><td>:coord</td><td>{:kind :cartesian} or a polar coord {:kind :polar ...} or nil</td><td>cartesian</td><td>coordinate system: cartesian or polar</td></tr><tr><td>:labels</td><td>map</td><td></td><td>plot title and axis titles</td></tr><tr><td>:custom-grid</td><td>map or nil</td><td></td><td>a hand-written layout grid instead of the generated one (only :labels {:title t} beside it)</td></tr><tr><td>:arrange</td><td>an arrange map {:plots :columns :rows :widths :heights :align :equal-panels} or nil</td><td></td><td>a multiplot: sub-plots in a grid (only :labels {:title t} beside it)</td></tr><tr><td>:margins</td><td>map</td><td></td><td>charts beside the panel sharing its scales (marginal plots)</td></tr><tr><td>:options</td><td>map or nil</td><td></td><td>render options, merged under the ones given to build / render</td></tr><tr><td>:theme</td><td>any value</td><td></td><td>theme overrides, deep-merged over the default theme</td></tr></tbody></table>
+```
+
+:::
+
+
+The smallest plot: data, a mapping and one chart.
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image {:data [{:x 1 :y 2} {:x 2 :y 3} {:x 3 :y 1} {:x 4 :y 4}]
+                    :mapping {:x :x :y :y}
+                    :charts [(chart/line) (chart/scatter)]}
+                   {:width 500 :height 350})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.intro_files/image0.png)
+:::
+
+
+
+## The pipeline
+
+`plot/build` validates the whole plot first (render options, plot keys, the merged theme, every chart's options
+and mapping) and throws an error listing the problems (Errors chapter). Then the plot passes through
+pure stages, each adding one key: `:split` (rows split per facet panel and group) → `:stats` (each chart's
+computed data) → `:extents` → `:scale-specs` → `:grid` → `:layout` → `:finalized-scales` → `:subplots`.
+`plot/render` draws the result.
+
+
+## The tables as data
+
+The tables come from `cljplot2.describe`, usable at the REPL too: `describe/options` takes a chart value, a
+builder or data function var or a schema; `describe/mapping` the mapping keys a chart reads; `describe/theme-rows`
+the theme; `describe/fragment-rows` a shared group; `describe/api-vars` lists the user-facing data functions. A
+row is a plain map:
+
+
+::: {.sourceClojure}
+```clojure
+(first (describe/options (chart/scatter)))
+```
+:::
+
+
+
+::: {.printedClojure}
+```clojure
+{:key :size,
+ :path [:size],
+ :type "a non-negative number",
+ :required? false,
+ :default 6,
+ :default-doc nil,
+ :description "point size in pixels (a mapped :size wins)",
+ :fragment nil}
+
+```
+:::
+
+
+
+```{=html}
+<div style="background-color:grey;height:2px;width:100%;"></div>
+```
+
+
+
+```{=html}
+<div><pre><small><small>source: notebooks/reference/intro.clj</small></small></pre></div>
+```

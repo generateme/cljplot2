@@ -1,13 +1,17 @@
 (ns notebook-utils
-  "Notebook helpers: datasets read through the manifest `data/datasets.edn` and the attribution line of an example.
+  "Notebook helpers: datasets read through the manifest `data/datasets.edn`, the attribution line of an example and
+  the option tables of the reference part ([[options-table]]).
   No plotting helpers - examples use the plain cljplot2 API."
   (:require [clojure.data.csv :as csv]
             [clojure.data.json :as json]
             [clojure.edn :as edn]
             [clojure.java.io :as io]
             [clojure.string :as str]
+            [clojure.walk :as walk]
             [scicloj.kindly.v4.api :as kindly]
-            [scicloj.kindly.v4.kind :as kind]))
+            [scicloj.kindly.v4.kind :as kind]
+            [cljplot2.describe :as describe])
+  (:import [fastmath.vector Vec4]))
 
 (def ^:private data-folder "data/")
 
@@ -141,3 +145,52 @@
                       (str "Data: " title ", " data-source "; licence: " licence ".")))]
     (kindly/hide-code
      (kind/md (str/join " " (remove nil? [(when (or source (seq urls)) (source-text source urls)) data-text]))))))
+
+;; option tables (reference part)
+
+(defn- color-key?
+  "Does keyword `k` name a colour (`:color`, `:stroke-color`, `:fill`, `:background` ...)?"
+  [k]
+  (and (keyword? k) (boolean (re-find #"(color|fill|background)$" (name k)))))
+
+(defn- hex-color
+  "Integer colour `c` as a `0xrrggbb` symbol (printed without quotes)."
+  [c]
+  (symbol (format "0x%06x" (long c))))
+
+(defn- readable-value
+  "`v` with colours and functions readable when printed: a `Vec4` colour as a vector of rounded channels, an integer
+  under a colour key as `0xrrggbb`, a function as `fn`."
+  [v]
+  (walk/postwalk (fn [x]
+                   (cond (instance? Vec4 x) (mapv #(Math/round (double %)) x)
+                         (fn? x) 'fn
+                         (and (map-entry? x) (color-key? (key x)) (integer? (val x))) [(key x) (hex-color (val x))]
+                         :else x))
+                 v))
+
+(defn- default-text
+  "Default cell of option `row`: its printed `:default` (an integer colour of a colour key as `0xrrggbb`) and its
+  `:default-doc`, either or both, `\"\"` without."
+  [{:keys [key default default-doc]}]
+  (let [value (when (some? default)
+                (pr-str (if (and (color-key? key) (integer? default)) (hex-color default) (readable-value default))))]
+    (str/join "; " (remove nil? [value default-doc]))))
+
+(defn- option-text
+  "Option cell of `row`: its path's keys (`:grid :x`), `(required)` after a required one."
+  [{:keys [path required?]}]
+  (cond-> (str/join " " (map pr-str path)) required? (str " (required)")))
+
+(defn options-table
+  "Table of option `rows` (from `cljplot2.describe`: `options`, `mapping`, `fragment-rows`, `theme-rows`): option path,
+  type, default (value and / or text) and description; a Group column - the shared group's title, documented once in
+  the Shared options chapter - when some row belongs to one."
+  [rows]
+  (let [grouped? (some :fragment rows)
+        group-title #(get-in describe/fragments [(:fragment %) :title] "")]
+    (kind/table {:column-names (cond-> ["Option" "Type" "Default" "Description"] grouped? (conj "Group"))
+                 :row-vectors (mapv (fn [row]
+                                      (cond-> [(option-text row) (:type row) (default-text row) (:description row)]
+                                        grouped? (conj (group-title row))))
+                                    rows)})))

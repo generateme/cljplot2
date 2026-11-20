@@ -968,16 +968,20 @@
       (into (map #(schema/optional % {:description (str "the " (name %) " aesthetic scale")} (aesthetic/scale-spec-schema %)))
             aesthetic/dims)))
 
+(def margin-spec-schema
+  "A plot margin as a map `{:charts c :size px :axis bool}` (the other forms of a margin are its charts alone)."
+  [:map {:closed true}
+   [:charts {:description "a chart or a vector of charts"}
+    [:multi {:dispatch chart-value?} [true chart-schema] [false [:vector {:min 1} chart-schema]]]]
+   (schema/optional :size {:description "margin thickness in pixels" :default 80} schema/pos)
+   (schema/optional :axis {:description "draw the magnitude axis of histogram and density margins" :default false} schema/bool)])
+
 (def ^:private margin-schema
   [:multi {:dispatch #(cond (chart-value? %) :chart (map? %) :spec :else :charts)
            :cljplot2/type-doc "a chart, a vector of charts or {:charts c :size px :axis bool}"}
    [:chart chart-schema]
    [:charts [:vector {:min 1} chart-schema]]
-   [:spec [:map {:closed true}
-           [:charts {:description "a chart or a vector of charts"}
-            [:multi {:dispatch chart-value?} [true chart-schema] [false [:vector {:min 1} chart-schema]]]]
-           (schema/optional :size {:description "margin thickness in pixels" :default 80} schema/pos)
-           (schema/optional :axis {:description "draw the magnitude axis of histogram and density margins" :default false} schema/bool)]]])
+   [:spec margin-spec-schema]])
 
 (def margins-schema
   "Plot `:margins`: `{:top m :right m}`, `m` - a chart, a vector of charts or `{:charts c :size px :axis bool}`."

@@ -14,6 +14,9 @@
 
 ;; ## How this book is organised
 
+;; * **Reference** - every option of the library in tables generated from its schemas: rendering, data and
+;;   mapping, aesthetics and legends, scales and coordinates, layering, labels, facets and multiplots, the theme,
+;;   shared option groups, errors and limits.
 ;; * **Use cases** - one chapter per family of the [R Graph Gallery](https://r-graph-gallery.com/) merged with
 ;;   [From Data to Viz](https://www.data-to-viz.com/): distribution, correlation, ranking, part of a whole,
 ;;   evolution, flow, and colours. Each use case has one canonical example here.

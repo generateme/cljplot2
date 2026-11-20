@@ -1,0 +1,194 @@
+---
+format:
+  html: {toc: true, toc-location: right, toc-depth: 4, theme: cosmo}
+code-block-background: true
+
+---
+<style></style><style>.printedClojure .sourceCode {
+  background-color: transparent;
+  border-style: none;
+}
+</style><style>.clay-limit-image-width .clay-image {max-width: 100%}
+.clay-side-by-side .sourceCode {margin: 0}
+.clay-side-by-side {margin: 1em 0}
+</style>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js" type="text/javascript"></script><script src="https://code.jquery.com/ui/1.13.1/jquery-ui.min.js" type="text/javascript"></script>
+
+# Errors
+
+Invalid input fails before anything is computed. `plot/build` (and `render`, `render-image`) validates in three
+rounds, each throwing one `ex-info` listing all its errors:
+
+1. the render options, the plot keys and the merged theme;
+2. when those hold, every chart's options and mapping;
+3. when those hold, the rules across keys (e.g. `:flip` needs the generated grid, not `:arrange`).
+
+Builders and data functions check their options before reading their data.
+
+
+::: {.sourceClojure}
+```clojure
+(ns reference.errors
+  (:require [cljplot2.chart :as chart]
+            [cljplot2.core :as plot]))
+```
+:::
+
+
+
+## Error data
+
+`ex-data` of the error: `:key` - the first offending key, `:in` - its path, `:value` - the value, `:errors` -
+every problem as `{:in path :value v :message text}`. A misspelled plot or builder key gets a spelling
+suggestion; a chart option is reported as a "disallowed key".
+
+
+::: {.sourceClojure}
+```clojure
+(def bad-plot
+  {:data [{:x 1 :y 2} {:x 2 :y 3}]
+   :mapping {:x :x :y :y}
+   :charts [(chart/scatter {:szie 4})]
+   :scales {:x {:kind :logarithmic}}})
+```
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(try (plot/build bad-plot)
+     (catch clojure.lang.ExceptionInfo e (ex-data e)))
+```
+:::
+
+
+
+::: {.printedClojure}
+```clojure
+{:key :kind,
+ :in [:scales :x :kind],
+ :value :logarithmic,
+ :errors
+ [{:in [:scales :x :kind],
+   :value :logarithmic,
+   :message
+   "should be either :bands, :datetime, :interpolated, :linear, :log, :pow, :radial or :symlog"}]}
+
+```
+:::
+
+
+The message lists the same problems as text:
+
+
+::: {.sourceClojure}
+```clojure
+(try (plot/build bad-plot)
+     (catch clojure.lang.ExceptionInfo e (ex-message e)))
+```
+:::
+
+
+
+::: {.printedClojure}
+```clojure
+"Invalid input: [:scales :x :kind] should be either :bands, :datetime, :interpolated, :linear, :log, :pow, :radial or :symlog, got :logarithmic"
+
+```
+:::
+
+
+With the scale fixed, the next round reports the chart's misspelled option:
+
+
+::: {.sourceClojure}
+```clojure
+(try (plot/build (assoc-in bad-plot [:scales :x :kind] :log))
+     (catch clojure.lang.ExceptionInfo e (ex-data e)))
+```
+:::
+
+
+
+::: {.printedClojure}
+```clojure
+{:key :szie,
+ :in [:charts 0 :options :szie],
+ :value 4,
+ :errors
+ [{:in [:charts 0 :options :szie],
+   :value 4,
+   :message "disallowed key"}]}
+
+```
+:::
+
+
+Fixed:
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (-> bad-plot
+                       (assoc :charts [(chart/scatter {:size 4})])
+                       (assoc-in [:scales :x :kind] :log))
+                   {:width 500 :height 300})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.errors_files/image0.png)
+:::
+
+
+
+## Builders and data functions
+
+Options are checked against the builder's schema before its data is read:
+
+
+::: {.sourceClojure}
+```clojure
+(try (plot/sankey [{:from "a" :to "b" :value 1}] {:node-widht 10})
+     (catch clojure.lang.ExceptionInfo e (ex-data e)))
+```
+:::
+
+
+
+::: {.printedClojure}
+```clojure
+{:key :node-widht,
+ :in [:node-widht],
+ :value 10,
+ :errors
+ [{:in [:node-widht],
+   :value 10,
+   :message "unknown key, should be spelled :node-width"}]}
+
+```
+:::
+
+
+Checks of the data itself (missing columns, wrong shapes) throw the same kind of error, keyed by the option or
+argument at fault.
+
+
+## Finding the cause
+
+
+* `:until` (render options) stops the build after a stage - the built plot is data to inspect.
+* `:debug true` paints the layout boxes (Render chapter).
+
+
+```{=html}
+<div style="background-color:grey;height:2px;width:100%;"></div>
+```
+
+
+
+```{=html}
+<div><pre><small><small>source: notebooks/reference/errors.clj</small></small></pre></div>
+```
