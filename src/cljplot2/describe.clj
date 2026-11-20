@@ -30,16 +30,17 @@
             [cljplot2.graphics.draw :as draw]
             [cljplot2.graphics.polyline :as polyline]
             [cljplot2.layout.plot-grid :as plot-grid]
+            [cljplot2.multiplot :as multiplot]
             [cljplot2.schema :as schema]
             [cljplot2.theme :as theme]
             ;; namespaces of the user-facing functions (`:cljplot2/api`), so [[api-vars]] finds them all
             [cljplot2.data.contour]
-            [cljplot2.data.graph]
+            [cljplot2.data.graph :as graph]
             [cljplot2.data.levels]
-            [cljplot2.data.series]
+            [cljplot2.data.series :as series]
             [cljplot2.data.sets]
             [cljplot2.data.shingle]
-            [cljplot2.data.tree]
+            [cljplot2.data.tree :as tree]
             [cljplot2.data.vector-field]
             [cljplot2.graphics.font]))
 
@@ -68,6 +69,31 @@
    :frame-3d {:title "3D frame" :doc "view, proportions, frame and domains of a 3D chart" :entries space/frame-options}
    :line-style {:title "Line style" :doc "colour, width and dash of a line" :entries polyline/style-entries}
    :pattern {:title "Fill patterns" :doc "the pattern drawn over a filled mark" :entries draw/pattern-style-entries}
+   :builder {:title "Builder options" :doc "title, scales and theme of a built plot (a builder takes the ones it uses)"
+             :entries multiplot/builder-entries}
+   :graph/graph {:title "Graph" :doc "edge and node rows of a graph: accessors of the ends, weight and ids; directedness"
+                 :entries graph/graph-entries}
+   :graph/layout {:title "Graph layout" :doc "node positions of a network: force, circle or random, iterations, gravity, random generator"
+                  :entries graph/layout-entries}
+   :graph/chord-layout {:title "Chord layout" :doc "node order, sector gaps, ring radius and the smallest flow of a chord diagram"
+                        :entries graph/chord-layout-entries}
+   :graph/arc-layout {:title "Arc layout" :doc "node order of an arc diagram" :entries graph/arc-layout-entries}
+   :graph/sankey-layout {:title "Sankey layout" :doc "columns, node width, gaps and relaxation of a sankey diagram"
+                         :entries graph/sankey-layout-entries}
+   :graph/alluvial-graph {:title "Alluvial graph" :doc "axes, weights and fill level of an alluvial diagram"
+                          :entries graph/alluvial-graph-entries}
+   :tree/layout {:title "Dendrogram layout" :doc "cluster cut and circular layout of a dendrogram" :entries tree/layout-entries}
+   :tree/node-link-layout {:title "Node-link tree layout"
+                           :doc "tidy or cluster placement, link shape and circular layout of a node-link tree"
+                           :entries tree/node-link-layout-entries}
+   :tree/bundle-paths {:title "Edge bundling" :doc "edge ends and bundling strength of hierarchical edge bundling"
+                       :entries tree/bundle-paths-entries}
+   :hierarchy/sequence-levels {:title "Sequences" :doc "sequence accessor, step separator, end marker and weights of a flow sunburst"
+                               :entries hierarchy/sequence-levels-entries}
+   :series/acf-rows {:title "Autocorrelation rows" :doc "lags, significance level and kind of the autocorrelation rows"
+                     :entries series/acf-rows-entries}
+   :series/horizon-rows {:title "Horizon rows" :doc "row keys, band count and height, and resampling of the horizon bands"
+                         :entries series/horizon-rows-entries}
    :arrange {:title "Multiplot layout" :doc "sub-plots in a grid: shape, weights, panel alignment"
              :entries plot-grid/arrange-entries}
    :text-style {:title "Text style" :doc "font, size, colour, padding, alignment and background of a text"

@@ -119,21 +119,22 @@
 ;; bin
 
 (def bin-options
-  "Options of [[bin]]: `:as` (required, the bin column), `:bins` (see [[bins]], default `:sturges`), `:digits`
-  (significant digits of the printed bounds, default 3), `:label`."
+  "Options of [[bin]]: `:as` (required, the bin column), `:bins` (see [[bins]]), `:digits` (significant digits of the
+  printed bounds), `:label`."
   [:map {:closed true}
-   [:as [:fn {:error/message "should be the key of the bin column"} some?]]
-   (schema/optional :bins bins)
-   (schema/optional :digits schema/pos-int)
-   (schema/nilable :label [:or string? boolean?])])
-
-(def ^:private bin-args
-  (schema/with-rules
-   [:map [:accessor schema/accessor] [:options bin-options]]
-   [(fn [{:keys [accessor options]}]
-      (when (and (true? (:label options)) (not (keyword? accessor)))
-        "label true needs a keyword accessor (its name is the label)"))
-    [:options :label]]))
+   [:as {:description "the key of the bin column added to every row (required)"}
+    [:fn {:error/message "should be the key of the bin column"} some?]]
+   (schema/optional :bins {:description (str "the bins: a fastmath bin-estimation method, a bin count, a vector of "
+                                             "increasing breaks or quantile bins {:quantiles q :estimation e}")
+                           :default :sturges}
+                    bins)
+   (schema/optional :digits {:description (str "the fewest significant digits of the printed bounds (more when "
+                                               "needed to keep the printed breaks distinct)")
+                             :default 3}
+                    schema/pos-int)
+   (schema/nilable :label {:description (str "the series name printed in every bin: a string, or true for the "
+                                             "accessor's name (keyword accessors only); none when absent")}
+                   [:or string? boolean?])])
 
 (defn bin
   "Rows of `data` (see [[cljplot2.data.rows/rows]]) with the bin of `value` (keyword or function) under `(:as opts)`:
@@ -143,9 +144,11 @@
   Bounds print with at least `:digits` significant digits (default 3, as R `cut`), more when needed to keep the
   printed breaks distinct; the bins keep their exact bounds. `:label` names the series in every bin: a string, or
   `true` for the accessor's name (keyword accessors only).
-  Throws `ex-info` for bad options ([[bin-options]], see [[cljplot2.schema]])."
+  Throws `ex-info` for bad options ([[bin-options]], see [[cljplot2.schema]]) or a bad accessor."
+  {:cljplot2/api true :cljplot2/options bin-options}
   [data value {:keys [as label] :as opts}]
-  (schema/explain! [[bin-args {:accessor value :options opts} []]])
+  (schema/check-options! bin-options opts)
+  (shingle/check-accessor! value label)
   (let [rs (rows/rows data)
         acc (rows/row-accessor :bin value)
         finite #(and (number? %) (m/valid-double? (double %)))
@@ -169,6 +172,7 @@
   "Mapping marker: `accessor` (keyword or function) read as usual, its dimension declared categorical - the scale is
   resolved as with `:type :categorical` (bands for `:x` / `:y`, ordinal for aesthetics), e.g.
   `:mapping {:y (categorical :cyl)}` puts numeric cylinder counts in bands. See [[cljplot2.data.accessor]]."
+  {:cljplot2/api true}
   [accessor]
   (accessor/->CategoricalAccessor accessor))
 
@@ -195,15 +199,24 @@
   [levels rows-of order-by descending?]
   (order-by-score levels (fn [l] (when-let [rs (seq (rows-of l))] (order-by (vec rs)))) descending?))
 
+(def order-levels-options
+  "Options of [[order-levels]]."
+  [:map {:closed true}
+   (schema/optional :descending {:description "order the levels by the statistic descending" :default false}
+                    schema/bool)])
+
 (defn order-levels
   "Levels of `level` (keyword or function) in the rows of `data` ordered by `(stat values)` - `values` the finite
   numbers of `value` in that level's rows; for a scale `:domain`. `stat`: a function of a non-empty sequence of
   numbers to a number (`fastmath.stats/median`, `stats/mode`, `count`, ...).
   `opts`: `:descending` (default false). Ties keep first-appearance order (ascending and descending); levels without a
   finite value follow the ordered ones (natural order), as do levels whose statistic isn't a finite number. The `nil`
-  (NA) level is left out: a domain lists values, the NA level is placed by the scale."
+  (NA) level is left out: a domain lists values, the NA level is placed by the scale.
+  Throws `ex-info` for bad options ([[order-levels-options]])."
+  {:cljplot2/api true :cljplot2/options order-levels-options}
   ([data level value stat] (order-levels data level value stat {}))
-  ([data level value stat {:keys [descending]}]
+  ([data level value stat {:keys [descending] :as opts}]
+   (schema/check-options! order-levels-options opts)
    (let [rs (rows/rows data)
          level-of (rows/row-accessor :level level)
          value-of (rows/row-accessor :value value)
@@ -216,17 +229,27 @@
   "Tie strategies of [[rank-rows]] (`fastmath.core/rank`)."
   #{:average :first :last :random :min :max :dense})
 
+(def rank-rows-options
+  "Options of [[rank-rows]]."
+  [:map {:closed true}
+   (schema/optional :key {:description "the key of the rank column added to every row" :default :rank}
+                    [:fn {:error/message "should be the key of the rank column"} some?])
+   (schema/optional :descending {:description "rank the highest value first (rank 1)" :default true} schema/bool)
+   (schema/optional :ties {:description "the fastmath.core/rank tie strategy (:min gives 1, 1, 3; :average gives doubles)"
+                           :default :min}
+                    (into [:enum] (sort rank-ties)))])
+
 (defn rank-rows
   "Rows of `data` (rows or columns, see [[cljplot2.data.rows/rows]]) with the rank of `value` among the rows sharing
   their `x` value added under `:key` (default `:rank`): 1-based, the highest value first (`:descending`, default
   true); `:ties` - a `fastmath.core/rank` strategy (default `:min`: 1, 1, 3; `:average` gives doubles). Rows share an
   x by its key (numbers and `java.time` values by [[cljplot2.data.rows/x-key]] - `1` and `1.0` are one x - levels by
   value). A row without a finite value or a valid x gets `nil` and isn't ranked. For bump charts: a line through the ranks on a reversed y
-  domain (`:scales {:y {:domain [n 1]}}`). Throws `ex-info {:key :ties}` for an unknown strategy."
+  domain (`:scales {:y {:domain [n 1]}}`). Throws `ex-info` for bad options ([[rank-rows-options]])."
+  {:cljplot2/api true :cljplot2/options rank-rows-options}
   ([data x value] (rank-rows data x value {}))
-  ([data x value {:keys [ties descending key] :or {ties :min descending true key :rank}}]
-   (when-not (contains? rank-ties ties)
-     (schema/fail! (str ":ties should be one of " (vec (sort rank-ties)) ".") {:key :ties :value ties}))
+  ([data x value {:keys [ties descending key] :or {ties :min descending true key :rank} :as opts}]
+   (schema/check-options! rank-rows-options opts)
    (let [rs (rows/rows data)
          x-of (rows/row-accessor :x x)
          value-of (rows/row-accessor :value value)

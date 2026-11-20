@@ -325,6 +325,15 @@
   [checks]
   (throw-errors! (into [] (mapcat (fn [[schema value in]] (errors schema value in))) checks)))
 
+(defn check-options!
+  "Validate the `options` map (`nil` - none) of a builder or user-facing function against its `schema` (the var's
+  `:cljplot2/options`); throw one `ex-info` like [[explain!]], each error at its option's path (`:key` - the option),
+  or return `nil`. A missing required option is listed after the other errors: an unknown key - usually its
+  misspelling - comes first, with its spelling suggestion."
+  [schema options]
+  (throw-errors! (vec (sort-by #(if (= "missing required key" (:message %)) 1 0)
+                               (errors schema (if (nil? options) {} options) [])))))
+
 (def ^{:arglists '([message data])} fail!
   "Throw the error of a check done by hand, shaped and worded as [[explain!]]'s (see [[cljplot2.error/fail!]])."
   error/fail!)

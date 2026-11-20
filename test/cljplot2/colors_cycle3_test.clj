@@ -129,9 +129,9 @@
 (deftest arrange-options-test
   (let [p (scatter-plot {})]
     (let [e (error-data #(plot/arrange [p] {:cols 3}))]
-      (is (= :arrange (:key e)))
+      (is (= :cols (:key e)))
       (is (str/includes? (:message (first (:errors e))) "should be spelled :columns")))
-    (is (= :arrange (:key (error #(plot/arrange [p] {:zzz 1})))) "an unknown key without a suggestion")
+    (is (= :zzz (:key (error #(plot/arrange [p] {:zzz 1})))) "an unknown key without a suggestion")
     (is (= {:arrange {:plots [p] :columns 2 :rows 1 :widths [1 2] :heights [1] :align false}}
            (plot/arrange [p] {:columns 2 :rows 1 :widths [1 2] :heights [1] :align false}))
         "every known key accepted")))

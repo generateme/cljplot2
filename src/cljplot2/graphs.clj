@@ -34,6 +34,26 @@
 (def ^:private ^:const frame-padding 0.06)
 (def ^:private ^:const min-arrow 7.0)
 
+(defn- options-schema
+  "Closed map schema of the entry `groups` in order (a builder's own entries first, then those it forwards, then
+  [[cljplot2.multiplot/builder-entries]]); an entry whose key an earlier one has is left out (the builder's own entry
+  wins)."
+  [& groups]
+  (first (reduce (fn [[schema seen] entry]
+                   (if (seen (first entry)) [schema seen] [(conj schema entry) (conj seen (first entry))]))
+                 [[:map {:closed true}] #{}] (apply concat groups))))
+
+(defn- keys-of
+  "Keys of the map `entries`."
+  [entries]
+  (mapv first entries))
+
+(def ^:private graph-keys (keys-of graph/graph-entries))
+
+(def ^:private node-map
+  "Schema of a mapping or a chart options map passed on to a chart (validated by the chart, at build)."
+  [:map-of keyword? any?])
+
 (defn- node-radius-fn
   "Pixel radius of a node (a shape `size` is its bounding box side): from the node size scale of `mapping` `:size`
   (`size-spec` - the plot's `:scales :size`, its domain the nodes' values; range from the merged `merged-theme`), else
@@ -70,6 +90,25 @@
   [merged-theme style]
   (merge node-defaults {:color (c/set-alpha (c/to-color (get-in merged-theme [:chart :scatter :color])) 255)} style))
 
+(def network-options
+  "Options schema of [[network]]: its own entries, those of [[cljplot2.data.graph/graph]] and
+  [[cljplot2.data.graph/layout]] (forwarded) and the builder's."
+  (options-schema
+   [(schema/nilable :mapping {:description "node aesthetics (:color, :size, :shape): accessors of the nodes (their row's columns, :degree, :in, :out)"}
+                    node-map)
+    (schema/nilable :edge-mapping {:description "edge aesthetics (:color, :size - the width): accessors of the edges (their row's columns, :value); none mapped in :mapping too"}
+                    node-map)
+    (schema/nilable :node-style {:description "scatter options of the nodes over {:size 12 :stroke-color :white :stroke-width 1} and the theme scatter colour made opaque"}
+                    node-map)
+    (schema/nilable :edge-style {:description "segment options of the edges over {:color [120 120 120 200]} (the colour only when not mapped); :arrow - the arrows of a directed graph"}
+                    node-map)
+    (schema/nilable :labels {:description "node labels right of the nodes: true - the id, an accessor of the node, false - none"
+                             :default false}
+                    [:or schema/bool schema/accessor])]
+   graph/graph-entries
+   graph/layout-entries
+   plot/builder-entries))
+
 (defn network
   "Network plot of `edges` (rows; see [[cljplot2.data.graph/graph]]) as a plot map: edges as segments under the nodes
   (scatter), labels beside them; equal units on both axes (`:aspect :iso`), no axes.
@@ -99,10 +138,15 @@
   correlation network: the pairs of a correlation matrix above a threshold, e.g.
   `(graph/adjacency->edges (mapv (fn [row] (mapv #(if (> (abs %) 0.7) % 0) row)) r) names {:directed? false})`
   with `|r|` as the `:value` (weights are non-negative) and `:edge-mapping {:color ..}` by the sign (the diagonal's
-  self-loops aren't drawn)."
+  self-loops aren't drawn).
+
+  Options are validated first ([[network-options]]): an invalid value or an unknown key throws `ex-info {:key k}`."
+  {:cljplot2/options network-options}
   [edges {:keys [mapping edge-mapping labels scales title directed? node-style edge-style] user-theme :theme :as options}]
+  (schema/check-options! network-options options)
   (check-mappings! mapping edge-mapping)
-  (let [{:keys [nodes] :as laid} (graph/layout (graph/graph edges options) options)
+  (let [{:keys [nodes] :as laid} (graph/layout (graph/graph edges (select-keys options graph-keys))
+                                               (select-keys options (keys-of graph/layout-entries)))
         merged-theme (theme/deep-merge theme/default-theme user-theme)
         node-st (node-options merged-theme node-style)
         scales (cond-> scales (:size mapping) (update :size #(merge node-size-range %)))
@@ -197,22 +241,44 @@
   pixel room past it (text `:reserve-room`, see [[radial-labels]]), whatever their length and the panel size."
   {:domain [-1.05 1.05] :nice false :expand [0.0 0.0] :axis false})
 
+(def dendrogram-options
+  "Options schema of [[dendrogram]]: its own entries, those of [[cljplot2.data.tree/layout]] (forwarded) and the
+  builder's."
+  (options-schema
+   [(schema/nilable :labels {:description "names of an hclust result's observations, in order (one per observation)"
+                             :cljplot2/default-doc "the observations' indices"}
+                    [:sequential any?])
+    (schema/nilable :horizontal {:description "leaves on the left, heights growing right (not circular)" :default false}
+                    schema/bool)
+    (schema/optional :labels? {:description "leaf names along the leaf axis (circular - outward around the circle)" :default true}
+                     schema/bool)
+    (schema/nilable :group-labels? {:description "names of the named groups at their nodes (level and parent trees)" :default false}
+                    schema/bool)
+    (schema/nilable :line-style {:description "line options of the branches over {:color [70 70 70] :width 1}"}
+                    node-map)]
+   tree/layout-entries
+   plot/builder-entries))
+
 (defn dendrogram
   "Dendrogram plot of `source` - a fastmath `hclust` result or a tree of [[cljplot2.data.tree]] - as a plot map:
   branches as elbow paths (`chart/line`), leaves at 0..n-1 along the leaf axis labelled by their names.
 
   `options`: `:labels` (names of an `hclust` result's observations), `:k` (cluster colours, see
   [[cljplot2.data.tree/layout]]; branches above the cut in the NA colour, no legend), `:circular` (radial, labels
-  outward, equal axes), `:horizontal` (leaves on the left, heights growing right), `:labels?` (default `true`),
-  `:group-labels?` (names of the named groups at their nodes - level and parent trees; default `false`),
-  `:line-style` (line options of the branches), `:title`, `:theme`. The height axis is shown for `hclust` trees
-  (merge heights), hidden otherwise.
+  outward, equal axes; `:span` - its degrees), `:horizontal` (leaves on the left, heights growing right), `:labels?`
+  (default `true`), `:group-labels?` (names of the named groups at their nodes - level and parent trees; default
+  `false`), `:line-style` (line options of the branches), `:scales`, `:title`, `:theme`. The height axis is shown for
+  `hclust` trees (merge heights), hidden otherwise.
+
+  Options are validated first ([[dendrogram-options]]): an invalid value or an unknown key throws `ex-info {:key k}`.
 
   Equivalents: R `plot(hclust)`, `dendextend` `color_branches(k)`, ggraph `geom_edge_elbow` (`circular = TRUE`)."
-  [source {:keys [labels k circular horizontal title line-style group-labels?] user-theme :theme :as options}]
+  {:cljplot2/options dendrogram-options}
+  [source {:keys [labels k circular horizontal scales title line-style group-labels?] user-theme :theme :as options}]
+  (schema/check-options! dendrogram-options options)
   (let [labels? (get options :labels? true)
         t (as-tree source labels)
-        {:keys [nodes paths]} (tree/layout t (cond-> {:circular circular} k (assoc :k k)))
+        {:keys [nodes paths]} (tree/layout t (select-keys options (keys-of tree/layout-entries)))
         leaves (tree/leaves t)
         heights? (contains? source :tree)
         top (double (:height t))]
@@ -222,12 +288,13 @@
                                                         :mapping {:x :x :y :y :label #(str (:name %))}
                                                         :anchor [:left :bottom] :offset [3 3] :size 8
                                                         :background [255 255 255 170] :padding 1})))
-             :scales (cond-> (if circular
-                               {:x circle-axis :y circle-axis}
-                               {:x (leaf-axis leaves labels?)
-                                :y (cond-> (height-axis top)
-                                     (not heights?) (assoc :axis false))})
-                       k (assoc :color {:legend false}))
+             :scales (theme/deep-merge (cond-> (if circular
+                                                 {:x circle-axis :y circle-axis}
+                                                 {:x (leaf-axis leaves labels?)
+                                                  :y (cond-> (height-axis top)
+                                                       (not heights?) (assoc :axis false))})
+                                         k (assoc :color {:legend false}))
+                                       scales)
              :labels {:title title :x nil :y (when (and heights? (not circular)) "height")}}
       circular (assoc :aspect :iso)
       (and horizontal (not circular)) (assoc :flip true)
@@ -252,6 +319,26 @@
       (seq leaves) (conj (text leaves [:left :middle] 6))
       (seq groups) (conj (text groups [:right :middle] -6)))))
 
+(def tree-options
+  "Options schema of [[tree]]: its own entries, those of [[cljplot2.data.tree/node-link-layout]] (forwarded) and the
+  builder's."
+  (options-schema
+   [(schema/optional :labels? {:description "node names (cartesian - leaves right of their node, groups left; circular - leaf names outward)"
+                               :default true}
+                     schema/bool)
+    (schema/optional :nodes? {:description "a point per node" :default true} schema/bool)
+    (schema/nilable :mapping {:description "node aesthetics (:color, :size, :shape): accessors of the nodes (their row's columns, :depth, :leaf?, :name)"}
+                    node-map)
+    (schema/nilable :node-style {:description "scatter options of the nodes over {:size 7 :color [70 130 180] :stroke-color :white :stroke-width 1}"}
+                    node-map)
+    (schema/nilable :link-style {:description "line options of the links over {:color [176 176 176] :width 0.9}"}
+                    node-map)
+    (schema/nilable :labels {:description "names of an hclust result's observations, in order (one per observation)"
+                             :cljplot2/default-doc "the observations' indices"}
+                    [:sequential any?])]
+   tree/node-link-layout-entries
+   plot/builder-entries))
+
 (defn tree
   "Node-link tree plot of `source` - a tree of [[cljplot2.data.tree]] (e.g. `from-parents`, `from-levels`) or a
   fastmath `hclust` result - as a plot map (see [[cljplot2.data.tree/node-link-layout]]): links as paths (`chart/line`)
@@ -259,7 +346,7 @@
   places the nodes.
 
   `options`: `:layout` (`:tidy` default, `:cluster`), `:links` (`:diagonal` default, `:line`), `:circular` (radial,
-  equal axes; leaf names outward, group names left out), `:labels?` (default `true`; cartesian - leaves right of
+  equal axes; leaf names outward, group names left out; `:span` - its degrees), `:labels?` (default `true`; cartesian - leaves right of
   their node, groups left), `:nodes?` (node points, default `true`), `:mapping` - node aesthetics (`:color`, `:size`,
   `:shape`; nodes have `:depth`, `:leaf?`, `:name` and their row's columns - e.g. `{:color #(str (:depth %))}`),
   `:node-style` (scatter options over `{:size 7 :color [70 130 180] :stroke-color :white :stroke-width 1}`),
@@ -268,18 +355,17 @@
   `:scales`, `:title`, `:theme`; no legend. Cartesian: the root on the left, depth growing right, the first child on
   top.
 
+  Options are validated first ([[tree-options]]): an invalid value or an unknown key throws `ex-info {:key k}`.
+
   Equivalents: Vega `tree-layout` / `radial-tree-layout`, d3 `tree` / `cluster` with `linkHorizontal` / `linkRadial`,
   ggraph `layout = \"tree\"` + `geom_edge_diagonal`."
-  [source {:keys [layout links circular mapping node-style link-style labels scales title] user-theme :theme
-           :or {layout :tidy links :diagonal} :as options}]
-  (when-not (#{:tidy :cluster} layout)
-    (schema/fail! "Tree :layout should be :tidy or :cluster." {:key :layout :value layout}))
-  (when-not (#{:diagonal :line} links)
-    (schema/fail! "Tree :links should be :diagonal or :line." {:key :links :value links}))
+  {:cljplot2/options tree-options}
+  [source {:keys [circular mapping node-style link-style labels scales title] user-theme :theme :as options}]
+  (schema/check-options! tree-options options)
   (let [labels? (get options :labels? true)
         nodes? (get options :nodes? true)
         t (as-tree source labels)
-        {:keys [nodes] laid-links :links} (tree/node-link-layout t {:layout layout :links links :circular circular})
+        {:keys [nodes] laid-links :links} (tree/node-link-layout t (select-keys options (keys-of tree/node-link-layout-entries)))
         max-depth (double (reduce max 0.0 (map :x nodes)))
         min-y (double (reduce min 0.0 (map :y nodes)))]
     (cond-> {:charts (cond-> [(chart/line (merge {:color [176 176 176] :width 0.9} link-style
@@ -319,13 +405,24 @@
 
 (defn- transpose [matrix] (apply mapv vector matrix))
 
-(defn- tree-size!
-  "`[w h]` of `:tree-size` - fractions in (0, 1) of the width / height for the row / column dendrograms; throws
-  `ex-info {:key :tree-size}` otherwise."
-  [size]
-  (when-not (and (vector? size) (= 2 (count size)) (every? #(and (number? %) (< 0.0 (double %) 1.0)) size))
-    (schema/fail! "Clustered heatmap :tree-size should be [w h], fractions in (0, 1)." {:key :tree-size :value size}))
-  size)
+(def clustered-heatmap-options
+  "Options schema of [[clustered-heatmap]]: its own entries and the builder's."
+  (options-schema
+   [[:row {:description "accessor of a row's tile row"} schema/accessor]
+    [:col {:description "accessor of a row's tile column"} schema/accessor]
+    [:value {:description "accessor of a row's tile value, a finite number"} schema/accessor]
+    (schema/optional :method {:description "fastmath hclust linkage of the rows and columns" :default :complete}
+                     [:enum :single :complete :average :weighted :centroid :median :ward :ward-d :diana])
+    (schema/optional :distance {:description "fastmath hclust distance: a keyword or a function of two double arrays" :default :euclidean}
+                     [:or [:enum :euclidean :chebyshev :manhattan :canberra :earth-movers] schema/function])
+    (schema/optional :row-tree? {:description "the rows' dendrogram right of the tiles (false - order only)" :default true}
+                     schema/bool)
+    (schema/optional :col-tree? {:description "the columns' dendrogram above the tiles (false - order only)" :default true}
+                     schema/bool)
+    (schema/optional :tree-size {:description "[w h] - the dendrograms' share of the width (rows) and the height (columns), fractions in (0, 1)"
+                                 :default [0.2 0.2]}
+                     [:tuple graph/open-fraction graph/open-fraction])]
+   plot/builder-entries))
 
 (defn clustered-heatmap
   "Clustered heatmap of long `rows` as an arrange plot map: tiles of `:value` at `:row` x `:col` (accessors), rows and
@@ -334,12 +431,16 @@
   - each leaf at its tile's centre (`:row-tree? false` / `:col-tree? false` - order only); the colour legend in a
   column of its own on the right. `:tree-size` - `[w h]`, the dendrograms' share of the width / height (default
   `[0.2 0.2]`). `:scales` - the tile plot's scales (e.g. `:color`), `:title`, `:theme`. Throws `ex-info` for a
-  missing cell (`:value`), fewer than 2 rows or columns (`:rows`), a bad `:tree-size`.
+  missing cell (`:value`), fewer than 2 rows or columns (`:rows`), a missing `:row` / `:col` / `:value` accessor
+  (its key); options are validated first ([[clustered-heatmap-options]]): an invalid value or an unknown key throws
+  `ex-info {:key k}`.
 
   Equivalents: R `heatmap`, `pheatmap` (without annotations; the row tree on the right as cljplot2 margins)."
+  {:cljplot2/options clustered-heatmap-options}
   [rows {:keys [method distance scales title row-tree? col-tree? tree-size] user-theme :theme
          :or {method :complete distance :euclidean row-tree? true col-tree? true tree-size [0.2 0.2]} :as options}]
-  (let [[tw th] (tree-size! tree-size)
+  (schema/check-options! clustered-heatmap-options options)
+  (let [[tw th] tree-size
         [rs cs matrix] (value-matrix rows options)
         opts {:method method :distance distance}
         row-tree (tree/from-hclust (cl/hclust matrix opts) rs)
@@ -376,6 +477,21 @@
                     col-tree? (assoc :heights [(double th) (- 1.0 (double th))])
                     title (assoc :title title)))))
 
+(def bundle-options
+  "Options schema of [[bundle]]: its own entries, those of [[cljplot2.data.tree/bundle-paths]] (forwarded) and the
+  builder's."
+  (options-schema
+   [(schema/optional :alpha {:description "opacity of the edges (leaf points and legend keys stay opaque)" :default 0.4}
+                     schema/fraction)
+    (schema/optional :color-by-group? {:description "edges and leaves coloured by the top-level group of their (source) leaf, with a legend"
+                                       :default true}
+                     schema/bool)
+    (schema/optional :edge-color {:description "colour of the edges when not coloured by group" :default [70 110 180]}
+                     schema/color)
+    (schema/optional :labels? {:description "leaf names outward around the circle" :default true} schema/bool)]
+   tree/bundle-paths-entries
+   plot/builder-entries))
+
 (defn bundle
   "Hierarchical edge bundling plot of `edges` (rows between leaves of `tree` - a [[cljplot2.data.tree/from-parents]]
   tree, leaves by `:id`; `:from` / `:to` accessors) as a plot map: leaves around a circle (the radial layout of the
@@ -384,11 +500,14 @@
   default `true`; else `:edge-color`), with `:alpha` (default 0.4; the edges only - leaf points and legend keys stay
   opaque); leaf names outward around the circle
   (`:labels?`, default `true`). Edges with an end that isn't a leaf are dropped (see `bundle-paths` for the count).
-  `:scales` (e.g. `{:color {:legend false}}`), `:title`, `:theme`.
+  `:scales` (e.g. `{:color {:legend false}}`), `:title`, `:theme`. Options are validated first
+  ([[bundle-options]]): an invalid value or an unknown key throws `ex-info {:key k}`.
 
   Equivalents: ggraph `geom_conn_bundle` (`tension`), d3 `curveBundle.beta`; Holten (2006)."
+  {:cljplot2/options bundle-options}
   [edges tree {:keys [from to beta alpha edge-color scales title] user-theme :theme
                :or {beta 0.85 alpha 0.4 edge-color [70 110 180]} :as options}]
+  (schema/check-options! bundle-options options)
   (let [labels? (get options :labels? true)
         by-group? (get options :color-by-group? true)
         laid (tree/layout tree {:circular true})
@@ -412,6 +531,17 @@
 
 ;; ordered layouts
 
+(def chord-options
+  "Options schema of [[chord]]: its own entries, those of [[cljplot2.data.graph/graph]] and
+  [[cljplot2.data.graph/chord-layout]] (forwarded) and the builder's."
+  (options-schema
+   [(schema/optional :alpha {:description "opacity of the ribbons" :default 0.6} schema/fraction)
+    (schema/optional :labels? {:description "node names outward from the sectors' middles (nodes without flow unlabelled)" :default true}
+                     schema/bool)]
+   graph/graph-entries
+   graph/chord-layout-entries
+   plot/builder-entries))
+
 (defn chord
   "Chord diagram of `edges` (rows; see [[cljplot2.data.graph/graph]]) as a plot map (see
   [[cljplot2.data.graph/chord-layout]] - d3 `chord` for undirected graphs, `chordDirected` with `:directed? true`):
@@ -422,12 +552,15 @@
   `options`: graph - `:from`, `:to`, `:value`, `:nodes`, `:id`, `:directed?`; layout - `:order` (`nil`, ids,
   `:cluster`; see [[cljplot2.data.graph/node-order]]), `:pad` (degrees, default 2), `:inner` (default 0.92),
   `:min-value` (weaker flows left out - summed per pair, see `chord-layout`); `:scales` (e.g. `:color`), `:title`, `:theme`.
+  Options are validated first ([[chord-options]]): an invalid value or an unknown key throws `ex-info {:key k}`.
 
   Equivalents: d3 `chord` / `chordDirected` + `ribbon`, R `circlize::chordDiagram` (without tracks or ticks)."
+  {:cljplot2/options chord-options}
   [edges {:keys [alpha scales title] user-theme :theme :or {alpha 0.6} :as options}]
+  (schema/check-options! chord-options options)
   (let [labels? (get options :labels? true)
-        g (graph/graph edges options)
-        {:keys [groups arcs ribbons]} (graph/chord-layout g (select-keys options [:order :pad :inner :min-value]))
+        g (graph/graph edges (select-keys options graph-keys))
+        {:keys [groups arcs ribbons]} (graph/chord-layout g (select-keys options (keys-of graph/chord-layout-entries)))
         label-nodes (vec (for [{:keys [id start end value]} groups :when (pos? (double value))]
                            {:name id :leaf? true :angle (* 0.5 (+ (double start) (double end)))}))]
     (cond-> {:charts (cond-> [(chart/polygon {:data ribbons :alpha (double alpha) :mapping {:x :x :y :y :group :ribbon :color :from}})
@@ -446,6 +579,28 @@
   the panel."
   0.04)
 
+(def arc-options
+  "Options schema of [[arc]]: its own entries, those of [[cljplot2.data.graph/graph]] and
+  [[cljplot2.data.graph/arc-layout]] (forwarded) and the builder's."
+  (options-schema
+   [(schema/nilable :mapping {:description "node aesthetics (:color, :size, :shape): accessors of the nodes (their row's columns, :degree, :in, :out)"}
+                    node-map)
+    (schema/nilable :edge-mapping {:description "edge aesthetics (:color, :size - the width): accessors of the edges (their row's columns, :value); none mapped in :mapping too"
+                                   :cljplot2/default-doc "{:size :value} (widths from the size scale {:range [0.5 4]}) when the edge weights differ and :mapping has no :size"}
+                    node-map)
+    (schema/optional :alpha {:description "opacity of the arcs' strokes" :default 0.5} schema/fraction)
+    (schema/nilable :node-style {:description "scatter options of the nodes over {:size 8 :stroke-color :white :stroke-width 1} and the theme scatter colour made opaque"}
+                    node-map)
+    (schema/nilable :edge-style {:description "line options of the arcs over {:color [120 120 120] :width 1}"}
+                    node-map)
+    (schema/optional :labels {:description "node labels under the line: true - the id, or an accessor of the node (a nil or \"\" result - an empty label)"
+                              :default true}
+                     [:or [:= true] schema/accessor])
+    (schema/optional :labels? {:description "node labels under the line, rotated to read downward" :default true} schema/bool)]
+   graph/graph-entries
+   graph/arc-layout-entries
+   plot/builder-entries))
+
 (defn arc
   "Arc diagram of `edges` (rows; see [[cljplot2.data.graph/graph]]) as a plot map (see
   [[cljplot2.data.graph/arc-layout]]): nodes on a line in node order (scatter), every edge a semicircle above it (a
@@ -459,14 +614,17 @@
   `:degree`, `:in`, `:out` and their row's columns), `:edge-mapping` - edge aesthetics (default `{:size :value}` -
   widths from the size scale `{:range [0.5 4]}` - when the edge weights differ and the nodes don't map `:size`); an
   aesthetic in both throws `ex-info {:key :edge-mapping}`; `:node-style` (scatter options over `{:size 8 :stroke-color :white :stroke-width 1}`),
-  `:edge-style` (line options over `{:color [120 120 120]}`), `:scales`, `:title`, `:theme`.
+  `:edge-style` (line options over `{:color [120 120 120]}`), `:scales`, `:title`, `:theme`. Options are validated
+  first ([[arc-options]]): an invalid value or an unknown key throws `ex-info {:key k}`.
 
   Equivalents: ggraph `layout = \"linear\"` + `geom_edge_arc`, arcdiagram (R)."
+  {:cljplot2/options arc-options}
   [edges {:keys [order mapping edge-mapping alpha scales title node-style edge-style labels] user-theme :theme
           :or {alpha 0.5 labels true} :as options}]
+  (schema/check-options! arc-options options)
   (let [labels? (get options :labels? true)
         label-of (if (true? labels) :id (data/row-accessor :labels labels))
-        g (graph/graph edges options)
+        g (graph/graph edges (select-keys options graph-keys))
         weighted? (< 1 (count (distinct (map :value (:edges g)))))
         edge-mapping (if (contains? options :edge-mapping)
                        edge-mapping
@@ -515,7 +673,22 @@
       (seq right) (conj (chart/text (merge label-box {:data (mapv #(row (:x0 %) %) right) :mapping {:x :x :y :y :label :label}
                                                       :anchor [:right :middle] :offset [-4 0] :size 9}))))))
 
-(def ^:private sankey-layout-keys [:align :layer :node-width :pad :iterations :node-sort])
+(def sankey-options
+  "Options schema of [[sankey]]: its own entries, those of [[cljplot2.data.graph/graph]] (but `:directed?` - flows are
+  directed) and [[cljplot2.data.graph/sankey-layout]] (forwarded) and the builder's."
+  (options-schema
+   [(schema/nilable :mapping {:description "node aesthetics: only :color"}
+                    [:map {:closed true}
+                     (schema/nilable :color {:description "accessor of the node rows giving the node colour (a legend unless it's the id)"
+                                             :cljplot2/default-doc "the node id, no legend"}
+                                     schema/accessor)])
+    (schema/optional :link-color {:description "the flow colour: that of its :source or :target node, or :none (grey)" :default :source}
+                     [:enum :source :target :none])
+    (schema/optional :alpha {:description "opacity of the flow bands" :default 0.5} schema/fraction)
+    (schema/optional :labels? {:description "node names beside the nodes, inside the frame" :default true} schema/bool)]
+   (remove #(= :directed? (first %)) graph/graph-entries)
+   graph/sankey-layout-entries
+   plot/builder-entries))
 
 (defn sankey
   "Sankey diagram of `edges` (rows `{:from :to :value}`, flows; see [[cljplot2.data.graph/graph]]) as a plot map (see
@@ -525,16 +698,16 @@
 
   `options`: graph - `:from`, `:to`, `:value`, `:nodes`, `:id`; layout - `:align`, `:layer`, `:node-width`, `:pad`,
   `:iterations`, `:node-sort`; `:mapping {:color acc}` - the node colour (an accessor of node rows, default the id;
-  a legend unless it's the id); `:scales`, `:title`, `:theme`. Throws `ex-info {:key :link-color}` for another
-  `:link-color`.
+  a legend unless it's the id); `:scales`, `:title`, `:theme`. Options are validated first ([[sankey-options]]): an
+  invalid value or an unknown key throws `ex-info {:key k}`.
 
   Equivalents: d3-sankey, networkD3 `sankeyNetwork`, plotly sankey."
+  {:cljplot2/options sankey-options}
   [edges {:keys [mapping link-color alpha scales title] user-theme :theme :or {link-color :source alpha 0.5} :as options}]
-  (when-not (#{:source :target :none} link-color)
-    (schema/fail! "Sankey :link-color should be :source, :target or :none." {:key :link-color :value link-color}))
+  (schema/check-options! sankey-options options)
   (let [labels? (get options :labels? true)
-        {:keys [nodes rects bands]} (graph/sankey-layout (graph/graph edges (assoc options :directed? true))
-                                                         (select-keys options sankey-layout-keys))
+        {:keys [nodes rects bands]} (graph/sankey-layout (graph/graph edges (assoc (select-keys options graph-keys) :directed? true))
+                                                         (select-keys options (keys-of graph/sankey-layout-entries)))
         color-of (data/row-accessor :color (or (:color mapping) :id))
         node-color (into {} (map (juxt :id color-of)) nodes)
         bands (cond->> bands
@@ -557,6 +730,20 @@
   [axis]
   (if (keyword? axis) (name axis) (str axis)))
 
+(def alluvial-options
+  "Options schema of [[alluvial]]: its own entries, those of [[cljplot2.data.graph/alluvial-graph]] (forwarded) and
+  the builder's."
+  (options-schema
+   [(schema/optional :alpha {:description "opacity of the strands" :default 0.6} schema/fraction)
+    (schema/optional :node-width {:description "stratum width, a fraction of the plot width" :default 0.12} graph/open-fraction)
+    (schema/optional :pad {:description "least gap between the strata of an axis, a fraction of the plot height" :default 0.03}
+                     graph/finite-non-neg)
+    (schema/nilable :axis-names {:description "names under the columns, one per axis"
+                                 :cljplot2/default-doc "the axes' names (a keyword's name, else its text)"}
+                    [:sequential any?])]
+   graph/alluvial-graph-entries
+   plot/builder-entries))
+
 (defn alluvial
   "Alluvial diagram of `rows` over `:axes` (accessors, at least 2) as a plot map: a column per axis with a stratum
   per level (grey, the level's name centred on a white box; levels in natural order), strands between consecutive
@@ -565,12 +752,15 @@
   order, spread evenly); axis names under the columns (`:axis-names`, default the accessors' names), no y axis.
 
   `options`: `:value` (an accessor, default 1 per row), `:node-width` (default 0.12), `:pad` (default 0.03),
-  `:scales` (e.g. `:color`), `:title`, `:theme`.
+  `:scales` (e.g. `:color`), `:title`, `:theme`. Options are validated first ([[alluvial-options]]): an invalid value
+  or an unknown key throws `ex-info {:key k}`.
 
   Equivalents: ggalluvial `geom_alluvium` + `geom_stratum`, d3 parallel sets."
+  {:cljplot2/options alluvial-options}
   [rows {:keys [axes fill alpha node-width pad axis-names scales title] user-theme :theme
          :or {alpha 0.6 node-width 0.12 pad 0.03} :as options}]
-  (let [g (graph/alluvial-graph rows (select-keys options [:axes :value :fill]))
+  (schema/check-options! alluvial-options options)
+  (let [g (graph/alluvial-graph rows (select-keys options (keys-of graph/alluvial-graph-entries)))
         {:keys [nodes rects bands]} (graph/sankey-layout g {:layer :layer :node-sort :input :iterations 0
                                                             :node-width node-width :pad pad})
         columns (count axes)
@@ -595,19 +785,35 @@
 
 ;; sequences
 
+(def sequences-options
+  "Options schema of [[sequences]]: its own entries, those of [[cljplot2.data.hierarchy/sequence-levels]] (forwarded;
+  `:keep-end?` the builder's own, default `true`) and the builder's."
+  (options-schema
+   [(schema/optional :inner {:description "radius of the centre hole, a fraction of the outer one" :default 0.3}
+                     [:and schema/finite [:>= 0] [:< 1]])
+    (schema/optional :labels? {:description "step names in the cells that fit" :default false} schema/bool)
+    (schema/optional :keep-end? {:description "the end marker a step of its own, coloured and in the legend (false - sequences that end are their group's grey remainder)"
+                                 :default true}
+                     schema/bool)]
+   hierarchy/sequence-levels-entries
+   plot/builder-entries))
+
 (defn sequences
   "Flow (sequence) sunburst of `rows` as a plot map: the sequences' steps as rings from the centre (see
   [[cljplot2.data.hierarchy/sequence-levels]]; `:sequence`, `:value`, `:separator`, `:end`), every step coloured by
   its name wherever it occurs, with a legend of the names (`chart/partition` `:color-by :name` under polar); the end
   marker a step of its own, coloured and in the legend (`:keep-end?`, default `true`; `false` - sequences that end
   are their group's grey remainder); a centre hole `:inner` (default 0.3); `:labels?` (step names in the cells that
-  fit, default `false`); `:scales`, `:title`, `:theme`.
+  fit, default `false`); `:scales`, `:title`, `:theme`. Options are validated first ([[sequences-options]]): an
+  invalid value or an unknown key throws `ex-info {:key k}`.
 
   Equivalents: d3 sequences sunburst (Kerry Rodden), sunburstR."
+  {:cljplot2/options sequences-options}
   [rows {:keys [inner scales title] user-theme :theme :or {inner 0.3} :as options}]
+  (schema/check-options! sequences-options options)
   (let [labels? (get options :labels? false)
         {:keys [rows hierarchy]} (hierarchy/sequence-levels rows (merge {:keep-end? true}
-                                                                        (select-keys options [:sequence :value :separator :end :keep-end?])))]
+                                                                        (select-keys options (keys-of hierarchy/sequence-levels-entries))))]
     (cond-> {:data rows
              :mapping {:value :value :hierarchy hierarchy}
              ;; thin borders: deep rings have many narrow cells

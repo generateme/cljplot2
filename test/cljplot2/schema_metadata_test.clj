@@ -19,7 +19,8 @@
             [cljplot2.data.facet]
             [cljplot2.data.rows]
             [cljplot2.layout.plot-grid]
-            [cljplot2.theme]))
+            [cljplot2.theme]
+            [cljplot2.test-util :refer [explicit-defaults pixels same-pixels?]]))
 
 (def chart-constructors
   "Kind -> constructor of every built-in chart."
@@ -90,18 +91,6 @@
 
 ;; defaults
 
-(defn- explicit-defaults
-  "Chart options `options` with every constant `:default` of `rows` set where absent (`nil` - not set); nested rows
-  only inside a given map (an absent map - e.g. no `:arrow` - is no map of defaults)."
-  [rows options]
-  (reduce (fn [opts {:keys [path default]}]
-            (if (and (some? default) (nil? (get-in opts path))
-                     (or (= 1 (count path)) (map? (get-in opts (pop path)))))
-              (assoc-in opts path default)
-              opts))
-          (into {} (remove (comp nil? val)) options)
-          (remove #(nil? (:default %)) rows)))
-
 (defn- behaviour-rows
   "Option rows of `chart` with a schema `:default` (style rows take theme defaults - not schema ones)."
   [chart]
@@ -119,11 +108,6 @@
                       ((chart-constructors kind) (explicit-defaults (behaviour-rows c) (:options c)))
                       c))
                   charts))))
-
-(defn- pixels
-  "ARGB pixels of `img`."
-  ^ints [^java.awt.image.BufferedImage img]
-  (.getRGB img 0 0 (.getWidth img) (.getHeight img) nil 0 (.getWidth img)))
 
 (def fixture-plots
   "Plots of the chart kinds without a demo plot."
@@ -299,10 +283,6 @@
   [plot path schema]
   (let [set-defaults #(explicit-defaults (describe/schema-rows schema) (or % {}))]
     (if (empty? path) (set-defaults plot) (update-in plot path set-defaults))))
-
-(defn- same-pixels?
-  [p q options]
-  (java.util.Arrays/equals (pixels (plot/render-image p options)) (pixels (plot/render-image q options))))
 
 (def ^:private faceted
   {:data (for [f ["a" "b" "c" nil] i (range 8)] {:f f :x i :y (* i (count (str f))) :c (if (even? i) "u" "v")})

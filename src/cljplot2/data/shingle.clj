@@ -97,19 +97,29 @@
 (def shingle-options
   "Options of [[shingle]]: `:as` (required), `:intervals` or `:count` / `:overlap`, `:label`."
   [:map {:closed true}
-   [:as [:fn {:error/message "should be the key of the interval column"} some?]]
-   (schema/optional :intervals [:sequential {:min 1} bounds])
-   (schema/optional :count schema/pos-int)
-   (schema/optional :overlap overlap)
-   (schema/nilable :label [:or string? boolean?])])
+   [:as {:description "the key of the interval column added to every repeated row (required)"}
+    [:fn {:error/message "should be the key of the interval column"} some?]]
+   (schema/optional :intervals {:description "the intervals [[lo hi] ...], closed, lo <= hi"
+                                :cljplot2/default-doc "equal-count intervals from :count and :overlap"}
+                    [:sequential {:min 1} bounds])
+   (schema/optional :count {:description "the number of equal-count intervals (fewer when the data can't support them; ignored with :intervals)"
+                            :default 6}
+                    schema/pos-int)
+   (schema/optional :overlap {:description "the fraction of points shared by neighbouring equal-count intervals (ignored with :intervals)"
+                              :default 0.5}
+                    overlap)
+   (schema/nilable :label {:description (str "the series name printed in every interval (and so in facet strips): a "
+                                             "string, or true for the accessor's name (keyword accessors only); none when absent")}
+                   [:or string? boolean?])])
 
-(def ^:private shingle-args
-  (schema/with-rules
-   [:map [:accessor schema/accessor] [:options shingle-options]]
-   [(fn [{:keys [accessor options]}]
-      (when (and (true? (:label options)) (not (keyword? accessor)))
-        "label true needs a keyword accessor (its name is the label)"))
-    [:options :label]]))
+(defn check-accessor!
+  "Check the `accessor` (see [[cljplot2.schema/accessor]]) of a function with a `:label` option (see [[shingle]],
+  [[cljplot2.data.levels/bin]]): `:label true` needs a keyword accessor (its name is the label). Throws `ex-info`
+  (`{:key :accessor}` / `{:key :label}`)."
+  [accessor label]
+  (schema/explain! [[schema/accessor accessor [:accessor]]])
+  (when (and (true? label) (not (keyword? accessor)))
+    (schema/fail! "label true needs a keyword accessor (its name is the label)" {:key :label :in [:label] :value label})))
 
 (defn- non-numeric-value!
   [values]
@@ -135,9 +145,12 @@
   or equal-count ones from `:count` / `:overlap` (see [[equal-count]]). `:label` names the data series in every
   interval (and so in facet strips): a string, or `true` for the accessor's name (keyword accessors only); default
   none. Rows with a `nil`, NaN or uncovered value are left out; the result's metadata holds `{:dropped n}`.
-  Throws `ex-info` for bad options ([[shingle-options]], see [[cljplot2.schema]]) or non-numeric values (`{:key :shingle}`)."
+  Throws `ex-info` for bad options ([[shingle-options]], see [[cljplot2.schema]]), a bad accessor or non-numeric
+  values (`{:key :shingle}`)."
+  {:cljplot2/api true :cljplot2/options shingle-options}
   [data accessor {:keys [intervals as label] :as opts}]
-  (schema/explain! [[shingle-args {:accessor accessor :options opts} []]])
+  (schema/check-options! shingle-options opts)
+  (check-accessor! accessor label)
   (let [rs (rows/rows data)
         acc (rows/row-accessor :shingle accessor)
         _ (non-numeric-value! (map acc rs))

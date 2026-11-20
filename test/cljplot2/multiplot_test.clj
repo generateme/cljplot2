@@ -126,10 +126,11 @@
         [] {}
         nil {}
         [p1 p2 p1] {:columns 1 :rows 2}
-        [p1] {:columns 0}
-        [p1] {:rows 1.5}
-        [p1 p2] {:columns 2 :widths [1]}
-        [p1 p2] {:heights [1 -1]}))
+        [p1 p2] {:columns 2 :widths [1]})
+      (are [opts k] (= k (first (:in (error #(plot/arrange [p1] opts)))))
+        {:columns 0} :columns
+        {:rows 1.5} :rows
+        {:heights [1 -1]} :heights))
     (testing "weights"
       (let [built (b (plot/arrange [p1 p2] {:heights [2 1]}))
             ha (:h (box-of built [:plot 0])) hc (:h (box-of built [:plot 1]))]
@@ -235,4 +236,4 @@
         (is (= 3 (count (:subplots b))))
         (is (nil? (get-in b [:subplots [:plot 0] :alignment-padding])))))
     (testing "validation"
-      (is (= [:arrange :align] (:in (error #(plot/build (plot/arrange [p1] {:align 1})))))))))
+      (is (= [:align] (:in (error #(plot/arrange [p1] {:align 1}))))))))

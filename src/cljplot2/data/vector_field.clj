@@ -42,6 +42,7 @@
 (defn mapped-points
   "Rows `{:x :y :x0 :y0}` of `seeds` (pairs `[x y]`) mapped through the field `f`: `(x, y)` = f(x0, y0); seeds whose
   image isn't finite are left out."
+  {:cljplot2/api true}
   [f seeds]
   (check-seeds! seeds)
   (vec (keep (fn [[x0 y0]]
@@ -49,20 +50,33 @@
                  {:x (.x p) :y (.y p) :x0 x0 :y0 y0}))
              seeds)))
 
-(defn- check-range!
-  [k r]
-  (when-not (and (sequential? r) (= 2 (count r)) (every? #(and (number? %) (m/valid-double? (double %))) r)
-                 (< (double (first r)) (double (second r))))
-    (schema/fail! (str "Arrows :domain " k " should be [lo hi] with lo < hi.") {:key :domain :value r})))
+(def ^:private axis-range
+  "`[lo hi]`, finite numbers, `lo < hi`."
+  (schema/with-rules [:tuple schema/finite schema/finite]
+    [(fn [[lo hi]] (when-not (< (double lo) (double hi)) "should be [lo hi] with lo < hi"))]))
+
+(def ^:private positive-finite
+  [:and schema/finite [:> 0]])
+
+(def arrows-options
+  "Options of [[arrows]]."
+  [:map {:closed true}
+   [:domain {:description "the domain of the arrow grid {:x [lo hi] :y [lo hi]} (required)"}
+    [:map {:closed true}
+     [:x {:description "x domain [lo hi], lo < hi"} axis-range]
+     [:y {:description "y domain [lo hi], lo < hi"} axis-range]]]
+   (schema/optional :n {:description "grid cells per axis, or [nx ny]" :default 20}
+                    [:or schema/pos-int [:tuple schema/pos-int schema/pos-int]])
+   (schema/optional :grid {:description "arrow starts: cell centres (:square) or every second row moved half a cell along x (:shifted)"
+                           :default :square}
+                    [:enum :square :shifted])
+   (schema/optional :scale {:description "arrow length factor: an arrow is scale * cell * (1 - e^-|f|) long" :default 1.0}
+                    positive-finite)])
 
 (defn- grid-counts
   "`[nx ny]` of `:n` (a positive integer or a pair of them)."
   [n]
-  (let [ok? #(and (integer? %) (pos? (long %)))]
-    (cond
-      (ok? n) [(long n) (long n)]
-      (and (sequential? n) (= 2 (count n)) (every? ok? n)) (mapv long n)
-      :else (schema/fail! "Arrows :n should be a positive integer or a pair of them." {:key :n :value n}))))
+  (if (sequential? n) (mapv long n) [(long n) (long n)]))
 
 (defn- arrow-length
   "Length of the arrow of a vector of magnitude `magnitude` in a cell of side `cell`: `scale * cell * (1 - e^-|v|)`."
@@ -88,14 +102,10 @@
   `:scale` 1 - old cljplot's vector field), `:magnitude` |f|. `:n` - cells per axis (default 20, or `[nx ny]`);
   `:grid` - `:square` (default) or `:shifted` (every second row moved half a cell); `:scale` - default 1.0. Zero
   and non-finite vectors are left out.
-  Throws `ex-info` with `{:key k}` for an invalid option `k`."
-  [f {:keys [domain n grid scale] :or {n 20 grid :square scale 1.0}}]
-  (check-range! :x (:x domain))
-  (check-range! :y (:y domain))
-  (when-not (#{:square :shifted} grid)
-    (schema/fail! "Arrows :grid should be :square or :shifted." {:key :grid :value grid}))
-  (when-not (and (number? scale) (pos? (double scale)) (m/valid-double? (double scale)))
-    (schema/fail! "Arrows :scale should be a positive number." {:key :scale :value scale}))
+  Throws `ex-info` for bad options ([[arrows-options]])."
+  {:cljplot2/api true :cljplot2/options arrows-options}
+  [f {:keys [domain n grid scale] :or {n 20 grid :square scale 1.0} :as opts}]
+  (schema/check-options! arrows-options opts)
   (let [{:keys [points cell]} (grid-points domain (grid-counts n) (= grid :shifted))]
     (vec (keep (fn [[x y]]
                  (when-let [p (field-value f x y)]
@@ -111,17 +121,22 @@
   (when-let [d (field-value f (.x p) (.y p))]
     (v/add p (v/mult d (* step (- 1.0 (m/exp (- (v/mag d)))))))))
 
+(def traces-options
+  "Options of [[traces]]."
+  [:map {:closed true}
+   (schema/optional :steps {:description "the number of steps of every trace" :default 100} schema/pos-int)
+   (schema/optional :step {:description "the step factor: each step moves p by f(p) * (1 - e^-|f(p)|) * step" :default 0.01}
+                    positive-finite)])
+
 (defn traces
   "Rows `{:id :i :x :y}` of paths following the field `f` from `seeds` (pairs `[x y]`; `:id` - the seed's index, `:i`
   - the step, 0 at the seed): each step `p + f(p) * (1 - e^-|f(p)|) * :step` (old cljplot's trace), `:steps` steps
   (default 100, `:step` default 0.01); a path ends before a non-finite point.
-  Throws `ex-info` with `{:key k}` for an invalid option `k`."
-  [f seeds {:keys [steps step] :or {steps 100 step 0.01}}]
+  Throws `ex-info` for bad options ([[traces-options]]) or seeds (`{:key :seeds}`)."
+  {:cljplot2/api true :cljplot2/options traces-options}
+  [f seeds {:keys [steps step] :or {steps 100 step 0.01} :as opts}]
+  (schema/check-options! traces-options opts)
   (check-seeds! seeds)
-  (when-not (and (integer? steps) (pos? (long steps)))
-    (schema/fail! "Traces :steps should be a positive integer." {:key :steps :value steps}))
-  (when-not (and (number? step) (pos? (double step)) (m/valid-double? (double step)))
-    (schema/fail! "Traces :step should be a positive number." {:key :step :value step}))
   (vec (mapcat (fn [id [x y]]
                  (let [path (->> (iterate #(when % (trace-step f % (double step))) (v/vec2 x y))
                                  (take (inc (long steps)))

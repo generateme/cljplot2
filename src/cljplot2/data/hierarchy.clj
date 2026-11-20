@@ -229,6 +229,28 @@
         steps (filterv #(not (or (nil? %) (= "" %))) steps)]
     (if (and (not keep-end?) (seq steps) (= end (peek steps))) (pop steps) steps)))
 
+(def sequence-levels-entries
+  "Option entries of [[sequence-levels]] (a shared group, `:hierarchy/sequence-levels`; [[cljplot2.graphs/sequences]]
+  forwards them)."
+  (schema/in-fragment
+   :hierarchy/sequence-levels
+   [(schema/optional :sequence {:description "accessor of a row's sequence: a string split at :separator or a sequence of steps"
+                                :default :sequence}
+                     schema/accessor)
+    (schema/nilable :value {:description "accessor of a row's weight, a finite number >= 0 (nil - 1; identical sequences summed)"
+                            :cljplot2/default-doc "1 per row"}
+                    schema/accessor)
+    (schema/optional :separator {:description "literal text splitting a string sequence into steps" :default "-"} :string)
+    (schema/optional :end {:description "the end marker (nil - none): a final step equal to it is removed unless :keep-end?" :default "end"}
+                      any?)
+    (schema/nilable :keep-end? {:description "keep a final end marker as a step of its own (false - a sequence ending before others continue is its group's unnamed leaf)"
+                                :default false}
+                    schema/bool)]))
+
+(def sequence-levels-options
+  "Options schema of [[sequence-levels]]."
+  (into [:map {:closed true}] sequence-levels-entries))
+
 (defn sequence-levels
   "Hierarchy rows of sequences (e.g. page visits) for a flow sunburst (`chart/partition` under polar, see
   [[cljplot2.graphs/sequences]]): every row's `:sequence` (an accessor of a string split at `:separator`, default
@@ -237,8 +259,11 @@
   `:keep-end? true`) with `:value` (an accessor, default 1 per row; see [[cljplot2.data.rows/weight]]; summed over
   identical sequences). Returns `{:rows [{:step-1 s1 .. :step-k sk :value v}] :hierarchy [:step-1 ..
   :step-k] :dropped n}` - `k` the longest sequence, shorter ones padded with `nil`, rows in first-appearance order;
-  `:dropped` - rows without steps."
-  [rows {:keys [sequence value separator end keep-end?] :or {sequence :sequence separator "-" end "end"}}]
+  `:dropped` - rows without steps. Throws `ex-info {:key :value}` for an invalid weight; `{:key k}` for an invalid
+  option `k` (checked first, see [[sequence-levels-options]])."
+  {:cljplot2/api true :cljplot2/options sequence-levels-options}
+  [rows {:keys [sequence value separator end keep-end?] :or {sequence :sequence separator "-" end "end"} :as options}]
+  (schema/check-options! sequence-levels-options options)
   (let [sequence-of (data/row-accessor :sequence sequence)
         value-of (if value (data/row-accessor :value value) (constantly nil))
         keyed (mapv (fn [row] [(sequence-steps (sequence-of row) separator [end keep-end?]) (data/weight (value-of row))]) rows)

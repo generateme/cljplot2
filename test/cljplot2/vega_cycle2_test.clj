@@ -272,4 +272,4 @@
   (testing ":scales merged; :colors validated"
     (is (= "v" (get-in (plot/horizon [{:x 0 :y 1}] {:scales {:color {:title "v"}}}) [:scales :color :title])))
     (is (= :colors (:key (error #(plot/horizon [{:x 0 :y 1}] {:colors {:positive [[0 0 255]]}})))) "fewer than :bands colours")
-    (is (= :colors (:key (error #(plot/horizon [{:x 0 :y 1}] {:colors {:up [[0 0 255] [0 0 9]]}})))))))
+    (is (= :up (:key (error #(plot/horizon [{:x 0 :y 1}] {:colors {:up [[0 0 255] [0 0 9]]}})))))))

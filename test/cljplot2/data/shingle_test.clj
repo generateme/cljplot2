@@ -69,12 +69,12 @@
       (is (= 2 (count (shingle/shingle {:v [1 2]} #(:v %) {:intervals [[0 5]] :as :b})))))
     (testing "errors"
       (are [opts in] (= in (:in (error #(shingle/shingle data :v opts))))
-        {:intervals [[0 3]]} [:options :as]
-        {:intervals [] :as :b} [:options :intervals]
-        {:intervals [[3 0]] :as :b} [:options :intervals 0]
-        {:intervals [[0 1 2]] :as :b} [:options :intervals 0]
-        {:count 0 :as :b} [:options :count]
-        {:as :b :lable "x"} [:options :lable])
+        {:intervals [[0 3]]} [:as]
+        {:intervals [] :as :b} [:intervals]
+        {:intervals [[3 0]] :as :b} [:intervals 0]
+        {:intervals [[0 1 2]] :as :b} [:intervals 0]
+        {:count 0 :as :b} [:count]
+        {:as :b :lable "x"} [:lable])
       (is (= [:accessor] (:in (error #(shingle/shingle data "v" {:as :b})))))
       (is (= :shingle (:key (error #(shingle/shingle [{:v "x"}] :v {:intervals [[0 1]] :as :b}))))))))
 
@@ -119,6 +119,6 @@
         (is (= (sort-by :lo ivs) (sort ivs)))
         (is (every? #(.startsWith ^String (str %) "mag: [") ivs))))
     (testing "errors: :label true with a function accessor, non-string label"
-      (is (= [:options :label] (:in (error #(shingle/shingle data (fn [r] (:mag r)) {:intervals [[3 6]] :as :m :label true})))))
-      (is (= [:options :label] (:in (error #(shingle/shingle data :mag {:intervals [[3 6]] :as :m :label 3})))))
+      (is (= [:label] (:in (error #(shingle/shingle data (fn [r] (:mag r)) {:intervals [[3 6]] :as :m :label true})))))
+      (is (= [:label] (:in (error #(shingle/shingle data :mag {:intervals [[3 6]] :as :m :label 3})))))
       (is (= [:interval :label] (:in (error #(shingle/interval 1 2 :x))))))))

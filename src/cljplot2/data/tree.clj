@@ -23,6 +23,7 @@
 
 (defn leaves
   "Leaves of the tree under `node`, in order."
+  {:cljplot2/api true}
   [node]
   (if (leaf? node) [node] (vec (mapcat leaves (:children node)))))
 
@@ -33,6 +34,7 @@
   :children}`, leaves `{:name :index :height 0}` named by `labels` (a vector of the observations' names, `nil` -
   their indices); children ordered as `:order`. Throws `ex-info {:key :labels}` when `labels` doesn't have one name
   per observation."
+  {:cljplot2/api true}
   ([result] (from-hclust result nil))
   ([result labels]
    (let [{:keys [merge height order n]} (:tree result)
@@ -60,11 +62,20 @@
 
 (defn- depth-of ^long [node] (if (leaf? node) 0 (inc (long (reduce max (map depth-of (:children node)))))))
 
+(def from-levels-options
+  "Options schema of [[from-levels]]."
+  [:map {:closed true}
+   (schema/nilable :hierarchy {:description "level accessors, outer level first (none - a root without children)"}
+                   [:sequential schema/accessor])])
+
 (defn from-levels
   "Tree of `rows` grouped by the level accessors `:hierarchy` (outer level first; see [[cljplot2.data.hierarchy]] - a
   path ends at the first `nil` / `\"\"`); heights as in the namespace doc. Rows without a level are left out; no rows -
-  a root without children."
-  [rows {:keys [hierarchy]}]
+  a root without children. Throws `ex-info {:key k}` for an invalid option `k` (checked first, see
+  [[from-levels-options]])."
+  {:cljplot2/api true :cljplot2/options from-levels-options}
+  [rows {:keys [hierarchy] :as options}]
+  (schema/check-options! from-levels-options options)
   (let [accessors (hierarchy/level-accessors hierarchy)
         entries (keep (fn [row] (let [p (hierarchy/path-of accessors row)] (when (seq p) {:path p :value 1.0}))) rows)]
     (if (empty? entries)
@@ -72,12 +83,22 @@
       (let [root (hierarchy/root entries)]
         (with-heights root 0 (depth-of root))))))
 
+(def from-parents-options
+  "Options schema of [[from-parents]]."
+  [:map {:closed true}
+   (schema/optional :id {:description "accessor of a row's node id" :default :id} schema/accessor)
+   (schema/optional :parent {:description "accessor of a row's parent id (nil - the root)" :default :parent} schema/accessor)
+   (schema/nilable :name {:description "accessor of a node's name" :cljplot2/default-doc "the id accessor"} schema/accessor)])
+
 (defn from-parents
   "Tree of `rows` with an id (`:id` accessor, default `:id`) and a parent id (`:parent`, default `:parent`; the root
   has none), as d3 `stratify`: nodes are the rows with `:id` and `:name` (the `:name` accessor, default the id),
   children in row order; heights as in the namespace doc. Throws `ex-info {:key :parent}` for no root or several
-  roots, a parent id that isn't a row's id, a repeated id, or a cycle."
-  [rows {:keys [id parent name] :or {id :id parent :parent}}]
+  roots, a parent id that isn't a row's id, a repeated id, or a cycle; `{:key k}` for an invalid option `k` (checked
+  first, see [[from-parents-options]])."
+  {:cljplot2/api true :cljplot2/options from-parents-options}
+  [rows {:keys [id parent name] :or {id :id parent :parent} :as options}]
+  (schema/check-options! from-parents-options options)
   (let [id-of (data/row-accessor :id id)
         parent-of (data/row-accessor :parent parent)
         name-of (if name (data/row-accessor :name name) id-of)
@@ -145,6 +166,33 @@
     (mapv (fn [^long s] (let [a (+ a0 (* (- a1 a0) (/ (double s) steps)))] [(* r (m/sin a)) (* r (m/cos a))]))
           (range (inc steps)))))
 
+(def ^:private finite-pos
+  (schema/named-type ::finite-pos #(and (schema/finite? %) (pos? (double %))) "should be a positive finite number"))
+
+(def circular-entry
+  "Option entry `:circular` of the tree layouts."
+  (schema/nilable :circular {:description "radial: breadth as the angle over :span degrees, height (or depth) as the radius; points in [-1, 1]"
+                             :default false}
+                  schema/bool))
+
+(def span-entry
+  "Option entry `:span` of the circular tree layouts."
+  (schema/optional :span {:description "degrees a circular layout covers, clockwise from the top" :default 360.0} finite-pos))
+
+(def layout-entries
+  "Option entries of [[layout]] (a shared group, `:tree/layout`; [[cljplot2.graphs/dendrogram]] forwards them)."
+  (schema/in-fragment
+   :tree/layout
+   [(schema/nilable :k {:description "cluster count: cutting the k - 1 highest groups leaves k subtrees, clusters 1..k in leaf order (at most the leaf count)"
+                        :cljplot2/default-doc "no clusters (every :cluster nil)"}
+                    schema/pos-int)
+    circular-entry
+    span-entry]))
+
+(def layout-options
+  "Options schema of [[layout]]."
+  (into [:map {:closed true}] layout-entries))
+
 (defn layout
   "Layout of tree `root`: `{:nodes [node ..] :paths [{:id i :x x :y y :cluster c} ..]}` - nodes with `:x`, `:y`,
   `:depth`, `:parent`, `:leaf?`, `:cluster` (and with `:circular` also `:angle` - degrees clockwise from the top - and
@@ -156,8 +204,13 @@
     branch inside a cluster takes its number, branches above the cut `nil` (absent - all `nil`)
   * `:circular true` - x as the angle over `:span` degrees (default 360; leaves one step apart, the last one step
     before the first on a full circle), height as the radius from 1 (leaves) to 0 (the root's height); elbows' cross
-    pieces become arcs; points in [-1, 1]"
-  [root {:keys [k circular span] :or {span 360.0}}]
+    pieces become arcs; points in [-1, 1]
+
+  Throws `ex-info {:key :k}` for more clusters than leaves; `{:key k}` for an invalid option `k` (checked first, see
+  [[layout-options]])."
+  {:cljplot2/api true :cljplot2/options layout-options}
+  [root {:keys [k circular span] :or {span 360.0} :as options}]
+  (schema/check-options! layout-options options)
   (let [clusters (when k (vec (map-indexed (fn [i sub] [sub (inc (long i))]) (cut-nodes root (long k)))))
         cut-of (fn [node] (some (fn [[sub c]] (when (identical? sub node) c)) clusters))
         [nodes n] (placed root [nil 0 nil] [[] 0] cut-of)
@@ -291,6 +344,23 @@
                 [(+ (* a s0) (* b mid) (* c mid) (* d s1)) (+ (* a b0) (* b b0) (* c b1) (* d b1))]))
             (range 17)))))
 
+(def node-link-layout-entries
+  "Option entries of [[node-link-layout]] (a shared group, `:tree/node-link-layout`; [[cljplot2.graphs/tree]] forwards
+  them)."
+  (schema/in-fragment
+   :tree/node-link-layout
+   [(schema/optional :layout {:description "node placement: :tidy (every node at its depth, d3 tree) or :cluster (leaves at the deepest depth, d3 cluster)"
+                              :default :tidy}
+                     [:enum :tidy :cluster])
+    (schema/optional :links {:description "link shape: :diagonal (curves along the depth axis) or :line" :default :diagonal}
+                     [:enum :diagonal :line])
+    circular-entry
+    span-entry]))
+
+(def node-link-layout-options
+  "Options schema of [[node-link-layout]]."
+  (into [:map {:closed true}] node-link-layout-entries))
+
 (defn node-link-layout
   "Node-link layout of tree `root` (d3 `tree` / `cluster`, Vega `tree`): `{:nodes [node ..] :links [{:id i :x x :y y}
   ..]}` - nodes in depth-first order with `:depth`, `:parent` (index), `:leaf?`, `:breadth` and `:x` / `:y`; one link
@@ -305,8 +375,12 @@
     step, so the ends don't meet), depth as the radius from 0 (the root) to 1 (the deepest node); nodes also get
     `:angle` (degrees clockwise from the top) and `:radius`; diagonal links are curves in (angle, radius) - d3
     `linkRadial`; points in [-1, 1]
-  * else depth along x from 0 (the root) and breadth along y (the first node of a depth on top: y = -breadth)"
-  [root {:keys [layout links circular span] :or {layout :tidy links :diagonal span 360.0}}]
+  * else depth along x from 0 (the root) and breadth along y (the first node of a depth on top: y = -breadth)
+
+  Throws `ex-info {:key k}` for an invalid option `k` (checked first, see [[node-link-layout-options]])."
+  {:cljplot2/api true :cljplot2/options node-link-layout-options}
+  [root {:keys [layout links circular span] :or {layout :tidy links :diagonal span 360.0} :as options}]
+  (schema/check-options! node-link-layout-options options)
   (let [[placed-nodes] (placed root [nil 0 nil] [[] 0] (constantly nil))
         breadths (if (= :cluster layout) (mapv :x placed-nodes) (tidy-breadths placed-nodes))
         max-depth (double (reduce max 1 (map :depth placed-nodes)))
@@ -379,16 +453,30 @@
              [(+ (* b0 (double ax)) (* b1 (double bx)) (* b2 (double cx)) (* b3 (double dx)))
               (+ (* b0 (double ay)) (* b1 (double by)) (* b2 (double cy)) (* b3 (double dy)))])))))
 
+(def bundle-paths-entries
+  "Option entries of [[bundle-paths]] (a shared group, `:tree/bundle-paths`; [[cljplot2.graphs/bundle]] forwards
+  them)."
+  (schema/in-fragment
+   :tree/bundle-paths
+   [(schema/optional :from {:description "accessor of an edge row's source leaf id" :default :from} schema/accessor)
+    (schema/optional :to {:description "accessor of an edge row's target leaf id" :default :to} schema/accessor)
+    (schema/optional :beta {:description "bundling strength: 1 - along the tree path, 0 - a straight line" :default 0.85}
+                     schema/fraction)]))
+
+(def bundle-paths-options
+  "Options schema of [[bundle-paths]]."
+  (into [:map {:closed true}] bundle-paths-entries))
+
 (defn bundle-paths
   "Edges (rows; `:from` / `:to` accessors, default `:from` / `:to` - leaf ids, `:id` of the nodes, see
   [[from-parents]]) bundled along the laid out tree `laid` (see [[layout]], `:circular`): each a B-spline through the
   positions of the tree path between its leaves, straightened by `:beta` (default 0.85; 1 - the tree path, 0 - a
   straight line). Returns `{:paths [{:id i :x :y :from :to} ..] :dropped n}` - path rows (edge index `:id`, its row's
   keys kept), edges with an end that isn't a leaf (or the same leaf at both ends) dropped and counted. Throws
-  `ex-info {:key :beta}` for a `:beta` outside [0, 1]."
-  [edges laid {:keys [from to beta] :or {from :from to :to beta 0.85}}]
-  (when-not (and (number? beta) (<= 0.0 (double beta) 1.0))
-    (schema/fail! "Bundle :beta should be a number in [0, 1]." {:key :beta :value beta}))
+  `ex-info {:key k}` for an invalid option `k` (checked first, see [[bundle-paths-options]])."
+  {:cljplot2/api true :cljplot2/options bundle-paths-options}
+  [edges laid {:keys [from to beta] :or {from :from to :to beta 0.85} :as options}]
+  (schema/check-options! bundle-paths-options options)
   (let [nodes (:nodes laid)
         leaf-index (into {} (keep-indexed (fn [i node] (when (:leaf? node) [(:id node) i])) nodes))
         from-of (data/row-accessor :from from)

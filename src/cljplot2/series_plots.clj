@@ -7,6 +7,7 @@
   (:require [clojure2d.color :as c]
             [cljplot2.chart :as chart]
             [cljplot2.data.series :as series]
+            [cljplot2.multiplot :as multiplot]
             [cljplot2.schema :as schema]
             [cljplot2.theme :as theme]))
 
@@ -22,15 +23,32 @@
 
 (def ^:private kind-names {false "ACF" true "PACF"})
 
-(defn- check-options!
-  "Throw `ex-info {:key k}` for an invalid `:partial?`, `:band` or `:colors`."
-  [{:keys [partial? band colors]}]
-  (when-not (contains? kinds-of partial?)
-    (schema/fail! "acf :partial? should be :both, :acf (or false) or :pacf (or true)." {:key :partial? :value partial?}))
-  (when-not (#{:smooth :stepped} band)
-    (schema/fail! "acf :band should be :smooth or :stepped." {:key :band :value band}))
-  (when-not (and (map? colors) (every? (set (keys default-colors)) (keys colors)) (every? schema/color? (vals colors)))
-    (schema/fail! "acf :colors should be a map of :stem, :band, :significant to colors." {:key :colors :value colors})))
+(defn- forwarded
+  "`entries` without the keys `ks`."
+  [entries ks]
+  (filterv #(not (contains? ks (first %))) entries))
+
+(def acf-options
+  "Options schema of [[acf]]: its own entries, `:lags` / `:alpha` forwarded to
+  [[cljplot2.data.series/acf-rows]] and the builder entries."
+  (-> [:map {:closed true}
+       (schema/nilable :partial? {:description "the correlograms drawn: :both (ACF above PACF), :acf or false (ACF), :pacf or true (PACF)"
+                                  :default :both}
+                       [:enum :both :acf :pacf false true])
+       (schema/nilable :band {:description "significance band: :smooth (a ribbon through the lags) or :stepped (a block per lag)"
+                              :default :smooth}
+                       [:enum :smooth :stepped])
+       (schema/nilable :colors {:description "colours of the stems and points, the band and the significant lags' points"}
+                       [:map {:closed true}
+                        (schema/optional :stem {:description "colour of the stems and points" :default (:stem default-colors)}
+                                         schema/color)
+                        (schema/optional :band {:description "colour of the significance band" :default (:band default-colors)}
+                                         schema/color)
+                        (schema/optional :significant {:description "colour of the points of lags outside the band"
+                                                       :default (:significant default-colors)}
+                                         schema/color)])]
+      (into (forwarded series/acf-rows-entries #{:partial?}))
+      (into multiplot/builder-entries)))
 
 (defn- stepped-band
   "Rows `{:x :lo :hi :lag :kind}` of a stepped band: each lag's band from `lag - 0.5` to `lag + 0.5` (a ribbon group
@@ -56,14 +74,15 @@
   `options`: `:lags`, `:alpha` (see `acf-rows`); `:partial?` - `:both` (default; ACF above PACF, facet rows by
   `:kind`, each row its own y scale - `:facets {:scales {:y :free}}` - unless `:scales {:y {:domain ..}}` sets one), `:acf` or `false` (ACF), `:pacf` or `true`
   (PACF); `:band` - `:smooth` (default, a ribbon through the lags, as R's `ci.type \"ma\"` line) or `:stepped` (a block per lag); `:colors {:stem :band
-  :significant}`; `:scales`, `:title`, `:theme`. Throws `ex-info {:key k}` for an invalid `:partial?`, `:band`,
-  `:colors` (`nil` options - the defaults).
+  :significant}`; `:scales`, `:title`, `:theme` (see [[acf-options]]). Throws `ex-info {:key k}` for an invalid option
+  (checked first; `nil` options - the defaults).
 
   Equivalents: R `acf` / `pacf` plots, `forecast::ggtsdisplay` (lower panels)."
+  {:cljplot2/options acf-options}
   ([values] (acf values {}))
   ([values {:keys [scales title] user-theme :theme :as options}]
+   (schema/check-options! acf-options options)
    (let [{:keys [partial? band colors] :as options} (merge {:partial? :both :band :smooth :colors {}} (into {} (remove (comp nil? val)) options))
-         _ (check-options! options)
          {:keys [stem significant] band-color :band} (merge default-colors colors)
          kinds (kinds-of partial?)
          rows (vec (mapcat (fn [p?] (map #(assoc % :kind (kind-names p?))
@@ -98,14 +117,30 @@
 (defn- horizon-colors
   "Colours of the bands `1..n`, `-1..-n` (see [[cljplot2.data.series/horizon-bands]]): `colors` `:positive` /
   `:negative` (at least `n` colours each, lightest first) or the default palettes. Throws `ex-info {:key :colors}`
-  for an unknown key, too few or invalid colours."
+  for fewer than `n` colours."
   [colors ^long n]
-  (when-not (and (map? colors) (every? #{:positive :negative} (keys colors))
-                 (every? #(and (sequential? %) (>= (count %) n) (every? schema/color? %)) (vals colors)))
-    (schema/fail! (str "horizon :colors should be a map of :positive / :negative to at least " n " colors.")
+  (when-let [sign (some (fn [[k cs]] (when (< (count cs) n) k)) colors)]
+    (schema/fail! (str "horizon :colors " sign " should hold at least " n " colors (:bands).")
                   {:key :colors :value colors}))
   (into (vec (take n (or (:positive colors) (band-colors (:positive horizon-ends) n))))
         (take n (or (:negative colors) (band-colors (:negative horizon-ends) n)))))
+
+(def horizon-options
+  "Options schema of [[horizon]]: its own entries, those forwarded to [[cljplot2.data.series/horizon-rows]] and the
+  builder entries."
+  (-> [:map {:closed true}
+       (schema/nilable :colors {:description "band colours per sign, lightest first, at least :bands colours each"}
+                       [:map {:closed true}
+                        (schema/optional :positive {:description "colours of the positive bands, lightest first"
+                                                    :cljplot2/default-doc ":bands blues from [158 202 225] to [8 69 148]"}
+                                         [:sequential schema/color])
+                        (schema/optional :negative {:description "colours of the negative (mirrored) bands, lightest first"
+                                                    :cljplot2/default-doc ":bands reds from [252 174 145] to [165 15 21]"}
+                                         [:sequential schema/color])])
+       (schema/optional :alpha {:description "fill alpha of the bands (translucent bands show the ones beneath)" :default 1.0}
+                        schema/fraction)]
+      (into series/horizon-rows-entries)
+      (into multiplot/builder-entries)))
 
 (defn horizon
   "Horizon chart of `rows` as a plot map (see [[cljplot2.data.series/horizon-rows]]): values `:y` over `:x` folded
@@ -117,11 +152,14 @@
   `options`: `:x`, `:y`, `:series` (row keys), `:bands`, `:band-height`, `:interpolator`, `:steps-per-gap` (see
   `horizon-rows` - a curve through the values, e.g. `:monotone`); `:colors {:positive [..] :negative [..]}` (at least
   `:bands` colours each, lightest first; default blues / reds); `:alpha` - the bands' fill alpha (default 1, opaque;
-  translucent bands show the ones beneath); `:scales`, `:title`, `:theme`. Throws `ex-info {:key k}` for invalid `:bands`, `:band-height`, `:colors`, x or y values.
+  translucent bands show the ones beneath); `:scales`, `:title`, `:theme` (see [[horizon-options]]). Throws `ex-info
+  {:key k}` for an invalid option `k` (checked first), fewer than `:bands` colours (`:colors`), x or y values.
 
   Equivalents: Vega-Lite `area_horizon`, Vega `horizon-graph`, latticeExtra `horizonplot`."
+  {:cljplot2/options horizon-options}
   ([rows] (horizon rows {}))
   ([rows {:keys [x series bands colors scales title alpha] user-theme :theme :or {x :x bands 2 alpha 1.0} :as options}]
+   (schema/check-options! horizon-options options)
    (let [{band-rows :rows h :band-height} (series/horizon-rows rows (select-keys options [:x :y :series :bands :band-height
                                                                                          :interpolator :steps-per-gap]))
          n (long bands)

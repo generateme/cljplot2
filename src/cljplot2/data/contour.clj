@@ -113,6 +113,7 @@
 (defn isolines
   "Lines of `grid` at `level`: `[{:points [[x y] ..] :closed? bool}]` (see the namespace doc); `[]` when the field
   doesn't cross it."
+  {:cljplot2/api true}
   [grid level]
   (let [level (double level)]
     (mapv (fn [{:keys [edges closed?]}]

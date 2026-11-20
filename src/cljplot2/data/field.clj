@@ -304,18 +304,25 @@
         b (* 255.0 bright)]
     (from-space (c/color (m/norm angle m/-PI m/PI 0.0 255.0) (- 255.0 (/ (- 255.0 b) 4.0)) b))))
 
+(def domain-color-options
+  "Options of [[domain-color]]."
+  [:map {:closed true}
+   (schema/optional :wrap {:description "how the magnitude of f is wrapped into [0 1] for the brightness (see cljplot2.data.field/wrap)"
+                           :default :log2}
+                    (into [:enum] (sort wrap-methods)))
+   (schema/optional :colorspace {:description "the hue-first colour space of the colours (:HSI - old cljplot's example)"
+                                 :default :HSI}
+                    (into [:enum] (sort hue-colorspaces)))])
+
 (defn domain-color
   "A `:pixel-color` function (see [[cljplot2.chart.field]]) colouring a complex function `f` (a `Vec2` -> `Vec2`
   function of `fastmath.complex`, e.g. `cx/log`) by domain colouring: the point `(x, y)` is `x + iy`, the hue the
   argument of f there (the returned function takes a point `[x y]`), the brightness its magnitude wrapped by `:wrap` (default `:log2`, see [[wrap]]), in
   `:colorspace` (default `:HSI` - old cljplot's example; one of [[hue-colorspaces]]). Zeros and poles get a colour.
-  Throws `ex-info {:key :wrap}` / `{:key :colorspace}` for an unknown wrap / colour space."
+  Throws `ex-info` for bad options ([[domain-color-options]])."
+  {:cljplot2/api true :cljplot2/options domain-color-options}
   ([f] (domain-color f {}))
-  ([f {:keys [wrap colorspace] :or {wrap :log2 colorspace :HSI}}]
-   (when-not (wrap-methods wrap)
-     (schema/fail! (str "Domain colouring :wrap should be one of " (sort wrap-methods) ".") {:key :wrap :value wrap}))
-   (when-not (hue-colorspaces colorspace)
-     (schema/fail! (str "Domain colouring :colorspace should be one of " (sort hue-colorspaces) ".")
-                   {:key :colorspace :value colorspace}))
+  ([f {:keys [wrap colorspace] :or {wrap :log2 colorspace :HSI} :as opts}]
+   (schema/check-options! domain-color-options opts)
    (let [from-space (second (c/colorspaces* colorspace))]
      (fn [[x y]] (complex-color from-space wrap (f (cx/complex x y)))))))

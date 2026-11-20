@@ -6,18 +6,36 @@
             [cljplot2.data.accessor :as accessor]
             [cljplot2.scale.aesthetic :as aesthetic]
             [cljplot2.data.rows :as data]
+            [cljplot2.layout.plot-grid :as plot-grid]
+            [cljplot2.pipeline :as pipeline]
             [cljplot2.schema :as schema]
             [cljplot2.theme :as theme]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
-(def ^:private options-schema
-  "Keys of [[arrange]]'s `options` (their values are validated with the plot, at build)."
-  [:map {:closed true}
-   (schema/optional :columns any?) (schema/optional :rows any?) (schema/optional :widths any?)
-   (schema/optional :heights any?) (schema/optional :align any?) (schema/optional :equal-panels any?)
-   (schema/optional :title any?) (schema/optional :theme any?)])
+(def builder-entries
+  "Option entries every builder takes (a shared group, `:builder`): the plot title, scales deep-merged into the
+  builder's and a theme; their values are validated with the built plot."
+  (schema/in-fragment
+   :builder
+   [(schema/optional :title {:description "plot title (a text or label options)"} any?)
+    (schema/optional :scales {:description "scale specs deep-merged into the builder's (validated with the plot)"} any?)
+    (schema/optional :theme {:description "theme overrides of the built plot"} any?)]))
+
+(defn- builder-entries-of
+  "The entries of [[builder-entries]] with keys `ks`, in order (a builder taking only some of the shared group)."
+  [ks]
+  (let [by-key (into {} (map (juxt first identity)) builder-entries)]
+    (mapv by-key ks)))
+
+(def arrange-options
+  "Schema of [[arrange]]'s `options`: the plot `:arrange` layout entries but `:plots` (the shared group `:arrange`,
+  see [[cljplot2.layout.plot-grid/arrange-entries]]) and the builder's `:title` and `:theme` (a multiplot takes no
+  `:scales` - each sub-plot has its own)."
+  (-> [:map {:closed true}]
+      (into (remove #(= :plots (first %))) plot-grid/arrange-entries)
+      (into (builder-entries-of [:title :theme]))))
 
 (defn arrange
   "Plot map arranging `plots` in a grid of cells filled row by row: `{:arrange {:plots plots ...}}`.
@@ -37,13 +55,13 @@
   * `:theme` - the multiplot's theme: background, title style, `[:multiplot :gap]` between cells, `[:plot :margin]`
     around them; sub-plots keep their own themes
 
-  An unknown option key throws `ex-info {:key :arrange}` (with a spelling suggestion when one is close).
-  The grid is generated at build time from the merged theme ([[cljplot2.layout.plot-grid/arrange-grid]], cells `[:plot i]`),
+  Options are validated first ([[arrange-options]]): an invalid value or an unknown key throws `ex-info {:key k}`, `k`
+  the option (with a spelling suggestion when a known key is close). The grid is generated at build time from the merged theme ([[cljplot2.layout.plot-grid/arrange-grid]], cells `[:plot i]`),
   where the spec is validated (`ex-info {:key :arrange}`)."
+  {:cljplot2/options arrange-options}
   ([plots] (arrange plots {}))
   ([plots {:keys [title theme] :as options}]
-   (when-let [{:keys [in value message]} (first (schema/errors options-schema options [:options]))]
-     (schema/fail! (str "Invalid arrange option " (pr-str (last in)) ": " message ".") {:key :arrange :in in :value value}))
+   (schema/check-options! arrange-options options)
    (cond-> {:arrange (assoc (select-keys options [:columns :rows :widths :heights :align :equal-panels]) :plots plots)}
      theme (assoc :theme theme)
      (some? title) (assoc :labels {:title title}))))
@@ -79,6 +97,40 @@
   [slot]
   (cond (nil? slot) [] (map? slot) [slot] :else (vec slot)))
 
+(defn- chart-value? [v] (map? v))
+
+(def ^:private slot-schema
+  "A `pairs` slot: a chart, a sequence of charts or `nil` (none)."
+  [:maybe [:multi {:dispatch chart-value? :cljplot2/type-doc "a chart or a vector of charts"}
+           [true pipeline/chart-schema] [false [:sequential pipeline/chart-schema]]]])
+
+(def pairs-options
+  "Schema of [[pairs]]'s `options` (the variables' count and values are checked against the data)."
+  (-> [:map {:closed true}
+       [:variables {:description "the numeric columns, in matrix order"}
+        [:sequential {:min 2 :max max-pairs-variables} keyword?]]
+       (schema/nilable :mapping {:description "extra mapping of every cell (grouping aesthetics such as :color, :group)"}
+                       data/mapping-schema)
+       (schema/optional :lower {:description "charts below the diagonal; nil - empty cells"
+                                :cljplot2/default-doc "(chart/scatter)"}
+                        slot-schema)
+       (schema/optional :upper {:description "charts above the diagonal; nil - empty cells"
+                                :cljplot2/default-doc "(chart/correlation {:glyph :number})"}
+                        slot-schema)
+       (schema/optional :diagonal {:description "charts of the diagonal cells (in their own magnitude scale); :names - the variable's name; nil - empty cells"
+                                   :cljplot2/default-doc "(chart/density)"}
+                        [:maybe [:multi {:dispatch #(cond (= :names %) :names (map? %) :chart :else :charts)
+                                         :cljplot2/type-doc ":names, a chart or a vector of charts"}
+                                 [:names [:= :names]]
+                                 [:chart pipeline/chart-schema]
+                                 [:charts [:sequential pipeline/chart-schema]]]])
+       (schema/nilable :labels {:description "display names of the variables, {variable text}"
+                                :cljplot2/default-doc "the variable's name"}
+                       [:map-of keyword? string?])
+       (schema/nilable :theme {:description "theme of every cell and of the matrix (a [:plot :margin] or [:multiplot :gap] given wins over the cells' facet-like spacing)"}
+                       any?)]
+      (into (builder-entries-of [:title]))))
+
 (defn pairs
   "Scatter-plot matrix of the numeric `variables` of `data` as an [[arrange]] plot map: cell (row i, column j) plots
   variable j on x against variable i on y.
@@ -105,18 +157,19 @@
   charts compute (e.g. the r color bar of correlation glyphs);
   the matrix has `:equal-panels` and cells shaded as a checkerboard like facet panels (`:alternate-panel` on odd
   `i + j`, theme `[:panel :alternate-fill]`; `:none` turns it off). Throws `ex-info {:key :variables}` for
-  a wrong variable count, a missing or non-numeric variable.
+  a wrong variable count, a missing or non-numeric variable; options are validated first ([[pairs-options]], `ex-info
+  {:key k}`, `k` the option).
 
   Equivalents: GGally `ggpairs` - the defaults (scatter below, correlation text above - per group when grouped -,
   density on the diagonal); R `corrgram` / `pairs` panel functions - `chart/correlation` glyphs in `:lower` / `:upper`
   (`:shade`, `:pie`, `:ellipse`, ...) with `:diagonal :names`. A correlation matrix as a heatmap (one tile per pair)
   is `chart/tile` over `fastmath.stats/correlation-matrix` rows instead."
+  {:cljplot2/options pairs-options}
   [data {:keys [variables mapping lower upper diagonal labels theme title]
-         :or {lower ::default upper ::default diagonal ::default}}]
-  (let [variables (vec variables)
+         :or {lower ::default upper ::default diagonal ::default} :as options}]
+  (let [_ (schema/check-options! pairs-options options)
+        variables (vec variables)
         n (count variables)
-        _ (when-not (<= 2 n max-pairs-variables)
-            (schema/fail! (str "Pairs needs 2 to " max-pairs-variables " :variables, got " n ".") {:key :variables :value variables}))
         rows (data/rows data)
         domains (variable-domains rows variables)
         name-of (fn [k] (get labels k (name k)))

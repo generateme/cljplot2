@@ -256,8 +256,8 @@
   (testing "R4 invalid :partial?, :band, :colors throw; nil options - the defaults"
     (is (= :partial? (:key (error #(plot/acf noise {:partial? :acf2})))))
     (is (= :band (:key (error #(plot/acf noise {:band :blocky})))))
-    (is (= :colors (:key (error #(plot/acf noise {:colors {:stems :red}})))))
-    (is (= :colors (:key (error #(plot/acf noise {:colors {:stem :not-a-colour}})))))
+    (is (= :stems (:key (error #(plot/acf noise {:colors {:stems :red}})))))
+    (is (= :stem (:key (error #(plot/acf noise {:colors {:stem :not-a-colour}})))))
     (is (= :colors (:key (error #(plot/acf noise {:colors [:red]})))))
     (is (= (plot/acf noise) (plot/acf noise {:partial? nil :band nil :colors nil}))))
   (testing "U1 the band: a ribbon through the lags (default), a block per lag with :band :stepped"
@@ -324,7 +324,7 @@
       (is (= 400 (count (vf/arrows (constantly [1 1]) {:domain domain}))) "n 20 by default"))
     (testing "3.2 invalid options"
       (is (= :domain (:key (error #(vf/arrows identity {})))))
-      (is (= :domain (:key (error #(vf/arrows identity {:domain {:x [1 1] :y [0 1]}})))))
+      (is (= :x (:key (error #(vf/arrows identity {:domain {:x [1 1] :y [0 1]}})))))
       (is (= :n (:key (error #(vf/arrows identity {:domain domain :n 0})))))
       (is (= :grid (:key (error #(vf/arrows identity {:domain domain :grid :hex})))))
       (is (= :scale (:key (error #(vf/arrows identity {:domain domain :scale 0})))))

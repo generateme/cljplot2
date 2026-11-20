@@ -71,6 +71,7 @@
   `font` is a bundled family name (see [[bundled-fonts]]), an installed or logical (`\"SansSerif\"`, ...) font
   family name (case-insensitive; an unknown name throws `ex-info` with `{:key :font}` unless the platform
   can't list its fonts) or a `java.awt.Font` (its size and style are replaced by `size` and `font-style`)."
+  {:cljplot2/api true}
   ^Font [font font-style size]
   (let [style (font-styles font-style)]
     (when-not style

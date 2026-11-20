@@ -1,5 +1,7 @@
 (ns cljplot2.test-util
-  "Helpers shared by the tests.")
+  "Helpers shared by the tests."
+  (:require [cljplot2.core :as plot]
+            [cljplot2.describe :as describe]))
 
 (defn error-data
   "`ex-data` of the `ExceptionInfo` thrown by calling `f`, `nil` when it doesn't throw one."
@@ -15,3 +17,35 @@
   "Set of the `:in` paths of every error thrown by calling `f`."
   [f]
   (set (map :in (:errors (error-data f)))))
+
+;; defaults (reference part: every schema `:default` is the real one)
+
+(defn explicit-defaults
+  "Options `options` with every constant `:default` of option `rows` set where absent (`nil` - not set); nested rows
+  only inside a given map (an absent map - e.g. no `:arrow` - is no map of defaults)."
+  [rows options]
+  (reduce (fn [opts {:keys [path default]}]
+            (if (and (some? default) (nil? (get-in opts path))
+                     (or (= 1 (count path)) (map? (get-in opts (pop path)))))
+              (assoc-in opts path default)
+              opts))
+          (into {} (remove (comp nil? val)) options)
+          (remove #(nil? (:default %)) rows)))
+
+(defn pixels
+  "ARGB pixels of `img`."
+  ^ints [^java.awt.image.BufferedImage img]
+  (.getRGB img 0 0 (.getWidth img) (.getHeight img) nil 0 (.getWidth img)))
+
+(defn same-pixels?
+  "Do plots `p` and `q` render to the same pixels with render `options`?"
+  [p q options]
+  (java.util.Arrays/equals (pixels (plot/render-image p options)) (pixels (plot/render-image q options))))
+
+(defn builder-defaults-hold?
+  "Does builder `v` (a var with `:cljplot2/options`) applied to `args` and `options` render the same pixels as with
+  every constant `:default` of its options set explicitly?"
+  [v args options render-options]
+  (let [f @v
+        explicit (explicit-defaults (describe/options v) options)]
+    (same-pixels? (apply f (concat args [options])) (apply f (concat args [explicit])) render-options)))

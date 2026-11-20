@@ -68,6 +68,7 @@
 (defn upset-rows
   "Rows of an UpSet plot: `[{:combination \"A & B\" :sets [..] :size n :degree k} ..]` (see [[intersections]]), by
   size descending, then degree, then set order."
+  {:cljplot2/api true}
   ([rows mapping] (upset-rows rows mapping nil))
   ([rows mapping sets]
    (let [{order :sets} (memberships rows mapping sets)
@@ -80,6 +81,7 @@
 (defn membership-rows
   "Dot-matrix rows of an UpSet plot: `{:combination c :set s :member? bool}` for every combination of [[upset-rows]]
   (in its order) and every chosen set (set order)."
+  {:cljplot2/api true}
   ([rows mapping] (membership-rows rows mapping nil))
   ([rows mapping sets]
    (let [{order :sets} (memberships rows mapping sets)]

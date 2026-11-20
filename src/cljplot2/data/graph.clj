@@ -33,6 +33,35 @@
 
 (def layouts #{:force :circle :random})
 
+;; option schemas
+
+(def open-fraction
+  "Schema of a number in the open interval (0, 1)."
+  (schema/named-type ::open-fraction #(and (number? %) (< 0.0 (double %) 1.0)) "should be a number in (0 1)"))
+
+(def finite-non-neg
+  "Schema of a finite number >= 0."
+  (schema/named-type ::finite-non-neg #(and (schema/finite? %) (>= (double %) 0.0)) "should be a finite number >= 0"))
+
+(def graph-entries
+  "Option entries of [[graph]] (a shared group, `:graph/graph`; the graph builders of [[cljplot2.graphs]] forward
+  them)."
+  (schema/in-fragment
+   :graph/graph
+   [(schema/optional :from {:description "accessor of an edge row's source node id" :default :from} schema/accessor)
+    (schema/optional :to {:description "accessor of an edge row's target node id" :default :to} schema/accessor)
+    (schema/optional :value {:description "accessor of an edge row's weight, a finite number >= 0 (nil - 1)" :default :value}
+                     schema/accessor)
+    (schema/nilable :nodes {:description "node rows (each with an id), placed first in their order; ids seen only in edges follow"}
+                    [:sequential map?])
+    (schema/optional :id {:description "accessor of a node row's id" :default :id} schema/accessor)
+    (schema/nilable :directed? {:description "a directed graph: degrees split into :in and :out" :default false}
+                    schema/bool)]))
+
+(def graph-options
+  "Options schema of [[graph]]."
+  (into [:map {:closed true}] graph-entries))
+
 (defn- edge-rows!
   "`edges` checked: a sequence of maps (`ex-info {:key :edges}` otherwise)."
   [edges]
@@ -55,9 +84,12 @@
   "The graph of `edges` (rows) - see the namespace doc. `opts`: `:from`, `:to`, `:value` - accessors (keywords or
   functions; defaults `:from`, `:to`, `:value`), `:nodes` - node rows, `:id` - their id accessor (default `:id`),
   `:directed?` (default `false`). Throws `ex-info` for edges that aren't rows (`:edges`), an invalid weight
-  (`:value`), repeated or `nil` node ids (`:nodes`)."
+  (`:value`), repeated or `nil` node ids (`:nodes`); `{:key k}` for an invalid option `k` (checked first, see
+  [[graph-options]])."
+  {:cljplot2/api true :cljplot2/options graph-options}
   ([edges] (graph edges {}))
-  ([edges {:keys [from to value nodes id directed?] :or {from :from to :to value :value id :id}}]
+  ([edges {:keys [from to value nodes id directed?] :or {from :from to :to value :value id :id} :as options}]
+   (schema/check-options! graph-options options)
    (let [from-of (data/row-accessor :from from)
          to-of (data/row-accessor :to to)
          value-of (data/row-accessor :value value)
@@ -78,12 +110,22 @@
       :directed? (boolean directed?)
       :dropped (- (count all) (count kept))})))
 
+(def adjacency->edges-options
+  "Options schema of [[adjacency->edges]]."
+  [:map {:closed true}
+   (schema/optional :directed? {:description "read the whole matrix (false - only the upper triangle and the diagonal)"
+                                :default true}
+                    schema/bool)])
+
 (defn adjacency->edges
   "Edge rows `{:from :to :value}` of the square `matrix` (rows of numbers, `names` - row / column names in order): a
   zero, `nil` or non-finite cell is no edge; with `:directed? false` (default `true`) only the upper triangle (and
-  the diagonal) is read. Throws `ex-info {:key :matrix}` when the matrix isn't `n x n` for `n` names."
+  the diagonal) is read. Throws `ex-info {:key :matrix}` when the matrix isn't `n x n` for `n` names; `{:key k}` for
+  an invalid option `k` (checked first, see [[adjacency->edges-options]])."
+  {:cljplot2/api true :cljplot2/options adjacency->edges-options}
   ([matrix names] (adjacency->edges matrix names {}))
-  ([matrix names {:keys [directed?] :or {directed? true}}]
+  ([matrix names {:keys [directed?] :or {directed? true} :as options}]
+   (schema/check-options! adjacency->edges-options options)
    (let [n (count names)
          rows (vec matrix)]
      (when-not (and (= n (count rows)) (every? #(= n (count %)) rows))
@@ -259,19 +301,36 @@
               (recur more (+ (double x) s component-gap) (double y) (max (double row-height) s)))))
         [xs ys]))))
 
+(def layout-entries
+  "Option entries of [[layout]] (a shared group, `:graph/layout`; [[cljplot2.graphs/network]] forwards them)."
+  (schema/in-fragment
+   :graph/layout
+   [(schema/optional :layout {:description "node placement: :force (Fruchterman-Reingold), :circle or :random" :default :force}
+                     (into [:enum] (sort layouts)))
+    (schema/optional :iterations {:description "steps of the force layout" :default 500} [:int {:min 0}])
+    (schema/optional :gravity {:description "pull of the force layout to each component's centroid, in units of the ideal edge length (0 - none)"
+                               :default 1.0}
+                     finite-non-neg)
+    (schema/nilable :rng {:description "fastmath random generator of the force and random layouts, copied per call (seeded - the same layout every time)"
+                          :cljplot2/default-doc "a fresh unseeded generator every call"}
+                    rng/schema)]))
+
+(def layout-options
+  "Options schema of [[layout]]."
+  (into [:map {:closed true}] layout-entries))
+
 (defn layout
   "Graph `g` (see [[graph]]) with positions (see the namespace doc). `opts`: `:layout` - `:force` (default),
   `:circle`, `:random`; force: `:iterations` (default 500), `:gravity` - the pull to the centroid in units of the
   ideal edge length, inside each connected component (default 1; 0 - none; more - a tighter layout); `:rng`. A force layout places every connected
   component on its own and packs them in rows, largest first (see [[packed-force-positions]]); it is scaled into
-  the unit square keeping its proportions. Throws `ex-info` for an unknown layout (`:layout`), a
-  `:gravity` that isn't a finite number >= 0 (`:gravity`)."
+  the unit square keeping its proportions. Throws `{:key k}` for an invalid option `k` (checked first, see
+  [[layout-options]])."
+  {:cljplot2/api true :cljplot2/options layout-options}
   ([g] (layout g {}))
-  ([{:keys [nodes edges loops] :as g} {:keys [iterations gravity rng] kind :layout :or {kind :force iterations 500 gravity 1.0}}]
-   (when-not (layouts kind)
-     (schema/fail! (str "Unknown layout, known: " (sort layouts) ".") {:key :layout :value kind}))
-   (when-not (and (number? gravity) (m/valid-double? (double gravity)) (>= (double gravity) 0.0))
-     (schema/fail! "Layout :gravity should be a finite number >= 0." {:key :gravity :value gravity}))
+  ([{:keys [nodes edges loops] :as g} {:keys [iterations gravity rng] kind :layout :or {kind :force iterations 500 gravity 1.0}
+                                       :as options}]
+   (schema/check-options! layout-options options)
    (let [n (count nodes)
          index (zipmap (map :id nodes) (range))
          [^doubles xs ^doubles ys] (case kind
@@ -398,6 +457,29 @@
         (into target)
         (into (through-centre (peek target) (first source))))))
 
+(def order-entry
+  "Option entry `:order` of the ordered layouts (see [[node-order]])."
+  (schema/nilable :order {:description "node order: a sequence of ids (those first, the rest after them in input order) or :cluster (nodes linked to the same others side by side)"
+                          :cljplot2/default-doc "the nodes' input order"}
+                  [:or [:= :cluster] [:sequential any?]]))
+
+(def chord-layout-entries
+  "Option entries of [[chord-layout]] (a shared group, `:graph/chord-layout`; [[cljplot2.graphs/chord]] forwards
+  them)."
+  (schema/in-fragment
+   :graph/chord-layout
+   [order-entry
+    (schema/optional :pad {:description "gap after every ring sector in degrees (must leave room for the sectors)" :default 2.0}
+                     finite-non-neg)
+    (schema/optional :inner {:description "inner radius of the ring, where the ribbons end (the outer one is 1)" :default 0.92}
+                     open-fraction)
+    (schema/nilable :min-value {:description "flows of a pair (summed) below it are left out and counted in :dropped (nil - none)"}
+                    finite-non-neg)]))
+
+(def chord-layout-options
+  "Options schema of [[chord-layout]]."
+  (into [:map {:closed true}] chord-layout-entries))
+
 (defn chord-layout
   "Chord diagram of graph `g` (see [[graph]]) as data in the unit circle (d3 `chord` for an undirected graph,
   `chordDirected` for a directed one - see [[chord-angles]]): a ring sector per node, its angle proportional to the
@@ -409,16 +491,14 @@
   (undirected - the pair's exchange); its edges are counted in `:dropped`.
   Returns `{:groups [{:id :start :end :value}] :arcs [{:group :x :y}] :ribbons [{:ribbon :from :to :value :x :y}]
   :dropped n}` (angles in degrees; `:value` of a ribbon - its source end's weight; polygon rows in point order).
-  Throws `ex-info` for a `:pad` that isn't a finite number >= 0 or leaves no room (`:pad`), an `:inner` outside
-  (0, 1) (`:inner`), a `:min-value` that isn't a finite number >= 0 (`:min-value`)."
+  Throws `ex-info {:key :pad}` for a `:pad` leaving no room for the arcs; `{:key k}` for an invalid option `k`
+  (checked first, see [[chord-layout-options]])."
+  {:cljplot2/api true :cljplot2/options chord-layout-options}
   ([g] (chord-layout g {}))
-  ([{:keys [edges directed?] :as g} {:keys [order pad inner min-value] :or {pad 2.0 inner 0.92}}]
-   (when-not (and (number? pad) (m/valid-double? (double pad)) (<= 0.0 (double pad)) (< (* (double pad) (count (:nodes g))) 360.0))
-     (schema/fail! "Chord :pad should be a finite number of degrees >= 0, leaving room for the arcs." {:key :pad :value pad}))
-   (when-not (and (number? inner) (< 0.0 (double inner) 1.0))
-     (schema/fail! "Chord :inner should be a radius in (0, 1)." {:key :inner :value inner}))
-   (when-not (or (nil? min-value) (and (number? min-value) (m/valid-double? (double min-value)) (<= 0.0 (double min-value))))
-     (schema/fail! "Chord :min-value should be a finite number >= 0." {:key :min-value :value min-value}))
+  ([{:keys [edges directed?] :as g} {:keys [order pad inner min-value] :or {pad 2.0 inner 0.92} :as options}]
+   (schema/check-options! chord-layout-options options)
+   (when-not (< (* (double pad) (count (:nodes g))) 360.0)
+     (schema/fail! "Chord :pad leaves no room for the arcs." {:key :pad :value pad}))
    (let [ids (mapv :id (:nodes g))
          index (zipmap ids (range))
          summed (weight-matrix g ids)
@@ -437,13 +517,24 @@
                       {:ribbon k :from (ids i) :to (ids j) :value ((w i) j) :x x :y y}))
       :dropped (count (filter #(weak? (index (:from %)) (index (:to %))) edges))})))
 
+(def arc-layout-entries
+  "Option entries of [[arc-layout]] (a shared group, `:graph/arc-layout`; [[cljplot2.graphs/arc]] forwards them)."
+  (schema/in-fragment :graph/arc-layout [order-entry]))
+
+(def arc-layout-options
+  "Options schema of [[arc-layout]]."
+  (into [:map {:closed true}] arc-layout-entries))
+
 (defn arc-layout
   "Arc diagram of graph `g` (see [[graph]]) as data: nodes on the x axis at 0, 1, ... in node order (`opts` `:order`,
   see [[node-order]]), y = 0; every edge a semicircle above the axis between its ends (peak height half their
   distance), sampled every ~2 degrees. Returns `{:nodes [node + :x :y] :arcs [{:edge :from :to :value :x :y}]}`
-  (`:edge` - the edge's index; arcs in edge order)."
+  (`:edge` - the edge's index; arcs in edge order). Throws `ex-info {:key :order}` for an id not in the graph;
+  `{:key k}` for an invalid option `k` (checked first, see [[arc-layout-options]])."
+  {:cljplot2/api true :cljplot2/options arc-layout-options}
   ([g] (arc-layout g {}))
-  ([{:keys [nodes edges] :as g} {:keys [order]}]
+  ([{:keys [nodes edges] :as g} {:keys [order] :as options}]
+   (schema/check-options! arc-layout-options options)
    (let [ids (node-order g order)
          x-of (zipmap ids (range))
          by-id (zipmap (map :id nodes) nodes)]
@@ -460,17 +551,31 @@
 
 (def sankey-aligns #{:justify :left :right :center})
 
-(defn- sankey-options!
-  "Sankey `opts` checked: `:align`, `:node-width` in (0, 1), `:pad` a finite number >= 0, `:iterations` an integer
-  >= 0, `:node-sort` `nil` / `:input`; `ex-info` with the option's key otherwise."
-  [{:keys [align node-width pad iterations node-sort]}]
-  (let [fail (fn [k v msg] (schema/fail! msg {:key k :value v}))
-        finite? #(and (number? %) (m/valid-double? (double %)))]
-    (when-not (sankey-aligns align) (fail :align align (str "Sankey :align should be one of " (sort sankey-aligns) ".")))
-    (when-not (and (finite? node-width) (< 0.0 (double node-width) 1.0)) (fail :node-width node-width "Sankey :node-width should be in (0, 1)."))
-    (when-not (and (finite? pad) (<= 0.0 (double pad))) (fail :pad pad "Sankey :pad should be a finite number >= 0."))
-    (when-not (and (integer? iterations) (<= 0 (long iterations))) (fail :iterations iterations "Sankey :iterations should be an integer >= 0."))
-    (when-not (contains? #{nil :input} node-sort) (fail :node-sort node-sort "Sankey :node-sort should be nil or :input."))))
+(def sankey-layout-entries
+  "Option entries of [[sankey-layout]] (a shared group, `:graph/sankey-layout`; [[cljplot2.graphs/sankey]] forwards
+  them)."
+  (schema/in-fragment
+   :graph/sankey-layout
+   [(schema/optional :align {:description "the column of a node: :justify (sinks in the last column), :left, :right (by the longest path to a sink) or :center"
+                             :default :justify}
+                     (into [:enum] (sort sankey-aligns)))
+    (schema/nilable :layer {:description "accessor of the node rows giving the column (integers >= 0, every edge to a later one; wins over :align)"
+                            :cljplot2/default-doc "columns from :align"}
+                    schema/accessor)
+    (schema/optional :node-width {:description "node width, a fraction of the unit square's width" :default 0.03}
+                     open-fraction)
+    (schema/optional :pad {:description "least gap between the nodes of a column, a fraction of the unit square's height"
+                           :default 0.02}
+                     finite-non-neg)
+    (schema/optional :iterations {:description "relaxation sweeps moving the nodes towards their links' ends (0 - spread in the start order)"
+                                  :default 6}
+                     [:int {:min 0}])
+    (schema/nilable :node-sort {:description "nil - relaxation reorders a column, :input - the input order kept"}
+                    [:enum :input])]))
+
+(def sankey-layout-options
+  "Options schema of [[sankey-layout]]."
+  (into [:map {:closed true}] sankey-layout-entries))
 
 (defn- longest-paths
   "Longest path length (in links) of every node index `0..n-1` from the start of `next-of` (node index -> next node
@@ -634,13 +739,14 @@
   band's top at the source / target (y up); rect and band rows are polygon points; edges of zero value and self-loops
   are left out, as are nodes without flow (counted; `:edges` also counts the graph's `:dropped` - edges with a `nil`
   end).
-  Throws `ex-info` for a cycle (`:edges`), a bad option (its key), a `:pad` leaving no room in the fullest column
-  (`:pad`)."
+  Throws `ex-info` for a cycle (`:edges`), a bad `:layer` (`:layer`), a `:pad` leaving no room in the fullest column
+  (`:pad`); `{:key k}` for an invalid option `k` (checked first, see [[sankey-layout-options]])."
+  {:cljplot2/api true :cljplot2/options sankey-layout-options}
   ([g] (sankey-layout g {}))
   ([{:keys [nodes edges loops] :as g} opts]
-   (let [{:keys [align layer node-width pad iterations node-sort] :as opts}
+   (schema/check-options! sankey-layout-options opts)
+   (let [{:keys [align layer node-width pad iterations node-sort]}
          (merge {:align :justify :node-width 0.03 :pad 0.02 :iterations 6} opts)
-         _ (sankey-options! opts)
          flows (filterv #(pos? (double (:value %))) edges)
          used (set (mapcat (juxt :from :to) flows))
          all-count (count nodes)
@@ -726,6 +832,23 @@
   (let [vs (vec (distinct values))]
     (try (vec (sort vs)) (catch ClassCastException _ vs))))
 
+(def alluvial-graph-entries
+  "Option entries of [[alluvial-graph]] (a shared group, `:graph/alluvial-graph`; [[cljplot2.graphs/alluvial]]
+  forwards them)."
+  (schema/in-fragment
+   :graph/alluvial-graph
+   [[:axes {:description "accessors of the axes, in column order (at least 2)"} [:sequential {:min 2} schema/accessor]]
+    (schema/nilable :value {:description "accessor of a row's weight, a finite number >= 0 (nil - 1)"
+                            :cljplot2/default-doc "1 per row"}
+                    schema/accessor)
+    (schema/nilable :fill {:description "accessor of the level the strands are grouped (and coloured) by"
+                           :cljplot2/default-doc "the first axis"}
+                    schema/accessor)]))
+
+(def alluvial-graph-options
+  "Options schema of [[alluvial-graph]]."
+  (into [:map {:closed true}] alluvial-graph-entries))
+
 (defn alluvial-graph
   "Directed graph (see [[graph]]) of an alluvial diagram of `rows` over `:axes` (accessors, at least 2): a node per
   level of every axis - `{:id [axis-index level] :name level :layer axis-index}`, levels in natural order (first
@@ -734,10 +857,10 @@
   [[cljplot2.data.rows/weight]]) and `:fill` set; edges
   ordered by fill level, so strands of one level lie together at every node. For [[sankey-layout]] with
   `{:layer :layer :node-sort :input}`. Throws `ex-info {:key :axes}` for fewer than 2 axes or a row without a value
-  of an axis."
-  [rows {:keys [axes value fill]}]
-  (when-not (and (sequential? axes) (<= 2 (count axes)))
-    (schema/fail! "An alluvial diagram needs at least 2 :axes." {:key :axes :value axes}))
+  of an axis; `{:key k}` for an invalid option `k` (checked first, see [[alluvial-graph-options]])."
+  {:cljplot2/api true :cljplot2/options alluvial-graph-options}
+  [rows {:keys [axes value fill] :as options}]
+  (schema/check-options! alluvial-graph-options options)
   (let [axis-of (mapv #(data/row-accessor :axes %) axes)
         value-of (if value (data/row-accessor :value value) (constantly 1.0))
         fill-of (data/row-accessor :fill (or fill (first axes)))
