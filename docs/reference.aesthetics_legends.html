@@ -545,7 +545,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <section id="levels-or-numbers" class="level2" data-number="4.1">
 <h2 data-number="4.1" class="anchored" data-anchor-id="levels-or-numbers"><span class="header-section-number">4.1</span> Levels or numbers</h2>
-<p>An aesthetic scale has its own kinds - not those of the position scales (<code>:log</code>, <code>:datetime</code> … in the examples below are the x axis’s, Scales chapter). The kind follows the data: levels (strings, keywords) get an <code>:ordinal</code> scale - one attribute per level, in <code>:domain</code> order - numbers a <code>:linear</code> one - a gradient or a size range; <code>:binned</code> cuts numbers into classes; <code>:type :categorical</code> treats numbers as levels; <code>:identity</code> reads the attributes from the data.</p>
+<p>An aesthetic scale has its own kinds - not those of the position scales (<code>:log</code>, <code>:datetime</code> … in the examples below are the x axis’s, Scales chapter). The kind follows the data: levels (strings, keywords) get an <code>:ordinal</code> scale - one attribute per level, in <code>:domain</code> order - numbers a <code>:linear</code> one - a gradient or a size range; <code>:binned</code> cuts numbers into classes; <code>:type :categorical</code> treats numbers or dates as levels; <code>:identity</code> reads the attributes from the data.</p>
 <div class="clay-table">
 <div class="table-responsive">
 <table class="table table-hover clay-table caption-top">
@@ -568,7 +568,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td>:type</td>
 <td>one of :categorical :numeric</td>
 <td></td>
-<td>declare numbers categorical (ordinal levels) or force a numeric scale</td>
+<td>declare numbers or dates categorical (ordinal levels) or force a numeric scale</td>
 </tr>
 <tr class="odd">
 <td>:domain</td>

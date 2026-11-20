@@ -60,13 +60,13 @@ Data: Gapminder 2007: life expectancy, population and GDP per capita, data-to-vi
 An aesthetic scale has its own kinds - not those of the position scales (`:log`, `:datetime` ... in the
 examples below are the x axis's, Scales chapter). The kind follows the data: levels (strings, keywords) get an
 `:ordinal` scale - one attribute per level, in `:domain` order - numbers a `:linear` one - a gradient or a size
-range; `:binned` cuts numbers into classes; `:type :categorical` treats numbers as levels; `:identity` reads the
-attributes from the data.
+range; `:binned` cuts numbers into classes; `:type :categorical` treats numbers or dates as levels; `:identity`
+reads the attributes from the data.
 
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:kind</td><td>one of :binned :identity :linear :ordinal</td><td>:linear for numeric :color / :size data, else :ordinal</td><td>scale kind: :ordinal (levels), :linear (a gradient or size range), :binned (:color by bins) or :identity (values are the attributes)</td></tr><tr><td>:type</td><td>one of :categorical :numeric</td><td></td><td>declare numbers categorical (ordinal levels) or force a numeric scale</td></tr><tr><td>:domain</td><td>sequential of any value or nil</td><td>the data's levels (sorted) or [min max]</td><td>ordinal: the levels in order; linear / binned: [lo hi]</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:kind</td><td>one of :binned :identity :linear :ordinal</td><td>:linear for numeric :color / :size data, else :ordinal</td><td>scale kind: :ordinal (levels), :linear (a gradient or size range), :binned (:color by bins) or :identity (values are the attributes)</td></tr><tr><td>:type</td><td>one of :categorical :numeric</td><td></td><td>declare numbers or dates categorical (ordinal levels) or force a numeric scale</td></tr><tr><td>:domain</td><td>sequential of any value or nil</td><td>the data's levels (sorted) or [min max]</td><td>ordinal: the levels in order; linear / binned: [lo hi]</td></tr></tbody></table>
 ```
 
 :::

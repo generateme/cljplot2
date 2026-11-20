@@ -210,7 +210,7 @@
   (let [years (for [y (range 2000 2012)] (java.time.Year/of y))
         months (for [m (range 1 13)] (java.time.YearMonth/of 2024 m))
         o {:width 300 :height 200}]
-    (testing "positions and colours read a Year / YearMonth as its period's start - a datetime x, a date gradient"
+    (testing "continuous scales place a Year / YearMonth at its period's start - a datetime x, a date gradient"
       (doseq [vs [years months]
               :let [rows (map-indexed (fn [i v] {:x i :y i :t v}) vs)]]
         (is (= :datetime (get-in (plot/build {:data rows :mapping {:x :t :y :y} :charts [(chart/scatter)]} o) [:scale-specs :x :kind])))
@@ -264,16 +264,16 @@
         (is (re-find #"numbers or dates declared categorical" message))))))
 
 (deftest explicit-year-color-domain-test
-  (testing "an explicit colour :domain or :ticks of Years reads as period starts: the formatter gets LocalDates as without one"
+  (testing "Year data with or without an explicit colour :domain / :ticks of Years: the formatter gets Years (the data's type)"
     (let [rows (for [y (range 2000 2010)] {:x y :y y :t (java.time.Year/of y)})
           labels (fn [scale] (:labels (first (filter #(= :colorbar (:kind %))
                                                       (legend/legends (plot/build {:data rows :mapping {:x :x :y :y :color :t}
                                                                                    :charts [(chart/scatter)]
                                                                                    :scales {:color (merge {:formatter #(.getName (class %))} scale)}}
                                                                                   {:width 300 :height 200 :until :scale-specs}))))))]
-      (is (every? #{"java.time.LocalDate"} (labels {})))
-      (is (every? #{"java.time.LocalDate"} (labels {:domain [(java.time.Year/of 2000) (java.time.Year/of 2009)]})))
-      (is (every? #{"java.time.LocalDate"} (labels {:ticks [(java.time.Year/of 2002) (java.time.Year/of 2005)]}))))))
+      (is (every? #{"java.time.Year"} (labels {})))
+      (is (every? #{"java.time.Year"} (labels {:domain [(java.time.Year/of 2000) (java.time.Year/of 2009)]})))
+      (is (every? #{"java.time.Year"} (labels {:ticks [(java.time.Year/of 2002) (java.time.Year/of 2005)]}))))))
 
 (deftest year-tick-labels-test
   (testing "a datetime x over Years labels whole years"
@@ -282,3 +282,18 @@
                          [:finalized-scales :x :tick-labels])]
       (is (seq labels))
       (is (every? #(re-matches #"\d{4}" %) labels) (pr-str labels)))))
+
+(deftest categorical-years-test
+  (let [rows (for [y (range 2000 2004)] {:year (java.time.Year/of y) :v (mod y 5)})
+        o {:width 300 :height 200}
+        x-labels #(get-in (plot/build (merge {:data rows :charts [(chart/bar {:stat :sum})]} %) o) [:finalized-scales :x :tick-labels])
+        color-domain #(get-in (plot/build (merge {:data rows :charts [(chart/scatter)]} %) o) [:scale-specs :color :domain])]
+    (testing "a categorical marker and :type :categorical give the same Year levels (positions and colours)"
+      (is (= ["2000" "2001" "2002" "2003"]
+             (x-labels {:mapping {:x (cljplot2.data.levels/categorical :year) :y :v}})
+             (x-labels {:mapping {:x :year :y :v} :scales {:x {:type :categorical}}})))
+      (is (= (mapv #(java.time.Year/of %) (range 2000 2004))
+             (color-domain {:mapping {:x :v :y :v :color (cljplot2.data.levels/categorical :year)}})
+             (color-domain {:mapping {:x :v :y :v :color :year} :scales {:color {:type :categorical}}}))))
+    (testing "boundary: undeclared Years are dates - a datetime x"
+      (is (= :datetime (get-in (plot/build {:data rows :mapping {:x :year :y :v} :charts [(chart/scatter)]} o) [:scale-specs :x :kind]))))))

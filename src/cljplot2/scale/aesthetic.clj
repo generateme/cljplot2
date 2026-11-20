@@ -270,7 +270,7 @@
           (schema/optional :kind {:cljplot2/section :levels :description "scale kind: :ordinal (levels), :linear (a gradient or size range), :binned (:color by bins) or :identity (values are the attributes)"
                                   :cljplot2/default-doc ":linear for numeric :color / :size data, else :ordinal"}
                            (into [:enum] (sort kinds)))
-          (schema/optional :type {:cljplot2/section :levels :description "declare numbers categorical (ordinal levels) or force a numeric scale"}
+          (schema/optional :type {:cljplot2/section :levels :description "declare numbers or dates categorical (ordinal levels) or force a numeric scale"}
                            [:enum :categorical :numeric])
           (schema/nilable :domain {:cljplot2/section :levels :description "ordinal: the levels in order; linear / binned: [lo hi]"
                                    :cljplot2/default-doc "the data's levels (sorted) or [min max]"}
@@ -514,12 +514,6 @@
   (let [explicit (:domain spec)]
     (when (or explicit extent)
       (let [kind (inferred-kind k spec (continuous-extent? k extent))
-            ;; a linear scale reads a Year / YearMonth in its :domain and :ticks as data values are read: the date
-            ;; its period starts (cljplot2.data.rows/period-start); ordinal levels stay as given
-            spec (cond-> spec
-                   (and (= :linear kind) (sequential? explicit)) (update :domain #(mapv data/period-start %))
-                   (and (= :linear kind) (sequential? (:ticks spec))) (update :ticks #(mapv data/period-start %)))
-            explicit (:domain spec)
             explicit-date (when (data/temporal? (first explicit)) (first explicit))
             temporal? (and (or (= :temporal (:kind extent)) explicit-date) (not= kind :ordinal) (not= kind :identity))
             ticks (:ticks spec)

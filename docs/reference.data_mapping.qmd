@@ -90,7 +90,7 @@ Data and mapping group every chart takes:
 
 The coordinates of a mark. Every mapping key takes an accessor: a keyword (the row's value under it), a
 function of the row (computing the value - here y is a ratio of two columns), or a categorical marker of either,
-`(levels/categorical acc)`, which reads numbers as levels (below).
+`(levels/categorical acc)`, which reads numbers or dates as levels (below).
 
 ::: {.clay-table}
 
@@ -162,6 +162,41 @@ as levels (right - one band each):
 :::
 
 
+Dates as levels: one bar per year, labelled by the year (unmarked, `Year` values would be dates on a time axis):
+
+
+::: {.sourceClojure}
+```clojure
+(def yearly (for [y (range 2015 2023)] {:year (java.time.Year/of y) :visitors (+ 40 (* 7 (mod (* y 5) 9)))}))
+```
+:::
+
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>year</th><th>visitors</th></tr></thead><tbody><tr><td>2015</td><td>68</td></tr><tr><td>2016</td><td>40</td></tr><tr><td>2017</td><td>75</td></tr><tr><td>2018</td><td>47</td></tr><tr><td>2019</td><td>82</td></tr><tr><td>2020</td><td>54</td></tr><tr><td>2021</td><td>89</td></tr><tr><td>2022</td><td>61</td></tr></tbody></table>
+```
+
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image {:data yearly
+                    :mapping {:x (levels/categorical :year) :y :visitors}
+                    :charts [(chart/bar)]}
+                   {:width 600 :height 300})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.data_mapping_files/image3.png)
+:::
+
+
 
 ## Intervals and segments
 
@@ -210,7 +245,7 @@ to `:xend` / `:yend`.
 
 
 ::: {.clay-image}
-![](reference.data_mapping_files/image3.png)
+![](reference.data_mapping_files/image4.png)
 :::
 
 
@@ -263,7 +298,7 @@ Opening, highest, lowest and closing values of a period - the candlestick chart.
 
 
 ::: {.clay-image}
-![](reference.data_mapping_files/image4.png)
+![](reference.data_mapping_files/image5.png)
 :::
 
 
@@ -294,7 +329,7 @@ and legends chapter).
 
 
 ::: {.clay-image}
-![](reference.data_mapping_files/image5.png)
+![](reference.data_mapping_files/image6.png)
 :::
 
 
@@ -342,7 +377,7 @@ densities ...) draw each separately; any aesthetic groups too. `:order` sets the
 
 
 ::: {.clay-image}
-![](reference.data_mapping_files/image6.png)
+![](reference.data_mapping_files/image7.png)
 :::
 
 
@@ -388,7 +423,7 @@ ordered by size (ascending, the default `:order-direction`) the large ones come 
 
 
 ::: {.clay-image}
-![](reference.data_mapping_files/image7.png)
+![](reference.data_mapping_files/image8.png)
 :::
 
 
@@ -417,7 +452,7 @@ A `nil` group value forms its own NA level - the bottom line above is the walk w
 
 
 ::: {.clay-image}
-![](reference.data_mapping_files/image8.png)
+![](reference.data_mapping_files/image9.png)
 :::
 
 
@@ -448,7 +483,7 @@ chapter).
 
 
 ::: {.clay-image}
-![](reference.data_mapping_files/image9.png)
+![](reference.data_mapping_files/image10.png)
 :::
 
 
@@ -467,7 +502,7 @@ A grid: species as columns, wide and narrow sepals as rows:
 
 
 ::: {.clay-image}
-![](reference.data_mapping_files/image10.png)
+![](reference.data_mapping_files/image11.png)
 :::
 
 
@@ -540,7 +575,7 @@ outer first) and `:set` / `:item` (set membership of Venn diagrams).
 
 
 ::: {.clay-image}
-![](reference.data_mapping_files/image11.png)
+![](reference.data_mapping_files/image12.png)
 :::
 
 

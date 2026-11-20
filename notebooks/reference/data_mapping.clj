@@ -35,7 +35,7 @@
 
 ;; The coordinates of a mark. Every mapping key takes an accessor: a keyword (the row's value under it), a
 ;; function of the row (computing the value - here y is a ratio of two columns), or a categorical marker of either,
-;; `(levels/categorical acc)`, which reads numbers as levels (below).
+;; `(levels/categorical acc)`, which reads numbers or dates as levels (below).
 
 (nu/options-table (describe/options rows/mapping-schema) :position)
 
@@ -64,6 +64,17 @@
                                    :charts [(chart/box)]}]
                                  {:columns 2})
                    {:width 800 :height 300})
+
+;; Dates as levels: one bar per year, labelled by the year (unmarked, `Year` values would be dates on a time axis):
+
+(def yearly (for [y (range 2015 2023)] {:year (java.time.Year/of y) :visitors (+ 40 (* 7 (mod (* y 5) 9)))}))
+
+(nu/data-table yearly)
+
+(plot/render-image {:data yearly
+                    :mapping {:x (levels/categorical :year) :y :visitors}
+                    :charts [(chart/bar)]}
+                   {:width 600 :height 300})
 
 ;; ## Intervals and segments
 

@@ -120,7 +120,7 @@
           (schema/optional :kind {:cljplot2/section :kind-domain :description "scale kind: :linear, :log, :pow, :symlog, :radial, :interpolated, :datetime or :bands"
                                   :cljplot2/default-doc "from the data: :linear for numbers, :bands for levels, :datetime for java.time values"}
                            (into [:enum] (sort position-kinds)))
-          (schema/optional :type {:cljplot2/section :kind-domain :description "declare numbers categorical (one band per value) or force a numeric scale"}
+          (schema/optional :type {:cljplot2/section :kind-domain :description "declare numbers or dates categorical (one band per value) or force a numeric scale"}
                            [:enum :categorical :numeric])
           (schema/nilable :domain {:cljplot2/section :kind-domain :description "explicit domain: [lo hi] for continuous kinds, the levels in order for :bands"
                                    :cljplot2/default-doc "the charts' data extent"}
@@ -377,7 +377,9 @@
                       domain (case (:kind extent)
                                :categorical (:values extent)
                                :temporal (cond
-                                           (= :datetime kind) (widen-temporal (:min extent) (:max extent))
+                                           ;; a Year / YearMonth extent spans the dates its periods start
+                                           (= :datetime kind) (widen-temporal (rows/period-start (:min extent))
+                                                                              (rows/period-start (:max extent)))
                                            ;; dates declared categorical: one band per distinct date, in time order
                                            (= :bands kind) (if (:values extent)
                                                              (vec (sort (:values extent)))
@@ -627,13 +629,16 @@
   (if (= :log (:kind spec)) log10-transform identity-transform))
 
 (defn forward-fn
-  "Function mapping a value to its pixel position in the finalized scale (band center for `:bands`); `##NaN` for a
-  value the scale can't place (e.g. not in a bands domain) - callers skip such values.
+  "Function mapping a value to its pixel position in the finalized scale (band center for `:bands`; a `Year` /
+  `YearMonth` on a `:datetime` scale at its period's start); `##NaN` for a value the scale can't place (e.g. not in a
+  bands domain) - callers skip such values.
   Builds the wadogo scale once; reuse the function for many values."
   [finalized]
   (let [scale (->wadogo finalized)
-        offset (pixel-offset (:kind finalized) (:range finalized))]
-    (fn ^double [value] (let [p (scale value)] (if (nil? p) ##NaN (+ offset (double p)))))))
+        offset (pixel-offset (:kind finalized) (:range finalized))
+        ;; a datetime scale places a Year / YearMonth at its period's start
+        value-of (if (= :datetime (:kind finalized)) rows/period-start identity)]
+    (fn ^double [value] (let [p (scale (value-of value))] (if (nil? p) ##NaN (+ offset (double p)))))))
 
 (defn inverse-fn
   "Function mapping a pixel position to its value in the finalized continuous scale (wadogo `inverse`: a number, a

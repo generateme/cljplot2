@@ -24,8 +24,8 @@
 ;; An aesthetic scale has its own kinds - not those of the position scales (`:log`, `:datetime` ... in the
 ;; examples below are the x axis's, Scales chapter). The kind follows the data: levels (strings, keywords) get an
 ;; `:ordinal` scale - one attribute per level, in `:domain` order - numbers a `:linear` one - a gradient or a size
-;; range; `:binned` cuts numbers into classes; `:type :categorical` treats numbers as levels; `:identity` reads the
-;; attributes from the data.
+;; range; `:binned` cuts numbers into classes; `:type :categorical` treats numbers or dates as levels; `:identity`
+;; reads the attributes from the data.
 
 (nu/options-table (describe/options (aesthetic/scale-spec-schema :color)) :levels)
 

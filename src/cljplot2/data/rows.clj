@@ -132,27 +132,16 @@
     (instance? YearMonth v) (.atDay ^YearMonth v 1)
     :else v))
 
-(def ^:private level-keys
-  "Mapping keys whose values name levels or labels - read as they are (a `Year` facet keeps its \"2024\" strip)."
-  #{:facet :facet-col :facet-row :group :label :set :item :hierarchy})
-
-(defn- plain-accessor
+(defn row-accessor
+  "Function of a row for mapping accessor `acc` (keyword or function, or a categorical marker of one - see
+  [[cljplot2.data.accessor]]) of dimension `k`. Values are read as they are - a `Year` stays a `Year` (a level, or a
+  date the continuous scales place at its period's start, see [[period-start]])."
   [k acc]
   (cond
     (keyword? acc) acc
     (fn? acc) acc
+    (accessor/categorical? acc) (row-accessor k (accessor/unwrap acc))
     :else (schema/fail! "Mapping accessor must be a keyword or a function." {:key :mapping :value k})))
-
-(defn row-accessor
-  "Function of a row for mapping accessor `acc` (keyword or function, or a categorical marker of one - see
-  [[cljplot2.data.accessor]]) of dimension `k`. Position and aesthetic values read a `Year` / `YearMonth` as the date
-  its period starts ([[period-start]]) - every scale places dates; level and label keys ([[level-keys]]) and
-  categorical markers read values as they are (levels)."
-  [k acc]
-  (cond
-    (accessor/categorical? acc) (plain-accessor k (accessor/unwrap acc))
-    (level-keys k) (plain-accessor k acc)
-    :else (let [f (plain-accessor k acc)] (fn [row] (period-start (f row))))))
 
 (defn temporal? [v] (instance? java.time.temporal.Temporal v))
 
