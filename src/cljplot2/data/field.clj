@@ -52,29 +52,29 @@
   "Map entries of the field options shared by the field and contour charts."
   (schema/in-fragment
    :field
-   [(schema/optional :f {:description "the field as a function of a point [x y] returning a number (instead of mapped data)"}
+   [(schema/optional :f {:cljplot2/section :function :description "the field as a function of a point [x y] returning a number (instead of mapped data)"}
                      schema/function)
-    (schema/optional :domain {:description "the domain of a function field"
+    (schema/optional :domain {:cljplot2/section :function :description "the domain of a function field"
                               :cljplot2/default-doc "the plot's explicit :x and :y scale domains"}
                      [:map {:closed true}
                       [:x {:description "x domain [lo hi]"} [:tuple schema/finite schema/finite]]
                       [:y {:description "y domain [lo hi]"} [:tuple schema/finite schema/finite]]])
-    (schema/optional :kernel {:description "fastmath kernel of the 2D density estimate of mapped points"
+    (schema/optional :kernel {:cljplot2/section :density :description "fastmath kernel of the 2D density estimate of mapped points"
                               :default :gaussian}
                      keyword?)
-    (schema/optional :bandwidth {:description "bandwidth of the density estimate: a number, a fastmath selector or :scott, or a pair [hx hy] of them"
+    (schema/optional :bandwidth {:cljplot2/section :density :description "bandwidth of the density estimate: a number, a fastmath selector or :scott, or a pair [hx hy] of them"
                                  :cljplot2/default-doc ":nrd per axis (MASS::kde2d, as ggplot2)"}
                      bandwidth-schema)
-    (schema/optional :binned? {:description "estimate the density from binned points (faster for many points)"
+    (schema/optional :binned? {:cljplot2/section :density :description "estimate the density from binned points (faster for many points)"
                                :default false}
                      :boolean)
-    (schema/optional :cut {:description "how many bandwidths the density domain extends past the points on each side"
+    (schema/optional :cut {:cljplot2/section :density :description "how many bandwidths the density domain extends past the points on each side"
                            :default 3}
                      schema/finite-non-neg)
-    (schema/optional :interpolation {:description "interpolation of gridded data (mapped :x, :y, :value on a full lattice)"
+    (schema/optional :interpolation {:cljplot2/section :grid :description "interpolation of gridded data (mapped :x, :y, :value on a full lattice)"
                                      :default :bilinear}
                      [:enum :bilinear :bicubic :cubic-2d])
-    (schema/optional :n {:description "grid size: values sampled along each axis, or [nx ny]"
+    (schema/optional :n {:cljplot2/section :grid :description "grid size: values sampled along each axis, or [nx ny]"
                          :default 100}
                      n-schema)]))
 

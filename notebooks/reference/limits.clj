@@ -8,8 +8,8 @@
 
 ;; ## Output
 
-;; * Static raster images only (`BufferedImage`, a clojure2d canvas): no interactivity, no SVG or PDF.
-;; * No save function - `clojure2d.core/save` writes an image (Render chapter).
+;; * Static raster images only (`BufferedImage`, a clojure2d raster canvas) - no interactivity, no SVG or PDF;
+;;   `plot/save` writes the formats Java's ImageIO knows (png, jpg, bmp, gif, tiff ...; Render chapter).
 
 ;; ## Layout
 

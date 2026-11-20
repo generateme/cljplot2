@@ -993,49 +993,49 @@
   "A plot map (keys in the namespace doc); `:theme` and `:options` are checked merged ([[cljplot2.theme/theme-schema]],
   [[options-schema]])."
   [:map {:closed true}
-   (schema/nilable :data {:description "rows (a sequence of maps) or columns (a map of sequences) the charts read"} data/data-schema)
-   (schema/nilable :mapping {:description "accessors of the dimensions the charts read (keywords or functions), merged under each chart's"}
+   (schema/nilable :data {:cljplot2/section :content :description "rows (a sequence of maps) or columns (a map of sequences) the charts read"} data/data-schema)
+   (schema/nilable :mapping {:cljplot2/section :content :description "accessors of the dimensions the charts read (keywords or functions), merged under each chart's"}
                    data/mapping-schema)
-   (schema/nilable :charts {:description "the charts, drawn in order"} [:vector chart-schema])
-   (schema/nilable :scales {:description "position, facet and aesthetic scale specs"} scales-schema)
-   (schema/nilable :facets {:description "facet layout: wrap shape, order, NA panel, scale relations, strips, panel weights"}
+   (schema/nilable :charts {:cljplot2/section :content :description "the charts, drawn in order"} [:vector chart-schema])
+   (schema/nilable :scales {:cljplot2/section :scales :description "position, facet and aesthetic scale specs"} scales-schema)
+   (schema/nilable :facets {:cljplot2/section :layout :description "facet layout: wrap shape, order, NA panel, scale relations, strips, panel weights"}
                    facet/facet-options)
-   (schema/nilable :groups {:description "grouping options"}
+   (schema/nilable :groups {:cljplot2/section :content :description "grouping options"}
                    [:map {:closed true}
                     (schema/nilable :na {:description "nil aesthetic values form the NA level (false - such rows are dropped)" :default true}
                                     schema/bool)])
-   (schema/nilable :legend {:description "draw the legends (false hides all)" :default true} schema/bool)
-   (schema/nilable :legend-only {:description "draw only the legends (a legend cell of an :arrange)" :default false} schema/bool)
-   (schema/nilable :alternate-panel {:description "shade a single panel as an odd facet panel (theme [:panel :alternate-fill])"
+   (schema/nilable :legend {:cljplot2/section :legend :description "draw the legends (false hides all)" :default true} schema/bool)
+   (schema/nilable :legend-only {:cljplot2/section :legend :description "draw only the legends (a legend cell of an :arrange)" :default false} schema/bool)
+   (schema/nilable :alternate-panel {:cljplot2/section :style :description "shade a single panel as an odd facet panel (theme [:panel :alternate-fill])"
                                      :default false}
                    schema/bool)
-   (schema/nilable :aspect {:description ":iso - equal pixels per data unit on x and y (linear scales)"} [:enum :iso])
-   (schema/nilable :flip {:description "draw the :x scale vertically and :y horizontally" :default false} schema/bool)
-   (schema/nilable :coord {:description "coordinate system: cartesian or polar" :cljplot2/default-doc "cartesian"} coord/coord-schema)
-   (schema/nilable :labels {:description "plot title and axis titles"} plot-grid/labels-schema)
-   (schema/nilable :custom-grid {:description "a hand-written layout grid instead of the generated one (only :labels {:title t} beside it)"}
+   (schema/nilable :aspect {:cljplot2/section :coordinates :description ":iso - equal pixels per data unit on x and y (linear scales)"} [:enum :iso])
+   (schema/nilable :flip {:cljplot2/section :coordinates :description "draw the :x scale vertically and :y horizontally" :default false} schema/bool)
+   (schema/nilable :coord {:cljplot2/section :coordinates :description "coordinate system: cartesian or polar" :cljplot2/default-doc "cartesian"} coord/coord-schema)
+   (schema/nilable :labels {:cljplot2/section :titles :description "plot title and axis titles"} plot-grid/labels-schema)
+   (schema/nilable :custom-grid {:cljplot2/section :layout :description "a hand-written layout grid instead of the generated one (only :labels {:title t} beside it)"}
                    :map)
-   (schema/nilable :arrange {:description "a multiplot: sub-plots in a grid (only :labels {:title t} beside it)"}
+   (schema/nilable :arrange {:cljplot2/section :layout :description "a multiplot: sub-plots in a grid (only :labels {:title t} beside it)"}
                    plot-grid/arrange-schema)
-   (schema/nilable :margins {:description "charts beside the panel sharing its scales (marginal plots)"} margins-schema)
+   (schema/nilable :margins {:cljplot2/section :layout :description "charts beside the panel sharing its scales (marginal plots)"} margins-schema)
    (schema/optional :alignment-padding {:description "pixels added to the generated grid's margins by multiplot alignment"
                                         :cljplot2/internal true}
                     [:map-of keyword? number?])
-   (schema/nilable :options {:description "render options, merged under the ones given to build / render"} :map)
-   (schema/optional :theme {:description "theme overrides, deep-merged over the default theme"} any?)])
+   (schema/nilable :options {:cljplot2/section :render :description "render options, merged under the ones given to build / render"} :map)
+   (schema/optional :theme {:cljplot2/section :style :description "theme overrides, deep-merged over the default theme"} any?)])
 
 (def options-schema
   "Merged render options of `build` (see [[default-options]]), `:debug` and `:cvd` (used by
   `cljplot2.render/render`) and `:until`."
   [:map {:closed true :cljplot2/merged true}
-   [:width {:description "target width in pixels" :default 600} schema/pos-int]
-   [:height {:description "target height in pixels" :default 600} schema/pos-int]
-   [:hint {:description "rendering quality hint (antialiasing and text metrics)" :default :high} (into [:enum] (sort measure/rendering-hints))]
-   (schema/nilable :debug {:description "paint every layout item's box (a distinct colour, its outline and id) under its content"
+   [:width {:cljplot2/section :image :description "target width in pixels" :default 600} schema/pos-int]
+   [:height {:cljplot2/section :image :description "target height in pixels" :default 600} schema/pos-int]
+   [:hint {:cljplot2/section :image :description "rendering quality hint (antialiasing and text metrics)" :default :high} (into [:enum] (sort measure/rendering-hints))]
+   (schema/nilable :debug {:cljplot2/section :inspection :description "paint every layout item's box (a distinct colour, its outline and id) under its content"
                            :default false}
                    schema/bool)
-   (schema/nilable :cvd {:description "render as seen with a colour vision deficiency"} schema/cvd-deficiency)
-   (schema/optional :until {:description "build stops after this pipeline stage (inspect the intermediate data)"}
+   (schema/nilable :cvd {:cljplot2/section :color-vision :description "render as seen with a colour vision deficiency"} schema/cvd-deficiency)
+   (schema/optional :until {:cljplot2/section :inspection :description "build stops after this pipeline stage (inspect the intermediate data)"}
                     (into [:enum] stage-order))])
 
 (defn- merged-mappings

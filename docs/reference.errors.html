@@ -380,7 +380,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <section id="error-data" class="level2" data-number="11.1">
 <h2 data-number="11.1" class="anchored" data-anchor-id="error-data"><span class="header-section-number">11.1</span> Error data</h2>
-<p><code>ex-data</code> of the error: <code>:key</code> - the first offending key, <code>:in</code> - its path, <code>:value</code> - the value, <code>:errors</code> - every problem as <code>{:in path :value v :message text}</code>. A misspelled plot or builder key gets a spelling suggestion; a chart option is reported as a “disallowed key”.</p>
+<p><code>ex-data</code> of the error: <code>:key</code> - the first offending key, <code>:in</code> - its path, <code>:value</code> - the value, <code>:errors</code> - every problem as <code>{:in path :value v :message text}</code>; the exception message lists the same problems as text. A misspelled key gets a spelling suggestion.</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> bad-plot</span></span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  {<span class="at">:data</span> [{<span class="at">:x</span> <span class="dv">1</span> <span class="at">:y</span> <span class="dv">2</span>} {<span class="at">:x</span> <span class="dv">2</span> <span class="at">:y</span> <span class="dv">3</span>}]</span>
@@ -390,46 +390,41 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">try</span> (plot/build bad-plot)</span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>     (<span class="kw">catch</span> clojure.lang.ExceptionInfo <span class="kw">e</span> (ex-data <span class="kw">e</span>)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>     (<span class="kw">catch</span> clojure.lang.ExceptionInfo <span class="kw">e</span> {<span class="at">:message</span> (ex-message <span class="kw">e</span>) <span class="at">:data</span> (ex-data <span class="kw">e</span>)}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="printedClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>{<span class="at">:key</span> <span class="at">:kind</span>,</span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a> <span class="at">:in</span> [<span class="at">:scales</span> <span class="at">:x</span> <span class="at">:kind</span>],</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a> <span class="at">:value</span> <span class="at">:logarithmic</span>,</span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a> <span class="at">:errors</span></span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a> [{<span class="at">:in</span> [<span class="at">:scales</span> <span class="at">:x</span> <span class="at">:kind</span>],</span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>   <span class="at">:value</span> <span class="at">:logarithmic</span>,</span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>   <span class="at">:message</span></span>
-<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>   <span class="st">"should be either :bands, :datetime, :interpolated, :linear, :log, :pow, :radial or :symlog"</span>}]}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<p>The message lists the same problems as text:</p>
-<div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">try</span> (plot/build bad-plot)</span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>     (<span class="kw">catch</span> clojure.lang.ExceptionInfo <span class="kw">e</span> (ex-message <span class="kw">e</span>)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<div class="printedClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="st">"Invalid input: [:scales :x :kind] should be either :bands, :datetime, :interpolated, :linear, :log, :pow, :radial or :symlog, got :logarithmic"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>{<span class="at">:message</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a> <span class="st">"Invalid input: [:scales :x :kind] should be either :bands, :datetime, :interpolated, :linear, :log, :pow, :radial or :symlog, got :logarithmic"</span>,</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a> <span class="at">:data</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a> {<span class="at">:key</span> <span class="at">:kind</span>,</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">:in</span> [<span class="at">:scales</span> <span class="at">:x</span> <span class="at">:kind</span>],</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">:value</span> <span class="at">:logarithmic</span>,</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">:errors</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>  [{<span class="at">:in</span> [<span class="at">:scales</span> <span class="at">:x</span> <span class="at">:kind</span>],</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">:value</span> <span class="at">:logarithmic</span>,</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">:message</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>    <span class="st">"should be either :bands, :datetime, :interpolated, :linear, :log, :pow, :radial or :symlog"</span>}]}}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>With the scale fixed, the next round reports the chart’s misspelled option:</p>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">try</span> (plot/build (<span class="kw">assoc-in</span> bad-plot [<span class="at">:scales</span> <span class="at">:x</span> <span class="at">:kind</span>] <span class="at">:log</span>))</span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>     (<span class="kw">catch</span> clojure.lang.ExceptionInfo <span class="kw">e</span> (ex-data <span class="kw">e</span>)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">try</span> (plot/build (<span class="kw">assoc-in</span> bad-plot [<span class="at">:scales</span> <span class="at">:x</span> <span class="at">:kind</span>] <span class="at">:log</span>))</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>     (<span class="kw">catch</span> clojure.lang.ExceptionInfo <span class="kw">e</span> (ex-data <span class="kw">e</span>)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="printedClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>{<span class="at">:key</span> <span class="at">:szie</span>,</span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a> <span class="at">:in</span> [<span class="at">:charts</span> <span class="dv">0</span> <span class="at">:options</span> <span class="at">:szie</span>],</span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a> <span class="at">:value</span> <span class="dv">4</span>,</span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a> <span class="at">:errors</span></span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a> [{<span class="at">:in</span> [<span class="at">:charts</span> <span class="dv">0</span> <span class="at">:options</span> <span class="at">:szie</span>],</span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>   <span class="at">:value</span> <span class="dv">4</span>,</span>
-<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>   <span class="at">:message</span> <span class="st">"disallowed key"</span>}]}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>{<span class="at">:key</span> <span class="at">:szie</span>,</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a> <span class="at">:in</span> [<span class="at">:charts</span> <span class="dv">0</span> <span class="at">:options</span> <span class="at">:szie</span>],</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a> <span class="at">:value</span> <span class="dv">4</span>,</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a> <span class="at">:errors</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a> [{<span class="at">:in</span> [<span class="at">:charts</span> <span class="dv">0</span> <span class="at">:options</span> <span class="at">:szie</span>],</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>   <span class="at">:value</span> <span class="dv">4</span>,</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>   <span class="at">:message</span> <span class="st">"unknown key, should be spelled :size"</span>}]}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>Fixed:</p>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (<span class="kw">-&gt;</span> bad-plot</span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>                       (<span class="kw">assoc</span> <span class="at">:charts</span> [(chart/scatter {<span class="at">:size</span> <span class="dv">4</span>})])</span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>                       (<span class="kw">assoc-in</span> [<span class="at">:scales</span> <span class="at">:x</span> <span class="at">:kind</span>] <span class="at">:log</span>))</span>
-<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">500</span> <span class="at">:height</span> <span class="dv">300</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (<span class="kw">-&gt;</span> bad-plot</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>                       (<span class="kw">assoc</span> <span class="at">:charts</span> [(chart/scatter {<span class="at">:size</span> <span class="dv">4</span>})])</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>                       (<span class="kw">assoc-in</span> [<span class="at">:scales</span> <span class="at">:x</span> <span class="at">:kind</span>] <span class="at">:log</span>))</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">500</span> <span class="at">:height</span> <span class="dv">300</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="clay-image">
 <p><img src="reference.errors_files/image0.png" class="img-fluid"></p>
@@ -439,17 +434,17 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h2 data-number="11.2" class="anchored" data-anchor-id="builders-and-data-functions"><span class="header-section-number">11.2</span> Builders and data functions</h2>
 <p>Options are checked against the builder’s schema before its data is read:</p>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">try</span> (plot/sankey [{<span class="at">:from</span> <span class="st">"a"</span> <span class="at">:to</span> <span class="st">"b"</span> <span class="at">:value</span> <span class="dv">1</span>}] {<span class="at">:node-widht</span> <span class="dv">10</span>})</span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>     (<span class="kw">catch</span> clojure.lang.ExceptionInfo <span class="kw">e</span> (ex-data <span class="kw">e</span>)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">try</span> (plot/sankey [{<span class="at">:from</span> <span class="st">"a"</span> <span class="at">:to</span> <span class="st">"b"</span> <span class="at">:value</span> <span class="dv">1</span>}] {<span class="at">:node-widht</span> <span class="dv">10</span>})</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>     (<span class="kw">catch</span> clojure.lang.ExceptionInfo <span class="kw">e</span> (ex-data <span class="kw">e</span>)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="printedClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>{<span class="at">:key</span> <span class="at">:node-widht</span>,</span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a> <span class="at">:in</span> [<span class="at">:node-widht</span>],</span>
-<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a> <span class="at">:value</span> <span class="dv">10</span>,</span>
-<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a> <span class="at">:errors</span></span>
-<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a> [{<span class="at">:in</span> [<span class="at">:node-widht</span>],</span>
-<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>   <span class="at">:value</span> <span class="dv">10</span>,</span>
-<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>   <span class="at">:message</span> <span class="st">"unknown key, should be spelled :node-width"</span>}]}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>{<span class="at">:key</span> <span class="at">:node-widht</span>,</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a> <span class="at">:in</span> [<span class="at">:node-widht</span>],</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a> <span class="at">:value</span> <span class="dv">10</span>,</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a> <span class="at">:errors</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a> [{<span class="at">:in</span> [<span class="at">:node-widht</span>],</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>   <span class="at">:value</span> <span class="dv">10</span>,</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>   <span class="at">:message</span> <span class="st">"unknown key, should be spelled :node-width"</span>}]}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>Checks of the data itself (missing columns, wrong shapes) throw the same kind of error, keyed by the option or argument at fault.</p>
 </section>

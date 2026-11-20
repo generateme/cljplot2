@@ -326,12 +326,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">Table of contents</h2>
    
   <ul>
-  <li><a href="#render-options" id="toc-render-options" class="nav-link active" data-scroll-target="#render-options"><span class="header-section-number">2.1</span> Render options</a></li>
-  <li><a href="#size-and-quality" id="toc-size-and-quality" class="nav-link" data-scroll-target="#size-and-quality"><span class="header-section-number">2.2</span> Size and quality</a></li>
-  <li><a href="#layout-debugging" id="toc-layout-debugging" class="nav-link" data-scroll-target="#layout-debugging"><span class="header-section-number">2.3</span> Layout debugging</a></li>
-  <li><a href="#colour-vision-deficiency" id="toc-colour-vision-deficiency" class="nav-link" data-scroll-target="#colour-vision-deficiency"><span class="header-section-number">2.4</span> Colour vision deficiency</a></li>
-  <li><a href="#intermediate-data" id="toc-intermediate-data" class="nav-link" data-scroll-target="#intermediate-data"><span class="header-section-number">2.5</span> Intermediate data</a></li>
-  <li><a href="#saving-a-file" id="toc-saving-a-file" class="nav-link" data-scroll-target="#saving-a-file"><span class="header-section-number">2.6</span> Saving a file</a></li>
+  <li><a href="#size-and-quality" id="toc-size-and-quality" class="nav-link active" data-scroll-target="#size-and-quality"><span class="header-section-number">2.1</span> Size and quality</a></li>
+  <li><a href="#inspection" id="toc-inspection" class="nav-link" data-scroll-target="#inspection"><span class="header-section-number">2.2</span> Inspection</a></li>
+  <li><a href="#colour-vision" id="toc-colour-vision" class="nav-link" data-scroll-target="#colour-vision"><span class="header-section-number">2.3</span> Colour vision</a></li>
+  <li><a href="#saving" id="toc-saving" class="nav-link" data-scroll-target="#saving"><span class="header-section-number">2.4</span> Saving</a></li>
   </ul>
 </nav>
     </div>
@@ -369,7 +367,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </style>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js" type="text/javascript"></script>
 <script src="https://code.jquery.com/ui/1.13.1/jquery-ui.min.js" type="text/javascript"></script>
-<p>Building and drawing a plot: <code>plot/build</code> (the built plot, data only), <code>plot/render</code> (a clojure2d canvas), <code>plot/render-image</code> (a <code>java.awt.image.BufferedImage</code>) and <code>plot/cvd-image</code> (an image as seen with a colour vision deficiency). All take the same render options.</p>
+<p>Building and drawing a plot: <code>plot/build</code> (the built plot, data only), <code>plot/render</code> (a clojure2d canvas), <code>plot/render-image</code> (a <code>java.awt.image.BufferedImage</code>), <code>plot/cvd-image</code> (an image as seen with a colour vision deficiency) and <code>plot/save</code> (an image or canvas to a file). The first three take the same render options, as their second argument or under the plot’s <code>:options</code> (merged under the argument).</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">ns</span> reference.render</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  (<span class="at">:require</span> [cljplot2.chart <span class="at">:as</span> chart]</span>
@@ -378,12 +376,19 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>            [cljplot2.pipeline <span class="at">:as</span> pipeline]</span>
 <span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>            [notebook-utils <span class="at">:as</span> nu]))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<section id="render-options" class="level2" data-number="2.1">
-<h2 data-number="2.1" class="anchored" data-anchor-id="render-options"><span class="header-section-number">2.1</span> Render options</h2>
-<p>Given as the second argument of <code>build</code> / <code>render</code> / <code>render-image</code>, or under the plot’s <code>:options</code> (merged under the argument). The size is the whole image, legends and titles included.</p>
+<p>Data: Edgar Anderson’s iris measurements, R datasets package <code>iris</code> (Anderson 1935; Fisher 1936); licence: Part of R (GPL-2 | GPL-3).</p>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>(nu/options-table (describe/options pipeline/options-schema))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> iris </span>(nu/dataset <span class="at">:iris</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> iris-plot</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  {<span class="at">:data</span> iris</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:sepal-length</span> <span class="at">:y</span> <span class="at">:petal-length</span> <span class="at">:color</span> <span class="at">:species</span>}</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>   <span class="at">:charts</span> [(chart/scatter)]})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<section id="size-and-quality" class="level2" data-number="2.1">
+<h2 data-number="2.1" class="anchored" data-anchor-id="size-and-quality"><span class="header-section-number">2.1</span> Size and quality</h2>
+<p>The image size in pixels - the whole image, legends and titles included - and the rendering quality: <code>:low</code> draws without antialiasing (faster, jagged edges), <code>:highest</code> with the most precise text metrics.</p>
 <div class="clay-table">
 <div class="table-responsive">
 <table class="table table-hover clay-table caption-top">
@@ -414,17 +419,37 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td>:high</td>
 <td>rendering quality hint (antialiasing and text metrics)</td>
 </tr>
-<tr class="even">
+</tbody>
+</table>
+</div>
+</div>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image iris-plot {<span class="at">:width</span> <span class="dv">500</span> <span class="at">:height</span> <span class="dv">300</span> <span class="at">:hint</span> <span class="at">:low</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.render_files/image0.png" class="img-fluid"></p>
+</div>
+</section>
+<section id="inspection" class="level2" data-number="2.2">
+<h2 data-number="2.2" class="anchored" data-anchor-id="inspection"><span class="header-section-number">2.2</span> Inspection</h2>
+<p>Two aids for finding out why a plot looks as it does. <code>:debug true</code> paints every layout item’s box under its content - panel, axes, axis titles, legend:</p>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">Option</th>
+<th data-quarto-table-cell-role="th">Type</th>
+<th data-quarto-table-cell-role="th">Default</th>
+<th data-quarto-table-cell-role="th">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
 <td>:debug</td>
 <td>true or false or nil</td>
 <td>false</td>
 <td>paint every layout item's box (a distinct colour, its outline and id) under its content</td>
-</tr>
-<tr class="odd">
-<td>:cvd</td>
-<td>a clojure2d color vision deficiency: a keyword (:protanopia, :deuteranopia, :tritanopia, :achromatopsia) or [keyword severity] (:protanomaly, :deuteranomaly, :tritanomaly, :achromatomaly; severity in [0 1]) or nil</td>
-<td></td>
-<td>render as seen with a colour vision deficiency</td>
 </tr>
 <tr class="even">
 <td>:until</td>
@@ -436,71 +461,69 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </table>
 </div>
 </div>
-<p>Data: Edgar Anderson’s iris measurements, R datasets package <code>iris</code> (Anderson 1935; Fisher 1936); licence: Part of R (GPL-2 | GPL-3).</p>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> iris </span>(nu/dataset <span class="at">:iris</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> iris-plot</span></span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  {<span class="at">:data</span> iris</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:sepal-length</span> <span class="at">:y</span> <span class="at">:petal-length</span> <span class="at">:color</span> <span class="at">:species</span>}</span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>   <span class="at">:charts</span> [(chart/scatter)]})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-</section>
-<section id="size-and-quality" class="level2" data-number="2.2">
-<h2 data-number="2.2" class="anchored" data-anchor-id="size-and-quality"><span class="header-section-number">2.2</span> Size and quality</h2>
-<p><code>:width</code> / <code>:height</code> in pixels; <code>:hint</code> trades antialiasing and text metrics for speed (<code>:low</code> draws without antialiasing).</p>
-<div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image iris-plot {<span class="at">:width</span> <span class="dv">500</span> <span class="at">:height</span> <span class="dv">350</span> <span class="at">:hint</span> <span class="at">:low</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<div class="clay-image">
-<p><img src="reference.render_files/image0.png" class="img-fluid"></p>
-</div>
-</section>
-<section id="layout-debugging" class="level2" data-number="2.3">
-<h2 data-number="2.3" class="anchored" data-anchor-id="layout-debugging"><span class="header-section-number">2.3</span> Layout debugging</h2>
-<p><code>:debug true</code> paints every layout item’s box under its content - panel, axes, axis titles, legend.</p>
-<div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image iris-plot {<span class="at">:width</span> <span class="dv">500</span> <span class="at">:height</span> <span class="dv">350</span> <span class="at">:debug</span> <span class="va">true</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image iris-plot {<span class="at">:width</span> <span class="dv">500</span> <span class="at">:height</span> <span class="dv">300</span> <span class="at">:debug</span> <span class="va">true</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="clay-image">
 <p><img src="reference.render_files/image1.png" class="img-fluid"></p>
 </div>
-</section>
-<section id="colour-vision-deficiency" class="level2" data-number="2.4">
-<h2 data-number="2.4" class="anchored" data-anchor-id="colour-vision-deficiency"><span class="header-section-number">2.4</span> Colour vision deficiency</h2>
-<p><code>:cvd</code> renders the plot as seen with a deficiency (a keyword, or <code>[keyword severity]</code> for the partial ones); <code>plot/cvd-image</code> converts any image.</p>
+<p><code>:until</code> stops the build after a stage; the built plot is data. Here the build stops after <code>:extents</code> - the extent of each mapped dimension:</p>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image iris-plot {<span class="at">:width</span> <span class="dv">500</span> <span class="at">:height</span> <span class="dv">350</span> <span class="at">:cvd</span> <span class="at">:deuteranopia</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>(<span class="at">:extents</span> (plot/build iris-plot {<span class="at">:until</span> <span class="at">:extents</span>}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="printedClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>{<span class="at">:color</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a> {<span class="at">:extent</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  {<span class="at">:kind</span> <span class="at">:categorical</span>, <span class="at">:values</span> [<span class="st">"setosa"</span> <span class="st">"versicolor"</span> <span class="st">"virginica"</span>]},</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">:na</span>? <span class="va">false</span>},</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a> <span class="at">:y</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a> {<span class="at">:extent</span> {<span class="at">:kind</span> <span class="at">:numeric</span>, <span class="at">:min</span> <span class="fl">1.0</span>, <span class="at">:max</span> <span class="fl">6.9</span>},</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">:padding</span> [<span class="fl">0.05</span> <span class="fl">0.05</span>],</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">:padding-px</span> [<span class="fl">0.0</span> <span class="fl">0.0</span>]},</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a> <span class="at">:x</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a> {<span class="at">:extent</span> {<span class="at">:kind</span> <span class="at">:numeric</span>, <span class="at">:min</span> <span class="fl">4.3</span>, <span class="at">:max</span> <span class="fl">7.9</span>},</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">:padding</span> [<span class="fl">0.05</span> <span class="fl">0.05</span>],</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>  <span class="at">:padding-px</span> [<span class="fl">0.0</span> <span class="fl">0.0</span>]}}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section>
+<section id="colour-vision" class="level2" data-number="2.3">
+<h2 data-number="2.3" class="anchored" data-anchor-id="colour-vision"><span class="header-section-number">2.3</span> Colour vision</h2>
+<p><code>:cvd</code> renders the plot as seen with a colour vision deficiency - a keyword, or <code>[keyword severity]</code> for the partial ones; <code>plot/cvd-image</code> converts any image. Here versicolor and virginica become hard to tell apart:</p>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">Option</th>
+<th data-quarto-table-cell-role="th">Type</th>
+<th data-quarto-table-cell-role="th">Default</th>
+<th data-quarto-table-cell-role="th">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>:cvd</td>
+<td>a clojure2d color vision deficiency: a keyword (:protanopia, :deuteranopia, :tritanopia, :achromatopsia) or [keyword severity] (:protanomaly, :deuteranomaly, :tritanomaly, :achromatomaly; severity in [0 1]) or nil</td>
+<td></td>
+<td>render as seen with a colour vision deficiency</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image iris-plot {<span class="at">:width</span> <span class="dv">500</span> <span class="at">:height</span> <span class="dv">300</span> <span class="at">:cvd</span> <span class="at">:deuteranopia</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="clay-image">
 <p><img src="reference.render_files/image2.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="intermediate-data" class="level2" data-number="2.5">
-<h2 data-number="2.5" class="anchored" data-anchor-id="intermediate-data"><span class="header-section-number">2.5</span> Intermediate data</h2>
-<p><code>:until</code> stops the build after a stage; the built plot is data. Here the build stops after <code>:extents</code> - the extent of each mapped dimension:</p>
-<div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>(<span class="at">:extents</span> (plot/build iris-plot {<span class="at">:until</span> <span class="at">:extents</span>}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<div class="printedClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>{<span class="at">:color</span></span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a> {<span class="at">:extent</span></span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  {<span class="at">:kind</span> <span class="at">:categorical</span>, <span class="at">:values</span> [<span class="st">"setosa"</span> <span class="st">"versicolor"</span> <span class="st">"virginica"</span>]},</span>
-<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">:na</span>? <span class="va">false</span>},</span>
-<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a> <span class="at">:y</span></span>
-<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a> {<span class="at">:extent</span> {<span class="at">:kind</span> <span class="at">:numeric</span>, <span class="at">:min</span> <span class="fl">1.0</span>, <span class="at">:max</span> <span class="fl">6.9</span>},</span>
-<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">:padding</span> [<span class="fl">0.05</span> <span class="fl">0.05</span>],</span>
-<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">:padding-px</span> [<span class="fl">0.0</span> <span class="fl">0.0</span>]},</span>
-<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a> <span class="at">:x</span></span>
-<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a> {<span class="at">:extent</span> {<span class="at">:kind</span> <span class="at">:numeric</span>, <span class="at">:min</span> <span class="fl">4.3</span>, <span class="at">:max</span> <span class="fl">7.9</span>},</span>
-<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">:padding</span> [<span class="fl">0.05</span> <span class="fl">0.05</span>],</span>
-<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>  <span class="at">:padding-px</span> [<span class="fl">0.0</span> <span class="fl">0.0</span>]}}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-</section>
-<section id="saving-a-file" class="level2" data-number="2.6">
-<h2 data-number="2.6" class="anchored" data-anchor-id="saving-a-file"><span class="header-section-number">2.6</span> Saving a file</h2>
-<p>cljplot2 has no save function: write the image (or the canvas of <code>plot/render</code>) with <code>clojure2d.core/save</code>, e.g.&nbsp;<code>(c2d/save (plot/render-image p) "plot.png")</code> - the file extension picks the format.</p>
+<section id="saving" class="level2" data-number="2.4">
+<h2 data-number="2.4" class="anchored" data-anchor-id="saving"><span class="header-section-number">2.4</span> Saving</h2>
+<p><code>plot/save</code> writes an image (or the canvas of <code>plot/render</code>) to a file - the format from the extension (png, jpg, bmp, tiff …) - and returns it, so it ends a pipeline:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">-&gt;</span> iris-plot</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>    (plot/render-image {<span class="at">:width</span> <span class="dv">800</span> <span class="at">:height</span> <span class="dv">500</span>})</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>    (plot/save <span class="st">"iris.png"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div style="background-color:grey;height:2px;width:100%;"></div>
 <div><pre><small><small>source: notebooks/reference/render.clj</small></small></pre></div>
 

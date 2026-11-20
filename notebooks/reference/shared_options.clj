@@ -4,30 +4,68 @@
 ;; rows with the group's title. A chart may take only part of a group - its own table lists what it accepts.
 
 (ns reference.shared-options
-  (:require [cljplot2.chart :as chart]
+  (:require [fastmath.random :as r]
+            [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
+            [cljplot2.data.tree :as tree]
             [cljplot2.describe :as describe]
             [notebook-utils :as nu]))
+
+(def wave (for [t (range 30)] {:t t :v (Math/sin (* 0.3 t)) :g (if (< t 15) "early" "late")}))
+
+(def counts [{:k "a" :g "x" :v 3} {:k "a" :g "y" :v 2} {:k "b" :g "x" :v 5}
+             {:k "b" :g "y" :v 4} {:k "c" :g "x" :v 4} {:k "c" :g "y" :v 1}])
+
+(nu/source-note {:dataset :iris})
+
+(def iris (nu/dataset :iris))
 
 ;; ## Charts
 
 ;; ### Data and mapping
 
-;; Every chart's own data and mapping (merged over the plot's, Data and mapping chapter).
+;; Every chart may read its own rows and merge its own mapping over the plot's - e.g. a reference curve beside the
+;; data (Data and mapping chapter).
 
 (nu/options-table (describe/fragment-rows :common))
 
+(plot/render-image {:data wave
+                    :mapping {:x :t :y :v}
+                    :charts [(chart/scatter)
+                             (chart/line {:data (for [t (range 0 30 0.5)] {:t t :v (Math/sin (* 0.3 t))})})]}
+                   {:width 500 :height 250})
+
 ;; ### Annotation options
+
+;; The rule, rect and text charts mark literal positions. By default their positions count for the scales (the axis
+;; reaches them); `:extent false` leaves them out - the rule at y = 2 is then off the panel (right).
 
 (nu/options-table (describe/fragment-rows :annotation))
 
+(plot/render-image (plot/arrange (for [extent [true false]]
+                                   {:data wave
+                                    :mapping {:x :t :y :v}
+                                    :charts [(chart/line) (chart/rule {:y 2 :extent extent :dash :dashed})]
+                                    :labels {:title (str ":extent " extent)}})
+                                 {:columns 2})
+                   {:width 800 :height 250})
+
 ;; ### Line style
+
+;; Colour, width and dash of the lines of line-like charts (line, rule, segment, smooth, density, ecdf ...); a
+;; mapped aesthetic wins over the fixed value.
 
 (nu/options-table (describe/fragment-rows :line-style))
 
+(plot/render-image {:data wave
+                    :mapping {:x :t :y :v}
+                    :charts [(chart/line {:color [178 34 34] :width 3 :dash [6 2]})]}
+                   {:width 500 :height 250})
+
 ;; ### Curves
 
-;; The line between data points: straight, a fastmath interpolation or a step, sampled for drawing.
+;; The line between data points of lines and ribbons: straight, a fastmath interpolation or a step, sampled for
+;; drawing.
 
 (nu/options-table (describe/fragment-rows :curve))
 
@@ -39,9 +77,11 @@
                                     :charts [(chart/line {:interpolator interpolator}) (chart/scatter)]
                                     :labels {:title (str ":interpolator " interpolator)}})
                                  {:columns 4})
-                   {:width 1000 :height 300})
+                   {:width 1000 :height 260})
 
 ;; ### Fill patterns
+
+;; A pattern drawn over filled marks (bars, areas, boxes, tiles of hierarchies ...), in its own colour.
 
 (nu/options-table (describe/fragment-rows :pattern))
 
@@ -49,58 +89,207 @@
                     :mapping {:x :p :y :v :pattern :p}
                     :charts [(chart/bar {:color :white :stroke-color :black :pattern-color :black})]
                     :legend false}
-                   {:width 500 :height 300})
+                   {:width 500 :height 260})
 
 ;; ### Rounded corners
 
+;; Rounded bar corners: all of them, or only the end away from the baseline.
+
 (nu/options-table (describe/fragment-rows :corner-radius))
 
-;; ### Strip options
+(plot/render-image {:data counts
+                    :mapping {:x :k :y :v :color :g}
+                    :charts [(chart/bar {:corner-radius-end 8})]}
+                   {:width 500 :height 260})
 
-;; Strip charts (box, violin, stripplot, beeswarm, dotplot, bar, error bars ...) draw one item per level of a
-;; categorical axis.
+;; ### Strip placement
 
-(nu/options-table (describe/fragment-rows :strip))
+;; Strip charts (bar, box, violin, stripplot, beeswarm, dotplot, rug, bullet, extent) draw one item per level of a
+;; categorical axis. Where the items sit across the value axis, how wide, and which axis holds the levels:
+
+(nu/options-table (describe/fragment-rows :strip) :placement)
+
+(plot/render-image {:data iris
+                    :mapping {:x :species :y :sepal-length}
+                    :charts [(chart/violin {:width 0.9}) (chart/box {:width 0.15})]}
+                   {:width 500 :height 280})
+
+;; ### Strip groups
+
+;; Groups of one level share its band: side by side (`:dodge`, with a gap), on top of each other, or one half each
+;; (`:mirror`).
+
+(nu/options-table (describe/fragment-rows :strip) :groups)
+
+(plot/render-image {:data counts
+                    :mapping {:x :k :y :v :color :g}
+                    :charts [(chart/bar {:position :dodge :dodge-gap 0.3})]}
+                   {:width 500 :height 260})
+
+;; ### Strip counts
+
+;; Each item's row count written past its largest value.
+
+(nu/options-table (describe/fragment-rows :strip) :n-label)
+
+(plot/render-image {:data iris
+                    :mapping {:x :species :y :petal-length}
+                    :charts [(chart/box {:n-label true :n-format "%d flowers"})]}
+                   {:width 500 :height 280})
 
 ;; ### Mirrored strips
 
+;; Two groups on the two sides of the value axis, e.g. a population pyramid.
+
 (nu/options-table (describe/fragment-rows :mirror))
+
+(plot/render-image {:data counts
+                    :mapping {:x :k :y :v :color :g}
+                    :charts [(chart/bar {:mirror :color})]
+                    :flip true
+                    :scales {:x {:reverse true}}}
+                   {:width 500 :height 260})
 
 ;; ### Ridgelines
 
+;; Histograms and densities over a categorical axis - one row per level, overlapping by `:overlap` rows.
+
 (nu/options-table (describe/fragment-rows :ridge))
+
+(plot/render-image {:data iris
+                    :mapping {:x :sepal-length :y :species :color :species}
+                    :charts [(chart/density {:overlap 1.8 :fill :color :alpha 0.7})]
+                    :scales {:y {:reverse true}}
+                    :legend false}
+                   {:width 500 :height 300})
 
 ;; ### Cell style
 
+;; The cell shape and outline of grid-cell charts (tile, bin2d): squares or hexagons, scaled.
+
 (nu/options-table (describe/fragment-rows :cell))
 
-;; ### Fields
+(plot/render-image {:data iris
+                    :mapping {:x :sepal-length :y :sepal-width}
+                    :charts [(chart/bin2d {:cell :pointy-hex :stroke-color :white})]}
+                   {:width 500 :height 300})
 
-(nu/options-table (describe/fragment-rows :field))
+;; ### Field: a function
+
+;; Raster and contour charts draw a scalar field: a function of a point over a domain ...
+
+(nu/options-table (describe/fragment-rows :field) :function)
+
+(plot/render-image {:charts [(chart/contour {:f (fn [[x y]] (+ (* x x) (* 2 y y))) :domain {:x [-2 2] :y [-2 2]}})]}
+                   {:width 450 :height 350})
+
+;; ### Field: a density estimate
+
+;; ... or the kernel density estimate of mapped points ...
+
+(nu/options-table (describe/fragment-rows :field) :density)
+
+(plot/render-image {:data iris
+                    :mapping {:x :sepal-length :y :sepal-width}
+                    :charts [(chart/field {:kernel :epanechnikov :bandwidth 0.4}) (chart/scatter {:size 3})]}
+                   {:width 450 :height 350})
+
+;; ### Field: the grid
+
+;; ... sampled on a grid of `:n` points per axis (interpolating gridded data with `:interpolation`).
+
+(nu/options-table (describe/fragment-rows :field) :grid)
+
+(plot/render-image {:charts [(chart/field {:f (fn [[x y]] (Math/sin (* x y))) :domain {:x [0 3] :y [0 3]} :n 12})]}
+                   {:width 450 :height 350})
 
 ;; ### Hierarchy labels
 
+;; Group and leaf labels of treemaps, partitions and circle packings: off, on, or a function writing them.
+
 (nu/options-table (describe/fragment-rows :hierarchy-labels))
 
-;; ### 3D frame
+(def budget [{:dept "science" :team "physics" :cost 40} {:dept "science" :team "biology" :cost 25}
+             {:dept "arts" :team "music" :cost 15} {:dept "arts" :team "theatre" :cost 10}
+             {:dept "sport" :team "football" :cost 20}])
 
-(nu/options-table (describe/fragment-rows :frame-3d))
+(plot/render-image {:data budget
+                    :mapping {:hierarchy [:dept :team] :value :cost}
+                    :charts [(chart/treemap {:group-labels false :leaf-labels #(str (:name %) " " (:value %))})]}
+                   {:width 500 :height 300})
+
+;; ### 3D view
+
+;; 3D charts (cloud, surface) are seen from an eye at an azimuth and elevation, with perspective; the box has
+;; proportions and may mirror axes.
+
+(nu/options-table (describe/fragment-rows :frame-3d) :view)
+
+(plot/render-image {:data iris
+                    :mapping {:x :sepal-length :y :sepal-width :z :petal-length :color :species}
+                    :charts [(chart/cloud {:view {:azimuth 60 :elevation 20 :distance 0.3} :aspect [1 1 0.6]})]}
+                   {:width 500 :height 400})
+
+;; ### 3D axes
+
+;; The box, the ticks and the axis titles.
+
+(nu/options-table (describe/fragment-rows :frame-3d) :axes)
+
+(plot/render-image {:data iris
+                    :mapping {:x :sepal-length :y :sepal-width :z :petal-length}
+                    :charts [(chart/cloud {:box false :axis-titles {:x "sepal L" :y "sepal W" :z "petal L"}})]}
+                   {:width 500 :height 400})
+
+;; ### 3D domains
+
+;; Explicit domains - needed when several 3D charts share a plot.
+
+(nu/options-table (describe/fragment-rows :frame-3d) :domain)
+
+(plot/render-image {:data iris
+                    :mapping {:x :sepal-length :y :sepal-width :z :petal-length}
+                    :charts [(chart/cloud {:domain {:x [4 8] :y [2 4.5] :z [0 7]}})]}
+                   {:width 500 :height 400})
 
 ;; ### Text style
 
-;; Also the style of every theme text role (Theme chapter).
+;; Font, size, colour, padding, alignment and background of the `text` chart - also the style of every theme text
+;; role (Theme chapter).
 
 (nu/options-table (describe/fragment-rows :text-style))
+
+(plot/render-image {:data wave
+                    :mapping {:x :t :y :v}
+                    :charts [(chart/line)
+                             (chart/text {:x 15 :y 0 :text "a styled note" :size 14 :font-style :bold
+                                          :color :white :background [70 90 140] :padding 6})]}
+                   {:width 500 :height 250})
 
 ;; ## Builders
 
 ;; ### Builder options
 
+;; Title, scales and theme of the plot a builder returns.
+
 (nu/options-table (describe/fragment-rows :builder))
+
+(def flows [{:from "coal" :to "power" :value 30} {:from "gas" :to "power" :value 20} {:from "gas" :to "homes" :value 15}
+            {:from "power" :to "homes" :value 25} {:from "power" :to "industry" :value 25}])
+
+(plot/render-image (plot/sankey flows {:title "Energy flows" :theme {:plot {:background :white}}})
+                   {:width 500 :height 300})
 
 ;; ### Multiplot layout
 
+;; The grid of `plot/arrange` (and of a plot's `:arrange`): shape, weights, panel alignment.
+
 (nu/options-table (describe/fragment-rows :arrange))
+
+(plot/render-image (plot/arrange [{:data wave :mapping {:x :t :y :v} :charts [(chart/line)]}
+                                  {:data wave :mapping {:x :g :y :v} :charts [(chart/box)]}]
+                                 {:columns 2 :widths [3 1]})
+                   {:width 700 :height 250})
 
 ;; ## Builders and data functions
 
@@ -108,48 +297,114 @@
 
 ;; ### Graph
 
+;; The edge rows' ends, weight and node ids, optional node rows, directedness.
+
 (nu/options-table (describe/fragment-rows :graph/graph))
+
+(def edges [{:a "x" :b "y" :w 3} {:a "y" :b "z" :w 1} {:a "z" :b "x" :w 2} {:a "z" :b "u" :w 2}])
+
+(plot/render-image (plot/network edges {:from :a :to :b :value :w :directed? true :labels true :rng (r/rng :mersenne 1)})
+                   {:width 450 :height 300})
 
 ;; ### Graph layout
 
+;; Node positions of a network: force-directed, a circle, or random.
+
 (nu/options-table (describe/fragment-rows :graph/layout))
+
+(plot/render-image (plot/network edges {:from :a :to :b :layout :circle :labels true}) {:width 450 :height 300})
 
 ;; ### Chord layout
 
+;; Node order, gaps between sectors, the ring's inner radius and the smallest drawn flow.
+
 (nu/options-table (describe/fragment-rows :graph/chord-layout))
+
+(plot/render-image (plot/chord flows {:pad 6 :inner 0.8}) {:width 450 :height 450})
 
 ;; ### Arc layout
 
+;; Node order along the line.
+
 (nu/options-table (describe/fragment-rows :graph/arc-layout))
+
+(plot/render-image (plot/arc edges {:from :a :to :b :order :cluster}) {:width 450 :height 250})
 
 ;; ### Sankey layout
 
+;; Columns, node width, gaps and relaxation of a sankey diagram.
+
 (nu/options-table (describe/fragment-rows :graph/sankey-layout))
+
+(plot/render-image (plot/sankey flows {:align :left :node-width 0.06 :pad 0.08}) {:width 500 :height 300})
 
 ;; ### Alluvial graph
 
+;; The axes (categorical columns) the strands cross, their weights and which axis colours them.
+
 (nu/options-table (describe/fragment-rows :graph/alluvial-graph))
+
+(plot/render-image (plot/alluvial [{:class "1st" :sex "f" :n 140} {:class "1st" :sex "m" :n 180}
+                                   {:class "3rd" :sex "f" :n 190} {:class "3rd" :sex "m" :n 510}]
+                                  {:axes [:class :sex] :value :n :fill :sex})
+                   {:width 500 :height 300})
 
 ;; ### Dendrogram layout
 
+;; A cut into `:k` clusters and a circular layout.
+
 (nu/options-table (describe/fragment-rows :tree/layout))
+
+(def org (tree/from-levels [{:div "north" :team "a"} {:div "north" :team "b"} {:div "south" :team "c"}
+                            {:div "south" :team "d"} {:div "south" :team "e"}]
+                           {:hierarchy [:div :team]}))
+
+(plot/render-image (plot/dendrogram org {:k 2}) {:width 450 :height 300})
 
 ;; ### Node-link tree layout
 
+;; Tidy or cluster placement, diagonal or straight (`:line`) links, circular.
+
 (nu/options-table (describe/fragment-rows :tree/node-link-layout))
+
+(plot/render-image (plot/tree org {:layout :cluster :links :line}) {:width 450 :height 300})
 
 ;; ### Edge bundling
 
+;; Edges between the tree's leaves, bent along the tree with strength `:beta`.
+
 (nu/options-table (describe/fragment-rows :tree/bundle-paths))
+
+(plot/render-image (plot/bundle [{:from "a" :to "d"} {:from "b" :to "e"} {:from "a" :to "c"}] org {:beta 0.9})
+                   {:width 400 :height 400})
 
 ;; ### Sequences
 
+;; Step sequences as text (`"home-search-end"`) split into rings of a flow sunburst.
+
 (nu/options-table (describe/fragment-rows :hierarchy/sequence-levels))
+
+(plot/render-image (plot/sequences [{:sequence "home-search-product" :n 5} {:sequence "home-product" :n 3}
+                                    {:sequence "search-product-cart" :n 2}]
+                                   {:value :n})
+                   {:width 400 :height 400})
 
 ;; ### Autocorrelation rows
 
+;; The lags of the correlogram, the significance level of its bands and which of ACF and PACF to draw.
+
 (nu/options-table (describe/fragment-rows :series/acf-rows))
+
+(plot/render-image (plot/acf (map #(Math/sin (* 0.5 (double %))) (range 100)) {:lags 30 :partial? true})
+                   {:width 600 :height 300})
 
 ;; ### Horizon rows
 
+;; The keys of the series rows, the number and height of the bands and resampling between points.
+
 (nu/options-table (describe/fragment-rows :series/horizon-rows))
+
+(plot/render-image (plot/horizon (for [s ["a" "b"] t (range 60)]
+                                   {:x t :y (* (if (= s "a") 1 -1) (Math/sin (* 0.2 t)) t) :series s})
+                                 {:series :series :bands 3})
+                   {:width 600 :height 250})

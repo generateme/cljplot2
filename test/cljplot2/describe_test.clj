@@ -2,10 +2,13 @@
   "Reference part R1a: `cljplot2.describe` rows, type texts, fragments, API vars."
   (:require [clojure.test :refer [deftest testing is]]
             [cljplot2.chart :as chart]
+            [cljplot2.data.rows]
             [cljplot2.describe :as describe]
             [cljplot2.layout.plot-grid :as plot-grid]
             [cljplot2.pipeline :as pipeline]
+            [cljplot2.scale.position]
             [cljplot2.schema :as schema]
+            [cljplot2.test-util :refer [error-data]]
             [cljplot2.theme :as theme]))
 
 (defn- row [rows k] (first (filter #(= [k] (:path %)) rows)))
@@ -20,7 +23,7 @@
       (is (= :strip (:fragment (row rows :place))))
       (is (nil? (:fragment (row rows :measure-width)))))
     (testing "every row has the documented keys"
-      (is (every? #(= #{:key :path :type :required? :default :default-doc :description :fragment} (set (keys %))) rows)))))
+      (is (every? #(= #{:key :path :type :required? :default :default-doc :description :fragment :section} (set (keys %))) rows)))))
 
 (deftest schema-rows-test
   (let [s [:map {:closed true}
@@ -179,9 +182,37 @@
       (is (= (filter #(= :legend (first (:path %))) rows) (describe/theme-rows :legend)))
       (is (= [:legend] (:path (first (describe/theme-rows :legend)))))
       (is (= (count rows) (reduce + (map (comp count describe/theme-rows) (distinct (map (comp first :path) rows)))))))
-    (testing "boundary: an unknown section, nil - no rows"
-      (is (= [] (describe/theme-rows :no-such-section)))
-      (is (= [] (describe/theme-rows nil))))))
+    (testing "boundary: an unknown theme key, nil - an error keyed :theme-key"
+      (is (= :theme-key (:key (error-data #(describe/theme-rows :no-such-key)))))
+      (is (= :theme-key (:key (error-data #(describe/theme-rows nil))))))
+    (testing "text roles in their sections: plot, legend and chart texts"
+      (is (= #{:plot-text :legend-text :chart-text} (set (keep :section (describe/theme-rows :text)))))
+      (is (= :legend-text (:section (by-path [:text :legend-title])))))))
+
+(deftest section-rows-test
+  (let [nested [:map {:closed true} [:w {:description "w"} :int]
+                [:v {:description "v" :cljplot2/section :own} :int]]
+        s [:map {:closed true}
+           [:a {:description "a" :cljplot2/section :first} :int]
+           [:b {:description "b" :cljplot2/section :second} nested]]
+        by-path (into {} (map (juxt :path :section)) (describe/schema-rows s))]
+    (testing "an entry's section, nested entries inherit their map entry's, their own wins"
+      (is (= {[:a] :first [:b] :second [:b :w] :second [:b :v] :own} by-path)))
+    (testing "boundary: no sections - nil"
+      (is (every? nil? (map :section (describe/schema-rows [:map [:a {:description "a"} :int]])))))
+    (testing "library schemas: plot, mapping and position scale rows are sliced"
+      (is (every? :section (describe/options pipeline/plot-schema)))
+      (is (every? :section (describe/options cljplot2.data.rows/mapping-schema)))
+      (is (= :wadogo (:section (first (filter #(= [:exponent] (:path %))
+                                                (describe/options cljplot2.scale.position/scale-spec-schema)))))))))
+
+(deftest chart-constructors-test
+  (testing "every built-in chart kind, sorted, each var returning its kind's chart value"
+    (let [cs (describe/chart-constructors)]
+      (is (= 39 (count cs)))
+      (is (= (sort (keys cs)) (keys cs)))
+      (is (every? (fn [[k v]] (= k (:kind (v)))) cs))
+      (is (every? var? (vals cs))))))
 
 (deftest entries-fragment-test
   (let [style [:map {:closed true} [:w {:description "w"} :int]]

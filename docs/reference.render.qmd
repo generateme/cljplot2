@@ -17,8 +17,9 @@ code-block-background: true
 # Render
 
 Building and drawing a plot: `plot/build` (the built plot, data only), `plot/render` (a clojure2d canvas),
-`plot/render-image` (a `java.awt.image.BufferedImage`) and `plot/cvd-image` (an image as seen with a colour vision
-deficiency). All take the same render options.
+`plot/render-image` (a `java.awt.image.BufferedImage`), `plot/cvd-image` (an image as seen with a colour vision
+deficiency) and `plot/save` (an image or canvas to a file). The first three take the same render options, as
+their second argument or under the plot's `:options` (merged under the argument).
 
 
 ::: {.sourceClojure}
@@ -30,29 +31,6 @@ deficiency). All take the same render options.
             [cljplot2.pipeline :as pipeline]
             [notebook-utils :as nu]))
 ```
-:::
-
-
-
-## Render options
-
-Given as the second argument of `build` / `render` / `render-image`, or under the plot's `:options` (merged under
-the argument). The size is the whole image, legends and titles included.
-
-
-::: {.sourceClojure}
-```clojure
-(nu/options-table (describe/options pipeline/options-schema))
-```
-:::
-
-
-::: {.clay-table}
-
-```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:width</td><td>a positive integer</td><td>600</td><td>target width in pixels</td></tr><tr><td>:height</td><td>a positive integer</td><td>600</td><td>target height in pixels</td></tr><tr><td>:hint</td><td>one of :high :highest :low :mid</td><td>:high</td><td>rendering quality hint (antialiasing and text metrics)</td></tr><tr><td>:debug</td><td>true or false or nil</td><td>false</td><td>paint every layout item's box (a distinct colour, its outline and id) under its content</td></tr><tr><td>:cvd</td><td>a clojure2d color vision deficiency: a keyword (:protanopia, :deuteranopia, :tritanopia, :achromatopsia) or [keyword severity] (:protanomaly, :deuteranomaly, :tritanomaly, :achromatomaly; severity in [0 1]) or nil</td><td></td><td>render as seen with a colour vision deficiency</td></tr><tr><td>:until</td><td>one of :split :stats :extents :scale-specs :grid :layout :finalized-scales :subplots</td><td></td><td>build stops after this pipeline stage (inspect the intermediate data)</td></tr></tbody></table>
-```
-
 :::
 
 
@@ -80,13 +58,22 @@ Data: Edgar Anderson's iris measurements, R datasets package `iris` (Anderson 19
 
 ## Size and quality
 
-`:width` / `:height` in pixels; `:hint` trades antialiasing and text metrics for speed (`:low` draws without
-antialiasing).
+The image size in pixels - the whole image, legends and titles included - and the rendering quality: `:low`
+draws without antialiasing (faster, jagged edges), `:highest` with the most precise text metrics.
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:width</td><td>a positive integer</td><td>600</td><td>target width in pixels</td></tr><tr><td>:height</td><td>a positive integer</td><td>600</td><td>target height in pixels</td></tr><tr><td>:hint</td><td>one of :high :highest :low :mid</td><td>:high</td><td>rendering quality hint (antialiasing and text metrics)</td></tr></tbody></table>
+```
+
+:::
+
 
 
 ::: {.sourceClojure}
 ```clojure
-(plot/render-image iris-plot {:width 500 :height 350 :hint :low})
+(plot/render-image iris-plot {:width 500 :height 300 :hint :low})
 ```
 :::
 
@@ -97,14 +84,24 @@ antialiasing).
 
 
 
-## Layout debugging
+## Inspection
 
-`:debug true` paints every layout item's box under its content - panel, axes, axis titles, legend.
+Two aids for finding out why a plot looks as it does. `:debug true` paints every layout item's box under its
+content - panel, axes, axis titles, legend:
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:debug</td><td>true or false or nil</td><td>false</td><td>paint every layout item's box (a distinct colour, its outline and id) under its content</td></tr><tr><td>:until</td><td>one of :split :stats :extents :scale-specs :grid :layout :finalized-scales :subplots</td><td></td><td>build stops after this pipeline stage (inspect the intermediate data)</td></tr></tbody></table>
+```
+
+:::
+
 
 
 ::: {.sourceClojure}
 ```clojure
-(plot/render-image iris-plot {:width 500 :height 350 :debug true})
+(plot/render-image iris-plot {:width 500 :height 300 :debug true})
 ```
 :::
 
@@ -113,28 +110,6 @@ antialiasing).
 ![](reference.render_files/image1.png)
 :::
 
-
-
-## Colour vision deficiency
-
-`:cvd` renders the plot as seen with a deficiency (a keyword, or `[keyword severity]` for the partial ones);
-`plot/cvd-image` converts any image.
-
-
-::: {.sourceClojure}
-```clojure
-(plot/render-image iris-plot {:width 500 :height 350 :cvd :deuteranopia})
-```
-:::
-
-
-::: {.clay-image}
-![](reference.render_files/image2.png)
-:::
-
-
-
-## Intermediate data
 
 `:until` stops the build after a stage; the built plot is data. Here the build stops after `:extents` - the
 extent of each mapped dimension:
@@ -168,10 +143,44 @@ extent of each mapped dimension:
 
 
 
-## Saving a file
+## Colour vision
 
-cljplot2 has no save function: write the image (or the canvas of `plot/render`) with `clojure2d.core/save`,
-e.g. `(c2d/save (plot/render-image p) "plot.png")` - the file extension picks the format.
+`:cvd` renders the plot as seen with a colour vision deficiency - a keyword, or `[keyword severity]` for the
+partial ones; `plot/cvd-image` converts any image. Here versicolor and virginica become hard to tell apart:
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:cvd</td><td>a clojure2d color vision deficiency: a keyword (:protanopia, :deuteranopia, :tritanopia, :achromatopsia) or [keyword severity] (:protanomaly, :deuteranomaly, :tritanomaly, :achromatomaly; severity in [0 1]) or nil</td><td></td><td>render as seen with a colour vision deficiency</td></tr></tbody></table>
+```
+
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image iris-plot {:width 500 :height 300 :cvd :deuteranopia})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.render_files/image2.png)
+:::
+
+
+
+## Saving
+
+`plot/save` writes an image (or the canvas of `plot/render`) to a file - the format from the extension (png,
+jpg, bmp, tiff ...) - and returns it, so it ends a pipeline:
+
+```clojure
+(-> iris-plot
+    (plot/render-image {:width 800 :height 500})
+    (plot/save "iris.png"))
+```
 
 
 ```{=html}

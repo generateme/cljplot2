@@ -1,7 +1,8 @@
 ;; # Theme
 
 ;; The theme holds every style default: backgrounds, grid lines, axes, legends, palettes, text roles and each chart
-;; kind's style. A plot's `:theme` is deep-merged over the default theme, so it names only what changes.
+;; kind's style. A plot's `:theme` is deep-merged over the default theme, so it names only what changes. Each
+;; section below lists its keys with their default values and changes some of them.
 
 (ns reference.theme
   (:require [cljplot2.chart :as chart]
@@ -13,80 +14,145 @@
 
 (def iris (nu/dataset :iris))
 
-(plot/render-image {:data iris
-                    :mapping {:x :sepal-length :y :petal-length :color :species :facet :species}
-                    :charts [(chart/scatter)]
-                    :facets {:columns 3}
-                    :labels {:title "A darker theme"}
-                    :theme {:plot {:background [40 44 52]}
-                            :panel {:fill [55 60 70] :grid {:x {:color [90 96 110] :width 0.5 :dash :none}
-                                                            :y {:color [90 96 110] :width 0.5 :dash :none}}}
-                            :strip {:fill [70 76 88] :border-color :none}
-                            :axis {:x {:line-color :none :tick-color [150 150 150]}
-                                   :y {:line-color :none :tick-color [150 150 150]}}
-                            :palette {:color :tableau-10}
-                            :text {:title {:color :white}
-                                   :axis-title {:color [220 220 220]}
-                                   :tick-label {:color [200 200 200]}
-                                   :strip {:color :white}
-                                   :legend-title {:color :white}
-                                   :legend-label {:color [220 220 220]}}}}
-                   {:width 900 :height 400})
+(def iris-plot
+  {:data iris
+   :mapping {:x :sepal-length :y :petal-length :color :species}
+   :charts [(chart/scatter)]})
 
 ;; ## Plot
 
+;; The canvas behind everything and the margin around the plot.
+
 (nu/options-table (describe/theme-rows :plot))
 
-;; ## Panel
+(plot/render-image (assoc iris-plot :theme {:plot {:background [255 250 235] :margin 30}})
+                   {:width 500 :height 300})
 
-(nu/options-table (describe/theme-rows :panel))
+;; ## Panel box
 
-;; ## Axis
+;; The data panel's fill and border; `:alternate-fill` shades every other facet panel.
 
-;; Per position scale key (`:x`, `:y`), also when `:flip` draws `:x` vertically.
+(nu/options-table (describe/theme-rows :panel) :panel-box)
 
-(nu/options-table (describe/theme-rows :axis))
+(plot/render-image (assoc iris-plot
+                          :theme {:panel {:fill :white :border-color [60 60 60] :border-width 2}})
+                   {:width 500 :height 300})
 
-;; ## Strip
+;; ## Grid lines
+
+;; Grid lines at the ticks of each position scale, of bands scales (with the alternate band fill) and at minor
+;; ticks; `:none` turns a kind of line off.
+
+(nu/options-table (describe/theme-rows :panel) :grid)
+
+(plot/render-image (assoc iris-plot
+                          :scales {:x {:minor-ticks 4}}
+                          :theme {:panel {:grid {:x {:color [150 150 200] :width 1 :dash :none}
+                                                 :y :none
+                                                 :minor {:color [200 200 220] :width 0.5 :dash :none}}}})
+                   {:width 500 :height 300})
+
+;; ## Axes
+
+;; The axis line, ticks and tick labels per position scale - kept by scale (`:x` stays `:x` when `:flip` draws it
+;; vertically). `:tick-spacing` sets how many ticks fit (pixels per tick); `:label-rotation` turns long tick labels.
+
+(nu/options-table (describe/theme-rows :axis) :x-axis)
+
+(nu/options-table (describe/theme-rows :axis) :y-axis)
+
+(plot/render-image {:data [{:k "a long level" :v 3} {:k "another long level" :v 5} {:k "the last level" :v 4}]
+                    :mapping {:x :k :y :v}
+                    :charts [(chart/bar)]
+                    :theme {:axis {:x {:label-rotation 45 :tick-length 0 :line-color :none}
+                                   :y {:tick-spacing 25 :tick-color [200 0 0]}}}}
+                   {:width 500 :height 350})
+
+;; ## Strips and facets
+
+;; Facet strip boxes (the shingle fill marks a shingle level's range) and the gap between facet panels.
 
 (nu/options-table (describe/theme-rows :strip))
 
-;; ## Facet
-
 (nu/options-table (describe/theme-rows :facet))
 
-;; ## Multiplot
+(plot/render-image (assoc iris-plot
+                          :mapping {:x :sepal-length :y :petal-length :facet :species}
+                          :theme {:strip {:fill [70 90 140] :border-color :none}
+                                  :text {:strip {:color :white}}
+                                  :facet {:gap 20}})
+                   {:width 700 :height 300})
+
+;; ## Multiplots
+
+;; The gap between arranged plots.
 
 (nu/options-table (describe/theme-rows :multiplot))
 
+(plot/render-image (plot/arrange [iris-plot (assoc iris-plot :mapping {:x :sepal-width :y :petal-width :color :species})]
+                                 {:columns 2 :theme {:multiplot {:gap 40}}})
+                   {:width 800 :height 300})
+
 ;; ## Legend
+
+;; Legend key sizes, spacing, the legend box and the colour bar.
 
 (nu/options-table (describe/theme-rows :legend))
 
+(plot/render-image (assoc iris-plot :theme {:legend {:key-size 24 :gap 10 :fill :white :border-color [150 150 150]}})
+                   {:width 500 :height 300})
+
 ;; ## Palette
 
-;; The default ranges of the aesthetic scales (Aesthetics and legends chapter).
+;; The default ranges of the aesthetic scales (Aesthetics and legends chapter): colours of levels, the gradient of
+;; numbers, shapes, sizes, dashes and patterns.
 
 (nu/options-table (describe/theme-rows :palette))
 
+(plot/render-image (assoc iris-plot
+                          :mapping {:x :sepal-length :y :petal-length :color :species :shape :species}
+                          :theme {:palette {:color :tableau-10 :shape [\s \A \V]}})
+                   {:width 500 :height 300})
+
 ;; ## Text
 
-;; Each text the library draws has a role; a label's `:role` may also name a role of your own added here. Every
-;; role is a text style - the keys of the Text style group:
+;; Every text the library draws has a role; each role is a text style (the keys of the Text style group, below). A
+;; label's `:role` may also name a role of your own added under `:text`.
 
-(nu/options-table (describe/theme-rows :text))
+;; Titles, strips and axis texts:
+
+(nu/options-table (describe/theme-rows :text) :plot-text)
+
+;; Legend texts:
+
+(nu/options-table (describe/theme-rows :text) :legend-text)
+
+;; Texts of particular charts:
+
+(nu/options-table (describe/theme-rows :text) :chart-text)
+
+;; The keys of a text style:
 
 (nu/options-table (describe/fragment-rows :text-style))
 
+(plot/render-image (assoc iris-plot
+                          :labels {:title "Iris" :x "sepal length" :y "petal length"}
+                          :theme {:text {:title {:size 20 :font-style :italic :align [:left :middle]}
+                                         :axis-title {:color [120 30 30]}
+                                         :tick-label {:size 8}
+                                         :legend-title {:size 9 :font-style :plain}}})
+                   {:width 500 :height 320})
+
 ;; ## Chart
 
-;; The style of each chart kind, `[:chart kind]` - its style keys and defaults are in the chart's table (the rows
-;; with a theme default). Chart options given to the chart override the theme.
+;; The style of each chart kind, `[:chart kind]` - its keys and defaults are the rows with a theme default in the
+;; chart's table. Options given to a chart override its theme style.
 
 (nu/options-table (describe/theme-rows :chart))
 
-(plot/render-image {:data iris
-                    :mapping {:x :sepal-length :y :petal-length}
-                    :charts [(chart/scatter)]
-                    :theme {:chart {:scatter {:shape \s :size 8 :color [178 34 34 120]}}}}
-                   {:width 500 :height 350})
+;; The kinds with a theme style:
+
+(keys (describe/chart-constructors))
+
+(plot/render-image (assoc iris-plot :theme {:chart {:scatter {:shape \s :size 8}}})
+                   {:width 500 :height 300})

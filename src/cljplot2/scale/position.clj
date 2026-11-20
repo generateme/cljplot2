@@ -117,51 +117,51 @@
   (e.g. a tick per category of many; default true; axis titles are separate, `:labels`)."
   (schema/with-rules
    (into [:map {:closed true :cljplot2/type-doc "a position scale spec"}
-          (schema/optional :kind {:description "scale kind: :linear, :log, :pow, :symlog, :radial, :interpolated, :datetime or :bands"
+          (schema/optional :kind {:cljplot2/section :kind :description "scale kind: :linear, :log, :pow, :symlog, :radial, :interpolated, :datetime or :bands"
                                   :cljplot2/default-doc "from the data: :linear for numbers, :bands for levels, :datetime for java.time values"}
                            (into [:enum] (sort position-kinds)))
-          (schema/optional :type {:description "declare numbers categorical (one band per value) or force a numeric scale"}
+          (schema/optional :type {:cljplot2/section :kind :description "declare numbers categorical (one band per value) or force a numeric scale"}
                            [:enum :categorical :numeric])
-          (schema/nilable :domain {:description "explicit domain: [lo hi] for continuous kinds, the levels in order for :bands"
+          (schema/nilable :domain {:cljplot2/section :kind :description "explicit domain: [lo hi] for continuous kinds, the levels in order for :bands"
                                    :cljplot2/default-doc "the charts' data extent"}
                           [:sequential {:min 1} any?])
-          (schema/nilable :ticks {:description "a tick count hint, or the tick values themselves"
+          (schema/nilable :ticks {:cljplot2/section :ticks :description "a tick count hint, or the tick values themselves"
                                   :cljplot2/default-doc "a count from the panel size and theme :tick-spacing"}
                           [:multi {:dispatch sequential?} [true [:sequential any?]] [false schema/pos-int]])
-          (schema/nilable :nice {:description "extend a continuous domain to nice tick values (a number - the most it may grow, a fraction of the span)"
+          (schema/nilable :nice {:cljplot2/section :ticks :description "extend a continuous domain to nice tick values (a number - the most it may grow, a fraction of the span)"
                                  :cljplot2/default-doc "true (false for :interpolated)"}
                           [:multi {:dispatch boolean?} [true :boolean] [false [:and schema/finite schema/non-neg]]])
-          (schema/optional :expand {:description "padding [lo hi] of a continuous domain, fractions of the span (wins over the charts')"
+          (schema/optional :expand {:cljplot2/section :axis :description "padding [lo hi] of a continuous domain, fractions of the span (wins over the charts')"
                                     :cljplot2/default-doc "the charts' padding"}
                            schema/padding)
-          (schema/optional :formatter {:description "tick label text: a function of the value, a java.time pattern (:datetime) or :power (:log)"
+          (schema/optional :formatter {:cljplot2/section :ticks :description "tick label text: a function of the value, a java.time pattern (:datetime) or :power (:log)"
                                        :cljplot2/default-doc "the charts' suggested format, else plain numbers, levels or dates"}
                            [:multi {:dispatch #(cond (string? %) :pattern (keyword? %) :preset :else :function)}
                             [:pattern :string] [:preset [:enum :power]] [:function schema/function]])
-          (schema/nilable :order-by {:description "bands ordered by a function of each level's rows (not with :domain)"} schema/function)
-          (schema/nilable :descending {:description "reverse the :order-by order (needs :order-by)" :default false} schema/bool)
-          (schema/nilable :reverse {:description "the axis runs the other way (the final domain reversed)" :default false} schema/bool)
-          (schema/nilable :minor-ticks {:description "unlabelled ticks between two major ticks (continuous numeric kinds)"} schema/pos-int)
-          (schema/nilable :axis-domain {:description "display only: axis and grid show the ticks of this linear domain over the panel"}
+          (schema/nilable :order-by {:cljplot2/section :order :description "bands ordered by a function of each level's rows (not with :domain)"} schema/function)
+          (schema/nilable :descending {:cljplot2/section :order :description "reverse the :order-by order (needs :order-by)" :default false} schema/bool)
+          (schema/nilable :reverse {:cljplot2/section :order :description "the axis runs the other way (the final domain reversed)" :default false} schema/bool)
+          (schema/nilable :minor-ticks {:cljplot2/section :ticks :description "unlabelled ticks between two major ticks (continuous numeric kinds)"} schema/pos-int)
+          (schema/nilable :axis-domain {:cljplot2/section :axis :description "display only: axis and grid show the ticks of this linear domain over the panel"}
                           [:tuple schema/finite schema/finite])
-          (schema/optional :axis {:description "true - axis and grid, false - neither, :grid - grid lines only, :no-grid - axis only"
+          (schema/optional :axis {:cljplot2/section :axis :description "true - axis and grid, false - neither, :grid - grid lines only, :no-grid - axis only"
                                   :default true}
                            [:or :boolean [:enum :grid :no-grid]])
-          (schema/optional :stops {:description "panel fractions the :interpolated domain values map to (increasing, or decreasing - reversed)"
+          (schema/optional :stops {:cljplot2/section :interpolated :description "panel fractions the :interpolated domain values map to (increasing, or decreasing - reversed)"
                                    :cljplot2/default-doc "evenly spaced"}
                            [:sequential {:min 2} schema/finite])
-          (schema/optional :interpolator {:description "interpolation between the :stops of an :interpolated scale (only there)"
+          (schema/optional :interpolator {:cljplot2/section :interpolated :description "interpolation between the :stops of an :interpolated scale (only there)"
                                           :cljplot2/default-doc ":linear"}
                            schema/interpolator)
-          (schema/optional :ticks-method {:description "tick algorithm of continuous kinds: :default (d3) or :pretty (R pretty())"
+          (schema/optional :ticks-method {:cljplot2/section :ticks :description "tick algorithm of continuous kinds: :default (d3) or :pretty (R pretty())"
                                           :cljplot2/default-doc ":pretty for :datetime, else :default"}
                            [:enum :default :pretty])
-          (schema/optional :ticks-params {:description "tick algorithm parameters: {:min-n n}, calendar ticks {:unit u :step s}"}
+          (schema/optional :ticks-params {:cljplot2/section :ticks :description "tick algorithm parameters: {:min-n n}, calendar ticks {:unit u :step s}"}
                            ticks-params)
           (schema/optional :range (schema/forbidden "is set from the layout, it can't be given"))
           (schema/optional :padding (schema/forbidden "is internal; use :expand"))
           (schema/optional :tick-format (schema/forbidden "is internal (set by charts); use :formatter"))]
-         (map (fn [[k description]] (schema/optional k {:description description} any?)))
+         (map (fn [[k description]] (schema/optional k {:description description :cljplot2/section :wadogo} any?)))
          wadogo-attributes)
    [domain-problem [:domain]]
    [#(when (and (:order-by %) (:domain %)) "give either :order-by or :domain, not both") [:order-by]]

@@ -1,8 +1,9 @@
 ;; # Render
 
 ;; Building and drawing a plot: `plot/build` (the built plot, data only), `plot/render` (a clojure2d canvas),
-;; `plot/render-image` (a `java.awt.image.BufferedImage`) and `plot/cvd-image` (an image as seen with a colour vision
-;; deficiency). All take the same render options.
+;; `plot/render-image` (a `java.awt.image.BufferedImage`), `plot/cvd-image` (an image as seen with a colour vision
+;; deficiency) and `plot/save` (an image or canvas to a file). The first three take the same render options, as
+;; their second argument or under the plot's `:options` (merged under the argument).
 
 (ns reference.render
   (:require [cljplot2.chart :as chart]
@@ -10,13 +11,6 @@
             [cljplot2.describe :as describe]
             [cljplot2.pipeline :as pipeline]
             [notebook-utils :as nu]))
-
-;; ## Render options
-
-;; Given as the second argument of `build` / `render` / `render-image`, or under the plot's `:options` (merged under
-;; the argument). The size is the whole image, legends and titles included.
-
-(nu/options-table (describe/options pipeline/options-schema))
 
 (nu/source-note {:dataset :iris})
 
@@ -29,32 +23,43 @@
 
 ;; ## Size and quality
 
-;; `:width` / `:height` in pixels; `:hint` trades antialiasing and text metrics for speed (`:low` draws without
-;; antialiasing).
+;; The image size in pixels - the whole image, legends and titles included - and the rendering quality: `:low`
+;; draws without antialiasing (faster, jagged edges), `:highest` with the most precise text metrics.
 
-(plot/render-image iris-plot {:width 500 :height 350 :hint :low})
+(nu/options-table (describe/options pipeline/options-schema) :image)
 
-;; ## Layout debugging
+(plot/render-image iris-plot {:width 500 :height 300 :hint :low})
 
-;; `:debug true` paints every layout item's box under its content - panel, axes, axis titles, legend.
+;; ## Inspection
 
-(plot/render-image iris-plot {:width 500 :height 350 :debug true})
+;; Two aids for finding out why a plot looks as it does. `:debug true` paints every layout item's box under its
+;; content - panel, axes, axis titles, legend:
 
-;; ## Colour vision deficiency
+(nu/options-table (describe/options pipeline/options-schema) :inspection)
 
-;; `:cvd` renders the plot as seen with a deficiency (a keyword, or `[keyword severity]` for the partial ones);
-;; `plot/cvd-image` converts any image.
-
-(plot/render-image iris-plot {:width 500 :height 350 :cvd :deuteranopia})
-
-;; ## Intermediate data
+(plot/render-image iris-plot {:width 500 :height 300 :debug true})
 
 ;; `:until` stops the build after a stage; the built plot is data. Here the build stops after `:extents` - the
 ;; extent of each mapped dimension:
 
 (:extents (plot/build iris-plot {:until :extents}))
 
-;; ## Saving a file
+;; ## Colour vision
 
-;; cljplot2 has no save function: write the image (or the canvas of `plot/render`) with `clojure2d.core/save`,
-;; e.g. `(c2d/save (plot/render-image p) "plot.png")` - the file extension picks the format.
+;; `:cvd` renders the plot as seen with a colour vision deficiency - a keyword, or `[keyword severity]` for the
+;; partial ones; `plot/cvd-image` converts any image. Here versicolor and virginica become hard to tell apart:
+
+(nu/options-table (describe/options pipeline/options-schema) :color-vision)
+
+(plot/render-image iris-plot {:width 500 :height 300 :cvd :deuteranopia})
+
+;; ## Saving
+
+;; `plot/save` writes an image (or the canvas of `plot/render`) to a file - the format from the extension (png,
+;; jpg, bmp, tiff ...) - and returns it, so it ends a pipeline:
+;;
+;; ```clojure
+;; (-> iris-plot
+;;     (plot/render-image {:width 800 :height 500})
+;;     (plot/save "iris.png"))
+;; ```

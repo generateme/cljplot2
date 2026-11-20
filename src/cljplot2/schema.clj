@@ -16,8 +16,9 @@
   sentence), `:default` (a constant default of a behaviour option; style options take theme defaults instead),
   `:cljplot2/default-doc` (the text of a computed default), `:cljplot2/fragment` (the shared group of options the
   entry belongs to, set by [[in-fragment]]), `:cljplot2/entries-fragment` (the shared group documenting the entries of
-  the entry's map - one table for many entries, e.g. text roles) and `:cljplot2/internal` (not a user option - no
-  table row); see
+  the entry's map - one table for many entries, e.g. text roles), `:cljplot2/section` (the slice of a long option
+  table the entry belongs to - a keyword; in one map every user entry has one or none has; nested entries inherit
+  it) and `:cljplot2/internal` (not a user option - no table row); see
   [[optional]], [[nilable]]. Schema properties: `:cljplot2/type-doc` (the type's text in option tables, for a large
   map or composite; named types take it as an argument, see [[named-type]]) and, on a map, `:cljplot2/merged` (a
   merged input - theme, render options: every key present after merging, users give partial overrides)."
@@ -292,14 +293,35 @@
       (let [matches (filter #(and (keyword? %) (str/starts-with? (name %) (subs n 0 3)) (not= % unknown)) known)]
         (when (= 1 (count matches)) (first matches))))))
 
+(defn- swapped-neighbours?
+  "Is string `a` string `b` with two adjacent characters swapped (a typo such as \"szie\" for \"size\")?"
+  [^String a ^String b]
+  (and (= (count a) (count b))
+       (let [diffs (filterv #(not= (.charAt a (int %)) (.charAt b (int %)))
+                            (range (count a)))]
+         (and (= 2 (count diffs))
+              (= (inc (long (diffs 0))) (long (diffs 1)))
+              (= (.charAt a (int (diffs 0))) (.charAt b (int (diffs 1))))
+              (= (.charAt a (int (diffs 1))) (.charAt b (int (diffs 0))))))))
+
+(defn- transposed-key
+  "The only key among `known` whose name is `unknown`'s name with two adjacent characters swapped, or `nil` - malli's
+  similarity misses such typos in short keys (`:szie` for `:size`)."
+  [unknown known]
+  (when (keyword? unknown)
+    (let [matches (filter #(and (keyword? %) (swapped-neighbours? (name unknown) (name %))) known)]
+      (when (= 1 (count matches)) (first matches)))))
+
 (defn- spelling-suggestion
-  "For an unknown-key `error`: the closest key of its (closed) map schema, else the only key it abbreviates (see
-  [[abbreviated-key]]), or `nil`. Present keys count too, as merged inputs (the theme) always hold every known key."
+  "For an unknown-key `error`: the closest key of its (closed) map schema, else the only key it is a transposition of
+  (see [[transposed-key]]) or abbreviates (see [[abbreviated-key]]), or `nil`. Present keys count too, as merged inputs
+  (the theme) always hold every known key."
   [error]
   (when (= ::malli/extra-key (:type error))
     (let [unknown (peek (:in error))
           known (set (map first (malli/entries (:schema error))))]
       (or (first (me/-most-similar-to #{} unknown known))
+          (transposed-key unknown known)
           (abbreviated-key unknown known)))))
 
 (defn- error-entry

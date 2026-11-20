@@ -16,48 +16,23 @@ code-block-background: true
 
 # Scales, axes and coordinates
 
-Position scales map `:x` and `:y` to the panel; their kind follows the data (numbers, levels, dates) unless set.
-Each position scale draws an axis and grid lines. A plot is cartesian unless `:coord` is polar; `:flip` swaps the
-directions and `:aspect :iso` keeps data units square.
+Position scales map `:x` and `:y` data to the panel; their kind follows the data (numbers, levels, dates) unless
+set. Each position scale draws an axis and grid lines. A plot is cartesian unless `:coord` is polar; `:flip`
+swaps the directions and `:aspect :iso` keeps data units square.
 
 
 ::: {.sourceClojure}
 ```clojure
 (ns reference.scales-axes-coords
-  (:require [scicloj.kindly.v4.kind :as kind]
-            [wadogo.scale :as ws]
-            [cljplot2.chart :as chart]
+  (:require [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
-            [cljplot2.data.facet :as facet]
             [cljplot2.describe :as describe]
             [cljplot2.scale.coord :as coord]
             [cljplot2.scale.position :as position]
             [cljplot2.schema :as schema]
-            [notebook-utils :as nu]))
+            [notebook-utils :as nu])
+  (:import [java.time LocalDate]))
 ```
-:::
-
-
-
-## Position scale
-
-Keys marked "wadogo:" pass through to the [wadogo](https://github.com/scicloj/wadogo) scale of the kind (see the
-kinds below).
-
-
-::: {.sourceClojure}
-```clojure
-(nu/options-table (describe/options position/scale-spec-schema))
-```
-:::
-
-
-::: {.clay-table}
-
-```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:kind</td><td>one of :bands :datetime :interpolated :linear :log :pow :radial :symlog</td><td>from the data: :linear for numbers, :bands for levels, :datetime for java.time values</td><td>scale kind: :linear, :log, :pow, :symlog, :radial, :interpolated, :datetime or :bands</td></tr><tr><td>:type</td><td>one of :categorical :numeric</td><td></td><td>declare numbers categorical (one band per value) or force a numeric scale</td></tr><tr><td>:domain</td><td>sequential of any value (at least 1) or nil</td><td>the charts' data extent</td><td>explicit domain: [lo hi] for continuous kinds, the levels in order for :bands</td></tr><tr><td>:ticks</td><td>sequential of any value or a positive integer or nil</td><td>a count from the panel size and theme :tick-spacing</td><td>a tick count hint, or the tick values themselves</td></tr><tr><td>:nice</td><td>true or false or a finite number, a non-negative number or nil</td><td>true (false for :interpolated)</td><td>extend a continuous domain to nice tick values (a number - the most it may grow, a fraction of the span)</td></tr><tr><td>:expand</td><td>[lo hi], non-negative numbers</td><td>the charts' padding</td><td>padding [lo hi] of a continuous domain, fractions of the span (wins over the charts')</td></tr><tr><td>:formatter</td><td>string or one of :power or a function</td><td>the charts' suggested format, else plain numbers, levels or dates</td><td>tick label text: a function of the value, a java.time pattern (:datetime) or :power (:log)</td></tr><tr><td>:order-by</td><td>a function or nil</td><td></td><td>bands ordered by a function of each level's rows (not with :domain)</td></tr><tr><td>:descending</td><td>true or false or nil</td><td>false</td><td>reverse the :order-by order (needs :order-by)</td></tr><tr><td>:reverse</td><td>true or false or nil</td><td>false</td><td>the axis runs the other way (the final domain reversed)</td></tr><tr><td>:minor-ticks</td><td>a positive integer or nil</td><td></td><td>unlabelled ticks between two major ticks (continuous numeric kinds)</td></tr><tr><td>:axis-domain</td><td>[a finite number, a finite number] or nil</td><td></td><td>display only: axis and grid show the ticks of this linear domain over the panel</td></tr><tr><td>:axis</td><td>true or false or one of :grid :no-grid</td><td>true</td><td>true - axis and grid, false - neither, :grid - grid lines only, :no-grid - axis only</td></tr><tr><td>:stops</td><td>sequential of a finite number (at least 2)</td><td>evenly spaced</td><td>panel fractions the :interpolated domain values map to (increasing, or decreasing - reversed)</td></tr><tr><td>:interpolator</td><td>a fastmath 1D interpolation method keyword or a function (fn [xs ys & params] f)</td><td>:linear</td><td>interpolation between the :stops of an :interpolated scale (only there)</td></tr><tr><td>:ticks-method</td><td>one of :default :pretty</td><td>:pretty for :datetime, else :default</td><td>tick algorithm of continuous kinds: :default (d3) or :pretty (R pretty())</td></tr><tr><td>:ticks-params</td><td>map</td><td></td><td>tick algorithm parameters: {:min-n n}, calendar ticks {:unit u :step s}</td></tr><tr><td>:ticks-params :min-n</td><td>integer, >= 0</td><td></td><td>the fewest ticks (clamped to the tick count)</td></tr><tr><td>:ticks-params :unit</td><td>one of :days :hours :minutes :months :seconds :weeks :years</td><td></td><td>calendar tick unit (:datetime with :pretty ticks)</td></tr><tr><td>:ticks-params :step</td><td>a positive integer</td><td>1</td><td>a calendar tick every :step units</td></tr><tr><td>:clamp</td><td>any value</td><td></td><td>wadogo: clamp values outside the domain to its ends</td></tr><tr><td>:unknown</td><td>any value</td><td></td><td>wadogo: the value returned for values outside a bands domain</td></tr><tr><td>:round</td><td>any value</td><td></td><td>wadogo: round band starts and widths to whole pixels</td></tr><tr><td>:base</td><td>any value</td><td></td><td>wadogo: logarithm base of a :log scale (ticks and nice only)</td></tr><tr><td>:exponent</td><td>any value</td><td></td><td>wadogo: exponent of a :pow scale</td></tr><tr><td>:padding-in</td><td>any value</td><td></td><td>wadogo: space between bands, a fraction of the step</td></tr><tr><td>:padding-out</td><td>any value</td><td></td><td>wadogo: space before the first and after the last band, a fraction of the step</td></tr><tr><td>:align-outer</td><td>any value</td><td></td><td>wadogo: how the outer band space is split, 0 - all after the last band, 1 - all before the first</td></tr><tr><td>:align</td><td>any value</td><td></td><td>wadogo: position of a point inside its band, 0 - band start, 1 - band end</td></tr><tr><td>:interpolator-params</td><td>any value</td><td></td><td>wadogo: parameters of the :interpolated scale's :interpolator</td></tr></tbody></table>
-```
-
 :::
 
 
@@ -71,17 +46,53 @@ Data: Gapminder 2007: life expectancy, population and GDP per capita, data-to-vi
 :::
 
 
-A log scale with powers of ten as tick labels and minor ticks; a reversed linear scale with a fixed domain:
+
+::: {.sourceClojure}
+```clojure
+(def counts (for [[continent rs] (group-by :continent gapminder)] {:continent continent :n (count rs)}))
+```
+:::
+
+
+
+## Kind and domain
+
+The scale kind (see Scale kinds below) and the data range it covers: the charts' data extent unless `:domain`
+is given - `[lo hi]` for continuous kinds, the levels in order for `:bands`. `:type :categorical` makes numbers
+levels (left: cylinder counts as three bands).
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:kind</td><td>one of :bands :datetime :interpolated :linear :log :pow :radial :symlog</td><td>from the data: :linear for numbers, :bands for levels, :datetime for java.time values</td><td>scale kind: :linear, :log, :pow, :symlog, :radial, :interpolated, :datetime or :bands</td></tr><tr><td>:type</td><td>one of :categorical :numeric</td><td></td><td>declare numbers categorical (one band per value) or force a numeric scale</td></tr><tr><td>:domain</td><td>sequential of any value (at least 1) or nil</td><td>the charts' data extent</td><td>explicit domain: [lo hi] for continuous kinds, the levels in order for :bands</td></tr></tbody></table>
+```
+
+:::
+
+
+Data: Motor Trend car road tests (1974), R datasets package `mtcars` (Henderson & Velleman 1981); licence: Part of R (GPL-2 | GPL-3).
 
 
 ::: {.sourceClojure}
 ```clojure
-(plot/render-image {:data gapminder
-                    :mapping {:x :gdp-per-cap :y :life-exp}
-                    :charts [(chart/scatter)]
-                    :scales {:x {:kind :log :formatter :power :minor-ticks 9}
-                             :y {:domain [30 90] :reverse true :ticks 7}}}
-                   {:width 600 :height 400})
+(def mtcars (nu/dataset :mtcars))
+```
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange [{:data mtcars
+                                   :mapping {:x :cyl :y :mpg}
+                                   :charts [(chart/box)]
+                                   :scales {:x {:type :categorical}}}
+                                  {:data mtcars
+                                   :mapping {:x :wt :y :mpg}
+                                   :charts [(chart/scatter)]
+                                   :scales {:x {:domain [0 6]} :y {:domain [0 40]}}}]
+                                 {:columns 2})
+                   {:width 800 :height 320})
 ```
 :::
 
@@ -92,17 +103,156 @@ A log scale with powers of ten as tick labels and minor ticks; a reversed linear
 
 
 
-## Scale kinds
+## Ticks and labels
 
-The position scale kinds and their wadogo attributes (from `wadogo.scale/kind-info`):
+Where ticks go and how they read: a tick count hint or the tick values, nice domain ends, a formatter (a
+function, a date pattern, `:power` for powers of ten), minor ticks and the tick algorithm.
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:ticks</td><td>sequential of any value or a positive integer or nil</td><td>a count from the panel size and theme :tick-spacing</td><td>a tick count hint, or the tick values themselves</td></tr><tr><td>:nice</td><td>true or false or a finite number, a non-negative number or nil</td><td>true (false for :interpolated)</td><td>extend a continuous domain to nice tick values (a number - the most it may grow, a fraction of the span)</td></tr><tr><td>:formatter</td><td>string or one of :power or a function</td><td>the charts' suggested format, else plain numbers, levels or dates</td><td>tick label text: a function of the value, a java.time pattern (:datetime) or :power (:log)</td></tr><tr><td>:minor-ticks</td><td>a positive integer or nil</td><td></td><td>unlabelled ticks between two major ticks (continuous numeric kinds)</td></tr><tr><td>:ticks-method</td><td>one of :default :pretty</td><td>:pretty for :datetime, else :default</td><td>tick algorithm of continuous kinds: :default (d3) or :pretty (R pretty())</td></tr><tr><td>:ticks-params</td><td>map</td><td></td><td>tick algorithm parameters: {:min-n n}, calendar ticks {:unit u :step s}</td></tr><tr><td>:ticks-params :min-n</td><td>integer, >= 0</td><td></td><td>the fewest ticks (clamped to the tick count)</td></tr><tr><td>:ticks-params :unit</td><td>one of :days :hours :minutes :months :seconds :weeks :years</td><td></td><td>calendar tick unit (:datetime with :pretty ticks)</td></tr><tr><td>:ticks-params :step</td><td>a positive integer</td><td>1</td><td>a calendar tick every :step units</td></tr></tbody></table>
+```
+
+:::
+
 
 
 ::: {.sourceClojure}
 ```clojure
-(kind/md (ws/kind-info :linear))
+(plot/render-image {:data gapminder
+                    :mapping {:x :gdp-per-cap :y :life-exp}
+                    :charts [(chart/scatter)]
+                    :scales {:x {:kind :log :formatter :power :minor-ticks 9}
+                             :y {:ticks [40 50 60 70 80] :formatter #(str % " y") :nice false}}}
+                   {:width 600 :height 350})
 ```
 :::
 
+
+::: {.clay-image}
+![](reference.scales_axes_coords_files/image1.png)
+:::
+
+
+
+## Order and direction
+
+The order of bands - by a function of each level's rows, optionally descending - and the axis direction.
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:order-by</td><td>a function or nil</td><td></td><td>bands ordered by a function of each level's rows (not with :domain)</td></tr><tr><td>:descending</td><td>true or false or nil</td><td>false</td><td>reverse the :order-by order (needs :order-by)</td></tr><tr><td>:reverse</td><td>true or false or nil</td><td>false</td><td>the axis runs the other way (the final domain reversed)</td></tr></tbody></table>
+```
+
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange [{:data counts
+                                   :mapping {:x :continent :y :n}
+                                   :charts [(chart/bar)]
+                                   :scales {:x {:order-by #(reduce + (map :n %)) :descending true}}
+                                   :labels {:title "ordered by count"}}
+                                  {:data counts
+                                   :mapping {:x :continent :y :n}
+                                   :charts [(chart/bar)]
+                                   :scales {:y {:reverse true}}
+                                   :labels {:title "y reversed"}}]
+                                 {:columns 2})
+                   {:width 900 :height 320})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.scales_axes_coords_files/image2.png)
+:::
+
+
+
+## Axis
+
+What the axis draws (`:grid` - grid lines only, `:no-grid` - the axis only, `false` - nothing), a display-only
+domain for its ticks, and the padding around the data.
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:expand</td><td>[lo hi], non-negative numbers</td><td>the charts' padding</td><td>padding [lo hi] of a continuous domain, fractions of the span (wins over the charts')</td></tr><tr><td>:axis-domain</td><td>[a finite number, a finite number] or nil</td><td></td><td>display only: axis and grid show the ticks of this linear domain over the panel</td></tr><tr><td>:axis</td><td>true or false or one of :grid :no-grid</td><td>true</td><td>true - axis and grid, false - neither, :grid - grid lines only, :no-grid - axis only</td></tr></tbody></table>
+```
+
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange [{:data mtcars
+                                   :mapping {:x :wt :y :mpg}
+                                   :charts [(chart/scatter)]
+                                   :scales {:x {:axis :no-grid :expand [0 0]} :y {:axis :grid}}
+                                   :labels {:title "x :no-grid, no padding; y :grid"}}
+                                  {:data mtcars
+                                   :mapping {:x :wt :y :mpg}
+                                   :charts [(chart/scatter)]
+                                   :scales {:y {:axis-domain [0 1]}}
+                                   :labels {:title "y ticks of [0 1] over the panel"}}]
+                                 {:columns 2})
+                   {:width 900 :height 320})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.scales_axes_coords_files/image3.png)
+:::
+
+
+
+## wadogo attributes
+
+Options passed to the [wadogo](https://github.com/scicloj/wadogo) scale of the kind; each kind below lists the
+ones it reads.
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:clamp</td><td>any value</td><td></td><td>wadogo: clamp values outside the domain to its ends</td></tr><tr><td>:unknown</td><td>any value</td><td></td><td>wadogo: the value returned for values outside a bands domain</td></tr><tr><td>:round</td><td>any value</td><td></td><td>wadogo: round band starts and widths to whole pixels</td></tr><tr><td>:base</td><td>any value</td><td></td><td>wadogo: logarithm base of a :log scale (ticks and nice only)</td></tr><tr><td>:exponent</td><td>any value</td><td></td><td>wadogo: exponent of a :pow scale</td></tr><tr><td>:padding-in</td><td>any value</td><td></td><td>wadogo: space between bands, a fraction of the step</td></tr><tr><td>:padding-out</td><td>any value</td><td></td><td>wadogo: space before the first and after the last band, a fraction of the step</td></tr><tr><td>:align-outer</td><td>any value</td><td></td><td>wadogo: how the outer band space is split, 0 - all after the last band, 1 - all before the first</td></tr><tr><td>:align</td><td>any value</td><td></td><td>wadogo: position of a point inside its band, 0 - band start, 1 - band end</td></tr><tr><td>:interpolator-params</td><td>any value</td><td></td><td>wadogo: parameters of the :interpolated scale's :interpolator</td></tr></tbody></table>
+```
+
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image {:data counts
+                    :mapping {:x :continent :y :n}
+                    :charts [(chart/bar {:width 1.0})]
+                    :scales {:x {:padding-in 0.5 :padding-out 1.0}}}
+                   {:width 500 :height 280})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.scales_axes_coords_files/image4.png)
+:::
+
+
+
+## Scale kinds
+
+Each kind below is described by wadogo (`wadogo.scale/kind-info`). cljplot2 sets a kind's `:domain` (the data
+extent or the spec's `:domain`), its `:range` (the panel's pixels), ticks and tick format itself - through the
+options above; the remaining attributes of a kind are the "wadogo:" options.
+
+
+### Linear
 
 `:linear` kind: continuous numerical domain mapped linearly to a continuous numerical range (d3 `scaleLinear`).
 
@@ -124,10 +274,23 @@ The position scale kinds and their wadogo attributes (from `wadogo.scale/kind-in
 
 ::: {.sourceClojure}
 ```clojure
-(kind/md (ws/kind-info :log))
+(plot/render-image {:data mtcars
+                    :mapping {:x :hp :y :mpg}
+                    :charts [(chart/scatter)]}
+                   {:width 500 :height 250})
 ```
 :::
 
+
+::: {.clay-image}
+![](reference.scales_axes_coords_files/image5.png)
+:::
+
+
+
+### Log
+
+Positive values only; `:base` changes the tick values (here powers of two).
 
 `:log` kind: logarithmic mapping of a positive or negative numerical domain to a continuous numerical range (d3 `scaleLog`).
 
@@ -148,10 +311,22 @@ The position scale kinds and their wadogo attributes (from `wadogo.scale/kind-in
 
 ::: {.sourceClojure}
 ```clojure
-(kind/md (ws/kind-info :pow))
+(plot/render-image {:data (for [i (range 1 11)] {:x (Math/pow 2 i) :y i})
+                    :mapping {:x :x :y :y}
+                    :charts [(chart/line) (chart/scatter)]
+                    :scales {:x {:kind :log :base 2}}}
+                   {:width 500 :height 250})
 ```
 :::
 
+
+::: {.clay-image}
+![](reference.scales_axes_coords_files/image6.png)
+:::
+
+
+
+### Pow
 
 `:pow` kind: power mapping of a continuous numerical domain to a continuous numerical range (d3 `scalePow`).
 
@@ -167,10 +342,24 @@ The position scale kinds and their wadogo attributes (from `wadogo.scale/kind-in
 
 ::: {.sourceClojure}
 ```clojure
-(kind/md (ws/kind-info :symlog))
+(plot/render-image {:data mtcars
+                    :mapping {:x :hp :y :mpg}
+                    :charts [(chart/scatter)]
+                    :scales {:x {:kind :pow :exponent 0.5}}}
+                   {:width 500 :height 250})
 ```
 :::
 
+
+::: {.clay-image}
+![](reference.scales_axes_coords_files/image7.png)
+:::
+
+
+
+### Symlog
+
+For data of both signs over many magnitudes. The constant `:C` isn't passed through (wadogo's default 1.0).
 
 `:symlog` kind: bi-symmetric logarithmic mapping of a continuous numerical domain (any sign, zero included) to a continuous numerical range (d3 `scaleSymlog`).
 
@@ -189,10 +378,24 @@ The position scale kinds and their wadogo attributes (from `wadogo.scale/kind-in
 
 ::: {.sourceClojure}
 ```clojure
-(kind/md (ws/kind-info :bands))
+(plot/render-image {:data (for [i (range -40 41)] {:x (* i i i) :y i})
+                    :mapping {:x :x :y :y}
+                    :charts [(chart/scatter)]
+                    :scales {:x {:kind :symlog}}}
+                   {:width 500 :height 250})
 ```
 :::
 
+
+::: {.clay-image}
+![](reference.scales_axes_coords_files/image8.png)
+:::
+
+
+
+### Bands
+
+Levels; the default kind for strings and keywords.
 
 `:bands` kind: discrete values mapped to evenly distributed bands (intervals) of a continuous numerical range (d3 `scaleBand`).
 
@@ -222,10 +425,24 @@ The position scale kinds and their wadogo attributes (from `wadogo.scale/kind-in
 
 ::: {.sourceClojure}
 ```clojure
-(kind/md (ws/kind-info :datetime))
+(plot/render-image {:data counts
+                    :mapping {:x :continent :y :n}
+                    :charts [(chart/bar)]
+                    :scales {:x {:align-outer 0.0 :padding-out 2.0}}}
+                   {:width 500 :height 250})
 ```
 :::
 
+
+::: {.clay-image}
+![](reference.scales_axes_coords_files/image9.png)
+:::
+
+
+
+### Datetime
+
+`java.time` values; `:formatter` takes a date pattern.
 
 `:datetime` kind: a datetime domain mapped linearly to a continuous numerical range (d3 `scaleUtc`).
 
@@ -245,8 +462,33 @@ The position scale kinds and their wadogo attributes (from `wadogo.scale/kind-in
 
 ::: {.sourceClojure}
 ```clojure
-(kind/md (ws/kind-info :interpolated))
+(plot/render-image {:data (for [m (range 24)]
+                            {:date (.plusMonths (LocalDate/of 2020 1 1) m) :v (+ 10 (mod (* m 7) 9))})
+                    :mapping {:x :date :y :v}
+                    :charts [(chart/line) (chart/scatter)]
+                    :scales {:x {:formatter "MMM yyyy"}}}
+                   {:width 600 :height 250})
 ```
+:::
+
+
+::: {.clay-image}
+![](reference.scales_axes_coords_files/image10.png)
+:::
+
+
+
+### Interpolated
+
+A piecewise mapping of the domain values onto evenly spaced (or given) `:stops` of the panel, through an
+`:interpolator`:
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:stops</td><td>sequential of a finite number (at least 2)</td><td>evenly spaced</td><td>panel fractions the :interpolated domain values map to (increasing, or decreasing - reversed)</td></tr><tr><td>:interpolator</td><td>a fastmath 1D interpolation method keyword or a function (fn [xs ys & params] f)</td><td>:linear</td><td>interpolation between the :stops of an :interpolated scale (only there)</td></tr></tbody></table>
+```
+
 :::
 
 
@@ -268,29 +510,7 @@ The position scale kinds and their wadogo attributes (from `wadogo.scale/kind-in
 
   Ticks and `nice` use the first and last domain value; `nice` replaces only these two.
 
-
-::: {.sourceClojure}
-```clojure
-(kind/md (ws/kind-info :radial))
-```
-:::
-
-
-`:radial` kind: linear mapping of a continuous numerical domain to the squared range, so that the range values are radii of areas proportional to the domain values (d3 `scaleRadial`).
-
-  Attributes:
-
-
-  - `:domain` (default `[0.0 1.0]`), `:range` (default `[0.0 1.0]`): as for the `:linear` kind.
-  - `:clamp`, `:unknown`, `:round`: as for the `:linear` kind (rounding is applied to the radius).
-
-  Forward is `sign(y) * sqrt(|y|)` of the linear mapping of the domain to the signed squares of the range ends; inverse is its inverse. Ticks and `nice` are linear in the domain. Range ends of different signs are allowed (squares keep the sign). A degenerate domain maps values below it to the range start, above it to the range end and the value itself to the signed square root of the middle of the squared range.
-
-
-## Interpolated scales
-
-An `:interpolated` scale maps the domain piecewise onto evenly spaced (or given) `:stops`; `:interpolator` is one
-of the fastmath 1D interpolation methods (or a function):
+The interpolators - fastmath 1D interpolation methods (or a function):
 
 
 ::: {.sourceClojure}
@@ -331,7 +551,7 @@ of the fastmath 1D interpolation methods (or a function):
 :::
 
 
-Here the middle of the domain gets half of the axis:
+Here the middle of the domain, 40 to 60, gets half of the axis:
 
 
 ::: {.sourceClojure}
@@ -340,29 +560,74 @@ Here the middle of the domain gets half of the axis:
                     :mapping {:x :x :y :y}
                     :charts [(chart/line)]
                     :scales {:x {:kind :interpolated :domain [1 40 60 100] :ticks [1 20 40 50 60 80 100]}}}
-                   {:width 600 :height 300})
+                   {:width 600 :height 250})
 ```
 :::
 
 
 ::: {.clay-image}
-![](reference.scales_axes_coords_files/image1.png)
+![](reference.scales_axes_coords_files/image11.png)
 :::
 
 
 
-## Coordinates, flip and aspect
+### Radial
 
-`:flip true` draws `:x` vertically; scales, labels and theme keys keep their names. Polar coordinates map the
-horizontal scale to angles and the vertical one to radii - only some charts draw in them:
+Radii of areas proportional to the values - for polar charts whose bar areas should read as values.
+
+`:radial` kind: linear mapping of a continuous numerical domain to the squared range, so that the range values are radii of areas proportional to the domain values (d3 `scaleRadial`).
+
+  Attributes:
+
+
+  - `:domain` (default `[0.0 1.0]`), `:range` (default `[0.0 1.0]`): as for the `:linear` kind.
+  - `:clamp`, `:unknown`, `:round`: as for the `:linear` kind (rounding is applied to the radius).
+
+  Forward is `sign(y) * sqrt(|y|)` of the linear mapping of the domain to the signed squares of the range ends; inverse is its inverse. Ticks and `nice` are linear in the domain. Range ends of different signs are allowed (squares keep the sign). A degenerate domain maps values below it to the range start, above it to the range end and the value itself to the signed square root of the middle of the squared range.
 
 
 ::: {.sourceClojure}
 ```clojure
-(sort (for [v (vals (ns-publics 'cljplot2.chart))
-            :let [c (try (v) (catch Exception _ nil))]
-            :when (contains? (:coords c) :polar)]
-        (:kind c)))
+(plot/render-image {:data counts
+                    :mapping {:x :continent :y :n :color :continent}
+                    :charts [(chart/bar {:width 1.0})]
+                    :scales {:y {:kind :radial}}
+                    :coord {:kind :polar}
+                    :legend false}
+                   {:width 400 :height 400})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.scales_axes_coords_files/image12.png)
+:::
+
+
+
+## Coordinates
+
+`:flip true` draws `:x` vertically; scales, labels and theme keys keep their names. `:aspect :iso` gives both
+linear axes the same pixels per data unit (the panel shrinks to fit). Polar coordinates map the horizontal scale
+to angles and the vertical one to radii.
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:kind (required)</td><td>:polar</td><td></td><td>polar coordinates: the horizontal scale maps to angles, the vertical one to radii</td></tr><tr><td>:start</td><td>a finite number</td><td>0.0</td><td>angle of the horizontal scale's range start, degrees (0 - 12 o'clock)</td></tr><tr><td>:direction</td><td>one of :clockwise :counter-clockwise</td><td>:clockwise</td><td>direction of growing angles</td></tr><tr><td>:span</td><td>a finite number, > 0, <= 360</td><td>360.0</td><td>degrees covered (e.g. 180 for a half circle)</td></tr><tr><td>:inner</td><td>a finite number, >= 0, < 1</td><td>0.0</td><td>inner radius as a fraction of the outer one (a hole for donuts)</td></tr><tr><td>:arcs</td><td>true or false or nil</td><td>false</td><td>data lines between points follow the circle instead of chords</td></tr></tbody></table>
+```
+
+:::
+
+
+Polar coordinates work with these charts:
+
+
+::: {.sourceClojure}
+```clojure
+(sort (for [[kind constructor] (describe/chart-constructors)
+            :when (contains? (:coords (constructor)) :polar)]
+        kind))
 ```
 :::
 
@@ -379,40 +644,17 @@ horizontal scale to angles and the vertical one to radii - only some charts draw
 
 ::: {.sourceClojure}
 ```clojure
-(nu/options-table (describe/options coord/polar-schema))
-```
-:::
-
-
-::: {.clay-table}
-
-```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:kind (required)</td><td>:polar</td><td></td><td>polar coordinates: the horizontal scale maps to angles, the vertical one to radii</td></tr><tr><td>:start</td><td>a finite number</td><td>0.0</td><td>angle of the horizontal scale's range start, degrees (0 - 12 o'clock)</td></tr><tr><td>:direction</td><td>one of :clockwise :counter-clockwise</td><td>:clockwise</td><td>direction of growing angles</td></tr><tr><td>:span</td><td>a finite number, > 0, <= 360</td><td>360.0</td><td>degrees covered (e.g. 180 for a half circle)</td></tr><tr><td>:inner</td><td>a finite number, >= 0, < 1</td><td>0.0</td><td>inner radius as a fraction of the outer one (a hole for donuts)</td></tr><tr><td>:arcs</td><td>true or false or nil</td><td>false</td><td>data lines between points follow the circle instead of chords</td></tr></tbody></table>
-```
-
-:::
-
-
-
-::: {.sourceClojure}
-```clojure
-(def counts (for [[continent rs] (group-by :continent gapminder)] {:continent continent :n (count rs)}))
-```
-:::
-
-
-
-::: {.sourceClojure}
-```clojure
 (plot/render-image (plot/arrange [{:data counts
                                    :mapping {:x :continent :y :n}
                                    :charts [(chart/bar)]
                                    :flip true
-                                   :scales {:x {:reverse true}}}
+                                   :scales {:x {:reverse true}}
+                                   :labels {:title ":flip true"}}
                                   {:data counts
                                    :mapping {:x :continent :y :n :color :continent}
                                    :charts [(chart/bar {:width 1.0})]
-                                   :coord {:kind :polar :inner 0.2}
+                                   :coord {:kind :polar :inner 0.2 :span 270 :start -135}
+                                   :labels {:title "polar, 270 degrees"}
                                    :legend false}]
                                  {:columns 2})
                    {:width 900 :height 400})
@@ -421,32 +663,25 @@ horizontal scale to angles and the vertical one to radii - only some charts draw
 
 
 ::: {.clay-image}
-![](reference.scales_axes_coords_files/image2.png)
+![](reference.scales_axes_coords_files/image13.png)
 :::
 
-
-`:aspect :iso` gives both linear axes the same pixels per data unit (the panel shrinks to fit).
-
-
-## Facet scales
-
-The facet levels have scales too: `:scales {:facet spec}` (and `:facet-col` / `:facet-row`) order the panels and
-format the strip text (Facets chapter).
 
 
 ::: {.sourceClojure}
 ```clojure
-(nu/options-table (describe/options facet/scale-spec-schema))
+(plot/render-image {:data (for [t (range 0 63)] {:x (Math/cos (* 0.1 t)) :y (* 0.5 (Math/sin (* 0.1 t)))})
+                    :mapping {:x :x :y :y}
+                    :charts [(chart/line)]
+                    :aspect :iso
+                    :labels {:title ":aspect :iso - an ellipse twice as wide as high"}}
+                   {:width 500 :height 400})
 ```
 :::
 
 
-::: {.clay-table}
-
-```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:domain</td><td>sequential of any value (at least 1) or nil</td><td>the data's levels, sorted (NA last)</td><td>the facet levels in panel order (values outside are dropped)</td></tr><tr><td>:formatter</td><td>a function</td><td>(str level), "NA" for the NA level</td><td>strip text of a level, a function of the level</td></tr><tr><td>:order-by</td><td>a function or nil</td><td></td><td>levels in ascending order of a function of each level's rows (not with :domain)</td></tr><tr><td>:descending</td><td>true or false or nil</td><td>false</td><td>reverse the :order-by order (needs :order-by)</td></tr><tr><td>:type</td><td>:categorical</td><td></td><td>facets are always categorical (accepted for symmetry with other scales)</td></tr></tbody></table>
-```
-
+::: {.clay-image}
+![](reference.scales_axes_coords_files/image14.png)
 :::
 
 

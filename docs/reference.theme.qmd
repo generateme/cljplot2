@@ -17,7 +17,8 @@ code-block-background: true
 # Theme
 
 The theme holds every style default: backgrounds, grid lines, axes, legends, palettes, text roles and each chart
-kind's style. A plot's `:theme` is deep-merged over the default theme, so it names only what changes.
+kind's style. A plot's `:theme` is deep-merged over the default theme, so it names only what changes. Each
+section below lists its keys with their default values and changes some of them.
 
 
 ::: {.sourceClojure}
@@ -44,44 +45,18 @@ Data: Edgar Anderson's iris measurements, R datasets package `iris` (Anderson 19
 
 ::: {.sourceClojure}
 ```clojure
-(plot/render-image {:data iris
-                    :mapping {:x :sepal-length :y :petal-length :color :species :facet :species}
-                    :charts [(chart/scatter)]
-                    :facets {:columns 3}
-                    :labels {:title "A darker theme"}
-                    :theme {:plot {:background [40 44 52]}
-                            :panel {:fill [55 60 70] :grid {:x {:color [90 96 110] :width 0.5 :dash :none}
-                                                            :y {:color [90 96 110] :width 0.5 :dash :none}}}
-                            :strip {:fill [70 76 88] :border-color :none}
-                            :axis {:x {:line-color :none :tick-color [150 150 150]}
-                                   :y {:line-color :none :tick-color [150 150 150]}}
-                            :palette {:color :tableau-10}
-                            :text {:title {:color :white}
-                                   :axis-title {:color [220 220 220]}
-                                   :tick-label {:color [200 200 200]}
-                                   :strip {:color :white}
-                                   :legend-title {:color :white}
-                                   :legend-label {:color [220 220 220]}}}}
-                   {:width 900 :height 400})
+(def iris-plot
+  {:data iris
+   :mapping {:x :sepal-length :y :petal-length :color :species}
+   :charts [(chart/scatter)]})
 ```
-:::
-
-
-::: {.clay-image}
-![](reference.theme_files/image0.png)
 :::
 
 
 
 ## Plot
 
-
-::: {.sourceClojure}
-```clojure
-(nu/options-table (describe/theme-rows :plot))
-```
-:::
-
+The canvas behind everything and the margin around the plot.
 
 ::: {.clay-table}
 
@@ -93,57 +68,127 @@ Data: Edgar Anderson's iris measurements, R datasets package `iris` (Anderson 19
 
 
 
-## Panel
+::: {.sourceClojure}
+```clojure
+(plot/render-image (assoc iris-plot :theme {:plot {:background [255 250 235] :margin 30}})
+                   {:width 500 :height 300})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.theme_files/image0.png)
+:::
+
+
+
+## Panel box
+
+The data panel's fill and border; `:alternate-fill` shades every other facet panel.
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:panel :fill</td><td>a clojure2d color or :none</td><td>:none</td><td>panel background colour</td></tr><tr><td>:panel :alternate-fill</td><td>a clojure2d color or :none</td><td>[0 0 0 12]</td><td>drawn over odd facet panels (row + column odd); :none - off</td></tr><tr><td>:panel :border-color</td><td>a clojure2d color or :none</td><td>:none</td><td>panel border colour</td></tr><tr><td>:panel :border-width</td><td>a non-negative number</td><td>1</td><td>panel border width in pixels (drawn inside the panel)</td></tr></tbody></table>
+```
+
+:::
+
 
 
 ::: {.sourceClojure}
 ```clojure
-(nu/options-table (describe/theme-rows :panel))
+(plot/render-image (assoc iris-plot
+                          :theme {:panel {:fill :white :border-color [60 60 60] :border-width 2}})
+                   {:width 500 :height 300})
 ```
+:::
+
+
+::: {.clay-image}
+![](reference.theme_files/image1.png)
+:::
+
+
+
+## Grid lines
+
+Grid lines at the ticks of each position scale, of bands scales (with the alternate band fill) and at minor
+ticks; `:none` turns a kind of line off.
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:panel :grid</td><td>map</td><td></td><td>grid lines at the ticks</td></tr><tr><td>:panel :grid :x</td><td>:none or a line {:color :width :dash}</td><td>{:color 0xb4b4b4, :width 0.5, :dash [4.0]}</td><td>grid lines of the x scale</td></tr><tr><td>:panel :grid :y</td><td>:none or a line {:color :width :dash}</td><td>{:color 0xb4b4b4, :width 0.5, :dash [4.0]}</td><td>grid lines of the y scale</td></tr><tr><td>:panel :grid :bands</td><td>:none or a line {:color :width :dash}</td><td>{:color 0xb4b4b4, :width 1, :dash [1.0 2.0]}</td><td>grid lines of a bands scale, instead of :x / :y</td></tr><tr><td>:panel :grid :bands-fill</td><td>a clojure2d color or :none</td><td>[0 0 0 8]</td><td>fill of every second band of a bands scale; :none - off</td></tr><tr><td>:panel :grid :minor</td><td>:none or a line {:color :width :dash}</td><td>:none</td><td>grid lines at minor ticks</td></tr></tbody></table>
+```
+
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (assoc iris-plot
+                          :scales {:x {:minor-ticks 4}}
+                          :theme {:panel {:grid {:x {:color [150 150 200] :width 1 :dash :none}
+                                                 :y :none
+                                                 :minor {:color [200 200 220] :width 0.5 :dash :none}}}})
+                   {:width 500 :height 300})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.theme_files/image2.png)
+:::
+
+
+
+## Axes
+
+The axis line, ticks and tick labels per position scale - kept by scale (`:x` stays `:x` when `:flip` draws it
+vertically). `:tick-spacing` sets how many ticks fit (pixels per tick); `:label-rotation` turns long tick labels.
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:axis :x</td><td>map</td><td></td><td>x axis style</td></tr><tr><td>:axis :x :line-color</td><td>a clojure2d color or :none</td><td>:black</td><td>axis line colour</td></tr><tr><td>:axis :x :line-width</td><td>a non-negative number</td><td>1</td><td>axis line width in pixels (0 - not drawn)</td></tr><tr><td>:axis :x :tick-color</td><td>a clojure2d color or :none</td><td>:black</td><td>tick colour</td></tr><tr><td>:axis :x :tick-length</td><td>a non-negative number</td><td>6</td><td>tick length in pixels</td></tr><tr><td>:axis :x :tick-width</td><td>a non-negative number</td><td>1</td><td>tick width in pixels (0 - not drawn)</td></tr><tr><td>:axis :x :label-gap</td><td>a non-negative number</td><td>2</td><td>gap between ticks and tick labels in pixels</td></tr><tr><td>:axis :x :tick-spacing</td><td>a positive number</td><td>80</td><td>target distance between ticks in pixels (sets the tick count)</td></tr><tr><td>:axis :x :label-rotation</td><td>number, >= -90, <= 90</td><td>0</td><td>tick labels rotated clockwise, degrees</td></tr><tr><td>:axis :x :minor-tick-length</td><td>a non-negative number</td><td>3</td><td>minor tick length in pixels</td></tr></tbody></table>
+```
+
 :::
 
 
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:panel</td><td>map</td><td></td><td>the data panels</td></tr><tr><td>:panel :fill</td><td>a clojure2d color or :none</td><td>:none</td><td>panel background colour</td></tr><tr><td>:panel :alternate-fill</td><td>a clojure2d color or :none</td><td>[0 0 0 12]</td><td>drawn over odd facet panels (row + column odd); :none - off</td></tr><tr><td>:panel :border-color</td><td>a clojure2d color or :none</td><td>:none</td><td>panel border colour</td></tr><tr><td>:panel :border-width</td><td>a non-negative number</td><td>1</td><td>panel border width in pixels (drawn inside the panel)</td></tr><tr><td>:panel :grid</td><td>map</td><td></td><td>grid lines at the ticks</td></tr><tr><td>:panel :grid :x</td><td>:none or a line {:color :width :dash}</td><td>{:color 0xb4b4b4, :width 0.5, :dash [4.0]}</td><td>grid lines of the x scale</td></tr><tr><td>:panel :grid :y</td><td>:none or a line {:color :width :dash}</td><td>{:color 0xb4b4b4, :width 0.5, :dash [4.0]}</td><td>grid lines of the y scale</td></tr><tr><td>:panel :grid :bands</td><td>:none or a line {:color :width :dash}</td><td>{:color 0xb4b4b4, :width 1, :dash [1.0 2.0]}</td><td>grid lines of a bands scale, instead of :x / :y</td></tr><tr><td>:panel :grid :bands-fill</td><td>a clojure2d color or :none</td><td>[0 0 0 8]</td><td>fill of every second band of a bands scale; :none - off</td></tr><tr><td>:panel :grid :minor</td><td>:none or a line {:color :width :dash}</td><td>:none</td><td>grid lines at minor ticks</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:axis :y</td><td>map</td><td></td><td>y axis style</td></tr><tr><td>:axis :y :line-color</td><td>a clojure2d color or :none</td><td>:black</td><td>axis line colour</td></tr><tr><td>:axis :y :line-width</td><td>a non-negative number</td><td>1</td><td>axis line width in pixels (0 - not drawn)</td></tr><tr><td>:axis :y :tick-color</td><td>a clojure2d color or :none</td><td>:black</td><td>tick colour</td></tr><tr><td>:axis :y :tick-length</td><td>a non-negative number</td><td>6</td><td>tick length in pixels</td></tr><tr><td>:axis :y :tick-width</td><td>a non-negative number</td><td>1</td><td>tick width in pixels (0 - not drawn)</td></tr><tr><td>:axis :y :label-gap</td><td>a non-negative number</td><td>2</td><td>gap between ticks and tick labels in pixels</td></tr><tr><td>:axis :y :tick-spacing</td><td>a positive number</td><td>50</td><td>target distance between ticks in pixels (sets the tick count)</td></tr><tr><td>:axis :y :label-rotation</td><td>number, >= -90, <= 90</td><td>0</td><td>tick labels rotated clockwise, degrees</td></tr><tr><td>:axis :y :minor-tick-length</td><td>a non-negative number</td><td>3</td><td>minor tick length in pixels</td></tr></tbody></table>
 ```
 
 :::
 
-
-
-## Axis
-
-Per position scale key (`:x`, `:y`), also when `:flip` draws `:x` vertically.
 
 
 ::: {.sourceClojure}
 ```clojure
-(nu/options-table (describe/theme-rows :axis))
+(plot/render-image {:data [{:k "a long level" :v 3} {:k "another long level" :v 5} {:k "the last level" :v 4}]
+                    :mapping {:x :k :y :v}
+                    :charts [(chart/bar)]
+                    :theme {:axis {:x {:label-rotation 45 :tick-length 0 :line-color :none}
+                                   :y {:tick-spacing 25 :tick-color [200 0 0]}}}}
+                   {:width 500 :height 350})
 ```
 :::
 
 
-::: {.clay-table}
-
-```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:axis</td><td>map</td><td></td><td>axes per scale (kept by scale also when a flipped plot draws :x vertically)</td></tr><tr><td>:axis :x</td><td>map</td><td></td><td>x axis style</td></tr><tr><td>:axis :x :line-color</td><td>a clojure2d color or :none</td><td>:black</td><td>axis line colour</td></tr><tr><td>:axis :x :line-width</td><td>a non-negative number</td><td>1</td><td>axis line width in pixels (0 - not drawn)</td></tr><tr><td>:axis :x :tick-color</td><td>a clojure2d color or :none</td><td>:black</td><td>tick colour</td></tr><tr><td>:axis :x :tick-length</td><td>a non-negative number</td><td>6</td><td>tick length in pixels</td></tr><tr><td>:axis :x :tick-width</td><td>a non-negative number</td><td>1</td><td>tick width in pixels (0 - not drawn)</td></tr><tr><td>:axis :x :label-gap</td><td>a non-negative number</td><td>2</td><td>gap between ticks and tick labels in pixels</td></tr><tr><td>:axis :x :tick-spacing</td><td>a positive number</td><td>80</td><td>target distance between ticks in pixels (sets the tick count)</td></tr><tr><td>:axis :x :label-rotation</td><td>number, >= -90, <= 90</td><td>0</td><td>tick labels rotated clockwise, degrees</td></tr><tr><td>:axis :x :minor-tick-length</td><td>a non-negative number</td><td>3</td><td>minor tick length in pixels</td></tr><tr><td>:axis :y</td><td>map</td><td></td><td>y axis style</td></tr><tr><td>:axis :y :line-color</td><td>a clojure2d color or :none</td><td>:black</td><td>axis line colour</td></tr><tr><td>:axis :y :line-width</td><td>a non-negative number</td><td>1</td><td>axis line width in pixels (0 - not drawn)</td></tr><tr><td>:axis :y :tick-color</td><td>a clojure2d color or :none</td><td>:black</td><td>tick colour</td></tr><tr><td>:axis :y :tick-length</td><td>a non-negative number</td><td>6</td><td>tick length in pixels</td></tr><tr><td>:axis :y :tick-width</td><td>a non-negative number</td><td>1</td><td>tick width in pixels (0 - not drawn)</td></tr><tr><td>:axis :y :label-gap</td><td>a non-negative number</td><td>2</td><td>gap between ticks and tick labels in pixels</td></tr><tr><td>:axis :y :tick-spacing</td><td>a positive number</td><td>50</td><td>target distance between ticks in pixels (sets the tick count)</td></tr><tr><td>:axis :y :label-rotation</td><td>number, >= -90, <= 90</td><td>0</td><td>tick labels rotated clockwise, degrees</td></tr><tr><td>:axis :y :minor-tick-length</td><td>a non-negative number</td><td>3</td><td>minor tick length in pixels</td></tr></tbody></table>
-```
-
+::: {.clay-image}
+![](reference.theme_files/image3.png)
 :::
 
 
 
-## Strip
+## Strips and facets
 
-
-::: {.sourceClojure}
-```clojure
-(nu/options-table (describe/theme-rows :strip))
-```
-:::
-
+Facet strip boxes (the shingle fill marks a shingle level's range) and the gap between facet panels.
 
 ::: {.clay-table}
 
@@ -151,17 +196,6 @@ Per position scale key (`:x`, `:y`), also when `:flip` draws `:x` vertically.
 <table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:strip</td><td>map</td><td></td><td>facet strips</td></tr><tr><td>:strip :fill</td><td>a clojure2d color or :none</td><td>[255 255 255 150]</td><td>strip background colour</td></tr><tr><td>:strip :border-color</td><td>a clojure2d color or :none</td><td>[0 0 0 100]</td><td>strip border colour</td></tr><tr><td>:strip :border-width</td><td>a non-negative number</td><td>1</td><td>strip border width in pixels</td></tr><tr><td>:strip :shingle-fill</td><td>a clojure2d color or :none</td><td>[255 165 0 110]</td><td>colour of the bar marking a shingle level</td></tr></tbody></table>
 ```
 
-:::
-
-
-
-## Facet
-
-
-::: {.sourceClojure}
-```clojure
-(nu/options-table (describe/theme-rows :facet))
-```
 :::
 
 
@@ -175,15 +209,27 @@ Per position scale key (`:x`, `:y`), also when `:flip` draws `:x` vertically.
 
 
 
-## Multiplot
-
-
 ::: {.sourceClojure}
 ```clojure
-(nu/options-table (describe/theme-rows :multiplot))
+(plot/render-image (assoc iris-plot
+                          :mapping {:x :sepal-length :y :petal-length :facet :species}
+                          :theme {:strip {:fill [70 90 140] :border-color :none}
+                                  :text {:strip {:color :white}}
+                                  :facet {:gap 20}})
+                   {:width 700 :height 300})
 ```
 :::
 
+
+::: {.clay-image}
+![](reference.theme_files/image4.png)
+:::
+
+
+
+## Multiplots
+
+The gap between arranged plots.
 
 ::: {.clay-table}
 
@@ -195,15 +241,24 @@ Per position scale key (`:x`, `:y`), also when `:flip` draws `:x` vertically.
 
 
 
-## Legend
-
-
 ::: {.sourceClojure}
 ```clojure
-(nu/options-table (describe/theme-rows :legend))
+(plot/render-image (plot/arrange [iris-plot (assoc iris-plot :mapping {:x :sepal-width :y :petal-width :color :species})]
+                                 {:columns 2 :theme {:multiplot {:gap 40}}})
+                   {:width 800 :height 300})
 ```
 :::
 
+
+::: {.clay-image}
+![](reference.theme_files/image5.png)
+:::
+
+
+
+## Legend
+
+Legend key sizes, spacing, the legend box and the colour bar.
 
 ::: {.clay-table}
 
@@ -215,17 +270,24 @@ Per position scale key (`:x`, `:y`), also when `:flip` draws `:x` vertically.
 
 
 
-## Palette
-
-The default ranges of the aesthetic scales (Aesthetics and legends chapter).
-
-
 ::: {.sourceClojure}
 ```clojure
-(nu/options-table (describe/theme-rows :palette))
+(plot/render-image (assoc iris-plot :theme {:legend {:key-size 24 :gap 10 :fill :white :border-color [150 150 150]}})
+                   {:width 500 :height 300})
 ```
 :::
 
+
+::: {.clay-image}
+![](reference.theme_files/image6.png)
+:::
+
+
+
+## Palette
+
+The default ranges of the aesthetic scales (Aesthetics and legends chapter): colours of levels, the gradient of
+numbers, shapes, sizes, dashes and patterns.
 
 ::: {.clay-table}
 
@@ -237,23 +299,66 @@ The default ranges of the aesthetic scales (Aesthetics and legends chapter).
 
 
 
+::: {.sourceClojure}
+```clojure
+(plot/render-image (assoc iris-plot
+                          :mapping {:x :sepal-length :y :petal-length :color :species :shape :species}
+                          :theme {:palette {:color :tableau-10 :shape [\s \A \V]}})
+                   {:width 500 :height 300})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.theme_files/image7.png)
+:::
+
+
+
 ## Text
 
-Each text the library draws has a role; a label's `:role` may also name a role of your own added here. Every
-role is a text style - the keys of the Text style group:
+Every text the library draws has a role; each role is a text style (the keys of the Text style group, below). A
+label's `:role` may also name a role of your own added under `:text`.
 
-
-::: {.sourceClojure}
-```clojure
-(nu/options-table (describe/theme-rows :text))
-```
-:::
-
+Titles, strips and axis texts:
 
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:text</td><td>map of keyword to a text style (:font :size :font-style :color :padding :align :background)</td><td></td><td>text styles by role (see text-roles)</td></tr><tr><td>:text :annotation</td><td>a text style (:font :size :font-style :color :padding :align :background)</td><td>{:font "DejaVu Sans Mono", :size 10, :font-style :plain, :color :black, :padding 2, :align [:center :middle]}</td><td>text charts and strip n labels</td></tr><tr><td>:text :axis-title</td><td>a text style (:font :size :font-style :color :padding :align :background)</td><td>{:font "DejaVu Sans Mono", :size 12, :font-style :plain, :color :black, :padding 4, :align [:center :middle]}</td><td>axis titles</td></tr><tr><td>:text :contour-label</td><td>a text style (:font :size :font-style :color :padding :align :background)</td><td>{:font "DejaVu Sans Mono", :size 9, :font-style :plain, :color :black, :padding 1, :align [:center :middle], :background [255 255 255 180]}</td><td>contour level labels</td></tr><tr><td>:text :correlation</td><td>a text style (:font :size :font-style :color :padding :align :background)</td><td>{:font "DejaVu Sans Mono", :size 12, :font-style :plain, :color :black, :padding 1, :align [:center :middle]}</td><td>correlation numbers</td></tr><tr><td>:text :legend-label</td><td>a text style (:font :size :font-style :color :padding :align :background)</td><td>{:font "DejaVu Sans Mono", :size 10, :font-style :plain, :color :black, :padding 2, :align [:left :middle]}</td><td>legend entry labels and colour bar ticks</td></tr><tr><td>:text :legend-title</td><td>a text style (:font :size :font-style :color :padding :align :background)</td><td>{:font "DejaVu Sans Mono", :size 11, :font-style :bold, :color :black, :padding 2, :align [:left :middle]}</td><td>legend titles</td></tr><tr><td>:text :pack-group</td><td>a text style (:font :size :font-style :color :padding :align :background)</td><td>{:font "DejaVu Sans Mono", :size 10, :font-style :bold, :color :black, :padding 2, :align [:center :middle]}</td><td>circle packing group labels</td></tr><tr><td>:text :pack-leaf</td><td>a text style (:font :size :font-style :color :padding :align :background)</td><td>{:font "DejaVu Sans Mono", :size 9, :font-style :plain, :color :black, :padding 2, :align [:center :middle]}</td><td>circle packing leaf labels</td></tr><tr><td>:text :partition-group</td><td>a text style (:font :size :font-style :color :padding :align :background)</td><td>{:font "DejaVu Sans Mono", :size 10, :font-style :bold, :color :black, :padding 2, :align [:center :middle]}</td><td>partition (icicle, sunburst) group labels</td></tr><tr><td>:text :partition-leaf</td><td>a text style (:font :size :font-style :color :padding :align :background)</td><td>{:font "DejaVu Sans Mono", :size 9, :font-style :plain, :color :black, :padding 2, :align [:center :middle]}</td><td>partition leaf labels</td></tr><tr><td>:text :strip</td><td>a text style (:font :size :font-style :color :padding :align :background)</td><td>{:font "DejaVu Sans Mono", :size 11, :font-style :plain, :color :black, :padding 2, :align [:center :middle]}</td><td>facet strip texts</td></tr><tr><td>:text :tick-label</td><td>a text style (:font :size :font-style :color :padding :align :background)</td><td>{:font "DejaVu Sans Mono", :size 10, :font-style :plain, :color :black, :padding 2, :align [:center :middle]}</td><td>tick labels</td></tr><tr><td>:text :tile-value</td><td>a text style (:font :size :font-style :color :padding :align :background)</td><td>{:font "DejaVu Sans Mono", :size 9, :font-style :plain, :color :black, :padding 1, :align [:center :middle]}</td><td>tile value labels</td></tr><tr><td>:text :title</td><td>a text style (:font :size :font-style :color :padding :align :background)</td><td>{:font "DejaVu Sans Mono", :size 14, :font-style :bold, :color :black, :padding 4, :align [:center :middle]}</td><td>plot and multiplot titles</td></tr><tr><td>:text :treemap-group</td><td>a text style (:font :size :font-style :color :padding :align :background)</td><td>{:font "DejaVu Sans Mono", :size 10, :font-style :bold, :color :black, :padding 2, :align [:left :middle]}</td><td>treemap group headers</td></tr><tr><td>:text :treemap-leaf</td><td>a text style (:font :size :font-style :color :padding :align :background)</td><td>{:font "DejaVu Sans Mono", :size 9, :font-style :plain, :color :black, :padding 2, :align [:center :middle]}</td><td>treemap leaf labels</td></tr><tr><td>:text :venn-count</td><td>a text style (:font :size :font-style :color :padding :align :background)</td><td>{:font "DejaVu Sans Mono", :size 10, :font-style :plain, :color :black, :padding 2, :align [:center :middle]}</td><td>Venn diagram region counts</td></tr><tr><td>:text :venn-set</td><td>a text style (:font :size :font-style :color :padding :align :background)</td><td>{:font "DejaVu Sans Mono", :size 11, :font-style :bold, :color :black, :padding 2, :align [:center :middle]}</td><td>Venn diagram set names</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:text :axis-title</td><td>a text style (:font :size :font-style :color :padding :align :background)</td><td>{:font "DejaVu Sans Mono", :size 12, :font-style :plain, :color :black, :padding 4, :align [:center :middle]}</td><td>axis titles</td></tr><tr><td>:text :strip</td><td>a text style (:font :size :font-style :color :padding :align :background)</td><td>{:font "DejaVu Sans Mono", :size 11, :font-style :plain, :color :black, :padding 2, :align [:center :middle]}</td><td>facet strip texts</td></tr><tr><td>:text :tick-label</td><td>a text style (:font :size :font-style :color :padding :align :background)</td><td>{:font "DejaVu Sans Mono", :size 10, :font-style :plain, :color :black, :padding 2, :align [:center :middle]}</td><td>tick labels</td></tr><tr><td>:text :title</td><td>a text style (:font :size :font-style :color :padding :align :background)</td><td>{:font "DejaVu Sans Mono", :size 14, :font-style :bold, :color :black, :padding 4, :align [:center :middle]}</td><td>plot and multiplot titles</td></tr></tbody></table>
+```
+
+:::
+
+
+Legend texts:
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:text :legend-label</td><td>a text style (:font :size :font-style :color :padding :align :background)</td><td>{:font "DejaVu Sans Mono", :size 10, :font-style :plain, :color :black, :padding 2, :align [:left :middle]}</td><td>legend entry labels and colour bar ticks</td></tr><tr><td>:text :legend-title</td><td>a text style (:font :size :font-style :color :padding :align :background)</td><td>{:font "DejaVu Sans Mono", :size 11, :font-style :bold, :color :black, :padding 2, :align [:left :middle]}</td><td>legend titles</td></tr></tbody></table>
+```
+
+:::
+
+
+Texts of particular charts:
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:text :annotation</td><td>a text style (:font :size :font-style :color :padding :align :background)</td><td>{:font "DejaVu Sans Mono", :size 10, :font-style :plain, :color :black, :padding 2, :align [:center :middle]}</td><td>text charts and strip n labels</td></tr><tr><td>:text :contour-label</td><td>a text style (:font :size :font-style :color :padding :align :background)</td><td>{:font "DejaVu Sans Mono", :size 9, :font-style :plain, :color :black, :padding 1, :align [:center :middle], :background [255 255 255 180]}</td><td>contour level labels</td></tr><tr><td>:text :correlation</td><td>a text style (:font :size :font-style :color :padding :align :background)</td><td>{:font "DejaVu Sans Mono", :size 12, :font-style :plain, :color :black, :padding 1, :align [:center :middle]}</td><td>correlation numbers</td></tr><tr><td>:text :pack-group</td><td>a text style (:font :size :font-style :color :padding :align :background)</td><td>{:font "DejaVu Sans Mono", :size 10, :font-style :bold, :color :black, :padding 2, :align [:center :middle]}</td><td>circle packing group labels</td></tr><tr><td>:text :pack-leaf</td><td>a text style (:font :size :font-style :color :padding :align :background)</td><td>{:font "DejaVu Sans Mono", :size 9, :font-style :plain, :color :black, :padding 2, :align [:center :middle]}</td><td>circle packing leaf labels</td></tr><tr><td>:text :partition-group</td><td>a text style (:font :size :font-style :color :padding :align :background)</td><td>{:font "DejaVu Sans Mono", :size 10, :font-style :bold, :color :black, :padding 2, :align [:center :middle]}</td><td>partition (icicle, sunburst) group labels</td></tr><tr><td>:text :partition-leaf</td><td>a text style (:font :size :font-style :color :padding :align :background)</td><td>{:font "DejaVu Sans Mono", :size 9, :font-style :plain, :color :black, :padding 2, :align [:center :middle]}</td><td>partition leaf labels</td></tr><tr><td>:text :tile-value</td><td>a text style (:font :size :font-style :color :padding :align :background)</td><td>{:font "DejaVu Sans Mono", :size 9, :font-style :plain, :color :black, :padding 1, :align [:center :middle]}</td><td>tile value labels</td></tr><tr><td>:text :treemap-group</td><td>a text style (:font :size :font-style :color :padding :align :background)</td><td>{:font "DejaVu Sans Mono", :size 10, :font-style :bold, :color :black, :padding 2, :align [:left :middle]}</td><td>treemap group headers</td></tr><tr><td>:text :treemap-leaf</td><td>a text style (:font :size :font-style :color :padding :align :background)</td><td>{:font "DejaVu Sans Mono", :size 9, :font-style :plain, :color :black, :padding 2, :align [:center :middle]}</td><td>treemap leaf labels</td></tr><tr><td>:text :venn-count</td><td>a text style (:font :size :font-style :color :padding :align :background)</td><td>{:font "DejaVu Sans Mono", :size 10, :font-style :plain, :color :black, :padding 2, :align [:center :middle]}</td><td>Venn diagram region counts</td></tr><tr><td>:text :venn-set</td><td>a text style (:font :size :font-style :color :padding :align :background)</td><td>{:font "DejaVu Sans Mono", :size 11, :font-style :bold, :color :black, :padding 2, :align [:center :middle]}</td><td>Venn diagram set names</td></tr></tbody></table>
+```
+
+:::
+
+
+The keys of a text style:
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:font</td><td>a bundled, installed or logical font name, or a java.awt.Font</td><td></td><td>font name (bundled, installed or logical) or a java.awt.Font</td></tr><tr><td>:size</td><td>a positive number</td><td></td><td>font size in points</td></tr><tr><td>:font-style</td><td>one of :bold :bold-italic :italic :plain</td><td></td><td>font style</td></tr><tr><td>:color</td><td>a clojure2d color</td><td></td><td>text colour</td></tr><tr><td>:padding</td><td>a non-negative number</td><td></td><td>space around the text in pixels</td></tr><tr><td>:align</td><td>[h v], h one of :left :center :right, v one of :top :middle :bottom</td><td></td><td>alignment [horizontal vertical] of the text at its anchor</td></tr><tr><td>:background</td><td>a clojure2d color or :none</td><td></td><td>box colour behind the text (:none - no box)</td></tr></tbody></table>
 ```
 
 :::
@@ -262,33 +367,27 @@ role is a text style - the keys of the Text style group:
 
 ::: {.sourceClojure}
 ```clojure
-(nu/options-table (describe/fragment-rows :text-style))
+(plot/render-image (assoc iris-plot
+                          :labels {:title "Iris" :x "sepal length" :y "petal length"}
+                          :theme {:text {:title {:size 20 :font-style :italic :align [:left :middle]}
+                                         :axis-title {:color [120 30 30]}
+                                         :tick-label {:size 8}
+                                         :legend-title {:size 9 :font-style :plain}}})
+                   {:width 500 :height 320})
 ```
 :::
 
 
-::: {.clay-table}
-
-```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th><th>Group</th></tr></thead><tbody><tr><td>:font</td><td>a bundled, installed or logical font name, or a java.awt.Font</td><td></td><td>font name (bundled, installed or logical) or a java.awt.Font</td><td>Text style</td></tr><tr><td>:size</td><td>a positive number</td><td></td><td>font size in points</td><td>Text style</td></tr><tr><td>:font-style</td><td>one of :bold :bold-italic :italic :plain</td><td></td><td>font style</td><td>Text style</td></tr><tr><td>:color</td><td>a clojure2d color</td><td></td><td>text colour</td><td>Text style</td></tr><tr><td>:padding</td><td>a non-negative number</td><td></td><td>space around the text in pixels</td><td>Text style</td></tr><tr><td>:align</td><td>[h v], h one of :left :center :right, v one of :top :middle :bottom</td><td></td><td>alignment [horizontal vertical] of the text at its anchor</td><td>Text style</td></tr><tr><td>:background</td><td>a clojure2d color or :none</td><td></td><td>box colour behind the text (:none - no box)</td><td>Text style</td></tr></tbody></table>
-```
-
+::: {.clay-image}
+![](reference.theme_files/image8.png)
 :::
 
 
 
 ## Chart
 
-The style of each chart kind, `[:chart kind]` - its style keys and defaults are in the chart's table (the rows
-with a theme default). Chart options given to the chart override the theme.
-
-
-::: {.sourceClojure}
-```clojure
-(nu/options-table (describe/theme-rows :chart))
-```
-:::
-
+The style of each chart kind, `[:chart kind]` - its keys and defaults are the rows with a theme default in the
+chart's table. Options given to a chart override its theme style.
 
 ::: {.clay-table}
 
@@ -299,20 +398,74 @@ with a theme default). Chart options given to the chart override the theme.
 :::
 
 
+The kinds with a theme style:
+
 
 ::: {.sourceClojure}
 ```clojure
-(plot/render-image {:data iris
-                    :mapping {:x :sepal-length :y :petal-length}
-                    :charts [(chart/scatter)]
-                    :theme {:chart {:scatter {:shape \s :size 8 :color [178 34 34 120]}}}}
-                   {:width 500 :height 350})
+(keys (describe/chart-constructors))
+```
+:::
+
+
+
+::: {.printedClojure}
+```clojure
+(:bar
+ :beeswarm
+ :bin2d
+ :box
+ :bullet
+ :candlestick
+ :cloud
+ :contour
+ :correlation
+ :density
+ :dotplot
+ :ecdf
+ :extent
+ :field
+ :function
+ :histogram
+ :image
+ :line
+ :pack
+ :parallel
+ :partition
+ :polygon
+ :pp
+ :qq
+ :rect
+ :ribbon
+ :rug
+ :rule
+ :scatter
+ :segment
+ :smooth
+ :stripplot
+ :surface
+ :text
+ :tile
+ :treemap
+ :venn
+ :violin
+ :waffle)
+
+```
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (assoc iris-plot :theme {:chart {:scatter {:shape \s :size 8}}})
+                   {:width 500 :height 300})
 ```
 :::
 
 
 ::: {.clay-image}
-![](reference.theme_files/image1.png)
+![](reference.theme_files/image9.png)
 :::
 
 

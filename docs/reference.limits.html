@@ -376,8 +376,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="output" class="level2" data-number="12.1">
 <h2 data-number="12.1" class="anchored" data-anchor-id="output"><span class="header-section-number">12.1</span> Output</h2>
 <ul>
-<li>Static raster images only (<code>BufferedImage</code>, a clojure2d canvas): no interactivity, no SVG or PDF.</li>
-<li>No save function - <code>clojure2d.core/save</code> writes an image (Render chapter).</li>
+<li>Static raster images only (<code>BufferedImage</code>, a clojure2d raster canvas) - no interactivity, no SVG or PDF; <code>plot/save</code> writes the formats Java’s ImageIO knows (png, jpg, bmp, gif, tiff …; Render chapter).</li>
 </ul>
 </section>
 <section id="layout" class="level2" data-number="12.2">

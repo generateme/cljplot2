@@ -38,18 +38,10 @@ A layer is any chart; annotation charts (`rule`, `rect`, `text`, `function`, `im
 instead of data and inherit only the plot's facet keys. Their extent counts for the scales unless
 `:extent false` (the Annotation options group):
 
-
-::: {.sourceClojure}
-```clojure
-(nu/options-table (describe/fragment-rows :annotation))
-```
-:::
-
-
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th><th>Group</th></tr></thead><tbody><tr><td>:extent</td><td>true or false or nil</td><td>true</td><td>include the positions in the scale extents</td><td>Annotation options</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:extent</td><td>true or false or nil</td><td>true</td><td>include the positions in the scale extents</td></tr></tbody></table>
 ```
 
 :::

@@ -11,14 +11,16 @@
   isn't flattened: its map's entries are the shared group `g`'s table, its row keeps its value as the default.
 
   A row: `{:key k :path [k ...] :type text :required? bool :default v :default-doc text :description text
-  :fragment kw}` - `:path` is longer than `[k]` for the entries of nested closed maps (each nested map also has its
-  own row); `:default` / `:default-doc` / `:description` / `:fragment` are `nil` when absent; `:required?` is false in a
+  :fragment kw :section kw}` - `:path` is longer than `[k]` for the entries of nested closed maps (each nested map also
+  has its own row); `:section` - the slice of a long table the entry belongs to (`:cljplot2/section`, else its
+  enclosing entry's); `:default` / `:default-doc` / `:description` / `:fragment` / `:section` are `nil` when absent; `:required?` is false in a
   merged map (`:cljplot2/merged` - the theme, render options: users give partial overrides). Entries rejecting every
   value ([[cljplot2.schema/forbidden]]) and internal entries (`:cljplot2/internal`) have no row. `:default` is the value
   used when the option is absent (a style row's comes from the theme), `:default-doc` the text of a computed default;
   only a style row may have both - the theme value and how the chart applies it (e.g. only to grouped lines)."
   (:require [clojure.string :as str]
             [malli.core :as malli]
+            [cljplot2.chart]
             [cljplot2.data.annotation :as annotation]
             [cljplot2.data.cells :as cells]
             [cljplot2.data.field :as field]
@@ -205,33 +207,34 @@
 
 (defn- entry-row
   "The row of entry `k` (`props`, schema `s`) at `path`; `merged?` - the entry belongs to a merged map (theme, render
-  options: every key is there after merging, users give partial overrides - so not required). Metadata `::container?`
+  options: every key is there after merging, users give partial overrides - so not required); `section` - the
+  enclosing entry's section, taken when the entry has no `:cljplot2/section` of its own. Metadata `::container?`
   marks an entry holding entries of its own (see [[with-defaults]]) - not one whose entries a shared group documents
   (`:cljplot2/entries-fragment`): its row keeps its own value as the default (e.g. a text role's style)."
-  [path k props s merged?]
+  [[path k props s] merged? section]
   (with-meta {:key k :path path :type (if (flattened? props s) "map" (type-text s))
               :required? (and (not merged?) (not (:optional props)))
               :default (:default props) :default-doc (:cljplot2/default-doc props) :description (:description props)
-              :fragment (:cljplot2/fragment props)}
+              :fragment (:cljplot2/fragment props) :section (or (:cljplot2/section props) section)}
     {::container? (and (container? s) (not (:cljplot2/entries-fragment props)))}))
 
 (defn- map-rows
   "Rows of the entries of map schema `m` under `path` (nested closed maps flattened after their own row); forbidden and
-  `:cljplot2/internal` entries have none; `merged?` - see [[entry-row]] (a `:cljplot2/merged` map makes its nested
-  maps merged too)."
-  [m path merged?]
+  `:cljplot2/internal` entries have none; `merged?` and `section` (of the enclosing entry) - see [[entry-row]] (a
+  `:cljplot2/merged` map makes its nested maps merged too)."
+  [m path merged? section]
   (let [merged? (or merged? (true? (:cljplot2/merged (malli/properties m))))]
     (into [] (mapcat (fn [[k props s]]
                        (when-not (or (schema/forbidden? s) (:cljplot2/internal props))
-                         (let [p (conj path k)]
-                           (cons (entry-row p k props s merged?)
-                                 (when (flattened? props s) (map-rows (nested-map s) p merged?)))))))
+                         (let [p (conj path k)
+                               row (entry-row [p k props s] merged? section)]
+                           (cons row (when (flattened? props s) (map-rows (nested-map s) p merged? (:section row))))))))
           (malli/children m))))
 
 (defn schema-rows
   "Rows of the entries of map `schema` (see the namespace doc); empty for a schema without entries."
   [schema]
-  (if-let [m (some-> schema entries-map)] (map-rows m [] false) []))
+  (if-let [m (some-> schema entries-map)] (map-rows m [] false nil) []))
 
 (defn- chart-value? [x] (and (map? x) (contains? x :compute)))
 
@@ -256,23 +259,31 @@
 
 (defn- text-roles-schema
   "The theme's `:text` as a merged map of the roles of [[cljplot2.theme/text-roles]] (sorted), each a text style
-  documented by the shared group `:text-style` - rows for the roles the theme's `map-of` can't give."
+  documented by the shared group `:text-style`, in its role's section - rows for the roles the theme's `map-of` can't
+  give."
   []
   (into [:map {:closed true :cljplot2/merged true}]
-        (map (fn [role] [role {:description (theme/text-roles role) :cljplot2/entries-fragment :text-style}
-                         theme/text-style-schema]))
-        (sort (keys theme/text-roles))))
+        (map (fn [[role {:keys [description section]}]]
+               [role {:description description :cljplot2/section section :cljplot2/entries-fragment :text-style}
+                theme/text-style-schema]))
+        (sort-by key theme/text-roles)))
 
 (defn theme-rows
   "Rows of the theme ([[cljplot2.theme/theme-schema]]), then one row `[:text role]` per text role of
   [[cljplot2.theme/text-roles]] (sorted; its default the role's style), with their defaults from
   [[cljplot2.theme/default-theme]]. The style keys are one shared table: `(fragment-rows :text-style)`.
-  With `section` (a top-level theme key, e.g. `:legend`) only the rows under it; empty for an unknown section."
+  With `k` (a top-level theme key, e.g. `:legend`) only the rows under it; throws `ex-info {:key :theme-key}` for a
+  key the theme hasn't."
   ([]
-   (with-defaults (into (schema-rows theme/theme-schema) (map-rows (malli/schema (text-roles-schema)) [:text] false))
+   (with-defaults (into (schema-rows theme/theme-schema)
+                        (map-rows (malli/schema (text-roles-schema)) [:text] false nil))
                   theme/default-theme))
-  ([section]
-   (filterv #(= section (first (:path %))) (theme-rows))))
+  ([k]
+   (let [rows (filterv #(= k (first (:path %))) (theme-rows))]
+     (when (empty? rows)
+       (schema/fail! (str "Unknown theme key " (pr-str k) ", known: " (str/join " " (keys theme/default-theme)) ".")
+                     {:key :theme-key :value k}))
+     rows)))
 
 (defn fragment-rows
   "Rows of the entries of shared group `fragment` (a key of [[fragments]]); empty for an unknown group."
@@ -292,6 +303,16 @@
   "Rows of the mapping keys chart value `chart` reads (its `:mapping` schema's entries)."
   [chart]
   (schema-rows (get-in chart [:schema :mapping])))
+
+(defn chart-constructors
+  "Kind -> constructor var of every built-in chart (the public functions of `cljplot2.chart` returning a chart value),
+  sorted by kind."
+  []
+  (into (sorted-map)
+        (for [v (vals (ns-publics 'cljplot2.chart))
+              :let [c (try (@v) (catch Exception _ nil))]
+              :when (chart-value? c)]
+          [(:kind c) v])))
 
 (defn api-vars
   "The user-facing functions - vars with `:cljplot2/api` metadata in the loaded `cljplot2.*` namespaces - sorted by

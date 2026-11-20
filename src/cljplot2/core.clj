@@ -1,6 +1,7 @@
 (ns cljplot2.core
   "Public API."
-  (:require [cljplot2.graphs :as graphs]
+  (:require [clojure2d.core :as c2d]
+            [cljplot2.graphs :as graphs]
             [cljplot2.pipeline :as pipeline]
             [cljplot2.multiplot :as multiplot]
             [cljplot2.render :as render]
@@ -116,3 +117,12 @@
   [[cljplot2.render/cvd-image]]."
   ^java.awt.image.BufferedImage [image deficiency]
   (render/cvd-image image deficiency))
+
+(defn save
+  "Save `image` - a `java.awt.image.BufferedImage` ([[render-image]], [[cvd-image]]) or a clojure2d canvas ([[render]])
+  - to the file `file-name` and return `image` (`clojure2d.core/save`), so saving composes:
+  `(-> plot render-image (save \"plot.png\"))`. The format follows the extension (png, jpg, bmp, tiff ...); missing
+  parent directories are created; with an extension no image writer knows nothing is written (clojure2d prints
+  \"can't save an image\")."
+  [image file-name]
+  (c2d/save image file-name))

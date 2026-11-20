@@ -39,8 +39,8 @@ Builders and data functions check their options before reading their data.
 ## Error data
 
 `ex-data` of the error: `:key` - the first offending key, `:in` - its path, `:value` - the value, `:errors` -
-every problem as `{:in path :value v :message text}`. A misspelled plot or builder key gets a spelling
-suggestion; a chart option is reported as a "disallowed key".
+every problem as `{:in path :value v :message text}`; the exception message lists the same problems as text. A
+misspelled key gets a spelling suggestion.
 
 
 ::: {.sourceClojure}
@@ -58,7 +58,7 @@ suggestion; a chart option is reported as a "disallowed key".
 ::: {.sourceClojure}
 ```clojure
 (try (plot/build bad-plot)
-     (catch clojure.lang.ExceptionInfo e (ex-data e)))
+     (catch clojure.lang.ExceptionInfo e {:message (ex-message e) :data (ex-data e)}))
 ```
 :::
 
@@ -66,34 +66,17 @@ suggestion; a chart option is reported as a "disallowed key".
 
 ::: {.printedClojure}
 ```clojure
-{:key :kind,
- :in [:scales :x :kind],
- :value :logarithmic,
- :errors
- [{:in [:scales :x :kind],
-   :value :logarithmic,
-   :message
-   "should be either :bands, :datetime, :interpolated, :linear, :log, :pow, :radial or :symlog"}]}
-
-```
-:::
-
-
-The message lists the same problems as text:
-
-
-::: {.sourceClojure}
-```clojure
-(try (plot/build bad-plot)
-     (catch clojure.lang.ExceptionInfo e (ex-message e)))
-```
-:::
-
-
-
-::: {.printedClojure}
-```clojure
-"Invalid input: [:scales :x :kind] should be either :bands, :datetime, :interpolated, :linear, :log, :pow, :radial or :symlog, got :logarithmic"
+{:message
+ "Invalid input: [:scales :x :kind] should be either :bands, :datetime, :interpolated, :linear, :log, :pow, :radial or :symlog, got :logarithmic",
+ :data
+ {:key :kind,
+  :in [:scales :x :kind],
+  :value :logarithmic,
+  :errors
+  [{:in [:scales :x :kind],
+    :value :logarithmic,
+    :message
+    "should be either :bands, :datetime, :interpolated, :linear, :log, :pow, :radial or :symlog"}]}}
 
 ```
 :::
@@ -119,7 +102,7 @@ With the scale fixed, the next round reports the chart's misspelled option:
  :errors
  [{:in [:charts 0 :options :szie],
    :value 4,
-   :message "disallowed key"}]}
+   :message "unknown key, should be spelled :size"}]}
 
 ```
 :::

@@ -23,10 +23,39 @@ rows with the group's title. A chart may take only part of a group - its own tab
 ::: {.sourceClojure}
 ```clojure
 (ns reference.shared-options
-  (:require [cljplot2.chart :as chart]
+  (:require [fastmath.random :as r]
+            [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
+            [cljplot2.data.tree :as tree]
             [cljplot2.describe :as describe]
             [notebook-utils :as nu]))
+```
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(def wave (for [t (range 30)] {:t t :v (Math/sin (* 0.3 t)) :g (if (< t 15) "early" "late")}))
+```
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(def counts [{:k "a" :g "x" :v 3} {:k "a" :g "y" :v 2} {:k "b" :g "x" :v 5}
+             {:k "b" :g "y" :v 4} {:k "c" :g "x" :v 4} {:k "c" :g "y" :v 1}])
+```
+:::
+
+
+Data: Edgar Anderson's iris measurements, R datasets package `iris` (Anderson 1935; Fisher 1936); licence: Part of R (GPL-2 | GPL-3).
+
+
+::: {.sourceClojure}
+```clojure
+(def iris (nu/dataset :iris))
 ```
 :::
 
@@ -37,82 +66,110 @@ rows with the group's title. A chart may take only part of a group - its own tab
 
 ### Data and mapping
 
-Every chart's own data and mapping (merged over the plot's, Data and mapping chapter).
-
-
-::: {.sourceClojure}
-```clojure
-(nu/options-table (describe/fragment-rows :common))
-```
-:::
-
+Every chart may read its own rows and merge its own mapping over the plot's - e.g. a reference curve beside the
+data (Data and mapping chapter).
 
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th><th>Group</th></tr></thead><tbody><tr><td>:data</td><td>a sequence of rows (maps) or a map of columns (sequences) or nil</td><td>the plot's :data</td><td>the chart's own data instead of the plot's</td><td>Data and mapping</td></tr><tr><td>:mapping</td><td>a mapping: key -> accessor (a keyword or a function of a row)</td><td></td><td>the chart's mapping, merged over the plot's mapping (a key set to nil removes it)</td><td>Data and mapping</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:data</td><td>a sequence of rows (maps) or a map of columns (sequences) or nil</td><td>the plot's :data</td><td>the chart's own data instead of the plot's</td></tr><tr><td>:mapping</td><td>a mapping: key -> accessor (a keyword or a function of a row)</td><td></td><td>the chart's mapping, merged over the plot's mapping (a key set to nil removes it)</td></tr></tbody></table>
 ```
 
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image {:data wave
+                    :mapping {:x :t :y :v}
+                    :charts [(chart/scatter)
+                             (chart/line {:data (for [t (range 0 30 0.5)] {:t t :v (Math/sin (* 0.3 t))})})]}
+                   {:width 500 :height 250})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.shared_options_files/image0.png)
 :::
 
 
 
 ### Annotation options
 
-
-::: {.sourceClojure}
-```clojure
-(nu/options-table (describe/fragment-rows :annotation))
-```
-:::
-
+The rule, rect and text charts mark literal positions. By default their positions count for the scales (the axis
+reaches them); `:extent false` leaves them out - the rule at y = 2 is then off the panel (right).
 
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th><th>Group</th></tr></thead><tbody><tr><td>:extent</td><td>true or false or nil</td><td>true</td><td>include the positions in the scale extents</td><td>Annotation options</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:extent</td><td>true or false or nil</td><td>true</td><td>include the positions in the scale extents</td></tr></tbody></table>
 ```
 
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange (for [extent [true false]]
+                                   {:data wave
+                                    :mapping {:x :t :y :v}
+                                    :charts [(chart/line) (chart/rule {:y 2 :extent extent :dash :dashed})]
+                                    :labels {:title (str ":extent " extent)}})
+                                 {:columns 2})
+                   {:width 800 :height 250})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.shared_options_files/image1.png)
 :::
 
 
 
 ### Line style
 
-
-::: {.sourceClojure}
-```clojure
-(nu/options-table (describe/fragment-rows :line-style))
-```
-:::
-
+Colour, width and dash of the lines of line-like charts (line, rule, segment, smooth, density, ecdf ...); a
+mapped aesthetic wins over the fixed value.
 
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th><th>Group</th></tr></thead><tbody><tr><td>:color</td><td>a clojure2d color or :none</td><td></td><td>line colour (a mapped :color wins)</td><td>Line style</td></tr><tr><td>:width</td><td>a non-negative number</td><td></td><td>line width in pixels</td><td>Line style</td></tr><tr><td>:dash</td><td>:none, a dash style (:dashed :dot-dash :dot-dot-dash :dotted :long-dash :loose-dot :solid :two-dash) or a sequence of positive numbers or nil</td><td></td><td>dash style of the line (a mapped :dash wins)</td><td>Line style</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:color</td><td>a clojure2d color or :none</td><td></td><td>line colour (a mapped :color wins)</td></tr><tr><td>:width</td><td>a non-negative number</td><td></td><td>line width in pixels</td></tr><tr><td>:dash</td><td>:none, a dash style (:dashed :dot-dash :dot-dot-dash :dotted :long-dash :loose-dot :solid :two-dash) or a sequence of positive numbers or nil</td><td></td><td>dash style of the line (a mapped :dash wins)</td></tr></tbody></table>
 ```
 
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image {:data wave
+                    :mapping {:x :t :y :v}
+                    :charts [(chart/line {:color [178 34 34] :width 3 :dash [6 2]})]}
+                   {:width 500 :height 250})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.shared_options_files/image2.png)
 :::
 
 
 
 ### Curves
 
-The line between data points: straight, a fastmath interpolation or a step, sampled for drawing.
-
-
-::: {.sourceClojure}
-```clojure
-(nu/options-table (describe/fragment-rows :curve))
-```
-:::
-
+The line between data points of lines and ribbons: straight, a fastmath interpolation or a step, sampled for
+drawing.
 
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th><th>Group</th></tr></thead><tbody><tr><td>:interpolator</td><td>a fastmath 1D interpolation method keyword or a function (fn [xs ys & params] f)</td><td></td><td>interpolation of the line between data points (none - straight segments)</td><td>Curves</td></tr><tr><td>:interpolator-params</td><td>vector of any value</td><td></td><td>extra parameters passed to the interpolation method</td><td>Curves</td></tr><tr><td>:curve</td><td>one of :parametric :bezier</td><td></td><td>path curve instead of a function of x: :parametric (x(t), y(t) over the chord length) or :bezier</td><td>Curves</td></tr><tr><td>:sample-step</td><td>a positive number of pixels or {:count n}, n >= 2</td><td>1.0</td><td>distance between evaluated positions: pixels or {:count n} per run</td><td>Curves</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:interpolator</td><td>a fastmath 1D interpolation method keyword or a function (fn [xs ys & params] f)</td><td></td><td>interpolation of the line between data points (none - straight segments)</td></tr><tr><td>:interpolator-params</td><td>vector of any value</td><td></td><td>extra parameters passed to the interpolation method</td></tr><tr><td>:curve</td><td>one of :parametric :bezier</td><td></td><td>path curve instead of a function of x: :parametric (x(t), y(t) over the chord length) or :bezier</td></tr><tr><td>:sample-step</td><td>a positive number of pixels or {:count n}, n >= 2</td><td>1.0</td><td>distance between evaluated positions: pixels or {:count n} per run</td></tr></tbody></table>
 ```
 
 :::
@@ -135,31 +192,25 @@ The line between data points: straight, a fastmath interpolation or a step, samp
                                     :charts [(chart/line {:interpolator interpolator}) (chart/scatter)]
                                     :labels {:title (str ":interpolator " interpolator)}})
                                  {:columns 4})
-                   {:width 1000 :height 300})
+                   {:width 1000 :height 260})
 ```
 :::
 
 
 ::: {.clay-image}
-![](reference.shared_options_files/image0.png)
+![](reference.shared_options_files/image3.png)
 :::
 
 
 
 ### Fill patterns
 
-
-::: {.sourceClojure}
-```clojure
-(nu/options-table (describe/fragment-rows :pattern))
-```
-:::
-
+A pattern drawn over filled marks (bars, areas, boxes, tiles of hierarchies ...), in its own colour.
 
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th><th>Group</th></tr></thead><tbody><tr><td>:pattern</td><td>a pattern name (:back-hatch :cross :dense-dots :diagonal-cross :dots :hatch :horizontal :solid :vertical) or a pattern map</td><td></td><td>pattern drawn over the fill (a mapped :pattern wins)</td><td>Fill patterns</td></tr><tr><td>:pattern-color</td><td>:darker or a clojure2d color or :none</td><td></td><td>pattern ink: a colour, :none or :darker (the darkened fill)</td><td>Fill patterns</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:pattern</td><td>a pattern name (:back-hatch :cross :dense-dots :diagonal-cross :dots :hatch :horizontal :solid :vertical) or a pattern map</td><td></td><td>pattern drawn over the fill (a mapped :pattern wins)</td></tr><tr><td>:pattern-color</td><td>:darker or a clojure2d color or :none</td><td></td><td>pattern ink: a colour, :none or :darker (the darkened fill)</td></tr></tbody></table>
 ```
 
 :::
@@ -172,198 +223,479 @@ The line between data points: straight, a fastmath interpolation or a step, samp
                     :mapping {:x :p :y :v :pattern :p}
                     :charts [(chart/bar {:color :white :stroke-color :black :pattern-color :black})]
                     :legend false}
-                   {:width 500 :height 300})
+                   {:width 500 :height 260})
 ```
 :::
 
 
 ::: {.clay-image}
-![](reference.shared_options_files/image1.png)
+![](reference.shared_options_files/image4.png)
 :::
 
 
 
 ### Rounded corners
 
-
-::: {.sourceClojure}
-```clojure
-(nu/options-table (describe/fragment-rows :corner-radius))
-```
-:::
-
+Rounded bar corners: all of them, or only the end away from the baseline.
 
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th><th>Group</th></tr></thead><tbody><tr><td>:corner-radius</td><td>a non-negative number</td><td>0</td><td>radius in pixels of every bar corner</td><td>Rounded corners</td></tr><tr><td>:corner-radius-end</td><td>a non-negative number</td><td></td><td>radius in pixels of the corners at the bar's value end only (wins over :corner-radius)</td><td>Rounded corners</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:corner-radius</td><td>a non-negative number</td><td>0</td><td>radius in pixels of every bar corner</td></tr><tr><td>:corner-radius-end</td><td>a non-negative number</td><td></td><td>radius in pixels of the corners at the bar's value end only (wins over :corner-radius)</td></tr></tbody></table>
 ```
 
 :::
 
-
-
-### Strip options
-
-Strip charts (box, violin, stripplot, beeswarm, dotplot, bar, error bars ...) draw one item per level of a
-categorical axis.
 
 
 ::: {.sourceClojure}
 ```clojure
-(nu/options-table (describe/fragment-rows :strip))
+(plot/render-image {:data counts
+                    :mapping {:x :k :y :v :color :g}
+                    :charts [(chart/bar {:corner-radius-end 8})]}
+                   {:width 500 :height 260})
 ```
 :::
 
 
+::: {.clay-image}
+![](reference.shared_options_files/image5.png)
+:::
+
+
+
+### Strip placement
+
+Strip charts (bar, box, violin, stripplot, beeswarm, dotplot, rug, bullet, extent) draw one item per level of a
+categorical axis. Where the items sit across the value axis, how wide, and which axis holds the levels:
+
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th><th>Group</th></tr></thead><tbody><tr><td>:place</td><td>{:at a finite number} or one of :band :bottom :center :edge</td><td>:band with a level mapping, else the chart's own (:center for most, :edge for the rug)</td><td>where the items sit across the value axis: :band (one band per level), {:at v} (centred on v of a numeric scale), :center, :edge or :bottom (between the panel edge and 0)</td><td>Strip options</td></tr><tr><td>:width</td><td>a non-negative number</td><td>0.8</td><td>fraction of the level's band (or of the panel for :center and :bottom) an item spans across the value axis</td><td>Strip options</td></tr><tr><td>:thickness</td><td>a non-negative number</td><td>20 pixels for {:at v}, 8 for :edge</td><td>item thickness in pixels for :place {:at v} and :edge</td><td>Strip options</td></tr><tr><td>:position</td><td>one of :dodge :mirror :overlay</td><td>:dodge when a level holds two or more groups, else :overlay (dotplot: always :overlay)</td><td>how groups of one level share its band: :dodge (side by side), :overlay (on top of each other) or :mirror (two groups, one half each)</td><td>Strip options</td></tr><tr><td>:dodge-gap</td><td>a number in [0 1]</td><td>0.1</td><td>gap between dodged groups, a fraction of a group's part of the band</td><td>Strip options</td></tr><tr><td>:bottom-share</td><td>a number in [0 1]</td><td>0.15 with :place :bottom</td><td>padding below the data asked for with :place :bottom (only there), a fraction of the y data span</td><td>Strip options</td></tr><tr><td>:n-label</td><td>true or false or nil</td><td>false</td><td>draw each item's row count just past its largest value</td><td>Strip options</td></tr><tr><td>:n-format</td><td>string</td><td>"n=%d"</td><td>format string of the n labels</td><td>Strip options</td></tr><tr><td>:level-axis</td><td>one of :x :y</td><td>the categorical axis of the mapping; with neither, :x when only :y is mapped, else :y</td><td>the mapping axis holding the levels (decides when both or neither of :x and :y are categorical)</td><td>Strip options</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:place</td><td>{:at a finite number} or one of :band :bottom :center :edge</td><td>:band with a level mapping, else the chart's own (:center for most, :edge for the rug)</td><td>where the items sit across the value axis: :band (one band per level), {:at v} (centred on v of a numeric scale), :center, :edge or :bottom (between the panel edge and 0)</td></tr><tr><td>:width</td><td>a non-negative number</td><td>0.8</td><td>fraction of the level's band (or of the panel for :center and :bottom) an item spans across the value axis</td></tr><tr><td>:thickness</td><td>a non-negative number</td><td>20 pixels for {:at v}, 8 for :edge</td><td>item thickness in pixels for :place {:at v} and :edge</td></tr><tr><td>:bottom-share</td><td>a number in [0 1]</td><td>0.15 with :place :bottom</td><td>padding below the data asked for with :place :bottom (only there), a fraction of the y data span</td></tr><tr><td>:level-axis</td><td>one of :x :y</td><td>the categorical axis of the mapping; with neither, :x when only :y is mapped, else :y</td><td>the mapping axis holding the levels (decides when both or neither of :x and :y are categorical)</td></tr></tbody></table>
 ```
 
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image {:data iris
+                    :mapping {:x :species :y :sepal-length}
+                    :charts [(chart/violin {:width 0.9}) (chart/box {:width 0.15})]}
+                   {:width 500 :height 280})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.shared_options_files/image6.png)
+:::
+
+
+
+### Strip groups
+
+Groups of one level share its band: side by side (`:dodge`, with a gap), on top of each other, or one half each
+(`:mirror`).
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:position</td><td>one of :dodge :mirror :overlay</td><td>:dodge when a level holds two or more groups, else :overlay (dotplot: always :overlay)</td><td>how groups of one level share its band: :dodge (side by side), :overlay (on top of each other) or :mirror (two groups, one half each)</td></tr><tr><td>:dodge-gap</td><td>a number in [0 1]</td><td>0.1</td><td>gap between dodged groups, a fraction of a group's part of the band</td></tr></tbody></table>
+```
+
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image {:data counts
+                    :mapping {:x :k :y :v :color :g}
+                    :charts [(chart/bar {:position :dodge :dodge-gap 0.3})]}
+                   {:width 500 :height 260})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.shared_options_files/image7.png)
+:::
+
+
+
+### Strip counts
+
+Each item's row count written past its largest value.
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:n-label</td><td>true or false or nil</td><td>false</td><td>draw each item's row count just past its largest value</td></tr><tr><td>:n-format</td><td>string</td><td>"n=%d"</td><td>format string of the n labels</td></tr></tbody></table>
+```
+
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image {:data iris
+                    :mapping {:x :species :y :petal-length}
+                    :charts [(chart/box {:n-label true :n-format "%d flowers"})]}
+                   {:width 500 :height 280})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.shared_options_files/image8.png)
 :::
 
 
 
 ### Mirrored strips
 
-
-::: {.sourceClojure}
-```clojure
-(nu/options-table (describe/fragment-rows :mirror))
-```
-:::
-
+Two groups on the two sides of the value axis, e.g. a population pyramid.
 
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th><th>Group</th></tr></thead><tbody><tr><td>:mirror</td><td>one of :color :shape :size :dash :pattern :group</td><td></td><td>a grouping dimension with exactly two levels; the second level's items are drawn on the negative side</td><td>Mirrored strips</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:mirror</td><td>one of :color :shape :size :dash :pattern :group</td><td></td><td>a grouping dimension with exactly two levels; the second level's items are drawn on the negative side</td></tr></tbody></table>
 ```
 
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image {:data counts
+                    :mapping {:x :k :y :v :color :g}
+                    :charts [(chart/bar {:mirror :color})]
+                    :flip true
+                    :scales {:x {:reverse true}}}
+                   {:width 500 :height 260})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.shared_options_files/image9.png)
 :::
 
 
 
 ### Ridgelines
 
-
-::: {.sourceClojure}
-```clojure
-(nu/options-table (describe/fragment-rows :ridge))
-```
-:::
-
+Histograms and densities over a categorical axis - one row per level, overlapping by `:overlap` rows.
 
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th><th>Group</th></tr></thead><tbody><tr><td>:overlap</td><td>a non-negative number</td><td>0.9</td><td>height of the tallest ridge in band steps (above 1 - ridges overlap the next level)</td><td>Ridgelines</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:overlap</td><td>a non-negative number</td><td>0.9</td><td>height of the tallest ridge in band steps (above 1 - ridges overlap the next level)</td></tr></tbody></table>
 ```
 
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image {:data iris
+                    :mapping {:x :sepal-length :y :species :color :species}
+                    :charts [(chart/density {:overlap 1.8 :fill :color :alpha 0.7})]
+                    :scales {:y {:reverse true}}
+                    :legend false}
+                   {:width 500 :height 300})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.shared_options_files/image10.png)
 :::
 
 
 
 ### Cell style
 
-
-::: {.sourceClojure}
-```clojure
-(nu/options-table (describe/fragment-rows :cell))
-```
-:::
-
+The cell shape and outline of grid-cell charts (tile, bin2d): squares or hexagons, scaled.
 
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th><th>Group</th></tr></thead><tbody><tr><td>:cell</td><td>one of :square :shifted-square :triangle :rhombus :flat-hex :pointy-hex</td><td></td><td>cell shape of the grid (a fastmath grid cell type)</td><td>Cell style</td></tr><tr><td>:cell-scale</td><td>a finite number, > 0, <= 1</td><td></td><td>cell polygon size relative to its grid cell, in (0 1]</td><td>Cell style</td></tr><tr><td>:stroke-color</td><td>:darker or a clojure2d color or :none</td><td></td><td>cell outline: a colour, :none or :darker (the darkened fill)</td><td>Cell style</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td></td><td>cell outline width in pixels</td><td>Cell style</td></tr><tr><td>:alpha</td><td>a number in [0 1]</td><td></td><td>fill opacity multiplier</td><td>Cell style</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:cell</td><td>one of :square :shifted-square :triangle :rhombus :flat-hex :pointy-hex</td><td></td><td>cell shape of the grid (a fastmath grid cell type)</td></tr><tr><td>:cell-scale</td><td>a finite number, > 0, <= 1</td><td></td><td>cell polygon size relative to its grid cell, in (0 1]</td></tr><tr><td>:stroke-color</td><td>:darker or a clojure2d color or :none</td><td></td><td>cell outline: a colour, :none or :darker (the darkened fill)</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td></td><td>cell outline width in pixels</td></tr><tr><td>:alpha</td><td>a number in [0 1]</td><td></td><td>fill opacity multiplier</td></tr></tbody></table>
 ```
 
 :::
 
-
-
-### Fields
 
 
 ::: {.sourceClojure}
 ```clojure
-(nu/options-table (describe/fragment-rows :field))
+(plot/render-image {:data iris
+                    :mapping {:x :sepal-length :y :sepal-width}
+                    :charts [(chart/bin2d {:cell :pointy-hex :stroke-color :white})]}
+                   {:width 500 :height 300})
 ```
 :::
 
 
+::: {.clay-image}
+![](reference.shared_options_files/image11.png)
+:::
+
+
+
+### Field: a function
+
+Raster and contour charts draw a scalar field: a function of a point over a domain ...
+
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th><th>Group</th></tr></thead><tbody><tr><td>:f</td><td>a function</td><td></td><td>the field as a function of a point [x y] returning a number (instead of mapped data)</td><td>Fields</td></tr><tr><td>:domain</td><td>map</td><td>the plot's explicit :x and :y scale domains</td><td>the domain of a function field</td><td>Fields</td></tr><tr><td>:domain :x (required)</td><td>[a finite number, a finite number]</td><td></td><td>x domain [lo hi]</td><td></td></tr><tr><td>:domain :y (required)</td><td>[a finite number, a finite number]</td><td></td><td>y domain [lo hi]</td><td></td></tr><tr><td>:kernel</td><td>keyword</td><td>:gaussian</td><td>fastmath kernel of the 2D density estimate of mapped points</td><td>Fields</td></tr><tr><td>:bandwidth</td><td>a positive finite number or one of :nrd :nrd0 :nrd-adjust :sj :sj-dpi :rlcv :lcv :lscv :scott or [a positive finite number or one of :nrd :nrd0 :nrd-adjust :sj :sj-dpi :rlcv :lcv :lscv :scott, a positive finite number or one of :nrd :nrd0 :nrd-adjust :sj :sj-dpi :rlcv :lcv :lscv :scott]</td><td>:nrd per axis (MASS::kde2d, as ggplot2)</td><td>bandwidth of the density estimate: a number, a fastmath selector or :scott, or a pair [hx hy] of them</td><td>Fields</td></tr><tr><td>:binned?</td><td>true or false</td><td>false</td><td>estimate the density from binned points (faster for many points)</td><td>Fields</td></tr><tr><td>:cut</td><td>a non-negative finite number</td><td>3</td><td>how many bandwidths the density domain extends past the points on each side</td><td>Fields</td></tr><tr><td>:interpolation</td><td>one of :bilinear :bicubic :cubic-2d</td><td>:bilinear</td><td>interpolation of gridded data (mapped :x, :y, :value on a full lattice)</td><td>Fields</td></tr><tr><td>:n</td><td>integer (2..2000) or [integer (2..2000), integer (2..2000)]</td><td>100</td><td>grid size: values sampled along each axis, or [nx ny]</td><td>Fields</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th><th>Group</th></tr></thead><tbody><tr><td>:f</td><td>a function</td><td></td><td>the field as a function of a point [x y] returning a number (instead of mapped data)</td><td>Fields</td></tr><tr><td>:domain</td><td>map</td><td>the plot's explicit :x and :y scale domains</td><td>the domain of a function field</td><td>Fields</td></tr><tr><td>:domain :x (required)</td><td>[a finite number, a finite number]</td><td></td><td>x domain [lo hi]</td><td></td></tr><tr><td>:domain :y (required)</td><td>[a finite number, a finite number]</td><td></td><td>y domain [lo hi]</td><td></td></tr></tbody></table>
 ```
 
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image {:charts [(chart/contour {:f (fn [[x y]] (+ (* x x) (* 2 y y))) :domain {:x [-2 2] :y [-2 2]}})]}
+                   {:width 450 :height 350})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.shared_options_files/image12.png)
+:::
+
+
+
+### Field: a density estimate
+
+... or the kernel density estimate of mapped points ...
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:kernel</td><td>keyword</td><td>:gaussian</td><td>fastmath kernel of the 2D density estimate of mapped points</td></tr><tr><td>:bandwidth</td><td>a positive finite number or one of :nrd :nrd0 :nrd-adjust :sj :sj-dpi :rlcv :lcv :lscv :scott or [a positive finite number or one of :nrd :nrd0 :nrd-adjust :sj :sj-dpi :rlcv :lcv :lscv :scott, a positive finite number or one of :nrd :nrd0 :nrd-adjust :sj :sj-dpi :rlcv :lcv :lscv :scott]</td><td>:nrd per axis (MASS::kde2d, as ggplot2)</td><td>bandwidth of the density estimate: a number, a fastmath selector or :scott, or a pair [hx hy] of them</td></tr><tr><td>:binned?</td><td>true or false</td><td>false</td><td>estimate the density from binned points (faster for many points)</td></tr><tr><td>:cut</td><td>a non-negative finite number</td><td>3</td><td>how many bandwidths the density domain extends past the points on each side</td></tr></tbody></table>
+```
+
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image {:data iris
+                    :mapping {:x :sepal-length :y :sepal-width}
+                    :charts [(chart/field {:kernel :epanechnikov :bandwidth 0.4}) (chart/scatter {:size 3})]}
+                   {:width 450 :height 350})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.shared_options_files/image13.png)
+:::
+
+
+
+### Field: the grid
+
+... sampled on a grid of `:n` points per axis (interpolating gridded data with `:interpolation`).
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:interpolation</td><td>one of :bilinear :bicubic :cubic-2d</td><td>:bilinear</td><td>interpolation of gridded data (mapped :x, :y, :value on a full lattice)</td></tr><tr><td>:n</td><td>integer (2..2000) or [integer (2..2000), integer (2..2000)]</td><td>100</td><td>grid size: values sampled along each axis, or [nx ny]</td></tr></tbody></table>
+```
+
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image {:charts [(chart/field {:f (fn [[x y]] (Math/sin (* x y))) :domain {:x [0 3] :y [0 3]} :n 12})]}
+                   {:width 450 :height 350})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.shared_options_files/image14.png)
 :::
 
 
 
 ### Hierarchy labels
 
-
-::: {.sourceClojure}
-```clojure
-(nu/options-table (describe/fragment-rows :hierarchy-labels))
-```
-:::
-
+Group and leaf labels of treemaps, partitions and circle packings: off, on, or a function writing them.
 
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th><th>Group</th></tr></thead><tbody><tr><td>:group-labels</td><td>true or false or a function or nil</td><td>true</td><td>group labels: true - the node's name, false - none, or a function of the node info {:name :value :depth :path :share :parent-share} returning the text</td><td>Hierarchy labels</td></tr><tr><td>:leaf-labels</td><td>true or false or a function or nil</td><td>true</td><td>leaf labels: as :group-labels, for the leaves</td><td>Hierarchy labels</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:group-labels</td><td>true or false or a function or nil</td><td>true</td><td>group labels: true - the node's name, false - none, or a function of the node info {:name :value :depth :path :share :parent-share} returning the text</td></tr><tr><td>:leaf-labels</td><td>true or false or a function or nil</td><td>true</td><td>leaf labels: as :group-labels, for the leaves</td></tr></tbody></table>
 ```
 
 :::
 
-
-
-### 3D frame
 
 
 ::: {.sourceClojure}
 ```clojure
-(nu/options-table (describe/fragment-rows :frame-3d))
+(def budget [{:dept "science" :team "physics" :cost 40} {:dept "science" :team "biology" :cost 25}
+             {:dept "arts" :team "music" :cost 15} {:dept "arts" :team "theatre" :cost 10}
+             {:dept "sport" :team "football" :cost 20}])
 ```
 :::
 
 
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image {:data budget
+                    :mapping {:hierarchy [:dept :team] :value :cost}
+                    :charts [(chart/treemap {:group-labels false :leaf-labels #(str (:name %) " " (:value %))})]}
+                   {:width 500 :height 300})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.shared_options_files/image15.png)
+:::
+
+
+
+### 3D view
+
+3D charts (cloud, surface) are seen from an eye at an azimuth and elevation, with perspective; the box has
+proportions and may mirror axes.
+
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th><th>Group</th></tr></thead><tbody><tr><td>:view</td><td>map</td><td></td><td>the eye's position: azimuth, elevation and perspective distance</td><td>3D frame</td></tr><tr><td>:view :azimuth</td><td>a finite number</td><td>40.0</td><td>rotation around the vertical axis, degrees</td><td></td></tr><tr><td>:view :elevation</td><td>a finite number, >= -90, <= 90</td><td>30.0</td><td>angle of the eye above the floor, degrees</td><td></td></tr><tr><td>:view :distance</td><td>a non-negative finite number</td><td>0.0</td><td>perspective: 0 - parallel projection, larger - stronger perspective (lattice distance)</td><td></td></tr><tr><td>:aspect</td><td>[a positive number, a positive number, a positive number]</td><td>[1 1 1]</td><td>box proportions [ax ay az]</td><td>3D frame</td></tr><tr><td>:box</td><td>true or false or nil</td><td>true</td><td>draw the box: hidden edges dashed and a floor grid behind the data, visible edges over it</td><td>3D frame</td></tr><tr><td>:axes</td><td>true or false or nil</td><td>true</td><td>draw ticks, tick labels and axis titles</td><td>3D frame</td></tr><tr><td>:axis-titles</td><td>map</td><td>the mapped column names</td><td>axis titles (nil - none)</td><td>3D frame</td></tr><tr><td>:axis-titles :x</td><td>any value</td><td></td><td>x axis title</td><td></td></tr><tr><td>:axis-titles :y</td><td>any value</td><td></td><td>y axis title</td><td></td></tr><tr><td>:axis-titles :z</td><td>any value</td><td></td><td>z axis title</td><td></td></tr><tr><td>:domain</td><td>map</td><td>the data's domains</td><td>explicit data domains (needed for each of several 3D charts in one plot)</td><td>3D frame</td></tr><tr><td>:domain :x</td><td>[a finite number, a finite number]</td><td></td><td>explicit x domain [a b] (a > b reverses the axis)</td><td></td></tr><tr><td>:domain :y</td><td>[a finite number, a finite number]</td><td></td><td>explicit y domain [a b] (a > b reverses the axis)</td><td></td></tr><tr><td>:domain :z</td><td>[a finite number, a finite number]</td><td></td><td>explicit z domain [a b] (a > b reverses the axis)</td><td></td></tr><tr><td>:reverse</td><td>set of one of :x :y :z</td><td></td><td>axes running the other way (mirrors the scene)</td><td>3D frame</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th><th>Group</th></tr></thead><tbody><tr><td>:view</td><td>map</td><td></td><td>the eye's position: azimuth, elevation and perspective distance</td><td>3D frame</td></tr><tr><td>:view :azimuth</td><td>a finite number</td><td>40.0</td><td>rotation around the vertical axis, degrees</td><td></td></tr><tr><td>:view :elevation</td><td>a finite number, >= -90, <= 90</td><td>30.0</td><td>angle of the eye above the floor, degrees</td><td></td></tr><tr><td>:view :distance</td><td>a non-negative finite number</td><td>0.0</td><td>perspective: 0 - parallel projection, larger - stronger perspective (lattice distance)</td><td></td></tr><tr><td>:aspect</td><td>[a positive number, a positive number, a positive number]</td><td>[1 1 1]</td><td>box proportions [ax ay az]</td><td>3D frame</td></tr><tr><td>:reverse</td><td>set of one of :x :y :z</td><td></td><td>axes running the other way (mirrors the scene)</td><td>3D frame</td></tr></tbody></table>
 ```
 
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image {:data iris
+                    :mapping {:x :sepal-length :y :sepal-width :z :petal-length :color :species}
+                    :charts [(chart/cloud {:view {:azimuth 60 :elevation 20 :distance 0.3} :aspect [1 1 0.6]})]}
+                   {:width 500 :height 400})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.shared_options_files/image16.png)
+:::
+
+
+
+### 3D axes
+
+The box, the ticks and the axis titles.
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th><th>Group</th></tr></thead><tbody><tr><td>:box</td><td>true or false or nil</td><td>true</td><td>draw the box: hidden edges dashed and a floor grid behind the data, visible edges over it</td><td>3D frame</td></tr><tr><td>:axes</td><td>true or false or nil</td><td>true</td><td>draw ticks, tick labels and axis titles</td><td>3D frame</td></tr><tr><td>:axis-titles</td><td>map</td><td>the mapped column names</td><td>axis titles (nil - none)</td><td>3D frame</td></tr><tr><td>:axis-titles :x</td><td>any value</td><td></td><td>x axis title</td><td></td></tr><tr><td>:axis-titles :y</td><td>any value</td><td></td><td>y axis title</td><td></td></tr><tr><td>:axis-titles :z</td><td>any value</td><td></td><td>z axis title</td><td></td></tr></tbody></table>
+```
+
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image {:data iris
+                    :mapping {:x :sepal-length :y :sepal-width :z :petal-length}
+                    :charts [(chart/cloud {:box false :axis-titles {:x "sepal L" :y "sepal W" :z "petal L"}})]}
+                   {:width 500 :height 400})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.shared_options_files/image17.png)
+:::
+
+
+
+### 3D domains
+
+Explicit domains - needed when several 3D charts share a plot.
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th><th>Group</th></tr></thead><tbody><tr><td>:domain</td><td>map</td><td>the data's domains</td><td>explicit data domains (needed for each of several 3D charts in one plot)</td><td>3D frame</td></tr><tr><td>:domain :x</td><td>[a finite number, a finite number]</td><td></td><td>explicit x domain [a b] (a > b reverses the axis)</td><td></td></tr><tr><td>:domain :y</td><td>[a finite number, a finite number]</td><td></td><td>explicit y domain [a b] (a > b reverses the axis)</td><td></td></tr><tr><td>:domain :z</td><td>[a finite number, a finite number]</td><td></td><td>explicit z domain [a b] (a > b reverses the axis)</td><td></td></tr></tbody></table>
+```
+
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image {:data iris
+                    :mapping {:x :sepal-length :y :sepal-width :z :petal-length}
+                    :charts [(chart/cloud {:domain {:x [4 8] :y [2 4.5] :z [0 7]}})]}
+                   {:width 500 :height 400})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.shared_options_files/image18.png)
 :::
 
 
 
 ### Text style
 
-Also the style of every theme text role (Theme chapter).
-
-
-::: {.sourceClojure}
-```clojure
-(nu/options-table (describe/fragment-rows :text-style))
-```
-:::
-
+Font, size, colour, padding, alignment and background of the `text` chart - also the style of every theme text
+role (Theme chapter).
 
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th><th>Group</th></tr></thead><tbody><tr><td>:font</td><td>a bundled, installed or logical font name, or a java.awt.Font</td><td></td><td>font name (bundled, installed or logical) or a java.awt.Font</td><td>Text style</td></tr><tr><td>:size</td><td>a positive number</td><td></td><td>font size in points</td><td>Text style</td></tr><tr><td>:font-style</td><td>one of :bold :bold-italic :italic :plain</td><td></td><td>font style</td><td>Text style</td></tr><tr><td>:color</td><td>a clojure2d color</td><td></td><td>text colour</td><td>Text style</td></tr><tr><td>:padding</td><td>a non-negative number</td><td></td><td>space around the text in pixels</td><td>Text style</td></tr><tr><td>:align</td><td>[h v], h one of :left :center :right, v one of :top :middle :bottom</td><td></td><td>alignment [horizontal vertical] of the text at its anchor</td><td>Text style</td></tr><tr><td>:background</td><td>a clojure2d color or :none</td><td></td><td>box colour behind the text (:none - no box)</td><td>Text style</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:font</td><td>a bundled, installed or logical font name, or a java.awt.Font</td><td></td><td>font name (bundled, installed or logical) or a java.awt.Font</td></tr><tr><td>:size</td><td>a positive number</td><td></td><td>font size in points</td></tr><tr><td>:font-style</td><td>one of :bold :bold-italic :italic :plain</td><td></td><td>font style</td></tr><tr><td>:color</td><td>a clojure2d color</td><td></td><td>text colour</td></tr><tr><td>:padding</td><td>a non-negative number</td><td></td><td>space around the text in pixels</td></tr><tr><td>:align</td><td>[h v], h one of :left :center :right, v one of :top :middle :bottom</td><td></td><td>alignment [horizontal vertical] of the text at its anchor</td></tr><tr><td>:background</td><td>a clojure2d color or :none</td><td></td><td>box colour behind the text (:none - no box)</td></tr></tbody></table>
 ```
 
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image {:data wave
+                    :mapping {:x :t :y :v}
+                    :charts [(chart/line)
+                             (chart/text {:x 15 :y 0 :text "a styled note" :size 14 :font-style :bold
+                                          :color :white :background [70 90 140] :padding 6})]}
+                   {:width 500 :height 250})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.shared_options_files/image19.png)
 :::
 
 
@@ -373,40 +705,67 @@ Also the style of every theme text role (Theme chapter).
 
 ### Builder options
 
-
-::: {.sourceClojure}
-```clojure
-(nu/options-table (describe/fragment-rows :builder))
-```
-:::
-
+Title, scales and theme of the plot a builder returns.
 
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th><th>Group</th></tr></thead><tbody><tr><td>:title</td><td>any value</td><td></td><td>plot title (a text or label options)</td><td>Builder options</td></tr><tr><td>:scales</td><td>any value</td><td></td><td>scale specs deep-merged into the builder's (validated with the plot)</td><td>Builder options</td></tr><tr><td>:theme</td><td>any value</td><td></td><td>theme overrides of the built plot</td><td>Builder options</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:title</td><td>any value</td><td></td><td>plot title (a text or label options)</td></tr><tr><td>:scales</td><td>any value</td><td></td><td>scale specs deep-merged into the builder's (validated with the plot)</td></tr><tr><td>:theme</td><td>any value</td><td></td><td>theme overrides of the built plot</td></tr></tbody></table>
 ```
 
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(def flows [{:from "coal" :to "power" :value 30} {:from "gas" :to "power" :value 20} {:from "gas" :to "homes" :value 15}
+            {:from "power" :to "homes" :value 25} {:from "power" :to "industry" :value 25}])
+```
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/sankey flows {:title "Energy flows" :theme {:plot {:background :white}}})
+                   {:width 500 :height 300})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.shared_options_files/image20.png)
 :::
 
 
 
 ### Multiplot layout
 
-
-::: {.sourceClojure}
-```clojure
-(nu/options-table (describe/fragment-rows :arrange))
-```
-:::
-
+The grid of `plot/arrange` (and of a plot's `:arrange`): shape, weights, panel alignment.
 
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th><th>Group</th></tr></thead><tbody><tr><td>:plots (required)</td><td>sequential of map (at least 1)</td><td></td><td>the sub-plots, filling the grid row by row</td><td>Multiplot layout</td></tr><tr><td>:columns</td><td>a positive integer or nil</td><td>one column (from :rows when given)</td><td>grid columns</td><td>Multiplot layout</td></tr><tr><td>:rows</td><td>a positive integer or nil</td><td>from the plot count and :columns</td><td>grid rows</td><td>Multiplot layout</td></tr><tr><td>:widths</td><td>sequential of a positive number or :measured or [:fixed, a non-negative number] or nil</td><td>equal</td><td>relative column weights; :measured sizes a column of legend-only plots, [:fixed px] a fixed width</td><td>Multiplot layout</td></tr><tr><td>:heights</td><td>sequential of a positive number or [:fixed, a non-negative number] or nil</td><td>equal</td><td>relative row weights; [:fixed px] a fixed height</td><td>Multiplot layout</td></tr><tr><td>:align</td><td>true or false or nil</td><td>true</td><td>align the sub-plots' panels in rows and columns</td><td>Multiplot layout</td></tr><tr><td>:equal-panels</td><td>true or false or nil</td><td>false</td><td>resize columns and rows so every aligned panel has the same size (builds twice)</td><td>Multiplot layout</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:plots (required)</td><td>sequential of map (at least 1)</td><td></td><td>the sub-plots, filling the grid row by row</td></tr><tr><td>:columns</td><td>a positive integer or nil</td><td>one column (from :rows when given)</td><td>grid columns</td></tr><tr><td>:rows</td><td>a positive integer or nil</td><td>from the plot count and :columns</td><td>grid rows</td></tr><tr><td>:widths</td><td>sequential of a positive number or :measured or [:fixed, a non-negative number] or nil</td><td>equal</td><td>relative column weights; :measured sizes a column of legend-only plots, [:fixed px] a fixed width</td></tr><tr><td>:heights</td><td>sequential of a positive number or [:fixed, a non-negative number] or nil</td><td>equal</td><td>relative row weights; [:fixed px] a fixed height</td></tr><tr><td>:align</td><td>true or false or nil</td><td>true</td><td>align the sub-plots' panels in rows and columns</td></tr><tr><td>:equal-panels</td><td>true or false or nil</td><td>false</td><td>resize columns and rows so every aligned panel has the same size (builds twice)</td></tr></tbody></table>
 ```
 
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange [{:data wave :mapping {:x :t :y :v} :charts [(chart/line)]}
+                                  {:data wave :mapping {:x :g :y :v} :charts [(chart/box)]}]
+                                 {:columns 2 :widths [3 1]})
+                   {:width 700 :height 250})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.shared_options_files/image21.png)
 :::
 
 
@@ -418,240 +777,354 @@ The options a builder forwards to the data function computing its layout; the fu
 
 ### Graph
 
-
-::: {.sourceClojure}
-```clojure
-(nu/options-table (describe/fragment-rows :graph/graph))
-```
-:::
-
+The edge rows' ends, weight and node ids, optional node rows, directedness.
 
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th><th>Group</th></tr></thead><tbody><tr><td>:from</td><td>a keyword, a function or a categorical marker of one</td><td>:from</td><td>accessor of an edge row's source node id</td><td>Graph</td></tr><tr><td>:to</td><td>a keyword, a function or a categorical marker of one</td><td>:to</td><td>accessor of an edge row's target node id</td><td>Graph</td></tr><tr><td>:value</td><td>a keyword, a function or a categorical marker of one</td><td>:value</td><td>accessor of an edge row's weight, a finite number >= 0 (nil - 1)</td><td>Graph</td></tr><tr><td>:nodes</td><td>sequential of map or nil</td><td></td><td>node rows (each with an id), placed first in their order; ids seen only in edges follow</td><td>Graph</td></tr><tr><td>:id</td><td>a keyword, a function or a categorical marker of one</td><td>:id</td><td>accessor of a node row's id</td><td>Graph</td></tr><tr><td>:directed?</td><td>true or false or nil</td><td>false</td><td>a directed graph: degrees split into :in and :out</td><td>Graph</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:from</td><td>a keyword, a function or a categorical marker of one</td><td>:from</td><td>accessor of an edge row's source node id</td></tr><tr><td>:to</td><td>a keyword, a function or a categorical marker of one</td><td>:to</td><td>accessor of an edge row's target node id</td></tr><tr><td>:value</td><td>a keyword, a function or a categorical marker of one</td><td>:value</td><td>accessor of an edge row's weight, a finite number >= 0 (nil - 1)</td></tr><tr><td>:nodes</td><td>sequential of map or nil</td><td></td><td>node rows (each with an id), placed first in their order; ids seen only in edges follow</td></tr><tr><td>:id</td><td>a keyword, a function or a categorical marker of one</td><td>:id</td><td>accessor of a node row's id</td></tr><tr><td>:directed?</td><td>true or false or nil</td><td>false</td><td>a directed graph: degrees split into :in and :out</td></tr></tbody></table>
 ```
 
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(def edges [{:a "x" :b "y" :w 3} {:a "y" :b "z" :w 1} {:a "z" :b "x" :w 2} {:a "z" :b "u" :w 2}])
+```
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/network edges {:from :a :to :b :value :w :directed? true :labels true :rng (r/rng :mersenne 1)})
+                   {:width 450 :height 300})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.shared_options_files/image22.png)
 :::
 
 
 
 ### Graph layout
 
-
-::: {.sourceClojure}
-```clojure
-(nu/options-table (describe/fragment-rows :graph/layout))
-```
-:::
-
+Node positions of a network: force-directed, a circle, or random.
 
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th><th>Group</th></tr></thead><tbody><tr><td>:layout</td><td>one of :circle :force :random</td><td>:force</td><td>node placement: :force (Fruchterman-Reingold), :circle or :random</td><td>Graph layout</td></tr><tr><td>:iterations</td><td>integer (at least 0)</td><td>500</td><td>steps of the force layout</td><td>Graph layout</td></tr><tr><td>:gravity</td><td>a non-negative finite number</td><td>1.0</td><td>pull of the force layout to each component's centroid, in units of the ideal edge length (0 - none)</td><td>Graph layout</td></tr><tr><td>:rng</td><td>a fastmath random generator or nil</td><td>a fresh unseeded generator every call</td><td>fastmath random generator of the force and random layouts, copied per call (seeded - the same layout every time)</td><td>Graph layout</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:layout</td><td>one of :circle :force :random</td><td>:force</td><td>node placement: :force (Fruchterman-Reingold), :circle or :random</td></tr><tr><td>:iterations</td><td>integer (at least 0)</td><td>500</td><td>steps of the force layout</td></tr><tr><td>:gravity</td><td>a non-negative finite number</td><td>1.0</td><td>pull of the force layout to each component's centroid, in units of the ideal edge length (0 - none)</td></tr><tr><td>:rng</td><td>a fastmath random generator or nil</td><td>a fresh unseeded generator every call</td><td>fastmath random generator of the force and random layouts, copied per call (seeded - the same layout every time)</td></tr></tbody></table>
 ```
 
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/network edges {:from :a :to :b :layout :circle :labels true}) {:width 450 :height 300})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.shared_options_files/image23.png)
 :::
 
 
 
 ### Chord layout
 
-
-::: {.sourceClojure}
-```clojure
-(nu/options-table (describe/fragment-rows :graph/chord-layout))
-```
-:::
-
+Node order, gaps between sectors, the ring's inner radius and the smallest drawn flow.
 
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th><th>Group</th></tr></thead><tbody><tr><td>:order</td><td>:cluster or sequential of any value or nil</td><td>the nodes' input order</td><td>node order: a sequence of ids (those first, the rest after them in input order) or :cluster (nodes linked to the same others side by side)</td><td>Chord layout</td></tr><tr><td>:pad</td><td>a non-negative finite number</td><td>2.0</td><td>gap after every ring sector in degrees (must leave room for the sectors)</td><td>Chord layout</td></tr><tr><td>:inner</td><td>a number in (0 1)</td><td>0.92</td><td>inner radius of the ring, where the ribbons end (the outer one is 1)</td><td>Chord layout</td></tr><tr><td>:min-value</td><td>a non-negative finite number or nil</td><td></td><td>flows of a pair (summed) below it are left out and counted in :dropped (nil - none)</td><td>Chord layout</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:order</td><td>:cluster or sequential of any value or nil</td><td>the nodes' input order</td><td>node order: a sequence of ids (those first, the rest after them in input order) or :cluster (nodes linked to the same others side by side)</td></tr><tr><td>:pad</td><td>a non-negative finite number</td><td>2.0</td><td>gap after every ring sector in degrees (must leave room for the sectors)</td></tr><tr><td>:inner</td><td>a number in (0 1)</td><td>0.92</td><td>inner radius of the ring, where the ribbons end (the outer one is 1)</td></tr><tr><td>:min-value</td><td>a non-negative finite number or nil</td><td></td><td>flows of a pair (summed) below it are left out and counted in :dropped (nil - none)</td></tr></tbody></table>
 ```
 
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/chord flows {:pad 6 :inner 0.8}) {:width 450 :height 450})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.shared_options_files/image24.png)
 :::
 
 
 
 ### Arc layout
 
-
-::: {.sourceClojure}
-```clojure
-(nu/options-table (describe/fragment-rows :graph/arc-layout))
-```
-:::
-
+Node order along the line.
 
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th><th>Group</th></tr></thead><tbody><tr><td>:order</td><td>:cluster or sequential of any value or nil</td><td>the nodes' input order</td><td>node order: a sequence of ids (those first, the rest after them in input order) or :cluster (nodes linked to the same others side by side)</td><td>Arc layout</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:order</td><td>:cluster or sequential of any value or nil</td><td>the nodes' input order</td><td>node order: a sequence of ids (those first, the rest after them in input order) or :cluster (nodes linked to the same others side by side)</td></tr></tbody></table>
 ```
 
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arc edges {:from :a :to :b :order :cluster}) {:width 450 :height 250})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.shared_options_files/image25.png)
 :::
 
 
 
 ### Sankey layout
 
-
-::: {.sourceClojure}
-```clojure
-(nu/options-table (describe/fragment-rows :graph/sankey-layout))
-```
-:::
-
+Columns, node width, gaps and relaxation of a sankey diagram.
 
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th><th>Group</th></tr></thead><tbody><tr><td>:align</td><td>one of :center :justify :left :right</td><td>:justify</td><td>the column of a node: :justify (sinks in the last column), :left, :right (by the longest path to a sink) or :center</td><td>Sankey layout</td></tr><tr><td>:layer</td><td>a keyword, a function or a categorical marker of one or nil</td><td>columns from :align</td><td>accessor of the node rows giving the column (integers >= 0, every edge to a later one; wins over :align)</td><td>Sankey layout</td></tr><tr><td>:node-width</td><td>a number in (0 1)</td><td>0.03</td><td>node width, a fraction of the unit square's width</td><td>Sankey layout</td></tr><tr><td>:pad</td><td>a non-negative finite number</td><td>0.02</td><td>least gap between the nodes of a column, a fraction of the unit square's height</td><td>Sankey layout</td></tr><tr><td>:iterations</td><td>integer (at least 0)</td><td>6</td><td>relaxation sweeps moving the nodes towards their links' ends (0 - spread in the start order)</td><td>Sankey layout</td></tr><tr><td>:node-sort</td><td>one of :input or nil</td><td></td><td>nil - relaxation reorders a column, :input - the input order kept</td><td>Sankey layout</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:align</td><td>one of :center :justify :left :right</td><td>:justify</td><td>the column of a node: :justify (sinks in the last column), :left, :right (by the longest path to a sink) or :center</td></tr><tr><td>:layer</td><td>a keyword, a function or a categorical marker of one or nil</td><td>columns from :align</td><td>accessor of the node rows giving the column (integers >= 0, every edge to a later one; wins over :align)</td></tr><tr><td>:node-width</td><td>a number in (0 1)</td><td>0.03</td><td>node width, a fraction of the unit square's width</td></tr><tr><td>:pad</td><td>a non-negative finite number</td><td>0.02</td><td>least gap between the nodes of a column, a fraction of the unit square's height</td></tr><tr><td>:iterations</td><td>integer (at least 0)</td><td>6</td><td>relaxation sweeps moving the nodes towards their links' ends (0 - spread in the start order)</td></tr><tr><td>:node-sort</td><td>one of :input or nil</td><td></td><td>nil - relaxation reorders a column, :input - the input order kept</td></tr></tbody></table>
 ```
 
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/sankey flows {:align :left :node-width 0.06 :pad 0.08}) {:width 500 :height 300})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.shared_options_files/image26.png)
 :::
 
 
 
 ### Alluvial graph
 
-
-::: {.sourceClojure}
-```clojure
-(nu/options-table (describe/fragment-rows :graph/alluvial-graph))
-```
-:::
-
+The axes (categorical columns) the strands cross, their weights and which axis colours them.
 
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th><th>Group</th></tr></thead><tbody><tr><td>:axes (required)</td><td>sequential of a keyword, a function or a categorical marker of one (at least 2)</td><td></td><td>accessors of the axes, in column order (at least 2)</td><td>Alluvial graph</td></tr><tr><td>:value</td><td>a keyword, a function or a categorical marker of one or nil</td><td>1 per row</td><td>accessor of a row's weight, a finite number >= 0 (nil - 1)</td><td>Alluvial graph</td></tr><tr><td>:fill</td><td>a keyword, a function or a categorical marker of one or nil</td><td>the first axis</td><td>accessor of the level the strands are grouped (and coloured) by</td><td>Alluvial graph</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:axes (required)</td><td>sequential of a keyword, a function or a categorical marker of one (at least 2)</td><td></td><td>accessors of the axes, in column order (at least 2)</td></tr><tr><td>:value</td><td>a keyword, a function or a categorical marker of one or nil</td><td>1 per row</td><td>accessor of a row's weight, a finite number >= 0 (nil - 1)</td></tr><tr><td>:fill</td><td>a keyword, a function or a categorical marker of one or nil</td><td>the first axis</td><td>accessor of the level the strands are grouped (and coloured) by</td></tr></tbody></table>
 ```
 
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/alluvial [{:class "1st" :sex "f" :n 140} {:class "1st" :sex "m" :n 180}
+                                   {:class "3rd" :sex "f" :n 190} {:class "3rd" :sex "m" :n 510}]
+                                  {:axes [:class :sex] :value :n :fill :sex})
+                   {:width 500 :height 300})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.shared_options_files/image27.png)
 :::
 
 
 
 ### Dendrogram layout
 
-
-::: {.sourceClojure}
-```clojure
-(nu/options-table (describe/fragment-rows :tree/layout))
-```
-:::
-
+A cut into `:k` clusters and a circular layout.
 
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th><th>Group</th></tr></thead><tbody><tr><td>:k</td><td>a positive integer or nil</td><td>no clusters (every :cluster nil)</td><td>cluster count: cutting the k - 1 highest groups leaves k subtrees, clusters 1..k in leaf order (at most the leaf count)</td><td>Dendrogram layout</td></tr><tr><td>:circular</td><td>true or false or nil</td><td>false</td><td>radial: breadth as the angle over :span degrees, height (or depth) as the radius; points in [-1, 1]</td><td>Dendrogram layout</td></tr><tr><td>:span</td><td>a positive finite number</td><td>360.0</td><td>degrees a circular layout covers, clockwise from the top</td><td>Dendrogram layout</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:k</td><td>a positive integer or nil</td><td>no clusters (every :cluster nil)</td><td>cluster count: cutting the k - 1 highest groups leaves k subtrees, clusters 1..k in leaf order (at most the leaf count)</td></tr><tr><td>:circular</td><td>true or false or nil</td><td>false</td><td>radial: breadth as the angle over :span degrees, height (or depth) as the radius; points in [-1, 1]</td></tr><tr><td>:span</td><td>a positive finite number</td><td>360.0</td><td>degrees a circular layout covers, clockwise from the top</td></tr></tbody></table>
 ```
 
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(def org (tree/from-levels [{:div "north" :team "a"} {:div "north" :team "b"} {:div "south" :team "c"}
+                            {:div "south" :team "d"} {:div "south" :team "e"}]
+                           {:hierarchy [:div :team]}))
+```
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/dendrogram org {:k 2}) {:width 450 :height 300})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.shared_options_files/image28.png)
 :::
 
 
 
 ### Node-link tree layout
 
-
-::: {.sourceClojure}
-```clojure
-(nu/options-table (describe/fragment-rows :tree/node-link-layout))
-```
-:::
-
+Tidy or cluster placement, diagonal or straight (`:line`) links, circular.
 
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th><th>Group</th></tr></thead><tbody><tr><td>:layout</td><td>one of :tidy :cluster</td><td>:tidy</td><td>node placement: :tidy (every node at its depth, d3 tree) or :cluster (leaves at the deepest depth, d3 cluster)</td><td>Node-link tree layout</td></tr><tr><td>:links</td><td>one of :diagonal :line</td><td>:diagonal</td><td>link shape: :diagonal (curves along the depth axis) or :line</td><td>Node-link tree layout</td></tr><tr><td>:circular</td><td>true or false or nil</td><td>false</td><td>radial: breadth as the angle over :span degrees, height (or depth) as the radius; points in [-1, 1]</td><td>Node-link tree layout</td></tr><tr><td>:span</td><td>a positive finite number</td><td>360.0</td><td>degrees a circular layout covers, clockwise from the top</td><td>Node-link tree layout</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:layout</td><td>one of :tidy :cluster</td><td>:tidy</td><td>node placement: :tidy (every node at its depth, d3 tree) or :cluster (leaves at the deepest depth, d3 cluster)</td></tr><tr><td>:links</td><td>one of :diagonal :line</td><td>:diagonal</td><td>link shape: :diagonal (curves along the depth axis) or :line</td></tr><tr><td>:circular</td><td>true or false or nil</td><td>false</td><td>radial: breadth as the angle over :span degrees, height (or depth) as the radius; points in [-1, 1]</td></tr><tr><td>:span</td><td>a positive finite number</td><td>360.0</td><td>degrees a circular layout covers, clockwise from the top</td></tr></tbody></table>
 ```
 
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/tree org {:layout :cluster :links :line}) {:width 450 :height 300})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.shared_options_files/image29.png)
 :::
 
 
 
 ### Edge bundling
 
-
-::: {.sourceClojure}
-```clojure
-(nu/options-table (describe/fragment-rows :tree/bundle-paths))
-```
-:::
-
+Edges between the tree's leaves, bent along the tree with strength `:beta`.
 
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th><th>Group</th></tr></thead><tbody><tr><td>:from</td><td>a keyword, a function or a categorical marker of one</td><td>:from</td><td>accessor of an edge row's source leaf id</td><td>Edge bundling</td></tr><tr><td>:to</td><td>a keyword, a function or a categorical marker of one</td><td>:to</td><td>accessor of an edge row's target leaf id</td><td>Edge bundling</td></tr><tr><td>:beta</td><td>a number in [0 1]</td><td>0.85</td><td>bundling strength: 1 - along the tree path, 0 - a straight line</td><td>Edge bundling</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:from</td><td>a keyword, a function or a categorical marker of one</td><td>:from</td><td>accessor of an edge row's source leaf id</td></tr><tr><td>:to</td><td>a keyword, a function or a categorical marker of one</td><td>:to</td><td>accessor of an edge row's target leaf id</td></tr><tr><td>:beta</td><td>a number in [0 1]</td><td>0.85</td><td>bundling strength: 1 - along the tree path, 0 - a straight line</td></tr></tbody></table>
 ```
 
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/bundle [{:from "a" :to "d"} {:from "b" :to "e"} {:from "a" :to "c"}] org {:beta 0.9})
+                   {:width 400 :height 400})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.shared_options_files/image30.png)
 :::
 
 
 
 ### Sequences
 
-
-::: {.sourceClojure}
-```clojure
-(nu/options-table (describe/fragment-rows :hierarchy/sequence-levels))
-```
-:::
-
+Step sequences as text (`"home-search-end"`) split into rings of a flow sunburst.
 
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th><th>Group</th></tr></thead><tbody><tr><td>:sequence</td><td>a keyword, a function or a categorical marker of one</td><td>:sequence</td><td>accessor of a row's sequence: a string split at :separator or a sequence of steps</td><td>Sequences</td></tr><tr><td>:value</td><td>a keyword, a function or a categorical marker of one or nil</td><td>1 per row</td><td>accessor of a row's weight, a finite number >= 0 (nil - 1; identical sequences summed)</td><td>Sequences</td></tr><tr><td>:separator</td><td>string</td><td>"-"</td><td>literal text splitting a string sequence into steps</td><td>Sequences</td></tr><tr><td>:end</td><td>any value</td><td>"end"</td><td>the end marker (nil - none): a final step equal to it is removed unless :keep-end?</td><td>Sequences</td></tr><tr><td>:keep-end?</td><td>true or false or nil</td><td>false</td><td>keep a final end marker as a step of its own (false - a sequence ending before others continue is its group's unnamed leaf)</td><td>Sequences</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:sequence</td><td>a keyword, a function or a categorical marker of one</td><td>:sequence</td><td>accessor of a row's sequence: a string split at :separator or a sequence of steps</td></tr><tr><td>:value</td><td>a keyword, a function or a categorical marker of one or nil</td><td>1 per row</td><td>accessor of a row's weight, a finite number >= 0 (nil - 1; identical sequences summed)</td></tr><tr><td>:separator</td><td>string</td><td>"-"</td><td>literal text splitting a string sequence into steps</td></tr><tr><td>:end</td><td>any value</td><td>"end"</td><td>the end marker (nil - none): a final step equal to it is removed unless :keep-end?</td></tr><tr><td>:keep-end?</td><td>true or false or nil</td><td>false</td><td>keep a final end marker as a step of its own (false - a sequence ending before others continue is its group's unnamed leaf)</td></tr></tbody></table>
 ```
 
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/sequences [{:sequence "home-search-product" :n 5} {:sequence "home-product" :n 3}
+                                    {:sequence "search-product-cart" :n 2}]
+                                   {:value :n})
+                   {:width 400 :height 400})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.shared_options_files/image31.png)
 :::
 
 
 
 ### Autocorrelation rows
 
-
-::: {.sourceClojure}
-```clojure
-(nu/options-table (describe/fragment-rows :series/acf-rows))
-```
-:::
-
+The lags of the correlogram, the significance level of its bands and which of ACF and PACF to draw.
 
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th><th>Group</th></tr></thead><tbody><tr><td>:lags</td><td>a positive integer or nil</td><td>floor(10 log10 n), at most n - 1 (R acf)</td><td>the largest lag, from 1 to n - 1 for n values</td><td>Autocorrelation rows</td></tr><tr><td>:alpha</td><td>a number in (0 1) or nil</td><td>0.05</td><td>significance level of the band (0.05 - a 95% band)</td><td>Autocorrelation rows</td></tr><tr><td>:partial?</td><td>true or false or nil</td><td>false</td><td>the partial autocorrelation (lags from 1, a constant band) instead of the autocorrelation</td><td>Autocorrelation rows</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:lags</td><td>a positive integer or nil</td><td>floor(10 log10 n), at most n - 1 (R acf)</td><td>the largest lag, from 1 to n - 1 for n values</td></tr><tr><td>:alpha</td><td>a number in (0 1) or nil</td><td>0.05</td><td>significance level of the band (0.05 - a 95% band)</td></tr><tr><td>:partial?</td><td>true or false or nil</td><td>false</td><td>the partial autocorrelation (lags from 1, a constant band) instead of the autocorrelation</td></tr></tbody></table>
 ```
 
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/acf (map #(Math/sin (* 0.5 (double %))) (range 100)) {:lags 30 :partial? true})
+                   {:width 600 :height 300})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.shared_options_files/image32.png)
 :::
 
 
 
 ### Horizon rows
 
-
-::: {.sourceClojure}
-```clojure
-(nu/options-table (describe/fragment-rows :series/horizon-rows))
-```
-:::
-
+The keys of the series rows, the number and height of the bands and resampling between points.
 
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th><th>Group</th></tr></thead><tbody><tr><td>:x</td><td>keyword or string</td><td>:x</td><td>row key of the x values (numbers)</td><td>Horizon rows</td></tr><tr><td>:y</td><td>keyword or string</td><td>:y</td><td>row key of the y values (finite numbers, nil breaks the bands)</td><td>Horizon rows</td></tr><tr><td>:series</td><td>keyword or string or nil</td><td>none - one series</td><td>row key of the series, one horizon per value in first-appearance order</td><td>Horizon rows</td></tr><tr><td>:bands</td><td>a positive integer</td><td>2</td><td>number of bands each sign of the values is folded into</td><td>Horizon rows</td></tr><tr><td>:band-height</td><td>a positive finite number or nil</td><td>the largest |y| of all series / :bands (1 when it is 0)</td><td>height of one band in y units</td><td>Horizon rows</td></tr><tr><td>:interpolator</td><td>a fastmath 1D interpolation method keyword or a function (fn [xs ys & params] f) or nil</td><td>none - straight segments</td><td>a curve the valid points of every run are resampled on before folding</td><td>Horizon rows</td></tr><tr><td>:steps-per-gap</td><td>a positive integer</td><td>10</td><td>resampled points per gap between consecutive x (with :interpolator)</td><td>Horizon rows</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:x</td><td>keyword or string</td><td>:x</td><td>row key of the x values (numbers)</td></tr><tr><td>:y</td><td>keyword or string</td><td>:y</td><td>row key of the y values (finite numbers, nil breaks the bands)</td></tr><tr><td>:series</td><td>keyword or string or nil</td><td>none - one series</td><td>row key of the series, one horizon per value in first-appearance order</td></tr><tr><td>:bands</td><td>a positive integer</td><td>2</td><td>number of bands each sign of the values is folded into</td></tr><tr><td>:band-height</td><td>a positive finite number or nil</td><td>the largest |y| of all series / :bands (1 when it is 0)</td><td>height of one band in y units</td></tr><tr><td>:interpolator</td><td>a fastmath 1D interpolation method keyword or a function (fn [xs ys & params] f) or nil</td><td>none - straight segments</td><td>a curve the valid points of every run are resampled on before folding</td></tr><tr><td>:steps-per-gap</td><td>a positive integer</td><td>10</td><td>resampled points per gap between consecutive x (with :interpolator)</td></tr></tbody></table>
 ```
 
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/horizon (for [s ["a" "b"] t (range 60)]
+                                   {:x t :y (* (if (= s "a") 1 -1) (Math/sin (* 0.2 t)) t) :series s})
+                                 {:series :series :bands 3})
+                   {:width 600 :height 250})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.shared_options_files/image33.png)
 :::
 
 

@@ -16,7 +16,7 @@ code-block-background: true
 
 # Facets, multiplots and margins
 
-One plot can split into panels by data (facets), several plots can share one image (`:arrange`, `plot/arrange`,
+One plot can split into panels by data (facets), several plots can share one image (`plot/arrange`,
 `plot/pairs`, `:custom-grid`), and a panel can carry charts beside it (`:margins`).
 
 
@@ -34,30 +34,6 @@ One plot can split into panels by data (facets), several plots can share one ima
 :::
 
 
-
-## Facets
-
-Mapping `:facet` wraps one panel per level into rows and columns; `:facet-col` / `:facet-row` make a grid. The
-plot's `:facets` map sets the layout; panels share scales unless `:scales` frees them. The level order and strip
-text come from the facet scales (`:scales {:facet spec}`, Scales chapter).
-
-
-::: {.sourceClojure}
-```clojure
-(nu/options-table (describe/options facet/facet-options))
-```
-:::
-
-
-::: {.clay-table}
-
-```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:columns</td><td>a positive integer or nil</td><td>the most square shape (from :rows when given)</td><td>columns of a wrap layout</td></tr><tr><td>:rows</td><td>a positive integer or nil</td><td>the most square shape (from :columns when given)</td><td>rows of a wrap layout</td></tr><tr><td>:order</td><td>one of :top-down :bottom-up or nil</td><td>:top-down</td><td>wrap panel order: :top-down (first level at the top) or :bottom-up (lattice's)</td></tr><tr><td>:na-panel</td><td>true or false or nil</td><td>true</td><td>give nil facet values a panel of their own (false - drop those rows)</td></tr><tr><td>:scales</td><td>map</td><td></td><td>position scale relation between panels per axis</td></tr><tr><td>:scales :x</td><td>one of :free :same :sliced or nil</td><td>:same</td><td>x relation: :same (one domain), :free (each panel's data) or :sliced (each panel's centre, the widest span)</td></tr><tr><td>:scales :y</td><td>one of :free :same :sliced or nil</td><td>:same</td><td>y relation: :same (one domain), :free (each panel's data) or :sliced (each panel's centre, the widest span)</td></tr><tr><td>:strips</td><td>true or false or nil</td><td>true</td><td>draw the facet strips</td></tr><tr><td>:widths</td><td>sequential of a positive number (at least 1) or nil</td><td>equal</td><td>relative widths of the panel columns, one per column</td></tr><tr><td>:heights</td><td>sequential of a positive number (at least 1) or nil</td><td>equal</td><td>relative heights of the panel rows, one per row</td></tr></tbody></table>
-```
-
-:::
-
-
 Data: Motor Trend car road tests (1974), R datasets package `mtcars` (Henderson & Velleman 1981); licence: Part of R (GPL-2 | GPL-3).
 
 
@@ -69,14 +45,28 @@ Data: Motor Trend car road tests (1974), R datasets package `mtcars` (Henderson 
 
 
 
+## Facet shape
+
+Mapping `:facet` wraps one panel per level into rows and columns; `:facet-col` / `:facet-row` make a grid of
+them. The plot's `:facets` map shapes the wrap and weights the panel columns and rows.
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:columns</td><td>a positive integer or nil</td><td>the most square shape (from :rows when given)</td><td>columns of a wrap layout</td></tr><tr><td>:rows</td><td>a positive integer or nil</td><td>the most square shape (from :columns when given)</td><td>rows of a wrap layout</td></tr><tr><td>:order</td><td>one of :top-down :bottom-up or nil</td><td>:top-down</td><td>wrap panel order: :top-down (first level at the top) or :bottom-up (lattice's)</td></tr><tr><td>:widths</td><td>sequential of a positive number (at least 1) or nil</td><td>equal</td><td>relative widths of the panel columns, one per column</td></tr><tr><td>:heights</td><td>sequential of a positive number (at least 1) or nil</td><td>equal</td><td>relative heights of the panel rows, one per row</td></tr></tbody></table>
+```
+
+:::
+
+
+
 ::: {.sourceClojure}
 ```clojure
 (plot/render-image {:data mtcars
-                    :mapping {:x :wt :y :mpg :facet-col :cyl :facet-row :am}
+                    :mapping {:x :wt :y :mpg :facet :carb}
                     :charts [(chart/scatter)]
-                    :facets {:scales {:x :free}}
-                    :scales {:facet-row {:formatter #(if (= 1 %) "manual" "automatic")}}}
-                   {:width 800 :height 500})
+                    :facets {:columns 4 :order :bottom-up}}
+                   {:width 800 :height 400})
 ```
 :::
 
@@ -87,41 +77,78 @@ Data: Motor Trend car road tests (1974), R datasets package `mtcars` (Henderson 
 
 
 
-## Multiplots
+## Facet panels
 
-`plot/arrange` puts plots in a grid; the panels align across rows and columns. Its options:
+Panels share their position scales unless freed per axis (`:free` - each panel its data; `:sliced` - each
+panel its centre, the widest span); `nil` facet values get a panel of their own; strips can go.
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:na-panel</td><td>true or false or nil</td><td>true</td><td>give nil facet values a panel of their own (false - drop those rows)</td></tr><tr><td>:scales</td><td>map</td><td></td><td>position scale relation between panels per axis</td></tr><tr><td>:scales :x</td><td>one of :free :same :sliced or nil</td><td>:same</td><td>x relation: :same (one domain), :free (each panel's data) or :sliced (each panel's centre, the widest span)</td></tr><tr><td>:scales :y</td><td>one of :free :same :sliced or nil</td><td>:same</td><td>y relation: :same (one domain), :free (each panel's data) or :sliced (each panel's centre, the widest span)</td></tr><tr><td>:strips</td><td>true or false or nil</td><td>true</td><td>draw the facet strips</td></tr></tbody></table>
+```
+
+:::
+
 
 
 ::: {.sourceClojure}
 ```clojure
-(nu/options-table (describe/options #'plot/arrange))
+(plot/render-image {:data mtcars
+                    :mapping {:x :wt :y :mpg :facet-col :cyl :facet-row :am}
+                    :charts [(chart/scatter)]
+                    :facets {:scales {:x :free} :widths [1 1 2]}}
+                   {:width 800 :height 450})
 ```
 :::
 
+
+::: {.clay-image}
+![](reference.facets_arrange_files/image1.png)
+:::
+
+
+
+## Facet levels
+
+The facet levels have scales: `:scales {:facet spec}` (and `:facet-col` / `:facet-row`) order the panels and
+write the strip texts.
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:domain</td><td>sequential of any value (at least 1) or nil</td><td>the data's levels, sorted (NA last)</td><td>the facet levels in panel order (values outside are dropped)</td></tr><tr><td>:formatter</td><td>a function</td><td>(str level), "NA" for the NA level</td><td>strip text of a level, a function of the level</td></tr><tr><td>:order-by</td><td>a function or nil</td><td></td><td>levels in ascending order of a function of each level's rows (not with :domain)</td></tr><tr><td>:descending</td><td>true or false or nil</td><td>false</td><td>reverse the :order-by order (needs :order-by)</td></tr><tr><td>:type</td><td>:categorical</td><td></td><td>facets are always categorical (accepted for symmetry with other scales)</td></tr></tbody></table>
+```
+
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image {:data mtcars
+                    :mapping {:x :wt :y :mpg :facet :gear}
+                    :charts [(chart/scatter)]
+                    :scales {:facet {:domain [5 4 3] :formatter #(str % " gears")}}}
+                   {:width 800 :height 300})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.facets_arrange_files/image2.png)
+:::
+
+
+
+## Arrange
+
+`plot/arrange` puts plots in a grid; the panels align across rows and columns. Its options:
 
 ::: {.clay-table}
 
 ```{=html}
 <table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th><th>Group</th></tr></thead><tbody><tr><td>:columns</td><td>a positive integer or nil</td><td>one column (from :rows when given)</td><td>grid columns</td><td>Multiplot layout</td></tr><tr><td>:rows</td><td>a positive integer or nil</td><td>from the plot count and :columns</td><td>grid rows</td><td>Multiplot layout</td></tr><tr><td>:widths</td><td>sequential of a positive number or :measured or [:fixed, a non-negative number] or nil</td><td>equal</td><td>relative column weights; :measured sizes a column of legend-only plots, [:fixed px] a fixed width</td><td>Multiplot layout</td></tr><tr><td>:heights</td><td>sequential of a positive number or [:fixed, a non-negative number] or nil</td><td>equal</td><td>relative row weights; [:fixed px] a fixed height</td><td>Multiplot layout</td></tr><tr><td>:align</td><td>true or false or nil</td><td>true</td><td>align the sub-plots' panels in rows and columns</td><td>Multiplot layout</td></tr><tr><td>:equal-panels</td><td>true or false or nil</td><td>false</td><td>resize columns and rows so every aligned panel has the same size (builds twice)</td><td>Multiplot layout</td></tr><tr><td>:title</td><td>any value</td><td></td><td>plot title (a text or label options)</td><td>Builder options</td></tr><tr><td>:theme</td><td>any value</td><td></td><td>theme overrides of the built plot</td><td>Builder options</td></tr></tbody></table>
-```
-
-:::
-
-
-It returns a plot with `:arrange`, which can also be written by hand:
-
-
-::: {.sourceClojure}
-```clojure
-(nu/options-table (describe/options plot-grid/arrange-schema))
-```
-:::
-
-
-::: {.clay-table}
-
-```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th><th>Group</th></tr></thead><tbody><tr><td>:plots (required)</td><td>sequential of map (at least 1)</td><td></td><td>the sub-plots, filling the grid row by row</td><td>Multiplot layout</td></tr><tr><td>:columns</td><td>a positive integer or nil</td><td>one column (from :rows when given)</td><td>grid columns</td><td>Multiplot layout</td></tr><tr><td>:rows</td><td>a positive integer or nil</td><td>from the plot count and :columns</td><td>grid rows</td><td>Multiplot layout</td></tr><tr><td>:widths</td><td>sequential of a positive number or :measured or [:fixed, a non-negative number] or nil</td><td>equal</td><td>relative column weights; :measured sizes a column of legend-only plots, [:fixed px] a fixed width</td><td>Multiplot layout</td></tr><tr><td>:heights</td><td>sequential of a positive number or [:fixed, a non-negative number] or nil</td><td>equal</td><td>relative row weights; [:fixed px] a fixed height</td><td>Multiplot layout</td></tr><tr><td>:align</td><td>true or false or nil</td><td>true</td><td>align the sub-plots' panels in rows and columns</td><td>Multiplot layout</td></tr><tr><td>:equal-panels</td><td>true or false or nil</td><td>false</td><td>resize columns and rows so every aligned panel has the same size (builds twice)</td><td>Multiplot layout</td></tr></tbody></table>
 ```
 
 :::
@@ -140,7 +167,39 @@ It returns a plot with `:arrange`, which can also be written by hand:
 
 
 ::: {.clay-image}
-![](reference.facets_arrange_files/image1.png)
+![](reference.facets_arrange_files/image3.png)
+:::
+
+
+It returns a plot whose `:arrange` key holds the plots and the layout - also written by hand. Here a legend
+shown once, in its own cell sized to fit (`:measured`):
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:plots (required)</td><td>sequential of map (at least 1)</td><td></td><td>the sub-plots, filling the grid row by row</td></tr><tr><td>:columns</td><td>a positive integer or nil</td><td>one column (from :rows when given)</td><td>grid columns</td></tr><tr><td>:rows</td><td>a positive integer or nil</td><td>from the plot count and :columns</td><td>grid rows</td></tr><tr><td>:widths</td><td>sequential of a positive number or :measured or [:fixed, a non-negative number] or nil</td><td>equal</td><td>relative column weights; :measured sizes a column of legend-only plots, [:fixed px] a fixed width</td></tr><tr><td>:heights</td><td>sequential of a positive number or [:fixed, a non-negative number] or nil</td><td>equal</td><td>relative row weights; [:fixed px] a fixed height</td></tr><tr><td>:align</td><td>true or false or nil</td><td>true</td><td>align the sub-plots' panels in rows and columns</td></tr><tr><td>:equal-panels</td><td>true or false or nil</td><td>false</td><td>resize columns and rows so every aligned panel has the same size (builds twice)</td></tr></tbody></table>
+```
+
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image {:arrange {:plots [{:data mtcars :mapping {:x :hp :y :mpg :color :gear} :charts [(chart/scatter)]
+                                       :scales {:color {:type :categorical}} :legend false}
+                                      {:data mtcars :mapping {:x :wt :y :mpg :color :gear} :charts [(chart/scatter)]
+                                       :scales {:color {:type :categorical}} :legend false}
+                                      {:data mtcars :mapping {:x :wt :y :mpg :color :gear} :charts [(chart/scatter)]
+                                       :scales {:color {:type :categorical}} :legend-only true}]
+                              :columns 3 :widths [1 1 :measured]}}
+                   {:width 900 :height 320})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.facets_arrange_files/image4.png)
 :::
 
 
@@ -148,15 +207,7 @@ It returns a plot with `:arrange`, which can also be written by hand:
 ## Scatter-plot matrix
 
 `plot/pairs` draws a cell for every pair of `:variables` (2 to 20 numeric columns); the cells below, above and on
-the diagonal take any charts (`:lower`, `:upper`, `:diagonal`).
-
-
-::: {.sourceClojure}
-```clojure
-(nu/options-table (describe/options #'plot/pairs))
-```
-:::
-
+the diagonal take any charts.
 
 ::: {.clay-table}
 
@@ -170,14 +221,15 @@ the diagonal take any charts (`:lower`, `:upper`, `:diagonal`).
 
 ::: {.sourceClojure}
 ```clojure
-(plot/render-image (plot/pairs mtcars {:variables [:mpg :hp :wt :qsec]})
+(plot/render-image (plot/pairs mtcars {:variables [:mpg :hp :wt :qsec]
+                                       :upper [(chart/correlation)]})
                    {:width 700 :height 700})
 ```
 :::
 
 
 ::: {.clay-image}
-![](reference.facets_arrange_files/image2.png)
+![](reference.facets_arrange_files/image5.png)
 :::
 
 
@@ -185,15 +237,8 @@ the diagonal take any charts (`:lower`, `:upper`, `:diagonal`).
 ## Margins
 
 `:margins` puts charts above (`:top`) and right of (`:right`) a single panel, sharing its horizontal / vertical
-scale; margin charts read the plot's data with `:x` mapped to the shared dimension.
-
-
-::: {.sourceClojure}
-```clojure
-(nu/options-table (describe/options pipeline/margins-schema))
-```
-:::
-
+scale; margin charts read the plot's data with `:x` mapped to the shared dimension. A margin is a chart, a
+vector of charts, or a map:
 
 ::: {.clay-table}
 
@@ -201,16 +246,6 @@ scale; margin charts read the plot's data with `:x` mapped to the shared dimensi
 <table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:top</td><td>a chart, a vector of charts or {:charts c :size px :axis bool}</td><td></td><td>charts above the panel sharing its horizontal scale</td></tr><tr><td>:right</td><td>a chart, a vector of charts or {:charts c :size px :axis bool}</td><td></td><td>charts right of the panel sharing its vertical scale</td></tr></tbody></table>
 ```
 
-:::
-
-
-A margin given as a map:
-
-
-::: {.sourceClojure}
-```clojure
-(nu/options-table (describe/options pipeline/margin-spec-schema))
-```
 :::
 
 
@@ -236,7 +271,7 @@ A margin given as a map:
 
 
 ::: {.clay-image}
-![](reference.facets_arrange_files/image3.png)
+![](reference.facets_arrange_files/image6.png)
 :::
 
 
@@ -245,8 +280,35 @@ A margin given as a map:
 
 `:custom-grid` replaces the generated layout with a hand-written track grid (see the `cljplot2.layout.grid`
 namespace doc): columns and rows of `[:fixed px]`, `[:fraction f]`, `[:measured]` or `[:flexible w]` tracks and
-items placed on them; an item's content `{:kind :plot :plot p}` holds a whole plot. Only `:labels {:title t}` may
-accompany it; for plots in a regular grid prefer `plot/arrange`.
+items placed on them - labels, or whole plots (`{:kind :plot :plot p}`). Only `:labels {:title t}` may
+accompany it; plots in a regular grid are simpler with `plot/arrange`.
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image {:custom-grid {:columns [{:size [:flexible 2]} {:size [:flexible 1]}]
+                                  :rows [{:size [:flexible 1]} {:size [:measured]}]
+                                  :items [{:id :main :column 0 :row 0
+                                           :content {:kind :plot
+                                                     :plot {:data mtcars :mapping {:x :wt :y :mpg}
+                                                            :charts [(chart/scatter)]}}}
+                                          {:id :side :column 1 :row 0
+                                           :content {:kind :plot
+                                                     :plot {:data mtcars :mapping {:x :mpg}
+                                                            :charts [(chart/density)]}}}
+                                          {:id :note :column {:from 0 :to 1} :row 1
+                                           :content {:kind :label :role :axis-title
+                                                     :text "a hand-written grid: 2 : 1 columns, a note row"}}]}
+                    :labels {:title "Custom grid"}}
+                   {:width 800 :height 400})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.facets_arrange_files/image7.png)
+:::
+
 
 
 ```{=html}

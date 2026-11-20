@@ -10,6 +10,7 @@
             [clojure.walk :as walk]
             [scicloj.kindly.v4.api :as kindly]
             [scicloj.kindly.v4.kind :as kind]
+            [wadogo.scale :as ws]
             [cljplot2.describe :as describe])
   (:import [fastmath.vector Vec4]))
 
@@ -182,15 +183,38 @@
   [{:keys [path required?]}]
   (cond-> (str/join " " (map pr-str path)) required? (str " (required)")))
 
+(defn- section-rows
+  "The rows of `rows` in `section` (their `:section`); throws `ex-info {:key :section}` naming the sections of `rows`
+  when none is."
+  [rows section]
+  (let [selected (filterv #(= section (:section %)) rows)]
+    (when (empty? selected)
+      (throw (ex-info (str "No rows in section " (pr-str section) ", sections: "
+                           (str/join " " (distinct (keep :section rows))) ".")
+                      {:key :section :value section :known (set (keep :section rows))})))
+    selected))
+
 (defn options-table
-  "Table of option `rows` (from `cljplot2.describe`: `options`, `mapping`, `fragment-rows`, `theme-rows`): option path,
-  type, default (value and / or text) and description; a Group column - the shared group's title, documented once in
-  the Shared options chapter - when some row belongs to one."
-  [rows]
-  (let [grouped? (some :fragment rows)
-        group-title #(get-in describe/fragments [(:fragment %) :title] "")]
-    (kind/table {:column-names (cond-> ["Option" "Type" "Default" "Description"] grouped? (conj "Group"))
-                 :row-vectors (mapv (fn [row]
-                                      (cond-> [(option-text row) (:type row) (default-text row) (:description row)]
-                                        grouped? (conj (group-title row))))
-                                    rows)})))
+  "Table of option `rows` (from `cljplot2.describe`: `options`, `mapping`, `fragment-rows`, `theme-rows`), its code
+  hidden: option path, type, default (value and / or text) and description; with `section` only the rows of that
+  slice (`:section`, see `cljplot2.describe`). A Group column - the shared group's title, documented once in the
+  Shared options chapter - when the rows mix groups (rows of one group are named by the text around the table).
+  Throws `ex-info {:key :rows}` for no rows, `{:key :section}` for a section without rows - a table is never empty."
+  ([rows]
+   (when (empty? rows)
+     (throw (ex-info "An options table needs rows." {:key :rows :value rows})))
+   (let [grouped? (< 1 (count (distinct (map :fragment rows))))
+         group-title #(get-in describe/fragments [(:fragment %) :title] "")]
+     (kindly/hide-code
+      (kind/table {:column-names (cond-> ["Option" "Type" "Default" "Description"] grouped? (conj "Group"))
+                   :row-vectors (mapv (fn [row]
+                                        (cond-> [(option-text row) (:type row) (default-text row) (:description row)]
+                                          grouped? (conj (group-title row))))
+                                      rows)}))))
+  ([rows section]
+   (options-table (section-rows rows section))))
+
+(defn scale-kind-doc
+  "wadogo's description of position scale kind `k` (`wadogo.scale/kind-info`, Markdown), its code hidden."
+  [k]
+  (kindly/hide-code (kind/md (ws/kind-info k))))

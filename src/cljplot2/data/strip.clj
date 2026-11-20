@@ -76,33 +76,33 @@
   "Map entries of the options every strip chart takes (besides [[cljplot2.data.rows/common-options]])."
   (schema/in-fragment
    :strip
-   [(schema/optional :place {:description "where the items sit across the value axis: :band (one band per level), {:at v} (centred on v of a numeric scale), :center, :edge or :bottom (between the panel edge and 0)"
+   [(schema/optional :place {:cljplot2/section :placement :description "where the items sit across the value axis: :band (one band per level), {:at v} (centred on v of a numeric scale), :center, :edge or :bottom (between the panel edge and 0)"
                              :cljplot2/default-doc ":band with a level mapping, else the chart's own (:center for most, :edge for the rug)"}
                      [:multi {:dispatch map?}
                       [true [:map {:closed true} [:at schema/finite]]]
                       [false (into [:enum] (sort named-places))]])
-    (schema/optional :width {:description "fraction of the level's band (or of the panel for :center and :bottom) an item spans across the value axis"
+    (schema/optional :width {:cljplot2/section :placement :description "fraction of the level's band (or of the panel for :center and :bottom) an item spans across the value axis"
                              :default 0.8}
                      schema/non-neg)
-    (schema/optional :thickness {:description "item thickness in pixels for :place {:at v} and :edge"
+    (schema/optional :thickness {:cljplot2/section :placement :description "item thickness in pixels for :place {:at v} and :edge"
                                  :cljplot2/default-doc "20 pixels for {:at v}, 8 for :edge"}
                      schema/non-neg)
-    (schema/optional :position {:description "how groups of one level share its band: :dodge (side by side), :overlay (on top of each other) or :mirror (two groups, one half each)"
+    (schema/optional :position {:cljplot2/section :groups :description "how groups of one level share its band: :dodge (side by side), :overlay (on top of each other) or :mirror (two groups, one half each)"
                                 :cljplot2/default-doc ":dodge when a level holds two or more groups, else :overlay (dotplot: always :overlay)"}
                      (into [:enum] (sort positions)))
-    (schema/optional :dodge-gap {:description "gap between dodged groups, a fraction of a group's part of the band"
+    (schema/optional :dodge-gap {:cljplot2/section :groups :description "gap between dodged groups, a fraction of a group's part of the band"
                                  :default 0.1}
                      schema/fraction)
-    (schema/optional :bottom-share {:description "padding below the data asked for with :place :bottom (only there), a fraction of the y data span"
+    (schema/optional :bottom-share {:cljplot2/section :placement :description "padding below the data asked for with :place :bottom (only there), a fraction of the y data span"
                                     :cljplot2/default-doc "0.15 with :place :bottom"}
                      schema/fraction)
-    (schema/nilable :n-label {:description "draw each item's row count just past its largest value"
+    (schema/nilable :n-label {:cljplot2/section :n-label :description "draw each item's row count just past its largest value"
                               :default false}
                     schema/bool)
-    (schema/optional :n-format {:description "format string of the n labels"
+    (schema/optional :n-format {:cljplot2/section :n-label :description "format string of the n labels"
                                 :default "n=%d"}
                      :string)
-    (schema/optional :level-axis {:description "the mapping axis holding the levels (decides when both or neither of :x and :y are categorical)"
+    (schema/optional :level-axis {:cljplot2/section :placement :description "the mapping axis holding the levels (decides when both or neither of :x and :y are categorical)"
                                   :cljplot2/default-doc "the categorical axis of the mapping; with neither, :x when only :y is mapped, else :y"}
                      [:enum :x :y])]))
 

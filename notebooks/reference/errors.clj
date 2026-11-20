@@ -16,8 +16,8 @@
 ;; ## Error data
 
 ;; `ex-data` of the error: `:key` - the first offending key, `:in` - its path, `:value` - the value, `:errors` -
-;; every problem as `{:in path :value v :message text}`. A misspelled plot or builder key gets a spelling
-;; suggestion; a chart option is reported as a "disallowed key".
+;; every problem as `{:in path :value v :message text}`; the exception message lists the same problems as text. A
+;; misspelled key gets a spelling suggestion.
 
 (def bad-plot
   {:data [{:x 1 :y 2} {:x 2 :y 3}]
@@ -26,12 +26,7 @@
    :scales {:x {:kind :logarithmic}}})
 
 (try (plot/build bad-plot)
-     (catch clojure.lang.ExceptionInfo e (ex-data e)))
-
-;; The message lists the same problems as text:
-
-(try (plot/build bad-plot)
-     (catch clojure.lang.ExceptionInfo e (ex-message e)))
+     (catch clojure.lang.ExceptionInfo e {:message (ex-message e) :data (ex-data e)}))
 
 ;; With the scale fixed, the next round reports the chart's misspelled option:
 

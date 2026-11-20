@@ -38,12 +38,12 @@
   "Label options given by users (plot `:labels` maps, label content in custom grids): `:text`, `:role`, `:rotation`,
   `:align` and the style overrides of [[cljplot2.theme/style-keys]]."
   (-> [:map {:closed true :cljplot2/type-doc "a label options map (:text, :role, :rotation, text style keys)"}
-       (schema/optional :kind {:description "content kind (labels only)"} [:= :label])
-       (schema/optional :text {:description "the text (converted with str; \\n breaks lines)"} any?)
-       (schema/optional :role {:description "theme text role styling the label (:title, :axis-title, ... or a role of your theme)"}
+       (schema/optional :kind {:cljplot2/section :label :description "content kind (labels only)"} [:= :label])
+       (schema/optional :text {:cljplot2/section :label :description "the text (converted with str; \\n breaks lines)"} any?)
+       (schema/optional :role {:cljplot2/section :label :description "theme text role styling the label (:title, :axis-title, ... or a role of your theme)"}
                         keyword?)
-       (schema/optional :rotation {:description "clockwise degrees (270 reads bottom to top)" :default 0} [:enum 0 90 270])]
-      (into theme/text-style-overrides)))
+       (schema/optional :rotation {:cljplot2/section :label :description "clockwise degrees (270 reads bottom to top)" :default 0} [:enum 0 90 270])]
+      (into (map (fn [[k props s]] [k (assoc props :cljplot2/section :text-style) s])) theme/text-style-overrides)))
 
 (defn- lines
   "Lines of the label text; empty text has no lines, empty inner or trailing lines are kept."

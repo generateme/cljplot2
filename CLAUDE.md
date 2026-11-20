@@ -38,8 +38,9 @@ images should stay byte-identical unless the change is meant to alter them.
 **Pipeline** (`cljplot2.pipeline`): a plot map passes through pure stages, each adding one key -
 `:split` (facet split per chart) → `:stats` (chart compute) → `:extents` → `:scale-specs` → `:grid` → `:layout` →
 `:finalized-scales` → `:subplots`; `cljplot2.render` draws the result. `build` first validates everything with malli
-(`pipeline/validate!`: render options, plot, merged theme, every chart's `:schema`, cross-key rules) and throws one
-`ex-info {:key :in :value :errors}` listing all errors - charts don't validate their own input.
+(`pipeline/validate!`) in rounds - render options, plot and merged theme; then (when those hold) every chart's
+`:schema`; then the cross-key rules - each round throwing one `ex-info {:key :in :value :errors}` listing its errors;
+charts don't validate their own input.
 
 **Chart contract** (`cljplot2.chart` ns doc): a chart value is a plain map `{:kind :options :compute :draw :legend
 :schema}` with top-level functions, so built plots print and compare as data.
@@ -63,14 +64,15 @@ hold a whole plot (`:arrange`, `plot/pairs`, `:margins`).
 `data.graph`, `data.tree`, `data.series`, `data.vector-field`), `scale/`, `layout/`, `content/` (panel, axis, legend,
 strip, label), `graphics/` (canvas, fonts, polylines, shapes). Builders (`graphs.clj`, `series_plots.clj`,
 `multiplot.clj`) turn layout rows into ordinary plot maps; their `:scales` option is deep-merged (`theme/deep-merge`)
-into the builder's. `cljplot2.core` is the public API (`build`, `render`, `render-image`, builders).
+into the builder's. `cljplot2.core` is the public API (`build`, `render`, `render-image`, `cvd-image`, `save`, builders).
 
 ## Notebooks, demos, data
 
 - `notebooks/reference/*.clj` (the Reference part, before Use cases), `notebooks/use_cases/*.clj` and
   `notebooks/galleries/*.clj` are Clay notebooks; order in `notebooks/chapters.edn`. Reference option tables come
-  only from `nu/options-table` over `cljplot2.describe` rows (never hand-written); `reference-notebook-test` checks
-  every plot-level schema, shared group and theme section has a table.
+  only from `nu/options-table` over `cljplot2.describe` rows (never hand-written; code hidden), one section at a
+  time for sliced rows, each slice with a sentence or two and an example; `reference-notebook-test` checks every
+  plot-level schema, shared group, theme key and section has a table of at most 12 rows.
   Conventions: a heading, 1-3 lines, `nu/source-note` with `:url`, code ending in `plot/render-image` at most
   1000×800; every random value from a seeded rng (`(r/rng :mersenne n)`); no notebook plotting helpers.
 - `docs/` holds only Clay output (wiped on every build); the `:clay` classpath is `notebooks/` only, so notebooks
@@ -92,12 +94,13 @@ into the builder's. `cljplot2.core` is the public API (`build`, `render`, `rende
   period), `:default` for a constant behaviour default (never on style entries - the theme holds those) or
   `:cljplot2/default-doc` for a computed one; `:cljplot2/internal` for keys users don't set; shared groups via
   `schema/in-fragment` (registered in `cljplot2.describe/fragments`), `:cljplot2/entries-fragment` for a map whose
-  entries a group documents; schema properties `:cljplot2/type-doc` (short type text of a large map or composite)
+  entries a group documents; `:cljplot2/section` slices a long table (in one map all user entries or none, nested
+  entries inherit it); schema properties `:cljplot2/type-doc` (short type text of a large map or composite)
   and `:cljplot2/merged` (a map merged over defaults - theme, render options). `cljplot2.describe` turns schemas into
   option rows for the book's reference part;
   `schema-metadata-test` checks every chart and plot-level entry (plot, scales, facets, labels, coord, theme ...) is
   described and every `:default` is the real one (pixel-equal renders); theme entries take their defaults from
-  `default-theme`, text roles their descriptions from `theme/text-roles`.
+  `default-theme`, text roles their descriptions and sections from `theme/text-roles`.
 - Builders (`cljplot2.core` - `graphs`, `series_plots`, `multiplot`) and user-facing data functions (var metadata
   `:cljplot2/api true`) take a closed options schema in var metadata `:cljplot2/options` (also on the `plot/…`
   var) and check it first - `(schema/check-options! schema options)` before reading their data; a builder's schema

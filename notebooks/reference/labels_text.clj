@@ -13,12 +13,10 @@
 
 ;; ## Plot labels
 
+;; The plot title and the axis titles. Axis titles are absent unless given, except that statistical charts
+;; (histogram, density, ecdf, qq ...) suggest one for their computed axis.
+
 (nu/options-table (describe/options plot-grid/labels-schema))
-
-;; A label map: the text, a theme text role (`:title` for the title, `:axis-title` for axis titles - its style is the
-;; base), a rotation and text style keys overriding the role's.
-
-(nu/options-table (describe/options label/label-options))
 
 (nu/source-note {:dataset :iris})
 
@@ -27,16 +25,37 @@
 (plot/render-image {:data iris
                     :mapping {:x :sepal-length :y :sepal-width :color :species}
                     :charts [(chart/scatter)]
-                    :labels {:title {:text "Iris sepals" :size 18 :align [:left :middle] :color [40 40 120]}
-                             :x "sepal length [cm]"
+                    :labels {:title "Iris sepals" :x "sepal length [cm]" :y "sepal width [cm]"}}
+                   {:width 600 :height 350})
+
+;; ## Label maps
+
+;; A label is a string or a label map: the text, the theme text role whose style is the base (`:title` for the
+;; title, `:axis-title` for axis titles, or a role of your theme) and a rotation. Here the y title is horizontal and
+;; styled as a tick label.
+
+(nu/options-table (describe/options label/label-options) :label)
+
+(plot/render-image {:data iris
+                    :mapping {:x :petal-length :y :petal-width}
+                    :charts [(chart/scatter)]
+                    :labels {:x {:text "petal length\n[cm]"}
+                             :y {:text "petal\nwidth" :rotation 0 :role :tick-label}}}
+                   {:width 600 :height 350})
+
+;; ## Label style
+
+;; Text style keys in a label map override its role's style for this label only:
+
+(nu/options-table (describe/options label/label-options) :text-style)
+
+(plot/render-image {:data iris
+                    :mapping {:x :sepal-length :y :sepal-width :color :species}
+                    :charts [(chart/scatter)]
+                    :labels {:title {:text "Iris sepals" :size 18 :align [:left :middle] :color [40 40 120]
+                                     :background [230 230 245] :padding 6}
                              :y {:text "sepal width [cm]" :font-style :italic}}}
-                   {:width 600 :height 400})
-
-;; ## Text style
-
-;; The style keys of a label, a text role and the `text` chart (the Text style group):
-
-(nu/options-table (describe/fragment-rows :text-style))
+                   {:width 600 :height 350})
 
 ;; ## Text in the panel
 

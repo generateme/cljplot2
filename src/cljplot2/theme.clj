@@ -214,26 +214,27 @@
          (conj text-style-entries [:align schema/align] [:background schema/color]))))
 
 (def text-roles
-  "What each text role of the default theme styles: role -> description (a theme may add roles of its own, used by
-  labels' `:role`)."
-  {:title "plot and multiplot titles"
-   :strip "facet strip texts"
-   :axis-title "axis titles"
-   :tick-label "tick labels"
-   :legend-title "legend titles"
-   :legend-label "legend entry labels and colour bar ticks"
-   :treemap-group "treemap group headers"
-   :treemap-leaf "treemap leaf labels"
-   :partition-group "partition (icicle, sunburst) group labels"
-   :partition-leaf "partition leaf labels"
-   :pack-group "circle packing group labels"
-   :pack-leaf "circle packing leaf labels"
-   :venn-set "Venn diagram set names"
-   :venn-count "Venn diagram region counts"
-   :tile-value "tile value labels"
-   :correlation "correlation numbers"
-   :contour-label "contour level labels"
-   :annotation "text charts and strip n labels"})
+  "The text roles of the default theme: role -> `{:section s :description d}` - what the role styles and who draws it
+  (`:plot-text` - titles, strips, axes; `:legend-text`; `:chart-text` - texts of particular charts). A theme may add
+  roles of its own, used by labels' `:role`."
+  {:title {:section :plot-text :description "plot and multiplot titles"}
+   :strip {:section :plot-text :description "facet strip texts"}
+   :axis-title {:section :plot-text :description "axis titles"}
+   :tick-label {:section :plot-text :description "tick labels"}
+   :legend-title {:section :legend-text :description "legend titles"}
+   :legend-label {:section :legend-text :description "legend entry labels and colour bar ticks"}
+   :treemap-group {:section :chart-text :description "treemap group headers"}
+   :treemap-leaf {:section :chart-text :description "treemap leaf labels"}
+   :partition-group {:section :chart-text :description "partition (icicle, sunburst) group labels"}
+   :partition-leaf {:section :chart-text :description "partition leaf labels"}
+   :pack-group {:section :chart-text :description "circle packing group labels"}
+   :pack-leaf {:section :chart-text :description "circle packing leaf labels"}
+   :venn-set {:section :chart-text :description "Venn diagram set names"}
+   :venn-count {:section :chart-text :description "Venn diagram region counts"}
+   :tile-value {:section :chart-text :description "tile value labels"}
+   :correlation {:section :chart-text :description "correlation numbers"}
+   :contour-label {:section :chart-text :description "contour level labels"}
+   :annotation {:section :chart-text :description "text charts and strip n labels"}})
 
 (def ^:private grid-line
   (schema/keyword-or :none [:map {:closed true :cljplot2/type-doc "a line {:color :width :dash}"}
@@ -263,11 +264,11 @@
      [:margin {:description "pixels around the plot on every side"} schema/non-neg]]]
    [:panel {:description "the data panels"}
     [:map {:closed true}
-     [:fill {:description "panel background colour"} schema/color]
-     [:alternate-fill {:description "drawn over odd facet panels (row + column odd); :none - off"} schema/color]
-     [:border-color {:description "panel border colour"} schema/color]
-     [:border-width {:description "panel border width in pixels (drawn inside the panel)"} schema/non-neg]
-     [:grid {:description "grid lines at the ticks"}
+     [:fill {:description "panel background colour" :cljplot2/section :panel-box} schema/color]
+     [:alternate-fill {:description "drawn over odd facet panels (row + column odd); :none - off" :cljplot2/section :panel-box} schema/color]
+     [:border-color {:description "panel border colour" :cljplot2/section :panel-box} schema/color]
+     [:border-width {:description "panel border width in pixels (drawn inside the panel)" :cljplot2/section :panel-box} schema/non-neg]
+     [:grid {:description "grid lines at the ticks" :cljplot2/section :grid}
       [:map {:closed true}
        [:x {:description "grid lines of the x scale"} grid-line]
        [:y {:description "grid lines of the y scale"} grid-line]
@@ -298,7 +299,8 @@
     [:and {:cljplot2/type-doc "map of chart kind to its style"} [:map-of keyword? :map]
      [:map (schema/optional :text (schema/forbidden "isn't used: text charts take the text role [:text :annotation]"))]]]
    [:axis {:description "axes per scale (kept by scale also when a flipped plot draws :x vertically)"}
-    [:map {:closed true} [:x {:description "x axis style"} axis-style] [:y {:description "y axis style"} axis-style]]]
+    [:map {:closed true} [:x {:description "x axis style" :cljplot2/section :x-axis} axis-style]
+     [:y {:description "y axis style" :cljplot2/section :y-axis} axis-style]]]
    [:text {:description "text styles by role (see text-roles)"} [:map-of keyword? text-style-schema]]])
 
 (defn plot-theme
