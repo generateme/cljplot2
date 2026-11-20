@@ -23,10 +23,11 @@
 ;; ## Kind and domain
 
 ;; The scale kind (see Scale kinds below) and the data range it covers: the charts' data extent unless `:domain`
-;; is given - `[lo hi]` for continuous kinds, the levels in order for `:bands`. `:type :categorical` makes numbers
-;; levels (left: cylinder counts as three bands).
+;; is given - `[lo hi]` for continuous kinds, the levels in order for `:bands` - padded (`:expand`) and extended to
+;; nice tick values (`:nice`). `:type :categorical` makes numbers levels (left: cylinder counts as three bands);
+;; right: fixed domains, x without padding.
 
-(nu/options-table (describe/options position/scale-spec-schema) :kind)
+(nu/options-table (describe/options position/scale-spec-schema) :kind-domain)
 
 (nu/source-note {:dataset :mtcars})
 
@@ -39,14 +40,14 @@
                                   {:data mtcars
                                    :mapping {:x :wt :y :mpg}
                                    :charts [(chart/scatter)]
-                                   :scales {:x {:domain [0 6]} :y {:domain [0 40]}}}]
+                                   :scales {:x {:domain [1.5 5.5] :expand [0 0] :nice false} :y {:domain [0 40]}}}]
                                  {:columns 2})
                    {:width 800 :height 320})
 
 ;; ## Ticks and labels
 
-;; Where ticks go and how they read: a tick count hint or the tick values, nice domain ends, a formatter (a
-;; function, a date pattern, `:power` for powers of ten), minor ticks and the tick algorithm.
+;; Where ticks go and how they read: a tick count hint or the tick values, a formatter (a function, a date
+;; pattern, `:power` for powers of ten), minor ticks and the tick algorithm.
 
 (nu/options-table (describe/options position/scale-spec-schema) :ticks)
 
@@ -54,7 +55,7 @@
                     :mapping {:x :gdp-per-cap :y :life-exp}
                     :charts [(chart/scatter)]
                     :scales {:x {:kind :log :formatter :power :minor-ticks 9}
-                             :y {:ticks [40 50 60 70 80] :formatter #(str % " y") :nice false}}}
+                             :y {:ticks [40 50 60 70 80] :formatter #(str % " y")}}}
                    {:width 600 :height 350})
 
 ;; ## Order and direction
@@ -78,16 +79,16 @@
 
 ;; ## Axis
 
-;; What the axis draws (`:grid` - grid lines only, `:no-grid` - the axis only, `false` - nothing), a display-only
-;; domain for its ticks, and the padding around the data.
+;; What the axis draws (`:grid` - grid lines only, `:no-grid` - the axis only, `false` - nothing) and a
+;; display-only domain for its ticks.
 
 (nu/options-table (describe/options position/scale-spec-schema) :axis)
 
 (plot/render-image (plot/arrange [{:data mtcars
                                    :mapping {:x :wt :y :mpg}
                                    :charts [(chart/scatter)]
-                                   :scales {:x {:axis :no-grid :expand [0 0]} :y {:axis :grid}}
-                                   :labels {:title "x :no-grid, no padding; y :grid"}}
+                                   :scales {:x {:axis :no-grid} :y {:axis :grid}}
+                                   :labels {:title "x :no-grid; y :grid"}}
                                   {:data mtcars
                                    :mapping {:x :wt :y :mpg}
                                    :charts [(chart/scatter)]

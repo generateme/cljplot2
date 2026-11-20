@@ -23,8 +23,9 @@
 
 ;; ## Size and quality
 
-;; The image size in pixels - the whole image, legends and titles included - and the rendering quality: `:low`
-;; draws without antialiasing (faster, jagged edges), `:highest` with the most precise text metrics.
+;; The image size in pixels - the whole image, legends and titles included - and the rendering quality (clojure2d
+;; hints): `:low` draws without antialiasing (faster, jagged edges), `:mid` antialiased for speed, `:high`
+;; antialiased for quality, `:highest` adds exact stroke geometry (lines can look softer).
 
 (nu/options-table (describe/options pipeline/options-schema) :image)
 
@@ -47,11 +48,17 @@
 ;; ## Colour vision
 
 ;; `:cvd` renders the plot as seen with a colour vision deficiency - a keyword, or `[keyword severity]` for the
-;; partial ones; `plot/cvd-image` converts any image. Here versicolor and virginica become hard to tell apart:
+;; partial ones; `plot/cvd-image` converts any image. Red and green species, as rendered:
 
 (nu/options-table (describe/options pipeline/options-schema) :color-vision)
 
-(plot/render-image iris-plot {:width 500 :height 300 :cvd :deuteranopia})
+(def red-green-plot (assoc iris-plot :scales {:color {:range [[215 48 39] [26 152 80] [69 117 180]]}}))
+
+(plot/render-image red-green-plot {:width 500 :height 300})
+
+;; ... and as seen with deuteranopia - setosa and versicolor turn into similar olive tones, virginica stays blue:
+
+(plot/render-image red-green-plot {:width 500 :height 300 :cvd :deuteranopia})
 
 ;; ## Saving
 

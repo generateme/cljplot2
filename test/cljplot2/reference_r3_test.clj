@@ -9,21 +9,35 @@
             [cljplot2.core :as plot]
             [cljplot2.describe :as describe]
             [cljplot2.schema :as schema]
-            [cljplot2.schema-metadata-test :refer [non-chart-schemas]]
             [cljplot2.test-util :refer [error-data]])
   (:import [java.awt.image BufferedImage]
            [javax.imageio ImageIO]))
 
 (def ^:private small-plot {:data [{:x 1 :y 1} {:x 2 :y 3}] :mapping {:x :x :y :y} :charts [(chart/scatter)]})
 
-(defn- temp-path
-  "A path `name` in a fresh temporary directory (deleted on exit)."
-  [name]
-  (let [dir (.toFile (java.nio.file.Files/createTempDirectory "cljplot2-save" (make-array java.nio.file.attribute.FileAttribute 0)))]
-    (.deleteOnExit dir)
-    (str dir "/" name)))
+(defn- delete-tree!
+  "Delete file or directory `f` with everything under it."
+  [^java.io.File f]
+  (doseq [child (reverse (file-seq f))] (io/delete-file child true)))
 
-(deftest save-test
+(def ^:dynamic ^:private *temp-dir* nil)
+
+(defn- temp-path
+  "Path `name` under the test's temporary directory."
+  [name]
+  (str *temp-dir* "/" name))
+
+(defn- with-temp-dir
+  "Run `f` with [[*temp-dir*]] a fresh temporary directory, deleted afterwards (also when `f` throws)."
+  [f]
+  (let [dir (.toFile (java.nio.file.Files/createTempDirectory "cljplot2-save"
+                                                            (make-array java.nio.file.attribute.FileAttribute 0)))]
+    (try (binding [*temp-dir* dir] (f))
+         (finally (delete-tree! dir)))))
+
+(defn- save-cases
+  "The `plot/save` cases, files under [[*temp-dir*]]."
+  []
   (let [image (plot/render-image small-plot {:width 120 :height 80})]
     (testing "an image: written in the extension's format, the image returned (composes with ->)"
       (doseq [ext ["png" "jpg" "bmp"]]
@@ -37,13 +51,17 @@
         (is (identical? canvas (plot/save canvas path)))
         (is (= 100 (.getWidth (ImageIO/read (io/file path)))))))
     (testing "boundary: missing parent directories are created"
-      (let [path (str (temp-path "a") "/b/c/plot.png")]
+      (let [path (temp-path "a/b/c/plot.png")]
         (plot/save image path)
         (is (.exists (io/file path)))))
     (testing "boundary: an extension without an image writer - nothing written, the image returned"
-      (let [path (temp-path "plot.nope")]
-        (is (identical? image (plot/save image path)))
-        (is (not (.exists (io/file path))))))))
+      (let [path (temp-path "plot.nope")
+            out (with-out-str (is (identical? image (plot/save image path))))]
+        (is (not (.exists (io/file path))))
+        (is (re-find #"can't save an image" out) "clojure2d's message on *out*, as documented")))))
+
+(deftest save-test
+  (with-temp-dir save-cases))
 
 (deftest transposed-key-test
   (let [s [:map {:closed true} [:size :int] [:color :int] [:id :int]]
@@ -82,15 +100,15 @@
 
 (deftest sections-test
   (testing "in every map of the plot-level schemas and shared groups, every user entry has a section or none has"
-    (doseq [[n s] (concat non-chart-schemas
+    (doseq [[n s] (concat describe/plot-level-schemas
                           (for [[f {:keys [entries]}] describe/fragments] [f (into [:map] entries)]))
             m (maps-in s)]
       (is (nil? (mixed-sections m)) n)))
   (testing "plot-level tables longer than 12 options are sliced (the theme per top-level key, its own slicing)"
-    (doseq [[n rows] (concat (for [[n s] (dissoc non-chart-schemas :theme)] [n (describe/options s)])
+    (doseq [[n rows] (concat (for [[n s] (dissoc describe/plot-level-schemas :theme)] [n (describe/options s)])
                              (for [k (distinct (map (comp first :path) (describe/theme-rows)))]
                                [[:theme k] (describe/theme-rows k)]))
-            :let [options (remove #(:cljplot2.describe/container? (meta %)) rows)]
+            :let [options (remove describe/container-row? rows)]
             :when (< 12 (count rows))]
       (is (every? :section options) n)))
   (testing "boundary: a map mixing sectioned and plain entries is found"
@@ -110,3 +128,21 @@
     (testing "boundary: no rows, an unknown section - errors, never an empty table"
       (is (= :rows (:key (error-data #(nu/options-table [])))))
       (is (= :section (:key (error-data #(nu/options-table rows :no-such-section))))))))
+
+(defn- label-grid
+  "A one-cell custom grid holding label `content`."
+  [content]
+  {:custom-grid {:columns [{:size [:flexible 1]}] :rows [{:size [:flexible 1]}]
+                 :items [{:id :note :column 0 :row 0 :content (merge {:kind :label :text "note"} content)}]}})
+
+(deftest label-content-role-test
+  (testing "label content needs a theme role: missing - a validation error at the role, before drawing"
+    (let [data (error-data #(plot/build (label-grid {}) {:width 200 :height 100}))]
+      (is (= :role (:key data)))
+      (is (re-find #"missing required key" (pr-str (:errors data))))))
+  (testing "a known role builds; an unknown one fails keyed by the role"
+    (is (instance? BufferedImage (plot/render-image (label-grid {:role :axis-title}) {:width 200 :height 100})))
+    (is (= :role (:key (error-data #(plot/build (label-grid {:role :no-such-role}) {:width 200 :height 100}))))))
+  (testing "boundary: plot :labels need no role (the layout gives title / axis-title)"
+    (is (instance? BufferedImage (plot/render-image (assoc small-plot :labels {:title {:text "t"} :x {:text "x"}})
+                                                    {:width 200 :height 150})))))

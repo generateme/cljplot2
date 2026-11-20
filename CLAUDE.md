@@ -71,8 +71,9 @@ into the builder's. `cljplot2.core` is the public API (`build`, `render`, `rende
 - `notebooks/reference/*.clj` (the Reference part, before Use cases), `notebooks/use_cases/*.clj` and
   `notebooks/galleries/*.clj` are Clay notebooks; order in `notebooks/chapters.edn`. Reference option tables come
   only from `nu/options-table` over `cljplot2.describe` rows (never hand-written; code hidden), one section at a
-  time for sliced rows, each slice with a sentence or two and an example; `reference-notebook-test` checks every
-  plot-level schema, shared group, theme key and section has a table of at most 12 rows.
+  time for sliced rows, each table with a sentence or two and followed by its example (a chart or a value);
+  `reference-notebook-test` checks every schema of `describe/plot-level-schemas`, shared group, theme key and section
+  has a table of at most 12 rows, each followed by an example.
   Conventions: a heading, 1-3 lines, `nu/source-note` with `:url`, code ending in `plot/render-image` at most
   1000×800; every random value from a seeded rng (`(r/rng :mersenne n)`); no notebook plotting helpers.
 - `docs/` holds only Clay output (wiped on every build); the `:clay` classpath is `notebooks/` only, so notebooks
@@ -94,8 +95,9 @@ into the builder's. `cljplot2.core` is the public API (`build`, `render`, `rende
   period), `:default` for a constant behaviour default (never on style entries - the theme holds those) or
   `:cljplot2/default-doc` for a computed one; `:cljplot2/internal` for keys users don't set; shared groups via
   `schema/in-fragment` (registered in `cljplot2.describe/fragments`), `:cljplot2/entries-fragment` for a map whose
-  entries a group documents; `:cljplot2/section` slices a long table (in one map all user entries or none, nested
-  entries inherit it); schema properties `:cljplot2/type-doc` (short type text of a large map or composite)
+  entries a group documents; `:cljplot2/section` slices the table of the map holding the entry (in one map all user
+  entries or none; nested entries inherit it unless their own map is sliced - `describe/top-level-rows` gives a
+  schema's own table); schema properties `:cljplot2/type-doc` (short type text of a large map or composite)
   and `:cljplot2/merged` (a map merged over defaults - theme, render options). `cljplot2.describe` turns schemas into
   option rows for the book's reference part;
   `schema-metadata-test` checks every chart and plot-level entry (plot, scales, facets, labels, coord, theme ...) is

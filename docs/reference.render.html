@@ -388,7 +388,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <section id="size-and-quality" class="level2" data-number="2.1">
 <h2 data-number="2.1" class="anchored" data-anchor-id="size-and-quality"><span class="header-section-number">2.1</span> Size and quality</h2>
-<p>The image size in pixels - the whole image, legends and titles included - and the rendering quality: <code>:low</code> draws without antialiasing (faster, jagged edges), <code>:highest</code> with the most precise text metrics.</p>
+<p>The image size in pixels - the whole image, legends and titles included - and the rendering quality (clojure2d hints): <code>:low</code> draws without antialiasing (faster, jagged edges), <code>:mid</code> antialiased for speed, <code>:high</code> antialiased for quality, <code>:highest</code> adds exact stroke geometry (lines can look softer).</p>
 <div class="clay-table">
 <div class="table-responsive">
 <table class="table table-hover clay-table caption-top">
@@ -488,7 +488,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="colour-vision" class="level2" data-number="2.3">
 <h2 data-number="2.3" class="anchored" data-anchor-id="colour-vision"><span class="header-section-number">2.3</span> Colour vision</h2>
-<p><code>:cvd</code> renders the plot as seen with a colour vision deficiency - a keyword, or <code>[keyword severity]</code> for the partial ones; <code>plot/cvd-image</code> converts any image. Here versicolor and virginica become hard to tell apart:</p>
+<p><code>:cvd</code> renders the plot as seen with a colour vision deficiency - a keyword, or <code>[keyword severity]</code> for the partial ones; <code>plot/cvd-image</code> converts any image. Red and green species, as rendered:</p>
 <div class="clay-table">
 <div class="table-responsive">
 <table class="table table-hover clay-table caption-top">
@@ -512,18 +512,28 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image iris-plot {<span class="at">:width</span> <span class="dv">500</span> <span class="at">:height</span> <span class="dv">300</span> <span class="at">:cvd</span> <span class="at">:deuteranopia</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> red-green-plot </span>(<span class="kw">assoc</span> iris-plot <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:range</span> [[<span class="dv">215</span> <span class="dv">48</span> <span class="dv">39</span>] [<span class="dv">26</span> <span class="dv">152</span> <span class="dv">80</span>] [<span class="dv">69</span> <span class="dv">117</span> <span class="dv">180</span>]]}}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image red-green-plot {<span class="at">:width</span> <span class="dv">500</span> <span class="at">:height</span> <span class="dv">300</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="clay-image">
 <p><img src="reference.render_files/image2.png" class="img-fluid"></p>
+</div>
+<p>… and as seen with deuteranopia - setosa and versicolor turn into similar olive tones, virginica stays blue:</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image red-green-plot {<span class="at">:width</span> <span class="dv">500</span> <span class="at">:height</span> <span class="dv">300</span> <span class="at">:cvd</span> <span class="at">:deuteranopia</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.render_files/image3.png" class="img-fluid"></p>
 </div>
 </section>
 <section id="saving" class="level2" data-number="2.4">
 <h2 data-number="2.4" class="anchored" data-anchor-id="saving"><span class="header-section-number">2.4</span> Saving</h2>
 <p><code>plot/save</code> writes an image (or the canvas of <code>plot/render</code>) to a file - the format from the extension (png, jpg, bmp, tiff …) - and returns it, so it ends a pipeline:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">-&gt;</span> iris-plot</span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>    (plot/render-image {<span class="at">:width</span> <span class="dv">800</span> <span class="at">:height</span> <span class="dv">500</span>})</span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>    (plot/save <span class="st">"iris.png"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">-&gt;</span> iris-plot</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>    (plot/render-image {<span class="at">:width</span> <span class="dv">800</span> <span class="at">:height</span> <span class="dv">500</span>})</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>    (plot/save <span class="st">"iris.png"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div style="background-color:grey;height:2px;width:100%;"></div>
 <div><pre><small><small>source: notebooks/reference/render.clj</small></small></pre></div>
 

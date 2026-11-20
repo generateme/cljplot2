@@ -58,13 +58,14 @@ Data: Gapminder 2007: life expectancy, population and GDP per capita, data-to-vi
 ## Kind and domain
 
 The scale kind (see Scale kinds below) and the data range it covers: the charts' data extent unless `:domain`
-is given - `[lo hi]` for continuous kinds, the levels in order for `:bands`. `:type :categorical` makes numbers
-levels (left: cylinder counts as three bands).
+is given - `[lo hi]` for continuous kinds, the levels in order for `:bands` - padded (`:expand`) and extended to
+nice tick values (`:nice`). `:type :categorical` makes numbers levels (left: cylinder counts as three bands);
+right: fixed domains, x without padding.
 
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:kind</td><td>one of :bands :datetime :interpolated :linear :log :pow :radial :symlog</td><td>from the data: :linear for numbers, :bands for levels, :datetime for java.time values</td><td>scale kind: :linear, :log, :pow, :symlog, :radial, :interpolated, :datetime or :bands</td></tr><tr><td>:type</td><td>one of :categorical :numeric</td><td></td><td>declare numbers categorical (one band per value) or force a numeric scale</td></tr><tr><td>:domain</td><td>sequential of any value (at least 1) or nil</td><td>the charts' data extent</td><td>explicit domain: [lo hi] for continuous kinds, the levels in order for :bands</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:kind</td><td>one of :bands :datetime :interpolated :linear :log :pow :radial :symlog</td><td>from the data: :linear for numbers, :bands for levels, :datetime for java.time values</td><td>scale kind: :linear, :log, :pow, :symlog, :radial, :interpolated, :datetime or :bands</td></tr><tr><td>:type</td><td>one of :categorical :numeric</td><td></td><td>declare numbers categorical (one band per value) or force a numeric scale</td></tr><tr><td>:domain</td><td>sequential of any value (at least 1) or nil</td><td>the charts' data extent</td><td>explicit domain: [lo hi] for continuous kinds, the levels in order for :bands</td></tr><tr><td>:nice</td><td>true or false or a finite number, a non-negative number or nil</td><td>true (false for :interpolated)</td><td>extend a continuous domain to nice tick values (a number - the most it may grow, a fraction of the span)</td></tr><tr><td>:expand</td><td>[lo hi], non-negative numbers</td><td>the charts' padding</td><td>padding [lo hi] of a continuous domain, fractions of the span (wins over the charts')</td></tr></tbody></table>
 ```
 
 :::
@@ -90,7 +91,7 @@ Data: Motor Trend car road tests (1974), R datasets package `mtcars` (Henderson 
                                   {:data mtcars
                                    :mapping {:x :wt :y :mpg}
                                    :charts [(chart/scatter)]
-                                   :scales {:x {:domain [0 6]} :y {:domain [0 40]}}}]
+                                   :scales {:x {:domain [1.5 5.5] :expand [0 0] :nice false} :y {:domain [0 40]}}}]
                                  {:columns 2})
                    {:width 800 :height 320})
 ```
@@ -105,13 +106,13 @@ Data: Motor Trend car road tests (1974), R datasets package `mtcars` (Henderson 
 
 ## Ticks and labels
 
-Where ticks go and how they read: a tick count hint or the tick values, nice domain ends, a formatter (a
-function, a date pattern, `:power` for powers of ten), minor ticks and the tick algorithm.
+Where ticks go and how they read: a tick count hint or the tick values, a formatter (a function, a date
+pattern, `:power` for powers of ten), minor ticks and the tick algorithm.
 
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:ticks</td><td>sequential of any value or a positive integer or nil</td><td>a count from the panel size and theme :tick-spacing</td><td>a tick count hint, or the tick values themselves</td></tr><tr><td>:nice</td><td>true or false or a finite number, a non-negative number or nil</td><td>true (false for :interpolated)</td><td>extend a continuous domain to nice tick values (a number - the most it may grow, a fraction of the span)</td></tr><tr><td>:formatter</td><td>string or one of :power or a function</td><td>the charts' suggested format, else plain numbers, levels or dates</td><td>tick label text: a function of the value, a java.time pattern (:datetime) or :power (:log)</td></tr><tr><td>:minor-ticks</td><td>a positive integer or nil</td><td></td><td>unlabelled ticks between two major ticks (continuous numeric kinds)</td></tr><tr><td>:ticks-method</td><td>one of :default :pretty</td><td>:pretty for :datetime, else :default</td><td>tick algorithm of continuous kinds: :default (d3) or :pretty (R pretty())</td></tr><tr><td>:ticks-params</td><td>map</td><td></td><td>tick algorithm parameters: {:min-n n}, calendar ticks {:unit u :step s}</td></tr><tr><td>:ticks-params :min-n</td><td>integer, >= 0</td><td></td><td>the fewest ticks (clamped to the tick count)</td></tr><tr><td>:ticks-params :unit</td><td>one of :days :hours :minutes :months :seconds :weeks :years</td><td></td><td>calendar tick unit (:datetime with :pretty ticks)</td></tr><tr><td>:ticks-params :step</td><td>a positive integer</td><td>1</td><td>a calendar tick every :step units</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:ticks</td><td>sequential of any value or a positive integer or nil</td><td>a count from the panel size and theme :tick-spacing</td><td>a tick count hint, or the tick values themselves</td></tr><tr><td>:formatter</td><td>string or one of :power or a function</td><td>the charts' suggested format, else plain numbers, levels or dates</td><td>tick label text: a function of the value, a java.time pattern (:datetime) or :power (:log)</td></tr><tr><td>:minor-ticks</td><td>a positive integer or nil</td><td></td><td>unlabelled ticks between two major ticks (continuous numeric kinds)</td></tr><tr><td>:ticks-method</td><td>one of :default :pretty</td><td>:pretty for :datetime, else :default</td><td>tick algorithm of continuous kinds: :default (d3) or :pretty (R pretty())</td></tr><tr><td>:ticks-params</td><td>map</td><td></td><td>tick algorithm parameters: {:min-n n}, calendar ticks {:unit u :step s}</td></tr><tr><td>:ticks-params :min-n</td><td>integer, >= 0</td><td></td><td>the fewest ticks (clamped to the tick count)</td></tr><tr><td>:ticks-params :unit</td><td>one of :days :hours :minutes :months :seconds :weeks :years</td><td></td><td>calendar tick unit (:datetime with :pretty ticks)</td></tr><tr><td>:ticks-params :step</td><td>a positive integer</td><td>1</td><td>a calendar tick every :step units</td></tr></tbody></table>
 ```
 
 :::
@@ -124,7 +125,7 @@ function, a date pattern, `:power` for powers of ten), minor ticks and the tick 
                     :mapping {:x :gdp-per-cap :y :life-exp}
                     :charts [(chart/scatter)]
                     :scales {:x {:kind :log :formatter :power :minor-ticks 9}
-                             :y {:ticks [40 50 60 70 80] :formatter #(str % " y") :nice false}}}
+                             :y {:ticks [40 50 60 70 80] :formatter #(str % " y")}}}
                    {:width 600 :height 350})
 ```
 :::
@@ -176,13 +177,13 @@ The order of bands - by a function of each level's rows, optionally descending -
 
 ## Axis
 
-What the axis draws (`:grid` - grid lines only, `:no-grid` - the axis only, `false` - nothing), a display-only
-domain for its ticks, and the padding around the data.
+What the axis draws (`:grid` - grid lines only, `:no-grid` - the axis only, `false` - nothing) and a
+display-only domain for its ticks.
 
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:expand</td><td>[lo hi], non-negative numbers</td><td>the charts' padding</td><td>padding [lo hi] of a continuous domain, fractions of the span (wins over the charts')</td></tr><tr><td>:axis-domain</td><td>[a finite number, a finite number] or nil</td><td></td><td>display only: axis and grid show the ticks of this linear domain over the panel</td></tr><tr><td>:axis</td><td>true or false or one of :grid :no-grid</td><td>true</td><td>true - axis and grid, false - neither, :grid - grid lines only, :no-grid - axis only</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:axis-domain</td><td>[a finite number, a finite number] or nil</td><td></td><td>display only: axis and grid show the ticks of this linear domain over the panel</td></tr><tr><td>:axis</td><td>true or false or one of :grid :no-grid</td><td>true</td><td>true - axis and grid, false - neither, :grid - grid lines only, :no-grid - axis only</td></tr></tbody></table>
 ```
 
 :::
@@ -194,8 +195,8 @@ domain for its ticks, and the padding around the data.
 (plot/render-image (plot/arrange [{:data mtcars
                                    :mapping {:x :wt :y :mpg}
                                    :charts [(chart/scatter)]
-                                   :scales {:x {:axis :no-grid :expand [0 0]} :y {:axis :grid}}
-                                   :labels {:title "x :no-grid, no padding; y :grid"}}
+                                   :scales {:x {:axis :no-grid} :y {:axis :grid}}
+                                   :labels {:title "x :no-grid; y :grid"}}
                                   {:data mtcars
                                    :mapping {:x :wt :y :mpg}
                                    :charts [(chart/scatter)]

@@ -95,10 +95,18 @@
 ;; ## Margins
 
 ;; `:margins` puts charts above (`:top`) and right of (`:right`) a single panel, sharing its horizontal / vertical
-;; scale; margin charts read the plot's data with `:x` mapped to the shared dimension. A margin is a chart, a
-;; vector of charts, or a map:
+;; scale; margin charts read the plot's data with `:x` mapped to the shared dimension. A margin is a chart or a
+;; vector of charts ...
 
 (nu/options-table (describe/options pipeline/margins-schema))
+
+(plot/render-image {:data mtcars
+                    :mapping {:x :wt :y :mpg}
+                    :charts [(chart/scatter)]
+                    :margins {:top [(chart/density) (chart/rug)]}}
+                   {:width 500 :height 400})
+
+;; ... or a map giving the margin's thickness and the magnitude axis of histogram and density margins:
 
 (nu/options-table (describe/options pipeline/margin-spec-schema))
 

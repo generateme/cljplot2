@@ -117,21 +117,21 @@
   (e.g. a tick per category of many; default true; axis titles are separate, `:labels`)."
   (schema/with-rules
    (into [:map {:closed true :cljplot2/type-doc "a position scale spec"}
-          (schema/optional :kind {:cljplot2/section :kind :description "scale kind: :linear, :log, :pow, :symlog, :radial, :interpolated, :datetime or :bands"
+          (schema/optional :kind {:cljplot2/section :kind-domain :description "scale kind: :linear, :log, :pow, :symlog, :radial, :interpolated, :datetime or :bands"
                                   :cljplot2/default-doc "from the data: :linear for numbers, :bands for levels, :datetime for java.time values"}
                            (into [:enum] (sort position-kinds)))
-          (schema/optional :type {:cljplot2/section :kind :description "declare numbers categorical (one band per value) or force a numeric scale"}
+          (schema/optional :type {:cljplot2/section :kind-domain :description "declare numbers categorical (one band per value) or force a numeric scale"}
                            [:enum :categorical :numeric])
-          (schema/nilable :domain {:cljplot2/section :kind :description "explicit domain: [lo hi] for continuous kinds, the levels in order for :bands"
+          (schema/nilable :domain {:cljplot2/section :kind-domain :description "explicit domain: [lo hi] for continuous kinds, the levels in order for :bands"
                                    :cljplot2/default-doc "the charts' data extent"}
                           [:sequential {:min 1} any?])
           (schema/nilable :ticks {:cljplot2/section :ticks :description "a tick count hint, or the tick values themselves"
                                   :cljplot2/default-doc "a count from the panel size and theme :tick-spacing"}
                           [:multi {:dispatch sequential?} [true [:sequential any?]] [false schema/pos-int]])
-          (schema/nilable :nice {:cljplot2/section :ticks :description "extend a continuous domain to nice tick values (a number - the most it may grow, a fraction of the span)"
+          (schema/nilable :nice {:cljplot2/section :kind-domain :description "extend a continuous domain to nice tick values (a number - the most it may grow, a fraction of the span)"
                                  :cljplot2/default-doc "true (false for :interpolated)"}
                           [:multi {:dispatch boolean?} [true :boolean] [false [:and schema/finite schema/non-neg]]])
-          (schema/optional :expand {:cljplot2/section :axis :description "padding [lo hi] of a continuous domain, fractions of the span (wins over the charts')"
+          (schema/optional :expand {:cljplot2/section :kind-domain :description "padding [lo hi] of a continuous domain, fractions of the span (wins over the charts')"
                                     :cljplot2/default-doc "the charts' padding"}
                            schema/padding)
           (schema/optional :formatter {:cljplot2/section :ticks :description "tick label text: a function of the value, a java.time pattern (:datetime) or :power (:log)"

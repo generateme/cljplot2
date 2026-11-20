@@ -95,16 +95,21 @@
         call (calls forms options-table)]
     {:page page :rows-form (normalized (second call)) :section (nth call 2 nil)}))
 
+(defn- eval-rows-arg
+  "The value of a (resolved) form of a table's rows or of their source."
+  [form]
+  (binding [*ns* (the-ns 'cljplot2.reference-notebook-test)]
+    (eval form)))
+
 (defn- eval-rows
   "The rows of a table's (resolved) rows form."
   [form]
-  (binding [*ns* (the-ns 'cljplot2.reference-notebook-test)]
-    (vec (eval form))))
+  (vec (eval-rows-arg form)))
 
 (defn- leaf-row?
   "Is `row` an option, not a map holding options (a container row - a heading of its entries' rows)?"
   [row]
-  (not (:cljplot2.describe/container? (meta row))))
+  (not (describe/container-row? row)))
 
 (defn- options-table-args
   "The arguments of every `describe/options` call inside an options table anywhere in `forms`."
@@ -122,21 +127,19 @@
       (is (.exists (io/file "notebooks" p)) p)
       (is (re-find #"^;; # \S" (slurp (io/file "notebooks" p))) p))))
 
-(def ^:private plot-level-schemas
-  "Every non-chart schema users write, as the symbol a page passes to `describe/options` (the aesthetic scale specs
-  are calls, see [[aesthetic-scale-tables-test]])."
-  '#{cljplot2.pipeline/options-schema cljplot2.pipeline/plot-schema cljplot2.data.rows/mapping-schema
-     cljplot2.scale.position/scale-spec-schema cljplot2.data.facet/scale-spec-schema cljplot2.data.facet/facet-options
-     cljplot2.layout.plot-grid/labels-schema cljplot2.content.label/label-options
-     cljplot2.layout.plot-grid/arrange-schema
-     cljplot2.scale.coord/polar-schema cljplot2.pipeline/margins-schema cljplot2.pipeline/margin-spec-schema})
+(def ^:private schemas-shown-elsewhere
+  "Plot-level schemas without a `describe/options` table of their own: the theme (tables per key, `theme-rows`) and the
+  coord (a choice of maps - the polar one has the table)."
+  #{:theme :coord})
 
 (deftest schema-tables-test
-  (let [shown (options-table-args (vals (notebook-forms)))]
-    (testing "every plot-level schema has an options table"
-      (is (= #{} (into (sorted-set) (remove shown) plot-level-schemas))))
+  (let [shown (set (map #(describe/options (eval-rows-arg %)) (options-table-args (vals (notebook-forms)))))]
+    (testing "every plot-level schema (describe/plot-level-schemas) has an options table"
+      (is (= #{} (into (sorted-set)
+                       (keep (fn [[n s]] (when-not (shown (describe/options s)) n)))
+                       (apply dissoc describe/plot-level-schemas schemas-shown-elsewhere)))))
     (testing "the builders of the concept chapters (arrange, pairs) have options tables"
-      (is (every? shown '[(var cljplot2.core/arrange) (var cljplot2.core/pairs)])))))
+      (is (every? #(shown (describe/options %)) [#'cljplot2.core/arrange #'cljplot2.core/pairs])))))
 
 (defn- dim-sections
   "Aesthetic dimension -> the sections of its scale spec shown."
@@ -202,6 +205,35 @@
   [call]
   (let [plot (second call)]
     (merge (when (map? plot) (:options plot)) (nth call 2 nil))))
+
+(defn- illustration?
+  "Is top-level `form` an example - a chart or a value shown - rather than setup (`ns`, `def`, a source note, a wadogo
+  kind doc) or a table?"
+  [form]
+  (not (and (seq? form)
+            (#{'ns 'def 'defn 'notebook-utils/source-note 'notebook-utils/scale-kind-doc options-table} (first form)))))
+
+(defn- tables-without-example
+  "Rows forms of the tables in top-level `forms` not followed by an example before the next table or the page end."
+  [forms]
+  (loop [[form & more] forms, pending nil, missing []]
+    (cond
+      (nil? form) (cond-> missing pending (conj pending))
+      (and (seq? form) (= options-table (first form))) (recur more (second form) (cond-> missing pending (conj pending)))
+      (illustration? form) (recur more nil missing)
+      :else (recur more pending missing))))
+
+(deftest examples-test
+  (doseq [[page forms] (notebook-forms)]
+    (testing (str page ": every table is followed by its example (a chart or a value)")
+      (is (= [] (tables-without-example forms))))))
+
+(deftest examples-rule-test
+  (testing "boundary: a table at the end, two tables in a row, setup between a table and its example"
+    (is (= [:a] (tables-without-example [(list options-table :a)])))
+    (is (= [:a] (tables-without-example [(list options-table :a) (list options-table :b) '(f)])))
+    (is (= [] (tables-without-example [(list options-table :a) '(def x 1) '(notebook-utils/source-note {}) '(f)])))
+    (is (= [] (tables-without-example [])))))
 
 (deftest conventions-test
   (doseq [[page forms] (notebook-forms)]

@@ -13,7 +13,8 @@
   A row: `{:key k :path [k ...] :type text :required? bool :default v :default-doc text :description text
   :fragment kw :section kw}` - `:path` is longer than `[k]` for the entries of nested closed maps (each nested map also
   has its own row); `:section` - the slice of a long table the entry belongs to (`:cljplot2/section`, else its
-  enclosing entry's); `:default` / `:default-doc` / `:description` / `:fragment` / `:section` are `nil` when absent; `:required?` is false in a
+  enclosing entry's): a section slices the table of the map holding the entry, so a flattened nested map with sections
+  of its own (plot `:facets`) slices its own table - show such a schema's own table with [[top-level-rows]]; `:default` / `:default-doc` / `:description` / `:fragment` / `:section` are `nil` when absent; `:required?` is false in a
   merged map (`:cljplot2/merged` - the theme, render options: users give partial overrides). Entries rejecting every
   value ([[cljplot2.schema/forbidden]]) and internal entries (`:cljplot2/internal`) have no row. `:default` is the value
   used when the option is absent (a style row's comes from the theme), `:default-doc` the text of a computed default;
@@ -21,8 +22,10 @@
   (:require [clojure.string :as str]
             [malli.core :as malli]
             [cljplot2.chart]
+            [cljplot2.content.label :as label]
             [cljplot2.data.annotation :as annotation]
             [cljplot2.data.cells :as cells]
+            [cljplot2.data.facet :as facet]
             [cljplot2.data.field :as field]
             [cljplot2.data.hierarchy :as hierarchy]
             [cljplot2.data.rows :as rows]
@@ -33,6 +36,10 @@
             [cljplot2.graphics.polyline :as polyline]
             [cljplot2.layout.plot-grid :as plot-grid]
             [cljplot2.multiplot :as multiplot]
+            [cljplot2.pipeline :as pipeline]
+            [cljplot2.scale.aesthetic :as aesthetic]
+            [cljplot2.scale.coord :as coord]
+            [cljplot2.scale.position :as position]
             [cljplot2.schema :as schema]
             [cljplot2.theme :as theme]
             ;; namespaces of the user-facing functions (`:cljplot2/api`), so [[api-vars]] finds them all
@@ -290,6 +297,17 @@
   [fragment]
   (schema-rows (into [:map] (get-in fragments [fragment :entries]))))
 
+(defn container-row?
+  "Is `row` the row of a map holding options of its own (a heading of its entries' rows, no default), not an option?"
+  [row]
+  (boolean (::container? (meta row))))
+
+(defn top-level-rows
+  "The rows of `rows` for the top-level keys (`:path` of one key) - a schema's own table without its nested maps'
+  entries (those have tables, and sections, of their own)."
+  [rows]
+  (filterv #(= 1 (count (:path %))) rows))
+
 (defn options
   "Option rows (see the namespace doc) of `x`: a chart value, a var with `:cljplot2/options` metadata (a builder or
   API function) or a map schema."
@@ -313,6 +331,26 @@
               :let [c (try (@v) (catch Exception _ nil))]
               :when (chart-value? c)]
           [(:kind c) v])))
+
+(def plot-level-schemas
+  "Every non-chart schema users write: name -> schema (the aesthetic scale specs one per dimension; margins also as
+  the map form of one margin)."
+  (into {:plot pipeline/plot-schema
+         :render-options pipeline/options-schema
+         :mapping rows/mapping-schema
+         :position-scale position/scale-spec-schema
+         :facet-scale facet/scale-spec-schema
+         :facets facet/facet-options
+         :labels plot-grid/labels-schema
+         :label label/label-options
+         :arrange plot-grid/arrange-schema
+         :coord coord/coord-schema
+         :polar-coord coord/polar-schema
+         :margins pipeline/margins-schema
+         :margin-spec pipeline/margin-spec-schema
+         :theme theme/theme-schema}
+        (map (fn [dim] [(keyword (str (name dim) "-scale")) (aesthetic/scale-spec-schema dim)]))
+        aesthetic/dims))
 
 (defn api-vars
   "The user-facing functions - vars with `:cljplot2/api` metadata in the loaded `cljplot2.*` namespaces - sorted by

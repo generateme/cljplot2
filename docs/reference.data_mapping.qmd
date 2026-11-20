@@ -240,22 +240,13 @@ and legends chapter).
 ## Groups and order
 
 `:group` splits rows into groups without styling them - charts drawing one mark per group (lines, areas,
-densities ...) draw each separately; `:order` sets the drawing order of points. Any aesthetic groups too. A `nil`
-group value forms its own NA level unless the plot says `:groups {:na false}` (such rows are dropped):
+densities ...) draw each separately; any aesthetic groups too. `:order` sets the drawing order of points (here
+the large points are drawn last, on top).
 
 ::: {.clay-table}
 
 ```{=html}
 <table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:group</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>groups without a visual aesthetic</td></tr><tr><td>:order</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>drawing order of points</td></tr></tbody></table>
-```
-
-:::
-
-
-::: {.clay-table}
-
-```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:groups</td><td>map</td><td></td><td>grouping options</td></tr><tr><td>:groups :na</td><td>true or false or nil</td><td>true</td><td>nil aesthetic values form the NA level (false - such rows are dropped)</td></tr></tbody></table>
 ```
 
 :::
@@ -272,17 +263,53 @@ group value forms its own NA level unless the plot says `:groups {:na false}` (s
 
 ::: {.sourceClojure}
 ```clojure
-(plot/render-image {:data walks
-                    :mapping {:x :t :y :v :group :walk}
-                    :charts [(chart/line {:color [70 70 70]})]
-                    :groups {:na false}}
-                   {:width 500 :height 280})
+(plot/render-image (plot/arrange [{:data walks
+                                   :mapping {:x :t :y :v :group :walk}
+                                   :charts [(chart/line {:color [70 70 70]})]
+                                   :labels {:title ":group - a line per walk"}}
+                                  {:data (for [i (range 40)] {:x (mod (* i 7) 13) :y (mod (* i 5) 11) :s (mod i 4)})
+                                   :mapping {:x :x :y :y :size :s :order :s}
+                                   :charts [(chart/scatter)]
+                                   :scales {:size {:range [4 30]}}
+                                   :legend false
+                                   :labels {:title ":order - larger on top"}}]
+                                 {:columns 2})
+                   {:width 900 :height 300})
 ```
 :::
 
 
 ::: {.clay-image}
 ![](reference.data_mapping_files/image5.png)
+:::
+
+
+A `nil` group value forms its own NA level - the bottom line above is the walk without a number. The plot's
+`:groups {:na false}` drops such rows instead:
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:groups</td><td>map</td><td></td><td>grouping options</td></tr><tr><td>:groups :na</td><td>true or false or nil</td><td>true</td><td>nil aesthetic values form the NA level (false - such rows are dropped)</td></tr></tbody></table>
+```
+
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image {:data walks
+                    :mapping {:x :t :y :v :group :walk}
+                    :charts [(chart/line {:color [70 70 70]})]
+                    :groups {:na false}}
+                   {:width 450 :height 280})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.data_mapping_files/image6.png)
 :::
 
 
@@ -313,7 +340,7 @@ chapter).
 
 
 ::: {.clay-image}
-![](reference.data_mapping_files/image6.png)
+![](reference.data_mapping_files/image7.png)
 :::
 
 
@@ -368,7 +395,7 @@ outer first) and `:set` / `:item` (set membership of Venn diagrams).
 
 
 ::: {.clay-image}
-![](reference.data_mapping_files/image7.png)
+![](reference.data_mapping_files/image8.png)
 :::
 
 

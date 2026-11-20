@@ -23,6 +23,7 @@
             [clojure2d.core :as c2d]
             [fastmath.core :as m]
             [fastmath.vector :as v]
+            [malli.util :as mu]
             [cljplot2.graphics.canvas :as canvas]
             [cljplot2.graphics.draw :as draw]
             [cljplot2.graphics.font :as font]
@@ -53,9 +54,14 @@
 
 (def ^:private default-align [:center :middle])
 
+(def ^:private content-schema
+  "Label content (custom grid items, labels the layout builds): [[label-options]] with `:role` required - plot
+  `:labels` get their role from the layout, content has no default."
+  (mu/required-keys label-options [:role]))
+
 (defmethod measure/validate-content :label
   [content]
-  (schema/explain! [[label-options content [:content]]]))
+  (schema/explain! [[content-schema content [:content]]]))
 
 (defn- label-spec
   "Drawing parameters of validated label `content` in `theme`; validates the style with inline overrides."

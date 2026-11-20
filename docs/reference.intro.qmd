@@ -48,16 +48,16 @@ part says what exists.
 
 ## How to read a table
 
-Each table is one group of related options, followed by an example using them.
+Each table is one group of related options, followed by an example using them - a chart or a value.
 
 
 * **Option** - the key; a nested key is listed after its map, with its full path (`:scales :x`). `(required)`
   marks a key that must be given.
 
 * **Type** - the values the schema accepts.
-* **Default** - the value used when the key is absent (style defaults come from the theme), and / or how the
-  default is found. Empty: the key has no default - absent means not set (an optional feature off, a computed
-  value, or a map whose own keys have the defaults).
+* **Default** - the value used when the key is absent (style defaults come from the theme), and / or how a
+  computed default is found. Empty: absent means not set - an optional feature off, or a map whose own keys
+  have the defaults.
 
 * **Description** - what the key does.
 * **Group** - shown when a table mixes keys of a shared group (data and mapping, curves, strips ...) with others;

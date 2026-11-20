@@ -237,8 +237,8 @@ the diagonal take any charts.
 ## Margins
 
 `:margins` puts charts above (`:top`) and right of (`:right`) a single panel, sharing its horizontal / vertical
-scale; margin charts read the plot's data with `:x` mapped to the shared dimension. A margin is a chart, a
-vector of charts, or a map:
+scale; margin charts read the plot's data with `:x` mapped to the shared dimension. A margin is a chart or a
+vector of charts ...
 
 ::: {.clay-table}
 
@@ -248,6 +248,25 @@ vector of charts, or a map:
 
 :::
 
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image {:data mtcars
+                    :mapping {:x :wt :y :mpg}
+                    :charts [(chart/scatter)]
+                    :margins {:top [(chart/density) (chart/rug)]}}
+                   {:width 500 :height 400})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.facets_arrange_files/image6.png)
+:::
+
+
+... or a map giving the margin's thickness and the magnitude axis of histogram and density margins:
 
 ::: {.clay-table}
 
@@ -271,7 +290,7 @@ vector of charts, or a map:
 
 
 ::: {.clay-image}
-![](reference.facets_arrange_files/image6.png)
+![](reference.facets_arrange_files/image7.png)
 :::
 
 
@@ -306,7 +325,7 @@ accompany it; plots in a regular grid are simpler with `plot/arrange`.
 
 
 ::: {.clay-image}
-![](reference.facets_arrange_files/image7.png)
+![](reference.facets_arrange_files/image8.png)
 :::
 
 

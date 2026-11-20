@@ -23,12 +23,8 @@
             [cljplot2.test-util :refer [explicit-defaults pixels same-pixels?]]))
 
 (def chart-constructors
-  "Kind -> constructor of every built-in chart."
-  (into (sorted-map)
-        (for [[_ v] (ns-publics 'cljplot2.chart)
-              :let [c (try (@v) (catch Throwable _ nil))]
-              :when (and (map? c) (:compute c))]
-          [(:kind c) @v])))
+  "Kind -> constructor (var) of every built-in chart."
+  (describe/chart-constructors))
 
 (defn- undocumented
   "Paths of `rows` without a `:description`."
@@ -218,23 +214,7 @@
 
 (def non-chart-schemas
   "Every non-chart schema users write: name -> schema."
-  {:plot cljplot2.pipeline/plot-schema
-   :render-options cljplot2.pipeline/options-schema
-   :position-scale cljplot2.scale.position/scale-spec-schema
-   :facet-scale cljplot2.data.facet/scale-spec-schema
-   :color-scale (cljplot2.scale.aesthetic/scale-spec-schema :color)
-   :shape-scale (cljplot2.scale.aesthetic/scale-spec-schema :shape)
-   :size-scale (cljplot2.scale.aesthetic/scale-spec-schema :size)
-   :dash-scale (cljplot2.scale.aesthetic/scale-spec-schema :dash)
-   :pattern-scale (cljplot2.scale.aesthetic/scale-spec-schema :pattern)
-   :facets cljplot2.data.facet/facet-options
-   :labels cljplot2.layout.plot-grid/labels-schema
-   :label cljplot2.content.label/label-options
-   :arrange cljplot2.layout.plot-grid/arrange-schema
-   :coord cljplot2.scale.coord/coord-schema
-   :margins cljplot2.pipeline/margins-schema
-   :mapping cljplot2.data.rows/mapping-schema
-   :theme cljplot2.theme/theme-schema})
+  describe/plot-level-schemas)
 
 (defn- all-entries
   "`[path props schema]` of every map entry anywhere in `schema` - nested maps, `:multi` branches, `:and` / `:or` /

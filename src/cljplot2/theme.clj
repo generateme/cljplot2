@@ -215,20 +215,20 @@
 
 (def text-roles
   "The text roles of the default theme: role -> `{:section s :description d}` - what the role styles and who draws it
-  (`:plot-text` - titles, strips, axes; `:legend-text`; `:chart-text` - texts of particular charts). A theme may add
-  roles of its own, used by labels' `:role`."
+  (`:plot-text` - titles, strips, axes; `:legend-text`; `:hierarchy-text` - treemap, partition and pack labels;
+  `:chart-text` - texts of other charts). A theme may add roles of its own, used by labels' `:role`."
   {:title {:section :plot-text :description "plot and multiplot titles"}
    :strip {:section :plot-text :description "facet strip texts"}
    :axis-title {:section :plot-text :description "axis titles"}
    :tick-label {:section :plot-text :description "tick labels"}
    :legend-title {:section :legend-text :description "legend titles"}
    :legend-label {:section :legend-text :description "legend entry labels and colour bar ticks"}
-   :treemap-group {:section :chart-text :description "treemap group headers"}
-   :treemap-leaf {:section :chart-text :description "treemap leaf labels"}
-   :partition-group {:section :chart-text :description "partition (icicle, sunburst) group labels"}
-   :partition-leaf {:section :chart-text :description "partition leaf labels"}
-   :pack-group {:section :chart-text :description "circle packing group labels"}
-   :pack-leaf {:section :chart-text :description "circle packing leaf labels"}
+   :treemap-group {:section :hierarchy-text :description "treemap group headers"}
+   :treemap-leaf {:section :hierarchy-text :description "treemap leaf labels"}
+   :partition-group {:section :hierarchy-text :description "partition (icicle, sunburst) group labels"}
+   :partition-leaf {:section :hierarchy-text :description "partition leaf labels"}
+   :pack-group {:section :hierarchy-text :description "circle packing group labels"}
+   :pack-leaf {:section :hierarchy-text :description "circle packing leaf labels"}
    :venn-set {:section :chart-text :description "Venn diagram set names"}
    :venn-count {:section :chart-text :description "Venn diagram region counts"}
    :tile-value {:section :chart-text :description "tile value labels"}

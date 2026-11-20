@@ -28,7 +28,7 @@
 
 (def ^:private mapping-key-docs
   "Plot-level meaning of each mapping key (each chart's mapping rows say how it reads them) and its section of the
-  mapping table: `:position`, `:interval`, `:ohlc`, `:aesthetic`, `:grouping`, `:facet`, `:value`."
+  mapping table: `:position`, `:interval`, `:ohlc`, `:aesthetic`, `:groups-and-order`, `:facet`, `:value`."
   {:x {:section :position :description "x position (or the values of a strip chart with levels on y)"}
    :y {:section :position :description "y position (or the levels of a strip chart)"}
    :z {:section :position :description "third coordinate of 3D charts"}
@@ -45,11 +45,11 @@
    :size {:section :aesthetic :description "size aesthetic"}
    :dash {:section :aesthetic :description "line dash aesthetic"}
    :pattern {:section :aesthetic :description "fill pattern aesthetic"}
-   :group {:section :grouping :description "groups without a visual aesthetic"}
+   :group {:section :groups-and-order :description "groups without a visual aesthetic"}
    :facet {:section :facet :description "wrap facets: one panel per value"}
    :facet-col {:section :facet :description "grid facets: one column per value"}
    :facet-row {:section :facet :description "grid facets: one row per value"}
-   :order {:section :grouping :description "drawing order of points"}
+   :order {:section :groups-and-order :description "drawing order of points"}
    :value {:section :value :description "a value: cell values, weights, sizes of hierarchy leaves"}
    :set {:section :value :description "set name of a membership row (Venn)"}
    :item {:section :value :description "item of a membership row (Venn)"}})

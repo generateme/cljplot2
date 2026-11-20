@@ -330,12 +330,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#panel-box" id="toc-panel-box" class="nav-link" data-scroll-target="#panel-box"><span class="header-section-number">9.2</span> Panel box</a></li>
   <li><a href="#grid-lines" id="toc-grid-lines" class="nav-link" data-scroll-target="#grid-lines"><span class="header-section-number">9.3</span> Grid lines</a></li>
   <li><a href="#axes" id="toc-axes" class="nav-link" data-scroll-target="#axes"><span class="header-section-number">9.4</span> Axes</a></li>
-  <li><a href="#strips-and-facets" id="toc-strips-and-facets" class="nav-link" data-scroll-target="#strips-and-facets"><span class="header-section-number">9.5</span> Strips and facets</a></li>
-  <li><a href="#multiplots" id="toc-multiplots" class="nav-link" data-scroll-target="#multiplots"><span class="header-section-number">9.6</span> Multiplots</a></li>
-  <li><a href="#legend" id="toc-legend" class="nav-link" data-scroll-target="#legend"><span class="header-section-number">9.7</span> Legend</a></li>
-  <li><a href="#palette" id="toc-palette" class="nav-link" data-scroll-target="#palette"><span class="header-section-number">9.8</span> Palette</a></li>
-  <li><a href="#text" id="toc-text" class="nav-link" data-scroll-target="#text"><span class="header-section-number">9.9</span> Text</a></li>
-  <li><a href="#chart" id="toc-chart" class="nav-link" data-scroll-target="#chart"><span class="header-section-number">9.10</span> Chart</a></li>
+  <li><a href="#strips" id="toc-strips" class="nav-link" data-scroll-target="#strips"><span class="header-section-number">9.5</span> Strips</a></li>
+  <li><a href="#facets" id="toc-facets" class="nav-link" data-scroll-target="#facets"><span class="header-section-number">9.6</span> Facets</a></li>
+  <li><a href="#multiplots" id="toc-multiplots" class="nav-link" data-scroll-target="#multiplots"><span class="header-section-number">9.7</span> Multiplots</a></li>
+  <li><a href="#legend" id="toc-legend" class="nav-link" data-scroll-target="#legend"><span class="header-section-number">9.8</span> Legend</a></li>
+  <li><a href="#palette" id="toc-palette" class="nav-link" data-scroll-target="#palette"><span class="header-section-number">9.9</span> Palette</a></li>
+  <li><a href="#text" id="toc-text" class="nav-link" data-scroll-target="#text"><span class="header-section-number">9.10</span> Text</a></li>
+  <li><a href="#chart" id="toc-chart" class="nav-link" data-scroll-target="#chart"><span class="header-section-number">9.11</span> Chart</a></li>
   </ul>
 </nav>
     </div>
@@ -634,6 +635,20 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </table>
 </div>
 </div>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> long-levels </span>[{<span class="at">:k</span> <span class="st">"a long level"</span> <span class="at">:v</span> <span class="dv">3</span>} {<span class="at">:k</span> <span class="st">"another long level"</span> <span class="at">:v</span> <span class="dv">5</span>} {<span class="at">:k</span> <span class="st">"the last level"</span> <span class="at">:v</span> <span class="dv">4</span>}])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> long-levels</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:k</span> <span class="at">:y</span> <span class="at">:v</span>}</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:charts</span> [(chart/bar)]</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:theme</span> {<span class="at">:axis</span> {<span class="at">:x</span> {<span class="at">:label-rotation</span> <span class="dv">45</span> <span class="at">:tick-length</span> <span class="dv">0</span> <span class="at">:line-color</span> <span class="at">:none</span>}}}}</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">500</span> <span class="at">:height</span> <span class="dv">320</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.theme_files/image3.png" class="img-fluid"></p>
+</div>
+<p>The y axis has the same keys:</p>
 <div class="clay-table">
 <div class="table-responsive">
 <table class="table table-hover clay-table caption-top">
@@ -711,20 +726,16 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> [{<span class="at">:k</span> <span class="st">"a long level"</span> <span class="at">:v</span> <span class="dv">3</span>} {<span class="at">:k</span> <span class="st">"another long level"</span> <span class="at">:v</span> <span class="dv">5</span>} {<span class="at">:k</span> <span class="st">"the last level"</span> <span class="at">:v</span> <span class="dv">4</span>}]</span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:k</span> <span class="at">:y</span> <span class="at">:v</span>}</span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:charts</span> [(chart/bar)]</span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:theme</span> {<span class="at">:axis</span> {<span class="at">:x</span> {<span class="at">:label-rotation</span> <span class="dv">45</span> <span class="at">:tick-length</span> <span class="dv">0</span> <span class="at">:line-color</span> <span class="at">:none</span>}</span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:y</span> {<span class="at">:tick-spacing</span> <span class="dv">25</span> <span class="at">:tick-color</span> [<span class="dv">200</span> <span class="dv">0</span> <span class="dv">0</span>]}}}}</span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">500</span> <span class="at">:height</span> <span class="dv">350</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (<span class="kw">assoc</span> iris-plot <span class="at">:theme</span> {<span class="at">:axis</span> {<span class="at">:y</span> {<span class="at">:tick-spacing</span> <span class="dv">25</span> <span class="at">:tick-color</span> [<span class="dv">200</span> <span class="dv">0</span> <span class="dv">0</span>] <span class="at">:tick-length</span> <span class="dv">10</span>}}})</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">500</span> <span class="at">:height</span> <span class="dv">300</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="clay-image">
-<p><img src="reference.theme_files/image3.png" class="img-fluid"></p>
+<p><img src="reference.theme_files/image4.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="strips-and-facets" class="level2" data-number="9.5">
-<h2 data-number="9.5" class="anchored" data-anchor-id="strips-and-facets"><span class="header-section-number">9.5</span> Strips and facets</h2>
-<p>Facet strip boxes (the shingle fill marks a shingle level’s range) and the gap between facet panels.</p>
+<section id="strips" class="level2" data-number="9.5">
+<h2 data-number="9.5" class="anchored" data-anchor-id="strips"><span class="header-section-number">9.5</span> Strips</h2>
+<p>Facet strip boxes; the shingle fill marks a shingle level’s range.</p>
 <div class="clay-table">
 <div class="table-responsive">
 <table class="table table-hover clay-table caption-top">
@@ -771,6 +782,21 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </table>
 </div>
 </div>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> faceted-iris </span>(<span class="kw">assoc</span> iris-plot <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:sepal-length</span> <span class="at">:y</span> <span class="at">:petal-length</span> <span class="at">:facet</span> <span class="at">:species</span>}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (<span class="kw">assoc</span> faceted-iris <span class="at">:theme</span> {<span class="at">:strip</span> {<span class="at">:fill</span> [<span class="dv">70</span> <span class="dv">90</span> <span class="dv">140</span>] <span class="at">:border-color</span> <span class="at">:none</span>}</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>                                               <span class="at">:text</span> {<span class="at">:strip</span> {<span class="at">:color</span> <span class="at">:white</span>}}})</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">700</span> <span class="at">:height</span> <span class="dv">280</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.theme_files/image5.png" class="img-fluid"></p>
+</div>
+</section>
+<section id="facets" class="level2" data-number="9.6">
+<h2 data-number="9.6" class="anchored" data-anchor-id="facets"><span class="header-section-number">9.6</span> Facets</h2>
+<p>The gap between facet panels.</p>
 <div class="clay-table">
 <div class="table-responsive">
 <table class="table table-hover clay-table caption-top">
@@ -800,19 +826,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (<span class="kw">assoc</span> iris-plot</span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>                          <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:sepal-length</span> <span class="at">:y</span> <span class="at">:petal-length</span> <span class="at">:facet</span> <span class="at">:species</span>}</span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>                          <span class="at">:theme</span> {<span class="at">:strip</span> {<span class="at">:fill</span> [<span class="dv">70</span> <span class="dv">90</span> <span class="dv">140</span>] <span class="at">:border-color</span> <span class="at">:none</span>}</span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>                                  <span class="at">:text</span> {<span class="at">:strip</span> {<span class="at">:color</span> <span class="at">:white</span>}}</span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>                                  <span class="at">:facet</span> {<span class="at">:gap</span> <span class="dv">20</span>}})</span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">700</span> <span class="at">:height</span> <span class="dv">300</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (<span class="kw">assoc</span> faceted-iris <span class="at">:theme</span> {<span class="at">:facet</span> {<span class="at">:gap</span> <span class="dv">25</span>}}) {<span class="at">:width</span> <span class="dv">700</span> <span class="at">:height</span> <span class="dv">280</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="clay-image">
-<p><img src="reference.theme_files/image4.png" class="img-fluid"></p>
+<p><img src="reference.theme_files/image6.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="multiplots" class="level2" data-number="9.6">
-<h2 data-number="9.6" class="anchored" data-anchor-id="multiplots"><span class="header-section-number">9.6</span> Multiplots</h2>
+<section id="multiplots" class="level2" data-number="9.7">
+<h2 data-number="9.7" class="anchored" data-anchor-id="multiplots"><span class="header-section-number">9.7</span> Multiplots</h2>
 <p>The gap between arranged plots.</p>
 <div class="clay-table">
 <div class="table-responsive">
@@ -843,16 +864,16 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [iris-plot (<span class="kw">assoc</span> iris-plot <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:sepal-width</span> <span class="at">:y</span> <span class="at">:petal-width</span> <span class="at">:color</span> <span class="at">:species</span>})]</span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">2</span> <span class="at">:theme</span> {<span class="at">:multiplot</span> {<span class="at">:gap</span> <span class="dv">40</span>}}})</span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">800</span> <span class="at">:height</span> <span class="dv">300</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [iris-plot (<span class="kw">assoc</span> iris-plot <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:sepal-width</span> <span class="at">:y</span> <span class="at">:petal-width</span> <span class="at">:color</span> <span class="at">:species</span>})]</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">2</span> <span class="at">:theme</span> {<span class="at">:multiplot</span> {<span class="at">:gap</span> <span class="dv">40</span>}}})</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">800</span> <span class="at">:height</span> <span class="dv">300</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="clay-image">
-<p><img src="reference.theme_files/image5.png" class="img-fluid"></p>
+<p><img src="reference.theme_files/image7.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="legend" class="level2" data-number="9.7">
-<h2 data-number="9.7" class="anchored" data-anchor-id="legend"><span class="header-section-number">9.7</span> Legend</h2>
+<section id="legend" class="level2" data-number="9.8">
+<h2 data-number="9.8" class="anchored" data-anchor-id="legend"><span class="header-section-number">9.8</span> Legend</h2>
 <p>Legend key sizes, spacing, the legend box and the colour bar.</p>
 <div class="clay-table">
 <div class="table-responsive">
@@ -919,15 +940,15 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (<span class="kw">assoc</span> iris-plot <span class="at">:theme</span> {<span class="at">:legend</span> {<span class="at">:key-size</span> <span class="dv">24</span> <span class="at">:gap</span> <span class="dv">10</span> <span class="at">:fill</span> <span class="at">:white</span> <span class="at">:border-color</span> [<span class="dv">150</span> <span class="dv">150</span> <span class="dv">150</span>]}})</span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">500</span> <span class="at">:height</span> <span class="dv">300</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (<span class="kw">assoc</span> iris-plot <span class="at">:theme</span> {<span class="at">:legend</span> {<span class="at">:key-size</span> <span class="dv">24</span> <span class="at">:gap</span> <span class="dv">10</span> <span class="at">:fill</span> <span class="at">:white</span> <span class="at">:border-color</span> [<span class="dv">150</span> <span class="dv">150</span> <span class="dv">150</span>]}})</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">500</span> <span class="at">:height</span> <span class="dv">300</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="clay-image">
-<p><img src="reference.theme_files/image6.png" class="img-fluid"></p>
+<p><img src="reference.theme_files/image8.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="palette" class="level2" data-number="9.8">
-<h2 data-number="9.8" class="anchored" data-anchor-id="palette"><span class="header-section-number">9.8</span> Palette</h2>
+<section id="palette" class="level2" data-number="9.9">
+<h2 data-number="9.9" class="anchored" data-anchor-id="palette"><span class="header-section-number">9.9</span> Palette</h2>
 <p>The default ranges of the aesthetic scales (Aesthetics and legends chapter): colours of levels, the gradient of numbers, shapes, sizes, dashes and patterns.</p>
 <div class="clay-table">
 <div class="table-responsive">
@@ -994,18 +1015,18 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (<span class="kw">assoc</span> iris-plot</span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>                          <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:sepal-length</span> <span class="at">:y</span> <span class="at">:petal-length</span> <span class="at">:color</span> <span class="at">:species</span> <span class="at">:shape</span> <span class="at">:species</span>}</span>
-<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>                          <span class="at">:theme</span> {<span class="at">:palette</span> {<span class="at">:color</span> <span class="at">:tableau-10</span> <span class="at">:shape</span> [<span class="ch">\s</span> <span class="ch">\A</span> <span class="ch">\V</span>]}})</span>
-<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">500</span> <span class="at">:height</span> <span class="dv">300</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (<span class="kw">assoc</span> iris-plot</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>                          <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:sepal-length</span> <span class="at">:y</span> <span class="at">:petal-length</span> <span class="at">:color</span> <span class="at">:species</span> <span class="at">:shape</span> <span class="at">:species</span>}</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>                          <span class="at">:theme</span> {<span class="at">:palette</span> {<span class="at">:color</span> <span class="at">:tableau-10</span> <span class="at">:shape</span> [<span class="ch">\s</span> <span class="ch">\A</span> <span class="ch">\V</span>]}})</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">500</span> <span class="at">:height</span> <span class="dv">300</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="clay-image">
-<p><img src="reference.theme_files/image7.png" class="img-fluid"></p>
+<p><img src="reference.theme_files/image9.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="text" class="level2" data-number="9.9">
-<h2 data-number="9.9" class="anchored" data-anchor-id="text"><span class="header-section-number">9.9</span> Text</h2>
-<p>Every text the library draws has a role; each role is a text style (the keys of the Text style group, below). A label’s <code>:role</code> may also name a role of your own added under <code>:text</code>.</p>
+<section id="text" class="level2" data-number="9.10">
+<h2 data-number="9.10" class="anchored" data-anchor-id="text"><span class="header-section-number">9.10</span> Text</h2>
+<p>Every text the library draws has a role; each role is a text style (the keys of the Text style group, last in this section). A label’s <code>:role</code> may also name a role of your own added under <code>:text</code>.</p>
 <p>Titles, strips and axis texts:</p>
 <div class="clay-table">
 <div class="table-responsive">
@@ -1047,6 +1068,17 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </table>
 </div>
 </div>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (<span class="kw">assoc</span> iris-plot</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>                          <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"Iris"</span> <span class="at">:x</span> <span class="st">"sepal length"</span> <span class="at">:y</span> <span class="st">"petal length"</span>}</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>                          <span class="at">:theme</span> {<span class="at">:text</span> {<span class="at">:title</span> {<span class="at">:size</span> <span class="dv">20</span> <span class="at">:font-style</span> <span class="at">:italic</span> <span class="at">:align</span> [<span class="at">:left</span> <span class="at">:middle</span>]}</span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>                                         <span class="at">:axis-title</span> {<span class="at">:color</span> [<span class="dv">120</span> <span class="dv">30</span> <span class="dv">30</span>]}</span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>                                         <span class="at">:tick-label</span> {<span class="at">:size</span> <span class="dv">8</span>}}})</span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">500</span> <span class="at">:height</span> <span class="dv">320</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.theme_files/image10.png" class="img-fluid"></p>
+</div>
 <p>Legend texts:</p>
 <div class="clay-table">
 <div class="table-responsive">
@@ -1076,7 +1108,83 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </table>
 </div>
 </div>
-<p>Texts of particular charts:</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (<span class="kw">assoc</span> iris-plot <span class="at">:theme</span> {<span class="at">:text</span> {<span class="at">:legend-title</span> {<span class="at">:size</span> <span class="dv">9</span> <span class="at">:font-style</span> <span class="at">:plain</span> <span class="at">:color</span> [<span class="dv">100</span> <span class="dv">100</span> <span class="dv">100</span>]}</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>                                                   <span class="at">:legend-label</span> {<span class="at">:font-style</span> <span class="at">:italic</span>}}})</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">500</span> <span class="at">:height</span> <span class="dv">300</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.theme_files/image11.png" class="img-fluid"></p>
+</div>
+<p>Labels of treemaps, partitions and circle packings (their colour contrasts with the fill - the role’s <code>:color</code> isn’t used):</p>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">Option</th>
+<th data-quarto-table-cell-role="th">Type</th>
+<th data-quarto-table-cell-role="th">Default</th>
+<th data-quarto-table-cell-role="th">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>:text :pack-group</td>
+<td>a text style (:font :size :font-style :color :padding :align :background)</td>
+<td>{:font "DejaVu Sans Mono", :size 10, :font-style :bold, :color :black, :padding 2, :align [:center :middle]}</td>
+<td>circle packing group labels</td>
+</tr>
+<tr class="even">
+<td>:text :pack-leaf</td>
+<td>a text style (:font :size :font-style :color :padding :align :background)</td>
+<td>{:font "DejaVu Sans Mono", :size 9, :font-style :plain, :color :black, :padding 2, :align [:center :middle]}</td>
+<td>circle packing leaf labels</td>
+</tr>
+<tr class="odd">
+<td>:text :partition-group</td>
+<td>a text style (:font :size :font-style :color :padding :align :background)</td>
+<td>{:font "DejaVu Sans Mono", :size 10, :font-style :bold, :color :black, :padding 2, :align [:center :middle]}</td>
+<td>partition (icicle, sunburst) group labels</td>
+</tr>
+<tr class="even">
+<td>:text :partition-leaf</td>
+<td>a text style (:font :size :font-style :color :padding :align :background)</td>
+<td>{:font "DejaVu Sans Mono", :size 9, :font-style :plain, :color :black, :padding 2, :align [:center :middle]}</td>
+<td>partition leaf labels</td>
+</tr>
+<tr class="odd">
+<td>:text :treemap-group</td>
+<td>a text style (:font :size :font-style :color :padding :align :background)</td>
+<td>{:font "DejaVu Sans Mono", :size 10, :font-style :bold, :color :black, :padding 2, :align [:left :middle]}</td>
+<td>treemap group headers</td>
+</tr>
+<tr class="even">
+<td>:text :treemap-leaf</td>
+<td>a text style (:font :size :font-style :color :padding :align :background)</td>
+<td>{:font "DejaVu Sans Mono", :size 9, :font-style :plain, :color :black, :padding 2, :align [:center :middle]}</td>
+<td>treemap leaf labels</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> budget </span>[{<span class="at">:dept</span> <span class="st">"science"</span> <span class="at">:team</span> <span class="st">"physics"</span> <span class="at">:cost</span> <span class="dv">40</span>} {<span class="at">:dept</span> <span class="st">"science"</span> <span class="at">:team</span> <span class="st">"biology"</span> <span class="at">:cost</span> <span class="dv">25</span>}</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>             {<span class="at">:dept</span> <span class="st">"arts"</span> <span class="at">:team</span> <span class="st">"music"</span> <span class="at">:cost</span> <span class="dv">15</span>} {<span class="at">:dept</span> <span class="st">"arts"</span> <span class="at">:team</span> <span class="st">"theatre"</span> <span class="at">:cost</span> <span class="dv">10</span>}])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> budget</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:hierarchy</span> [<span class="at">:dept</span> <span class="at">:team</span>] <span class="at">:value</span> <span class="at">:cost</span>}</span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:charts</span> [(chart/treemap)]</span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:theme</span> {<span class="at">:text</span> {<span class="at">:treemap-group</span> {<span class="at">:size</span> <span class="dv">13</span> <span class="at">:font-style</span> <span class="at">:bold-italic</span>}</span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:treemap-leaf</span> {<span class="at">:font-style</span> <span class="at">:italic</span>}}}}</span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">500</span> <span class="at">:height</span> <span class="dv">300</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.theme_files/image12.png" class="img-fluid"></p>
+</div>
+<p>Texts of other charts (text annotations, Venn diagrams, tiles, correlations, contours):</p>
 <div class="clay-table">
 <div class="table-responsive">
 <table class="table table-hover clay-table caption-top">
@@ -1108,46 +1216,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td>correlation numbers</td>
 </tr>
 <tr class="even">
-<td>:text :pack-group</td>
-<td>a text style (:font :size :font-style :color :padding :align :background)</td>
-<td>{:font "DejaVu Sans Mono", :size 10, :font-style :bold, :color :black, :padding 2, :align [:center :middle]}</td>
-<td>circle packing group labels</td>
-</tr>
-<tr class="odd">
-<td>:text :pack-leaf</td>
-<td>a text style (:font :size :font-style :color :padding :align :background)</td>
-<td>{:font "DejaVu Sans Mono", :size 9, :font-style :plain, :color :black, :padding 2, :align [:center :middle]}</td>
-<td>circle packing leaf labels</td>
-</tr>
-<tr class="even">
-<td>:text :partition-group</td>
-<td>a text style (:font :size :font-style :color :padding :align :background)</td>
-<td>{:font "DejaVu Sans Mono", :size 10, :font-style :bold, :color :black, :padding 2, :align [:center :middle]}</td>
-<td>partition (icicle, sunburst) group labels</td>
-</tr>
-<tr class="odd">
-<td>:text :partition-leaf</td>
-<td>a text style (:font :size :font-style :color :padding :align :background)</td>
-<td>{:font "DejaVu Sans Mono", :size 9, :font-style :plain, :color :black, :padding 2, :align [:center :middle]}</td>
-<td>partition leaf labels</td>
-</tr>
-<tr class="even">
 <td>:text :tile-value</td>
 <td>a text style (:font :size :font-style :color :padding :align :background)</td>
 <td>{:font "DejaVu Sans Mono", :size 9, :font-style :plain, :color :black, :padding 1, :align [:center :middle]}</td>
 <td>tile value labels</td>
-</tr>
-<tr class="odd">
-<td>:text :treemap-group</td>
-<td>a text style (:font :size :font-style :color :padding :align :background)</td>
-<td>{:font "DejaVu Sans Mono", :size 10, :font-style :bold, :color :black, :padding 2, :align [:left :middle]}</td>
-<td>treemap group headers</td>
-</tr>
-<tr class="even">
-<td>:text :treemap-leaf</td>
-<td>a text style (:font :size :font-style :color :padding :align :background)</td>
-<td>{:font "DejaVu Sans Mono", :size 9, :font-style :plain, :color :black, :padding 2, :align [:center :middle]}</td>
-<td>treemap leaf labels</td>
 </tr>
 <tr class="odd">
 <td>:text :venn-count</td>
@@ -1164,6 +1236,15 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </tbody>
 </table>
 </div>
+</div>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (<span class="kw">assoc</span> iris-plot</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>                          <span class="at">:charts</span> [(chart/scatter) (chart/text {<span class="at">:x</span> <span class="fl">6.5</span> <span class="at">:y</span> <span class="dv">2</span> <span class="at">:text</span> <span class="st">"an annotation"</span>})]</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>                          <span class="at">:theme</span> {<span class="at">:text</span> {<span class="at">:annotation</span> {<span class="at">:size</span> <span class="dv">14</span> <span class="at">:color</span> [<span class="dv">178</span> <span class="dv">34</span> <span class="dv">34</span>] <span class="at">:background</span> [<span class="dv">255</span> <span class="dv">255</span> <span class="dv">255</span> <span class="dv">200</span>]}}})</span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">500</span> <span class="at">:height</span> <span class="dv">300</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.theme_files/image13.png" class="img-fluid"></p>
 </div>
 <p>The keys of a text style:</p>
 <div class="clay-table">
@@ -1225,20 +1306,17 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (<span class="kw">assoc</span> iris-plot</span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>                          <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"Iris"</span> <span class="at">:x</span> <span class="st">"sepal length"</span> <span class="at">:y</span> <span class="st">"petal length"</span>}</span>
-<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>                          <span class="at">:theme</span> {<span class="at">:text</span> {<span class="at">:title</span> {<span class="at">:size</span> <span class="dv">20</span> <span class="at">:font-style</span> <span class="at">:italic</span> <span class="at">:align</span> [<span class="at">:left</span> <span class="at">:middle</span>]}</span>
-<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>                                         <span class="at">:axis-title</span> {<span class="at">:color</span> [<span class="dv">120</span> <span class="dv">30</span> <span class="dv">30</span>]}</span>
-<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>                                         <span class="at">:tick-label</span> {<span class="at">:size</span> <span class="dv">8</span>}</span>
-<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>                                         <span class="at">:legend-title</span> {<span class="at">:size</span> <span class="dv">9</span> <span class="at">:font-style</span> <span class="at">:plain</span>}}})</span>
-<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">500</span> <span class="at">:height</span> <span class="dv">320</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb21"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (<span class="kw">assoc</span> iris-plot</span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>                          <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"Iris"</span>}</span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>                          <span class="at">:theme</span> {<span class="at">:text</span> {<span class="at">:title</span> {<span class="at">:font</span> <span class="st">"Serif"</span> <span class="at">:size</span> <span class="dv">16</span> <span class="at">:padding</span> <span class="dv">10</span> <span class="at">:background</span> [<span class="dv">230</span> <span class="dv">230</span> <span class="dv">245</span>]}}})</span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">500</span> <span class="at">:height</span> <span class="dv">300</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="clay-image">
-<p><img src="reference.theme_files/image8.png" class="img-fluid"></p>
+<p><img src="reference.theme_files/image14.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="chart" class="level2" data-number="9.10">
-<h2 data-number="9.10" class="anchored" data-anchor-id="chart"><span class="header-section-number">9.10</span> Chart</h2>
+<section id="chart" class="level2" data-number="9.11">
+<h2 data-number="9.11" class="anchored" data-anchor-id="chart"><span class="header-section-number">9.11</span> Chart</h2>
 <p>The style of each chart kind, <code>[:chart kind]</code> - its keys and defaults are the rows with a theme default in the chart’s table. Options given to a chart override its theme style.</p>
 <div class="clay-table">
 <div class="table-responsive">
@@ -1264,55 +1342,55 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <p>The kinds with a theme style:</p>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">keys</span> (describe/chart-constructors))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">keys</span> (describe/chart-constructors))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="printedClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>(<span class="at">:bar</span></span>
-<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a> <span class="at">:beeswarm</span></span>
-<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a> <span class="at">:bin2d</span></span>
-<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a> <span class="at">:box</span></span>
-<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a> <span class="at">:bullet</span></span>
-<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a> <span class="at">:candlestick</span></span>
-<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a> <span class="at">:cloud</span></span>
-<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a> <span class="at">:contour</span></span>
-<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a> <span class="at">:correlation</span></span>
-<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a> <span class="at">:density</span></span>
-<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a> <span class="at">:dotplot</span></span>
-<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a> <span class="at">:ecdf</span></span>
-<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a> <span class="at">:extent</span></span>
-<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a> <span class="at">:field</span></span>
-<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a> <span class="at">:function</span></span>
-<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a> <span class="at">:histogram</span></span>
-<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a> <span class="at">:image</span></span>
-<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a> <span class="at">:line</span></span>
-<span id="cb14-19"><a href="#cb14-19" aria-hidden="true" tabindex="-1"></a> <span class="at">:pack</span></span>
-<span id="cb14-20"><a href="#cb14-20" aria-hidden="true" tabindex="-1"></a> <span class="at">:parallel</span></span>
-<span id="cb14-21"><a href="#cb14-21" aria-hidden="true" tabindex="-1"></a> <span class="at">:partition</span></span>
-<span id="cb14-22"><a href="#cb14-22" aria-hidden="true" tabindex="-1"></a> <span class="at">:polygon</span></span>
-<span id="cb14-23"><a href="#cb14-23" aria-hidden="true" tabindex="-1"></a> <span class="at">:pp</span></span>
-<span id="cb14-24"><a href="#cb14-24" aria-hidden="true" tabindex="-1"></a> <span class="at">:qq</span></span>
-<span id="cb14-25"><a href="#cb14-25" aria-hidden="true" tabindex="-1"></a> <span class="at">:rect</span></span>
-<span id="cb14-26"><a href="#cb14-26" aria-hidden="true" tabindex="-1"></a> <span class="at">:ribbon</span></span>
-<span id="cb14-27"><a href="#cb14-27" aria-hidden="true" tabindex="-1"></a> <span class="at">:rug</span></span>
-<span id="cb14-28"><a href="#cb14-28" aria-hidden="true" tabindex="-1"></a> <span class="at">:rule</span></span>
-<span id="cb14-29"><a href="#cb14-29" aria-hidden="true" tabindex="-1"></a> <span class="at">:scatter</span></span>
-<span id="cb14-30"><a href="#cb14-30" aria-hidden="true" tabindex="-1"></a> <span class="at">:segment</span></span>
-<span id="cb14-31"><a href="#cb14-31" aria-hidden="true" tabindex="-1"></a> <span class="at">:smooth</span></span>
-<span id="cb14-32"><a href="#cb14-32" aria-hidden="true" tabindex="-1"></a> <span class="at">:stripplot</span></span>
-<span id="cb14-33"><a href="#cb14-33" aria-hidden="true" tabindex="-1"></a> <span class="at">:surface</span></span>
-<span id="cb14-34"><a href="#cb14-34" aria-hidden="true" tabindex="-1"></a> <span class="at">:text</span></span>
-<span id="cb14-35"><a href="#cb14-35" aria-hidden="true" tabindex="-1"></a> <span class="at">:tile</span></span>
-<span id="cb14-36"><a href="#cb14-36" aria-hidden="true" tabindex="-1"></a> <span class="at">:treemap</span></span>
-<span id="cb14-37"><a href="#cb14-37" aria-hidden="true" tabindex="-1"></a> <span class="at">:venn</span></span>
-<span id="cb14-38"><a href="#cb14-38" aria-hidden="true" tabindex="-1"></a> <span class="at">:violin</span></span>
-<span id="cb14-39"><a href="#cb14-39" aria-hidden="true" tabindex="-1"></a> <span class="at">:waffle</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb23"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>(<span class="at">:bar</span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a> <span class="at">:beeswarm</span></span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a> <span class="at">:bin2d</span></span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a> <span class="at">:box</span></span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a> <span class="at">:bullet</span></span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a> <span class="at">:candlestick</span></span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a> <span class="at">:cloud</span></span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a> <span class="at">:contour</span></span>
+<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a> <span class="at">:correlation</span></span>
+<span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a> <span class="at">:density</span></span>
+<span id="cb23-11"><a href="#cb23-11" aria-hidden="true" tabindex="-1"></a> <span class="at">:dotplot</span></span>
+<span id="cb23-12"><a href="#cb23-12" aria-hidden="true" tabindex="-1"></a> <span class="at">:ecdf</span></span>
+<span id="cb23-13"><a href="#cb23-13" aria-hidden="true" tabindex="-1"></a> <span class="at">:extent</span></span>
+<span id="cb23-14"><a href="#cb23-14" aria-hidden="true" tabindex="-1"></a> <span class="at">:field</span></span>
+<span id="cb23-15"><a href="#cb23-15" aria-hidden="true" tabindex="-1"></a> <span class="at">:function</span></span>
+<span id="cb23-16"><a href="#cb23-16" aria-hidden="true" tabindex="-1"></a> <span class="at">:histogram</span></span>
+<span id="cb23-17"><a href="#cb23-17" aria-hidden="true" tabindex="-1"></a> <span class="at">:image</span></span>
+<span id="cb23-18"><a href="#cb23-18" aria-hidden="true" tabindex="-1"></a> <span class="at">:line</span></span>
+<span id="cb23-19"><a href="#cb23-19" aria-hidden="true" tabindex="-1"></a> <span class="at">:pack</span></span>
+<span id="cb23-20"><a href="#cb23-20" aria-hidden="true" tabindex="-1"></a> <span class="at">:parallel</span></span>
+<span id="cb23-21"><a href="#cb23-21" aria-hidden="true" tabindex="-1"></a> <span class="at">:partition</span></span>
+<span id="cb23-22"><a href="#cb23-22" aria-hidden="true" tabindex="-1"></a> <span class="at">:polygon</span></span>
+<span id="cb23-23"><a href="#cb23-23" aria-hidden="true" tabindex="-1"></a> <span class="at">:pp</span></span>
+<span id="cb23-24"><a href="#cb23-24" aria-hidden="true" tabindex="-1"></a> <span class="at">:qq</span></span>
+<span id="cb23-25"><a href="#cb23-25" aria-hidden="true" tabindex="-1"></a> <span class="at">:rect</span></span>
+<span id="cb23-26"><a href="#cb23-26" aria-hidden="true" tabindex="-1"></a> <span class="at">:ribbon</span></span>
+<span id="cb23-27"><a href="#cb23-27" aria-hidden="true" tabindex="-1"></a> <span class="at">:rug</span></span>
+<span id="cb23-28"><a href="#cb23-28" aria-hidden="true" tabindex="-1"></a> <span class="at">:rule</span></span>
+<span id="cb23-29"><a href="#cb23-29" aria-hidden="true" tabindex="-1"></a> <span class="at">:scatter</span></span>
+<span id="cb23-30"><a href="#cb23-30" aria-hidden="true" tabindex="-1"></a> <span class="at">:segment</span></span>
+<span id="cb23-31"><a href="#cb23-31" aria-hidden="true" tabindex="-1"></a> <span class="at">:smooth</span></span>
+<span id="cb23-32"><a href="#cb23-32" aria-hidden="true" tabindex="-1"></a> <span class="at">:stripplot</span></span>
+<span id="cb23-33"><a href="#cb23-33" aria-hidden="true" tabindex="-1"></a> <span class="at">:surface</span></span>
+<span id="cb23-34"><a href="#cb23-34" aria-hidden="true" tabindex="-1"></a> <span class="at">:text</span></span>
+<span id="cb23-35"><a href="#cb23-35" aria-hidden="true" tabindex="-1"></a> <span class="at">:tile</span></span>
+<span id="cb23-36"><a href="#cb23-36" aria-hidden="true" tabindex="-1"></a> <span class="at">:treemap</span></span>
+<span id="cb23-37"><a href="#cb23-37" aria-hidden="true" tabindex="-1"></a> <span class="at">:venn</span></span>
+<span id="cb23-38"><a href="#cb23-38" aria-hidden="true" tabindex="-1"></a> <span class="at">:violin</span></span>
+<span id="cb23-39"><a href="#cb23-39" aria-hidden="true" tabindex="-1"></a> <span class="at">:waffle</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (<span class="kw">assoc</span> iris-plot <span class="at">:theme</span> {<span class="at">:chart</span> {<span class="at">:scatter</span> {<span class="at">:shape</span> <span class="ch">\s</span> <span class="at">:size</span> <span class="dv">8</span>}}})</span>
-<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">500</span> <span class="at">:height</span> <span class="dv">300</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb24"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (<span class="kw">assoc</span> iris-plot <span class="at">:theme</span> {<span class="at">:chart</span> {<span class="at">:scatter</span> {<span class="at">:shape</span> <span class="ch">\s</span> <span class="at">:size</span> <span class="dv">8</span>}}})</span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">500</span> <span class="at">:height</span> <span class="dv">300</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="clay-image">
-<p><img src="reference.theme_files/image9.png" class="img-fluid"></p>
+<p><img src="reference.theme_files/image15.png" class="img-fluid"></p>
 </div>
 <div style="background-color:grey;height:2px;width:100%;"></div>
 <div><pre><small><small>source: notebooks/reference/theme.clj</small></small></pre></div>

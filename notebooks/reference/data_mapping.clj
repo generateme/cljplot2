@@ -98,20 +98,36 @@
 ;; ## Groups and order
 
 ;; `:group` splits rows into groups without styling them - charts drawing one mark per group (lines, areas,
-;; densities ...) draw each separately; `:order` sets the drawing order of points. Any aesthetic groups too. A `nil`
-;; group value forms its own NA level unless the plot says `:groups {:na false}` (such rows are dropped):
+;; densities ...) draw each separately; any aesthetic groups too. `:order` sets the drawing order of points (here
+;; the large points are drawn last, on top).
 
-(nu/options-table (describe/options rows/mapping-schema) :grouping)
-
-(nu/options-table (filter #(= :groups (first (:path %))) (describe/options pipeline/plot-schema)))
+(nu/options-table (describe/options rows/mapping-schema) :groups-and-order)
 
 (def walks (for [w (range 4) t (range 12)] {:walk (when (pos? w) w) :t t :v (+ w (* t 0.3 (inc w)) (mod (* t w) 3))}))
+
+(plot/render-image (plot/arrange [{:data walks
+                                   :mapping {:x :t :y :v :group :walk}
+                                   :charts [(chart/line {:color [70 70 70]})]
+                                   :labels {:title ":group - a line per walk"}}
+                                  {:data (for [i (range 40)] {:x (mod (* i 7) 13) :y (mod (* i 5) 11) :s (mod i 4)})
+                                   :mapping {:x :x :y :y :size :s :order :s}
+                                   :charts [(chart/scatter)]
+                                   :scales {:size {:range [4 30]}}
+                                   :legend false
+                                   :labels {:title ":order - larger on top"}}]
+                                 {:columns 2})
+                   {:width 900 :height 300})
+
+;; A `nil` group value forms its own NA level - the bottom line above is the walk without a number. The plot's
+;; `:groups {:na false}` drops such rows instead:
+
+(nu/options-table (filter #(= :groups (first (:path %))) (describe/options pipeline/plot-schema)))
 
 (plot/render-image {:data walks
                     :mapping {:x :t :y :v :group :walk}
                     :charts [(chart/line {:color [70 70 70]})]
                     :groups {:na false}}
-                   {:width 500 :height 280})
+                   {:width 450 :height 280})
 
 ;; ## Facets
 

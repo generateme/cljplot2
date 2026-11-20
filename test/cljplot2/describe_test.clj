@@ -185,8 +185,9 @@
     (testing "boundary: an unknown theme key, nil - an error keyed :theme-key"
       (is (= :theme-key (:key (error-data #(describe/theme-rows :no-such-key)))))
       (is (= :theme-key (:key (error-data #(describe/theme-rows nil))))))
-    (testing "text roles in their sections: plot, legend and chart texts"
-      (is (= #{:plot-text :legend-text :chart-text} (set (keep :section (describe/theme-rows :text)))))
+    (testing "text roles in their sections: plot, legend, hierarchy and other chart texts"
+      (is (= #{:plot-text :legend-text :hierarchy-text :chart-text} (set (keep :section (describe/theme-rows :text)))))
+      (is (= :hierarchy-text (:section (by-path [:text :pack-leaf]))))
       (is (= :legend-text (:section (by-path [:text :legend-title])))))))
 
 (deftest section-rows-test
@@ -205,6 +206,29 @@
       (is (every? :section (describe/options cljplot2.data.rows/mapping-schema)))
       (is (= :wadogo (:section (first (filter #(= [:exponent] (:path %))
                                                 (describe/options cljplot2.scale.position/scale-spec-schema)))))))))
+
+(deftest row-helpers-test
+  (let [rows (describe/options pipeline/plot-schema)]
+    (testing "top-level rows: one key paths, in order; a nested map's own sections stay with its own table"
+      (is (= (filter #(= 1 (count (:path %))) rows) (describe/top-level-rows rows)))
+      (is (= :layout (:section (row rows :facets))))
+      (is (= :shape (:section (first (filter #(= [:facets :columns] (:path %)) rows)))))
+      (is (every? #(not= :shape (:section %)) (describe/top-level-rows rows))))
+    (testing "boundary: no rows; only nested rows"
+      (is (= [] (describe/top-level-rows [])))
+      (is (= [] (describe/top-level-rows (filter #(< 1 (count (:path %))) rows)))))
+    (testing "container rows: maps holding options, not the options"
+      (is (describe/container-row? (row rows :facets)))
+      (is (not (describe/container-row? (row rows :legend))))
+      (is (not (describe/container-row? {:path [:x]})) "a row map without the metadata"))))
+
+(deftest plot-level-schemas-test
+  (testing "the registry: every plot-level schema, one aesthetic scale spec per dimension, each with rows or a choice"
+    (is (every? #(contains? describe/plot-level-schemas %)
+                [:plot :render-options :mapping :position-scale :facets :labels :label :arrange :polar-coord :margins
+                 :margin-spec :theme :color-scale :pattern-scale]))
+    (is (= 5 (count (filter #(re-find #"^(color|shape|size|dash|pattern)-scale$" (name %)) (keys describe/plot-level-schemas)))))
+    (is (every? (fn [[n s]] (or (#{:coord} n) (seq (describe/options s)))) describe/plot-level-schemas))))
 
 (deftest chart-constructors-test
   (testing "every built-in chart kind, sorted, each var returning its kind's chart value"
