@@ -10,8 +10,9 @@ functions (no DSL, no grammar of graphics). Pure JVM - it renders `BufferedImage
 The book (Clay + Quarto) is published from `docs/` at https://generateme.github.io/cljplot2/.
 
 Design history, specs and the roadmap live in the user's Obsidian vault: `~/notes/Topics/cljplot2/`
-(`01 Build Steps/Architecture Design.md`, `03 Use Case Notebooks/Roadmap - Use Case Notebooks.md` - section status
-and backlog). Read them when a decision's rationale is unclear.
+(`01 Build Steps/Architecture Design.md`; `03 Use Case Notebooks/` - a folder per section or gallery, the roadmap with
+section status and backlog in `00 Frame and Roadmap/Roadmap - Use Case Notebooks.md`). Read them when a decision's
+rationale is unclear.
 
 ## Commands
 
