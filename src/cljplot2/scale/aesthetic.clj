@@ -155,13 +155,13 @@
 (def palette-schema
   "Theme `:palette` (aesthetic defaults)."
   [:map {:closed true}
-   [:color palette]
-   [:gradient gradient]
-   [:shape shapes]
-   [:size size-range]
-   [:dash dashes]
-   [:pattern patterns]
-   [:na schema/solid-color]])
+   [:color {:description "ordinal colours: a palette name or colours"} palette]
+   [:gradient {:description "linear and binned colours: colours or a palette name"} gradient]
+   [:shape {:description "point shapes, cycled"} shapes]
+   [:size {:description "size range [min max] in pixels"} size-range]
+   [:dash {:description "dash styles, cycled"} dashes]
+   [:pattern {:description "fill patterns, cycled"} patterns]
+   [:na {:description "colour of NA values"} schema/solid-color]])
 
 (defn- level-key
   "Identity of an ordinal level: numbers compare as doubles (`1931` = `1931.0`), other values as themselves."
@@ -240,21 +240,36 @@
   "Schema of the plot scale spec of aesthetic `k`."
   [k]
   (apply schema/with-rules
-         [:map {:closed true}
-          (schema/optional :kind (into [:enum] (sort kinds)))
-          (schema/optional :type [:enum :categorical :numeric])
-          (schema/nilable :domain [:sequential any?])
-          (schema/optional :range (range-schema k))
-          (schema/optional :spread schema/bool)
-          (schema/optional :midpoint schema/finite)
-          (schema/optional :transform [:enum :sqrt :log])
-          (schema/optional :reverse schema/bool)
-          (schema/optional :area schema/bool)
-          (schema/optional :bins levels/bins)
-          (schema/optional :formatter schema/function)
-          (schema/nilable :ticks [:multi {:dispatch sequential?} [true [:sequential schema/finite]] [false schema/pos-int]])
-          (schema/nilable :title string?)
-          (schema/nilable :legend schema/bool)]
+         [:map {:closed true :cljplot2/type-doc "an aesthetic scale spec"}
+          (schema/optional :kind {:description "scale kind: :ordinal (levels), :linear (a gradient or size range), :binned (:color by bins) or :identity (values are the attributes)"
+                                  :cljplot2/default-doc ":linear for numeric :color / :size data, else :ordinal"}
+                           (into [:enum] (sort kinds)))
+          (schema/optional :type {:description "declare numbers categorical (ordinal levels) or force a numeric scale"}
+                           [:enum :categorical :numeric])
+          (schema/nilable :domain {:description "ordinal: the levels in order; linear / binned: [lo hi]"
+                                   :cljplot2/default-doc "the data's levels (sorted) or [min max]"}
+                          [:sequential any?])
+          (schema/optional :range {:description "attributes the domain maps to: palette, gradient, shapes, sizes [min max], dashes or patterns, or a level map"
+                                   :cljplot2/default-doc "theme :palette"}
+                           (range-schema k))
+          (schema/optional :spread {:description "ordinal :color: the range resampled to one colour per level" :default false}
+                           schema/bool)
+          (schema/optional :midpoint {:description "linear / binned :color: the value at the gradient's middle (a diverging scale)"}
+                           schema/finite)
+          (schema/optional :transform {:description "linear :color: values placed along the gradient by their square root or logarithm"}
+                           [:enum :sqrt :log])
+          (schema/optional :reverse {:description "the attributes in reverse order" :default false} schema/bool)
+          (schema/optional :area {:description ":size: the mark's area, not its size, grows linearly with the value" :default false}
+                           schema/bool)
+          (schema/optional :bins {:description "binned :color: a bin count, breaks, a bin method or quantile bins"
+                                  :cljplot2/default-doc "5 equal bins"}
+                           levels/bins)
+          (schema/optional :formatter {:description "legend labels, a function of the level or value"} schema/function)
+          (schema/nilable :ticks {:description "linear :size / :color: the legend entries or colour bar ticks - a count or the values"}
+                          [:multi {:dispatch sequential?} [true [:sequential schema/finite]] [false schema/pos-int]])
+          (schema/nilable :title {:description "legend title (nil - none)" :cljplot2/default-doc "the mapped column's name"}
+                          string?)
+          (schema/nilable :legend {:description "show the scale's legend" :default true} schema/bool)]
          [#(domain-problem k %) [:domain]]
          (map #(option-rule k %) [:kind :domain :range :spread :midpoint :transform :reverse :area :bins :ticks])))
 

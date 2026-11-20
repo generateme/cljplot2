@@ -91,14 +91,24 @@
     (:scales env)))
 
 (def ^:private wadogo-attributes
-  "wadogo scale attributes passed through to the scale (see wadogo's kinds)."
-  [:clamp :unknown :round :base :exponent :padding-in :padding-out :align-outer :align :interpolator-params])
+  "wadogo scale attributes passed through to the scale (see wadogo's kinds, `wadogo.scale/kind-info`):
+  `[key description]` pairs, in table order."
+  [[:clamp "wadogo: clamp values outside the domain to its ends"]
+   [:unknown "wadogo: the value returned for values outside a bands domain"]
+   [:round "wadogo: round band starts and widths to whole pixels"]
+   [:base "wadogo: logarithm base of a :log scale (ticks and nice only)"]
+   [:exponent "wadogo: exponent of a :pow scale"]
+   [:padding-in "wadogo: space between bands, a fraction of the step"]
+   [:padding-out "wadogo: space before the first and after the last band, a fraction of the step"]
+   [:align-outer "wadogo: how the outer band space is split, 0 - all after the last band, 1 - all before the first"]
+   [:align "wadogo: position of a point inside its band, 0 - band start, 1 - band end"]
+   [:interpolator-params "wadogo: parameters of the :interpolated scale's :interpolator"]])
 
 (def ^:private ticks-params
   [:map {:closed true}
-   (schema/optional :min-n [:and :int [:>= 0]])
-   (schema/optional :unit (into [:enum] (sort pretty-datetime/calendar-units)))
-   (schema/optional :step schema/pos-int)])
+   (schema/optional :min-n {:description "the fewest ticks (clamped to the tick count)"} [:and :int [:>= 0]])
+   (schema/optional :unit {:description "calendar tick unit (:datetime with :pretty ticks)"} (into [:enum] (sort pretty-datetime/calendar-units)))
+   (schema/optional :step {:description "a calendar tick every :step units" :default 1} schema/pos-int)])
 
 (def scale-spec-schema
   "Plot scale spec of `:x` / `:y`: wadogo attributes plus `:nice` and `:expand`, see [[scale-spec]] and
@@ -106,29 +116,52 @@
   the axis (no track, ticks, tick labels) but keeps the grid lines, `:axis :no-grid` keeps the axis without grid lines
   (e.g. a tick per category of many; default true; axis titles are separate, `:labels`)."
   (schema/with-rules
-   (into [:map {:closed true}
-          (schema/optional :kind (into [:enum] (sort position-kinds)))
-          (schema/optional :type [:enum :categorical :numeric])
-          (schema/nilable :domain [:sequential {:min 1} any?])
-          (schema/nilable :ticks [:multi {:dispatch sequential?} [true [:sequential any?]] [false schema/pos-int]])
-          (schema/nilable :nice [:multi {:dispatch boolean?} [true :boolean] [false [:and schema/finite schema/non-neg]]])
-          (schema/optional :expand schema/padding)
-          (schema/optional :formatter [:multi {:dispatch #(cond (string? %) :pattern (keyword? %) :preset :else :function)}
-                                       [:pattern :string] [:preset [:enum :power]] [:function schema/function]])
-          (schema/nilable :order-by schema/function)
-          (schema/nilable :descending schema/bool)
-          (schema/nilable :reverse schema/bool)
-          (schema/nilable :minor-ticks schema/pos-int)
-          (schema/nilable :axis-domain [:tuple schema/finite schema/finite])
-          (schema/optional :axis [:or :boolean [:enum :grid :no-grid]])
-          (schema/optional :stops [:sequential {:min 2} schema/finite])
-          (schema/optional :interpolator schema/interpolator)
-          (schema/optional :ticks-method [:enum :default :pretty])
-          (schema/optional :ticks-params ticks-params)
+   (into [:map {:closed true :cljplot2/type-doc "a position scale spec"}
+          (schema/optional :kind {:description "scale kind: :linear, :log, :pow, :symlog, :radial, :interpolated, :datetime or :bands"
+                                  :cljplot2/default-doc "from the data: :linear for numbers, :bands for levels, :datetime for java.time values"}
+                           (into [:enum] (sort position-kinds)))
+          (schema/optional :type {:description "declare numbers categorical (one band per value) or force a numeric scale"}
+                           [:enum :categorical :numeric])
+          (schema/nilable :domain {:description "explicit domain: [lo hi] for continuous kinds, the levels in order for :bands"
+                                   :cljplot2/default-doc "the charts' data extent"}
+                          [:sequential {:min 1} any?])
+          (schema/nilable :ticks {:description "a tick count hint, or the tick values themselves"
+                                  :cljplot2/default-doc "a count from the panel size and theme :tick-spacing"}
+                          [:multi {:dispatch sequential?} [true [:sequential any?]] [false schema/pos-int]])
+          (schema/nilable :nice {:description "extend a continuous domain to nice tick values (a number - the most it may grow, a fraction of the span)"
+                                 :cljplot2/default-doc "true (false for :interpolated)"}
+                          [:multi {:dispatch boolean?} [true :boolean] [false [:and schema/finite schema/non-neg]]])
+          (schema/optional :expand {:description "padding [lo hi] of a continuous domain, fractions of the span (wins over the charts')"
+                                    :cljplot2/default-doc "the charts' padding"}
+                           schema/padding)
+          (schema/optional :formatter {:description "tick label text: a function of the value, a java.time pattern (:datetime) or :power (:log)"
+                                       :cljplot2/default-doc "the charts' suggested format, else plain numbers, levels or dates"}
+                           [:multi {:dispatch #(cond (string? %) :pattern (keyword? %) :preset :else :function)}
+                            [:pattern :string] [:preset [:enum :power]] [:function schema/function]])
+          (schema/nilable :order-by {:description "bands ordered by a function of each level's rows (not with :domain)"} schema/function)
+          (schema/nilable :descending {:description "reverse the :order-by order (needs :order-by)" :default false} schema/bool)
+          (schema/nilable :reverse {:description "the axis runs the other way (the final domain reversed)" :default false} schema/bool)
+          (schema/nilable :minor-ticks {:description "unlabelled ticks between two major ticks (continuous numeric kinds)"} schema/pos-int)
+          (schema/nilable :axis-domain {:description "display only: axis and grid show the ticks of this linear domain over the panel"}
+                          [:tuple schema/finite schema/finite])
+          (schema/optional :axis {:description "true - axis and grid, false - neither, :grid - grid lines only, :no-grid - axis only"
+                                  :default true}
+                           [:or :boolean [:enum :grid :no-grid]])
+          (schema/optional :stops {:description "panel fractions the :interpolated domain values map to (increasing, or decreasing - reversed)"
+                                   :cljplot2/default-doc "evenly spaced"}
+                           [:sequential {:min 2} schema/finite])
+          (schema/optional :interpolator {:description "interpolation between the :stops of an :interpolated scale (only there)"
+                                          :cljplot2/default-doc ":linear"}
+                           schema/interpolator)
+          (schema/optional :ticks-method {:description "tick algorithm of continuous kinds: :default (d3) or :pretty (R pretty())"
+                                          :cljplot2/default-doc ":pretty for :datetime, else :default"}
+                           [:enum :default :pretty])
+          (schema/optional :ticks-params {:description "tick algorithm parameters: {:min-n n}, calendar ticks {:unit u :step s}"}
+                           ticks-params)
           (schema/optional :range (schema/forbidden "is set from the layout, it can't be given"))
           (schema/optional :padding (schema/forbidden "is internal; use :expand"))
           (schema/optional :tick-format (schema/forbidden "is internal (set by charts); use :formatter"))]
-         (map #(schema/optional % any?))
+         (map (fn [[k description]] (schema/optional k {:description description} any?)))
          wadogo-attributes)
    [domain-problem [:domain]]
    [#(when (and (:order-by %) (:domain %)) "give either :order-by or :domain, not both") [:order-by]]

@@ -41,15 +41,20 @@
 (set! *unchecked-math* :warn-on-boxed)
 
 (def ^:private plot-labels
-  "Plot label key -> grid item id, content defaults and placement, in item order."
-  [[:title {:id :title :defaults {:role :title} :column {:from :y-title :to :x-overhang} :row :title}]
-   [:x {:id :x-title :defaults {:role :axis-title} :column :panel :row :x-title}]
-   [:y {:id :y-title :defaults {:role :axis-title :rotation 270} :column :y-title :row :panel}]])
+  "Plot label key -> grid item id, content defaults, placement and description, in item order."
+  [[:title {:id :title :defaults {:role :title} :column {:from :y-title :to :x-overhang} :row :title
+            :description "plot title above the panels (role :title)"}]
+   [:x {:id :x-title :defaults {:role :axis-title} :column :panel :row :x-title
+        :description "x axis title (role :axis-title)"}]
+   [:y {:id :y-title :defaults {:role :axis-title :rotation 270} :column :y-title :row :panel
+        :description "y axis title (role :axis-title, rotated 270)"}]])
 
 (def labels-schema
   "Plot `:labels`: `{:title :x :y}`, each a text or a map of [[cljplot2.content.label/label-options]]; `nil` - no label."
   (into [:map {:closed true}]
-        (map (fn [[k]] (schema/nilable k [:multi {:dispatch map?} [true label/label-options] [false any?]])))
+        (map (fn [[k {:keys [description]}]]
+               (schema/nilable k {:description description :cljplot2/default-doc "none; axis titles from the charts or the mapped column names"}
+                               [:multi {:dispatch map?} [true label/label-options] [false any?]])))
         plot-labels))
 
 (defn- label-items
@@ -461,14 +466,19 @@
 (def arrange-schema
   "Plot `:arrange`, see [[cljplot2.multiplot/arrange]]; the plots are validated when built as sub-plots."
   (schema/with-rules
-   [:map {:closed true}
-    [:plots [:sequential {:min 1} :map]]
-    (schema/nilable :columns schema/pos-int)
-    (schema/nilable :rows schema/pos-int)
-    (schema/nilable :widths [:sequential [:or schema/pos [:= :measured] [:tuple [:= :fixed] schema/non-neg]]])
-    (schema/nilable :heights [:sequential [:or schema/pos [:tuple [:= :fixed] schema/non-neg]]])
-    (schema/nilable :align schema/bool)
-    (schema/nilable :equal-panels schema/bool)]
+   [:map {:closed true :cljplot2/type-doc "an arrange map {:plots :columns :rows :widths :heights :align :equal-panels}"}
+    [:plots {:description "the sub-plots, filling the grid row by row"} [:sequential {:min 1} :map]]
+    (schema/nilable :columns {:description "grid columns" :cljplot2/default-doc "one column (from :rows when given)"} schema/pos-int)
+    (schema/nilable :rows {:description "grid rows" :cljplot2/default-doc "from the plot count and :columns"} schema/pos-int)
+    (schema/nilable :widths {:description "relative column weights; :measured sizes a column of legend-only plots, [:fixed px] a fixed width"
+                             :cljplot2/default-doc "equal"}
+                    [:sequential [:or schema/pos [:= :measured] [:tuple [:= :fixed] schema/non-neg]]])
+    (schema/nilable :heights {:description "relative row weights; [:fixed px] a fixed height" :cljplot2/default-doc "equal"}
+                    [:sequential [:or schema/pos [:tuple [:= :fixed] schema/non-neg]]])
+    (schema/nilable :align {:description "align the sub-plots' panels in rows and columns" :default true} schema/bool)
+    (schema/nilable :equal-panels {:description "resize columns and rows so every aligned panel has the same size (builds twice)"
+                                   :default false}
+                    schema/bool)]
    [arrange-problem]))
 
 (defn- arrange-weights

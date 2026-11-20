@@ -24,17 +24,26 @@
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
+(def polar-schema
+  "Schema of a polar plot `:coord` (see the namespace doc)."
+  [:map {:closed true :cljplot2/type-doc "a polar coord {:kind :polar :start :direction :span :inner :arcs}"}
+   [:kind {:description "polar coordinates: the horizontal scale maps to angles, the vertical one to radii"} [:= :polar]]
+   (schema/optional :start {:description "angle of the horizontal scale's range start, degrees (0 - 12 o'clock)" :default 0}
+                    schema/finite)
+   (schema/optional :direction {:description "direction of growing angles" :default :clockwise}
+                    [:enum :clockwise :counter-clockwise])
+   (schema/optional :span {:description "degrees covered (e.g. 180 for a half circle)" :default 360}
+                    [:and schema/finite [:> 0] [:<= 360]])
+   (schema/optional :inner {:description "inner radius as a fraction of the outer one (a hole for donuts)" :default 0}
+                    [:and schema/finite [:>= 0] [:< 1]])
+   (schema/nilable :arcs {:description "data lines between points follow the circle instead of chords" :default false}
+                   schema/bool)])
+
 (def coord-schema
-  "Schema of the plot `:coord`."
-  [:multi {:dispatch :kind}
-   [:cartesian [:map {:closed true} [:kind [:= :cartesian]]]]
-   [:polar [:map {:closed true}
-            [:kind [:= :polar]]
-            (schema/optional :start schema/finite)
-            (schema/optional :direction [:enum :clockwise :counter-clockwise])
-            (schema/optional :span [:and schema/finite [:> 0] [:<= 360]])
-            (schema/optional :inner [:and schema/finite [:>= 0] [:< 1]])
-            (schema/nilable :arcs schema/bool)]]])
+  "Schema of the plot `:coord`: cartesian (the default) or [[polar-schema]]."
+  [:multi {:dispatch :kind :cljplot2/type-doc "{:kind :cartesian} or a polar coord {:kind :polar ...}"}
+   [:cartesian [:map {:closed true} [:kind {:description "cartesian coordinates (the default)"} [:= :cartesian]]]]
+   [:polar polar-schema]])
 
 (defn polar?
   "Is plot coord `coord` (a plot `:coord` value, may be `nil`) polar?"

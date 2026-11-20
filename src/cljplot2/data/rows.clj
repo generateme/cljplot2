@@ -26,13 +26,41 @@
   holds a vector of accessors; `:set` / `:item` - set membership (Venn)."
   [:x :y :z :ymin :ymax :xend :yend :open :high :low :close :color :shape :size :dash :pattern :group :facet :facet-col :facet-row :order :value :set :item])
 
+(def ^:private mapping-key-descriptions
+  "Plot-level meaning of each mapping key (each chart's mapping rows say how it reads them)."
+  {:x "x position (or the values of a strip chart with levels on y)"
+   :y "y position (or the levels of a strip chart)"
+   :z "third coordinate of 3D charts"
+   :ymin "lower end of an interval (ribbons, error bars)"
+   :ymax "upper end of an interval"
+   :xend "x of a segment's end"
+   :yend "y of a segment's end"
+   :open "opening value (candlesticks)"
+   :high "highest value (candlesticks)"
+   :low "lowest value (candlesticks)"
+   :close "closing value (candlesticks)"
+   :color "colour aesthetic: groups, or values on a colour scale"
+   :shape "point shape aesthetic"
+   :size "size aesthetic"
+   :dash "line dash aesthetic"
+   :pattern "fill pattern aesthetic"
+   :group "groups without a visual aesthetic"
+   :facet "wrap facets: one panel per value"
+   :facet-col "grid facets: one column per value"
+   :facet-row "grid facets: one row per value"
+   :order "drawing order of points"
+   :value "a value: cell values, weights, sizes of hierarchy leaves"
+   :set "set name of a membership row (Venn)"
+   :item "item of a membership row (Venn)"})
+
 (def mapping-schema
   "A plot or chart `:mapping`: accessors (keyword or function; `nil` - not mapped) of the built-in keys, `:hierarchy`
   a non-empty vector of accessors; `:fill` is rejected (not an aesthetic, see the density / histogram `:fill`
   options). Open: user charts may read other keys."
-  (-> [:map]
-      (into (map #(schema/nilable % schema/accessor)) mapping-keys)
-      (conj (schema/nilable :hierarchy [:vector {:min 1} schema/accessor])
+  (-> [:map {:cljplot2/type-doc "a mapping: key -> accessor (a keyword or a function of a row)"}]
+      (into (map #(schema/nilable % {:description (mapping-key-descriptions %)} schema/accessor)) mapping-keys)
+      (conj (schema/nilable :hierarchy {:description "levels of a hierarchy, root first (treemap, partition, pack)"}
+                            [:vector {:min 1} schema/accessor])
             ;; no :fill aesthetic: a mapped :fill would be silently ignored
             (schema/nilable :fill (schema/forbidden "isn't an aesthetic - fill areas by group with the chart option :fill :color")))))
 

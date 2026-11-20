@@ -70,14 +70,20 @@
   in ascending order of it (see [[cljplot2.data.levels/order-by-rows]]; not with `:domain`), `:descending` - `true`
   reverses that order (needs `:order-by`)."
   (schema/with-rules
-   [:map {:closed true}
-    (schema/nilable :domain (schema/with-rules [:sequential {:min 1} any?]
-                              [#(when-not (apply distinct? %) "facet domain values should be distinct")]))
-    (schema/optional :formatter schema/function)
-    (schema/nilable :order-by schema/function)
-    (schema/nilable :descending schema/bool)
+   [:map {:closed true :cljplot2/type-doc "a facet scale spec"}
+    (schema/nilable :domain {:description "the facet levels in panel order (values outside are dropped)"
+                             :cljplot2/default-doc "the data's levels, sorted (NA last)"}
+                    (schema/with-rules [:sequential {:min 1} any?]
+                      [#(when-not (apply distinct? %) "facet domain values should be distinct")]))
+    (schema/optional :formatter {:description "strip text of a level, a function of the level"
+                                 :cljplot2/default-doc "(str level), \"NA\" for the NA level"}
+                     schema/function)
+    (schema/nilable :order-by {:description "levels in ascending order of a function of each level's rows (not with :domain)"}
+                    schema/function)
+    (schema/nilable :descending {:description "reverse the :order-by order (needs :order-by)" :default false} schema/bool)
     ;; facets are always categorical; accepted for symmetry with the other scales
-    (schema/optional :type [:= :categorical])]
+    (schema/optional :type {:description "facets are always categorical (accepted for symmetry with other scales)"}
+                     [:= :categorical])]
    [#(when (and (:order-by %) (:domain %)) "give either :order-by or :domain, not both") [:order-by]]
    [#(when (and (:descending %) (nil? (:order-by %))) ":descending needs :order-by") [:descending]]))
 
@@ -92,16 +98,28 @@
   default `:same`), `:strips` (default true; `false` - no strips), `:widths` / `:heights` - relative sizes of the
   panel columns / rows (positive numbers, one per column / row)."
   [:map {:closed true}
-   (schema/nilable :columns schema/pos-int)
-   (schema/nilable :rows schema/pos-int)
-   (schema/nilable :order [:enum :top-down :bottom-up])
-   (schema/nilable :na-panel schema/bool)
-   (schema/nilable :scales [:map {:closed true}
-                            (schema/nilable :x (into [:enum] (sort scale-relations)))
-                            (schema/nilable :y (into [:enum] (sort scale-relations)))])
-   (schema/nilable :strips schema/bool)
-   (schema/nilable :widths [:sequential {:min 1} schema/pos])
-   (schema/nilable :heights [:sequential {:min 1} schema/pos])])
+   (schema/nilable :columns {:description "columns of a wrap layout" :cljplot2/default-doc "the most square shape (from :rows when given)"}
+                   schema/pos-int)
+   (schema/nilable :rows {:description "rows of a wrap layout" :cljplot2/default-doc "the most square shape (from :columns when given)"}
+                   schema/pos-int)
+   (schema/nilable :order {:description "wrap panel order: :top-down (first level at the top) or :bottom-up (lattice's)"
+                           :default :top-down}
+                   [:enum :top-down :bottom-up])
+   (schema/nilable :na-panel {:description "give nil facet values a panel of their own (false - drop those rows)" :default true}
+                   schema/bool)
+   (schema/nilable :scales {:description "position scale relation between panels per axis"}
+                   [:map {:closed true}
+                    (schema/nilable :x {:description "x relation: :same (one domain), :free (each panel's data) or :sliced (each panel's centre, the widest span)"
+                                        :default :same}
+                                    (into [:enum] (sort scale-relations)))
+                    (schema/nilable :y {:description "y relation: :same (one domain), :free (each panel's data) or :sliced (each panel's centre, the widest span)"
+                                        :default :same}
+                                    (into [:enum] (sort scale-relations)))])
+   (schema/nilable :strips {:description "draw the facet strips" :default true} schema/bool)
+   (schema/nilable :widths {:description "relative widths of the panel columns, one per column" :cljplot2/default-doc "equal"}
+                   [:sequential {:min 1} schema/pos])
+   (schema/nilable :heights {:description "relative heights of the panel rows, one per row" :cljplot2/default-doc "equal"}
+                   [:sequential {:min 1} schema/pos])])
 
 (defn scale-relation
   "Relation of position scale `k` in plot `facets` options: `:same` (default), `:free` or `:sliced`."

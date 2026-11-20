@@ -37,11 +37,12 @@
 (def label-options
   "Label options given by users (plot `:labels` maps, label content in custom grids): `:text`, `:role`, `:rotation`,
   `:align` and the style overrides of [[cljplot2.theme/style-keys]]."
-  (-> [:map {:closed true}
-       (schema/optional :kind [:= :label])
-       (schema/optional :text any?)
-       (schema/optional :role keyword?)
-       (schema/optional :rotation [:enum 0 90 270])]
+  (-> [:map {:closed true :cljplot2/type-doc "a label options map (:text, :role, :rotation, text style keys)"}
+       (schema/optional :kind {:description "content kind (labels only)"} [:= :label])
+       (schema/optional :text {:description "the text (converted with str; \\n breaks lines)"} any?)
+       (schema/optional :role {:description "theme text role styling the label (:title, :axis-title, ... or a role of your theme)"}
+                        keyword?)
+       (schema/optional :rotation {:description "clockwise degrees (270 reads bottom to top)" :default 0} [:enum 0 90 270])]
       (into theme/text-style-overrides)))
 
 (defn- lines

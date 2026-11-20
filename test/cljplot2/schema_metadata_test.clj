@@ -9,7 +9,17 @@
             [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
             [cljplot2.describe :as describe]
-            [cljplot2.demo :as demo]))
+            [cljplot2.demo :as demo]
+            [cljplot2.pipeline]
+            [cljplot2.schema :as schema]
+            [cljplot2.scale.aesthetic]
+            [cljplot2.scale.coord]
+            [cljplot2.scale.position]
+            [cljplot2.content.label]
+            [cljplot2.data.facet]
+            [cljplot2.data.rows]
+            [cljplot2.layout.plot-grid]
+            [cljplot2.theme]))
 
 (def chart-constructors
   "Kind -> constructor of every built-in chart."
@@ -219,3 +229,121 @@
       (is (every? (fn [{:keys [fragment key]}]
                     (some #(= key (:key %)) (describe/fragment-rows fragment)))
                   (filter #(and (:fragment %) (= 1 (count (:path %)))) rows))))))
+
+;; R1b: the non-chart schemas
+
+(def non-chart-schemas
+  "Every non-chart schema users write: name -> schema."
+  {:plot cljplot2.pipeline/plot-schema
+   :render-options cljplot2.pipeline/options-schema
+   :position-scale cljplot2.scale.position/scale-spec-schema
+   :facet-scale cljplot2.data.facet/scale-spec-schema
+   :color-scale (cljplot2.scale.aesthetic/scale-spec-schema :color)
+   :shape-scale (cljplot2.scale.aesthetic/scale-spec-schema :shape)
+   :size-scale (cljplot2.scale.aesthetic/scale-spec-schema :size)
+   :dash-scale (cljplot2.scale.aesthetic/scale-spec-schema :dash)
+   :pattern-scale (cljplot2.scale.aesthetic/scale-spec-schema :pattern)
+   :facets cljplot2.data.facet/facet-options
+   :labels cljplot2.layout.plot-grid/labels-schema
+   :label cljplot2.content.label/label-options
+   :arrange cljplot2.layout.plot-grid/arrange-schema
+   :coord cljplot2.scale.coord/coord-schema
+   :margins cljplot2.pipeline/margins-schema
+   :mapping cljplot2.data.rows/mapping-schema
+   :theme cljplot2.theme/theme-schema})
+
+(defn- all-entries
+  "`[path props schema]` of every map entry anywhere in `schema` - nested maps, `:multi` branches, `:and` / `:or` /
+  `:maybe` / collection children."
+  [schema]
+  (letfn [(walk [s path]
+            (let [s (malli/schema s)]
+              (case (malli/type s)
+                :map (mapcat (fn [[k props v]] (cons [(conj path k) props v] (walk v (conj path k)))) (malli/children s))
+                :multi (mapcat (fn [[_ _ v]] (walk v path)) (malli/children s))
+                (:maybe :and :or :vector :sequential :set :map-of :tuple)
+                (mapcat #(when (malli/schema? (try (malli/schema %) (catch Exception _ nil))) (walk % path)) (malli/children s))
+                nil)))]
+    (walk schema [])))
+
+(deftest non-chart-descriptions-test
+  (doseq [[n s] non-chart-schemas
+          :let [entries (remove (fn [[_ _ v]] (schema/forbidden? v)) (all-entries s))]]
+    (testing (str n ": every entry described")
+      (is (seq entries))
+      (is (= [] (vec (keep (fn [[path props]] (when-not (:description props) path)) entries)))))
+    (testing (str n ": not both :default and a default text")
+      (is (not-any? (fn [[_ props]] (and (contains? props :default) (contains? props :cljplot2/default-doc))) entries)))
+    (testing (str n ": writing rule")
+      (is (= [] (rule-breaks (map (fn [[path props]] {:kind n :path path :description (:description props)
+                                                      :default-doc (:cljplot2/default-doc props)})
+                                  entries)
+                             :description)))
+      (is (= [] (rule-breaks (map (fn [[path props]] {:kind n :path path :default-doc (:cljplot2/default-doc props)}) entries)
+                             :default-doc))))
+    (testing (str n ": readable type texts")
+      (is (= [] (vec (keep #(when (re-find #":cljplot2\.|#object|\[:(cat|\?|\*|\+|fn|map|and|or|maybe|enum)\b|\w\?(,| |$)" (:type %))
+                              [(:path %) (:type %)])
+                           (describe/options s))))))))
+
+(deftest theme-entries-test
+  (testing "theme entries take their defaults from the default theme, not :default"
+    (is (not-any? (fn [[_ props]] (contains? props :default)) (all-entries cljplot2.theme/theme-schema))))
+  (testing "every text role of the default theme is described"
+    (is (= (set (keys (:text cljplot2.theme/default-theme))) (set (keys cljplot2.theme/text-roles))))))
+
+;; R1b: non-chart defaults
+
+(defn- set-defaults-at
+  "`plot` with the constant `:default`s of `schema` set explicitly in the map at `path` (nested ones inside given maps)."
+  [plot path schema]
+  (let [set-defaults #(explicit-defaults (describe/schema-rows schema) (or % {}))]
+    (if (empty? path) (set-defaults plot) (update-in plot path set-defaults))))
+
+(defn- same-pixels?
+  [p q options]
+  (java.util.Arrays/equals (pixels (plot/render-image p options)) (pixels (plot/render-image q options))))
+
+(def ^:private faceted
+  {:data (for [f ["a" "b" "c" nil] i (range 8)] {:f f :x i :y (* i (count (str f))) :c (if (even? i) "u" "v")})
+   :mapping {:x :x :y :y :color :c :facet :f}
+   :charts [(chart/scatter)]
+   :facets {:scales {}}
+   :groups {}
+   :labels {:title {:text "T"}}})
+
+(deftest non-chart-defaults-test
+  (let [o {:width 500 :height 400}]
+    (testing "plot, facets, groups, labels"
+      (is (same-pixels? faceted (-> faceted
+                                    (set-defaults-at [] cljplot2.pipeline/plot-schema)
+                                    (set-defaults-at [:labels :title] cljplot2.content.label/label-options))
+                        o)))
+    (testing "position and aesthetic scales"
+      (let [p (assoc faceted :scales {:x {:ticks-params {:unit :days}} :y {} :color {} :facet {}})
+            p (update-in p [:scales :x] dissoc :ticks-params)]
+        (is (same-pixels? p (-> p
+                                (set-defaults-at [:scales :x] cljplot2.scale.position/scale-spec-schema)
+                                (set-defaults-at [:scales :y] cljplot2.scale.position/scale-spec-schema)
+                                (set-defaults-at [:scales :color] (cljplot2.scale.aesthetic/scale-spec-schema :color))
+                                (set-defaults-at [:scales :facet] cljplot2.data.facet/scale-spec-schema))
+                          o))))
+    (testing "polar coord"
+      (let [p {:data [{:x "a" :y 1} {:x "b" :y 2}] :mapping {:x :x :y :y} :charts [(chart/bar)] :coord {:kind :polar}}]
+        (is (same-pixels? p (set-defaults-at p [:coord] cljplot2.scale.coord/polar-schema) o))))
+    (testing "margins"
+      (let [p {:data (map (fn [i] {:x i :y (* i i)}) (range 20)) :mapping {:x :x :y :y} :charts [(chart/scatter)]
+               :margins {:top {:charts [(chart/histogram)]}}}
+            top (some (fn [[k _ v]] (when (= :top k) v)) (malli/children (malli/schema cljplot2.pipeline/margins-schema)))
+            spec (some (fn [[k _ v]] (when (= :spec k) v)) (malli/children (malli/schema top)))
+            defaults (into {} (keep (fn [{:keys [key default]}] (when (some? default) [key default])))
+                           (describe/schema-rows spec))]
+        (is (= {:size 80 :axis false} defaults))
+        (is (same-pixels? p (update-in p [:margins :top] merge defaults) o))))
+    (testing "arrange"
+      (let [cell {:data [{:x 1 :y 2} {:x 2 :y 3}] :mapping {:x :x :y :y} :charts [(chart/scatter)]}
+            p {:arrange {:plots [cell cell] :columns 2}}]
+        (is (same-pixels? p (set-defaults-at p [:arrange] cljplot2.layout.plot-grid/arrange-schema) o))))
+    (testing "render options"
+      (is (java.util.Arrays/equals (pixels (plot/render-image faceted))
+                                   (pixels (plot/render-image faceted (explicit-defaults (describe/schema-rows cljplot2.pipeline/options-schema) {})))))))) 

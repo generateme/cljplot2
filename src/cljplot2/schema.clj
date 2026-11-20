@@ -241,9 +241,12 @@
   [:fn {:error/message message :cljplot2/forbidden true} (constantly false)])
 
 (defn forbidden?
-  "Is `schema` (a malli schema) a [[forbidden]] one?"
+  "Is `schema` (a malli schema) a [[forbidden]] one (also under `:maybe`, as [[nilable]] wraps it)?"
   [schema]
-  (true? (:cljplot2/forbidden (malli/properties (malli/schema schema)))))
+  (let [s (malli/schema schema)]
+    (if (= :maybe (malli/type s))
+      (forbidden? (first (malli/children s)))
+      (true? (:cljplot2/forbidden (malli/properties s))))))
 
 (defn keyword-or
   "Schema of the keyword `kw` (e.g. `:none`, `:stretch`) or a value of `schema`; errors come from `schema` alone."

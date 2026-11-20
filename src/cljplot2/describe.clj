@@ -6,7 +6,8 @@
   function var (its `:cljplot2/options` schema) or of a map schema; [[mapping]] - rows of the mapping keys a chart
   reads; [[api-vars]] - the user-facing data functions (`:cljplot2/api` var metadata; this namespace loads every
   namespace holding them); [[fragments]] - the shared groups of options entries belong to, [[fragment-rows]] - the
-  rows of one group (a chart may take only some of a group's entries - its own rows are what it accepts).
+  rows of one group (a chart may take only some of a group's entries - its own rows are what it accepts);
+  [[theme-rows]] - the theme's rows with their defaults and text roles.
 
   A row: `{:key k :path [k ...] :type text :required? bool :default v :default-doc text :description text
   :fragment kw}` - `:path` is longer than `[k]` for the entries of nested closed maps (each nested map also has its
@@ -118,13 +119,14 @@
       nil)))
 
 (defn type-text
-  "Readable text of `schema`'s type: a named type's `:cljplot2/type-doc` or error message, built-in types and
-  composites spelled out (`\"one of :a :b\"`, `\"[number number]\"`, `\"x or nil\"` ...)."
+  "Readable text of `schema`'s type: a named type's `:cljplot2/type-doc` (or a schema's own, e.g. a large map's) or
+  error message, built-in types and composites spelled out (`\"one of :a :b\"`, `\"[number number]\"`, `\"x or nil\"` ...)."
   [schema]
   (let [s (malli/schema schema)
         t (malli/type s)
         tp (malli/type-properties s)]
     (or (:cljplot2/type-doc tp)
+        (:cljplot2/type-doc (malli/properties s))
         (when (and (qualified-keyword? t) (string? (:error/message tp))) (message-text (:error/message tp)))
         (composite-text s t)
         (when-let [text (get builtin-texts t)] (str text (bounds-text (malli/properties s))))
@@ -185,6 +187,28 @@
             (cond-> row
               (and (= 1 (count path)) (contains? style-keys key) (contains? style key)) (assoc :default (get style key))))
           (schema-rows (get-in chart [:schema :options])))))
+
+(defn- with-defaults
+  "`rows` with `:default` from the nested map `defaults` at each row's `:path` where the row has none - except a
+  map-typed row holding a map (a nested map or a map of entries: its own rows carry the values)."
+  [rows defaults]
+  (mapv (fn [{:keys [path type] :as row}]
+          (let [v (get-in defaults path)]
+            (cond-> row
+              (and (nil? (:default row)) (some? v) (not (and (map? v) (str/starts-with? type "map")))) (assoc :default v))))
+        rows))
+
+(defn theme-rows
+  "Rows of the theme ([[cljplot2.theme/theme-schema]]) with their defaults from [[cljplot2.theme/default-theme]],
+  then one row `[:text role]` per text role of [[cljplot2.theme/text-roles]] (sorted), its default the role's style."
+  []
+  (let [style-type (type-text theme/text-style-schema)]
+    (into (with-defaults (schema-rows theme/theme-schema) theme/default-theme)
+          (map (fn [role]
+                 {:key role :path [:text role] :type style-type :required? false
+                  :default (get-in theme/default-theme [:text role]) :default-doc nil
+                  :description (theme/text-roles role) :fragment nil}))
+          (sort (keys theme/text-roles)))))
 
 (defn fragment-rows
   "Rows of the entries of shared group `fragment` (a key of [[fragments]]); empty for an unknown group."

@@ -89,7 +89,9 @@ into the builder's. `cljplot2.core` is the public API (`build`, `render`, `rende
   period), `:default` for a constant behaviour default (never on style entries - the theme holds those) or
   `:cljplot2/default-doc` for a computed one; shared groups via `schema/in-fragment` (registered in
   `cljplot2.describe/fragments`). `cljplot2.describe` turns schemas into option rows for the book's reference part;
-  `schema-metadata-test` checks every chart entry is described and every `:default` is the real one.
+  `schema-metadata-test` checks every chart and plot-level entry (plot, scales, facets, labels, coord, theme ...) is
+  described and every `:default` is the real one (pixel-equal renders); theme entries take their defaults from
+  `default-theme`, text roles their descriptions from `theme/text-roles`.
 - Errors: `cljplot2.schema/fail!` with `{:key option …}`; namespaces `cljplot2.schema` itself requires (e.g.
   `graphics.shape`) use `cljplot2.error/fail!` (the same function, no dependency cycle).
 
