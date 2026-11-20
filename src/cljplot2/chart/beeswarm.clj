@@ -13,8 +13,8 @@
   a few diameters off their value along the axis); `:fit` squeezes the cross offsets only.
 
   Options (style defaults from theme `[:chart :beeswarm]`): `:size`, `:color`, `:stroke-color`, `:stroke-width`,
-  `:shape` (as scatter, see [[cljplot2.graphics.shape]]); `:fit`, `:pack`, `:padding {:x [lo hi]}` (default `[0.05 0.05]`),
-  plus the strip options and `:data` / `:mapping`."
+  `:shape` (as scatter, see [[cljplot2.graphics.shape]]); `:fit`, `:pack`, `:padding {:x [lo hi]}` (default
+  `[0.05 0.05]`), plus the strip options and `:data` / `:mapping`."
   (:require [fastmath.core :as m]
             [fastmath.vector :as v]
             [cljplot2.data.group :as group]
@@ -94,7 +94,9 @@
 
 (def ^:private ^:const golden-angle (* Math/PI (- 3.0 (Math/sqrt 5.0))))
 
-(def ^:private ^:const max-spiral-steps 100000)
+(def ^:const max-spiral-steps
+  "Most spiral spots [[around-offsets]] tests for one circle."
+  100000)
 
 (defn- free-spot?
   "Is a circle of `diameter` at `[u c]` clear of every circle in `grid` (cell `[i j]` of side `diameter` -> centres)?"
@@ -108,7 +110,9 @@
   (increasing): each circle, in order, at the first spot of a Vogel spiral around `[position 0]` (spacing a quarter
   diameter - the free spot nearest its target, closely) where it is at least `diameter` from every circle placed
   before (`one-sided?` - spots with a non-negative cross offset only). Deterministic; a grid of cell side `diameter`
-  keeps each test local. A zero `diameter` gives zero offsets."
+  keeps each test local. A zero `diameter` gives zero offsets. Each search restarts at the target, so many equal
+  values cost more steps per point (a cluster of `k` circles - about 16 `k` spots for the last one); a circle with no
+  free spot within [[max-spiral-steps]] stays at its target (overlapping)."
   [positions ^double diameter one-sided?]
   (if-not (pos? diameter)
     (mapv (constantly [0.0 0.0]) positions)
@@ -183,7 +187,9 @@
         (doseq [[[v] [along] o] (map vector kept pairs crosses)
                 :let [cross (+ base (/ (* (if one-sided? side 1.0) (double o)) s))
                       ^Vec2 p (point v level cross)
-                      ^Vec2 p (if (zero? (double along)) p (v/add p (v/mult (value-direction point v level cross) (double along))))]
+                      ^Vec2 p (if (zero? (double along))
+                                p
+                                (v/add p (v/mult (value-direction point v level cross) (double along))))]
                 :when (and (m/valid-double? (.x p)) (m/valid-double? (.y p)))]
           (shape/draw! canvas (:shape st) p st))))
     (strip/draw-n-labels! canvas pl items (fn [{:keys [values]}] (reduce max values)) options scales env)))

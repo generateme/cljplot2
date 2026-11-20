@@ -165,9 +165,11 @@
 
 (deftest tree-defaults-test
   (let [p (plot/tree small {})]
-    (testing "light links; cartesian labels keep anchored room"
-      (is (= [204 204 204] (get-in p [:charts 0 :options :color])))
-      (is (= 0.75 (get-in p [:charts 0 :options :width])))
+    (testing "mid-grey links; cartesian labels keep anchored room"
+      (is (= [176 176 176] (get-in p [:charts 0 :options :color])))
+      (is (= 0.9 (get-in p [:charts 0 :options :width])))
+      (is (= [120 0 0] (get-in (plot/tree small {:link-style {:color [120 0 0]}}) [:charts 0 :options :color]))
+          ":link-style wins")
       (is (every? #(= :anchor (get-in % [:options :reserve-room])) (filter #(= :text (:kind %)) (:charts p)))))
     (testing "radial labels keep room on every side"
       (is (every? #(true? (get-in % [:options :reserve-room]))
