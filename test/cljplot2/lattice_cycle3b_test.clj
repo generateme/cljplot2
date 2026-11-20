@@ -279,9 +279,9 @@
       (is (= [2 1 1] (:aspect (scene {:aspect [3 1 1]} {:aspect [2 1 1]}))) "the last wins")
       (is (false? (:box? (scene {:box? false})))))
     (testing "R7 overrides hold only the options set; :axis-titles nil - no titles"
-      (is (= {} (cloud/frame-overrides {:box nil :size 3})))
-      (is (= {:view {:azimuth 5} :box? false :titles nil} (cloud/frame-overrides {:view {:azimuth 5} :box false :axis-titles nil})))
-      (is (nil? (:titles (cloud/frame-settings {:axis-titles nil} {:x :x})))))
+      (is (= {} (space/frame-overrides {:box nil :size 3})))
+      (is (= {:view {:azimuth 5} :box? false :titles nil} (space/frame-overrides {:view {:azimuth 5} :box false :axis-titles nil})))
+      (is (nil? (:titles (space/frame-settings {:axis-titles nil} {:x :x})))))
     (testing "R7 a cloud's view over a surface's frame"
       (let [domain {:x [0 2] :y [0 1] :z [0 12]}
             b (built {:data lattice :mapping {:x :x :y :y :z :z}

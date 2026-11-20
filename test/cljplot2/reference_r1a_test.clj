@@ -62,4 +62,12 @@
     (testing "an ungrouped glyph shows r on the colour scale, not the theme colour"
       (is (not (contains? (colors (render {:x :x :y :y})) theme-blue))))
     (testing "a grouped chart's glyph takes the theme colour"
-      (is (contains? (colors (render {:x :x :y :y :group :g})) theme-blue)))))
+      (is (contains? (colors (render {:x :x :y :y :group :g})) theme-blue))))
+  (let [render #(plot/render-image {:data (points) :mapping %1 :charts [(chart/correlation)]} {:width 200 :height 200})
+        black (c/pack (c/color :black))]
+    (testing ":number glyph grouped by :group: group lines in black, never the theme colour"
+      (let [cs (colors (render {:x :x :y :y :group :g}))]
+        (is (contains? cs black))
+        (is (not (contains? cs theme-blue)))))
+    (testing ":number glyph grouped by :color: group lines in their mapped colours"
+      (is (contains? (colors (render {:x :x :y :y :color :g})) (c/pack (first (c/palette :category10))))))))

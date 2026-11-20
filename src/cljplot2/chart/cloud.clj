@@ -116,30 +116,6 @@
   [options theme]
   (merge (get-in theme [:chart :cloud]) (select-keys options [:size :color :stroke-color :stroke-width :shape])))
 
-(defn frame-settings
-  "Frame of a 3D chart from its `options` and merged `mapping`: `{:view :aspect :box? :axes? :titles}` - titles from
-  `:axis-titles`, else the names of keyword accessors."
-  [options mapping]
-  {:view (merge space/default-view (:view options))
-   :aspect (or (:aspect options) [1.0 1.0 1.0])
-   :box? (not (false? (:box options)))
-   :axes? (not (false? (:axes options)))
-   :titles (if (contains? options :axis-titles)
-             (:axis-titles options)
-             (into {} (keep (fn [k] (let [a (accessor/unwrap (get mapping k))] (when (keyword? a) [k (name a)])))) position-dims))})
-
-(defn frame-overrides
-  "The frame settings a 3D chart's `options` set explicitly (keys of [[frame-settings]]; `:view` as given, `:titles`
-  from `:axis-titles`): a later chart's are merged over the first chart's frame of a scene, see
-  [[cljplot2.graphics.space3d/scene-frame]]."
-  [options]
-  (cond-> {}
-    (:view options) (assoc :view (:view options))
-    (:aspect options) (assoc :aspect (:aspect options))
-    (some? (:box options)) (assoc :box? (:box options))
-    (some? (:axes options)) (assoc :axes? (:axes options))
-    (contains? options :axis-titles) (assoc :titles (:axis-titles options))))
-
 (defn axis-levels
   "Levels of the position axis `k` (`:x` / `:y`) from its values `vs` over every panel (`nil`s and non-finite numbers
   ignored - dropped rows): `nil` for numbers (a numeric axis) unless `accessor` is marked categorical
@@ -227,7 +203,7 @@
 
 (defn compute
   "Per panel: `{:points {:x [..] :y [..] :z [..] aesthetic [..]} :domains {:x :y :z} :frame f :style st :type t :base b
-  :half [hx hy]}` (`f` - see [[frame-settings]], `hx` / `hy` - half a bar in data units; with `:bins` the points are
+  :half [hx hy]}` (`f` - see [[cljplot2.data.space3d/frame-settings]], `hx` / `hy` - half a bar in data units; with `:bins` the points are
   the non-empty cells, see [[bin-counts]]; with `:projections` also `:projections`, see [[projection-layers]]);
   aesthetic extents only (no position extents: the chart lays out its panel), `:na`, `:dropped` per dimension."
   [{:keys [options]} {:keys [groups mapping]} {:keys [theme na-level? plot-scales] :or {na-level? true}}]
@@ -288,12 +264,12 @@
                   :y (or (:y explicit) (:y bin-domains) (level-domain :y) (space/data-domain (coords :y) (double (half :y))))
                   :z (or (:z explicit) (space/data-domain (cond-> (vec z-values) (and (seq z-values) (#{:spikes :bars} type)) (conj base)) 0.0))}
                  (:reverse options))
-        frame (cond-> (frame-settings options mapping)
+        frame (cond-> (space/frame-settings options mapping)
                 (and bins (not (contains? options :axis-titles))) (assoc-in [:titles :z] "Count")
                 (seq levels) (assoc :levels levels))
         layers (when-let [projections (not-empty (:projections options))] (projection-layers projections points domains))]
     {:data (into {} (map (fn [[panel p]]
-                           [panel (cond-> {:points p :domains domains :frame frame :frame-overrides (frame-overrides options)
+                           [panel (cond-> {:points p :domains domains :frame frame :frame-overrides (space/frame-overrides options)
                                            :style st :type type :base base :half [(half :x) (half :y)]}
                                     layers (assoc :projections (layers panel)))]))
                  points)

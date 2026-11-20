@@ -16,10 +16,14 @@
   [[projector]] fits the projected box (plus a margin for axes) in a panel and gives pixel positions with depths;
   primitives are drawn far to near by depth (painter's algorithm, see [[cljplot2.graphics.space3d]]). Faces are
   shaded by Lambert lighting ([[shade]]); [[visible-edges]] - box edges not hidden behind it, [[axis-edges]] - the box
-  edge each axis is drawn on."
+  edge each axis is drawn on.
+
+  The 3D charts' shared frame options - [[frame-options]] (schema), [[frame-settings]] (a chart's frame, the options'
+  defaults applied) and [[frame-overrides]] (the frame options a chart sets explicitly) - live here too."
   (:require [clojure2d.color :as c]
             [fastmath.core :as m]
             [fastmath.vector :as v]
+            [cljplot2.data.accessor :as accessor]
             [cljplot2.scale.position :as scale]
             [cljplot2.schema :as schema])
   (:import [fastmath.vector Vec2 Vec3]))
@@ -78,6 +82,30 @@
   "Box proportions `aspect` as a vector; `nil` - the default cube `[1 1 1]`."
   [aspect]
   (vec (or aspect [1.0 1.0 1.0])))
+
+(defn frame-settings
+  "Frame of a 3D chart from its `options` and merged `mapping`: `{:view :aspect :box? :axes? :titles}` - titles from
+  `:axis-titles`, else the names of keyword accessors."
+  [options mapping]
+  {:view (merge default-view (:view options))
+   :aspect (box-aspect (:aspect options))
+   :box? (not (false? (:box options)))
+   :axes? (not (false? (:axes options)))
+   :titles (if (contains? options :axis-titles)
+             (:axis-titles options)
+             (into {} (keep (fn [k] (let [a (accessor/unwrap (get mapping k))] (when (keyword? a) [k (name a)])))) axes))})
+
+(defn frame-overrides
+  "The frame settings a 3D chart's `options` set explicitly (keys of [[frame-settings]]; `:view` as given, `:titles`
+  from `:axis-titles`): a later chart's are merged over the first chart's frame of a scene, see
+  [[cljplot2.graphics.space3d/scene-frame]]."
+  [options]
+  (cond-> {}
+    (:view options) (assoc :view (:view options))
+    (:aspect options) (assoc :aspect (:aspect options))
+    (some? (:box options)) (assoc :box? (:box options))
+    (some? (:axes options)) (assoc :axes? (:axes options))
+    (contains? options :axis-titles) (assoc :titles (:axis-titles options))))
 
 (defn axis-index
   "Position of axis `k` (`:x` / `:y` / `:z`) in a point or a corner."

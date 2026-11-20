@@ -284,7 +284,7 @@
 (defn scene-frame
   "The box of one panel's `computeds` (the computed data of each 3D chart, in chart order): the first's `:frame` with
   its `:domains` (several 3D charts share their explicit domains), the later charts' `:frame-overrides` (their
-  explicitly set frame options, see [[cljplot2.chart.cloud/frame-overrides]]) merged over it in order - `:view` and
+  explicitly set frame options, see [[cljplot2.data.space3d/frame-overrides]]) merged over it in order - `:view` and
   `:titles` key by key, `:titles nil` clearing them."
   [computeds]
   (let [{:keys [frame domains]} (first computeds)]

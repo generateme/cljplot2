@@ -214,7 +214,7 @@
           :shade? (not (false? (:shade options)))}))
 
 (defn compute
-  "Per panel: `{:mesh m :domains {:x :y :z} :frame f :style st}` (see [[mesh]], [[cljplot2.chart.cloud/frame-settings]]);
+  "Per panel: `{:mesh m :domains {:x :y :z} :frame f :style st}` (see [[mesh]], [[cljplot2.data.space3d/frame-settings]]);
   no position extents (the chart lays out its panel), color extents - the finite tones (computed color only),
   `:dropped` - gridded / density rows without a finite x / y."
   [{:keys [options]} {:keys [groups mapping]} {:keys [theme]}]
@@ -226,12 +226,12 @@
         domains (space/reverse-domains
                  (into {} (map-indexed (fn [i k] [k (or (get explicit k) (space/data-domain (map #(% i) nodes) 0.0))]) space/axes))
                  (:reverse options))
-        frame (cond-> (cloud/frame-settings options mapping)
+        frame (cond-> (space/frame-settings options mapping)
                 (and (= kind :density) (not (contains? options :axis-titles))) (assoc-in [:titles :z] "Density"))
         st (style options theme)
         colored? (nil? (:color options))]
     {:data (update-vals meshes (fn [mesh] {:mesh mesh :domains domains :frame frame
-                                           :frame-overrides (cloud/frame-overrides options) :style st}))
+                                           :frame-overrides (space/frame-overrides options) :style st}))
      :extents (update-vals meshes (fn [{:keys [tones]}]
                                     (let [ts (remove m/nan? tones)]
                                       (if (and colored? (seq ts))
