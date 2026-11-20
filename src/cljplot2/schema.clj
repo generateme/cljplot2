@@ -15,7 +15,9 @@
   Entry properties documenting an option (read by [[cljplot2.describe]], ignored by validation): `:description` (one
   sentence), `:default` (a constant default of a behaviour option; style options take theme defaults instead),
   `:cljplot2/default-doc` (the text of a computed default), `:cljplot2/fragment` (the shared group of options the
-  entry belongs to, set by [[in-fragment]]) and `:cljplot2/internal` (not a user option - no table row); see
+  entry belongs to, set by [[in-fragment]]), `:cljplot2/entries-fragment` (the shared group documenting the entries of
+  the entry's map - one table for many entries, e.g. text roles) and `:cljplot2/internal` (not a user option - no
+  table row); see
   [[optional]], [[nilable]]. Schema properties: `:cljplot2/type-doc` (the type's text in option tables, for a large
   map or composite; named types take it as an argument, see [[named-type]]) and, on a map, `:cljplot2/merged` (a
   merged input - theme, render options: every key present after merging, users give partial overrides)."

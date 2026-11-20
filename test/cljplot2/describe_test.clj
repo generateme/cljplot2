@@ -164,15 +164,28 @@
       (is (nil? (:default (by-path [:panel]))))
       (is (nil? (:default (by-path [:chart]))))
       (is (nil? (:default (by-path [:text])))))
-    (testing "one row per text role, sorted, then its style entries with the role's defaults"
+    (testing "one row per text role, sorted, its default the role's style, typed as a text style"
       (let [roles (filter #(= :text (first (:path %))) (filter #(= 2 (count (:path %))) rows))]
         (is (= (sort (keys theme/text-roles)) (map :key roles)))
         (is (every? :description roles))
-        (is (nil? (:default (by-path [:text :title]))) "a role is a container")
-        (is (= 14 (:default (by-path [:text :title :size]))))
-        (is (= [255 255 255 180] (:default (by-path [:text :contour-label :background]))))
-        (is (nil? (:default (by-path [:text :title :background]))) "boundary: a key the role's style leaves out")
-        (is (every? #(some? (by-path [:text % :font])) (keys theme/text-roles)) "every role has its style rows")))
-    (testing "role rows go through the common row code: merged (not required), with the text style's entries"
-      (is (not-any? :required? (filter #(= :text (first (:path %))) rows)))
-      (is (= 7 (count (filter #(= [:text :title] (pop (:path %))) rows)))))))
+        (is (= (get-in theme/default-theme [:text :title]) (:default (by-path [:text :title]))))
+        (is (re-find #"^a text style" (:type (by-path [:text :title]))))))
+    (testing "the style keys aren't repeated per role: one shared table, the :text-style group"
+      (is (not-any? #(= 3 (count (:path %))) (filter #(= :text (first (:path %))) rows)))
+      (is (= [:font :size :font-style :color :padding :align :background] (map :key (describe/fragment-rows :text-style)))))
+    (testing "role rows go through the common row code: merged, not required"
+      (is (not-any? :required? (filter #(= :text (first (:path %))) rows))))))
+
+(deftest entries-fragment-test
+  (let [style [:map {:closed true} [:w {:description "w"} :int]]
+        rows (describe/schema-rows [:map [:a {:description "a" :cljplot2/entries-fragment :line-style} style]
+                                    [:b {:description "b"} style]])
+        with-defaults #'describe/with-defaults
+        filled (into {} (map (juxt :path :default)) (with-defaults rows {:a {:w 1} :b {:w 2}}))]
+    (testing "an entry whose entries a group documents isn't flattened and keeps its value as default"
+      (is (= [[:a] [:b] [:b :w]] (map :path rows)))
+      (is (= {:w 1} (filled [:a])))
+      (is (= "{:w integer}" (:type (first rows)))))
+    (testing "boundary: an ordinary nested map is flattened, its row a container without default"
+      (is (nil? (filled [:b])))
+      (is (= 2 (filled [:b :w]))))))

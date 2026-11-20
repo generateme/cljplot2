@@ -88,8 +88,10 @@ into the builder's. `cljplot2.core` is the public API (`build`, `render`, `rende
 - Every schema entry documents itself (`cljplot2.schema` ns doc): `:description` (one sentence, lowercase, no
   period), `:default` for a constant behaviour default (never on style entries - the theme holds those) or
   `:cljplot2/default-doc` for a computed one; `:cljplot2/internal` for keys users don't set; shared groups via
-  `schema/in-fragment` (registered in `cljplot2.describe/fragments`); schema properties `:cljplot2/type-doc` (short
-  type text of a large map or composite) and `:cljplot2/merged` (a map merged over defaults - theme, render options). `cljplot2.describe` turns schemas into option rows for the book's reference part;
+  `schema/in-fragment` (registered in `cljplot2.describe/fragments`), `:cljplot2/entries-fragment` for a map whose
+  entries a group documents; schema properties `:cljplot2/type-doc` (short type text of a large map or composite)
+  and `:cljplot2/merged` (a map merged over defaults - theme, render options). `cljplot2.describe` turns schemas into
+  option rows for the book's reference part;
   `schema-metadata-test` checks every chart and plot-level entry (plot, scales, facets, labels, coord, theme ...) is
   described and every `:default` is the real one (pixel-equal renders); theme entries take their defaults from
   `default-theme`, text roles their descriptions from `theme/text-roles`.

@@ -7,7 +7,8 @@
   reads; [[api-vars]] - the user-facing data functions (`:cljplot2/api` var metadata; this namespace loads every
   namespace holding them); [[fragments]] - the shared groups of options entries belong to, [[fragment-rows]] - the
   rows of one group (a chart may take only some of a group's entries - its own rows are what it accepts);
-  [[theme-rows]] - the theme's rows with their defaults and text roles.
+  [[theme-rows]] - the theme's rows with their defaults and text roles. An entry with `:cljplot2/entries-fragment g`
+  isn't flattened: its map's entries are the shared group `g`'s table, its row keeps its value as the default.
 
   A row: `{:key k :path [k ...] :type text :required? bool :default v :default-doc text :description text
   :fragment kw}` - `:path` is longer than `[k]` for the entries of nested closed maps (each nested map also has its
@@ -170,16 +171,23 @@
       (:maybe :and) (container? (first (malli/children s)))
       false)))
 
+(defn- flattened?
+  "Are the entries of entry (`props`, schema `s`) flattened under its row: a [[nested-map]] whose entries aren't
+  documented by a shared group (`:cljplot2/entries-fragment`)?"
+  [props s]
+  (and (some? (nested-map s)) (not (:cljplot2/entries-fragment props))))
+
 (defn- entry-row
   "The row of entry `k` (`props`, schema `s`) at `path`; `merged?` - the entry belongs to a merged map (theme, render
   options: every key is there after merging, users give partial overrides - so not required). Metadata `::container?`
-  marks an entry holding entries of its own (see [[with-defaults]])."
+  marks an entry holding entries of its own (see [[with-defaults]]) - not one whose entries a shared group documents
+  (`:cljplot2/entries-fragment`): its row keeps its own value as the default (e.g. a text role's style)."
   [path k props s merged?]
-  (with-meta {:key k :path path :type (if (nested-map s) "map" (type-text s))
+  (with-meta {:key k :path path :type (if (flattened? props s) "map" (type-text s))
               :required? (and (not merged?) (not (:optional props)))
               :default (:default props) :default-doc (:cljplot2/default-doc props) :description (:description props)
               :fragment (:cljplot2/fragment props)}
-    {::container? (container? s)}))
+    {::container? (and (container? s) (not (:cljplot2/entries-fragment props)))}))
 
 (defn- map-rows
   "Rows of the entries of map schema `m` under `path` (nested closed maps flattened after their own row); forbidden and
@@ -191,7 +199,7 @@
                        (when-not (or (schema/forbidden? s) (:cljplot2/internal props))
                          (let [p (conj path k)]
                            (cons (entry-row p k props s merged?)
-                                 (when-let [nested (nested-map s)] (map-rows nested p merged?)))))))
+                                 (when (flattened? props s) (map-rows (nested-map s) p merged?)))))))
           (malli/children m))))
 
 (defn schema-rows
@@ -221,16 +229,18 @@
         rows))
 
 (defn- text-roles-schema
-  "The theme's `:text` as a merged map of the roles of [[cljplot2.theme/text-roles]] (sorted), each a text style -
-  rows for the roles the theme's `map-of` can't give."
+  "The theme's `:text` as a merged map of the roles of [[cljplot2.theme/text-roles]] (sorted), each a text style
+  documented by the shared group `:text-style` - rows for the roles the theme's `map-of` can't give."
   []
   (into [:map {:closed true :cljplot2/merged true}]
-        (map (fn [role] [role {:description (theme/text-roles role)} theme/text-style-schema]))
+        (map (fn [role] [role {:description (theme/text-roles role) :cljplot2/entries-fragment :text-style}
+                         theme/text-style-schema]))
         (sort (keys theme/text-roles))))
 
 (defn theme-rows
-  "Rows of the theme ([[cljplot2.theme/theme-schema]]), then of every text role of [[cljplot2.theme/text-roles]]
-  (`[:text role]` and its style entries `[:text role k]`), with their defaults from [[cljplot2.theme/default-theme]]."
+  "Rows of the theme ([[cljplot2.theme/theme-schema]]), then one row `[:text role]` per text role of
+  [[cljplot2.theme/text-roles]] (sorted; its default the role's style), with their defaults from
+  [[cljplot2.theme/default-theme]]. The style keys are one shared table: `(fragment-rows :text-style)`."
   []
   (with-defaults (into (schema-rows theme/theme-schema) (map-rows (malli/schema (text-roles-schema)) [:text] false))
                  theme/default-theme))
