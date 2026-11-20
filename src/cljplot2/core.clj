@@ -34,6 +34,12 @@
   [source options]
   (graphs/dendrogram source options))
 
+(defn tree
+  "Node-link tree plot (tidy or cluster layout, diagonal or straight links, cartesian or radial), see
+  [[cljplot2.graphs/tree]]."
+  ([source] (graphs/tree source {}))
+  ([source options] (graphs/tree source options)))
+
 (defn clustered-heatmap
   "Heatmap with rows and columns ordered by hierarchical clustering and their dendrograms, see
   [[cljplot2.graphs/clustered-heatmap]]."

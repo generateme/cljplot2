@@ -4380,7 +4380,8 @@ Source: [Vega-Lite - Trellis Area](https://vega.github.io/vega-lite/examples/tre
 ### Trellis Area Plot Showing Annual Temperatures in Seattle
 
 Hourly temperature normals over the year, a thin panel per hour from 6 AM, each labelled inside at its left
-(strips off), the y range per panel's data (no zero, no y axis - as the original).
+(strips off); one y scale from the coldest to the warmest normal (no zero, no y axis - as the original), so the night
+hours sit lower.
 
 Source: [Vega-Lite - Trellis Area Plot Showing Annual Temperatures in Seattle](https://vega.github.io/vega-lite/examples/trellis_area_seattle.html). Data: Seattle hourly climate normals for 1981–2010, vega-datasets 3.3.1 `seattle-weather-hourly-normals.csv` (https://cdn.jsdelivr.net/npm/vega-datasets@3.3.1/data/seattle-weather-hourly-normals.csv); original: NOAA National Climatic Data Center (NCDC); licence: other-pd (vega-datasets `datapackage.json`).
 
@@ -4401,9 +4402,10 @@ Source: [Vega-Lite - Trellis Area Plot Showing Annual Temperatures in Seattle](h
                                    :mid (* 0.5 (+ (double (reduce min ts)) (double (reduce max ts))))})
                           :mapping {:x :date :y :mid :label :hour :facet-row :hour} :anchor [:left :middle] :offset [4 0]
                           :size 9})]
-    :scales {:facet-row {:domain (mapv hour-label hours)} :y {:axis false}
+    :scales {:facet-row {:domain (mapv hour-label hours)}
+             :y {:axis false :domain [(reduce min (map :temperature rows)) (reduce max (map :temperature rows))] :nice false}
              :x {:formatter #(.format (DateTimeFormatter/ofPattern "MMM" Locale/ENGLISH) ^TemporalAccessor %)}}
-    :facets {:strips false :scales {:y :free}}
+    :facets {:strips false}
     :theme {:panel {:grid {:x :none :y :none}} :facet {:gap 1}}
     :labels {:title "Seattle Temperature Normals" :x "Month" :y nil}}
    {:width 800 :height 800}))
@@ -4944,7 +4946,9 @@ Source: [Vega - Contour plot](https://vega.github.io/vega/examples/contour-plot/
 
 ### Wheat plot
 
-A sample stacked as dots in bins of 0.075 from -1 (dot plot `:method :histogram`).
+A sample stacked as dots in bins of 0.075 from -1, each dot at its own value (sorted within its bin), so the stacks
+lean like wheat stalks (dot plot `:method :histogram`, `:at :value`), standing on the axis (`:width 1.0` - the
+whole panel height).
 
 Source: [Vega - Wheat plot](https://vega.github.io/vega/examples/wheat-plot/). Data: Simulated points from a bivariate normal distribution, vega-datasets 3.3.1 `normal-2d.json` (https://cdn.jsdelivr.net/npm/vega-datasets@3.3.1/data/normal-2d.json); original: Generated Data; licence: BSD-3-Clause (vega-datasets `datapackage.json`).
 
@@ -4953,7 +4957,7 @@ Source: [Vega - Wheat plot](https://vega.github.io/vega/examples/wheat-plot/). D
 ```clojure
 (plot/render-image
  {:data normal-2d :mapping {:x :u}
-  :charts [(chart/dotplot {:method :histogram :binwidth 0.075 :origin -1})]
+  :charts [(chart/dotplot {:method :histogram :binwidth 0.075 :origin -1 :at :value :width 1.0})]
   :scales {:x {:domain [-1 1]}}
   :labels {:x "u" :y nil}}
  {:width 900 :height 600})
@@ -4970,8 +4974,8 @@ Source: [Vega - Wheat plot](https://vega.github.io/vega/examples/wheat-plot/). D
 ### Quantile dot plot
 
 A bus arrival time as 20 equally likely outcomes - the quantiles of a log-normal distribution (median 11.4 min) as
-dots in bins of 1.25 min; the red band marks arrivals within 10 minutes and their probability (the original selects
-the time by a click).
+dots in bins of 1.25 min; the red band marks arrivals within 10 minutes, the title their probability (the original
+selects the time by a click and writes it at the rule).
 
 Source: [Vega - Quantile dot plot](https://vega.github.io/vega/examples/quantile-dot-plot/).
 
@@ -4984,11 +4988,10 @@ Source: [Vega - Quantile dot plot](https://vega.github.io/vega/examples/quantile
    {:data (map (fn [i] {:minutes (r/icdf arrival (/ (+ 0.5 (double i)) 20.0))}) (range 20))
     :mapping {:x :minutes}
     :charts [(chart/rect {:x [0 select] :fill [178 34 34] :alpha 0.2})
-             (chart/dotplot {:method :histogram :binwidth 1.25 :origin 0 :color [70 130 180]})
-             (chart/text {:x select :y [:panel 0.95] :text (format "%.1f%%" (* 100.0 (r/cdf arrival select)))
-                          :anchor [:left :top] :offset [3 0]})]
+             (chart/dotplot {:method :histogram :binwidth 1.25 :origin 0 :color [70 130 180] :width 1.0})]
     :scales {:x {:domain [0 30]}}
-    :labels {:x "Minutes until the bus arrives" :y nil}}
+    :labels {:title (format "Arrival within %.0f minutes: %.1f%%" select (* 100.0 (r/cdf arrival select)))
+             :x "Minutes until the bus arrives" :y nil}}
    {:width 600 :height 250}))
 ```
 :::
@@ -5002,30 +5005,35 @@ Source: [Vega - Quantile dot plot](https://vega.github.io/vega/examples/quantile
 
 ### Time units
 
-20,000 flights (January - March 2001) per month, day of the month, weekday and hour: the number of flights (left)
-and the mean delay (right) - every unit and measure of the original's selectors (its year is a single bar, left
-out).
+20,000 flights (January - March 2001) per month, day of the month, weekday and hour: the number of flights (top)
+and the mean delay (bottom), a panel per unit with its own x scale - every unit and measure of the original's
+selectors (its year is a single bar, left out). Levels sort within a panel by a leading number, hidden by the
+formatter.
 
 Source: [Vega - Time units](https://vega.github.io/vega/examples/time-units/). Data: U.S. flight delays and routes (20,000 flights), vega-datasets 3.3.1 `flights-20k.json` (https://cdn.jsdelivr.net/npm/vega-datasets@3.3.1/data/flights-20k.json); original: U.S. Bureau of Transportation Statistics; licence: other-open (vega-datasets `datapackage.json`).
 
 
 ::: {.sourceClojure}
 ```clojure
-(let [flights (map #(assoc % :t (java.time.LocalDateTime/parse (:date %))) (nu/dataset :flights-20k))
-      units [["month" #(month-names (dec (.getMonthValue ^java.time.LocalDateTime (:t %)))) (subvec month-names 0 3)]
-             ["date" #(str (.getDayOfMonth ^java.time.LocalDateTime (:t %))) (mapv str (range 1 32))]
-             ["day" #(weekdays (dec (.getValue (.getDayOfWeek ^java.time.LocalDateTime (:t %))))) weekdays]
-             ["hours" #(str (.getHour ^java.time.LocalDateTime (:t %))) (mapv str (range 24))]]]
+(let [units [["month" #(let [mo (.getMonthValue ^java.time.LocalDateTime %)] (str mo " " (month-names (dec mo))))]
+             ["date" #(format "%02d" (.getDayOfMonth ^java.time.LocalDateTime %))]
+             ["day" #(let [d (.getValue (.getDayOfWeek ^java.time.LocalDateTime %))] (str d " " (weekdays (dec d))))]
+             ["hours" #(format "%02d" (.getHour ^java.time.LocalDateTime %))]]
+      rows (for [{:keys [date delay]} (nu/dataset :flights-20k)
+                 :let [t (java.time.LocalDateTime/parse date)]
+                 [unit f] units]
+             {:unit unit :level (f t) :delay delay})]
   (plot/render-image
    (plot/arrange
-    (vec (for [[unit f domain] units
-               [stat title] [[:count "flights"] [:mean "mean delay (min)"]]]
-           {:data (map #(assoc % :unit (f %)) flights) :mapping {:x :unit :y :delay}
+    (vec (for [[stat title] [[:count "Number of Flights"] [:mean "Average Delay (min)"]]]
+           {:data rows :mapping {:x :level :y :delay :facet :unit}
             :charts [(chart/bar {:stat stat})]
-            :scales {:x {:domain domain}}
-            :labels {:x unit :y title}}))
-    {:columns 2})
-   {:width 1000 :height 800}))
+            :scales {:facet {:domain (mapv first units)} :x {:formatter #(str/replace (str %) #"^\d+ " "")}}
+            :facets {:columns 4 :scales {:x :free} :widths [3 31 7 24]}
+            :theme {:axis {:x {:label-rotation -90}} :text {:tick-label {:size 8}}}
+            :labels {:title title :x nil :y nil}}))
+    {:columns 1})
+   {:width 1000 :height 600}))
 ```
 :::
 
@@ -5041,7 +5049,8 @@ Source: [Vega - Time units](https://vega.github.io/vega/examples/time-units/). D
 
 ### Volcano contours
 
-The Maunga Whau volcano's heights on a 10 m grid as filled contours (a gridded `:value`), north up.
+The Maunga Whau volcano's heights on a 10 m grid as filled contours (a gridded `:value`) every 10 m from 90 m - below
+the lowest height, so the first band covers the whole grid, as the original's - north up.
 
 Source: [Vega - Volcano contours](https://vega.github.io/vega/examples/volcano-contours/). Data: Mount Eden volcano elevation grid, vega-datasets 3.3.1 `volcano.json` (https://cdn.jsdelivr.net/npm/vega-datasets@3.3.1/data/volcano.json); original: R Datasets; licence: none listed - see vega-datasets (cite Vega as the source).
 
@@ -5050,11 +5059,11 @@ Source: [Vega - Volcano contours](https://vega.github.io/vega/examples/volcano-c
 ```clojure
 (plot/render-image
  {:data (nu/dataset :volcano-vega) :mapping {:x :col :y :row :value :value}
-  :charts [(chart/contour {:fill true :levels 10})]
+  :charts [(chart/contour {:fill true :levels (vec (range 90 200 10))})]
   :scales {:y {:reverse true :axis false} :x {:axis false} :color {:range :viridis/viridis :title "height (m)"}}
   :aspect :iso
   :labels {:x nil :y nil}}
- {:width 700 :height 500})
+ {:width 960 :height 620})
 ```
 :::
 
@@ -5070,9 +5079,9 @@ Source: [Vega - Volcano contours](https://vega.github.io/vega/examples/volcano-c
 
 ### Tree layout
 
-The Flare class hierarchy as a tree, the root on the left and the leaves on the right (a horizontal dendrogram of
-the parent links, its height axis reversed), groups named (the original also names the 220 leaves on a 1600 px tall
-canvas; its tidy layout places groups by depth, the dendrogram aligns all leaves).
+The Flare class hierarchy as a node-link tree - `plot/tree`: the tidy layout (nodes by depth, the root on the left),
+diagonal links, nodes coloured by depth, every node named (the original's canvas is 1600 px tall, so its leaf names
+don't overlap).
 
 Source: [Vega - Tree layout](https://vega.github.io/vega/examples/tree-layout/). Data: Flare package and class hierarchy, vega-datasets 3.3.1 `flare.json` (https://cdn.jsdelivr.net/npm/vega-datasets@3.3.1/data/flare.json); licence: none listed - see vega-datasets (cite Vega as the source).
 
@@ -5096,7 +5105,7 @@ Source: [Vega - Tree layout](https://vega.github.io/vega/examples/tree-layout/).
 ::: {.sourceClojure}
 ```clojure
 (plot/render-image
- (assoc-in (plot/dendrogram flare-tree {:horizontal true :labels? false :group-labels? true}) [:scales :y :reverse] true)
+ (plot/tree flare-tree {:mapping {:color #(str (:depth %))}})
  {:width 900 :height 800})
 ```
 :::
@@ -5110,7 +5119,8 @@ Source: [Vega - Tree layout](https://vega.github.io/vega/examples/tree-layout/).
 
 ### Radial tree layout
 
-The same tree around a circle, every leaf named.
+The same tree around a circle - depth as the radius, links curving along it, every leaf named (group names left
+out).
 
 Source: [Vega - Radial tree layout](https://vega.github.io/vega/examples/radial-tree-layout/). Data: Flare package and class hierarchy, vega-datasets 3.3.1 `flare.json` (https://cdn.jsdelivr.net/npm/vega-datasets@3.3.1/data/flare.json); licence: none listed - see vega-datasets (cite Vega as the source).
 
@@ -5118,7 +5128,7 @@ Source: [Vega - Radial tree layout](https://vega.github.io/vega/examples/radial-
 ::: {.sourceClojure}
 ```clojure
 (plot/render-image
- (plot/dendrogram flare-tree {:circular true})
+ (plot/tree flare-tree {:circular true :mapping {:color #(str (:depth %))}})
  {:width 900 :height 900})
 ```
 :::
@@ -5292,7 +5302,8 @@ Source: [Vega - Force directed layout](https://vega.github.io/vega/examples/forc
 ### Reorderable matrix
 
 The co-occurrence matrix of the characters ordered by group: a cell per pair of characters who meet, coloured by
-their group when both share it (grey across groups) - the original reorders by dragging.
+their group when both share it (grey across groups), every name on the axes (x labels vertical) - the original
+reorders by dragging.
 
 Source: [Vega - Reorderable matrix](https://vega.github.io/vega/examples/reorderable-matrix/). Data: Les Misérables character coappearance network, vega-datasets 3.3.1 `miserables.json` (https://cdn.jsdelivr.net/npm/vega-datasets@3.3.1/data/miserables.json); original: D. E. Knuth, The Stanford GraphBase: A Platform for Combinatorial Computing, Addison-Wesley, Reading, MA (1993).; licence: notspecified (vega-datasets `datapackage.json`).
 
@@ -5307,13 +5318,13 @@ Source: [Vega - Reorderable matrix](https://vega.github.io/vega/examples/reorder
                 [a b] [[s t] [t s]]]
             {:x (:name a) :y (:name b) :group (if (= (:group a) (:group b)) (:group a) "across")})
     :mapping {:x :x :y :y :color :group}
-    :charts [(chart/tile {:stroke-color :white :stroke-width 0.5})]
+    :charts [(chart/tile)]
     :scales {:x {:domain order} :y {:domain order :reverse true}
              :color {:domain (conj (vec (sort-by parse-long (distinct (map :group miserables-nodes)))) "across")
                      :range (conj (vec (take 11 (cycle (c/palette :category10)))) [190 190 190]) :legend false}}
-    :theme {:text {:tick-label {:size 6}}}
+    :theme {:text {:tick-label {:size 8}} :axis {:x {:label-rotation -90}}}
     :labels {:x nil :y nil}}
-   {:width 900 :height 900}))
+   {:width 1000 :height 1000}))
 ```
 :::
 
@@ -5326,7 +5337,8 @@ Source: [Vega - Reorderable matrix](https://vega.github.io/vega/examples/reorder
 
 ### Arc diagram
 
-The same co-occurrences as arcs above the characters, ordered by group.
+The same co-occurrences as arcs above the characters, ordered by group, the names reading upward (`:labels :name`,
+x labels at -90°).
 
 Source: [Vega - Arc diagram](https://vega.github.io/vega/examples/arc-diagram/). Data: Les Misérables character coappearance network, vega-datasets 3.3.1 `miserables.json` (https://cdn.jsdelivr.net/npm/vega-datasets@3.3.1/data/miserables.json); original: D. E. Knuth, The Stanford GraphBase: A Platform for Combinatorial Computing, Addison-Wesley, Reading, MA (1993).; licence: notspecified (vega-datasets `datapackage.json`).
 
@@ -5336,7 +5348,8 @@ Source: [Vega - Arc diagram](https://vega.github.io/vega/examples/arc-diagram/).
 (plot/render-image
  (plot/arc miserables-links {:from :source :to :target :nodes miserables-nodes :id :index
                              :order (mapv :index (sort-by (juxt #(parse-long (:group %)) :index) miserables-nodes))
-                             :mapping {:color :group} :scales {:color {:legend false}}})
+                             :mapping {:color :group} :scales {:color {:legend false}} :labels :name
+                             :theme {:axis {:x {:label-rotation -90}}}})
  {:width 1000 :height 450})
 ```
 :::
@@ -5379,7 +5392,8 @@ Source: [Vega - Density heatmaps](https://vega.github.io/vega/examples/density-h
 
 ### Beeswarm plot
 
-Les Misérables characters per group, packed without overlap (a beeswarm; the original simulates forces).
+Les Misérables characters per group, packed without overlap - every group swarms across the whole height
+(`:position :overlay`; the original simulates forces).
 
 Source: [Vega - Beeswarm plot](https://vega.github.io/vega/examples/beeswarm-plot/). Data: Les Misérables character coappearance network, vega-datasets 3.3.1 `miserables.json` (https://cdn.jsdelivr.net/npm/vega-datasets@3.3.1/data/miserables.json); original: D. E. Knuth, The Stanford GraphBase: A Platform for Combinatorial Computing, Addison-Wesley, Reading, MA (1993).; licence: notspecified (vega-datasets `datapackage.json`).
 
@@ -5388,7 +5402,7 @@ Source: [Vega - Beeswarm plot](https://vega.github.io/vega/examples/beeswarm-plo
 ```clojure
 (plot/render-image
  {:data (map #(assoc % :g (parse-long (:group %))) miserables-nodes) :mapping {:x :g :color :group}
-  :charts [(chart/beeswarm {:size 18})]
+  :charts [(chart/beeswarm {:size 14 :position :overlay})]
   :scales {:x {:ticks (vec (range 11))} :color {:legend false}}
   :labels {:x "group" :y nil}}
  {:width 800 :height 350})
@@ -5404,37 +5418,65 @@ Source: [Vega - Beeswarm plot](https://vega.github.io/vega/examples/beeswarm-plo
 
 ### Calendar view
 
-Daily change of the S&P 500 close, 2000-2020: a row of panels per year, a cell per trading day (week of the year ×
-weekday), diverging around 0.
+Daily change of the S&P 500 close, 2000-2020, diverging around 0: a row of panels per year, a cell per trading day
+(week of the year × weekday) - in three images of seven years; months marked at the week of their first day (in
+2001; a year's weeks shift by a day or two).
 
 Source: [Vega - Calendar view](https://vega.github.io/vega/examples/calendar-view/). Data: S&P 500 daily index values and volume, vega-datasets 3.3.1 `sp500-2000.csv` (https://cdn.jsdelivr.net/npm/vega-datasets@3.3.1/data/sp500-2000.csv); original: Yahoo Finance; licence: none listed - see vega-datasets (cite Vega as the source).
 
 
 ::: {.sourceClojure}
 ```clojure
-(let [days (map #(update % :date local-date) (nu/dataset :sp500-2000))
-      week-fields (java.time.temporal.WeekFields/of java.time.DayOfWeek/SUNDAY 1)]
-  (plot/render-image
-   {:data (map (fn [prev {:keys [^LocalDate date close]}]
-                 {:year (str (.getYear date)) :week (.get date (.weekOfYear week-fields))
-                  :day (weekdays (dec (.getValue (.getDayOfWeek date))))
-                  :change (/ (- (double close) (double (:close prev))) (double (:close prev)))})
-               days (rest days))
-    :mapping {:x :week :y :day :color :change :facet-row :year}
-    :charts [(chart/tile)]
-    :scales {:y {:domain (subvec weekdays 0 5) :reverse true :axis false} :x {:axis false}
-             :color {:range [[197 27 125] [247 247 247] [77 146 33]] :midpoint 0 :domain [-0.06 0.06]
-                     :formatter #(format "%.0f%%" (* 100.0 (double %))) :title "change"}}
-    :theme {:facet {:gap 2} :text {:strip {:size 8}}}
-    :labels {:x nil :y nil}}
-   {:width 900 :height 800}))
+(def sp500-days
+  "Trading days with the close's change from the previous trading day: `:year`, `:week` (Sunday-first weeks of the
+  year), `:day` (weekday), `:change`."
+  (let [days (map #(update % :date local-date) (nu/dataset :sp500-2000))
+        week-fields (java.time.temporal.WeekFields/of java.time.DayOfWeek/SUNDAY 1)]
+    (mapv (fn [prev {:keys [^LocalDate date close]}]
+            {:year (.getYear date) :week (.get date (.weekOfYear week-fields))
+             :day (weekdays (dec (.getValue (.getDayOfWeek date))))
+             :change (/ (- (double close) (double (:close prev))) (double (:close prev)))})
+          days (rest days))))
 ```
 :::
 
 
-::: {.clay-image}
-![](galleries.vega_files/image169.png)
+
+::: {.sourceClojure}
+```clojure
+(def month-weeks
+  "Week of the year (as in `sp500-days`) of every month's first day in 2001 -> the month's name."
+  (let [week-fields (java.time.temporal.WeekFields/of java.time.DayOfWeek/SUNDAY 1)]
+    (into (sorted-map) (map (fn [mo] [(.get (LocalDate/of 2001 (int mo) 1) (.weekOfYear week-fields)) (month-names (dec mo))])
+                            (range 1 13)))))
+```
 :::
+
+
+
+::: {.sourceClojure}
+```clojure
+(mapv (fn [years]
+        (plot/render-image
+         {:data (filter #(<= (first years) (long (:year %)) (last years)) sp500-days)
+          :mapping {:x :week :y :day :color :change :facet-row #(str (:year %))}
+          :charts [(chart/tile)]
+          :scales {:y {:domain (subvec weekdays 0 5) :reverse true}
+                   :x {:domain [0.5 53.5] :nice false :ticks (vec (keys month-weeks)) :formatter #(month-weeks (m/round (double %)) "")}
+                   :color {:range [[197 27 125] [247 247 247] [77 146 33]] :midpoint 0 :domain [-0.06 0.06]
+                           :formatter #(format "%.0f%%" (* 100.0 (double %))) :title "change"}}
+          :theme {:facet {:gap 8} :text {:tick-label {:size 8}}}
+          :labels {:x nil :y nil}}
+         {:width 1000 :height 800}))
+      [(range 2000 2007) (range 2007 2014) (range 2014 2021)])
+```
+:::
+
+
+
+```{=html}
+<div><p>[</p><div class="clay-sequential" style="margin-left:10%;width:110%;"><div class="clay-image"><p><img alt="" src="galleries.vega_files/image169.png" /></p></div><div class="clay-image"><p><img alt="" src="galleries.vega_files/image170.png" /></p></div><div class="clay-image"><p><img alt="" src="galleries.vega_files/image171.png" /></p></div></div><p>]</p></div>
+```
 
 
 
@@ -5459,7 +5501,7 @@ Source: [Vega - Packed bubble chart](https://vega.github.io/vega/examples/packed
 
 
 ::: {.clay-image}
-![](galleries.vega_files/image170.png)
+![](galleries.vega_files/image172.png)
 :::
 
 
@@ -5491,7 +5533,7 @@ Source: [Vega - Budget forecasts](https://vega.github.io/vega/examples/budget-fo
 
 
 ::: {.clay-image}
-![](galleries.vega_files/image171.png)
+![](galleries.vega_files/image173.png)
 :::
 
 
@@ -5499,7 +5541,8 @@ Source: [Vega - Budget forecasts](https://vega.github.io/vega/examples/budget-fo
 ### Annual temperature
 
 Seattle's hourly temperature normals over the year, each hour of the day a row from 6 AM, its area scaled into the
-row (ribbons from the row's base).
+row (ribbons from the row's base) - the Vega design of the data in "Trellis Area Plot Showing Annual Temperatures
+in Seattle" above, in one panel.
 
 Source: [Vega - Annual temperature](https://vega.github.io/vega/examples/annual-temperature/). Data: Seattle hourly climate normals for 1981–2010, vega-datasets 3.3.1 `seattle-weather-hourly-normals.csv` (https://cdn.jsdelivr.net/npm/vega-datasets@3.3.1/data/seattle-weather-hourly-normals.csv); original: NOAA National Climatic Data Center (NCDC); licence: other-pd (vega-datasets `datapackage.json`).
 
@@ -5530,7 +5573,7 @@ Source: [Vega - Annual temperature](https://vega.github.io/vega/examples/annual-
 
 
 ::: {.clay-image}
-![](galleries.vega_files/image172.png)
+![](galleries.vega_files/image174.png)
 :::
 
 
@@ -5562,7 +5605,7 @@ Source: [Vega - Flight passengers](https://vega.github.io/vega/examples/flight-p
 
 
 ::: {.clay-image}
-![](galleries.vega_files/image173.png)
+![](galleries.vega_files/image175.png)
 :::
 
 
@@ -5604,7 +5647,7 @@ Source: [Vega - Timelines](https://vega.github.io/vega/examples/timelines/).
 
 
 ::: {.clay-image}
-![](galleries.vega_files/image174.png)
+![](galleries.vega_files/image176.png)
 :::
 
 
@@ -5612,7 +5655,8 @@ Source: [Vega - Timelines](https://vega.github.io/vega/examples/timelines/).
 ### U district cuisine
 
 Restaurants of Seattle's University District by latitude (south to north), a density ridge per cuisine coloured by
-kind, the cross streets as rules.
+kind, the cross streets as rules. The names follow the original's (its burgers ridge reads "Pizza" and its pizza
+ridge "Burgers" - its two lists don't match there).
 
 Source: [Vega - U district cuisine](https://vega.github.io/vega/examples/u-district-cuisine/). Data: Restaurant and cafe latitudes in Seattle's University District, vega-datasets 3.3.1 `udistrict.json` (https://cdn.jsdelivr.net/npm/vega-datasets@3.3.1/data/udistrict.json); licence: none listed - see vega-datasets (cite Vega as the source).
 
@@ -5644,7 +5688,7 @@ Source: [Vega - U district cuisine](https://vega.github.io/vega/examples/u-distr
 
 
 ::: {.clay-image}
-![](galleries.vega_files/image175.png)
+![](galleries.vega_files/image177.png)
 :::
 
 
@@ -5674,7 +5718,7 @@ Source: [Vega - Warming stripes](https://vega.github.io/vega/examples/warming-st
 
 
 ::: {.clay-image}
-![](galleries.vega_files/image176.png)
+![](galleries.vega_files/image178.png)
 :::
 
 

@@ -162,15 +162,15 @@
                       :mapping (cond-> {:x :x :y :y :group :id} clustered? (assoc :color #(some-> (:cluster %) str)))})))
 
 (defn- radial-labels
-  "Two text charts of the leaf names around a circle (`nodes` with `:angle` and `:leaf?`), just outside radius 1,
-  each turned along its angle and reading outward: the right half anchored left, the left half anchored right; the
+  "Two text charts of the leaf names around a circle (`nodes` with `:angle`, `:leaf?` and optional `:radius`, default
+  1), just outside each leaf's radius, each turned along its angle and reading outward: the right half anchored left, the left half anchored right; the
   font smaller for many leaves (9 pt down to 5 pt); pixel room for the labels kept around the circle
   (`:reserve-room`)."
   [nodes]
   (let [leaves (filterv :leaf? nodes)
         size (m/constrain (/ 1400.0 (double (max 1 (count leaves)))) 5.0 9.0)
-        row (fn [{:keys [name angle]}]
-              (let [a (m/radians (double angle)) r 1.03]
+        row (fn [{:keys [name angle radius] :or {radius 1.0}}]
+              (let [a (m/radians (double angle)) r (+ (double radius) 0.03)]
                 {:x (* r (m/sin a)) :y (* r (m/cos a)) :label (str name)
                  :angle (if (<= (double angle) 180.0) (- (double angle) 90.0) (- (double angle) 270.0))}))
         [right left] ((juxt filter remove) #(<= (double (:angle %)) 180.0) leaves)]
@@ -232,6 +232,70 @@
       circular (assoc :aspect :iso)
       (and horizontal (not circular)) (assoc :flip true)
       (and labels? (not circular) (not horizontal)) (assoc-in [:theme :axis :x :label-rotation] -90)
+      user-theme (update :theme #(theme/deep-merge % user-theme)))))
+
+;; node-link tree
+
+(def ^:private tree-node-defaults {:size 7 :color [70 130 180] :stroke-color :white :stroke-width 1})
+
+(defn- tree-labels
+  "Text charts of the node names of a cartesian node-link tree (root on the left): leaves right of their node, groups
+  left of theirs (Vega `tree`); unnamed nodes get none."
+  [nodes]
+  (let [named (filterv #(some? (:name %)) nodes)
+        [leaves groups] ((juxt filter remove) :leaf? named)
+        text (fn [rows anchor dx]
+               (chart/text {:data rows :mapping {:x :x :y :y :label #(str (:name %))} :anchor anchor :offset [dx 0]
+                            :size 9 :reserve-room true}))]
+    (cond-> []
+      (seq leaves) (conj (text leaves [:left :middle] 6))
+      (seq groups) (conj (text groups [:right :middle] -6)))))
+
+(defn tree
+  "Node-link tree plot of `source` - a tree of [[cljplot2.data.tree]] (e.g. `from-parents`, `from-levels`) or a
+  fastmath `hclust` result - as a plot map (see [[cljplot2.data.tree/node-link-layout]]): links as paths (`chart/line`)
+  under a point per node (scatter), node names beside them; no axes. Unlike [[dendrogram]] (heights, elbows), depth
+  places the nodes.
+
+  `options`: `:layout` (`:tidy` default, `:cluster`), `:links` (`:diagonal` default, `:line`), `:circular` (radial,
+  equal axes; leaf names outward, group names left out), `:labels?` (default `true`; cartesian - leaves right of
+  their node, groups left), `:nodes?` (node points, default `true`), `:mapping` - node aesthetics (`:color`, `:size`,
+  `:shape`; nodes have `:depth`, `:leaf?`, `:name` and their row's columns - e.g. `{:color #(str (:depth %))}`),
+  `:node-style` (scatter options over `{:size 7 :color [70 130 180] :stroke-color :white :stroke-width 1}`),
+  `:link-style` (line options over `{:color [150 150 150] :width 1}`), `:labels` (hclust observation names),
+  `:scales`, `:title`, `:theme`; no legend. Cartesian: the root on the left, depth growing right, the first child on
+  top.
+
+  Equivalents: Vega `tree-layout` / `radial-tree-layout`, d3 `tree` / `cluster` with `linkHorizontal` / `linkRadial`,
+  ggraph `layout = \"tree\"` + `geom_edge_diagonal`."
+  [source {:keys [layout links circular mapping node-style link-style labels scales title] user-theme :theme
+           :or {layout :tidy links :diagonal} :as options}]
+  (when-not (#{:tidy :cluster} layout)
+    (schema/fail! "Tree :layout should be :tidy or :cluster." {:key :layout :value layout}))
+  (when-not (#{:diagonal :line} links)
+    (schema/fail! "Tree :links should be :diagonal or :line." {:key :links :value links}))
+  (let [labels? (get options :labels? true)
+        nodes? (get options :nodes? true)
+        t (as-tree source labels)
+        {:keys [nodes] laid-links :links} (tree/node-link-layout t {:layout layout :links links :circular circular})
+        max-depth (double (reduce max 0.0 (map :x nodes)))
+        min-y (double (reduce min 0.0 (map :y nodes)))]
+    (cond-> {:charts (cond-> [(chart/line (merge {:color [150 150 150] :width 1} link-style
+                                                 {:data laid-links :sort false :mapping {:x :x :y :y :group :id}}))]
+                       nodes? (conj (chart/scatter (merge tree-node-defaults node-style
+                                                          {:data nodes :mapping (merge {:x :x :y :y} mapping)})))
+                       (and labels? circular) (into (radial-labels nodes))
+                       (and labels? (not circular)) (into (tree-labels nodes)))
+             :scales (theme/deep-merge
+                      (if circular
+                        {:x circle-axis :y circle-axis}
+                        {:x {:domain [0.0 (max max-depth 1.0)] :nice false :axis false}
+                         :y {:domain [(- min-y 0.5) 0.5] :nice false :expand [0.0 0.0] :axis false}})
+                      scales)
+             :theme {:panel {:grid {:x :none :y :none}}}
+             :legend false
+             :labels {:title title :x nil :y nil}}
+      circular (assoc :aspect :iso)
       user-theme (update :theme #(theme/deep-merge % user-theme)))))
 
 (defn- value-matrix
@@ -383,8 +447,10 @@
 (defn arc
   "Arc diagram of `edges` (rows; see [[cljplot2.data.graph/graph]]) as a plot map (see
   [[cljplot2.data.graph/arc-layout]]): nodes on a line in node order (scatter), every edge a semicircle above it (a
-  line chart path) at `:alpha` (default 0.5, the stroke only), node names under the line as x tick labels rotated to
-  read downward (`:labels?`, default `true`); no y axis.
+  line chart path) at `:alpha` (default 0.5, the stroke only), node labels under the line as x tick labels rotated to
+  read downward (`:labels?`, default `true`; `:labels` - `true` (default, the node id) or an accessor of the node,
+  e.g. `:name` - a column of `:nodes`; `nil` / `\"\"` - an empty label; reading upward: `:theme {:axis {:x
+  {:label-rotation -90}}}`); no y axis.
 
   `options`: graph - `:from`, `:to`, `:value`, `:nodes`, `:id`, `:directed?`; `:order` (`nil`, ids, `:cluster`; see
   [[cljplot2.data.graph/node-order]]); `:mapping` - node aesthetics (`:color`, `:size`, `:shape`; nodes have
@@ -394,9 +460,10 @@
   `:edge-style` (line options over `{:color [120 120 120]}`), `:scales`, `:title`, `:theme`.
 
   Equivalents: ggraph `layout = \"linear\"` + `geom_edge_arc`, arcdiagram (R)."
-  [edges {:keys [order mapping edge-mapping alpha scales title node-style edge-style] user-theme :theme
-          :or {alpha 0.5} :as options}]
+  [edges {:keys [order mapping edge-mapping alpha scales title node-style edge-style labels] user-theme :theme
+          :or {alpha 0.5 labels true} :as options}]
   (let [labels? (get options :labels? true)
+        label-of (if (true? labels) :id (data/row-accessor :labels labels))
         g (graph/graph edges options)
         weighted? (< 1 (count (distinct (map :value (:edges g)))))
         edge-mapping (if (contains? options :edge-mapping)
@@ -413,7 +480,7 @@
                                           :mapping (merge {:x :x :y :y :group :edge} edge-mapping)}))
                       (chart/scatter (merge (node-options merged-theme (merge {:size 8} node-style))
                                             {:data nodes :mapping (merge {:x :x :y :y} mapping)}))]
-             :scales (cond-> (theme/deep-merge {:x (leaf-axis (mapv (fn [n] {:name (:id n)}) nodes) labels?)
+             :scales (cond-> (theme/deep-merge {:x (leaf-axis (mapv (fn [n] {:name (or (label-of n) "")}) nodes) labels?)
                                                 :y {:domain [(- (* arc-room top)) (* (+ 1.0 arc-room) top)] :nice false
                                                     :expand [0.0 0.0] :axis false}}
                                                scales)

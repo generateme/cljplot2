@@ -188,6 +188,148 @@
                        [x y] points]
                    {:id i :x x :y y :cluster cluster}))}))
 
+;; node-link layout (d3 tree / cluster)
+
+(defn- children-indices
+  "Child indices of every node of `nodes` (with `:parent` indices, depth-first order), in order."
+  [nodes]
+  (reduce (fn [acc [i {:keys [parent]}]] (if (some? parent) (update acc parent conj i) acc))
+          (vec (repeat (count nodes) [])) (map-indexed vector nodes)))
+
+(defn tidy-breadths
+  "Breadth positions of the tidy tree layout of `nodes` (depth-first, `:parent` indices, the root first) - Reingold and
+  Tilford's tree drawing in Buchheim, Jünger and Leipert's linear-time version (d3 `tree`): every node above its
+  children's middle, subtrees as close as `separation` allows (1 between siblings, 2 between cousins), nodes of one
+  depth in order and never overlapping; the root at 0. Returns a vector of doubles (index order)."
+  [nodes]
+  (let [n (count nodes)
+        kids (children-indices nodes)
+        parent (mapv #(if-let [p (:parent %)] (long p) -1) nodes)
+        number (let [a (long-array n)] (doseq [ks kids [j k] (map-indexed vector ks)] (aset a (long k) (long j))) a)
+        prelim (double-array n) modifier (double-array n) change (double-array n) shift (double-array n)
+        ancestor (long-array (range n)) thread (long-array n -1)
+        leaf? (fn [^long v] (empty? (kids v)))
+        left-sibling (fn ^long [^long v] (let [j (aget number v)] (if (or (neg? (long (parent v))) (zero? j)) -1 (long ((kids (parent v)) (dec j))))))
+        leftmost-sibling (fn ^long [^long v] (if (neg? (long (parent v))) v (long (first (kids (parent v))))))
+        next-left (fn ^long [^long v] (if (leaf? v) (aget thread v) (long (first (kids v)))))
+        next-right (fn ^long [^long v] (if (leaf? v) (aget thread v) (long (peek (kids v)))))
+        separation (fn ^double [^long a ^long b] (if (== (long (parent a)) (long (parent b))) 1.0 2.0))
+        move-subtree! (fn [^long wl ^long wr ^double sh]
+                        (let [subtrees (double (- (aget number wr) (aget number wl)))]
+                          (aset change wr (- (aget change wr) (/ sh subtrees)))
+                          (aset shift wr (+ (aget shift wr) sh))
+                          (aset change wl (+ (aget change wl) (/ sh subtrees)))
+                          (aset prelim wr (+ (aget prelim wr) sh))
+                          (aset modifier wr (+ (aget modifier wr) sh))))
+        execute-shifts! (fn [^long v]
+                          (loop [ws (rseq (kids v)) sh 0.0 ch 0.0]
+                            (when-let [w (first ws)]
+                              (let [w (long w)]
+                                (aset prelim w (+ (aget prelim w) sh))
+                                (aset modifier w (+ (aget modifier w) sh))
+                                (let [ch (+ ch (aget change w))]
+                                  (recur (next ws) (+ sh (aget shift w) ch) ch))))))
+        ancestor-of (fn ^long [^long vil ^long v ^long default]
+                      (let [a (aget ancestor vil)] (if (== (long (parent a)) (long (parent v))) a default)))
+        apportion (fn ^long [^long v ^long default]
+                    (let [w (long (left-sibling v))]
+                      (if (neg? w)
+                        default
+                        (loop [vir v vor v vil w vol (long (leftmost-sibling v))
+                               sir (aget modifier v) sor (aget modifier v) sil (aget modifier w) sol (aget modifier (long (leftmost-sibling v)))
+                               default default]
+                          (let [nr (long (next-right vil)) nl (long (next-left vir))]
+                            (if (and (>= nr 0) (>= nl 0))
+                              (let [vil nr vir nl vol (long (next-left vol)) vor (long (next-right vor))]
+                                (aset ancestor vor v)
+                                (let [sh (+ (- (+ (aget prelim vil) sil) (+ (aget prelim vir) sir)) (double (separation vil vir)))
+                                      [sir sor] (if (pos? sh)
+                                                  (do (move-subtree! (ancestor-of vil v default) v sh) [(+ sir sh) (+ sor sh)])
+                                                  [sir sor])]
+                                  (recur vir vor vil vol
+                                         (+ (double sir) (aget modifier vir)) (+ (double sor) (aget modifier vor))
+                                         (+ sil (aget modifier vil)) (+ sol (aget modifier vol)) default)))
+                              (do (when (and (>= nr 0) (neg? (long (next-right vor))))
+                                    (aset thread vor nr)
+                                    (aset modifier vor (+ (aget modifier vor) (- sil sor))))
+                                  (if (and (>= nl 0) (neg? (long (next-left vol))))
+                                    (do (aset thread vol nl)
+                                        (aset modifier vol (+ (aget modifier vol) (- sir sol)))
+                                        v)
+                                    default))))))))
+        first-walk (fn first-walk [^long v]
+                     (let [w (long (left-sibling v))]
+                       (if (leaf? v)
+                         (aset prelim v (if (neg? w) 0.0 (+ (aget prelim w) (double (separation v w)))))
+                         (let [ks (kids v)]
+                           (reduce (fn [default k] (first-walk (long k)) (apportion (long k) (long default))) (long (first ks)) ks)
+                           (execute-shifts! v)
+                           (let [mid (* 0.5 (+ (aget prelim (long (first ks))) (aget prelim (long (peek ks)))))]
+                             (if (neg? w)
+                               (aset prelim v mid)
+                               (do (aset prelim v (+ (aget prelim w) (double (separation v w))))
+                                   (aset modifier v (- (aget prelim v) mid)))))))))
+        xs (double-array n)
+        second-walk (fn second-walk [^long v ^double m]
+                      (aset xs v (+ (aget prelim v) m))
+                      (doseq [k (kids v)] (second-walk (long k) (+ m (aget modifier v)))))]
+    (when (pos? n)
+      (first-walk 0)
+      (second-walk 0 (- (aget prelim 0))))
+    (vec xs)))
+
+(defn- curve-points
+  "Points of the link from `[s0 b0]` to `[s1 b1]` (depth, breadth): `:line` - the two ends; `:diagonal` - a cubic
+  bezier with both control points at the middle depth (d3 `linkHorizontal`), 16 segments."
+  [links [s0 b0] [s1 b1]]
+  (if (= :line links)
+    [[s0 b0] [s1 b1]]
+    (let [s0 (double s0) b0 (double b0) s1 (double s1) b1 (double b1) mid (* 0.5 (+ s0 s1))]
+      (mapv (fn [^long i]
+              (let [t (/ (double i) 16.0) u (- 1.0 t)
+                    a (* u u u) b (* 3.0 u u t) c (* 3.0 u t t) d (* t t t)]
+                [(+ (* a s0) (* b mid) (* c mid) (* d s1)) (+ (* a b0) (* b b0) (* c b1) (* d b1))]))
+            (range 17)))))
+
+(defn node-link-layout
+  "Node-link layout of tree `root` (d3 `tree` / `cluster`, Vega `tree`): `{:nodes [node ..] :links [{:id i :x x :y y}
+  ..]}` - nodes in depth-first order with `:depth`, `:parent` (index), `:leaf?`, `:breadth` and `:x` / `:y`; one link
+  path per non-root node (`:id` - the node's index; points from the parent to the node).
+
+  `opts`:
+
+  * `:layout` - `:tidy` (default; [[tidy-breadths]], every node at its depth) or `:cluster` (leaves one step apart in
+    order and all at the deepest depth, a group above its children's middle - as [[layout]])
+  * `:links` - `:diagonal` (default; curves leaving and entering along the depth axis) or `:line`
+  * `:circular` - breadth as the angle over `:span` degrees (default 360; on a full circle the breadth range plus one
+    step, so the ends don't meet), depth as the radius from 0 (the root) to 1 (the deepest node); nodes also get
+    `:angle` (degrees clockwise from the top) and `:radius`; diagonal links are curves in (angle, radius) - d3
+    `linkRadial`; points in [-1, 1]
+  * else depth along x from 0 (the root) and breadth along y (the first node of a depth on top: y = -breadth)"
+  [root {:keys [layout links circular span] :or {layout :tidy links :diagonal span 360.0}}]
+  (let [[placed-nodes] (placed root [nil 0 nil] [[] 0] (constantly nil))
+        breadths (if (= :cluster layout) (mapv :x placed-nodes) (tidy-breadths placed-nodes))
+        max-depth (double (reduce max 1 (map :depth placed-nodes)))
+        depth-of (fn ^double [node] (if (and (= :cluster layout) (:leaf? node)) max-depth (double (:depth node))))
+        lo (double (reduce min breadths)) hi (double (reduce max breadths))
+        nodes (mapv (fn [node b] (assoc node :breadth (- (double b) lo) :depth-pos (depth-of node))) placed-nodes breadths)
+        span-b (- hi lo)
+        step (/ (m/radians (double span)) (if (>= (double span) 360.0) (+ span-b 1.0) (max span-b 1.0)))
+        polar (fn [[d b]] (let [a (* (double b) step) r (/ (double d) max-depth)] [(* r (m/sin a)) (* r (m/cos a))]))
+        place (fn [[d b]] (if circular (polar [d b]) [(double d) (- (double b))]))
+        nodes (mapv (fn [{:keys [breadth depth-pos] :as node}]
+                      (let [[x y] (place [depth-pos breadth])]
+                        (cond-> (assoc node :x x :y y)
+                          circular (assoc :angle (m/degrees (* (double breadth) step)) :radius (/ (double depth-pos) max-depth)))))
+                    nodes)]
+    {:nodes nodes
+     :links (vec (for [[i {:keys [parent] :as node}] (map-indexed vector nodes)
+                       :when (some? parent)
+                       :let [p (nodes parent)]
+                       pt (curve-points links [(:depth-pos p) (:breadth p)] [(:depth-pos node) (:breadth node)])
+                       :let [[x y] (place pt)]]
+                   {:id i :x x :y y}))}))
+
 ;; edge bundling
 
 (defn- ancestors-of

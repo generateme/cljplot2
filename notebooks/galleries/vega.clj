@@ -2432,7 +2432,8 @@
 ;; ### Trellis Area Plot Showing Annual Temperatures in Seattle
 
 ;; Hourly temperature normals over the year, a thin panel per hour from 6 AM, each labelled inside at its left
-;; (strips off), the y range per panel's data (no zero, no y axis - as the original).
+;; (strips off); one y scale from the coldest to the warmest normal (no zero, no y axis - as the original), so the night
+;; hours sit lower.
 
 (nu/source-note {:source "Vega-Lite - Trellis Area Plot Showing Annual Temperatures in Seattle"
                  :url (vl-url "trellis_area_seattle") :dataset :seattle-weather-hourly-normals})
@@ -2451,9 +2452,10 @@
                                    :mid (* 0.5 (+ (double (reduce min ts)) (double (reduce max ts))))})
                           :mapping {:x :date :y :mid :label :hour :facet-row :hour} :anchor [:left :middle] :offset [4 0]
                           :size 9})]
-    :scales {:facet-row {:domain (mapv hour-label hours)} :y {:axis false}
+    :scales {:facet-row {:domain (mapv hour-label hours)}
+             :y {:axis false :domain [(reduce min (map :temperature rows)) (reduce max (map :temperature rows))] :nice false}
              :x {:formatter #(.format (DateTimeFormatter/ofPattern "MMM" Locale/ENGLISH) ^TemporalAccessor %)}}
-    :facets {:strips false :scales {:y :free}}
+    :facets {:strips false}
     :theme {:panel {:grid {:x :none :y :none}} :facet {:gap 1}}
     :labels {:title "Seattle Temperature Normals" :x "Month" :y nil}}
    {:width 800 :height 800}))
@@ -2789,13 +2791,15 @@
 
 ;; ### Wheat plot
 
-;; A sample stacked as dots in bins of 0.075 from -1 (dot plot `:method :histogram`).
+;; A sample stacked as dots in bins of 0.075 from -1, each dot at its own value (sorted within its bin), so the stacks
+;; lean like wheat stalks (dot plot `:method :histogram`, `:at :value`), standing on the axis (`:width 1.0` - the
+;; whole panel height).
 
 (nu/source-note {:source "Vega - Wheat plot" :url (vg-url "wheat-plot") :dataset :normal-2d})
 
 (plot/render-image
  {:data normal-2d :mapping {:x :u}
-  :charts [(chart/dotplot {:method :histogram :binwidth 0.075 :origin -1})]
+  :charts [(chart/dotplot {:method :histogram :binwidth 0.075 :origin -1 :at :value :width 1.0})]
   :scales {:x {:domain [-1 1]}}
   :labels {:x "u" :y nil}}
  {:width 900 :height 600})
@@ -2803,8 +2807,8 @@
 ;; ### Quantile dot plot
 
 ;; A bus arrival time as 20 equally likely outcomes - the quantiles of a log-normal distribution (median 11.4 min) as
-;; dots in bins of 1.25 min; the red band marks arrivals within 10 minutes and their probability (the original selects
-;; the time by a click).
+;; dots in bins of 1.25 min; the red band marks arrivals within 10 minutes, the title their probability (the original
+;; selects the time by a click and writes it at the rule).
 
 (nu/source-note {:source "Vega - Quantile dot plot" :url (vg-url "quantile-dot-plot")})
 
@@ -2814,60 +2818,65 @@
    {:data (map (fn [i] {:minutes (r/icdf arrival (/ (+ 0.5 (double i)) 20.0))}) (range 20))
     :mapping {:x :minutes}
     :charts [(chart/rect {:x [0 select] :fill [178 34 34] :alpha 0.2})
-             (chart/dotplot {:method :histogram :binwidth 1.25 :origin 0 :color [70 130 180]})
-             (chart/text {:x select :y [:panel 0.95] :text (format "%.1f%%" (* 100.0 (r/cdf arrival select)))
-                          :anchor [:left :top] :offset [3 0]})]
+             (chart/dotplot {:method :histogram :binwidth 1.25 :origin 0 :color [70 130 180] :width 1.0})]
     :scales {:x {:domain [0 30]}}
-    :labels {:x "Minutes until the bus arrives" :y nil}}
+    :labels {:title (format "Arrival within %.0f minutes: %.1f%%" select (* 100.0 (r/cdf arrival select)))
+             :x "Minutes until the bus arrives" :y nil}}
    {:width 600 :height 250}))
 
 ;; ### Time units
 
-;; 20,000 flights (January - March 2001) per month, day of the month, weekday and hour: the number of flights (left)
-;; and the mean delay (right) - every unit and measure of the original's selectors (its year is a single bar, left
-;; out).
+;; 20,000 flights (January - March 2001) per month, day of the month, weekday and hour: the number of flights (top)
+;; and the mean delay (bottom), a panel per unit with its own x scale - every unit and measure of the original's
+;; selectors (its year is a single bar, left out). Levels sort within a panel by a leading number, hidden by the
+;; formatter.
 
 (nu/source-note {:source "Vega - Time units" :url (vg-url "time-units") :dataset :flights-20k})
 
-(let [flights (map #(assoc % :t (java.time.LocalDateTime/parse (:date %))) (nu/dataset :flights-20k))
-      units [["month" #(month-names (dec (.getMonthValue ^java.time.LocalDateTime (:t %)))) (subvec month-names 0 3)]
-             ["date" #(str (.getDayOfMonth ^java.time.LocalDateTime (:t %))) (mapv str (range 1 32))]
-             ["day" #(weekdays (dec (.getValue (.getDayOfWeek ^java.time.LocalDateTime (:t %))))) weekdays]
-             ["hours" #(str (.getHour ^java.time.LocalDateTime (:t %))) (mapv str (range 24))]]]
+(let [units [["month" #(let [mo (.getMonthValue ^java.time.LocalDateTime %)] (str mo " " (month-names (dec mo))))]
+             ["date" #(format "%02d" (.getDayOfMonth ^java.time.LocalDateTime %))]
+             ["day" #(let [d (.getValue (.getDayOfWeek ^java.time.LocalDateTime %))] (str d " " (weekdays (dec d))))]
+             ["hours" #(format "%02d" (.getHour ^java.time.LocalDateTime %))]]
+      rows (for [{:keys [date delay]} (nu/dataset :flights-20k)
+                 :let [t (java.time.LocalDateTime/parse date)]
+                 [unit f] units]
+             {:unit unit :level (f t) :delay delay})]
   (plot/render-image
    (plot/arrange
-    (vec (for [[unit f domain] units
-               [stat title] [[:count "flights"] [:mean "mean delay (min)"]]]
-           {:data (map #(assoc % :unit (f %)) flights) :mapping {:x :unit :y :delay}
+    (vec (for [[stat title] [[:count "Number of Flights"] [:mean "Average Delay (min)"]]]
+           {:data rows :mapping {:x :level :y :delay :facet :unit}
             :charts [(chart/bar {:stat stat})]
-            :scales {:x {:domain domain}}
-            :labels {:x unit :y title}}))
-    {:columns 2})
-   {:width 1000 :height 800}))
+            :scales {:facet {:domain (mapv first units)} :x {:formatter #(str/replace (str %) #"^\d+ " "")}}
+            :facets {:columns 4 :scales {:x :free} :widths [3 31 7 24]}
+            :theme {:axis {:x {:label-rotation -90}} :text {:tick-label {:size 8}}}
+            :labels {:title title :x nil :y nil}}))
+    {:columns 1})
+   {:width 1000 :height 600}))
 
 ;; ## Geographic Maps (Vega)
 
 ;; ### Volcano contours
 
-;; The Maunga Whau volcano's heights on a 10 m grid as filled contours (a gridded `:value`), north up.
+;; The Maunga Whau volcano's heights on a 10 m grid as filled contours (a gridded `:value`) every 10 m from 90 m - below
+;; the lowest height, so the first band covers the whole grid, as the original's - north up.
 
 (nu/source-note {:source "Vega - Volcano contours" :url (vg-url "volcano-contours") :dataset :volcano-vega})
 
 (plot/render-image
  {:data (nu/dataset :volcano-vega) :mapping {:x :col :y :row :value :value}
-  :charts [(chart/contour {:fill true :levels 10})]
+  :charts [(chart/contour {:fill true :levels (vec (range 90 200 10))})]
   :scales {:y {:reverse true :axis false} :x {:axis false} :color {:range :viridis/viridis :title "height (m)"}}
   :aspect :iso
   :labels {:x nil :y nil}}
- {:width 700 :height 500})
+ {:width 960 :height 620})
 
 ;; ## Tree Diagrams (Vega)
 
 ;; ### Tree layout
 
-;; The Flare class hierarchy as a tree, the root on the left and the leaves on the right (a horizontal dendrogram of
-;; the parent links, its height axis reversed), groups named (the original also names the 220 leaves on a 1600 px tall
-;; canvas; its tidy layout places groups by depth, the dendrogram aligns all leaves).
+;; The Flare class hierarchy as a node-link tree - `plot/tree`: the tidy layout (nodes by depth, the root on the left),
+;; diagonal links, nodes coloured by depth, every node named (the original's canvas is 1600 px tall, so its leaf names
+;; don't overlap).
 
 (nu/source-note {:source "Vega - Tree layout" :url (vg-url "tree-layout") :dataset :flare-vega})
 
@@ -2876,17 +2885,18 @@
 (def flare-tree (tree/from-parents flare {:id :id :parent :parent :name :name}))
 
 (plot/render-image
- (assoc-in (plot/dendrogram flare-tree {:horizontal true :labels? false :group-labels? true}) [:scales :y :reverse] true)
+ (plot/tree flare-tree {:mapping {:color #(str (:depth %))}})
  {:width 900 :height 800})
 
 ;; ### Radial tree layout
 
-;; The same tree around a circle, every leaf named.
+;; The same tree around a circle - depth as the radius, links curving along it, every leaf named (group names left
+;; out).
 
 (nu/source-note {:source "Vega - Radial tree layout" :url (vg-url "radial-tree-layout") :dataset :flare-vega})
 
 (plot/render-image
- (plot/dendrogram flare-tree {:circular true})
+ (plot/tree flare-tree {:circular true :mapping {:color #(str (:depth %))}})
  {:width 900 :height 900})
 
 ;; ### Treemap
@@ -2966,7 +2976,8 @@
 ;; ### Reorderable matrix
 
 ;; The co-occurrence matrix of the characters ordered by group: a cell per pair of characters who meet, coloured by
-;; their group when both share it (grey across groups) - the original reorders by dragging.
+;; their group when both share it (grey across groups), every name on the axes (x labels vertical) - the original
+;; reorders by dragging.
 
 (nu/source-note {:source "Vega - Reorderable matrix" :url (vg-url "reorderable-matrix") :dataset :miserables-links-vega})
 
@@ -2978,24 +2989,26 @@
                 [a b] [[s t] [t s]]]
             {:x (:name a) :y (:name b) :group (if (= (:group a) (:group b)) (:group a) "across")})
     :mapping {:x :x :y :y :color :group}
-    :charts [(chart/tile {:stroke-color :white :stroke-width 0.5})]
+    :charts [(chart/tile)]
     :scales {:x {:domain order} :y {:domain order :reverse true}
              :color {:domain (conj (vec (sort-by parse-long (distinct (map :group miserables-nodes)))) "across")
                      :range (conj (vec (take 11 (cycle (c/palette :category10)))) [190 190 190]) :legend false}}
-    :theme {:text {:tick-label {:size 6}}}
+    :theme {:text {:tick-label {:size 8}} :axis {:x {:label-rotation -90}}}
     :labels {:x nil :y nil}}
-   {:width 900 :height 900}))
+   {:width 1000 :height 1000}))
 
 ;; ### Arc diagram
 
-;; The same co-occurrences as arcs above the characters, ordered by group.
+;; The same co-occurrences as arcs above the characters, ordered by group, the names reading upward (`:labels :name`,
+;; x labels at -90°).
 
 (nu/source-note {:source "Vega - Arc diagram" :url (vg-url "arc-diagram") :dataset :miserables-links-vega})
 
 (plot/render-image
  (plot/arc miserables-links {:from :source :to :target :nodes miserables-nodes :id :index
                              :order (mapv :index (sort-by (juxt #(parse-long (:group %)) :index) miserables-nodes))
-                             :mapping {:color :group} :scales {:color {:legend false}}})
+                             :mapping {:color :group} :scales {:color {:legend false}} :labels :name
+                             :theme {:axis {:x {:label-rotation -90}}}})
  {:width 1000 :height 450})
 
 ;; ## Other Chart Types (Vega)
@@ -3016,40 +3029,56 @@
 
 ;; ### Beeswarm plot
 
-;; Les Misérables characters per group, packed without overlap (a beeswarm; the original simulates forces).
+;; Les Misérables characters per group, packed without overlap - every group swarms across the whole height
+;; (`:position :overlay`; the original simulates forces).
 
 (nu/source-note {:source "Vega - Beeswarm plot" :url (vg-url "beeswarm-plot") :dataset :miserables-nodes})
 
 (plot/render-image
  {:data (map #(assoc % :g (parse-long (:group %))) miserables-nodes) :mapping {:x :g :color :group}
-  :charts [(chart/beeswarm {:size 18})]
+  :charts [(chart/beeswarm {:size 14 :position :overlay})]
   :scales {:x {:ticks (vec (range 11))} :color {:legend false}}
   :labels {:x "group" :y nil}}
  {:width 800 :height 350})
 
 ;; ### Calendar view
 
-;; Daily change of the S&P 500 close, 2000-2020: a row of panels per year, a cell per trading day (week of the year ×
-;; weekday), diverging around 0.
+;; Daily change of the S&P 500 close, 2000-2020, diverging around 0: a row of panels per year, a cell per trading day
+;; (week of the year × weekday) - in three images of seven years; months marked at the week of their first day (in
+;; 2001; a year's weeks shift by a day or two).
 
 (nu/source-note {:source "Vega - Calendar view" :url (vg-url "calendar-view") :dataset :sp500-2000})
 
-(let [days (map #(update % :date local-date) (nu/dataset :sp500-2000))
-      week-fields (java.time.temporal.WeekFields/of java.time.DayOfWeek/SUNDAY 1)]
-  (plot/render-image
-   {:data (map (fn [prev {:keys [^LocalDate date close]}]
-                 {:year (str (.getYear date)) :week (.get date (.weekOfYear week-fields))
-                  :day (weekdays (dec (.getValue (.getDayOfWeek date))))
-                  :change (/ (- (double close) (double (:close prev))) (double (:close prev)))})
-               days (rest days))
-    :mapping {:x :week :y :day :color :change :facet-row :year}
-    :charts [(chart/tile)]
-    :scales {:y {:domain (subvec weekdays 0 5) :reverse true :axis false} :x {:axis false}
-             :color {:range [[197 27 125] [247 247 247] [77 146 33]] :midpoint 0 :domain [-0.06 0.06]
-                     :formatter #(format "%.0f%%" (* 100.0 (double %))) :title "change"}}
-    :theme {:facet {:gap 2} :text {:strip {:size 8}}}
-    :labels {:x nil :y nil}}
-   {:width 900 :height 800}))
+(def sp500-days
+  "Trading days with the close's change from the previous trading day: `:year`, `:week` (Sunday-first weeks of the
+  year), `:day` (weekday), `:change`."
+  (let [days (map #(update % :date local-date) (nu/dataset :sp500-2000))
+        week-fields (java.time.temporal.WeekFields/of java.time.DayOfWeek/SUNDAY 1)]
+    (mapv (fn [prev {:keys [^LocalDate date close]}]
+            {:year (.getYear date) :week (.get date (.weekOfYear week-fields))
+             :day (weekdays (dec (.getValue (.getDayOfWeek date))))
+             :change (/ (- (double close) (double (:close prev))) (double (:close prev)))})
+          days (rest days))))
+
+(def month-weeks
+  "Week of the year (as in `sp500-days`) of every month's first day in 2001 -> the month's name."
+  (let [week-fields (java.time.temporal.WeekFields/of java.time.DayOfWeek/SUNDAY 1)]
+    (into (sorted-map) (map (fn [mo] [(.get (LocalDate/of 2001 (int mo) 1) (.weekOfYear week-fields)) (month-names (dec mo))])
+                            (range 1 13)))))
+
+(mapv (fn [years]
+        (plot/render-image
+         {:data (filter #(<= (first years) (long (:year %)) (last years)) sp500-days)
+          :mapping {:x :week :y :day :color :change :facet-row #(str (:year %))}
+          :charts [(chart/tile)]
+          :scales {:y {:domain (subvec weekdays 0 5) :reverse true}
+                   :x {:domain [0.5 53.5] :nice false :ticks (vec (keys month-weeks)) :formatter #(month-weeks (m/round (double %)) "")}
+                   :color {:range [[197 27 125] [247 247 247] [77 146 33]] :midpoint 0 :domain [-0.06 0.06]
+                           :formatter #(format "%.0f%%" (* 100.0 (double %))) :title "change"}}
+          :theme {:facet {:gap 8} :text {:tick-label {:size 8}}}
+          :labels {:x nil :y nil}}
+         {:width 1000 :height 800}))
+      [(range 2000 2007) (range 2007 2014) (range 2014 2021)])
 
 ;; ### Packed bubble chart
 
@@ -3087,7 +3116,8 @@
 ;; ### Annual temperature
 
 ;; Seattle's hourly temperature normals over the year, each hour of the day a row from 6 AM, its area scaled into the
-;; row (ribbons from the row's base).
+;; row (ribbons from the row's base) - the Vega design of the data in "Trellis Area Plot Showing Annual Temperatures
+;; in Seattle" above, in one panel.
 
 (nu/source-note {:source "Vega - Annual temperature" :url (vg-url "annual-temperature") :dataset :seattle-weather-hourly-normals})
 
@@ -3164,7 +3194,8 @@
 ;; ### U district cuisine
 
 ;; Restaurants of Seattle's University District by latitude (south to north), a density ridge per cuisine coloured by
-;; kind, the cross streets as rules.
+;; kind, the cross streets as rules. The names follow the original's (its burgers ridge reads "Pizza" and its pizza
+;; ridge "Burgers" - its two lists don't match there).
 
 (nu/source-note {:source "Vega - U district cuisine" :url (vg-url "u-district-cuisine") :dataset :udistrict})
 
