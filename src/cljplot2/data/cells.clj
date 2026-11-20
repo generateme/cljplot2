@@ -38,12 +38,14 @@
 
 (def style-entries
   "Style map entries of a cell chart: `:cell` (type), `:cell-scale` (polygon shrink factor, `(0 1]`), `:stroke-color`
-  (a color, `:none` or `:darker`), `:stroke-width`, `:alpha` (fill alpha, a fraction; default - colors as they are)."
-  [(schema/optional :cell cell-schema)
-   (schema/optional :cell-scale [:and schema/finite [:> 0] [:<= 1]])
-   (schema/optional :stroke-color draw/stroke-color)
-   (schema/optional :stroke-width schema/non-neg)
-   (schema/optional :alpha schema/fraction)])
+  (a color, `:none` or `:darker`), `:stroke-width`, `:alpha` (fill alpha multiplier, a fraction; theme default 1.0 - colors as they are)."
+  (schema/in-fragment
+   :cell
+   [(schema/optional :cell {:description "cell shape of the grid (a fastmath grid cell type)"} cell-schema)
+    (schema/optional :cell-scale {:description "cell polygon size relative to its grid cell, in (0 1]"} [:and schema/finite [:> 0] [:<= 1]])
+    (schema/optional :stroke-color {:description "cell outline: a colour, :none or :darker (the darkened fill)"} draw/stroke-color)
+    (schema/optional :stroke-width {:description "cell outline width in pixels"} schema/non-neg)
+    (schema/optional :alpha {:description "fill opacity multiplier"} schema/fraction)]))
 
 (def style-keys
   "Option keys of [[style-entries]], merged over a cell chart's theme style."

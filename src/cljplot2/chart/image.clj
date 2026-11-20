@@ -31,8 +31,13 @@
   "Schemas of the image chart: `:style` (none), `:options`, `:mapping` (merged; only facet keys)."
   {:style [:map {:closed true}]
    :options [:map {:closed true}
-             [:f schema/function]
-             (schema/optional :domain [:map {:closed true} [:x range-schema] [:y range-schema]])]
+             [:f {:description "callback of {:x-scale :y-scale :x-domain :y-domain :facet :size} returning the panel's image (a BufferedImage, clojure2d canvas or pixels; nil - nothing)"}
+              schema/function]
+             (schema/optional :domain {:description "the data range the image covers, added to the extents without padding or nice ends"
+                                       :cljplot2/default-doc "the image follows the other charts' domains"}
+                              [:map {:closed true}
+                               [:x {:description "x range [lo hi] (data units)"} range-schema]
+                               [:y {:description "y range [lo hi] (data units)"} range-schema]])]
    :mapping [:map]})
 
 (defn compute

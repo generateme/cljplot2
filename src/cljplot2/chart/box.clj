@@ -45,12 +45,23 @@
 (set! *unchecked-math* :warn-on-boxed)
 
 (def ^:private style-entries
-  (into [(schema/optional :color schema/solid-color)
-         (schema/optional :stroke-color draw/stroke-color)
-         (schema/optional :stroke-width schema/non-neg)
-         (schema/optional :shape schema/shape)
-         (schema/optional :size schema/non-neg)]
+  (into [(schema/optional :color {:description "box fill colour; the Tufte variant's median point and mean marker (a mapped :color wins)"}
+                          schema/solid-color)
+         (schema/optional :stroke-color {:description "outline colour: a colour, :none or :darker (the darkened fill); also the whiskers and outlier outlines"}
+                          draw/stroke-color)
+         (schema/optional :stroke-width {:description "outline and whisker width in pixels"} schema/non-neg)
+         (schema/optional :shape {:description "outlier point shape, also the Tufte median point (a mapped :shape wins)"} schema/shape)
+         (schema/optional :size {:description "outlier point size in pixels, also the Tufte median point; the mean marker is half of it (a mapped :size wins)"}
+                          schema/non-neg)]
         draw/pattern-style-entries))
+
+(def ^:private padding-entry
+  (schema/optional :padding {:description "padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span"
+                             :cljplot2/default-doc "[0.05 0.05] along the value axis; with :place :bottom also :bottom-share below the data"}
+                   data/position-padding))
+
+(def ^:private stat-keys-doc
+  "with :stat :identity, the statistics of a level and group")
 
 (def schemas
   "Schemas of the box chart: `:style` (theme `[:chart :box]`), `:options`, `:mapping` (merged)."
@@ -59,13 +70,36 @@
                 (into style-entries)
                 (into data/common-options)
                 (into strip/options)
-                (conj (schema/optional :stat [:enum :tukey :identity])
-                      (schema/nilable :outliers schema/bool)
-                      (schema/nilable :mean schema/bool)
-                      (schema/nilable :varwidth schema/bool)
-                      (schema/nilable :variant [:enum :classic :tufte])
-                      (schema/optional :padding data/position-padding)))
-   :mapping (schema/with-rules [:map]
+                (conj (schema/optional :stat {:description "statistics: :tukey (computed from the values) or :identity (pre-aggregated, one row per level and group read through the mapping keys :lower :q1 :median :q3 :upper)"
+                                              :default :tukey}
+                                       [:enum :tukey :identity])
+                      (schema/nilable :outliers {:description "draw the outliers (and include them in the value extent)" :default true} schema/bool)
+                      (schema/nilable :mean {:description "draw a mean marker (with :stat :identity it needs :mean mapped)" :default false} schema/bool)
+                      (schema/nilable :varwidth {:description "box width proportional to the square root of its count, relative to the largest (with :stat :identity it needs :n mapped)"
+                                                 :default false}
+                                      schema/bool)
+                      (schema/nilable :variant {:description "drawing: :classic (box, median line, whiskers with caps) or :tufte (Tufte's quartile plot: whisker lines and a median point, no box)"
+                                                :default :classic}
+                                      [:enum :classic :tufte])
+                      padding-entry))
+   :mapping (schema/with-rules
+              [:map
+               (schema/nilable :x {:description "values (data units) on the value axis (not read with :stat :identity), or levels for vertical boxes"}
+                               schema/accessor)
+               (schema/nilable :y {:description "levels on the categorical axis (absent - one box), or values for vertical boxes"} schema/accessor)
+               (schema/nilable :color {:description "groups, each a box in its own fill colour"} schema/accessor)
+               (schema/nilable :pattern {:description "groups, each a box with its own fill pattern"} schema/accessor)
+               (schema/nilable :shape {:description "groups, each with its own outlier shape"} schema/accessor)
+               (schema/nilable :size {:description "groups, each with its own outlier size"} schema/accessor)
+               (schema/nilable :group {:description "groups without a visual aesthetic, each its own box"} schema/accessor)
+               (schema/nilable :lower {:description (str stat-keys-doc ": the lower whisker end")} schema/accessor)
+               (schema/nilable :q1 {:description (str stat-keys-doc ": the first quartile")} schema/accessor)
+               (schema/nilable :median {:description (str stat-keys-doc ": the median")} schema/accessor)
+               (schema/nilable :q3 {:description (str stat-keys-doc ": the third quartile")} schema/accessor)
+               (schema/nilable :upper {:description (str stat-keys-doc ": the upper whisker end")} schema/accessor)
+               (schema/nilable :outliers {:description (str stat-keys-doc ": a collection of outlier values (optional)")} schema/accessor)
+               (schema/nilable :mean {:description (str stat-keys-doc ": the mean (needed by the :mean option)")} schema/accessor)
+               (schema/nilable :n {:description (str stat-keys-doc ": the count (needed by :varwidth and :n-label)")} schema/accessor)]
               [#(when-not (or (some? (:x %)) (some? (:y %)) (some? (:q1 %)))
                   "should map :x or :y (the values), or the statistics (:q1 ... with :stat :identity)")
                nil])})

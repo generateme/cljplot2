@@ -44,7 +44,8 @@
 (set! *unchecked-math* :warn-on-boxed)
 
 (def ^:private style-entries
-  (conj polyline/style-entries (schema/optional :alpha schema/fraction)))
+  (conj polyline/style-entries (schema/optional :alpha {:description "opacity multiplying the colours' alpha (unset, grouped filled contours take half the theme's)"}
+                                                 schema/fraction)))
 
 (def schemas
   "Schemas of the contour chart: `:style` (theme `[:chart :contour]`), `:options`, `:mapping` (merged)."
@@ -54,11 +55,25 @@
                  (into style-entries)
                  (into field/options)
                  (into data/common-options)
-                 (conj (schema/optional :levels [:or [:int {:min 1 :max 1000}] [:vector {:min 1} schema/finite]])
-                       (schema/optional :fill :boolean)
-                       (schema/nilable :labels [:or :boolean schema/function])))
+                 (conj (schema/optional :levels {:description "contour levels: a count evenly spread over the range of every sampled value (the ends left out), or a vector of level values"
+                                                 :default 10}
+                                        [:or [:int {:min 1 :max 1000}] [:vector {:min 1} schema/finite]])
+                       (schema/optional :fill {:description "fill the region at or above each level, each band coloured by its middle value, instead of drawing lines"
+                                               :default false}
+                                        :boolean)
+                       (schema/nilable :labels {:description "line contours only: label each line with its level - true (the number) or a function of {:level v} returning the text (nil - no label)"
+                                                :default false}
+                                       [:or :boolean schema/function])))
              [#(when (and (:labels %) (:fill %)) "labels need line contours, not :fill true") [:labels]])
-   :mapping [:maybe [:map]]})
+   :mapping [:maybe [:map
+                     (schema/nilable :x {:description "x of the points (density) or of the gridded data"} schema/accessor)
+                     (schema/nilable :y {:description "y of the points (density) or of the gridded data"} schema/accessor)
+                     (schema/nilable :value {:description "the field's value at gridded (x, y) on a full lattice, interpolated (absent - a density of the points)"}
+                                     schema/accessor)
+                     (schema/nilable :color {:description "categorical groups, each its own field with lines in its colour (else the lines are coloured by level)"}
+                                     schema/accessor)
+                     (schema/nilable :dash {:description "groups, each its own field with lines in its dash style"} schema/accessor)
+                     (schema/nilable :group {:description "groups without a visual aesthetic, each its own field"} schema/accessor)]]})
 
 (defn- style
   [options theme]

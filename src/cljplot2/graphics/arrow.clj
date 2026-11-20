@@ -20,11 +20,13 @@
 (def schema
   "Schema of the `:arrow` option."
   [:map {:closed true}
-   (schema/optional :end schema/bool)
-   (schema/optional :start schema/bool)
-   (schema/optional :size schema/pos)
-   (schema/optional :angle [:and number? [:> 0] [:< 90]])
-   (schema/optional :shape [:enum :closed :open])])
+   (schema/optional :end {:description "a head at the run's end" :default true} schema/bool)
+   (schema/optional :start {:description "a head at the run's start" :default false} schema/bool)
+   (schema/optional :size {:description "head length in pixels" :default 8.0} schema/pos)
+   (schema/optional :angle {:description "angle in degrees between each side of the head and the line" :default 20.0}
+                    [:and number? [:> 0] [:< 90]])
+   (schema/optional :shape {:description ":closed (a filled triangle) or :open (two strokes)" :default :closed}
+                    [:enum :closed :open])])
 
 (def ^:private defaults {:end true :start false :size 8.0 :angle 20.0 :shape :closed})
 

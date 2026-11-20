@@ -45,12 +45,14 @@
   [:ranges :measures :markers])
 
 (def ^:private style-entries
-  [(schema/optional :range-colors [:tuple schema/color schema/color])
-   (schema/optional :measure-colors [:tuple schema/color schema/color])
-   (schema/optional :measure-width schema/fraction)
-   (schema/optional :marker-color schema/color)
-   (schema/optional :marker-width schema/non-neg)
-   (schema/optional :marker-length schema/fraction)])
+  [(schema/optional :range-colors {:description "[first last] colours shading the ranges from the smallest to the largest"}
+                    [:tuple schema/color schema/color])
+   (schema/optional :measure-colors {:description "[first last] colours shading the measures from the first (the current value) to the last"}
+                    [:tuple schema/color schema/color])
+   (schema/optional :measure-width {:description "measure bar width, a fraction of the item slot"} schema/fraction)
+   (schema/optional :marker-color {:description "marker line colour"} schema/color)
+   (schema/optional :marker-width {:description "marker line width in pixels (0 - no markers)"} schema/non-neg)
+   (schema/optional :marker-length {:description "marker line length, a fraction of the item slot"} schema/fraction)])
 
 (def schemas
   "Schemas of the bullet chart: `:style` (theme `[:chart :bullet]`), `:options`, `:mapping` (merged)."
@@ -59,8 +61,19 @@
                 (into style-entries)
                 (into data/common-options)
                 (into (remove #(#{:n-label :n-format} (first %)) strip/options))
-                (conj (schema/optional :padding data/position-padding)))
-   :mapping (schema/with-rules [:map]
+                (conj (schema/optional :padding {:description "padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span (strip frame: :x the values)"
+                                                 :cljplot2/default-doc "values 0.05 on a side holding values, 0 on the side of 0"}
+                                       data/position-padding)))
+   :mapping (schema/with-rules [:map
+                                (schema/nilable :ranges {:description "qualitative ranges of a level: a number or a vector of them (one row per level and group)"}
+                                                schema/accessor)
+                                (schema/nilable :measures {:description "measures of a level: a number or a vector of them, the first the current value"}
+                                                schema/accessor)
+                                (schema/nilable :markers {:description "marker values of a level: a number or a vector of them"}
+                                                schema/accessor)
+                                (schema/nilable :y {:description "levels on the categorical axis (absent - one bullet)"} schema/accessor)
+                                (schema/nilable :x {:description "levels of vertical bullets (values aren't read from it)"} schema/accessor)
+                                (schema/nilable :group {:description "groups of a level, dodged as other strips"} schema/accessor)]
               [#(when-not (some (fn [k] (some? (get % k))) value-keys)
                   "should map :ranges, :measures or :markers")
                nil]

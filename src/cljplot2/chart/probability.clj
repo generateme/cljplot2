@@ -51,38 +51,62 @@
 (def ^:private ^:const default-points 100)
 
 (def ^:private style-entries
-  (conj scatter/style-entries (schema/optional :line-width schema/non-neg)))
+  (conj scatter/style-entries (schema/optional :line-width {:description "reference line width in pixels"} schema/non-neg)))
 
 (def ^:private style-keys [:size :color :stroke-color :stroke-width :shape :line-width])
 
+(defn- distribution-entry
+  [k side]
+  (schema/nilable k {:description (str "the " side " side as a distribution instead of data: a fastmath distribution, [:name] or [:name params]"
+                                       " (wins over the plot's mapping of " side ")")}
+                  probability/distribution-schema))
+
 (defn- options-schema
-  [line-values extra]
+  "Options of a probability plot; `line-props` - the documenting properties of `:line` (values `line-values`)."
+  [line-values line-props extra]
   (-> [:map {:closed true}]
       (into style-entries)
       (into data/common-options)
-      (conj (schema/nilable :x-distribution probability/distribution-schema)
-            (schema/nilable :y-distribution probability/distribution-schema)
-            (schema/optional :line (into [:enum false] line-values))
-            (schema/optional :points [:int {:min 2}])
-            (schema/nilable :label [:or :string :keyword])
-            (schema/optional :padding data/position-padding))
+      (conj (distribution-entry :x-distribution ":x")
+            (distribution-entry :y-distribution ":y")
+            (schema/optional :line line-props (into [:enum false] line-values))
+            (schema/optional :points {:description "both sides distributions only: the number of points (Q-Q plotting positions, P-P values over :domain)"
+                                      :cljplot2/default-doc "100; an error with a data side"}
+                             [:int {:min 2}])
+            (schema/nilable :label {:description "both sides distributions only: the label of the chart's one row {:label l}, styled by the chart's own mapping of :label (e.g. {:color :label})"
+                                    :cljplot2/default-doc "\"<y name> vs <x name>\"; an error with a data side"}
+                            [:or :string :keyword])
+            (schema/optional :padding {:description "padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span"
+                                       :cljplot2/default-doc "{:x [0.05 0.05] :y [0.05 0.05]}"}
+                             data/position-padding))
       (into extra)))
 
 (def ^:private mapping-schema
-  [:map [:x {:optional true} [:maybe schema/accessor]] [:y {:optional true} [:maybe schema/accessor]]])
+  [:map
+   (schema/nilable :x {:description "data of the x side (unless :x-distribution is given)"} schema/accessor)
+   (schema/nilable :y {:description "data of the y side (unless :y-distribution is given)"} schema/accessor)
+   (schema/nilable :color {:description "groups, each with its own point and line colour"} schema/accessor)
+   (schema/nilable :shape {:description "groups, each with its own point shape"} schema/accessor)
+   (schema/nilable :size {:description "groups, each with its own point size"} schema/accessor)
+   (schema/nilable :group {:description "groups without a visual aesthetic"} schema/accessor)])
 
 (def qq-schemas
   "Schemas of the Q-Q chart: `:style` (theme `[:chart :qq]`), `:options`, `:mapping` (merged)."
   {:style (into [:map {:closed true}] style-entries)
-   :options (options-schema [:quartiles] [])
+   :options (options-schema [:quartiles] {:description "reference line, one per group: :quartiles (through the first and third quartile pairs, R qqline) or false (none)"
+                                          :default :quartiles}
+                            [])
    :mapping mapping-schema})
 
 (def pp-schemas
   "Schemas of the P-P chart: `:style` (theme `[:chart :pp]`), `:options`, `:mapping` (merged)."
   {:style (into [:map {:closed true}] style-entries)
-   :options (options-schema [:identity] [(schema/optional :domain (schema/with-rules [:tuple schema/finite schema/finite]
-                                                                    [#(when-not (< (double (first %)) (double (second %)))
-                                                                        "should be [lo hi] with lo < hi")]))])
+   :options (options-schema [:identity] {:description "reference line, one per group: :identity (y = x) or false (none)"
+                                         :default :identity}
+                            [(schema/optional :domain {:description "both sides distributions only (then required): [lo hi] of the values the CDFs are evaluated at"}
+                                              (schema/with-rules [:tuple schema/finite schema/finite]
+                                                [#(when-not (< (double (first %)) (double (second %)))
+                                                    "should be [lo hi] with lo < hi")]))])
    :mapping mapping-schema})
 
 (def ^:private distribution-keys {:x :x-distribution :y :y-distribution})

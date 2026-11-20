@@ -50,14 +50,33 @@
 
 (def options
   "Map entries of the field options shared by the field and contour charts."
-  [(schema/optional :f schema/function)
-   (schema/optional :domain [:map {:closed true} [:x [:tuple schema/finite schema/finite]] [:y [:tuple schema/finite schema/finite]]])
-   (schema/optional :kernel keyword?)
-   (schema/optional :bandwidth bandwidth-schema)
-   (schema/optional :binned? :boolean)
-   (schema/optional :cut [:and schema/finite [:>= 0]])
-   (schema/optional :interpolation [:enum :bilinear :bicubic :cubic-2d])
-   (schema/optional :n n-schema)])
+  (schema/in-fragment
+   :field
+   [(schema/optional :f {:description "the field as a function of a point [x y] returning a number (instead of mapped data)"}
+                     schema/function)
+    (schema/optional :domain {:description "the domain of a function field"
+                              :cljplot2/default-doc "the plot's explicit :x and :y scale domains"}
+                     [:map {:closed true}
+                      [:x {:description "x domain [lo hi]"} [:tuple schema/finite schema/finite]]
+                      [:y {:description "y domain [lo hi]"} [:tuple schema/finite schema/finite]]])
+    (schema/optional :kernel {:description "fastmath kernel of the 2D density estimate of mapped points"
+                              :default :gaussian}
+                     keyword?)
+    (schema/optional :bandwidth {:description "bandwidth of the density estimate: a number, a fastmath selector or :scott, or a pair [hx hy] of them"
+                                 :cljplot2/default-doc ":nrd per axis (MASS::kde2d, as ggplot2)"}
+                     bandwidth-schema)
+    (schema/optional :binned? {:description "estimate the density from binned points (faster for many points)"
+                               :default false}
+                     :boolean)
+    (schema/optional :cut {:description "how many bandwidths the density domain extends past the points on each side"
+                           :default 3}
+                     [:and schema/finite [:>= 0]])
+    (schema/optional :interpolation {:description "interpolation of gridded data (mapped :x, :y, :value on a full lattice)"
+                                     :default :bilinear}
+                     [:enum :bilinear :bicubic :cubic-2d])
+    (schema/optional :n {:description "grid size: values sampled along each axis, or [nx ny]"
+                         :default 100}
+                     n-schema)]))
 
 (defn source-kind
   "The source of a field chart: `:function` with option `:f`, `:gridded` with a mapped `:value`, else `:points`."

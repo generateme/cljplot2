@@ -40,7 +40,11 @@
 
 (def options
   "Map entries of the options every annotation chart takes (besides [[cljplot2.data.rows/common-options]])."
-  [(schema/nilable :extent schema/bool)])
+  (schema/in-fragment
+   :annotation
+   [(schema/nilable :extent {:description "include the positions in the scale extents"
+                             :default true}
+                    schema/bool)]))
 
 (defn as-vector
   "Literal option `v` as a vector of items; `item?` - is `v` itself one item (else a vector of items)."

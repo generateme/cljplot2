@@ -82,7 +82,11 @@
                      "should be :quantiles, :min-max, :none or {:quantiles [p q]}, 0 <= p < q <= 1"))
 
 (def ^:private style-entries
-  (conj polyline/style-entries (schema/optional :fill schema/color) (schema/optional :bridge polyline/bridge-schema)))
+  (conj polyline/style-entries
+        (schema/optional :fill {:description "fill colour (or :none) of the area to y = 0 (:f) or of the polygon the curve closes (:parametric)"}
+                         schema/color)
+        (schema/optional :bridge {:description "style of the segments bridging gaps with :gaps :bridge: :alpha (a fraction of the line alpha), optional :width and :dash"}
+                         polyline/bridge-schema)))
 
 (def schemas
   "Schemas of the function chart: `:style` (theme `[:chart :function]`), `:options`, `:mapping` (the chart's own)."
@@ -90,17 +94,33 @@
    :options (-> [:map {:closed true}]
                 (into style-entries)
                 (conj (schema/optional :data (schema/forbidden "isn't used: a function chart samples its functions"))
-                      (schema/optional :mapping data/mapping-schema)
-                      (schema/optional :f functions)
-                      (schema/optional :parametric functions)
-                      (schema/optional :domain span)
-                      (schema/optional :t span)
-                      (schema/optional :sample-step curve/sample-step)
-                      (schema/optional :y-limits limits)
-                      (schema/optional :y-extent y-extent)
-                      (schema/optional :gaps [:enum :break :bridge])
-                      (schema/optional :padding data/position-padding)))
-   :mapping [:map]})
+                      (schema/optional :mapping {:description "the chart's own mapping of the function labels (e.g. {:color :function}); only facet keys come from the plot"}
+                                       data/mapping-schema)
+                      (schema/optional :f {:description "y = f(x): a function, a vector of functions or of [label function] pairs, or a map label -> function (this or :parametric)"}
+                                       functions)
+                      (schema/optional :parametric {:description "[x y] = f(t): functions given as for :f (this or :f)"} functions)
+                      (schema/optional :domain {:description "x span [lo hi] the :f functions are sampled over: numbers or java.time values"
+                                                :cljplot2/default-doc "the plot's explicit x domain, else the x scale's domain at drawing"}
+                                       span)
+                      (schema/optional :t {:description "t span [lo hi] of :parametric (required there): numbers or java.time values"} span)
+                      (schema/optional :sample-step {:description "distance between samples: pixels along x or {:count n} (:parametric - only {:count n})"
+                                                     :cljplot2/default-doc "1 pixel for :f, {:count 500} for :parametric"}
+                                       curve/sample-step)
+                      (schema/optional :y-limits {:description "[lo hi] - samples outside don't count for the y extent (the curve is only clipped)"}
+                                       limits)
+                      (schema/optional :y-extent {:description "y extent of the samples without :y-limits or an explicit y domain: :quantiles (1% and 99%), {:quantiles [p q]}, :min-max or :none"
+                                                  :default :quantiles}
+                                       y-extent)
+                      (schema/optional :gaps {:description "nil or non-finite results break the curve: :break (empty space) or :bridge (a straight segment in the :bridge style)"
+                                              :default :break}
+                                       [:enum :break :bridge])
+                      (schema/optional :padding {:description "padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span"
+                                                 :cljplot2/default-doc "0.05 on every side"}
+                                       data/position-padding)))
+   :mapping [:map
+             (schema/nilable :color {:description "line colour per function label (e.g. :function)"} schema/accessor)
+             (schema/nilable :dash {:description "dash style per function label"} schema/accessor)
+             (schema/nilable :group {:description "groups the functions"} schema/accessor)]})
 
 (defn categorical-labels
   "`options` with every accessor `:function` of the chart's own `:mapping` marked categorical (see

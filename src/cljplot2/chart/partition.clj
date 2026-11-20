@@ -43,8 +43,8 @@
 (set! *unchecked-math* :warn-on-boxed)
 
 (def ^:private style-entries
-  (into [(schema/optional :border-color schema/color)
-         (schema/optional :border-width schema/non-neg)]
+  (into [(schema/optional :border-color {:description "cell border colour"} schema/color)
+         (schema/optional :border-width {:description "cell border width in pixels"} schema/non-neg)]
         draw/pattern-style-entries))
 
 (def schemas
@@ -53,11 +53,15 @@
    :options (-> [:map {:closed true}]
                 (into style-entries)
                 (into data/common-options)
-                (conj (schema/optional :order [:enum :value :data])
-                      (schema/optional :color-by [:enum :top :name])
-                      (schema/nilable :root schema/bool)
-                      (schema/nilable :group-labels hierarchy/label-option)
-                      (schema/nilable :leaf-labels hierarchy/label-option)))
+                (conj (schema/optional :order {:description "order of siblings: :value (descending) or :data (first appearance)"
+                                               :default :value}
+                                       [:enum :value :data])
+                      (schema/optional :color-by {:description (str "node colours: :top - each top-level node's palette colour, lighter by depth; "
+                                                                    ":name - every node by its name through the color scale")
+                                                  :default :top}
+                                       [:enum :top :name])
+                      (schema/nilable :root {:description "draw the root too, every level one up" :default false} schema/bool))
+                (into hierarchy/label-entries))
    :mapping hierarchy/mapping-schema})
 
 (def ^:private defaults {:order :value :root false :group-labels true :leaf-labels true})

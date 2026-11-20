@@ -37,11 +37,24 @@
                 (into polyline/style-entries)
                 (into data/common-options)
                 (into annotation/options)
-                (conj (schema/nilable :x (annotation/positions-schema annotation/position))
-                      (schema/nilable :y (annotation/positions-schema annotation/position))
-                      (schema/nilable :slope (annotation/positions-schema schema/finite))
-                      (schema/nilable :intercept (annotation/positions-schema schema/finite))))
-   :mapping [:map]})
+                (conj (schema/nilable :x {:description "literal x position(s) of lines along the y direction: a position or a vector of them (wins over the mapping)"}
+                                      (annotation/positions-schema annotation/position))
+                      (schema/nilable :y {:description "literal y position(s) of lines along the x direction: a position or a vector of them (wins over the mapping)"}
+                                      (annotation/positions-schema annotation/position))
+                      (schema/nilable :slope {:description "literal slope(s) of lines y = intercept + slope * x, a number or a vector of 1 or n (needs :intercept; linear scales only)"}
+                                      (annotation/positions-schema schema/finite))
+                      (schema/nilable :intercept {:description "literal intercept(s) of lines y = intercept + slope * x, a number or a vector of 1 or n (needs :slope)"}
+                                      (annotation/positions-schema schema/finite))))
+   :mapping [:map
+             (schema/nilable :x {:description "x position of a line along the y direction, one per row"} schema/accessor)
+             (schema/nilable :y {:description "y position of a line along the x direction, one per row"} schema/accessor)
+             (schema/nilable :slope {:description "slope of a line y = intercept + slope * x, one per row (with :intercept)"}
+                             schema/accessor)
+             (schema/nilable :intercept {:description "intercept of a line y = intercept + slope * x, one per row (with :slope)"}
+                             schema/accessor)
+             (schema/nilable :color {:description "line colour per group (gives legend keys)"} schema/accessor)
+             (schema/nilable :dash {:description "dash style per group (gives legend keys)"} schema/accessor)
+             (schema/nilable :group {:description "groups the rows without styling them"} schema/accessor)]})
 
 (defn- style
   [options theme]

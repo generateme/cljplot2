@@ -51,8 +51,8 @@
 (set! *unchecked-math* :warn-on-boxed)
 
 (def ^:private style-entries
-  [(schema/optional :stroke-color schema/color)
-   (schema/optional :stroke-width schema/non-neg)])
+  [(schema/optional :stroke-color {:description "quad outline colour of :style :both"} schema/color)
+   (schema/optional :stroke-width {:description "quad outline width in pixels (:style :both and :wireframe)"} schema/non-neg)])
 
 (def ^:private range-schema [:tuple schema/finite schema/finite])
 
@@ -64,22 +64,33 @@
                  (into style-entries)
                  (into data/common-options)
                  (into cloud/frame-options)
-                 (conj (schema/optional :style [:enum :surface :wireframe :both])
-                       (schema/optional :color schema/color)
-                       (schema/nilable :shade schema/bool)
-                       (schema/optional :f schema/function)
-                       (schema/nilable :density schema/bool)
-                       (schema/optional :fu schema/function)
-                       (schema/optional :u range-schema)
-                       (schema/optional :v range-schema)
-                       (schema/optional :n field/n-schema)
-                       (schema/optional :cut [:and schema/finite [:>= 0]])))
+                 (conj (schema/optional :style {:description "mesh drawing: :surface (filled quads), :wireframe (quad outlines) or :both"
+                                                :default :surface}
+                                        [:enum :surface :wireframe :both])
+                       (schema/optional :color {:description "one colour for all quads (no color scale)"
+                                                :cljplot2/default-doc "each quad's mean height (or c of [z c]) through the plot's color scale"}
+                                        schema/color)
+                       (schema/nilable :shade {:description "Lambert shading of filled quads" :default true} schema/bool)
+                       (schema/optional :f {:description "source: a function of [x y] returning z or [z c], sampled over :domain :x / :y"}
+                                        schema/function)
+                       (schema/nilable :density {:description "source: the 2D kernel density of the mapped :x, :y" :default false} schema/bool)
+                       (schema/optional :fu {:description "source: a parametric surface, a function of [u v] returning [x y z]"} schema/function)
+                       (schema/optional :u {:description "the u range [lo hi] of :fu"} range-schema)
+                       (schema/optional :v {:description "the v range [lo hi] of :fu"} range-schema)
+                       (schema/optional :n {:description "grid points per axis of :f, :fu, :density: n or [nx ny]" :default 30}
+                                        field/n-schema)
+                       (schema/optional :cut {:description "how many bandwidths the density domain extends past the points on each side"
+                                              :cljplot2/default-doc "3 (only with :density)"}
+                                        [:and schema/finite [:>= 0]])))
              [#(when (> (count (filter % [:f :fu :density])) 1) "a surface takes one source: :f, :fu or :density true") nil]
              [#(when (and (:fu %) (not (and (:u %) (:v %)))) "a parametric surface needs :u and :v ranges") [:fu]]
              [#(when (and (or (:u %) (:v %)) (not (:fu %))) ":u and :v are the ranges of a parametric :fu") [:u]]
              [#(when (and (some? (:cut %)) (not (:density %))) ":cut widens a :density surface") [:cut]]
              cloud/distance-rule)
-   :mapping [:maybe [:map]]})
+   :mapping [:maybe [:map
+                     (schema/nilable :x {:description "x of a lattice node (gridded) or of a point (:density)"} schema/accessor)
+                     (schema/nilable :y {:description "y of a lattice node (gridded) or of a point (:density)"} schema/accessor)
+                     (schema/nilable :z {:description "height of a lattice node (gridded source)"} schema/accessor)]]})
 
 (defn source-kind
   "The source of a surface chart's `options`: `:function` (`:f`), `:parametric` (`:fu`), `:density`, else `:gridded`."

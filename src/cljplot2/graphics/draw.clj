@@ -23,8 +23,10 @@
 (def pattern-style-entries
   "Style map entries of a filled chart's pattern: `:pattern` (see [[cljplot2.schema/pattern]]) and `:pattern-color`
   (the ink: a color or `:darker`, see [[pattern-ink]])."
-  [(schema/optional :pattern schema/pattern)
-   (schema/optional :pattern-color stroke-color)])
+  (schema/in-fragment
+   :pattern
+   [(schema/optional :pattern {:description "pattern drawn over the fill (a mapped :pattern wins)"} schema/pattern)
+    (schema/optional :pattern-color {:description "pattern ink: a colour, :none or :darker (the darkened fill)"} stroke-color)]))
 
 (defn contrast-color
   "Black or white, whichever reads better on `color` (by luma): text and lines drawn over a fill."
@@ -161,12 +163,17 @@
 
 (def corner-radius-option
   "Option entry `:corner-radius`: pixels, every corner of a bar rounded (default 0 - square)."
-  (schema/optional :corner-radius schema/non-neg))
+  (first (schema/in-fragment
+          :corner-radius
+          [(schema/optional :corner-radius {:description "radius in pixels of every bar corner" :default 0} schema/non-neg)])))
 
 (def corner-radius-end-option
   "Option entry `:corner-radius-end`: pixels, only the corners at a bar's value end rounded (Vega-Lite
   `cornerRadiusEnd`); wins over `:corner-radius`."
-  (schema/optional :corner-radius-end schema/non-neg))
+  (first (schema/in-fragment
+          :corner-radius
+          [(schema/optional :corner-radius-end {:description "radius in pixels of the corners at the bar's value end only (wins over :corner-radius)"}
+                            schema/non-neg)])))
 
 (defn corner-rounding
   "Corner rounding `{:radius r :end? e}` of a bar chart's `options` (see [[corner-radius-option]],

@@ -32,9 +32,12 @@
 (def view-schema
   "`:view {:azimuth deg :elevation deg :distance δ}` (elevation in [-90 90]; δ >= 0, see the namespace doc)."
   [:map {:closed true}
-   (schema/optional :azimuth schema/finite)
-   (schema/optional :elevation [:and schema/finite [:>= -90] [:<= 90]])
-   (schema/optional :distance [:and schema/finite [:>= 0]])])
+   (schema/optional :azimuth {:description "rotation around the vertical axis, degrees" :default 40.0} schema/finite)
+   (schema/optional :elevation {:description "angle of the eye above the floor, degrees" :default 30.0}
+                    [:and schema/finite [:>= -90] [:<= 90]])
+   (schema/optional :distance {:description "perspective: 0 - parallel projection, larger - stronger perspective (lattice distance)"
+                               :default 0.0}
+                    [:and schema/finite [:>= 0]])])
 
 (def aspect-schema
   "`:aspect [ax ay az]` - positive box proportions."
@@ -44,7 +47,8 @@
   "`:domain {:x [a b] :y [a b] :z [a b]}` - explicit data domains (each optional; `a > b` reverses the axis, e.g. depth
   growing downward)."
   (into [:map {:closed true}]
-        (map #(schema/optional % (schema/with-rules [:tuple schema/finite schema/finite]
+        (map #(schema/optional % {:description (str "explicit " (name %) " domain [a b] (a > b reverses the axis)")}
+                               (schema/with-rules [:tuple schema/finite schema/finite]
                                    [(fn [[a b]] (when (== (double a) (double b)) "domain should be two different numbers"))])))
         [:x :y :z]))
 

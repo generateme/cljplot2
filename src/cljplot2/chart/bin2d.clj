@@ -44,11 +44,22 @@
    :options (-> [:map {:closed true}]
                 (into cells/style-entries)
                 (into data/common-options)
-                (conj (schema/optional :bins [:or (into [:enum] cells/size-methods) schema/pos-int])
-                      (schema/optional :binwidth [:and schema/finite [:> 0]])
-                      (schema/optional :shape [:and schema/finite [:> 0]])
-                      (schema/optional :measure [:enum :count :percent :pmf :density])))
-   :mapping [:map [:x schema/accessor] [:y schema/accessor] [:color {:optional true} :nil]]})
+                (conj (schema/optional :bins {:description "cells across the x range (a positive integer), or a fastmath estimate-grid-size method giving a cell area (:binwidth wins)"
+                                              :default :scott-correlated}
+                                       [:or (into [:enum] cells/size-methods) schema/pos-int])
+                      (schema/optional :binwidth {:description "cell size in x data units (log10 units on a :log axis); wins over :bins"}
+                                       [:and schema/finite [:> 0]])
+                      (schema/optional :shape {:description "height / width ratio of the normalized binning space (cells are regular in pixels when it matches the panel)"
+                                               :cljplot2/default-doc "the panel's height / width (y span / x span with :aspect :iso), estimated from the plot size and facet layout"}
+                                       [:and schema/finite [:> 0]])
+                      (schema/optional :measure {:description "the cell colour: :count, :percent (of the panel's points), :pmf (share of the panel's points) or :density (count / (n * cell area in data units))"
+                                                 :default :count}
+                                       [:enum :count :percent :pmf :density])))
+   :mapping [:map
+             [:x {:description "point x positions (numbers)"} schema/accessor]
+             [:y {:description "point y positions (numbers)"} schema/accessor]
+             [:color {:optional true :description "must be nil (the cell colour is the measure): set it so in the chart's mapping when the plot maps :color"}
+              :nil]]})
 
 (defn- style
   [options theme]

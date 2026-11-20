@@ -10,7 +10,12 @@
   first error in the input (e.g. `[:theme :legend :gap]`), `:key` its last keyword, `:value` the offending value;
   `:errors` lists every error (`:in` `nil` - location unknown, for some checks done by hand).
   Input maps are closed - unknown keys are errors (\"disallowed key\"), with a spelling suggestion when a known key is
-  close - except those that carry user extensions: mappings, chart values, theme `:chart`, custom grids, `:data`."
+  close - except those that carry user extensions: mappings, chart values, theme `:chart`, custom grids, `:data`.
+
+  Entry properties documenting an option (read by [[cljplot2.describe]], ignored by validation): `:description` (one
+  sentence), `:default` (a constant default of a behaviour option; style options take theme defaults instead),
+  `:cljplot2/default-doc` (the text of a computed default) and `:cljplot2/fragment` (the shared group of options the
+  entry belongs to, set by [[in-fragment]]); see [[optional]], [[nilable]]."
   (:refer-clojure :exclude [accessor])
   (:require [clojure.string :as str]
             [clojure2d.color :as c]
@@ -30,12 +35,16 @@
 
 (defn named-type
   "Schema type `type` (qualified keyword, printed in schema forms) of values satisfying `pred`, with error `message` -
-  a string, or a function of the invalid value giving the message."
-  [type pred message]
-  (malli/-simple-schema {:type type :pred pred
-                         :type-properties (if (fn? message)
-                                            {:error/fn (fn [{:keys [value]} _] (message value))}
-                                            {:error/message message})}))
+  a string, or a function of the invalid value giving the message; `type-doc` - the type's text in option tables
+  (type property `:cljplot2/type-doc`, see [[cljplot2.describe]]; default: a string `message` without its leading
+  \"should be\")."
+  ([type pred message] (named-type type pred message nil))
+  ([type pred message type-doc]
+   (malli/-simple-schema {:type type :pred pred
+                          :type-properties (cond-> (if (fn? message)
+                                                     {:error/fn (fn [{:keys [value]} _] (message value))}
+                                                     {:error/message message})
+                                             type-doc (assoc :cljplot2/type-doc type-doc))})))
 
 (defn- non-neg-number? [v] (and (number? v) (>= (double v) 0.0)))
 (defn- pos-number? [v] (and (number? v) (pos? (double v))))
@@ -102,7 +111,9 @@
 
 (def dash
   (malli/-simple-schema {:type ::dash :pred dash?
-                         :type-properties {:error/fn (fn [{:keys [value]} _] (dash-message value))}}))
+                         :type-properties {:error/fn (fn [{:keys [value]} _] (dash-message value))
+                                           :cljplot2/type-doc (str ":none, a dash style (" dash-names-text
+                                                                   ") or a sequence of positive numbers")}}))
 
 (def pattern-styles
   "Named fill patterns: name -> pattern spec (see [[pattern?]]); pixels, fixed. Every pattern shows at least two marks
@@ -149,7 +160,8 @@
 
 (def pattern
   (malli/-simple-schema {:type ::pattern :pred pattern?
-                         :type-properties {:error/fn (fn [{:keys [value]} _] (pattern-message value))}}))
+                         :type-properties {:error/fn (fn [{:keys [value]} _] (pattern-message value))
+                                           :cljplot2/type-doc (str "a pattern name (" pattern-names-text ") or a pattern map")}}))
 
 (def interpolation-methods
   "fastmath `interpolation` methods taking one-dimensional `xs`, `ys` (the 2D grid methods excluded): line curves and
@@ -162,7 +174,8 @@
   "Schema of `:interpolator`: a fastmath 1D method of [[interpolation-methods]] or a function."
   (named-type ::interpolator #(or (fn? %) (contains? interpolation-methods %))
               (str "should be a function (fn [xs ys & params] f) or a fastmath 1D interpolation method: "
-                   (str/join " " (sort interpolation-methods)))))
+                   (str/join " " (sort interpolation-methods)))
+              "a fastmath 1D interpolation method keyword or a function (fn [xs ys & params] f)"))
 
 (def ^:private h-aligns #{:left :center :right})
 (def ^:private v-aligns #{:top :middle :bottom})
@@ -183,19 +196,29 @@
 (def shape
   "A point shape: a built-in character or a shape map (see [[cljplot2.graphics.shape/shape-problem]], whose message is
   the error)."
-  (named-type ::shape shape/shape? shape/shape-problem))
+  (named-type ::shape shape/shape? shape/shape-problem "a shape character, keyword or shape map"))
 (def font (named-type ::font font/known-font? "should be a bundled, installed or logical font name, or a java.awt.Font"))
 (def font-style (into [:enum] (sort (keys font/font-styles))))
 
 (defn optional
-  "Map entry `k` that may be absent."
-  [k schema]
-  [k {:optional true} schema])
+  "Map entry `k` that may be absent; `props` - its documenting properties (see the namespace doc)."
+  ([k schema] (optional k nil schema))
+  ([k props schema] [k (assoc props :optional true) schema]))
 
 (defn nilable
-  "Map entry `k` that may be absent or `nil` (not set)."
-  [k schema]
-  [k {:optional true} [:maybe schema]])
+  "Map entry `k` that may be absent or `nil` (not set); `props` - its documenting properties (see the namespace doc)."
+  ([k schema] (nilable k nil schema))
+  ([k props schema] [k (assoc props :optional true) [:maybe schema]]))
+
+(defn in-fragment
+  "Map `entries` (`[k props schema]` or `[k schema]`) tagged `:cljplot2/fragment fragment` - the shared group of
+  options they belong to (see [[cljplot2.describe/fragments]])."
+  [fragment entries]
+  (mapv (fn [[k a b :as entry]]
+          (if (= 3 (count entry))
+            [k (assoc a :cljplot2/fragment fragment) b]
+            [k {:cljplot2/fragment fragment} a]))
+        entries))
 
 (defn with-rules
   "`schema` with rules over the whole value. Each rule is `[problem path]`: `problem` returns `nil` for a valid value,
@@ -212,9 +235,15 @@
           rules)))
 
 (defn forbidden
-  "Schema rejecting any value of its map entry with `message` (keys reserved for internal use)."
+  "Schema rejecting any value of its map entry with `message` (keys reserved for internal use); marked
+  `:cljplot2/forbidden` - not an option (see [[forbidden?]])."
   [message]
-  [:fn {:error/message message} (constantly false)])
+  [:fn {:error/message message :cljplot2/forbidden true} (constantly false)])
+
+(defn forbidden?
+  "Is `schema` (a malli schema) a [[forbidden]] one?"
+  [schema]
+  (true? (:cljplot2/forbidden (malli/properties (malli/schema schema)))))
 
 (defn keyword-or
   "Schema of the keyword `kw` (e.g. `:none`, `:stretch`) or a value of `schema`; errors come from `schema` alone."

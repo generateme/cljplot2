@@ -9,7 +9,7 @@
                  :extra-deps {org.clojure/data.json {:mvn/version "2.5.1"}
                               org.clojure/data.csv {:mvn/version "1.1.0"}
                               org.clojure/test.check {:mvn/version "1.1.1"}}}
-           :test {:extra-paths ["test" "dev" "notebooks"]
+           :test {:extra-paths ["test" "dev" "dev/resources" "notebooks"]
                   :extra-deps {org.clojure/test.check {:mvn/version "1.1.1"}
                                ;; notebook helpers (`notebook-utils`) and their data readers
                                org.scicloj/kindly {:mvn/version "4-beta25"}

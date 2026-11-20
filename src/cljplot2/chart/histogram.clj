@@ -53,12 +53,13 @@
 (set! *unchecked-math* :warn-on-boxed)
 
 (def ^:private style-entries
-  (into [(schema/optional :color schema/solid-color)
-         (schema/optional :stroke-color draw/stroke-color)
-         (schema/optional :stroke-width schema/non-neg)
-         (schema/optional :alpha schema/fraction)
-         (schema/optional :zero-line-color schema/color)
-         (schema/optional :zero-line-width schema/non-neg)]
+  (into [(schema/optional :color {:description "bar fill colour (a mapped :color wins)"} schema/solid-color)
+         (schema/optional :stroke-color {:description "outline colour: a colour, :none or :darker (the darkened fill)"} draw/stroke-color)
+         (schema/optional :stroke-width {:description "outline width in pixels"} schema/non-neg)
+         (schema/optional :alpha {:description "fill opacity of grouped bars with :position :overlay (other bars are opaque)"}
+                          schema/fraction)
+         (schema/optional :zero-line-color {:description "colour of the y = 0 line drawn with :position :mirror"} schema/color)
+         (schema/optional :zero-line-width {:description "width in pixels of the y = 0 line drawn with :position :mirror"} schema/non-neg)]
         draw/pattern-style-entries))
 
 (def schemas
@@ -67,16 +68,34 @@
    :options (-> [:map {:closed true}]
                 (into style-entries)
                 (into data/common-options)
-                (conj (schema/optional :bins [:and levels/bins [:fn {:error/message "quantile bins aren't supported by histograms (give a breaks vector)"} (complement map?)]])
-                      (schema/optional :y (into [:enum :cumulative] (keys measure/titles)))
-                      (schema/optional :position (into [:enum] (sort position/positions)))
-                      (schema/nilable :symmetric schema/bool)
-                      (schema/nilable :zero-line schema/bool)
-                      (schema/optional :padding data/position-padding)
+                (conj (schema/optional :bins {:description "bins shared by all panels and groups: a fastmath bin-estimation method (:sturges, :sqrt, :rice, :doane, :scott, :freedman-diaconis), a bin count (equal widths over the data range) or a vector of at least 2 increasing breaks (values outside are dropped)"
+                                                :default :sturges}
+                                        [:and levels/bins [:fn {:error/message "quantile bins aren't supported by histograms (give a breaks vector)"} (complement map?)]])
+                      (schema/optional :y {:description "bar height: :percent (of the panel's or group's total), :count, :pmf (shares summing to 1), :density (area 1) or :cumulative (count of the bin and every bin before it)"
+                                           :default :percent}
+                                       (into [:enum :cumulative] (keys measure/titles)))
+                      (schema/optional :position {:description "grouped bars: :overlay (translucent, full width), :dodge (bins split among the groups), :stack, :normalize (stacked, each bin summing to 1) or :mirror (two groups, the second drawn downward); ridgelines take :overlay or :mirror"
+                                                  :default :overlay}
+                                       (into [:enum] (sort position/positions)))
+                      (schema/nilable :symmetric {:description "with :position :mirror, tie both halves to one y range [-M M], M the tallest bar over all panels"
+                                                  :default false}
+                                      schema/bool)
+                      (schema/nilable :zero-line {:description "with :position :mirror, draw the y = 0 line over the bars"
+                                                  :default true}
+                                      schema/bool)
+                      (schema/optional :padding {:description "padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span"
+                                                 :cljplot2/default-doc "{:x [0.05 0.05] :y [0 0.05]} (bars stand on the panel's bottom edge); y [0.05 0.05] with :position :mirror"}
+                                       data/position-padding)
                       draw/corner-radius-option
                       draw/corner-radius-end-option)
                 (into strip/ridge-options))
-   :mapping [:map [:x schema/accessor]]})
+   :mapping [:map
+             [:x {:description "values to bin (data units)"} schema/accessor]
+             (schema/nilable :y {:description "ridgeline levels: categorical or on a :bands scale, one histogram per level (a numeric :y otherwise is ignored)"}
+                             schema/accessor)
+             (schema/nilable :color {:description "groups, each with its own bar fill colour"} schema/accessor)
+             (schema/nilable :pattern {:description "groups, each with its own fill pattern"} schema/accessor)
+             (schema/nilable :group {:description "groups without a visual aesthetic"} schema/accessor)]})
 
 (defn- style
   [options theme]

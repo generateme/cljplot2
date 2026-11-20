@@ -30,10 +30,11 @@
 (set! *unchecked-math* :warn-on-boxed)
 
 (def ^:private style-entries
-  (into [(schema/optional :color schema/solid-color)
-         (schema/optional :stroke-color draw/stroke-color)
-         (schema/optional :stroke-width schema/non-neg)
-         (schema/optional :inner-color schema/color)]
+  (into [(schema/optional :color {:description "violin fill colour (a mapped :color wins)"} schema/solid-color)
+         (schema/optional :stroke-color {:description "outline colour: a colour, :none or :darker (the darkened fill)"} draw/stroke-color)
+         (schema/optional :stroke-width {:description "outline width in pixels"} schema/non-neg)
+         (schema/optional :inner-color {:description "colour of the inner marks (:none - black or white, whichever reads better on the fill)"}
+                          schema/color)]
         draw/pattern-style-entries))
 
 (def schemas
@@ -43,15 +44,33 @@
                 (into style-entries)
                 (into data/common-options)
                 (into strip/options)
-                (conj (schema/optional :kernel keyword?)
-                      (schema/optional :bandwidth [:or schema/pos keyword?])
-                      (schema/nilable :n [:and :int [:>= 2]])
-                      (schema/nilable :cut schema/non-neg)
-                      (schema/optional :scale [:enum :width :area :count])
-                      (schema/nilable :varwidth schema/bool)
-                      (schema/optional :inner [:enum :box :quartiles :rug :points :none])
-                      (schema/optional :padding data/position-padding)))
-   :mapping strip/values-mapping})
+                (conj (schema/optional :kernel {:description "density kernel (a fastmath kernel keyword)" :default :gaussian} keyword?)
+                      (schema/optional :bandwidth {:description "kernel bandwidth in data units, or a fastmath bandwidth selector keyword"
+                                                   :default :nrd0}
+                                       [:or schema/pos keyword?])
+                      (schema/nilable :n {:description "number of density evaluation points per violin" :default 100} [:and :int [:>= 2]])
+                      (schema/nilable :cut {:description "how far the violin reaches past the data range, in bandwidths (0 - the data range)"
+                                            :default 0.0}
+                                      schema/non-neg)
+                      (schema/optional :scale {:description "violin widths: :width (each as wide as its slot), :area (equal areas - densities on one scale) or :count (areas proportional to the counts)"
+                                               :default :width}
+                                       [:enum :width :area :count])
+                      (schema/nilable :varwidth {:description "multiply each violin's width by the square root of its count relative to the largest"
+                                                 :default false}
+                                      schema/bool)
+                      (schema/optional :inner {:description "inner marks: :box (IQR bar, whisker line, median dot), :quartiles (quartile lines across), :rug (a tick per value), :points (values on the centre line) or :none"
+                                               :default :box}
+                                       [:enum :box :quartiles :rug :points :none])
+                      (schema/optional :padding {:description "padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span"
+                                                 :cljplot2/default-doc "[0.05 0.05] along the value axis; with :place :bottom also :bottom-share below the data"}
+                                       data/position-padding)))
+   :mapping (strip/values-mapping
+              [(schema/nilable :x {:description "values (data units) on the value axis, or levels for vertical violins"} schema/accessor)
+               (schema/nilable :y {:description "levels on the categorical axis (absent - one violin), or values for vertical violins"}
+                               schema/accessor)
+               (schema/nilable :color {:description "groups, each a violin in its own fill colour"} schema/accessor)
+               (schema/nilable :pattern {:description "groups, each a violin with its own fill pattern"} schema/accessor)
+               (schema/nilable :group {:description "groups without a visual aesthetic, each its own violin"} schema/accessor)])})
 
 (defn- style
   [options theme]

@@ -23,12 +23,29 @@
 
 (def mapping-schema
   "Schema of a hierarchy chart's merged mapping: `:value` and a non-empty `:hierarchy` vector."
-  [:map [:value schema/accessor] [:hierarchy [:vector {:min 1} schema/accessor]]])
+  [:map
+   [:value {:description "node size: a positive finite number per row (other rows are dropped)"} schema/accessor]
+   [:hierarchy {:description "the levels of the tree, outer level first (a row's path ends at its first nil or \"\")"}
+    [:vector {:min 1} schema/accessor]]
+   (schema/nilable :color {:description "leaf colour (rows with the same path but different colours stay separate leaves)"}
+                   schema/accessor)])
 
 (def label-option
   "Schema of `:group-labels` / `:leaf-labels`: a boolean or a function of the node info (see [[node-info]]) returning
   the label text."
   [:or schema/bool schema/function])
+
+(def label-entries
+  "Option entries `:group-labels` / `:leaf-labels` of the hierarchy charts (see [[label-option]])."
+  (schema/in-fragment
+   :hierarchy-labels
+   [(schema/nilable :group-labels {:description (str "group labels: true - the node's name, false - none, or a function of the node info "
+                                                     "{:name :value :depth :path :share :parent-share} returning the text")
+                                   :default true}
+                    label-option)
+    (schema/nilable :leaf-labels {:description "leaf labels: as :group-labels, for the leaves"
+                                  :default true}
+                    label-option)]))
 
 (defn level-accessors
   "Row accessors of the `:hierarchy` mapping (a vector of accessors, outer level first)."

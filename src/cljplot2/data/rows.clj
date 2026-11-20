@@ -44,8 +44,13 @@
 
 (def common-options
   "Map entries of the options every chart takes: own `:data` (see [[rows]]) and `:mapping` (over the plot's)."
-  [(schema/nilable :data data-schema)
-   (schema/optional :mapping mapping-schema)])
+  (schema/in-fragment
+   :common
+   [(schema/nilable :data {:description "the chart's own data instead of the plot's"
+                           :cljplot2/default-doc "the plot's :data"}
+                    data-schema)
+    (schema/optional :mapping {:description "the chart's mapping, merged over the plot's mapping (a key set to nil removes it)"}
+                     mapping-schema)]))
 
 (def position-padding
   "Chart option `:padding`: `{:x [lo hi] :y [lo hi]}`, fractions of the data span."

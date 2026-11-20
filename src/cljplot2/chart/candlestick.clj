@@ -34,14 +34,15 @@
   10.0)
 
 (def ^:private style-entries
-  [(schema/optional :up-color schema/color)
-   (schema/optional :down-color schema/color)
-   (schema/optional :body-width schema/fraction)
-   (schema/optional :wick-width schema/non-neg)
-   (schema/optional :stroke-color schema/color)
-   (schema/optional :up-pattern schema/pattern)
-   (schema/optional :down-pattern schema/pattern)
-   (schema/optional :pattern-color draw/stroke-color)])
+  [(schema/optional :up-color {:description "colour of a candle closing at or above its open"} schema/color)
+   (schema/optional :down-color {:description "colour of a candle closing below its open"} schema/color)
+   (schema/optional :body-width {:description "body width, a fraction of the smallest pixel gap between distinct x (of a band's width on a bands scale)"}
+                    schema/fraction)
+   (schema/optional :wick-width {:description "wick (and OHLC bar) width in pixels"} schema/non-neg)
+   (schema/optional :stroke-color {:description "body outline colour: a colour or :none"} schema/color)
+   (schema/optional :up-pattern {:description "pattern drawn over the bodies of up candles"} schema/pattern)
+   (schema/optional :down-pattern {:description "pattern drawn over the bodies of down candles"} schema/pattern)
+   (schema/optional :pattern-color {:description "pattern ink: a colour, :none or :darker (the darkened body colour)"} draw/stroke-color)])
 
 (def ^:private value-keys [:open :high :low :close])
 
@@ -51,9 +52,18 @@
    :options (-> [:map {:closed true}]
                 (into style-entries)
                 (into data/common-options)
-                (conj (schema/optional :style [:enum :candle :ohlc])
-                      (schema/optional :padding data/position-padding)))
-   :mapping (into [:map [:x schema/accessor]] (map (fn [k] [k schema/accessor])) value-keys)})
+                (conj (schema/optional :style {:description ":candle (wick and body) or :ohlc (a low-high bar with open and close ticks)"
+                                               :default :candle}
+                                       [:enum :candle :ohlc])
+                      (schema/optional :padding {:description "padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span"
+                                                 :cljplot2/default-doc "0.05 on every side (the x extent also reaches half the smallest x gap beyond the data)"}
+                                       data/position-padding)))
+   :mapping [:map
+             [:x {:description "x position (data units)"} schema/accessor]
+             [:open {:description "opening price"} schema/accessor]
+             [:high {:description "highest price"} schema/accessor]
+             [:low {:description "lowest price"} schema/accessor]
+             [:close {:description "closing price"} schema/accessor]]})
 
 (defn- style
   [options theme]

@@ -43,10 +43,16 @@
 
 (def options
   "Map entries of the curve options of a line chart."
-  [(schema/optional :interpolator schema/interpolator)
-   (schema/optional :interpolator-params [:vector any?])
-   (schema/optional :curve [:enum :parametric :bezier])
-   (schema/optional :sample-step sample-step)])
+  (schema/in-fragment
+   :curve
+   [(schema/optional :interpolator {:description "interpolation of the line between data points (none - straight segments)"}
+                     schema/interpolator)
+    (schema/optional :interpolator-params {:description "extra parameters passed to the interpolation method"} [:vector any?])
+    (schema/optional :curve {:description "path curve instead of a function of x: :parametric (x(t), y(t) over the chord length) or :bezier"}
+                     [:enum :parametric :bezier])
+    (schema/optional :sample-step {:description "distance between evaluated positions: pixels or {:count n} per run"
+                                   :default default-sample-step}
+                     sample-step)]))
 
 ;; sampling
 

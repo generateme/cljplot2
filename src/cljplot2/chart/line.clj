@@ -64,9 +64,11 @@
 
 (def ^:private style-entries
   (into (conj polyline/style-entries
-              (schema/optional :fill [:or [:= :color] schema/color])
-              (schema/optional :alpha schema/fraction)
-              (schema/optional :bridge polyline/bridge-schema))
+              (schema/optional :fill {:description "area between the line and y = 0: :color (the line colour at :alpha), a colour or :none"}
+                               [:or [:= :color] schema/color])
+              (schema/optional :alpha {:description "area fill opacity of :fill :color and of stacked areas"} schema/fraction)
+              (schema/optional :bridge {:description "style of the segments bridging gaps with :gaps :bridge: :alpha (a fraction of the line alpha), optional :width and :dash"}
+                               polyline/bridge-schema))
         draw/pattern-style-entries))
 
 (def positions
@@ -83,18 +85,38 @@
                 (into style-entries)
                 (into data/common-options)
                 (into curve/options)
-                (conj (schema/nilable :sort schema/bool)
-                      (schema/optional :gaps [:enum :break :bridge])
-                      (schema/optional :position (into [:enum] (sort positions)))
-                      (schema/optional :fill-gradient polyline/fill-gradient-schema)
-                      (schema/optional :fill-gradient-axis [:enum :x :y])
-                      (schema/optional :padding data/position-padding)
-                      (schema/optional :stroke-alpha schema/fraction)
-                      (schema/optional :arrow arrow/schema)
-                      (schema/optional :start-gap schema/non-neg)
-                      (schema/optional :end-gap schema/non-neg)
-                      (schema/nilable :trail schema/bool)))
-   :mapping [:map [:x schema/accessor] [:y schema/accessor]]})
+                (conj (schema/nilable :sort {:description "order the points by numeric or temporal x (false - data order)" :default true}
+                                      schema/bool)
+                      (schema/optional :gaps {:description "an invalid y breaks the line: :break (empty space) or :bridge (a straight segment in the :bridge style)"
+                                              :cljplot2/default-doc ":break (stacked lines take no :gaps)"}
+                                       [:enum :break :bridge])
+                      (schema/optional :position {:description "how groups combine: :overlay, stacked :stack / :normalize, or streamgraph :silhouette / :wiggle"
+                                                  :default :overlay}
+                                       (into [:enum] (sort positions)))
+                      (schema/optional :fill-gradient {:description "clojure2d gradient (preset, colours or function of t) colouring the areas; wins over :fill"}
+                                       polyline/fill-gradient-schema)
+                      (schema/optional :fill-gradient-axis {:description "axis the :fill-gradient runs along, over that scale's range (needs :fill-gradient)"
+                                                            :cljplot2/default-doc ":x"}
+                                       [:enum :x :y])
+                      (schema/optional :padding {:description "padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span"
+                                                 :cljplot2/default-doc "0.05 on every side; y [0 0.05] when stacked without negative values"}
+                                       data/position-padding)
+                      (schema/optional :stroke-alpha {:description "multiplies the stroke colour's opacity of unstacked lines (the legend key stays opaque)"}
+                                       schema/fraction)
+                      (schema/optional :arrow {:description "arrowheads at the ends of every run of a plain stroked line"} arrow/schema)
+                      (schema/optional :start-gap {:description "shortens every run at its start, in pixels"} schema/non-neg)
+                      (schema/optional :end-gap {:description "shortens every run at its end, in pixels"} schema/non-neg)
+                      (schema/nilable :trail {:description "draw a filled trail whose width follows a linear mapped :size at every point"
+                                              :default false}
+                                      schema/bool)))
+   :mapping [:map
+             [:x {:description "x position (data units)"} schema/accessor]
+             [:y {:description "y position (data units)"} schema/accessor]
+             (schema/nilable :color {:description "line colour: per group (ordinal) or along the line (linear or binned)"} schema/accessor)
+             (schema/nilable :size {:description "line width: per group, or per point with :trail"} schema/accessor)
+             (schema/nilable :dash {:description "dash style per group"} schema/accessor)
+             (schema/nilable :pattern {:description "area fill pattern per group"} schema/accessor)
+             (schema/nilable :group {:description "groups the rows into separate lines"} schema/accessor)]})
 
 (defn- style
   [options theme]

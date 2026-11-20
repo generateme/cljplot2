@@ -16,8 +16,8 @@
 (set! *unchecked-math* :warn-on-boxed)
 
 (def ^:private style-entries
-  [(schema/optional :color schema/color)
-   (schema/optional :line-width schema/non-neg)])
+  [(schema/optional :color {:description "rug line colour (a mapped :color wins)"} schema/color)
+   (schema/optional :line-width {:description "rug line width in pixels (0 - nothing drawn)"} schema/non-neg)])
 
 (def schemas
   "Schemas of the rug chart: `:style` (theme `[:chart :rug]`), `:options`, `:mapping` (merged)."
@@ -26,8 +26,15 @@
                 (into style-entries)
                 (into data/common-options)
                 (into strip/options)
-                (conj (schema/optional :padding data/position-padding)))
-   :mapping strip/values-mapping})
+                (conj (schema/optional :padding {:description "padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span"
+                                         :cljplot2/default-doc "[0.05 0.05] along the value axis; with :place :bottom also :bottom-share below the data"}
+                               data/position-padding)))
+   :mapping (strip/values-mapping
+              [(schema/nilable :x {:description "values (data units) on the value axis, or levels for vertical rugs"} schema/accessor)
+               (schema/nilable :y {:description "levels on the categorical axis (absent - one rug along the panel edge), or values for vertical rugs"}
+                               schema/accessor)
+               (schema/nilable :color {:description "groups, each in its own line colour"} schema/accessor)
+               (schema/nilable :group {:description "groups without a visual aesthetic"} schema/accessor)])})
 
 (defn- style
   [options theme]

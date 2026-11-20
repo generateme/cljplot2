@@ -33,16 +33,18 @@
 (def band-style-entries
   "Map entries of a band's fill style: `:color`, `:fill` (`:color`, a colour or `:none`), `:alpha`, `:pattern`,
   `:pattern-color` (see [[cljplot2.graphics.draw/pattern-style-entries]])."
-  (into [(schema/optional :color schema/color)
-         (schema/optional :fill [:or [:= :color] schema/color])
-         (schema/optional :alpha schema/fraction)]
+  (into [(schema/optional :color {:description "band colour (a mapped :color wins)"} schema/color)
+         (schema/optional :fill {:description "band fill: :color (the band colour at :alpha), a colour or :none"}
+                          [:or [:= :color] schema/color])
+         (schema/optional :alpha {:description "fill opacity of :fill :color"} schema/fraction)]
         draw/pattern-style-entries))
 
 (def ^:private style-entries
   (conj band-style-entries
-        (schema/optional :stroke-color [:or [:= :color] schema/color])
-        (schema/optional :stroke-width schema/non-neg)
-        (schema/nilable :dash schema/dash)))
+        (schema/optional :stroke-color {:description "colour of both bounds' edges: a colour, :none or :color (the band colour)"}
+                         [:or [:= :color] schema/color])
+        (schema/optional :stroke-width {:description "edge width in pixels"} schema/non-neg)
+        (schema/nilable :dash {:description "dash style of the edges (a mapped :dash wins)"} schema/dash)))
 
 (def schemas
   "Schemas of the ribbon chart: `:style` (theme `[:chart :ribbon]`), `:options`, `:mapping` (merged)."
@@ -50,13 +52,23 @@
    :options (-> [:map {:closed true}]
                 (into style-entries)
                 (into data/common-options)
-                (conj (schema/optional :interpolator schema/interpolator)
-                      (schema/optional :interpolator-params [:vector any?])
-                      (schema/optional :sample-step curve/sample-step)
-                      (schema/optional :fill-gradient polyline/fill-gradient-schema)
-                      (schema/optional :fill-gradient-axis [:enum :x :y])
-                      (schema/optional :padding data/position-padding)))
-   :mapping [:map [:x schema/accessor] [:ymin schema/accessor] [:ymax schema/accessor]]})
+                (into (remove #(= :curve (first %))) curve/options)
+                (conj (schema/optional :fill-gradient {:description "clojure2d gradient (preset, colours or function of t) filling the bands; wins over :fill"}
+                                       polyline/fill-gradient-schema)
+                      (schema/optional :fill-gradient-axis {:description "axis the :fill-gradient runs along, over that scale's range (needs :fill-gradient)"
+                                                            :cljplot2/default-doc ":x"}
+                                       [:enum :x :y])
+                      (schema/optional :padding {:description "padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span"
+                                                 :cljplot2/default-doc "0.05 on every side"}
+                                       data/position-padding)))
+   :mapping [:map
+             [:x {:description "x position (data units)"} schema/accessor]
+             [:ymin {:description "lower bound of the band (data units)"} schema/accessor]
+             [:ymax {:description "upper bound of the band (data units)"} schema/accessor]
+             (schema/nilable :color {:description "band colour per group"} schema/accessor)
+             (schema/nilable :dash {:description "edge dash style per group"} schema/accessor)
+             (schema/nilable :pattern {:description "fill pattern per group"} schema/accessor)
+             (schema/nilable :group {:description "groups the rows into separate bands"} schema/accessor)]})
 
 (defn- style
   [options theme]

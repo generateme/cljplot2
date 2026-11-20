@@ -51,8 +51,9 @@
 
 (def ^:private style-entries
   (into (conj polyline/style-entries
-              (schema/optional :fill [:or [:= :color] schema/color])
-              (schema/optional :alpha schema/fraction))
+              (schema/optional :fill {:description "band fill: :color (the line colour at :alpha), a colour or :none (no band, as :band :none)"}
+                               [:or [:= :color] schema/color])
+              (schema/optional :alpha {:description "band fill opacity of :fill :color"} schema/fraction))
         draw/pattern-style-entries))
 
 (def ^:private method-schema
@@ -68,19 +69,42 @@
    :options (-> [:map {:closed true}]
                 (into style-entries)
                 (into data/common-options)
-                (conj (schema/optional :method method-schema)
-                      (schema/nilable :method-params [:map-of keyword? any?])
-                      (schema/optional :band (into [:enum] smooth/band-kinds))
-                      (schema/optional :level [:or level-schema [:vector {:min 1} level-schema]])
-                      (schema/nilable :bootstrap [:map {:closed true}
-                                                  (schema/optional :samples schema/pos-int)
-                                                  (schema/optional :rng rng/schema)
-                                                  (schema/optional :ci (into [:enum] (sort smooth/bootstrap-intervals)))
-                                                  (schema/optional :estimation keyword?)])
-                      (schema/nilable :n [:and :int [:>= 2]])
-                      (schema/nilable :full-range schema/bool)
-                      (schema/optional :padding data/position-padding)))
-   :mapping [:map [:x schema/accessor] [:y schema/accessor]]})
+                (conj (schema/optional :method {:description "fit method: :loess, :lm, :glm, :gp, another fastmath 1D interpolation method or a function (fn [xs ys] f)"
+                                                :default :loess}
+                                       method-schema)
+                      (schema/nilable :method-params {:description "options of the method (e.g. loess :bandwidth and :degree, lm :degree), else its extra argument"}
+                                      [:map-of keyword? any?])
+                      (schema/optional :band {:description "band around the curve: :confidence, :prediction (:lm), :bootstrap or :none"
+                                              :cljplot2/default-doc ":confidence for :loess, :lm, :glm and :gp, else :none"}
+                                       (into [:enum] smooth/band-kinds))
+                      (schema/optional :level {:description "confidence level of the band in (0, 1), or a vector of levels (nested bands)"
+                                               :default 0.95}
+                                       [:or level-schema [:vector {:min 1} level-schema]])
+                      (schema/nilable :bootstrap {:description "options of the :band :bootstrap (see fastmath.interpolation/bootstrap)"}
+                                      [:map {:closed true}
+                                       (schema/optional :samples {:description "number of bootstrap samples" :default 200} schema/pos-int)
+                                       (schema/optional :rng {:description "random number generator of the samples (seeded for reproducible plots)"
+                                                              :cljplot2/default-doc "an unseeded generator (builds differ)"}
+                                                        rng/schema)
+                                       (schema/optional :ci {:description "confidence interval kind of a band point" :default :percentile}
+                                                        (into [:enum] (sort smooth/bootstrap-intervals)))
+                                       (schema/optional :estimation {:description "quantile estimation strategy of the interval (not used by :normal)"
+                                                                     :default :legacy}
+                                                        keyword?)])
+                      (schema/nilable :n {:description "number of grid points the curve is evaluated at" :default 200} [:and :int [:>= 2]])
+                      (schema/nilable :full-range {:description "fit over the plot's x :domain when given, else the x range of all groups of the panel (false - each group's x range)"
+                                                   :default false}
+                                      schema/bool)
+                      (schema/optional :padding {:description "padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span"
+                                                 :cljplot2/default-doc "0.05 on every side"}
+                                       data/position-padding)))
+   :mapping [:map
+             [:x {:description "x position (data units)"} schema/accessor]
+             [:y {:description "y value to fit (data units)"} schema/accessor]
+             (schema/nilable :color {:description "curve and band colour per group"} schema/accessor)
+             (schema/nilable :dash {:description "curve dash style per group"} schema/accessor)
+             (schema/nilable :pattern {:description "band fill pattern per group"} schema/accessor)
+             (schema/nilable :group {:description "groups the rows, one fit per group"} schema/accessor)]})
 
 (defn- style
   [options theme]

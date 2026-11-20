@@ -45,9 +45,10 @@
 (def glyphs [:number :shade :square :circle :ellipse :pie])
 
 (def ^:private style-entries
-  [(schema/optional :color schema/color)
-   (schema/optional :stroke-color draw/stroke-color)
-   (schema/optional :stroke-width schema/non-neg)])
+  [(schema/optional :color {:description "one fixed glyph colour, the :number text's too (unset - r through the colour scale, the text in the :correlation text role's colour)"}
+                    schema/color)
+   (schema/optional :stroke-color {:description "outline colour: a colour, :none or :darker (the darkened fill)"} draw/stroke-color)
+   (schema/optional :stroke-width {:description "outline width in pixels"} schema/non-neg)])
 
 (def schemas
   "Schemas of the correlation chart: `:style` (theme `[:chart :correlation]`), `:options`, `:mapping` (merged)."
@@ -55,9 +56,17 @@
    :options (-> [:map {:closed true}]
                 (into style-entries)
                 (into data/common-options)
-                (conj (schema/optional :method [:enum :pearson :spearman :kendall])
-                      (schema/optional :glyph (into [:enum] glyphs))))
-   :mapping [:maybe [:map [:x schema/accessor] [:y schema/accessor]]]})
+                (conj (schema/optional :method {:description "correlation coefficient: :pearson, :spearman or :kendall"
+                                                :default :pearson}
+                                        [:enum :pearson :spearman :kendall])
+                      (schema/optional :glyph {:description "how r is drawn: :number (the text, a line per group), :shade (the panel in r's colour), :square or :circle (area proportional to |r|), :ellipse (the bivariate normal contour) or :pie (a disk filled |r| of the way)"
+                                               :default :number}
+                                       (into [:enum] glyphs))))
+   :mapping [:maybe [:map
+                     [:x {:description "first variable (numbers)"} schema/accessor]
+                     [:y {:description "second variable (numbers)"} schema/accessor]
+                     (schema/nilable :color {:description "categorical groups, each a line of the :number glyph in its colour"} schema/accessor)
+                     (schema/nilable :group {:description "groups without a visual aesthetic, each a line of the :number glyph"} schema/accessor)]]})
 
 (defn- style
   [options theme]

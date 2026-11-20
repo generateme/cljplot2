@@ -35,7 +35,7 @@
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
-(def ^:private style-entries [(schema/optional :alpha schema/fraction)])
+(def ^:private style-entries [(schema/optional :alpha {:description "opacity multiplying the colours' alpha"} schema/fraction)])
 
 (def schemas
   "Schemas of the field chart: `:style` (theme `[:chart :field]`), `:options`, `:mapping` (merged)."
@@ -44,8 +44,15 @@
                 (into style-entries)
                 (into field/options)
                 (into data/common-options)
-                (conj (schema/optional :pixel-color schema/function)))
-   :mapping [:maybe [:map [:color {:optional true} :nil]]]})
+                (conj (schema/optional :pixel-color {:description "a function of a point [x y] (a Vec2) returning each pixel's colour (nil - transparent): a raster without a grid, colour scale or legend, over :domain (else the plot's explicit x / y domains); not with :f, ignores the mapping and the other field options"}
+                                       schema/function)))
+   :mapping [:maybe [:map
+                     (schema/nilable :x {:description "x of the points (density) or of the gridded data"} schema/accessor)
+                     (schema/nilable :y {:description "y of the points (density) or of the gridded data"} schema/accessor)
+                     (schema/nilable :value {:description "the field's value at gridded (x, y) on a full lattice, interpolated (absent - a density of the points)"}
+                                     schema/accessor)
+                     [:color {:optional true :description "must be nil (the colour is the field's value): set it so in the chart's mapping when the plot maps :color"}
+                      :nil]]]})
 
 (defn- style
   [options theme]

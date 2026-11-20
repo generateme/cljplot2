@@ -50,8 +50,18 @@
    :options (-> [:map {:closed true}]
                 (into cells/style-entries)
                 (into data/common-options)
-                (conj (schema/optional :value-label [:or :boolean schema/function])))
-   :mapping [:map [:x schema/accessor] [:y schema/accessor] [:color schema/accessor]]})
+                (conj (schema/optional :value-label {:description "label in each cell: true (the colour value, numbers to 2 decimals) or a function of {:value :x :y} returning the text (nil - none), drawn in black or white by the fill under it"
+                                                     :default false}
+                                       [:or :boolean schema/function])))
+   :mapping [:map
+             [:x {:description "cell x position: categorical (a cell per level) or numeric (cells centred on the values, sized by the smallest gap)"}
+              schema/accessor]
+             [:y {:description "cell y position: categorical (a cell per level) or numeric (cells centred on the values, sized by the smallest gap)"}
+              schema/accessor]
+             [:color {:description "cell fill: numeric (a gradient and colour bar) or categorical (a palette and legend); nil - the NA colour"}
+              schema/accessor]
+             (schema/nilable :size {:description "cell size: each cell shrinks by :cell-scale times its size over the size scale's largest"}
+                             schema/accessor)]})
 
 (defn- style
   [options theme]

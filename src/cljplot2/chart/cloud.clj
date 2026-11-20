@@ -63,13 +63,23 @@
 
 (def frame-options
   "Option entries shared by the 3D charts: view, box proportions, frame, axis titles, explicit domains."
-  [(schema/optional :view space/view-schema)
-   (schema/optional :aspect space/aspect-schema)
-   (schema/nilable :box schema/bool)
-   (schema/nilable :axes schema/bool)
-   (schema/nilable :axis-titles [:map {:closed true} (schema/optional :x any?) (schema/optional :y any?) (schema/optional :z any?)])
-   (schema/optional :domain space/domains-schema)
-   (schema/optional :reverse [:set [:enum :x :y :z]])])
+  (schema/in-fragment
+   :frame-3d
+   [(schema/optional :view {:description "the eye's position: azimuth, elevation and perspective distance"} space/view-schema)
+    (schema/optional :aspect {:description "box proportions [ax ay az]" :default [1 1 1]} space/aspect-schema)
+    (schema/nilable :box {:description "draw the box: hidden edges dashed and a floor grid behind the data, visible edges over it"
+                          :default true}
+                    schema/bool)
+    (schema/nilable :axes {:description "draw ticks, tick labels and axis titles" :default true} schema/bool)
+    (schema/nilable :axis-titles {:description "axis titles (nil - none)" :cljplot2/default-doc "the mapped column names"}
+                    [:map {:closed true}
+                     (schema/optional :x {:description "x axis title"} any?)
+                     (schema/optional :y {:description "y axis title"} any?)
+                     (schema/optional :z {:description "z axis title"} any?)])
+    (schema/optional :domain {:description "explicit data domains (needed for each of several 3D charts in one plot)"
+                              :cljplot2/default-doc "the data's domains"}
+                     space/domains-schema)
+    (schema/optional :reverse {:description "axes running the other way (mirrors the scene)"} [:set [:enum :x :y :z]])]))
 
 (def distance-rule
   "Rule (see [[cljplot2.schema/with-rules]]) of the 3D charts' options: a `:view` `:distance` putting the eye within
@@ -89,18 +99,36 @@
                  (into scatter/style-entries)
                  (into data/common-options)
                  (into frame-options)
-                 (conj (schema/optional :type [:enum :points :spikes :bars :none])
-                       (schema/optional :base schema/finite)
-                       (schema/optional :bar-size [:tuple schema/fraction schema/fraction])
-                       (schema/optional :projections [:map {:closed true}
-                                                      (schema/optional :xy projection-kinds)
-                                                      (schema/optional :xz projection-kinds)
-                                                      (schema/optional :yz projection-kinds)])
-                       (schema/optional :bins [:tuple [:int {:min 1 :max 1000}] [:int {:min 1 :max 1000}]])))
+                 (conj (schema/optional :type {:description (str "marks: :points, :spikes (a line from :base to each point), "
+                                                                 ":bars (a box per row from :base to z) or :none (only :projections)")
+                                               :default :points}
+                                        [:enum :points :spikes :bars :none])
+                       (schema/optional :base {:description "z where spikes and bars start (kept within an explicit z domain)"
+                                               :cljplot2/default-doc "the low z limit (0 with :bins)"}
+                                        schema/finite)
+                       (schema/optional :bar-size {:description "bar footprint [fx fy], fractions of the x / y resolution (of a cell with :bins)"
+                                                   :default [0.8 0.8]}
+                                        [:tuple schema/fraction schema/fraction])
+                       (schema/optional :projections {:description "side projections of the points on the far walls, per plane"}
+                                        [:map {:closed true}
+                                         (schema/optional :xy {:description "xy wall: :points, :density (KDE bands) or :contour (KDE lines)"}
+                                                          projection-kinds)
+                                         (schema/optional :xz {:description "xz wall: :points, :density (KDE bands) or :contour (KDE lines)"}
+                                                          projection-kinds)
+                                         (schema/optional :yz {:description "yz wall: :points, :density (KDE bands) or :contour (KDE lines)"}
+                                                          projection-kinds)])
+                       (schema/optional :bins {:description "a 2D histogram: rows counted on an [nx ny] grid over x / y, counts as z"}
+                                        [:tuple [:int {:min 1 :max 1000}] [:int {:min 1 :max 1000}]])))
              [#(when (and (:bins %) (not (#{:bars :spikes} (:type %)))) "counts of :bins are drawn as :type :bars or :spikes") [:bins]]
              [#(when (and (:bins %) (seq (:projections %))) "side :projections show the rows, not :bins counts") [:projections]]
              distance-rule)
-   :mapping [:map [:x schema/accessor] [:y schema/accessor] [:z {:optional true} schema/accessor]]})
+   :mapping [:map
+             [:x {:description "x coordinate: numbers or categories"} schema/accessor]
+             [:y {:description "y coordinate: numbers or categories"} schema/accessor]
+             [:z {:optional true :description "z coordinate, numeric (not read with :bins)"} schema/accessor]
+             (schema/nilable :color {:description "point colour"} schema/accessor)
+             (schema/nilable :size {:description "point size"} schema/accessor)
+             (schema/nilable :shape {:description "point shape"} schema/accessor)]})
 
 (def ^:private position-dims [:x :y :z])
 

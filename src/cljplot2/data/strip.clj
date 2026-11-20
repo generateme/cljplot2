@@ -74,25 +74,52 @@
 
 (def options
   "Map entries of the options every strip chart takes (besides [[cljplot2.data.rows/common-options]])."
-  [(schema/optional :place [:multi {:dispatch map?}
-                            [true [:map {:closed true} [:at schema/finite]]]
-                            [false (into [:enum] (sort named-places))]])
-   (schema/optional :width schema/non-neg)
-   (schema/optional :thickness schema/non-neg)
-   (schema/optional :position (into [:enum] (sort positions)))
-   (schema/optional :dodge-gap schema/fraction)
-   (schema/optional :bottom-share schema/fraction)
-   (schema/nilable :n-label schema/bool)
-   (schema/optional :n-format :string)
-   (schema/optional :level-axis [:enum :x :y])])
+  (schema/in-fragment
+   :strip
+   [(schema/optional :place {:description "where the items sit across the value axis: :band (one band per level), {:at v} (centred on v of a numeric scale), :center, :edge or :bottom (between the panel edge and 0)"
+                             :cljplot2/default-doc ":band with a level mapping, else the chart's own (:center for most, :edge for the rug)"}
+                     [:multi {:dispatch map?}
+                      [true [:map {:closed true} [:at schema/finite]]]
+                      [false (into [:enum] (sort named-places))]])
+    (schema/optional :width {:description "fraction of the level's band (or of the panel for :center and :bottom) an item spans across the value axis"
+                             :default 0.8}
+                     schema/non-neg)
+    (schema/optional :thickness {:description "item thickness in pixels for :place {:at v} and :edge"
+                                 :cljplot2/default-doc "20 pixels for {:at v}, 8 for :edge"}
+                     schema/non-neg)
+    (schema/optional :position {:description "how groups of one level share its band: :dodge (side by side), :overlay (on top of each other) or :mirror (two groups, one half each)"
+                                :cljplot2/default-doc ":dodge when a level holds two or more groups, else :overlay (dotplot: always :overlay)"}
+                     (into [:enum] (sort positions)))
+    (schema/optional :dodge-gap {:description "gap between dodged groups, a fraction of a group's part of the band"
+                                 :default 0.1}
+                     schema/fraction)
+    (schema/optional :bottom-share {:description "padding below the data asked for with :place :bottom (only there), a fraction of the y data span"
+                                    :cljplot2/default-doc "0.15 with :place :bottom"}
+                     schema/fraction)
+    (schema/nilable :n-label {:description "draw each item's row count just past its largest value"
+                              :default false}
+                    schema/bool)
+    (schema/optional :n-format {:description "format string of the n labels"
+                                :default "n=%d"}
+                     :string)
+    (schema/optional :level-axis {:description "the mapping axis holding the levels (decides when both or neither of :x and :y are categorical)"
+                                  :cljplot2/default-doc "the categorical axis of the mapping; with neither, :x when only :y is mapped, else :y"}
+                     [:enum :x :y])]))
 
 (def mirror-option
   "Map entry of the `:mirror` option of strip charts drawing a negative side (bar, extent)."
-  (schema/optional :mirror (into [:enum] (conj aesthetic/dims :group))))
+  (first (schema/in-fragment
+          :mirror
+          [(schema/optional :mirror {:description "a grouping dimension with exactly two levels; the second level's items are drawn on the negative side"}
+                            (into [:enum] (conj aesthetic/dims :group)))])))
 
 (def ridge-options
   "Map entries of the ridgeline options (histogram and density with a categorical `:y`)."
-  [(schema/optional :overlap schema/non-neg)])
+  (schema/in-fragment
+   :ridge
+   [(schema/optional :overlap {:description "height of the tallest ridge in band steps (above 1 - ridges overlap the next level)"
+                               :default 0.9}
+                     schema/non-neg)]))
 
 (defn- place-of
   "The placement of a chart: explicit `:place` or the default (`:band` with a `:y` mapping, else `default-place`).
@@ -633,10 +660,11 @@
 
 ;; orientation
 
-(def values-mapping
+(defn values-mapping
   "Mapping schema of strip charts reading values: `:x` or `:y` mapped (the values sit on the axis other than the
-  levels, see [[level-axis]])."
-  (schema/with-rules [:map]
+  levels, see [[level-axis]]); `entries` - the map entries documenting the keys the chart reads."
+  [entries]
+  (schema/with-rules (into [:map] entries)
     [#(when-not (or (some? (:x %)) (some? (:y %))) "should map :x or :y (the values)") nil]))
 
 (defn- categorical-axis?

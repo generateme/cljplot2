@@ -34,9 +34,9 @@
 (set! *unchecked-math* :warn-on-boxed)
 
 (def ^:private style-entries
-  (into [(schema/optional :padding schema/non-neg)
-         (schema/optional :border-color schema/color)
-         (schema/optional :border-width schema/non-neg)]
+  (into [(schema/optional :padding {:description "gap inside every group around its header and children, in pixels"} schema/non-neg)
+         (schema/optional :border-color {:description "cell border colour"} schema/color)
+         (schema/optional :border-width {:description "cell border width in pixels"} schema/non-neg)]
         draw/pattern-style-entries))
 
 (def schemas
@@ -45,9 +45,10 @@
    :options (-> [:map {:closed true}]
                 (into style-entries)
                 (into data/common-options)
-                (conj (schema/optional :layout [:enum :squarify :slice-dice])
-                      (schema/nilable :group-labels hierarchy/label-option)
-                      (schema/nilable :leaf-labels hierarchy/label-option)))
+                (conj (schema/optional :layout {:description "rectangle layout: :squarify (near-square cells) or :slice-dice (slices turning by depth)"
+                                                :default :squarify}
+                                       [:enum :squarify :slice-dice]))
+                (into hierarchy/label-entries))
    :mapping hierarchy/mapping-schema})
 
 (defn- style

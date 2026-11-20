@@ -76,16 +76,35 @@
                 (into (filter #(contains? (set style-keys) (first %)) theme/text-style-overrides))
                 (into data/common-options)
                 (into annotation/options)
-                (conj (schema/nilable :x text-positions)
-                      (schema/nilable :y text-positions)
-                      (schema/nilable :text any?)
-                      (schema/optional :anchor [:tuple [:enum :left :center :right] [:enum :top :middle :bottom]])
-                      (schema/optional :offset [:tuple schema/finite schema/finite])
-                      (schema/optional :rotation [:or schema/finite [:= :radial]])
-                      (schema/optional :select [:enum :last :first])
-                      (schema/optional :anchor-frame [:enum :box :text])
-                      (schema/optional :reserve-room [:or schema/bool [:= :anchor]])))
-   :mapping [:map]})
+                (conj (schema/nilable :x {:description "literal x position(s): a position, [:panel f] (fraction f of the panel, not in the extents) or a vector of 1 or n (wins over the mapping)"}
+                                      text-positions)
+                      (schema/nilable :y {:description "literal y position(s): a position, [:panel f] (fraction f of the panel, not in the extents) or a vector of 1 or n (wins over the mapping)"}
+                                      text-positions)
+                      (schema/nilable :text {:description "literal label text: a value or a vector of 1 or n (converted with str)"} any?)
+                      (schema/optional :anchor {:description "point of the text box placed at the position, [h v] (h :left :center :right, v :top :middle :bottom)"
+                                                :cljplot2/default-doc "[:center :middle]; with :select just past the point; polar :radial - away from the centre"}
+                                       [:tuple [:enum :left :center :right] [:enum :top :middle :bottom]])
+                      (schema/optional :offset {:description "shift [dx dy] of the text in pixels, dy up"
+                                                :cljplot2/default-doc "[0 0]; with :select 5 pixels past the point"}
+                                       [:tuple schema/finite schema/finite])
+                      (schema/optional :rotation {:description "text rotation in degrees, clockwise, or :radial (polar: along each label's angle, upright; 0 in cartesian plots) (a mapped :angle wins)"
+                                                  :default 0}
+                                       [:or schema/finite [:= :radial]])
+                      (schema/optional :select {:description "end labels from data: keep per group and text only the row with the largest (:last) or smallest (:first) x"}
+                                       [:enum :last :first])
+                      (schema/optional :anchor-frame {:description "what :anchor points into: :box (the rotated label's bounding box) or :text (the unrotated text, turned about that point)"
+                                                      :default :box}
+                                       [:enum :box :text])
+                      (schema/optional :reserve-room {:description "keep pixel room past the data for the labels: true - the largest label's diagonal on every side, :anchor - only where the anchored labels reach"
+                                                      :default false}
+                                       [:or schema/bool [:= :anchor]])))
+   :mapping [:map
+             (schema/nilable :x {:description "x position of a label, one per row"} schema/accessor)
+             (schema/nilable :y {:description "y position of a label, one per row"} schema/accessor)
+             (schema/nilable :label {:description "label text, one per row (converted with str)"} schema/accessor)
+             (schema/nilable :angle {:description "label rotation in degrees, clockwise (nil or not finite - :rotation)"} schema/accessor)
+             (schema/nilable :color {:description "text colour per group (gives legend keys)"} schema/accessor)
+             (schema/nilable :group {:description "groups the rows without styling them (labels per group with :select)"} schema/accessor)]})
 
 (defn- one? [v] (not (and (vector? v) (not (panel-position? v)))))
 

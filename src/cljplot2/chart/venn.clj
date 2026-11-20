@@ -38,9 +38,9 @@
 (set! *unchecked-math* :warn-on-boxed)
 
 (def ^:private style-entries
-  [(schema/optional :alpha schema/fraction)
-   (schema/optional :border-color draw/stroke-color)
-   (schema/optional :border-width schema/non-neg)])
+  [(schema/optional :alpha {:description "fill opacity"} schema/fraction)
+   (schema/optional :border-color {:description "circle outline colour: a colour, :none or :darker (the darkened set colour)"} draw/stroke-color)
+   (schema/optional :border-width {:description "circle outline width in pixels"} schema/non-neg)])
 
 (def schemas
   "Schemas of the Venn diagram: `:style` (theme `[:chart :venn]`), `:options`, `:mapping` (merged)."
@@ -48,11 +48,20 @@
    :options (-> [:map {:closed true}]
                 (into style-entries)
                 (into data/common-options)
-                (conj (schema/optional :sets [:vector {:min 1} any?])
-                      (schema/nilable :proportional schema/bool)
-                      (schema/nilable :set-labels schema/bool)
-                      (schema/nilable :region-labels [:or schema/bool schema/function])))
-   :mapping [:map [:set schema/accessor] [:item schema/accessor]]})
+                (conj (schema/optional :sets {:description "the sets shown (2 or 3), in order"
+                                              :cljplot2/default-doc "every set, in first-appearance order"}
+                                       [:vector {:min 1} any?])
+                      (schema/nilable :proportional {:description "2 sets: circle and overlap areas proportional to the counts (false - equal circles)"
+                                                     :default true}
+                                      schema/bool)
+                      (schema/nilable :set-labels {:description "write the set names outside their circles" :default true} schema/bool)
+                      (schema/nilable :region-labels {:description (str "region labels: true - the item count, false - none, or a function of "
+                                                                        "{:sets :size :share} returning the text")
+                                                      :default true}
+                                      [:or schema/bool schema/function])))
+   :mapping [:map
+             [:set {:description "the set a row's item belongs to"} schema/accessor]
+             [:item {:description "the item (repeated rows count once)"} schema/accessor]]})
 
 (def ^:private ^:const label-gap
   "Pixels between a circle and its set name."

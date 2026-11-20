@@ -112,8 +112,9 @@
 
 (def ^:private style-entries
   (into (conj polyline/style-entries
-              (schema/optional :fill [:or [:= :color] schema/color])
-              (schema/optional :alpha schema/fraction))
+              (schema/optional :fill {:description "radar polygon fill (polar only): :none, :color (the line's colour at :alpha) or a colour"}
+                               [:or [:= :color] schema/color])
+              (schema/optional :alpha {:description "fill opacity"} schema/fraction))
         draw/pattern-style-entries))
 
 (defn- unknown-limits
@@ -136,21 +137,45 @@
               (-> [:map {:closed true}]
                   (into style-entries)
                   (into data/common-options)
-                  (conj [:variables variables]
-                        (schema/optional :scaling (into [:enum] (sort scalings)))
-                        (schema/optional :limits [:map-of any? limits])
-                        (schema/nilable :axes schema/bool)
-                        (schema/optional :missing [:enum :break :drop])
-                        (schema/optional :robust-center [:enum :median :mean])
-                        (schema/optional :robust-spread robust-spread)
-                        (schema/optional :curve [:enum :smooth])
-                        (schema/optional :smoothness [:and schema/finite [:> 0] [:<= 1]])
-                        (schema/optional :padding [:map {:closed true} (schema/optional :y schema/padding)])))
+                  (conj [:variables {:description "the variables in axis order: keywords or [label accessor] pairs (2 or more)"}
+                         variables]
+                        (schema/optional :scaling {:description "per variable scaling: :uniminmax (0..1), :std, :robust, :center or :globalminmax"
+                                                   :default :uniminmax}
+                                         (into [:enum] (sort scalings)))
+                        (schema/optional :limits {:description "explicit variable domains {key [lo hi]}, key - the keyword or the pair's label"
+                                                  :cljplot2/default-doc "each variable's finite data range"}
+                                         [:map-of any? limits])
+                        (schema/nilable :axes {:description "draw each variable's axis with ticks and labels" :default true} schema/bool)
+                        (schema/optional :missing {:description "a missing value: :break (the line breaks there) or :drop (the row is dropped)"
+                                                   :default :break}
+                                         [:enum :break :drop])
+                        (schema/optional :robust-center {:description "centre of :scaling :robust: :median or :mean"
+                                                         :cljplot2/default-doc ":median (only with :scaling :robust)"}
+                                         [:enum :median :mean])
+                        (schema/optional :robust-spread {:description (str "spread of :scaling :robust: a fastmath.stats/robust-stddev "
+                                                                           "estimator (:mad, :iqr, :sn, :qn, ...) or a quantile p in (0 0.5)")
+                                                         :cljplot2/default-doc ":mad (only with :scaling :robust)"}
+                                         robust-spread)
+                        (schema/optional :curve {:description "join consecutive axes with smooth curves (:smooth)"
+                                                 :cljplot2/default-doc "straight segments"}
+                                         [:enum :smooth])
+                        (schema/optional :smoothness {:description "how far the smooth bend spreads over the gap between axes, (0 1]"
+                                                      :cljplot2/default-doc "1 (only with :curve :smooth)"}
+                                         [:and schema/finite [:> 0] [:<= 1]])
+                        (schema/optional :padding {:description "padding of the scaled values' span, {:y [lo hi]} fractions of the span"}
+                                         [:map {:closed true}
+                                          (schema/optional :y {:description "padding of the value axis [lo hi], fractions of the span"
+                                                               :default [0.05 0.05]}
+                                                           schema/padding)])))
               [unknown-limits [:limits]]
               (needs :robust-center #(= :robust (:scaling %)) ":robust-center needs :scaling :robust")
               (needs :robust-spread #(= :robust (:scaling %)) ":robust-spread needs :scaling :robust")
               (needs :smoothness #(= :smooth (:curve %)) ":smoothness needs :curve :smooth"))
-   :mapping [:maybe [:map]]})
+   :mapping [:maybe [:map
+                     (schema/nilable :color {:description "line colour, grouping the rows"} schema/accessor)
+                     (schema/nilable :dash {:description "line dash style, grouping the rows"} schema/accessor)
+                     (schema/nilable :pattern {:description "radar fill pattern, grouping the rows"} schema/accessor)
+                     (schema/nilable :group {:description "groups of rows without a visual difference"} schema/accessor)]]})
 
 (defn- style
   [options theme]

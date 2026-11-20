@@ -30,10 +30,10 @@
 (set! *unchecked-math* :warn-on-boxed)
 
 (def ^:private style-entries
-  (into [(schema/optional :gap [:and schema/finite [:>= 0] [:< 1]])
-         (schema/optional :shape [:enum :square :circle])
-         (schema/optional :border-color schema/color)
-         (schema/optional :border-width schema/non-neg)]
+  (into [(schema/optional :gap {:description "space between cells, a fraction of a cell"} [:and schema/finite [:>= 0] [:< 1]])
+         (schema/optional :shape {:description "cell shape: :square or :circle"} [:enum :square :circle])
+         (schema/optional :border-color {:description "cell border colour"} schema/color)
+         (schema/optional :border-width {:description "cell border width in pixels"} schema/non-neg)]
         draw/pattern-style-entries))
 
 (def ^:const max-cells
@@ -46,11 +46,20 @@
    :options (-> [:map {:closed true}]
                 (into style-entries)
                 (into data/common-options)
-                (conj (schema/optional :rows [:int {:min 1 :max max-cells}])
-                      (schema/optional :columns [:int {:min 1 :max max-cells}])
-                      (schema/optional :unit [:and schema/finite [:> 0]])
-                      (schema/optional :fill-order [:enum :rows :columns])))
-   :mapping [:map [:color schema/accessor]]})
+                (conj (schema/optional :rows {:description "grid rows (ignored with :unit)" :default 10} [:int {:min 1 :max max-cells}])
+                      (schema/optional :columns {:description "grid columns" :default 10} [:int {:min 1 :max max-cells}])
+                      (schema/optional :unit {:description "the value of one cell: a category gets value / unit cells, the grid :columns wide"
+                                              :cljplot2/default-doc "none - the categories share the :rows x :columns grid"}
+                                       [:and schema/finite [:> 0]])
+                      (schema/optional :fill-order {:description "fill from the bottom-left cell: :rows (row by row, upwards) or :columns (column by column)"
+                                                    :default :rows}
+                                       [:enum :rows :columns])))
+   :mapping [:map
+             [:color {:description "the category: one colour and a share of the cells per category"} schema/accessor]
+             (schema/nilable :value {:description "weight per row, a non-negative finite number (other rows are dropped)"
+                                     :cljplot2/default-doc "every row counts 1"}
+                             schema/accessor)
+             (schema/nilable :pattern {:description "fill pattern, splitting categories too"} schema/accessor)]})
 
 (defn- style
   [options theme]

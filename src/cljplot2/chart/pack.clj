@@ -44,9 +44,10 @@
 (set! *unchecked-math* :warn-on-boxed)
 
 (def ^:private style-entries
-  (into [(schema/optional :padding schema/non-neg)
-         (schema/optional :border-color schema/color)
-         (schema/optional :border-width schema/non-neg)]
+  (into [(schema/optional :padding {:description "gap between siblings and between a child and its parent's edge, in pixels"}
+                          schema/non-neg)
+         (schema/optional :border-color {:description "circle border colour"} schema/color)
+         (schema/optional :border-width {:description "circle border width in pixels"} schema/non-neg)]
         draw/pattern-style-entries))
 
 (def schemas
@@ -55,11 +56,14 @@
    :options (-> [:map {:closed true}]
                 (into style-entries)
                 (into data/common-options)
-                (conj (schema/optional :order [:enum :value :data])
-                      (schema/nilable :root schema/bool)
-                      (schema/nilable :hidden-levels [:set [:int {:min 0}]])
-                      (schema/nilable :group-labels hierarchy/label-option)
-                      (schema/nilable :leaf-labels hierarchy/label-option)))
+                (conj (schema/optional :order {:description "packing order of siblings: :value (descending, largest near the centre) or :data"
+                                               :default :value}
+                                       [:enum :value :data])
+                      (schema/nilable :root {:description "draw the root circle too" :default false} schema/bool)
+                      (schema/nilable :hidden-levels {:description "depths (root 0, top level 1) not drawn, the layout unchanged"
+                                                      :default #{}}
+                                      [:set [:int {:min 0}]]))
+                (into hierarchy/label-entries))
    :mapping hierarchy/mapping-schema})
 
 (def ^:private defaults {:order :value :root false :hidden-levels #{} :group-labels true :leaf-labels true})

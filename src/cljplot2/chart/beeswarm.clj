@@ -28,11 +28,11 @@
 (set! *unchecked-math* :warn-on-boxed)
 
 (def ^:private style-entries
-  [(schema/optional :size schema/non-neg)
-   (schema/optional :color schema/color)
-   (schema/optional :stroke-color schema/color)
-   (schema/optional :stroke-width schema/non-neg)
-   (schema/optional :shape schema/shape)])
+  [(schema/optional :size {:description "point size in pixels, also the packing diameter (a mapped :size wins)"} schema/non-neg)
+   (schema/optional :color {:description "point colour (a mapped :color wins)"} schema/color)
+   (schema/optional :stroke-color {:description "point outline colour (or :none)"} schema/color)
+   (schema/optional :stroke-width {:description "outline width in pixels"} schema/non-neg)
+   (schema/optional :shape {:description "point shape (a mapped :shape wins)"} schema/shape)])
 
 (def schemas
   "Schemas of the beeswarm chart: `:style` (theme `[:chart :beeswarm]`), `:options`, `:mapping` (merged)."
@@ -41,10 +41,23 @@
                 (into style-entries)
                 (into data/common-options)
                 (into strip/options)
-                (conj (schema/nilable :fit schema/bool)
-                      (schema/optional :pack [:enum :across :around])
-                      (schema/optional :padding data/position-padding)))
-   :mapping strip/values-mapping})
+                (conj (schema/nilable :fit {:description "squeeze a swarm wider than its item's cross range into it (points may then overlap)"
+                                             :default true}
+                                      schema/bool)
+                      (schema/optional :pack {:description "packing: :across (points move only across the value axis) or :around (in both directions - round clusters, points may leave their value a little)"
+                                              :default :across}
+                                       [:enum :across :around])
+                      (schema/optional :padding {:description "padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span"
+                                                 :cljplot2/default-doc "[0.05 0.05] along the value axis; with :place :bottom also :bottom-share below the data"}
+                                       data/position-padding)))
+   :mapping (strip/values-mapping
+              [(schema/nilable :x {:description "values (data units) on the value axis, or levels for vertical swarms"} schema/accessor)
+               (schema/nilable :y {:description "levels on the categorical axis (absent - one swarm), or values for vertical swarms"}
+                               schema/accessor)
+               (schema/nilable :color {:description "groups, each in its own point colour"} schema/accessor)
+               (schema/nilable :shape {:description "groups, each with its own point shape"} schema/accessor)
+               (schema/nilable :size {:description "groups, each with its own point size"} schema/accessor)
+               (schema/nilable :group {:description "groups without a visual aesthetic"} schema/accessor)])})
 
 (defn- style
   [options theme]

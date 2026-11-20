@@ -20,9 +20,11 @@
 
 (def style-entries
   "Map entries of a line style (all optional; defaults from the theme)."
-  [(schema/optional :color schema/color)
-   (schema/optional :width schema/non-neg)
-   (schema/nilable :dash schema/dash)])
+  (schema/in-fragment
+   :line-style
+   [(schema/optional :color {:description "line colour (a mapped :color wins)"} schema/color)
+    (schema/optional :width {:description "line width in pixels"} schema/non-neg)
+    (schema/nilable :dash {:description "dash style of the line (a mapped :dash wins)"} schema/dash)]))
 
 (defn finite-runs
   "Runs of consecutive indices of `xs` / `ys` whose coordinates are finite; a non-finite coordinate ends a run."
@@ -80,9 +82,11 @@
 (def bridge-schema
   "Theme `:bridge` of a line style: `:alpha` (fraction of the line alpha), optional `:width`, `:dash`."
   [:map {:closed true}
-   [:alpha schema/fraction]
-   (schema/optional :width schema/non-neg)
-   (schema/nilable :dash schema/dash)])
+   [:alpha {:description "bridge opacity, a fraction of the line's alpha"
+            :cljplot2/default-doc "0.3 in the theme's :bridge (a given :bridge replaces it whole)"}
+    schema/fraction]
+   (schema/optional :width {:description "bridge width in pixels" :cljplot2/default-doc "the line's width"} schema/non-neg)
+   (schema/nilable :dash {:description "dash style of the bridge" :cljplot2/default-doc "the line's dash"} schema/dash)])
 
 (defn path-length
   "Length of the polyline through `points` (pixels)."

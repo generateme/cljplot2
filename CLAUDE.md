@@ -11,8 +11,8 @@ The book (Clay + Quarto) is published from `docs/` at https://generateme.github.
 
 Design history, specs and the roadmap live in the user's Obsidian vault: `~/notes/Topics/cljplot2/`
 (`01 Build Steps/Architecture Design.md`; `03 Use Case Notebooks/` - a folder per section or gallery, the roadmap with
-section status and backlog in `00 Frame and Roadmap/Roadmap - Use Case Notebooks.md`). Read them when a decision's
-rationale is unclear.
+section status and backlog in `00 Frame and Roadmap/Roadmap - Use Case Notebooks.md`; `04 Reference/` - the reference
+part of the book). Read them when a decision's rationale is unclear.
 
 ## Commands
 
@@ -85,6 +85,11 @@ into the builder's. `cljplot2.core` is the public API (`build`, `render`, `rende
   silent. Functions with primitive type hints take at most 4 arguments.
 - Never mutate a caller's arrays.
 - Option schemas are closed; new options are off by default (existing images unchanged).
+- Every schema entry documents itself (`cljplot2.schema` ns doc): `:description` (one sentence, lowercase, no
+  period), `:default` for a constant behaviour default (never on style entries - the theme holds those) or
+  `:cljplot2/default-doc` for a computed one; shared groups via `schema/in-fragment` (registered in
+  `cljplot2.describe/fragments`). `cljplot2.describe` turns schemas into option rows for the book's reference part;
+  `schema-metadata-test` checks every chart entry is described and every `:default` is the real one.
 - Errors: `cljplot2.schema/fail!` with `{:key option …}`; namespaces `cljplot2.schema` itself requires (e.g.
   `graphics.shape`) use `cljplot2.error/fail!` (the same function, no dependency cycle).
 

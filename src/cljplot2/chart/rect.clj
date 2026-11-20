@@ -37,9 +37,9 @@
 (set! *unchecked-math* :warn-on-boxed)
 
 (def ^:private style-entries
-  (into [(schema/optional :fill schema/color)
-         (schema/optional :stroke-color schema/color)
-         (schema/optional :stroke-width schema/non-neg)]
+  (into [(schema/optional :fill {:description "rect fill colour (a mapped :color wins)"} schema/color)
+         (schema/optional :stroke-color {:description "outline colour (or :none)"} schema/color)
+         (schema/optional :stroke-width {:description "outline width in pixels"} schema/non-neg)]
         draw/pattern-style-entries))
 
 (def ^:private end-schema [:maybe annotation/position])
@@ -56,13 +56,29 @@
                 (into (rest style-entries))
                 (into data/common-options)
                 (into annotation/options)
-                (conj (schema/optional :fill fill-option)
-                      (schema/optional :alpha schema/fraction)
-                      (schema/nilable :x (annotation/positions-schema interval-schema))
-                      (schema/nilable :y (annotation/positions-schema interval-schema))
+                (conj (schema/optional :fill {:description "fill colour, or a vector of 1 or n colours paired with literal intervals (a mapped :color wins)"}
+                                       fill-option)
+                      (schema/optional :alpha {:description "fill opacity"
+                                               :cljplot2/default-doc "colours as they are"}
+                                       schema/fraction)
+                      (schema/nilable :x {:description "literal x interval(s) [a b] (an end nil - the panel edge), alone a band across the panel (wins over the mapping)"}
+                                      (annotation/positions-schema interval-schema))
+                      (schema/nilable :y {:description "literal y interval(s) [a b] (an end nil - the panel edge), alone a band across the panel (wins over the mapping)"}
+                                      (annotation/positions-schema interval-schema))
                       draw/corner-radius-option
-                      (schema/optional :band-width [:and schema/finite [:> 0] [:<= 1]])))
-   :mapping [:map]})
+                      (schema/optional :band-width {:description "fraction of its band step a level end covers, centred"
+                                                    :default 1.0}
+                                       [:and schema/finite [:> 0] [:<= 1]])))
+   :mapping [:map
+             (schema/nilable :x0 {:description "x start of a rect, one per row (with :x1; nil - the panel edge)"} schema/accessor)
+             (schema/nilable :x1 {:description "x end of a rect, one per row (with :x0; nil - the panel edge)"} schema/accessor)
+             (schema/nilable :y0 {:description "y start of a rect, one per row (with :y1; nil - the panel edge)"} schema/accessor)
+             (schema/nilable :y1 {:description "y end of a rect, one per row (with :y0; nil - the panel edge)"} schema/accessor)
+             (schema/nilable :color {:description "fill colour per group or row (gives legend keys)"} schema/accessor)
+             (schema/nilable :pattern {:description "fill pattern per group (gives legend keys)"} schema/accessor)
+             (schema/nilable :shape {:description "groups the rects (no visual effect)"} schema/accessor)
+             (schema/nilable :size {:description "groups the rects (no visual effect)"} schema/accessor)
+             (schema/nilable :group {:description "groups the rows without styling them"} schema/accessor)]})
 
 (defn- style
   "Theme style under the options; a vector of fills (literal, per rect) leaves the theme fill as the base."

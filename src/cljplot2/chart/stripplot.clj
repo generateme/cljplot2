@@ -25,11 +25,11 @@
 (set! *unchecked-math* :warn-on-boxed)
 
 (def ^:private style-entries
-  [(schema/optional :size schema/non-neg)
-   (schema/optional :color schema/color)
-   (schema/optional :stroke-color schema/color)
-   (schema/optional :stroke-width schema/non-neg)
-   (schema/optional :shape schema/shape)])
+  [(schema/optional :size {:description "point size in pixels (a mapped :size wins)"} schema/non-neg)
+   (schema/optional :color {:description "point colour (a mapped :color wins)"} schema/color)
+   (schema/optional :stroke-color {:description "point outline colour (or :none)"} schema/color)
+   (schema/optional :stroke-width {:description "outline width in pixels"} schema/non-neg)
+   (schema/optional :shape {:description "point shape (a mapped :shape wins)"} schema/shape)])
 
 (def schemas
   "Schemas of the stripplot chart: `:style` (theme `[:chart :stripplot]`), `:options`, `:mapping` (merged)."
@@ -38,10 +38,23 @@
                 (into style-entries)
                 (into data/common-options)
                 (into strip/options)
-                (conj (schema/optional :jitter schema/fraction)
-                      (schema/nilable :rng rng/schema)
-                      (schema/optional :padding data/position-padding)))
-   :mapping strip/values-mapping})
+                (conj (schema/optional :jitter {:description "jitter spread across the strip, a fraction of the item's cross range (Gaussian, sd :jitter / 4, clamped to ±:jitter / 2; 0 - on the centre line)"
+                                                :default 0.25}
+                                       schema/fraction)
+                      (schema/nilable :rng {:description "random number generator for jitter (seeded for reproducible plots)"
+                                            :cljplot2/default-doc "a fresh unseeded generator per build (builds differ)"}
+                                      rng/schema)
+                      (schema/optional :padding {:description "padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span"
+                                                 :cljplot2/default-doc "[0.05 0.05] along the value axis; with :place :bottom also :bottom-share below the data"}
+                                       data/position-padding)))
+   :mapping (strip/values-mapping
+              [(schema/nilable :x {:description "values (data units) on the value axis, or levels for vertical strips"} schema/accessor)
+               (schema/nilable :y {:description "levels on the categorical axis (absent - one strip), or values for vertical strips"}
+                               schema/accessor)
+               (schema/nilable :color {:description "groups, each in its own point colour"} schema/accessor)
+               (schema/nilable :shape {:description "groups, each with its own point shape"} schema/accessor)
+               (schema/nilable :size {:description "groups, each with its own point size"} schema/accessor)
+               (schema/nilable :group {:description "groups without a visual aesthetic"} schema/accessor)])})
 
 (defn- style
   [options theme]

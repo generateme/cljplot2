@@ -36,11 +36,11 @@
 
 (def style-entries
   "Map entries of a point style (all optional; defaults from the theme)."
-  [(schema/optional :size schema/non-neg)
-   (schema/optional :color schema/color)
-   (schema/optional :stroke-color schema/color)
-   (schema/optional :stroke-width schema/non-neg)
-   (schema/optional :shape schema/shape)])
+  [(schema/optional :size {:description "point size in pixels (a mapped :size wins)"} schema/non-neg)
+   (schema/optional :color {:description "point colour (a mapped :color wins)"} schema/color)
+   (schema/optional :stroke-color {:description "outline colour: a colour or :none"} schema/color)
+   (schema/optional :stroke-width {:description "outline width in pixels"} schema/non-neg)
+   (schema/optional :shape {:description "point shape (a mapped :shape wins)"} schema/shape)])
 
 (def schemas
   "Schemas of the scatter chart: `:style` (theme `[:chart :scatter]`), `:options`, `:mapping` (merged)."
@@ -48,11 +48,25 @@
    :options (-> [:map {:closed true}]
                 (into style-entries)
                 (into data/common-options)
-                (conj (schema/optional :padding data/position-padding)
-                      (schema/optional :order-direction [:enum :ascending :descending])
-                      (schema/optional :jitter [:tuple schema/non-neg schema/non-neg])
-                      (schema/nilable :rng rng/schema)))
-   :mapping [:map [:x schema/accessor] [:y schema/accessor]]})
+                (conj (schema/optional :padding {:description "padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span"
+                                                 :cljplot2/default-doc "0.05 on every side"}
+                                       data/position-padding)
+                      (schema/optional :order-direction {:description "draw order of the values of a mapped :order (later points on top)"
+                                                         :default :ascending}
+                                       [:enum :ascending :descending])
+                      (schema/optional :jitter {:description "[dx dy] - uniform random offsets within ±dx / ±dy data units added to the positions"}
+                                       [:tuple schema/non-neg schema/non-neg])
+                      (schema/nilable :rng {:description "random number generator for jitter (seeded for reproducible plots)"
+                                            :cljplot2/default-doc "an unseeded generator (builds differ)"}
+                                      rng/schema)))
+   :mapping [:map
+             [:x {:description "x position (data units)"} schema/accessor]
+             [:y {:description "y position (data units)"} schema/accessor]
+             (schema/nilable :color {:description "point colour per row"} schema/accessor)
+             (schema/nilable :shape {:description "point shape per row"} schema/accessor)
+             (schema/nilable :size {:description "point size per row"} schema/accessor)
+             (schema/nilable :order {:description "draw order: points drawn by its values (see :order-direction), else in data order"}
+                             schema/accessor)]})
 
 (defn- style
   "Chart options merged over the theme defaults."

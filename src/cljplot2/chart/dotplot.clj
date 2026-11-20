@@ -32,11 +32,12 @@
 (set! *unchecked-math* :warn-on-boxed)
 
 (def ^:private style-entries
-  [(schema/optional :size schema/non-neg)
-   (schema/optional :color schema/color)
-   (schema/optional :stroke-color schema/color)
-   (schema/optional :stroke-width schema/non-neg)
-   (schema/optional :shape schema/shape)])
+  [(schema/optional :size {:description "dot size in pixels (a mapped :size wins)"
+                           :cljplot2/default-doc "the dot diameter: the bin width in pixels, shrunk so the tallest stack fits its slot"} schema/non-neg)
+   (schema/optional :color {:description "point colour (a mapped :color wins)"} schema/color)
+   (schema/optional :stroke-color {:description "point outline colour (or :none)"} schema/color)
+   (schema/optional :stroke-width {:description "outline width in pixels"} schema/non-neg)
+   (schema/optional :shape {:description "point shape (a mapped :shape wins)"} schema/shape)])
 
 (def schemas
   "Schemas of the dot plot: `:style` (theme `[:chart :dotplot]`), `:options`, `:mapping` (merged)."
@@ -45,13 +46,32 @@
                 (into style-entries)
                 (into data/common-options)
                 (into strip/options)
-                (conj (schema/optional :method [:enum :dot-density :histogram])
-                      (schema/optional :binwidth [:and schema/finite schema/pos])
-                      (schema/optional :origin schema/finite)
-                      (schema/optional :at [:enum :center :value])
-                      (schema/optional :stack-dir [:enum :up :center])
-                      (schema/optional :padding data/position-padding)))
-   :mapping strip/values-mapping})
+                (conj (schema/optional :method {:description "binning: :dot-density (Wilkinson) or :histogram (fixed bins from :origin)"
+                                                :default :dot-density}
+                                       [:enum :dot-density :histogram])
+                      (schema/optional :binwidth {:description "bin width in data units"
+                                                  :cljplot2/default-doc "the range of all values / 30 (1 for a single distinct value)"}
+                                       [:and schema/finite schema/pos])
+                      (schema/optional :origin {:description "left edge of the first fixed bin in data units (only with :method :histogram - an error otherwise)"
+                                                :cljplot2/default-doc "the smallest value"}
+                                       schema/finite)
+                      (schema/optional :at {:description "where a bin's dots sit along the value axis: :center (the bin centre) or :value (each dot at its own value - the wheat plot)"
+                                            :default :center}
+                                       [:enum :center :value])
+                      (schema/optional :stack-dir {:description "stacking: :up (from the slot's low cross edge toward the next level) or :center (centred on the slot)"
+                                                   :default :up}
+                                       [:enum :up :center])
+                      (schema/optional :padding {:description "padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span"
+                                                 :cljplot2/default-doc "[0.05 0.05] along the value axis; with :place :bottom also :bottom-share below the data"}
+                                       data/position-padding)))
+   :mapping (strip/values-mapping
+              [(schema/nilable :x {:description "values (data units) on the value axis, or levels for vertical dot plots"} schema/accessor)
+               (schema/nilable :y {:description "levels on the categorical axis (absent - one dot plot), or values for vertical dot plots"}
+                               schema/accessor)
+               (schema/nilable :color {:description "groups, each in its own point colour"} schema/accessor)
+               (schema/nilable :shape {:description "groups, each with its own point shape"} schema/accessor)
+               (schema/nilable :size {:description "groups, each with its own point size"} schema/accessor)
+               (schema/nilable :group {:description "groups without a visual aesthetic (sharing stacks unless dodged)"} schema/accessor)])})
 
 (defn- style
   [options theme]

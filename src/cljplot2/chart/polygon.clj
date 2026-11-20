@@ -27,10 +27,11 @@
 (set! *unchecked-math* :warn-on-boxed)
 
 (def ^:private style-entries
-  [(schema/optional :color schema/color)
-   (schema/optional :alpha schema/fraction)
-   (schema/optional :stroke-color [:or [:= :color] schema/color])
-   (schema/optional :stroke-width schema/non-neg)])
+  [(schema/optional :color {:description "fill colour (a mapped :color wins)"} schema/color)
+   (schema/optional :alpha {:description "fill opacity"} schema/fraction)
+   (schema/optional :stroke-color {:description "outline colour: a colour, :none or :color (the group colour, opaque)"}
+                    [:or [:= :color] schema/color])
+   (schema/optional :stroke-width {:description "outline width in pixels"} schema/non-neg)])
 
 (def schemas
   "Schemas of the polygon chart: `:style` (theme `[:chart :polygon]`), `:options`, `:mapping` (merged)."
@@ -38,8 +39,15 @@
    :options (-> [:map {:closed true}]
                 (into style-entries)
                 (into data/common-options)
-                (conj (schema/optional :padding data/position-padding)))
-   :mapping [:map [:x schema/accessor] [:y schema/accessor]]})
+                (conj (schema/optional :padding {:description "padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span"
+                                                 :cljplot2/default-doc "0.05 on every side"}
+                                       data/position-padding)))
+   :mapping [:map
+             [:x {:description "x position of a vertex (data units)"} schema/accessor]
+             [:y {:description "y position of a vertex (data units)"} schema/accessor]
+             (schema/nilable :color {:description "fill colour: per group (ordinal), or by the group's first row (linear or binned)"}
+                             schema/accessor)
+             (schema/nilable :group {:description "groups the rows into separate polygons"} schema/accessor)]})
 
 (def ^:private ^:const min-points 3)
 
