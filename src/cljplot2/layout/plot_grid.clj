@@ -45,15 +45,17 @@
   [[:title {:id :title :defaults {:role :title} :column {:from :y-title :to :x-overhang} :row :title
             :description "plot title above the panels (role :title)"}]
    [:x {:id :x-title :defaults {:role :axis-title} :column :panel :row :x-title
-        :description "x axis title (role :axis-title)"}]
+        :description "x axis title (role :axis-title)"
+        :default-doc "the first chart's suggested title (histogram, density, ecdf, qq, pp ...), else none"}]
    [:y {:id :y-title :defaults {:role :axis-title :rotation 270} :column :y-title :row :panel
-        :description "y axis title (role :axis-title, rotated 270)"}]])
+        :description "y axis title (role :axis-title, rotated 270)"
+        :default-doc "the first chart's suggested title (histogram, density, ecdf, qq, pp ...), else none"}]])
 
 (def labels-schema
   "Plot `:labels`: `{:title :x :y}`, each a text or a map of [[cljplot2.content.label/label-options]]; `nil` - no label."
   (into [:map {:closed true}]
-        (map (fn [[k {:keys [description]}]]
-               (schema/nilable k {:description description :cljplot2/default-doc "none; axis titles from the charts or the mapped column names"}
+        (map (fn [[k {:keys [description default-doc]}]]
+               (schema/nilable k (cond-> {:description description} default-doc (assoc :cljplot2/default-doc default-doc))
                                [:multi {:dispatch map?} [true label/label-options] [false any?]])))
         plot-labels))
 
@@ -463,11 +465,11 @@
       ":widths :measured sizes a column of :legend-only plots only"
       (and heights (not= r (count heights))) (str ":heights should have one weight per row (" r ")"))))
 
-(def arrange-schema
-  "Plot `:arrange`, see [[cljplot2.multiplot/arrange]]; the plots are validated when built as sub-plots."
-  (schema/with-rules
-   [:map {:closed true :cljplot2/type-doc "an arrange map {:plots :columns :rows :widths :heights :align :equal-panels}"}
-    [:plots {:description "the sub-plots, filling the grid row by row"} [:sequential {:min 1} :map]]
+(def arrange-entries
+  "Map entries of a multiplot layout (plot `:arrange`, the `plot/arrange` builder): a shared group (`:arrange`)."
+  (schema/in-fragment
+   :arrange
+   [[:plots {:description "the sub-plots, filling the grid row by row"} [:sequential {:min 1} :map]]
     (schema/nilable :columns {:description "grid columns" :cljplot2/default-doc "one column (from :rows when given)"} schema/pos-int)
     (schema/nilable :rows {:description "grid rows" :cljplot2/default-doc "from the plot count and :columns"} schema/pos-int)
     (schema/nilable :widths {:description "relative column weights; :measured sizes a column of legend-only plots, [:fixed px] a fixed width"
@@ -478,7 +480,13 @@
     (schema/nilable :align {:description "align the sub-plots' panels in rows and columns" :default true} schema/bool)
     (schema/nilable :equal-panels {:description "resize columns and rows so every aligned panel has the same size (builds twice)"
                                    :default false}
-                    schema/bool)]
+                    schema/bool)]))
+
+(def arrange-schema
+  "Plot `:arrange`, see [[cljplot2.multiplot/arrange]]; the plots are validated when built as sub-plots."
+  (schema/with-rules
+   (into [:map {:closed true :cljplot2/type-doc "an arrange map {:plots :columns :rows :widths :heights :align :equal-panels}"}]
+         arrange-entries)
    [arrange-problem]))
 
 (defn- arrange-weights

@@ -319,9 +319,15 @@
                                     (set-defaults-at [] cljplot2.pipeline/plot-schema)
                                     (set-defaults-at [:labels :title] cljplot2.content.label/label-options))
                         o)))
+    (testing "calendar ticks: the nested :step default"
+      (let [day (java.time.LocalDate/of 2026 1 1)
+            p {:data (map (fn [i] {:x (.plusDays day i) :y i}) (range 20)) :mapping {:x :x :y :y} :charts [(chart/line)]
+               :scales {:x {:ticks-method :pretty :ticks-params {:unit :days}}}}]
+        (is (same-pixels? p (set-defaults-at p [:scales :x] cljplot2.scale.position/scale-spec-schema) o))
+        (is (= 1 (get-in (set-defaults-at p [:scales :x] cljplot2.scale.position/scale-spec-schema) [:scales :x :ticks-params :step]))
+            "the default is really set")))
     (testing "position and aesthetic scales"
-      (let [p (assoc faceted :scales {:x {:ticks-params {:unit :days}} :y {} :color {} :facet {}})
-            p (update-in p [:scales :x] dissoc :ticks-params)]
+      (let [p (assoc faceted :scales {:x {} :y {} :color {} :facet {}})]
         (is (same-pixels? p (-> p
                                 (set-defaults-at [:scales :x] cljplot2.scale.position/scale-spec-schema)
                                 (set-defaults-at [:scales :y] cljplot2.scale.position/scale-spec-schema)

@@ -11,10 +11,11 @@
 
   A row: `{:key k :path [k ...] :type text :required? bool :default v :default-doc text :description text
   :fragment kw}` - `:path` is longer than `[k]` for the entries of nested closed maps (each nested map also has its
-  own row); `:default` / `:default-doc` / `:description` / `:fragment` are `nil` when absent. `:default` is the value
+  own row); `:default` / `:default-doc` / `:description` / `:fragment` are `nil` when absent; `:required?` is false in a
+  merged map (`:cljplot2/merged` - the theme, render options: users give partial overrides). Entries rejecting every
+  value ([[cljplot2.schema/forbidden]]) and internal entries (`:cljplot2/internal`) have no row. `:default` is the value
   used when the option is absent (a style row's comes from the theme), `:default-doc` the text of a computed default;
-  only a style row may have both - the theme value and how the chart applies it (e.g. only to grouped lines). Entries rejecting every
-  value ([[cljplot2.schema/forbidden]]) aren't options and have no row."
+  only a style row may have both - the theme value and how the chart applies it (e.g. only to grouped lines)."
   (:require [clojure.string :as str]
             [malli.core :as malli]
             [cljplot2.data.annotation :as annotation]
@@ -27,6 +28,7 @@
             [cljplot2.graphics.curve :as curve]
             [cljplot2.graphics.draw :as draw]
             [cljplot2.graphics.polyline :as polyline]
+            [cljplot2.layout.plot-grid :as plot-grid]
             [cljplot2.schema :as schema]
             [cljplot2.theme :as theme]
             ;; namespaces of the user-facing functions (`:cljplot2/api`), so [[api-vars]] finds them all
@@ -65,6 +67,8 @@
    :frame-3d {:title "3D frame" :doc "view, proportions, frame and domains of a 3D chart" :entries space/frame-options}
    :line-style {:title "Line style" :doc "colour, width and dash of a line" :entries polyline/style-entries}
    :pattern {:title "Fill patterns" :doc "the pattern drawn over a filled mark" :entries draw/pattern-style-entries}
+   :arrange {:title "Multiplot layout" :doc "sub-plots in a grid: shape, weights, panel alignment"
+             :entries plot-grid/arrange-entries}
    :text-style {:title "Text style" :doc "font, size, colour, padding, alignment and background of a text"
                 :entries theme/text-style-overrides}})
 
@@ -154,27 +158,43 @@
       :maybe (nested-map (first (malli/children s)))
       nil)))
 
+(defn- container?
+  "Does entry schema `s` hold entries of its own - a map or a map of entries (also under `:maybe` / `:and`)?"
+  [s]
+  (let [s (malli/schema s)]
+    (case (malli/type s)
+      (:map :map-of) true
+      (:maybe :and) (container? (first (malli/children s)))
+      false)))
+
 (defn- entry-row
-  "The row of entry `k` (`props`, schema `s`) at `path`."
-  [path k props s]
-  {:key k :path path :type (if (nested-map s) "map" (type-text s)) :required? (not (:optional props))
-   :default (:default props) :default-doc (:cljplot2/default-doc props) :description (:description props)
-   :fragment (:cljplot2/fragment props)})
+  "The row of entry `k` (`props`, schema `s`) at `path`; `merged?` - the entry belongs to a merged map (theme, render
+  options: every key is there after merging, users give partial overrides - so not required). Metadata `::container?`
+  marks an entry holding entries of its own (see [[with-defaults]])."
+  [path k props s merged?]
+  (with-meta {:key k :path path :type (if (nested-map s) "map" (type-text s))
+              :required? (and (not merged?) (not (:optional props)))
+              :default (:default props) :default-doc (:cljplot2/default-doc props) :description (:description props)
+              :fragment (:cljplot2/fragment props)}
+    {::container? (container? s)}))
 
 (defn- map-rows
-  "Rows of the entries of map schema `m` under `path` (nested closed maps flattened after their own row)."
-  [m path]
-  (into [] (mapcat (fn [[k props s]]
-                     (when-not (schema/forbidden? s)
-                       (let [p (conj path k)]
-                         (cons (entry-row p k props s)
-                               (when-let [nested (nested-map s)] (map-rows nested p)))))))
-        (malli/children m)))
+  "Rows of the entries of map schema `m` under `path` (nested closed maps flattened after their own row); forbidden and
+  `:cljplot2/internal` entries have none; `merged?` - see [[entry-row]] (a `:cljplot2/merged` map makes its nested
+  maps merged too)."
+  [m path merged?]
+  (let [merged? (or merged? (true? (:cljplot2/merged (malli/properties m))))]
+    (into [] (mapcat (fn [[k props s]]
+                       (when-not (or (schema/forbidden? s) (:cljplot2/internal props))
+                         (let [p (conj path k)]
+                           (cons (entry-row p k props s merged?)
+                                 (when-let [nested (nested-map s)] (map-rows nested p merged?)))))))
+          (malli/children m))))
 
 (defn schema-rows
   "Rows of the entries of map `schema` (see the namespace doc); empty for a schema without entries."
   [schema]
-  (if-let [m (some-> schema entries-map)] (map-rows m []) []))
+  (if-let [m (some-> schema entries-map)] (map-rows m [] false) []))
 
 (defn- chart-value? [x] (and (map? x) (contains? x :compute)))
 
@@ -190,12 +210,11 @@
 
 (defn- with-defaults
   "`rows` with `:default` from the nested map `defaults` at each row's `:path` where the row has none - except a
-  map-typed row holding a map (a nested map or a map of entries: its own rows carry the values)."
+  container row (a map or a map of entries, see [[entry-row]]: its entries' rows carry the values)."
   [rows defaults]
-  (mapv (fn [{:keys [path type] :as row}]
+  (mapv (fn [{:keys [path] :as row}]
           (let [v (get-in defaults path)]
-            (cond-> row
-              (and (nil? (:default row)) (some? v) (not (and (map? v) (str/starts-with? type "map")))) (assoc :default v))))
+            (cond-> row (and (nil? (:default row)) (some? v) (not (::container? (meta row)))) (assoc :default v))))
         rows))
 
 (defn theme-rows

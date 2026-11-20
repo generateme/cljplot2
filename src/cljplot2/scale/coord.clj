@@ -28,13 +28,13 @@
   "Schema of a polar plot `:coord` (see the namespace doc)."
   [:map {:closed true :cljplot2/type-doc "a polar coord {:kind :polar :start :direction :span :inner :arcs}"}
    [:kind {:description "polar coordinates: the horizontal scale maps to angles, the vertical one to radii"} [:= :polar]]
-   (schema/optional :start {:description "angle of the horizontal scale's range start, degrees (0 - 12 o'clock)" :default 0}
+   (schema/optional :start {:description "angle of the horizontal scale's range start, degrees (0 - 12 o'clock)" :default 0.0}
                     schema/finite)
    (schema/optional :direction {:description "direction of growing angles" :default :clockwise}
                     [:enum :clockwise :counter-clockwise])
-   (schema/optional :span {:description "degrees covered (e.g. 180 for a half circle)" :default 360}
+   (schema/optional :span {:description "degrees covered (e.g. 180 for a half circle)" :default 360.0}
                     [:and schema/finite [:> 0] [:<= 360]])
-   (schema/optional :inner {:description "inner radius as a fraction of the outer one (a hole for donuts)" :default 0}
+   (schema/optional :inner {:description "inner radius as a fraction of the outer one (a hole for donuts)" :default 0.0}
                     [:and schema/finite [:>= 0] [:< 1]])
    (schema/nilable :arcs {:description "data lines between points follow the circle instead of chords" :default false}
                    schema/bool)])

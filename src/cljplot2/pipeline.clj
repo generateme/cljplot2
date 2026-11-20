@@ -1014,7 +1014,8 @@
    (schema/nilable :arrange {:description "a multiplot: sub-plots in a grid (only :labels {:title t} beside it)"}
                    plot-grid/arrange-schema)
    (schema/nilable :margins {:description "charts beside the panel sharing its scales (marginal plots)"} margins-schema)
-   (schema/optional :alignment-padding {:description "internal: pixels added to the generated grid's margins by multiplot alignment"}
+   (schema/optional :alignment-padding {:description "pixels added to the generated grid's margins by multiplot alignment"
+                                        :cljplot2/internal true}
                     [:map-of keyword? number?])
    (schema/nilable :options {:description "render options, merged under the ones given to build / render"} :map)
    (schema/optional :theme {:description "theme overrides, deep-merged over the default theme"} any?)])
@@ -1022,11 +1023,13 @@
 (def options-schema
   "Merged render options of `build` (see [[default-options]]), `:debug` and `:cvd` (used by
   `cljplot2.render/render`) and `:until`."
-  [:map {:closed true}
+  [:map {:closed true :cljplot2/merged true}
    [:width {:description "target width in pixels" :default 600} schema/pos-int]
    [:height {:description "target height in pixels" :default 600} schema/pos-int]
    [:hint {:description "rendering quality hint (antialiasing and text metrics)" :default :high} (into [:enum] (sort measure/rendering-hints))]
-   (schema/nilable :debug {:description "draw the layout grid's tracks and items over the plot" :default false} schema/bool)
+   (schema/nilable :debug {:description "paint every layout item's box (a distinct colour, its outline and id) under its content"
+                           :default false}
+                   schema/bool)
    (schema/nilable :cvd {:description "render as seen with a colour vision deficiency"} schema/cvd-deficiency)
    (schema/optional :until {:description "build stops after this pipeline stage (inspect the intermediate data)"}
                     (into [:enum] stage-order))])

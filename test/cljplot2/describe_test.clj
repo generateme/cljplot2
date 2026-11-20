@@ -3,6 +3,7 @@
   (:require [clojure.test :refer [deftest testing is]]
             [cljplot2.chart :as chart]
             [cljplot2.describe :as describe]
+            [cljplot2.layout.plot-grid :as plot-grid]
             [cljplot2.pipeline :as pipeline]
             [cljplot2.schema :as schema]
             [cljplot2.theme :as theme]))
@@ -108,15 +109,50 @@
   (let [rows (describe/options pipeline/plot-schema)
         by-path (into {} (map (juxt :path identity)) rows)]
     (testing "the plot's top-level keys, nested closed maps flattened"
-      (is (= 19 (count (filter #(= 1 (count (:path %))) rows))))
+      (is (= 18 (count (filter #(= 1 (count (:path %))) rows))) "19 keys, :alignment-padding internal")
       (is (contains? by-path [:facets :scales :x]))
       (is (= :same (:default (by-path [:facets :scales :x])))))
     (testing "large composite types read as their type docs"
       (is (= "a position scale spec" (:type (by-path [:scales :x]))))
       (is (re-find #"^\{:kind :cartesian\}" (:type (by-path [:coord])))))
-    (testing "internal and forbidden entries: a described internal key stays, a forbidden one has no row"
-      (is (some? (by-path [:alignment-padding])))
-      (is (nil? (by-path [:mapping :fill]))))))
+    (testing "internal and forbidden entries have no rows"
+      (is (nil? (by-path [:alignment-padding])))
+      (is (nil? (by-path [:mapping :fill]))))
+    (testing "boundary: maps under validation rules (:scales :x, :arrange) aren't flattened - they have tables of their own"
+      (is (nil? (by-path [:arrange :columns])))
+      (is (nil? (by-path [:scales :x :kind]))))
+    (testing "the :arrange entries are the shared group :arrange"
+      (let [arrange (describe/options plot-grid/arrange-schema)]
+        (is (every? #(= :arrange (:fragment %)) arrange))
+        (is (= (map :key (describe/fragment-rows :arrange)) (map :key arrange)))))))
+
+(deftest required-rows-test
+  (testing "merged maps (theme, render options): nothing is required of the user, nested maps included"
+    (is (not-any? :required? (describe/theme-rows)))
+    (is (not-any? :required? (describe/options pipeline/options-schema))))
+  (testing "boundary: a required entry of an ordinary map stays required, also nested; a merged map's flag doesn't leak"
+    (let [rows (describe/schema-rows [:map [:a {:description "a"} [:map {:closed true} [:b {:description "b"} :int]]]])]
+      (is (every? :required? rows)))
+    (let [rows (describe/schema-rows [:map [:m {:description "m"} [:map {:closed true :cljplot2/merged true} [:b {:description "b"} :int]]]
+                                      [:c {:description "c"} :int]])]
+      (is (= [true false true] (map :required? rows))))))
+
+(deftest internal-rows-test
+  (testing "an internal entry has no row; boundary: its nested entries neither"
+    (is (= [[:a]] (map :path (describe/schema-rows [:map [:a :int] [:i {:cljplot2/internal true} [:map {:closed true} [:x :int]]]]))))))
+
+(deftest container-defaults-test
+  (let [with-defaults #'describe/with-defaults
+        rows (describe/schema-rows [:map [:roles {:cljplot2/type-doc "a lookup"} [:map-of keyword? :map]]
+                                    [:line [:or [:= :none] [:map {:closed true} [:w :int]]]]
+                                    [:box [:map {:closed true} [:w :int]]]])
+        filled (into {} (map (juxt :path :default)) (with-defaults rows {:roles {:a {}} :line {:w 1} :box {:w 2}}))]
+    (testing "a container (map, map of entries) gets no default, whatever its type text reads"
+      (is (nil? (filled [:roles])))
+      (is (nil? (filled [:box]))))
+    (testing "its entries do, and a map value of a non-container (a line spec) is a default"
+      (is (= 2 (filled [:box :w])))
+      (is (= {:w 1} (filled [:line]))))))
 
 (deftest theme-rows-test
   (let [rows (describe/theme-rows)

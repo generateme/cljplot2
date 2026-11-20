@@ -256,7 +256,7 @@
 (def theme-schema
   "The merged theme (see [[default-theme]]; every key has a value there - overrides are partial). `:chart` subtrees
   are checked against the charts' style schemas by `build`, see [[cljplot2.pipeline/build]]."
-  [:map {:closed true}
+  [:map {:closed true :cljplot2/merged true}
    [:plot {:description "the whole canvas"}
     [:map {:closed true}
      [:background {:description "canvas background colour"} schema/color]
