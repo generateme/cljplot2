@@ -596,7 +596,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="clay-image">
 <p><img src="reference.aesthetics_legends_files/image0.png" class="img-fluid"></p>
 </div>
-<p>Dates (<code>java.time</code> values) mapped to <code>:color</code> get a linear gradient over time, the colour bar ticked at dates:</p>
+<p>Dates (<code>java.time</code> values) mapped to <code>:color</code> get a linear gradient over time, the colour bar ticked at dates (a <code>Year</code> / <code>YearMonth</code> reads as the date its period starts, on every scale):</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> readings </span>(<span class="kw">for</span> [i (<span class="kw">range</span> <span class="dv">40</span>)]</span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>                {<span class="at">:day</span> (.plusDays (LocalDate/of <span class="dv">2024</span> <span class="dv">1</span> <span class="dv">1</span>) (<span class="kw">*</span> <span class="dv">9</span> i)) <span class="at">:x</span> (<span class="kw">mod</span> (<span class="kw">*</span> i <span class="dv">7</span>) <span class="dv">13</span>) <span class="at">:y</span> (<span class="kw">mod</span> (<span class="kw">*</span> i <span class="dv">5</span>) <span class="dv">11</span>)}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>

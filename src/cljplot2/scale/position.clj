@@ -346,6 +346,17 @@
                                [(LocalTime/ofSecondOfDay (max 0 (- s 3600))) (LocalTime/ofSecondOfDay (min 86399 (+ s 3600)))])
     :else [(.minus ^Temporal lo 1 ChronoUnit/DAYS) (.plus ^Temporal lo 1 ChronoUnit/DAYS)]))
 
+(defn- period-starts
+  "Scale `spec` with a `Year` / `YearMonth` in an explicit `:domain` or `:ticks` vector as the date its period starts
+  (see [[cljplot2.data.rows/period-start]]), as data values read - except on a bands or categorical scale, where
+  they are levels."
+  [spec]
+  (if (or (= :bands (:kind spec)) (= :categorical (:type spec)))
+    spec
+    (cond-> spec
+      (sequential? (:domain spec)) (update :domain #(mapv rows/period-start %))
+      (sequential? (:ticks spec)) (update :ticks #(mapv rows/period-start %)))))
+
 (defn data-scale-spec
   "Phase-1 spec of plot scale `k` from its `spec` (may be `{}`) and the merged data `extent` (may be `nil`)
   with the charts' `padding` `[lo hi]`. An explicit `:domain` wins over data (`nil` - not set). A data domain gets
@@ -359,7 +370,8 @@
   [k spec extent padding]
   (when (and (= :interpolated (:kind spec)) (nil? (:domain spec)))
     (schema/fail! "An :interpolated scale needs an explicit :domain (its stop values)." {:key :domain :in [:scales k :domain]}))
-  (let [built (if (or (some? (:domain spec)) (nil? extent))
+  (let [spec (period-starts spec)
+        built (if (or (some? (:domain spec)) (nil? extent))
                 (scale-spec k spec)
                 (let [kind (or (:kind spec) (extent-kinds (:kind extent)))
                       domain (case (:kind extent)

@@ -156,7 +156,7 @@
   (if colors
     (let [na (get-in theme [:palette :na])
           color-of (if-let [sc (:color scales)] (aesthetic/attribute-fn :color sc na) (constantly na))]
-      (mapv #(if (nil? %) na (color-of (double %))) colors))
+      (mapv #(if (nil? %) na (color-of %)) colors))
     (vec (repeat n (:color st)))))
 
 (defn- row-widths

@@ -324,7 +324,7 @@
   [values scale theme]
   (let [na (get-in theme [:palette :na])
         color-of (if scale (aesthetic/attribute-fn :color scale na) (constantly na))]
-    (mapv #(if (nil? %) na (color-of (double %))) values)))
+    (mapv #(if (nil? %) na (color-of %)) values)))
 
 (defn- segment-colors
   "Colors of the segments of a gradient line with point color values `colors` under the finalized color `scale`:
@@ -540,7 +540,9 @@
       (if (some :y0 lines)
         (draw-stacked! canvas lines style (:position options) opts gradient axis scales (:theme env))
         (doseq [{:keys [x y aesthetics colors] :as line} lines
-                :let [st (group-style style line scales (:theme env))
+                :let [;; colour values as numbers for interpolation (dates - epoch milliseconds, as the colour scale)
+                      colors (some->> colors (mapv #(some-> % data/x-key)))
+                      st (group-style style line scales (:theme env))
                       st (if (and st (:stroke-alpha options) (not= :none (:color st)))
                            (update st :color #(let [col (c/to-color %)]
                                                 (c/set-alpha col (* (double (:stroke-alpha options)) (double (c/alpha col))))))

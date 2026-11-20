@@ -95,7 +95,8 @@ attributes from the data.
 :::
 
 
-Dates (`java.time` values) mapped to `:color` get a linear gradient over time, the colour bar ticked at dates:
+Dates (`java.time` values) mapped to `:color` get a linear gradient over time, the colour bar ticked at dates (a
+`Year` / `YearMonth` reads as the date its period starts, on every scale):
 
 
 ::: {.sourceClojure}

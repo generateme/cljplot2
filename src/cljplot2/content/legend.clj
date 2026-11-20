@@ -102,8 +102,9 @@
   domain `[lo hi]` in epoch milliseconds): an explicit `:ticks` vector of dates (those inside the domain), else nice
   ticks of a wadogo `:datetime` scale (at least two inside, as an axis; a count from `:ticks`) over the domain as
   local date-times (see [[cljplot2.data.rows/->local-date-time]]). Ticks are in the data's type (`LocalDate` data -
-  dates: sub-day ticks of a short domain collapse to their day; zoned values in their zone), labelled by `:formatter`
-  (a function of such a value) or as wadogo labels them; `key` - the tick's epoch milliseconds."
+  dates: sub-day ticks of a short domain collapse to their day; zoned values in their zone - a tick in a daylight-saving
+  fold takes the earlier offset), labelled by `:formatter` (a function of such a value) or as wadogo labels them;
+  `key` - the tick's epoch milliseconds."
   [{:keys [temporal-sample formatter ticks]} ^double lo ^double hi]
   (let [as-data #(data/local-date-time->like % temporal-sample)
         local-at #(data/->local-date-time (data/key->x % temporal-sample))

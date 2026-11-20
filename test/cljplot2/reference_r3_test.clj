@@ -522,3 +522,84 @@
     (testing "boundary: a date-time back to a date drops the time; to a time drops the date"
       (is (= (java.time.LocalDate/of 2024 2 29) (rows/local-date-time->like (java.time.LocalDateTime/of 2024 2 29 18 0) (values 0))))
       (is (= (java.time.LocalTime/of 18 0) (rows/local-date-time->like (java.time.LocalDateTime/of 2024 2 29 18 0) (values 2)))))))
+
+;; 3D frame labels
+
+(deftest frame-label-collisions-test
+  (let [draw-axis! #'cljplot2.graphics.space3d/draw-axis!
+        boxes (fn [length]
+                (measure/call-with-scratch-canvas
+                 :high
+                 (fn [c]
+                   (draw-axis! c :x {:axis :x :from [0 0 0] :to [1 0 0]}
+                               {:corner (fn [[x _ _]] (fastmath.vector/vec2 (+ 10.0 (* (double length) (double x))) 100.0))
+                                :centre (fastmath.vector/vec2 (+ 10.0 (* 0.5 (double length))) 0.0)}
+                               {:domains {:x [0 1e9 ]} :levels {} :titles {}}
+                               [] {:theme cljplot2.theme/default-theme :canvas c}))))
+        overlap? (fn [[ax0 ay0 ax1 ay1] [bx0 by0 bx1 by1]]
+                   (and (< ax0 bx1) (< bx0 ax1) (< ay0 by1) (< by0 ay1)))
+        pairwise-free? (fn [bs] (every? true? (for [[i a] (map-indexed vector bs) [j b] (map-indexed vector bs) :when (< i j)]
+                                                (not (overlap? a b)))))]
+    (testing "a short edge with wide labels: the labels drawn don't overlap each other"
+      (let [short (boxes 120)]
+        (is (seq short))
+        (is (pairwise-free? short))))
+    (testing "a long edge keeps more of them, still without overlaps"
+      (let [long-boxes (boxes 900)]
+        (is (pairwise-free? long-boxes))
+        (is (< (count (boxes 120)) (count long-boxes)))))))
+
+;; Year and YearMonth
+
+(deftest year-values-test
+  (let [years (for [y (range 2000 2012)] (java.time.Year/of y))
+        months (for [m (range 1 13)] (java.time.YearMonth/of 2024 m))
+        o {:width 300 :height 200}]
+    (testing "positions and colours read a Year / YearMonth as its period's start - a datetime x, a date gradient"
+      (doseq [vs [years months]
+              :let [rows (map-indexed (fn [i v] {:x i :y i :t v}) vs)]]
+        (is (= :datetime (get-in (plot/build {:data rows :mapping {:x :t :y :y} :charts [(chart/scatter)]} o) [:scale-specs :x :kind])))
+        (is (= :linear (get-in (plot/build {:data rows :mapping {:x :x :y :y :color :t} :charts [(chart/scatter)]} o) [:scale-specs :color :kind])))
+        (is (instance? BufferedImage (plot/render-image {:data rows :mapping {:x :t :y :y :color :t} :charts [(chart/line) (chart/scatter)]} o)))))
+    (testing "period starts and the conversions"
+      (is (= (java.time.LocalDate/of 2024 1 1) (rows/period-start (java.time.Year/of 2024))))
+      (is (= (java.time.LocalDate/of 2024 3 1) (rows/period-start (java.time.YearMonth/of 2024 3))))
+      (is (= (rows/x-key (java.time.LocalDate/of 2024 3 1)) (rows/x-key (java.time.YearMonth/of 2024 3))))
+      (is (= (java.time.Year/of 2024) (rows/local-date-time->like (rows/->local-date-time (java.time.Year/of 2024)) (java.time.Year/of 1))))
+      (is (= (java.time.YearMonth/of 2024 3) (rows/local-date-time->like (java.time.LocalDateTime/of 2024 3 17 12 0) (java.time.YearMonth/of 1 1)))))
+    (testing "boundary: levels stay Years - facet panels, hierarchy levels; other values pass through"
+      (let [rows (map-indexed (fn [i v] {:x i :y i :t v}) (take 3 years))]
+        (is (= (vec (take 3 years)) (get-in (plot/build {:data rows :mapping {:x :x :y :y :facet :t} :charts [(chart/scatter)]} o)
+                                            [:split :facets :levels :facet])))
+        (is (instance? BufferedImage (plot/render-image {:data (map #(assoc % :v 1) rows) :mapping {:hierarchy [:t] :value :v}
+                                                         :charts [(chart/treemap)]} o)))
+        (is (= "x" (rows/period-start "x")))
+        (is (nil? (rows/period-start nil)))))
+    (testing "an explicit domain of Years on a continuous x scale"
+      (let [rows (map-indexed (fn [i v] {:x i :y i :t v}) years)]
+        (is (= [(java.time.LocalDate/of 1999 1 1) (java.time.LocalDate/of 2013 1 1)]
+               (get-in (plot/build {:data rows :mapping {:x :t :y :y} :charts [(chart/scatter)]
+                                    :scales {:x {:domain [(java.time.Year/of 1999) (java.time.Year/of 2013)]}}} o)
+                       [:scale-specs :x :domain])))))))
+
+(deftest explicit-bands-ticks-keep-test
+  (testing "explicit :ticks on a bands scale keep every label (no every-s-th thinning) unless :drop"
+    (let [levels-data (for [i (range 40)] {:k (str "level number " i) :v i})
+          finalized (fn [spec] (get-in (plot/build {:data levels-data :mapping {:x :k :y :v} :charts [(chart/bar)] :scales {:x spec}}
+                                                   {:width 300 :height 200})
+                                       [:finalized-scales :x]))
+          drawn (fn [f] (count (axis/drawn-label-indices :x f (vec (repeat (count (:ticks f)) (fastmath.vector/vec2 60 10))) 2 nil nil)))
+          ticks (mapv #(str "level number " %) (range 40))]
+      (is (= 40 (drawn (finalized {:ticks ticks}))))
+      (is (< (drawn (finalized {:ticks ticks :overlapping-labels :drop})) 40))
+      (is (< (drawn (finalized {})) 40) "computed (every band) ticks thin"))))
+
+(deftest date-colour-charts-test
+  (testing "charts colouring along their marks take date colour values: line gradients, segments, polygons"
+    (let [dates (for [m (range 12)] (.plusMonths (java.time.LocalDate/of 2024 1 1) m))
+          rows (map-indexed (fn [i d] {:x i :y (mod (* i 5) 7) :xend (inc i) :yend (mod (* i 3) 7) :d d}) dates)
+          o {:width 300 :height 200}]
+      (doseq [c [(chart/line) (chart/segment) (chart/polygon)]]
+        (is (instance? BufferedImage (plot/render-image {:data rows :mapping {:x :x :y :y :xend :xend :yend :yend :color :d}
+                                                          :charts [c]} o))
+            (str (:kind c)))))))

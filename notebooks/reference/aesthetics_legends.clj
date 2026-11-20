@@ -41,7 +41,8 @@
                                  {:columns 2})
                    {:width 900 :height 350})
 
-;; Dates (`java.time` values) mapped to `:color` get a linear gradient over time, the colour bar ticked at dates:
+;; Dates (`java.time` values) mapped to `:color` get a linear gradient over time, the colour bar ticked at dates (a
+;; `Year` / `YearMonth` reads as the date its period starts, on every scale):
 
 (def readings (for [i (range 40)]
                 {:day (.plusDays (LocalDate/of 2024 1 1) (* 9 i)) :x (mod (* i 7) 13) :y (mod (* i 5) 11)}))

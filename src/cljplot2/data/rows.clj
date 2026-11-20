@@ -16,7 +16,7 @@
   (:require [fastmath.core :as m]
             [cljplot2.data.accessor :as accessor]
             [cljplot2.schema :as schema])
-  (:import [java.time Instant LocalDate LocalDateTime LocalTime OffsetDateTime ZonedDateTime ZoneOffset]))
+  (:import [java.time Instant LocalDate LocalDateTime LocalTime OffsetDateTime Year YearMonth ZonedDateTime ZoneOffset]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -123,24 +123,47 @@
   [options k default]
   (let [v (get options k)] (if (nil? v) default v)))
 
-(defn row-accessor
-  "Function of a row for mapping accessor `acc` (keyword or function, or a categorical marker of one - see
-  [[cljplot2.data.accessor]]) of dimension `k`."
+(defn period-start
+  "`v` with a `java.time.Year` or `YearMonth` as the `LocalDate` its period starts (January 1st, the 1st of the month);
+  other values as they are."
+  [v]
+  (cond
+    (instance? Year v) (.atDay ^Year v 1)
+    (instance? YearMonth v) (.atDay ^YearMonth v 1)
+    :else v))
+
+(def ^:private level-keys
+  "Mapping keys whose values name levels or labels - read as they are (a `Year` facet keeps its \"2024\" strip)."
+  #{:facet :facet-col :facet-row :group :label :set :item :hierarchy})
+
+(defn- plain-accessor
   [k acc]
   (cond
     (keyword? acc) acc
     (fn? acc) acc
-    (accessor/categorical? acc) (row-accessor k (accessor/unwrap acc))
     :else (schema/fail! "Mapping accessor must be a keyword or a function." {:key :mapping :value k})))
+
+(defn row-accessor
+  "Function of a row for mapping accessor `acc` (keyword or function, or a categorical marker of one - see
+  [[cljplot2.data.accessor]]) of dimension `k`. Position and aesthetic values read a `Year` / `YearMonth` as the date
+  its period starts ([[period-start]]) - every scale places dates; level and label keys ([[level-keys]]) and
+  categorical markers read values as they are (levels)."
+  [k acc]
+  (cond
+    (accessor/categorical? acc) (plain-accessor k (accessor/unwrap acc))
+    (level-keys k) (plain-accessor k acc)
+    :else (let [f (plain-accessor k acc)] (fn [row] (period-start (f row))))))
 
 (defn temporal? [v] (instance? java.time.temporal.Temporal v))
 
 (defn x-key
   "Number aligning an x value: a number as a double, a `java.time` value as epoch milliseconds (UTC; a `LocalTime` as
-  milliseconds of the day - ordered as wadogo places it, on one day); `nil` otherwise."
+  milliseconds of the day - ordered as wadogo places it, on one day; a `Year` / `YearMonth` as its period's start);
+  `nil` otherwise."
   [x]
   (cond
     (number? x) (double x)
+    (or (instance? Year x) (instance? YearMonth x)) (x-key (period-start x))
     (instance? LocalDate x) (* 86400000.0 (.toEpochDay ^LocalDate x))
     (instance? LocalDateTime x) (double (.toEpochMilli (.toInstant ^LocalDateTime x ZoneOffset/UTC)))
     (instance? Instant x) (double (.toEpochMilli ^Instant x))
@@ -159,7 +182,8 @@
       k
       (let [instant (Instant/ofEpochMilli (Math/round k))]
         (cond
-          (or (instance? LocalDate like) (instance? LocalDateTime like)) (LocalDateTime/ofInstant instant ZoneOffset/UTC)
+          (or (instance? LocalDate like) (instance? LocalDateTime like) (instance? Year like) (instance? YearMonth like))
+          (LocalDateTime/ofInstant instant ZoneOffset/UTC)
           (instance? Instant like) instant
           (instance? ZonedDateTime like) (ZonedDateTime/ofInstant instant (.getZone ^ZonedDateTime like))
           (instance? OffsetDateTime like) (OffsetDateTime/ofInstant instant (.getOffset ^OffsetDateTime like))
@@ -167,9 +191,11 @@
 
 (defn ->local-date-time
   "`java.time` value `t` as the `LocalDateTime` wadogo `:datetime` scales tick in: a date at its start, a date-time as
-  it is, a time on 1970-01-01, an instant in UTC, a zoned or offset date-time as it reads in its own zone / offset."
+  it is, a time on 1970-01-01, an instant in UTC, a zoned or offset date-time as it reads in its own zone / offset, a
+  `Year` / `YearMonth` at its period's start."
   ^LocalDateTime [t]
   (cond
+    (or (instance? Year t) (instance? YearMonth t)) (->local-date-time (period-start t))
     (instance? LocalDate t) (.atStartOfDay ^LocalDate t)
     (instance? LocalDateTime t) t
     (instance? LocalTime t) (LocalDateTime/of LocalDate/EPOCH ^LocalTime t)
@@ -179,9 +205,12 @@
 
 (defn local-date-time->like
   "Inverse of [[->local-date-time]]: `LocalDateTime` `ldt` as a value of the type of `like` (a date - its day, a time -
-  its time of day, a zoned / offset date-time in the zone / offset of `like`)."
+  its time of day, a `Year` / `YearMonth` - the one holding it, a zoned / offset date-time in the zone / offset of
+  `like`)."
   [^LocalDateTime ldt like]
   (cond
+    (instance? Year like) (Year/from ldt)
+    (instance? YearMonth like) (YearMonth/from ldt)
     (instance? LocalDate like) (.toLocalDate ldt)
     (instance? LocalDateTime like) ldt
     (instance? LocalTime like) (.toLocalTime ldt)

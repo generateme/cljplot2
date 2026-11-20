@@ -117,7 +117,7 @@
   (let [na (get-in theme [:palette :na])]
     (if (nil? value)
       (assoc st :color na)
-      (when-let [col (if-let [sc (:color scales)] ((aesthetic/attribute-fn :color sc na) (double value)) na)]
+      (when-let [col (if-let [sc (:color scales)] ((aesthetic/attribute-fn :color sc na) value) na)]
         (assoc st :color col)))))
 
 (defn draw

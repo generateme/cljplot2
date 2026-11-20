@@ -53,8 +53,9 @@ charts don't validate their own input.
   every panel).
 - Every built-in kind has a theme entry `[:chart kind]` checked against `chart/builtin-styles`.
 - Tick labels are drawn without collisions: axes, polar guides, 3D frames and colour bars keep the first label, then
-  each not overlapping one drawn (`measure/kept-label-indices` along an axis, `measure/kept-box-indices` for boxes);
-  a scale with `:overlapping-labels :keep` - or explicit `:ticks` without `:drop` - draws them all.
+  each not overlapping one drawn (`measure/kept-label-indices` along an axis, `measure/kept-box-indices` for boxes).
+  Axes and polar guides draw them all for a scale with `:overlapping-labels :keep` or explicit `:ticks` (without
+  `:drop`); colour bars for explicit `:ticks`; 3D frames always thin (no scale spec).
 - Text drawn over a fill takes its colour from its text role through `draw/text-color` (role `:color` `:contrast` -
   black or white by the fill; never a hard-coded contrast colour), so a theme colour always wins.
 
