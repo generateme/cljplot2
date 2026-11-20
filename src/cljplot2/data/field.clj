@@ -41,7 +41,7 @@
 
 (def bandwidth-schema
   "Schema of `:bandwidth`: a positive number, a selector keyword, or a pair of them."
-  (let [one [:or [:and schema/finite [:> 0]] [:enum :nrd :nrd0 :nrd-adjust :sj :sj-dpi :rlcv :lcv :lscv :scott]]]
+  (let [one [:or schema/finite-pos [:enum :nrd :nrd0 :nrd-adjust :sj :sj-dpi :rlcv :lcv :lscv :scott]]]
     [:or one [:tuple one one]]))
 
 (def n-schema
@@ -70,7 +70,7 @@
                      :boolean)
     (schema/optional :cut {:description "how many bandwidths the density domain extends past the points on each side"
                            :default 3}
-                     [:and schema/finite [:>= 0]])
+                     schema/finite-non-neg)
     (schema/optional :interpolation {:description "interpolation of gridded data (mapped :x, :y, :value on a full lattice)"
                                      :default :bilinear}
                      [:enum :bilinear :bicubic :cubic-2d])

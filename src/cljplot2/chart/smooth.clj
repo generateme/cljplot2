@@ -60,9 +60,6 @@
   (schema/named-type ::method #(or (fn? %) (contains? smooth/smooth-methods %))
                      (str "should be a function (fn [xs ys] f) or one of " (vec (sort smooth/smooth-methods)))))
 
-(def ^:private level-schema
-  (schema/named-type ::level #(and (number? %) (< 0.0 (double %) 1.0)) "should be a number in (0 1)"))
-
 (def schemas
   "Schemas of the smooth chart: `:style` (theme `[:chart :smooth]`), `:options`, `:mapping` (merged)."
   {:style (into [:map {:closed true}] style-entries)
@@ -79,7 +76,7 @@
                                        (into [:enum] smooth/band-kinds))
                       (schema/optional :level {:description "confidence level of the band in (0, 1), or a vector of levels (nested bands)"
                                                :default 0.95}
-                                       [:or level-schema [:vector {:min 1} level-schema]])
+                                       [:or schema/open-fraction [:vector {:min 1} schema/open-fraction]])
                       (schema/nilable :bootstrap {:description "options of the :band :bootstrap (see fastmath.interpolation/bootstrap)"}
                                       [:map {:closed true}
                                        (schema/optional :samples {:description "number of bootstrap samples" :default 200} schema/pos-int)

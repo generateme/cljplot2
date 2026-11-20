@@ -166,9 +166,6 @@
     (mapv (fn [^long s] (let [a (+ a0 (* (- a1 a0) (/ (double s) steps)))] [(* r (m/sin a)) (* r (m/cos a))]))
           (range (inc steps)))))
 
-(def ^:private finite-pos
-  (schema/named-type ::finite-pos #(and (schema/finite? %) (pos? (double %))) "should be a positive finite number"))
-
 (def circular-entry
   "Option entry `:circular` of the tree layouts."
   (schema/nilable :circular {:description "radial: breadth as the angle over :span degrees, height (or depth) as the radius; points in [-1, 1]"
@@ -177,7 +174,7 @@
 
 (def span-entry
   "Option entry `:span` of the circular tree layouts."
-  (schema/optional :span {:description "degrees a circular layout covers, clockwise from the top" :default 360.0} finite-pos))
+  (schema/optional :span {:description "degrees a circular layout covers, clockwise from the top" :default 360.0} schema/finite-pos))
 
 (def layout-entries
   "Option entries of [[layout]] (a shared group, `:tree/layout`; [[cljplot2.graphs/dendrogram]] forwards them)."

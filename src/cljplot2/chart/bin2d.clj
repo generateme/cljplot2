@@ -48,10 +48,10 @@
                                               :default :scott-correlated}
                                        [:or (into [:enum] cells/size-methods) schema/pos-int])
                       (schema/optional :binwidth {:description "cell size in x data units (log10 units on a :log axis); wins over :bins"}
-                                       [:and schema/finite [:> 0]])
+                                       schema/finite-pos)
                       (schema/optional :shape {:description "height / width ratio of the normalized binning space (cells are regular in pixels when it matches the panel)"
                                                :cljplot2/default-doc "the panel's height / width (y span / x span with :aspect :iso), estimated from the plot size and facet layout"}
-                                       [:and schema/finite [:> 0]])
+                                       schema/finite-pos)
                       (schema/optional :measure {:description "the cell colour: :count, :percent (of the panel's points), :pmf (share of the panel's points) or :density (count / (n * cell area in data units))"
                                                  :default :count}
                                        [:enum :count :percent :pmf :density])))

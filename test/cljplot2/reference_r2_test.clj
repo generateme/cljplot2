@@ -162,3 +162,29 @@
       (let [row (first (filter #(= [k] (:path %)) (describe/options v)))]
         (is (re-find #"^\{" (str (:default-doc row))) [(var-name v) k])
         (is (not (re-find #"\{:" (:description row))) [(var-name v) k])))))
+
+(def ^:private intended-overrides
+  "Builder -> keys whose own entry shadows a forwarded group's (schema/options-map: own entries win), each on purpose:
+  pairs' `:theme` styles the cells and the matrix (not only the built plot); sequences' `:keep-end?` defaults to true
+  (a sunburst keeps the end marker); acf's `:partial?` adds `:both`, translated before acf-rows."
+  '{pairs #{:theme} sequences #{:keep-end?} acf #{:partial?}})
+
+(defn- shadowed-keys
+  "Own (untagged) top-level option keys of builder `v` that a group it also takes defines."
+  [v]
+  (let [rows (filter #(= 1 (count (:path %))) (describe/options v))
+        own (set (map :key (remove :fragment rows)))]
+    (set (for [g (set (keep :fragment rows))
+               r (describe/fragment-rows g)
+               :when (and (= 1 (count (:path r))) (own (:key r)))]
+           (:key r)))))
+
+(deftest overrides-test
+  (testing "a builder's own entry shadows a forwarded one only where intended (a new clash fails here)"
+    (is (= intended-overrides
+           (into {} (keep (fn [v] (let [ks (shadowed-keys v)] (when (seq ks) [(:name (meta v)) ks]))) builders)))))
+  (testing "boundary: an overridden key has one row - the builder's own"
+    (doseq [[n ks] intended-overrides
+            :let [v (ns-resolve 'cljplot2.core n)]
+            k ks]
+      (is (= [nil] (map :fragment (filter #(= [k] (:path %)) (describe/options v)))) [n k]))))

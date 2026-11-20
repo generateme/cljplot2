@@ -81,7 +81,7 @@
                                         field/n-schema)
                        (schema/optional :cut {:description "how many bandwidths the density domain extends past the points on each side"
                                               :cljplot2/default-doc "3 (only with :density)"}
-                                        [:and schema/finite [:>= 0]])))
+                                        schema/finite-non-neg)))
              [#(when (> (count (filter % [:f :fu :density])) 1) "a surface takes one source: :f, :fu or :density true") nil]
              [#(when (and (:fu %) (not (and (:u %) (:v %)))) "a parametric surface needs :u and :v ranges") [:fu]]
              [#(when (and (or (:u %) (:v %)) (not (:fu %))) ":u and :v are the ranges of a parametric :fu") [:u]]

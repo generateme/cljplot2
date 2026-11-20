@@ -28,8 +28,7 @@
 (def ^:private estimation-strategies (set (keys stats/estimation-strategies-list)))
 
 (def ^:private probabilities-schema
-  (schema/with-rules [:vector {:min 1} [:and schema/finite [:fn {:error/message "should be strictly between 0 and 1"}
-                                                             #(< 0.0 (double %) 1.0)]]]
+  (schema/with-rules [:vector {:min 1} schema/open-fraction]
     [#(when-not (apply < %) "probabilities should be increasing")]))
 
 (def ^:private quantiles-schema

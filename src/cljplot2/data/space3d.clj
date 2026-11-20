@@ -41,7 +41,7 @@
                     [:and schema/finite [:>= -90] [:<= 90]])
    (schema/optional :distance {:description "perspective: 0 - parallel projection, larger - stronger perspective (lattice distance)"
                                :default 0.0}
-                    [:and schema/finite [:>= 0]])])
+                    schema/finite-non-neg)])
 
 (def aspect-schema
   "`:aspect [ax ay az]` - positive box proportions."

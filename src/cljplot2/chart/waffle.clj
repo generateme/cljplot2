@@ -50,7 +50,7 @@
                       (schema/optional :columns {:description "grid columns" :default 10} [:int {:min 1 :max max-cells}])
                       (schema/optional :unit {:description "the value of one cell: a category gets value / unit cells, the grid :columns wide"
                                               :cljplot2/default-doc "none - the categories share the :rows x :columns grid"}
-                                       [:and schema/finite [:> 0]])
+                                       schema/finite-pos)
                       (schema/optional :fill-order {:description "fill from the bottom-left cell: :rows (row by row, upwards) or :columns (column by column)"
                                                     :default :rows}
                                        [:enum :rows :columns])))
