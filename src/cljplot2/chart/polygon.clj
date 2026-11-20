@@ -47,7 +47,7 @@
              [:y {:description "y position of a vertex (data units)"} schema/accessor]
              (schema/nilable :color {:description "fill colour: per group (ordinal), or by the group's first row (linear or binned)"}
                              schema/accessor)
-             (schema/nilable :group {:description "groups the rows into separate polygons"} schema/accessor)]})
+             (schema/nilable :group {:description "groups without a visual aesthetic, each its own polygon"} schema/accessor)]})
 
 (def ^:private ^:const min-points 3)
 

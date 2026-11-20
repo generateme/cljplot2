@@ -68,13 +68,15 @@
    :options (-> [:map {:closed true}]
                 (into style-entries)
                 (into data/common-options)
-                (conj (schema/optional :bins {:description "bins shared by all panels and groups: a fastmath bin-estimation method (:sturges, :sqrt, :rice, :doane, :scott, :freedman-diaconis), a bin count (equal widths over the data range) or a vector of at least 2 increasing breaks (values outside are dropped)"
+                (conj (schema/optional :bins {:description (str "bins shared by all panels and groups: a fastmath estimation method (:sturges :sqrt :rice :doane :scott "
+                                                                  ":freedman-diaconis), a bin count or increasing breaks (values outside dropped)")
                                                 :default :sturges}
                                         [:and levels/bins [:fn {:error/message "quantile bins aren't supported by histograms (give a breaks vector)"} (complement map?)]])
                       (schema/optional :y {:description "bar height: :percent (of the panel's or group's total), :count, :pmf (shares summing to 1), :density (area 1) or :cumulative (count of the bin and every bin before it)"
                                            :default :percent}
                                        (into [:enum :cumulative] (keys measure/titles)))
-                      (schema/optional :position {:description "grouped bars: :overlay (translucent, full width), :dodge (bins split among the groups), :stack, :normalize (stacked, each bin summing to 1) or :mirror (two groups, the second drawn downward); ridgelines take :overlay or :mirror"
+                      (schema/optional :position {:description (str "grouped bars: :overlay (translucent), :dodge, :stack, :normalize (stacked to 1) or :mirror (two groups, "
+                                                                      "the second downward); ridgelines: :overlay or :mirror")
                                                   :default :overlay}
                                        (into [:enum] (sort position/positions)))
                       (schema/nilable :symmetric {:description "with :position :mirror, tie both halves to one y range [-M M], M the tallest bar over all panels"

@@ -104,7 +104,7 @@
              (schema/nilable :label {:description "label text, one per row (converted with str)"} schema/accessor)
              (schema/nilable :angle {:description "label rotation in degrees, clockwise (nil or not finite - :rotation)"} schema/accessor)
              (schema/nilable :color {:description "text colour per group (gives legend keys)"} schema/accessor)
-             (schema/nilable :group {:description "groups the rows without styling them (labels per group with :select)"} schema/accessor)]})
+             (schema/nilable :group {:description "groups without a visual aesthetic (labels per group with :select)"} schema/accessor)]})
 
 (defn- one? [v] (not (and (vector? v) (not (panel-position? v)))))
 

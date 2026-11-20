@@ -104,7 +104,7 @@
              (schema/nilable :color {:description "curve and band colour per group"} schema/accessor)
              (schema/nilable :dash {:description "curve dash style per group"} schema/accessor)
              (schema/nilable :pattern {:description "band fill pattern per group"} schema/accessor)
-             (schema/nilable :group {:description "groups the rows, one fit per group"} schema/accessor)]})
+             (schema/nilable :group {:description "groups without a visual aesthetic, each its own fit"} schema/accessor)]})
 
 (defn- style
   [options theme]

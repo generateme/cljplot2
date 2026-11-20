@@ -86,3 +86,17 @@
       (finally
         (remove-ns 'cljplot2.describe-probe)
         (remove-ns 'describe-probe-outside)))))
+
+(deftest fragment-rows-test
+  (testing "one group's rows, in entry order"
+    (is (= [[:corner-radius] [:corner-radius-end]] (map :path (describe/fragment-rows :corner-radius))))
+    (is (= [[:mirror]] (map :path (describe/fragment-rows :mirror)))))
+  (testing "boundary: an unknown group or nil has no rows"
+    (is (= [] (describe/fragment-rows :nope)))
+    (is (= [] (describe/fragment-rows nil)))))
+
+(deftest api-namespaces-test
+  (testing "describe loads every namespace that holds user-facing functions"
+    (is (every? find-ns '[cljplot2.data.contour cljplot2.data.field cljplot2.data.graph cljplot2.data.hierarchy
+                          cljplot2.data.levels cljplot2.data.series cljplot2.data.sets cljplot2.data.shingle
+                          cljplot2.data.tree cljplot2.data.vector-field cljplot2.graphics.font]))))

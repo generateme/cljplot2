@@ -68,7 +68,7 @@
              (schema/nilable :color {:description "band colour per group"} schema/accessor)
              (schema/nilable :dash {:description "edge dash style per group"} schema/accessor)
              (schema/nilable :pattern {:description "fill pattern per group"} schema/accessor)
-             (schema/nilable :group {:description "groups the rows into separate bands"} schema/accessor)]})
+             (schema/nilable :group {:description "groups without a visual aesthetic, each its own band"} schema/accessor)]})
 
 (defn- style
   [options theme]

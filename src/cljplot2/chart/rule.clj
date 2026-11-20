@@ -54,7 +54,7 @@
                              schema/accessor)
              (schema/nilable :color {:description "line colour per group (gives legend keys)"} schema/accessor)
              (schema/nilable :dash {:description "dash style per group (gives legend keys)"} schema/accessor)
-             (schema/nilable :group {:description "groups the rows without styling them"} schema/accessor)]})
+             (schema/nilable :group {:description "groups without a visual aesthetic"} schema/accessor)]})
 
 (defn- style
   [options theme]

@@ -45,7 +45,9 @@
 (def glyphs [:number :shade :square :circle :ellipse :pie])
 
 (def ^:private style-entries
-  [(schema/optional :color {:description "one fixed glyph colour, the :number text's too (unset - r through the colour scale, the text in the :correlation text role's colour)"}
+  [(schema/optional :color {:description "one fixed glyph colour, the :number text's too"
+                             :cljplot2/default-doc (str "r on a diverging colour scale; the :number text in the :correlation text role's "
+                                                        "colour; group lines in their group colours")}
                     schema/color)
    (schema/optional :stroke-color {:description "outline colour: a colour, :none or :darker (the darkened fill)"} draw/stroke-color)
    (schema/optional :stroke-width {:description "outline width in pixels"} schema/non-neg)])
@@ -59,7 +61,8 @@
                 (conj (schema/optional :method {:description "correlation coefficient: :pearson, :spearman or :kendall"
                                                 :default :pearson}
                                         [:enum :pearson :spearman :kendall])
-                      (schema/optional :glyph {:description "how r is drawn: :number (the text, a line per group), :shade (the panel in r's colour), :square or :circle (area proportional to |r|), :ellipse (the bivariate normal contour) or :pie (a disk filled |r| of the way)"
+                      (schema/optional :glyph {:description (str "how r is drawn: :number (text, a line per group), :shade (the panel in r's colour), "
+                                                                 ":square / :circle (area ~ |r|), :ellipse (normal contour) or :pie (a disk filled |r|)")
                                                :default :number}
                                        (into [:enum] glyphs))))
    :mapping [:maybe [:map

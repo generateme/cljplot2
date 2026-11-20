@@ -120,7 +120,7 @@
    :mapping [:map
              (schema/nilable :color {:description "line colour per function label (e.g. :function)"} schema/accessor)
              (schema/nilable :dash {:description "dash style per function label"} schema/accessor)
-             (schema/nilable :group {:description "groups the functions"} schema/accessor)]})
+             (schema/nilable :group {:description "groups without a visual aesthetic, each its own function"} schema/accessor)]})
 
 (defn categorical-labels
   "`options` with every accessor `:function` of the chart's own `:mapping` marked categorical (see

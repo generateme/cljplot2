@@ -44,8 +44,13 @@
 (set! *unchecked-math* :warn-on-boxed)
 
 (def ^:private style-entries
-  (conj polyline/style-entries (schema/optional :alpha {:description "opacity multiplying the colours' alpha (unset, grouped filled contours take half the theme's)"}
-                                                 schema/fraction)))
+  (-> [(schema/optional :color {:description "one colour for every line, instead of colouring by level"
+                                :cljplot2/default-doc "lines coloured by level, or by the mapped :color groups"}
+                        schema/color)]
+      (into (remove #(= :color (first %))) polyline/style-entries)
+      (conj (schema/optional :alpha {:description "opacity multiplying the colours' alpha"
+                                     :cljplot2/default-doc "the theme's; grouped filled contours without :alpha take half of it"}
+                             schema/fraction))))
 
 (def schemas
   "Schemas of the contour chart: `:style` (theme `[:chart :contour]`), `:options`, `:mapping` (merged)."

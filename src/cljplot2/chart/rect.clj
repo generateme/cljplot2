@@ -15,11 +15,11 @@
   (as for `chart/rule`): a mapped `:color` is the fill (any color scale kind, e.g. identity colors for swatches) and
   gives legend keys; `:shape` / `:size` only group.
 
-  Options (style defaults from theme `[:chart :rect]`): `:fill`, `:stroke-color`, `:stroke-width`, `:alpha` (the
-  fill's alpha, a fraction; default - colors as they are), `:corner-radius` (pixels, every corner rounded, clamped to
-  half the shorter side; polar - the annular sector's corners; default 0), `:band-width` (the fraction of its band step
-  a level end covers, centred, `(0 1]`; default 1 - the whole step, rects of neighbouring levels touch), `:extent`, plus
-  `:data` / `:mapping`."
+  Options (style defaults from theme `[:chart :rect]`): `:fill`, `:stroke-color` (a color, `:none` or
+  `:darker` - the darkened fill), `:stroke-width`, `:alpha` (the fill's alpha, a fraction; default - colors as they
+  are), `:corner-radius` (pixels, every corner rounded, clamped to half the shorter side; polar - the annular
+  sector's corners; default 0), `:band-width` (the fraction of its band step a level end covers, centred, `(0 1]`;
+  default 1 - the whole step, rects of neighbouring levels touch), `:extent`, plus `:data` / `:mapping`."
   (:require [clojure2d.color :as c]
             [clojure2d.core :as c2d]
             [fastmath.core :as m]
@@ -38,7 +38,7 @@
 
 (def ^:private style-entries
   (into [(schema/optional :fill {:description "rect fill colour (a mapped :color wins)"} schema/color)
-         (schema/optional :stroke-color {:description "outline colour (or :none)"} schema/color)
+         (schema/optional :stroke-color {:description "outline colour: a colour, :none or :darker (the darkened fill)"} draw/stroke-color)
          (schema/optional :stroke-width {:description "outline width in pixels"} schema/non-neg)]
         draw/pattern-style-entries))
 
@@ -78,7 +78,7 @@
              (schema/nilable :pattern {:description "fill pattern per group (gives legend keys)"} schema/accessor)
              (schema/nilable :shape {:description "groups the rects (no visual effect)"} schema/accessor)
              (schema/nilable :size {:description "groups the rects (no visual effect)"} schema/accessor)
-             (schema/nilable :group {:description "groups the rows without styling them"} schema/accessor)]})
+             (schema/nilable :group {:description "groups without a visual aesthetic"} schema/accessor)]})
 
 (defn- style
   "Theme style under the options; a vector of fills (literal, per rect) leaves the theme fill as the base."
@@ -158,6 +158,12 @@
                           (assoc-in [:dropped :color] (:dropped color-stats))
                           (cond-> (:na? color-stats) (update :na conj :color))))))))
 
+(defn- outline
+  "Outline colour of a rect filled with `fill` for `:stroke-color` `stroke` (`:darker` - the darkened fill; no outline
+  for an unfilled rect)."
+  [stroke fill]
+  (if (and (= :darker stroke) (theme/none? fill)) :none (draw/outline-color stroke fill)))
+
 (declare draw-pixel-rect!)
 
 (defn draw
@@ -196,7 +202,8 @@
             :when (and px py)]
       (let [[h0 h1] (if x-horizontal? px py)
             [v0 v1] (if x-horizontal? py px)
-            fill (with-alpha (or fill g-fill) (:alpha style))]
+            fill (with-alpha (or fill g-fill) (:alpha style))
+            stroke (outline stroke fill)]
         (if geometry
           (do (c2d/set-stroke-custom canvas {:size sw :join :miter})
               (draw/range-bar! canvas geometry [h0 v0] [h1 v1] (if (theme/none? fill) [0 0 0 0] fill)
@@ -234,7 +241,7 @@
   [{:keys [options]} attributes canvas {:keys [x y w h]} env]
   (let [st (merge (style options (:theme env)) (select-keys attributes [:pattern]))
         fill (with-alpha (get attributes :color (:fill st)) (:alpha st))
-        stroke (:stroke-color st)
+        stroke (outline (:stroke-color st) fill)
         sw (double (:stroke-width st))
         side (m/round (* 0.7 (m/min (double w) (double h))))
         left (m/round (+ (double x) (* 0.5 (- (double w) side))))

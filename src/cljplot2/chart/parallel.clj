@@ -175,7 +175,7 @@
                      (schema/nilable :color {:description "line colour, grouping the rows"} schema/accessor)
                      (schema/nilable :dash {:description "line dash style, grouping the rows"} schema/accessor)
                      (schema/nilable :pattern {:description "radar fill pattern, grouping the rows"} schema/accessor)
-                     (schema/nilable :group {:description "groups of rows without a visual difference"} schema/accessor)]]})
+                     (schema/nilable :group {:description "groups without a visual aesthetic"} schema/accessor)]]})
 
 (defn- style
   [options theme]

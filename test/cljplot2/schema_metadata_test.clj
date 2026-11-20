@@ -2,7 +2,9 @@
   "Reference part R1a: every chart option, style and mapping entry is documented (`:description`), entry properties
   are consistent, fragments are registered, and every constant `:default` is the real default (a plot rendered with
   the defaults set explicitly is pixel-equal)."
-  (:require [clojure.test :refer [deftest testing is]]
+  (:require [clojure.string :as str]
+            [clojure.test :refer [deftest testing is]]
+            [fastmath.random :as r]
             [malli.core :as malli]
             [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
@@ -149,7 +151,12 @@
           :charts [(chart/line {:arrow {}})]}
    :cloud {:data (map (fn [i] {:x i :y (- i) :z (* i i)}) (range 8))
            :mapping {:x :x :y :y :z :z}
-           :charts [(chart/cloud {:view {}})]}})
+           :charts [(chart/cloud {:view {}})]}
+   :smooth {:data (map (fn [i] {:x i :y (+ i (* 3.0 (Math/sin i)))}) (range 20))
+            :mapping {:x :x :y :y}
+            :charts [(chart/smooth {:method :lm :band :bootstrap :bootstrap {:rng (r/rng :mersenne 7)}})]}
+   :parallel {:data (map (fn [i] {:a i :b (* i i) :c (- 10 i)}) (range 6))
+              :charts [(chart/parallel {:variables [:a :b :c] :padding {}})]}})
 
 (deftest nested-defaults-test
   (doseq [[kind p] nested-fixture-plots
@@ -157,3 +164,54 @@
     (testing (str kind ": nested defaults inside a given empty map are the real ones")
       (is (java.util.Arrays/equals (pixels (plot/render-image p o))
                                    (pixels (plot/render-image (with-explicit-defaults p kind) o)))))))
+
+;; writing rules
+
+(defn- all-rows
+  "Option and mapping rows of every chart and the rows of every shared group, each with its `:kind` (or fragment)."
+  []
+  (concat (for [[kind ctor] chart-constructors
+                :let [c (ctor)]
+                row (concat (describe/options c) (describe/mapping c))]
+            (assoc row :kind kind))
+          (for [f (keys describe/fragments) row (describe/fragment-rows f)] (assoc row :kind f))))
+
+(defn- rule-breaks
+  "`[kind path text]` of the texts under `k` of `rows` breaking the writing rule: one sentence of at most 200
+  characters, starting lowercase, without a final period."
+  [rows k]
+  (vec (for [{:keys [kind path] :as row} rows
+             :let [t (get row k)]
+             :when (and (string? t) (or (re-find #"^[A-Z]" t) (str/ends-with? t ".") (> (count t) 200)))]
+         [kind path t])))
+
+(deftest writing-rules-test
+  (let [rows (all-rows)]
+    (testing "descriptions"
+      (is (= [] (rule-breaks rows :description))))
+    (testing "default texts"
+      (is (= [] (rule-breaks rows :default-doc))))
+    (testing "boundary: the rule itself"
+      (is (= 3 (count (rule-breaks [{:kind :k :path [:a] :description "Starts upper"}
+                                    {:kind :k :path [:b] :description "ends with a period."}
+                                    {:kind :k :path [:c] :description (apply str (repeat 201 "x"))}
+                                    {:kind :k :path [:d] :description (apply str (repeat 200 "x"))}
+                                    {:kind :k :path [:e] :description nil}]
+                                   :description)))))
+    (testing "a mapped :group reads the same in every chart"
+      (is (every? #(str/starts-with? (:description %) "groups without a visual aesthetic")
+                  (filter #(= [:group] (:path %)) (mapcat (comp describe/mapping #(%)) (vals chart-constructors))))))))
+
+;; fragments
+
+(deftest fragment-entries-test
+  (doseq [[f {:keys [entries]}] describe/fragments]
+    (testing (str f ": every top-level entry of the group is tagged with it (nested entries belong to their map)")
+      (is (seq entries))
+      (is (every? #(= f (:fragment %)) (filter #(= 1 (count (:path %))) (describe/fragment-rows f))))))
+  (doseq [[kind ctor] chart-constructors
+          :let [rows (describe/options (ctor))]]
+    (testing (str kind ": a chart's group rows are entries of that group")
+      (is (every? (fn [{:keys [fragment key]}]
+                    (some #(= key (:key %)) (describe/fragment-rows fragment)))
+                  (filter #(and (:fragment %) (= 1 (count (:path %)))) rows))))))

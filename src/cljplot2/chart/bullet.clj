@@ -73,7 +73,7 @@
                                                 schema/accessor)
                                 (schema/nilable :y {:description "levels on the categorical axis (absent - one bullet)"} schema/accessor)
                                 (schema/nilable :x {:description "levels of vertical bullets (values aren't read from it)"} schema/accessor)
-                                (schema/nilable :group {:description "groups of a level, dodged as other strips"} schema/accessor)]
+                                (schema/nilable :group {:description "groups without a visual aesthetic (dodged as other groups)"} schema/accessor)]
               [#(when-not (some (fn [k] (some? (get % k))) value-keys)
                   "should map :ranges, :measures or :markers")
                nil]

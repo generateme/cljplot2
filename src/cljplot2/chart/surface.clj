@@ -70,7 +70,7 @@
                        (schema/optional :color {:description "one colour for all quads (no color scale)"
                                                 :cljplot2/default-doc "each quad's mean height (or c of [z c]) through the plot's color scale"}
                                         schema/color)
-                       (schema/nilable :shade {:description "Lambert shading of filled quads" :default true} schema/bool)
+                       (schema/nilable :shade {:description "shading of filled quads by their angle to the light (Lambert)" :default true} schema/bool)
                        (schema/optional :f {:description "source: a function of [x y] returning z or [z c], sampled over :domain :x / :y"}
                                         schema/function)
                        (schema/nilable :density {:description "source: the 2D kernel density of the mapped :x, :y" :default false} schema/bool)

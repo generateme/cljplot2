@@ -44,7 +44,8 @@
                 (into style-entries)
                 (into field/options)
                 (into data/common-options)
-                (conj (schema/optional :pixel-color {:description "a function of a point [x y] (a Vec2) returning each pixel's colour (nil - transparent): a raster without a grid, colour scale or legend, over :domain (else the plot's explicit x / y domains); not with :f, ignores the mapping and the other field options"}
+                (conj (schema/optional :pixel-color {:description (str "a function of a point [x y] returning each pixel's colour (nil - transparent): a raster over "
+                                                                     ":domain, no grid, colour scale or legend; not with :f")}
                                        schema/function)))
    :mapping [:maybe [:map
                      (schema/nilable :x {:description "x of the points (density) or of the gridded data"} schema/accessor)

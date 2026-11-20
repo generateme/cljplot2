@@ -62,7 +62,7 @@
              (schema/nilable :color {:description "segment colour: per group (ordinal) or per row (linear or binned)"} schema/accessor)
              (schema/nilable :size {:description "line width: per row (linear) or per group (ordinal)"} schema/accessor)
              (schema/nilable :dash {:description "dash style per group"} schema/accessor)
-             (schema/nilable :group {:description "groups the rows (one stroke setup per group)"} schema/accessor)]})
+             (schema/nilable :group {:description "groups without a visual aesthetic (one stroke setup per group)"} schema/accessor)]})
 
 (defn- style
   [options theme]

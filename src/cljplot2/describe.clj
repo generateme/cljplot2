@@ -4,8 +4,9 @@
 
   [[options]] - rows of a chart value's options (style defaults from theme `[:chart kind]`), of a builder or API
   function var (its `:cljplot2/options` schema) or of a map schema; [[mapping]] - rows of the mapping keys a chart
-  reads; [[api-vars]] - the user-facing data functions (`:cljplot2/api` var metadata); [[fragments]] - the shared
-  groups of options entries belong to.
+  reads; [[api-vars]] - the user-facing data functions (`:cljplot2/api` var metadata; this namespace loads every
+  namespace holding them); [[fragments]] - the shared groups of options entries belong to, [[fragment-rows]] - the
+  rows of one group (a chart may take only some of a group's entries - its own rows are what it accepts).
 
   A row: `{:key k :path [k ...] :type text :required? bool :default v :default-doc text :description text
   :fragment kw}` - `:path` is longer than `[k]` for the entries of nested closed maps (each nested map also has its
@@ -13,28 +14,56 @@
   value ([[cljplot2.schema/forbidden]]) aren't options and have no row."
   (:require [clojure.string :as str]
             [malli.core :as malli]
+            [cljplot2.chart.cloud :as cloud]
+            [cljplot2.data.annotation :as annotation]
+            [cljplot2.data.cells :as cells]
+            [cljplot2.data.field :as field]
+            [cljplot2.data.hierarchy :as hierarchy]
+            [cljplot2.data.rows :as rows]
+            [cljplot2.data.strip :as strip]
+            [cljplot2.graphics.curve :as curve]
+            [cljplot2.graphics.draw :as draw]
+            [cljplot2.graphics.polyline :as polyline]
             [cljplot2.schema :as schema]
-            [cljplot2.theme :as theme]))
+            [cljplot2.theme :as theme]
+            ;; namespaces of the user-facing functions (`:cljplot2/api`), so [[api-vars]] finds them all
+            [cljplot2.data.contour]
+            [cljplot2.data.graph]
+            [cljplot2.data.levels]
+            [cljplot2.data.series]
+            [cljplot2.data.sets]
+            [cljplot2.data.shingle]
+            [cljplot2.data.tree]
+            [cljplot2.data.vector-field]
+            [cljplot2.graphics.font]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
 (def fragments
-  "Shared groups of options (`:cljplot2/fragment` of their entries): keyword -> `{:title t :doc d}`."
-  {:common {:title "Data and mapping" :doc "the chart's own data and mapping, taken by every chart"}
-   :strip {:title "Strip options" :doc "placement, width and grouping of strip charts - one item per level on a categorical axis"}
-   :mirror {:title "Mirrored strips" :doc "the value side a strip chart draws each group on"}
-   :ridge {:title "Ridgelines" :doc "overlapping rows of histograms and densities over a categorical axis"}
-   :annotation {:title "Annotation options" :doc "the extents of annotation charts"}
-   :cell {:title "Cell style" :doc "the cell shape and outline of grid-cell charts"}
-   :corner-radius {:title "Rounded corners" :doc "rounded bar corners"}
-   :curve {:title "Curves" :doc "interpolation and sampling of the line between data points"}
-   :field {:title "Fields" :doc "the scalar field of a raster or contour chart: a function or a kernel density estimate"}
-   :hierarchy-labels {:title "Hierarchy labels" :doc "group and leaf labels of the hierarchy charts (treemap, partition, pack)"}
-   :frame-3d {:title "3D frame" :doc "view, proportions, frame and domains of a 3D chart"}
-   :line-style {:title "Line style" :doc "colour, width and dash of a line"}
-   :pattern {:title "Fill patterns" :doc "the pattern drawn over a filled mark"}
-   :text-style {:title "Text style" :doc "font, size, colour, padding, alignment and background of a text"}})
+  "Shared groups of options (`:cljplot2/fragment` of their entries): keyword -> `{:title t :doc d :entries [entry ...]}`
+  (the group's map entries, see [[fragment-rows]])."
+  {:common {:title "Data and mapping" :doc "the chart's own data and mapping, taken by every chart"
+            :entries rows/common-options}
+   :strip {:title "Strip options" :doc "placement, width and grouping of strip charts - one item per level on a categorical axis"
+           :entries strip/options}
+   :mirror {:title "Mirrored strips" :doc "the value side a strip chart draws each group on" :entries [strip/mirror-option]}
+   :ridge {:title "Ridgelines" :doc "overlapping rows of histograms and densities over a categorical axis"
+           :entries strip/ridge-options}
+   :annotation {:title "Annotation options" :doc "the extents of annotation charts" :entries annotation/options}
+   :cell {:title "Cell style" :doc "the cell shape and outline of grid-cell charts" :entries cells/style-entries}
+   :corner-radius {:title "Rounded corners" :doc "rounded bar corners"
+                   :entries [draw/corner-radius-option draw/corner-radius-end-option]}
+   :curve {:title "Curves" :doc "interpolation and sampling of the line between data points" :entries curve/options}
+   :field {:title "Fields" :doc "the scalar field of a raster or contour chart: a function or a kernel density estimate"
+           :entries field/options}
+   :hierarchy-labels {:title "Hierarchy labels" :doc "group and leaf labels of the hierarchy charts (treemap, partition, pack)"
+                      :entries hierarchy/label-entries}
+   :frame-3d {:title "3D frame" :doc "view, proportions, frame and domains of a 3D chart" :entries cloud/frame-options}
+   :line-style {:title "Line style" :doc "colour, width and dash of a line" :entries polyline/style-entries}
+   :pattern {:title "Fill patterns" :doc "the pattern drawn over a filled mark" :entries draw/pattern-style-entries}
+   :text-style {:title "Text style" :doc "font, size, colour, padding, alignment and background of a text"
+                :entries theme/text-style-overrides}})
 
 ;; types
 
@@ -154,6 +183,11 @@
             (cond-> row
               (and (= 1 (count path)) (contains? style-keys key) (contains? style key)) (assoc :default (get style key))))
           (schema-rows (get-in chart [:schema :options])))))
+
+(defn fragment-rows
+  "Rows of the entries of shared group `fragment` (a key of [[fragments]]); empty for an unknown group."
+  [fragment]
+  (schema-rows (into [:map] (get-in fragments [fragment :entries]))))
 
 (defn options
   "Option rows (see the namespace doc) of `x`: a chart value, a var with `:cljplot2/options` metadata (a builder or

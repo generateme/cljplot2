@@ -140,7 +140,7 @@
                              schema/accessor)
              (schema/nilable :color {:description "fill colour per group (gives legend keys)"} schema/accessor)
              (schema/nilable :pattern {:description "fill pattern per group (gives legend keys)"} schema/accessor)
-             (schema/nilable :group {:description "groups the rows without styling them (dodged, stacked or mirrored as other groups)"}
+             (schema/nilable :group {:description "groups without a visual aesthetic (dodged, stacked or mirrored as other groups)"}
                              schema/accessor)]})
 
 (defn- style

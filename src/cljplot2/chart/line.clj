@@ -116,7 +116,7 @@
              (schema/nilable :size {:description "line width: per group, or per point with :trail"} schema/accessor)
              (schema/nilable :dash {:description "dash style per group"} schema/accessor)
              (schema/nilable :pattern {:description "area fill pattern per group"} schema/accessor)
-             (schema/nilable :group {:description "groups the rows into separate lines"} schema/accessor)]})
+             (schema/nilable :group {:description "groups without a visual aesthetic, each its own line"} schema/accessor)]})
 
 (defn- style
   [options theme]
