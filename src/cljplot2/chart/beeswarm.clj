@@ -7,10 +7,16 @@
   wider than its item's cross range is squeezed into it (points may then overlap); `:fit false` keeps the packing
   and lets the swarm leave its range. With `:position :mirror` each group swarms to its own side only.
 
+  `:pack` - `:across` (default, the packing above: points move only across the value axis, so equal values form a
+  line) or `:around` - in both directions: each point, in value order, at the free spot nearest its value position
+  ([[around-offsets]]) - equal or close values form round clusters, as d3 / Vega force beeswarms (points then sit up to
+  a few diameters off their value along the axis); `:fit` squeezes the cross offsets only.
+
   Options (style defaults from theme `[:chart :beeswarm]`): `:size`, `:color`, `:stroke-color`, `:stroke-width`,
-  `:shape` (as scatter, see [[cljplot2.graphics.shape]]); `:fit`, `:padding {:x [lo hi]}` (default `[0.05 0.05]`),
+  `:shape` (as scatter, see [[cljplot2.graphics.shape]]); `:fit`, `:pack`, `:padding {:x [lo hi]}` (default `[0.05 0.05]`),
   plus the strip options and `:data` / `:mapping`."
   (:require [fastmath.core :as m]
+            [fastmath.vector :as v]
             [cljplot2.data.group :as group]
             [cljplot2.data.rows :as data]
             [cljplot2.data.strip :as strip]
@@ -36,6 +42,7 @@
                 (into data/common-options)
                 (into strip/options)
                 (conj (schema/nilable :fit schema/bool)
+                      (schema/optional :pack [:enum :across :around])
                       (schema/optional :padding data/position-padding)))
    :mapping strip/values-mapping})
 
@@ -85,6 +92,41 @@
               o (nearest-free (sort-by first intervals) one-sided?)]
           (recur (next ps) (conj placed [p o]) (conj! offsets o)))))))
 
+(def ^:private ^:const golden-angle (* Math/PI (- 3.0 (Math/sqrt 5.0))))
+
+(def ^:private ^:const max-spiral-steps 100000)
+
+(defn- free-spot?
+  "Is a circle of `diameter` at `[u c]` clear of every circle in `grid` (cell `[i j]` of side `diameter` -> centres)?"
+  [grid ^double u ^double c ^double diameter]
+  (let [i (long (m/floor (/ u diameter))) j (long (m/floor (/ c diameter))) limit (- (* diameter diameter) eps)]
+    (not-any? (fn [[^double pu ^double pc]] (< (+ (m/sq (- u pu)) (m/sq (- c pc))) limit))
+              (for [di [-1 0 1] dj [-1 0 1] pt (get grid [(+ i (long di)) (+ j (long dj))])] pt))))
+
+(defn around-offsets
+  "Offsets `[along cross]` (pixels) packing circles of `diameter` around the pixel `positions` along the value axis
+  (increasing): each circle, in order, at the first spot of a Vogel spiral around `[position 0]` (spacing a quarter
+  diameter - the free spot nearest its target, closely) where it is at least `diameter` from every circle placed
+  before (`one-sided?` - spots with a non-negative cross offset only). Deterministic; a grid of cell side `diameter`
+  keeps each test local. A zero `diameter` gives zero offsets."
+  [positions ^double diameter one-sided?]
+  (if-not (pos? diameter)
+    (mapv (constantly [0.0 0.0]) positions)
+    (let [step (* 0.25 diameter)]
+      (loop [ps (seq positions) grid {} offsets (transient [])]
+        (if-not ps
+          (persistent! offsets)
+          (let [p (double (first ps))
+                [u c] (or (first (for [k (range max-spiral-steps)
+                                       :let [r (* step (m/sqrt (double k))) a (* (double k) golden-angle)
+                                             u (+ p (* r (m/cos a))) c (* r (m/sin a))
+                                             c (if one-sided? (m/abs c) c)]
+                                       :when (free-spot? grid u c diameter)]
+                                   [u c]))
+                          [p 0.0])
+                cell [(long (m/floor (/ (double u) diameter))) (long (m/floor (/ (double c) diameter)))]]
+            (recur (next ps) (update grid cell conj [u c]) (conj! offsets [(- (double u) p) c]))))))))
+
 (defn fit-offsets
   "`offsets` squeezed proportionally so none is farther than `room` from 0 (unchanged when they fit)."
   [offsets ^double room]
@@ -106,6 +148,17 @@
      :na (group/na-dims panels)
      :dropped dropped}))
 
+(defn- value-direction
+  "Unit pixel vector of increasing value along the value axis at `v` (`point` - value, level, cross -> pixel), from a
+  nearby value; a zero vector when the axis doesn't move there."
+  ^Vec2 [point v level cross]
+  (let [v (double v)
+        ^Vec2 a (point v level cross)
+        ^Vec2 b (point (+ v (* 1.0e-3 (m/max 1.0 (m/abs v)))) level cross)
+        d (v/sub b a)
+        len (v/mag d)]
+    (if (and (m/valid-double? len) (pos? len)) (v/div d len) (v/vec2 0.0 0.0))))
+
 (defn- draw-in-strip-frame
   "Draw the points of one panel, each item swarmed by [[swarm-offsets]] around its centre line (one-sided: from 0
   outward), fitted into its slot with `:fit`."
@@ -122,10 +175,15 @@
             room (* s (if one-sided? (m/abs (+ (double lo) (double hi))) (strip/slot-half slot)))
             ;; [value pixel] pairs in increasing pixel order (a reversed value axis reverses the values)
             kept (sort-by second (filter #(m/valid-double? (double (second %))) (map (juxt identity value-pixel) values)))
-            offsets (cond-> (swarm-offsets (map second kept) (double (:size st)) one-sided?)
-                      fit? (fit-offsets room))]
-        (doseq [[[v] o] (map vector kept offsets)
-                :let [^Vec2 p (point v level (+ base (/ (* (if one-sided? side 1.0) (double o)) s)))]
+            around? (= :around (:pack options))
+            pairs (if around?
+                    (around-offsets (map second kept) (double (:size st)) one-sided?)
+                    (mapv (fn [o] [0.0 o]) (swarm-offsets (map second kept) (double (:size st)) one-sided?)))
+            crosses (cond-> (mapv second pairs) fit? (fit-offsets room))]
+        (doseq [[[v] [along] o] (map vector kept pairs crosses)
+                :let [cross (+ base (/ (* (if one-sided? side 1.0) (double o)) s))
+                      ^Vec2 p (point v level cross)
+                      ^Vec2 p (if (zero? (double along)) p (v/add p (v/mult (value-direction point v level cross) (double along))))]
                 :when (and (m/valid-double? (.x p)) (m/valid-double? (.y p)))]
           (shape/draw! canvas (:shape st) p st))))
     (strip/draw-n-labels! canvas pl items (fn [{:keys [values]}] (reduce max values)) options scales env)))

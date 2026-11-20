@@ -5080,8 +5080,8 @@ Source: [Vega - Volcano contours](https://vega.github.io/vega/examples/volcano-c
 ### Tree layout
 
 The Flare class hierarchy as a node-link tree - `plot/tree`: the tidy layout (nodes by depth, the root on the left),
-diagonal links, nodes coloured by depth, every node named (the original's canvas is 1600 px tall, so its leaf names
-don't overlap).
+light diagonal links, nodes coloured by depth, every node named. The image is 1000 x 1600 - over the book's usual
+800 px, as the original's 1600 px canvas, so the 220 leaf names don't overlap.
 
 Source: [Vega - Tree layout](https://vega.github.io/vega/examples/tree-layout/). Data: Flare package and class hierarchy, vega-datasets 3.3.1 `flare.json` (https://cdn.jsdelivr.net/npm/vega-datasets@3.3.1/data/flare.json); licence: none listed - see vega-datasets (cite Vega as the source).
 
@@ -5106,7 +5106,7 @@ Source: [Vega - Tree layout](https://vega.github.io/vega/examples/tree-layout/).
 ```clojure
 (plot/render-image
  (plot/tree flare-tree {:mapping {:color #(str (:depth %))}})
- {:width 900 :height 800})
+ {:width 1000 :height 1600})
 ```
 :::
 
@@ -5120,7 +5120,7 @@ Source: [Vega - Tree layout](https://vega.github.io/vega/examples/tree-layout/).
 ### Radial tree layout
 
 The same tree around a circle - depth as the radius, links curving along it, every leaf named (group names left
-out).
+out); 1200 x 1200, over the usual size, for the leaf names.
 
 Source: [Vega - Radial tree layout](https://vega.github.io/vega/examples/radial-tree-layout/). Data: Flare package and class hierarchy, vega-datasets 3.3.1 `flare.json` (https://cdn.jsdelivr.net/npm/vega-datasets@3.3.1/data/flare.json); licence: none listed - see vega-datasets (cite Vega as the source).
 
@@ -5129,7 +5129,7 @@ Source: [Vega - Radial tree layout](https://vega.github.io/vega/examples/radial-
 ```clojure
 (plot/render-image
  (plot/tree flare-tree {:circular true :mapping {:color #(str (:depth %))}})
- {:width 900 :height 900})
+ {:width 1200 :height 1200})
 ```
 :::
 
@@ -5392,8 +5392,9 @@ Source: [Vega - Density heatmaps](https://vega.github.io/vega/examples/density-h
 
 ### Beeswarm plot
 
-Les Misérables characters per group, packed without overlap - every group swarms across the whole height
-(`:position :overlay`; the original simulates forces).
+Les Misérables characters per group as round clusters: each point at the free spot nearest its group's position
+(beeswarm `:pack :around`; `:position :overlay` - every group over the whole height). The original simulates
+forces to the same effect.
 
 Source: [Vega - Beeswarm plot](https://vega.github.io/vega/examples/beeswarm-plot/). Data: Les Misérables character coappearance network, vega-datasets 3.3.1 `miserables.json` (https://cdn.jsdelivr.net/npm/vega-datasets@3.3.1/data/miserables.json); original: D. E. Knuth, The Stanford GraphBase: A Platform for Combinatorial Computing, Addison-Wesley, Reading, MA (1993).; licence: notspecified (vega-datasets `datapackage.json`).
 
@@ -5402,7 +5403,7 @@ Source: [Vega - Beeswarm plot](https://vega.github.io/vega/examples/beeswarm-plo
 ```clojure
 (plot/render-image
  {:data (map #(assoc % :g (parse-long (:group %))) miserables-nodes) :mapping {:x :g :color :group}
-  :charts [(chart/beeswarm {:size 14 :position :overlay})]
+  :charts [(chart/beeswarm {:size 12 :position :overlay :pack :around})]
   :scales {:x {:ticks (vec (range 11))} :color {:legend false}}
   :labels {:x "group" :y nil}}
  {:width 800 :height 350})
@@ -5456,27 +5457,57 @@ Source: [Vega - Calendar view](https://vega.github.io/vega/examples/calendar-vie
 
 ::: {.sourceClojure}
 ```clojure
-(mapv (fn [years]
-        (plot/render-image
-         {:data (filter #(<= (first years) (long (:year %)) (last years)) sp500-days)
-          :mapping {:x :week :y :day :color :change :facet-row #(str (:year %))}
-          :charts [(chart/tile)]
-          :scales {:y {:domain (subvec weekdays 0 5) :reverse true}
-                   :x {:domain [0.5 53.5] :nice false :ticks (vec (keys month-weeks)) :formatter #(month-weeks (m/round (double %)) "")}
-                   :color {:range [[197 27 125] [247 247 247] [77 146 33]] :midpoint 0 :domain [-0.06 0.06]
-                           :formatter #(format "%.0f%%" (* 100.0 (double %))) :title "change"}}
-          :theme {:facet {:gap 8} :text {:tick-label {:size 8}}}
-          :labels {:x nil :y nil}}
-         {:width 1000 :height 800}))
-      [(range 2000 2007) (range 2007 2014) (range 2014 2021)])
+(def calendar
+  "The calendar plot without its data (a year range's days are added per image)."
+  {:mapping {:x :week :y :day :color :change :facet-row #(str (:year %))}
+   :charts [(chart/tile)]
+   :scales {:y {:domain (subvec weekdays 0 5) :reverse true}
+            :x {:domain [0.5 53.5] :nice false :ticks (vec (keys month-weeks)) :formatter #(month-weeks (m/round (double %)) "")}
+            :color {:range [[197 27 125] [247 247 247] [77 146 33]] :midpoint 0 :domain [-0.06 0.06]
+                    :formatter #(format "%.0f%%" (* 100.0 (double %))) :title "change"}}
+   :theme {:facet {:gap 8} :text {:tick-label {:size 8}}}
+   :labels {:x nil :y nil}})
 ```
 :::
 
 
 
-```{=html}
-<div><p>[</p><div class="clay-sequential" style="margin-left:10%;width:110%;"><div class="clay-image"><p><img alt="" src="galleries.vega_files/image169.png" /></p></div><div class="clay-image"><p><img alt="" src="galleries.vega_files/image170.png" /></p></div><div class="clay-image"><p><img alt="" src="galleries.vega_files/image171.png" /></p></div></div><p>]</p></div>
+::: {.sourceClojure}
+```clojure
+(plot/render-image (assoc calendar :data (filter #(<= 2000 (long (:year %)) 2006) sp500-days)) {:width 1000 :height 800})
 ```
+:::
+
+
+::: {.clay-image}
+![](galleries.vega_files/image169.png)
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (assoc calendar :data (filter #(<= 2007 (long (:year %)) 2013) sp500-days)) {:width 1000 :height 800})
+```
+:::
+
+
+::: {.clay-image}
+![](galleries.vega_files/image170.png)
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (assoc calendar :data (filter #(<= 2014 (long (:year %)) 2020) sp500-days)) {:width 1000 :height 800})
+```
+:::
+
+
+::: {.clay-image}
+![](galleries.vega_files/image171.png)
+:::
 
 
 

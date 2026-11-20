@@ -240,13 +240,14 @@
 
 (defn- tree-labels
   "Text charts of the node names of a cartesian node-link tree (root on the left): leaves right of their node, groups
-  left of theirs (Vega `tree`); unnamed nodes get none."
+  left of theirs (Vega `tree`); unnamed nodes get none; room kept only where the names reach (`:reserve-room
+  :anchor`)."
   [nodes]
   (let [named (filterv #(some? (:name %)) nodes)
         [leaves groups] ((juxt filter remove) :leaf? named)
         text (fn [rows anchor dx]
                (chart/text {:data rows :mapping {:x :x :y :y :label #(str (:name %))} :anchor anchor :offset [dx 0]
-                            :size 9 :reserve-room true}))]
+                            :size 9 :reserve-room :anchor}))]
     (cond-> []
       (seq leaves) (conj (text leaves [:left :middle] 6))
       (seq groups) (conj (text groups [:right :middle] -6)))))
@@ -262,7 +263,7 @@
   their node, groups left), `:nodes?` (node points, default `true`), `:mapping` - node aesthetics (`:color`, `:size`,
   `:shape`; nodes have `:depth`, `:leaf?`, `:name` and their row's columns - e.g. `{:color #(str (:depth %))}`),
   `:node-style` (scatter options over `{:size 7 :color [70 130 180] :stroke-color :white :stroke-width 1}`),
-  `:link-style` (line options over `{:color [150 150 150] :width 1}`), `:labels` (hclust observation names),
+  `:link-style` (line options over `{:color [204 204 204] :width 0.75}` - light, as Vega's), `:labels` (hclust observation names),
   `:scales`, `:title`, `:theme`; no legend. Cartesian: the root on the left, depth growing right, the first child on
   top.
 
@@ -280,7 +281,7 @@
         {:keys [nodes] laid-links :links} (tree/node-link-layout t {:layout layout :links links :circular circular})
         max-depth (double (reduce max 0.0 (map :x nodes)))
         min-y (double (reduce min 0.0 (map :y nodes)))]
-    (cond-> {:charts (cond-> [(chart/line (merge {:color [150 150 150] :width 1} link-style
+    (cond-> {:charts (cond-> [(chart/line (merge {:color [204 204 204] :width 0.75} link-style
                                                  {:data laid-links :sort false :mapping {:x :x :y :y :group :id}}))]
                        nodes? (conj (chart/scatter (merge tree-node-defaults node-style
                                                           {:data nodes :mapping (merge {:x :x :y :y} mapping)})))

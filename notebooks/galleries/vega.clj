@@ -2875,8 +2875,8 @@
 ;; ### Tree layout
 
 ;; The Flare class hierarchy as a node-link tree - `plot/tree`: the tidy layout (nodes by depth, the root on the left),
-;; diagonal links, nodes coloured by depth, every node named (the original's canvas is 1600 px tall, so its leaf names
-;; don't overlap).
+;; light diagonal links, nodes coloured by depth, every node named. The image is 1000 x 1600 - over the book's usual
+;; 800 px, as the original's 1600 px canvas, so the 220 leaf names don't overlap.
 
 (nu/source-note {:source "Vega - Tree layout" :url (vg-url "tree-layout") :dataset :flare-vega})
 
@@ -2886,18 +2886,18 @@
 
 (plot/render-image
  (plot/tree flare-tree {:mapping {:color #(str (:depth %))}})
- {:width 900 :height 800})
+ {:width 1000 :height 1600})
 
 ;; ### Radial tree layout
 
 ;; The same tree around a circle - depth as the radius, links curving along it, every leaf named (group names left
-;; out).
+;; out); 1200 x 1200, over the usual size, for the leaf names.
 
 (nu/source-note {:source "Vega - Radial tree layout" :url (vg-url "radial-tree-layout") :dataset :flare-vega})
 
 (plot/render-image
  (plot/tree flare-tree {:circular true :mapping {:color #(str (:depth %))}})
- {:width 900 :height 900})
+ {:width 1200 :height 1200})
 
 ;; ### Treemap
 
@@ -3029,14 +3029,15 @@
 
 ;; ### Beeswarm plot
 
-;; Les Misérables characters per group, packed without overlap - every group swarms across the whole height
-;; (`:position :overlay`; the original simulates forces).
+;; Les Misérables characters per group as round clusters: each point at the free spot nearest its group's position
+;; (beeswarm `:pack :around`; `:position :overlay` - every group over the whole height). The original simulates
+;; forces to the same effect.
 
 (nu/source-note {:source "Vega - Beeswarm plot" :url (vg-url "beeswarm-plot") :dataset :miserables-nodes})
 
 (plot/render-image
  {:data (map #(assoc % :g (parse-long (:group %))) miserables-nodes) :mapping {:x :g :color :group}
-  :charts [(chart/beeswarm {:size 14 :position :overlay})]
+  :charts [(chart/beeswarm {:size 12 :position :overlay :pack :around})]
   :scales {:x {:ticks (vec (range 11))} :color {:legend false}}
   :labels {:x "group" :y nil}}
  {:width 800 :height 350})
@@ -3066,19 +3067,22 @@
     (into (sorted-map) (map (fn [mo] [(.get (LocalDate/of 2001 (int mo) 1) (.weekOfYear week-fields)) (month-names (dec mo))])
                             (range 1 13)))))
 
-(mapv (fn [years]
-        (plot/render-image
-         {:data (filter #(<= (first years) (long (:year %)) (last years)) sp500-days)
-          :mapping {:x :week :y :day :color :change :facet-row #(str (:year %))}
-          :charts [(chart/tile)]
-          :scales {:y {:domain (subvec weekdays 0 5) :reverse true}
-                   :x {:domain [0.5 53.5] :nice false :ticks (vec (keys month-weeks)) :formatter #(month-weeks (m/round (double %)) "")}
-                   :color {:range [[197 27 125] [247 247 247] [77 146 33]] :midpoint 0 :domain [-0.06 0.06]
-                           :formatter #(format "%.0f%%" (* 100.0 (double %))) :title "change"}}
-          :theme {:facet {:gap 8} :text {:tick-label {:size 8}}}
-          :labels {:x nil :y nil}}
-         {:width 1000 :height 800}))
-      [(range 2000 2007) (range 2007 2014) (range 2014 2021)])
+(def calendar
+  "The calendar plot without its data (a year range's days are added per image)."
+  {:mapping {:x :week :y :day :color :change :facet-row #(str (:year %))}
+   :charts [(chart/tile)]
+   :scales {:y {:domain (subvec weekdays 0 5) :reverse true}
+            :x {:domain [0.5 53.5] :nice false :ticks (vec (keys month-weeks)) :formatter #(month-weeks (m/round (double %)) "")}
+            :color {:range [[197 27 125] [247 247 247] [77 146 33]] :midpoint 0 :domain [-0.06 0.06]
+                    :formatter #(format "%.0f%%" (* 100.0 (double %))) :title "change"}}
+   :theme {:facet {:gap 8} :text {:tick-label {:size 8}}}
+   :labels {:x nil :y nil}})
+
+(plot/render-image (assoc calendar :data (filter #(<= 2000 (long (:year %)) 2006) sp500-days)) {:width 1000 :height 800})
+
+(plot/render-image (assoc calendar :data (filter #(<= 2007 (long (:year %)) 2013) sp500-days)) {:width 1000 :height 800})
+
+(plot/render-image (assoc calendar :data (filter #(<= 2014 (long (:year %)) 2020) sp500-days)) {:width 1000 :height 800})
 
 ;; ### Packed bubble chart
 
