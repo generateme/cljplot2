@@ -387,12 +387,11 @@
   option's default `defaults` (key -> value) is shown by a call without the option (the basic example)."
   [maps own-keys enums defaults]
   (let [set-keys (set (mapcat keys maps))
-        given (set (mapcat seq maps))
-        bare? (some #(empty? %) maps)]
+        given (set (mapcat seq maps))]
     {:options (vec (remove set-keys own-keys))
      :values (vec (for [[k vs] enums, v vs
                         :when (not (given [k v]))
-                        :when (not (and (= v (get defaults k)) (or bare? (some #(not (contains? % k)) maps))))]
+                        :when (not (and (= v (get defaults k)) (some #(not (contains? % k)) maps)))]
                     [k v]))}))
 
 (defn- chart-coverage-gaps

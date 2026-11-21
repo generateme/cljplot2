@@ -107,6 +107,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     "search-label": "Search"
   }
 }</script>
+<style>
+.data-table { width: fit-content; max-width: 100%; max-height: 15rem; overflow: auto; margin: 0 auto 1rem; }
+.data-table .table-responsive { overflow: visible; }
+.data-table table { font-size: 0.75rem; width: auto; margin: 0; }
+.data-table th, .data-table td { padding: 0.1rem 0.45rem !important; white-space: nowrap; }
+.data-table thead th { position: sticky; top: 0; background: var(--bs-body-bg, #fff); }
+</style>
 
 
 </head>
@@ -440,7 +447,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> mtcars </span>(nu/dataset <span class="at">:mtcars</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<div class="clay-table">
+<div class="data-table">
 <div class="table-responsive">
 <table class="table table-hover clay-table caption-top">
 <thead>
@@ -748,7 +755,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> stocks </span>(nu/dataset <span class="at">:stocks</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<div class="clay-table">
+<div class="data-table">
 <div class="table-responsive">
 <table class="table table-hover clay-table caption-top">
 <thead>
@@ -1166,7 +1173,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> wave </span>(<span class="kw">for</span> [t (<span class="kw">range</span> <span class="dv">40</span>)] {<span class="at">:t</span> t <span class="at">:v</span> (<span class="kw">+</span> <span class="fl">1.5</span> (Math/sin (<span class="kw">*</span> <span class="fl">0.25</span> t))) <span class="at">:w</span> (<span class="kw">+</span> <span class="dv">1</span> (<span class="kw">mod</span> t <span class="dv">10</span>))}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<div class="clay-table">
+<div class="data-table">
 <div class="table-responsive">
 <table class="table table-hover clay-table caption-top">
 <thead>
@@ -1384,7 +1391,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> spiral </span>(<span class="kw">for</span> [t (<span class="kw">range</span> <span class="dv">0</span> <span class="dv">12</span> <span class="fl">0.25</span>)] {<span class="at">:x</span> (<span class="kw">*</span> t (Math/cos t)) <span class="at">:y</span> (<span class="kw">*</span> t (Math/sin t)) <span class="at">:v</span> (<span class="kw">when-not</span> (<span class="kw">&lt;</span> <span class="dv">5</span> t <span class="dv">6</span>) t)}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<div class="clay-table">
+<div class="data-table">
 <div class="table-responsive">
 <table class="table table-hover clay-table caption-top">
 <thead>
@@ -1523,7 +1530,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> streams </span>(<span class="kw">for</span> [series [<span class="st">"a"</span> <span class="st">"b"</span> <span class="st">"c"</span>] t (<span class="kw">range</span> <span class="dv">25</span>)]</span>
 <span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>               {<span class="at">:series</span> series <span class="at">:t</span> t <span class="at">:v</span> (<span class="kw">+</span> <span class="fl">1.5</span> (Math/sin (<span class="kw">+</span> (<span class="kw">*</span> <span class="fl">0.3</span> t) (<span class="kw">*</span> <span class="dv">2</span> (<span class="kw">count</span> series)) (<span class="kw">int</span> (<span class="kw">first</span> series)))))}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<div class="clay-table">
+<div class="data-table">
 <div class="table-responsive">
 <table class="table table-hover clay-table caption-top">
 <thead>
@@ -1724,7 +1731,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> path-points </span>[{<span class="at">:x</span> <span class="dv">0</span> <span class="at">:y</span> <span class="dv">0</span>} {<span class="at">:x</span> <span class="dv">1</span> <span class="at">:y</span> <span class="dv">2</span>} {<span class="at">:x</span> <span class="dv">2</span> <span class="at">:y</span> <span class="dv">1</span>} {<span class="at">:x</span> <span class="dv">3</span> <span class="at">:y</span> <span class="dv">3</span>}])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<div class="clay-table">
+<div class="data-table">
 <div class="table-responsive">
 <table class="table table-hover clay-table caption-top">
 <thead>
@@ -1848,7 +1855,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> moves </span>[{<span class="at">:from</span> <span class="st">"a"</span> <span class="at">:x</span> <span class="dv">1</span> <span class="at">:y</span> <span class="dv">1</span> <span class="at">:x2</span> <span class="dv">3</span> <span class="at">:y2</span> <span class="dv">2</span>} {<span class="at">:from</span> <span class="st">"b"</span> <span class="at">:x</span> <span class="dv">2</span> <span class="at">:y</span> <span class="dv">4</span> <span class="at">:x2</span> <span class="dv">4</span> <span class="at">:y2</span> <span class="dv">3</span>} {<span class="at">:from</span> <span class="st">"c"</span> <span class="at">:x</span> <span class="dv">3</span> <span class="at">:y</span> <span class="fl">0.5</span> <span class="at">:x2</span> <span class="fl">1.5</span> <span class="at">:y2</span> <span class="dv">3</span>}])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<div class="clay-table">
+<div class="data-table">
 <div class="table-responsive">
 <table class="table table-hover clay-table caption-top">
 <thead>
@@ -2061,7 +2068,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>                      {<span class="at">:shape</span> <span class="st">"hexagon"</span> <span class="at">:x</span> (Math/cos (Math/toRadians a)) <span class="at">:y</span> (Math/sin (Math/toRadians a))})</span>
 <span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>                    (<span class="kw">for</span> [[x y] [[<span class="fl">1.5</span> -<span class="dv">1</span>] [<span class="dv">3</span> -<span class="dv">1</span>] [<span class="fl">2.25</span> <span class="dv">1</span>]]] {<span class="at">:shape</span> <span class="st">"triangle"</span> <span class="at">:x</span> x <span class="at">:y</span> y})))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<div class="clay-table">
+<div class="data-table">
 <div class="table-responsive">
 <table class="table table-hover clay-table caption-top">
 <thead>

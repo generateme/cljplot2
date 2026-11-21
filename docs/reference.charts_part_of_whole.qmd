@@ -1,6 +1,19 @@
 ---
 format:
-  html: {toc: true, toc-location: right, toc-depth: 4, theme: cosmo}
+  html:
+    toc: true
+    toc-location: right
+    toc-depth: 4
+    theme: cosmo
+    include-in-header:
+      text: |-
+        <style>
+        .data-table { width: fit-content; max-width: 100%; max-height: 15rem; overflow: auto; margin: 0 auto 1rem; }
+        .data-table .table-responsive { overflow: visible; }
+        .data-table table { font-size: 0.75rem; width: auto; margin: 0; }
+        .data-table th, .data-table td { padding: 0.1rem 0.45rem !important; white-space: nowrap; }
+        .data-table thead th { position: sticky; top: 0; background: var(--bs-body-bg, #fff); }
+        </style>
 code-block-background: true
 
 ---
@@ -43,13 +56,10 @@ its own options and the shared option groups it takes (documented once in the Sh
 :::
 
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>dept</th><th>team</th><th>cost</th></tr></thead><tbody><tr><td>science</td><td>physics</td><td>40</td></tr><tr><td>science</td><td>biology</td><td>25</td></tr><tr><td>science</td><td>chemistry</td><td>18</td></tr><tr><td>arts</td><td>music</td><td>15</td></tr><tr><td>arts</td><td>theatre</td><td>10</td></tr><tr><td>arts</td><td>painting</td><td>7</td></tr><tr><td>sport</td><td>football</td><td>20</td></tr><tr><td>sport</td><td>tennis</td><td>8</td></tr></tbody></table>
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>dept</th><th>team</th><th>cost</th></tr></thead><tbody><tr><td>science</td><td>physics</td><td>40</td></tr><tr><td>science</td><td>biology</td><td>25</td></tr><tr><td>science</td><td>chemistry</td><td>18</td></tr><tr><td>arts</td><td>music</td><td>15</td></tr><tr><td>arts</td><td>theatre</td><td>10</td></tr><tr><td>arts</td><td>painting</td><td>7</td></tr><tr><td>sport</td><td>football</td><td>20</td></tr><tr><td>sport</td><td>tennis</td><td>8</td></tr></tbody></table></div>
 ```
-
-:::
 
 
 
@@ -338,13 +348,10 @@ A grid of cells (10 × 10 by default), each category taking a share of the cells
 :::
 
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>source</th><th>share</th></tr></thead><tbody><tr><td>coal</td><td>35</td></tr><tr><td>gas</td><td>23</td></tr><tr><td>nuclear</td><td>10</td></tr><tr><td>hydro</td><td>15</td></tr><tr><td>wind and solar</td><td>17</td></tr></tbody></table>
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>source</th><th>share</th></tr></thead><tbody><tr><td>coal</td><td>35</td></tr><tr><td>gas</td><td>23</td></tr><tr><td>nuclear</td><td>10</td></tr><tr><td>hydro</td><td>15</td></tr><tr><td>wind and solar</td><td>17</td></tr></tbody></table></div>
 ```
-
-:::
 
 
 
@@ -431,13 +438,10 @@ an item and a set it belongs to.
 :::
 
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>club</th><th>member</th></tr></thead><tbody><tr><td>chess</td><td>p0</td></tr><tr><td>chess</td><td>p1</td></tr><tr><td>chess</td><td>p2</td></tr><tr><td>chess</td><td>p3</td></tr><tr><td>chess</td><td>p4</td></tr><tr><td>chess</td><td>p5</td></tr><tr><td>chess</td><td>p6</td></tr><tr><td>chess</td><td>p7</td></tr><tr><td>chess</td><td>p8</td></tr><tr><td>chess</td><td>p9</td></tr><tr><td>chess</td><td>p10</td></tr><tr><td>chess</td><td>p11</td></tr><tr><td>running</td><td>p8</td></tr><tr><td>running</td><td>p9</td></tr><tr><td>running</td><td>p10</td></tr><tr><td>running</td><td>p11</td></tr><tr><td>running</td><td>p12</td></tr><tr><td>running</td><td>p13</td></tr><tr><td>choir</td><td>p0</td></tr><tr><td>choir</td><td>p3</td></tr></tbody></table>
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>club</th><th>member</th></tr></thead><tbody><tr><td>chess</td><td>p0</td></tr><tr><td>chess</td><td>p1</td></tr><tr><td>chess</td><td>p2</td></tr><tr><td>chess</td><td>p3</td></tr><tr><td>chess</td><td>p4</td></tr><tr><td>chess</td><td>p5</td></tr><tr><td>chess</td><td>p6</td></tr><tr><td>chess</td><td>p7</td></tr><tr><td>chess</td><td>p8</td></tr><tr><td>chess</td><td>p9</td></tr><tr><td>chess</td><td>p10</td></tr><tr><td>chess</td><td>p11</td></tr><tr><td>running</td><td>p8</td></tr><tr><td>running</td><td>p9</td></tr><tr><td>running</td><td>p10</td></tr><tr><td>running</td><td>p11</td></tr><tr><td>running</td><td>p12</td></tr><tr><td>running</td><td>p13</td></tr><tr><td>choir</td><td>p0</td></tr><tr><td>choir</td><td>p3</td></tr></tbody></table></div>
 ```
-
-:::
 
 
 

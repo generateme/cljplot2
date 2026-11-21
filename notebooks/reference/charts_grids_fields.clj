@@ -274,7 +274,7 @@
                                  {:columns 2 :widths [1 1.25]})
                    {:width 1000 :height 380})
 
-;; ### Field sources
+;; ### Contour sources
 
 ;; The same sources as `field`: a function over a domain (lines on a coarse grid are angular), interpolated gridded
 ;; values and a density with its own bandwidth:

@@ -151,12 +151,17 @@
                                                     {:width 200 :height 150})))))
 
 (deftest data-table-test
-  (let [table (fn [data] (nu/data-table data))]
-    (testing "rows: a column per key (first appearance), cells as text; the code hidden"
+  (let [table (fn [data] (nth (nu/data-table data) 2))]
+    (testing "a table in a box of the data-table class (compact style), the code hidden"
+      (let [box (nu/data-table [{:a 1}])]
+        (is (= :kind/hiccup (:kindly/kind (meta box))))
+        (is (:kindly/hide-code (meta box)))
+        (is (= [:div {:class "data-table"}] (subvec box 0 2)))
+        (is (= :kind/table (:kindly/kind (meta (nth box 2)))))))
+    (testing "rows: a column per key (first appearance), cells as text"
       (let [t (table [{:a 1 :b "x"} {:a 2 :c (java.time.LocalDate/of 2024 1 2)}])]
         (is (= ["a" "b" "c"] (:column-names t)))
-        (is (= [["1" "x" ""] ["2" "" "2024-01-02"]] (:row-vectors t)) "a missing value - an empty cell")
-        (is (:kindly/hide-code (meta t)))))
+        (is (= [["1" "x" ""] ["2" "" "2024-01-02"]] (:row-vectors t)) "a missing value - an empty cell")))
     (testing "columns become rows"
       (is (= [["0" "1"] ["1" "2"]] (:row-vectors (table {:t [0 1] :v [1 2]})))))
     (testing "boundary: at most 20 rows; exactly one row"
@@ -172,7 +177,7 @@
           text (str (clojure.string/join "," header) "\n" (clojure.string/join "," (range 12)) "\n")
           rows (nu/parse-csv text)]
       (is (= (map keyword header) (keys (first rows))))
-      (is (= ["c0" "c1"] (take 2 (:column-names (nu/data-table rows)))))))
+      (is (= ["c0" "c1"] (take 2 (:column-names (nth (nu/data-table rows) 2)))))))
   (testing "boundary: one column; a dataset of the book (mtcars - model first)"
     (is (= [:a] (keys (first (nu/parse-csv "a\n1\n")))))
     (is (= :model (first (keys (first (nu/dataset :mtcars))))))))

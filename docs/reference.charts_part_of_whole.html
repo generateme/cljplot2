@@ -107,6 +107,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     "search-label": "Search"
   }
 }</script>
+<style>
+.data-table { width: fit-content; max-width: 100%; max-height: 15rem; overflow: auto; margin: 0 auto 1rem; }
+.data-table .table-responsive { overflow: visible; }
+.data-table table { font-size: 0.75rem; width: auto; margin: 0; }
+.data-table th, .data-table td { padding: 0.1rem 0.45rem !important; white-space: nowrap; }
+.data-table thead th { position: sticky; top: 0; background: var(--bs-body-bg, #fff); }
+</style>
 
 
 </head>
@@ -436,7 +443,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>             {<span class="at">:dept</span> <span class="st">"arts"</span> <span class="at">:team</span> <span class="st">"theatre"</span> <span class="at">:cost</span> <span class="dv">10</span>} {<span class="at">:dept</span> <span class="st">"arts"</span> <span class="at">:team</span> <span class="st">"painting"</span> <span class="at">:cost</span> <span class="dv">7</span>}</span>
 <span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>             {<span class="at">:dept</span> <span class="st">"sport"</span> <span class="at">:team</span> <span class="st">"football"</span> <span class="at">:cost</span> <span class="dv">20</span>} {<span class="at">:dept</span> <span class="st">"sport"</span> <span class="at">:team</span> <span class="st">"tennis"</span> <span class="at">:cost</span> <span class="dv">8</span>}])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<div class="clay-table">
+<div class="data-table">
 <div class="table-responsive">
 <table class="table table-hover clay-table caption-top">
 <thead>
@@ -908,7 +915,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> energy-mix </span>[{<span class="at">:source</span> <span class="st">"coal"</span> <span class="at">:share</span> <span class="dv">35</span>} {<span class="at">:source</span> <span class="st">"gas"</span> <span class="at">:share</span> <span class="dv">23</span>} {<span class="at">:source</span> <span class="st">"nuclear"</span> <span class="at">:share</span> <span class="dv">10</span>}</span>
 <span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>                 {<span class="at">:source</span> <span class="st">"hydro"</span> <span class="at">:share</span> <span class="dv">15</span>} {<span class="at">:source</span> <span class="st">"wind and solar"</span> <span class="at">:share</span> <span class="dv">17</span>}])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<div class="clay-table">
+<div class="data-table">
 <div class="table-responsive">
 <table class="table table-hover clay-table caption-top">
 <thead>
@@ -1076,7 +1083,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>                         (<span class="kw">for</span> [i (<span class="kw">range</span> <span class="dv">8</span> <span class="dv">14</span>)] {<span class="at">:club</span> <span class="st">"running"</span> <span class="at">:member</span> (<span class="kw">str</span> <span class="st">"p"</span> i)})</span>
 <span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>                         (<span class="kw">for</span> [i (<span class="kw">range</span> <span class="dv">0</span> <span class="dv">24</span> <span class="dv">3</span>)] {<span class="at">:club</span> <span class="st">"choir"</span> <span class="at">:member</span> (<span class="kw">str</span> <span class="st">"p"</span> i)})))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<div class="clay-table">
+<div class="data-table">
 <div class="table-responsive">
 <table class="table table-hover clay-table caption-top">
 <thead>

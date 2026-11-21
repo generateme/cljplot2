@@ -1,6 +1,19 @@
 ---
 format:
-  html: {toc: true, toc-location: right, toc-depth: 4, theme: cosmo}
+  html:
+    toc: true
+    toc-location: right
+    toc-depth: 4
+    theme: cosmo
+    include-in-header:
+      text: |-
+        <style>
+        .data-table { width: fit-content; max-width: 100%; max-height: 15rem; overflow: auto; margin: 0 auto 1rem; }
+        .data-table .table-responsive { overflow: visible; }
+        .data-table table { font-size: 0.75rem; width: auto; margin: 0; }
+        .data-table th, .data-table td { padding: 0.1rem 0.45rem !important; white-space: nowrap; }
+        .data-table thead th { position: sticky; top: 0; background: var(--bs-body-bg, #fff); }
+        </style>
 code-block-background: true
 
 ---
@@ -44,13 +57,10 @@ Data: Motor Trend car road tests (1974), R datasets package `mtcars` (Henderson 
 :::
 
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>model</th><th>mpg</th><th>cyl</th><th>disp</th><th>hp</th><th>drat</th><th>wt</th><th>qsec</th><th>vs</th><th>am</th><th>gear</th><th>carb</th></tr></thead><tbody><tr><td>Mazda RX4</td><td>21</td><td>6</td><td>160</td><td>110</td><td>3.9</td><td>2.62</td><td>16.46</td><td>0</td><td>1</td><td>4</td><td>4</td></tr><tr><td>Mazda RX4 Wag</td><td>21</td><td>6</td><td>160</td><td>110</td><td>3.9</td><td>2.875</td><td>17.02</td><td>0</td><td>1</td><td>4</td><td>4</td></tr><tr><td>Datsun 710</td><td>22.8</td><td>4</td><td>108</td><td>93</td><td>3.85</td><td>2.32</td><td>18.61</td><td>1</td><td>1</td><td>4</td><td>1</td></tr><tr><td>Hornet 4 Drive</td><td>21.4</td><td>6</td><td>258</td><td>110</td><td>3.08</td><td>3.215</td><td>19.44</td><td>1</td><td>0</td><td>3</td><td>1</td></tr><tr><td>Hornet Sportabout</td><td>18.7</td><td>8</td><td>360</td><td>175</td><td>3.15</td><td>3.44</td><td>17.02</td><td>0</td><td>0</td><td>3</td><td>2</td></tr><tr><td>Valiant</td><td>18.1</td><td>6</td><td>225</td><td>105</td><td>2.76</td><td>3.46</td><td>20.22</td><td>1</td><td>0</td><td>3</td><td>1</td></tr><tr><td>Duster 360</td><td>14.3</td><td>8</td><td>360</td><td>245</td><td>3.21</td><td>3.57</td><td>15.84</td><td>0</td><td>0</td><td>3</td><td>4</td></tr><tr><td>Merc 240D</td><td>24.4</td><td>4</td><td>146.7</td><td>62</td><td>3.69</td><td>3.19</td><td>20</td><td>1</td><td>0</td><td>4</td><td>2</td></tr><tr><td>Merc 230</td><td>22.8</td><td>4</td><td>140.8</td><td>95</td><td>3.92</td><td>3.15</td><td>22.9</td><td>1</td><td>0</td><td>4</td><td>2</td></tr><tr><td>Merc 280</td><td>19.2</td><td>6</td><td>167.6</td><td>123</td><td>3.92</td><td>3.44</td><td>18.3</td><td>1</td><td>0</td><td>4</td><td>4</td></tr><tr><td>Merc 280C</td><td>17.8</td><td>6</td><td>167.6</td><td>123</td><td>3.92</td><td>3.44</td><td>18.9</td><td>1</td><td>0</td><td>4</td><td>4</td></tr><tr><td>Merc 450SE</td><td>16.4</td><td>8</td><td>275.8</td><td>180</td><td>3.07</td><td>4.07</td><td>17.4</td><td>0</td><td>0</td><td>3</td><td>3</td></tr><tr><td>Merc 450SL</td><td>17.3</td><td>8</td><td>275.8</td><td>180</td><td>3.07</td><td>3.73</td><td>17.6</td><td>0</td><td>0</td><td>3</td><td>3</td></tr><tr><td>Merc 450SLC</td><td>15.2</td><td>8</td><td>275.8</td><td>180</td><td>3.07</td><td>3.78</td><td>18</td><td>0</td><td>0</td><td>3</td><td>3</td></tr><tr><td>Cadillac Fleetwood</td><td>10.4</td><td>8</td><td>472</td><td>205</td><td>2.93</td><td>5.25</td><td>17.98</td><td>0</td><td>0</td><td>3</td><td>4</td></tr><tr><td>Lincoln Continental</td><td>10.4</td><td>8</td><td>460</td><td>215</td><td>3</td><td>5.424</td><td>17.82</td><td>0</td><td>0</td><td>3</td><td>4</td></tr><tr><td>Chrysler Imperial</td><td>14.7</td><td>8</td><td>440</td><td>230</td><td>3.23</td><td>5.345</td><td>17.42</td><td>0</td><td>0</td><td>3</td><td>4</td></tr><tr><td>Fiat 128</td><td>32.4</td><td>4</td><td>78.7</td><td>66</td><td>4.08</td><td>2.2</td><td>19.47</td><td>1</td><td>1</td><td>4</td><td>1</td></tr><tr><td>Honda Civic</td><td>30.4</td><td>4</td><td>75.7</td><td>52</td><td>4.93</td><td>1.615</td><td>18.52</td><td>1</td><td>1</td><td>4</td><td>2</td></tr><tr><td>Toyota Corolla</td><td>33.9</td><td>4</td><td>71.1</td><td>65</td><td>4.22</td><td>1.835</td><td>19.9</td><td>1</td><td>1</td><td>4</td><td>1</td></tr></tbody></table>
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>model</th><th>mpg</th><th>cyl</th><th>disp</th><th>hp</th><th>drat</th><th>wt</th><th>qsec</th><th>vs</th><th>am</th><th>gear</th><th>carb</th></tr></thead><tbody><tr><td>Mazda RX4</td><td>21</td><td>6</td><td>160</td><td>110</td><td>3.9</td><td>2.62</td><td>16.46</td><td>0</td><td>1</td><td>4</td><td>4</td></tr><tr><td>Mazda RX4 Wag</td><td>21</td><td>6</td><td>160</td><td>110</td><td>3.9</td><td>2.875</td><td>17.02</td><td>0</td><td>1</td><td>4</td><td>4</td></tr><tr><td>Datsun 710</td><td>22.8</td><td>4</td><td>108</td><td>93</td><td>3.85</td><td>2.32</td><td>18.61</td><td>1</td><td>1</td><td>4</td><td>1</td></tr><tr><td>Hornet 4 Drive</td><td>21.4</td><td>6</td><td>258</td><td>110</td><td>3.08</td><td>3.215</td><td>19.44</td><td>1</td><td>0</td><td>3</td><td>1</td></tr><tr><td>Hornet Sportabout</td><td>18.7</td><td>8</td><td>360</td><td>175</td><td>3.15</td><td>3.44</td><td>17.02</td><td>0</td><td>0</td><td>3</td><td>2</td></tr><tr><td>Valiant</td><td>18.1</td><td>6</td><td>225</td><td>105</td><td>2.76</td><td>3.46</td><td>20.22</td><td>1</td><td>0</td><td>3</td><td>1</td></tr><tr><td>Duster 360</td><td>14.3</td><td>8</td><td>360</td><td>245</td><td>3.21</td><td>3.57</td><td>15.84</td><td>0</td><td>0</td><td>3</td><td>4</td></tr><tr><td>Merc 240D</td><td>24.4</td><td>4</td><td>146.7</td><td>62</td><td>3.69</td><td>3.19</td><td>20</td><td>1</td><td>0</td><td>4</td><td>2</td></tr><tr><td>Merc 230</td><td>22.8</td><td>4</td><td>140.8</td><td>95</td><td>3.92</td><td>3.15</td><td>22.9</td><td>1</td><td>0</td><td>4</td><td>2</td></tr><tr><td>Merc 280</td><td>19.2</td><td>6</td><td>167.6</td><td>123</td><td>3.92</td><td>3.44</td><td>18.3</td><td>1</td><td>0</td><td>4</td><td>4</td></tr><tr><td>Merc 280C</td><td>17.8</td><td>6</td><td>167.6</td><td>123</td><td>3.92</td><td>3.44</td><td>18.9</td><td>1</td><td>0</td><td>4</td><td>4</td></tr><tr><td>Merc 450SE</td><td>16.4</td><td>8</td><td>275.8</td><td>180</td><td>3.07</td><td>4.07</td><td>17.4</td><td>0</td><td>0</td><td>3</td><td>3</td></tr><tr><td>Merc 450SL</td><td>17.3</td><td>8</td><td>275.8</td><td>180</td><td>3.07</td><td>3.73</td><td>17.6</td><td>0</td><td>0</td><td>3</td><td>3</td></tr><tr><td>Merc 450SLC</td><td>15.2</td><td>8</td><td>275.8</td><td>180</td><td>3.07</td><td>3.78</td><td>18</td><td>0</td><td>0</td><td>3</td><td>3</td></tr><tr><td>Cadillac Fleetwood</td><td>10.4</td><td>8</td><td>472</td><td>205</td><td>2.93</td><td>5.25</td><td>17.98</td><td>0</td><td>0</td><td>3</td><td>4</td></tr><tr><td>Lincoln Continental</td><td>10.4</td><td>8</td><td>460</td><td>215</td><td>3</td><td>5.424</td><td>17.82</td><td>0</td><td>0</td><td>3</td><td>4</td></tr><tr><td>Chrysler Imperial</td><td>14.7</td><td>8</td><td>440</td><td>230</td><td>3.23</td><td>5.345</td><td>17.42</td><td>0</td><td>0</td><td>3</td><td>4</td></tr><tr><td>Fiat 128</td><td>32.4</td><td>4</td><td>78.7</td><td>66</td><td>4.08</td><td>2.2</td><td>19.47</td><td>1</td><td>1</td><td>4</td><td>1</td></tr><tr><td>Honda Civic</td><td>30.4</td><td>4</td><td>75.7</td><td>52</td><td>4.93</td><td>1.615</td><td>18.52</td><td>1</td><td>1</td><td>4</td><td>2</td></tr><tr><td>Toyota Corolla</td><td>33.9</td><td>4</td><td>71.1</td><td>65</td><td>4.22</td><td>1.835</td><td>19.9</td><td>1</td><td>1</td><td>4</td><td>1</td></tr></tbody></table></div>
 ```
-
-:::
 
 
 Data: Monthly stock prices for five companies, vega-datasets 3.3.1 `stocks.csv` (https://cdn.jsdelivr.net/npm/vega-datasets@3.3.1/data/stocks.csv); licence: none listed - see vega-datasets (cite Vega as the source).
@@ -63,13 +73,10 @@ Data: Monthly stock prices for five companies, vega-datasets 3.3.1 `stocks.csv` 
 :::
 
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>symbol</th><th>date</th><th>price</th></tr></thead><tbody><tr><td>MSFT</td><td>2000-01-01</td><td>39.81</td></tr><tr><td>MSFT</td><td>2000-02-01</td><td>36.35</td></tr><tr><td>MSFT</td><td>2000-03-01</td><td>43.22</td></tr><tr><td>MSFT</td><td>2000-04-01</td><td>28.37</td></tr><tr><td>MSFT</td><td>2000-05-01</td><td>25.45</td></tr><tr><td>MSFT</td><td>2000-06-01</td><td>32.54</td></tr><tr><td>MSFT</td><td>2000-07-01</td><td>28.4</td></tr><tr><td>MSFT</td><td>2000-08-01</td><td>28.4</td></tr><tr><td>MSFT</td><td>2000-09-01</td><td>24.53</td></tr><tr><td>MSFT</td><td>2000-10-01</td><td>28.02</td></tr><tr><td>MSFT</td><td>2000-11-01</td><td>23.34</td></tr><tr><td>MSFT</td><td>2000-12-01</td><td>17.65</td></tr><tr><td>MSFT</td><td>2001-01-01</td><td>24.84</td></tr><tr><td>MSFT</td><td>2001-02-01</td><td>24</td></tr><tr><td>MSFT</td><td>2001-03-01</td><td>22.25</td></tr><tr><td>MSFT</td><td>2001-04-01</td><td>27.56</td></tr><tr><td>MSFT</td><td>2001-05-01</td><td>28.14</td></tr><tr><td>MSFT</td><td>2001-06-01</td><td>29.7</td></tr><tr><td>MSFT</td><td>2001-07-01</td><td>26.93</td></tr><tr><td>MSFT</td><td>2001-08-01</td><td>23.21</td></tr></tbody></table>
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>symbol</th><th>date</th><th>price</th></tr></thead><tbody><tr><td>MSFT</td><td>2000-01-01</td><td>39.81</td></tr><tr><td>MSFT</td><td>2000-02-01</td><td>36.35</td></tr><tr><td>MSFT</td><td>2000-03-01</td><td>43.22</td></tr><tr><td>MSFT</td><td>2000-04-01</td><td>28.37</td></tr><tr><td>MSFT</td><td>2000-05-01</td><td>25.45</td></tr><tr><td>MSFT</td><td>2000-06-01</td><td>32.54</td></tr><tr><td>MSFT</td><td>2000-07-01</td><td>28.4</td></tr><tr><td>MSFT</td><td>2000-08-01</td><td>28.4</td></tr><tr><td>MSFT</td><td>2000-09-01</td><td>24.53</td></tr><tr><td>MSFT</td><td>2000-10-01</td><td>28.02</td></tr><tr><td>MSFT</td><td>2000-11-01</td><td>23.34</td></tr><tr><td>MSFT</td><td>2000-12-01</td><td>17.65</td></tr><tr><td>MSFT</td><td>2001-01-01</td><td>24.84</td></tr><tr><td>MSFT</td><td>2001-02-01</td><td>24</td></tr><tr><td>MSFT</td><td>2001-03-01</td><td>22.25</td></tr><tr><td>MSFT</td><td>2001-04-01</td><td>27.56</td></tr><tr><td>MSFT</td><td>2001-05-01</td><td>28.14</td></tr><tr><td>MSFT</td><td>2001-06-01</td><td>29.7</td></tr><tr><td>MSFT</td><td>2001-07-01</td><td>26.93</td></tr><tr><td>MSFT</td><td>2001-08-01</td><td>23.21</td></tr></tbody></table></div>
 ```
-
-:::
 
 
 
@@ -225,13 +232,10 @@ follows a mapped `:size`:
 :::
 
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>t</th><th>v</th><th>w</th></tr></thead><tbody><tr><td>0</td><td>1.5</td><td>1</td></tr><tr><td>1</td><td>1.747403959254523</td><td>2</td></tr><tr><td>2</td><td>1.979425538604203</td><td>3</td></tr><tr><td>3</td><td>2.181638760023334</td><td>4</td></tr><tr><td>4</td><td>2.3414709848078967</td><td>5</td></tr><tr><td>5</td><td>2.448984619355586</td><td>6</td></tr><tr><td>6</td><td>2.4974949866040546</td><td>7</td></tr><tr><td>7</td><td>2.483985946873937</td><td>8</td></tr><tr><td>8</td><td>2.409297426825682</td><td>9</td></tr><tr><td>9</td><td>2.278073196887921</td><td>10</td></tr><tr><td>10</td><td>2.0984721441039564</td><td>1</td></tr><tr><td>11</td><td>1.8816609920523317</td><td>2</td></tr><tr><td>12</td><td>1.6411200080598671</td><td>3</td></tr><tr><td>13</td><td>1.3918048654698916</td><td>4</td></tr><tr><td>14</td><td>1.14921677231038</td><td>5</td></tr><tr><td>15</td><td>0.9284386812576563</td><td>6</td></tr><tr><td>16</td><td>0.7431975046920718</td><td>7</td></tr><tr><td>17</td><td>0.6050106417714165</td><td>8</td></tr><tr><td>18</td><td>0.522469882334903</td><td>9</td></tr><tr><td>19</td><td>0.500707211024622</td><td>10</td></tr></tbody></table>
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>t</th><th>v</th><th>w</th></tr></thead><tbody><tr><td>0</td><td>1.5</td><td>1</td></tr><tr><td>1</td><td>1.747403959254523</td><td>2</td></tr><tr><td>2</td><td>1.979425538604203</td><td>3</td></tr><tr><td>3</td><td>2.181638760023334</td><td>4</td></tr><tr><td>4</td><td>2.3414709848078967</td><td>5</td></tr><tr><td>5</td><td>2.448984619355586</td><td>6</td></tr><tr><td>6</td><td>2.4974949866040546</td><td>7</td></tr><tr><td>7</td><td>2.483985946873937</td><td>8</td></tr><tr><td>8</td><td>2.409297426825682</td><td>9</td></tr><tr><td>9</td><td>2.278073196887921</td><td>10</td></tr><tr><td>10</td><td>2.0984721441039564</td><td>1</td></tr><tr><td>11</td><td>1.8816609920523317</td><td>2</td></tr><tr><td>12</td><td>1.6411200080598671</td><td>3</td></tr><tr><td>13</td><td>1.3918048654698916</td><td>4</td></tr><tr><td>14</td><td>1.14921677231038</td><td>5</td></tr><tr><td>15</td><td>0.9284386812576563</td><td>6</td></tr><tr><td>16</td><td>0.7431975046920718</td><td>7</td></tr><tr><td>17</td><td>0.6050106417714165</td><td>8</td></tr><tr><td>18</td><td>0.522469882334903</td><td>9</td></tr><tr><td>19</td><td>0.500707211024622</td><td>10</td></tr></tbody></table></div>
 ```
-
-:::
 
 
 
@@ -304,13 +308,10 @@ groups combine (the Layering and position chapter shows `:stack` and the streamg
 :::
 
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>x</th><th>y</th><th>v</th></tr></thead><tbody><tr><td>0.0</td><td>0.0</td><td>0</td></tr><tr><td>0.24222810542766118</td><td>0.061850989813630734</td><td>0.25</td></tr><tr><td>0.4387912809451864</td><td>0.2397127693021015</td><td>0.5</td></tr><tr><td>0.5487666516553656</td><td>0.5112290700175006</td><td>0.75</td></tr><tr><td>0.5403023058681398</td><td>0.8414709848078965</td><td>1.0</td></tr><tr><td>0.3941529529940858</td><td>1.1862307741944829</td><td>1.25</td></tr><tr><td>0.10610580250155435</td><td>1.4962424799060816</td><td>1.5</td></tr><tr><td>-0.31193059738661116</td><td>1.7219754070293896</td><td>1.75</td></tr><tr><td>-0.8322936730942848</td><td>1.8185948536513634</td><td>2.0</td></tr><tr><td>-1.4133906511261631</td><td>1.7506646929978227</td><td>2.25</td></tr><tr><td>-2.002859038867334</td><td>1.496180360259891</td><td>2.5</td></tr><tr><td>-2.541831541239275</td><td>1.0495677281439122</td><td>2.75</td></tr><tr><td>-2.9699774898013365</td><td>0.4233600241796016</td><td>3.0</td></tr><tr><td>-3.2309214472617755</td><td>-0.3516341872228522</td><td>3.25</td></tr><tr><td>-3.277598405517787</td><td>-1.2277412969136694</td><td>3.5</td></tr><tr><td>-3.077097590023353</td><td>-2.143354945283789</td><td>3.75</td></tr><tr><td>-2.6145744834544478</td><td>-3.027209981231713</td><td>4.0</td></tr><tr><td>-1.8958718321336194</td><td>-3.80370477247148</td><td>4.25</td></tr><tr><td>-0.9485810974385086</td><td>-4.3988855294929365</td><td>4.5</td></tr><tr><td>0.17861022621788863</td><td>-4.746640747633045</td><td>4.75</td></tr></tbody></table>
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>x</th><th>y</th><th>v</th></tr></thead><tbody><tr><td>0.0</td><td>0.0</td><td>0</td></tr><tr><td>0.24222810542766118</td><td>0.061850989813630734</td><td>0.25</td></tr><tr><td>0.4387912809451864</td><td>0.2397127693021015</td><td>0.5</td></tr><tr><td>0.5487666516553656</td><td>0.5112290700175006</td><td>0.75</td></tr><tr><td>0.5403023058681398</td><td>0.8414709848078965</td><td>1.0</td></tr><tr><td>0.3941529529940858</td><td>1.1862307741944829</td><td>1.25</td></tr><tr><td>0.10610580250155435</td><td>1.4962424799060816</td><td>1.5</td></tr><tr><td>-0.31193059738661116</td><td>1.7219754070293896</td><td>1.75</td></tr><tr><td>-0.8322936730942848</td><td>1.8185948536513634</td><td>2.0</td></tr><tr><td>-1.4133906511261631</td><td>1.7506646929978227</td><td>2.25</td></tr><tr><td>-2.002859038867334</td><td>1.496180360259891</td><td>2.5</td></tr><tr><td>-2.541831541239275</td><td>1.0495677281439122</td><td>2.75</td></tr><tr><td>-2.9699774898013365</td><td>0.4233600241796016</td><td>3.0</td></tr><tr><td>-3.2309214472617755</td><td>-0.3516341872228522</td><td>3.25</td></tr><tr><td>-3.277598405517787</td><td>-1.2277412969136694</td><td>3.5</td></tr><tr><td>-3.077097590023353</td><td>-2.143354945283789</td><td>3.75</td></tr><tr><td>-2.6145744834544478</td><td>-3.027209981231713</td><td>4.0</td></tr><tr><td>-1.8958718321336194</td><td>-3.80370477247148</td><td>4.25</td></tr><tr><td>-0.9485810974385086</td><td>-4.3988855294929365</td><td>4.5</td></tr><tr><td>0.17861022621788863</td><td>-4.746640747633045</td><td>4.75</td></tr></tbody></table></div>
 ```
-
-:::
 
 
 
@@ -350,13 +351,10 @@ Groups combined by `:position` (`:overlay`, the default, draws each line on its 
 :::
 
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>series</th><th>t</th><th>v</th></tr></thead><tbody><tr><td>a</td><td>0</td><td>0.5007931658136463</td></tr><tr><td>a</td><td>1</td><td>0.5571891259213132</td></tr><tr><td>a</td><td>2</td><td>0.6978035734827992</td></tr><tr><td>a</td><td>3</td><td>0.9100758386825973</td></tr><tr><td>a</td><td>4</td><td>1.175044272270521</td></tr><tr><td>a</td><td>5</td><td>1.4690400332167286</td></tr><tr><td>a</td><td>6</td><td>1.7658013557891272</td></tr><tr><td>a</td><td>7</td><td>2.0388194348720936</td></tr><tr><td>a</td><td>8</td><td>2.263706378577581</td></tr><tr><td>a</td><td>9</td><td>2.4203737059941695</td></tr><tr><td>a</td><td>10</td><td>2.494826791358406</td></tr><tr><td>a</td><td>11</td><td>2.4804149622946956</td></tr><tr><td>a</td><td>12</td><td>2.378425584571251</td></tr><tr><td>a</td><td>13</td><td>2.1979690655501094</td></tr><tr><td>a</td><td>14</td><td>1.9551650486306003</td></tr><tr><td>a</td><td>15</td><td>1.6717024935127782</td></tr><tr><td>a</td><td>16</td><td>1.3729022660226193</td></tr><tr><td>a</td><td>17</td><td>1.0854553005796792</td></tr><tr><td>a</td><td>18</td><td>0.8350383785176917</td></tr><tr><td>a</td><td>19</td><td>0.6440204976799755</td></tr></tbody></table>
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>series</th><th>t</th><th>v</th></tr></thead><tbody><tr><td>a</td><td>0</td><td>0.5007931658136463</td></tr><tr><td>a</td><td>1</td><td>0.5571891259213132</td></tr><tr><td>a</td><td>2</td><td>0.6978035734827992</td></tr><tr><td>a</td><td>3</td><td>0.9100758386825973</td></tr><tr><td>a</td><td>4</td><td>1.175044272270521</td></tr><tr><td>a</td><td>5</td><td>1.4690400332167286</td></tr><tr><td>a</td><td>6</td><td>1.7658013557891272</td></tr><tr><td>a</td><td>7</td><td>2.0388194348720936</td></tr><tr><td>a</td><td>8</td><td>2.263706378577581</td></tr><tr><td>a</td><td>9</td><td>2.4203737059941695</td></tr><tr><td>a</td><td>10</td><td>2.494826791358406</td></tr><tr><td>a</td><td>11</td><td>2.4804149622946956</td></tr><tr><td>a</td><td>12</td><td>2.378425584571251</td></tr><tr><td>a</td><td>13</td><td>2.1979690655501094</td></tr><tr><td>a</td><td>14</td><td>1.9551650486306003</td></tr><tr><td>a</td><td>15</td><td>1.6717024935127782</td></tr><tr><td>a</td><td>16</td><td>1.3729022660226193</td></tr><tr><td>a</td><td>17</td><td>1.0854553005796792</td></tr><tr><td>a</td><td>18</td><td>0.8350383785176917</td></tr><tr><td>a</td><td>19</td><td>0.6440204976799755</td></tr></tbody></table></div>
 ```
-
-:::
 
 
 
@@ -403,13 +401,10 @@ Arrowheads at the ends of each run and gaps shortening it - e.g. to stop short o
 :::
 
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>x</th><th>y</th></tr></thead><tbody><tr><td>0</td><td>0</td></tr><tr><td>1</td><td>2</td></tr><tr><td>2</td><td>1</td></tr><tr><td>3</td><td>3</td></tr></tbody></table>
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>x</th><th>y</th></tr></thead><tbody><tr><td>0</td><td>0</td></tr><tr><td>1</td><td>2</td></tr><tr><td>2</td><td>1</td></tr><tr><td>3</td><td>3</td></tr></tbody></table></div>
 ```
-
-:::
 
 
 
@@ -459,13 +454,10 @@ arrowheads and gaps as on lines.
 :::
 
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>from</th><th>x</th><th>y</th><th>x2</th><th>y2</th></tr></thead><tbody><tr><td>a</td><td>1</td><td>1</td><td>3</td><td>2</td></tr><tr><td>b</td><td>2</td><td>4</td><td>4</td><td>3</td></tr><tr><td>c</td><td>3</td><td>0.5</td><td>1.5</td><td>3</td></tr></tbody></table>
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>from</th><th>x</th><th>y</th><th>x2</th><th>y2</th></tr></thead><tbody><tr><td>a</td><td>1</td><td>1</td><td>3</td><td>2</td></tr><tr><td>b</td><td>2</td><td>4</td><td>4</td><td>3</td></tr><tr><td>c</td><td>3</td><td>0.5</td><td>1.5</td><td>3</td></tr></tbody></table></div>
 ```
-
-:::
 
 
 
@@ -568,13 +560,10 @@ A filled shape per group through its rows in data order.
 :::
 
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>shape</th><th>x</th><th>y</th></tr></thead><tbody><tr><td>hexagon</td><td>1.0</td><td>0.0</td></tr><tr><td>hexagon</td><td>0.5000000000000001</td><td>0.8660254037844386</td></tr><tr><td>hexagon</td><td>-0.4999999999999998</td><td>0.8660254037844387</td></tr><tr><td>hexagon</td><td>-1.0</td><td>1.2246467991473532E-16</td></tr><tr><td>hexagon</td><td>-0.5000000000000004</td><td>-0.8660254037844384</td></tr><tr><td>hexagon</td><td>0.5000000000000001</td><td>-0.8660254037844386</td></tr><tr><td>triangle</td><td>1.5</td><td>-1</td></tr><tr><td>triangle</td><td>3</td><td>-1</td></tr><tr><td>triangle</td><td>2.25</td><td>1</td></tr></tbody></table>
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>shape</th><th>x</th><th>y</th></tr></thead><tbody><tr><td>hexagon</td><td>1.0</td><td>0.0</td></tr><tr><td>hexagon</td><td>0.5000000000000001</td><td>0.8660254037844386</td></tr><tr><td>hexagon</td><td>-0.4999999999999998</td><td>0.8660254037844387</td></tr><tr><td>hexagon</td><td>-1.0</td><td>1.2246467991473532E-16</td></tr><tr><td>hexagon</td><td>-0.5000000000000004</td><td>-0.8660254037844384</td></tr><tr><td>hexagon</td><td>0.5000000000000001</td><td>-0.8660254037844386</td></tr><tr><td>triangle</td><td>1.5</td><td>-1</td></tr><tr><td>triangle</td><td>3</td><td>-1</td></tr><tr><td>triangle</td><td>2.25</td><td>1</td></tr></tbody></table></div>
 ```
-
-:::
 
 
 

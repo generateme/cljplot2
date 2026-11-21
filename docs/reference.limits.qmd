@@ -1,6 +1,19 @@
 ---
 format:
-  html: {toc: true, toc-location: right, toc-depth: 4, theme: cosmo}
+  html:
+    toc: true
+    toc-location: right
+    toc-depth: 4
+    theme: cosmo
+    include-in-header:
+      text: |-
+        <style>
+        .data-table { width: fit-content; max-width: 100%; max-height: 15rem; overflow: auto; margin: 0 auto 1rem; }
+        .data-table .table-responsive { overflow: visible; }
+        .data-table table { font-size: 0.75rem; width: auto; margin: 0; }
+        .data-table th, .data-table td { padding: 0.1rem 0.45rem !important; white-space: nowrap; }
+        .data-table thead th { position: sticky; top: 0; background: var(--bs-body-bg, #fff); }
+        </style>
 code-block-background: true
 
 ---
@@ -58,13 +71,10 @@ A caption written by a `text` chart, a legend moved below by `:legend-only`:
 :::
 
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>g</th><th>x</th><th>y</th></tr></thead><tbody><tr><td>a</td><td>0</td><td>0</td></tr><tr><td>a</td><td>1</td><td>3</td></tr><tr><td>a</td><td>2</td><td>6</td></tr><tr><td>a</td><td>3</td><td>4</td></tr><tr><td>a</td><td>4</td><td>7</td></tr><tr><td>a</td><td>5</td><td>5</td></tr><tr><td>a</td><td>6</td><td>8</td></tr><tr><td>a</td><td>7</td><td>11</td></tr><tr><td>a</td><td>8</td><td>9</td></tr><tr><td>a</td><td>9</td><td>12</td></tr><tr><td>a</td><td>10</td><td>10</td></tr><tr><td>a</td><td>11</td><td>13</td></tr><tr><td>b</td><td>0</td><td>0</td></tr><tr><td>b</td><td>1</td><td>4</td></tr><tr><td>b</td><td>2</td><td>8</td></tr><tr><td>b</td><td>3</td><td>7</td></tr><tr><td>b</td><td>4</td><td>11</td></tr><tr><td>b</td><td>5</td><td>10</td></tr><tr><td>b</td><td>6</td><td>14</td></tr><tr><td>b</td><td>7</td><td>18</td></tr></tbody></table>
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>g</th><th>x</th><th>y</th></tr></thead><tbody><tr><td>a</td><td>0</td><td>0</td></tr><tr><td>a</td><td>1</td><td>3</td></tr><tr><td>a</td><td>2</td><td>6</td></tr><tr><td>a</td><td>3</td><td>4</td></tr><tr><td>a</td><td>4</td><td>7</td></tr><tr><td>a</td><td>5</td><td>5</td></tr><tr><td>a</td><td>6</td><td>8</td></tr><tr><td>a</td><td>7</td><td>11</td></tr><tr><td>a</td><td>8</td><td>9</td></tr><tr><td>a</td><td>9</td><td>12</td></tr><tr><td>a</td><td>10</td><td>10</td></tr><tr><td>a</td><td>11</td><td>13</td></tr><tr><td>b</td><td>0</td><td>0</td></tr><tr><td>b</td><td>1</td><td>4</td></tr><tr><td>b</td><td>2</td><td>8</td></tr><tr><td>b</td><td>3</td><td>7</td></tr><tr><td>b</td><td>4</td><td>11</td></tr><tr><td>b</td><td>5</td><td>10</td></tr><tr><td>b</td><td>6</td><td>14</td></tr><tr><td>b</td><td>7</td><td>18</td></tr></tbody></table></div>
 ```
-
-:::
 
 
 

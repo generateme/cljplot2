@@ -1,6 +1,19 @@
 ---
 format:
-  html: {toc: true, toc-location: right, toc-depth: 4, theme: cosmo}
+  html:
+    toc: true
+    toc-location: right
+    toc-depth: 4
+    theme: cosmo
+    include-in-header:
+      text: |-
+        <style>
+        .data-table { width: fit-content; max-width: 100%; max-height: 15rem; overflow: auto; margin: 0 auto 1rem; }
+        .data-table .table-responsive { overflow: visible; }
+        .data-table table { font-size: 0.75rem; width: auto; margin: 0; }
+        .data-table th, .data-table td { padding: 0.1rem 0.45rem !important; white-space: nowrap; }
+        .data-table thead th { position: sticky; top: 0; background: var(--bs-body-bg, #fff); }
+        </style>
 code-block-background: true
 
 ---
@@ -59,13 +72,10 @@ Data and mapping group every chart takes:
 :::
 
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>t</th><th>v</th></tr></thead><tbody><tr><td>0</td><td>0.0</td></tr><tr><td>1</td><td>0.3894183423086505</td></tr><tr><td>2</td><td>0.7173560908995228</td></tr><tr><td>3</td><td>0.9320390859672264</td></tr><tr><td>4</td><td>0.9995736030415051</td></tr><tr><td>5</td><td>0.9092974268256817</td></tr><tr><td>6</td><td>0.6754631805511506</td></tr><tr><td>7</td><td>0.33498815015590466</td></tr><tr><td>8</td><td>-0.058374143427580086</td></tr><tr><td>9</td><td>-0.44252044329485246</td></tr><tr><td>10</td><td>-0.7568024953079282</td></tr><tr><td>11</td><td>-0.951602073889516</td></tr><tr><td>12</td><td>-0.9961646088358406</td></tr><tr><td>13</td><td>-0.8834546557201531</td></tr><tr><td>14</td><td>-0.6312666378723208</td></tr><tr><td>15</td><td>-0.27941549819892586</td></tr><tr><td>16</td><td>0.11654920485049364</td></tr><tr><td>17</td><td>0.49411335113860894</td></tr><tr><td>18</td><td>0.7936678638491531</td></tr><tr><td>19</td><td>0.9679196720314865</td></tr></tbody></table>
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>t</th><th>v</th></tr></thead><tbody><tr><td>0</td><td>0.0</td></tr><tr><td>1</td><td>0.3894183423086505</td></tr><tr><td>2</td><td>0.7173560908995228</td></tr><tr><td>3</td><td>0.9320390859672264</td></tr><tr><td>4</td><td>0.9995736030415051</td></tr><tr><td>5</td><td>0.9092974268256817</td></tr><tr><td>6</td><td>0.6754631805511506</td></tr><tr><td>7</td><td>0.33498815015590466</td></tr><tr><td>8</td><td>-0.058374143427580086</td></tr><tr><td>9</td><td>-0.44252044329485246</td></tr><tr><td>10</td><td>-0.7568024953079282</td></tr><tr><td>11</td><td>-0.951602073889516</td></tr><tr><td>12</td><td>-0.9961646088358406</td></tr><tr><td>13</td><td>-0.8834546557201531</td></tr><tr><td>14</td><td>-0.6312666378723208</td></tr><tr><td>15</td><td>-0.27941549819892586</td></tr><tr><td>16</td><td>0.11654920485049364</td></tr><tr><td>17</td><td>0.49411335113860894</td></tr><tr><td>18</td><td>0.7936678638491531</td></tr><tr><td>19</td><td>0.9679196720314865</td></tr></tbody></table></div>
 ```
-
-:::
 
 
 
@@ -111,13 +121,10 @@ Data: Edgar Anderson's iris measurements, R datasets package `iris` (Anderson 19
 :::
 
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>sepal-length</th><th>sepal-width</th><th>petal-length</th><th>petal-width</th><th>species</th></tr></thead><tbody><tr><td>5.1</td><td>3.5</td><td>1.4</td><td>0.2</td><td>setosa</td></tr><tr><td>4.9</td><td>3</td><td>1.4</td><td>0.2</td><td>setosa</td></tr><tr><td>4.7</td><td>3.2</td><td>1.3</td><td>0.2</td><td>setosa</td></tr><tr><td>4.6</td><td>3.1</td><td>1.5</td><td>0.2</td><td>setosa</td></tr><tr><td>5</td><td>3.6</td><td>1.4</td><td>0.2</td><td>setosa</td></tr><tr><td>5.4</td><td>3.9</td><td>1.7</td><td>0.4</td><td>setosa</td></tr><tr><td>4.6</td><td>3.4</td><td>1.4</td><td>0.3</td><td>setosa</td></tr><tr><td>5</td><td>3.4</td><td>1.5</td><td>0.2</td><td>setosa</td></tr><tr><td>4.4</td><td>2.9</td><td>1.4</td><td>0.2</td><td>setosa</td></tr><tr><td>4.9</td><td>3.1</td><td>1.5</td><td>0.1</td><td>setosa</td></tr><tr><td>5.4</td><td>3.7</td><td>1.5</td><td>0.2</td><td>setosa</td></tr><tr><td>4.8</td><td>3.4</td><td>1.6</td><td>0.2</td><td>setosa</td></tr><tr><td>4.8</td><td>3</td><td>1.4</td><td>0.1</td><td>setosa</td></tr><tr><td>4.3</td><td>3</td><td>1.1</td><td>0.1</td><td>setosa</td></tr><tr><td>5.8</td><td>4</td><td>1.2</td><td>0.2</td><td>setosa</td></tr><tr><td>5.7</td><td>4.4</td><td>1.5</td><td>0.4</td><td>setosa</td></tr><tr><td>5.4</td><td>3.9</td><td>1.3</td><td>0.4</td><td>setosa</td></tr><tr><td>5.1</td><td>3.5</td><td>1.4</td><td>0.3</td><td>setosa</td></tr><tr><td>5.7</td><td>3.8</td><td>1.7</td><td>0.3</td><td>setosa</td></tr><tr><td>5.1</td><td>3.8</td><td>1.5</td><td>0.3</td><td>setosa</td></tr></tbody></table>
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>sepal-length</th><th>sepal-width</th><th>petal-length</th><th>petal-width</th><th>species</th></tr></thead><tbody><tr><td>5.1</td><td>3.5</td><td>1.4</td><td>0.2</td><td>setosa</td></tr><tr><td>4.9</td><td>3</td><td>1.4</td><td>0.2</td><td>setosa</td></tr><tr><td>4.7</td><td>3.2</td><td>1.3</td><td>0.2</td><td>setosa</td></tr><tr><td>4.6</td><td>3.1</td><td>1.5</td><td>0.2</td><td>setosa</td></tr><tr><td>5</td><td>3.6</td><td>1.4</td><td>0.2</td><td>setosa</td></tr><tr><td>5.4</td><td>3.9</td><td>1.7</td><td>0.4</td><td>setosa</td></tr><tr><td>4.6</td><td>3.4</td><td>1.4</td><td>0.3</td><td>setosa</td></tr><tr><td>5</td><td>3.4</td><td>1.5</td><td>0.2</td><td>setosa</td></tr><tr><td>4.4</td><td>2.9</td><td>1.4</td><td>0.2</td><td>setosa</td></tr><tr><td>4.9</td><td>3.1</td><td>1.5</td><td>0.1</td><td>setosa</td></tr><tr><td>5.4</td><td>3.7</td><td>1.5</td><td>0.2</td><td>setosa</td></tr><tr><td>4.8</td><td>3.4</td><td>1.6</td><td>0.2</td><td>setosa</td></tr><tr><td>4.8</td><td>3</td><td>1.4</td><td>0.1</td><td>setosa</td></tr><tr><td>4.3</td><td>3</td><td>1.1</td><td>0.1</td><td>setosa</td></tr><tr><td>5.8</td><td>4</td><td>1.2</td><td>0.2</td><td>setosa</td></tr><tr><td>5.7</td><td>4.4</td><td>1.5</td><td>0.4</td><td>setosa</td></tr><tr><td>5.4</td><td>3.9</td><td>1.3</td><td>0.4</td><td>setosa</td></tr><tr><td>5.1</td><td>3.5</td><td>1.4</td><td>0.3</td><td>setosa</td></tr><tr><td>5.7</td><td>3.8</td><td>1.7</td><td>0.3</td><td>setosa</td></tr><tr><td>5.1</td><td>3.8</td><td>1.5</td><td>0.3</td><td>setosa</td></tr></tbody></table></div>
 ```
-
-:::
 
 
 
@@ -172,13 +179,10 @@ Dates as levels: one bar per year, labelled by the year (unmarked, `Year` values
 :::
 
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>year</th><th>visitors</th></tr></thead><tbody><tr><td>2015</td><td>68</td></tr><tr><td>2016</td><td>40</td></tr><tr><td>2017</td><td>75</td></tr><tr><td>2018</td><td>47</td></tr><tr><td>2019</td><td>82</td></tr><tr><td>2020</td><td>54</td></tr><tr><td>2021</td><td>89</td></tr><tr><td>2022</td><td>61</td></tr></tbody></table>
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>year</th><th>visitors</th></tr></thead><tbody><tr><td>2015</td><td>68</td></tr><tr><td>2016</td><td>40</td></tr><tr><td>2017</td><td>75</td></tr><tr><td>2018</td><td>47</td></tr><tr><td>2019</td><td>82</td></tr><tr><td>2020</td><td>54</td></tr><tr><td>2021</td><td>89</td></tr><tr><td>2022</td><td>61</td></tr></tbody></table></div>
 ```
-
-:::
 
 
 
@@ -220,13 +224,10 @@ to `:xend` / `:yend`.
 :::
 
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>t</th><th>v</th><th>lo</th><th>hi</th></tr></thead><tbody><tr><td>0</td><td>0.0</td><td>-3.0</td><td>3.0</td></tr><tr><td>1</td><td>0.1</td><td>-2.9</td><td>3.1</td></tr><tr><td>2</td><td>0.4</td><td>-2.6</td><td>3.4</td></tr><tr><td>3</td><td>0.9000000000000001</td><td>-2.0999999999999996</td><td>3.9000000000000004</td></tr><tr><td>4</td><td>1.6</td><td>-1.4</td><td>4.6</td></tr><tr><td>5</td><td>2.5</td><td>-0.5</td><td>5.5</td></tr><tr><td>6</td><td>3.6000000000000005</td><td>0.6000000000000005</td><td>6.6000000000000005</td></tr><tr><td>7</td><td>4.9</td><td>1.9000000000000004</td><td>7.9</td></tr><tr><td>8</td><td>6.4</td><td>3.4000000000000004</td><td>9.4</td></tr><tr><td>9</td><td>8.1</td><td>5.1</td><td>11.1</td></tr><tr><td>10</td><td>10.0</td><td>7.0</td><td>13.0</td></tr><tr><td>11</td><td>12.100000000000001</td><td>9.100000000000001</td><td>15.100000000000001</td></tr><tr><td>12</td><td>14.400000000000002</td><td>11.400000000000002</td><td>17.400000000000002</td></tr><tr><td>13</td><td>16.900000000000002</td><td>13.900000000000002</td><td>19.900000000000002</td></tr><tr><td>14</td><td>19.6</td><td>16.6</td><td>22.6</td></tr><tr><td>15</td><td>22.5</td><td>19.5</td><td>25.5</td></tr><tr><td>16</td><td>25.6</td><td>22.6</td><td>28.6</td></tr><tr><td>17</td><td>28.900000000000002</td><td>25.900000000000002</td><td>31.900000000000002</td></tr><tr><td>18</td><td>32.4</td><td>29.4</td><td>35.4</td></tr><tr><td>19</td><td>36.1</td><td>33.1</td><td>39.1</td></tr></tbody></table>
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>t</th><th>v</th><th>lo</th><th>hi</th></tr></thead><tbody><tr><td>0</td><td>0.0</td><td>-3.0</td><td>3.0</td></tr><tr><td>1</td><td>0.1</td><td>-2.9</td><td>3.1</td></tr><tr><td>2</td><td>0.4</td><td>-2.6</td><td>3.4</td></tr><tr><td>3</td><td>0.9000000000000001</td><td>-2.0999999999999996</td><td>3.9000000000000004</td></tr><tr><td>4</td><td>1.6</td><td>-1.4</td><td>4.6</td></tr><tr><td>5</td><td>2.5</td><td>-0.5</td><td>5.5</td></tr><tr><td>6</td><td>3.6000000000000005</td><td>0.6000000000000005</td><td>6.6000000000000005</td></tr><tr><td>7</td><td>4.9</td><td>1.9000000000000004</td><td>7.9</td></tr><tr><td>8</td><td>6.4</td><td>3.4000000000000004</td><td>9.4</td></tr><tr><td>9</td><td>8.1</td><td>5.1</td><td>11.1</td></tr><tr><td>10</td><td>10.0</td><td>7.0</td><td>13.0</td></tr><tr><td>11</td><td>12.100000000000001</td><td>9.100000000000001</td><td>15.100000000000001</td></tr><tr><td>12</td><td>14.400000000000002</td><td>11.400000000000002</td><td>17.400000000000002</td></tr><tr><td>13</td><td>16.900000000000002</td><td>13.900000000000002</td><td>19.900000000000002</td></tr><tr><td>14</td><td>19.6</td><td>16.6</td><td>22.6</td></tr><tr><td>15</td><td>22.5</td><td>19.5</td><td>25.5</td></tr><tr><td>16</td><td>25.6</td><td>22.6</td><td>28.6</td></tr><tr><td>17</td><td>28.900000000000002</td><td>25.900000000000002</td><td>31.900000000000002</td></tr><tr><td>18</td><td>32.4</td><td>29.4</td><td>35.4</td></tr><tr><td>19</td><td>36.1</td><td>33.1</td><td>39.1</td></tr></tbody></table></div>
 ```
-
-:::
 
 
 
@@ -277,13 +278,10 @@ Opening, highest, lowest and closing values of a period - the candlestick chart.
 :::
 
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>day</th><th>open</th><th>close</th><th>high</th><th>low</th></tr></thead><tbody><tr><td>0</td><td>100.0</td><td>100.0</td><td>101.0</td><td>99.0</td></tr><tr><td>1</td><td>100.0</td><td>99.0</td><td>101.0</td><td>98.0</td></tr><tr><td>2</td><td>99.0</td><td>102.0</td><td>104.0</td><td>97.0</td></tr><tr><td>3</td><td>102.0</td><td>98.0</td><td>102.0</td><td>95.0</td></tr><tr><td>4</td><td>98.0</td><td>98.0</td><td>99.0</td><td>98.0</td></tr><tr><td>5</td><td>98.0</td><td>102.0</td><td>104.0</td><td>97.0</td></tr><tr><td>6</td><td>102.0</td><td>99.0</td><td>102.0</td><td>97.0</td></tr><tr><td>7</td><td>99.0</td><td>100.0</td><td>101.0</td><td>96.0</td></tr><tr><td>8</td><td>100.0</td><td>105.0</td><td>107.0</td><td>100.0</td></tr><tr><td>9</td><td>105.0</td><td>103.0</td><td>105.0</td><td>102.0</td></tr><tr><td>10</td><td>103.0</td><td>105.0</td><td>106.0</td><td>101.0</td></tr><tr><td>11</td><td>105.0</td><td>100.0</td><td>107.0</td><td>97.0</td></tr><tr><td>12</td><td>100.0</td><td>99.0</td><td>100.0</td><td>99.0</td></tr><tr><td>13</td><td>99.0</td><td>102.0</td><td>103.0</td><td>98.0</td></tr><tr><td>14</td><td>102.0</td><td>98.0</td><td>104.0</td><td>96.0</td></tr><tr><td>15</td><td>98.0</td><td>98.0</td><td>98.0</td><td>95.0</td></tr><tr><td>16</td><td>98.0</td><td>102.0</td><td>103.0</td><td>98.0</td></tr><tr><td>17</td><td>102.0</td><td>99.0</td><td>104.0</td><td>98.0</td></tr><tr><td>18</td><td>99.0</td><td>100.0</td><td>100.0</td><td>97.0</td></tr><tr><td>19</td><td>100.0</td><td>105.0</td><td>106.0</td><td>97.0</td></tr></tbody></table>
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>day</th><th>open</th><th>close</th><th>high</th><th>low</th></tr></thead><tbody><tr><td>0</td><td>100.0</td><td>100.0</td><td>101.0</td><td>99.0</td></tr><tr><td>1</td><td>100.0</td><td>99.0</td><td>101.0</td><td>98.0</td></tr><tr><td>2</td><td>99.0</td><td>102.0</td><td>104.0</td><td>97.0</td></tr><tr><td>3</td><td>102.0</td><td>98.0</td><td>102.0</td><td>95.0</td></tr><tr><td>4</td><td>98.0</td><td>98.0</td><td>99.0</td><td>98.0</td></tr><tr><td>5</td><td>98.0</td><td>102.0</td><td>104.0</td><td>97.0</td></tr><tr><td>6</td><td>102.0</td><td>99.0</td><td>102.0</td><td>97.0</td></tr><tr><td>7</td><td>99.0</td><td>100.0</td><td>101.0</td><td>96.0</td></tr><tr><td>8</td><td>100.0</td><td>105.0</td><td>107.0</td><td>100.0</td></tr><tr><td>9</td><td>105.0</td><td>103.0</td><td>105.0</td><td>102.0</td></tr><tr><td>10</td><td>103.0</td><td>105.0</td><td>106.0</td><td>101.0</td></tr><tr><td>11</td><td>105.0</td><td>100.0</td><td>107.0</td><td>97.0</td></tr><tr><td>12</td><td>100.0</td><td>99.0</td><td>100.0</td><td>99.0</td></tr><tr><td>13</td><td>99.0</td><td>102.0</td><td>103.0</td><td>98.0</td></tr><tr><td>14</td><td>102.0</td><td>98.0</td><td>104.0</td><td>96.0</td></tr><tr><td>15</td><td>98.0</td><td>98.0</td><td>98.0</td><td>95.0</td></tr><tr><td>16</td><td>98.0</td><td>102.0</td><td>103.0</td><td>98.0</td></tr><tr><td>17</td><td>102.0</td><td>99.0</td><td>104.0</td><td>98.0</td></tr><tr><td>18</td><td>99.0</td><td>100.0</td><td>100.0</td><td>97.0</td></tr><tr><td>19</td><td>100.0</td><td>105.0</td><td>106.0</td><td>97.0</td></tr></tbody></table></div>
 ```
-
-:::
 
 
 
@@ -356,13 +354,10 @@ densities ...) draw each separately; any aesthetic groups too. `:order` sets the
 :::
 
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>walk</th><th>t</th><th>v</th></tr></thead><tbody><tr><td></td><td>0</td><td>0.0</td></tr><tr><td></td><td>1</td><td>0.3</td></tr><tr><td></td><td>2</td><td>0.6</td></tr><tr><td></td><td>3</td><td>0.8999999999999999</td></tr><tr><td></td><td>4</td><td>1.2</td></tr><tr><td></td><td>5</td><td>1.5</td></tr><tr><td></td><td>6</td><td>1.7999999999999998</td></tr><tr><td></td><td>7</td><td>2.1</td></tr><tr><td></td><td>8</td><td>2.4</td></tr><tr><td></td><td>9</td><td>2.6999999999999997</td></tr><tr><td></td><td>10</td><td>3.0</td></tr><tr><td></td><td>11</td><td>3.3</td></tr><tr><td>1</td><td>0</td><td>1.0</td></tr><tr><td>1</td><td>1</td><td>2.6</td></tr><tr><td>1</td><td>2</td><td>4.2</td></tr><tr><td>1</td><td>3</td><td>2.8</td></tr><tr><td>1</td><td>4</td><td>4.4</td></tr><tr><td>1</td><td>5</td><td>6.0</td></tr><tr><td>1</td><td>6</td><td>4.6</td></tr><tr><td>1</td><td>7</td><td>6.2</td></tr></tbody></table>
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>walk</th><th>t</th><th>v</th></tr></thead><tbody><tr><td></td><td>0</td><td>0.0</td></tr><tr><td></td><td>1</td><td>0.3</td></tr><tr><td></td><td>2</td><td>0.6</td></tr><tr><td></td><td>3</td><td>0.8999999999999999</td></tr><tr><td></td><td>4</td><td>1.2</td></tr><tr><td></td><td>5</td><td>1.5</td></tr><tr><td></td><td>6</td><td>1.7999999999999998</td></tr><tr><td></td><td>7</td><td>2.1</td></tr><tr><td></td><td>8</td><td>2.4</td></tr><tr><td></td><td>9</td><td>2.6999999999999997</td></tr><tr><td></td><td>10</td><td>3.0</td></tr><tr><td></td><td>11</td><td>3.3</td></tr><tr><td>1</td><td>0</td><td>1.0</td></tr><tr><td>1</td><td>1</td><td>2.6</td></tr><tr><td>1</td><td>2</td><td>4.2</td></tr><tr><td>1</td><td>3</td><td>2.8</td></tr><tr><td>1</td><td>4</td><td>4.4</td></tr><tr><td>1</td><td>5</td><td>6.0</td></tr><tr><td>1</td><td>6</td><td>4.6</td></tr><tr><td>1</td><td>7</td><td>6.2</td></tr></tbody></table></div>
 ```
-
-:::
 
 
 
@@ -392,13 +387,10 @@ ordered by size (ascending, the default `:order-direction`) the large ones come 
 :::
 
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>x</th><th>y</th><th>s</th></tr></thead><tbody><tr><td>0.0</td><td>0.0</td><td>3</td></tr><tr><td>0.2</td><td>0.2</td><td>2</td></tr><tr><td>0.4</td><td>0.4</td><td>1</td></tr><tr><td>0.6000000000000001</td><td>0.6000000000000001</td><td>0</td></tr><tr><td>0.8</td><td>0.8</td><td>3</td></tr><tr><td>1.0</td><td>1.0</td><td>2</td></tr><tr><td>1.2000000000000002</td><td>1.2000000000000002</td><td>1</td></tr><tr><td>1.4000000000000001</td><td>1.4000000000000001</td><td>0</td></tr><tr><td>1.6</td><td>1.6</td><td>3</td></tr><tr><td>1.8</td><td>1.8</td><td>2</td></tr><tr><td>2.0</td><td>2.0</td><td>1</td></tr><tr><td>2.2</td><td>2.2</td><td>0</td></tr><tr><td>2.4000000000000004</td><td>2.4000000000000004</td><td>3</td></tr><tr><td>2.6</td><td>2.6</td><td>2</td></tr><tr><td>2.8000000000000003</td><td>2.8000000000000003</td><td>1</td></tr><tr><td>3.0</td><td>3.0</td><td>0</td></tr><tr><td>3.2</td><td>3.2</td><td>3</td></tr><tr><td>3.4000000000000004</td><td>3.4000000000000004</td><td>2</td></tr><tr><td>3.6</td><td>3.6</td><td>1</td></tr><tr><td>3.8000000000000003</td><td>3.8000000000000003</td><td>0</td></tr></tbody></table>
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>x</th><th>y</th><th>s</th></tr></thead><tbody><tr><td>0.0</td><td>0.0</td><td>3</td></tr><tr><td>0.2</td><td>0.2</td><td>2</td></tr><tr><td>0.4</td><td>0.4</td><td>1</td></tr><tr><td>0.6000000000000001</td><td>0.6000000000000001</td><td>0</td></tr><tr><td>0.8</td><td>0.8</td><td>3</td></tr><tr><td>1.0</td><td>1.0</td><td>2</td></tr><tr><td>1.2000000000000002</td><td>1.2000000000000002</td><td>1</td></tr><tr><td>1.4000000000000001</td><td>1.4000000000000001</td><td>0</td></tr><tr><td>1.6</td><td>1.6</td><td>3</td></tr><tr><td>1.8</td><td>1.8</td><td>2</td></tr><tr><td>2.0</td><td>2.0</td><td>1</td></tr><tr><td>2.2</td><td>2.2</td><td>0</td></tr><tr><td>2.4000000000000004</td><td>2.4000000000000004</td><td>3</td></tr><tr><td>2.6</td><td>2.6</td><td>2</td></tr><tr><td>2.8000000000000003</td><td>2.8000000000000003</td><td>1</td></tr><tr><td>3.0</td><td>3.0</td><td>0</td></tr><tr><td>3.2</td><td>3.2</td><td>3</td></tr><tr><td>3.4000000000000004</td><td>3.4000000000000004</td><td>2</td></tr><tr><td>3.6</td><td>3.6</td><td>1</td></tr><tr><td>3.8000000000000003</td><td>3.8000000000000003</td><td>0</td></tr></tbody></table></div>
 ```
-
-:::
 
 
 
@@ -531,13 +523,10 @@ outer first) and `:set` / `:item` (set membership of Venn diagrams).
 :::
 
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>dept</th><th>team</th><th>cost</th></tr></thead><tbody><tr><td>science</td><td>physics</td><td>40</td></tr><tr><td>science</td><td>biology</td><td>25</td></tr><tr><td>arts</td><td>music</td><td>15</td></tr><tr><td>arts</td><td>theatre</td><td>10</td></tr><tr><td>sport</td><td>football</td><td>20</td></tr></tbody></table>
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>dept</th><th>team</th><th>cost</th></tr></thead><tbody><tr><td>science</td><td>physics</td><td>40</td></tr><tr><td>science</td><td>biology</td><td>25</td></tr><tr><td>arts</td><td>music</td><td>15</td></tr><tr><td>arts</td><td>theatre</td><td>10</td></tr><tr><td>sport</td><td>football</td><td>20</td></tr></tbody></table></div>
 ```
-
-:::
 
 
 
@@ -550,13 +539,10 @@ outer first) and `:set` / `:item` (set membership of Venn diagrams).
 :::
 
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>set</th><th>item</th></tr></thead><tbody><tr><td>reads</td><td>ann</td></tr><tr><td>reads</td><td>bob</td></tr><tr><td>reads</td><td>cid</td></tr><tr><td>reads</td><td>dan</td></tr><tr><td>writes</td><td>bob</td></tr><tr><td>writes</td><td>dan</td></tr><tr><td>writes</td><td>eve</td></tr></tbody></table>
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>set</th><th>item</th></tr></thead><tbody><tr><td>reads</td><td>ann</td></tr><tr><td>reads</td><td>bob</td></tr><tr><td>reads</td><td>cid</td></tr><tr><td>reads</td><td>dan</td></tr><tr><td>writes</td><td>bob</td></tr><tr><td>writes</td><td>dan</td></tr><tr><td>writes</td><td>eve</td></tr></tbody></table></div>
 ```
-
-:::
 
 
 

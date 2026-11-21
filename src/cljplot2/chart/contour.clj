@@ -11,8 +11,8 @@
   * `:fill` - `true`: fill the region at or above each level (lowest first, so the bands stack; holes stay open)
     instead of drawing lines; each band colored by its middle value (between its level and the next, the top band up
     to the largest value); grouped filled contours are translucent by default (alpha × 0.5), the groups overlap
-  * colors: by default each level its color through the plot's color scale (a computed color, legend titled like
-    [[cljplot2.chart.field]]); option `:color` - one color for every line; a grouping mapping (`:color` with
+  * colors: by default each level its color through the plot's color scale over the field's value range (a computed
+    color, legend titled like [[cljplot2.chart.field]]; the lowest level isn't the gradient's end); option `:color` - one color for every line; a grouping mapping (`:color` with
     categorical values, `:group`, other ordinal aesthetics) - a field per group (points / gridded data of the group)
     with its lines in the group's style, levels shared by the groups
   * `:width`, `:dash`, `:alpha` (multiplies the colors' alpha, a fraction)
@@ -118,8 +118,8 @@
 
 (defn compute
   "Per panel: `{:contours [{:level l :aesthetics a :lines [{:points :closed?} ..] :rings [[..] ..]} ..] :style st
-  :fill? b :by-level? b}`; extents x / y - the sampled domain, color - the levels (lines colored by level), the value
-  range (filled bands), or the groups' values; no padding, `:na`, `:dropped`."
+  :fill? b :by-level? b}`; extents x / y - the sampled domain, color - the value range with the levels (by level: the
+  lowest line or band isn't the gradient's end), or the groups' values; no padding, `:na`, `:dropped`."
   [{:keys [options]} {:keys [groups mapping]} {:keys [theme plot-scales] :as env}]
   (let [fields (group-fields options mapping groups env)
         domain (field/union-domain (map (comp :domain #(nth % 2)) fields))
@@ -156,10 +156,10 @@
                               [panel (cond-> {:x {:kind :numeric :min (double x0) :max (double x1)}
                                               :y {:kind :numeric :min (double y0) :max (double y1)}}
                                        (and by-level? (seq levels))
-                                       (assoc :color (if fill?
-                                                       ;; bands over the whole value range: the lowest band isn't the gradient's end
-                                                       {:kind :numeric :min (double lo) :max (double hi)}
-                                                       {:kind :numeric :min (double (first levels)) :max (double (peek levels))}))
+                                       ;; the value range (with any given level outside it): the lowest line or band
+                                       ;; isn't the gradient's end (a near-white line on a light panel)
+                                       (assoc :color {:kind :numeric :min (m/min (double lo) (double (first levels)))
+                                                      :max (m/max (double hi) (double (peek levels)))})
                                        group-extents (merge (get group-extents panel)))]))
                     (keys panels))
      :padding {:x [0.0 0.0] :y [0.0 0.0]}

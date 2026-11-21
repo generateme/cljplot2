@@ -30,6 +30,14 @@
 
 (defmethod measure/natural-size :panel [_ _] (v/vec2 0.0 0.0))
 
+(defn- call-clipped-to-panel
+  "Calls `f` with an isolated copy of canvas `c` clipped to the `w` x `h` panel box at the origin - charts and the
+  cartesian grid stay inside the panel (a grid line at a tick on the panel's edge would fall beside it)."
+  [c w h f]
+  (canvas/call-with-isolated-graphics
+   c (fn [c'] (.clip ^Graphics2D (:graphics c') (Rectangle. 0 0 (int w) (int h)))
+       (f c'))))
+
 (defn- draw-charts!
   "Draw every chart's data for `panel-key` (and data of charts drawn in all panels) in panel-local coordinates; the
   charts' `env` has the panel's `:panel-key`. Each chart draws on its own copy of the graphics, clipped to the panel,
@@ -42,11 +50,8 @@
                      computed [(get-in stats [:data panel-key]) (get-in stats [:data facet/all-panels])]
                      :when (some? computed)]
                  [chart computed])
-        clipped (fn [f] (canvas/call-with-isolated-graphics
-                         c (fn [c'] (let [^Graphics2D g (:graphics c')]
-                                      (.clip g (Rectangle. 0 0 (int w) (int h)))
-                                      (.setStroke g (BasicStroke.))
-                                      (f c')))))
+        clipped (fn [f] (call-clipped-to-panel c w h (fn [c'] (.setStroke ^Graphics2D (:graphics c') (BasicStroke.))
+                                                            (f c'))))
         three-d (filter #(contains? (:coords (first %)) :three-d) layers)]
     (doseq [[chart computed] (remove #(contains? (:coords (first %)) :three-d) layers)]
       (clipped #((:draw chart) chart computed % {:x 0 :y 0 :w w :h h} (:scales env) env)))
@@ -257,9 +262,9 @@
                     (draw-polar-grid-lines! c' geometry env)
                     (draw-charts! c' (get content :panel facet/single-panel) w h env)
                     (draw-polar-labels! c' geometry env))
-                (do (draw-band-fills! c' w h env)
-                    (draw-minor-grid-lines! c' w h env)
-                    (draw-grid-lines! c' w h env)
+                (do (call-clipped-to-panel c' w h (fn [g] (draw-band-fills! g w h env)
+                                                       (draw-minor-grid-lines! g w h env)
+                                                       (draw-grid-lines! g w h env)))
                     (draw-charts! c' (get content :panel facet/single-panel) w h env)))))
     (draw/inner-border! canvas {:x x :y y :w w :h h} border-color border-width)))
 

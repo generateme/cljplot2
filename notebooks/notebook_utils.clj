@@ -294,15 +294,22 @@
     (instance? java.time.temporal.Temporal v) (str v)
     :else (pr-str (readable-value v))))
 
+(def data-table-class
+  "CSS class of the box holding a [[data-table]] - compact, centred and scrolling past a few rows (the style is in
+  `clay.edn`, `:include-in-header`); option tables keep the book's table style."
+  "data-table")
+
 (defn data-table
-  "The first 20 rows of `data` - rows (maps) or columns (a map of equal-length sequences) - as a table, its code
-  hidden: a column per key of the shown rows (first-appearance order), cells as [[cell-text]].
-  Throws `ex-info {:key :data}` for empty data or data that isn't rows or columns."
+  "The first 20 rows of `data` - rows (maps) or columns (a map of equal-length sequences) - as a table in a box of
+  class [[data-table-class]], its code hidden: a column per key of the shown rows (first-appearance order), cells as
+  [[cell-text]]. Throws `ex-info {:key :data}` for empty data or data that isn't rows or columns."
   [data]
   (let [rows (some->> (data-rows data) (take data-table-rows) vec)]
     (when (empty? rows)
       (throw (ex-info "data-table needs rows (maps) or columns (a map of sequences)." {:key :data :value data})))
     (let [ks (vec (distinct (mapcat keys rows)))]
       (kindly/hide-code
-       (kind/table {:column-names (mapv #(if (keyword? %) (name %) (str %)) ks)
-                    :row-vectors (mapv (fn [row] (mapv #(cell-text (get row %)) ks)) rows)})))))
+       (kind/hiccup
+        [:div {:class data-table-class}
+         (kind/table {:column-names (mapv #(if (keyword? %) (name %) (str %)) ks)
+                      :row-vectors (mapv (fn [row] (mapv #(cell-text (get row %)) ks)) rows)})])))))

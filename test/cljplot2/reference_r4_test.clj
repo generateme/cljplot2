@@ -1,12 +1,14 @@
 (ns cljplot2.reference-r4-test
   "Reference part R4 - chart pages: a chart's own rows and shared groups (`describe/own-rows`, `fragment-keys`),
   entries in a section (`schema/in-section`), the shared groups list (`nu/shared-groups`), the sections of the
-  long chart tables; full-turn polar sectors without a seam, parallel axis labels without collisions."
+  long chart tables; full-turn polar sectors without a seam, parallel axis labels without collisions; contour colours over the value
+  range, the cartesian grid clipped to the panel."
   (:require [clojure.string :as str]
             [clojure.test :refer [deftest testing is]]
             [fastmath.core :as m]
             [cljplot2.chart :as chart]
             [cljplot2.chart.parallel]
+            [cljplot2.core :as plot]
             [cljplot2.graphics.measure :as measure]
             [cljplot2.scale.coord :as coord]
             [cljplot2.theme :as theme]
@@ -109,3 +111,27 @@
       (is (= [] (kept [])))
       (is (= [] (kept [{:ticks []}])))
       (is (= ["a" "b"] (kept [{:ticks [(tick "a" 0.0)]} {:ticks [(tick "b" 200.0)]}]))))))
+
+(deftest contour-color-domain-test
+  (let [domain (fn [opts] (get-in (plot/build {:charts [(chart/contour (merge {:f (fn [[x y]] (+ (double x) (double y)))
+                                                                               :domain {:x [0 1] :y [0 1]}}
+                                                                              opts))]}
+                                              {:width 300 :height 300})
+                                  [:scale-specs :color :domain]))]
+    (testing "lines coloured over the field's value range - the lowest level isn't the gradient's end"
+      (is (= [0.0 2.0] (domain {:levels 4})))
+      (is (= [0.0 2.0] (domain {:levels 4 :fill true})) "filled bands alike"))
+    (testing "boundary: given levels outside the value range widen it; one level"
+      (is (= [-1.0 3.0] (domain {:levels [-1 1 3]})))
+      (is (= [0.0 2.0] (domain {:levels [1]}))))))
+
+(deftest grid-clipped-to-panel-test
+  (testing "a grid line at a tick on the panel's right edge stays inside the panel (none beside a field's raster)"
+    (let [img (plot/render-image {:charts [(chart/field {:f (fn [[x y]] (+ (double x) (double y))) :domain {:x [0 4] :y [0 4]}})]
+                                  :legend false}
+                                 {:width 300 :height 300})
+          rgb (fn [x y] (bit-and 0xffffff (.getRGB ^java.awt.image.BufferedImage img (int x) (int y))))
+          raster? (fn [x y] (< (bit-shift-right (rgb x y) 16) 100))
+          edge (first (filter #(not (raster? % 150)) (range 150 300)))]
+      (is (some? edge))
+      (is (every? #(= (rgb (+ 3 edge) %) (rgb edge %)) (range 40 240)) "the column past the raster is plain background"))))
