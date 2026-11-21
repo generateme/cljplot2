@@ -127,11 +127,12 @@
 
 (deftest grid-clipped-to-panel-test
   (testing "a grid line at a tick on the panel's right edge stays inside the panel (none beside a field's raster)"
-    (let [img (plot/render-image {:charts [(chart/field {:f (fn [[x y]] (+ (double x) (double y))) :domain {:x [0 4] :y [0 4]}})]
-                                  :legend false}
-                                 {:width 300 :height 300})
-          rgb (fn [x y] (bit-and 0xffffff (.getRGB ^java.awt.image.BufferedImage img (int x) (int y))))
-          raster? (fn [x y] (< (bit-shift-right (rgb x y) 16) 100))
-          edge (first (filter #(not (raster? % 150)) (range 150 300)))]
-      (is (some? edge))
+    (doseq [width [300 303]
+            :let [img (plot/render-image {:charts [(chart/field {:f (fn [[x y]] (+ (double x) (double y))) :domain {:x [0 4] :y [0 4]}})]
+                                          :legend false}
+                                         {:width width :height 300})
+                  rgb (fn [x y] (bit-and 0xffffff (.getRGB ^java.awt.image.BufferedImage img (int x) (int y))))
+                  raster? (fn [x y] (< (bit-shift-right (rgb x y) 16) 100))
+                  edge (first (filter #(not (raster? % 150)) (range 150 width)))]]
+      (is (some? edge) width)
       (is (every? #(= (rgb (+ 3 edge) %) (rgb edge %)) (range 40 240)) "the column past the raster is plain background"))))

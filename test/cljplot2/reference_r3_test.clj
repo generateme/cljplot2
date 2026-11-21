@@ -164,9 +164,15 @@
         (is (= [["1" "x" ""] ["2" "" "2024-01-02"]] (:row-vectors t)) "a missing value - an empty cell")))
     (testing "columns become rows"
       (is (= [["0" "1"] ["1" "2"]] (:row-vectors (table {:t [0 1] :v [1 2]})))))
-    (testing "boundary: at most 20 rows; exactly one row"
-      (is (= 20 (count (:row-vectors (table (for [i (range 50)] {:i i}))))))
-      (is (= 1 (count (:row-vectors (table [{:i 0}]))))))
+    (testing "boundary: at most 100 rows, longer data cut with a last row of dots; exactly 100 and one row uncut"
+      (let [cut (:row-vectors (table (for [i (range 101)] {:i i :j (- i)})))]
+        (is (= 101 (count cut)))
+        (is (= ["99" "-99"] (nth cut 99)))
+        (is (= ["…" "…"] (peek cut)) "a mark per column"))
+      (is (= 101 (count (:row-vectors (table (for [i (range 5000)] {:i i}))))) "long data: 100 rows and the mark")
+      (is (= ["99"] (peek (:row-vectors (table (for [i (range 100)] {:i i}))))) "exactly 100 - no mark")
+      (is (= [["0"]] (:row-vectors (table [{:i 0}]))))
+      (is (= 101 (count (:row-vectors (table {:t (range 300) :v (range 300)})))) "columns cut alike"))
     (testing "boundary: empty, not data, unequal columns - errors keyed :data"
       (doseq [bad [[] nil {} [:a :b] {:t [0 1] :v [1]} "rows"]]
         (is (= :data (:key (error-data #(table bad)))) (pr-str bad))))))

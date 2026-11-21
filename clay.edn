@@ -9,11 +9,12 @@
                                     :toc-location :right
                                     :toc-depth 4
                                     :theme :cosmo
-                                    ;; data tables (`nu/data-table`, class `data-table`): small type, tight cells,
-                                    ;; centred, about 8 rows visible (the header stays) - option tables unchanged
+                                    ;; data tables (`nu/data-table`, class `data-table` - `nu/data-table-class`, rename
+                                    ;; both together): small type, tight cells, left-aligned, about 8 rows visible
+                                    ;; (the header stays) - option tables unchanged
                                     :include-in-header
                                     {:text "<style>
-.data-table { width: fit-content; max-width: 100%; max-height: 15rem; overflow: auto; margin: 0 auto 1rem; }
+.data-table { width: fit-content; max-width: 100%; max-height: 15rem; overflow: auto; margin: 0 0 1rem 0; }
 .data-table .table-responsive { overflow: visible; }
 .data-table table { font-size: 0.75rem; width: auto; margin: 0; }
 .data-table th, .data-table td { padding: 0.1rem 0.45rem !important; white-space: nowrap; }

@@ -270,8 +270,12 @@
 ;; data tables
 
 (def ^:private data-table-rows
-  "The most rows [[data-table]] shows."
-  20)
+  "The most rows [[data-table]] shows (its box scrolls past a few)."
+  100)
+
+(def ^:private truncation-mark
+  "The text of every cell of the row [[data-table]] adds below the shown rows of longer data."
+  "…")
 
 (defn- data-rows
   "Rows of `data`: rows (a non-empty sequence of maps) as they are, columns (a map of equal-length non-empty
@@ -295,16 +299,19 @@
     :else (pr-str (readable-value v))))
 
 (def data-table-class
-  "CSS class of the box holding a [[data-table]] - compact, centred and scrolling past a few rows (the style is in
-  `clay.edn`, `:include-in-header`); option tables keep the book's table style."
+  "CSS class of the box holding a [[data-table]] - compact, left-aligned and scrolling past a few rows (the style is in
+  `clay.edn`, `:include-in-header`, under the same class name); option tables keep the book's table style."
   "data-table")
 
 (defn data-table
-  "The first 20 rows of `data` - rows (maps) or columns (a map of equal-length sequences) - as a table in a box of
-  class [[data-table-class]], its code hidden: a column per key of the shown rows (first-appearance order), cells as
-  [[cell-text]]. Throws `ex-info {:key :data}` for empty data or data that isn't rows or columns."
+  "The first 100 rows ([[data-table-rows]]) of `data` - rows (maps) or columns (a map of equal-length sequences) - as
+  a table in a box of class [[data-table-class]], its code hidden: a column per key of the shown rows
+  (first-appearance order), cells as [[cell-text]]; longer data gets a last row of [[truncation-mark]] cells (the
+  data is cut there). Throws `ex-info {:key :data}` for empty data or data that isn't rows or columns."
   [data]
-  (let [rows (some->> (data-rows data) (take data-table-rows) vec)]
+  (let [taken (some->> (data-rows data) (take (inc (long data-table-rows))) vec)
+        rows (vec (take data-table-rows taken))
+        truncated? (< (long data-table-rows) (count taken))]
     (when (empty? rows)
       (throw (ex-info "data-table needs rows (maps) or columns (a map of sequences)." {:key :data :value data})))
     (let [ks (vec (distinct (mapcat keys rows)))]
@@ -312,4 +319,5 @@
        (kind/hiccup
         [:div {:class data-table-class}
          (kind/table {:column-names (mapv #(if (keyword? %) (name %) (str %)) ks)
-                      :row-vectors (mapv (fn [row] (mapv #(cell-text (get row %)) ks)) rows)})])))))
+                      :row-vectors (cond-> (mapv (fn [row] (mapv #(cell-text (get row %)) ks)) rows)
+                                     truncated? (conj (vec (repeat (count ks) truncation-mark))))})])))))

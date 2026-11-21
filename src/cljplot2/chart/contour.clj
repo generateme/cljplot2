@@ -12,7 +12,8 @@
     instead of drawing lines; each band colored by its middle value (between its level and the next, the top band up
     to the largest value); grouped filled contours are translucent by default (alpha × 0.5), the groups overlap
   * colors: by default each level its color through the plot's color scale over the field's value range (a computed
-    color, legend titled like [[cljplot2.chart.field]]; the lowest level isn't the gradient's end); option `:color` - one color for every line; a grouping mapping (`:color` with
+    color, legend titled like [[cljplot2.chart.field]]; the lowest level isn't the gradient's end); option `:color` -
+    one color for every line; a grouping mapping (`:color` with
     categorical values, `:group`, other ordinal aesthetics) - a field per group (points / gridded data of the group)
     with its lines in the group's style, levels shared by the groups
   * `:width`, `:dash`, `:alpha` (multiplies the colors' alpha, a fraction)
