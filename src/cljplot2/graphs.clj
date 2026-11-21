@@ -491,13 +491,15 @@
    plot/builder-entries))
 
 (defn bundle
-  "Hierarchical edge bundling plot of `edges` (rows between leaves of `tree` - a [[cljplot2.data.tree/from-parents]]
-  tree, leaves by `:id`; `:from` / `:to` accessors) as a plot map: leaves around a circle (the radial layout of the
+  "Hierarchical edge bundling plot of `edges` (rows between leaves of `tree`, named as
+  [[cljplot2.data.tree/leaf-key]] - the `:id` of a `from-parents` tree, else the leaf name; `:from` / `:to`
+  accessors) as a plot map: leaves around a circle (the radial layout of the
   tree), each edge a B-spline along the tree path between its leaves, straightened by `:beta` (default 0.85, see
   [[cljplot2.data.tree/bundle-paths]]); edges coloured by the top-level group of their source leaf (`:color-by-group?`,
   default `true`; else `:edge-color`), with `:alpha` (default 0.4; the edges only - leaf points and legend keys stay
   opaque); leaf names outward around the circle
-  (`:labels?`, default `true`). Edges with an end that isn't a leaf are dropped (see `bundle-paths` for the count).
+  (`:labels?`, default `true`). Edges with an end that isn't a leaf are dropped (see `bundle-paths` for the count);
+  when every edge is dropped it throws `ex-info {:key :edges}` (nothing would be drawn).
   `:scales` (e.g. `{:color {:legend false}}`), `:title`, `:theme`. Options are validated first
   ([[bundle-options]]): an invalid value or an unknown key throws `ex-info {:key k}`.
 
@@ -512,11 +514,15 @@
         nodes (:nodes laid)
         top-group (fn [i] (let [chain (vec (take-while some? (iterate #(:parent (nodes %)) i)))]
                             (:name (nodes (nth chain (max 0 (- (count chain) 2)))))))
-        leaf-group (into {} (keep-indexed (fn [i n] (when (:leaf? n) [(:id n) (str (top-group i))])) nodes))
+        leaf-group (into {} (keep-indexed (fn [i n] (when (:leaf? n) [(tree/leaf-key n) (str (top-group i))])) nodes))
         {:keys [paths]} (tree/bundle-paths edges laid (cond-> {:beta beta} from (assoc :from from) to (assoc :to to)))
+        _ (when (and (seq edges) (empty? paths))
+            (schema/fail! (str "No bundle edge joins two different leaves of the tree: edge ends should name leaves - "
+                               "the :id of a from-parents tree, else the leaf name (see tree/leaf-key).")
+                          {:key :edges :value (count edges)}))
         from-of (data/row-accessor :from (or from :from))
         paths (mapv #(assoc % ::group (leaf-group (from-of %))) paths)
-        leaves (mapv #(assoc % ::group (leaf-group (:id %))) (filter :leaf? nodes))]
+        leaves (mapv #(assoc % ::group (leaf-group (tree/leaf-key %))) (filter :leaf? nodes))]
     (cond-> {:charts (cond-> [(chart/line (cond-> {:data paths :sort false :width 1 :stroke-alpha (double alpha)
                                                    :mapping (cond-> {:x :x :y :y :group :id} by-group? (assoc :color ::group))}
                                             (not by-group?) (assoc :color edge-color)))

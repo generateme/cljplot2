@@ -1,17 +1,23 @@
 ;; Book chapters in reading order (paths relative to notebooks/); the first one becomes the index page.
-;; Reference: concepts first (charts, builders and data functions follow); use case sections follow the R Graph
+;; Reference: four parts - concepts, charts, builders, data functions (with specific cases); Quarto books allow
+;; one level of parts, so they're consecutive parts named "Reference: ..."; use case sections follow the R Graph
 ;; Gallery site order; galleries: cljplot extras, lattice, vega.
 ;; Parts without chapters are left out of the book.
 ["book/index.clj"
- {:part "Reference" :chapters ["reference/intro.clj" "reference/render.clj" "reference/data_mapping.clj"
+ {:part "Reference: concepts" :chapters ["reference/intro.clj" "reference/render.clj" "reference/data_mapping.clj"
                                 "reference/aesthetics_legends.clj" "reference/scales_axes_coords.clj"
                                 "reference/layering_position.clj" "reference/labels_text.clj"
                                 "reference/facets_arrange.clj" "reference/theme.clj" "reference/shared_options.clj"
-                                "reference/errors.clj" "reference/limits.clj"
-                                "reference/charts_points_paths.clj" "reference/charts_series.clj"
+                                "reference/errors.clj" "reference/limits.clj"]}
+ {:part "Reference: charts" :chapters ["reference/charts_points_paths.clj" "reference/charts_series.clj"
                                 "reference/charts_annotations.clj" "reference/charts_bars_ranges.clj"
                                 "reference/charts_strip_distributions.clj" "reference/charts_distribution_stats.clj"
                                 "reference/charts_grids_fields.clj" "reference/charts_part_of_whole.clj"
                                 "reference/charts_multivariate_3d.clj"]}
+ {:part "Reference: builders" :chapters ["reference/builders_graphs.clj" "reference/builders_trees.clj"
+                                          "reference/builders_series.clj"]}
+ {:part "Reference: data functions" :chapters ["reference/data_levels.clj" "reference/data_graphs_trees.clj"
+                                "reference/data_sets_series.clj" "reference/data_fields.clj"
+                                "reference/specific_cases.clj"]}
  {:part "Use cases" :chapters ["use_cases/distribution.clj" "use_cases/colors.clj" "use_cases/evolution.clj" "use_cases/ranking.clj" "use_cases/part_of_a_whole.clj" "use_cases/correlation.clj" "use_cases/flow.clj"]}
  {:part "Galleries" :chapters ["galleries/cljplot_extras.clj" "galleries/lattice.clj" "galleries/vega.clj"]}]

@@ -1,0 +1,978 @@
+---
+format:
+  html:
+    toc: true
+    toc-location: right
+    toc-depth: 4
+    theme: cosmo
+    include-in-header:
+      text: |-
+        <style>
+        .data-table { width: fit-content; max-width: 100%; max-height: 15rem; overflow: auto; margin: 0 0 1rem 0; }
+        .data-table .table-responsive { overflow: visible; }
+        .data-table table { font-size: 0.75rem; width: auto; margin: 0; }
+        .data-table th, .data-table td { padding: 0.1rem 0.45rem !important; white-space: nowrap; }
+        .data-table thead th { position: sticky; top: 0; background: var(--bs-body-bg, #fff); }
+        </style>
+code-block-background: true
+
+---
+<style></style><style>.printedClojure .sourceCode {
+  background-color: transparent;
+  border-style: none;
+}
+</style><style>.clay-limit-image-width .clay-image {max-width: 100%}
+.clay-side-by-side .sourceCode {margin: 0}
+.clay-side-by-side {margin: 1em 0}
+</style>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js" type="text/javascript"></script><script src="https://code.jquery.com/ui/1.13.1/jquery-ui.min.js" type="text/javascript"></script>
+
+# Data functions: graphs and trees
+
+Functions turning edges, adjacency matrices, parent links, level columns or clusterings into graphs and trees,
+and laying them out as rows - node positions, edge paths, ring sectors, bands - that ordinary charts draw (the
+graph and tree builders are made of them). Options are checked against the table shown.
+
+
+::: {.sourceClojure}
+```clojure
+(ns reference.data-graphs-trees
+  (:require [fastmath.ml.clustering :as cl]
+            [fastmath.random :as r]
+            [fastmath.stats :as stats]
+            [cljplot2.chart :as chart]
+            [cljplot2.core :as plot]
+            [cljplot2.data.graph :as graph]
+            [cljplot2.data.hierarchy :as hierarchy]
+            [cljplot2.data.tree :as tree]
+            [cljplot2.describe :as describe]
+            [notebook-utils :as nu]))
+```
+:::
+
+
+Flights between airports (counts), the airports as node rows, and the same flows as a matrix:
+
+
+::: {.sourceClojure}
+```clojure
+(def flights [{:src "WAW" :dst "BER" :n 12} {:src "WAW" :dst "PRG" :n 5} {:src "BER" :dst "PRG" :n 8}
+              {:src "PRG" :dst "VIE" :n 6} {:src "VIE" :dst "WAW" :n 4} {:src "BER" :dst "VIE" :n 3}
+              {:src "WAW" :dst "VIE" :n 2} {:src "BUD" :dst "VIE" :n 7}])
+```
+:::
+
+
+
+```{=html}
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>src</th><th>dst</th><th>n</th></tr></thead><tbody><tr><td>WAW</td><td>BER</td><td>12</td></tr><tr><td>WAW</td><td>PRG</td><td>5</td></tr><tr><td>BER</td><td>PRG</td><td>8</td></tr><tr><td>PRG</td><td>VIE</td><td>6</td></tr><tr><td>VIE</td><td>WAW</td><td>4</td></tr><tr><td>BER</td><td>VIE</td><td>3</td></tr><tr><td>WAW</td><td>VIE</td><td>2</td></tr><tr><td>BUD</td><td>VIE</td><td>7</td></tr></tbody></table></div>
+```
+
+
+
+::: {.sourceClojure}
+```clojure
+(def airports [{:code "WAW" :city "Warsaw"} {:code "BER" :city "Berlin"} {:code "PRG" :city "Prague"}
+               {:code "VIE" :city "Vienna"} {:code "BUD" :city "Budapest"} {:code "KRK" :city "Krakow"}])
+```
+:::
+
+
+
+```{=html}
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>code</th><th>city</th></tr></thead><tbody><tr><td>WAW</td><td>Warsaw</td></tr><tr><td>BER</td><td>Berlin</td></tr><tr><td>PRG</td><td>Prague</td></tr><tr><td>VIE</td><td>Vienna</td></tr><tr><td>BUD</td><td>Budapest</td></tr><tr><td>KRK</td><td>Krakow</td></tr></tbody></table></div>
+```
+
+
+
+## graph/graph
+
+The graph of edge rows: nodes (the given node rows first, then ids seen only in edges) with their degrees, and
+edges with numeric weights. Undirected by default; directed graphs split degrees into in and out.
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:from</td><td>a keyword, a function or a categorical marker of one</td><td>:from</td><td>accessor of an edge row's source node id</td></tr><tr><td>:to</td><td>a keyword, a function or a categorical marker of one</td><td>:to</td><td>accessor of an edge row's target node id</td></tr><tr><td>:value</td><td>a keyword, a function or a categorical marker of one</td><td>:value</td><td>accessor of an edge row's weight, a finite number >= 0 (nil - 1)</td></tr><tr><td>:nodes</td><td>sequential of map or nil</td><td></td><td>node rows (each with an id), placed first in their order; ids seen only in edges follow</td></tr><tr><td>:id</td><td>a keyword, a function or a categorical marker of one</td><td>:id</td><td>accessor of a node row's id</td></tr><tr><td>:directed?</td><td>true or false or nil</td><td>false</td><td>a directed graph: degrees split into :in and :out</td></tr></tbody></table>
+```
+
+:::
+
+
+The flights as a directed graph with the airports as nodes - Krakow has no flights (degree 0):
+
+
+```{=html}
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>code</th><th>city</th><th>id</th><th>degree</th><th>in</th><th>out</th></tr></thead><tbody><tr><td>WAW</td><td>Warsaw</td><td>WAW</td><td>4</td><td>1</td><td>3</td></tr><tr><td>BER</td><td>Berlin</td><td>BER</td><td>3</td><td>1</td><td>2</td></tr><tr><td>PRG</td><td>Prague</td><td>PRG</td><td>3</td><td>2</td><td>1</td></tr><tr><td>VIE</td><td>Vienna</td><td>VIE</td><td>5</td><td>4</td><td>1</td></tr><tr><td>BUD</td><td>Budapest</td><td>BUD</td><td>1</td><td>0</td><td>1</td></tr><tr><td>KRK</td><td>Krakow</td><td>KRK</td><td>0</td><td>0</td><td>0</td></tr></tbody></table></div>
+```
+
+
+Its edges, weights as numbers (an edge without a weight counts 1):
+
+
+```{=html}
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>src</th><th>dst</th><th>n</th><th>from</th><th>to</th><th>value</th></tr></thead><tbody><tr><td>WAW</td><td>BER</td><td>12</td><td>WAW</td><td>BER</td><td>12.0</td></tr><tr><td>WAW</td><td>PRG</td><td>5</td><td>WAW</td><td>PRG</td><td>5.0</td></tr><tr><td>BER</td><td>PRG</td><td>8</td><td>BER</td><td>PRG</td><td>8.0</td></tr><tr><td>PRG</td><td>VIE</td><td>6</td><td>PRG</td><td>VIE</td><td>6.0</td></tr><tr><td>VIE</td><td>WAW</td><td>4</td><td>VIE</td><td>WAW</td><td>4.0</td></tr><tr><td>BER</td><td>VIE</td><td>3</td><td>BER</td><td>VIE</td><td>3.0</td></tr><tr><td>WAW</td><td>VIE</td><td>2</td><td>WAW</td><td>VIE</td><td>2.0</td></tr><tr><td>BUD</td><td>VIE</td><td>7</td><td>BUD</td><td>VIE</td><td>7.0</td></tr></tbody></table></div>
+```
+
+
+
+## graph/layout
+
+Node positions in the unit square: a force-directed layout (each connected component on its own, packed), a
+circle or random places. Edges get the positions of both ends - segments to draw.
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:layout</td><td>one of :circle :force :random</td><td>:force</td><td>node placement: :force (Fruchterman-Reingold), :circle or :random</td></tr><tr><td>:iterations</td><td>integer (at least 0)</td><td>500</td><td>steps of the force layout</td></tr><tr><td>:gravity</td><td>a non-negative finite number</td><td>1.0</td><td>pull of the force layout to each component's centroid, in units of the ideal edge length (0 - none)</td></tr><tr><td>:rng</td><td>a fastmath random generator or nil</td><td>a fresh unseeded generator every call</td><td>fastmath random generator of the force and random layouts, copied per call (seeded - the same layout every time)</td></tr></tbody></table>
+```
+
+:::
+
+
+The laid-out nodes (`:x`, `:y` added):
+
+
+```{=html}
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>id</th><th>degree</th><th>in</th><th>out</th><th>x</th><th>y</th></tr></thead><tbody><tr><td>WAW</td><td>4</td><td>4</td><td>4</td><td>0.3234363307746476</td><td>0.7801850395367322</td></tr><tr><td>BER</td><td>3</td><td>3</td><td>3</td><td>0.06158553022006996</td><td>0.4588596042823668</td></tr><tr><td>PRG</td><td>3</td><td>3</td><td>3</td><td>0.0</td><td>0.7826090954673459</td></tr><tr><td>VIE</td><td>5</td><td>5</td><td>5</td><td>0.544727205118378</td><td>0.46653057775449486</td></tr><tr><td>BUD</td><td>1</td><td>1</td><td>1</td><td>1.0</td><td>0.21739090453265397</td></tr></tbody></table></div>
+```
+
+
+The edges as segments, the nodes as points: the force layout (seeded, the same every build), a weaker pull to
+the centre after few iterations, a circle and random places:
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange (for [[title laid]
+                                       [[":layout :force (default)"
+                                         (graph/layout (graph/graph flights {:from :src :to :dst :value :n})
+                                                       {:rng (r/rng :mersenne 3)})]
+                                        [":iterations 20 :gravity 0.2"
+                                         (graph/layout (graph/graph flights {:from :src :to :dst :value :n})
+                                                       {:layout :force :iterations 20 :gravity 0.2 :rng (r/rng :mersenne 3)})]
+                                        [":layout :circle"
+                                         (graph/layout (graph/graph flights {:from :src :to :dst :value :n}) {:layout :circle})]
+                                        [":layout :random"
+                                         (graph/layout (graph/graph flights {:from :src :to :dst :value :n})
+                                                       {:layout :random :rng (r/rng :mersenne 3)})]]]
+                                   {:charts [(chart/segment {:data (:edges laid) :mapping {:x :x :y :y :xend :xend :yend :yend}})
+                                             (chart/scatter {:data (:nodes laid) :mapping {:x :x :y :y} :size 14})
+                                             (chart/text {:data (:nodes laid) :mapping {:x :x :y :y :label :id} :size 8})]
+                                    :aspect :iso
+                                    :scales {:x {:axis false} :y {:axis false}}
+                                    :labels {:title title}})
+                                 {:columns 2})
+                   {:width 900 :height 640})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.data_graphs_trees_files/image0.png)
+:::
+
+
+
+## graph/adjacency->edges
+
+Edge rows of a square matrix of weights between named nodes; a zero or missing cell is no edge. Undirected, only
+the upper triangle (and the diagonal) is read.
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:directed?</td><td>true or false</td><td>true</td><td>read the whole matrix (false - only the upper triangle and the diagonal)</td></tr></tbody></table>
+```
+
+:::
+
+
+A symmetric matrix of shared projects between four teams: read whole (each pair twice, directed) and as an
+undirected graph (each pair once):
+
+
+::: {.sourceClojure}
+```clojure
+(def shared-projects [[0 3 1 0] [3 0 2 4] [1 2 0 0] [0 4 0 0]])
+```
+:::
+
+
+
+```{=html}
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>from</th><th>to</th><th>value</th></tr></thead><tbody><tr><td>design</td><td>backend</td><td>3</td></tr><tr><td>design</td><td>data</td><td>1</td></tr><tr><td>backend</td><td>design</td><td>3</td></tr><tr><td>backend</td><td>data</td><td>2</td></tr><tr><td>backend</td><td>ops</td><td>4</td></tr><tr><td>data</td><td>design</td><td>1</td></tr><tr><td>data</td><td>backend</td><td>2</td></tr><tr><td>ops</td><td>backend</td><td>4</td></tr></tbody></table></div>
+```
+
+
+
+```{=html}
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>from</th><th>to</th><th>value</th></tr></thead><tbody><tr><td>design</td><td>backend</td><td>3</td></tr><tr><td>design</td><td>data</td><td>1</td></tr><tr><td>backend</td><td>data</td><td>2</td></tr><tr><td>backend</td><td>ops</td><td>4</td></tr></tbody></table></div>
+```
+
+
+
+## graph/arc-layout
+
+An arc diagram as rows: nodes on a line at 0, 1, ... in node order, each edge a semicircle between its ends
+(rows sampled along it).
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:order</td><td>:cluster or sequential of any value or nil</td><td>the nodes' input order</td><td>node order: a sequence of ids (those first, the rest after them in input order) or :cluster (nodes linked to the same others side by side)</td></tr></tbody></table>
+```
+
+:::
+
+
+The arcs (rows of each edge's semicircle, `:edge` its index):
+
+
+```{=html}
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>edge</th><th>from</th><th>to</th><th>value</th><th>x</th><th>y</th></tr></thead><tbody><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.0</td><td>3.061616997868383E-17</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>3.0458649045211894E-4</td><td>0.01744974835125054</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.0012179748700879012</td><td>0.03487823687206273</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.002739052315863355</td><td>0.05226423163382673</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.004865965629214819</td><td>0.06958655048003273</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.00759612349389599</td><td>0.08682408883346521</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.010926199633097211</td><td>0.10395584540887973</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.014852136862001764</td><td>0.12096094779983384</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.019369152030840553</td><td>0.13781867790849958</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.024471741852423234</td><td>0.15450849718747373</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.03015368960704584</td><td>0.1710100716628344</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.03640807271660634</td><td>0.1873032967079561</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.04322727117869957</td><td>0.2033683215379001</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.05060297685041648</td><td>0.21918557339453873</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.05852620357053656</td><td>0.23473578139294543</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.06698729810778065</td><td>0.24999999999999994</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.07597595192178702</td><td>0.26495963211660245</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.08548121372247913</td><td>0.2795964517353734</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.09549150281252627</td><td>0.29389262614623657</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.10599462319663905</td><td>0.30783073766282915</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.116977778440511</td><td>0.3213938048432697</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.12842758726130293</td><td>0.3345653031794291</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.14033009983067446</td><td>0.3473291852294986</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.15267081477050132</td><td>0.35966990016932554</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.16543469682057088</td><td>0.3715724127386971</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.17860619515673037</td><td>0.383022221559489</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.19216926233717085</td><td>0.39400537680336095</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.20610737385376343</td><td>0.4045084971874737</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.2204035482646266</td><td>0.41451878627752087</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.23504036788339755</td><td>0.42402404807821303</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.25</td><td>0.4330127018922193</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.2652642186070546</td><td>0.4414737964294635</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.2808144266054613</td><td>0.4493970231495835</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.2966316784620998</td><td>0.45677272882130043</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.3126967032920439</td><td>0.4635919272833937</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.3289899283371656</td><td>0.46984631039295416</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.3454915028125263</td><td>0.47552825814757677</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.36218132209150045</td><td>0.48063084796915945</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.3790390522001662</td><td>0.48514786313799824</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.3960441545911204</td><td>0.48907380036690284</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.41317591116653485</td><td>0.492403876506104</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.4304134495199673</td><td>0.4951340343707852</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.4477357683661733</td><td>0.49726094768413664</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.4651217631279374</td><td>0.49878202512991215</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.4825502516487495</td><td>0.4996954135095479</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.5</td><td>0.5</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.5174497483512503</td><td>0.4996954135095479</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.5348782368720627</td><td>0.4987820251299121</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.5522642316338267</td><td>0.49726094768413664</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.5695865504800326</td><td>0.4951340343707852</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.5868240888334652</td><td>0.492403876506104</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.6039558454088796</td><td>0.48907380036690284</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.6209609477998338</td><td>0.48514786313799824</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.6378186779084996</td><td>0.48063084796915945</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.6545084971874737</td><td>0.47552825814757677</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.6710100716628344</td><td>0.46984631039295416</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.6873032967079561</td><td>0.4635919272833937</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.7033683215379001</td><td>0.4567727288213005</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.7191855733945388</td><td>0.44939702314958346</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.7347357813929453</td><td>0.4414737964294635</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.7499999999999999</td><td>0.43301270189221935</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.7649596321166025</td><td>0.42402404807821303</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.7795964517353734</td><td>0.41451878627752087</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.7938926261462366</td><td>0.4045084971874737</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.8078307376628291</td><td>0.39400537680336095</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.8213938048432696</td><td>0.383022221559489</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.834565303179429</td><td>0.37157241273869723</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.8473291852294986</td><td>0.3596699001693255</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.8596699001693255</td><td>0.34732918522949874</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.8715724127386972</td><td>0.334565303179429</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.883022221559489</td><td>0.32139380484326974</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.8940053768033609</td><td>0.30783073766282915</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.9045084971874737</td><td>0.29389262614623657</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.9145187862775208</td><td>0.2795964517353734</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.9240240480782129</td><td>0.26495963211660245</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.9330127018922194</td><td>0.24999999999999994</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.9414737964294635</td><td>0.23473578139294532</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.9493970231495834</td><td>0.2191855733945388</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.9567727288213005</td><td>0.2033683215379</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.9635919272833937</td><td>0.1873032967079561</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.9698463103929542</td><td>0.1710100716628344</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.9755282581475768</td><td>0.15450849718747373</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.9806308479691594</td><td>0.13781867790849958</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.9851478631379982</td><td>0.12096094779983384</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.9890738003669028</td><td>0.10395584540887962</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.9924038765061041</td><td>0.08682408883346532</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.9951340343707852</td><td>0.06958655048003262</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.9972609476841366</td><td>0.05226423163382684</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.9987820251299121</td><td>0.03487823687206273</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>0.9996954135095479</td><td>0.01744974835125054</td></tr><tr><td>0</td><td>WAW</td><td>BER</td><td>12.0</td><td>1.0</td><td>3.061616997868383E-17</td></tr><tr><td>1</td><td>WAW</td><td>PRG</td><td>5.0</td><td>0.0</td><td>6.123233995736766E-17</td></tr><tr><td>1</td><td>WAW</td><td>PRG</td><td>5.0</td><td>6.091729809042379E-4</td><td>0.03489949670250108</td></tr><tr><td>1</td><td>WAW</td><td>PRG</td><td>5.0</td><td>0.0024359497401758023</td><td>0.06975647374412546</td></tr><tr><td>1</td><td>WAW</td><td>PRG</td><td>5.0</td><td>0.00547810463172671</td><td>0.10452846326765346</td></tr><tr><td>1</td><td>WAW</td><td>PRG</td><td>5.0</td><td>0.009731931258429638</td><td>0.13917310096006547</td></tr><tr><td>1</td><td>WAW</td><td>PRG</td><td>5.0</td><td>0.01519224698779198</td><td>0.17364817766693041</td></tr><tr><td>1</td><td>WAW</td><td>PRG</td><td>5.0</td><td>0.021852399266194422</td><td>0.20791169081775945</td></tr><tr><td>1</td><td>WAW</td><td>PRG</td><td>5.0</td><td>0.029704273724003527</td><td>0.24192189559966767</td></tr><tr><td>1</td><td>WAW</td><td>PRG</td><td>5.0</td><td>0.038738304061681106</td><td>0.27563735581699916</td></tr><tr><td>…</td><td>…</td><td>…</td><td>…</td><td>…</td><td>…</td></tr></tbody></table></div>
+```
+
+
+Drawn as lines through the arc rows over the nodes: the input order, an order given by ids (those first) and
+the clustered order (nodes linked to the same others side by side):
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange (for [[title laid]
+                                       [["input order" (graph/arc-layout (graph/graph flights {:from :src :to :dst :value :n}))]
+                                        [":order [\"VIE\" \"BUD\"]"
+                                         (graph/arc-layout (graph/graph flights {:from :src :to :dst :value :n}) {:order ["VIE" "BUD"]})]
+                                        [":order :cluster"
+                                         (graph/arc-layout (graph/graph flights {:from :src :to :dst :value :n}) {:order :cluster})]]]
+                                   {:charts [(chart/line {:data (:arcs laid) :mapping {:x :x :y :y :group :edge :size :value}
+                                                          :sort false})
+                                             (chart/scatter {:data (:nodes laid) :mapping {:x :x :y :y} :size 10})]
+                                    :scales {:x {:ticks (vec (range 5))
+                                                 :formatter (let [ids (mapv :id (:nodes laid))] #(get ids (long %) ""))}
+                                             :y {:axis false}}
+                                    :labels {:title title}
+                                    :legend false})
+                                 {:columns 3})
+                   {:width 1000 :height 260})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.data_graphs_trees_files/image1.png)
+:::
+
+
+
+## graph/chord-layout
+
+A chord diagram as polygon rows in the unit circle: a ring sector per node (its angle by the node's flow) and a
+ribbon per linked pair (undirected) or edge (directed) through the centre.
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:order</td><td>:cluster or sequential of any value or nil</td><td>the nodes' input order</td><td>node order: a sequence of ids (those first, the rest after them in input order) or :cluster (nodes linked to the same others side by side)</td></tr><tr><td>:pad</td><td>a non-negative finite number</td><td>2.0</td><td>gap after every ring sector in degrees (must leave room for the sectors)</td></tr><tr><td>:inner</td><td>a number in (0 1)</td><td>0.92</td><td>inner radius of the ring, where the ribbons end (the outer one is 1)</td></tr><tr><td>:min-value</td><td>a non-negative finite number or nil</td><td></td><td>flows of a pair (summed) below it are left out and counted in :dropped (nil - none)</td></tr></tbody></table>
+```
+
+:::
+
+
+The ring sectors (`:start` / `:end` in degrees, clockwise from the top):
+
+
+```{=html}
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>id</th><th>start</th><th>end</th><th>value</th></tr></thead><tbody><tr><td>WAW</td><td>0.0</td><td>85.63829787234043</td><td>23.0</td></tr><tr><td>BER</td><td>87.63829787234043</td><td>173.27659574468086</td><td>23.0</td></tr><tr><td>PRG</td><td>175.27659574468086</td><td>246.0212765957447</td><td>19.0</td></tr><tr><td>VIE</td><td>248.02127659574467</td><td>329.936170212766</td><td>22.0</td></tr><tr><td>BUD</td><td>331.93617021276594</td><td>358.0</td><td>7.0</td></tr></tbody></table></div>
+```
+
+
+Ribbons coloured by their source, sectors by node: the default ring, wide gaps and a thin ring, and the directed
+graph (a ribbon per edge) in clustered order without flows under 4 (their edges are dropped):
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange (for [[title {:keys [ribbons arcs]}]
+                                       [["defaults" (graph/chord-layout (graph/graph flights {:from :src :to :dst :value :n}))]
+                                        [":pad 12, :inner 0.75"
+                                         (graph/chord-layout (graph/graph flights {:from :src :to :dst :value :n})
+                                                             {:pad 12 :inner 0.75})]
+                                        [":order :cluster :min-value 4"
+                                         (graph/chord-layout (graph/graph flights {:from :src :to :dst :value :n :directed? true})
+                                                             {:order :cluster :min-value 4})]]]
+                                   {:charts [(chart/polygon {:data ribbons :alpha 0.6 :mapping {:x :x :y :y :group :ribbon :color :from}})
+                                             (chart/polygon {:data arcs :mapping {:x :x :y :y :color :group}})]
+                                    :aspect :iso
+                                    :scales {:x {:axis false} :y {:axis false}}
+                                    :labels {:title title}
+                                    :legend (= title "defaults")})
+                                 {:columns 3 :widths [1.3 1 1]})
+                   {:width 1000 :height 330})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.data_graphs_trees_files/image2.png)
+:::
+
+
+
+## graph/sankey-layout
+
+A sankey diagram as rows in the unit square: nodes in columns as rectangles, every edge a band as thick as its
+flow from its source's right side to its target's left side (edges are flows, whatever the graph's direction).
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:align</td><td>one of :center :justify :left :right</td><td>:justify</td><td>the column of a node: :justify (sinks in the last column), :left, :right (by the longest path to a sink) or :center</td></tr><tr><td>:layer</td><td>a keyword, a function or a categorical marker of one or nil</td><td>columns from :align</td><td>accessor of the node rows giving the column (integers >= 0, every edge to a later one; wins over :align)</td></tr><tr><td>:node-width</td><td>a number in (0 1)</td><td>0.03</td><td>node width, a fraction of the unit square's width</td></tr><tr><td>:pad</td><td>a non-negative finite number</td><td>0.02</td><td>least gap between the nodes of a column, a fraction of the unit square's height</td></tr><tr><td>:iterations</td><td>integer (at least 0)</td><td>6</td><td>relaxation sweeps moving the nodes towards their links' ends (0 - spread in the start order)</td></tr><tr><td>:node-sort</td><td>one of :input or nil</td><td></td><td>nil - relaxation reorders a column, :input - the input order kept</td></tr></tbody></table>
+```
+
+:::
+
+
+The nodes with their columns (`:layer`) and rectangles (`:x0 :x1 :y0 :y1`):
+
+
+```{=html}
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>value</th><th>y1</th><th>layer</th><th>out</th><th>id</th><th>degree</th><th>y0</th><th>x1</th><th>x0</th><th>in</th></tr></thead><tbody><tr><td>17.0</td><td>1.0</td><td>0</td><td>2</td><td>WAW</td><td>2</td><td>0.3058333333333335</td><td>0.03</td><td>0.0</td><td>0</td></tr><tr><td>7.0</td><td>0.2858333333333335</td><td>0</td><td>1</td><td>BUD</td><td>1</td><td>1.1102230246251565E-16</td><td>0.03</td><td>0.0</td><td>0</td></tr><tr><td>12.0</td><td>0.9907741294248698</td><td>1</td><td>2</td><td>BER</td><td>3</td><td>0.5007741294248699</td><td>0.3533333333333333</td><td>0.3233333333333333</td><td>1</td></tr><tr><td>13.0</td><td>0.7422724882972507</td><td>2</td><td>1</td><td>PRG</td><td>3</td><td>0.2114391549639174</td><td>0.6766666666666666</td><td>0.6466666666666666</td><td>2</td></tr><tr><td>16.0</td><td>0.6926601606219035</td><td>3</td><td>0</td><td>VIE</td><td>3</td><td>0.039326827288570176</td><td>1.0</td><td>0.97</td><td>3</td></tr></tbody></table></div>
+```
+
+
+Bands (polygons grouped by `:link`) under the node rectangles (grouped by `:rect`), for each column alignment -
+Krakow, a dead end after Warsaw, sits in the last column (`:justify`, `:right`) or right after Warsaw (`:left`,
+`:center`); Budapest starts in the first column only with `:left` and `:justify`:
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange (for [[title {:keys [rects bands]}]
+                                       [[":align :justify (default)"
+                                         (graph/sankey-layout (graph/graph [{:from "WAW" :to "BER" :value 12} {:from "WAW" :to "PRG" :value 5}
+                                                                            {:from "BER" :to "PRG" :value 8} {:from "PRG" :to "VIE" :value 6}
+                                                                            {:from "BUD" :to "PRG" :value 7} {:from "WAW" :to "KRK" :value 4}]))]
+                                        [":align :left"
+                                         (graph/sankey-layout (graph/graph [{:from "WAW" :to "BER" :value 12} {:from "WAW" :to "PRG" :value 5}
+                                                                            {:from "BER" :to "PRG" :value 8} {:from "PRG" :to "VIE" :value 6}
+                                                                            {:from "BUD" :to "PRG" :value 7} {:from "WAW" :to "KRK" :value 4}])
+                                                              {:align :left})]
+                                        [":align :right"
+                                         (graph/sankey-layout (graph/graph [{:from "WAW" :to "BER" :value 12} {:from "WAW" :to "PRG" :value 5}
+                                                                            {:from "BER" :to "PRG" :value 8} {:from "PRG" :to "VIE" :value 6}
+                                                                            {:from "BUD" :to "PRG" :value 7} {:from "WAW" :to "KRK" :value 4}])
+                                                              {:align :right})]
+                                        [":align :center"
+                                         (graph/sankey-layout (graph/graph [{:from "WAW" :to "BER" :value 12} {:from "WAW" :to "PRG" :value 5}
+                                                                            {:from "BER" :to "PRG" :value 8} {:from "PRG" :to "VIE" :value 6}
+                                                                            {:from "BUD" :to "PRG" :value 7} {:from "WAW" :to "KRK" :value 4}])
+                                                              {:align :center})]]]
+                                   {:charts [(chart/polygon {:data bands :alpha 0.5 :mapping {:x :x :y :y :group :link :color :from}})
+                                             (chart/polygon {:data rects :mapping {:x :x :y :y :group :rect :color :node}})]
+                                    :scales {:x {:axis false} :y {:axis false}}
+                                    :labels {:title title}
+                                    :legend false})
+                                 {:columns 4})
+                   {:width 1000 :height 280})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.data_graphs_trees_files/image3.png)
+:::
+
+
+Columns given by a node column (`:layer :stage`, winning over `:align`), wide nodes (`:node-width 0.08`) far apart
+(`:pad 0.1`), no relaxation, nodes in input order (left), against the defaults - columns from `:align`, six
+relaxation sweeps moving the nodes towards their links' ends (right):
+
+
+::: {.sourceClojure}
+```clojure
+(def stages [{:id "visit" :stage 0} {:id "search" :stage 1} {:id "browse" :stage 1} {:id "cart" :stage 2} {:id "buy" :stage 3}])
+```
+:::
+
+
+
+```{=html}
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>id</th><th>stage</th></tr></thead><tbody><tr><td>visit</td><td>0</td></tr><tr><td>search</td><td>1</td></tr><tr><td>browse</td><td>1</td></tr><tr><td>cart</td><td>2</td></tr><tr><td>buy</td><td>3</td></tr></tbody></table></div>
+```
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange (for [[title {:keys [rects bands]}]
+                                       [[":layer, :iterations 0, :node-sort :input"
+                                         (graph/sankey-layout (graph/graph [{:from "visit" :to "search" :value 6} {:from "visit" :to "browse" :value 9}
+                                                                            {:from "search" :to "cart" :value 4} {:from "browse" :to "cart" :value 3}
+                                                                            {:from "cart" :to "buy" :value 5} {:from "browse" :to "buy" :value 1}]
+                                                                           {:nodes stages})
+                                                              {:layer :stage :node-width 0.08 :pad 0.1 :iterations 0 :node-sort :input})]
+                                        ["defaults"
+                                         (graph/sankey-layout (graph/graph [{:from "visit" :to "search" :value 6} {:from "visit" :to "browse" :value 9}
+                                                                            {:from "search" :to "cart" :value 4} {:from "browse" :to "cart" :value 3}
+                                                                            {:from "cart" :to "buy" :value 5} {:from "browse" :to "buy" :value 1}]
+                                                                           {:nodes stages}))]]]
+                                   {:charts [(chart/polygon {:data bands :alpha 0.5 :mapping {:x :x :y :y :group :link :color :from}})
+                                             (chart/polygon {:data rects :mapping {:x :x :y :y :group :rect :color :node}})]
+                                    :scales {:x {:axis false} :y {:axis false}}
+                                    :labels {:title title}
+                                    :legend (= title "defaults")})
+                                 {:columns 2 :widths [1 1.2]})
+                   {:width 1000 :height 320})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.data_graphs_trees_files/image4.png)
+:::
+
+
+
+## graph/alluvial-graph
+
+The directed graph of an alluvial diagram: a node per level of every axis (a column each), an edge per pair of
+levels of consecutive axes and fill level, with the summed weight - for `sankey-layout` with fixed columns.
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:axes (required)</td><td>sequential of a keyword, a function or a categorical marker of one (at least 2)</td><td></td><td>accessors of the axes, in column order (at least 2)</td></tr><tr><td>:value</td><td>a keyword, a function or a categorical marker of one or nil</td><td>1 per row</td><td>accessor of a row's weight, a finite number >= 0 (nil - 1)</td></tr><tr><td>:fill</td><td>a keyword, a function or a categorical marker of one or nil</td><td>the first axis</td><td>accessor of the level the strands are grouped (and coloured) by</td></tr></tbody></table>
+```
+
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(def passengers [{:class "1st" :sex "f" :survived "yes" :n 140} {:class "1st" :sex "m" :survived "no" :n 118}
+                 {:class "2nd" :sex "f" :survived "yes" :n 80} {:class "2nd" :sex "m" :survived "no" :n 154}
+                 {:class "3rd" :sex "f" :survived "no" :n 106} {:class "3rd" :sex "m" :survived "no" :n 422}
+                 {:class "3rd" :sex "f" :survived "yes" :n 90} {:class "1st" :sex "m" :survived "yes" :n 62}])
+```
+:::
+
+
+
+```{=html}
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>class</th><th>sex</th><th>survived</th><th>n</th></tr></thead><tbody><tr><td>1st</td><td>f</td><td>yes</td><td>140</td></tr><tr><td>1st</td><td>m</td><td>no</td><td>118</td></tr><tr><td>2nd</td><td>f</td><td>yes</td><td>80</td></tr><tr><td>2nd</td><td>m</td><td>no</td><td>154</td></tr><tr><td>3rd</td><td>f</td><td>no</td><td>106</td></tr><tr><td>3rd</td><td>m</td><td>no</td><td>422</td></tr><tr><td>3rd</td><td>f</td><td>yes</td><td>90</td></tr><tr><td>1st</td><td>m</td><td>yes</td><td>62</td></tr></tbody></table></div>
+```
+
+
+The edges, weighted by `:n` and grouped by the survival level:
+
+
+```{=html}
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>from</th><th>to</th><th>value</th><th>fill</th></tr></thead><tbody><tr><td>[0 "1st"]</td><td>[1 "m"]</td><td>118.0</td><td>no</td></tr><tr><td>[0 "2nd"]</td><td>[1 "m"]</td><td>154.0</td><td>no</td></tr><tr><td>[0 "3rd"]</td><td>[1 "m"]</td><td>422.0</td><td>no</td></tr><tr><td>[0 "3rd"]</td><td>[1 "f"]</td><td>106.0</td><td>no</td></tr><tr><td>[1 "m"]</td><td>[2 "no"]</td><td>694.0</td><td>no</td></tr><tr><td>[1 "f"]</td><td>[2 "no"]</td><td>106.0</td><td>no</td></tr><tr><td>[0 "1st"]</td><td>[1 "m"]</td><td>62.0</td><td>yes</td></tr><tr><td>[0 "3rd"]</td><td>[1 "f"]</td><td>90.0</td><td>yes</td></tr><tr><td>[0 "1st"]</td><td>[1 "f"]</td><td>140.0</td><td>yes</td></tr><tr><td>[0 "2nd"]</td><td>[1 "f"]</td><td>80.0</td><td>yes</td></tr><tr><td>[1 "m"]</td><td>[2 "yes"]</td><td>62.0</td><td>yes</td></tr><tr><td>[1 "f"]</td><td>[2 "yes"]</td><td>310.0</td><td>yes</td></tr></tbody></table></div>
+```
+
+
+Laid out by `sankey-layout` with the axes as columns and the input order kept, strands coloured by their fill
+level - by survival (left) and by class, the default first axis (right):
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange (for [[title {:keys [rects bands]}]
+                                       [[":fill :survived"
+                                         (graph/sankey-layout (graph/alluvial-graph passengers {:axes [:class :sex :survived] :value :n :fill :survived})
+                                                              {:layer :layer :node-sort :input :iterations 0})]
+                                        ["default :fill (the first axis)"
+                                         (graph/sankey-layout (graph/alluvial-graph passengers {:axes [:class :sex :survived] :value :n})
+                                                              {:layer :layer :node-sort :input :iterations 0})]]]
+                                   {:charts [(chart/polygon {:data bands :alpha 0.6 :mapping {:x :x :y :y :group :link :color :fill}})
+                                             (chart/polygon {:data rects :color [90 90 90] :stroke-color :white
+                                                             :mapping {:x :x :y :y :group :rect}})]
+                                    :scales {:x {:axis false} :y {:axis false}}
+                                    :labels {:title title}})
+                                 {:columns 2})
+                   {:width 1000 :height 320})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.data_graphs_trees_files/image5.png)
+:::
+
+
+
+## tree/from-hclust
+
+A tree of a fastmath hierarchical clustering (`fastmath.ml.clustering/hclust`): groups with their merge
+heights, leaves named by the given labels. It takes no options.
+
+Data: Motor Trend car road tests (1974), R datasets package `mtcars` (Henderson & Velleman 1981); licence: Part of R (GPL-2 | GPL-3).
+
+
+::: {.sourceClojure}
+```clojure
+(def mtcars (take 12 (nu/dataset :mtcars)))
+```
+:::
+
+
+
+```{=html}
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>model</th><th>mpg</th><th>cyl</th><th>disp</th><th>hp</th><th>drat</th><th>wt</th><th>qsec</th><th>vs</th><th>am</th><th>gear</th><th>carb</th></tr></thead><tbody><tr><td>Mazda RX4</td><td>21</td><td>6</td><td>160</td><td>110</td><td>3.9</td><td>2.62</td><td>16.46</td><td>0</td><td>1</td><td>4</td><td>4</td></tr><tr><td>Mazda RX4 Wag</td><td>21</td><td>6</td><td>160</td><td>110</td><td>3.9</td><td>2.875</td><td>17.02</td><td>0</td><td>1</td><td>4</td><td>4</td></tr><tr><td>Datsun 710</td><td>22.8</td><td>4</td><td>108</td><td>93</td><td>3.85</td><td>2.32</td><td>18.61</td><td>1</td><td>1</td><td>4</td><td>1</td></tr><tr><td>Hornet 4 Drive</td><td>21.4</td><td>6</td><td>258</td><td>110</td><td>3.08</td><td>3.215</td><td>19.44</td><td>1</td><td>0</td><td>3</td><td>1</td></tr><tr><td>Hornet Sportabout</td><td>18.7</td><td>8</td><td>360</td><td>175</td><td>3.15</td><td>3.44</td><td>17.02</td><td>0</td><td>0</td><td>3</td><td>2</td></tr><tr><td>Valiant</td><td>18.1</td><td>6</td><td>225</td><td>105</td><td>2.76</td><td>3.46</td><td>20.22</td><td>1</td><td>0</td><td>3</td><td>1</td></tr><tr><td>Duster 360</td><td>14.3</td><td>8</td><td>360</td><td>245</td><td>3.21</td><td>3.57</td><td>15.84</td><td>0</td><td>0</td><td>3</td><td>4</td></tr><tr><td>Merc 240D</td><td>24.4</td><td>4</td><td>146.7</td><td>62</td><td>3.69</td><td>3.19</td><td>20</td><td>1</td><td>0</td><td>4</td><td>2</td></tr><tr><td>Merc 230</td><td>22.8</td><td>4</td><td>140.8</td><td>95</td><td>3.92</td><td>3.15</td><td>22.9</td><td>1</td><td>0</td><td>4</td><td>2</td></tr><tr><td>Merc 280</td><td>19.2</td><td>6</td><td>167.6</td><td>123</td><td>3.92</td><td>3.44</td><td>18.3</td><td>1</td><td>0</td><td>4</td><td>4</td></tr><tr><td>Merc 280C</td><td>17.8</td><td>6</td><td>167.6</td><td>123</td><td>3.92</td><td>3.44</td><td>18.9</td><td>1</td><td>0</td><td>4</td><td>4</td></tr><tr><td>Merc 450SE</td><td>16.4</td><td>8</td><td>275.8</td><td>180</td><td>3.07</td><td>4.07</td><td>17.4</td><td>0</td><td>0</td><td>3</td><td>3</td></tr></tbody></table></div>
+```
+
+
+The cars standardized on four variables, clustered with complete linkage; the tree's leaves in order:
+
+
+::: {.sourceClojure}
+```clojure
+(def car-features (let [cols (for [k [:mpg :hp :wt :qsec]] (stats/standardize (map k mtcars)))]
+                    (apply mapv vector cols)))
+```
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(mapv :name (tree/leaves (tree/from-hclust (cl/hclust car-features {:method :complete}) (mapv :model mtcars))))
+```
+:::
+
+
+
+::: {.printedClojure}
+```clojure
+["Duster 360"
+ "Hornet Sportabout"
+ "Merc 450SE"
+ "Datsun 710"
+ "Mazda RX4"
+ "Mazda RX4 Wag"
+ "Hornet 4 Drive"
+ "Valiant"
+ "Merc 280"
+ "Merc 280C"
+ "Merc 240D"
+ "Merc 230"]
+
+```
+:::
+
+
+The linkage methods of `hclust` (`:method`): `:single`, `:complete` (default), `:average`, `:weighted`,
+`:centroid`, `:median`, `:ward`, `:ward-d` and the divisive `:diana`. Their trees of the same cars:
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange (for [method [:single :complete :average :weighted :centroid :median :ward :ward-d :diana]]
+                                   (plot/dendrogram (tree/from-hclust (cl/hclust car-features {:method method}) (mapv :model mtcars))
+                                                    {:title (str ":method " method)}))
+                                 {:columns 3})
+                   {:width 1000 :height 800})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.data_graphs_trees_files/image6.png)
+:::
+
+
+
+## tree/from-levels
+
+A tree of rows grouped by level columns, outer level first: a group per level path, a leaf per row.
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:hierarchy</td><td>sequential of a keyword, a function or a categorical marker of one or nil</td><td></td><td>level accessors, outer level first (none - a root without children)</td></tr></tbody></table>
+```
+
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(def offices [{:region "Europe" :country "Poland" :city "Warsaw"} {:region "Europe" :country "Poland" :city "Krakow"}
+              {:region "Europe" :country "Czechia" :city "Prague"} {:region "Asia" :country "Japan" :city "Tokyo"}
+              {:region "Asia" :country "Japan" :city "Osaka"} {:region "Asia" :country "India" :city "Pune"}])
+```
+:::
+
+
+
+```{=html}
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>region</th><th>country</th><th>city</th></tr></thead><tbody><tr><td>Europe</td><td>Poland</td><td>Warsaw</td></tr><tr><td>Europe</td><td>Poland</td><td>Krakow</td></tr><tr><td>Europe</td><td>Czechia</td><td>Prague</td></tr><tr><td>Asia</td><td>Japan</td><td>Tokyo</td></tr><tr><td>Asia</td><td>Japan</td><td>Osaka</td></tr><tr><td>Asia</td><td>India</td><td>Pune</td></tr></tbody></table></div>
+```
+
+
+Its leaves (rows) in tree order, and the tree drawn by `tree/node-link-layout` below:
+
+
+::: {.sourceClojure}
+```clojure
+(mapv :city (tree/leaves (tree/from-levels offices {:hierarchy [:region :country]})))
+```
+:::
+
+
+
+::: {.printedClojure}
+```clojure
+[nil nil nil nil]
+
+```
+:::
+
+
+
+## tree/from-parents
+
+A tree of rows with ids and parent ids (as d3 `stratify`): the row without a parent is the root, children in row
+order, names from a column (the id by default).
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:id</td><td>a keyword, a function or a categorical marker of one</td><td>:id</td><td>accessor of a row's node id</td></tr><tr><td>:parent</td><td>a keyword, a function or a categorical marker of one</td><td>:parent</td><td>accessor of a row's parent id (nil - the root)</td></tr><tr><td>:name</td><td>a keyword, a function or a categorical marker of one or nil</td><td>the id accessor</td><td>accessor of a node's name</td></tr></tbody></table>
+```
+
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(def org [{:emp 1 :boss nil :who "CEO"} {:emp 2 :boss 1 :who "CTO"} {:emp 3 :boss 1 :who "CFO"}
+          {:emp 4 :boss 2 :who "dev lead"} {:emp 5 :boss 2 :who "ops lead"} {:emp 6 :boss 4 :who "developer"}])
+```
+:::
+
+
+
+```{=html}
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>emp</th><th>boss</th><th>who</th></tr></thead><tbody><tr><td>1</td><td></td><td>CEO</td></tr><tr><td>2</td><td>1</td><td>CTO</td></tr><tr><td>3</td><td>1</td><td>CFO</td></tr><tr><td>4</td><td>2</td><td>dev lead</td></tr><tr><td>5</td><td>2</td><td>ops lead</td></tr><tr><td>6</td><td>4</td><td>developer</td></tr></tbody></table></div>
+```
+
+
+
+::: {.sourceClojure}
+```clojure
+(mapv :name (tree/leaves (tree/from-parents org {:id :emp :parent :boss :name :who})))
+```
+:::
+
+
+
+::: {.printedClojure}
+```clojure
+["developer" "ops lead" "CFO"]
+
+```
+:::
+
+
+
+## tree/leaves
+
+The leaves under a node, in order (it takes no options) - above the leaves of a clustering, of level groups and
+of parent links; here of one subtree, the CTO's:
+
+
+::: {.sourceClojure}
+```clojure
+(mapv :name (tree/leaves (first (:children (tree/from-parents org {:id :emp :parent :boss :name :who})))))
+```
+:::
+
+
+
+::: {.printedClojure}
+```clojure
+["developer" "ops lead"]
+
+```
+:::
+
+
+
+## tree/layout
+
+A dendrogram layout: nodes at their heights, leaves one step apart, an elbow path per branch; optionally cut into
+coloured clusters or bent around a circle.
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:k</td><td>a positive integer or nil</td><td>no clusters (every :cluster nil)</td><td>cluster count: cutting the k - 1 highest groups leaves k subtrees, clusters 1..k in leaf order (at most the leaf count)</td></tr><tr><td>:circular</td><td>true or false or nil</td><td>false</td><td>radial: breadth as the angle over :span degrees, height (or depth) as the radius; points in [-1, 1]</td></tr><tr><td>:span</td><td>a positive finite number</td><td>360.0</td><td>degrees a circular layout covers, clockwise from the top</td></tr></tbody></table>
+```
+
+:::
+
+
+The elbow paths (rows grouped by `:id`, the branch's node; `:cluster` from the cut):
+
+
+```{=html}
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>id</th><th>x</th><th>y</th><th>cluster</th></tr></thead><tbody><tr><td>1</td><td>0.75</td><td>2.166665319730954</td><td></td></tr><tr><td>1</td><td>0.75</td><td>5.598048345197573</td><td></td></tr><tr><td>1</td><td>3.484375</td><td>5.598048345197573</td><td></td></tr><tr><td>2</td><td>0.0</td><td>0.0</td><td>1</td></tr><tr><td>2</td><td>0.0</td><td>2.166665319730954</td><td>1</td></tr><tr><td>2</td><td>0.75</td><td>2.166665319730954</td><td>1</td></tr><tr><td>3</td><td>1.5</td><td>1.58940265380535</td><td>1</td></tr><tr><td>3</td><td>1.5</td><td>2.166665319730954</td><td>1</td></tr><tr><td>3</td><td>0.75</td><td>2.166665319730954</td><td>1</td></tr><tr><td>4</td><td>1.0</td><td>0.0</td><td>1</td></tr><tr><td>4</td><td>1.0</td><td>1.58940265380535</td><td>1</td></tr><tr><td>4</td><td>1.5</td><td>1.58940265380535</td><td>1</td></tr><tr><td>5</td><td>2.0</td><td>0.0</td><td>1</td></tr><tr><td>5</td><td>2.0</td><td>1.58940265380535</td><td>1</td></tr><tr><td>5</td><td>1.5</td><td>1.58940265380535</td><td>1</td></tr><tr><td>6</td><td>6.21875</td><td>3.5390121923405538</td><td></td></tr><tr><td>6</td><td>6.21875</td><td>5.598048345197573</td><td></td></tr><tr><td>6</td><td>3.484375</td><td>5.598048345197573</td><td></td></tr><tr><td>7</td><td>3.75</td><td>1.6112724405634975</td><td></td></tr><tr><td>7</td><td>3.75</td><td>3.5390121923405538</td><td></td></tr><tr><td>7</td><td>6.21875</td><td>3.5390121923405538</td><td></td></tr><tr><td>8</td><td>3.0</td><td>0.0</td><td>2</td></tr><tr><td>8</td><td>3.0</td><td>1.6112724405634975</td><td>2</td></tr><tr><td>8</td><td>3.75</td><td>1.6112724405634975</td><td>2</td></tr><tr><td>9</td><td>4.5</td><td>0.6218970559554815</td><td>2</td></tr><tr><td>9</td><td>4.5</td><td>1.6112724405634975</td><td>2</td></tr><tr><td>9</td><td>3.75</td><td>1.6112724405634975</td><td>2</td></tr><tr><td>10</td><td>4.0</td><td>0.0</td><td>2</td></tr><tr><td>10</td><td>4.0</td><td>0.6218970559554815</td><td>2</td></tr><tr><td>10</td><td>4.5</td><td>0.6218970559554815</td><td>2</td></tr><tr><td>11</td><td>5.0</td><td>0.0</td><td>2</td></tr><tr><td>11</td><td>5.0</td><td>0.6218970559554815</td><td>2</td></tr><tr><td>11</td><td>4.5</td><td>0.6218970559554815</td><td>2</td></tr><tr><td>12</td><td>8.6875</td><td>2.785269900868879</td><td></td></tr><tr><td>12</td><td>8.6875</td><td>3.5390121923405538</td><td></td></tr><tr><td>12</td><td>6.21875</td><td>3.5390121923405538</td><td></td></tr><tr><td>13</td><td>6.875</td><td>1.3731383800896988</td><td>3</td></tr><tr><td>13</td><td>6.875</td><td>2.785269900868879</td><td>3</td></tr><tr><td>13</td><td>8.6875</td><td>2.785269900868879</td><td>3</td></tr><tr><td>14</td><td>6.0</td><td>0.0</td><td>3</td></tr><tr><td>14</td><td>6.0</td><td>1.3731383800896988</td><td>3</td></tr><tr><td>14</td><td>6.875</td><td>1.3731383800896988</td><td>3</td></tr><tr><td>15</td><td>7.75</td><td>1.1087815465495725</td><td>3</td></tr><tr><td>15</td><td>7.75</td><td>1.3731383800896988</td><td>3</td></tr><tr><td>15</td><td>6.875</td><td>1.3731383800896988</td><td>3</td></tr><tr><td>16</td><td>7.0</td><td>0.0</td><td>3</td></tr><tr><td>16</td><td>7.0</td><td>1.1087815465495725</td><td>3</td></tr><tr><td>16</td><td>7.75</td><td>1.1087815465495725</td><td>3</td></tr><tr><td>17</td><td>8.5</td><td>0.5661027523275094</td><td>3</td></tr><tr><td>17</td><td>8.5</td><td>1.1087815465495725</td><td>3</td></tr><tr><td>17</td><td>7.75</td><td>1.1087815465495725</td><td>3</td></tr><tr><td>18</td><td>8.0</td><td>0.0</td><td>3</td></tr><tr><td>18</td><td>8.0</td><td>0.5661027523275094</td><td>3</td></tr><tr><td>18</td><td>8.5</td><td>0.5661027523275094</td><td>3</td></tr><tr><td>19</td><td>9.0</td><td>0.0</td><td>3</td></tr><tr><td>19</td><td>9.0</td><td>0.5661027523275094</td><td>3</td></tr><tr><td>19</td><td>8.5</td><td>0.5661027523275094</td><td>3</td></tr><tr><td>20</td><td>10.5</td><td>1.711186969649643</td><td>3</td></tr><tr><td>20</td><td>10.5</td><td>2.785269900868879</td><td>3</td></tr><tr><td>20</td><td>8.6875</td><td>2.785269900868879</td><td>3</td></tr><tr><td>21</td><td>10.0</td><td>0.0</td><td>3</td></tr><tr><td>21</td><td>10.0</td><td>1.711186969649643</td><td>3</td></tr><tr><td>21</td><td>10.5</td><td>1.711186969649643</td><td>3</td></tr><tr><td>22</td><td>11.0</td><td>0.0</td><td>3</td></tr><tr><td>22</td><td>11.0</td><td>1.711186969649643</td><td>3</td></tr><tr><td>22</td><td>10.5</td><td>1.711186969649643</td><td>3</td></tr></tbody></table></div>
+```
+
+
+Drawn as lines: plain, cut into 3 clusters, and (also cut) circular - around the whole circle and over
+`:span 180` degrees:
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange (for [[title {:keys [paths]} iso?]
+                                       [["defaults" (tree/layout (tree/from-hclust (cl/hclust car-features) (mapv :model mtcars)) {}) false]
+                                        [":k 3" (tree/layout (tree/from-hclust (cl/hclust car-features) (mapv :model mtcars)) {:k 3}) false]
+                                        [":circular true" (tree/layout (tree/from-hclust (cl/hclust car-features) (mapv :model mtcars))
+                                                                       {:circular true :k 3}) true]
+                                        [":span 180"
+                                         (tree/layout (tree/from-hclust (cl/hclust car-features) (mapv :model mtcars))
+                                                      {:circular true :span 180 :k 3}) true]]]
+                                   (cond-> {:charts [(chart/line {:data paths :sort false
+                                                                  :mapping (cond-> {:x :x :y :y :group :id}
+                                                                             (some :cluster paths) (assoc :color #(some-> (:cluster %) str)))})]
+                                            :scales {:x {:axis false} :y {:axis false}}
+                                            :labels {:title title}
+                                            :legend false}
+                                     iso? (assoc :aspect :iso)))
+                                 {:columns 2})
+                   {:width 900 :height 640})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.data_graphs_trees_files/image7.png)
+:::
+
+
+
+## tree/node-link-layout
+
+A node-link layout (d3 `tree` / `cluster`): nodes at their depth, one link path per child; tidy or with the
+leaves aligned, curved or straight links, optionally around a circle.
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:layout</td><td>one of :tidy :cluster</td><td>:tidy</td><td>node placement: :tidy (every node at its depth, d3 tree) or :cluster (leaves at the deepest depth, d3 cluster)</td></tr><tr><td>:links</td><td>one of :diagonal :line</td><td>:diagonal</td><td>link shape: :diagonal (curves along the depth axis) or :line</td></tr><tr><td>:circular</td><td>true or false or nil</td><td>false</td><td>radial: breadth as the angle over :span degrees, height (or depth) as the radius; points in [-1, 1]</td></tr><tr><td>:span</td><td>a positive finite number</td><td>360.0</td><td>degrees a circular layout covers, clockwise from the top</td></tr></tbody></table>
+```
+
+:::
+
+
+The nodes (`:depth`, `:breadth`, `:x`, `:y`):
+
+
+```{=html}
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>y</th><th>cluster</th><th>parent</th><th>name</th><th>value</th><th>leaf?</th><th>depth-pos</th><th>depth</th><th>x</th><th>breadth</th><th>height</th><th>color</th></tr></thead><tbody><tr><td>-4.25</td><td></td><td></td><td></td><td>6.0</td><td>false</td><td>0.0</td><td>0</td><td>0.0</td><td>4.25</td><td>3.0</td><td></td></tr><tr><td>-1.75</td><td></td><td>0</td><td>Europe</td><td>3.0</td><td>false</td><td>1.0</td><td>1</td><td>1.0</td><td>1.75</td><td>2.0</td><td></td></tr><tr><td>-0.5</td><td></td><td>1</td><td>Poland</td><td>2.0</td><td>false</td><td>2.0</td><td>2</td><td>2.0</td><td>0.5</td><td>1.0</td><td></td></tr><tr><td>-0.0</td><td></td><td>2</td><td>Warsaw</td><td>1.0</td><td>true</td><td>3.0</td><td>3</td><td>3.0</td><td>0.0</td><td>0.0</td><td></td></tr><tr><td>-1.0</td><td></td><td>2</td><td>Krakow</td><td>1.0</td><td>true</td><td>3.0</td><td>3</td><td>3.0</td><td>1.0</td><td>0.0</td><td></td></tr><tr><td>-3.0</td><td></td><td>1</td><td>Czechia</td><td>1.0</td><td>false</td><td>2.0</td><td>2</td><td>2.0</td><td>3.0</td><td>1.0</td><td></td></tr><tr><td>-3.0</td><td></td><td>5</td><td>Prague</td><td>1.0</td><td>true</td><td>3.0</td><td>3</td><td>3.0</td><td>3.0</td><td>0.0</td><td></td></tr><tr><td>-6.75</td><td></td><td>0</td><td>Asia</td><td>3.0</td><td>false</td><td>1.0</td><td>1</td><td>1.0</td><td>6.75</td><td>2.0</td><td></td></tr><tr><td>-5.5</td><td></td><td>7</td><td>Japan</td><td>2.0</td><td>false</td><td>2.0</td><td>2</td><td>2.0</td><td>5.5</td><td>1.0</td><td></td></tr><tr><td>-5.0</td><td></td><td>8</td><td>Tokyo</td><td>1.0</td><td>true</td><td>3.0</td><td>3</td><td>3.0</td><td>5.0</td><td>0.0</td><td></td></tr><tr><td>-6.0</td><td></td><td>8</td><td>Osaka</td><td>1.0</td><td>true</td><td>3.0</td><td>3</td><td>3.0</td><td>6.0</td><td>0.0</td><td></td></tr><tr><td>-8.0</td><td></td><td>7</td><td>India</td><td>1.0</td><td>false</td><td>2.0</td><td>2</td><td>2.0</td><td>8.0</td><td>1.0</td><td></td></tr><tr><td>-8.0</td><td></td><td>11</td><td>Pune</td><td>1.0</td><td>true</td><td>3.0</td><td>3</td><td>3.0</td><td>8.0</td><td>0.0</td><td></td></tr></tbody></table></div>
+```
+
+
+Links as lines under the nodes - tidy with curved links, the leaves aligned with straight links, and circular
+(tidy, curved) over a full turn and `:span 180` degrees:
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange (for [[title {:keys [nodes links]} iso?]
+                                       [[":layout :tidy, :links :diagonal"
+                                         (tree/node-link-layout (tree/from-levels offices {:hierarchy [:region :country :city]})
+                                                                {:layout :tidy :links :diagonal}) false]
+                                        [":layout :cluster, :links :line"
+                                         (tree/node-link-layout (tree/from-levels offices {:hierarchy [:region :country :city]})
+                                                                {:layout :cluster :links :line}) false]
+                                        [":circular true"
+                                         (tree/node-link-layout (tree/from-levels offices {:hierarchy [:region :country :city]})
+                                                                {:circular true}) true]
+                                        [":span 180"
+                                         (tree/node-link-layout (tree/from-levels offices {:hierarchy [:region :country :city]})
+                                                                {:circular true :span 180}) true]]]
+                                   (cond-> {:charts [(chart/line {:data links :sort false :color [150 150 150] :mapping {:x :x :y :y :group :id}})
+                                                     (chart/scatter {:data nodes :size 8 :mapping {:x :x :y :y} :padding {:x [0.1 0.25] :y [0.1 0.1]}})
+                                                     (chart/text {:data (filter :leaf? nodes) :size 7 :anchor [:left :middle] :offset [5 0]
+                                                                  :mapping {:x :x :y :y :label #(str (:name %))}})]
+                                            :scales {:x {:axis false} :y {:axis false}}
+                                            :labels {:title title}}
+                                     iso? (assoc :aspect :iso)))
+                                 {:columns 2})
+                   {:width 900 :height 640})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.data_graphs_trees_files/image8.png)
+:::
+
+
+
+## tree/bundle-paths
+
+Hierarchical edge bundling: edges between leaves of a circular tree layout, each a B-spline through the tree
+path between its ends, straightened by `:beta`.
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:from</td><td>a keyword, a function or a categorical marker of one</td><td>:from</td><td>accessor of an edge row's source leaf id</td></tr><tr><td>:to</td><td>a keyword, a function or a categorical marker of one</td><td>:to</td><td>accessor of an edge row's target leaf id</td></tr><tr><td>:beta</td><td>a number in [0 1]</td><td>0.85</td><td>bundling strength: 1 - along the tree path, 0 - a straight line</td></tr></tbody></table>
+```
+
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(def modules [{:id "app"} {:id "ui" :parent "app"} {:id "core" :parent "app"} {:id "io" :parent "app"}
+              {:id "button" :parent "ui"} {:id "form" :parent "ui"} {:id "menu" :parent "ui"}
+              {:id "model" :parent "core"} {:id "rules" :parent "core"} {:id "cache" :parent "core"}
+              {:id "file" :parent "io"} {:id "net" :parent "io"} {:id "db" :parent "io"}])
+```
+:::
+
+
+
+```{=html}
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>id</th><th>parent</th></tr></thead><tbody><tr><td>app</td><td></td></tr><tr><td>ui</td><td>app</td></tr><tr><td>core</td><td>app</td></tr><tr><td>io</td><td>app</td></tr><tr><td>button</td><td>ui</td></tr><tr><td>form</td><td>ui</td></tr><tr><td>menu</td><td>ui</td></tr><tr><td>model</td><td>core</td></tr><tr><td>rules</td><td>core</td></tr><tr><td>cache</td><td>core</td></tr><tr><td>file</td><td>io</td></tr><tr><td>net</td><td>io</td></tr><tr><td>db</td><td>io</td></tr></tbody></table></div>
+```
+
+
+
+::: {.sourceClojure}
+```clojure
+(def imports [{:module "button" :uses "model"} {:module "form" :uses "rules"} {:module "form" :uses "model"}
+              {:module "menu" :uses "cache"} {:module "model" :uses "db"} {:module "rules" :uses "file"}
+              {:module "cache" :uses "net"} {:module "button" :uses "net"} {:module "menu" :uses "db"}])
+```
+:::
+
+
+
+```{=html}
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>module</th><th>uses</th></tr></thead><tbody><tr><td>button</td><td>model</td></tr><tr><td>form</td><td>rules</td></tr><tr><td>form</td><td>model</td></tr><tr><td>menu</td><td>cache</td></tr><tr><td>model</td><td>db</td></tr><tr><td>rules</td><td>file</td></tr><tr><td>cache</td><td>net</td></tr><tr><td>button</td><td>net</td></tr><tr><td>menu</td><td>db</td></tr></tbody></table></div>
+```
+
+
+The paths (rows grouped by `:id`, the edge's index):
+
+
+```{=html}
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>module</th><th>uses</th><th>id</th><th>x</th><th>y</th></tr></thead><tbody><tr><td>button</td><td>model</td><td>0</td><td>0.0</td><td>0.9999999999999999</td></tr><tr><td>button</td><td>model</td><td>0</td><td>9.949892147092956E-5</td><td>0.9998109762006268</td></tr><tr><td>button</td><td>model</td><td>0</td><td>7.959913717674365E-4</td><td>0.9984878096050144</td></tr><tr><td>button</td><td>model</td><td>0</td><td>0.0026864708797150983</td><td>0.994896357416924</td></tr><tr><td>button</td><td>model</td><td>0</td><td>0.006367930974139492</td><td>0.987902476840116</td></tr><tr><td>button</td><td>model</td><td>0</td><td>0.012437365183866195</td><td>0.9763720250783514</td></tr><tr><td>button</td><td>model</td><td>0</td><td>0.021491767037720787</td><td>0.9591708593353914</td></tr><tr><td>button</td><td>model</td><td>0</td><td>0.03412813006452884</td><td>0.9351648368149964</td></tr><tr><td>button</td><td>model</td><td>0</td><td>0.05094344779311594</td><td>0.9032198147209275</td></tr><tr><td>button</td><td>model</td><td>0</td><td>0.07215786126475851</td><td>0.8626444316523552</td></tr><tr><td>button</td><td>model</td><td>0</td><td>0.09648410157053647</td><td>0.8145184517900871</td></tr><tr><td>button</td><td>model</td><td>0</td><td>0.12225804731398054</td><td>0.7603644207103407</td></tr><tr><td>button</td><td>model</td><td>0</td><td>0.1478155770986215</td><td>0.7017048839893335</td></tr><tr><td>button</td><td>model</td><td>0</td><td>0.1714925695279901</td><td>0.6400623872032829</td></tr><tr><td>button</td><td>model</td><td>0</td><td>0.19162490320561706</td><td>0.5769594759284061</td></tr><tr><td>button</td><td>model</td><td>0</td><td>0.20654845673503322</td><td>0.5139186957409206</td></tr><tr><td>button</td><td>model</td><td>0</td><td>0.21459910871976923</td><td>0.45246259221704366</td></tr><tr><td>button</td><td>model</td><td>0</td><td>0.21470419053622572</td><td>0.3937711959480058</td></tr><tr><td>button</td><td>model</td><td>0</td><td>0.20815684465228232</td><td>0.3376544775850883</td></tr><tr><td>button</td><td>model</td><td>0</td><td>0.1968416663086886</td><td>0.2835798927945855</td></tr><tr><td>button</td><td>model</td><td>0</td><td>0.18264325074619406</td><td>0.23101489724279167</td></tr><tr><td>button</td><td>model</td><td>0</td><td>0.16744619320554818</td><td>0.1794269465960011</td></tr><tr><td>button</td><td>model</td><td>0</td><td>0.1531350889275005</td><td>0.1282834965205082</td></tr><tr><td>button</td><td>model</td><td>0</td><td>0.14159453315280046</td><td>0.0770520026826072</td></tr><tr><td>button</td><td>model</td><td>0</td><td>0.13470912112219763</td><td>0.02519992074859244</td></tr><tr><td>button</td><td>model</td><td>0</td><td>0.13405809274216288</td><td>-0.02757085289192347</td></tr><tr><td>button</td><td>model</td><td>0</td><td>0.13999926658205247</td><td>-0.08062065895605484</td></tr><tr><td>button</td><td>model</td><td>0</td><td>0.1525851058769441</td><td>-0.13307539743759755</td></tr><tr><td>button</td><td>model</td><td>0</td><td>0.17186807386191544</td><td>-0.18406096833034763</td></tr><tr><td>button</td><td>model</td><td>0</td><td>0.19790063377204406</td><td>-0.232703271628101</td></tr><tr><td>button</td><td>model</td><td>0</td><td>0.2307352488424078</td><td>-0.27812820732465365</td></tr><tr><td>button</td><td>model</td><td>0</td><td>0.2704243823080842</td><td>-0.31946167541380155</td></tr><tr><td>button</td><td>model</td><td>0</td><td>0.317020497404151</td><td>-0.3558295758893406</td></tr><tr><td>button</td><td>model</td><td>0</td><td>0.3702194477847304</td><td>-0.38659849796859497</td></tr><tr><td>button</td><td>model</td><td>0</td><td>0.42829064878012313</td><td>-0.41209778776300143</td></tr><tr><td>button</td><td>model</td><td>0</td><td>0.4891469061396743</td><td>-0.43289748060752486</td></tr><tr><td>button</td><td>model</td><td>0</td><td>0.5507010256127294</td><td>-0.4495676118371302</td></tr><tr><td>button</td><td>model</td><td>0</td><td>0.6108658129486334</td><td>-0.4626782167867822</td></tr><tr><td>button</td><td>model</td><td>0</td><td>0.6675540738967316</td><td>-0.4727993307914461</td></tr><tr><td>button</td><td>model</td><td>0</td><td>0.7186786142063694</td><td>-0.48050098918608636</td></tr><tr><td>button</td><td>model</td><td>0</td><td>0.7621522396268919</td><td>-0.4863532273056682</td></tr><tr><td>button</td><td>model</td><td>0</td><td>0.7964384988898321</td><td>-0.4908577284489144</td></tr><tr><td>button</td><td>model</td><td>0</td><td>0.8222039126554735</td><td>-0.49424276776957865</td></tr><tr><td>button</td><td>model</td><td>0</td><td>0.8406657445662875</td><td>-0.49666826838517275</td></tr><tr><td>button</td><td>model</td><td>0</td><td>0.8530412582647454</td><td>-0.4982941534132084</td></tr><tr><td>button</td><td>model</td><td>0</td><td>0.860547717393318</td><td>-0.49928034597119714</td></tr><tr><td>button</td><td>model</td><td>0</td><td>0.8644023855944769</td><td>-0.4997867691766509</td></tr><tr><td>button</td><td>model</td><td>0</td><td>0.8658225265106932</td><td>-0.4999733461470811</td></tr><tr><td>button</td><td>model</td><td>0</td><td>0.8660254037844386</td><td>-0.49999999999999967</td></tr><tr><td>form</td><td>rules</td><td>1</td><td>0.6427876096865393</td><td>0.7660444431189779</td></tr><tr><td>form</td><td>rules</td><td>1</td><td>0.6426950108863747</td><td>0.7659176416774994</td></tr><tr><td>form</td><td>rules</td><td>1</td><td>0.6420468192852233</td><td>0.76503003158715</td></tr><tr><td>form</td><td>rules</td><td>1</td><td>0.640287442082098</td><td>0.7626208041990581</td></tr><tr><td>form</td><td>rules</td><td>1</td><td>0.6368612864760119</td><td>0.757929150864353</td></tr><tr><td>form</td><td>rules</td><td>1</td><td>0.631212759665978</td><td>0.7501942629341636</td></tr><tr><td>form</td><td>rules</td><td>1</td><td>0.6227862688510095</td><td>0.7386553317596187</td></tr><tr><td>form</td><td>rules</td><td>1</td><td>0.6110262212301194</td><td>0.7225515486918472</td></tr><tr><td>form</td><td>rules</td><td>1</td><td>0.5953770240023206</td><td>0.7011221050819781</td></tr><tr><td>form</td><td>rules</td><td>1</td><td>0.5754682819669553</td><td>0.6738597951640974</td></tr><tr><td>form</td><td>rules</td><td>1</td><td>0.5516703903246816</td><td>0.641271824704119</td></tr><tr><td>form</td><td>rules</td><td>1</td><td>0.5245389418764862</td><td>0.6041190023509141</td></tr><tr><td>form</td><td>rules</td><td>1</td><td>0.49462952942335603</td><td>0.5631621367533537</td></tr><tr><td>form</td><td>rules</td><td>1</td><td>0.4624977457662782</td><td>0.5191620365603088</td></tr><tr><td>form</td><td>rules</td><td>1</td><td>0.4286991837062395</td><td>0.47287951042065074</td></tr><tr><td>form</td><td>rules</td><td>1</td><td>0.3937894360442269</td><td>0.42507536698325044</td></tr><tr><td>form</td><td>rules</td><td>1</td><td>0.35832409558122746</td><td>0.37651041489697906</td></tr><tr><td>form</td><td>rules</td><td>1</td><td>0.3229024008802478</td><td>0.32779463777694134</td></tr><tr><td>form</td><td>rules</td><td>1</td><td>0.2882981735523739</td><td>0.27893471910317613</td></tr><tr><td>form</td><td>rules</td><td>1</td><td>0.25532888097071177</td><td>0.22978651732195604</td></tr><tr><td>form</td><td>rules</td><td>1</td><td>0.22481199050836714</td><td>0.18020589087955372</td></tr><tr><td>form</td><td>rules</td><td>1</td><td>0.19756496953844582</td><td>0.13004869822224163</td></tr><tr><td>form</td><td>rules</td><td>1</td><td>0.1744052854340537</td><td>0.07917079779629238</td></tr><tr><td>form</td><td>rules</td><td>1</td><td>0.1561504055682966</td><td>0.027428048047978534</td></tr><tr><td>form</td><td>rules</td><td>1</td><td>0.14361779731428037</td><td>-0.025323692576427338</td></tr><tr><td>form</td><td>rules</td><td>1</td><td>0.1373524389207422</td><td>-0.07918051844607686</td></tr><tr><td>form</td><td>rules</td><td>1</td><td>0.13680935213894488</td><td>-0.1340463351918184</td></tr><tr><td>form</td><td>rules</td><td>1</td><td>0.14117106959578263</td><td>-0.18977700125992455</td></tr><tr><td>form</td><td>rules</td><td>1</td><td>0.1496201239181495</td><td>-0.24622837509666784</td></tr><tr><td>form</td><td>rules</td><td>1</td><td>0.16133904773293975</td><td>-0.3032563151483209</td></tr><tr><td>form</td><td>rules</td><td>1</td><td>0.17551037366704753</td><td>-0.36071667986115624</td></tr><tr><td>form</td><td>rules</td><td>1</td><td>0.19131663434736695</td><td>-0.4184653276814464</td></tr><tr><td>form</td><td>rules</td><td>1</td><td>0.20794036240079222</td><td>-0.47635811705546405</td></tr><tr><td>form</td><td>rules</td><td>1</td><td>0.224656689254382</td><td>-0.5341241049880032</td></tr><tr><td>form</td><td>rules</td><td>1</td><td>0.24111114153585286</td><td>-0.5909851427179438</td></tr><tr><td>form</td><td>rules</td><td>1</td><td>0.25704184467308594</td><td>-0.6460362800426872</td></tr><tr><td>form</td><td>rules</td><td>1</td><td>0.2721869240939623</td><td>-0.6983725667596353</td></tr><tr><td>form</td><td>rules</td><td>1</td><td>0.286284505226363</td><td>-0.7470890526661891</td></tr><tr><td>form</td><td>rules</td><td>1</td><td>0.2990727134981693</td><td>-0.7912807875597503</td></tr><tr><td>form</td><td>rules</td><td>1</td><td>0.3102896743372621</td><td>-0.8300428212377204</td></tr><tr><td>form</td><td>rules</td><td>1</td><td>0.31967351317152276</td><td>-0.8624702034975009</td></tr><tr><td>form</td><td>rules</td><td>1</td><td>0.32704964695287175</td><td>-0.887959634204026</td></tr><tr><td>form</td><td>rules</td><td>1</td><td>0.3325926587293885</td><td>-0.9071144134923614</td></tr><tr><td>form</td><td>rules</td><td>1</td><td>0.3365644230731918</td><td>-0.9208394915651056</td></tr><tr><td>form</td><td>rules</td><td>1</td><td>0.33922681455640064</td><td>-0.9300398186248574</td></tr><tr><td>form</td><td>rules</td><td>1</td><td>0.3408417077511338</td><td>-0.9356203448742149</td></tr><tr><td>form</td><td>rules</td><td>1</td><td>0.3416709772295103</td><td>-0.9384860205157769</td></tr><tr><td>form</td><td>rules</td><td>1</td><td>0.341976497563649</td><td>-0.9395417957521418</td></tr><tr><td>form</td><td>rules</td><td>1</td><td>0.3420201433256688</td><td>-0.9396926207859082</td></tr><tr><td>form</td><td>model</td><td>2</td><td>0.6427876096865393</td><td>0.7660444431189779</td></tr><tr><td>form</td><td>model</td><td>2</td><td>0.6427014074349643</td><td>0.7659230090190617</td></tr><tr><td>…</td><td>…</td><td>…</td><td>…</td><td>…</td></tr></tbody></table></div>
+```
+
+
+Bundled along the tree (`:beta 1`), the default 0.85, and straight lines (`:beta 0`):
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange (for [[title beta] [[":beta 1" 1.0] [":beta 0.85 (default)" 0.85] [":beta 0" 0.0]]]
+                                   {:charts [(chart/line {:data (:paths (tree/bundle-paths imports
+                                                                                           (tree/layout (tree/from-parents modules {}) {:circular true})
+                                                                                           {:from :module :to :uses :beta beta}))
+                                                          :sort false :mapping {:x :x :y :y :group :id :color :module}})
+                                             (chart/text {:data (filter :leaf? (:nodes (tree/layout (tree/from-parents modules {}) {:circular true})))
+                                                          :size 8 :mapping {:x :x :y :y :label :id}})]
+                                    :aspect :iso
+                                    :scales {:x {:axis false} :y {:axis false}}
+                                    :labels {:title title}
+                                    :legend false})
+                                 {:columns 3})
+                   {:width 1000 :height 340})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.data_graphs_trees_files/image9.png)
+:::
+
+
+
+## hierarchy/sequence-levels
+
+Hierarchy rows of sequences (e.g. visited pages) for a flow sunburst: a step column per position, identical
+sequences summed; a final end marker is removed (or kept as a step).
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:sequence</td><td>a keyword, a function or a categorical marker of one</td><td>:sequence</td><td>accessor of a row's sequence: a string split at :separator or a sequence of steps</td></tr><tr><td>:value</td><td>a keyword, a function or a categorical marker of one or nil</td><td>1 per row</td><td>accessor of a row's weight, a finite number >= 0 (nil - 1; identical sequences summed)</td></tr><tr><td>:separator</td><td>string</td><td>"-"</td><td>literal text splitting a string sequence into steps</td></tr><tr><td>:end</td><td>any value</td><td>"end"</td><td>the end marker (nil - none): a final step equal to it is removed unless :keep-end?</td></tr><tr><td>:keep-end?</td><td>true or false or nil</td><td>false</td><td>keep a final end marker as a step of its own (false - a sequence ending before others continue is its group's unnamed leaf)</td></tr></tbody></table>
+```
+
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(def visits [{:path "home>search>product>end" :n 30} {:path "home>search>end" :n 12}
+             {:path "home>product>cart>end" :n 18} {:path "home>search>product>cart" :n 9}
+             {:path "search>product>end" :n 7}])
+```
+:::
+
+
+
+```{=html}
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>path</th><th>n</th></tr></thead><tbody><tr><td>home>search>product>end</td><td>30</td></tr><tr><td>home>search>end</td><td>12</td></tr><tr><td>home>product>cart>end</td><td>18</td></tr><tr><td>home>search>product>cart</td><td>9</td></tr><tr><td>search>product>end</td><td>7</td></tr></tbody></table></div>
+```
+
+
+The step rows - the end marker dropped (left), kept as a step (right):
+
+
+```{=html}
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>step-1</th><th>step-2</th><th>step-3</th><th>step-4</th><th>value</th></tr></thead><tbody><tr><td>home</td><td>search</td><td>product</td><td></td><td>30.0</td></tr><tr><td>home</td><td>search</td><td></td><td></td><td>12.0</td></tr><tr><td>home</td><td>product</td><td>cart</td><td></td><td>18.0</td></tr><tr><td>home</td><td>search</td><td>product</td><td>cart</td><td>9.0</td></tr><tr><td>search</td><td>product</td><td></td><td></td><td>7.0</td></tr></tbody></table></div>
+```
+
+
+
+```{=html}
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>step-1</th><th>step-2</th><th>step-3</th><th>step-4</th><th>value</th></tr></thead><tbody><tr><td>home</td><td>search</td><td>product</td><td>end</td><td>30.0</td></tr><tr><td>home</td><td>search</td><td>end</td><td></td><td>12.0</td></tr><tr><td>home</td><td>product</td><td>cart</td><td>end</td><td>18.0</td></tr><tr><td>home</td><td>search</td><td>product</td><td>cart</td><td>9.0</td></tr><tr><td>search</td><td>product</td><td>end</td><td></td><td>7.0</td></tr></tbody></table></div>
+```
+
+
+The rows as a sunburst - `chart/partition` under polar, the steps as its hierarchy:
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (let [{:keys [rows hierarchy]} (hierarchy/sequence-levels visits {:sequence :path :value :n :separator ">"})]
+                     {:data rows
+                      :mapping {:hierarchy hierarchy :value :value}
+                      :charts [(chart/partition {:color-by :name})]
+                      :coord {:kind :polar}})
+                   {:width 500 :height 500})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.data_graphs_trees_files/image10.png)
+:::
+
+
+
+```{=html}
+<div style="background-color:grey;height:2px;width:100%;"></div>
+```
+
+
+
+```{=html}
+<div><pre><small><small>source: notebooks/reference/data_graphs_trees.clj</small></small></pre></div>
+```

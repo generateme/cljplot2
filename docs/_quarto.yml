@@ -17,8 +17,14 @@ project: {type: book}
 book:
   chapters:
   - index.qmd
-  - part: Reference
-    chapters: [reference.intro.qmd, reference.render.qmd, reference.data_mapping.qmd, reference.aesthetics_legends.qmd, reference.scales_axes_coords.qmd, reference.layering_position.qmd, reference.labels_text.qmd, reference.facets_arrange.qmd, reference.theme.qmd, reference.shared_options.qmd, reference.errors.qmd, reference.limits.qmd, reference.charts_points_paths.qmd, reference.charts_series.qmd, reference.charts_annotations.qmd, reference.charts_bars_ranges.qmd, reference.charts_strip_distributions.qmd, reference.charts_distribution_stats.qmd, reference.charts_grids_fields.qmd, reference.charts_part_of_whole.qmd, reference.charts_multivariate_3d.qmd]
+  - part: 'Reference: concepts'
+    chapters: [reference.intro.qmd, reference.render.qmd, reference.data_mapping.qmd, reference.aesthetics_legends.qmd, reference.scales_axes_coords.qmd, reference.layering_position.qmd, reference.labels_text.qmd, reference.facets_arrange.qmd, reference.theme.qmd, reference.shared_options.qmd, reference.errors.qmd, reference.limits.qmd]
+  - part: 'Reference: charts'
+    chapters: [reference.charts_points_paths.qmd, reference.charts_series.qmd, reference.charts_annotations.qmd, reference.charts_bars_ranges.qmd, reference.charts_strip_distributions.qmd, reference.charts_distribution_stats.qmd, reference.charts_grids_fields.qmd, reference.charts_part_of_whole.qmd, reference.charts_multivariate_3d.qmd]
+  - part: 'Reference: builders'
+    chapters: [reference.builders_graphs.qmd, reference.builders_trees.qmd, reference.builders_series.qmd]
+  - part: 'Reference: data functions'
+    chapters: [reference.data_levels.qmd, reference.data_graphs_trees.qmd, reference.data_sets_series.qmd, reference.data_fields.qmd, reference.specific_cases.qmd]
   - part: Use cases
     chapters: [use_cases.distribution.qmd, use_cases.colors.qmd, use_cases.evolution.qmd, use_cases.ranking.qmd, use_cases.part_of_a_whole.qmd, use_cases.correlation.qmd, use_cases.flow.qmd]
   - part: Galleries

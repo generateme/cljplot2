@@ -1,0 +1,2262 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.37">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>23&nbsp; Builders: trees – cljplot2</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./reference.builders_series.html" rel="next">
+<link href="./reference.builders_graphs.html" rel="prev">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-7f8f88aac4f3542376d5c11b86a4c14d.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-0d7f492f10755a5ae24b960b9550d083.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<style>
+.data-table { width: fit-content; max-width: 100%; max-height: 15rem; overflow: auto; margin: 0 0 1rem 0; }
+.data-table .table-responsive { overflow: visible; }
+.data-table table { font-size: 0.75rem; width: auto; margin: 0; }
+.data-table th, .data-table td { padding: 0.1rem 0.45rem !important; white-space: nowrap; }
+.data-table thead th { position: sticky; top: 0; background: var(--bs-body-bg, #fff); }
+</style>
+
+
+</head>
+
+<body class="nav-sidebar floating quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./reference.builders_graphs.html">Reference: builders</a></li><li class="breadcrumb-item"><a href="./reference.builders_trees.html"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">Builders: trees</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="./">cljplot2</a> 
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">cljplot2</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text">Reference: concepts</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.intro.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">Reference</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.render.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Render</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.data_mapping.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Data and mapping</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.aesthetics_legends.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Aesthetics and legends</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.scales_axes_coords.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Scales, axes and coordinates</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.layering_position.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Layering and position</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.labels_text.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Labels and text</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.facets_arrange.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Facets, multiplots and margins</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.theme.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Theme</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.shared_options.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Shared options</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.errors.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Errors</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.limits.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">Limits</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
+ <span class="menu-text">Reference: charts</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.charts_points_paths.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Charts: points and paths</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.charts_series.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Charts: series</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.charts_annotations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Charts: annotations</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.charts_bars_ranges.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Charts: bars and ranges</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.charts_strip_distributions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Charts: strip distributions</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.charts_distribution_stats.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Charts: distribution statistics</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.charts_grids_fields.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Charts: grids and fields</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.charts_part_of_whole.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Charts: part of a whole</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.charts_multivariate_3d.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">Charts: multivariate and 3D</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
+ <span class="menu-text">Reference: builders</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.builders_graphs.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Builders: graphs</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.builders_trees.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">Builders: trees</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.builders_series.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">Builders: series</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true">
+ <span class="menu-text">Reference: data functions</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.data_levels.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Data functions: levels</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.data_graphs_trees.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">Data functions: graphs and trees</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.data_sets_series.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">Data functions: sets and series</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.data_fields.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">Data functions: fields</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.specific_cases.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">Specific cases</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true">
+ <span class="menu-text">Use cases</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./use_cases.distribution.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">Distribution</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./use_cases.colors.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">Colors</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./use_cases.evolution.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Evolution</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./use_cases.ranking.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">33</span>&nbsp; <span class="chapter-title">Ranking</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./use_cases.part_of_a_whole.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">34</span>&nbsp; <span class="chapter-title">Part of a whole</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./use_cases.correlation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">Correlation</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./use_cases.flow.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">Flow</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true">
+ <span class="menu-text">Galleries</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./galleries.cljplot_extras.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">37</span>&nbsp; <span class="chapter-title">cljplot extras</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./galleries.lattice.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">38</span>&nbsp; <span class="chapter-title">Lattice</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./galleries.vega.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">39</span>&nbsp; <span class="chapter-title">Vega</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#dendrogram" id="toc-dendrogram" class="nav-link active" data-scroll-target="#dendrogram"><span class="header-section-number">23.1</span> dendrogram</a></li>
+  <li><a href="#tree" id="toc-tree" class="nav-link" data-scroll-target="#tree"><span class="header-section-number">23.2</span> tree</a></li>
+  <li><a href="#clustered-heatmap" id="toc-clustered-heatmap" class="nav-link" data-scroll-target="#clustered-heatmap"><span class="header-section-number">23.3</span> clustered-heatmap</a></li>
+  <li><a href="#bundle" id="toc-bundle" class="nav-link" data-scroll-target="#bundle"><span class="header-section-number">23.4</span> bundle</a></li>
+  <li><a href="#sequences" id="toc-sequences" class="nav-link" data-scroll-target="#sequences"><span class="header-section-number">23.5</span> sequences</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./reference.builders_graphs.html">Reference: builders</a></li><li class="breadcrumb-item"><a href="./reference.builders_trees.html"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">Builders: trees</span></a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">Builders: trees</span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<style></style>
+<style>.printedClojure .sourceCode {
+  background-color: transparent;
+  border-style: none;
+}
+</style>
+<style>.clay-limit-image-width .clay-image {max-width: 100%}
+.clay-side-by-side .sourceCode {margin: 0}
+.clay-side-by-side {margin: 1em 0}
+</style>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js" type="text/javascript"></script>
+<script src="https://code.jquery.com/ui/1.13.1/jquery-ui.min.js" type="text/javascript"></script>
+<p>Builders drawing a tree or using one: a dendrogram of a clustering or a hierarchy, a node-link tree, a heatmap ordered by clustering, edges bundled along a tree, and sequences as rings (a flow sunburst). Each takes its data and an options map and returns an ordinary plot map; the tree functions it forwards to are shared groups (Shared options), the trees themselves come from the tree data functions.</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">ns</span> reference.builders-trees</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  (<span class="at">:require</span> [fastmath.ml.clustering <span class="at">:as</span> cl]</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>            [fastmath.stats <span class="at">:as</span> stats]</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>            [cljplot2.core <span class="at">:as</span> plot]</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>            [cljplot2.data.tree <span class="at">:as</span> tree]</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>            [cljplot2.describe <span class="at">:as</span> describe]</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>            [notebook-utils <span class="at">:as</span> nu]))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>Data: Motor Trend car road tests (1974), R datasets package <code>mtcars</code> (Henderson &amp; Velleman 1981); licence: Part of R (GPL-2 | GPL-3).</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> mtcars </span>(<span class="kw">take</span> <span class="dv">16</span> (nu/dataset <span class="at">:mtcars</span>)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="data-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">model</th>
+<th data-quarto-table-cell-role="th">mpg</th>
+<th data-quarto-table-cell-role="th">cyl</th>
+<th data-quarto-table-cell-role="th">disp</th>
+<th data-quarto-table-cell-role="th">hp</th>
+<th data-quarto-table-cell-role="th">drat</th>
+<th data-quarto-table-cell-role="th">wt</th>
+<th data-quarto-table-cell-role="th">qsec</th>
+<th data-quarto-table-cell-role="th">vs</th>
+<th data-quarto-table-cell-role="th">am</th>
+<th data-quarto-table-cell-role="th">gear</th>
+<th data-quarto-table-cell-role="th">carb</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Mazda RX4</td>
+<td>21</td>
+<td>6</td>
+<td>160</td>
+<td>110</td>
+<td>3.9</td>
+<td>2.62</td>
+<td>16.46</td>
+<td>0</td>
+<td>1</td>
+<td>4</td>
+<td>4</td>
+</tr>
+<tr class="even">
+<td>Mazda RX4 Wag</td>
+<td>21</td>
+<td>6</td>
+<td>160</td>
+<td>110</td>
+<td>3.9</td>
+<td>2.875</td>
+<td>17.02</td>
+<td>0</td>
+<td>1</td>
+<td>4</td>
+<td>4</td>
+</tr>
+<tr class="odd">
+<td>Datsun 710</td>
+<td>22.8</td>
+<td>4</td>
+<td>108</td>
+<td>93</td>
+<td>3.85</td>
+<td>2.32</td>
+<td>18.61</td>
+<td>1</td>
+<td>1</td>
+<td>4</td>
+<td>1</td>
+</tr>
+<tr class="even">
+<td>Hornet 4 Drive</td>
+<td>21.4</td>
+<td>6</td>
+<td>258</td>
+<td>110</td>
+<td>3.08</td>
+<td>3.215</td>
+<td>19.44</td>
+<td>1</td>
+<td>0</td>
+<td>3</td>
+<td>1</td>
+</tr>
+<tr class="odd">
+<td>Hornet Sportabout</td>
+<td>18.7</td>
+<td>8</td>
+<td>360</td>
+<td>175</td>
+<td>3.15</td>
+<td>3.44</td>
+<td>17.02</td>
+<td>0</td>
+<td>0</td>
+<td>3</td>
+<td>2</td>
+</tr>
+<tr class="even">
+<td>Valiant</td>
+<td>18.1</td>
+<td>6</td>
+<td>225</td>
+<td>105</td>
+<td>2.76</td>
+<td>3.46</td>
+<td>20.22</td>
+<td>1</td>
+<td>0</td>
+<td>3</td>
+<td>1</td>
+</tr>
+<tr class="odd">
+<td>Duster 360</td>
+<td>14.3</td>
+<td>8</td>
+<td>360</td>
+<td>245</td>
+<td>3.21</td>
+<td>3.57</td>
+<td>15.84</td>
+<td>0</td>
+<td>0</td>
+<td>3</td>
+<td>4</td>
+</tr>
+<tr class="even">
+<td>Merc 240D</td>
+<td>24.4</td>
+<td>4</td>
+<td>146.7</td>
+<td>62</td>
+<td>3.69</td>
+<td>3.19</td>
+<td>20</td>
+<td>1</td>
+<td>0</td>
+<td>4</td>
+<td>2</td>
+</tr>
+<tr class="odd">
+<td>Merc 230</td>
+<td>22.8</td>
+<td>4</td>
+<td>140.8</td>
+<td>95</td>
+<td>3.92</td>
+<td>3.15</td>
+<td>22.9</td>
+<td>1</td>
+<td>0</td>
+<td>4</td>
+<td>2</td>
+</tr>
+<tr class="even">
+<td>Merc 280</td>
+<td>19.2</td>
+<td>6</td>
+<td>167.6</td>
+<td>123</td>
+<td>3.92</td>
+<td>3.44</td>
+<td>18.3</td>
+<td>1</td>
+<td>0</td>
+<td>4</td>
+<td>4</td>
+</tr>
+<tr class="odd">
+<td>Merc 280C</td>
+<td>17.8</td>
+<td>6</td>
+<td>167.6</td>
+<td>123</td>
+<td>3.92</td>
+<td>3.44</td>
+<td>18.9</td>
+<td>1</td>
+<td>0</td>
+<td>4</td>
+<td>4</td>
+</tr>
+<tr class="even">
+<td>Merc 450SE</td>
+<td>16.4</td>
+<td>8</td>
+<td>275.8</td>
+<td>180</td>
+<td>3.07</td>
+<td>4.07</td>
+<td>17.4</td>
+<td>0</td>
+<td>0</td>
+<td>3</td>
+<td>3</td>
+</tr>
+<tr class="odd">
+<td>Merc 450SL</td>
+<td>17.3</td>
+<td>8</td>
+<td>275.8</td>
+<td>180</td>
+<td>3.07</td>
+<td>3.73</td>
+<td>17.6</td>
+<td>0</td>
+<td>0</td>
+<td>3</td>
+<td>3</td>
+</tr>
+<tr class="even">
+<td>Merc 450SLC</td>
+<td>15.2</td>
+<td>8</td>
+<td>275.8</td>
+<td>180</td>
+<td>3.07</td>
+<td>3.78</td>
+<td>18</td>
+<td>0</td>
+<td>0</td>
+<td>3</td>
+<td>3</td>
+</tr>
+<tr class="odd">
+<td>Cadillac Fleetwood</td>
+<td>10.4</td>
+<td>8</td>
+<td>472</td>
+<td>205</td>
+<td>2.93</td>
+<td>5.25</td>
+<td>17.98</td>
+<td>0</td>
+<td>0</td>
+<td>3</td>
+<td>4</td>
+</tr>
+<tr class="even">
+<td>Lincoln Continental</td>
+<td>10.4</td>
+<td>8</td>
+<td>460</td>
+<td>215</td>
+<td>3</td>
+<td>5.424</td>
+<td>17.82</td>
+<td>0</td>
+<td>0</td>
+<td>3</td>
+<td>4</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> variables </span>[<span class="at">:mpg</span> <span class="at">:disp</span> <span class="at">:hp</span> <span class="at">:drat</span> <span class="at">:wt</span> <span class="at">:qsec</span>])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>The cars’ variables as z-scores, a row vector per car, clustered with complete linkage (fastmath <code>hclust</code>):</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> standardized</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  (<span class="kw">let</span> [moments (<span class="kw">into</span> {} (<span class="kw">for</span> [k variables <span class="at">:let</span> [vs (<span class="kw">map</span> k mtcars)]] [k [(stats/mean vs) (stats/stddev vs)]]))]</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    (<span class="kw">mapv</span> (<span class="kw">fn</span> [car] (<span class="kw">mapv</span> (<span class="kw">fn</span> [k] (<span class="kw">let</span> [[mu sd] (moments k)] (<span class="kw">/</span> (<span class="kw">-</span> (<span class="kw">double</span> (k car)) (<span class="kw">double</span> mu)) (<span class="kw">double</span> sd))))</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>                          variables))</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>          mtcars)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> car-clustering </span>(cl/hclust standardized {<span class="at">:method</span> <span class="at">:complete</span>}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> car-names </span>(<span class="kw">mapv</span> <span class="at">:model</span> mtcars))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>A small hierarchy as rows of levels:</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> offices </span>[{<span class="at">:region</span> <span class="st">"Europe"</span> <span class="at">:country</span> <span class="st">"Poland"</span> <span class="at">:city</span> <span class="st">"Warsaw"</span>} {<span class="at">:region</span> <span class="st">"Europe"</span> <span class="at">:country</span> <span class="st">"Poland"</span> <span class="at">:city</span> <span class="st">"Krakow"</span>}</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>              {<span class="at">:region</span> <span class="st">"Europe"</span> <span class="at">:country</span> <span class="st">"France"</span> <span class="at">:city</span> <span class="st">"Paris"</span>} {<span class="at">:region</span> <span class="st">"Europe"</span> <span class="at">:country</span> <span class="st">"France"</span> <span class="at">:city</span> <span class="st">"Lyon"</span>}</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>              {<span class="at">:region</span> <span class="st">"Asia"</span> <span class="at">:country</span> <span class="st">"Japan"</span> <span class="at">:city</span> <span class="st">"Tokyo"</span>} {<span class="at">:region</span> <span class="st">"Asia"</span> <span class="at">:country</span> <span class="st">"Japan"</span> <span class="at">:city</span> <span class="st">"Osaka"</span>}</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>              {<span class="at">:region</span> <span class="st">"Asia"</span> <span class="at">:country</span> <span class="st">"India"</span> <span class="at">:city</span> <span class="st">"Delhi"</span>}])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="data-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">region</th>
+<th data-quarto-table-cell-role="th">country</th>
+<th data-quarto-table-cell-role="th">city</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Europe</td>
+<td>Poland</td>
+<td>Warsaw</td>
+</tr>
+<tr class="even">
+<td>Europe</td>
+<td>Poland</td>
+<td>Krakow</td>
+</tr>
+<tr class="odd">
+<td>Europe</td>
+<td>France</td>
+<td>Paris</td>
+</tr>
+<tr class="even">
+<td>Europe</td>
+<td>France</td>
+<td>Lyon</td>
+</tr>
+<tr class="odd">
+<td>Asia</td>
+<td>Japan</td>
+<td>Tokyo</td>
+</tr>
+<tr class="even">
+<td>Asia</td>
+<td>Japan</td>
+<td>Osaka</td>
+</tr>
+<tr class="odd">
+<td>Asia</td>
+<td>India</td>
+<td>Delhi</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> office-tree </span>(tree/from-levels offices {<span class="at">:hierarchy</span> [<span class="at">:region</span> <span class="at">:country</span> <span class="at">:city</span>]}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<section id="dendrogram" class="level2" data-number="23.1">
+<h2 data-number="23.1" class="anchored" data-anchor-id="dendrogram"><span class="header-section-number">23.1</span> dendrogram</h2>
+<p>A dendrogram of a clustering (an <code>hclust</code> result, its observations named by <code>:labels</code>) or of a tree (levels or parents) - branches at their merge heights, leaves along one axis.</p>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">Option</th>
+<th data-quarto-table-cell-role="th">Type</th>
+<th data-quarto-table-cell-role="th">Default</th>
+<th data-quarto-table-cell-role="th">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>:labels</td>
+<td>sequential of any value or nil</td>
+<td>the observations' indices</td>
+<td>names of an hclust result's observations, in order (one per observation)</td>
+</tr>
+<tr class="even">
+<td>:horizontal</td>
+<td>true or false or nil</td>
+<td>false</td>
+<td>leaves on the left, heights growing right (not circular)</td>
+</tr>
+<tr class="odd">
+<td>:labels?</td>
+<td>true or false</td>
+<td>true</td>
+<td>leaf names along the leaf axis (circular - outward around the circle)</td>
+</tr>
+<tr class="even">
+<td>:group-labels?</td>
+<td>true or false or nil</td>
+<td>false</td>
+<td>names of the named groups at their nodes (level and parent trees)</td>
+</tr>
+<tr class="odd">
+<td>:line-style</td>
+<td>map of keyword to any value or nil</td>
+<td>{:color [70 70 70] :width 1}</td>
+<td>line options of the branches, merged over the default</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/dendrogram car-clustering {<span class="at">:labels</span> car-names <span class="at">:k</span> <span class="dv">3</span> <span class="at">:title</span> <span class="st">"complete linkage, 3 clusters"</span>})</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">900</span> <span class="at">:height</span> <span class="dv">420</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.builders_trees_files/image0.png" class="img-fluid"></p>
+</div>
+<p>Horizontal, with thicker red branches (<code>:line-style</code>, merged over the default), and without leaf names (left); a hierarchy with its group names at their nodes (right):</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [(plot/dendrogram car-clustering {<span class="at">:labels</span> car-names <span class="at">:horizontal</span> <span class="va">true</span> <span class="at">:labels</span>? <span class="va">false</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>                                                                   <span class="at">:line-style</span> {<span class="at">:color</span> [<span class="dv">200</span> <span class="dv">60</span> <span class="dv">40</span>] <span class="at">:width</span> <span class="dv">2</span>}</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>                                                                   <span class="at">:title</span> <span class="st">":horizontal, :labels? false, :line-style"</span>})</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>                                  (plot/dendrogram office-tree {<span class="at">:horizontal</span> <span class="va">false</span> <span class="at">:group-labels</span>? <span class="va">true</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>                                                                <span class="at">:title</span> <span class="st">"a hierarchy, :group-labels? true"</span>})]</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">2</span>})</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">400</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.builders_trees_files/image1.png" class="img-fluid"></p>
+</div>
+<p>Shared options: <a href="reference.shared_options.html#dendrogram-layout">Dendrogram layout</a> (<code>:k</code> <code>:circular</code> <code>:span</code>); <a href="reference.shared_options.html#builder-options">Builder options</a> (<code>:title</code> <code>:scales</code> <code>:theme</code>).</p>
+</section>
+<section id="tree" class="level2" data-number="23.2">
+<h2 data-number="23.2" class="anchored" data-anchor-id="tree"><span class="header-section-number">23.2</span> tree</h2>
+<p>A node-link tree: a point per node, links from parents to children, names beside the nodes; tidy (by depth) or cluster (leaves aligned), cartesian or circular (the Node-link tree layout group).</p>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">Option</th>
+<th data-quarto-table-cell-role="th">Type</th>
+<th data-quarto-table-cell-role="th">Default</th>
+<th data-quarto-table-cell-role="th">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>:labels?</td>
+<td>true or false</td>
+<td>true</td>
+<td>node names (cartesian - leaves right of their node, groups left; circular - leaf names outward)</td>
+</tr>
+<tr class="even">
+<td>:nodes?</td>
+<td>true or false</td>
+<td>true</td>
+<td>a point per node</td>
+</tr>
+<tr class="odd">
+<td>:mapping</td>
+<td>map of keyword to any value or nil</td>
+<td></td>
+<td>node aesthetics (:color, :size, :shape): accessors of the nodes (their row's columns, :depth, :leaf?, :name)</td>
+</tr>
+<tr class="even">
+<td>:node-style</td>
+<td>map of keyword to any value or nil</td>
+<td>{:size 7 :color [70 130 180] :stroke-color :white :stroke-width 1}</td>
+<td>scatter options of the nodes, merged over the default</td>
+</tr>
+<tr class="odd">
+<td>:link-style</td>
+<td>map of keyword to any value or nil</td>
+<td>{:color [176 176 176] :width 0.9}</td>
+<td>line options of the links, merged over the default</td>
+</tr>
+<tr class="even">
+<td>:labels</td>
+<td>sequential of any value or nil</td>
+<td>the observations' indices</td>
+<td>names of an hclust result's observations, in order (one per observation)</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/tree office-tree) {<span class="at">:width</span> <span class="dv">600</span> <span class="at">:height</span> <span class="dv">360</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.builders_trees_files/image2.png" class="img-fluid"></p>
+</div>
+<p>Nodes coloured by depth through <code>:mapping</code>, larger nodes (<code>:node-style</code>) and dashed links (<code>:link-style</code>) (left); circular, neither names nor points - only the links (middle); a clustering’s tree named by <code>:labels</code> (right):</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [(plot/tree office-tree {<span class="at">:mapping</span> {<span class="at">:color</span> #(<span class="kw">str</span> (<span class="at">:depth</span> <span class="va">%</span>))}</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>                                                          <span class="at">:node-style</span> {<span class="at">:size</span> <span class="dv">12</span>}</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>                                                          <span class="at">:link-style</span> {<span class="at">:dash</span> <span class="at">:dashed</span> <span class="at">:color</span> [<span class="dv">90</span> <span class="dv">90</span> <span class="dv">90</span>]}</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>                                                          <span class="at">:title</span> <span class="st">":mapping, :node-style, :link-style"</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>                                                          <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:legend</span> <span class="va">false</span>}}})</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>                                  (plot/tree office-tree {<span class="at">:labels</span>? <span class="va">false</span> <span class="at">:nodes</span>? <span class="va">false</span> <span class="at">:circular</span> <span class="va">true</span></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>                                                          <span class="at">:title</span> <span class="st">":circular true, no names or points"</span>})</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>                                  (plot/tree car-clustering {<span class="at">:labels</span> car-names <span class="at">:labels</span>? <span class="va">true</span> <span class="at">:nodes</span>? <span class="va">true</span></span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>                                                             <span class="at">:title</span> <span class="st">"a clustering, :labels"</span>})]</span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">3</span>})</span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">420</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.builders_trees_files/image3.png" class="img-fluid"></p>
+</div>
+<p>Shared options: <a href="reference.shared_options.html#node-link-tree-layout">Node-link tree layout</a> (<code>:layout</code> <code>:links</code> <code>:circular</code> <code>:span</code>); <a href="reference.shared_options.html#builder-options">Builder options</a> (<code>:title</code> <code>:scales</code> <code>:theme</code>).</p>
+</section>
+<section id="clustered-heatmap" class="level2" data-number="23.3">
+<h2 data-number="23.3" class="anchored" data-anchor-id="clustered-heatmap"><span class="header-section-number">23.3</span> clustered-heatmap</h2>
+<p>Tiles of a value per row and column, rows and columns ordered by hierarchical clustering, their dendrograms beside the tiles; the data are long rows (<code>:row</code>, <code>:col</code>, <code>:value</code> accessors).</p>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">Option</th>
+<th data-quarto-table-cell-role="th">Type</th>
+<th data-quarto-table-cell-role="th">Default</th>
+<th data-quarto-table-cell-role="th">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>:row (required)</td>
+<td>a keyword, a function or a categorical marker of one</td>
+<td></td>
+<td>accessor of a row's tile row</td>
+</tr>
+<tr class="even">
+<td>:col (required)</td>
+<td>a keyword, a function or a categorical marker of one</td>
+<td></td>
+<td>accessor of a row's tile column</td>
+</tr>
+<tr class="odd">
+<td>:value (required)</td>
+<td>a keyword, a function or a categorical marker of one</td>
+<td></td>
+<td>accessor of a row's tile value, a finite number</td>
+</tr>
+<tr class="even">
+<td>:method</td>
+<td>one of :single :complete :average :weighted :centroid :median :ward :ward-d :diana</td>
+<td>:complete</td>
+<td>fastmath hclust linkage of the rows and columns</td>
+</tr>
+<tr class="odd">
+<td>:distance</td>
+<td>one of :euclidean :chebyshev :manhattan :canberra :earth-movers or a function</td>
+<td>:euclidean</td>
+<td>fastmath hclust distance: a keyword or a function of two double arrays</td>
+</tr>
+<tr class="even">
+<td>:row-tree?</td>
+<td>true or false</td>
+<td>true</td>
+<td>the rows' dendrogram right of the tiles (false - order only)</td>
+</tr>
+<tr class="odd">
+<td>:col-tree?</td>
+<td>true or false</td>
+<td>true</td>
+<td>the columns' dendrogram above the tiles (false - order only)</td>
+</tr>
+<tr class="even">
+<td>:tree-size</td>
+<td>[a number in (0 1), a number in (0 1)]</td>
+<td>[0.2 0.2]</td>
+<td>[w h] - the dendrograms' share of the width (rows) and the height (columns), fractions in (0, 1)</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> car-scores </span>(<span class="kw">vec</span> (<span class="kw">for</span> [[car row] (<span class="kw">map</span> <span class="kw">vector</span> car-names standardized) [k v] (<span class="kw">map</span> <span class="kw">vector</span> variables row)]</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>                       {<span class="at">:car</span> car <span class="at">:variable</span> (<span class="kw">name</span> k) <span class="at">:z</span> v})))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="data-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">car</th>
+<th data-quarto-table-cell-role="th">variable</th>
+<th data-quarto-table-cell-role="th">z</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Mazda RX4</td>
+<td>mpg</td>
+<td>0.6750876206931093</td>
+</tr>
+<tr class="even">
+<td>Mazda RX4</td>
+<td>disp</td>
+<td>-0.8010684219091876</td>
+</tr>
+<tr class="odd">
+<td>Mazda RX4</td>
+<td>hp</td>
+<td>-0.6554596090331999</td>
+</tr>
+<tr class="even">
+<td>Mazda RX4</td>
+<td>drat</td>
+<td>1.1283722620337149</td>
+</tr>
+<tr class="odd">
+<td>Mazda RX4</td>
+<td>wt</td>
+<td>-1.1502784754134987</td>
+</tr>
+<tr class="even">
+<td>Mazda RX4</td>
+<td>qsec</td>
+<td>-1.1015230645561858</td>
+</tr>
+<tr class="odd">
+<td>Mazda RX4 Wag</td>
+<td>mpg</td>
+<td>0.6750876206931093</td>
+</tr>
+<tr class="even">
+<td>Mazda RX4 Wag</td>
+<td>disp</td>
+<td>-0.8010684219091876</td>
+</tr>
+<tr class="odd">
+<td>Mazda RX4 Wag</td>
+<td>hp</td>
+<td>-0.6554596090331999</td>
+</tr>
+<tr class="even">
+<td>Mazda RX4 Wag</td>
+<td>drat</td>
+<td>1.1283722620337149</td>
+</tr>
+<tr class="odd">
+<td>Mazda RX4 Wag</td>
+<td>wt</td>
+<td>-0.838525042459661</td>
+</tr>
+<tr class="even">
+<td>Mazda RX4 Wag</td>
+<td>qsec</td>
+<td>-0.7741715999318604</td>
+</tr>
+<tr class="odd">
+<td>Datsun 710</td>
+<td>mpg</td>
+<td>1.1090725197101083</td>
+</tr>
+<tr class="even">
+<td>Datsun 710</td>
+<td>disp</td>
+<td>-1.2597353595104843</td>
+</tr>
+<tr class="odd">
+<td>Datsun 710</td>
+<td>hp</td>
+<td>-0.9790258770132912</td>
+</tr>
+<tr class="even">
+<td>Datsun 710</td>
+<td>drat</td>
+<td>1.014968014593141</td>
+</tr>
+<tr class="odd">
+<td>Datsun 710</td>
+<td>wt</td>
+<td>-1.517047220065073</td>
+</tr>
+<tr class="even">
+<td>Datsun 710</td>
+<td>qsec</td>
+<td>0.15527273712649395</td>
+</tr>
+<tr class="odd">
+<td>Hornet 4 Drive</td>
+<td>mpg</td>
+<td>0.7715287093635531</td>
+</tr>
+<tr class="even">
+<td>Hornet 4 Drive</td>
+<td>disp</td>
+<td>0.06334234510864066</td>
+</tr>
+<tr class="odd">
+<td>Hornet 4 Drive</td>
+<td>hp</td>
+<td>-0.6554596090331999</td>
+</tr>
+<tr class="even">
+<td>Hornet 4 Drive</td>
+<td>drat</td>
+<td>-0.7314573959917041</td>
+</tr>
+<tr class="odd">
+<td>Hornet 4 Drive</td>
+<td>wt</td>
+<td>-0.4228537985212105</td>
+</tr>
+<tr class="even">
+<td>Hornet 4 Drive</td>
+<td>qsec</td>
+<td>0.6404543721946926</td>
+</tr>
+<tr class="odd">
+<td>Hornet Sportabout</td>
+<td>mpg</td>
+<td>0.1205513608380552</td>
+</tr>
+<tr class="even">
+<td>Hornet Sportabout</td>
+<td>disp</td>
+<td>0.9630351842496456</td>
+</tr>
+<tr class="odd">
+<td>Hornet Sportabout</td>
+<td>hp</td>
+<td>0.5817055332436202</td>
+</tr>
+<tr class="even">
+<td>Hornet Sportabout</td>
+<td>drat</td>
+<td>-0.5726914495749004</td>
+</tr>
+<tr class="odd">
+<td>Hornet Sportabout</td>
+<td>wt</td>
+<td>-0.14777724003252984</td>
+</tr>
+<tr class="even">
+<td>Hornet Sportabout</td>
+<td>qsec</td>
+<td>-0.7741715999318604</td>
+</tr>
+<tr class="odd">
+<td>Valiant</td>
+<td>mpg</td>
+<td>-0.024110272167610528</td>
+</tr>
+<tr class="even">
+<td>Valiant</td>
+<td>disp</td>
+<td>-0.2277347499075668</td>
+</tr>
+<tr class="odd">
+<td>Valiant</td>
+<td>hp</td>
+<td>-0.7506261584391091</td>
+</tr>
+<tr class="even">
+<td>Valiant</td>
+<td>drat</td>
+<td>-1.4572445796113807</td>
+</tr>
+<tr class="odd">
+<td>Valiant</td>
+<td>wt</td>
+<td>-0.12332599038909156</td>
+</tr>
+<tr class="even">
+<td>Valiant</td>
+<td>qsec</td>
+<td>1.096408197921431</td>
+</tr>
+<tr class="odd">
+<td>Duster 360</td>
+<td>mpg</td>
+<td>-0.9403006145368302</td>
+</tr>
+<tr class="even">
+<td>Duster 360</td>
+<td>disp</td>
+<td>0.9630351842496456</td>
+</tr>
+<tr class="odd">
+<td>Duster 360</td>
+<td>hp</td>
+<td>1.9140372249263495</td>
+</tr>
+<tr class="even">
+<td>Duster 360</td>
+<td>drat</td>
+<td>-0.43660635264621106</td>
+</tr>
+<tr class="odd">
+<td>Duster 360</td>
+<td>wt</td>
+<td>0.011155882649818772</td>
+</tr>
+<tr class="even">
+<td>Duster 360</td>
+<td>qsec</td>
+<td>-1.4639479003902616</td>
+</tr>
+<tr class="odd">
+<td>Merc 240D</td>
+<td>mpg</td>
+<td>1.4948368743918843</td>
+</tr>
+<tr class="even">
+<td>Merc 240D</td>
+<td>disp</td>
+<td>-0.9183813117187501</td>
+</tr>
+<tr class="odd">
+<td>Merc 240D</td>
+<td>hp</td>
+<td>-1.5690584833299286</td>
+</tr>
+<tr class="even">
+<td>Merc 240D</td>
+<td>drat</td>
+<td>0.6520744227833027</td>
+</tr>
+<tr class="odd">
+<td>Merc 240D</td>
+<td>wt</td>
+<td>-0.45341786057550826</td>
+</tr>
+<tr class="even">
+<td>Merc 240D</td>
+<td>qsec</td>
+<td>0.967805836819018</td>
+</tr>
+<tr class="odd">
+<td>Merc 230</td>
+<td>mpg</td>
+<td>1.1090725197101083</td>
+</tr>
+<tr class="even">
+<td>Merc 230</td>
+<td>disp</td>
+<td>-0.9704223681004355</td>
+</tr>
+<tr class="odd">
+<td>Merc 230</td>
+<td>hp</td>
+<td>-0.9409592572509275</td>
+</tr>
+<tr class="even">
+<td>Merc 230</td>
+<td>drat</td>
+<td>1.1737339610099446</td>
+</tr>
+<tr class="odd">
+<td>Merc 230</td>
+<td>wt</td>
+<td>-0.5023203598623848</td>
+</tr>
+<tr class="even">
+<td>Merc 230</td>
+<td>qsec</td>
+<td>2.663018778623563</td>
+</tr>
+<tr class="odd">
+<td>Merc 280</td>
+<td>mpg</td>
+<td>0.2411027216761104</td>
+</tr>
+<tr class="even">
+<td>Merc 280</td>
+<td>disp</td>
+<td>-0.734032484875152</td>
+</tr>
+<tr class="odd">
+<td>Merc 280</td>
+<td>hp</td>
+<td>-0.40802658057783586</td>
+</tr>
+<tr class="even">
+<td>Merc 280</td>
+<td>drat</td>
+<td>1.1737339610099446</td>
+</tr>
+<tr class="odd">
+<td>Merc 280</td>
+<td>wt</td>
+<td>-0.14777724003252984</td>
+</tr>
+<tr class="even">
+<td>Merc 280</td>
+<td>qsec</td>
+<td>-0.02593968079054295</td>
+</tr>
+<tr class="odd">
+<td>Merc 280C</td>
+<td>mpg</td>
+<td>-0.09644108867044382</td>
+</tr>
+<tr class="even">
+<td>Merc 280C</td>
+<td>disp</td>
+<td>-0.734032484875152</td>
+</tr>
+<tr class="odd">
+<td>Merc 280C</td>
+<td>hp</td>
+<td>-0.40802658057783586</td>
+</tr>
+<tr class="even">
+<td>Merc 280C</td>
+<td>drat</td>
+<td>1.1737339610099446</td>
+</tr>
+<tr class="odd">
+<td>Merc 280C</td>
+<td>wt</td>
+<td>-0.14777724003252984</td>
+</tr>
+<tr class="even">
+<td>Merc 280C</td>
+<td>qsec</td>
+<td>0.32479403130694806</td>
+</tr>
+<tr class="odd">
+<td>Merc 450SE</td>
+<td>mpg</td>
+<td>-0.43398489901699894</td>
+</tr>
+<tr class="even">
+<td>Merc 450SE</td>
+<td>disp</td>
+<td>0.2203475660567769</td>
+</tr>
+<tr class="odd">
+<td>Merc 450SE</td>
+<td>hp</td>
+<td>0.6768720826495295</td>
+</tr>
+<tr class="even">
+<td>Merc 450SE</td>
+<td>drat</td>
+<td>-0.7541382454798196</td>
+</tr>
+<tr class="odd">
+<td>Merc 450SE</td>
+<td>wt</td>
+<td>0.6224371237357761</td>
+</tr>
+<tr class="even">
+<td>Merc 450SE</td>
+<td>qsec</td>
+<td>-0.5520402489367825</td>
+</tr>
+<tr class="odd">
+<td>Merc 450SL</td>
+<td>mpg</td>
+<td>-0.21699244950849902</td>
+</tr>
+<tr class="even">
+<td>Merc 450SL</td>
+<td>disp</td>
+<td>0.2203475660567769</td>
+</tr>
+<tr class="odd">
+<td>Merc 450SL</td>
+<td>hp</td>
+<td>0.6768720826495295</td>
+</tr>
+<tr class="even">
+<td>Merc 450SL</td>
+<td>drat</td>
+<td>-0.7541382454798196</td>
+</tr>
+<tr class="odd">
+<td>Merc 450SL</td>
+<td>wt</td>
+<td>0.2067658797973251</td>
+</tr>
+<tr class="even">
+<td>Merc 450SL</td>
+<td>qsec</td>
+<td>-0.43512901157095013</td>
+</tr>
+<tr class="odd">
+<td>Merc 450SLC</td>
+<td>mpg</td>
+<td>-0.7233081650283313</td>
+</tr>
+<tr class="even">
+<td>Merc 450SLC</td>
+<td>disp</td>
+<td>0.2203475660567769</td>
+</tr>
+<tr class="odd">
+<td>Merc 450SLC</td>
+<td>hp</td>
+<td>0.6768720826495295</td>
+</tr>
+<tr class="even">
+<td>Merc 450SLC</td>
+<td>drat</td>
+<td>-0.7541382454798196</td>
+</tr>
+<tr class="odd">
+<td>Merc 450SLC</td>
+<td>wt</td>
+<td>0.26789400390592055</td>
+</tr>
+<tr class="even">
+<td>Merc 450SLC</td>
+<td>qsec</td>
+<td>-0.20130653683928948</td>
+</tr>
+<tr class="odd">
+<td>Cadillac Fleetwood</td>
+<td>mpg</td>
+<td>-1.880601229073661</td>
+</tr>
+<tr class="even">
+<td>Cadillac Fleetwood</td>
+<td>disp</td>
+<td>1.9509332036985922</td>
+</tr>
+<tr class="odd">
+<td>Cadillac Fleetwood</td>
+<td>hp</td>
+<td>1.1527048296790756</td>
+</tr>
+<tr class="even">
+<td>Cadillac Fleetwood</td>
+<td>drat</td>
+<td>-1.071670138313427</td>
+</tr>
+<tr class="odd">
+<td>Cadillac Fleetwood</td>
+<td>wt</td>
+<td>2.065060852698634</td>
+</tr>
+<tr class="even">
+<td>Cadillac Fleetwood</td>
+<td>qsec</td>
+<td>-0.2129976605758723</td>
+</tr>
+<tr class="odd">
+<td>Lincoln Continental</td>
+<td>mpg</td>
+<td>-1.880601229073661</td>
+</tr>
+<tr class="even">
+<td>Lincoln Continental</td>
+<td>disp</td>
+<td>1.8450869873290623</td>
+</tr>
+<tr class="odd">
+<td>Lincoln Continental</td>
+<td>hp</td>
+<td>1.3430379284908942</td>
+</tr>
+<tr class="even">
+<td>Lincoln Continental</td>
+<td>drat</td>
+<td>-0.9129041918966233</td>
+</tr>
+<tr class="odd">
+<td>Lincoln Continental</td>
+<td>wt</td>
+<td>2.277786724596547</td>
+</tr>
+<tr class="even">
+<td>Lincoln Continental</td>
+<td>qsec</td>
+<td>-0.306526650468537</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/clustered-heatmap car-scores {<span class="at">:row</span> <span class="at">:car</span> <span class="at">:col</span> <span class="at">:variable</span> <span class="at">:value</span> <span class="at">:z</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>                                                       <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:range</span> <span class="at">:RColorBrewer/RdBu</span> <span class="at">:midpoint</span> <span class="dv">0</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>                                                                        <span class="at">:reverse</span> <span class="va">true</span> <span class="at">:title</span> <span class="st">"z-score"</span>}}})</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">700</span> <span class="at">:height</span> <span class="dv">500</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.builders_trees_files/image4.png" class="img-fluid"></p>
+</div>
+<p>The distances between rows and columns (<code>:distance</code>, here with average linkage) give different orders and trees:</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [(plot/clustered-heatmap car-scores {<span class="at">:row</span> <span class="at">:car</span> <span class="at">:col</span> <span class="at">:variable</span> <span class="at">:value</span> <span class="at">:z</span> <span class="at">:method</span> <span class="at">:average</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>                                                                      <span class="at">:distance</span> <span class="at">:manhattan</span> <span class="at">:title</span> <span class="st">":distance :manhattan"</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>                                                                      <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:legend</span> <span class="va">false</span>}}})</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>                                  (plot/clustered-heatmap car-scores {<span class="at">:row</span> <span class="at">:car</span> <span class="at">:col</span> <span class="at">:variable</span> <span class="at">:value</span> <span class="at">:z</span> <span class="at">:method</span> <span class="at">:average</span></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>                                                                      <span class="at">:distance</span> <span class="at">:chebyshev</span> <span class="at">:title</span> <span class="st">":distance :chebyshev"</span></span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>                                                                      <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:legend</span> <span class="va">false</span>}}})</span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>                                  (plot/clustered-heatmap car-scores {<span class="at">:row</span> <span class="at">:car</span> <span class="at">:col</span> <span class="at">:variable</span> <span class="at">:value</span> <span class="at">:z</span> <span class="at">:method</span> <span class="at">:average</span></span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>                                                                      <span class="at">:distance</span> <span class="at">:canberra</span> <span class="at">:title</span> <span class="st">":distance :canberra"</span></span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>                                                                      <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:legend</span> <span class="va">false</span>}}})</span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a>                                  (plot/clustered-heatmap car-scores {<span class="at">:row</span> <span class="at">:car</span> <span class="at">:col</span> <span class="at">:variable</span> <span class="at">:value</span> <span class="at">:z</span> <span class="at">:method</span> <span class="at">:average</span></span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a>                                                                      <span class="at">:distance</span> <span class="at">:earth-movers</span></span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a>                                                                      <span class="at">:title</span> <span class="st">":distance :earth-movers"</span></span>
+<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a>                                                                      <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:legend</span> <span class="va">false</span>}}})]</span>
+<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">2</span>})</span>
+<span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">800</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.builders_trees_files/image5.png" class="img-fluid"></p>
+</div>
+<p>Only the rows’ tree, wider (<code>:tree-size</code>), columns ordered without their tree (left); Ward linkage with the default euclidean distance, no trees - only the order (right):</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [(plot/clustered-heatmap car-scores {<span class="at">:row</span> <span class="at">:car</span> <span class="at">:col</span> <span class="at">:variable</span> <span class="at">:value</span> <span class="at">:z</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>                                                                      <span class="at">:col-tree</span>? <span class="va">false</span> <span class="at">:tree-size</span> [<span class="fl">0.35</span> <span class="fl">0.2</span>]</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>                                                                      <span class="at">:title</span> <span class="st">":col-tree? false, :tree-size [0.35 0.2]"</span></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>                                                                      <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:legend</span> <span class="va">false</span>}}})</span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>                                  (plot/clustered-heatmap car-scores {<span class="at">:row</span> <span class="at">:car</span> <span class="at">:col</span> <span class="at">:variable</span> <span class="at">:value</span> <span class="at">:z</span> <span class="at">:method</span> <span class="at">:ward</span></span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>                                                                      <span class="at">:row-tree</span>? <span class="va">false</span> <span class="at">:col-tree</span>? <span class="va">false</span></span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>                                                                      <span class="at">:title</span> <span class="st">":method :ward, no trees"</span>})]</span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">2</span> <span class="at">:widths</span> [<span class="dv">1</span> <span class="fl">1.15</span>]})</span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">450</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.builders_trees_files/image6.png" class="img-fluid"></p>
+</div>
+<p>Shared options: <a href="reference.shared_options.html#builder-options">Builder options</a> (<code>:title</code> <code>:scales</code> <code>:theme</code>).</p>
+</section>
+<section id="bundle" class="level2" data-number="23.4">
+<h2 data-number="23.4" class="anchored" data-anchor-id="bundle"><span class="header-section-number">23.4</span> bundle</h2>
+<p>Hierarchical edge bundling: edges between the leaves of a tree, each bent along the tree path between its ends, leaves around a circle. Edges name their leaves by key - a <code>tree/from-parents</code> node’s id, else the leaf’s name (<code>tree/from-levels</code>, <code>tree/from-hclust</code>): here the office tree from levels, edges between cities.</p>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">Option</th>
+<th data-quarto-table-cell-role="th">Type</th>
+<th data-quarto-table-cell-role="th">Default</th>
+<th data-quarto-table-cell-role="th">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>:alpha</td>
+<td>a number in [0 1]</td>
+<td>0.4</td>
+<td>opacity of the edges (leaf points and legend keys stay opaque)</td>
+</tr>
+<tr class="even">
+<td>:color-by-group?</td>
+<td>true or false</td>
+<td>true</td>
+<td>edges and leaves coloured by the top-level group of their (source) leaf, with a legend</td>
+</tr>
+<tr class="odd">
+<td>:edge-color</td>
+<td>a clojure2d color or :none</td>
+<td>[70 110 180]</td>
+<td>colour of the edges when not coloured by group</td>
+</tr>
+<tr class="even">
+<td>:labels?</td>
+<td>true or false</td>
+<td>true</td>
+<td>leaf names outward around the circle</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> calls </span>[{<span class="at">:from</span> <span class="st">"Warsaw"</span> <span class="at">:to</span> <span class="st">"Paris"</span>} {<span class="at">:from</span> <span class="st">"Warsaw"</span> <span class="at">:to</span> <span class="st">"Tokyo"</span>} {<span class="at">:from</span> <span class="st">"Krakow"</span> <span class="at">:to</span> <span class="st">"Lyon"</span>}</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>            {<span class="at">:from</span> <span class="st">"Krakow"</span> <span class="at">:to</span> <span class="st">"Delhi"</span>} {<span class="at">:from</span> <span class="st">"Paris"</span> <span class="at">:to</span> <span class="st">"Osaka"</span>} {<span class="at">:from</span> <span class="st">"Lyon"</span> <span class="at">:to</span> <span class="st">"Tokyo"</span>}</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>            {<span class="at">:from</span> <span class="st">"Tokyo"</span> <span class="at">:to</span> <span class="st">"Delhi"</span>} {<span class="at">:from</span> <span class="st">"Osaka"</span> <span class="at">:to</span> <span class="st">"Warsaw"</span>} {<span class="at">:from</span> <span class="st">"Delhi"</span> <span class="at">:to</span> <span class="st">"Paris"</span>}])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="data-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">from</th>
+<th data-quarto-table-cell-role="th">to</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Warsaw</td>
+<td>Paris</td>
+</tr>
+<tr class="even">
+<td>Warsaw</td>
+<td>Tokyo</td>
+</tr>
+<tr class="odd">
+<td>Krakow</td>
+<td>Lyon</td>
+</tr>
+<tr class="even">
+<td>Krakow</td>
+<td>Delhi</td>
+</tr>
+<tr class="odd">
+<td>Paris</td>
+<td>Osaka</td>
+</tr>
+<tr class="even">
+<td>Lyon</td>
+<td>Tokyo</td>
+</tr>
+<tr class="odd">
+<td>Tokyo</td>
+<td>Delhi</td>
+</tr>
+<tr class="even">
+<td>Osaka</td>
+<td>Warsaw</td>
+</tr>
+<tr class="odd">
+<td>Delhi</td>
+<td>Paris</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/bundle calls office-tree {}) {<span class="at">:width</span> <span class="dv">500</span> <span class="at">:height</span> <span class="dv">500</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.builders_trees_files/image7.png" class="img-fluid"></p>
+</div>
+<p>One edge colour, more opaque, without leaf names (left); coloured by group with the default translucency and names (right):</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [(plot/bundle calls office-tree {<span class="at">:color-by-group</span>? <span class="va">false</span> <span class="at">:edge-color</span> [<span class="dv">120</span> <span class="dv">60</span> <span class="dv">160</span>]</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>                                                                  <span class="at">:alpha</span> <span class="fl">0.8</span> <span class="at">:labels</span>? <span class="va">false</span></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>                                                                  <span class="at">:title</span> <span class="st">":color-by-group? false, :alpha 0.8"</span>})</span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>                                  (plot/bundle calls office-tree {<span class="at">:color-by-group</span>? <span class="va">true</span> <span class="at">:alpha</span> <span class="fl">0.4</span> <span class="at">:labels</span>? <span class="va">true</span></span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>                                                                  <span class="at">:title</span> <span class="st">":color-by-group? true"</span>})]</span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">2</span> <span class="at">:widths</span> [<span class="dv">1</span> <span class="fl">1.3</span>]})</span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">480</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.builders_trees_files/image8.png" class="img-fluid"></p>
+</div>
+<p>Shared options: <a href="reference.shared_options.html#edge-bundling">Edge bundling</a> (<code>:from</code> <code>:to</code> <code>:beta</code>); <a href="reference.shared_options.html#builder-options">Builder options</a> (<code>:title</code> <code>:scales</code> <code>:theme</code>).</p>
+</section>
+<section id="sequences" class="level2" data-number="23.5">
+<h2 data-number="23.5" class="anchored" data-anchor-id="sequences"><span class="header-section-number">23.5</span> sequences</h2>
+<p>A flow sunburst: sequences of steps (a string of steps with a separator) as rings from the centre, every step coloured by its name wherever it occurs, the end of a sequence a step of its own.</p>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">Option</th>
+<th data-quarto-table-cell-role="th">Type</th>
+<th data-quarto-table-cell-role="th">Default</th>
+<th data-quarto-table-cell-role="th">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>:inner</td>
+<td>a finite number, &gt;= 0, &lt; 1</td>
+<td>0.3</td>
+<td>radius of the centre hole, a fraction of the outer one</td>
+</tr>
+<tr class="even">
+<td>:labels?</td>
+<td>true or false</td>
+<td>false</td>
+<td>step names in the cells that fit</td>
+</tr>
+<tr class="odd">
+<td>:keep-end?</td>
+<td>true or false</td>
+<td>true</td>
+<td>the end marker a step of its own, coloured and in the legend (false - sequences that end are their group's grey remainder)</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> visits </span>[{<span class="at">:sequence</span> <span class="st">"home-search-product-end"</span> <span class="at">:n</span> <span class="dv">30</span>} {<span class="at">:sequence</span> <span class="st">"home-product-cart-end"</span> <span class="at">:n</span> <span class="dv">25</span>}</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>             {<span class="at">:sequence</span> <span class="st">"home-search-end"</span> <span class="at">:n</span> <span class="dv">20</span>} {<span class="at">:sequence</span> <span class="st">"home-end"</span> <span class="at">:n</span> <span class="dv">15</span>}</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>             {<span class="at">:sequence</span> <span class="st">"home-help-search-product-cart-end"</span> <span class="at">:n</span> <span class="dv">10</span>} {<span class="at">:sequence</span> <span class="st">"home-product-end"</span> <span class="at">:n</span> <span class="dv">18</span>}])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="data-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">sequence</th>
+<th data-quarto-table-cell-role="th">n</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>home-search-product-end</td>
+<td>30</td>
+</tr>
+<tr class="even">
+<td>home-product-cart-end</td>
+<td>25</td>
+</tr>
+<tr class="odd">
+<td>home-search-end</td>
+<td>20</td>
+</tr>
+<tr class="even">
+<td>home-end</td>
+<td>15</td>
+</tr>
+<tr class="odd">
+<td>home-help-search-product-cart-end</td>
+<td>10</td>
+</tr>
+<tr class="even">
+<td>home-product-end</td>
+<td>18</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb21"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/sequences visits {<span class="at">:value</span> <span class="at">:n</span>}) {<span class="at">:width</span> <span class="dv">500</span> <span class="at">:height</span> <span class="dv">450</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.builders_trees_files/image9.png" class="img-fluid"></p>
+</div>
+<p>A smaller hole - more room for the rings - and the step names in the cells where they fit (a larger image):</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/sequences visits {<span class="at">:value</span> <span class="at">:n</span> <span class="at">:inner</span> <span class="fl">0.1</span> <span class="at">:labels</span>? <span class="va">true</span> <span class="at">:title</span> <span class="st">":inner 0.1, :labels? true"</span>})</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">700</span> <span class="at">:height</span> <span class="dv">600</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.builders_trees_files/image10.png" class="img-fluid"></p>
+</div>
+<p>Ending sequences left as their group’s grey remainder, the end not a step of its own:</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb23"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/sequences visits {<span class="at">:value</span> <span class="at">:n</span> <span class="at">:keep-end</span>? <span class="va">false</span> <span class="at">:title</span> <span class="st">":keep-end? false"</span>})</span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">550</span> <span class="at">:height</span> <span class="dv">450</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.builders_trees_files/image11.png" class="img-fluid"></p>
+</div>
+<p>Shared options: <a href="reference.shared_options.html#sequences">Sequences</a> (<code>:sequence</code> <code>:value</code> <code>:separator</code> <code>:end</code>); <a href="reference.shared_options.html#builder-options">Builder options</a> (<code>:title</code> <code>:scales</code> <code>:theme</code>).</p>
+<div style="background-color:grey;height:2px;width:100%;"></div>
+<div><pre><small><small>source: notebooks/reference/builders_trees.clj</small></small></pre></div>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="./reference.builders_graphs.html" class="pagination-link" aria-label="Builders: graphs">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Builders: graphs</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./reference.builders_series.html" class="pagination-link" aria-label="Builders: series">
+        <span class="nav-page-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">Builders: series</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

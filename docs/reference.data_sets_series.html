@@ -1,0 +1,3926 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.37">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>27&nbsp; Data functions: sets and series – cljplot2</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./reference.data_fields.html" rel="next">
+<link href="./reference.data_graphs_trees.html" rel="prev">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-7f8f88aac4f3542376d5c11b86a4c14d.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-0d7f492f10755a5ae24b960b9550d083.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<style>
+.data-table { width: fit-content; max-width: 100%; max-height: 15rem; overflow: auto; margin: 0 0 1rem 0; }
+.data-table .table-responsive { overflow: visible; }
+.data-table table { font-size: 0.75rem; width: auto; margin: 0; }
+.data-table th, .data-table td { padding: 0.1rem 0.45rem !important; white-space: nowrap; }
+.data-table thead th { position: sticky; top: 0; background: var(--bs-body-bg, #fff); }
+</style>
+
+
+</head>
+
+<body class="nav-sidebar floating quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./reference.data_levels.html">Reference: data functions</a></li><li class="breadcrumb-item"><a href="./reference.data_sets_series.html"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">Data functions: sets and series</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="./">cljplot2</a> 
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">cljplot2</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text">Reference: concepts</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.intro.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">Reference</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.render.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Render</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.data_mapping.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Data and mapping</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.aesthetics_legends.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Aesthetics and legends</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.scales_axes_coords.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Scales, axes and coordinates</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.layering_position.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Layering and position</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.labels_text.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Labels and text</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.facets_arrange.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Facets, multiplots and margins</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.theme.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Theme</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.shared_options.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Shared options</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.errors.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Errors</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.limits.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">Limits</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
+ <span class="menu-text">Reference: charts</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.charts_points_paths.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Charts: points and paths</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.charts_series.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Charts: series</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.charts_annotations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Charts: annotations</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.charts_bars_ranges.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Charts: bars and ranges</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.charts_strip_distributions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Charts: strip distributions</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.charts_distribution_stats.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Charts: distribution statistics</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.charts_grids_fields.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Charts: grids and fields</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.charts_part_of_whole.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Charts: part of a whole</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.charts_multivariate_3d.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">Charts: multivariate and 3D</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
+ <span class="menu-text">Reference: builders</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.builders_graphs.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Builders: graphs</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.builders_trees.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">Builders: trees</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.builders_series.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">Builders: series</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true">
+ <span class="menu-text">Reference: data functions</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.data_levels.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Data functions: levels</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.data_graphs_trees.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">Data functions: graphs and trees</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.data_sets_series.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">Data functions: sets and series</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.data_fields.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">Data functions: fields</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reference.specific_cases.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">Specific cases</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true">
+ <span class="menu-text">Use cases</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./use_cases.distribution.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">Distribution</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./use_cases.colors.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">Colors</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./use_cases.evolution.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Evolution</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./use_cases.ranking.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">33</span>&nbsp; <span class="chapter-title">Ranking</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./use_cases.part_of_a_whole.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">34</span>&nbsp; <span class="chapter-title">Part of a whole</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./use_cases.correlation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">Correlation</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./use_cases.flow.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">Flow</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true">
+ <span class="menu-text">Galleries</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./galleries.cljplot_extras.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">37</span>&nbsp; <span class="chapter-title">cljplot extras</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./galleries.lattice.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">38</span>&nbsp; <span class="chapter-title">Lattice</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./galleries.vega.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">39</span>&nbsp; <span class="chapter-title">Vega</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#setsupset-rows" id="toc-setsupset-rows" class="nav-link active" data-scroll-target="#setsupset-rows"><span class="header-section-number">27.1</span> sets/upset-rows</a></li>
+  <li><a href="#setsmembership-rows" id="toc-setsmembership-rows" class="nav-link" data-scroll-target="#setsmembership-rows"><span class="header-section-number">27.2</span> sets/membership-rows</a></li>
+  <li><a href="#serieslag-rows" id="toc-serieslag-rows" class="nav-link" data-scroll-target="#serieslag-rows"><span class="header-section-number">27.3</span> series/lag-rows</a></li>
+  <li><a href="#seriesacf-rows" id="toc-seriesacf-rows" class="nav-link" data-scroll-target="#seriesacf-rows"><span class="header-section-number">27.4</span> series/acf-rows</a></li>
+  <li><a href="#serieshorizon-rows" id="toc-serieshorizon-rows" class="nav-link" data-scroll-target="#serieshorizon-rows"><span class="header-section-number">27.5</span> series/horizon-rows</a></li>
+  <li><a href="#serieshorizon-bands" id="toc-serieshorizon-bands" class="nav-link" data-scroll-target="#serieshorizon-bands"><span class="header-section-number">27.6</span> series/horizon-bands</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./reference.data_levels.html">Reference: data functions</a></li><li class="breadcrumb-item"><a href="./reference.data_sets_series.html"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">Data functions: sets and series</span></a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">Data functions: sets and series</span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<style></style>
+<style>.printedClojure .sourceCode {
+  background-color: transparent;
+  border-style: none;
+}
+</style>
+<style>.clay-limit-image-width .clay-image {max-width: 100%}
+.clay-side-by-side .sourceCode {margin: 0}
+.clay-side-by-side {margin: 1em 0}
+</style>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js" type="text/javascript"></script>
+<script src="https://code.jquery.com/ui/1.13.1/jquery-ui.min.js" type="text/javascript"></script>
+<p>Functions turning set memberships and time series into rows for ordinary plots: the bars and dot matrix of an UpSet plot, lag pairs, autocorrelation rows and the folded bands of a horizon chart. The builders <code>plot/acf</code> and <code>plot/horizon</code> (Builders: series) draw the last two directly.</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">ns</span> reference.data-sets-series</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  (<span class="at">:require</span> [fastmath.core <span class="at">:as</span> m]</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>            [fastmath.random <span class="at">:as</span> r]</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>            [cljplot2.chart <span class="at">:as</span> chart]</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>            [cljplot2.core <span class="at">:as</span> plot]</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>            [cljplot2.data.series <span class="at">:as</span> series]</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>            [cljplot2.data.sets <span class="at">:as</span> sets]</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>            [cljplot2.describe <span class="at">:as</span> describe]</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>            [notebook-utils <span class="at">:as</span> nu]))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>Set memberships: one row per item and set it belongs to (an item may be in several).</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> members </span>(<span class="kw">concat</span> (<span class="kw">for</span> [i (<span class="kw">range</span> <span class="dv">40</span>)] {<span class="at">:set</span> <span class="st">"coffee"</span> <span class="at">:item</span> i})</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>                     (<span class="kw">for</span> [i (<span class="kw">range</span> <span class="dv">25</span> <span class="dv">60</span>)] {<span class="at">:set</span> <span class="st">"tea"</span> <span class="at">:item</span> i})</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>                     (<span class="kw">for</span> [i (<span class="kw">range</span> <span class="dv">30</span> <span class="dv">45</span>)] {<span class="at">:set</span> <span class="st">"juice"</span> <span class="at">:item</span> i})</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>                     (<span class="kw">for</span> [i (<span class="kw">range</span> <span class="dv">55</span> <span class="dv">70</span>)] {<span class="at">:set</span> <span class="st">"juice"</span> <span class="at">:item</span> i})))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="data-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">set</th>
+<th data-quarto-table-cell-role="th">item</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>coffee</td>
+<td>0</td>
+</tr>
+<tr class="even">
+<td>coffee</td>
+<td>1</td>
+</tr>
+<tr class="odd">
+<td>coffee</td>
+<td>2</td>
+</tr>
+<tr class="even">
+<td>coffee</td>
+<td>3</td>
+</tr>
+<tr class="odd">
+<td>coffee</td>
+<td>4</td>
+</tr>
+<tr class="even">
+<td>coffee</td>
+<td>5</td>
+</tr>
+<tr class="odd">
+<td>coffee</td>
+<td>6</td>
+</tr>
+<tr class="even">
+<td>coffee</td>
+<td>7</td>
+</tr>
+<tr class="odd">
+<td>coffee</td>
+<td>8</td>
+</tr>
+<tr class="even">
+<td>coffee</td>
+<td>9</td>
+</tr>
+<tr class="odd">
+<td>coffee</td>
+<td>10</td>
+</tr>
+<tr class="even">
+<td>coffee</td>
+<td>11</td>
+</tr>
+<tr class="odd">
+<td>coffee</td>
+<td>12</td>
+</tr>
+<tr class="even">
+<td>coffee</td>
+<td>13</td>
+</tr>
+<tr class="odd">
+<td>coffee</td>
+<td>14</td>
+</tr>
+<tr class="even">
+<td>coffee</td>
+<td>15</td>
+</tr>
+<tr class="odd">
+<td>coffee</td>
+<td>16</td>
+</tr>
+<tr class="even">
+<td>coffee</td>
+<td>17</td>
+</tr>
+<tr class="odd">
+<td>coffee</td>
+<td>18</td>
+</tr>
+<tr class="even">
+<td>coffee</td>
+<td>19</td>
+</tr>
+<tr class="odd">
+<td>coffee</td>
+<td>20</td>
+</tr>
+<tr class="even">
+<td>coffee</td>
+<td>21</td>
+</tr>
+<tr class="odd">
+<td>coffee</td>
+<td>22</td>
+</tr>
+<tr class="even">
+<td>coffee</td>
+<td>23</td>
+</tr>
+<tr class="odd">
+<td>coffee</td>
+<td>24</td>
+</tr>
+<tr class="even">
+<td>coffee</td>
+<td>25</td>
+</tr>
+<tr class="odd">
+<td>coffee</td>
+<td>26</td>
+</tr>
+<tr class="even">
+<td>coffee</td>
+<td>27</td>
+</tr>
+<tr class="odd">
+<td>coffee</td>
+<td>28</td>
+</tr>
+<tr class="even">
+<td>coffee</td>
+<td>29</td>
+</tr>
+<tr class="odd">
+<td>coffee</td>
+<td>30</td>
+</tr>
+<tr class="even">
+<td>coffee</td>
+<td>31</td>
+</tr>
+<tr class="odd">
+<td>coffee</td>
+<td>32</td>
+</tr>
+<tr class="even">
+<td>coffee</td>
+<td>33</td>
+</tr>
+<tr class="odd">
+<td>coffee</td>
+<td>34</td>
+</tr>
+<tr class="even">
+<td>coffee</td>
+<td>35</td>
+</tr>
+<tr class="odd">
+<td>coffee</td>
+<td>36</td>
+</tr>
+<tr class="even">
+<td>coffee</td>
+<td>37</td>
+</tr>
+<tr class="odd">
+<td>coffee</td>
+<td>38</td>
+</tr>
+<tr class="even">
+<td>coffee</td>
+<td>39</td>
+</tr>
+<tr class="odd">
+<td>tea</td>
+<td>25</td>
+</tr>
+<tr class="even">
+<td>tea</td>
+<td>26</td>
+</tr>
+<tr class="odd">
+<td>tea</td>
+<td>27</td>
+</tr>
+<tr class="even">
+<td>tea</td>
+<td>28</td>
+</tr>
+<tr class="odd">
+<td>tea</td>
+<td>29</td>
+</tr>
+<tr class="even">
+<td>tea</td>
+<td>30</td>
+</tr>
+<tr class="odd">
+<td>tea</td>
+<td>31</td>
+</tr>
+<tr class="even">
+<td>tea</td>
+<td>32</td>
+</tr>
+<tr class="odd">
+<td>tea</td>
+<td>33</td>
+</tr>
+<tr class="even">
+<td>tea</td>
+<td>34</td>
+</tr>
+<tr class="odd">
+<td>tea</td>
+<td>35</td>
+</tr>
+<tr class="even">
+<td>tea</td>
+<td>36</td>
+</tr>
+<tr class="odd">
+<td>tea</td>
+<td>37</td>
+</tr>
+<tr class="even">
+<td>tea</td>
+<td>38</td>
+</tr>
+<tr class="odd">
+<td>tea</td>
+<td>39</td>
+</tr>
+<tr class="even">
+<td>tea</td>
+<td>40</td>
+</tr>
+<tr class="odd">
+<td>tea</td>
+<td>41</td>
+</tr>
+<tr class="even">
+<td>tea</td>
+<td>42</td>
+</tr>
+<tr class="odd">
+<td>tea</td>
+<td>43</td>
+</tr>
+<tr class="even">
+<td>tea</td>
+<td>44</td>
+</tr>
+<tr class="odd">
+<td>tea</td>
+<td>45</td>
+</tr>
+<tr class="even">
+<td>tea</td>
+<td>46</td>
+</tr>
+<tr class="odd">
+<td>tea</td>
+<td>47</td>
+</tr>
+<tr class="even">
+<td>tea</td>
+<td>48</td>
+</tr>
+<tr class="odd">
+<td>tea</td>
+<td>49</td>
+</tr>
+<tr class="even">
+<td>tea</td>
+<td>50</td>
+</tr>
+<tr class="odd">
+<td>tea</td>
+<td>51</td>
+</tr>
+<tr class="even">
+<td>tea</td>
+<td>52</td>
+</tr>
+<tr class="odd">
+<td>tea</td>
+<td>53</td>
+</tr>
+<tr class="even">
+<td>tea</td>
+<td>54</td>
+</tr>
+<tr class="odd">
+<td>tea</td>
+<td>55</td>
+</tr>
+<tr class="even">
+<td>tea</td>
+<td>56</td>
+</tr>
+<tr class="odd">
+<td>tea</td>
+<td>57</td>
+</tr>
+<tr class="even">
+<td>tea</td>
+<td>58</td>
+</tr>
+<tr class="odd">
+<td>tea</td>
+<td>59</td>
+</tr>
+<tr class="even">
+<td>juice</td>
+<td>30</td>
+</tr>
+<tr class="odd">
+<td>juice</td>
+<td>31</td>
+</tr>
+<tr class="even">
+<td>juice</td>
+<td>32</td>
+</tr>
+<tr class="odd">
+<td>juice</td>
+<td>33</td>
+</tr>
+<tr class="even">
+<td>juice</td>
+<td>34</td>
+</tr>
+<tr class="odd">
+<td>juice</td>
+<td>35</td>
+</tr>
+<tr class="even">
+<td>juice</td>
+<td>36</td>
+</tr>
+<tr class="odd">
+<td>juice</td>
+<td>37</td>
+</tr>
+<tr class="even">
+<td>juice</td>
+<td>38</td>
+</tr>
+<tr class="odd">
+<td>juice</td>
+<td>39</td>
+</tr>
+<tr class="even">
+<td>juice</td>
+<td>40</td>
+</tr>
+<tr class="odd">
+<td>juice</td>
+<td>41</td>
+</tr>
+<tr class="even">
+<td>juice</td>
+<td>42</td>
+</tr>
+<tr class="odd">
+<td>juice</td>
+<td>43</td>
+</tr>
+<tr class="even">
+<td>juice</td>
+<td>44</td>
+</tr>
+<tr class="odd">
+<td>juice</td>
+<td>55</td>
+</tr>
+<tr class="even">
+<td>juice</td>
+<td>56</td>
+</tr>
+<tr class="odd">
+<td>juice</td>
+<td>57</td>
+</tr>
+<tr class="even">
+<td>juice</td>
+<td>58</td>
+</tr>
+<tr class="odd">
+<td>juice</td>
+<td>59</td>
+</tr>
+<tr class="even">
+<td>juice</td>
+<td>60</td>
+</tr>
+<tr class="odd">
+<td>juice</td>
+<td>61</td>
+</tr>
+<tr class="even">
+<td>juice</td>
+<td>62</td>
+</tr>
+<tr class="odd">
+<td>juice</td>
+<td>63</td>
+</tr>
+<tr class="even">
+<td>juice</td>
+<td>64</td>
+</tr>
+<tr class="odd">
+<td>…</td>
+<td>…</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p>A seeded autoregressive series with a weekly bump:</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> weekly </span>(<span class="kw">let</span> [g (r/rng <span class="at">:mersenne</span> <span class="dv">8</span>)]</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>              (<span class="kw">vec</span> (reductions (<span class="kw">fn</span> [y t] (<span class="kw">+</span> (<span class="kw">*</span> <span class="fl">0.6</span> (<span class="kw">double</span> y)) (<span class="kw">*</span> <span class="fl">2.0</span> (m/sin (<span class="kw">*</span> m/TWO_PI (<span class="kw">/</span> (<span class="kw">double</span> t) <span class="fl">7.0</span>))))</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>                                            (r/grandom g)))</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>                               <span class="fl">0.0</span> (<span class="kw">range</span> <span class="dv">1</span> <span class="dv">200</span>)))))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="data-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">t</th>
+<th data-quarto-table-cell-role="th">y</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>0</td>
+<td>0.0</td>
+</tr>
+<tr class="even">
+<td>1</td>
+<td>0.13977307440775744</td>
+</tr>
+<tr class="odd">
+<td>2</td>
+<td>2.7905276303712556</td>
+</tr>
+<tr class="even">
+<td>3</td>
+<td>1.182076374268736</td>
+</tr>
+<tr class="odd">
+<td>4</td>
+<td>1.8857619600375348</td>
+</tr>
+<tr class="even">
+<td>5</td>
+<td>0.17450253670221405</td>
+</tr>
+<tr class="odd">
+<td>6</td>
+<td>-2.2114471052072315</td>
+</tr>
+<tr class="even">
+<td>7</td>
+<td>-3.044028051154591</td>
+</tr>
+<tr class="odd">
+<td>8</td>
+<td>-0.14976638399572134</td>
+</tr>
+<tr class="even">
+<td>9</td>
+<td>1.587846819931787</td>
+</tr>
+<tr class="odd">
+<td>10</td>
+<td>2.2795328370428445</td>
+</tr>
+<tr class="even">
+<td>11</td>
+<td>-0.2956701822523501</td>
+</tr>
+<tr class="odd">
+<td>12</td>
+<td>-2.5970802695960344</td>
+</tr>
+<tr class="even">
+<td>13</td>
+<td>-1.0628029490748316</td>
+</tr>
+<tr class="odd">
+<td>14</td>
+<td>-1.3726235623170633</td>
+</tr>
+<tr class="even">
+<td>15</td>
+<td>2.2752608361156237</td>
+</tr>
+<tr class="odd">
+<td>16</td>
+<td>4.716331163150285</td>
+</tr>
+<tr class="even">
+<td>17</td>
+<td>4.738859355206512</td>
+</tr>
+<tr class="odd">
+<td>18</td>
+<td>2.7516193587370803</td>
+</tr>
+<tr class="even">
+<td>19</td>
+<td>-0.96089041389926</td>
+</tr>
+<tr class="odd">
+<td>20</td>
+<td>-1.672460418656026</td>
+</tr>
+<tr class="even">
+<td>21</td>
+<td>-1.5837748276209425</td>
+</tr>
+<tr class="odd">
+<td>22</td>
+<td>0.248029734088489</td>
+</tr>
+<tr class="even">
+<td>23</td>
+<td>2.1266466663341697</td>
+</tr>
+<tr class="odd">
+<td>24</td>
+<td>2.3667789741884153</td>
+</tr>
+<tr class="even">
+<td>25</td>
+<td>-0.5284470837340532</td>
+</tr>
+<tr class="odd">
+<td>26</td>
+<td>-2.5067655285740633</td>
+</tr>
+<tr class="even">
+<td>27</td>
+<td>-2.27184448699434</td>
+</tr>
+<tr class="odd">
+<td>28</td>
+<td>-1.0744854689699892</td>
+</tr>
+<tr class="even">
+<td>29</td>
+<td>1.0992257725118908</td>
+</tr>
+<tr class="odd">
+<td>30</td>
+<td>2.297817519004787</td>
+</tr>
+<tr class="even">
+<td>31</td>
+<td>2.524555509699196</td>
+</tr>
+<tr class="odd">
+<td>32</td>
+<td>0.9066650336613162</td>
+</tr>
+<tr class="even">
+<td>33</td>
+<td>-1.973900083417808</td>
+</tr>
+<tr class="odd">
+<td>34</td>
+<td>-1.4715527312854013</td>
+</tr>
+<tr class="even">
+<td>35</td>
+<td>-0.7397028802799019</td>
+</tr>
+<tr class="odd">
+<td>36</td>
+<td>1.3943372501425042</td>
+</tr>
+<tr class="even">
+<td>37</td>
+<td>3.195325772326656</td>
+</tr>
+<tr class="odd">
+<td>38</td>
+<td>2.4796323879573707</td>
+</tr>
+<tr class="even">
+<td>39</td>
+<td>0.3573983588652897</td>
+</tr>
+<tr class="odd">
+<td>40</td>
+<td>-0.20454515634164205</td>
+</tr>
+<tr class="even">
+<td>41</td>
+<td>-0.9842152462781779</td>
+</tr>
+<tr class="odd">
+<td>42</td>
+<td>-1.2190757467223128</td>
+</tr>
+<tr class="even">
+<td>43</td>
+<td>-0.473279449134298</td>
+</tr>
+<tr class="odd">
+<td>44</td>
+<td>0.5609960602226269</td>
+</tr>
+<tr class="even">
+<td>45</td>
+<td>0.5857249817586214</td>
+</tr>
+<tr class="odd">
+<td>46</td>
+<td>1.2275317907812817</td>
+</tr>
+<tr class="even">
+<td>47</td>
+<td>-1.6392350408707481</td>
+</tr>
+<tr class="odd">
+<td>48</td>
+<td>-2.5724035266084746</td>
+</tr>
+<tr class="even">
+<td>49</td>
+<td>-0.7405028134931776</td>
+</tr>
+<tr class="odd">
+<td>50</td>
+<td>1.7074340387731763</td>
+</tr>
+<tr class="even">
+<td>51</td>
+<td>2.594161614240549</td>
+</tr>
+<tr class="odd">
+<td>52</td>
+<td>2.3498598156391473</td>
+</tr>
+<tr class="even">
+<td>53</td>
+<td>2.107735039246341</td>
+</tr>
+<tr class="odd">
+<td>54</td>
+<td>-1.1114637386859947</td>
+</tr>
+<tr class="even">
+<td>55</td>
+<td>-3.3690149153531386</td>
+</tr>
+<tr class="odd">
+<td>56</td>
+<td>-1.7592885604742825</td>
+</tr>
+<tr class="even">
+<td>57</td>
+<td>0.9813141171195396</td>
+</tr>
+<tr class="odd">
+<td>58</td>
+<td>2.116997285412064</td>
+</tr>
+<tr class="even">
+<td>59</td>
+<td>1.8054651816902145</td>
+</tr>
+<tr class="odd">
+<td>60</td>
+<td>-0.14654679116113023</td>
+</tr>
+<tr class="even">
+<td>61</td>
+<td>-0.9156730593091467</td>
+</tr>
+<tr class="odd">
+<td>62</td>
+<td>-1.789270135872337</td>
+</tr>
+<tr class="even">
+<td>63</td>
+<td>-2.4440122834623805</td>
+</tr>
+<tr class="odd">
+<td>64</td>
+<td>0.3406167504738572</td>
+</tr>
+<tr class="even">
+<td>65</td>
+<td>2.3845853192163005</td>
+</tr>
+<tr class="odd">
+<td>66</td>
+<td>-0.0032829913925178644</td>
+</tr>
+<tr class="even">
+<td>67</td>
+<td>-1.0969826276179542</td>
+</tr>
+<tr class="odd">
+<td>68</td>
+<td>-3.5429896124502265</td>
+</tr>
+<tr class="even">
+<td>69</td>
+<td>-4.4024603131052045</td>
+</tr>
+<tr class="odd">
+<td>70</td>
+<td>-1.6091605047216901</td>
+</tr>
+<tr class="even">
+<td>71</td>
+<td>1.1039566123281377</td>
+</tr>
+<tr class="odd">
+<td>72</td>
+<td>0.7408238747971894</td>
+</tr>
+<tr class="even">
+<td>73</td>
+<td>2.512389179049876</td>
+</tr>
+<tr class="odd">
+<td>74</td>
+<td>1.8324044134757314</td>
+</tr>
+<tr class="even">
+<td>75</td>
+<td>-1.3966767543311789</td>
+</tr>
+<tr class="odd">
+<td>76</td>
+<td>-3.4027521255237416</td>
+</tr>
+<tr class="even">
+<td>77</td>
+<td>-2.5387986049782447</td>
+</tr>
+<tr class="odd">
+<td>78</td>
+<td>1.5168243927789171</td>
+</tr>
+<tr class="even">
+<td>79</td>
+<td>2.697994178390557</td>
+</tr>
+<tr class="odd">
+<td>80</td>
+<td>4.341639710378089</td>
+</tr>
+<tr class="even">
+<td>81</td>
+<td>3.471117571811411</td>
+</tr>
+<tr class="odd">
+<td>82</td>
+<td>-0.6374184324025643</td>
+</tr>
+<tr class="even">
+<td>83</td>
+<td>-3.144668234807061</td>
+</tr>
+<tr class="odd">
+<td>84</td>
+<td>-2.1590227155889243</td>
+</tr>
+<tr class="even">
+<td>85</td>
+<td>-0.3249893795694875</td>
+</tr>
+<tr class="odd">
+<td>86</td>
+<td>1.6319504527117272</td>
+</tr>
+<tr class="even">
+<td>87</td>
+<td>0.9181483544698612</td>
+</tr>
+<tr class="odd">
+<td>88</td>
+<td>-0.9042325628070139</td>
+</tr>
+<tr class="even">
+<td>89</td>
+<td>-3.1302798909817056</td>
+</tr>
+<tr class="odd">
+<td>90</td>
+<td>-3.831753173127805</td>
+</tr>
+<tr class="even">
+<td>91</td>
+<td>-4.033743121508569</td>
+</tr>
+<tr class="odd">
+<td>92</td>
+<td>-1.3156557235924389</td>
+</tr>
+<tr class="even">
+<td>93</td>
+<td>1.160997527709536</td>
+</tr>
+<tr class="odd">
+<td>94</td>
+<td>0.69073209315031</td>
+</tr>
+<tr class="even">
+<td>95</td>
+<td>-1.9516737852939403</td>
+</tr>
+<tr class="odd">
+<td>96</td>
+<td>-3.1029627017329986</td>
+</tr>
+<tr class="even">
+<td>97</td>
+<td>-3.9880277285668617</td>
+</tr>
+<tr class="odd">
+<td>98</td>
+<td>-1.4921477136546932</td>
+</tr>
+<tr class="even">
+<td>99</td>
+<td>1.0212389935099315</td>
+</tr>
+<tr class="odd">
+<td>…</td>
+<td>…</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<section id="setsupset-rows" class="level2" data-number="27.1">
+<h2 data-number="27.1" class="anchored" data-anchor-id="setsupset-rows"><span class="header-section-number">27.1</span> sets/upset-rows</h2>
+<p>The bars of an UpSet plot: every combination of sets that holds items exclusively - its sets, size and degree - by size descending. The mapping names the set and item keys; a third argument chooses (and orders) the sets.</p>
+<div class="data-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">combination</th>
+<th data-quarto-table-cell-role="th">sets</th>
+<th data-quarto-table-cell-role="th">size</th>
+<th data-quarto-table-cell-role="th">degree</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>coffee</td>
+<td>["coffee"]</td>
+<td>25</td>
+<td>1</td>
+</tr>
+<tr class="even">
+<td>tea</td>
+<td>["tea"]</td>
+<td>10</td>
+<td>1</td>
+</tr>
+<tr class="odd">
+<td>juice</td>
+<td>["juice"]</td>
+<td>10</td>
+<td>1</td>
+</tr>
+<tr class="even">
+<td>tea &amp; juice</td>
+<td>["tea" "juice"]</td>
+<td>10</td>
+<td>2</td>
+</tr>
+<tr class="odd">
+<td>coffee &amp; tea &amp; juice</td>
+<td>["coffee" "tea" "juice"]</td>
+<td>10</td>
+<td>3</td>
+</tr>
+<tr class="even">
+<td>coffee &amp; tea</td>
+<td>["coffee" "tea"]</td>
+<td>5</td>
+<td>2</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<section id="setsmembership-rows" class="level2" data-number="27.2">
+<h2 data-number="27.2" class="anchored" data-anchor-id="setsmembership-rows"><span class="header-section-number">27.2</span> sets/membership-rows</h2>
+<p>The dot matrix under the bars: a row per combination and set, <code>:member?</code> true where the set is in the combination.</p>
+<div class="data-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">combination</th>
+<th data-quarto-table-cell-role="th">set</th>
+<th data-quarto-table-cell-role="th">member?</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>coffee</td>
+<td>coffee</td>
+<td>true</td>
+</tr>
+<tr class="even">
+<td>coffee</td>
+<td>tea</td>
+<td>false</td>
+</tr>
+<tr class="odd">
+<td>coffee</td>
+<td>juice</td>
+<td>false</td>
+</tr>
+<tr class="even">
+<td>tea</td>
+<td>coffee</td>
+<td>false</td>
+</tr>
+<tr class="odd">
+<td>tea</td>
+<td>tea</td>
+<td>true</td>
+</tr>
+<tr class="even">
+<td>tea</td>
+<td>juice</td>
+<td>false</td>
+</tr>
+<tr class="odd">
+<td>juice</td>
+<td>coffee</td>
+<td>false</td>
+</tr>
+<tr class="even">
+<td>juice</td>
+<td>tea</td>
+<td>false</td>
+</tr>
+<tr class="odd">
+<td>juice</td>
+<td>juice</td>
+<td>true</td>
+</tr>
+<tr class="even">
+<td>tea &amp; juice</td>
+<td>coffee</td>
+<td>false</td>
+</tr>
+<tr class="odd">
+<td>tea &amp; juice</td>
+<td>tea</td>
+<td>true</td>
+</tr>
+<tr class="even">
+<td>tea &amp; juice</td>
+<td>juice</td>
+<td>true</td>
+</tr>
+<tr class="odd">
+<td>coffee &amp; tea &amp; juice</td>
+<td>coffee</td>
+<td>true</td>
+</tr>
+<tr class="even">
+<td>coffee &amp; tea &amp; juice</td>
+<td>tea</td>
+<td>true</td>
+</tr>
+<tr class="odd">
+<td>coffee &amp; tea &amp; juice</td>
+<td>juice</td>
+<td>true</td>
+</tr>
+<tr class="even">
+<td>coffee &amp; tea</td>
+<td>coffee</td>
+<td>true</td>
+</tr>
+<tr class="odd">
+<td>coffee &amp; tea</td>
+<td>tea</td>
+<td>true</td>
+</tr>
+<tr class="even">
+<td>coffee &amp; tea</td>
+<td>juice</td>
+<td>false</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p>Together, an UpSet plot of two stacked plots - the bars, then the dots of the members over grey dots of every cell - here with the sets chosen and ordered (tea first):</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> (sets/upset-rows members {<span class="at">:set</span> <span class="at">:set</span> <span class="at">:item</span> <span class="at">:item</span>} [<span class="st">"tea"</span> <span class="st">"coffee"</span> <span class="st">"juice"</span>])</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:combination</span> <span class="at">:y</span> <span class="at">:size</span>}</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/bar {<span class="at">:value-label</span> <span class="va">true</span>})]</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:x</span> <span class="va">nil</span> <span class="at">:y</span> <span class="st">"items"</span>}}</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> (sets/membership-rows members {<span class="at">:set</span> <span class="at">:set</span> <span class="at">:item</span> <span class="at">:item</span>} [<span class="st">"tea"</span> <span class="st">"coffee"</span> <span class="st">"juice"</span>])</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:combination</span> <span class="at">:y</span> <span class="at">:set</span>}</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/scatter {<span class="at">:size</span> <span class="dv">12</span> <span class="at">:color</span> [<span class="dv">210</span> <span class="dv">210</span> <span class="dv">210</span>]})</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>                                            (chart/scatter {<span class="at">:data</span> (<span class="kw">filter</span> <span class="at">:member</span>? (sets/membership-rows members {<span class="at">:set</span> <span class="at">:set</span> <span class="at">:item</span> <span class="at">:item</span>}</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>                                                                                                         [<span class="st">"tea"</span> <span class="st">"coffee"</span> <span class="st">"juice"</span>]))</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>                                                            <span class="at">:size</span> <span class="dv">12</span> <span class="at">:color</span> <span class="at">:black</span>})]</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:scales</span> {<span class="at">:y</span> {<span class="at">:reverse</span> <span class="va">true</span>}}</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:x</span> <span class="va">nil</span> <span class="at">:y</span> <span class="va">nil</span>}}]</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">1</span> <span class="at">:heights</span> [<span class="dv">2</span> <span class="dv">1</span>]})</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">900</span> <span class="at">:height</span> <span class="dv">450</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.data_sets_series_files/image0.png" class="img-fluid"></p>
+</div>
+</section>
+<section id="serieslag-rows" class="level2" data-number="27.3">
+<h2 data-number="27.3" class="anchored" data-anchor-id="serieslag-rows"><span class="header-section-number">27.3</span> series/lag-rows</h2>
+<p>Pairs every value <code>y(t)</code> with <code>y(t + k)</code> - a lag plot shows the correlation at lag k (here the weekly cycle: strong at 7, negative at 3):</p>
+<div class="data-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">t</th>
+<th data-quarto-table-cell-role="th">x</th>
+<th data-quarto-table-cell-role="th">y</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>0</td>
+<td>0.0</td>
+<td>-3.044028051154591</td>
+</tr>
+<tr class="even">
+<td>1</td>
+<td>0.13977307440775744</td>
+<td>-0.14976638399572134</td>
+</tr>
+<tr class="odd">
+<td>2</td>
+<td>2.7905276303712556</td>
+<td>1.587846819931787</td>
+</tr>
+<tr class="even">
+<td>3</td>
+<td>1.182076374268736</td>
+<td>2.2795328370428445</td>
+</tr>
+<tr class="odd">
+<td>4</td>
+<td>1.8857619600375348</td>
+<td>-0.2956701822523501</td>
+</tr>
+<tr class="even">
+<td>5</td>
+<td>0.17450253670221405</td>
+<td>-2.5970802695960344</td>
+</tr>
+<tr class="odd">
+<td>6</td>
+<td>-2.2114471052072315</td>
+<td>-1.0628029490748316</td>
+</tr>
+<tr class="even">
+<td>7</td>
+<td>-3.044028051154591</td>
+<td>-1.3726235623170633</td>
+</tr>
+<tr class="odd">
+<td>8</td>
+<td>-0.14976638399572134</td>
+<td>2.2752608361156237</td>
+</tr>
+<tr class="even">
+<td>9</td>
+<td>1.587846819931787</td>
+<td>4.716331163150285</td>
+</tr>
+<tr class="odd">
+<td>10</td>
+<td>2.2795328370428445</td>
+<td>4.738859355206512</td>
+</tr>
+<tr class="even">
+<td>11</td>
+<td>-0.2956701822523501</td>
+<td>2.7516193587370803</td>
+</tr>
+<tr class="odd">
+<td>12</td>
+<td>-2.5970802695960344</td>
+<td>-0.96089041389926</td>
+</tr>
+<tr class="even">
+<td>13</td>
+<td>-1.0628029490748316</td>
+<td>-1.672460418656026</td>
+</tr>
+<tr class="odd">
+<td>14</td>
+<td>-1.3726235623170633</td>
+<td>-1.5837748276209425</td>
+</tr>
+<tr class="even">
+<td>15</td>
+<td>2.2752608361156237</td>
+<td>0.248029734088489</td>
+</tr>
+<tr class="odd">
+<td>16</td>
+<td>4.716331163150285</td>
+<td>2.1266466663341697</td>
+</tr>
+<tr class="even">
+<td>17</td>
+<td>4.738859355206512</td>
+<td>2.3667789741884153</td>
+</tr>
+<tr class="odd">
+<td>18</td>
+<td>2.7516193587370803</td>
+<td>-0.5284470837340532</td>
+</tr>
+<tr class="even">
+<td>19</td>
+<td>-0.96089041389926</td>
+<td>-2.5067655285740633</td>
+</tr>
+<tr class="odd">
+<td>20</td>
+<td>-1.672460418656026</td>
+<td>-2.27184448699434</td>
+</tr>
+<tr class="even">
+<td>21</td>
+<td>-1.5837748276209425</td>
+<td>-1.0744854689699892</td>
+</tr>
+<tr class="odd">
+<td>22</td>
+<td>0.248029734088489</td>
+<td>1.0992257725118908</td>
+</tr>
+<tr class="even">
+<td>23</td>
+<td>2.1266466663341697</td>
+<td>2.297817519004787</td>
+</tr>
+<tr class="odd">
+<td>24</td>
+<td>2.3667789741884153</td>
+<td>2.524555509699196</td>
+</tr>
+<tr class="even">
+<td>25</td>
+<td>-0.5284470837340532</td>
+<td>0.9066650336613162</td>
+</tr>
+<tr class="odd">
+<td>26</td>
+<td>-2.5067655285740633</td>
+<td>-1.973900083417808</td>
+</tr>
+<tr class="even">
+<td>27</td>
+<td>-2.27184448699434</td>
+<td>-1.4715527312854013</td>
+</tr>
+<tr class="odd">
+<td>28</td>
+<td>-1.0744854689699892</td>
+<td>-0.7397028802799019</td>
+</tr>
+<tr class="even">
+<td>29</td>
+<td>1.0992257725118908</td>
+<td>1.3943372501425042</td>
+</tr>
+<tr class="odd">
+<td>30</td>
+<td>2.297817519004787</td>
+<td>3.195325772326656</td>
+</tr>
+<tr class="even">
+<td>31</td>
+<td>2.524555509699196</td>
+<td>2.4796323879573707</td>
+</tr>
+<tr class="odd">
+<td>32</td>
+<td>0.9066650336613162</td>
+<td>0.3573983588652897</td>
+</tr>
+<tr class="even">
+<td>33</td>
+<td>-1.973900083417808</td>
+<td>-0.20454515634164205</td>
+</tr>
+<tr class="odd">
+<td>34</td>
+<td>-1.4715527312854013</td>
+<td>-0.9842152462781779</td>
+</tr>
+<tr class="even">
+<td>35</td>
+<td>-0.7397028802799019</td>
+<td>-1.2190757467223128</td>
+</tr>
+<tr class="odd">
+<td>36</td>
+<td>1.3943372501425042</td>
+<td>-0.473279449134298</td>
+</tr>
+<tr class="even">
+<td>37</td>
+<td>3.195325772326656</td>
+<td>0.5609960602226269</td>
+</tr>
+<tr class="odd">
+<td>38</td>
+<td>2.4796323879573707</td>
+<td>0.5857249817586214</td>
+</tr>
+<tr class="even">
+<td>39</td>
+<td>0.3573983588652897</td>
+<td>1.2275317907812817</td>
+</tr>
+<tr class="odd">
+<td>40</td>
+<td>-0.20454515634164205</td>
+<td>-1.6392350408707481</td>
+</tr>
+<tr class="even">
+<td>41</td>
+<td>-0.9842152462781779</td>
+<td>-2.5724035266084746</td>
+</tr>
+<tr class="odd">
+<td>42</td>
+<td>-1.2190757467223128</td>
+<td>-0.7405028134931776</td>
+</tr>
+<tr class="even">
+<td>43</td>
+<td>-0.473279449134298</td>
+<td>1.7074340387731763</td>
+</tr>
+<tr class="odd">
+<td>44</td>
+<td>0.5609960602226269</td>
+<td>2.594161614240549</td>
+</tr>
+<tr class="even">
+<td>45</td>
+<td>0.5857249817586214</td>
+<td>2.3498598156391473</td>
+</tr>
+<tr class="odd">
+<td>46</td>
+<td>1.2275317907812817</td>
+<td>2.107735039246341</td>
+</tr>
+<tr class="even">
+<td>47</td>
+<td>-1.6392350408707481</td>
+<td>-1.1114637386859947</td>
+</tr>
+<tr class="odd">
+<td>48</td>
+<td>-2.5724035266084746</td>
+<td>-3.3690149153531386</td>
+</tr>
+<tr class="even">
+<td>49</td>
+<td>-0.7405028134931776</td>
+<td>-1.7592885604742825</td>
+</tr>
+<tr class="odd">
+<td>50</td>
+<td>1.7074340387731763</td>
+<td>0.9813141171195396</td>
+</tr>
+<tr class="even">
+<td>51</td>
+<td>2.594161614240549</td>
+<td>2.116997285412064</td>
+</tr>
+<tr class="odd">
+<td>52</td>
+<td>2.3498598156391473</td>
+<td>1.8054651816902145</td>
+</tr>
+<tr class="even">
+<td>53</td>
+<td>2.107735039246341</td>
+<td>-0.14654679116113023</td>
+</tr>
+<tr class="odd">
+<td>54</td>
+<td>-1.1114637386859947</td>
+<td>-0.9156730593091467</td>
+</tr>
+<tr class="even">
+<td>55</td>
+<td>-3.3690149153531386</td>
+<td>-1.789270135872337</td>
+</tr>
+<tr class="odd">
+<td>56</td>
+<td>-1.7592885604742825</td>
+<td>-2.4440122834623805</td>
+</tr>
+<tr class="even">
+<td>57</td>
+<td>0.9813141171195396</td>
+<td>0.3406167504738572</td>
+</tr>
+<tr class="odd">
+<td>58</td>
+<td>2.116997285412064</td>
+<td>2.3845853192163005</td>
+</tr>
+<tr class="even">
+<td>59</td>
+<td>1.8054651816902145</td>
+<td>-0.0032829913925178644</td>
+</tr>
+<tr class="odd">
+<td>60</td>
+<td>-0.14654679116113023</td>
+<td>-1.0969826276179542</td>
+</tr>
+<tr class="even">
+<td>61</td>
+<td>-0.9156730593091467</td>
+<td>-3.5429896124502265</td>
+</tr>
+<tr class="odd">
+<td>62</td>
+<td>-1.789270135872337</td>
+<td>-4.4024603131052045</td>
+</tr>
+<tr class="even">
+<td>63</td>
+<td>-2.4440122834623805</td>
+<td>-1.6091605047216901</td>
+</tr>
+<tr class="odd">
+<td>64</td>
+<td>0.3406167504738572</td>
+<td>1.1039566123281377</td>
+</tr>
+<tr class="even">
+<td>65</td>
+<td>2.3845853192163005</td>
+<td>0.7408238747971894</td>
+</tr>
+<tr class="odd">
+<td>66</td>
+<td>-0.0032829913925178644</td>
+<td>2.512389179049876</td>
+</tr>
+<tr class="even">
+<td>67</td>
+<td>-1.0969826276179542</td>
+<td>1.8324044134757314</td>
+</tr>
+<tr class="odd">
+<td>68</td>
+<td>-3.5429896124502265</td>
+<td>-1.3966767543311789</td>
+</tr>
+<tr class="even">
+<td>69</td>
+<td>-4.4024603131052045</td>
+<td>-3.4027521255237416</td>
+</tr>
+<tr class="odd">
+<td>70</td>
+<td>-1.6091605047216901</td>
+<td>-2.5387986049782447</td>
+</tr>
+<tr class="even">
+<td>71</td>
+<td>1.1039566123281377</td>
+<td>1.5168243927789171</td>
+</tr>
+<tr class="odd">
+<td>72</td>
+<td>0.7408238747971894</td>
+<td>2.697994178390557</td>
+</tr>
+<tr class="even">
+<td>73</td>
+<td>2.512389179049876</td>
+<td>4.341639710378089</td>
+</tr>
+<tr class="odd">
+<td>74</td>
+<td>1.8324044134757314</td>
+<td>3.471117571811411</td>
+</tr>
+<tr class="even">
+<td>75</td>
+<td>-1.3966767543311789</td>
+<td>-0.6374184324025643</td>
+</tr>
+<tr class="odd">
+<td>76</td>
+<td>-3.4027521255237416</td>
+<td>-3.144668234807061</td>
+</tr>
+<tr class="even">
+<td>77</td>
+<td>-2.5387986049782447</td>
+<td>-2.1590227155889243</td>
+</tr>
+<tr class="odd">
+<td>78</td>
+<td>1.5168243927789171</td>
+<td>-0.3249893795694875</td>
+</tr>
+<tr class="even">
+<td>79</td>
+<td>2.697994178390557</td>
+<td>1.6319504527117272</td>
+</tr>
+<tr class="odd">
+<td>80</td>
+<td>4.341639710378089</td>
+<td>0.9181483544698612</td>
+</tr>
+<tr class="even">
+<td>81</td>
+<td>3.471117571811411</td>
+<td>-0.9042325628070139</td>
+</tr>
+<tr class="odd">
+<td>82</td>
+<td>-0.6374184324025643</td>
+<td>-3.1302798909817056</td>
+</tr>
+<tr class="even">
+<td>83</td>
+<td>-3.144668234807061</td>
+<td>-3.831753173127805</td>
+</tr>
+<tr class="odd">
+<td>84</td>
+<td>-2.1590227155889243</td>
+<td>-4.033743121508569</td>
+</tr>
+<tr class="even">
+<td>85</td>
+<td>-0.3249893795694875</td>
+<td>-1.3156557235924389</td>
+</tr>
+<tr class="odd">
+<td>86</td>
+<td>1.6319504527117272</td>
+<td>1.160997527709536</td>
+</tr>
+<tr class="even">
+<td>87</td>
+<td>0.9181483544698612</td>
+<td>0.69073209315031</td>
+</tr>
+<tr class="odd">
+<td>88</td>
+<td>-0.9042325628070139</td>
+<td>-1.9516737852939403</td>
+</tr>
+<tr class="even">
+<td>89</td>
+<td>-3.1302798909817056</td>
+<td>-3.1029627017329986</td>
+</tr>
+<tr class="odd">
+<td>90</td>
+<td>-3.831753173127805</td>
+<td>-3.9880277285668617</td>
+</tr>
+<tr class="even">
+<td>91</td>
+<td>-4.033743121508569</td>
+<td>-1.4921477136546932</td>
+</tr>
+<tr class="odd">
+<td>92</td>
+<td>-1.3156557235924389</td>
+<td>1.0212389935099315</td>
+</tr>
+<tr class="even">
+<td>93</td>
+<td>1.160997527709536</td>
+<td>3.4969528572060113</td>
+</tr>
+<tr class="odd">
+<td>94</td>
+<td>0.69073209315031</td>
+<td>2.1886345245865</td>
+</tr>
+<tr class="even">
+<td>95</td>
+<td>-1.9516737852939403</td>
+<td>-0.8157697847877093</td>
+</tr>
+<tr class="odd">
+<td>96</td>
+<td>-3.1029627017329986</td>
+<td>-2.7192455186430973</td>
+</tr>
+<tr class="even">
+<td>97</td>
+<td>-3.9880277285668617</td>
+<td>-4.868280462395595</td>
+</tr>
+<tr class="odd">
+<td>98</td>
+<td>-1.4921477136546932</td>
+<td>-1.731832964844711</td>
+</tr>
+<tr class="even">
+<td>99</td>
+<td>1.0212389935099315</td>
+<td>-1.2620284015534728</td>
+</tr>
+<tr class="odd">
+<td>…</td>
+<td>…</td>
+<td>…</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> (series/lag-rows weekly <span class="dv">3</span>)</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:y</span>}</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/scatter {<span class="at">:size</span> <span class="dv">5</span>})]</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"lag 3"</span> <span class="at">:x</span> <span class="st">"y(t)"</span> <span class="at">:y</span> <span class="st">"y(t+3)"</span>}}</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> (series/lag-rows weekly <span class="dv">7</span>)</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:y</span>}</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/scatter {<span class="at">:size</span> <span class="dv">5</span>})]</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"lag 7"</span> <span class="at">:x</span> <span class="st">"y(t)"</span> <span class="at">:y</span> <span class="st">"y(t+7)"</span>}}]</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">2</span>})</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">800</span> <span class="at">:height</span> <span class="dv">380</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.data_sets_series_files/image1.png" class="img-fluid"></p>
+</div>
+</section>
+<section id="seriesacf-rows" class="level2" data-number="27.4">
+<h2 data-number="27.4" class="anchored" data-anchor-id="seriesacf-rows"><span class="header-section-number">27.4</span> series/acf-rows</h2>
+<p>The autocorrelation function: a row per lag with its value, the significance band and whether the value is outside it; <code>:partial? true</code> - the partial autocorrelation.</p>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">Option</th>
+<th data-quarto-table-cell-role="th">Type</th>
+<th data-quarto-table-cell-role="th">Default</th>
+<th data-quarto-table-cell-role="th">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>:lags</td>
+<td>a positive integer or nil</td>
+<td>floor(10 log10 n), at most n - 1 (R acf)</td>
+<td>the largest lag, from 1 to n - 1 for n values</td>
+</tr>
+<tr class="even">
+<td>:alpha</td>
+<td>a number in (0 1) or nil</td>
+<td>0.05</td>
+<td>significance level of the band (0.05 - a 95% band)</td>
+</tr>
+<tr class="odd">
+<td>:partial?</td>
+<td>true or false or nil</td>
+<td>false</td>
+<td>the partial autocorrelation (lags from 1, a constant band) instead of the autocorrelation</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="data-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">lag</th>
+<th data-quarto-table-cell-role="th">value</th>
+<th data-quarto-table-cell-role="th">lo</th>
+<th data-quarto-table-cell-role="th">hi</th>
+<th data-quarto-table-cell-role="th">significant?</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>0</td>
+<td>1.0</td>
+<td>-0.13859038243496777</td>
+<td>0.13859038243496777</td>
+<td>false</td>
+</tr>
+<tr class="even">
+<td>1</td>
+<td>0.6215962877171711</td>
+<td>-0.1845264138478444</td>
+<td>0.1845264138478444</td>
+<td>true</td>
+</tr>
+<tr class="odd">
+<td>2</td>
+<td>-0.0245812762532376</td>
+<td>-0.18458929818755346</td>
+<td>0.18458929818755346</td>
+<td>false</td>
+</tr>
+<tr class="even">
+<td>3</td>
+<td>-0.5117536249216397</td>
+<td>-0.2100801599517992</td>
+<td>0.2100801599517992</td>
+<td>true</td>
+</tr>
+<tr class="odd">
+<td>4</td>
+<td>-0.5330153237806908</td>
+<td>-0.23462195777800635</td>
+<td>0.23462195777800635</td>
+<td>true</td>
+</tr>
+<tr class="even">
+<td>5</td>
+<td>-0.10108379768907899</td>
+<td>-0.23545696168192612</td>
+<td>0.23545696168192612</td>
+<td>false</td>
+</tr>
+<tr class="odd">
+<td>6</td>
+<td>0.44682475423704965</td>
+<td>-0.25121613012862887</td>
+<td>0.25121613012862887</td>
+<td>true</td>
+</tr>
+<tr class="even">
+<td>7</td>
+<td>0.6837820669513154</td>
+<td>-0.2847289743030383</td>
+<td>0.2847289743030383</td>
+<td>true</td>
+</tr>
+<tr class="odd">
+<td>8</td>
+<td>0.4286047930660557</td>
+<td>-0.2968626418517464</td>
+<td>0.2968626418517464</td>
+<td>true</td>
+</tr>
+<tr class="even">
+<td>9</td>
+<td>-0.13943006698959823</td>
+<td>-0.29811782282562116</td>
+<td>0.29811782282562116</td>
+<td>false</td>
+</tr>
+<tr class="odd">
+<td>10</td>
+<td>-0.5932087660505585</td>
+<td>-0.3199878135302573</td>
+<td>0.3199878135302573</td>
+<td>true</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p>Drawn by hand from the rows - segments to 0, the band as a ribbon, significant lags in red: the autocorrelation up to lag 21 at the default 95% band (left) and the partial one with a 99% band (right):</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> (series/acf-rows weekly {<span class="at">:lags</span> <span class="dv">21</span> <span class="at">:alpha</span> <span class="fl">0.05</span>})</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:lag</span> <span class="at">:y</span> <span class="at">:value</span> <span class="at">:ymin</span> <span class="at">:lo</span> <span class="at">:ymax</span> <span class="at">:hi</span>}</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/ribbon {<span class="at">:color</span> [<span class="dv">69</span> <span class="dv">117</span> <span class="dv">180</span>] <span class="at">:alpha</span> <span class="fl">0.15</span>})</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>                                            (chart/segment {<span class="at">:yend</span> <span class="dv">0</span> <span class="at">:width</span> <span class="dv">2</span>})</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>                                            (chart/scatter {<span class="at">:mapping</span> {<span class="at">:color</span> #(<span class="kw">if</span> (<span class="at">:significant</span>? <span class="va">%</span>) <span class="st">"yes"</span> <span class="st">"no"</span>)}})]</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:domain</span> [<span class="st">"no"</span> <span class="st">"yes"</span>] <span class="at">:range</span> [[<span class="dv">90</span> <span class="dv">90</span> <span class="dv">90</span>] [<span class="dv">200</span> <span class="dv">40</span> <span class="dv">40</span>]]</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>                                                    <span class="at">:title</span> <span class="st">"significant"</span>}}</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"ACF, 95% band"</span>}</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:legend</span> <span class="va">false</span>}</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> (series/acf-rows weekly {<span class="at">:lags</span> <span class="dv">21</span> <span class="at">:alpha</span> <span class="fl">0.01</span> <span class="at">:partial</span>? <span class="va">true</span>})</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:lag</span> <span class="at">:y</span> <span class="at">:value</span> <span class="at">:ymin</span> <span class="at">:lo</span> <span class="at">:ymax</span> <span class="at">:hi</span>}</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/ribbon {<span class="at">:color</span> [<span class="dv">69</span> <span class="dv">117</span> <span class="dv">180</span>] <span class="at">:alpha</span> <span class="fl">0.15</span>})</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>                                            (chart/segment {<span class="at">:yend</span> <span class="dv">0</span> <span class="at">:width</span> <span class="dv">2</span>})</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>                                            (chart/scatter {<span class="at">:mapping</span> {<span class="at">:color</span> #(<span class="kw">if</span> (<span class="at">:significant</span>? <span class="va">%</span>) <span class="st">"yes"</span> <span class="st">"no"</span>)}})]</span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:domain</span> [<span class="st">"no"</span> <span class="st">"yes"</span>] <span class="at">:range</span> [[<span class="dv">90</span> <span class="dv">90</span> <span class="dv">90</span>] [<span class="dv">200</span> <span class="dv">40</span> <span class="dv">40</span>]]</span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>                                                    <span class="at">:title</span> <span class="st">"significant"</span>}}</span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"PACF, :alpha 0.01"</span>}}]</span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">2</span> <span class="at">:widths</span> [<span class="dv">1</span> <span class="fl">1.3</span>]})</span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">340</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.data_sets_series_files/image2.png" class="img-fluid"></p>
+</div>
+</section>
+<section id="serieshorizon-rows" class="level2" data-number="27.5">
+<h2 data-number="27.5" class="anchored" data-anchor-id="serieshorizon-rows"><span class="header-section-number">27.5</span> series/horizon-rows</h2>
+<p>The bands of a horizon chart: values folded into <code>:bands</code> bands of one height, negatives mirrored upward as negative band numbers; returns <code>{:rows [...] :band-height h}</code>.</p>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">Option</th>
+<th data-quarto-table-cell-role="th">Type</th>
+<th data-quarto-table-cell-role="th">Default</th>
+<th data-quarto-table-cell-role="th">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>:x</td>
+<td>keyword or string</td>
+<td>:x</td>
+<td>row key of the x values (numbers)</td>
+</tr>
+<tr class="even">
+<td>:y</td>
+<td>keyword or string</td>
+<td>:y</td>
+<td>row key of the y values (finite numbers, nil breaks the bands)</td>
+</tr>
+<tr class="odd">
+<td>:series</td>
+<td>keyword or string or nil</td>
+<td>none - one series</td>
+<td>row key of the series, one horizon per value in first-appearance order</td>
+</tr>
+<tr class="even">
+<td>:bands</td>
+<td>a positive integer</td>
+<td>2</td>
+<td>number of bands each sign of the values is folded into</td>
+</tr>
+<tr class="odd">
+<td>:band-height</td>
+<td>a positive finite number or nil</td>
+<td>the largest |y| of all series / :bands (1 when it is 0)</td>
+<td>height of one band in y units</td>
+</tr>
+<tr class="even">
+<td>:interpolator</td>
+<td>a fastmath 1D interpolation method keyword or a function (fn [xs ys &amp; params] f) or nil</td>
+<td>none - straight segments</td>
+<td>a curve the valid points of every run are resampled on before folding</td>
+</tr>
+<tr class="odd">
+<td>:steps-per-gap</td>
+<td>a positive integer</td>
+<td>10</td>
+<td>resampled points per gap between consecutive x (with :interpolator)</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> temperatures </span>(<span class="kw">for</span> [city [<span class="st">"Oslo"</span> <span class="st">"Rome"</span>] day (<span class="kw">range</span> <span class="dv">60</span>)]</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>                    {<span class="at">:city</span> city <span class="at">:day</span> day</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>                     <span class="at">:anomaly</span> (<span class="kw">*</span> (<span class="kw">if</span> (<span class="kw">=</span> city <span class="st">"Oslo"</span>) <span class="fl">4.0</span> <span class="fl">2.5</span>) (m/sin (<span class="kw">+</span> (<span class="kw">*</span> <span class="fl">0.12</span> day) (<span class="kw">if</span> (<span class="kw">=</span> city <span class="st">"Oslo"</span>) <span class="fl">0.0</span> <span class="fl">1.5</span>))))}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="data-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">city</th>
+<th data-quarto-table-cell-role="th">day</th>
+<th data-quarto-table-cell-role="th">anomaly</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Oslo</td>
+<td>0</td>
+<td>0.0</td>
+</tr>
+<tr class="even">
+<td>Oslo</td>
+<td>1</td>
+<td>0.47884882915567745</td>
+</tr>
+<tr class="odd">
+<td>Oslo</td>
+<td>2</td>
+<td>0.9508105057085383</td>
+</tr>
+<tr class="even">
+<td>Oslo</td>
+<td>3</td>
+<td>1.4090969331003598</td>
+</tr>
+<tr class="odd">
+<td>Oslo</td>
+<td>4</td>
+<td>1.8471167021659316</td>
+</tr>
+<tr class="even">
+<td>Oslo</td>
+<td>5</td>
+<td>2.2585698935801415</td>
+</tr>
+<tr class="odd">
+<td>Oslo</td>
+<td>6</td>
+<td>2.6375386878858924</td>
+</tr>
+<tr class="even">
+<td>Oslo</td>
+<td>7</td>
+<td>2.978572479883437</td>
+</tr>
+<tr class="odd">
+<td>Oslo</td>
+<td>8</td>
+<td>3.276766273203993</td>
+</tr>
+<tr class="even">
+<td>Oslo</td>
+<td>9</td>
+<td>3.52783122753979</td>
+</tr>
+<tr class="odd">
+<td>Oslo</td>
+<td>10</td>
+<td>3.728156343868905</td>
+</tr>
+<tr class="even">
+<td>Oslo</td>
+<td>11</td>
+<td>3.874860400473061</td>
+</tr>
+<tr class="odd">
+<td>Oslo</td>
+<td>12</td>
+<td>3.9658333927667457</td>
+</tr>
+<tr class="even">
+<td>Oslo</td>
+<td>13</td>
+<td>3.999766880919865</td>
+</tr>
+<tr class="odd">
+<td>Oslo</td>
+<td>14</td>
+<td>3.976172808792304</td>
+</tr>
+<tr class="even">
+<td>Oslo</td>
+<td>15</td>
+<td>3.895390523512781</td>
+</tr>
+<tr class="odd">
+<td>Oslo</td>
+<td>16</td>
+<td>3.7585818947412997</td>
+</tr>
+<tr class="even">
+<td>Oslo</td>
+<td>17</td>
+<td>3.5677146038135183</td>
+</tr>
+<tr class="odd">
+<td>Oslo</td>
+<td>18</td>
+<td>3.3255338431147323</td>
+</tr>
+<tr class="even">
+<td>Oslo</td>
+<td>19</td>
+<td>3.035522832723688</td>
+</tr>
+<tr class="odd">
+<td>Oslo</td>
+<td>20</td>
+<td>2.701852722204604</td>
+</tr>
+<tr class="even">
+<td>Oslo</td>
+<td>21</td>
+<td>2.3293225980963275</td>
+</tr>
+<tr class="odd">
+<td>Oslo</td>
+<td>22</td>
+<td>1.9232904599545946</td>
+</tr>
+<tr class="even">
+<td>Oslo</td>
+<td>23</td>
+<td>1.4895961577002228</td>
+</tr>
+<tr class="odd">
+<td>Oslo</td>
+<td>24</td>
+<td>1.0344773986444433</td>
+</tr>
+<tr class="even">
+<td>Oslo</td>
+<td>25</td>
+<td>0.5644800322394689</td>
+</tr>
+<tr class="odd">
+<td>Oslo</td>
+<td>26</td>
+<td>0.08636390290438384</td>
+</tr>
+<tr class="even">
+<td>Oslo</td>
+<td>27</td>
+<td>-0.392994374980433</td>
+</tr>
+<tr class="odd">
+<td>Oslo</td>
+<td>28</td>
+<td>-0.8667003215495185</td>
+</tr>
+<tr class="even">
+<td>Oslo</td>
+<td>29</td>
+<td>-1.3279407528829363</td>
+</tr>
+<tr class="odd">
+<td>Oslo</td>
+<td>30</td>
+<td>-1.7700817731794083</td>
+</tr>
+<tr class="even">
+<td>Oslo</td>
+<td>31</td>
+<td>-2.1867641882771474</td>
+</tr>
+<tr class="odd">
+<td>Oslo</td>
+<td>32</td>
+<td>-2.5719949682156353</td>
+</tr>
+<tr class="even">
+<td>Oslo</td>
+<td>33</td>
+<td>-2.920233443357198</td>
+</tr>
+<tr class="odd">
+<td>Oslo</td>
+<td>34</td>
+<td>-3.226470994332962</td>
+</tr>
+<tr class="even">
+<td>Oslo</td>
+<td>35</td>
+<td>-3.4863030896543528</td>
+</tr>
+<tr class="odd">
+<td>Oslo</td>
+<td>36</td>
+<td>-3.6959926348927516</td>
+</tr>
+<tr class="even">
+<td>Oslo</td>
+<td>37</td>
+<td>-3.852523722293266</td>
+</tr>
+<tr class="odd">
+<td>Oslo</td>
+<td>38</td>
+<td>-3.953645007756522</td>
+</tr>
+<tr class="even">
+<td>Oslo</td>
+<td>39</td>
+<td>-3.997902091309136</td>
+</tr>
+<tr class="odd">
+<td>Oslo</td>
+<td>40</td>
+<td>-3.9846584353433627</td>
+</tr>
+<tr class="even">
+<td>Oslo</td>
+<td>41</td>
+<td>-3.914104519764554</td>
+</tr>
+<tr class="odd">
+<td>Oslo</td>
+<td>42</td>
+<td>-3.7872551023704357</td>
+</tr>
+<tr class="even">
+<td>Oslo</td>
+<td>43</td>
+<td>-3.6059346238654193</td>
+</tr>
+<tr class="odd">
+<td>Oslo</td>
+<td>44</td>
+<td>-3.372750967425669</td>
+</tr>
+<tr class="even">
+<td>Oslo</td>
+<td>45</td>
+<td>-3.091057950223951</td>
+</tr>
+<tr class="odd">
+<td>Oslo</td>
+<td>46</td>
+<td>-2.7649070863885084</td>
+</tr>
+<tr class="even">
+<td>Oslo</td>
+<td>47</td>
+<td>-2.398989315176175</td>
+</tr>
+<tr class="odd">
+<td>Oslo</td>
+<td>48</td>
+<td>-1.9985675324676098</td>
+</tr>
+<tr class="even">
+<td>Oslo</td>
+<td>49</td>
+<td>-1.5694008959658154</td>
+</tr>
+<tr class="odd">
+<td>Oslo</td>
+<td>50</td>
+<td>-1.1176619927957034</td>
+</tr>
+<tr class="even">
+<td>Oslo</td>
+<td>51</td>
+<td>-0.6498480608606167</td>
+</tr>
+<tr class="odd">
+<td>Oslo</td>
+<td>52</td>
+<td>-0.17268754083491472</td>
+</tr>
+<tr class="even">
+<td>Oslo</td>
+<td>53</td>
+<td>0.3069566971700721</td>
+</tr>
+<tr class="odd">
+<td>Oslo</td>
+<td>54</td>
+<td>0.7821860604021735</td>
+</tr>
+<tr class="even">
+<td>Oslo</td>
+<td>55</td>
+<td>1.2461654540535114</td>
+</tr>
+<tr class="odd">
+<td>Oslo</td>
+<td>56</td>
+<td>1.6922215885719873</td>
+</tr>
+<tr class="even">
+<td>Oslo</td>
+<td>57</td>
+<td>2.113938959771723</td>
+</tr>
+<tr class="odd">
+<td>Oslo</td>
+<td>58</td>
+<td>2.5052521212866234</td>
+</tr>
+<tr class="even">
+<td>Oslo</td>
+<td>59</td>
+<td>2.8605329222374314</td>
+</tr>
+<tr class="odd">
+<td>Rome</td>
+<td>0</td>
+<td>2.493737466510136</td>
+</tr>
+<tr class="even">
+<td>Rome</td>
+<td>1</td>
+<td>2.49697435867631</td>
+</tr>
+<tr class="odd">
+<td>Rome</td>
+<td>2</td>
+<td>2.464297947088884</td>
+</tr>
+<tr class="even">
+<td>Rome</td>
+<td>3</td>
+<td>2.3961782076972855</td>
+</tr>
+<tr class="odd">
+<td>Rome</td>
+<td>4</td>
+<td>2.2935948882045247</td>
+</tr>
+<tr class="even">
+<td>Rome</td>
+<td>5</td>
+<td>2.1580234166221843</td>
+</tr>
+<tr class="odd">
+<td>Rome</td>
+<td>6</td>
+<td>1.991413680590217</td>
+</tr>
+<tr class="even">
+<td>Rome</td>
+<td>7</td>
+<td>1.7961619826728157</td>
+</tr>
+<tr class="odd">
+<td>Rome</td>
+<td>8</td>
+<td>1.5750765749897306</td>
+</tr>
+<tr class="even">
+<td>Rome</td>
+<td>9</td>
+<td>1.3313372688890528</td>
+</tr>
+<tr class="odd">
+<td>Rome</td>
+<td>10</td>
+<td>1.0684497005845746</td>
+</tr>
+<tr class="even">
+<td>Rome</td>
+<td>11</td>
+<td>0.7901949105426345</td>
+</tr>
+<tr class="odd">
+<td>Rome</td>
+<td>12</td>
+<td>0.5005749618044263</td>
+</tr>
+<tr class="even">
+<td>Rome</td>
+<td>13</td>
+<td>0.2037553794006728</td>
+</tr>
+<tr class="odd">
+<td>Rome</td>
+<td>14</td>
+<td>-0.09599476126308734</td>
+</tr>
+<tr class="even">
+<td>Rome</td>
+<td>15</td>
+<td>-0.39436423535812054</td>
+</tr>
+<tr class="odd">
+<td>Rome</td>
+<td>16</td>
+<td>-0.6870616758078101</td>
+</tr>
+<tr class="even">
+<td>Rome</td>
+<td>17</td>
+<td>-0.9698772948543257</td>
+</tr>
+<tr class="odd">
+<td>Rome</td>
+<td>18</td>
+<td>-1.2387434322921123</td>
+</tr>
+<tr class="even">
+<td>Rome</td>
+<td>19</td>
+<td>-1.4897930595194098</td>
+</tr>
+<tr class="odd">
+<td>Rome</td>
+<td>20</td>
+<td>-1.7194153979599345</td>
+</tr>
+<tr class="even">
+<td>Rome</td>
+<td>21</td>
+<td>-1.9243078519100596</td>
+</tr>
+<tr class="odd">
+<td>Rome</td>
+<td>22</td>
+<td>-2.1015235088754864</td>
+</tr>
+<tr class="even">
+<td>Rome</td>
+<td>23</td>
+<td>-2.248513524212944</td>
+</tr>
+<tr class="odd">
+<td>Rome</td>
+<td>24</td>
+<td>-2.3631637804701584</td>
+</tr>
+<tr class="even">
+<td>Rome</td>
+<td>25</td>
+<td>-2.4438252941627425</td>
+</tr>
+<tr class="odd">
+<td>Rome</td>
+<td>26</td>
+<td>-2.4893379326556135</td>
+</tr>
+<tr class="even">
+<td>Rome</td>
+<td>27</td>
+<td>-2.4990471000354635</td>
+</tr>
+<tr class="odd">
+<td>Rome</td>
+<td>28</td>
+<td>-2.4728131519859247</td>
+</tr>
+<tr class="even">
+<td>Rome</td>
+<td>29</td>
+<td>-2.411013404253826</td>
+</tr>
+<tr class="odd">
+<td>Rome</td>
+<td>30</td>
+<td>-2.3145367058193314</td>
+</tr>
+<tr class="even">
+<td>Rome</td>
+<td>31</td>
+<td>-2.184770654822556</td>
+</tr>
+<tr class="odd">
+<td>Rome</td>
+<td>32</td>
+<td>-2.0235816411165484</td>
+</tr>
+<tr class="even">
+<td>Rome</td>
+<td>33</td>
+<td>-1.8332880024891414</td>
+</tr>
+<tr class="odd">
+<td>Rome</td>
+<td>34</td>
+<td>-1.6166266806404586</td>
+</tr>
+<tr class="even">
+<td>Rome</td>
+<td>35</td>
+<td>-1.376713856494094</td>
+</tr>
+<tr class="odd">
+<td>Rome</td>
+<td>36</td>
+<td>-1.117000131013575</td>
+</tr>
+<tr class="even">
+<td>Rome</td>
+<td>37</td>
+<td>-0.8412208961462626</td>
+</tr>
+<tr class="odd">
+<td>Rome</td>
+<td>38</td>
+<td>-0.5533426096958989</td>
+</tr>
+<tr class="even">
+<td>Rome</td>
+<td>39</td>
+<td>-0.25750574683774463</td>
+</tr>
+<tr class="odd">
+<td>…</td>
+<td>…</td>
+<td>…</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p>Two bands per sign for each city (the rows of the bands, where the curve crosses a band edge points are added):</p>
+<div class="data-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">x</th>
+<th data-quarto-table-cell-role="th">y</th>
+<th data-quarto-table-cell-role="th">band</th>
+<th data-quarto-table-cell-role="th">series</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>0.0</td>
+<td>0.0</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>1.0</td>
+<td>0.47884882915567745</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>2.0</td>
+<td>0.9508105057085383</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>3.0</td>
+<td>1.4090969331003598</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>4.0</td>
+<td>1.8471167021659316</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>4.371285826630546</td>
+<td>1.9998834404599326</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>5.0</td>
+<td>1.9998834404599326</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>6.0</td>
+<td>1.9998834404599326</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>7.0</td>
+<td>1.9998834404599326</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>8.0</td>
+<td>1.9998834404599326</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>9.0</td>
+<td>1.9998834404599326</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>10.0</td>
+<td>1.9998834404599326</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>11.0</td>
+<td>1.9998834404599326</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>12.0</td>
+<td>1.9998834404599326</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>13.0</td>
+<td>1.9998834404599326</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>14.0</td>
+<td>1.9998834404599326</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>15.0</td>
+<td>1.9998834404599326</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>16.0</td>
+<td>1.9998834404599326</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>17.0</td>
+<td>1.9998834404599326</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>18.0</td>
+<td>1.9998834404599326</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>19.0</td>
+<td>1.9998834404599326</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>20.0</td>
+<td>1.9998834404599326</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>21.0</td>
+<td>1.9998834404599326</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>21.811362270839258</td>
+<td>1.9998834404599326</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>22.0</td>
+<td>1.9232904599545946</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>23.0</td>
+<td>1.4895961577002228</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>24.0</td>
+<td>1.0344773986444433</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>25.0</td>
+<td>0.5644800322394689</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>26.0</td>
+<td>0.08636390290438384</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>26.18016566499168</td>
+<td>0.0</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>27.0</td>
+<td>0.0</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>28.0</td>
+<td>0.0</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>29.0</td>
+<td>0.0</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>30.0</td>
+<td>0.0</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>30.55150315673058</td>
+<td>0.0</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>31.0</td>
+<td>0.0</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>32.0</td>
+<td>0.0</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>33.0</td>
+<td>0.0</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>34.0</td>
+<td>0.0</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>35.0</td>
+<td>0.0</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>36.0</td>
+<td>0.0</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>37.0</td>
+<td>0.0</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>38.0</td>
+<td>0.0</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>39.0</td>
+<td>0.0</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>40.0</td>
+<td>0.0</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>41.0</td>
+<td>0.0</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>42.0</td>
+<td>0.0</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>43.0</td>
+<td>0.0</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>44.0</td>
+<td>0.0</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>45.0</td>
+<td>0.0</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>46.0</td>
+<td>0.0</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>47.0</td>
+<td>0.0</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>47.99671369528545</td>
+<td>0.0</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>48.0</td>
+<td>0.0</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>49.0</td>
+<td>0.0</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>50.0</td>
+<td>0.0</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>51.0</td>
+<td>0.0</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>52.0</td>
+<td>0.0</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>52.36003255569833</td>
+<td>0.0</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>53.0</td>
+<td>0.3069566971700721</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>54.0</td>
+<td>0.7821860604021735</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>55.0</td>
+<td>1.2461654540535114</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>56.0</td>
+<td>1.6922215885719873</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>56.72954512405473</td>
+<td>1.9998834404599326</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>57.0</td>
+<td>1.9998834404599326</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>58.0</td>
+<td>1.9998834404599326</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>59.0</td>
+<td>1.9998834404599326</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>0.0</td>
+<td>0.0</td>
+<td>2</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>1.0</td>
+<td>0.0</td>
+<td>2</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>2.0</td>
+<td>0.0</td>
+<td>2</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>3.0</td>
+<td>0.0</td>
+<td>2</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>4.0</td>
+<td>0.0</td>
+<td>2</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>4.371285826630546</td>
+<td>0.0</td>
+<td>2</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>5.0</td>
+<td>0.2586864531202089</td>
+<td>2</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>6.0</td>
+<td>0.6376552474259598</td>
+<td>2</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>7.0</td>
+<td>0.9786890394235046</td>
+<td>2</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>8.0</td>
+<td>1.2768828327440604</td>
+<td>2</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>9.0</td>
+<td>1.5279477870798575</td>
+<td>2</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>10.0</td>
+<td>1.7282729034089725</td>
+<td>2</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>11.0</td>
+<td>1.8749769600131283</td>
+<td>2</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>12.0</td>
+<td>1.9659499523068131</td>
+<td>2</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>13.0</td>
+<td>1.9998834404599326</td>
+<td>2</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>14.0</td>
+<td>1.9762893683323712</td>
+<td>2</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>15.0</td>
+<td>1.8955070830528484</td>
+<td>2</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>16.0</td>
+<td>1.758698454281367</td>
+<td>2</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>17.0</td>
+<td>1.5678311633535857</td>
+<td>2</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>18.0</td>
+<td>1.3256504026547997</td>
+<td>2</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>19.0</td>
+<td>1.0356393922637555</td>
+<td>2</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>20.0</td>
+<td>0.7019692817446712</td>
+<td>2</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>21.0</td>
+<td>0.32943915763639486</td>
+<td>2</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>21.811362270839258</td>
+<td>0.0</td>
+<td>2</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>22.0</td>
+<td>0.0</td>
+<td>2</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>23.0</td>
+<td>0.0</td>
+<td>2</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>24.0</td>
+<td>0.0</td>
+<td>2</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>25.0</td>
+<td>0.0</td>
+<td>2</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>26.0</td>
+<td>0.0</td>
+<td>2</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>26.18016566499168</td>
+<td>0.0</td>
+<td>2</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>27.0</td>
+<td>0.0</td>
+<td>2</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>28.0</td>
+<td>0.0</td>
+<td>2</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>29.0</td>
+<td>0.0</td>
+<td>2</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>…</td>
+<td>…</td>
+<td>…</td>
+<td>…</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p>The bands drawn as filled lines - default band height (left), and three bands of a fixed height 1 on a monotone curve resampled 4 points per gap (right); <code>horizon-bands</code> orders the colour domain:</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> (<span class="at">:rows</span> (series/horizon-rows temperatures {<span class="at">:x</span> <span class="at">:day</span> <span class="at">:y</span> <span class="at">:anomaly</span> <span class="at">:series</span> <span class="at">:city</span>}))</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:y</span> <span class="at">:color</span> <span class="at">:band</span> <span class="at">:facet</span> <span class="at">:series</span>}</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/line {<span class="at">:fill</span> <span class="at">:color</span> <span class="at">:alpha</span> <span class="fl">1.0</span> <span class="at">:width</span> <span class="dv">0</span>})]</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:kind</span> <span class="at">:ordinal</span> <span class="at">:domain</span> (series/horizon-bands <span class="dv">2</span>)</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>                                                    <span class="at">:range</span> [[<span class="dv">158</span> <span class="dv">202</span> <span class="dv">225</span>] [<span class="dv">8</span> <span class="dv">69</span> <span class="dv">148</span>] [<span class="dv">252</span> <span class="dv">174</span> <span class="dv">145</span>] [<span class="dv">165</span> <span class="dv">15</span> <span class="dv">21</span>]]}}</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:facets</span> {<span class="at">:columns</span> <span class="dv">1</span>}</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"2 bands"</span> <span class="at">:y</span> <span class="va">nil</span>}</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:legend</span> <span class="va">false</span>}</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> (<span class="at">:rows</span> (series/horizon-rows temperatures {<span class="at">:x</span> <span class="at">:day</span> <span class="at">:y</span> <span class="at">:anomaly</span> <span class="at">:series</span> <span class="at">:city</span> <span class="at">:bands</span> <span class="dv">3</span></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>                                                                                   <span class="at">:band-height</span> <span class="fl">1.0</span> <span class="at">:interpolator</span> <span class="at">:monotone</span></span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>                                                                                   <span class="at">:steps-per-gap</span> <span class="dv">4</span>}))</span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:y</span> <span class="at">:color</span> <span class="at">:band</span> <span class="at">:facet</span> <span class="at">:series</span>}</span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/line {<span class="at">:fill</span> <span class="at">:color</span> <span class="at">:alpha</span> <span class="fl">1.0</span> <span class="at">:width</span> <span class="dv">0</span>})]</span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:kind</span> <span class="at">:ordinal</span> <span class="at">:domain</span> (series/horizon-bands <span class="dv">3</span>)</span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>                                                    <span class="at">:range</span> [[<span class="dv">198</span> <span class="dv">219</span> <span class="dv">239</span>] [<span class="dv">107</span> <span class="dv">174</span> <span class="dv">214</span>] [<span class="dv">8</span> <span class="dv">81</span> <span class="dv">156</span>]</span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>                                                            [<span class="dv">252</span> <span class="dv">187</span> <span class="dv">161</span>] [<span class="dv">251</span> <span class="dv">106</span> <span class="dv">74</span>] [<span class="dv">165</span> <span class="dv">15</span> <span class="dv">21</span>]]}}</span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:facets</span> {<span class="at">:columns</span> <span class="dv">1</span>}</span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"3 bands of height 1, :monotone"</span> <span class="at">:y</span> <span class="va">nil</span>}}]</span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">2</span> <span class="at">:widths</span> [<span class="dv">1</span> <span class="fl">1.2</span>]})</span>
+<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">360</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.data_sets_series_files/image3.png" class="img-fluid"></p>
+</div>
+</section>
+<section id="serieshorizon-bands" class="level2" data-number="27.6">
+<h2 data-number="27.6" class="anchored" data-anchor-id="serieshorizon-bands"><span class="header-section-number">27.6</span> series/horizon-bands</h2>
+<p>The band labels of a horizon of n bands in drawing order - positive bands first, then the mirrored negative ones - the colour domain above:</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>(series/horizon-bands <span class="dv">3</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="printedClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>[<span class="dv">1</span> <span class="dv">2</span> <span class="dv">3</span> -<span class="dv">1</span> -<span class="dv">2</span> -<span class="dv">3</span>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div style="background-color:grey;height:2px;width:100%;"></div>
+<div><pre><small><small>source: notebooks/reference/data_sets_series.clj</small></small></pre></div>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="./reference.data_graphs_trees.html" class="pagination-link" aria-label="Data functions: graphs and trees">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">Data functions: graphs and trees</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./reference.data_fields.html" class="pagination-link" aria-label="Data functions: fields">
+        <span class="nav-page-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">Data functions: fields</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

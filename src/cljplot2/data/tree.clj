@@ -464,9 +464,15 @@
   "Options schema of [[bundle-paths]]."
   (into [:map {:closed true}] bundle-paths-entries))
 
+(defn leaf-key
+  "The value edges name `node` (a leaf) by: its `:id` ([[from-parents]] trees), else its `:name` ([[from-levels]],
+  [[from-hclust]] leaves have no id)."
+  [node]
+  (if (contains? node :id) (:id node) (:name node)))
+
 (defn bundle-paths
-  "Edges (rows; `:from` / `:to` accessors, default `:from` / `:to` - leaf ids, `:id` of the nodes, see
-  [[from-parents]]) bundled along the laid out tree `laid` (see [[layout]], `:circular`): each a B-spline through the
+  "Edges (rows; `:from` / `:to` accessors, default `:from` / `:to` - leaf keys: the `:id` of a [[from-parents]] node,
+  else the leaf's `:name`, see [[leaf-key]]; with repeated names the first leaf is used) bundled along the laid out tree `laid` (see [[layout]], `:circular`): each a B-spline through the
   positions of the tree path between its leaves, straightened by `:beta` (default 0.85; 1 - the tree path, 0 - a
   straight line). Returns `{:paths [{:id i :x :y :from :to} ..] :dropped n}` - path rows (edge index `:id`, its row's
   keys kept), edges with an end that isn't a leaf (or the same leaf at both ends) dropped and counted. Throws
@@ -475,7 +481,9 @@
   [edges laid {:keys [from to beta] :or {from :from to :to beta 0.85} :as options}]
   (schema/check-options! bundle-paths-options options)
   (let [nodes (:nodes laid)
-        leaf-index (into {} (keep-indexed (fn [i node] (when (:leaf? node) [(:id node) i])) nodes))
+        leaf-index (reduce (fn [acc [i node]] (cond-> acc (and (:leaf? node) (not (contains? acc (leaf-key node))))
+                                                (assoc (leaf-key node) i)))
+                           {} (map-indexed vector nodes))
         from-of (data/row-accessor :from from)
         to-of (data/row-accessor :to to)
         routed (keep-indexed (fn [i e]

@@ -5,9 +5,11 @@
   the notebook conventions (image size, seeded rng, dataset credits); every chart kind on its chart page (R4) - a
   heading, its mapping table, its own options table and its shared groups. Notebooks are read as forms, their
   aliases resolved - a page names an item by calling or referring to it; a table's rows form is evaluated here.
-  Builders and data functions get their pages in R5 (spec 7.2)."
+  Builders and user-facing data functions (R5) likewise: a heading, their options table, called, every option shown;
+  the Specific cases chapter calls every internal namespace it shows (spec 7.2)."
   (:require [clojure.edn :as edn]
             [clojure.java.io :as io]
+            [clojure.string :as str]
             [clojure.test :refer [deftest testing is]]
             [clojure.walk :as walk]
             [malli.core :as malli]
@@ -41,16 +43,52 @@
              "charts_part_of_whole" [:treemap :partition :pack :waffle :venn]
              "charts_multivariate_3d" [:parallel :cloud :surface]))
 
+(def ^:private builder-chapters
+  "The builder chapters (R5): page -> the `cljplot2.core` builders it documents (`arrange`, `pairs` - Facets and
+  multiplots)."
+  (array-map "builders_graphs" '[network chord arc sankey alluvial]
+             "builders_trees" '[dendrogram tree clustered-heatmap bundle sequences]
+             "builders_series" '[acf horizon]))
+
+(def ^:private data-chapters
+  "The data function chapters (R5): page -> the user-facing functions (`:cljplot2/api`) it documents; fonts belong
+  to Labels and text."
+  (array-map "data_levels" '[cljplot2.data.levels/bin cljplot2.data.levels/categorical cljplot2.data.levels/order-levels
+                             cljplot2.data.levels/rank-rows cljplot2.data.shingle/shingle]
+             "data_graphs_trees" '[cljplot2.data.graph/graph cljplot2.data.graph/layout cljplot2.data.graph/adjacency->edges
+                                   cljplot2.data.graph/arc-layout cljplot2.data.graph/chord-layout
+                                   cljplot2.data.graph/sankey-layout cljplot2.data.graph/alluvial-graph
+                                   cljplot2.data.tree/from-hclust cljplot2.data.tree/from-levels
+                                   cljplot2.data.tree/from-parents cljplot2.data.tree/leaves cljplot2.data.tree/layout
+                                   cljplot2.data.tree/node-link-layout cljplot2.data.tree/bundle-paths
+                                   cljplot2.data.hierarchy/sequence-levels]
+             "data_sets_series" '[cljplot2.data.sets/membership-rows cljplot2.data.sets/upset-rows
+                                  cljplot2.data.series/lag-rows cljplot2.data.series/acf-rows
+                                  cljplot2.data.series/horizon-rows cljplot2.data.series/horizon-bands]
+             "data_fields" '[cljplot2.data.field/domain-color cljplot2.data.contour/isolines
+                             cljplot2.data.vector-field/arrows cljplot2.data.vector-field/mapped-points
+                             cljplot2.data.vector-field/traces]
+             "labels_text" '[cljplot2.graphics.font/resolve-font]))
+
+(def ^:private specific-cases-namespaces
+  "Internal namespaces (K19) the Specific cases chapter shows by example, one section each."
+  '[cljplot2.data.probability cljplot2.data.kde cljplot2.data.smooth cljplot2.data.dots cljplot2.layout.pack
+    cljplot2.layout.treemap cljplot2.layout.venn])
+
 (defn- book-parts
   "Parts of `notebooks/chapters.edn`: title -> chapter paths, and the titles in order (`:order`)."
   []
   (let [parts (filter map? (edn/read-string (slurp "notebooks/chapters.edn")))]
     (assoc (into {} (map (juxt :part :chapters)) parts) :order (mapv :part parts))))
 
+(def ^:private reference-parts
+  "The Reference parts of the book in order (Quarto books have one level of parts: consecutive parts, not nested)."
+  ["Reference: concepts" "Reference: charts" "Reference: builders" "Reference: data functions"])
+
 (defn- reference-paths
-  "Paths (relative to `notebooks/`) of the Reference part's chapters."
+  "Paths (relative to `notebooks/`) of the Reference parts' chapters, in order."
   []
-  (get (book-parts) "Reference"))
+  (let [parts (book-parts)] (vec (mapcat parts reference-parts))))
 
 (defn- read-forms
   "Every top-level form of the Clojure file at `path` (no evaluation)."
@@ -134,10 +172,15 @@
          (second call))))
 
 (deftest chapters-test
-  (testing "the Reference part lists the concept chapters, then the chart chapters, before Use cases"
-    (is (= (map #(str "reference/" % ".clj") (concat concept-chapters (keys chart-chapters)))
-           (take (+ (count concept-chapters) (count chart-chapters)) (reference-paths))))
-    (is (= ["Reference" "Use cases"] (take 2 (:order (book-parts))))))
+  (testing "the Reference parts - concepts, charts, builders, data functions with specific cases - before Use cases"
+    (let [parts (book-parts)
+          paths #(map (fn [page] (str "reference/" page ".clj")) %)]
+      (is (= (paths concept-chapters) (parts "Reference: concepts")))
+      (is (= (paths (keys chart-chapters)) (parts "Reference: charts")))
+      (is (= (paths (keys builder-chapters)) (parts "Reference: builders")))
+      (is (= (paths (concat (remove #{"labels_text"} (keys data-chapters)) ["specific_cases"]))
+             (parts "Reference: data functions")))
+      (is (= (conj reference-parts "Use cases") (take 5 (:order parts))))))
   (testing "every chapter exists and starts with a heading"
     (doseq [p (reference-paths)]
       (is (.exists (io/file "notebooks" p)) p)
@@ -229,10 +272,13 @@
     'notebook-utils/shared-groups options-table})
 
 (defn- illustration?
-  "Is top-level `form` an example - a call rendering a chart or computing a value shown - rather than setup (see
-  [[setup-heads]]), a table or a bare literal / symbol (which show nothing computed)?"
+  "Is top-level `form` an example - a call rendering a chart or computing a value shown, also a data table of a
+  computed value (`(nu/data-table (f ...))`) - rather than setup (see [[setup-heads]]), a table or a bare literal /
+  symbol (which show nothing computed)?"
   [form]
-  (and (seq? form) (not (setup-heads (first form)))))
+  (and (seq? form)
+       (or (not (setup-heads (first form)))
+           (and (= 'notebook-utils/data-table (first form)) (seq? (second form))))))
 
 (defn- tables-without-example
   "Rows forms of the tables in top-level `forms` not followed by an example before the next table or the page end."
@@ -256,7 +302,10 @@
     (is (= [] (tables-without-example [(list options-table :a) '(def x 1) '(notebook-utils/source-note {}) '(f)])))
     (is (= [] (tables-without-example []))))
   (testing "boundary: a literal or a bare symbol isn't an example"
-    (is (= [:a] (tables-without-example [(list options-table :a) :kw "text" 42 'sym])))))
+    (is (= [:a] (tables-without-example [(list options-table :a) :kw "text" 42 'sym]))))
+  (testing "a data table of a computed value is an example; of a defined name, setup"
+    (is (= [] (tables-without-example [(list options-table :a) '(notebook-utils/data-table (f x))])))
+    (is (= [:a] (tables-without-example [(list options-table :a) '(notebook-utils/data-table d)])))))
 
 (defn- data-value?
   "Is `v` data a page shows - rows (a non-empty sequence of maps) or columns (a map of equal-length non-empty
@@ -356,10 +405,16 @@
   6)
 
 (defn- literal-option-maps
-  "The literal option maps of the calls of chart constructor `kind` in (resolved) `forms` - `(chart/kind {...})`."
-  [forms kind]
-  (let [ctor (symbol "cljplot2.chart" (name kind))]
-    (filter map? (map second (calls forms ctor)))))
+  "The literal option maps of the calls of function `f` (a resolved symbol) in `forms` - a map literal as the call's
+  last argument (`(chart/kind {...})`, `(plot/network edges {...})`)."
+  [forms f]
+  (filter map? (keep #(when (< 1 (count %)) (last %)) (calls forms f))))
+
+(defn- bare-call?
+  "Is `call` of a function with arities `arglists` one without options - fewer arguments than the longest arity, and
+  no literal option map?"
+  [call arglists]
+  (and (not (map? (last call))) (< (dec (count call)) (apply max (map count arglists)))))
 
 (defn- enum-values
   "The values of the enums in entry schema `s` - an `:enum`, also under `:maybe` / `:or` - or `nil` for no enum."
@@ -371,13 +426,13 @@
       nil)))
 
 (defn- short-enums
-  "Own top-level option key -> its enum values, of chart value `chart`, for enums of at most [[max-enum-values]]."
-  [chart]
-  (let [own (set (map :key (filter #(= 1 (count (:path %))) (describe/own-rows (describe/options chart)))))
-        options (malli/schema (get-in chart [:schema :options]))
+  "Option key -> its enum values, of the entries `ks` of options schema `schema` (a map, also under validation rules),
+  for enums of at most [[max-enum-values]]."
+  [schema ks]
+  (let [options (malli/schema schema)
         m (if (= :map (malli/type options)) options (first (malli/children options)))]
     (into {} (for [[k _ s] (malli/children m)
-                   :when (own k)
+                   :when (contains? (set ks) k)
                    :let [vs (enum-values s)]
                    :when (and vs (<= (count vs) max-enum-values))]
                [k vs]))))
@@ -395,16 +450,23 @@
                         :when (not (and (= v (get defaults k)) (some #(not (contains? % k)) maps)))]
                     [k v]))}))
 
+(defn- function-coverage-gaps
+  "[[coverage-gaps]] of the calls of function `f` (resolved symbol, var `v`) in `forms` over option `rows` (their
+  top-level keys) of options schema `schema`; a call without options counts as a map without any (its defaults
+  shown)."
+  [forms f v schema rows]
+  (let [top (filter #(= 1 (count (:path %))) rows)
+        bare (when (some #(bare-call? % (:arglists (meta v))) (calls forms f)) [{}])]
+    (coverage-gaps (concat bare (literal-option-maps forms f)) (map :key top) (short-enums schema (map :key top))
+                   (into {} (keep #(when (some? (:default %)) [(:key %) (:default %)])) top))))
+
 (defn- chart-coverage-gaps
-  "[[coverage-gaps]] of chart `kind` on the page of resolved `forms`; a chart called without options counts as a bare
-  call (its defaults shown)."
+  "[[function-coverage-gaps]] of chart `kind` on the page of resolved `forms`: its own options."
   [forms kind]
-  (let [chart (@((describe/chart-constructors) kind))
-        own (filter #(= 1 (count (:path %))) (describe/own-rows (describe/options chart)))
-        ctor (symbol "cljplot2.chart" (name kind))
-        bare (when (some #(= 1 (count %)) (calls forms ctor)) [{}])]
-    (coverage-gaps (concat bare (literal-option-maps forms kind)) (map :key own) (short-enums chart)
-                   (into {} (keep #(when (some? (:default %)) [(:key %) (:default %)])) own))))
+  (let [v ((describe/chart-constructors) kind)
+        chart (@v)]
+    (function-coverage-gaps forms (symbol v) v (get-in chart [:schema :options])
+                            (describe/own-rows (describe/options chart)))))
 
 (deftest chart-coverage-test
   (let [forms (notebook-forms)]
@@ -421,7 +483,69 @@
   (testing "boundary: no maps; no options; no enums"
     (is (= {:options [:a] :values [[:e :x]]} (coverage-gaps [] [:a] {:e [:x]} {})))
     (is (= {:options [] :values []} (coverage-gaps [{:a 1}] [] {} {}))))
+  (testing "bare calls: fewer arguments than the longest arity and no option map"
+    (is (bare-call? '(f data) '([data] [data options])))
+    (is (not (bare-call? '(f data {:a 1}) '([data] [data options]))))
+    (is (not (bare-call? '(f data opts) '([data] [data options]))) "options in a symbol: unknown, not bare")
+    (is (not (bare-call? '(f data) '([data]))) "a function without options"))
   (testing "enum values: plain, under :maybe and :or; none"
     (is (= [:a :b] (enum-values [:enum :a :b])))
     (is (= [:a] (enum-values [:maybe [:or [:enum :a] :int]])))
     (is (nil? (enum-values :int)))))
+
+(defn- api-heading
+  "Page heading text of user-facing function `f` (a qualified symbol): its namespace's last segment and name
+  (`graph/layout`, `tree/layout`)."
+  [f]
+  (str (last (str/split (namespace f) #"\.")) "/" (name f)))
+
+(defn- heading?
+  "Does the notebook `page` have a `;; ## text` heading?"
+  [page text]
+  (boolean (re-find (re-pattern (str "(?m)^;; ## " (java.util.regex.Pattern/quote text) "$"))
+                    (slurp (str "notebooks/reference/" page ".clj")))))
+
+(deftest builder-pages-test
+  (let [forms (notebook-forms)]
+    (testing "every builder of cljplot2.core with options has a page (arrange, pairs: Facets and multiplots)"
+      (is (= (set (for [[sym v] (ns-publics 'cljplot2.core) :when (:cljplot2/options (meta v))] sym))
+             (into #{'arrange 'pairs} (mapcat val builder-chapters)))))
+    (doseq [[page builders] builder-chapters
+            :let [{:keys [tables groups]} (page-tables (get forms page))]
+            b builders
+            :let [v (ns-resolve 'cljplot2.core b)
+                  rows (describe/options v)
+                  own (describe/own-rows rows)
+                  f (symbol "cljplot2.core" (name b))]]
+      (testing (str page " " b ": a heading, its own options, its shared groups, called; every own option shown")
+        (is (heading? page (name b)))
+        (when (seq own) (is (tables (row-keys own))))
+        (when (seq (describe/fragment-keys rows)) (is (groups (row-keys rows))))
+        (is (seq (calls (get forms page) f)))
+        (is (= {:options [] :values []}
+               (function-coverage-gaps (get forms page) f v (:cljplot2/options (meta v)) own)))))))
+
+(deftest data-pages-test
+  (let [forms (notebook-forms)]
+    (testing "every user-facing function on one page"
+      (is (= (set (map symbol (describe/api-vars))) (set (mapcat val data-chapters))))
+      (is (apply distinct? (mapcat val data-chapters))))
+    (doseq [[page fs] data-chapters
+            :let [{:keys [tables]} (page-tables (get forms page))]
+            f fs
+            :let [v (resolve f)
+                  rows (describe/options v)]]
+      (testing (str page " " f ": a heading, its options table, called; every option shown")
+        (is (heading? page (api-heading f)) (api-heading f))
+        (when (seq rows) (is (tables (row-keys rows))))
+        (is (seq (calls (get forms page) f)))
+        (when (seq rows)
+          (is (= {:options [] :values []}
+                 (function-coverage-gaps (get forms page) f v (:cljplot2/options (meta v)) rows))))))))
+
+(deftest specific-cases-test
+  (let [forms (get (notebook-forms) "specific_cases")
+        called (set (keep #(when (and (seq? %) (symbol? (first %)) (namespace (first %))) (symbol (namespace (first %))))
+                          (tree-seq coll? seq forms)))]
+    (testing "every internal namespace shown (K19) is called on the page"
+      (is (= #{} (into (sorted-set) (remove called) specific-cases-namespaces))))))

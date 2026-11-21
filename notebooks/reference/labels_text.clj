@@ -8,6 +8,7 @@
             [cljplot2.content.label :as label]
             [cljplot2.core :as plot]
             [cljplot2.describe :as describe]
+            [cljplot2.graphics.font :as font]
             [cljplot2.layout.plot-grid :as plot-grid]
             [notebook-utils :as nu]))
 
@@ -77,4 +78,26 @@
                              (chart/text {:x [:panel 0.02] :y [:panel 0.95] :text "literal text in panel units"
                                           :anchor [:left :middle] :font-style :italic})]
                     :legend false}
+                   {:width 600 :height 350})
+
+;; ## font/resolve-font
+
+;; A text style's `:font` is a family name or a `java.awt.Font`; `resolve-font` turns a name, a style (`:plain`,
+;; `:bold`, `:italic`, `:bold-italic`) and a size in points into the `java.awt.Font` drawn. Bundled families
+;; (`"DejaVu Sans Mono"` - the default theme's font, `"Noto Emoji"`) win over installed ones, so plots render alike on
+;; every platform; installed and logical families (`"Serif"`, `"SansSerif"` ...) work too, an unknown name throws
+;; `{:key :font}`. It takes no options map.
+
+(font/resolve-font "DejaVu Sans Mono" :bold 14)
+
+(font/resolve-font "Serif" :italic 12)
+
+;; A resolved font (here a bundled bold face) in a label, and a logical family by name for the axis titles:
+
+(plot/render-image {:data iris
+                    :mapping {:x :sepal-length :y :sepal-width :color :species}
+                    :charts [(chart/scatter)]
+                    :labels {:title {:text "Iris sepals" :font (font/resolve-font "DejaVu Sans Mono" :bold 18)}
+                             :x {:text "sepal length [cm]" :font "Serif"}
+                             :y {:text "sepal width [cm]" :font "Serif" :font-style :italic}}}
                    {:width 600 :height 350})
