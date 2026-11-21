@@ -86,3 +86,12 @@
                                                            :charts [(chart/scatter)] :scales {:color {:integer-ticks true}}})))))
     (is (map? (plot/build {:data [{:x 1 :y 1 :c (java.time.LocalDate/of 2024 1 1)}] :mapping {:x :x :y :y :color :c}
                            :charts [(chart/scatter)] :scales {:color {:integer-ticks false}}})))))
+
+(deftest integer-ticks-colorbar-boundary-test
+  (let [bar (fn [spec extent] (:ticks (#'legend/colorbar-content
+                                       (aesthetic/scale-spec :color spec extent false (:palette theme/default-theme)) [:v])))]
+    (testing "an explicit :midpoint tick is drawn as given, among the whole ticks"
+      (is (= [2.0 2.5 3.0] (bar {:integer-ticks true :midpoint 2.5} {:kind :numeric :min 2.0 :max 3.0}))))
+    (testing "a log colour bar keeps its whole powers of ten - one on [0.01 1]; several on [1 1000]"
+      (is (= [1.0] (bar {:integer-ticks true :transform :log} {:kind :numeric :min 0.01 :max 1.0})))
+      (is (every? #(== % (Math/floor %)) (bar {:integer-ticks true :transform :log} {:kind :numeric :min 1.0 :max 1000.0}))))))

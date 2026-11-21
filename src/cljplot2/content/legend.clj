@@ -124,7 +124,7 @@
 (defn- colorbar-content
   "Color bar of the linear or binned color scale `spec` mapped with `accessors` (title rule as legends). Ticks:
   linear - nice ticks of the domain (at least two; scale `:ticks` a count of them; whole numbers with `:integer-ticks`,
-  see [[cljplot2.scale.aesthetic/integer-ticks]]), labelled as axis ticks, and the
+  see [[cljplot2.scale.aesthetic/integer-ticks]] - a log bar may keep one), labelled as axis ticks, and the
   `:midpoint` (see [[with-midpoint-tick]]; labelled by `:formatter` or [[cljplot2.data.levels/break-labels]]) - or
   an explicit `:ticks` vector exactly as given (see [[cljplot2.scale.aesthetic/explicit-ticks]], no added midpoint);
   binned - the inner breaks, labelled by `:formatter` or [[cljplot2.data.levels/break-labels]]; a linear scale over

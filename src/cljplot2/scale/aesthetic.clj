@@ -45,7 +45,8 @@
   * `:ticks` - linear `:size` / `:color`: the legend's entries or color bar ticks - a count (nice ticks), or the
     values themselves (see [[explicit-ticks]]; drawn as given - no added `:midpoint` tick)
   * `:integer-ticks true` - linear `:size` / `:color`: counted ticks only at whole numbers (see [[integer-ticks]]),
-    e.g. for counts or degrees; an explicit `:ticks` vector is drawn as given
+    e.g. for counts or degrees; an explicit `:ticks` vector and a `:midpoint` tick are drawn as given; a log colour
+    bar keeps only its whole powers of ten (one tick on a domain like [0.01 1])
   * `:formatter` - legend labels (function); `:title` - legend title (`nil` - no title); `:legend` - `false` hides it
   * dates - `:color` mapped to `java.time` values gets a `:linear` scale over time, as numbers do (domain in epoch
     milliseconds, see [[cljplot2.data.rows/x-key]]; an explicit `:domain` of two dates; color bar ticks are dates);
@@ -297,7 +298,7 @@
           (schema/optional :formatter {:cljplot2/section :legend :description "legend labels, a function of the level or value"} schema/function)
           (schema/nilable :ticks {:cljplot2/section :legend :description "linear :size / :color: the legend entries or colour bar ticks - a count or the values (dates for a :color scale over dates)"}
                           [:multi {:dispatch sequential?} [true [:sequential [:or schema/finite schema/temporal]]] [false schema/pos-int]])
-          (schema/optional :integer-ticks {:cljplot2/section :legend :description "linear :size / :color: counted legend entries or colour bar ticks only at whole numbers (an explicit :ticks vector is drawn as given)" :default false}
+          (schema/optional :integer-ticks {:cljplot2/section :legend :description "linear :size / :color: counted legend entries or colour bar ticks only at whole numbers (an explicit :ticks vector or :midpoint tick is drawn as given)" :default false}
                            schema/bool)
           (schema/nilable :title {:cljplot2/section :legend :description "legend title (nil - none)" :cljplot2/default-doc "the mapped column's name"}
                           string?)
@@ -714,8 +715,9 @@
                     (let [[lo hi] (:domain spec)
                           lo (double lo) hi (double hi)]
                       (let [explicit (:ticks spec)
+                            n (if (integer? explicit) explicit size-legend-ticks)
                             ws (s/scale :linear (cond-> {:domain (if (== lo hi) [lo (inc lo)] [lo hi])
-                                                         :ticks (if (integer? explicit) explicit size-legend-ticks)}
+                                                         :ticks n}
                                                   (:formatter spec) (assoc :formatter (:formatter spec))))
                             in-domain #(<= lo (double %) hi)
                             ticks (cond
@@ -723,7 +725,7 @@
                                     (== lo hi) [lo]
                                     :else (cond-> (filterv in-domain (s/ticks ws))
                                             (:integer-ticks spec)
-                                            (integer-ticks lo hi (if (integer? explicit) explicit size-legend-ticks))))]
+                                            (integer-ticks lo hi n)))]
                         (mapv (fn [t l] {:label l :value t}) ticks
                               (scale/tick-labels ws {:kind :linear :formatter (:formatter spec)} ticks)))))]
       (cond-> entries (:na? spec) (conj {:label "NA" :value nil})))))
