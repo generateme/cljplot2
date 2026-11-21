@@ -6,8 +6,8 @@
   Finalized scales in `env` `:scales` are panel-local (range `[0 w]` horizontal / `[h 0]` vertical): grid lines (theme
   `[:panel :grid]`, `:bands` for bands scales) and charts (`env` `:charts`, `:stats`) are drawn translated to the panel's top-left corner,
   between the fill and the border; each chart with isolated graphics, it and the cartesian grid and band fills
-  clipped to the exact panel box (a fractional last pixel kept; a grid line at a tick on the panel's edge falls
-  outside) - polar guides stay inside the circle unclipped. `{:kind :panel
+  clipped to the panel box (whole pixels from the layout; a grid line at a tick on the panel's edge falls outside) -
+  polar guides stay inside the circle unclipped. `{:kind :panel
   :panel k}` draws the charts' data of split group `k` (default `:panel`) and of charts drawn in all panels;
   several panel items with the same key draw the same data.
   `{:kind :panel :margin side}` - a plot margin's panel: its charts, stats and scales come from `env`
@@ -34,9 +34,9 @@
 (defmethod measure/natural-size :panel [_ _] (v/vec2 0.0 0.0))
 
 (defn- call-clipped-to-panel
-  "Calls `f` with an isolated copy of canvas `c` clipped to the exact `w` x `h` panel box at the origin (fractional
-  sizes kept: the partly covered last pixel column / row is drawn) - charts and the cartesian grid stay inside the
-  panel (a grid line at a tick on the panel's edge would fall beside it)."
+  "Calls `f` with an isolated copy of canvas `c` clipped to the `w` x `h` panel box at the origin (whole pixels from
+  the layout; the box as given, no rounding, should a size ever be fractional) - charts and the cartesian grid stay
+  inside the panel (a grid line at a tick on the panel's edge would fall beside it)."
   [c w h f]
   (canvas/call-with-isolated-graphics
    c (fn [c'] (.clip ^Graphics2D (:graphics c') (Rectangle2D$Double. 0.0 0.0 (double w) (double h)))

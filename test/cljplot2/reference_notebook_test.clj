@@ -11,6 +11,7 @@
             [clojure.test :refer [deftest testing is]]
             [clojure.walk :as walk]
             [malli.core :as malli]
+            [notebook-utils :as nu]
             [cljplot2.content.label]
             [cljplot2.core]
             [cljplot2.data.facet]
@@ -261,7 +262,7 @@
   "Is `v` data a page shows - rows (a non-empty sequence of maps) or columns (a map of equal-length non-empty
   sequences)?"
   [v]
-  (or (and (sequential? v) (seq v) (every? map? (take 20 v)))
+  (or (and (sequential? v) (seq v) (every? map? (take nu/data-table-rows v)))
       (and (map? v) (seq v) (every? sequential? (vals v)) (pos? (count (first (vals v))))
            (apply = (map count (vals v))))))
 

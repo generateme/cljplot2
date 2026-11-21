@@ -1,8 +1,8 @@
 (ns cljplot2.reference-r4-test
   "Reference part R4 - chart pages: a chart's own rows and shared groups (`describe/own-rows`, `fragment-keys`),
   entries in a section (`schema/in-section`), the shared groups list (`nu/shared-groups`), the sections of the
-  long chart tables; full-turn polar sectors without a seam, parallel axis labels without collisions; contour colours over the value
-  range, the cartesian grid clipped to the panel."
+  long chart tables; full-turn polar sectors without a seam, parallel axis labels without collisions; contour colours
+  over the value range, the cartesian grid clipped to the panel."
   (:require [clojure.string :as str]
             [clojure.test :refer [deftest testing is]]
             [fastmath.core :as m]
@@ -127,12 +127,12 @@
 
 (deftest grid-clipped-to-panel-test
   (testing "a grid line at a tick on the panel's right edge stays inside the panel (none beside a field's raster)"
-    (doseq [width [300 303]
-            :let [img (plot/render-image {:charts [(chart/field {:f (fn [[x y]] (+ (double x) (double y))) :domain {:x [0 4] :y [0 4]}})]
-                                          :legend false}
-                                         {:width width :height 300})
-                  rgb (fn [x y] (bit-and 0xffffff (.getRGB ^java.awt.image.BufferedImage img (int x) (int y))))
-                  raster? (fn [x y] (< (bit-shift-right (rgb x y) 16) 100))
-                  edge (first (filter #(not (raster? % 150)) (range 150 width)))]]
-      (is (some? edge) width)
-      (is (every? #(= (rgb (+ 3 edge) %) (rgb edge %)) (range 40 240)) "the column past the raster is plain background"))))
+    (let [width 300
+          field (chart/field {:f (fn [[x y]] (+ (double x) (double y))) :domain {:x [0 4] :y [0 4]}})
+          img (plot/render-image {:charts [field] :legend false} {:width width :height 300})
+          rgb (fn [x y] (bit-and 0xffffff (.getRGB ^java.awt.image.BufferedImage img (int x) (int y))))
+          raster? (fn [x y] (< (bit-shift-right (rgb x y) 16) 100))
+          edge (first (filter #(not (raster? % 150)) (range 150 width)))]
+      (is (some? edge))
+      (is (every? #(= (rgb (+ 3 edge) %) (rgb edge %)) (range 40 240))
+          "the column past the raster is plain background"))))

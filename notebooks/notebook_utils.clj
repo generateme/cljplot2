@@ -269,8 +269,9 @@
 
 ;; data tables
 
-(def ^:private data-table-rows
-  "The most rows [[data-table]] shows (its box scrolls past a few)."
+(def data-table-rows
+  "The most rows [[data-table]] shows (its box scrolls past a few); also the rows checked to tell rows from other
+  values."
   100)
 
 (def ^:private truncation-mark
