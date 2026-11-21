@@ -466,7 +466,8 @@
 
 (defn leaf-key
   "The value edges name `node` (a leaf) by: its `:id` ([[from-parents]] trees), else its `:name` ([[from-levels]],
-  [[from-hclust]] leaves have no id)."
+  [[from-hclust]] leaves have no id). Used by edge bundling ([[bundle-paths]], `plot/bundle`); not part of the
+  documented API (no `:cljplot2/api`)."
   [node]
   (if (contains? node :id) (:id node) (:name node)))
 

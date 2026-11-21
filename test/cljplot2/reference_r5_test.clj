@@ -1,9 +1,14 @@
 (ns cljplot2.reference-r5-test
-  "Reference part R5 - leaf keys of edge bundling (`tree/leaf-key`: a from-parents id, else the leaf name) and
-  `plot/bundle` failing when no edge joins two leaves."
+  "Reference part R5 - leaf keys of edge bundling (`tree/leaf-key`: a from-parents id, else the leaf name),
+  `plot/bundle` failing when no edge joins two leaves; aesthetic scale `:integer-ticks` (whole legend entries and colour
+  bar ticks)."
   (:require [clojure.test :refer [deftest testing is]]
             [fastmath.ml.clustering :as cl]
+            [cljplot2.chart :as chart]
+            [cljplot2.content.legend :as legend]
             [cljplot2.core :as plot]
+            [cljplot2.scale.aesthetic :as aesthetic]
+            [cljplot2.theme :as theme]
             [cljplot2.data.tree :as tree]
             [cljplot2.test-util :refer [error-data]]))
 
@@ -46,3 +51,38 @@
   (testing "boundary: some edges kept - a plot; no edges at all - a plot of the leaves"
     (is (map? (plot/bundle [{:from "Oslo" :to "Rome"} {:from "Warsaw" :to "Tokyo"}] level-tree {})))
     (is (map? (plot/bundle [] level-tree {})))))
+
+(deftest integer-ticks-test
+  (testing "the whole ticks; fewer than two - the whole numbers of the domain (at most n)"
+    (is (= [0.0 2.0 4.0] (aesthetic/integer-ticks [0.0 1.5 2.0 3.5 4.0] 0 4 5)))
+    (is (= [2.0 3.0] (aesthetic/integer-ticks [2.0 2.2 2.4 2.6 2.8 3.0] 2 3 5)) "two whole ticks kept")
+    (is (= [3.0 4.0 5.0] (aesthetic/integer-ticks [3.0 3.5 4.0 4.5 5.0] 3 5 5))))
+  (testing "boundary: a domain within one gap - no whole number, ticks as they are; one whole number; negatives; more
+            whole numbers than n - the whole ticks found"
+    (is (= [0.2 0.4 0.6] (aesthetic/integer-ticks [0.2 0.4 0.6] 0.1 0.7 5)))
+    (is (= [1.0] (aesthetic/integer-ticks [0.8 1.2] 0.7 1.3 5)))
+    (is (= [-2.0 -1.0 0.0] (aesthetic/integer-ticks [-2.0 -1.5 -1.0 -0.5 0.0] -2 0 5)))
+    (is (= [10.0] (aesthetic/integer-ticks [9.5 10.0 10.5] 2.5 17.5 5)))
+    (is (= [] (aesthetic/integer-ticks [] 0.1 0.2 5)))))
+
+(defn- size-spec [extra]
+  (aesthetic/scale-spec :size (merge {} extra) {:kind :numeric :min 2.0 :max 3.0} false (:palette theme/default-theme)))
+
+(deftest integer-ticks-legends-test
+  (testing "a size legend: counted entries fractional, whole with :integer-ticks; an explicit :ticks vector as given"
+    (is (< 2 (count (aesthetic/legend-entries :size (size-spec {})))))
+    (is (= [2.0 3.0] (mapv :value (aesthetic/legend-entries :size (size-spec {:integer-ticks true})))))
+    (is (= ["2" "3"] (mapv :label (aesthetic/legend-entries :size (size-spec {:integer-ticks true})))))
+    (is (= [2.5] (mapv :value (aesthetic/legend-entries :size (size-spec {:integer-ticks true :ticks [2.5]}))))))
+  (testing "a colour bar: whole ticks with :integer-ticks"
+    (let [spec (aesthetic/scale-spec :color {:integer-ticks true} {:kind :numeric :min 0.0 :max 1.0} false (:palette theme/default-theme))]
+      (is (= [0.0 1.0] (:ticks (#'legend/colorbar-content spec [:vs]))))))
+  (testing "boundary: other kinds and dimensions, dates - errors keyed :integer-ticks; false is fine everywhere"
+    (is (= :integer-ticks (:key (error-data #(plot/build {:data [{:x 1 :y 1 :s "a"}] :mapping {:x :x :y :y :shape :s}
+                                                           :charts [(chart/scatter)] :scales {:shape {:integer-ticks true}}})))))
+    (is (= :integer-ticks (:key (error-data #(plot/build {:data [{:x 1 :y 1 :c (java.time.LocalDate/of 2024 1 1)}
+                                                                  {:x 2 :y 2 :c (java.time.LocalDate/of 2024 2 1)}]
+                                                           :mapping {:x :x :y :y :color :c}
+                                                           :charts [(chart/scatter)] :scales {:color {:integer-ticks true}}})))))
+    (is (map? (plot/build {:data [{:x 1 :y 1 :c (java.time.LocalDate/of 2024 1 1)}] :mapping {:x :x :y :y :color :c}
+                           :charts [(chart/scatter)] :scales {:color {:integer-ticks false}}})))))

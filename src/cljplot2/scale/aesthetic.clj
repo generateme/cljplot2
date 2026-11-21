@@ -44,10 +44,12 @@
     area is proportional to the value (ggplot `scale_size_area`)
   * `:ticks` - linear `:size` / `:color`: the legend's entries or color bar ticks - a count (nice ticks), or the
     values themselves (see [[explicit-ticks]]; drawn as given - no added `:midpoint` tick)
+  * `:integer-ticks true` - linear `:size` / `:color`: counted ticks only at whole numbers (see [[integer-ticks]]),
+    e.g. for counts or degrees; an explicit `:ticks` vector is drawn as given
   * `:formatter` - legend labels (function); `:title` - legend title (`nil` - no title); `:legend` - `false` hides it
   * dates - `:color` mapped to `java.time` values gets a `:linear` scale over time, as numbers do (domain in epoch
     milliseconds, see [[cljplot2.data.rows/x-key]]; an explicit `:domain` of two dates; color bar ticks are dates);
-    `:midpoint`, `:transform` and `:binned` need numbers
+    `:midpoint`, `:transform`, `:integer-ticks` and `:binned` need numbers
 
   [[scale-spec]] gives plain data (with `:na?` - the scale has an NA level); it is also the finalized scale: no
   pixel range, `nice` or padding. [[attribute-fn]] maps data values to style attributes: NA (`nil`) to the NA
@@ -217,9 +219,9 @@
 
 (defn- option-problems
   "`[[key message] ...]` - options of aesthetic `k`'s scale `spec` that its `kind` doesn't allow or that contradict
-  each other (a level map `:range`, `:spread`, `:midpoint`, `:reverse`, `:area`, `:bins`, `:ticks`, identity's
-  `:domain` / `:range`)."
-  [k kind {:keys [range spread midpoint reverse area bins domain transform ticks] :as spec}]
+  each other (a level map `:range`, `:spread`, `:midpoint`, `:reverse`, `:area`, `:bins`, `:ticks`,
+  `:integer-ticks`, identity's `:domain` / `:range`)."
+  [k kind {:keys [range spread midpoint reverse area bins domain transform ticks integer-ticks] :as spec}]
   (let [level-map? (map? range)
         bins-domain (when (and (vector? bins) (>= (count bins) 2)) [(double (first bins)) (double (peek bins))])]
     (cond-> []
@@ -244,6 +246,8 @@
       (and (some? bins) (not= kind :binned)) (conj [:bins ":bins needs :kind :binned"])
       (and (some? ticks) (or (not (#{:color :size} k)) (not= kind :linear)))
       (conj [:ticks ":ticks needs a linear :size or :color scale (its legend entries or color bar ticks)"])
+      (and integer-ticks (or (not (#{:color :size} k)) (not= kind :linear)))
+      (conj [:integer-ticks ":integer-ticks needs a linear :size or :color scale (its legend entries or color bar ticks)"])
       (and (= kind :binned) bins-domain (sequential? domain) (= 2 (count domain))
            (not= bins-domain (mapv double domain)))
       (conj [:bins "breaks should span the explicit :domain (first and last break = its ends)"]))))
@@ -293,11 +297,13 @@
           (schema/optional :formatter {:cljplot2/section :legend :description "legend labels, a function of the level or value"} schema/function)
           (schema/nilable :ticks {:cljplot2/section :legend :description "linear :size / :color: the legend entries or colour bar ticks - a count or the values (dates for a :color scale over dates)"}
                           [:multi {:dispatch sequential?} [true [:sequential [:or schema/finite schema/temporal]]] [false schema/pos-int]])
+          (schema/optional :integer-ticks {:cljplot2/section :legend :description "linear :size / :color: counted legend entries or colour bar ticks only at whole numbers (an explicit :ticks vector is drawn as given)" :default false}
+                           schema/bool)
           (schema/nilable :title {:cljplot2/section :legend :description "legend title (nil - none)" :cljplot2/default-doc "the mapped column's name"}
                           string?)
           (schema/nilable :legend {:cljplot2/section :legend :description "show the scale's legend" :default true} schema/bool)]
          [#(domain-problem k %) [:domain]]
-         (map #(option-rule k %) [:kind :domain :range :spread :midpoint :transform :reverse :area :bins :ticks])))
+         (map #(option-rule k %) [:kind :domain :range :spread :midpoint :transform :reverse :area :bins :ticks :integer-ticks])))
 
 (defn- resolve-range
   "Concrete range of dimension `k` from the (validated) range value `r`: a level map or a function as given, the
@@ -509,7 +515,7 @@
   Returns `{:kind :domain :range :na?}` (identity: no `:domain` / `:range`; binned: also `:breaks`, the domain being
   their ends; a linear scale over dates: the domain in epoch milliseconds and `:temporal-sample` - a date of the
   data's type, for the color bar's labels) plus the spec's `:spread`, `:midpoint`, `:reverse`, `:area`,
-  `:formatter`, `:ticks`, `:title`, `:legend` when given."
+  `:formatter`, `:ticks`, `:integer-ticks`, `:title`, `:legend` when given."
   [k spec extent na? palette]
   (let [explicit (:domain spec)]
     (when (or explicit extent)
@@ -522,7 +528,8 @@
                   (schema/fail! (str ":ticks of a scale over " (if temporal? "dates should be dates" "numbers should be numbers") ".")
                                 {:key :ticks :in [:scales k :ticks] :value ticks})))
             _ (when temporal?
-                (when-let [key (some #(when (some? (get spec %)) %) [:midpoint :transform])]
+                (when-let [key (some #(let [v (get spec %)] (when (and (some? v) (not (false? v))) %))
+                                     [:midpoint :transform :integer-ticks])]
                   (schema/fail! (str key " needs numeric data, not dates.") {:key key :in [:scales k key] :value (get spec key)}))
                 (when (= :binned kind)
                   (schema/fail! "A :binned aesthetic scale needs numeric data, not dates." {:key :kind :in [:scales k :kind]})))
@@ -553,6 +560,7 @@
           (:area spec) (assoc :area true)
           (contains? spec :formatter) (assoc :formatter (:formatter spec))
           (some? (:ticks spec)) (assoc :ticks (:ticks spec))
+          (:integer-ticks spec) (assoc :integer-ticks true)
           (contains? spec :title) (assoc :title (:title spec))
           (contains? spec :legend) (assoc :legend (:legend spec)))))))
 
@@ -677,11 +685,26 @@
          vals
          vec)))
 
+(defn integer-ticks
+  "Counted ticks `ticks` (inside `[lo hi]`) of a scale with `:integer-ticks`: the whole numbers among them; when fewer
+  than two are whole, the whole numbers of `[lo hi]` if there are one to `n` of them; else `ticks` as they are (no
+  whole number in the domain to show, or more than `n` - the whole ticks found, if any)."
+  [ticks lo hi n]
+  (let [lo (double lo) hi (double hi) n (long n)
+        whole (filterv #(== (double %) (m/floor (double %))) ticks)
+        in-range (mapv double (range (long (m/ceil lo)) (inc (long (m/floor hi)))))]
+    (cond
+      (<= 2 (count whole)) whole
+      (<= 1 (count in-range) (max n 2)) in-range
+      (seq whole) whole
+      :else ticks)))
+
 (defn legend-entries
   "Legend entries `[{:label :value}]` of scale `spec` of dimension `k` (`:value nil` - the NA entry, last), or `nil`
   when it has no legend: `:legend false`, an identity scale, or linear / binned color (a color bar instead).
   Ordinal: one per level (`(str level)` or `:formatter`); linear size: ticks of the domain (labels as axis ticks) -
-  `:ticks` a count (default 5) or the values themselves (see [[explicit-ticks]])."
+  `:ticks` a count (default 5) or the values themselves (see [[explicit-ticks]]); counted ticks at whole numbers with
+  `:integer-ticks` (see [[integer-ticks]])."
   [k spec]
   (when-not (or (false? (:legend spec)) (= :identity (:kind spec))
                 (and (= k :color) (#{:linear :binned} (:kind spec))))
@@ -698,7 +721,9 @@
                             ticks (cond
                                     (sequential? explicit) (explicit-ticks explicit lo hi)
                                     (== lo hi) [lo]
-                                    :else (filterv in-domain (s/ticks ws)))]
+                                    :else (cond-> (filterv in-domain (s/ticks ws))
+                                            (:integer-ticks spec)
+                                            (integer-ticks lo hi (if (integer? explicit) explicit size-legend-ticks))))]
                         (mapv (fn [t l] {:label l :value t}) ticks
                               (scale/tick-labels ws {:kind :linear :formatter (:formatter spec)} ticks)))))]
       (cond-> entries (:na? spec) (conj {:label "NA" :value nil})))))

@@ -123,7 +123,8 @@
 
 (defn- colorbar-content
   "Color bar of the linear or binned color scale `spec` mapped with `accessors` (title rule as legends). Ticks:
-  linear - nice ticks of the domain (at least two; scale `:ticks` a count of them), labelled as axis ticks, and the
+  linear - nice ticks of the domain (at least two; scale `:ticks` a count of them; whole numbers with `:integer-ticks`,
+  see [[cljplot2.scale.aesthetic/integer-ticks]]), labelled as axis ticks, and the
   `:midpoint` (see [[with-midpoint-tick]]; labelled by `:formatter` or [[cljplot2.data.levels/break-labels]]) - or
   an explicit `:ticks` vector exactly as given (see [[cljplot2.scale.aesthetic/explicit-ticks]], no added midpoint);
   binned - the inner breaks, labelled by `:formatter` or [[cljplot2.data.levels/break-labels]]; a linear scale over
@@ -144,7 +145,9 @@
                                   (sequential? explicit) {:scale (scale-of colorbar-ticks)
                                                           :ticks (aesthetic/explicit-ticks explicit lo hi)}
                                   (== lo hi) {:scale (scale-of colorbar-ticks)}
-                                  :else (position/ticks-inside scale-of (or explicit colorbar-ticks) in-domain))
+                                  :else (cond-> (position/ticks-inside scale-of (or explicit colorbar-ticks) in-domain)
+                                          (:integer-ticks spec)
+                                          (update :ticks aesthetic/integer-ticks lo hi (or explicit colorbar-ticks))))
         axis-labels (fn [ts] (position/tick-labels ws {:kind :linear :formatter formatter} ts))
         pairs (cond
                 (:temporal-sample spec) (date-colorbar-pairs spec lo hi)

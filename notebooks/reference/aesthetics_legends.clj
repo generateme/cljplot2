@@ -184,7 +184,8 @@
 ;; ## Legend
 
 ;; One legend per mapped aesthetic, titled by the mapped column's name: `:title` renames it, `:formatter` writes its
-;; labels, `:ticks` picks the entries of a numeric scale, `:legend false` hides it (the plot's `:legend false` hides
+;; labels, `:ticks` picks the entries of a numeric scale (`:integer-ticks` keeps counted ones at whole numbers),
+;; `:legend false` hides it (the plot's `:legend false` hides
 ;; them all). Aesthetics mapped to the same column with equal levels share one legend. Legends sit right of the
 ;; panels; their sizes and frame are in the theme `:legend` section (Theme chapter).
 
@@ -207,6 +208,29 @@
                     :scales {:x {:kind :log :formatter :power}
                              :color {:ticks [45 55 65 75] :formatter #(str % " years") :title "life expectancy"}}}
                    {:width 600 :height 350})
+
+(nu/source-note {:dataset :mtcars})
+
+(def mtcars (nu/dataset :mtcars))
+
+(nu/data-table mtcars)
+
+;; Whole-number data over a short range - here 3 to 5 gears (size) and the 0 / 1 engine shape `vs` (colour) - gets
+;; fractional counted entries (left); `:integer-ticks true` keeps only whole ones, on a size legend and a colour bar
+;; alike (right):
+
+(plot/render-image (plot/arrange [{:data mtcars
+                                   :mapping {:x :wt :y :mpg :size :gear :color :vs}
+                                   :charts [(chart/scatter)]
+                                   :scales {:color {:range [[160 200 235] [8 48 107]]}}
+                                   :labels {:title "counted ticks"}}
+                                  {:data mtcars
+                                   :mapping {:x :wt :y :mpg :size :gear :color :vs}
+                                   :charts [(chart/scatter)]
+                                   :scales {:size {:integer-ticks true} :color {:integer-ticks true :range [[160 200 235] [8 48 107]]}}
+                                   :labels {:title ":integer-ticks true"}}]
+                                 {:columns 2})
+                   {:width 1000 :height 360})
 
 ;; ## Shape
 

@@ -492,8 +492,9 @@
 
 (defn bundle
   "Hierarchical edge bundling plot of `edges` (rows between leaves of `tree`, each leaf named by its `:id` in a
-  `from-parents` tree, else by its name; `:from` / `:to` accessors) as a plot map: leaves around a circle (the radial layout of the
-  tree), each edge a B-spline along the tree path between its leaves, straightened by `:beta` (default 0.85, see
+  `from-parents` tree, else by its name; `:from` / `:to` accessors) as a plot map: leaves around a circle (the radial
+  layout of the tree), each edge a B-spline along the tree path between its leaves, straightened by `:beta` (default
+  0.85, see
   [[cljplot2.data.tree/bundle-paths]]); edges coloured by the top-level group of their source leaf (`:color-by-group?`,
   default `true`; else `:edge-color`), with `:alpha` (default 0.4; the edges only - leaf points and legend keys stay
   opaque); leaf names outward around the circle

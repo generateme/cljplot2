@@ -52,12 +52,12 @@
 
 (nu/options-table (describe/own-rows (describe/options #'plot/network)))
 
-;; Node aesthetics from the node rows or the computed degree (whole numbers: integer legend ticks through the
-;; builder's `:scales`), labels beside the nodes:
+;; Node aesthetics from the node rows or the computed degree (whole numbers: `:integer-ticks` through the builder's
+;; `:scales`), labels beside the nodes:
 
 (plot/render-image (plot/network friends {:nodes people :rng (r/rng :mersenne 1)
                                           :mapping {:color :team :size :degree}
-                                          :scales {:size {:ticks [2 3]}}
+                                          :scales {:size {:integer-ticks true}}
                                           :labels true})
                    {:width 600 :height 400})
 
