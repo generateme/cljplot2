@@ -21,8 +21,15 @@
   "Weapon exports per country - the rows with a value."
   (filterv :value (nu/dataset :weapons)))
 
+(nu/data-table weapons)
+
 (def top-20 (vec (take 20 (sort-by :value > weapons))))
+
+(nu/data-table top-20)
+
 (def top-10 (vec (take 10 top-20)))
+
+(nu/data-table top-10)
 
 (defn- ascending
   "Countries of `rows` in increasing value - as the domain of horizontal bars the largest one ends on top."
@@ -35,8 +42,16 @@
   (reverse (sort-by :country rows)))
 
 (def iris (nu/dataset :iris))
+
+(nu/data-table iris)
+
 (def mtcars (nu/dataset :mtcars))
+
+(nu/data-table mtcars)
+
 (def diamonds (nu/dataset :diamonds))
+
+(nu/data-table diamonds)
 
 (def cuts ["Fair" "Good" "Very Good" "Premium" "Ideal"])
 (def clarities ["I1" "SI2" "SI1" "VS2" "VS1" "VVS2" "VVS1" "IF"])
@@ -258,6 +273,8 @@
            {:proposal (str "proposal " (inc i)) :answer answer :certainty certainty
             :answer-certainty (str answer ", " certainty) :people (long (* f share 12))}))))
 
+(nu/data-table votes)
+
 (nu/source-note {:source "R Graph Gallery - Barplot (back-to-back bars)"
                  :url "https://r-graph-gallery.com/barplot.html"})
 
@@ -341,6 +358,8 @@
                :let [v1 (+ 30 (r/irandom rng 50))]]
            {:team (str "team " (char (+ 65 i))) :season-1 v1 :season-2 (+ v1 -15 (r/irandom rng 35))}))))
 
+(nu/data-table scores)
+
 (nu/source-note {:source "R Graph Gallery - Lollipop chart with 2 values"
                  :url "https://r-graph-gallery.com/303-lollipop-plot-with-2-values.html"})
 
@@ -394,6 +413,8 @@
     (vec (for [shop ["North" "South" "East" "West" "Centre"] i (range 6)]
            {:shop shop :product (str shop " " (inc i)) :sales (+ 10 (r/irandom rng 90))}))))
 
+(nu/data-table products)
+
 (nu/source-note {:source "data-to-viz - Lollipop (subgroups)"
                  :url "https://www.data-to-viz.com/graph/lollipop.html"})
 
@@ -421,6 +442,8 @@
   (let [rng (r/rng :mersenne 12)]
     (vec (for [[g n] [["A" 6] ["B" 5] ["C" 7]] i (range n)]
            {:group g :item (str g (inc i)) :value (+ 10 (r/irandom rng 90))}))))
+
+(nu/data-table shop-groups)
 
 (nu/source-note {:source "R Graph Gallery - Basic circular barplot; Labels; Circular barplot with groups; data-to-viz - Circular barplot"
                  :url ["https://r-graph-gallery.com/295-basic-circular-barplot.html"
@@ -455,6 +478,8 @@
   (let [rng (r/rng :mersenne 23)]
     (vec (for [i (range 12) part ["x" "y" "z"]]
            {:item (str "item " (inc i)) :part part :value (+ 5 (r/irandom rng 30))}))))
+
+(nu/data-table parts)
 
 (nu/source-note {:source "R Graph Gallery - Circular stacked barplot"
                  :url "https://r-graph-gallery.com/299-circular-stacked-barplot.html"})
@@ -579,6 +604,8 @@
 
 (def car-variables [:mpg :hp :wt :qsec :drat :disp])
 (def four-cars (filterv #(#{"Mazda RX4" "Merc 240D" "Lotus Europa" "Cadillac Fleetwood"} (:model %)) mtcars))
+
+(nu/data-table four-cars)
 
 (def car-limits
   "Every variable's range over all 32 cars."

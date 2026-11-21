@@ -570,11 +570,325 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Weapon exports per country - the rows with a value."</span></span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  (<span class="kw">filterv</span> <span class="at">:value</span> (nu/dataset <span class="at">:weapons</span>)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
+<div class="data-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">country</th>
+<th data-quarto-table-cell-role="th">value</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>United States</td>
+<td>12394</td>
+</tr>
+<tr class="even">
+<td>Russia</td>
+<td>6148</td>
+</tr>
+<tr class="odd">
+<td>Germany (FRG)</td>
+<td>1653</td>
+</tr>
+<tr class="even">
+<td>France</td>
+<td>2162</td>
+</tr>
+<tr class="odd">
+<td>United Kingdom</td>
+<td>1214</td>
+</tr>
+<tr class="even">
+<td>China</td>
+<td>1131</td>
+</tr>
+<tr class="odd">
+<td>Netherlands</td>
+<td>1167</td>
+</tr>
+<tr class="even">
+<td>Italy</td>
+<td>660</td>
+</tr>
+<tr class="odd">
+<td>Israel</td>
+<td>1263</td>
+</tr>
+<tr class="even">
+<td>Ukraine</td>
+<td>240</td>
+</tr>
+<tr class="odd">
+<td>Spain</td>
+<td>814</td>
+</tr>
+<tr class="even">
+<td>Sweden</td>
+<td>83</td>
+</tr>
+<tr class="odd">
+<td>Switzerland</td>
+<td>186</td>
+</tr>
+<tr class="even">
+<td>Canada</td>
+<td>87</td>
+</tr>
+<tr class="odd">
+<td>South Korea</td>
+<td>587</td>
+</tr>
+<tr class="even">
+<td>Belarus</td>
+<td>23</td>
+</tr>
+<tr class="odd">
+<td>Norway</td>
+<td>134</td>
+</tr>
+<tr class="even">
+<td>Turkey</td>
+<td>244</td>
+</tr>
+<tr class="odd">
+<td>South Africa</td>
+<td>74</td>
+</tr>
+<tr class="even">
+<td>Czech Republic</td>
+<td>110</td>
+</tr>
+<tr class="odd">
+<td>Poland</td>
+<td>3</td>
+</tr>
+<tr class="even">
+<td>Belgium</td>
+<td>12</td>
+</tr>
+<tr class="odd">
+<td>Australia</td>
+<td>97</td>
+</tr>
+<tr class="even">
+<td>Brazil</td>
+<td>45</td>
+</tr>
+<tr class="odd">
+<td>Finland</td>
+<td>58</td>
+</tr>
+<tr class="even">
+<td>Japan</td>
+<td>2</td>
+</tr>
+<tr class="odd">
+<td>Slovakia</td>
+<td>22</td>
+</tr>
+<tr class="even">
+<td>Denmark</td>
+<td>12</td>
+</tr>
+<tr class="odd">
+<td>Austria</td>
+<td>22</td>
+</tr>
+<tr class="even">
+<td>Jordan</td>
+<td>77</td>
+</tr>
+<tr class="odd">
+<td>UAE</td>
+<td>72</td>
+</tr>
+<tr class="even">
+<td>Unknown supplier(s)</td>
+<td>7</td>
+</tr>
+<tr class="odd">
+<td>Indonesia</td>
+<td>102</td>
+</tr>
+<tr class="even">
+<td>Iran</td>
+<td>10</td>
+</tr>
+<tr class="odd">
+<td>Portugal</td>
+<td>56</td>
+</tr>
+<tr class="even">
+<td>India</td>
+<td>56</td>
+</tr>
+<tr class="odd">
+<td>Serbia</td>
+<td>2</td>
+</tr>
+<tr class="even">
+<td>Others</td>
+<td>77</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> top-20 </span>(<span class="kw">vec</span> (<span class="kw">take</span> <span class="dv">20</span> (<span class="kw">sort-by</span> <span class="at">:value</span> <span class="kw">&gt;</span> weapons))))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
+<div class="data-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">country</th>
+<th data-quarto-table-cell-role="th">value</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>United States</td>
+<td>12394</td>
+</tr>
+<tr class="even">
+<td>Russia</td>
+<td>6148</td>
+</tr>
+<tr class="odd">
+<td>France</td>
+<td>2162</td>
+</tr>
+<tr class="even">
+<td>Germany (FRG)</td>
+<td>1653</td>
+</tr>
+<tr class="odd">
+<td>Israel</td>
+<td>1263</td>
+</tr>
+<tr class="even">
+<td>United Kingdom</td>
+<td>1214</td>
+</tr>
+<tr class="odd">
+<td>Netherlands</td>
+<td>1167</td>
+</tr>
+<tr class="even">
+<td>China</td>
+<td>1131</td>
+</tr>
+<tr class="odd">
+<td>Spain</td>
+<td>814</td>
+</tr>
+<tr class="even">
+<td>Italy</td>
+<td>660</td>
+</tr>
+<tr class="odd">
+<td>South Korea</td>
+<td>587</td>
+</tr>
+<tr class="even">
+<td>Turkey</td>
+<td>244</td>
+</tr>
+<tr class="odd">
+<td>Ukraine</td>
+<td>240</td>
+</tr>
+<tr class="even">
+<td>Switzerland</td>
+<td>186</td>
+</tr>
+<tr class="odd">
+<td>Norway</td>
+<td>134</td>
+</tr>
+<tr class="even">
+<td>Czech Republic</td>
+<td>110</td>
+</tr>
+<tr class="odd">
+<td>Indonesia</td>
+<td>102</td>
+</tr>
+<tr class="even">
+<td>Australia</td>
+<td>97</td>
+</tr>
+<tr class="odd">
+<td>Canada</td>
+<td>87</td>
+</tr>
+<tr class="even">
+<td>Sweden</td>
+<td>83</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> top-10 </span>(<span class="kw">vec</span> (<span class="kw">take</span> <span class="dv">10</span> top<span class="dv">-20</span>)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="data-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">country</th>
+<th data-quarto-table-cell-role="th">value</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>United States</td>
+<td>12394</td>
+</tr>
+<tr class="even">
+<td>Russia</td>
+<td>6148</td>
+</tr>
+<tr class="odd">
+<td>France</td>
+<td>2162</td>
+</tr>
+<tr class="even">
+<td>Germany (FRG)</td>
+<td>1653</td>
+</tr>
+<tr class="odd">
+<td>Israel</td>
+<td>1263</td>
+</tr>
+<tr class="even">
+<td>United Kingdom</td>
+<td>1214</td>
+</tr>
+<tr class="odd">
+<td>Netherlands</td>
+<td>1167</td>
+</tr>
+<tr class="even">
+<td>China</td>
+<td>1131</td>
+</tr>
+<tr class="odd">
+<td>Spain</td>
+<td>814</td>
+</tr>
+<tr class="even">
+<td>Italy</td>
+<td>660</td>
+</tr>
+</tbody>
+</table>
+</div>
 </div>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">defn-</span><span class="fu"> ascending</span></span>
@@ -597,11 +911,2441 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> iris </span>(nu/dataset <span class="at">:iris</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
+<div class="data-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">sepal-length</th>
+<th data-quarto-table-cell-role="th">sepal-width</th>
+<th data-quarto-table-cell-role="th">petal-length</th>
+<th data-quarto-table-cell-role="th">petal-width</th>
+<th data-quarto-table-cell-role="th">species</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>5.1</td>
+<td>3.5</td>
+<td>1.4</td>
+<td>0.2</td>
+<td>setosa</td>
+</tr>
+<tr class="even">
+<td>4.9</td>
+<td>3</td>
+<td>1.4</td>
+<td>0.2</td>
+<td>setosa</td>
+</tr>
+<tr class="odd">
+<td>4.7</td>
+<td>3.2</td>
+<td>1.3</td>
+<td>0.2</td>
+<td>setosa</td>
+</tr>
+<tr class="even">
+<td>4.6</td>
+<td>3.1</td>
+<td>1.5</td>
+<td>0.2</td>
+<td>setosa</td>
+</tr>
+<tr class="odd">
+<td>5</td>
+<td>3.6</td>
+<td>1.4</td>
+<td>0.2</td>
+<td>setosa</td>
+</tr>
+<tr class="even">
+<td>5.4</td>
+<td>3.9</td>
+<td>1.7</td>
+<td>0.4</td>
+<td>setosa</td>
+</tr>
+<tr class="odd">
+<td>4.6</td>
+<td>3.4</td>
+<td>1.4</td>
+<td>0.3</td>
+<td>setosa</td>
+</tr>
+<tr class="even">
+<td>5</td>
+<td>3.4</td>
+<td>1.5</td>
+<td>0.2</td>
+<td>setosa</td>
+</tr>
+<tr class="odd">
+<td>4.4</td>
+<td>2.9</td>
+<td>1.4</td>
+<td>0.2</td>
+<td>setosa</td>
+</tr>
+<tr class="even">
+<td>4.9</td>
+<td>3.1</td>
+<td>1.5</td>
+<td>0.1</td>
+<td>setosa</td>
+</tr>
+<tr class="odd">
+<td>5.4</td>
+<td>3.7</td>
+<td>1.5</td>
+<td>0.2</td>
+<td>setosa</td>
+</tr>
+<tr class="even">
+<td>4.8</td>
+<td>3.4</td>
+<td>1.6</td>
+<td>0.2</td>
+<td>setosa</td>
+</tr>
+<tr class="odd">
+<td>4.8</td>
+<td>3</td>
+<td>1.4</td>
+<td>0.1</td>
+<td>setosa</td>
+</tr>
+<tr class="even">
+<td>4.3</td>
+<td>3</td>
+<td>1.1</td>
+<td>0.1</td>
+<td>setosa</td>
+</tr>
+<tr class="odd">
+<td>5.8</td>
+<td>4</td>
+<td>1.2</td>
+<td>0.2</td>
+<td>setosa</td>
+</tr>
+<tr class="even">
+<td>5.7</td>
+<td>4.4</td>
+<td>1.5</td>
+<td>0.4</td>
+<td>setosa</td>
+</tr>
+<tr class="odd">
+<td>5.4</td>
+<td>3.9</td>
+<td>1.3</td>
+<td>0.4</td>
+<td>setosa</td>
+</tr>
+<tr class="even">
+<td>5.1</td>
+<td>3.5</td>
+<td>1.4</td>
+<td>0.3</td>
+<td>setosa</td>
+</tr>
+<tr class="odd">
+<td>5.7</td>
+<td>3.8</td>
+<td>1.7</td>
+<td>0.3</td>
+<td>setosa</td>
+</tr>
+<tr class="even">
+<td>5.1</td>
+<td>3.8</td>
+<td>1.5</td>
+<td>0.3</td>
+<td>setosa</td>
+</tr>
+<tr class="odd">
+<td>5.4</td>
+<td>3.4</td>
+<td>1.7</td>
+<td>0.2</td>
+<td>setosa</td>
+</tr>
+<tr class="even">
+<td>5.1</td>
+<td>3.7</td>
+<td>1.5</td>
+<td>0.4</td>
+<td>setosa</td>
+</tr>
+<tr class="odd">
+<td>4.6</td>
+<td>3.6</td>
+<td>1</td>
+<td>0.2</td>
+<td>setosa</td>
+</tr>
+<tr class="even">
+<td>5.1</td>
+<td>3.3</td>
+<td>1.7</td>
+<td>0.5</td>
+<td>setosa</td>
+</tr>
+<tr class="odd">
+<td>4.8</td>
+<td>3.4</td>
+<td>1.9</td>
+<td>0.2</td>
+<td>setosa</td>
+</tr>
+<tr class="even">
+<td>5</td>
+<td>3</td>
+<td>1.6</td>
+<td>0.2</td>
+<td>setosa</td>
+</tr>
+<tr class="odd">
+<td>5</td>
+<td>3.4</td>
+<td>1.6</td>
+<td>0.4</td>
+<td>setosa</td>
+</tr>
+<tr class="even">
+<td>5.2</td>
+<td>3.5</td>
+<td>1.5</td>
+<td>0.2</td>
+<td>setosa</td>
+</tr>
+<tr class="odd">
+<td>5.2</td>
+<td>3.4</td>
+<td>1.4</td>
+<td>0.2</td>
+<td>setosa</td>
+</tr>
+<tr class="even">
+<td>4.7</td>
+<td>3.2</td>
+<td>1.6</td>
+<td>0.2</td>
+<td>setosa</td>
+</tr>
+<tr class="odd">
+<td>4.8</td>
+<td>3.1</td>
+<td>1.6</td>
+<td>0.2</td>
+<td>setosa</td>
+</tr>
+<tr class="even">
+<td>5.4</td>
+<td>3.4</td>
+<td>1.5</td>
+<td>0.4</td>
+<td>setosa</td>
+</tr>
+<tr class="odd">
+<td>5.2</td>
+<td>4.1</td>
+<td>1.5</td>
+<td>0.1</td>
+<td>setosa</td>
+</tr>
+<tr class="even">
+<td>5.5</td>
+<td>4.2</td>
+<td>1.4</td>
+<td>0.2</td>
+<td>setosa</td>
+</tr>
+<tr class="odd">
+<td>4.9</td>
+<td>3.1</td>
+<td>1.5</td>
+<td>0.2</td>
+<td>setosa</td>
+</tr>
+<tr class="even">
+<td>5</td>
+<td>3.2</td>
+<td>1.2</td>
+<td>0.2</td>
+<td>setosa</td>
+</tr>
+<tr class="odd">
+<td>5.5</td>
+<td>3.5</td>
+<td>1.3</td>
+<td>0.2</td>
+<td>setosa</td>
+</tr>
+<tr class="even">
+<td>4.9</td>
+<td>3.6</td>
+<td>1.4</td>
+<td>0.1</td>
+<td>setosa</td>
+</tr>
+<tr class="odd">
+<td>4.4</td>
+<td>3</td>
+<td>1.3</td>
+<td>0.2</td>
+<td>setosa</td>
+</tr>
+<tr class="even">
+<td>5.1</td>
+<td>3.4</td>
+<td>1.5</td>
+<td>0.2</td>
+<td>setosa</td>
+</tr>
+<tr class="odd">
+<td>5</td>
+<td>3.5</td>
+<td>1.3</td>
+<td>0.3</td>
+<td>setosa</td>
+</tr>
+<tr class="even">
+<td>4.5</td>
+<td>2.3</td>
+<td>1.3</td>
+<td>0.3</td>
+<td>setosa</td>
+</tr>
+<tr class="odd">
+<td>4.4</td>
+<td>3.2</td>
+<td>1.3</td>
+<td>0.2</td>
+<td>setosa</td>
+</tr>
+<tr class="even">
+<td>5</td>
+<td>3.5</td>
+<td>1.6</td>
+<td>0.6</td>
+<td>setosa</td>
+</tr>
+<tr class="odd">
+<td>5.1</td>
+<td>3.8</td>
+<td>1.9</td>
+<td>0.4</td>
+<td>setosa</td>
+</tr>
+<tr class="even">
+<td>4.8</td>
+<td>3</td>
+<td>1.4</td>
+<td>0.3</td>
+<td>setosa</td>
+</tr>
+<tr class="odd">
+<td>5.1</td>
+<td>3.8</td>
+<td>1.6</td>
+<td>0.2</td>
+<td>setosa</td>
+</tr>
+<tr class="even">
+<td>4.6</td>
+<td>3.2</td>
+<td>1.4</td>
+<td>0.2</td>
+<td>setosa</td>
+</tr>
+<tr class="odd">
+<td>5.3</td>
+<td>3.7</td>
+<td>1.5</td>
+<td>0.2</td>
+<td>setosa</td>
+</tr>
+<tr class="even">
+<td>5</td>
+<td>3.3</td>
+<td>1.4</td>
+<td>0.2</td>
+<td>setosa</td>
+</tr>
+<tr class="odd">
+<td>7</td>
+<td>3.2</td>
+<td>4.7</td>
+<td>1.4</td>
+<td>versicolor</td>
+</tr>
+<tr class="even">
+<td>6.4</td>
+<td>3.2</td>
+<td>4.5</td>
+<td>1.5</td>
+<td>versicolor</td>
+</tr>
+<tr class="odd">
+<td>6.9</td>
+<td>3.1</td>
+<td>4.9</td>
+<td>1.5</td>
+<td>versicolor</td>
+</tr>
+<tr class="even">
+<td>5.5</td>
+<td>2.3</td>
+<td>4</td>
+<td>1.3</td>
+<td>versicolor</td>
+</tr>
+<tr class="odd">
+<td>6.5</td>
+<td>2.8</td>
+<td>4.6</td>
+<td>1.5</td>
+<td>versicolor</td>
+</tr>
+<tr class="even">
+<td>5.7</td>
+<td>2.8</td>
+<td>4.5</td>
+<td>1.3</td>
+<td>versicolor</td>
+</tr>
+<tr class="odd">
+<td>6.3</td>
+<td>3.3</td>
+<td>4.7</td>
+<td>1.6</td>
+<td>versicolor</td>
+</tr>
+<tr class="even">
+<td>4.9</td>
+<td>2.4</td>
+<td>3.3</td>
+<td>1</td>
+<td>versicolor</td>
+</tr>
+<tr class="odd">
+<td>6.6</td>
+<td>2.9</td>
+<td>4.6</td>
+<td>1.3</td>
+<td>versicolor</td>
+</tr>
+<tr class="even">
+<td>5.2</td>
+<td>2.7</td>
+<td>3.9</td>
+<td>1.4</td>
+<td>versicolor</td>
+</tr>
+<tr class="odd">
+<td>5</td>
+<td>2</td>
+<td>3.5</td>
+<td>1</td>
+<td>versicolor</td>
+</tr>
+<tr class="even">
+<td>5.9</td>
+<td>3</td>
+<td>4.2</td>
+<td>1.5</td>
+<td>versicolor</td>
+</tr>
+<tr class="odd">
+<td>6</td>
+<td>2.2</td>
+<td>4</td>
+<td>1</td>
+<td>versicolor</td>
+</tr>
+<tr class="even">
+<td>6.1</td>
+<td>2.9</td>
+<td>4.7</td>
+<td>1.4</td>
+<td>versicolor</td>
+</tr>
+<tr class="odd">
+<td>5.6</td>
+<td>2.9</td>
+<td>3.6</td>
+<td>1.3</td>
+<td>versicolor</td>
+</tr>
+<tr class="even">
+<td>6.7</td>
+<td>3.1</td>
+<td>4.4</td>
+<td>1.4</td>
+<td>versicolor</td>
+</tr>
+<tr class="odd">
+<td>5.6</td>
+<td>3</td>
+<td>4.5</td>
+<td>1.5</td>
+<td>versicolor</td>
+</tr>
+<tr class="even">
+<td>5.8</td>
+<td>2.7</td>
+<td>4.1</td>
+<td>1</td>
+<td>versicolor</td>
+</tr>
+<tr class="odd">
+<td>6.2</td>
+<td>2.2</td>
+<td>4.5</td>
+<td>1.5</td>
+<td>versicolor</td>
+</tr>
+<tr class="even">
+<td>5.6</td>
+<td>2.5</td>
+<td>3.9</td>
+<td>1.1</td>
+<td>versicolor</td>
+</tr>
+<tr class="odd">
+<td>5.9</td>
+<td>3.2</td>
+<td>4.8</td>
+<td>1.8</td>
+<td>versicolor</td>
+</tr>
+<tr class="even">
+<td>6.1</td>
+<td>2.8</td>
+<td>4</td>
+<td>1.3</td>
+<td>versicolor</td>
+</tr>
+<tr class="odd">
+<td>6.3</td>
+<td>2.5</td>
+<td>4.9</td>
+<td>1.5</td>
+<td>versicolor</td>
+</tr>
+<tr class="even">
+<td>6.1</td>
+<td>2.8</td>
+<td>4.7</td>
+<td>1.2</td>
+<td>versicolor</td>
+</tr>
+<tr class="odd">
+<td>6.4</td>
+<td>2.9</td>
+<td>4.3</td>
+<td>1.3</td>
+<td>versicolor</td>
+</tr>
+<tr class="even">
+<td>6.6</td>
+<td>3</td>
+<td>4.4</td>
+<td>1.4</td>
+<td>versicolor</td>
+</tr>
+<tr class="odd">
+<td>6.8</td>
+<td>2.8</td>
+<td>4.8</td>
+<td>1.4</td>
+<td>versicolor</td>
+</tr>
+<tr class="even">
+<td>6.7</td>
+<td>3</td>
+<td>5</td>
+<td>1.7</td>
+<td>versicolor</td>
+</tr>
+<tr class="odd">
+<td>6</td>
+<td>2.9</td>
+<td>4.5</td>
+<td>1.5</td>
+<td>versicolor</td>
+</tr>
+<tr class="even">
+<td>5.7</td>
+<td>2.6</td>
+<td>3.5</td>
+<td>1</td>
+<td>versicolor</td>
+</tr>
+<tr class="odd">
+<td>5.5</td>
+<td>2.4</td>
+<td>3.8</td>
+<td>1.1</td>
+<td>versicolor</td>
+</tr>
+<tr class="even">
+<td>5.5</td>
+<td>2.4</td>
+<td>3.7</td>
+<td>1</td>
+<td>versicolor</td>
+</tr>
+<tr class="odd">
+<td>5.8</td>
+<td>2.7</td>
+<td>3.9</td>
+<td>1.2</td>
+<td>versicolor</td>
+</tr>
+<tr class="even">
+<td>6</td>
+<td>2.7</td>
+<td>5.1</td>
+<td>1.6</td>
+<td>versicolor</td>
+</tr>
+<tr class="odd">
+<td>5.4</td>
+<td>3</td>
+<td>4.5</td>
+<td>1.5</td>
+<td>versicolor</td>
+</tr>
+<tr class="even">
+<td>6</td>
+<td>3.4</td>
+<td>4.5</td>
+<td>1.6</td>
+<td>versicolor</td>
+</tr>
+<tr class="odd">
+<td>6.7</td>
+<td>3.1</td>
+<td>4.7</td>
+<td>1.5</td>
+<td>versicolor</td>
+</tr>
+<tr class="even">
+<td>6.3</td>
+<td>2.3</td>
+<td>4.4</td>
+<td>1.3</td>
+<td>versicolor</td>
+</tr>
+<tr class="odd">
+<td>5.6</td>
+<td>3</td>
+<td>4.1</td>
+<td>1.3</td>
+<td>versicolor</td>
+</tr>
+<tr class="even">
+<td>5.5</td>
+<td>2.5</td>
+<td>4</td>
+<td>1.3</td>
+<td>versicolor</td>
+</tr>
+<tr class="odd">
+<td>5.5</td>
+<td>2.6</td>
+<td>4.4</td>
+<td>1.2</td>
+<td>versicolor</td>
+</tr>
+<tr class="even">
+<td>6.1</td>
+<td>3</td>
+<td>4.6</td>
+<td>1.4</td>
+<td>versicolor</td>
+</tr>
+<tr class="odd">
+<td>5.8</td>
+<td>2.6</td>
+<td>4</td>
+<td>1.2</td>
+<td>versicolor</td>
+</tr>
+<tr class="even">
+<td>5</td>
+<td>2.3</td>
+<td>3.3</td>
+<td>1</td>
+<td>versicolor</td>
+</tr>
+<tr class="odd">
+<td>5.6</td>
+<td>2.7</td>
+<td>4.2</td>
+<td>1.3</td>
+<td>versicolor</td>
+</tr>
+<tr class="even">
+<td>5.7</td>
+<td>3</td>
+<td>4.2</td>
+<td>1.2</td>
+<td>versicolor</td>
+</tr>
+<tr class="odd">
+<td>5.7</td>
+<td>2.9</td>
+<td>4.2</td>
+<td>1.3</td>
+<td>versicolor</td>
+</tr>
+<tr class="even">
+<td>6.2</td>
+<td>2.9</td>
+<td>4.3</td>
+<td>1.3</td>
+<td>versicolor</td>
+</tr>
+<tr class="odd">
+<td>5.1</td>
+<td>2.5</td>
+<td>3</td>
+<td>1.1</td>
+<td>versicolor</td>
+</tr>
+<tr class="even">
+<td>5.7</td>
+<td>2.8</td>
+<td>4.1</td>
+<td>1.3</td>
+<td>versicolor</td>
+</tr>
+<tr class="odd">
+<td>…</td>
+<td>…</td>
+<td>…</td>
+<td>…</td>
+<td>…</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> mtcars </span>(nu/dataset <span class="at">:mtcars</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
+<div class="data-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">model</th>
+<th data-quarto-table-cell-role="th">mpg</th>
+<th data-quarto-table-cell-role="th">cyl</th>
+<th data-quarto-table-cell-role="th">disp</th>
+<th data-quarto-table-cell-role="th">hp</th>
+<th data-quarto-table-cell-role="th">drat</th>
+<th data-quarto-table-cell-role="th">wt</th>
+<th data-quarto-table-cell-role="th">qsec</th>
+<th data-quarto-table-cell-role="th">vs</th>
+<th data-quarto-table-cell-role="th">am</th>
+<th data-quarto-table-cell-role="th">gear</th>
+<th data-quarto-table-cell-role="th">carb</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Mazda RX4</td>
+<td>21</td>
+<td>6</td>
+<td>160</td>
+<td>110</td>
+<td>3.9</td>
+<td>2.62</td>
+<td>16.46</td>
+<td>0</td>
+<td>1</td>
+<td>4</td>
+<td>4</td>
+</tr>
+<tr class="even">
+<td>Mazda RX4 Wag</td>
+<td>21</td>
+<td>6</td>
+<td>160</td>
+<td>110</td>
+<td>3.9</td>
+<td>2.875</td>
+<td>17.02</td>
+<td>0</td>
+<td>1</td>
+<td>4</td>
+<td>4</td>
+</tr>
+<tr class="odd">
+<td>Datsun 710</td>
+<td>22.8</td>
+<td>4</td>
+<td>108</td>
+<td>93</td>
+<td>3.85</td>
+<td>2.32</td>
+<td>18.61</td>
+<td>1</td>
+<td>1</td>
+<td>4</td>
+<td>1</td>
+</tr>
+<tr class="even">
+<td>Hornet 4 Drive</td>
+<td>21.4</td>
+<td>6</td>
+<td>258</td>
+<td>110</td>
+<td>3.08</td>
+<td>3.215</td>
+<td>19.44</td>
+<td>1</td>
+<td>0</td>
+<td>3</td>
+<td>1</td>
+</tr>
+<tr class="odd">
+<td>Hornet Sportabout</td>
+<td>18.7</td>
+<td>8</td>
+<td>360</td>
+<td>175</td>
+<td>3.15</td>
+<td>3.44</td>
+<td>17.02</td>
+<td>0</td>
+<td>0</td>
+<td>3</td>
+<td>2</td>
+</tr>
+<tr class="even">
+<td>Valiant</td>
+<td>18.1</td>
+<td>6</td>
+<td>225</td>
+<td>105</td>
+<td>2.76</td>
+<td>3.46</td>
+<td>20.22</td>
+<td>1</td>
+<td>0</td>
+<td>3</td>
+<td>1</td>
+</tr>
+<tr class="odd">
+<td>Duster 360</td>
+<td>14.3</td>
+<td>8</td>
+<td>360</td>
+<td>245</td>
+<td>3.21</td>
+<td>3.57</td>
+<td>15.84</td>
+<td>0</td>
+<td>0</td>
+<td>3</td>
+<td>4</td>
+</tr>
+<tr class="even">
+<td>Merc 240D</td>
+<td>24.4</td>
+<td>4</td>
+<td>146.7</td>
+<td>62</td>
+<td>3.69</td>
+<td>3.19</td>
+<td>20</td>
+<td>1</td>
+<td>0</td>
+<td>4</td>
+<td>2</td>
+</tr>
+<tr class="odd">
+<td>Merc 230</td>
+<td>22.8</td>
+<td>4</td>
+<td>140.8</td>
+<td>95</td>
+<td>3.92</td>
+<td>3.15</td>
+<td>22.9</td>
+<td>1</td>
+<td>0</td>
+<td>4</td>
+<td>2</td>
+</tr>
+<tr class="even">
+<td>Merc 280</td>
+<td>19.2</td>
+<td>6</td>
+<td>167.6</td>
+<td>123</td>
+<td>3.92</td>
+<td>3.44</td>
+<td>18.3</td>
+<td>1</td>
+<td>0</td>
+<td>4</td>
+<td>4</td>
+</tr>
+<tr class="odd">
+<td>Merc 280C</td>
+<td>17.8</td>
+<td>6</td>
+<td>167.6</td>
+<td>123</td>
+<td>3.92</td>
+<td>3.44</td>
+<td>18.9</td>
+<td>1</td>
+<td>0</td>
+<td>4</td>
+<td>4</td>
+</tr>
+<tr class="even">
+<td>Merc 450SE</td>
+<td>16.4</td>
+<td>8</td>
+<td>275.8</td>
+<td>180</td>
+<td>3.07</td>
+<td>4.07</td>
+<td>17.4</td>
+<td>0</td>
+<td>0</td>
+<td>3</td>
+<td>3</td>
+</tr>
+<tr class="odd">
+<td>Merc 450SL</td>
+<td>17.3</td>
+<td>8</td>
+<td>275.8</td>
+<td>180</td>
+<td>3.07</td>
+<td>3.73</td>
+<td>17.6</td>
+<td>0</td>
+<td>0</td>
+<td>3</td>
+<td>3</td>
+</tr>
+<tr class="even">
+<td>Merc 450SLC</td>
+<td>15.2</td>
+<td>8</td>
+<td>275.8</td>
+<td>180</td>
+<td>3.07</td>
+<td>3.78</td>
+<td>18</td>
+<td>0</td>
+<td>0</td>
+<td>3</td>
+<td>3</td>
+</tr>
+<tr class="odd">
+<td>Cadillac Fleetwood</td>
+<td>10.4</td>
+<td>8</td>
+<td>472</td>
+<td>205</td>
+<td>2.93</td>
+<td>5.25</td>
+<td>17.98</td>
+<td>0</td>
+<td>0</td>
+<td>3</td>
+<td>4</td>
+</tr>
+<tr class="even">
+<td>Lincoln Continental</td>
+<td>10.4</td>
+<td>8</td>
+<td>460</td>
+<td>215</td>
+<td>3</td>
+<td>5.424</td>
+<td>17.82</td>
+<td>0</td>
+<td>0</td>
+<td>3</td>
+<td>4</td>
+</tr>
+<tr class="odd">
+<td>Chrysler Imperial</td>
+<td>14.7</td>
+<td>8</td>
+<td>440</td>
+<td>230</td>
+<td>3.23</td>
+<td>5.345</td>
+<td>17.42</td>
+<td>0</td>
+<td>0</td>
+<td>3</td>
+<td>4</td>
+</tr>
+<tr class="even">
+<td>Fiat 128</td>
+<td>32.4</td>
+<td>4</td>
+<td>78.7</td>
+<td>66</td>
+<td>4.08</td>
+<td>2.2</td>
+<td>19.47</td>
+<td>1</td>
+<td>1</td>
+<td>4</td>
+<td>1</td>
+</tr>
+<tr class="odd">
+<td>Honda Civic</td>
+<td>30.4</td>
+<td>4</td>
+<td>75.7</td>
+<td>52</td>
+<td>4.93</td>
+<td>1.615</td>
+<td>18.52</td>
+<td>1</td>
+<td>1</td>
+<td>4</td>
+<td>2</td>
+</tr>
+<tr class="even">
+<td>Toyota Corolla</td>
+<td>33.9</td>
+<td>4</td>
+<td>71.1</td>
+<td>65</td>
+<td>4.22</td>
+<td>1.835</td>
+<td>19.9</td>
+<td>1</td>
+<td>1</td>
+<td>4</td>
+<td>1</td>
+</tr>
+<tr class="odd">
+<td>Toyota Corona</td>
+<td>21.5</td>
+<td>4</td>
+<td>120.1</td>
+<td>97</td>
+<td>3.7</td>
+<td>2.465</td>
+<td>20.01</td>
+<td>1</td>
+<td>0</td>
+<td>3</td>
+<td>1</td>
+</tr>
+<tr class="even">
+<td>Dodge Challenger</td>
+<td>15.5</td>
+<td>8</td>
+<td>318</td>
+<td>150</td>
+<td>2.76</td>
+<td>3.52</td>
+<td>16.87</td>
+<td>0</td>
+<td>0</td>
+<td>3</td>
+<td>2</td>
+</tr>
+<tr class="odd">
+<td>AMC Javelin</td>
+<td>15.2</td>
+<td>8</td>
+<td>304</td>
+<td>150</td>
+<td>3.15</td>
+<td>3.435</td>
+<td>17.3</td>
+<td>0</td>
+<td>0</td>
+<td>3</td>
+<td>2</td>
+</tr>
+<tr class="even">
+<td>Camaro Z28</td>
+<td>13.3</td>
+<td>8</td>
+<td>350</td>
+<td>245</td>
+<td>3.73</td>
+<td>3.84</td>
+<td>15.41</td>
+<td>0</td>
+<td>0</td>
+<td>3</td>
+<td>4</td>
+</tr>
+<tr class="odd">
+<td>Pontiac Firebird</td>
+<td>19.2</td>
+<td>8</td>
+<td>400</td>
+<td>175</td>
+<td>3.08</td>
+<td>3.845</td>
+<td>17.05</td>
+<td>0</td>
+<td>0</td>
+<td>3</td>
+<td>2</td>
+</tr>
+<tr class="even">
+<td>Fiat X1-9</td>
+<td>27.3</td>
+<td>4</td>
+<td>79</td>
+<td>66</td>
+<td>4.08</td>
+<td>1.935</td>
+<td>18.9</td>
+<td>1</td>
+<td>1</td>
+<td>4</td>
+<td>1</td>
+</tr>
+<tr class="odd">
+<td>Porsche 914-2</td>
+<td>26</td>
+<td>4</td>
+<td>120.3</td>
+<td>91</td>
+<td>4.43</td>
+<td>2.14</td>
+<td>16.7</td>
+<td>0</td>
+<td>1</td>
+<td>5</td>
+<td>2</td>
+</tr>
+<tr class="even">
+<td>Lotus Europa</td>
+<td>30.4</td>
+<td>4</td>
+<td>95.1</td>
+<td>113</td>
+<td>3.77</td>
+<td>1.513</td>
+<td>16.9</td>
+<td>1</td>
+<td>1</td>
+<td>5</td>
+<td>2</td>
+</tr>
+<tr class="odd">
+<td>Ford Pantera L</td>
+<td>15.8</td>
+<td>8</td>
+<td>351</td>
+<td>264</td>
+<td>4.22</td>
+<td>3.17</td>
+<td>14.5</td>
+<td>0</td>
+<td>1</td>
+<td>5</td>
+<td>4</td>
+</tr>
+<tr class="even">
+<td>Ferrari Dino</td>
+<td>19.7</td>
+<td>6</td>
+<td>145</td>
+<td>175</td>
+<td>3.62</td>
+<td>2.77</td>
+<td>15.5</td>
+<td>0</td>
+<td>1</td>
+<td>5</td>
+<td>6</td>
+</tr>
+<tr class="odd">
+<td>Maserati Bora</td>
+<td>15</td>
+<td>8</td>
+<td>301</td>
+<td>335</td>
+<td>3.54</td>
+<td>3.57</td>
+<td>14.6</td>
+<td>0</td>
+<td>1</td>
+<td>5</td>
+<td>8</td>
+</tr>
+<tr class="even">
+<td>Volvo 142E</td>
+<td>21.4</td>
+<td>4</td>
+<td>121</td>
+<td>109</td>
+<td>4.11</td>
+<td>2.78</td>
+<td>18.6</td>
+<td>1</td>
+<td>1</td>
+<td>4</td>
+<td>2</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> diamonds </span>(nu/dataset <span class="at">:diamonds</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="data-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">carat</th>
+<th data-quarto-table-cell-role="th">cut</th>
+<th data-quarto-table-cell-role="th">color</th>
+<th data-quarto-table-cell-role="th">clarity</th>
+<th data-quarto-table-cell-role="th">depth</th>
+<th data-quarto-table-cell-role="th">table</th>
+<th data-quarto-table-cell-role="th">price</th>
+<th data-quarto-table-cell-role="th">x</th>
+<th data-quarto-table-cell-role="th">y</th>
+<th data-quarto-table-cell-role="th">z</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>0.23</td>
+<td>Ideal</td>
+<td>E</td>
+<td>SI2</td>
+<td>61.5</td>
+<td>55</td>
+<td>326</td>
+<td>3.95</td>
+<td>3.98</td>
+<td>2.43</td>
+</tr>
+<tr class="even">
+<td>0.21</td>
+<td>Premium</td>
+<td>E</td>
+<td>SI1</td>
+<td>59.8</td>
+<td>61</td>
+<td>326</td>
+<td>3.89</td>
+<td>3.84</td>
+<td>2.31</td>
+</tr>
+<tr class="odd">
+<td>0.23</td>
+<td>Good</td>
+<td>E</td>
+<td>VS1</td>
+<td>56.9</td>
+<td>65</td>
+<td>327</td>
+<td>4.05</td>
+<td>4.07</td>
+<td>2.31</td>
+</tr>
+<tr class="even">
+<td>0.29</td>
+<td>Premium</td>
+<td>I</td>
+<td>VS2</td>
+<td>62.4</td>
+<td>58</td>
+<td>334</td>
+<td>4.2</td>
+<td>4.23</td>
+<td>2.63</td>
+</tr>
+<tr class="odd">
+<td>0.31</td>
+<td>Good</td>
+<td>J</td>
+<td>SI2</td>
+<td>63.3</td>
+<td>58</td>
+<td>335</td>
+<td>4.34</td>
+<td>4.35</td>
+<td>2.75</td>
+</tr>
+<tr class="even">
+<td>0.24</td>
+<td>Very Good</td>
+<td>J</td>
+<td>VVS2</td>
+<td>62.8</td>
+<td>57</td>
+<td>336</td>
+<td>3.94</td>
+<td>3.96</td>
+<td>2.48</td>
+</tr>
+<tr class="odd">
+<td>0.24</td>
+<td>Very Good</td>
+<td>I</td>
+<td>VVS1</td>
+<td>62.3</td>
+<td>57</td>
+<td>336</td>
+<td>3.95</td>
+<td>3.98</td>
+<td>2.47</td>
+</tr>
+<tr class="even">
+<td>0.26</td>
+<td>Very Good</td>
+<td>H</td>
+<td>SI1</td>
+<td>61.9</td>
+<td>55</td>
+<td>337</td>
+<td>4.07</td>
+<td>4.11</td>
+<td>2.53</td>
+</tr>
+<tr class="odd">
+<td>0.22</td>
+<td>Fair</td>
+<td>E</td>
+<td>VS2</td>
+<td>65.1</td>
+<td>61</td>
+<td>337</td>
+<td>3.87</td>
+<td>3.78</td>
+<td>2.49</td>
+</tr>
+<tr class="even">
+<td>0.23</td>
+<td>Very Good</td>
+<td>H</td>
+<td>VS1</td>
+<td>59.4</td>
+<td>61</td>
+<td>338</td>
+<td>4</td>
+<td>4.05</td>
+<td>2.39</td>
+</tr>
+<tr class="odd">
+<td>0.3</td>
+<td>Good</td>
+<td>J</td>
+<td>SI1</td>
+<td>64</td>
+<td>55</td>
+<td>339</td>
+<td>4.25</td>
+<td>4.28</td>
+<td>2.73</td>
+</tr>
+<tr class="even">
+<td>0.23</td>
+<td>Ideal</td>
+<td>J</td>
+<td>VS1</td>
+<td>62.8</td>
+<td>56</td>
+<td>340</td>
+<td>3.93</td>
+<td>3.9</td>
+<td>2.46</td>
+</tr>
+<tr class="odd">
+<td>0.22</td>
+<td>Premium</td>
+<td>F</td>
+<td>SI1</td>
+<td>60.4</td>
+<td>61</td>
+<td>342</td>
+<td>3.88</td>
+<td>3.84</td>
+<td>2.33</td>
+</tr>
+<tr class="even">
+<td>0.31</td>
+<td>Ideal</td>
+<td>J</td>
+<td>SI2</td>
+<td>62.2</td>
+<td>54</td>
+<td>344</td>
+<td>4.35</td>
+<td>4.37</td>
+<td>2.71</td>
+</tr>
+<tr class="odd">
+<td>0.2</td>
+<td>Premium</td>
+<td>E</td>
+<td>SI2</td>
+<td>60.2</td>
+<td>62</td>
+<td>345</td>
+<td>3.79</td>
+<td>3.75</td>
+<td>2.27</td>
+</tr>
+<tr class="even">
+<td>0.32</td>
+<td>Premium</td>
+<td>E</td>
+<td>I1</td>
+<td>60.9</td>
+<td>58</td>
+<td>345</td>
+<td>4.38</td>
+<td>4.42</td>
+<td>2.68</td>
+</tr>
+<tr class="odd">
+<td>0.3</td>
+<td>Ideal</td>
+<td>I</td>
+<td>SI2</td>
+<td>62</td>
+<td>54</td>
+<td>348</td>
+<td>4.31</td>
+<td>4.34</td>
+<td>2.68</td>
+</tr>
+<tr class="even">
+<td>0.3</td>
+<td>Good</td>
+<td>J</td>
+<td>SI1</td>
+<td>63.4</td>
+<td>54</td>
+<td>351</td>
+<td>4.23</td>
+<td>4.29</td>
+<td>2.7</td>
+</tr>
+<tr class="odd">
+<td>0.3</td>
+<td>Good</td>
+<td>J</td>
+<td>SI1</td>
+<td>63.8</td>
+<td>56</td>
+<td>351</td>
+<td>4.23</td>
+<td>4.26</td>
+<td>2.71</td>
+</tr>
+<tr class="even">
+<td>0.3</td>
+<td>Very Good</td>
+<td>J</td>
+<td>SI1</td>
+<td>62.7</td>
+<td>59</td>
+<td>351</td>
+<td>4.21</td>
+<td>4.27</td>
+<td>2.66</td>
+</tr>
+<tr class="odd">
+<td>0.3</td>
+<td>Good</td>
+<td>I</td>
+<td>SI2</td>
+<td>63.3</td>
+<td>56</td>
+<td>351</td>
+<td>4.26</td>
+<td>4.3</td>
+<td>2.71</td>
+</tr>
+<tr class="even">
+<td>0.23</td>
+<td>Very Good</td>
+<td>E</td>
+<td>VS2</td>
+<td>63.8</td>
+<td>55</td>
+<td>352</td>
+<td>3.85</td>
+<td>3.92</td>
+<td>2.48</td>
+</tr>
+<tr class="odd">
+<td>0.23</td>
+<td>Very Good</td>
+<td>H</td>
+<td>VS1</td>
+<td>61</td>
+<td>57</td>
+<td>353</td>
+<td>3.94</td>
+<td>3.96</td>
+<td>2.41</td>
+</tr>
+<tr class="even">
+<td>0.31</td>
+<td>Very Good</td>
+<td>J</td>
+<td>SI1</td>
+<td>59.4</td>
+<td>62</td>
+<td>353</td>
+<td>4.39</td>
+<td>4.43</td>
+<td>2.62</td>
+</tr>
+<tr class="odd">
+<td>0.31</td>
+<td>Very Good</td>
+<td>J</td>
+<td>SI1</td>
+<td>58.1</td>
+<td>62</td>
+<td>353</td>
+<td>4.44</td>
+<td>4.47</td>
+<td>2.59</td>
+</tr>
+<tr class="even">
+<td>0.23</td>
+<td>Very Good</td>
+<td>G</td>
+<td>VVS2</td>
+<td>60.4</td>
+<td>58</td>
+<td>354</td>
+<td>3.97</td>
+<td>4.01</td>
+<td>2.41</td>
+</tr>
+<tr class="odd">
+<td>0.24</td>
+<td>Premium</td>
+<td>I</td>
+<td>VS1</td>
+<td>62.5</td>
+<td>57</td>
+<td>355</td>
+<td>3.97</td>
+<td>3.94</td>
+<td>2.47</td>
+</tr>
+<tr class="even">
+<td>0.3</td>
+<td>Very Good</td>
+<td>J</td>
+<td>VS2</td>
+<td>62.2</td>
+<td>57</td>
+<td>357</td>
+<td>4.28</td>
+<td>4.3</td>
+<td>2.67</td>
+</tr>
+<tr class="odd">
+<td>0.23</td>
+<td>Very Good</td>
+<td>D</td>
+<td>VS2</td>
+<td>60.5</td>
+<td>61</td>
+<td>357</td>
+<td>3.96</td>
+<td>3.97</td>
+<td>2.4</td>
+</tr>
+<tr class="even">
+<td>0.23</td>
+<td>Very Good</td>
+<td>F</td>
+<td>VS1</td>
+<td>60.9</td>
+<td>57</td>
+<td>357</td>
+<td>3.96</td>
+<td>3.99</td>
+<td>2.42</td>
+</tr>
+<tr class="odd">
+<td>0.23</td>
+<td>Very Good</td>
+<td>F</td>
+<td>VS1</td>
+<td>60</td>
+<td>57</td>
+<td>402</td>
+<td>4</td>
+<td>4.03</td>
+<td>2.41</td>
+</tr>
+<tr class="even">
+<td>0.23</td>
+<td>Very Good</td>
+<td>F</td>
+<td>VS1</td>
+<td>59.8</td>
+<td>57</td>
+<td>402</td>
+<td>4.04</td>
+<td>4.06</td>
+<td>2.42</td>
+</tr>
+<tr class="odd">
+<td>0.23</td>
+<td>Very Good</td>
+<td>E</td>
+<td>VS1</td>
+<td>60.7</td>
+<td>59</td>
+<td>402</td>
+<td>3.97</td>
+<td>4.01</td>
+<td>2.42</td>
+</tr>
+<tr class="even">
+<td>0.23</td>
+<td>Very Good</td>
+<td>E</td>
+<td>VS1</td>
+<td>59.5</td>
+<td>58</td>
+<td>402</td>
+<td>4.01</td>
+<td>4.06</td>
+<td>2.4</td>
+</tr>
+<tr class="odd">
+<td>0.23</td>
+<td>Very Good</td>
+<td>D</td>
+<td>VS1</td>
+<td>61.9</td>
+<td>58</td>
+<td>402</td>
+<td>3.92</td>
+<td>3.96</td>
+<td>2.44</td>
+</tr>
+<tr class="even">
+<td>0.23</td>
+<td>Good</td>
+<td>F</td>
+<td>VS1</td>
+<td>58.2</td>
+<td>59</td>
+<td>402</td>
+<td>4.06</td>
+<td>4.08</td>
+<td>2.37</td>
+</tr>
+<tr class="odd">
+<td>0.23</td>
+<td>Good</td>
+<td>E</td>
+<td>VS1</td>
+<td>64.1</td>
+<td>59</td>
+<td>402</td>
+<td>3.83</td>
+<td>3.85</td>
+<td>2.46</td>
+</tr>
+<tr class="even">
+<td>0.31</td>
+<td>Good</td>
+<td>H</td>
+<td>SI1</td>
+<td>64</td>
+<td>54</td>
+<td>402</td>
+<td>4.29</td>
+<td>4.31</td>
+<td>2.75</td>
+</tr>
+<tr class="odd">
+<td>0.26</td>
+<td>Very Good</td>
+<td>D</td>
+<td>VS2</td>
+<td>60.8</td>
+<td>59</td>
+<td>403</td>
+<td>4.13</td>
+<td>4.16</td>
+<td>2.52</td>
+</tr>
+<tr class="even">
+<td>0.33</td>
+<td>Ideal</td>
+<td>I</td>
+<td>SI2</td>
+<td>61.8</td>
+<td>55</td>
+<td>403</td>
+<td>4.49</td>
+<td>4.51</td>
+<td>2.78</td>
+</tr>
+<tr class="odd">
+<td>0.33</td>
+<td>Ideal</td>
+<td>I</td>
+<td>SI2</td>
+<td>61.2</td>
+<td>56</td>
+<td>403</td>
+<td>4.49</td>
+<td>4.5</td>
+<td>2.75</td>
+</tr>
+<tr class="even">
+<td>0.33</td>
+<td>Ideal</td>
+<td>J</td>
+<td>SI1</td>
+<td>61.1</td>
+<td>56</td>
+<td>403</td>
+<td>4.49</td>
+<td>4.55</td>
+<td>2.76</td>
+</tr>
+<tr class="odd">
+<td>0.26</td>
+<td>Good</td>
+<td>D</td>
+<td>VS2</td>
+<td>65.2</td>
+<td>56</td>
+<td>403</td>
+<td>3.99</td>
+<td>4.02</td>
+<td>2.61</td>
+</tr>
+<tr class="even">
+<td>0.26</td>
+<td>Good</td>
+<td>D</td>
+<td>VS1</td>
+<td>58.4</td>
+<td>63</td>
+<td>403</td>
+<td>4.19</td>
+<td>4.24</td>
+<td>2.46</td>
+</tr>
+<tr class="odd">
+<td>0.32</td>
+<td>Good</td>
+<td>H</td>
+<td>SI2</td>
+<td>63.1</td>
+<td>56</td>
+<td>403</td>
+<td>4.34</td>
+<td>4.37</td>
+<td>2.75</td>
+</tr>
+<tr class="even">
+<td>0.29</td>
+<td>Premium</td>
+<td>F</td>
+<td>SI1</td>
+<td>62.4</td>
+<td>58</td>
+<td>403</td>
+<td>4.24</td>
+<td>4.26</td>
+<td>2.65</td>
+</tr>
+<tr class="odd">
+<td>0.32</td>
+<td>Very Good</td>
+<td>H</td>
+<td>SI2</td>
+<td>61.8</td>
+<td>55</td>
+<td>403</td>
+<td>4.35</td>
+<td>4.42</td>
+<td>2.71</td>
+</tr>
+<tr class="even">
+<td>0.32</td>
+<td>Good</td>
+<td>H</td>
+<td>SI2</td>
+<td>63.8</td>
+<td>56</td>
+<td>403</td>
+<td>4.36</td>
+<td>4.38</td>
+<td>2.79</td>
+</tr>
+<tr class="odd">
+<td>0.25</td>
+<td>Very Good</td>
+<td>E</td>
+<td>VS2</td>
+<td>63.3</td>
+<td>60</td>
+<td>404</td>
+<td>4</td>
+<td>4.03</td>
+<td>2.54</td>
+</tr>
+<tr class="even">
+<td>0.29</td>
+<td>Very Good</td>
+<td>H</td>
+<td>SI2</td>
+<td>60.7</td>
+<td>60</td>
+<td>404</td>
+<td>4.33</td>
+<td>4.37</td>
+<td>2.64</td>
+</tr>
+<tr class="odd">
+<td>0.24</td>
+<td>Very Good</td>
+<td>F</td>
+<td>SI1</td>
+<td>60.9</td>
+<td>61</td>
+<td>404</td>
+<td>4.02</td>
+<td>4.03</td>
+<td>2.45</td>
+</tr>
+<tr class="even">
+<td>0.23</td>
+<td>Ideal</td>
+<td>G</td>
+<td>VS1</td>
+<td>61.9</td>
+<td>54</td>
+<td>404</td>
+<td>3.93</td>
+<td>3.95</td>
+<td>2.44</td>
+</tr>
+<tr class="odd">
+<td>0.32</td>
+<td>Ideal</td>
+<td>I</td>
+<td>SI1</td>
+<td>60.9</td>
+<td>55</td>
+<td>404</td>
+<td>4.45</td>
+<td>4.48</td>
+<td>2.72</td>
+</tr>
+<tr class="even">
+<td>0.22</td>
+<td>Premium</td>
+<td>E</td>
+<td>VS2</td>
+<td>61.6</td>
+<td>58</td>
+<td>404</td>
+<td>3.93</td>
+<td>3.89</td>
+<td>2.41</td>
+</tr>
+<tr class="odd">
+<td>0.22</td>
+<td>Premium</td>
+<td>D</td>
+<td>VS2</td>
+<td>59.3</td>
+<td>62</td>
+<td>404</td>
+<td>3.91</td>
+<td>3.88</td>
+<td>2.31</td>
+</tr>
+<tr class="even">
+<td>0.3</td>
+<td>Ideal</td>
+<td>I</td>
+<td>SI2</td>
+<td>61</td>
+<td>59</td>
+<td>405</td>
+<td>4.3</td>
+<td>4.33</td>
+<td>2.63</td>
+</tr>
+<tr class="odd">
+<td>0.3</td>
+<td>Premium</td>
+<td>J</td>
+<td>SI2</td>
+<td>59.3</td>
+<td>61</td>
+<td>405</td>
+<td>4.43</td>
+<td>4.38</td>
+<td>2.61</td>
+</tr>
+<tr class="even">
+<td>0.3</td>
+<td>Very Good</td>
+<td>I</td>
+<td>SI1</td>
+<td>62.6</td>
+<td>57</td>
+<td>405</td>
+<td>4.25</td>
+<td>4.28</td>
+<td>2.67</td>
+</tr>
+<tr class="odd">
+<td>0.3</td>
+<td>Very Good</td>
+<td>I</td>
+<td>SI1</td>
+<td>63</td>
+<td>57</td>
+<td>405</td>
+<td>4.28</td>
+<td>4.32</td>
+<td>2.71</td>
+</tr>
+<tr class="even">
+<td>0.3</td>
+<td>Good</td>
+<td>I</td>
+<td>SI1</td>
+<td>63.2</td>
+<td>55</td>
+<td>405</td>
+<td>4.25</td>
+<td>4.29</td>
+<td>2.7</td>
+</tr>
+<tr class="odd">
+<td>0.35</td>
+<td>Ideal</td>
+<td>I</td>
+<td>VS1</td>
+<td>60.9</td>
+<td>57</td>
+<td>552</td>
+<td>4.54</td>
+<td>4.59</td>
+<td>2.78</td>
+</tr>
+<tr class="even">
+<td>0.3</td>
+<td>Premium</td>
+<td>D</td>
+<td>SI1</td>
+<td>62.6</td>
+<td>59</td>
+<td>552</td>
+<td>4.23</td>
+<td>4.27</td>
+<td>2.66</td>
+</tr>
+<tr class="odd">
+<td>0.3</td>
+<td>Ideal</td>
+<td>D</td>
+<td>SI1</td>
+<td>62.5</td>
+<td>57</td>
+<td>552</td>
+<td>4.29</td>
+<td>4.32</td>
+<td>2.69</td>
+</tr>
+<tr class="even">
+<td>0.3</td>
+<td>Ideal</td>
+<td>D</td>
+<td>SI1</td>
+<td>62.1</td>
+<td>56</td>
+<td>552</td>
+<td>4.3</td>
+<td>4.33</td>
+<td>2.68</td>
+</tr>
+<tr class="odd">
+<td>0.42</td>
+<td>Premium</td>
+<td>I</td>
+<td>SI2</td>
+<td>61.5</td>
+<td>59</td>
+<td>552</td>
+<td>4.78</td>
+<td>4.84</td>
+<td>2.96</td>
+</tr>
+<tr class="even">
+<td>0.28</td>
+<td>Ideal</td>
+<td>G</td>
+<td>VVS2</td>
+<td>61.4</td>
+<td>56</td>
+<td>553</td>
+<td>4.19</td>
+<td>4.22</td>
+<td>2.58</td>
+</tr>
+<tr class="odd">
+<td>0.32</td>
+<td>Ideal</td>
+<td>I</td>
+<td>VVS1</td>
+<td>62</td>
+<td>55.3</td>
+<td>553</td>
+<td>4.39</td>
+<td>4.42</td>
+<td>2.73</td>
+</tr>
+<tr class="even">
+<td>0.31</td>
+<td>Very Good</td>
+<td>G</td>
+<td>SI1</td>
+<td>63.3</td>
+<td>57</td>
+<td>553</td>
+<td>4.33</td>
+<td>4.3</td>
+<td>2.73</td>
+</tr>
+<tr class="odd">
+<td>0.31</td>
+<td>Premium</td>
+<td>G</td>
+<td>SI1</td>
+<td>61.8</td>
+<td>58</td>
+<td>553</td>
+<td>4.35</td>
+<td>4.32</td>
+<td>2.68</td>
+</tr>
+<tr class="even">
+<td>0.24</td>
+<td>Premium</td>
+<td>E</td>
+<td>VVS1</td>
+<td>60.7</td>
+<td>58</td>
+<td>553</td>
+<td>4.01</td>
+<td>4.03</td>
+<td>2.44</td>
+</tr>
+<tr class="odd">
+<td>0.24</td>
+<td>Very Good</td>
+<td>D</td>
+<td>VVS1</td>
+<td>61.5</td>
+<td>60</td>
+<td>553</td>
+<td>3.97</td>
+<td>4</td>
+<td>2.45</td>
+</tr>
+<tr class="even">
+<td>0.3</td>
+<td>Very Good</td>
+<td>H</td>
+<td>SI1</td>
+<td>63.1</td>
+<td>56</td>
+<td>554</td>
+<td>4.29</td>
+<td>4.27</td>
+<td>2.7</td>
+</tr>
+<tr class="odd">
+<td>0.3</td>
+<td>Premium</td>
+<td>H</td>
+<td>SI1</td>
+<td>62.9</td>
+<td>59</td>
+<td>554</td>
+<td>4.28</td>
+<td>4.24</td>
+<td>2.68</td>
+</tr>
+<tr class="even">
+<td>0.3</td>
+<td>Premium</td>
+<td>H</td>
+<td>SI1</td>
+<td>62.5</td>
+<td>57</td>
+<td>554</td>
+<td>4.29</td>
+<td>4.25</td>
+<td>2.67</td>
+</tr>
+<tr class="odd">
+<td>0.3</td>
+<td>Good</td>
+<td>H</td>
+<td>SI1</td>
+<td>63.7</td>
+<td>57</td>
+<td>554</td>
+<td>4.28</td>
+<td>4.26</td>
+<td>2.72</td>
+</tr>
+<tr class="even">
+<td>0.26</td>
+<td>Very Good</td>
+<td>F</td>
+<td>VVS2</td>
+<td>59.2</td>
+<td>60</td>
+<td>554</td>
+<td>4.19</td>
+<td>4.22</td>
+<td>2.49</td>
+</tr>
+<tr class="odd">
+<td>0.26</td>
+<td>Very Good</td>
+<td>E</td>
+<td>VVS2</td>
+<td>59.9</td>
+<td>58</td>
+<td>554</td>
+<td>4.15</td>
+<td>4.23</td>
+<td>2.51</td>
+</tr>
+<tr class="even">
+<td>0.26</td>
+<td>Very Good</td>
+<td>D</td>
+<td>VVS2</td>
+<td>62.4</td>
+<td>54</td>
+<td>554</td>
+<td>4.08</td>
+<td>4.13</td>
+<td>2.56</td>
+</tr>
+<tr class="odd">
+<td>0.26</td>
+<td>Very Good</td>
+<td>D</td>
+<td>VVS2</td>
+<td>62.8</td>
+<td>60</td>
+<td>554</td>
+<td>4.01</td>
+<td>4.05</td>
+<td>2.53</td>
+</tr>
+<tr class="even">
+<td>0.26</td>
+<td>Very Good</td>
+<td>E</td>
+<td>VVS1</td>
+<td>62.6</td>
+<td>59</td>
+<td>554</td>
+<td>4.06</td>
+<td>4.09</td>
+<td>2.55</td>
+</tr>
+<tr class="odd">
+<td>0.26</td>
+<td>Very Good</td>
+<td>E</td>
+<td>VVS1</td>
+<td>63.4</td>
+<td>59</td>
+<td>554</td>
+<td>4</td>
+<td>4.04</td>
+<td>2.55</td>
+</tr>
+<tr class="even">
+<td>0.26</td>
+<td>Very Good</td>
+<td>D</td>
+<td>VVS1</td>
+<td>62.1</td>
+<td>60</td>
+<td>554</td>
+<td>4.03</td>
+<td>4.12</td>
+<td>2.53</td>
+</tr>
+<tr class="odd">
+<td>0.26</td>
+<td>Ideal</td>
+<td>E</td>
+<td>VVS2</td>
+<td>62.9</td>
+<td>58</td>
+<td>554</td>
+<td>4.02</td>
+<td>4.06</td>
+<td>2.54</td>
+</tr>
+<tr class="even">
+<td>0.38</td>
+<td>Ideal</td>
+<td>I</td>
+<td>SI2</td>
+<td>61.6</td>
+<td>56</td>
+<td>554</td>
+<td>4.65</td>
+<td>4.67</td>
+<td>2.87</td>
+</tr>
+<tr class="odd">
+<td>0.26</td>
+<td>Good</td>
+<td>E</td>
+<td>VVS1</td>
+<td>57.9</td>
+<td>60</td>
+<td>554</td>
+<td>4.22</td>
+<td>4.25</td>
+<td>2.45</td>
+</tr>
+<tr class="even">
+<td>0.24</td>
+<td>Premium</td>
+<td>G</td>
+<td>VVS1</td>
+<td>62.3</td>
+<td>59</td>
+<td>554</td>
+<td>3.95</td>
+<td>3.92</td>
+<td>2.45</td>
+</tr>
+<tr class="odd">
+<td>0.24</td>
+<td>Premium</td>
+<td>H</td>
+<td>VVS1</td>
+<td>61.2</td>
+<td>58</td>
+<td>554</td>
+<td>4.01</td>
+<td>3.96</td>
+<td>2.44</td>
+</tr>
+<tr class="even">
+<td>0.24</td>
+<td>Premium</td>
+<td>H</td>
+<td>VVS1</td>
+<td>60.8</td>
+<td>59</td>
+<td>554</td>
+<td>4.02</td>
+<td>4</td>
+<td>2.44</td>
+</tr>
+<tr class="odd">
+<td>0.24</td>
+<td>Premium</td>
+<td>H</td>
+<td>VVS2</td>
+<td>60.7</td>
+<td>58</td>
+<td>554</td>
+<td>4.07</td>
+<td>4.04</td>
+<td>2.46</td>
+</tr>
+<tr class="even">
+<td>0.32</td>
+<td>Premium</td>
+<td>I</td>
+<td>SI1</td>
+<td>62.9</td>
+<td>58</td>
+<td>554</td>
+<td>4.35</td>
+<td>4.33</td>
+<td>2.73</td>
+</tr>
+<tr class="odd">
+<td>0.7</td>
+<td>Ideal</td>
+<td>E</td>
+<td>SI1</td>
+<td>62.5</td>
+<td>57</td>
+<td>2757</td>
+<td>5.7</td>
+<td>5.72</td>
+<td>3.57</td>
+</tr>
+<tr class="even">
+<td>0.86</td>
+<td>Fair</td>
+<td>E</td>
+<td>SI2</td>
+<td>55.1</td>
+<td>69</td>
+<td>2757</td>
+<td>6.45</td>
+<td>6.33</td>
+<td>3.52</td>
+</tr>
+<tr class="odd">
+<td>0.7</td>
+<td>Ideal</td>
+<td>G</td>
+<td>VS2</td>
+<td>61.6</td>
+<td>56</td>
+<td>2757</td>
+<td>5.7</td>
+<td>5.67</td>
+<td>3.5</td>
+</tr>
+<tr class="even">
+<td>0.71</td>
+<td>Very Good</td>
+<td>E</td>
+<td>VS2</td>
+<td>62.4</td>
+<td>57</td>
+<td>2759</td>
+<td>5.68</td>
+<td>5.73</td>
+<td>3.56</td>
+</tr>
+<tr class="odd">
+<td>0.78</td>
+<td>Very Good</td>
+<td>G</td>
+<td>SI2</td>
+<td>63.8</td>
+<td>56</td>
+<td>2759</td>
+<td>5.81</td>
+<td>5.85</td>
+<td>3.72</td>
+</tr>
+<tr class="even">
+<td>0.7</td>
+<td>Good</td>
+<td>E</td>
+<td>VS2</td>
+<td>57.5</td>
+<td>58</td>
+<td>2759</td>
+<td>5.85</td>
+<td>5.9</td>
+<td>3.38</td>
+</tr>
+<tr class="odd">
+<td>0.7</td>
+<td>Good</td>
+<td>F</td>
+<td>VS1</td>
+<td>59.4</td>
+<td>62</td>
+<td>2759</td>
+<td>5.71</td>
+<td>5.76</td>
+<td>3.4</td>
+</tr>
+<tr class="even">
+<td>0.96</td>
+<td>Fair</td>
+<td>F</td>
+<td>SI2</td>
+<td>66.3</td>
+<td>62</td>
+<td>2759</td>
+<td>6.27</td>
+<td>5.95</td>
+<td>4.07</td>
+</tr>
+<tr class="odd">
+<td>0.73</td>
+<td>Very Good</td>
+<td>E</td>
+<td>SI1</td>
+<td>61.6</td>
+<td>59</td>
+<td>2760</td>
+<td>5.77</td>
+<td>5.78</td>
+<td>3.56</td>
+</tr>
+<tr class="even">
+<td>0.8</td>
+<td>Premium</td>
+<td>H</td>
+<td>SI1</td>
+<td>61.5</td>
+<td>58</td>
+<td>2760</td>
+<td>5.97</td>
+<td>5.93</td>
+<td>3.66</td>
+</tr>
+<tr class="odd">
+<td>…</td>
+<td>…</td>
+<td>…</td>
+<td>…</td>
+<td>…</td>
+<td>…</td>
+<td>…</td>
+<td>…</td>
+<td>…</td>
+<td>…</td>
+</tr>
+</tbody>
+</table>
+</div>
 </div>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> cuts </span>[<span class="st">"Fair"</span> <span class="st">"Good"</span> <span class="st">"Very Good"</span> <span class="st">"Premium"</span> <span class="st">"Ideal"</span>])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -825,6 +3569,247 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a>           {<span class="at">:proposal</span> (<span class="kw">str</span> <span class="st">"proposal "</span> (<span class="kw">inc</span> i)) <span class="at">:answer</span> answer <span class="at">:certainty</span> certainty</span>
 <span id="cb24-9"><a href="#cb24-9" aria-hidden="true" tabindex="-1"></a>            <span class="at">:answer-certainty</span> (<span class="kw">str</span> answer <span class="st">", "</span> certainty) <span class="at">:people</span> (<span class="kw">long</span> (<span class="kw">*</span> f share <span class="dv">12</span>))}))))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
+<div class="data-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">proposal</th>
+<th data-quarto-table-cell-role="th">answer</th>
+<th data-quarto-table-cell-role="th">certainty</th>
+<th data-quarto-table-cell-role="th">answer-certainty</th>
+<th data-quarto-table-cell-role="th">people</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>proposal 1</td>
+<td>for</td>
+<td>sure</td>
+<td>for, sure</td>
+<td>532</td>
+</tr>
+<tr class="even">
+<td>proposal 1</td>
+<td>for</td>
+<td>leaning</td>
+<td>for, leaning</td>
+<td>355</td>
+</tr>
+<tr class="odd">
+<td>proposal 1</td>
+<td>against</td>
+<td>sure</td>
+<td>against, sure</td>
+<td>187</td>
+</tr>
+<tr class="even">
+<td>proposal 1</td>
+<td>against</td>
+<td>leaning</td>
+<td>against, leaning</td>
+<td>124</td>
+</tr>
+<tr class="odd">
+<td>proposal 2</td>
+<td>for</td>
+<td>sure</td>
+<td>for, sure</td>
+<td>230</td>
+</tr>
+<tr class="even">
+<td>proposal 2</td>
+<td>for</td>
+<td>leaning</td>
+<td>for, leaning</td>
+<td>153</td>
+</tr>
+<tr class="odd">
+<td>proposal 2</td>
+<td>against</td>
+<td>sure</td>
+<td>against, sure</td>
+<td>489</td>
+</tr>
+<tr class="even">
+<td>proposal 2</td>
+<td>against</td>
+<td>leaning</td>
+<td>against, leaning</td>
+<td>326</td>
+</tr>
+<tr class="odd">
+<td>proposal 3</td>
+<td>for</td>
+<td>sure</td>
+<td>for, sure</td>
+<td>208</td>
+</tr>
+<tr class="even">
+<td>proposal 3</td>
+<td>for</td>
+<td>leaning</td>
+<td>for, leaning</td>
+<td>139</td>
+</tr>
+<tr class="odd">
+<td>proposal 3</td>
+<td>against</td>
+<td>sure</td>
+<td>against, sure</td>
+<td>511</td>
+</tr>
+<tr class="even">
+<td>proposal 3</td>
+<td>against</td>
+<td>leaning</td>
+<td>against, leaning</td>
+<td>340</td>
+</tr>
+<tr class="odd">
+<td>proposal 4</td>
+<td>for</td>
+<td>sure</td>
+<td>for, sure</td>
+<td>208</td>
+</tr>
+<tr class="even">
+<td>proposal 4</td>
+<td>for</td>
+<td>leaning</td>
+<td>for, leaning</td>
+<td>139</td>
+</tr>
+<tr class="odd">
+<td>proposal 4</td>
+<td>against</td>
+<td>sure</td>
+<td>against, sure</td>
+<td>511</td>
+</tr>
+<tr class="even">
+<td>proposal 4</td>
+<td>against</td>
+<td>leaning</td>
+<td>against, leaning</td>
+<td>340</td>
+</tr>
+<tr class="odd">
+<td>proposal 5</td>
+<td>for</td>
+<td>sure</td>
+<td>for, sure</td>
+<td>144</td>
+</tr>
+<tr class="even">
+<td>proposal 5</td>
+<td>for</td>
+<td>leaning</td>
+<td>for, leaning</td>
+<td>96</td>
+</tr>
+<tr class="odd">
+<td>proposal 5</td>
+<td>against</td>
+<td>sure</td>
+<td>against, sure</td>
+<td>576</td>
+</tr>
+<tr class="even">
+<td>proposal 5</td>
+<td>against</td>
+<td>leaning</td>
+<td>against, leaning</td>
+<td>384</td>
+</tr>
+<tr class="odd">
+<td>proposal 6</td>
+<td>for</td>
+<td>sure</td>
+<td>for, sure</td>
+<td>446</td>
+</tr>
+<tr class="even">
+<td>proposal 6</td>
+<td>for</td>
+<td>leaning</td>
+<td>for, leaning</td>
+<td>297</td>
+</tr>
+<tr class="odd">
+<td>proposal 6</td>
+<td>against</td>
+<td>sure</td>
+<td>against, sure</td>
+<td>273</td>
+</tr>
+<tr class="even">
+<td>proposal 6</td>
+<td>against</td>
+<td>leaning</td>
+<td>against, leaning</td>
+<td>182</td>
+</tr>
+<tr class="odd">
+<td>proposal 7</td>
+<td>for</td>
+<td>sure</td>
+<td>for, sure</td>
+<td>403</td>
+</tr>
+<tr class="even">
+<td>proposal 7</td>
+<td>for</td>
+<td>leaning</td>
+<td>for, leaning</td>
+<td>268</td>
+</tr>
+<tr class="odd">
+<td>proposal 7</td>
+<td>against</td>
+<td>sure</td>
+<td>against, sure</td>
+<td>316</td>
+</tr>
+<tr class="even">
+<td>proposal 7</td>
+<td>against</td>
+<td>leaning</td>
+<td>against, leaning</td>
+<td>211</td>
+</tr>
+<tr class="odd">
+<td>proposal 8</td>
+<td>for</td>
+<td>sure</td>
+<td>for, sure</td>
+<td>417</td>
+</tr>
+<tr class="even">
+<td>proposal 8</td>
+<td>for</td>
+<td>leaning</td>
+<td>for, leaning</td>
+<td>278</td>
+</tr>
+<tr class="odd">
+<td>proposal 8</td>
+<td>against</td>
+<td>sure</td>
+<td>against, sure</td>
+<td>302</td>
+</tr>
+<tr class="even">
+<td>proposal 8</td>
+<td>against</td>
+<td>leaning</td>
+<td>against, leaning</td>
+<td>201</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 <p>Source: <a href="https://r-graph-gallery.com/barplot.html">R Graph Gallery - Barplot (back-to-back bars)</a>.</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb25"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
@@ -906,6 +3891,81 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a>               <span class="at">:let</span> [v1 (<span class="kw">+</span> <span class="dv">30</span> (r/irandom rng <span class="dv">50</span>))]]</span>
 <span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a>           {<span class="at">:team</span> (<span class="kw">str</span> <span class="st">"team "</span> (<span class="kw">char</span> (<span class="kw">+</span> <span class="dv">65</span> i))) <span class="at">:season-1</span> v1 <span class="at">:season-2</span> (<span class="kw">+</span> v1 -<span class="dv">15</span> (r/irandom rng <span class="dv">35</span>))}))))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
+<div class="data-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">team</th>
+<th data-quarto-table-cell-role="th">season-1</th>
+<th data-quarto-table-cell-role="th">season-2</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>team A</td>
+<td>45</td>
+<td>33</td>
+</tr>
+<tr class="even">
+<td>team B</td>
+<td>76</td>
+<td>87</td>
+</tr>
+<tr class="odd">
+<td>team C</td>
+<td>63</td>
+<td>48</td>
+</tr>
+<tr class="even">
+<td>team D</td>
+<td>67</td>
+<td>64</td>
+</tr>
+<tr class="odd">
+<td>team E</td>
+<td>46</td>
+<td>31</td>
+</tr>
+<tr class="even">
+<td>team F</td>
+<td>74</td>
+<td>62</td>
+</tr>
+<tr class="odd">
+<td>team G</td>
+<td>62</td>
+<td>73</td>
+</tr>
+<tr class="even">
+<td>team H</td>
+<td>50</td>
+<td>69</td>
+</tr>
+<tr class="odd">
+<td>team I</td>
+<td>39</td>
+<td>41</td>
+</tr>
+<tr class="even">
+<td>team J</td>
+<td>60</td>
+<td>75</td>
+</tr>
+<tr class="odd">
+<td>team K</td>
+<td>47</td>
+<td>64</td>
+</tr>
+<tr class="even">
+<td>team L</td>
+<td>67</td>
+<td>52</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 <p>Source: <a href="https://r-graph-gallery.com/303-lollipop-plot-with-2-values.html">R Graph Gallery - Lollipop chart with 2 values</a>.</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb29"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">let</span> [order (<span class="kw">mapv</span> <span class="at">:team</span> (<span class="kw">sort-by</span> <span class="at">:season-2</span> scores))</span>
@@ -962,6 +4022,171 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a>    (<span class="kw">vec</span> (<span class="kw">for</span> [shop [<span class="st">"North"</span> <span class="st">"South"</span> <span class="st">"East"</span> <span class="st">"West"</span> <span class="st">"Centre"</span>] i (<span class="kw">range</span> <span class="dv">6</span>)]</span>
 <span id="cb31-5"><a href="#cb31-5" aria-hidden="true" tabindex="-1"></a>           {<span class="at">:shop</span> shop <span class="at">:product</span> (<span class="kw">str</span> shop <span class="st">" "</span> (<span class="kw">inc</span> i)) <span class="at">:sales</span> (<span class="kw">+</span> <span class="dv">10</span> (r/irandom rng <span class="dv">90</span>))}))))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
+<div class="data-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">shop</th>
+<th data-quarto-table-cell-role="th">product</th>
+<th data-quarto-table-cell-role="th">sales</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>North</td>
+<td>North 1</td>
+<td>92</td>
+</tr>
+<tr class="even">
+<td>North</td>
+<td>North 2</td>
+<td>66</td>
+</tr>
+<tr class="odd">
+<td>North</td>
+<td>North 3</td>
+<td>39</td>
+</tr>
+<tr class="even">
+<td>North</td>
+<td>North 4</td>
+<td>15</td>
+</tr>
+<tr class="odd">
+<td>North</td>
+<td>North 5</td>
+<td>37</td>
+</tr>
+<tr class="even">
+<td>North</td>
+<td>North 6</td>
+<td>82</td>
+</tr>
+<tr class="odd">
+<td>South</td>
+<td>South 1</td>
+<td>48</td>
+</tr>
+<tr class="even">
+<td>South</td>
+<td>South 2</td>
+<td>92</td>
+</tr>
+<tr class="odd">
+<td>South</td>
+<td>South 3</td>
+<td>24</td>
+</tr>
+<tr class="even">
+<td>South</td>
+<td>South 4</td>
+<td>19</td>
+</tr>
+<tr class="odd">
+<td>South</td>
+<td>South 5</td>
+<td>33</td>
+</tr>
+<tr class="even">
+<td>South</td>
+<td>South 6</td>
+<td>49</td>
+</tr>
+<tr class="odd">
+<td>East</td>
+<td>East 1</td>
+<td>37</td>
+</tr>
+<tr class="even">
+<td>East</td>
+<td>East 2</td>
+<td>78</td>
+</tr>
+<tr class="odd">
+<td>East</td>
+<td>East 3</td>
+<td>71</td>
+</tr>
+<tr class="even">
+<td>East</td>
+<td>East 4</td>
+<td>18</td>
+</tr>
+<tr class="odd">
+<td>East</td>
+<td>East 5</td>
+<td>90</td>
+</tr>
+<tr class="even">
+<td>East</td>
+<td>East 6</td>
+<td>19</td>
+</tr>
+<tr class="odd">
+<td>West</td>
+<td>West 1</td>
+<td>13</td>
+</tr>
+<tr class="even">
+<td>West</td>
+<td>West 2</td>
+<td>47</td>
+</tr>
+<tr class="odd">
+<td>West</td>
+<td>West 3</td>
+<td>83</td>
+</tr>
+<tr class="even">
+<td>West</td>
+<td>West 4</td>
+<td>28</td>
+</tr>
+<tr class="odd">
+<td>West</td>
+<td>West 5</td>
+<td>28</td>
+</tr>
+<tr class="even">
+<td>West</td>
+<td>West 6</td>
+<td>65</td>
+</tr>
+<tr class="odd">
+<td>Centre</td>
+<td>Centre 1</td>
+<td>40</td>
+</tr>
+<tr class="even">
+<td>Centre</td>
+<td>Centre 2</td>
+<td>60</td>
+</tr>
+<tr class="odd">
+<td>Centre</td>
+<td>Centre 3</td>
+<td>50</td>
+</tr>
+<tr class="even">
+<td>Centre</td>
+<td>Centre 4</td>
+<td>53</td>
+</tr>
+<tr class="odd">
+<td>Centre</td>
+<td>Centre 5</td>
+<td>65</td>
+</tr>
+<tr class="even">
+<td>Centre</td>
+<td>Centre 6</td>
+<td>50</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 <p>Source: <a href="https://www.data-to-viz.com/graph/lollipop.html">data-to-viz - Lollipop (subgroups)</a>.</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb32"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">let</span> [order (<span class="kw">mapv</span> <span class="at">:product</span> (<span class="kw">sort-by</span> (<span class="kw">juxt</span> <span class="at">:shop</span> <span class="at">:sales</span>) products))]</span>
@@ -990,6 +4215,111 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a>  (<span class="kw">let</span> [rng (r/rng <span class="at">:mersenne</span> <span class="dv">12</span>)]</span>
 <span id="cb33-4"><a href="#cb33-4" aria-hidden="true" tabindex="-1"></a>    (<span class="kw">vec</span> (<span class="kw">for</span> [[g n] [[<span class="st">"A"</span> <span class="dv">6</span>] [<span class="st">"B"</span> <span class="dv">5</span>] [<span class="st">"C"</span> <span class="dv">7</span>]] i (<span class="kw">range</span> n)]</span>
 <span id="cb33-5"><a href="#cb33-5" aria-hidden="true" tabindex="-1"></a>           {<span class="at">:group</span> g <span class="at">:item</span> (<span class="kw">str</span> g (<span class="kw">inc</span> i)) <span class="at">:value</span> (<span class="kw">+</span> <span class="dv">10</span> (r/irandom rng <span class="dv">90</span>))}))))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="data-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">group</th>
+<th data-quarto-table-cell-role="th">item</th>
+<th data-quarto-table-cell-role="th">value</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>A</td>
+<td>A1</td>
+<td>46</td>
+</tr>
+<tr class="even">
+<td>A</td>
+<td>A2</td>
+<td>23</td>
+</tr>
+<tr class="odd">
+<td>A</td>
+<td>A3</td>
+<td>39</td>
+</tr>
+<tr class="even">
+<td>A</td>
+<td>A4</td>
+<td>62</td>
+</tr>
+<tr class="odd">
+<td>A</td>
+<td>A5</td>
+<td>28</td>
+</tr>
+<tr class="even">
+<td>A</td>
+<td>A6</td>
+<td>40</td>
+</tr>
+<tr class="odd">
+<td>B</td>
+<td>B1</td>
+<td>51</td>
+</tr>
+<tr class="even">
+<td>B</td>
+<td>B2</td>
+<td>14</td>
+</tr>
+<tr class="odd">
+<td>B</td>
+<td>B3</td>
+<td>12</td>
+</tr>
+<tr class="even">
+<td>B</td>
+<td>B4</td>
+<td>20</td>
+</tr>
+<tr class="odd">
+<td>B</td>
+<td>B5</td>
+<td>43</td>
+</tr>
+<tr class="even">
+<td>C</td>
+<td>C1</td>
+<td>66</td>
+</tr>
+<tr class="odd">
+<td>C</td>
+<td>C2</td>
+<td>78</td>
+</tr>
+<tr class="even">
+<td>C</td>
+<td>C3</td>
+<td>35</td>
+</tr>
+<tr class="odd">
+<td>C</td>
+<td>C4</td>
+<td>70</td>
+</tr>
+<tr class="even">
+<td>C</td>
+<td>C5</td>
+<td>85</td>
+</tr>
+<tr class="odd">
+<td>C</td>
+<td>C6</td>
+<td>81</td>
+</tr>
+<tr class="even">
+<td>C</td>
+<td>C7</td>
+<td>67</td>
+</tr>
+</tbody>
+</table>
+</div>
 </div>
 <p>Source: R Graph Gallery - Basic circular barplot; Labels; Circular barplot with groups; data-to-viz - Circular barplot (<a href="https://r-graph-gallery.com/295-basic-circular-barplot.html">1</a>, <a href="https://r-graph-gallery.com/296-add-labels-to-circular-barplot.html">2</a>, <a href="https://r-graph-gallery.com/297-circular-barplot-with-groups.html">3</a>, <a href="https://www.data-to-viz.com/graph/circularbarplot.html">4</a>). Data: Weapon exports by country, data-to-viz example dataset <code>7_OneCatOneNum</code> (Yan Holtz); licence: MIT (data_to_viz repository).</p>
 <div class="sourceClojure">
@@ -1023,6 +4353,201 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb35-3"><a href="#cb35-3" aria-hidden="true" tabindex="-1"></a>  (<span class="kw">let</span> [rng (r/rng <span class="at">:mersenne</span> <span class="dv">23</span>)]</span>
 <span id="cb35-4"><a href="#cb35-4" aria-hidden="true" tabindex="-1"></a>    (<span class="kw">vec</span> (<span class="kw">for</span> [i (<span class="kw">range</span> <span class="dv">12</span>) part [<span class="st">"x"</span> <span class="st">"y"</span> <span class="st">"z"</span>]]</span>
 <span id="cb35-5"><a href="#cb35-5" aria-hidden="true" tabindex="-1"></a>           {<span class="at">:item</span> (<span class="kw">str</span> <span class="st">"item "</span> (<span class="kw">inc</span> i)) <span class="at">:part</span> part <span class="at">:value</span> (<span class="kw">+</span> <span class="dv">5</span> (r/irandom rng <span class="dv">30</span>))}))))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="data-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">item</th>
+<th data-quarto-table-cell-role="th">part</th>
+<th data-quarto-table-cell-role="th">value</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>item 1</td>
+<td>x</td>
+<td>17</td>
+</tr>
+<tr class="even">
+<td>item 1</td>
+<td>y</td>
+<td>31</td>
+</tr>
+<tr class="odd">
+<td>item 1</td>
+<td>z</td>
+<td>21</td>
+</tr>
+<tr class="even">
+<td>item 2</td>
+<td>x</td>
+<td>17</td>
+</tr>
+<tr class="odd">
+<td>item 2</td>
+<td>y</td>
+<td>13</td>
+</tr>
+<tr class="even">
+<td>item 2</td>
+<td>z</td>
+<td>14</td>
+</tr>
+<tr class="odd">
+<td>item 3</td>
+<td>x</td>
+<td>20</td>
+</tr>
+<tr class="even">
+<td>item 3</td>
+<td>y</td>
+<td>13</td>
+</tr>
+<tr class="odd">
+<td>item 3</td>
+<td>z</td>
+<td>31</td>
+</tr>
+<tr class="even">
+<td>item 4</td>
+<td>x</td>
+<td>7</td>
+</tr>
+<tr class="odd">
+<td>item 4</td>
+<td>y</td>
+<td>10</td>
+</tr>
+<tr class="even">
+<td>item 4</td>
+<td>z</td>
+<td>13</td>
+</tr>
+<tr class="odd">
+<td>item 5</td>
+<td>x</td>
+<td>23</td>
+</tr>
+<tr class="even">
+<td>item 5</td>
+<td>y</td>
+<td>29</td>
+</tr>
+<tr class="odd">
+<td>item 5</td>
+<td>z</td>
+<td>5</td>
+</tr>
+<tr class="even">
+<td>item 6</td>
+<td>x</td>
+<td>6</td>
+</tr>
+<tr class="odd">
+<td>item 6</td>
+<td>y</td>
+<td>34</td>
+</tr>
+<tr class="even">
+<td>item 6</td>
+<td>z</td>
+<td>33</td>
+</tr>
+<tr class="odd">
+<td>item 7</td>
+<td>x</td>
+<td>17</td>
+</tr>
+<tr class="even">
+<td>item 7</td>
+<td>y</td>
+<td>7</td>
+</tr>
+<tr class="odd">
+<td>item 7</td>
+<td>z</td>
+<td>21</td>
+</tr>
+<tr class="even">
+<td>item 8</td>
+<td>x</td>
+<td>31</td>
+</tr>
+<tr class="odd">
+<td>item 8</td>
+<td>y</td>
+<td>12</td>
+</tr>
+<tr class="even">
+<td>item 8</td>
+<td>z</td>
+<td>20</td>
+</tr>
+<tr class="odd">
+<td>item 9</td>
+<td>x</td>
+<td>29</td>
+</tr>
+<tr class="even">
+<td>item 9</td>
+<td>y</td>
+<td>31</td>
+</tr>
+<tr class="odd">
+<td>item 9</td>
+<td>z</td>
+<td>13</td>
+</tr>
+<tr class="even">
+<td>item 10</td>
+<td>x</td>
+<td>22</td>
+</tr>
+<tr class="odd">
+<td>item 10</td>
+<td>y</td>
+<td>12</td>
+</tr>
+<tr class="even">
+<td>item 10</td>
+<td>z</td>
+<td>26</td>
+</tr>
+<tr class="odd">
+<td>item 11</td>
+<td>x</td>
+<td>34</td>
+</tr>
+<tr class="even">
+<td>item 11</td>
+<td>y</td>
+<td>30</td>
+</tr>
+<tr class="odd">
+<td>item 11</td>
+<td>z</td>
+<td>17</td>
+</tr>
+<tr class="even">
+<td>item 12</td>
+<td>x</td>
+<td>32</td>
+</tr>
+<tr class="odd">
+<td>item 12</td>
+<td>y</td>
+<td>9</td>
+</tr>
+<tr class="even">
+<td>item 12</td>
+<td>z</td>
+<td>17</td>
+</tr>
+</tbody>
+</table>
+</div>
 </div>
 <p>Source: <a href="https://r-graph-gallery.com/299-circular-stacked-barplot.html">R Graph Gallery - Circular stacked barplot</a>.</p>
 <div class="sourceClojure">
@@ -1153,6 +4678,86 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb44"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> four-cars </span>(<span class="kw">filterv</span> #(#{<span class="st">"Mazda RX4"</span> <span class="st">"Merc 240D"</span> <span class="st">"Lotus Europa"</span> <span class="st">"Cadillac Fleetwood"</span>} (<span class="at">:model</span> <span class="va">%</span>)) mtcars))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="data-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">model</th>
+<th data-quarto-table-cell-role="th">mpg</th>
+<th data-quarto-table-cell-role="th">cyl</th>
+<th data-quarto-table-cell-role="th">disp</th>
+<th data-quarto-table-cell-role="th">hp</th>
+<th data-quarto-table-cell-role="th">drat</th>
+<th data-quarto-table-cell-role="th">wt</th>
+<th data-quarto-table-cell-role="th">qsec</th>
+<th data-quarto-table-cell-role="th">vs</th>
+<th data-quarto-table-cell-role="th">am</th>
+<th data-quarto-table-cell-role="th">gear</th>
+<th data-quarto-table-cell-role="th">carb</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Mazda RX4</td>
+<td>21</td>
+<td>6</td>
+<td>160</td>
+<td>110</td>
+<td>3.9</td>
+<td>2.62</td>
+<td>16.46</td>
+<td>0</td>
+<td>1</td>
+<td>4</td>
+<td>4</td>
+</tr>
+<tr class="even">
+<td>Merc 240D</td>
+<td>24.4</td>
+<td>4</td>
+<td>146.7</td>
+<td>62</td>
+<td>3.69</td>
+<td>3.19</td>
+<td>20</td>
+<td>1</td>
+<td>0</td>
+<td>4</td>
+<td>2</td>
+</tr>
+<tr class="odd">
+<td>Cadillac Fleetwood</td>
+<td>10.4</td>
+<td>8</td>
+<td>472</td>
+<td>205</td>
+<td>2.93</td>
+<td>5.25</td>
+<td>17.98</td>
+<td>0</td>
+<td>0</td>
+<td>3</td>
+<td>4</td>
+</tr>
+<tr class="even">
+<td>Lotus Europa</td>
+<td>30.4</td>
+<td>4</td>
+<td>95.1</td>
+<td>113</td>
+<td>3.77</td>
+<td>1.513</td>
+<td>16.9</td>
+<td>1</td>
+<td>1</td>
+<td>5</td>
+<td>2</td>
+</tr>
+</tbody>
+</table>
+</div>
 </div>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb45"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> car-limits</span></span>

@@ -24,14 +24,27 @@
   (mapv #(update % :date (fn [d] (LocalDate/parse d))) rows))
 
 (def economics (with-dates (nu/dataset :economics)))
+
+(nu/data-table economics)
+
 (def air (with-dates (nu/dataset :air-passengers)))
+
+(nu/data-table air)
+
 (def chicks (nu/dataset :chick-weight))
+
+(nu/data-table chicks)
+
 (def mtcars (nu/dataset :mtcars))
+
+(nu/data-table mtcars)
 
 (def lincoln
   "Lincoln weather with `:date` parsed (`2016-1-1` - not ISO)."
   (let [f (DateTimeFormatter/ofPattern "yyyy-M-d")]
     (mapv #(update % :date (fn [d] (LocalDate/parse d f))) (nu/dataset :lincoln-weather))))
+
+(nu/data-table lincoln)
 
 (def economics-long
   "Economics in long form - `:variable`, `:value` and `:value01` (the value rescaled to 0..1 per variable), as
@@ -40,6 +53,8 @@
              :let [vs (map k economics) lo (double (reduce min vs)) hi (double (reduce max vs))]
              row economics]
          {:date (:date row) :variable (name k) :value (k row) :value01 (/ (- (double (k row)) lo) (- hi lo))})))
+
+(nu/data-table economics-long)
 
 ;; ## Lines
 
@@ -419,6 +434,8 @@
   (vec (for [[[diet time] rows] (sort-by key (group-by (juxt :diet :time) chicks))]
          {:diet diet :time time :weight (/ (double (reduce + (map :weight rows))) (count rows))})))
 
+(nu/data-table diet-means)
+
 ;; ### Stacked area
 
 ;; `:position :stack` aligns the groups on the union of their x values and stacks them; every band is filled.
@@ -533,6 +550,8 @@
                           {:date (.plusDays start i) :open open :close close
                            :high (+ (max open close) spread) :low (- (min open close) spread)}))
                       (take 40 (reductions + 50.0 (repeatedly #(r/grandom rng))))))))
+
+(nu/data-table prices)
 
 (plot/render-image
  (plot/arrange

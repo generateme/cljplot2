@@ -17,11 +17,28 @@
             [notebook-utils :as nu]))
 
 (def iris (nu/dataset :iris))
+
+(nu/data-table iris)
+
 (def mtcars (nu/dataset :mtcars))
+
+(nu/data-table mtcars)
+
 (def barley (nu/dataset :barley))
+
+(nu/data-table barley)
+
 (def quakes (nu/dataset :quakes))
+
+(nu/data-table quakes)
+
 (def diamonds (nu/dataset :diamonds))
+
+(nu/data-table diamonds)
+
 (def lincoln (nu/dataset :lincoln-weather))
+
+(nu/data-table lincoln)
 
 ;; ## Specifying colours
 
@@ -255,6 +272,8 @@
   "A fixed 5% sample of diamonds (the full data has 53,940 rows)."
   (let [rng (r/rng :mersenne 7)] (filterv (fn [_] (< (r/drandom rng) 0.05)) diamonds)))
 
+(nu/data-table diamonds-sample)
+
 (plot/render-image
  (plot/arrange
   (for [[title bins] [["5 equal bins" 5] ["breaks vector" [0 1000 2500 5000 10000 20000]]
@@ -280,6 +299,8 @@
 (def iris-with-na
   "Iris with every seventh species missing."
   (map-indexed (fn [i row] (if (zero? (mod i 7)) (assoc row :species nil) row)) iris))
+
+(nu/data-table iris-with-na)
 
 (plot/render-image
  (plot/arrange
@@ -320,6 +341,8 @@
 (def lincoln-days
   "Lincoln weather with the day of the year."
   (map-indexed (fn [i row] (assoc row :day (inc i))) lincoln))
+
+(nu/data-table lincoln-days)
 
 (plot/render-image
  (plot/arrange

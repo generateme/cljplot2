@@ -20,9 +20,15 @@
   "World population by region, subregion and country - the countries with a known population."
   (filterv :population (nu/dataset :world-population)))
 
+(nu/data-table world)
+
 (def europe (filterv #(= "Europe" (:region %)) world))
 
+(nu/data-table europe)
+
 (def words (nu/dataset :artist-words))
+
+(nu/data-table words)
 
 (defn- share-label
   "Bar label: the part's name and its share of the whole."
@@ -56,9 +62,13 @@
                condition ["normal" "stress" "Nitrogen"]]
            {:specie specie :condition condition :value (m/abs (r/grandom rng 0.0 15.0))}))))
 
+(nu/data-table species-conditions)
+
 (def signed-conditions
   (let [rng (r/rng :mersenne 7)]
     (mapv #(assoc % :value (r/grandom rng 0.0 15.0)) species-conditions)))
+
+(nu/data-table signed-conditions)
 
 (nu/source-note {:source "R Graph Gallery - Grouped and Stacked barplot"
                  :url "https://r-graph-gallery.com/stacked-barplot.html"})
@@ -101,6 +111,8 @@
                      [{:question (str "Q" q) :answer answer :side "-" :count (* -0.5 n)}
                       {:question (str "Q" q) :answer answer :side "+" :count (* 0.5 n)}])]
            row))))
+
+(nu/data-table likert)
 
 (nu/source-note {:source "R Graph Gallery - Grouped and Stacked barplot (the Likert package)"
                  :url "https://r-graph-gallery.com/stacked-barplot.html"})
@@ -401,6 +413,8 @@
 
 (def caveat-data
   {"data 1" [17 18 20 22 24] "data 2" [20 18 21 20 20] "data 3" [24 23 21 19 18]})
+
+(nu/data-table caveat-data)
 
 (defn- caveat-rows [values] (mapv (fn [part v] {:part part :value v}) ["a" "b" "c" "d" "e"] values))
 

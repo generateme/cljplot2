@@ -57,24 +57,53 @@
   (month-names (dec (.getMonthValue (local-date s)))))
 
 (def cars (nu/dataset :cars))
+
+(nu/data-table cars)
+
 (def population (nu/dataset :population))
+
+(nu/data-table population)
+
 (def movies (nu/dataset :movies))
+
+(nu/data-table movies)
+
 (def seattle (nu/dataset :seattle-weather-vega))
+
+(nu/data-table seattle)
+
 (def barley (nu/dataset :barley-vega))
+
+(nu/data-table barley)
+
 (def stocks (mapv #(update % :date local-date) (nu/dataset :stocks)))
 
+(nu/data-table stocks)
+
 (def goog (filterv #(= "GOOG" (:symbol %)) stocks))
+
+(nu/data-table goog)
 
 (def yearly-stocks
   "Mean price per symbol and year (Vega-Lite's `timeUnit` year + `aggregate` mean), at January 1."
   (for [[[symbol year] rows] (group-by (juxt :symbol #(.getYear ^LocalDate (:date %))) stocks)]
     {:symbol symbol :date (LocalDate/of (int year) 1 1) :price (stats/mean (map :price rows))}))
+
+(nu/data-table yearly-stocks)
+
 (def penguins (nu/dataset :penguins))
+
+(nu/data-table penguins)
+
 (def normal-2d (nu/dataset :normal-2d))
+
+(nu/data-table normal-2d)
 
 (def imdb
   "Movies with an IMDB rating."
   (filterv #(number? (:imdb-rating %)) movies))
+
+(nu/data-table imdb)
 
 (defn- bin-start
   "Start of the bin of width `step` (from 0) holding `v`."
@@ -86,6 +115,8 @@
   (->> population
        (filter #(= 2000 (:year %)))
        (mapv #(assoc % :gender (if (= 2 (:sex %)) "Female" "Male")))))
+
+(nu/data-table population-2000)
 
 (def gender-colors {:domain ["Female" "Male"] :range [[103 81 147] [202 136 97]]})
 
@@ -109,6 +140,8 @@
 
 (def abc [{:a "A" :b 28} {:a "B" :b 55} {:a "C" :b 43} {:a "D" :b 91} {:a "E" :b 81} {:a "F" :b 53} {:a "G" :b 19}
           {:a "H" :b 87} {:a "I" :b 52}])
+
+(nu/data-table abc)
 
 (plot/render-image
  {:data abc :mapping {:x :a :y :b} :charts [(chart/bar)] :labels {:x "a" :y "b"}}
@@ -197,6 +230,8 @@
                      :range [[231 186 82] [199 199 199] [174 199 232] [31 119 180] [148 103 189]]})
 
 (def seattle-months (mapv #(assoc % :month (month-name (:date %))) seattle))
+
+(nu/data-table seattle-months)
 
 (plot/render-image
  {:data seattle-months :mapping {:x :month :color :weather}
@@ -339,6 +374,8 @@
                [answer lo hi] (map vector survey-answers ends (rest ends))]
            {:question question :answer answer :x0 (- lo offset) :x1 (- hi offset)}))))
 
+(nu/data-table survey)
+
 (plot/render-image
  {:data survey
   :charts [(chart/rect {:mapping {:x0 :x0 :x1 :x1 :y0 :question :y1 :question :color :answer} :band-width 0.8})]
@@ -414,6 +451,8 @@
 (nu/source-note {:source "Vega-Lite - Bar Chart with Negative Values and a Zero-Baseline" :url (vl-url "bar_negative")})
 
 (def abc-negative (mapv (fn [row v] (assoc row :b v)) abc [-28 55 -33 91 81 53 -19 87 52]))
+
+(nu/data-table abc-negative)
 
 (plot/render-image
  {:data abc-negative :mapping {:x :a :y :b}
@@ -668,6 +707,8 @@
         col (range 1 (inc (counts animal)))]
     {:country country :animal animal :col col}))
 
+(nu/data-table livestock)
+
 (def animal-icons
   {"cattle" {:path "M2 4 L14 4 L16 2 L19 3 L18 6 L16 6 L16 11 L14 11 L14 8 L5 8 L5 11 L3 11 L3 7 L1 6 Z"}
    "pigs" {:path "M3 5 C3 2 13 2 15 4 L18 4 L18 7 L16 7 C16 9 14 10 12 10 L12 12 L10 12 L10 10 L7 10 L7 12 L5 12 L5 10 C3 9 3 7 3 5 Z"}
@@ -821,6 +862,8 @@
 (nu/source-note {:source "Vega-Lite - Bubble Plot (Gapminder)" :url (vl-url "circle_bubble_health_income")
                  :dataset :gapminder-health-income})
 
+(nu/data-table (nu/dataset :gapminder-health-income))
+
 (plot/render-image
  {:data (nu/dataset :gapminder-health-income) :mapping {:x :income :y :health :size :population}
   :charts [(chart/scatter {:color [0 0 0 160]})]
@@ -836,6 +879,8 @@
 
 (nu/source-note {:source "Vega-Lite - Bubble Plot (Natural Disasters)" :url (vl-url "circle_natural_disasters")
                  :dataset :disasters})
+
+(nu/data-table (nu/dataset :disasters))
 
 (plot/render-image
  {:data (remove #(= "All natural disasters" (:entity %)) (nu/dataset :disasters))
@@ -1064,6 +1109,8 @@
 (nu/source-note {:source "Vega-Lite - Connected Scatterplot (Lines with Custom Paths)"
                  :url [(vl-url "connected_scatterplot") (vg-url "connected-scatter-plot")] :dataset :driving})
 
+(nu/data-table (nu/dataset :driving))
+
 (plot/render-image
  {:data (sort-by :year (nu/dataset :driving)) :mapping {:x :miles :y :gas}
   :charts [(chart/line {:sort false}) (chart/scatter {:shape \o :size 7 :color [76 120 168]})]
@@ -1142,6 +1189,8 @@
 
 (nu/source-note {:source "Vega-Lite - Carbon Dioxide in the Atmosphere" :url (vl-url "layer_line_co2_concentration")
                  :dataset :co2-concentration})
+
+(nu/data-table (nu/dataset :co2-concentration))
 
 (let [rows (for [{:keys [date co2]} (nu/dataset :co2-concentration)
                  :let [d (local-date date) year (.getYear d)]]
@@ -1237,6 +1286,8 @@
 (def unemployment
   "Unemployed per industry and month, `:date` a `LocalDate`."
   (mapv #(update % :date local-date) (nu/dataset :unemployment-across-industries)))
+
+(nu/data-table unemployment)
 
 (let [totals (for [[date rows] (group-by :date unemployment)] {:date date :count (reduce + (map :count rows))})]
   (plot/render-image
@@ -1386,6 +1437,8 @@
 
 (nu/source-note {:dataset :seattle-weather-hourly-normals})
 
+(nu/data-table (nu/dataset :seattle-weather-hourly-normals))
+
 (plot/render-image
  {:data (for [{:keys [date temperature]} (nu/dataset :seattle-weather-hourly-normals)
               :let [t (java.time.LocalDateTime/parse date) day (.toLocalDate t)]]
@@ -1403,6 +1456,8 @@
 
 (nu/source-note {:source "Vega-Lite - Table Bubble Plot (Github Punch Card)" :url (vl-url "circle_github_punchcard")
                  :dataset :github})
+
+(nu/data-table (nu/dataset :github))
 
 (def weekdays ["Mon" "Tue" "Wed" "Thu" "Fri" "Sat" "Sun"])
 
@@ -1473,6 +1528,8 @@
 (nu/source-note {:source "Vega-Lite - Wind Vector Map" :url [(vl-url "point_angle_windvector") (vg-url "wind-vectors")]
                  :dataset :windvectors})
 
+(nu/data-table (nu/dataset :windvectors))
+
 (plot/render-image
  {:data (for [{:keys [longitude latitude dir speed]} (nu/dataset :windvectors)
               :let [heading (m/radians (+ 180.0 (double dir))) len (* 0.05 (double speed))]]
@@ -1496,6 +1553,8 @@
 (nu/source-note {:source "Vega-Lite - Pie Chart" :url [(vl-url "arc_pie") (vg-url "pie-chart")]})
 
 (def pie-values (map (fn [category value] {:category (str category) :value value}) (range 1 7) [4 6 10 3 7 8]))
+
+(nu/data-table pie-values)
 
 (plot/render-image
  {:data pie-values :mapping {:x :value :color :category}
@@ -1668,11 +1727,15 @@
                   amounts sums (concat (map first (rest amounts)) ["End"]))]
     (vec (concat rows [{:label "End" :amount (last sums) :previous 0 :sum (last sums) :next "End" :kind "total"}]))))
 
+(nu/data-table waterfall)
+
 (def waterfall-centres
   "The waterfall rows with the bar centre `:center` and the change as text (`+` for increases)."
   (map #(assoc % :center (* 0.5 (+ (long (:sum %)) (long (:previous %))))
                :text (str (when (= "increase" (:kind %)) "+") (:amount %)))
        waterfall))
+
+(nu/data-table waterfall-centres)
 
 (plot/render-image
  {:data waterfall
@@ -1737,6 +1800,11 @@
 
 (nu/source-note {:source "Vega-Lite - Using the lookup transform to combine data" :url (vl-url "lookup")
                  :dataset :lookup-groups})
+
+(nu/data-table (nu/dataset :lookup-groups))
+
+
+(nu/data-table (nu/dataset :lookup-people))
 
 (let [people (into {} (map (juxt :name identity) (nu/dataset :lookup-people)))]
   (plot/render-image
@@ -2215,6 +2283,8 @@
 
 (nu/source-note {:source "Vega-Lite - Candlestick Chart" :url (vl-url "layer_candlestick") :dataset :ohlc})
 
+(nu/data-table (nu/dataset :ohlc))
+
 (plot/render-image
  {:data (map #(update % :date local-date) (nu/dataset :ohlc))
   :mapping {:x :date :open :open :high :high :low :low :close :close}
@@ -2228,6 +2298,8 @@
 ;; Life expectancy of five countries in 1955 and 2000, joined by a line.
 
 (nu/source-note {:source "Vega-Lite - Ranged Dot Plot" :url (vl-url "layer_ranged_dot") :dataset :countries-vega})
+
+(nu/data-table (nu/dataset :countries-vega))
 
 (let [countries #{"China" "India" "United States" "Indonesia" "Brazil"}
       rows (filter #(and (countries (:country %)) (#{1955 2000} (:year %))) (nu/dataset :countries-vega))]
@@ -2254,6 +2326,8 @@
    {:title "New Customers" :ranges [1400 2000 2500] :measures [1000 1650] :markers [2100]}
    {:title "Satisfaction" :ranges [3.5 4.25 5] :measures [3.2 4.7] :markers [4.4]}])
 
+(nu/data-table bullets)
+
 (plot/render-image
  {:data bullets :mapping {:facet :title :ranges :ranges :measures :measures :markers :markers}
   :charts [(chart/bullet)]
@@ -2270,6 +2344,8 @@
 
 (nu/source-note {:source "Vega-Lite - Weekly Weather Plot" :url [(vl-url "bar_layered_weather") (vg-url "weekly-temperature")]
                  :dataset :weekly-weather})
+
+(nu/data-table (nu/dataset :weekly-weather))
 
 (let [weather (nu/dataset :weekly-weather)
       series (fn [s] (filter #(and (= s (:series %)) (:low %)) weather))
@@ -2299,6 +2375,11 @@
 
 (nu/source-note {:source "Vega-Lite - Wheat and Wages Example" :url [(vl-url "wheat_wages") (vg-url "wheat-and-wages")]
                  :dataset :wheat})
+
+(nu/data-table (nu/dataset :wheat))
+
+
+(nu/data-table (nu/dataset :monarchs))
 
 (let [wheat (map #(update % :year parse-long) (nu/dataset :wheat))
       monarchs (for [{:keys [index commonwealth start end] :as monarch} (nu/dataset :monarchs)
@@ -2385,6 +2466,8 @@
 
 (nu/source-note {:source "Vega-Lite - Trellis Scatter Plot Showing Anscombe's Quartet" :url (vl-url "trellis_anscombe")
                  :dataset :anscombe})
+
+(nu/data-table (nu/dataset :anscombe))
 
 (plot/render-image
  {:data (nu/dataset :anscombe) :mapping {:x :x :y :y :facet-col :series}
@@ -2500,6 +2583,8 @@
 ;; Seattle's mean precipitation per month (top); days counted per bin of minimum and maximum temperature (bottom).
 
 (nu/source-note {:source "Vega-Lite - Vertical Concatenation" :url (vl-url "vconcat_weather") :dataset :weather})
+
+(nu/data-table (nu/dataset :weather))
 
 (let [seattle-days (filter #(= "Seattle" (:location %)) (nu/dataset :weather))]
   (plot/render-image
@@ -2703,6 +2788,8 @@
 
 (nu/source-note {:source "Vega - Job voyager" :url (vg-url "job-voyager") :dataset :jobs})
 
+(nu/data-table (nu/dataset :jobs))
+
 (plot/render-image
  {:data (nu/dataset :jobs) :mapping {:x :year :y :perc :color :sex :group :job}
   :charts [(chart/line {:fill :color :position :stack :alpha 0.6 :color :white :width 0.2})]
@@ -2833,6 +2920,8 @@
 
 (nu/source-note {:source "Vega - Time units" :url (vg-url "time-units") :dataset :flights-20k})
 
+(nu/data-table (nu/dataset :flights-20k))
+
 (let [units [["month" #(let [mo (.getMonthValue ^java.time.LocalDateTime %)] (str mo " " (month-names (dec mo))))]
              ["date" #(format "%02d" (.getDayOfMonth ^java.time.LocalDateTime %))]
              ["day" #(let [d (.getValue (.getDayOfWeek ^java.time.LocalDateTime %))] (str d " " (weekdays (dec d))))]
@@ -2862,6 +2951,8 @@
 
 (nu/source-note {:source "Vega - Volcano contours" :url (vg-url "volcano-contours") :dataset :volcano-vega})
 
+(nu/data-table (nu/dataset :volcano-vega))
+
 (plot/render-image
  {:data (nu/dataset :volcano-vega) :mapping {:x :col :y :row :value :value}
   :charts [(chart/contour {:fill true :levels (vec (range 90 200 10))})]
@@ -2881,6 +2972,8 @@
 (nu/source-note {:source "Vega - Tree layout" :url (vg-url "tree-layout") :dataset :flare-vega})
 
 (def flare (nu/dataset :flare-vega))
+
+(nu/data-table flare)
 
 (def flare-tree (tree/from-parents flare {:id :id :parent :parent :name :name}))
 
@@ -2910,6 +3003,8 @@
   (let [by-id (into {} (map (juxt :id identity) flare))
         path-of (fn [row] (->> (iterate (comp by-id :parent) row) (take-while some?) (map :name) reverse rest vec))]
     (mapv #(assoc % :path (path-of %)) (filter :size flare))))
+
+(nu/data-table flare-leaves)
 
 (def flare-levels
   "Hierarchy accessors of `flare-leaves`: one per path level."
@@ -2952,6 +3047,8 @@
 
 (nu/source-note {:source "Vega - Edge bundling" :url (vg-url "edge-bundling") :dataset :flare-dependencies-vega})
 
+(nu/data-table (nu/dataset :flare-dependencies-vega))
+
 (plot/render-image
  (plot/bundle (nu/dataset :flare-dependencies-vega) flare-tree {:from :source :to :target :scales {:color {:legend false}}})
  {:width 900 :height 900})
@@ -2965,7 +3062,11 @@
 
 (def miserables-nodes (map #(update % :group str) (nu/dataset :miserables-nodes)))
 
+(nu/data-table miserables-nodes)
+
 (def miserables-links (nu/dataset :miserables-links-vega))
+
+(nu/data-table miserables-links)
 
 (plot/render-image
  (plot/network miserables-links {:from :source :to :target :nodes miserables-nodes :id :index :rng (r/rng :mersenne 7)
@@ -3061,6 +3162,8 @@
              :change (/ (- (double close) (double (:close prev))) (double (:close prev)))})
           days (rest days))))
 
+(nu/data-table sp500-days)
+
 (def month-weeks
   "Week of the year (as in `sp500-days`) of every month's first day in 2001 -> the month's name."
   (let [week-fields (java.time.temporal.WeekFields/of java.time.DayOfWeek/SUNDAY 1)]
@@ -3105,6 +3208,8 @@
 ;; Each year's budget forecast of the surplus / deficit (% of GDP, grey lines) against the actual balance (black).
 
 (nu/source-note {:source "Vega - Budget forecasts" :url (vg-url "budget-forecasts") :dataset :budgets})
+
+(nu/data-table (nu/dataset :budgets))
 
 (let [budgets (nu/dataset :budgets)]
   (plot/render-image
@@ -3203,6 +3308,8 @@
 
 (nu/source-note {:source "Vega - U district cuisine" :url (vg-url "u-district-cuisine") :dataset :udistrict})
 
+(nu/data-table (nu/dataset :udistrict))
+
 (let [categories ["coffee" "drinks" "bubbletea" "vietnamese" "thai" "chinese" "japanese" "korean" "mideastern" "indian"
                   "burgers" "pizza" "american" "breakfast" "bakeries" "seafood" "hawaiian" "veg" "latin"]
       names ["Coffee" "Pubs, Lounges" "Bubble Tea, Juice" "Vietnamese" "Thai" "Chinese" "Japanese" "Korean"
@@ -3229,6 +3336,8 @@
 ;; Global temperature anomaly per year, 1880 onward, as stripes from blue (cold) to red (warm) - E. Hawkins' design.
 
 (nu/source-note {:source "Vega - Warming stripes" :url (vg-url "warming-stripes") :dataset :global-temp})
+
+(nu/data-table (nu/dataset :global-temp))
 
 (plot/render-image
  {:data (nu/dataset :global-temp) :mapping {:x :year :y (constantly "1") :color :temp}

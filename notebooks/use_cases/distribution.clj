@@ -16,12 +16,32 @@
             [notebook-utils :as nu]))
 
 (def iris (nu/dataset :iris))
+
+(nu/data-table iris)
+
 (def mtcars (nu/dataset :mtcars))
+
+(nu/data-table mtcars)
+
 (def faithful (nu/dataset :faithful))
+
+(nu/data-table faithful)
+
 (def barley (nu/dataset :barley))
+
+(nu/data-table barley)
+
 (def chem97 (nu/dataset :chem97))
+
+(nu/data-table chem97)
+
 (def diamonds (nu/dataset :diamonds))
+
+(nu/data-table diamonds)
+
 (def lincoln (nu/dataset :lincoln-weather))
+
+(nu/data-table lincoln)
 
 ;; ## Violin
 
@@ -126,6 +146,8 @@
 (def chem97-sample
   "A fixed 5% sample of chem97 (the full data has 31022 rows)."
   (let [rng (r/rng :mersenne 3)] (filterv (fn [_] (< (r/drandom rng) 0.05)) chem97)))
+
+(nu/data-table chem97-sample)
 
 (plot/render-image
  (plot/arrange (for [inner [:box :quartiles :rug :points]]

@@ -26,12 +26,20 @@
                :when (and (pos? (double value)) (not= (region from) (region to)))]
            {:from (region from) :to (region to) :value value}))))
 
+(nu/data-table migration)
+
 (def characters
   (mapv (fn [{:keys [name group]}] {:id name :group (str "group " group)}) (nu/dataset :miserables-characters)))
 
+(nu/data-table characters)
+
 (def co-occurrences (nu/dataset :miserables-links))
 
+(nu/data-table co-occurrences)
+
 (def mtcars (nu/dataset :mtcars))
+
+(nu/data-table mtcars)
 
 (def mtcars-variables [:mpg :cyl :disp :hp :drat :wt :qsec :vs :am :gear :carb])
 
@@ -43,6 +51,8 @@
           mtcars)))
 
 (def air-passengers (nu/dataset :air-passengers))
+
+(nu/data-table air-passengers)
 
 ;; ## Chord diagram
 
@@ -104,6 +114,8 @@
        (distinct)
        (mapv (fn [[a b]] {:from a :to b}))))
 
+(nu/data-table coauthor-edges)
+
 (plot/render-image
  (plot/network coauthor-edges {:rng (r/rng :mersenne 11) :node-style {:size 8}
                                :title (str (count coauthor-edges) " co-authorships")})
@@ -163,6 +175,8 @@
     (mapv #(assoc % :r (:value %) :value (Math/abs (double (:value %))))
           (graph/adjacency->edges strong names {:directed? false}))))
 
+(nu/data-table correlation-edges)
+
 (plot/render-image
  (plot/network correlation-edges {:nodes (mapv (fn [k] {:id (name k)}) mtcars-variables) :rng (r/rng :mersenne 5)
                                   :labels true
@@ -203,6 +217,8 @@
 
 (def energy-flows (nu/dataset :energy))
 
+(nu/data-table energy-flows)
+
 (plot/render-image
  (plot/sankey energy-flows {:title "UK energy flows in 2050 (TWh)"})
  {:width 1000 :height 650})
@@ -219,6 +235,8 @@
 (nu/source-note {:source "R Graph Gallery - Sankey diagram (alluvial section)"
                  :url "https://r-graph-gallery.com/sankey-diagram.html"
                  :dataset :titanic})
+
+(nu/data-table (nu/dataset :titanic))
 
 (plot/render-image
  (plot/alluvial (nu/dataset :titanic) {:axes [:class :sex :age :survived] :value :n :fill :class
@@ -239,6 +257,8 @@
   (vec (for [[year rows] (group-by :year air-passengers)
              [rank row] (map-indexed vector (sort-by :passengers > rows))]
          (assoc row :rank (inc rank)))))
+
+(nu/data-table month-ranks)
 
 (plot/render-image
  {:data month-ranks :mapping {:x :year :y :rank :color :month}
@@ -287,9 +307,13 @@
                        "https://www.data-to-viz.com/graph/edge_bundling.html"]
                  :dataset :flare})
 
+(nu/data-table (nu/dataset :flare))
+
 (def flare-tree (tree/from-parents (nu/dataset :flare) {:name :name}))
 
 (def flare-imports (nu/dataset :flare-dependencies))
+
+(nu/data-table flare-imports)
 
 (plot/render-image
  (plot/bundle flare-imports flare-tree {:from :source :to :target
@@ -325,6 +349,8 @@
                  :url ["https://r-graph-gallery.com/334-basic-dendrogram-with-ggraph.html"
                        "https://www.data-to-viz.com/graph/dendrogram.html"]
                  :dataset :world-population})
+
+(nu/data-table (nu/dataset :world-population))
 
 (plot/render-image
  (plot/dendrogram (tree/from-levels (nu/dataset :world-population) {:hierarchy [:region :subregion]})
@@ -418,6 +444,8 @@
   (mapv #(assoc % :period (cond (<= (long (:year %)) 1952) "1949-1952" (<= (long (:year %)) 1956) "1953-1956" :else "1957-1960"))
         air-passengers))
 
+(nu/data-table periods)
+
 (plot/render-image
  (plot/arrange
   [{:data air-passengers :mapping {:x :month :y :passengers}
@@ -465,6 +493,8 @@
                                       (if (or (= 6 (count path)) (< (r/drandom g) (* 0.12 (count path))))
                                         (conj path "end")
                                         (recur (conj path (pages (pick (weights (peek path)))))))))}))))
+
+(nu/data-table visits)
 
 (plot/render-image
  (plot/sequences visits {:scales {:color {:domain (conj pages "end")}}

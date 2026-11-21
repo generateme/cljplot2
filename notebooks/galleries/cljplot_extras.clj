@@ -68,6 +68,8 @@
 
 (nu/source-note {:source "cljplot - qqplot" :url examples-url :dataset :faithful})
 
+(nu/data-table (nu/dataset :faithful))
+
 (let [faithful (nu/dataset :faithful)
       short-wait (map :eruptions (filter #(< (double (:waiting %)) 70.0) faithful))
       long-wait (map :eruptions (filter #(>= (double (:waiting %)) 70.0) faithful))
@@ -189,6 +191,8 @@
 
 (def bo-1d
   (opt/bayesian-optimization target {:bounds [[-2.0 10.0]] :vector-arg? false :init-points 2 :rng (r/rng :mersenne 7)}))
+
+(nu/data-table bo-1d)
 
 (let [xtest (m/slice-range -2.0 10.0 200)
       step-plot (fn [i]
@@ -549,6 +553,8 @@
 
 (nu/source-note {:source "cljplot - bubble" :url examples-url :dataset :seattle-weather})
 
+(nu/data-table (nu/dataset :seattle-weather))
+
 (plot/render-image
  {:data (nu/dataset :seattle-weather)
   :mapping {:x :temp_min :y :temp_max :color :wind :size :precipitation}
@@ -686,9 +692,13 @@
   (let [g (r/rng :mersenne 21)]
     (vec (repeatedly 2000 (fn [] {:v (+ 1.5 (m/exp (r/grandom g 1.0 0.45)))})))))
 
+(nu/data-table skewed)
+
 (def tailed
   (let [d (r/distribution :gamma {:shape 1.2 :scale 8.0 :rng (r/rng :mersenne 22)})]
     (vec (repeatedly 150 (fn [] {:v (r/sample d)})))))
+
+(nu/data-table tailed)
 
 ;; ### One-dimensional charts
 

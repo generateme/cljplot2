@@ -81,8 +81,9 @@ into the builder's. `cljplot2.core` is the public API (`build`, `render`, `rende
   only from `nu/options-table` over `cljplot2.describe` rows (never hand-written; code hidden), one section at a
   time for sliced rows, each table with a sentence or two and followed by its example (a chart or a value);
   `reference-notebook-test` checks every schema of `describe/plot-level-schemas`, shared group, theme key and section
-  has a table of at most 12 rows, each followed by an example; every dataset or data a reference page defines is shown
-  right after its `def` with `nu/data-table` (first 100 rows, a last row of `…` when cut, code hidden; a box of
+  has a table of at most 12 rows, each followed by an example. On every book page (reference, use cases, galleries;
+  `book-data-test`) every dataset or data defined is shown right after its `def`, and every dataset read is shown by
+  some table (of the dataset, or of a var defined from it), with `nu/data-table` (first 100 rows, a last row of `…` when cut, code hidden; a box of
   class `data-table` - compact, left-aligned, scrolling, styled in `clay.edn` `:include-in-header`). Chart pages (`charts_*.clj`, kinds per
   page in `reference-notebook-test/chart-chapters`): per kind a `;; ## kind` heading, its mapping table, its own
   options (`describe/own-rows` - shared groups left to the Shared options chapter, sliced by `:cljplot2/section` when

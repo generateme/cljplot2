@@ -18,15 +18,40 @@
            [java.time.temporal IsoFields]))
 
 (def houses (nu/dataset :house-prices))
+
+(nu/data-table houses)
+
 (def iris (nu/dataset :iris))
+
+(nu/data-table iris)
+
 (def mtcars (nu/dataset :mtcars))
+
+(nu/data-table mtcars)
+
 (def faithful (nu/dataset :faithful))
+
+(nu/data-table faithful)
+
 (def gapminder (nu/dataset :gapminder-2007))
+
+(nu/data-table gapminder)
+
 (def countries (nu/dataset :countries))
+
+(nu/data-table countries)
+
 (def diamonds (nu/dataset :diamonds))
 
+(nu/data-table diamonds)
+
 (def economics (mapv #(update % :date (fn [d] (LocalDate/parse d))) (nu/dataset :economics)))
+
+(nu/data-table economics)
+
 (def bitcoin (mapv #(update % :date (fn [d] (LocalDate/parse d))) (nu/dataset :bitcoin)))
+
+(nu/data-table bitcoin)
 
 (def indicators
   "The countries' rate indicators (per person, comparable across countries)."
@@ -189,6 +214,8 @@
                                 {:chromosome chromosome :position (+ offset i) :log-p (- (m/log10 (max p 1.0e-12)))})]
           (recur (inc chromosome) (+ offset n) (into rows chromosome-rows)))))))
 
+(nu/data-table markers)
+
 (let [centres (into (sorted-map) (for [[chromosome rows] (group-by :chromosome markers)]
                                      [(stats/mean (map :position rows)) chromosome]))]
   (plot/render-image
@@ -216,6 +243,8 @@
                :let [dx (r/grandom rng 0.0 1.0)]]
            {:group g :x (+ cx dx) :y (+ cy (* 0.8 dx) (r/grandom rng 0.0 0.5))}))))
 
+(nu/data-table simpson)
+
 (plot/render-image
  (plot/arrange
   [{:data simpson :mapping {:x :x :y :y}
@@ -238,6 +267,8 @@
 ;; columns of different units; `:cell :pointy-hex` draws the same grid as a honeycomb.
 
 (def europe (filterv #(= "Europe" (:continent %)) countries))
+
+(nu/data-table europe)
 
 (nu/source-note {:source "R Graph Gallery - Heatmap; data-to-viz - Heatmap"
                  :url ["https://r-graph-gallery.com/heatmap.html" "https://www.data-to-viz.com/graph/heatmap.html"]
@@ -387,6 +418,8 @@
            {:x x :y y :z (+ (* 8 (m/exp (- (/ (+ (m/sq (- x 3)) (m/sq (- y 6))) 6.0))))
                             (* 5 (m/exp (- (/ (+ (m/sq (- x 8)) (m/sq (- y 2))) 8.0))))
                             (* 0.6 (r/drandom rng)))}))))
+
+(nu/data-table lattice)
 
 (plot/render-image
  (plot/arrange
@@ -657,6 +690,8 @@
             "IV" [6.58 5.76 7.71 8.84 8.47 7.04 5.25 12.50 5.56 7.91 6.89]}]
     (vec (for [set ["I" "II" "III" "IV"] [x y] (map vector (if (= "IV" set) x4 x123) (ys set))]
            {:set set :x x :y y}))))
+
+(nu/data-table anscombe)
 
 (let [r-label (fn [rows] (format "r = %.2f" (stats/pearson-correlation (map :x rows) (map :y rows))))]
   (plot/render-image

@@ -13,7 +13,6 @@
             [clojure.test :refer [deftest testing is]]
             [clojure.walk :as walk]
             [malli.core :as malli]
-            [notebook-utils :as nu]
             [cljplot2.content.label]
             [cljplot2.core]
             [cljplot2.data.facet]
@@ -23,8 +22,8 @@
             [cljplot2.pipeline]
             [cljplot2.scale.aesthetic :as aesthetic]
             [cljplot2.scale.coord]
-            [cljplot2.scale.position])
-  (:import [java.io PushbackReader]))
+            [cljplot2.scale.position]
+            [cljplot2.notebook-forms :refer [resolved-forms calls]]))
 
 (def ^:private concept-chapters
   "The concept chapters (R3), in reading order."
@@ -90,41 +89,11 @@
   []
   (let [parts (book-parts)] (vec (mapcat parts reference-parts))))
 
-(defn- read-forms
-  "Every top-level form of the Clojure file at `path` (no evaluation)."
-  [path]
-  (binding [*read-eval* false]
-    (with-open [r (PushbackReader. (io/reader path))]
-      (vec (take-while #(not= ::end %) (repeatedly #(read {:eof ::end} r)))))))
-
-(defn- aliases
-  "Alias name -> namespace symbol of the `ns` form in `forms`."
-  [forms]
-  (let [ns-form (first (filter #(and (seq? %) (= 'ns (first %))) forms))
-        requires (rest (first (filter #(and (seq? %) (= :require (first %))) ns-form)))]
-    (into {} (for [spec requires
-                   :when (vector? spec)
-                   :let [{alias :as} (apply hash-map (rest spec))]
-                   :when alias]
-               [(name alias) (first spec)]))))
-
-(defn- resolved-forms
-  "Forms of the notebook at `path` with alias-qualified symbols (`plot/arrange`) fully qualified."
-  [path]
-  (let [forms (read-forms path)
-        as (aliases forms)]
-    (walk/postwalk #(if-let [n (and (symbol? %) (as (namespace %)))] (symbol (str n) (name %)) %) forms)))
-
 (defn- notebook-forms
   "Notebook file name (without `.clj`) -> resolved forms, of every Reference chapter."
   []
   (into {} (map (fn [p] [(second (re-find #"([^/]+)\.clj$" p)) (resolved-forms (str "notebooks/" p))]))
         (reference-paths)))
-
-(defn- calls
-  "Every call of function symbol `f` anywhere in `forms`."
-  [forms f]
-  (filter #(and (seq? %) (= f (first %))) (tree-seq coll? seq forms)))
 
 (def ^:private options-table 'notebook-utils/options-table)
 
@@ -306,48 +275,6 @@
   (testing "a data table of a computed value is an example; of a defined name, setup"
     (is (= [] (tables-without-example [(list options-table :a) '(notebook-utils/data-table (f x))])))
     (is (= [:a] (tables-without-example [(list options-table :a) '(notebook-utils/data-table d)])))))
-
-(defn- data-value?
-  "Is `v` data a page shows - rows (a non-empty sequence of maps) or columns (a map of equal-length non-empty
-  sequences)?"
-  [v]
-  (or (and (sequential? v) (seq v) (every? map? (take nu/data-table-rows v)))
-      (and (map? v) (seq v) (every? sequential? (vals v)) (pos? (count (first (vals v))))
-           (apply = (map count (vals v))))))
-
-(defn- data-vars
-  "Names (symbols) of the vars of notebook namespace `ns-sym` (loaded here) holding data."
-  [ns-sym]
-  (require ns-sym)
-  (set (for [[n v] (ns-publics ns-sym) :when (data-value? @v)] n)))
-
-(defn- defs-without-table
-  "Names of the `defs` among top-level `forms` not immediately followed by `(nu/data-table name)`."
-  [forms defs]
-  (vec (for [[form next-form] (partition 2 1 (concat forms [nil]))
-             :when (and (seq? form) (= 'def (first form)) (contains? defs (second form)))
-             :when (not (and (seq? next-form) (= 'notebook-utils/data-table (first next-form))
-                             (= (second form) (second next-form))))]
-         (second form))))
-
-(deftest data-tables-test
-  (doseq [[page forms] (notebook-forms)
-          :let [ns-sym (second (first (filter #(and (seq? %) (= 'ns (first %))) forms)))]]
-    (testing (str page ": every dataset or data defined is shown right after its definition (nu/data-table)")
-      (is (= [] (defs-without-table forms (data-vars ns-sym)))))))
-
-(deftest data-tables-rule-test
-  (testing "boundary: a table right after the def; a table later; none; a non-data def"
-    (is (= [] (defs-without-table ['(def d [{:a 1}]) '(notebook-utils/data-table d)] #{'d})))
-    (is (= ['d] (defs-without-table ['(def d [{:a 1}]) '(f) '(notebook-utils/data-table d)] #{'d})))
-    (is (= ['d] (defs-without-table ['(def d [{:a 1}])] #{'d})))
-    (is (= [] (defs-without-table ['(def p {:charts []})] #{}))))
-  (testing "data values: rows, columns; not plots, keyword lists or empty data"
-    (is (data-value? [{:a 1}]))
-    (is (data-value? {:t (range 3) :v [1 2 3]}))
-    (is (not (data-value? {:data [{:a 1}] :charts []})))
-    (is (not (data-value? [:a :b])))
-    (is (not (data-value? [])))))
 
 (deftest conventions-test
   (doseq [[page forms] (notebook-forms)]

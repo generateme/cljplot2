@@ -43,19 +43,60 @@
           chapter chapter figure))
 
 (def chem97 (nu/dataset :chem97))
+
+(nu/data-table chem97)
+
 (def oats (nu/dataset :oats))
+
+(nu/data-table oats)
+
 (def barley (nu/dataset :barley))
+
+(nu/data-table barley)
+
 (def titanic (nu/dataset :titanic))
+
+(nu/data-table titanic)
+
 (def faithful (nu/dataset :faithful))
+
+(nu/data-table faithful)
+
 (def gvhd10 (nu/dataset :gvhd10))
+
+(nu/data-table gvhd10)
+
 (def quakes (nu/dataset :quakes))
+
+(nu/data-table quakes)
+
 (def va-deaths (nu/dataset :va-deaths))
+
+(nu/data-table va-deaths)
+
 (def postdoc (nu/dataset :postdoc))
+
+(nu/data-table postdoc)
+
 (def earthquake (nu/dataset :earthquake))
+
+(nu/data-table earthquake)
+
 (def seatac (nu/dataset :seatac-weather))
+
+(nu/data-table seatac)
+
 (def us-arrests (nu/dataset :us-arrests))
+
+(nu/data-table us-arrests)
+
 (def states (nu/dataset :states))
+
+(nu/data-table states)
+
 (def mtcars (nu/dataset :mtcars))
+
+(nu/data-table mtcars)
 
 ;; ## Chapter 1 - Introduction
 
@@ -318,6 +359,8 @@
   "gvhd10 with log and log2 forward scatter."
   (mapv (fn [{:keys [fsc-h] :as row}] (assoc row :log-fsc (m/log fsc-h) :log2-fsc (m/log2 fsc-h))) gvhd10))
 
+(nu/data-table gvhd10-log)
+
 (plot/render-image
  {:data gvhd10-log
   :mapping {:x :log-fsc :facet :days}
@@ -375,6 +418,8 @@
   "chem97 with the transformed GCSE score `gcsescore^2.34`."
   (mapv #(assoc % :gcsescore-trans (m/pow (:gcsescore %) 2.34)) chem97))
 
+(nu/data-table chem97-trans)
+
 (plot/render-image
  {:data chem97-trans
   :mapping {:y :gcsescore-trans :color :score :facet :gender}
@@ -389,6 +434,8 @@
 (nu/source-note {:source "Lattice Fig 3.8" :url (figure-url 3 8) :dataset :chem97})
 
 (def chem97-positive (filterv #(pos? (:gcsescore %)) chem97))
+
+(nu/data-table chem97-positive)
 
 (plot/render-image
  {:data chem97-positive
@@ -524,6 +571,8 @@
     (mapv (fn [row residual] (assoc row :root-residual (m/sqrt (m/abs residual))))
           barley (get-in model [:residuals :raw]))))
 
+(nu/data-table barley-residuals)
+
 (def barley-residual-plot
   "The residuals jittered by site (R's order), a line through each year's medians (in site order, left to right)."
   (let [by-site-year (group-by (juxt :site :year) barley-residuals)
@@ -615,6 +664,8 @@
   "postdoc counts as proportions of each field's total."
   (let [totals (update-vals (group-by :field postdoc) #(reduce + (map :count %)))]
     (mapv #(assoc % :proportion (/ (double (:count %)) (double (totals (:field %))))) postdoc)))
+
+(nu/data-table postdoc-proportions)
 
 (plot/render-image
  {:data postdoc-proportions
@@ -723,6 +774,8 @@
   "quakes, deepest first."
   (vec (sort-by :depth > quakes)))
 
+(nu/data-table quakes-by-depth)
+
 (def grey-depth
   "Colour scale of depth: grey levels as R's `gray.colors`, dark for shallow."
   {:color {:range [[77 77 77] [230 230 230]] :title "depth"}})
@@ -745,6 +798,8 @@
 
 (def quakes-magnitude
   (shingle/shingle quakes-by-depth :mag {:count 4 :overlap 0.5 :as :magnitude :label "Magnitude"}))
+
+(nu/data-table quakes-magnitude)
 
 (plot/render-image
  {:data quakes-magnitude
@@ -880,6 +935,8 @@
   "SeaTac weather, one row per day and variable."
   (for [row seatac, k [:min-temp :max-temp :precip]]
     {:month (:month row) :day (:day row) :variable (name k) :value (k row)}))
+
+(nu/data-table seatac-long)
 
 (plot/render-image
  {:data seatac-long
@@ -1030,6 +1087,8 @@
   "quakes with a shingle of four equal-count, half-overlapping magnitude intervals."
   (shingle/shingle quakes :mag {:count 4 :overlap 0.5 :as :magnitude :label "Magnitude"}))
 
+(nu/data-table quakes-magnitude-4)
+
 (plot/render-image
  {:data quakes-magnitude-4
   :mapping {:x :lat :y :long :z :depth :facet :magnitude}
@@ -1077,6 +1136,8 @@
         :when (not (#{"Alaska" "Hawaii"} name))]
     {:name name :long long :lat lat :density (/ (* 1000.0 population) area)}))
 
+(nu/data-table state-density)
+
 (plot/render-image
  {:data state-density
   :mapping {:x :long :y :lat :z :density}
@@ -1096,6 +1157,8 @@
 (def env
   "environmental with the cube root of ozone."
   (mapv #(update % :ozone m/cbrt) (nu/dataset :environmental)))
+
+(nu/data-table env)
 
 (plot/render-image
  {:data (shingle/shingle env :radiation {:count 4 :overlap 0.5 :as :radiation-cut :label "Radiation"})
@@ -1140,6 +1203,8 @@
         mesh (fn [[lo hi] n] (mapv #(+ lo (* (- hi lo) (/ % (double n)))) (range (inc n))))]
     (vec (for [[model f] models, r (mesh (ranges :radiation) 3), w (mesh (ranges :wind) 50), t (mesh (ranges :temperature) 50)]
            {:model model :radiation (m/round r) :wind w :temperature t :fit (f [w t r])}))))
+
+(nu/data-table env-fits)
 
 (def model-order {:facet-row {:domain ["Shepard" "radial basis" "Gaussian process" "linear"]}})
 
@@ -1186,6 +1251,8 @@
 
 (def volcano (nu/dataset :volcano))
 
+(nu/data-table volcano)
+
 (plot/render-image
  (plot/arrange [{:data volcano
                  :mapping {:x :row :y :column :value :height}
@@ -1211,6 +1278,8 @@
 
 (def cars93 (nu/dataset :cars93))
 
+(nu/data-table cars93)
+
 (def cars93-correlations
   "Correlation of every pair of numeric Cars93 columns, over the rows where both are present."
   (let [columns [:min-price :price :max-price :mpg-city :mpg-highway :engine-size :horsepower :rpm :rev-per-mile
@@ -1219,6 +1288,8 @@
     (vec (for [a columns, b columns
                :let [pairs (filter #(and (some? (a %)) (some? (b %))) cars93)]]
            {:row (name a) :column (name b) :r (stats/correlation (map a pairs) (map b pairs))}))))
+
+(nu/data-table cars93-correlations)
 
 (plot/render-image
  {:data cars93-correlations
@@ -1254,6 +1325,8 @@
         counts (frequencies (map (juxt :score :gcd :gender) binned))]
     (vec (for [gender ["M" "F"], score (sort (distinct (map :score binned))), gcd (sort (distinct (map :gcd binned)))]
            {:score score :gcd gcd :gender gender :count (get counts [score gcd gender] 0)}))))
+
+(nu/data-table chem97-deciles)
 
 (plot/render-image
  {:data (map #(assoc % :root (m/sqrt (:count %))) chem97-deciles)
@@ -1355,6 +1428,8 @@
 
 (nu/source-note {:source "Lattice Fig 7.3" :url (figure-url 7 3) :dataset :lattice-settings})
 
+(nu/data-table (nu/dataset :lattice-settings))
+
 (let [settings (nu/dataset :lattice-settings)
       by-count (fn [k descending?] (->> (frequencies (map k settings)) (sort-by (fn [[v n]] [(if descending? (- n) n) v])) (mapv key)))]
   (plot/render-image
@@ -1391,6 +1466,8 @@
 ;; `relation = "sliced"` (equal ranges) needs numbers in cljplot2; the equal-length slices make `:free` the same.
 
 (nu/source-note {:source "Lattice Fig 8.2" :url (figure-url 8 2) :dataset :bioc-access})
+
+(nu/data-table (nu/dataset :bioc-access))
 
 (plot/render-image
  {:data (shingle/shingle (map-indexed (fn [i row] (assoc row :hour-index i :thousands (/ (:counts row) 1000.0)
@@ -1453,6 +1530,8 @@
 ;; plots (no secondary axes).
 
 (nu/source-note {:source "Lattice Fig 8.6" :url (figure-url 8 6) :dataset :nhtemp})
+
+(nu/data-table (nu/dataset :nhtemp))
 
 (let [nhtemp (map #(assoc % :celsius (/ (* 5.0 (- (:value %) 32.0)) 9.0)) (nu/dataset :nhtemp))]
   (plot/render-image
@@ -1527,6 +1606,8 @@
 
 (def titanic-adults (filterv #(= "Adult" (:age %)) titanic))
 
+(nu/data-table titanic-adults)
+
 (plot/render-image
  {:data titanic-adults
   :mapping {:x :n :y :class :color :survived :facet :sex}
@@ -1565,6 +1646,8 @@
 (nu/source-note {:source "Lattice Fig 10.3" :url (figure-url 10 3) :dataset :gcsemv})
 
 (def gcsemv (nu/dataset :gcsemv))
+
+(nu/data-table gcsemv)
 
 (plot/render-image
  {:data gcsemv
@@ -1618,6 +1701,8 @@
 
 (nu/source-note {:source "Lattice Fig 10.6" :url (figure-url 10 6) :dataset :beavers})
 
+(nu/data-table (nu/dataset :beavers))
+
 (plot/render-image
  {:data (for [{:keys [day time activ] :as row} (nu/dataset :beavers)]
           (assoc row :hour (+ (quot time 100) (* 24 (- day 307)) (/ (mod time 100) 60.0))
@@ -1634,6 +1719,9 @@
 (nu/source-note {:source "Lattice Fig 10.7" :url (figure-url 10 7) :dataset :us-age})
 
 (def us-age (nu/dataset :us-age))
+
+(nu/data-table us-age)
+
 (def us-sex {:color {:domain (nu/levels :us-age :sex) :range two-colors}})
 
 (plot/render-image
@@ -1694,6 +1782,8 @@
 (def quakes-mag-10
   (shingle/shingle quakes :mag {:count 10 :overlap 0.2 :as :magnitude}))
 
+(nu/data-table quakes-mag-10)
+
 (let [intervals (sort (distinct (map :magnitude quakes-mag-10)))]
   (plot/render-image
    (plot/arrange [{:data (map-indexed (fn [i iv] {:level (inc i) :lo (:lo iv) :hi (:hi iv)}) intervals)
@@ -1752,6 +1842,8 @@
 (def states-density
   (mapv (fn [{:keys [name population area region]}] {:name name :region region :density (/ (double population) area)}) states))
 
+(nu/data-table states-density)
+
 (def by-density {:y {:order-by #(stats/mean (map :density %))}})
 
 (plot/render-image
@@ -1786,6 +1878,8 @@
 ;; own axes.
 
 (nu/source-note {:source "Lattice Fig 10.17" :url (figure-url 10 17) :dataset :eu-stock-markets})
+
+(nu/data-table (nu/dataset :eu-stock-markets))
 
 (let [date (fn [decimal-year]
              (let [year (long (m/floor decimal-year))
@@ -1828,6 +1922,8 @@
 (nu/source-note {:source "Lattice Fig 10.19" :url (figure-url 10 19) :dataset :states})
 
 (def states-per-mile (mapv #(update % :density * 1000.0) states-density))
+
+(nu/data-table states-per-mile)
 
 (plot/render-image
  {:data states-per-mile
@@ -1872,6 +1968,8 @@
 ;; log-2 axes with the line y = x (square panels from the image size: `:aspect :iso` needs linear axes).
 
 (nu/source-note {:source "Lattice Fig 10.22" :url (figure-url 10 22) :dataset :us-cancer-rates})
+
+(nu/data-table (nu/dataset :us-cancer-rates))
 
 (plot/render-image
  {:data (filter #(and (:rate-male %) (:rate-female %)) (nu/dataset :us-cancer-rates))
@@ -1930,6 +2028,8 @@
 ;; a log-2 axis on the right.
 
 (nu/source-note {:source "Lattice Fig 11.1" :url (figure-url 11 1) :dataset :us-personal-expenditure})
+
+(nu/data-table (nu/dataset :us-personal-expenditure))
 
 (let [expenditure {:data (nu/dataset :us-personal-expenditure)
                    :mapping {:x :expenditure :y :year :facet :category}
@@ -2136,6 +2236,8 @@
   (vec (for [a cars93-cluster-order, b cars93-cluster-order, row cars93]
          {:a (cars93-short-names a) :b (cars93-short-names b) :x (a row) :y (b row)})))
 
+(nu/data-table cars93-pairs)
+
 ;; ### Fig 13.5 Correlation ellipses
 
 ;; The Cars93 correlations (6.12) in clustered order, each pair as the ellipse of a bivariate normal with that
@@ -2217,6 +2319,8 @@
 
 (nu/source-note {:source "Lattice Fig 14.1" :url (figure-url 14 1) :dataset :sunspot-year})
 
+(nu/data-table (nu/dataset :sunspot-year))
+
 (plot/render-image
  {:data (shingle/shingle (nu/dataset :sunspot-year) :time {:count 4 :overlap 0.05 :as :period :label "Time"})
   :mapping {:x :time :y :value :facet :period}
@@ -2261,6 +2365,8 @@
 
 (nu/source-note {:source "Lattice Fig 14.3" :url (figure-url 14 3) :dataset :gvhd})
 
+(nu/data-table (nu/dataset :gvhd))
+
 (plot/render-image
  {:data (nu/dataset :gvhd)
   :mapping {:x :fsc-h :y (levels/categorical :visit) :color (levels/categorical :visit) :facet :patient}
@@ -2276,6 +2382,8 @@
 ;; Hemoglobin by total iron-binding capacity in NHANES, counted in hexagons, a panel per sex.
 
 (nu/source-note {:source "Lattice Fig 14.4" :url (figure-url 14 4) :dataset :nhanes})
+
+(nu/data-table (nu/dataset :nhanes))
 
 (plot/render-image
  {:data (nu/dataset :nhanes)

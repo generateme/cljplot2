@@ -48,6 +48,8 @@
 
 (def faithful (nu/dataset :faithful))
 
+(nu/data-table faithful)
+
 (plot/render-image
  (plot/arrange [{:data faithful
                  :mapping {:x :eruptions :y :waiting}
