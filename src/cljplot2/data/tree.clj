@@ -472,11 +472,12 @@
 
 (defn bundle-paths
   "Edges (rows; `:from` / `:to` accessors, default `:from` / `:to` - leaf keys: the `:id` of a [[from-parents]] node,
-  else the leaf's `:name`, see [[leaf-key]]; with repeated names the first leaf is used) bundled along the laid out tree `laid` (see [[layout]], `:circular`): each a B-spline through the
-  positions of the tree path between its leaves, straightened by `:beta` (default 0.85; 1 - the tree path, 0 - a
-  straight line). Returns `{:paths [{:id i :x :y :from :to} ..] :dropped n}` - path rows (edge index `:id`, its row's
-  keys kept), edges with an end that isn't a leaf (or the same leaf at both ends) dropped and counted. Throws
-  `ex-info {:key k}` for an invalid option `k` (checked first, see [[bundle-paths-options]])."
+  else the leaf's `:name`; with repeated names the first leaf is used) bundled along the laid out
+  tree `laid` (see [[layout]], `:circular`): each a B-spline through the positions of the tree path between its
+  leaves, straightened by `:beta` (default 0.85; 1 - the tree path, 0 - a straight line). Returns `{:paths [{:id i :x
+  :y :from :to} ..] :dropped n}` - path rows (edge index `:id`, its row's keys kept), edges with an end that isn't a
+  leaf (or the same leaf at both ends) dropped and counted. Throws `ex-info {:key k}` for an invalid option `k`
+  (checked first, see [[bundle-paths-options]])."
   {:cljplot2/api true :cljplot2/options bundle-paths-options}
   [edges laid {:keys [from to beta] :or {from :from to :to beta 0.85} :as options}]
   (schema/check-options! bundle-paths-options options)

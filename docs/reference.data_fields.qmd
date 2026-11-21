@@ -290,8 +290,9 @@ along f, `:steps` times by a factor `:step`.
 ```
 
 
-Streamlines of a damped rotation from the seed grid - short (left) and long (middle) - and a seeded cloud of
-traces of a fastmath field drawn as faint points (right):
+Streamlines of a damped rotation from the seed grid - short (left) and long (middle; the spirals stop short of
+the centre after 400 steps) - and traces of a cellular flow `[sin y, sin x]` from 300 seeded random points as faint
+lines (right; cells turning in alternate directions, traces leaving the panel are cut):
 
 
 ::: {.sourceClojure}
@@ -310,13 +311,14 @@ traces of a fastmath field drawn as faint points (right):
                                    :aspect :iso
                                    :labels {:title ":steps 400"}}
                                   {:data (let [g (r/rng :mersenne 12)]
-                                           (vf/traces (f/field :exp) (repeatedly 1500 #(vector (r/drandom g -7 7) (r/drandom g -7 7)))
-                                                      {:steps 100 :step 0.01}))
-                                   :mapping {:x :x :y :y}
-                                   :charts [(chart/scatter {:size 1 :color [20 70 140 25]})]
-                                   :scales {:x {:domain [-7 7] :nice false} :y {:domain [-7 7] :nice false}}
+                                           (vf/traces (fn [[x y]] (v/vec2 (Math/sin y) (Math/sin x)))
+                                                      (repeatedly 300 #(vector (r/drandom g -4 4) (r/drandom g -4 4)))
+                                                      {:steps 60 :step 0.05}))
+                                   :mapping {:x :x :y :y :group :id}
+                                   :charts [(chart/line {:sort false :color [20 70 140 70]})]
+                                   :scales {:x {:domain [-4 4] :nice false} :y {:domain [-4 4] :nice false}}
                                    :aspect :iso
-                                   :labels {:title "exp field, 1500 seeds"}}]
+                                   :labels {:title "[sin y, sin x], 300 seeds"}}]
                                  {:columns 3 :widths [1 1.2 1]})
                    {:width 1000 :height 360})
 ```

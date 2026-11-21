@@ -208,7 +208,7 @@
 ;; The packed circles drawn as polygons - the root's circle in grey, the children in colour:
 
 (def circle-outlines (for [[i {:keys [x y r]}] (map-indexed vector (cons packed (:children packed)))
-                           a (range 0 360 6)]
+                           a (range 0 360 2)]
                        {:circle (if (zero? i) "root" (str "value " (:value (nth (:children packed) (dec i)))))
                         :x (+ x (* r (Math/cos (Math/toRadians a))))
                         :y (+ y (* r (Math/sin (Math/toRadians a))))}))
@@ -266,7 +266,7 @@
 ;; The two proportional circles drawn as polygons, each region labelled at its point:
 
 (def venn-outlines (for [[i {:keys [x y r]}] (map-indexed vector two-circles)
-                         a (range 0 360 4)]
+                         a (range 0 360 2)]
                      {:set (nth ["A (10)" "B (6)"] i)
                       :x (+ x (* r (Math/cos (Math/toRadians a))))
                       :y (+ y (* r (Math/sin (Math/toRadians a))))}))

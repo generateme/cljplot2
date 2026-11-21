@@ -491,9 +491,8 @@
    plot/builder-entries))
 
 (defn bundle
-  "Hierarchical edge bundling plot of `edges` (rows between leaves of `tree`, named as
-  [[cljplot2.data.tree/leaf-key]] - the `:id` of a `from-parents` tree, else the leaf name; `:from` / `:to`
-  accessors) as a plot map: leaves around a circle (the radial layout of the
+  "Hierarchical edge bundling plot of `edges` (rows between leaves of `tree`, each leaf named by its `:id` in a
+  `from-parents` tree, else by its name; `:from` / `:to` accessors) as a plot map: leaves around a circle (the radial layout of the
   tree), each edge a B-spline along the tree path between its leaves, straightened by `:beta` (default 0.85, see
   [[cljplot2.data.tree/bundle-paths]]); edges coloured by the top-level group of their source leaf (`:color-by-group?`,
   default `true`; else `:edge-color`), with `:alpha` (default 0.4; the edges only - leaf points and legend keys stay
@@ -518,7 +517,7 @@
         {:keys [paths]} (tree/bundle-paths edges laid (cond-> {:beta beta} from (assoc :from from) to (assoc :to to)))
         _ (when (and (seq edges) (empty? paths))
             (schema/fail! (str "No bundle edge joins two different leaves of the tree: edge ends should name leaves - "
-                               "the :id of a from-parents tree, else the leaf name (see tree/leaf-key).")
+                               "the :id of a from-parents node, else the leaf name.")
                           {:key :edges :value (count edges)}))
         from-of (data/row-accessor :from (or from :from))
         paths (mapv #(assoc % ::group (leaf-group (from-of %))) paths)
