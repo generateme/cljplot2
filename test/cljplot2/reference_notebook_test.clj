@@ -242,12 +242,15 @@
 
 (defn- illustration?
   "Is top-level `form` an example - a call rendering a chart or computing a value shown, also a data table of a
-  computed value (`(nu/data-table (f ...))`) - rather than setup (see [[setup-heads]]), a table or a bare literal /
-  symbol (which show nothing computed)?"
+  computed value (`(nu/data-table (f ...))`, not of a dataset as read - `(nu/data-table (nu/dataset :k))` shows input,
+  like a data table of a name) - rather than setup (see [[setup-heads]]), a table or a bare literal / symbol (which
+  show nothing computed)?"
   [form]
   (and (seq? form)
        (or (not (setup-heads (first form)))
-           (and (= 'notebook-utils/data-table (first form)) (seq? (second form))))))
+           (let [arg (second form)]
+             (and (= 'notebook-utils/data-table (first form)) (seq? arg)
+                  (not= 'notebook-utils/dataset (first arg)))))))
 
 (defn- tables-without-example
   "Rows forms of the tables in top-level `forms` not followed by an example before the next table or the page end."
@@ -274,7 +277,12 @@
     (is (= [:a] (tables-without-example [(list options-table :a) :kw "text" 42 'sym]))))
   (testing "a data table of a computed value is an example; of a defined name, setup"
     (is (= [] (tables-without-example [(list options-table :a) '(notebook-utils/data-table (f x))])))
-    (is (= [:a] (tables-without-example [(list options-table :a) '(notebook-utils/data-table d)])))))
+    (is (= [:a] (tables-without-example [(list options-table :a) '(notebook-utils/data-table d)])))
+    (is (= [:a] (tables-without-example [(list options-table :a) '(notebook-utils/data-table (notebook-utils/dataset :k))]))
+        "a dataset as read is input, not an example")
+    (is (= [] (tables-without-example [(list options-table :a)
+                                       '(notebook-utils/data-table (remove p (notebook-utils/dataset :k)))]))
+        "a computation over a dataset is")))
 
 (deftest conventions-test
   (doseq [[page forms] (notebook-forms)]
