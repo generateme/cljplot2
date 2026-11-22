@@ -63,6 +63,7 @@
              (-> [:map {:closed true}]
                  (into style-entries)
                  (into data/common-options)
+                 (into theme/theme-style-entries)
                  (into space/frame-options)
                  (conj (schema/optional :style {:description "mesh drawing: :surface (filled quads), :wireframe (quad outlines) or :both"
                                                 :default :surface}
@@ -208,7 +209,7 @@
 
 (defn- style
   [options theme]
-  (merge (get-in theme [:chart :surface])
+  (merge (theme/chart-style theme :surface options)
          (select-keys options [:stroke-color :stroke-width :color])
          {:surface-style (get options :style :surface)
           :shade? (not (false? (:shade options)))}))

@@ -185,6 +185,20 @@
                                  {:columns 3})
                    {:width 1000 :height 320})
 
+;; The labels' style is a theme text role, `:annotation` by default; `:role` picks another - a role the theme adds,
+;; or a builder's (here `:network-label`, small names on white boxes), the inline style keys still over it:
+
+(plot/render-image {:data cities
+                    :mapping {:x :lon :y :lat}
+                    :charts [(chart/scatter)
+                             (chart/text {:mapping {:x :lon :y :lat :label :city} :anchor [:left :bottom] :offset [4 2]
+                                          :role :network-label})
+                             (chart/text {:x [:panel 0.5] :y [:panel 0.95] :text "European cities" :role :callout})]
+                    :theme {:text {:callout {:font "DejaVu Sans Mono" :size 13 :font-style :bold :color [178 34 34]
+                                             :padding 2}}}
+                    :labels {:x "longitude" :y "latitude"}}
+                   {:width 550 :height 340})
+
 (nu/shared-groups (describe/options (chart/text)))
 
 ;; ## image

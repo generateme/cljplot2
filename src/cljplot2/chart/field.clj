@@ -29,7 +29,8 @@
             [cljplot2.data.rows :as data]
             [cljplot2.scale.aesthetic :as aesthetic]
             [cljplot2.scale.position :as scale]
-            [cljplot2.schema :as schema])
+            [cljplot2.schema :as schema]
+            [cljplot2.theme :as theme])
   (:import [fastmath.vector Vec2]))
 
 (set! *warn-on-reflection* true)
@@ -44,6 +45,7 @@
                 (into style-entries)
                 (into field/options)
                 (into data/common-options)
+                (into theme/theme-style-entries)
                 (conj (schema/optional :pixel-color {:description (str "a function of a point [x y] returning each pixel's colour (nil - transparent): a raster over "
                                                                      ":domain, no grid, colour scale or legend; not with :f")}
                                        schema/function)))
@@ -57,7 +59,7 @@
 
 (defn- style
   [options theme]
-  (merge (get-in theme [:chart :field]) (select-keys options [:alpha])))
+  (merge (theme/chart-style theme :field options) (select-keys options [:alpha])))
 
 (defn value-title
   "Legend title of a field's computed value from the chart `options` and merged `mapping`: \"Density\" for points, the

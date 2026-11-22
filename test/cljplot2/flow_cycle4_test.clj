@@ -3,7 +3,8 @@
   sequences sunburst."
   (:require [clojure.test :refer [deftest testing is are]]
             [fastmath.core :as m]
-            [cljplot2.test-util :refer [error]]
+            [clojure2d.color :as c]
+            [cljplot2.test-util :refer [error drawn-style]]
             [cljplot2.chart :as chart]
             [cljplot2.content.legend :as legend]
             [cljplot2.core :as plot]
@@ -140,7 +141,7 @@
                                    (set (map (juxt :from :to #(get % :cljplot2.graphs/color)) (get-in bands [:options :data])))))]
       (is (contains? (band-colors {}) ["b" "y" "b"]))
       (is (contains? (band-colors {:link-color :target}) ["b" "y" "y"]))
-      (is (= [150 150 150] (get-in (first (:charts (plot/sankey flows {:link-color :none}))) [:options :color])))
+      (is (= (c/to-color [150 150 150]) (c/to-color (:color (drawn-style (first (:charts (plot/sankey flows {:link-color :none}))))))))
       (is (= :link-color (:key (error #(plot/sankey flows {:link-color :from})))))))
   (testing "2.1 labels beside the nodes, inside the frame; legend only for a mapped colour"
     (let [p (plot/sankey flows {})
@@ -151,7 +152,8 @@
       (is (= false (get-in p [:scales :color :legend])))
       (is (= true (get-in (plot/sankey flows {:nodes [{:id "a" :kind "in"}] :mapping {:color #(or (:kind %) "other")}})
                           [:scales :color :legend])))
-      (is (= [255 255 255 170] (get-in left [:options :background])) "labels on translucent boxes")
+      (is (= :sankey-label (get-in left [:options :role])) "labels in the sankey role")
+      (is (= (c/to-color [255 255 255 170]) (c/to-color (get-in cljplot2.theme/default-theme [:text :sankey-label :background]))) "on translucent boxes")
       (is (= 2 (count (:charts (plot/sankey flows {:labels? false})))))
       (is (instance? BufferedImage (plot/render-image p {:width 400 :height 300}))))))
 
@@ -190,7 +192,7 @@
           [bands strata labels] (:charts p)]
       (is (= :fill (get-in bands [:options :mapping :color])))
       (is (= #{"F" "M"} (set (map :fill (get-in bands [:options :data])))))
-      (is (= [150 150 150] (get-in strata [:options :color])))
+      (is (= (c/to-color [150 150 150]) (c/to-color (:color (drawn-style strata)))))
       (is (= :text (:kind labels)))
       (is (= "sex" (get-in p [:scales :color :title])))
       (is (= ["class" "sex" "age"] (mapv (get-in p [:scales :x :formatter]) (get-in p [:scales :x :ticks]))))

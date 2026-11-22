@@ -24,7 +24,8 @@
             [cljplot2.data.rows :as data]
             [cljplot2.data.strip :as strip]
             [cljplot2.graphics.shape :as shape]
-            [cljplot2.schema :as schema])
+            [cljplot2.schema :as schema]
+            [cljplot2.theme :as theme])
   (:import [fastmath.vector Vec2]))
 
 (set! *warn-on-reflection* true)
@@ -72,6 +73,7 @@
    :options (-> [:map {:closed true}]
                 (into style-entries)
                 (into data/common-options)
+                (into theme/theme-style-entries)
                 (into strip/options)
                 (conj (schema/optional :method {:description "interval of the values: a fastmath extent or bootstrap method keyword, or a function of the values returning [lo hi] or [lo hi centre]"
                                                 :default :min-max}
@@ -103,7 +105,7 @@
 
 (defn- style
   [options theme]
-  (merge (get-in theme [:chart :extent]) (select-keys options [:color :line-width :shape :size])))
+  (merge (theme/chart-style theme :extent options) (select-keys options [:color :line-width :shape :size])))
 
 (defn bootstrap-interval
   "Bootstrap interval `ci` (a key of [[bootstrap-intervals]]) of `statistic` (default fastmath `mean`) of `values`,

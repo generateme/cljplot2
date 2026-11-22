@@ -43,6 +43,16 @@
                                   :title ":colors"})
                    {:width 700 :height 500})
 
+;; The lag points draw in the theme style `[:chart :acf-point]` (a scatter style over `[:chart :scatter]`; their
+;; colours are the `:colors` option):
+
+(nu/options-table (describe/style-rows :acf-point))
+
+;; Larger triangle points through the theme:
+
+(plot/render-image (plot/acf ar1 {:partial? :acf :theme {:chart {:acf-point {:size 8 :shape \A}}}})
+                   {:width 700 :height 360})
+
 (nu/shared-groups (describe/options #'plot/acf))
 
 ;; ## horizon

@@ -77,6 +77,27 @@
                                  {:columns 2})
                    {:width 900 :height 380})
 
+;; The theme styles a network draws with - the nodes in `[:chart :network-node]` (a scatter style over
+;; `[:chart :scatter]`), the edges in `[:chart :network-edge]` (a segment style), the labels in the text role
+;; `:network-label` (see the Theme chapter); `:node-style` / `:edge-style` win over them per call:
+
+(nu/options-table (describe/style-rows :network-node))
+
+;; A theme restyles every network of a plot - here square, dark nodes:
+
+(plot/render-image (plot/network friends {:rng (r/rng :mersenne 1) :labels true
+                                          :theme {:chart {:network-node {:shape \s :color [60 60 60] :size 10}}}})
+                   {:width 500 :height 360})
+
+(nu/options-table (describe/style-rows :network-edge))
+
+;; Dashed blue edges and larger labels through the theme:
+
+(plot/render-image (plot/network friends {:rng (r/rng :mersenne 1) :labels true
+                                          :theme {:chart {:network-edge {:color [40 90 200] :dash :dashed :width 2}}
+                                                  :text {:network-label {:size 11}}}})
+                   {:width 500 :height 360})
+
 (nu/shared-groups (describe/options #'plot/network))
 
 ;; ## chord
@@ -120,6 +141,24 @@
                                  {:columns 2})
                    {:width 900 :height 320})
 
+;; The theme styles of an arc diagram - nodes in `[:chart :arc-node]` (scatter), arcs in `[:chart :arc-edge]`
+;; (line):
+
+(nu/options-table (describe/style-rows :arc-node))
+
+;; Hollow nodes through the theme:
+
+(plot/render-image (plot/arc friends {:theme {:chart {:arc-node {:shape \o :color [200 60 40] :size 10}}}})
+                   {:width 500 :height 300})
+
+(nu/options-table (describe/style-rows :arc-edge))
+
+;; Thick dark arcs through the theme:
+
+(plot/render-image (plot/arc friends {:edge-mapping {} :alpha 0.8
+                                      :theme {:chart {:arc-edge {:color [40 40 40] :width 3}}}})
+                   {:width 500 :height 300})
+
 (nu/shared-groups (describe/options #'plot/arc))
 
 ;; ## sankey
@@ -153,6 +192,19 @@
                                  {:columns 3 :widths [1 1 1.3]})
                    {:width 1000 :height 330})
 
+;; The flow bands draw in the theme style `[:chart :sankey-link]` (a polygon style; its colour shows with
+;; `:link-color :none`), the node names in the text role `:sankey-label`:
+
+(nu/options-table (describe/style-rows :sankey-link))
+
+;; Grey bands outlined in white, larger names:
+
+(plot/render-image (plot/sankey visits {:link-color :none
+                                        :theme {:chart {:sankey-link {:color [120 140 170] :stroke-color :white
+                                                                      :stroke-width 1}}
+                                                :text {:sankey-label {:size 11}}}})
+                   {:width 600 :height 330})
+
 (nu/shared-groups (describe/options #'plot/sankey))
 
 ;; ## alluvial
@@ -172,6 +224,18 @@
 (plot/render-image (plot/alluvial titanic {:axes [:class :survived] :value :n :fill :survived
                                            :alpha 0.9 :node-width 0.25 :pad 0.1
                                            :axis-names ["passenger class" "survived?"]})
+                   {:width 600 :height 400})
+
+;; The strata draw in the theme style `[:chart :alluvial-stratum]` (a polygon style), their names in the text role
+;; `:alluvial-label`:
+
+(nu/options-table (describe/style-rows :alluvial-stratum))
+
+;; Dark strata with light names:
+
+(plot/render-image (plot/alluvial titanic {:axes [:class :survived] :value :n :fill :survived
+                                           :theme {:chart {:alluvial-stratum {:color [50 50 50]}}
+                                                   :text {:alluvial-label {:color :white :background :none}}}})
                    {:width 600 :height 400})
 
 (nu/shared-groups (describe/options #'plot/alluvial))

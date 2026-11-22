@@ -39,7 +39,8 @@
             [cljplot2.graphics.polyline :as polyline]
             [cljplot2.scale.aesthetic :as aesthetic]
             [cljplot2.scale.position :as scale]
-            [cljplot2.schema :as schema])
+            [cljplot2.schema :as schema]
+            [cljplot2.theme :as theme])
   (:import [fastmath.vector Vec2]))
 
 (set! *warn-on-reflection* true)
@@ -89,6 +90,7 @@
   {:style (into [:map {:closed true}] style-entries)
    :options (-> [:map {:closed true}]
                 (into style-entries)
+                (into theme/theme-style-entries)
                 (conj (schema/optional :data (schema/forbidden "isn't used: a function chart samples its functions"))
                       (schema/optional :mapping {:cljplot2/section :curve :description "the chart's own mapping of the function labels (e.g. {:color :function}); only facet keys come from the plot"}
                                        data/mapping-schema)
@@ -128,7 +130,7 @@
 
 (defn- style
   [options theme]
-  (merge (get-in theme [:chart :function]) (select-keys options [:color :width :dash :fill :bridge])))
+  (merge (theme/chart-style theme :function options) (select-keys options [:color :width :dash :fill :bridge])))
 
 ;; input
 

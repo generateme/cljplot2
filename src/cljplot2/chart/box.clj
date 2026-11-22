@@ -69,6 +69,7 @@
    :options (-> [:map {:closed true}]
                 (into style-entries)
                 (into data/common-options)
+                (into theme/theme-style-entries)
                 (into strip/options)
                 (conj (schema/optional :stat {:description "statistics: :tukey (computed from the values) or :identity (pre-aggregated, one row per level and group read through the mapping keys :lower :q1 :median :q3 :upper)"
                                               :default :tukey}
@@ -106,7 +107,7 @@
 
 (defn- style
   [options theme]
-  (merge (get-in theme [:chart :box]) (select-keys options [:color :stroke-color :stroke-width :shape :size :pattern :pattern-color])))
+  (merge (theme/chart-style theme :box options) (select-keys options [:color :stroke-color :stroke-width :shape :size :pattern :pattern-color])))
 
 (defn box-stats
   "Tukey box statistics of `values` (non-empty): `{:q1 :median :q3 :lav :uav :outliers [..] :mean :n}`."

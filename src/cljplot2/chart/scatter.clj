@@ -26,7 +26,8 @@
             [cljplot2.data.rows :as data]
             [cljplot2.scale.position :as scale]
             [cljplot2.graphics.shape :as shape]
-            [cljplot2.schema :as schema])
+            [cljplot2.schema :as schema]
+            [cljplot2.theme :as theme])
   (:import [fastmath.vector Vec2]))
 
 (set! *warn-on-reflection* true)
@@ -48,6 +49,7 @@
    :options (-> [:map {:closed true}]
                 (into style-entries)
                 (into data/common-options)
+                (into theme/theme-style-entries)
                 (conj (schema/optional :padding {:description "padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span"
                                                  :cljplot2/default-doc "0.05 on every side"}
                                        data/position-padding)
@@ -71,7 +73,7 @@
 (defn- style
   "Chart options merged over the theme defaults."
   [options theme]
-  (merge (get-in theme [:chart :scatter]) (select-keys options [:size :color :stroke-color :stroke-width :shape])))
+  (merge (theme/chart-style theme :scatter options) (select-keys options [:size :color :stroke-color :stroke-width :shape])))
 
 (defn kept?
   "Is `v` of dimension `k` kept: valid (for an aesthetic: kept by its plot scale, see

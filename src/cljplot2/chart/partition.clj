@@ -36,7 +36,8 @@
             [cljplot2.scale.aesthetic :as aesthetic]
             [cljplot2.scale.coord :as coord]
             [cljplot2.scale.position :as scale]
-            [cljplot2.schema :as schema])
+            [cljplot2.schema :as schema]
+            [cljplot2.theme :as theme])
   (:import [fastmath.vector Vec2]))
 
 (set! *warn-on-reflection* true)
@@ -53,6 +54,7 @@
    :options (-> [:map {:closed true}]
                 (into style-entries)
                 (into data/common-options)
+                (into theme/theme-style-entries)
                 (conj (schema/optional :order {:description "order of siblings: :value (descending) or :data (first appearance)"
                                                :default :value}
                                        [:enum :value :data])
@@ -68,7 +70,7 @@
 
 (defn- style
   [options theme]
-  (merge (get-in theme [:chart :partition]) (select-keys options [:border-color :border-width :pattern :pattern-color])))
+  (merge (theme/chart-style theme :partition options) (select-keys options [:border-color :border-width :pattern :pattern-color])))
 
 (defn cells
   "Cells of `tree` (a root, see [[cljplot2.data.hierarchy]]) for `options` (`:order`, `:root`, `:group-labels`,

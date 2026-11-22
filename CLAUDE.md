@@ -51,7 +51,14 @@ charts don't validate their own input.
 - Optional keys: `:computed-aesthetics` (e.g. a computed colour), `:coords` (`#{:cartesian :polar}`),
   `:inherit-mapping :facets` (annotation charts inherit only facet keys; data under `facet/all-panels` is drawn in
   every panel).
-- Every built-in kind has a theme entry `[:chart kind]` checked against `chart/builtin-styles`.
+- Every built-in kind has a theme entry `[:chart kind]` checked against `chart/builtin-styles`. A chart's style is
+  `(theme/chart-style theme kind options)`: `[:chart kind]` with the named style of its `:theme-style` option
+  (shared group `:theme-style`, every kind with a theme style) merged over it, its own style options over both.
+  Named styles are partial `[:chart name]` entries; builders draw with registered ones (`theme/named-styles` - name
+  -> kind, values in `default-theme`, e.g. `:network-node`, `:tree-link`), so a theme restyles builders; `build`
+  checks each merged over its kind (`pipeline/named-style-checks`), an unknown name is an error. Builder labels use
+  text roles of section `:builder-text` through the text chart's `:role` (default `:annotation`). Builder pages show
+  each named style with `describe/style-rows`.
 - Tick labels are drawn without collisions: axes, polar guides, 3D frames and colour bars keep the first label, then
   each not overlapping one drawn (`measure/kept-label-indices` along an axis, `measure/kept-box-indices` for boxes).
   Axes and polar guides draw them all for a scale with `:overlapping-labels :keep` or explicit `:ticks` (without
@@ -131,6 +138,32 @@ into the builder's. `cljplot2.core` is the public API (`build`, `render`, `rende
   `fail!`. `reference-r2-test` checks every builder and API function.
 - Errors: `cljplot2.schema/fail!` with `{:key option …}`; namespaces `cljplot2.schema` itself requires (e.g.
   `graphics.shape`) use `cljplot2.error/fail!` (the same function, no dependency cycle).
+- Docstrings follow the user's `docstring` skill (statement, context, parameters with map keys and defaults, return
+  value, corner cases and errors, `[[links]]`; no implementation details). A `def`'s doc goes in metadata:
+  `(def ^{:doc "..."} name value)`, never positional after the name.
+
+### Clojure style (user review)
+
+- Primitive hints work in destructuring (`{:keys [^double x]}`, `[[^double a ^double b]]`); prefer them to
+  `(double x)` rebinding.
+- A hint truncates: a `^long` argument receiving a double drops the fraction - hint what the value is (e.g.
+  `m/slice-range` yields doubles, so `(fn [^double t] ...)`).
+- A function returning a primitive (`^double`) needs no explicit conversion of its result.
+- Arithmetic and comparisons on numbers with `fastmath.core` (`m/+ m/* m/< m/== m/max m/round m/pos? m/one? ...`),
+  not `Math/...` or `clojure.core` operators.
+- Primitive longs in loops are always forced: `(long ...)`.
+- A primitive put into a Clojure collection is boxed anyway - don't force it with `double` / `long` there.
+- No `boolean` coercion: `nil` and `false` are false, everything else true.
+- Compute constants once (a `def`, e.g. `(def ^{:private true :const true :tag 'double} frame-padding+ (m/inc
+  frame-padding))`), never per call; `:const` defs carry `:tag`.
+- `delay` only to defer a computation that may not be needed; a value used anyway is computed once in a `let`.
+- Hard-coded colours are made once with `c/color` (`(c/color r g b a)`) or `c/gray` (`(c/gray v a)`), not vectors;
+  users may pass any colour representation. clojure2d colour functions coerce their arguments - no explicit
+  `c/to-color` before them. Tests compare colours through `c/to-color` on both sides (a `Vec4` is never `=` to a
+  vector).
+- Mutable caches: a `defonce` atom of a Clojure map, not Java collections.
+- Style defaults (colours, sizes, label boxes) belong to the theme, never private vars or inline literals in
+  builders or charts.
 
 ## Related repositories
 

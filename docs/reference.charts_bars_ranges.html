@@ -1554,7 +1554,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="odd">
 <td>:color</td>
 <td>a clojure2d color</td>
-<td>[69 117 180]</td>
+<td>[69.0 117.0 180.0 255.0]</td>
 <td>bar fill colour (a mapped :color wins)</td>
 </tr>
 <tr class="even">
@@ -2005,7 +2005,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="clay-image">
 <p><img src="reference.charts_bars_ranges_files/image8.png" class="img-fluid"></p>
 </div>
-<p>Shared options: <a href="reference.shared_options.html#fill-patterns">Fill patterns</a> (<code>:pattern</code> <code>:pattern-color</code>); <a href="reference.shared_options.html#data-and-mapping">Data and mapping</a> (<code>:data</code> <code>:mapping</code>); <a href="reference.shared_options.html#strip-options">Strip options</a> (<code>:place</code> <code>:width</code> <code>:thickness</code> <code>:dodge-gap</code> <code>:bottom-share</code> <code>:n-label</code> <code>:n-format</code> <code>:level-axis</code>); <a href="reference.shared_options.html#mirrored-strips">Mirrored strips</a> (<code>:mirror</code>); <a href="reference.shared_options.html#rounded-corners">Rounded corners</a> (<code>:corner-radius</code> <code>:corner-radius-end</code>).</p>
+<p>Shared options: <a href="reference.shared_options.html#fill-patterns">Fill patterns</a> (<code>:pattern</code> <code>:pattern-color</code>); <a href="reference.shared_options.html#data-and-mapping">Data and mapping</a> (<code>:data</code> <code>:mapping</code>); <a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> (<code>:theme-style</code>); <a href="reference.shared_options.html#strip-options">Strip options</a> (<code>:place</code> <code>:width</code> <code>:thickness</code> <code>:dodge-gap</code> <code>:bottom-share</code> <code>:n-label</code> <code>:n-format</code> <code>:level-axis</code>); <a href="reference.shared_options.html#mirrored-strips">Mirrored strips</a> (<code>:mirror</code>); <a href="reference.shared_options.html#rounded-corners">Rounded corners</a> (<code>:corner-radius</code> <code>:corner-radius-end</code>).</p>
 </section>
 </section>
 <section id="extent" class="level2" data-number="16.2">
@@ -2089,7 +2089,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="odd">
 <td>:color</td>
 <td>a clojure2d color or :none</td>
-<td>[69 117 180]</td>
+<td>[69.0 117.0 180.0 255.0]</td>
 <td>interval colour (a mapped :color wins)</td>
 </tr>
 <tr class="even">
@@ -2584,7 +2584,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="clay-image">
 <p><img src="reference.charts_bars_ranges_files/image12.png" class="img-fluid"></p>
 </div>
-<p>Shared options: <a href="reference.shared_options.html#data-and-mapping">Data and mapping</a> (<code>:data</code> <code>:mapping</code>); <a href="reference.shared_options.html#strip-options">Strip options</a> (<code>:place</code> <code>:width</code> <code>:thickness</code> <code>:position</code> <code>:dodge-gap</code> <code>:bottom-share</code> <code>:n-label</code> <code>:n-format</code> <code>:level-axis</code>); <a href="reference.shared_options.html#mirrored-strips">Mirrored strips</a> (<code>:mirror</code>).</p>
+<p>Shared options: <a href="reference.shared_options.html#data-and-mapping">Data and mapping</a> (<code>:data</code> <code>:mapping</code>); <a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> (<code>:theme-style</code>); <a href="reference.shared_options.html#strip-options">Strip options</a> (<code>:place</code> <code>:width</code> <code>:thickness</code> <code>:position</code> <code>:dodge-gap</code> <code>:bottom-share</code> <code>:n-label</code> <code>:n-format</code> <code>:level-axis</code>); <a href="reference.shared_options.html#mirrored-strips">Mirrored strips</a> (<code>:mirror</code>).</p>
 </section>
 <section id="bullet" class="level2" data-number="16.3">
 <h2 data-number="16.3" class="anchored" data-anchor-id="bullet"><span class="header-section-number">16.3</span> bullet</h2>
@@ -2707,13 +2707,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="odd">
 <td>:range-colors</td>
 <td>[a clojure2d color or :none, a clojure2d color or :none]</td>
-<td>[[204 204 204] [238 238 238]]</td>
+<td>[[204.0 204.0 204.0 255.0] [238.0 238.0 238.0 255.0]]</td>
 <td>[first last] colours shading the ranges from the smallest to the largest</td>
 </tr>
 <tr class="even">
 <td>:measure-colors</td>
 <td>[a clojure2d color or :none, a clojure2d color or :none]</td>
-<td>[[70 130 180] [176 196 222]]</td>
+<td>[[70.0 130.0 180.0 255.0] [176.0 196.0 222.0 255.0]]</td>
 <td>[first last] colours shading the measures from the first (the current value) to the last</td>
 </tr>
 <tr class="odd">
@@ -2770,7 +2770,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="clay-image">
 <p><img src="reference.charts_bars_ranges_files/image14.png" class="img-fluid"></p>
 </div>
-<p>Shared options: <a href="reference.shared_options.html#data-and-mapping">Data and mapping</a> (<code>:data</code> <code>:mapping</code>); <a href="reference.shared_options.html#strip-options">Strip options</a> (<code>:place</code> <code>:width</code> <code>:thickness</code> <code>:position</code> <code>:dodge-gap</code> <code>:bottom-share</code> <code>:level-axis</code>).</p>
+<p>Shared options: <a href="reference.shared_options.html#data-and-mapping">Data and mapping</a> (<code>:data</code> <code>:mapping</code>); <a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> (<code>:theme-style</code>); <a href="reference.shared_options.html#strip-options">Strip options</a> (<code>:place</code> <code>:width</code> <code>:thickness</code> <code>:position</code> <code>:dodge-gap</code> <code>:bottom-share</code> <code>:level-axis</code>).</p>
 <div style="background-color:grey;height:2px;width:100%;"></div>
 <div><pre><small><small>source: notebooks/reference/charts_bars_ranges.clj</small></small></pre></div>
 

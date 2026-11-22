@@ -139,7 +139,7 @@ random layout (seeded here), edges as segments - with arrows for a directed grap
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:mapping</td><td>map of keyword to any value or nil</td><td></td><td>node aesthetics (:color, :size, :shape): accessors of the nodes (their row's columns, :degree, :in, :out)</td></tr><tr><td>:edge-mapping</td><td>map of keyword to any value or nil</td><td></td><td>edge aesthetics (:color, :size - the width): accessors of the edges (their row's columns, :value); none mapped in :mapping too</td></tr><tr><td>:node-style</td><td>map of keyword to any value or nil</td><td>{:size 12 :stroke-color :white :stroke-width 1}, the theme scatter colour made opaque</td><td>scatter options of the nodes, merged over the default</td></tr><tr><td>:edge-style</td><td>map of keyword to any value or nil</td><td>{:color [120 120 120 200]} (the colour only when not mapped)</td><td>segment options of the edges, merged over the default; :arrow - the arrows of a directed graph</td></tr><tr><td>:labels</td><td>true or false or a keyword, a function or a categorical marker of one or nil</td><td>false</td><td>node labels right of the nodes: true - the id, an accessor of the node, false - none</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:mapping</td><td>map of keyword to any value or nil</td><td></td><td>node aesthetics (:color, :size, :shape): accessors of the nodes (their row's columns, :degree, :in, :out)</td></tr><tr><td>:edge-mapping</td><td>map of keyword to any value or nil</td><td></td><td>edge aesthetics (:color, :size - the width): accessors of the edges (their row's columns, :value); none mapped in :mapping too</td></tr><tr><td>:node-style</td><td>map of keyword to any value or nil</td><td>theme [:chart :network-node]</td><td>scatter options of the nodes, merged over the default</td></tr><tr><td>:edge-style</td><td>map of keyword to any value or nil</td><td>theme [:chart :network-edge]</td><td>segment options of the edges, merged over the default (a mapped colour wins); :arrow - the arrows of a directed graph</td></tr><tr><td>:labels</td><td>true or false or a keyword, a function or a categorical marker of one or nil</td><td>false</td><td>node labels right of the nodes: true - the id, an accessor of the node, false - none</td></tr></tbody></table>
 ```
 
 :::
@@ -192,6 +192,63 @@ not both:
 :::
 
 
+The theme styles a network draws with - the nodes in `[:chart :network-node]` (a scatter style over
+`[:chart :scatter]`), the edges in `[:chart :network-edge]` (a segment style), the labels in the text role
+`:network-label` (see the Theme chapter); `:node-style` / `:edge-style` win over them per call:
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:size</td><td>a non-negative number</td><td>12</td><td>point size in pixels (a mapped :size wins)</td></tr><tr><td>:color</td><td>a clojure2d color or :none</td><td>[69.0 117.0 180.0 255.0]</td><td>point colour (a mapped :color wins)</td></tr><tr><td>:stroke-color</td><td>a clojure2d color or :none</td><td>:white</td><td>outline colour: a colour or :none</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>outline width in pixels</td></tr><tr><td>:shape</td><td>a shape character, keyword or shape map</td><td>\O</td><td>point shape (a mapped :shape wins)</td></tr></tbody></table>
+```
+
+:::
+
+
+A theme restyles every network of a plot - here square, dark nodes:
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/network friends {:rng (r/rng :mersenne 1) :labels true
+                                          :theme {:chart {:network-node {:shape \s :color [60 60 60] :size 10}}}})
+                   {:width 500 :height 360})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.builders_graphs_files/image2.png)
+:::
+
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:color</td><td>a clojure2d color or :none</td><td>[120.0 120.0 120.0 200.0]</td><td>line colour (a mapped :color wins)</td></tr><tr><td>:width</td><td>a non-negative number</td><td>1</td><td>line width in pixels</td></tr><tr><td>:dash</td><td>:none, a dash style (:dashed :dot-dash :dot-dot-dash :dotted :long-dash :loose-dot :solid :two-dash) or a sequence of positive numbers or nil</td><td>:none</td><td>dash style of the line (a mapped :dash wins)</td></tr></tbody></table>
+```
+
+:::
+
+
+Dashed blue edges and larger labels through the theme:
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/network friends {:rng (r/rng :mersenne 1) :labels true
+                                          :theme {:chart {:network-edge {:color [40 90 200] :dash :dashed :width 2}}
+                                                  :text {:network-label {:size 11}}}})
+                   {:width 500 :height 360})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.builders_graphs_files/image3.png)
+:::
+
+
 Shared options: [Graph](reference.shared_options.html#graph) (`:from` `:to` `:value` `:nodes` `:id` `:directed?`); [Graph layout](reference.shared_options.html#graph-layout) (`:layout` `:iterations` `:gravity` `:rng`); [Builder options](reference.shared_options.html#builder-options) (`:title` `:scales` `:theme`).
 
 
@@ -224,7 +281,7 @@ Migration between world regions (flows under 0.1 dropped), opaque ribbons and no
 
 
 ::: {.clay-image}
-![](reference.builders_graphs_files/image2.png)
+![](reference.builders_graphs_files/image4.png)
 :::
 
 
@@ -238,7 +295,7 @@ Nodes on a line, links as arcs above it - a compact view of a graph whose node o
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:mapping</td><td>map of keyword to any value or nil</td><td></td><td>node aesthetics (:color, :size, :shape): accessors of the nodes (their row's columns, :degree, :in, :out)</td></tr><tr><td>:edge-mapping</td><td>map of keyword to any value or nil</td><td>{:size :value} (widths from the size scale {:range [0.5 4]}) when the edge weights differ and :mapping has no :size</td><td>edge aesthetics (:color, :size - the width): accessors of the edges (their row's columns, :value); none mapped in :mapping too</td></tr><tr><td>:alpha</td><td>a number in [0 1]</td><td>0.5</td><td>opacity of the arcs' strokes</td></tr><tr><td>:node-style</td><td>map of keyword to any value or nil</td><td>{:size 8 :stroke-color :white :stroke-width 1}, the theme scatter colour made opaque</td><td>scatter options of the nodes, merged over the default</td></tr><tr><td>:edge-style</td><td>map of keyword to any value or nil</td><td>{:color [120 120 120] :width 1}</td><td>line options of the arcs, merged over the default</td></tr><tr><td>:labels</td><td>true or a keyword, a function or a categorical marker of one</td><td>true</td><td>node labels under the line: true - the id, or an accessor of the node (a nil or "" result - an empty label)</td></tr><tr><td>:labels?</td><td>true or false</td><td>true</td><td>node labels under the line, rotated to read downward</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:mapping</td><td>map of keyword to any value or nil</td><td></td><td>node aesthetics (:color, :size, :shape): accessors of the nodes (their row's columns, :degree, :in, :out)</td></tr><tr><td>:edge-mapping</td><td>map of keyword to any value or nil</td><td>{:size :value} (widths from the size scale {:range [0.5 4]}) when the edge weights differ and :mapping has no :size</td><td>edge aesthetics (:color, :size - the width): accessors of the edges (their row's columns, :value); none mapped in :mapping too</td></tr><tr><td>:alpha</td><td>a number in [0 1]</td><td>0.5</td><td>opacity of the arcs' strokes</td></tr><tr><td>:node-style</td><td>map of keyword to any value or nil</td><td>theme [:chart :arc-node]</td><td>scatter options of the nodes, merged over the default</td></tr><tr><td>:edge-style</td><td>map of keyword to any value or nil</td><td>theme [:chart :arc-edge]</td><td>line options of the arcs, merged over the default</td></tr><tr><td>:labels</td><td>true or a keyword, a function or a categorical marker of one</td><td>true</td><td>node labels under the line: true - the id, or an accessor of the node (a nil or "" result - an empty label)</td></tr><tr><td>:labels?</td><td>true or false</td><td>true</td><td>node labels under the line, rotated to read downward</td></tr></tbody></table>
 ```
 
 :::
@@ -257,7 +314,7 @@ line:
 
 
 ::: {.clay-image}
-![](reference.builders_graphs_files/image3.png)
+![](reference.builders_graphs_files/image5.png)
 :::
 
 
@@ -280,7 +337,61 @@ Arc colours and opacity, node style, labels from a node column (left); no labels
 
 
 ::: {.clay-image}
-![](reference.builders_graphs_files/image4.png)
+![](reference.builders_graphs_files/image6.png)
+:::
+
+
+The theme styles of an arc diagram - nodes in `[:chart :arc-node]` (scatter), arcs in `[:chart :arc-edge]`
+(line):
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:size</td><td>a non-negative number</td><td>8</td><td>point size in pixels (a mapped :size wins)</td></tr><tr><td>:color</td><td>a clojure2d color or :none</td><td>[69.0 117.0 180.0 255.0]</td><td>point colour (a mapped :color wins)</td></tr><tr><td>:stroke-color</td><td>a clojure2d color or :none</td><td>:white</td><td>outline colour: a colour or :none</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>outline width in pixels</td></tr><tr><td>:shape</td><td>a shape character, keyword or shape map</td><td>\O</td><td>point shape (a mapped :shape wins)</td></tr></tbody></table>
+```
+
+:::
+
+
+Hollow nodes through the theme:
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arc friends {:theme {:chart {:arc-node {:shape \o :color [200 60 40] :size 10}}}})
+                   {:width 500 :height 300})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.builders_graphs_files/image7.png)
+:::
+
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th><th>Group</th></tr></thead><tbody><tr><td>:color</td><td>a clojure2d color or :none</td><td>[120.0 120.0 120.0 255.0]</td><td>line colour (a mapped :color wins)</td><td>Line style</td></tr><tr><td>:width</td><td>a non-negative number</td><td>1</td><td>line width in pixels</td><td>Line style</td></tr><tr><td>:dash</td><td>:none, a dash style (:dashed :dot-dash :dot-dot-dash :dotted :long-dash :loose-dot :solid :two-dash) or a sequence of positive numbers or nil</td><td>:none</td><td>dash style of the line (a mapped :dash wins)</td><td>Line style</td></tr><tr><td>:fill</td><td>:color or a clojure2d color or :none</td><td>:none</td><td>area between the line and y = 0: :color (the line colour at :alpha), a colour or :none</td><td></td></tr><tr><td>:alpha</td><td>a number in [0 1]</td><td>0.6</td><td>area fill opacity of :fill :color and of stacked areas</td><td></td></tr><tr><td>:bridge</td><td>map</td><td></td><td>style of the segments bridging gaps with :gaps :bridge: :alpha (a fraction of the line alpha), optional :width and :dash</td><td></td></tr><tr><td>:bridge :alpha (required)</td><td>a number in [0 1]</td><td>0.3; 0.3 in the theme's :bridge (a given :bridge replaces it whole)</td><td>bridge opacity, a fraction of the line's alpha</td><td></td></tr><tr><td>:bridge :width</td><td>a non-negative number</td><td>the line's width</td><td>bridge width in pixels</td><td></td></tr><tr><td>:bridge :dash</td><td>:none, a dash style (:dashed :dot-dash :dot-dot-dash :dotted :long-dash :loose-dot :solid :two-dash) or a sequence of positive numbers or nil</td><td>the line's dash</td><td>dash style of the bridge</td><td></td></tr><tr><td>:pattern</td><td>a pattern name (:back-hatch :cross :dense-dots :diagonal-cross :dots :hatch :horizontal :solid :vertical) or a pattern map</td><td>:solid</td><td>pattern drawn over the fill (a mapped :pattern wins)</td><td>Fill patterns</td></tr><tr><td>:pattern-color</td><td>:darker or a clojure2d color or :none</td><td>:darker</td><td>pattern ink: a colour, :none or :darker (the darkened fill)</td><td>Fill patterns</td></tr></tbody></table>
+```
+
+:::
+
+
+Thick dark arcs through the theme:
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arc friends {:edge-mapping {} :alpha 0.8
+                                      :theme {:chart {:arc-edge {:color [40 40 40] :width 3}}}})
+                   {:width 500 :height 300})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.builders_graphs_files/image8.png)
 :::
 
 
@@ -294,7 +405,7 @@ Flows through layered nodes: nodes as bars in columns, links as bands as wide as
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:mapping</td><td>map</td><td></td><td>node aesthetics: only :color</td></tr><tr><td>:mapping :color</td><td>a keyword, a function or a categorical marker of one or nil</td><td>the node id, no legend</td><td>accessor of the node rows giving the node colour (a legend unless it's the id)</td></tr><tr><td>:link-color</td><td>one of :source :target :none</td><td>:source</td><td>the flow colour: that of its :source or :target node, or :none (grey)</td></tr><tr><td>:alpha</td><td>a number in [0 1]</td><td>0.5</td><td>opacity of the flow bands</td></tr><tr><td>:labels?</td><td>true or false</td><td>true</td><td>node names beside the nodes, inside the frame</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:mapping</td><td>map</td><td></td><td>node aesthetics: only :color</td></tr><tr><td>:mapping :color</td><td>a keyword, a function or a categorical marker of one or nil</td><td>the node id, no legend</td><td>accessor of the node rows giving the node colour (a legend unless it's the id)</td></tr><tr><td>:link-color</td><td>one of :source :target :none</td><td>:source</td><td>the flow colour: that of its :source or :target node, or :none (the theme style [:chart :sankey-link], grey)</td></tr><tr><td>:alpha</td><td>a number in [0 1]</td><td>0.5</td><td>opacity of the flow bands</td></tr><tr><td>:labels?</td><td>true or false</td><td>true</td><td>node names beside the nodes, inside the frame</td></tr></tbody></table>
 ```
 
 :::
@@ -312,7 +423,7 @@ The UK energy flows of a 2050 scenario, bands in their source's colour (the defa
 
 
 ::: {.clay-image}
-![](reference.builders_graphs_files/image5.png)
+![](reference.builders_graphs_files/image9.png)
 :::
 
 
@@ -363,7 +474,38 @@ no labels:
 
 
 ::: {.clay-image}
-![](reference.builders_graphs_files/image6.png)
+![](reference.builders_graphs_files/image10.png)
+:::
+
+
+The flow bands draw in the theme style `[:chart :sankey-link]` (a polygon style; its colour shows with
+`:link-color :none`), the node names in the text role `:sankey-label`:
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:color</td><td>a clojure2d color or :none</td><td>[150.0 150.0 150.0 255.0]</td><td>fill colour (a mapped :color wins)</td></tr><tr><td>:alpha</td><td>a number in [0 1]</td><td>1.0</td><td>fill opacity</td></tr><tr><td>:stroke-color</td><td>:color or a clojure2d color or :none</td><td>:none</td><td>outline colour: a colour, :none or :color (the group colour, opaque)</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>outline width in pixels</td></tr></tbody></table>
+```
+
+:::
+
+
+Grey bands outlined in white, larger names:
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/sankey visits {:link-color :none
+                                        :theme {:chart {:sankey-link {:color [120 140 170] :stroke-color :white
+                                                                      :stroke-width 1}}
+                                                :text {:sankey-label {:size 11}}}})
+                   {:width 600 :height 330})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.builders_graphs_files/image11.png)
 :::
 
 
@@ -396,7 +538,7 @@ Titanic passengers by class, sex, age and survival, coloured by class:
 
 
 ::: {.clay-image}
-![](reference.builders_graphs_files/image7.png)
+![](reference.builders_graphs_files/image12.png)
 :::
 
 
@@ -414,7 +556,37 @@ Opaque strands, wide strata with large gaps and names of your own under the colu
 
 
 ::: {.clay-image}
-![](reference.builders_graphs_files/image8.png)
+![](reference.builders_graphs_files/image13.png)
+:::
+
+
+The strata draw in the theme style `[:chart :alluvial-stratum]` (a polygon style), their names in the text role
+`:alluvial-label`:
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:color</td><td>a clojure2d color or :none</td><td>[150.0 150.0 150.0 255.0]</td><td>fill colour (a mapped :color wins)</td></tr><tr><td>:alpha</td><td>a number in [0 1]</td><td>1.0</td><td>fill opacity</td></tr><tr><td>:stroke-color</td><td>:color or a clojure2d color or :none</td><td>:white</td><td>outline colour: a colour, :none or :color (the group colour, opaque)</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>outline width in pixels</td></tr></tbody></table>
+```
+
+:::
+
+
+Dark strata with light names:
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/alluvial titanic {:axes [:class :survived] :value :n :fill :survived
+                                           :theme {:chart {:alluvial-stratum {:color [50 50 50]}}
+                                                   :text {:alluvial-label {:color :white :background :none}}}})
+                   {:width 600 :height 400})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.builders_graphs_files/image14.png)
 :::
 
 

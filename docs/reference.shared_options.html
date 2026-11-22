@@ -519,6 +519,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#sequences" id="toc-sequences" class="nav-link" data-scroll-target="#sequences"><span class="header-section-number">10.3.10</span> Sequences</a></li>
   <li><a href="#autocorrelation-rows" id="toc-autocorrelation-rows" class="nav-link" data-scroll-target="#autocorrelation-rows"><span class="header-section-number">10.3.11</span> Autocorrelation rows</a></li>
   <li><a href="#horizon-rows" id="toc-horizon-rows" class="nav-link" data-scroll-target="#horizon-rows"><span class="header-section-number">10.3.12</span> Horizon rows</a></li>
+  <li><a href="#named-theme-styles" id="toc-named-theme-styles" class="nav-link" data-scroll-target="#named-theme-styles"><span class="header-section-number">10.3.13</span> Named theme styles</a></li>
   </ul></li>
   </ul>
 </nav>
@@ -3958,6 +3959,44 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <div class="clay-image">
 <p><img src="reference.shared_options_files/image39.png" class="img-fluid"></p>
+</div>
+</section>
+<section id="named-theme-styles" class="level3" data-number="10.3.13">
+<h3 data-number="10.3.13" class="anchored" data-anchor-id="named-theme-styles"><span class="header-section-number">10.3.13</span> Named theme styles</h3>
+<p>A chart’s style comes from the theme <code>[:chart kind]</code>; <code>:theme-style</code> names a <code>[:chart name]</code> entry merged over it - a partial style a theme defines once and charts pick by name (builders draw with their own, see each builder’s page). <code>build</code> checks the merged style against the chart’s style keys; a name the theme hasn’t is an error.</p>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">Option</th>
+<th data-quarto-table-cell-role="th">Type</th>
+<th data-quarto-table-cell-role="th">Default</th>
+<th data-quarto-table-cell-role="th">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>:theme-style</td>
+<td>keyword</td>
+<td></td>
+<td>name of a theme [:chart name] style (a builder's, or one the theme adds) merged over the kind's style</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p>Highlighted points in a style named <code>:highlight</code>, the rest in the scatter style:</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb51"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb51-1"><a href="#cb51-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> points</span>
+<span id="cb51-2"><a href="#cb51-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:y</span>}</span>
+<span id="cb51-3"><a href="#cb51-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:charts</span> [(chart/scatter)</span>
+<span id="cb51-4"><a href="#cb51-4" aria-hidden="true" tabindex="-1"></a>                             (chart/scatter {<span class="at">:data</span> (<span class="kw">filter</span> #(<span class="kw">&gt;</span> (<span class="at">:y</span> <span class="va">%</span>) <span class="dv">4</span>) points) <span class="at">:theme-style</span> <span class="at">:highlight</span>})]</span>
+<span id="cb51-5"><a href="#cb51-5" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:theme</span> {<span class="at">:chart</span> {<span class="at">:highlight</span> {<span class="at">:size</span> <span class="dv">14</span> <span class="at">:color</span> [<span class="dv">215</span> <span class="dv">48</span> <span class="dv">39</span>] <span class="at">:shape</span> <span class="ch">\s</span>}}}}</span>
+<span id="cb51-6"><a href="#cb51-6" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">500</span> <span class="at">:height</span> <span class="dv">300</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.shared_options_files/image40.png" class="img-fluid"></p>
 </div>
 <div style="background-color:grey;height:2px;width:100%;"></div>
 <div><pre><small><small>source: notebooks/reference/shared_options.clj</small></small></pre></div>

@@ -10,7 +10,8 @@
             [cljplot2.data.group :as group]
             [cljplot2.graphics.polyline :as polyline]
             [cljplot2.scale.position :as scale]
-            [cljplot2.schema :as schema])
+            [cljplot2.schema :as schema]
+            [cljplot2.theme :as theme])
   (:import [fastmath.vector Vec2]))
 
 (set! *warn-on-reflection* true)
@@ -22,6 +23,7 @@
    :options (-> [:map {:closed true}]
                 (into polyline/style-entries)
                 (into data/common-options)
+                (into theme/theme-style-entries)
                 (conj (schema/optional :padding {:description "padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span"
                                                  :cljplot2/default-doc "{:x [0.05 0.05] :y [0.05 0.05]}"}
                                        data/position-padding)))
@@ -33,7 +35,7 @@
 
 (defn- style
   [options theme]
-  (merge (get-in theme [:chart :ecdf]) (select-keys options [:color :width :dash])))
+  (merge (theme/chart-style theme :ecdf options) (select-keys options [:color :width :dash])))
 
 (defn steps
   "Step-line vertices of the ECDF of `values` (finite doubles, not empty): starting at `(min, 0)`, rising at every

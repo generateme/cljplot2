@@ -1,7 +1,8 @@
 (ns cljplot2.test-util
   "Helpers shared by the tests."
   (:require [cljplot2.core :as plot]
-            [cljplot2.describe :as describe]))
+            [cljplot2.describe :as describe]
+            [cljplot2.theme :as theme]))
 
 (defn error-data
   "`ex-data` of the `ExceptionInfo` thrown by calling `f`, `nil` when it doesn't throw one."
@@ -12,6 +13,13 @@
   "[[error-data]] without `:errors` (the first error: `:key`, `:in`, `:value` and any extra data)."
   [f]
   (some-> (error-data f) (dissoc :errors)))
+
+(defn drawn-style
+  "Style keys a chart value draws with under the default theme (or `theme`, merged): its kind's style, its named
+  `:theme-style`, then its options over them (style keys only matter; other options come along)."
+  ([chart] (drawn-style chart nil))
+  ([{:keys [kind options]} theme]
+   (merge (theme/chart-style (theme/plot-theme theme) kind options) options)))
 
 (defn error-ins
   "Set of the `:in` paths of every error thrown by calling `f`."

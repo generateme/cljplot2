@@ -65,6 +65,17 @@
                                  {:columns 2})
                    {:width 1000 :height 400})
 
+;; The branches draw in the theme style `[:chart :dendrogram-branch]` (a line style; the clustered heatmap's trees
+;; too), the group names in the text role `:dendrogram-group-label`:
+
+(nu/options-table (describe/style-rows :dendrogram-branch))
+
+;; Thin blue branches through the theme:
+
+(plot/render-image (plot/dendrogram car-clustering {:labels car-names
+                                                    :theme {:chart {:dendrogram-branch {:color [40 90 160] :width 0.6}}}})
+                   {:width 700 :height 380})
+
 (nu/shared-groups (describe/options #'plot/dendrogram))
 
 ;; ## tree
@@ -90,6 +101,24 @@
                                                              :title "a clustering, :labels"})]
                                  {:columns 3})
                    {:width 1000 :height 420})
+
+;; The theme styles of a node-link tree - nodes in `[:chart :tree-node]` (scatter), links in `[:chart :tree-link]`
+;; (line), names in the text role `:tree-label`:
+
+(nu/options-table (describe/style-rows :tree-node))
+
+;; Small dark nodes through the theme:
+
+(plot/render-image (plot/tree office-tree {:theme {:chart {:tree-node {:size 5 :color [60 60 60] :stroke-color :none}}}})
+                   {:width 600 :height 360})
+
+(nu/options-table (describe/style-rows :tree-link))
+
+;; Darker, thicker links and bold names through the theme:
+
+(plot/render-image (plot/tree office-tree {:theme {:chart {:tree-link {:color [90 90 90] :width 2}}
+                                                   :text {:tree-label {:font-style :bold}}}})
+                   {:width 600 :height 360})
 
 (nu/shared-groups (describe/options #'plot/tree))
 
@@ -170,6 +199,23 @@
                                  {:columns 2 :widths [1 1.3]})
                    {:width 1000 :height 480})
 
+;; The theme styles of edge bundling - edges in `[:chart :bundle-edge]` (line), leaves in `[:chart :bundle-leaf]`
+;; (scatter):
+
+(nu/options-table (describe/style-rows :bundle-edge))
+
+;; Thicker edges through the theme:
+
+(plot/render-image (plot/bundle calls office-tree {:theme {:chart {:bundle-edge {:width 2.5}}}})
+                   {:width 500 :height 500})
+
+(nu/options-table (describe/style-rows :bundle-leaf))
+
+;; Large square leaves through the theme:
+
+(plot/render-image (plot/bundle calls office-tree {:theme {:chart {:bundle-leaf {:size 8 :shape \s}}}})
+                   {:width 500 :height 500})
+
 (nu/shared-groups (describe/options #'plot/bundle))
 
 ;; ## sequences
@@ -196,5 +242,14 @@
 
 (plot/render-image (plot/sequences visits {:value :n :keep-end? false :title ":keep-end? false"})
                    {:width 550 :height 450})
+
+;; The cells draw in the theme style `[:chart :sequences-cell]` (a partition style over `[:chart :partition]`):
+
+(nu/options-table (describe/style-rows :sequences-cell))
+
+;; Thick white cell borders through the theme:
+
+(plot/render-image (plot/sequences visits {:value :n :theme {:chart {:sequences-cell {:border-width 2}}}})
+                   {:width 500 :height 450})
 
 (nu/shared-groups (describe/options #'plot/sequences))

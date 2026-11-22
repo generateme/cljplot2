@@ -1,7 +1,11 @@
 (ns cljplot2.multiplot
   "Multiplots: plots arranged in a grid, each drawn as a whole plot in its cell (see [[cljplot2.content.subplot]]).
-  Panels of arranged plots are aligned in rows and columns by default, see [[cljplot2.layout.align]]."
+
+  Panels of arranged plots are aligned in rows and columns by default, see [[cljplot2.layout.align]]. Sub-plots keep their own themes.
+
+  Functions: [[arrange]] (plots in a grid, options [[arrange-options]]), [[pairs]] (a scatter-plot matrix, options [[pairs-options]]); [[builder-entries]] - the option entries every builder takes."
   (:require [fastmath.core :as m]
+            [fastmath.vector :as v]
             [cljplot2.chart :as chart]
             [cljplot2.data.accessor :as accessor]
             [cljplot2.scale.aesthetic :as aesthetic]
@@ -14,9 +18,8 @@
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
-(def builder-entries
-  "Option entries every builder takes (a shared group, `:builder`): the plot title, scales deep-merged into the
-  builder's and a theme; their values are validated with the built plot."
+(def ^{:doc "Option entries every builder takes (a shared group, `:builder`): the plot title, scales deep-merged into the builder's and a theme; their values are validated with the built plot."}
+  builder-entries
   (schema/in-fragment
    :builder
    [(schema/optional :title {:description "plot title (a text or label options)"} any?)
@@ -24,40 +27,40 @@
     (schema/optional :theme {:description "theme overrides of the built plot"} any?)]))
 
 (defn- builder-entries-of
-  "The entries of [[builder-entries]] with keys `ks`, in order (a builder taking only some of the shared group)."
+  "Some of the [[builder-entries]], for a builder taking only part of the shared group.
+
+  Parameters:
+
+  - `ks` (sequence of keywords): the keys wanted, each one of `:title`, `:scales`, `:theme`.
+
+  Returns their entries in the order of `ks`."
   [ks]
   (let [by-key (into {} (map (juxt first identity)) builder-entries)]
     (mapv by-key ks)))
 
-(def arrange-options
-  "Schema of [[arrange]]'s `options`: the plot `:arrange` layout entries but `:plots` (the shared group `:arrange`,
-  see [[cljplot2.layout.plot-grid/arrange-entries]]) and the builder's `:title` and `:theme` (a multiplot takes no
-  `:scales` - each sub-plot has its own)."
+(def ^{:doc "Schema of the `options` of [[arrange]]: the plot `:arrange` layout entries but `:plots` (the shared group `:arrange`, see [[cljplot2.layout.plot-grid/arrange-entries]]) and the builder's `:title` and `:theme` (a multiplot takes no `:scales` - each sub-plot has its own)."}
+  arrange-options
   (-> [:map {:closed true}]
       (into (remove #(= :plots (first %))) plot-grid/arrange-entries)
       (into (builder-entries-of [:title :theme]))))
 
 (defn arrange
-  "Plot map arranging `plots` in a grid of cells filled row by row: `{:arrange {:plots plots ...}}`.
+  "A plot map arranging plots in a grid of cells filled row by row: `{:arrange {:plots plots ...}}`.
 
-  `options`:
+  Parameters:
 
-  * `:columns`, `:rows` - grid shape (default one column; one given, the other computed)
-  * `:widths`, `:heights` - relative column / row weights (default equal); a `:widths` entry `:measured` sizes a
-    column of `:legend-only` plots to their legends (e.g. a shared legend column)
-  * `:align` - aligns the panels of sub-plots in rows and columns (default true; `false` - each sub-plot laid out
-    on its own), see [[cljplot2.layout.align]]
-  * `:equal-panels` - `true`: after the first layout the columns and rows are resized so every aligned panel has the
-    same width and height (cells with axes get the extra room; fixed / `:measured` columns keep their width) - a
-    matrix of panels, e.g. [[pairs]]; the whole multiplot is built twice; a `:widths` / `:heights` entry may also be
-    `[:fixed px]`
-  * `:title` - overall title above the cells (`:labels {:title t}`)
-  * `:theme` - the multiplot's theme: background, title style, `[:multiplot :gap]` between cells, `[:plot :margin]`
-    around them; sub-plots keep their own themes
+  - `plots` (sequence of plot maps): the cells, row by row.
+  - `options` (map, optional):
+    - `:columns`, `:rows` - grid shape (default one column; one given, the other computed);
+    - `:widths`, `:heights` - relative column / row weights (default equal); a `:widths` entry `:measured` sizes a column of `:legend-only` plots to their legends (e.g. a shared legend column), an entry may also be `[:fixed px]`;
+    - `:align` - align the panels of sub-plots in rows and columns (default `true`; `false` - each sub-plot laid out on its own), see [[cljplot2.layout.align]];
+    - `:equal-panels` - `true`: after the first layout the columns and rows are resized so every aligned panel has the same width and height (cells with axes get the extra room; fixed / `:measured` columns keep their width) - a matrix of panels, e.g. [[pairs]]; the whole multiplot is built twice;
+    - `:title` - overall title above the cells (`:labels {:title t}`);
+    - `:theme` - the multiplot's theme: background, title style, `[:multiplot :gap]` between cells, `[:plot :margin]` around them; sub-plots keep their own themes.
 
-  Options are validated first ([[arrange-options]]): an invalid value or an unknown key throws `ex-info {:key k}`, `k`
-  the option (with a spelling suggestion when a known key is close). The grid is generated at build time from the merged theme ([[cljplot2.layout.plot-grid/arrange-grid]], cells `[:plot i]`),
-  where the spec is validated (`ex-info {:key :arrange}`)."
+  Returns a plot map; the grid is generated at build time from the merged theme ([[cljplot2.layout.plot-grid/arrange-grid]], cells `[:plot i]`), where the spec is validated (`ex-info {:key :arrange}`).
+
+  Options are validated first ([[arrange-options]]): an invalid value or an unknown key throws `ex-info {:key k}`, `k` the option (with a spelling suggestion when a known key is close)."
   {:cljplot2/options arrange-options}
   ([plots] (arrange plots {}))
   ([plots {:keys [title theme] :as options}]
@@ -68,44 +71,65 @@
 
 ;; scatter-plot matrix
 
-(def ^:const max-pairs-variables
-  "Most variables [[pairs]] takes (each cell is a sub-plot)."
+(def ^{:const true :tag 'long :doc "Most variables [[pairs]] takes (each cell is a sub-plot)."} max-pairs-variables
   20)
 
 (defn- variable-domain
-  "`[lo hi]` of the finite `values` widened by 5 % of the span on both sides (a single value: ± 0.5)."
+  "The domain of a pairs variable: its range widened by 5 % of the span on both sides.
+
+  Parameters:
+
+  - `values` (non-empty sequence of finite numbers): the variable's values.
+
+  Returns `[lo hi]`; a single distinct value is widened by 0.5 on both sides."
   [values]
-  (let [lo (double (reduce min values)) hi (double (reduce max values))
-        pad (if (== lo hi) 0.5 (* 0.05 (- hi lo)))]
-    [(- lo pad) (+ hi pad)]))
+  (let [lo (v/mn values)
+        hi (v/mx values)
+        pad (if (m/== lo hi) 0.5 (m/* 0.05 (m/- hi lo)))]
+    [(m/- lo pad) (m/+ hi pad)]))
 
 (defn- variable-domains
-  "`{variable [lo hi]}` (see [[variable-domain]]) of `rows`; a variable without finite numbers, or with a value that
-  is neither a number nor `nil`, throws `ex-info {:key :variables}`."
+  "The domains of the pairs variables.
+
+  Parameters:
+
+  - `rows` (sequence of maps): the data rows.
+  - `variables` (sequence of keywords): the variables.
+
+  Returns `{variable [lo hi]}` (see [[variable-domain]]); `nil` and non-finite numbers are left out. Throws `ex-info {:key :variables}` for a variable without finite numbers or with a value that is neither a number nor `nil`."
   [rows variables]
   (into {} (map (fn [k]
                   (let [acc (data/row-accessor k k)
                         vs (keep acc rows)
-                        finite (filter #(and (number? %) (m/valid-double? (double %))) vs)]
-                    (when (or (empty? finite) (some #(not (number? %)) vs))
+                        finite (filter (fn [v] (and (number? v) (m/valid-double? v))) vs)]
+                    (when (or (empty? finite) (some (fn [v] (not (number? v))) vs))
                       (schema/fail! (str "Pairs variable " k " needs numeric values.") {:key :variables :value k}))
                     [k (variable-domain finite)])))
         variables))
 
 (defn- slot-charts
-  "Charts of a `pairs` slot value: a chart, a vector of charts, `nil` (none)."
+  "The charts of a pairs slot.
+
+  Parameters:
+
+  - `slot` (chart, sequence of charts or `nil`): a `:lower`, `:upper` or `:diagonal` value.
+
+  Returns a vector of charts, empty for `nil`."
   [slot]
   (cond (nil? slot) [] (map? slot) [slot] :else (vec slot)))
 
-(defn- chart-value? [v] (map? v))
+(defn- chart-value?
+  "Is `v` a single chart value (a map), not a sequence of charts?"
+  [v]
+  (map? v))
 
-(def ^:private slot-schema
-  "A `pairs` slot: a chart, a sequence of charts or `nil` (none)."
+(def ^{:private true :doc "Schema of a pairs slot: a chart, a sequence of charts or `nil` (none)."}
+  slot-schema
   [:maybe [:multi {:dispatch chart-value? :cljplot2/type-doc "a chart or a vector of charts"}
            [true pipeline/chart-schema] [false [:sequential pipeline/chart-schema]]]])
 
-(def pairs-options
-  "Schema of [[pairs]]'s `options` (the variables' count and values are checked against the data)."
+(def ^{:doc "Schema of the `options` of [[pairs]] (the variables' count and values are checked against the data)."}
+  pairs-options
   (-> [:map {:closed true}
        [:variables {:description "the numeric columns, in matrix order"}
         [:sequential {:min 2 :max max-pairs-variables} keyword?]]
@@ -117,7 +141,7 @@
        (schema/optional :upper {:description "charts above the diagonal; nil - empty cells"
                                 :cljplot2/default-doc "(chart/correlation {:glyph :number})"}
                         slot-schema)
-       (schema/optional :diagonal {:description "charts of the diagonal cells (in their own magnitude scale); :names - the variable's name; nil - empty cells"
+       (schema/optional :diagonal {:description "charts of the diagonal cells (in their own magnitude scale); :names - the variable's name (text role :pairs-name); nil - empty cells"
                                    :cljplot2/default-doc "(chart/density)"}
                         [:maybe [:multi {:dispatch #(cond (= :names %) :names (map? %) :chart :else :charts)
                                          :cljplot2/type-doc ":names, a chart or a vector of charts"}
@@ -132,20 +156,19 @@
       (into (builder-entries-of [:title]))))
 
 (defn pairs
-  "Scatter-plot matrix of the numeric `variables` of `data` as an [[arrange]] plot map: cell (row i, column j) plots
-  variable j on x against variable i on y.
+  "A scatter-plot matrix of numeric variables as an [[arrange]] plot map: cell (row i, column j) plots variable j on x against variable i on y.
 
-  `options`:
+  Parameters:
 
-  * `:variables` - 2 to [[max-pairs-variables]] numeric columns (keywords), in matrix order
-  * `:mapping` - extra mapping of every cell (grouping aesthetics such as `:color`, `:group`)
-  * `:lower` / `:upper` - charts below / above the diagonal: a chart, a vector of charts, `nil` (an empty cell);
-    defaults `(chart/scatter)` and `(chart/correlation {:glyph :number})`
-  * `:diagonal` - charts of the diagonal cells (x - the variable, y their own magnitude scale with its axis hidden),
-    default `(chart/density)`; `:names` - the variable's name in the middle of the cell
-  * `:labels` - `{variable text}`, display names (default the variable's name)
-  * `:theme` - every cell's and the matrix's theme; `:title` - a title above the matrix. Cells have no plot margin
-    and are `[:facet :gap]` apart, as facet panels (a `[:plot :margin]` / `[:multiplot :gap]` in `:theme` wins)
+  - `data` (rows or columns): the data.
+  - `options` (map):
+    - `:variables` - 2 to [[max-pairs-variables]] numeric columns (keywords), in matrix order (required);
+    - `:mapping` - extra mapping of every cell (grouping aesthetics such as `:color`, `:group`);
+    - `:lower` / `:upper` - charts below / above the diagonal: a chart, a vector of charts, `nil` (an empty cell); defaults `(chart/scatter)` and `(chart/correlation {:glyph :number})`;
+    - `:diagonal` - charts of the diagonal cells (x - the variable, y their own magnitude scale with its axis hidden), default `(chart/density)`; `:names` - the variable's name in the middle of the cell (text role `:pairs-name`);
+    - `:labels` - `{variable text}`, display names (default the variable's name);
+    - `:theme` - every cell's and the matrix's theme (cells have no plot margin and are `[:facet :gap]` apart, as facet panels; a `[:plot :margin]` / `[:multiplot :gap]` in `:theme` wins);
+    - `:title` - a title above the matrix.
 
   All cells of a column share the x domain of its variable, all cells of a row the y domain of its (the variable's
   range widened by 5 %, no nice extension, no chart padding). Tick labels and axis titles (the variable names) only on the outer cells
@@ -156,9 +179,9 @@
   bar for a continuous color - left out of the diagonal cells) or, without a mapping, the colors the lower / upper
   charts compute (e.g. the r color bar of correlation glyphs);
   the matrix has `:equal-panels` and cells shaded as a checkerboard like facet panels (`:alternate-panel` on odd
-  `i + j`, theme `[:panel :alternate-fill]`; `:none` turns it off). Throws `ex-info {:key :variables}` for
-  a wrong variable count, a missing or non-numeric variable; options are validated first ([[pairs-options]], `ex-info
-  {:key k}`, `k` the option).
+  `i + j`, theme `[:panel :alternate-fill]`; `:none` turns it off).
+
+  Returns a plot map. Throws `ex-info {:key :variables}` for a wrong variable count, a missing or non-numeric variable; options are validated first ([[pairs-options]], `ex-info {:key k}`, `k` the option).
 
   Equivalents: GGally `ggpairs` - the defaults (scatter below, correlation text above - per group when grouped -,
   density on the diagonal); R `corrgram` / `pairs` panel functions - `chart/correlation` glyphs in `:lower` / `:upper`
@@ -170,17 +193,19 @@
   (let [_ (schema/check-options! pairs-options options)
         variables (vec variables)
         n (count variables)
+        n- (m/dec n)
+        n+ (m/inc n)
         rows (data/rows data)
         domains (variable-domains rows variables)
         name-of (fn [k] (get labels k (name k)))
         lower (if (= ::default lower) [(chart/scatter)] (slot-charts lower))
         upper (if (= ::default upper) [(chart/correlation {:glyph :number})] (slot-charts upper))
         diagonal (if (= ::default diagonal) [(chart/density)] diagonal)
-        mapped? (boolean (seq (aesthetic/mapped-dims mapping)))
+        mapped? (seq (aesthetic/mapped-dims mapping))
         ;; aesthetics with continuous values (e.g. a numeric :color) color marks without grouping: left out on the
         ;; diagonal, whose 1d charts group by their aesthetics
         continuous (set (filter (fn [k] (let [vs (keep (data/row-accessor k (mapping k)) rows)]
-                                          (and (seq vs) (every? number? vs) (not (accessor/categorical? (mapping k))))))
+                                         (and (seq vs) (every? number? vs) (not (accessor/categorical? (mapping k))))))
                                 (aesthetic/mapped-dims mapping)))
         diagonal-mapping (apply dissoc mapping continuous)
         pair-mapping (assoc mapping :x (variables 1) :y (variables 0))
@@ -189,7 +214,7 @@
         legend-charts (cond
                         mapped? (if (seq lower) lower [(chart/scatter)])
                         :else (vec (distinct (filter #(seq (aesthetic/computed-aesthetics % pair-mapping)) (concat lower upper)))))
-        legend? (boolean (seq legend-charts))
+        legend? (seq legend-charts)
         axis (fn [outer?] (if outer? true :grid))
         ;; panels as close as facet panels: cells without plot margins, the facet gap between them (`theme` wins)
         cell-theme (theme/deep-merge {:plot {:margin 0}} theme)
@@ -197,11 +222,11 @@
                                        theme)
         cell (fn [^long i ^long j]
                (let [vx (variables j) vy (variables i)
-                     diag? (= i j) bottom? (= i (dec n)) left? (zero? j)
+                     diag? (m/== i j) bottom? (m/== i n-) left? (m/zero? j)
                      names? (and diag? (= :names diagonal))
-                     charts (cond names? [(chart/text {:x [:panel 0.5] :y [:panel 0.5] :text (name-of vx) :size 13 :font-style :bold})]
+                     charts (cond names? [(chart/text {:x [:panel 0.5] :y [:panel 0.5] :text (name-of vx) :role :pairs-name})]
                                   diag? (slot-charts diagonal)
-                                  (> i j) lower
+                                  (m/> i j) lower
                                   :else upper)]
                  (cond-> {:data rows
                           :mapping (if diag? (assoc diagonal-mapping :x vx) (assoc mapping :x vx :y vy))
@@ -213,16 +238,17 @@
                                             :else {:domain (domains vy) :nice false :expand [0.0 0.0] :axis (axis left?)})}
                           :labels {:x (when bottom? (name-of vx)) :y (when left? (name-of vy))}
                           :legend false}
-                   (odd? (+ i j)) (assoc :alternate-panel true)
+                   (m/odd? (m/+ i j)) (assoc :alternate-panel true)
                    ;; names or an empty diagonal: no data on y - a fixed unit domain
                    (and diag? (or names? (empty? charts))) (assoc-in [:scales :y] {:domain [0 1] :expand [0.0 0.0] :axis (axis left?)
-                                                                                    :axis-domain (domains vx)})
+                                                                                   :axis-domain (domains vx)})
                    names? (update :mapping dissoc :y)
                    true (assoc :theme cell-theme))))
         legend-cell (fn [^long i] (cond-> {:legend-only true :theme cell-theme}
-                              (zero? i) (assoc :data rows :mapping pair-mapping :charts legend-charts)))
-        plots (vec (for [i (range n) j (range (if legend? (inc n) n))]
-                     (if (== (long j) n) (legend-cell i) (cell i j))))]
-    (arrange plots (cond-> {:columns (if legend? (inc n) n) :equal-panels true :theme matrix-theme}
+                                   (m/zero? i) (assoc :data rows :mapping pair-mapping :charts legend-charts)))
+        plots (vec (for [^long i (range n)
+                         ^long j (range (if legend? n+ n))]
+                     (if (m/== j n) (legend-cell i) (cell i j))))]
+    (arrange plots (cond-> {:columns (if legend? n+ n) :equal-panels true :theme matrix-theme}
                      legend? (assoc :widths (conj (vec (repeat n 1)) :measured))
                      title (assoc :title title)))))

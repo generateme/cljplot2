@@ -45,6 +45,7 @@
    :options (-> [:map {:closed true}]
                 (into style-entries)
                 (into data/common-options)
+                (into theme/theme-style-entries)
                 (conj (schema/optional :layout {:description "rectangle layout: :squarify (near-square cells) or :slice-dice (slices turning by depth)"
                                                 :default :squarify}
                                        [:enum :squarify :slice-dice]))
@@ -53,7 +54,7 @@
 
 (defn- style
   [options theme]
-  (merge (get-in theme [:chart :treemap]) (select-keys options [:padding :border-color :border-width :pattern :pattern-color])))
+  (merge (theme/chart-style theme :treemap options) (select-keys options [:padding :border-color :border-width :pattern :pattern-color])))
 
 (defn compute
   "Per panel: `{:tree root :top-count n :style style :options {...} :colored? bool}`, `root` - see

@@ -48,6 +48,7 @@
    :options (-> [:map {:closed true}]
                 (into style-entries)
                 (into data/common-options)
+                (into theme/theme-style-entries)
                 (conj (schema/optional :sets {:description "the sets shown (2 or 3), in order"
                                               :cljplot2/default-doc "every set, in first-appearance order"}
                                        [:vector {:min 1} any?])
@@ -69,7 +70,7 @@
 
 (defn- style
   [options theme]
-  (merge (get-in theme [:chart :venn]) (select-keys options [:alpha :border-color :border-width])))
+  (merge (theme/chart-style theme :venn options) (select-keys options [:alpha :border-color :border-width])))
 
 (defn compute
   "Per panel: `{:sets [s ..] :sizes [n ..] :regions {#{i ..} n} :total n :style st :options o}` (regions keyed by set

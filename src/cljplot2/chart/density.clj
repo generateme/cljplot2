@@ -64,6 +64,7 @@
    :options (-> [:map {:closed true}]
                 (into style-entries)
                 (into data/common-options)
+                (into theme/theme-style-entries)
                 (conj (schema/optional :kernel {:cljplot2/section :estimate :description "fastmath KDE kernel" :default :gaussian} keyword?)
                       (schema/optional :bandwidth {:cljplot2/section :estimate :description "kernel bandwidth in data units, or a fastmath bandwidth selector"
                                                    :default :nrd0}
@@ -101,7 +102,7 @@
 
 (defn- style
   [options theme]
-  (merge (get-in theme [:chart :density]) (select-keys options [:color :width :dash :fill :alpha :zero-line-color :zero-line-width :pattern
+  (merge (theme/chart-style theme :density options) (select-keys options [:color :width :dash :fill :alpha :zero-line-color :zero-line-width :pattern
                                                                  :pattern-color])))
 
 (defn- panel-curves

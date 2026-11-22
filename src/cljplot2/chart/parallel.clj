@@ -135,6 +135,7 @@
               (-> [:map {:closed true}]
                   (into style-entries)
                   (into data/common-options)
+                  (into theme/theme-style-entries)
                   (conj [:variables {:cljplot2/section :axes :description "the variables in axis order: keywords or [label accessor] pairs (2 or more)"}
                          variables]
                         (schema/optional :scaling {:cljplot2/section :axes :description "per variable scaling: :uniminmax (0..1), :std, :robust, :center or :globalminmax"
@@ -177,7 +178,7 @@
 
 (defn- style
   [options theme]
-  (merge (get-in theme [:chart :parallel]) (select-keys options [:color :width :dash :fill :alpha :pattern :pattern-color])))
+  (merge (theme/chart-style theme :parallel options) (select-keys options [:color :width :dash :fill :alpha :pattern :pattern-color])))
 
 ;; scaling
 

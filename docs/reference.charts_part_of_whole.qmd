@@ -127,7 +127,7 @@ direction at each depth:
 :::
 
 
-Shared options: [Fill patterns](reference.shared_options.html#fill-patterns) (`:pattern` `:pattern-color`); [Data and mapping](reference.shared_options.html#data-and-mapping) (`:data` `:mapping`); [Hierarchy labels](reference.shared_options.html#hierarchy-labels) (`:group-labels` `:leaf-labels`).
+Shared options: [Fill patterns](reference.shared_options.html#fill-patterns) (`:pattern` `:pattern-color`); [Data and mapping](reference.shared_options.html#data-and-mapping) (`:data` `:mapping`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`); [Hierarchy labels](reference.shared_options.html#hierarchy-labels) (`:group-labels` `:leaf-labels`).
 
 
 ## partition
@@ -228,7 +228,7 @@ The borders in an icicle: the default thin white lines, and thick dark ones:
 :::
 
 
-Shared options: [Fill patterns](reference.shared_options.html#fill-patterns) (`:pattern` `:pattern-color`); [Data and mapping](reference.shared_options.html#data-and-mapping) (`:data` `:mapping`); [Hierarchy labels](reference.shared_options.html#hierarchy-labels) (`:group-labels` `:leaf-labels`).
+Shared options: [Fill patterns](reference.shared_options.html#fill-patterns) (`:pattern` `:pattern-color`); [Data and mapping](reference.shared_options.html#data-and-mapping) (`:data` `:mapping`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`); [Hierarchy labels](reference.shared_options.html#hierarchy-labels) (`:group-labels` `:leaf-labels`).
 
 
 ## pack
@@ -323,7 +323,7 @@ data order; and wider borders:
 :::
 
 
-Shared options: [Fill patterns](reference.shared_options.html#fill-patterns) (`:pattern` `:pattern-color`); [Data and mapping](reference.shared_options.html#data-and-mapping) (`:data` `:mapping`); [Hierarchy labels](reference.shared_options.html#hierarchy-labels) (`:group-labels` `:leaf-labels`).
+Shared options: [Fill patterns](reference.shared_options.html#fill-patterns) (`:pattern` `:pattern-color`); [Data and mapping](reference.shared_options.html#data-and-mapping) (`:data` `:mapping`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`); [Hierarchy labels](reference.shared_options.html#hierarchy-labels) (`:group-labels` `:leaf-labels`).
 
 
 ## waffle
@@ -411,7 +411,7 @@ so the cell count follows the values (here one cell per 2 units, 5 columns wide)
 :::
 
 
-Shared options: [Fill patterns](reference.shared_options.html#fill-patterns) (`:pattern` `:pattern-color`); [Data and mapping](reference.shared_options.html#data-and-mapping) (`:data` `:mapping`).
+Shared options: [Fill patterns](reference.shared_options.html#fill-patterns) (`:pattern` `:pattern-color`); [Data and mapping](reference.shared_options.html#data-and-mapping) (`:data` `:mapping`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`).
 
 
 ## venn
@@ -523,7 +523,7 @@ Without set names, and with thick outlines in the darkened set colours:
 :::
 
 
-Shared options: [Data and mapping](reference.shared_options.html#data-and-mapping) (`:data` `:mapping`).
+Shared options: [Data and mapping](reference.shared_options.html#data-and-mapping) (`:data` `:mapping`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`).
 
 
 ```{=html}

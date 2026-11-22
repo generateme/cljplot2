@@ -138,7 +138,7 @@ parents) - branches at their merge heights, leaves along one axis.
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:labels</td><td>sequential of any value or nil</td><td>the observations' indices</td><td>names of an hclust result's observations, in order (one per observation)</td></tr><tr><td>:horizontal</td><td>true or false or nil</td><td>false</td><td>leaves on the left, heights growing right (not circular)</td></tr><tr><td>:labels?</td><td>true or false</td><td>true</td><td>leaf names along the leaf axis (circular - outward around the circle)</td></tr><tr><td>:group-labels?</td><td>true or false or nil</td><td>false</td><td>names of the named groups at their nodes (level and parent trees)</td></tr><tr><td>:line-style</td><td>map of keyword to any value or nil</td><td>{:color [70 70 70] :width 1}</td><td>line options of the branches, merged over the default</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:labels</td><td>sequential of any value or nil</td><td>the observations' indices</td><td>names of an hclust result's observations, in order (one per observation)</td></tr><tr><td>:horizontal</td><td>true or false or nil</td><td>false</td><td>leaves on the left, heights growing right (not circular)</td></tr><tr><td>:labels?</td><td>true or false</td><td>true</td><td>leaf names along the leaf axis (circular - outward around the circle)</td></tr><tr><td>:group-labels?</td><td>true or false or nil</td><td>false</td><td>names of the named groups at their nodes (level and parent trees)</td></tr><tr><td>:line-style</td><td>map of keyword to any value or nil</td><td>theme [:chart :dendrogram-branch]</td><td>line options of the branches, merged over the default</td></tr></tbody></table>
 ```
 
 :::
@@ -180,6 +180,35 @@ hierarchy with its group names at their nodes (right):
 :::
 
 
+The branches draw in the theme style `[:chart :dendrogram-branch]` (a line style; the clustered heatmap's trees
+too), the group names in the text role `:dendrogram-group-label`:
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th><th>Group</th></tr></thead><tbody><tr><td>:color</td><td>a clojure2d color or :none</td><td>[70.0 70.0 70.0 255.0]</td><td>line colour (a mapped :color wins)</td><td>Line style</td></tr><tr><td>:width</td><td>a non-negative number</td><td>1</td><td>line width in pixels</td><td>Line style</td></tr><tr><td>:dash</td><td>:none, a dash style (:dashed :dot-dash :dot-dot-dash :dotted :long-dash :loose-dot :solid :two-dash) or a sequence of positive numbers or nil</td><td>:none</td><td>dash style of the line (a mapped :dash wins)</td><td>Line style</td></tr><tr><td>:fill</td><td>:color or a clojure2d color or :none</td><td>:none</td><td>area between the line and y = 0: :color (the line colour at :alpha), a colour or :none</td><td></td></tr><tr><td>:alpha</td><td>a number in [0 1]</td><td>0.6</td><td>area fill opacity of :fill :color and of stacked areas</td><td></td></tr><tr><td>:bridge</td><td>map</td><td></td><td>style of the segments bridging gaps with :gaps :bridge: :alpha (a fraction of the line alpha), optional :width and :dash</td><td></td></tr><tr><td>:bridge :alpha (required)</td><td>a number in [0 1]</td><td>0.3; 0.3 in the theme's :bridge (a given :bridge replaces it whole)</td><td>bridge opacity, a fraction of the line's alpha</td><td></td></tr><tr><td>:bridge :width</td><td>a non-negative number</td><td>the line's width</td><td>bridge width in pixels</td><td></td></tr><tr><td>:bridge :dash</td><td>:none, a dash style (:dashed :dot-dash :dot-dot-dash :dotted :long-dash :loose-dot :solid :two-dash) or a sequence of positive numbers or nil</td><td>the line's dash</td><td>dash style of the bridge</td><td></td></tr><tr><td>:pattern</td><td>a pattern name (:back-hatch :cross :dense-dots :diagonal-cross :dots :hatch :horizontal :solid :vertical) or a pattern map</td><td>:solid</td><td>pattern drawn over the fill (a mapped :pattern wins)</td><td>Fill patterns</td></tr><tr><td>:pattern-color</td><td>:darker or a clojure2d color or :none</td><td>:darker</td><td>pattern ink: a colour, :none or :darker (the darkened fill)</td><td>Fill patterns</td></tr></tbody></table>
+```
+
+:::
+
+
+Thin blue branches through the theme:
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/dendrogram car-clustering {:labels car-names
+                                                    :theme {:chart {:dendrogram-branch {:color [40 90 160] :width 0.6}}}})
+                   {:width 700 :height 380})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.builders_trees_files/image2.png)
+:::
+
+
 Shared options: [Dendrogram layout](reference.shared_options.html#dendrogram-layout) (`:k` `:circular` `:span`); [Builder options](reference.shared_options.html#builder-options) (`:title` `:scales` `:theme`).
 
 
@@ -191,7 +220,7 @@ cluster (leaves aligned), cartesian or circular (the Node-link tree layout group
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:labels?</td><td>true or false</td><td>true</td><td>node names (cartesian - leaves right of their node, groups left; circular - leaf names outward)</td></tr><tr><td>:nodes?</td><td>true or false</td><td>true</td><td>a point per node</td></tr><tr><td>:mapping</td><td>map of keyword to any value or nil</td><td></td><td>node aesthetics (:color, :size, :shape): accessors of the nodes (their row's columns, :depth, :leaf?, :name)</td></tr><tr><td>:node-style</td><td>map of keyword to any value or nil</td><td>{:size 7 :color [70 130 180] :stroke-color :white :stroke-width 1}</td><td>scatter options of the nodes, merged over the default</td></tr><tr><td>:link-style</td><td>map of keyword to any value or nil</td><td>{:color [176 176 176] :width 0.9}</td><td>line options of the links, merged over the default</td></tr><tr><td>:labels</td><td>sequential of any value or nil</td><td>the observations' indices</td><td>names of an hclust result's observations, in order (one per observation)</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:labels?</td><td>true or false</td><td>true</td><td>node names (cartesian - leaves right of their node, groups left; circular - leaf names outward)</td></tr><tr><td>:nodes?</td><td>true or false</td><td>true</td><td>a point per node</td></tr><tr><td>:mapping</td><td>map of keyword to any value or nil</td><td></td><td>node aesthetics (:color, :size, :shape): accessors of the nodes (their row's columns, :depth, :leaf?, :name)</td></tr><tr><td>:node-style</td><td>map of keyword to any value or nil</td><td>theme [:chart :tree-node]</td><td>scatter options of the nodes, merged over the default</td></tr><tr><td>:link-style</td><td>map of keyword to any value or nil</td><td>theme [:chart :tree-link]</td><td>line options of the links, merged over the default</td></tr><tr><td>:labels</td><td>sequential of any value or nil</td><td>the observations' indices</td><td>names of an hclust result's observations, in order (one per observation)</td></tr></tbody></table>
 ```
 
 :::
@@ -206,7 +235,7 @@ cluster (leaves aligned), cartesian or circular (the Node-link tree layout group
 
 
 ::: {.clay-image}
-![](reference.builders_trees_files/image2.png)
+![](reference.builders_trees_files/image3.png)
 :::
 
 
@@ -232,7 +261,61 @@ circular, neither names nor points - only the links (middle); a clustering's tre
 
 
 ::: {.clay-image}
-![](reference.builders_trees_files/image3.png)
+![](reference.builders_trees_files/image4.png)
+:::
+
+
+The theme styles of a node-link tree - nodes in `[:chart :tree-node]` (scatter), links in `[:chart :tree-link]`
+(line), names in the text role `:tree-label`:
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:size</td><td>a non-negative number</td><td>7</td><td>point size in pixels (a mapped :size wins)</td></tr><tr><td>:color</td><td>a clojure2d color or :none</td><td>[70.0 130.0 180.0 255.0]</td><td>point colour (a mapped :color wins)</td></tr><tr><td>:stroke-color</td><td>a clojure2d color or :none</td><td>:white</td><td>outline colour: a colour or :none</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>outline width in pixels</td></tr><tr><td>:shape</td><td>a shape character, keyword or shape map</td><td>\O</td><td>point shape (a mapped :shape wins)</td></tr></tbody></table>
+```
+
+:::
+
+
+Small dark nodes through the theme:
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/tree office-tree {:theme {:chart {:tree-node {:size 5 :color [60 60 60] :stroke-color :none}}}})
+                   {:width 600 :height 360})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.builders_trees_files/image5.png)
+:::
+
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th><th>Group</th></tr></thead><tbody><tr><td>:color</td><td>a clojure2d color or :none</td><td>[176.0 176.0 176.0 255.0]</td><td>line colour (a mapped :color wins)</td><td>Line style</td></tr><tr><td>:width</td><td>a non-negative number</td><td>0.9</td><td>line width in pixels</td><td>Line style</td></tr><tr><td>:dash</td><td>:none, a dash style (:dashed :dot-dash :dot-dot-dash :dotted :long-dash :loose-dot :solid :two-dash) or a sequence of positive numbers or nil</td><td>:none</td><td>dash style of the line (a mapped :dash wins)</td><td>Line style</td></tr><tr><td>:fill</td><td>:color or a clojure2d color or :none</td><td>:none</td><td>area between the line and y = 0: :color (the line colour at :alpha), a colour or :none</td><td></td></tr><tr><td>:alpha</td><td>a number in [0 1]</td><td>0.6</td><td>area fill opacity of :fill :color and of stacked areas</td><td></td></tr><tr><td>:bridge</td><td>map</td><td></td><td>style of the segments bridging gaps with :gaps :bridge: :alpha (a fraction of the line alpha), optional :width and :dash</td><td></td></tr><tr><td>:bridge :alpha (required)</td><td>a number in [0 1]</td><td>0.3; 0.3 in the theme's :bridge (a given :bridge replaces it whole)</td><td>bridge opacity, a fraction of the line's alpha</td><td></td></tr><tr><td>:bridge :width</td><td>a non-negative number</td><td>the line's width</td><td>bridge width in pixels</td><td></td></tr><tr><td>:bridge :dash</td><td>:none, a dash style (:dashed :dot-dash :dot-dot-dash :dotted :long-dash :loose-dot :solid :two-dash) or a sequence of positive numbers or nil</td><td>the line's dash</td><td>dash style of the bridge</td><td></td></tr><tr><td>:pattern</td><td>a pattern name (:back-hatch :cross :dense-dots :diagonal-cross :dots :hatch :horizontal :solid :vertical) or a pattern map</td><td>:solid</td><td>pattern drawn over the fill (a mapped :pattern wins)</td><td>Fill patterns</td></tr><tr><td>:pattern-color</td><td>:darker or a clojure2d color or :none</td><td>:darker</td><td>pattern ink: a colour, :none or :darker (the darkened fill)</td><td>Fill patterns</td></tr></tbody></table>
+```
+
+:::
+
+
+Darker, thicker links and bold names through the theme:
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/tree office-tree {:theme {:chart {:tree-link {:color [90 90 90] :width 2}}
+                                                   :text {:tree-label {:font-style :bold}}}})
+                   {:width 600 :height 360})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.builders_trees_files/image6.png)
 :::
 
 
@@ -280,7 +363,7 @@ the tiles; the data are long rows (`:row`, `:col`, `:value` accessors).
 
 
 ::: {.clay-image}
-![](reference.builders_trees_files/image4.png)
+![](reference.builders_trees_files/image7.png)
 :::
 
 
@@ -309,7 +392,7 @@ The distances between rows and columns (`:distance`, here with average linkage) 
 
 
 ::: {.clay-image}
-![](reference.builders_trees_files/image5.png)
+![](reference.builders_trees_files/image8.png)
 :::
 
 
@@ -333,7 +416,7 @@ default euclidean distance, no trees - only the order (right):
 
 
 ::: {.clay-image}
-![](reference.builders_trees_files/image6.png)
+![](reference.builders_trees_files/image9.png)
 :::
 
 
@@ -349,7 +432,7 @@ leaves around a circle. Edges name their leaves by key - a `tree/from-parents` n
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:alpha</td><td>a number in [0 1]</td><td>0.4</td><td>opacity of the edges (leaf points and legend keys stay opaque)</td></tr><tr><td>:color-by-group?</td><td>true or false</td><td>true</td><td>edges and leaves coloured by the top-level group of their (source) leaf, with a legend</td></tr><tr><td>:edge-color</td><td>a clojure2d color or :none</td><td>[70 110 180]</td><td>colour of the edges when not coloured by group</td></tr><tr><td>:labels?</td><td>true or false</td><td>true</td><td>leaf names outward around the circle</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:alpha</td><td>a number in [0 1]</td><td>0.4</td><td>opacity of the edges (leaf points and legend keys stay opaque)</td></tr><tr><td>:color-by-group?</td><td>true or false</td><td>true</td><td>edges and leaves coloured by the top-level group of their (source) leaf, with a legend</td></tr><tr><td>:edge-color</td><td>a clojure2d color or :none</td><td>[70.0 110.0 180.0 255.0]</td><td>colour of the edges when not coloured by group</td></tr><tr><td>:labels?</td><td>true or false</td><td>true</td><td>leaf names outward around the circle</td></tr></tbody></table>
 ```
 
 :::
@@ -380,7 +463,7 @@ leaves around a circle. Edges name their leaves by key - a `tree/from-parents` n
 
 
 ::: {.clay-image}
-![](reference.builders_trees_files/image7.png)
+![](reference.builders_trees_files/image10.png)
 :::
 
 
@@ -402,7 +485,60 @@ names (right):
 
 
 ::: {.clay-image}
-![](reference.builders_trees_files/image8.png)
+![](reference.builders_trees_files/image11.png)
+:::
+
+
+The theme styles of edge bundling - edges in `[:chart :bundle-edge]` (line), leaves in `[:chart :bundle-leaf]`
+(scatter):
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th><th>Group</th></tr></thead><tbody><tr><td>:color</td><td>a clojure2d color or :none</td><td>[69.0 117.0 180.0 255.0]</td><td>line colour (a mapped :color wins)</td><td>Line style</td></tr><tr><td>:width</td><td>a non-negative number</td><td>1</td><td>line width in pixels</td><td>Line style</td></tr><tr><td>:dash</td><td>:none, a dash style (:dashed :dot-dash :dot-dot-dash :dotted :long-dash :loose-dot :solid :two-dash) or a sequence of positive numbers or nil</td><td>:none</td><td>dash style of the line (a mapped :dash wins)</td><td>Line style</td></tr><tr><td>:fill</td><td>:color or a clojure2d color or :none</td><td>:none</td><td>area between the line and y = 0: :color (the line colour at :alpha), a colour or :none</td><td></td></tr><tr><td>:alpha</td><td>a number in [0 1]</td><td>0.6</td><td>area fill opacity of :fill :color and of stacked areas</td><td></td></tr><tr><td>:bridge</td><td>map</td><td></td><td>style of the segments bridging gaps with :gaps :bridge: :alpha (a fraction of the line alpha), optional :width and :dash</td><td></td></tr><tr><td>:bridge :alpha (required)</td><td>a number in [0 1]</td><td>0.3; 0.3 in the theme's :bridge (a given :bridge replaces it whole)</td><td>bridge opacity, a fraction of the line's alpha</td><td></td></tr><tr><td>:bridge :width</td><td>a non-negative number</td><td>the line's width</td><td>bridge width in pixels</td><td></td></tr><tr><td>:bridge :dash</td><td>:none, a dash style (:dashed :dot-dash :dot-dot-dash :dotted :long-dash :loose-dot :solid :two-dash) or a sequence of positive numbers or nil</td><td>the line's dash</td><td>dash style of the bridge</td><td></td></tr><tr><td>:pattern</td><td>a pattern name (:back-hatch :cross :dense-dots :diagonal-cross :dots :hatch :horizontal :solid :vertical) or a pattern map</td><td>:solid</td><td>pattern drawn over the fill (a mapped :pattern wins)</td><td>Fill patterns</td></tr><tr><td>:pattern-color</td><td>:darker or a clojure2d color or :none</td><td>:darker</td><td>pattern ink: a colour, :none or :darker (the darkened fill)</td><td>Fill patterns</td></tr></tbody></table>
+```
+
+:::
+
+
+Thicker edges through the theme:
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/bundle calls office-tree {:theme {:chart {:bundle-edge {:width 2.5}}}})
+                   {:width 500 :height 500})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.builders_trees_files/image12.png)
+:::
+
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:size</td><td>a non-negative number</td><td>3</td><td>point size in pixels (a mapped :size wins)</td></tr><tr><td>:color</td><td>a clojure2d color or :none</td><td>[69.0 117.0 180.0 180.0]</td><td>point colour (a mapped :color wins)</td></tr><tr><td>:stroke-color</td><td>a clojure2d color or :none</td><td>:none</td><td>outline colour: a colour or :none</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>outline width in pixels</td></tr><tr><td>:shape</td><td>a shape character, keyword or shape map</td><td>\O</td><td>point shape (a mapped :shape wins)</td></tr></tbody></table>
+```
+
+:::
+
+
+Large square leaves through the theme:
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/bundle calls office-tree {:theme {:chart {:bundle-leaf {:size 8 :shape \s}}}})
+                   {:width 500 :height 500})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.builders_trees_files/image13.png)
 :::
 
 
@@ -448,7 +584,7 @@ coloured by its name wherever it occurs, the end of a sequence a step of its own
 
 
 ::: {.clay-image}
-![](reference.builders_trees_files/image9.png)
+![](reference.builders_trees_files/image14.png)
 :::
 
 
@@ -464,7 +600,7 @@ A smaller hole - more room for the rings - and the step names in the cells where
 
 
 ::: {.clay-image}
-![](reference.builders_trees_files/image10.png)
+![](reference.builders_trees_files/image15.png)
 :::
 
 
@@ -480,7 +616,34 @@ Ending sequences left as their group's grey remainder, the end not a step of its
 
 
 ::: {.clay-image}
-![](reference.builders_trees_files/image11.png)
+![](reference.builders_trees_files/image16.png)
+:::
+
+
+The cells draw in the theme style `[:chart :sequences-cell]` (a partition style over `[:chart :partition]`):
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th><th>Group</th></tr></thead><tbody><tr><td>:border-color</td><td>a clojure2d color or :none</td><td>:white</td><td>cell border colour</td><td></td></tr><tr><td>:border-width</td><td>a non-negative number</td><td>0.3</td><td>cell border width in pixels</td><td></td></tr><tr><td>:pattern</td><td>a pattern name (:back-hatch :cross :dense-dots :diagonal-cross :dots :hatch :horizontal :solid :vertical) or a pattern map</td><td>:solid</td><td>pattern drawn over the fill (a mapped :pattern wins)</td><td>Fill patterns</td></tr><tr><td>:pattern-color</td><td>:darker or a clojure2d color or :none</td><td>:darker</td><td>pattern ink: a colour, :none or :darker (the darkened fill)</td><td>Fill patterns</td></tr></tbody></table>
+```
+
+:::
+
+
+Thick white cell borders through the theme:
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/sequences visits {:value :n :theme {:chart {:sequences-cell {:border-width 2}}}})
+                   {:width 500 :height 450})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.builders_trees_files/image17.png)
 :::
 
 

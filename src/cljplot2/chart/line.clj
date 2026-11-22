@@ -84,6 +84,7 @@
    :options (-> [:map {:closed true}]
                 (into style-entries)
                 (into data/common-options)
+                (into theme/theme-style-entries)
                 (into curve/options)
                 (conj (schema/nilable :sort {:cljplot2/section :path :description "order the points by numeric or temporal x (false - data order)" :default true}
                                       schema/bool)
@@ -120,7 +121,7 @@
 
 (defn- style
   [options theme]
-  (merge (get-in theme [:chart :line]) (select-keys options [:color :width :dash :fill :alpha :bridge :pattern :pattern-color])))
+  (merge (theme/chart-style theme :line options) (select-keys options [:color :width :dash :fill :alpha :bridge :pattern :pattern-color])))
 
 (defn- sortable? [xs] (or (every? number? xs) (every? data/temporal? xs)))
 

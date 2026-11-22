@@ -43,6 +43,7 @@
    :options (-> [:map {:closed true}]
                 (into style-entries)
                 (into data/common-options)
+                (into theme/theme-style-entries)
                 (into strip/options)
                 (conj (schema/optional :kernel {:description "density kernel (a fastmath kernel keyword)" :default :gaussian} keyword?)
                       (schema/optional :bandwidth {:description "kernel bandwidth in data units, or a fastmath bandwidth selector keyword"
@@ -74,7 +75,7 @@
 
 (defn- style
   [options theme]
-  (merge (get-in theme [:chart :violin]) (select-keys options [:color :stroke-color :stroke-width :inner-color :pattern :pattern-color])))
+  (merge (theme/chart-style theme :violin options) (select-keys options [:color :stroke-color :stroke-width :inner-color :pattern :pattern-color])))
 
 (defn- profile
   "`{:xs [..] :ds [..] :n}` - the KDE of `values` on its grid (raw densities)."

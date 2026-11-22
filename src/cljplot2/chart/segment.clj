@@ -27,7 +27,8 @@
             [cljplot2.scale.coord :as coord]
             [cljplot2.scale.aesthetic :as aesthetic]
             [cljplot2.scale.position :as scale]
-            [cljplot2.schema :as schema])
+            [cljplot2.schema :as schema]
+            [cljplot2.theme :as theme])
   (:import [fastmath.vector Vec2]))
 
 (set! *warn-on-reflection* true)
@@ -39,6 +40,7 @@
    :options (-> [:map {:closed true}]
                 (into polyline/style-entries)
                 (into data/common-options)
+                (into theme/theme-style-entries)
                 (conj (schema/nilable :xend {:description "literal end x of every segment: a number, a java.time value or a level (wins over a mapped :xend)"
                                              :cljplot2/default-doc "the mapped :xend, else the start x"}
                                       annotation/position)
@@ -66,7 +68,7 @@
 
 (defn- style
   [options theme]
-  (merge (get-in theme [:chart :segment]) (select-keys options [:color :width :dash])))
+  (merge (theme/chart-style theme :segment options) (select-keys options [:color :width :dash])))
 
 (defn- end-accessor
   "Row accessor of the end coordinate `k` (`:xend` / `:yend`): the literal option, the mapped accessor, or the start

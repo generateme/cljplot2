@@ -34,7 +34,8 @@
             [cljplot2.data.rows :as data]
             [cljplot2.data.strip :as strip]
             [cljplot2.scale.aesthetic :as aesthetic]
-            [cljplot2.schema :as schema])
+            [cljplot2.schema :as schema]
+            [cljplot2.theme :as theme])
   (:import [fastmath.vector Vec2]))
 
 (set! *warn-on-reflection* true)
@@ -60,6 +61,7 @@
    :options (-> [:map {:closed true}]
                 (into style-entries)
                 (into data/common-options)
+                (into theme/theme-style-entries)
                 (into (remove #(#{:n-label :n-format} (first %)) strip/options))
                 (conj (schema/optional :padding {:description "padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span (strip frame: :x the values)"
                                                  :cljplot2/default-doc "values 0.05 on a side holding values, 0 on the side of 0"}
@@ -84,7 +86,7 @@
 
 (defn- style
   [options theme]
-  (merge (get-in theme [:chart :bullet]) (select-keys options (map first style-entries))))
+  (merge (theme/chart-style theme :bullet options) (select-keys options (map first style-entries))))
 
 (defn- as-values
   "`v` - `nil`, a finite number or a sequential collection of them - as a vector of doubles; `nil` for anything

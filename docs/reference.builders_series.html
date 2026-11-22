@@ -974,19 +974,19 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="even">
 <td>:colors :stem</td>
 <td>a clojure2d color or :none</td>
-<td>[69 117 180]</td>
+<td>[69.0 117.0 180.0 255.0]</td>
 <td>colour of the stems and points</td>
 </tr>
 <tr class="odd">
 <td>:colors :band</td>
 <td>a clojure2d color or :none</td>
-<td>[69 117 180]</td>
+<td>[69.0 117.0 180.0 255.0]</td>
 <td>colour of the significance band</td>
 </tr>
 <tr class="even">
 <td>:colors :significant</td>
 <td>a clojure2d color or :none</td>
-<td>[215 48 39]</td>
+<td>[215.0 48.0 39.0 255.0]</td>
 <td>colour of the points of lags outside the band</td>
 </tr>
 </tbody>
@@ -1020,6 +1020,61 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <div class="clay-image">
 <p><img src="reference.builders_series_files/image2.png" class="img-fluid"></p>
+</div>
+<p>The lag points draw in the theme style <code>[:chart :acf-point]</code> (a scatter style over <code>[:chart :scatter]</code>; their colours are the <code>:colors</code> option):</p>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">Option</th>
+<th data-quarto-table-cell-role="th">Type</th>
+<th data-quarto-table-cell-role="th">Default</th>
+<th data-quarto-table-cell-role="th">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>:size</td>
+<td>a non-negative number</td>
+<td>5</td>
+<td>point size in pixels (a mapped :size wins)</td>
+</tr>
+<tr class="even">
+<td>:color</td>
+<td>a clojure2d color or :none</td>
+<td>[69.0 117.0 180.0 180.0]</td>
+<td>point colour (a mapped :color wins)</td>
+</tr>
+<tr class="odd">
+<td>:stroke-color</td>
+<td>a clojure2d color or :none</td>
+<td>:none</td>
+<td>outline colour: a colour or :none</td>
+</tr>
+<tr class="even">
+<td>:stroke-width</td>
+<td>a non-negative number</td>
+<td>1</td>
+<td>outline width in pixels</td>
+</tr>
+<tr class="odd">
+<td>:shape</td>
+<td>a shape character, keyword or shape map</td>
+<td>\O</td>
+<td>point shape (a mapped :shape wins)</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p>Larger triangle points through the theme:</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/acf ar1 {<span class="at">:partial</span>? <span class="at">:acf</span> <span class="at">:theme</span> {<span class="at">:chart</span> {<span class="at">:acf-point</span> {<span class="at">:size</span> <span class="dv">8</span> <span class="at">:shape</span> <span class="ch">\A</span>}}}})</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">700</span> <span class="at">:height</span> <span class="dv">360</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.builders_series_files/image3.png" class="img-fluid"></p>
 </div>
 <p>Shared options: <a href="reference.shared_options.html#autocorrelation-rows">Autocorrelation rows</a> (<code>:lags</code> <code>:alpha</code>); <a href="reference.shared_options.html#builder-options">Builder options</a> (<code>:title</code> <code>:scales</code> <code>:theme</code>).</p>
 </section>
@@ -1067,9 +1122,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> waves </span>(<span class="kw">for</span> [[i series] (map-indexed <span class="kw">vector</span> [<span class="st">"north"</span> <span class="st">"south"</span> <span class="st">"east"</span>]) t (<span class="kw">range</span> <span class="dv">0</span> <span class="dv">100</span> <span class="dv">2</span>)]</span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>             {<span class="at">:t</span> t <span class="at">:series</span> series</span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>              <span class="at">:v</span> (<span class="kw">*</span> (<span class="kw">+</span> <span class="fl">1.0</span> i) (Math/sin (<span class="kw">+</span> (<span class="kw">*</span> (<span class="kw">+</span> <span class="fl">0.05</span> (<span class="kw">*</span> <span class="fl">0.03</span> i)) t) (<span class="kw">*</span> <span class="fl">1.3</span> i))) (<span class="kw">+</span> <span class="dv">1</span> (<span class="kw">*</span> <span class="fl">0.01</span> t)))}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> waves </span>(<span class="kw">for</span> [[i series] (map-indexed <span class="kw">vector</span> [<span class="st">"north"</span> <span class="st">"south"</span> <span class="st">"east"</span>]) t (<span class="kw">range</span> <span class="dv">0</span> <span class="dv">100</span> <span class="dv">2</span>)]</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>             {<span class="at">:t</span> t <span class="at">:series</span> series</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>              <span class="at">:v</span> (<span class="kw">*</span> (<span class="kw">+</span> <span class="fl">1.0</span> i) (Math/sin (<span class="kw">+</span> (<span class="kw">*</span> (<span class="kw">+</span> <span class="fl">0.05</span> (<span class="kw">*</span> <span class="fl">0.03</span> i)) t) (<span class="kw">*</span> <span class="fl">1.3</span> i))) (<span class="kw">+</span> <span class="dv">1</span> (<span class="kw">*</span> <span class="fl">0.01</span> t)))}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="data-table">
 <div class="table-responsive">
@@ -1592,24 +1647,24 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/horizon waves {<span class="at">:x</span> <span class="at">:t</span> <span class="at">:y</span> <span class="at">:v</span> <span class="at">:series</span> <span class="at">:series</span> <span class="at">:bands</span> <span class="dv">3</span>}) {<span class="at">:width</span> <span class="dv">700</span> <span class="at">:height</span> <span class="dv">300</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<div class="clay-image">
-<p><img src="reference.builders_series_files/image3.png" class="img-fluid"></p>
-</div>
-<p>Two bands (the default; left - blues and reds), own band colours per sign, lightest first (middle), and translucent bands showing the ones beneath (right):</p>
-<div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [(plot/horizon waves {<span class="at">:x</span> <span class="at">:t</span> <span class="at">:y</span> <span class="at">:v</span> <span class="at">:series</span> <span class="at">:series</span> <span class="at">:title</span> <span class="st">"defaults"</span>})</span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>                                  (plot/horizon waves {<span class="at">:x</span> <span class="at">:t</span> <span class="at">:y</span> <span class="at">:v</span> <span class="at">:series</span> <span class="at">:series</span></span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>                                                       <span class="at">:colors</span> {<span class="at">:positive</span> [[<span class="dv">199</span> <span class="dv">233</span> <span class="dv">192</span>] [<span class="dv">35</span> <span class="dv">139</span> <span class="dv">69</span>]]</span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>                                                                <span class="at">:negative</span> [[<span class="dv">218</span> <span class="dv">218</span> <span class="dv">235</span>] [<span class="dv">84</span> <span class="dv">39</span> <span class="dv">143</span>]]}</span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>                                                       <span class="at">:title</span> <span class="st">":colors"</span>})</span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>                                  (plot/horizon waves {<span class="at">:x</span> <span class="at">:t</span> <span class="at">:y</span> <span class="at">:v</span> <span class="at">:series</span> <span class="at">:series</span> <span class="at">:alpha</span> <span class="fl">0.5</span> <span class="at">:title</span> <span class="st">":alpha 0.5"</span>})]</span>
-<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">3</span>})</span>
-<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">320</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/horizon waves {<span class="at">:x</span> <span class="at">:t</span> <span class="at">:y</span> <span class="at">:v</span> <span class="at">:series</span> <span class="at">:series</span> <span class="at">:bands</span> <span class="dv">3</span>}) {<span class="at">:width</span> <span class="dv">700</span> <span class="at">:height</span> <span class="dv">300</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="clay-image">
 <p><img src="reference.builders_series_files/image4.png" class="img-fluid"></p>
+</div>
+<p>Two bands (the default; left - blues and reds), own band colours per sign, lightest first (middle), and translucent bands showing the ones beneath (right):</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [(plot/horizon waves {<span class="at">:x</span> <span class="at">:t</span> <span class="at">:y</span> <span class="at">:v</span> <span class="at">:series</span> <span class="at">:series</span> <span class="at">:title</span> <span class="st">"defaults"</span>})</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>                                  (plot/horizon waves {<span class="at">:x</span> <span class="at">:t</span> <span class="at">:y</span> <span class="at">:v</span> <span class="at">:series</span> <span class="at">:series</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>                                                       <span class="at">:colors</span> {<span class="at">:positive</span> [[<span class="dv">199</span> <span class="dv">233</span> <span class="dv">192</span>] [<span class="dv">35</span> <span class="dv">139</span> <span class="dv">69</span>]]</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>                                                                <span class="at">:negative</span> [[<span class="dv">218</span> <span class="dv">218</span> <span class="dv">235</span>] [<span class="dv">84</span> <span class="dv">39</span> <span class="dv">143</span>]]}</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>                                                       <span class="at">:title</span> <span class="st">":colors"</span>})</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>                                  (plot/horizon waves {<span class="at">:x</span> <span class="at">:t</span> <span class="at">:y</span> <span class="at">:v</span> <span class="at">:series</span> <span class="at">:series</span> <span class="at">:alpha</span> <span class="fl">0.5</span> <span class="at">:title</span> <span class="st">":alpha 0.5"</span>})]</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">3</span>})</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">320</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.builders_series_files/image5.png" class="img-fluid"></p>
 </div>
 <p>Shared options: <a href="reference.shared_options.html#horizon-rows">Horizon rows</a> (<code>:x</code> <code>:y</code> <code>:series</code> <code>:bands</code> <code>:band-height</code> <code>:interpolator</code> <code>:steps-per-gap</code>); <a href="reference.shared_options.html#builder-options">Builder options</a> (<code>:title</code> <code>:scales</code> <code>:theme</code>).</p>
 <div style="background-color:grey;height:2px;width:100%;"></div>

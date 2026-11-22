@@ -1357,6 +1357,43 @@ The keys of the series rows, the number and height of the bands and resampling b
 
 
 
+### Named theme styles
+
+A chart's style comes from the theme `[:chart kind]`; `:theme-style` names a `[:chart name]` entry merged over
+it - a partial style a theme defines once and charts pick by name (builders draw with their own, see each
+builder's page). `build` checks the merged style against the chart's style keys; a name the theme hasn't is an
+error.
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:theme-style</td><td>keyword</td><td></td><td>name of a theme [:chart name] style (a builder's, or one the theme adds) merged over the kind's style</td></tr></tbody></table>
+```
+
+:::
+
+
+Highlighted points in a style named `:highlight`, the rest in the scatter style:
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image {:data points
+                    :mapping {:x :x :y :y}
+                    :charts [(chart/scatter)
+                             (chart/scatter {:data (filter #(> (:y %) 4) points) :theme-style :highlight})]
+                    :theme {:chart {:highlight {:size 14 :color [215 48 39] :shape \s}}}}
+                   {:width 500 :height 300})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.shared_options_files/image40.png)
+:::
+
+
+
 ```{=html}
 <div style="background-color:grey;height:2px;width:100%;"></div>
 ```

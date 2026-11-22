@@ -66,6 +66,7 @@
    :options (-> [:map {:closed true}]
                 (into style-entries)
                 (into data/common-options)
+                (into theme/theme-style-entries)
                 (conj (schema/optional :method {:cljplot2/section :fit :description "fit method: :loess, :lm, :glm, :gp, another fastmath 1D interpolation method or a function (fn [xs ys] f)"
                                                 :default :loess}
                                        method-schema)
@@ -105,7 +106,7 @@
 
 (defn- style
   [options theme]
-  (merge (get-in theme [:chart :smooth]) (select-keys options [:color :width :dash :fill :alpha :pattern :pattern-color])))
+  (merge (theme/chart-style theme :smooth options) (select-keys options [:color :width :dash :fill :alpha :pattern :pattern-color])))
 
 (defn- fit-spec
   "The fit of the chart `options` with style `st`: `{:method :params :band :levels :bootstrap}` (`:band :none` for a

@@ -18,7 +18,8 @@
             [cljplot2.data.rows :as data]
             [cljplot2.data.strip :as strip]
             [cljplot2.graphics.shape :as shape]
-            [cljplot2.schema :as schema])
+            [cljplot2.schema :as schema]
+            [cljplot2.theme :as theme])
   (:import [fastmath.vector Vec2]))
 
 (set! *warn-on-reflection* true)
@@ -37,6 +38,7 @@
    :options (-> [:map {:closed true}]
                 (into style-entries)
                 (into data/common-options)
+                (into theme/theme-style-entries)
                 (into strip/options)
                 (conj (schema/optional :jitter {:description "jitter spread across the strip, a fraction of the item's cross range (Gaussian, sd :jitter / 4, clamped to ±:jitter / 2; 0 - on the centre line)"
                                                 :default 0.25}
@@ -58,7 +60,7 @@
 
 (defn- style
   [options theme]
-  (merge (get-in theme [:chart :stripplot]) (select-keys options [:size :color :stroke-color :stroke-width :shape])))
+  (merge (theme/chart-style theme :stripplot options) (select-keys options [:size :color :stroke-color :stroke-width :shape])))
 
 (defn jitter-offsets
   "`n` jitter offsets (two-sided cross units) from `rng`: Gaussian, sd `jitter` / 4, clamped to ±`jitter` / 2."

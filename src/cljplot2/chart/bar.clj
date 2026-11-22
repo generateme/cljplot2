@@ -71,7 +71,8 @@
             [cljplot2.data.strip :as strip]
             [cljplot2.graphics.draw :as draw]
             [cljplot2.scale.coord :as coord]
-            [cljplot2.schema :as schema]))
+            [cljplot2.schema :as schema]
+            [cljplot2.theme :as theme]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -96,6 +97,7 @@
    :options (-> [:map {:closed true}]
                 (into style-entries)
                 (into data/common-options)
+                (into theme/theme-style-entries)
                 (into (remove #(= :position (first %)) strip/options))
                 (conj (schema/optional :stat {:cljplot2/section :bars :description "bar length from the item's rows: :sum, :mean, :median or a function of the values, or a count measure :count, :percent, :pmf (no values needed)"
                                               :default :sum}
@@ -145,7 +147,7 @@
 
 (defn- style
   [options theme]
-  (merge (get-in theme [:chart :bar])
+  (merge (theme/chart-style theme :bar options)
          (select-keys options [:color :stroke-color :stroke-width :alpha :zero-line-color :zero-line-width :pattern
                                :pattern-color])))
 

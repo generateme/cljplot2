@@ -516,3 +516,21 @@
                                    {:x t :y (* (if (= s "a") 1 -1) (Math/sin (* 0.2 t)) t) :series s})
                                  {:series :series :bands 3})
                    {:width 600 :height 250})
+
+;; ### Named theme styles
+
+;; A chart's style comes from the theme `[:chart kind]`; `:theme-style` names a `[:chart name]` entry merged over
+;; it - a partial style a theme defines once and charts pick by name (builders draw with their own, see each
+;; builder's page). `build` checks the merged style against the chart's style keys; a name the theme hasn't is an
+;; error.
+
+(nu/options-table (describe/fragment-rows :theme-style))
+
+;; Highlighted points in a style named `:highlight`, the rest in the scatter style:
+
+(plot/render-image {:data points
+                    :mapping {:x :x :y :y}
+                    :charts [(chart/scatter)
+                             (chart/scatter {:data (filter #(> (:y %) 4) points) :theme-style :highlight})]
+                    :theme {:chart {:highlight {:size 14 :color [215 48 39] :shape \s}}}}
+                   {:width 500 :height 300})

@@ -3,6 +3,7 @@
   facets, explicit domains) and the cloud additions (side projections, `:bins`)."
   (:require [clojure.test :refer [deftest testing is]]
             [clojure2d.core :as c2d]
+            [clojure2d.color :as c]
             [fastmath.core :as m]
             [cljplot2.chart :as chart]
             [cljplot2.chart.cloud :as cloud]
@@ -83,7 +84,7 @@
       (is (every? #(= [1 2 3] (:stroke %)) (prims {:style :both :stroke-color [1 2 3]})))
       (let [ps (prims {:style :wireframe :color [9 9 9]})]
         (is (every? #(= [9 9 9] (:stroke %)) ps))
-        (is (every? #(= 0xececf3 (:fill %)) ps) "the plot background")))
+        (is (every? #(= (c/to-color 0xececf3) (c/to-color (:fill %))) ps) "the plot background")))
     (testing "5.2 shading on by default; :shade false - the color itself"
       (is (every? #(= [9 9 9] (:fill %)) (prims {:color [9 9 9] :shade false})))
       (is (not-every? #(= [9 9 9] (:fill %)) (prims {:color [9 9 9]}))))

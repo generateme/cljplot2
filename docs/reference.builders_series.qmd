@@ -71,7 +71,7 @@ significance band around zero, the lags outside it marked.
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:partial?</td><td>one of :both :acf :pacf false true or nil</td><td>:both</td><td>the correlograms drawn: :both (ACF above PACF), :acf or false (ACF), :pacf or true (PACF)</td></tr><tr><td>:band</td><td>one of :smooth :stepped or nil</td><td>:smooth</td><td>significance band: :smooth (a ribbon through the lags) or :stepped (a block per lag)</td></tr><tr><td>:colors</td><td>map</td><td></td><td>colours of the stems and points, the band and the significant lags' points</td></tr><tr><td>:colors :stem</td><td>a clojure2d color or :none</td><td>[69 117 180]</td><td>colour of the stems and points</td></tr><tr><td>:colors :band</td><td>a clojure2d color or :none</td><td>[69 117 180]</td><td>colour of the significance band</td></tr><tr><td>:colors :significant</td><td>a clojure2d color or :none</td><td>[215 48 39]</td><td>colour of the points of lags outside the band</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:partial?</td><td>one of :both :acf :pacf false true or nil</td><td>:both</td><td>the correlograms drawn: :both (ACF above PACF), :acf or false (ACF), :pacf or true (PACF)</td></tr><tr><td>:band</td><td>one of :smooth :stepped or nil</td><td>:smooth</td><td>significance band: :smooth (a ribbon through the lags) or :stepped (a block per lag)</td></tr><tr><td>:colors</td><td>map</td><td></td><td>colours of the stems and points, the band and the significant lags' points</td></tr><tr><td>:colors :stem</td><td>a clojure2d color or :none</td><td>[69.0 117.0 180.0 255.0]</td><td>colour of the stems and points</td></tr><tr><td>:colors :band</td><td>a clojure2d color or :none</td><td>[69.0 117.0 180.0 255.0]</td><td>colour of the significance band</td></tr><tr><td>:colors :significant</td><td>a clojure2d color or :none</td><td>[215.0 48.0 39.0 255.0]</td><td>colour of the points of lags outside the band</td></tr></tbody></table>
 ```
 
 :::
@@ -129,6 +129,34 @@ The colours of the stems, the band and the significant lags:
 :::
 
 
+The lag points draw in the theme style `[:chart :acf-point]` (a scatter style over `[:chart :scatter]`; their
+colours are the `:colors` option):
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:size</td><td>a non-negative number</td><td>5</td><td>point size in pixels (a mapped :size wins)</td></tr><tr><td>:color</td><td>a clojure2d color or :none</td><td>[69.0 117.0 180.0 180.0]</td><td>point colour (a mapped :color wins)</td></tr><tr><td>:stroke-color</td><td>a clojure2d color or :none</td><td>:none</td><td>outline colour: a colour or :none</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>outline width in pixels</td></tr><tr><td>:shape</td><td>a shape character, keyword or shape map</td><td>\O</td><td>point shape (a mapped :shape wins)</td></tr></tbody></table>
+```
+
+:::
+
+
+Larger triangle points through the theme:
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/acf ar1 {:partial? :acf :theme {:chart {:acf-point {:size 8 :shape \A}}}})
+                   {:width 700 :height 360})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.builders_series_files/image3.png)
+:::
+
+
 Shared options: [Autocorrelation rows](reference.shared_options.html#autocorrelation-rows) (`:lags` `:alpha`); [Builder options](reference.shared_options.html#builder-options) (`:title` `:scales` `:theme`).
 
 
@@ -172,7 +200,7 @@ with x, y and (several series) a series column.
 
 
 ::: {.clay-image}
-![](reference.builders_series_files/image3.png)
+![](reference.builders_series_files/image4.png)
 :::
 
 
@@ -195,7 +223,7 @@ translucent bands showing the ones beneath (right):
 
 
 ::: {.clay-image}
-![](reference.builders_series_files/image4.png)
+![](reference.builders_series_files/image5.png)
 :::
 
 

@@ -178,12 +178,18 @@
   [c]
   (symbol (format "0x%06x" (long c))))
 
+(defn- readable-color
+  "`Vec4` colour `c` as a vector of its rounded channels, `[r g b]` when opaque (alpha 255), else `[r g b a]`."
+  [c]
+  (let [channels (mapv #(Math/round (double %)) c)]
+    (if (== 255 (long (peek channels))) (pop channels) channels)))
+
 (defn- readable-value
-  "`v` with colours and functions readable when printed: a `Vec4` colour as a vector of rounded channels, an integer
-  under a colour key as `0xrrggbb`, a function as `fn`."
+  "`v` with colours and functions readable when printed: a `Vec4` colour as [[readable-color]], an integer under a
+  colour key as `0xrrggbb`, a function as `fn`."
   [v]
   (walk/postwalk (fn [x]
-                   (cond (instance? Vec4 x) (mapv #(Math/round (double %)) x)
+                   (cond (instance? Vec4 x) (readable-color x)
                          (fn? x) 'fn
                          (and (map-entry? x) (color-key? (key x)) (integer? (val x))) [(key x) (hex-color (val x))]
                          :else x))

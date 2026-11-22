@@ -68,6 +68,7 @@
    :options (-> [:map {:closed true}]
                 (into style-entries)
                 (into data/common-options)
+                (into theme/theme-style-entries)
                 (conj (schema/optional :bins {:description (str "bins shared by all panels and groups: a fastmath estimation method (:sturges :sqrt :rice :doane :scott "
                                                                   ":freedman-diaconis), a bin count or increasing breaks (values outside dropped)")
                                                 :default :sturges}
@@ -101,7 +102,7 @@
 
 (defn- style
   [options theme]
-  (merge (get-in theme [:chart :histogram]) (select-keys options [:color :stroke-color :stroke-width :alpha :zero-line-color :zero-line-width :pattern :pattern-color])))
+  (merge (theme/chart-style theme :histogram options) (select-keys options [:color :stroke-color :stroke-width :alpha :zero-line-color :zero-line-width :pattern :pattern-color])))
 
 (defn- bin-counts
   "Counts of `values` per bin of `brks` (last bin closed) and the number outside."

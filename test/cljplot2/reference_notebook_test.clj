@@ -22,6 +22,7 @@
             [cljplot2.pipeline]
             [cljplot2.scale.aesthetic :as aesthetic]
             [cljplot2.scale.coord]
+            [cljplot2.theme]
             [cljplot2.scale.position]
             [cljplot2.notebook-forms :refer [resolved-forms calls]]))
 
@@ -459,6 +460,13 @@
         (is (seq (calls (get forms page) f)))
         (is (= {:options [] :values []}
                (function-coverage-gaps (get forms page) f v (:cljplot2/options (meta v)) own)))))))
+
+(deftest named-style-tables-test
+  (testing "every named theme style (a builder's) has its table on a builder page"
+    (is (= (set (keys cljplot2.theme/named-styles))
+           (set (for [page (keys builder-chapters)
+                      call (calls (get (notebook-forms) page) 'cljplot2.describe/style-rows)]
+                  (second call)))))))
 
 (deftest data-pages-test
   (let [forms (notebook-forms)]

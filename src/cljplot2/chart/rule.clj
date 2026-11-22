@@ -22,7 +22,8 @@
             [cljplot2.graphics.polyline :as polyline]
             [cljplot2.scale.coord :as coord]
             [cljplot2.scale.position :as scale]
-            [cljplot2.schema :as schema])
+            [cljplot2.schema :as schema]
+            [cljplot2.theme :as theme])
   (:import [fastmath.vector Vec2]))
 
 (set! *warn-on-reflection* true)
@@ -36,6 +37,7 @@
    :options (-> [:map {:closed true}]
                 (into polyline/style-entries)
                 (into data/common-options)
+                (into theme/theme-style-entries)
                 (into annotation/options)
                 (conj (schema/nilable :x {:description "literal x position(s) of lines along the y direction: a position or a vector of them (wins over the mapping)"}
                                       (annotation/positions-schema annotation/position))
@@ -58,7 +60,7 @@
 
 (defn- style
   [options theme]
-  (merge (get-in theme [:chart :rule]) (select-keys options [:color :width :dash])))
+  (merge (theme/chart-style theme :rule options) (select-keys options [:color :width :dash])))
 
 (defn- abline-pairs
   "`[[slope intercept] ..]` of `slopes` / `intercepts` (vectors); both or neither, else `ex-info {:key k}`."

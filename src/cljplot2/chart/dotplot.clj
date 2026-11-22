@@ -25,7 +25,8 @@
             [cljplot2.data.rows :as data]
             [cljplot2.data.strip :as strip]
             [cljplot2.graphics.shape :as shape]
-            [cljplot2.schema :as schema])
+            [cljplot2.schema :as schema]
+            [cljplot2.theme :as theme])
   (:import [fastmath.vector Vec2]))
 
 (set! *warn-on-reflection* true)
@@ -45,6 +46,7 @@
    :options (-> [:map {:closed true}]
                 (into style-entries)
                 (into data/common-options)
+                (into theme/theme-style-entries)
                 (into strip/options)
                 (conj (schema/optional :method {:description "binning: :dot-density (Wilkinson) or :histogram (fixed bins from :origin)"
                                                 :default :dot-density}
@@ -75,7 +77,7 @@
 
 (defn- style
   [options theme]
-  (merge (get-in theme [:chart :dotplot]) (select-keys options [:size :color :stroke-color :stroke-width :shape])))
+  (merge (theme/chart-style theme :dotplot options) (select-keys options [:size :color :stroke-color :stroke-width :shape])))
 
 (defn- bins-of
   "Bins (see [[cljplot2.data.dots]]) of the increasing `values` under the chart `options` and `binwidth`; `origin` -

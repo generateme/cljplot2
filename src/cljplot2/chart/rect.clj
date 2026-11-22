@@ -56,6 +56,7 @@
    :options (-> [:map {:closed true}]
                 (into (rest style-entries))
                 (into data/common-options)
+                (into theme/theme-style-entries)
                 (into annotation/options)
                 (conj (schema/optional :fill {:description "fill colour, or a vector of 1 or n colours paired with literal intervals (a mapped :color wins)"}
                                        fill-option)
@@ -84,7 +85,7 @@
 (defn- style
   "Theme style under the options; a vector of fills (literal, per rect) leaves the theme fill as the base."
   [options theme]
-  (merge (get-in theme [:chart :rect])
+  (merge (theme/chart-style theme :rect options)
          (select-keys options [:stroke-color :stroke-width :alpha :pattern :pattern-color])
          (when (schema/color? (:fill options)) (select-keys options [:fill]))))
 

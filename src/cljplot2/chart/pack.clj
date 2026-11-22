@@ -56,6 +56,7 @@
    :options (-> [:map {:closed true}]
                 (into style-entries)
                 (into data/common-options)
+                (into theme/theme-style-entries)
                 (conj (schema/optional :order {:description "packing order of siblings: :value (descending, largest near the centre) or :data"
                                                :default :value}
                                        [:enum :value :data])
@@ -74,7 +75,7 @@
 
 (defn- style
   [options theme]
-  (merge (get-in theme [:chart :pack]) (select-keys options [:padding :border-color :border-width :pattern :pattern-color])))
+  (merge (theme/chart-style theme :pack options) (select-keys options [:padding :border-color :border-width :pattern :pattern-color])))
 
 (defn compute
   "Per panel: `{:tree root :top-count n :style style :options {...} :colored? bool}` (`root` - see

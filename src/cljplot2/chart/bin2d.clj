@@ -33,6 +33,7 @@
             [cljplot2.scale.aesthetic :as aesthetic]
             [cljplot2.scale.position :as scale]
             [cljplot2.schema :as schema]
+            [cljplot2.theme :as theme]
             [fastmath.core :as m]))
 
 (set! *warn-on-reflection* true)
@@ -44,6 +45,7 @@
    :options (-> [:map {:closed true}]
                 (into cells/style-entries)
                 (into data/common-options)
+                (into theme/theme-style-entries)
                 (conj (schema/optional :bins {:description "cells across the x range (a positive integer), or a fastmath estimate-grid-size method giving a cell area (:binwidth wins)"
                                               :default :scott-correlated}
                                        [:or (into [:enum] cells/size-methods) schema/pos-int])
@@ -63,7 +65,7 @@
 
 (defn- style
   [options theme]
-  (merge (get-in theme [:chart :bin2d]) (select-keys options cells/style-keys)))
+  (merge (theme/chart-style theme :bin2d options) (select-keys options cells/style-keys)))
 
 (defn- finite? [v] (and (number? v) (m/valid-double? (double v))))
 

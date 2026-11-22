@@ -42,7 +42,8 @@
             [cljplot2.graphics.shape :as shape]
             [cljplot2.scale.aesthetic :as aesthetic]
             [cljplot2.scale.position :as scale]
-            [cljplot2.schema :as schema])
+            [cljplot2.schema :as schema]
+            [cljplot2.theme :as theme])
   (:import [fastmath.vector Vec2]))
 
 (set! *warn-on-reflection* true)
@@ -67,6 +68,7 @@
   (-> [:map {:closed true}]
       (into (schema/in-section :style style-entries))
       (into data/common-options)
+      (into theme/theme-style-entries)
       (conj (distribution-entry :x-distribution ":x")
             (distribution-entry :y-distribution ":y")
             (schema/optional :line (assoc line-props :cljplot2/section :distributions) (into [:enum false] line-values))
@@ -151,7 +153,7 @@
 
 (defn- style
   [kind options theme]
-  (merge (get-in theme [:chart kind]) (select-keys options style-keys)))
+  (merge (theme/chart-style theme kind options) (select-keys options style-keys)))
 
 (defn- pairs
   "Points `{:x [..] :y [..]}` and `:line` of one group's sides (data sides with `:values`)."

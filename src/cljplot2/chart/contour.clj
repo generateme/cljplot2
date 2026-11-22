@@ -63,6 +63,7 @@
                  (into style-entries)
                  (into field/options)
                  (into data/common-options)
+                 (into theme/theme-style-entries)
                  (conj (schema/optional :levels {:description "contour levels: a count evenly spread over the range of every sampled value (the ends left out), or a vector of level values"
                                                  :default 10}
                                         [:or [:int {:min 1 :max 1000}] [:vector {:min 1} schema/finite]])
@@ -85,7 +86,7 @@
 
 (defn- style
   [options theme]
-  (merge (get-in theme [:chart :contour]) (select-keys options [:color :width :dash :alpha])))
+  (merge (theme/chart-style theme :contour options) (select-keys options [:color :width :dash :alpha])))
 
 (def ^:private ^:const grouped-fill-alpha
   "Alpha factor of grouped filled contours without an `:alpha` option: the groups' regions overlap."

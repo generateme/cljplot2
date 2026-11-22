@@ -58,6 +58,7 @@
    :options (-> [:map {:closed true}]
                 (into style-entries)
                 (into data/common-options)
+                (into theme/theme-style-entries)
                 (conj (schema/optional :method {:description "correlation coefficient: :pearson, :spearman or :kendall"
                                                 :default :pearson}
                                         [:enum :pearson :spearman :kendall])
@@ -73,7 +74,7 @@
 
 (defn- style
   [options theme]
-  (merge (get-in theme [:chart :correlation]) (select-keys options [:color :stroke-color :stroke-width])))
+  (merge (theme/chart-style theme :correlation options) (select-keys options [:color :stroke-color :stroke-width])))
 
 (defn- grouped? [mapping] (boolean (seq (group/group-dims mapping))))
 

@@ -5,7 +5,7 @@
             [clojure2d.core :as c2d]
             [fastmath.core :as m]
             [fastmath.random :as r]
-            [cljplot2.test-util :refer [error]]
+            [cljplot2.test-util :refer [error drawn-style]]
             [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
             [cljplot2.data.graph :as graph]
@@ -238,16 +238,18 @@
     (let [p (plot/network star {:rng (r/rng :mersenne 1) :mapping {:size :degree}})]
       (is (= {:x :x :y :y :size :degree} (get-in p [:charts 1 :options :mapping])))
       (is (instance? BufferedImage (plot/render-image p {:width 300 :height 300})))))
-  (testing "R1 node and edge styles: builder defaults, options win, opaque fill"
+  (testing "R1 node and edge styles: theme styles, options win, opaque fill"
     (let [p (plot/network star {:rng (r/rng :mersenne 1)})
-          nodes (get-in p [:charts 1 :options])
-          edges (get-in p [:charts 0 :options])]
+          nodes (drawn-style (get-in p [:charts 1]))
+          edges (drawn-style (get-in p [:charts 0]))]
+      (is (= [:network-node :network-edge] (map #(get-in % [:options :theme-style]) (reverse (take 2 (:charts p))))))
       (is (= [12 :white 1] ((juxt :size :stroke-color :stroke-width) nodes)))
       (is (== 255.0 (double (color/alpha (:color nodes)))) "opaque")
-      (is (= [120 120 120 200] (:color edges)))
-      (is (= 20 (get-in (plot/network star {:node-style {:size 20}}) [:charts 1 :options :size])))
-      (is (= :red (get-in (plot/network star {:edge-style {:color :red}}) [:charts 0 :options :color])))
-      (is (nil? (get-in (plot/network star {:edge-mapping {:color :value}}) [:charts 0 :options :color])) "mapped colour: no fixed one")))
+      (is (= (color/to-color [120 120 120 200]) (color/to-color (:color edges))))
+      (is (= 20 (:size (drawn-style (get-in (plot/network star {:node-style {:size 20}}) [:charts 1])))))
+      (is (= :red (:color (drawn-style (get-in (plot/network star {:edge-style {:color :red}}) [:charts 0])))))
+      (is (nil? (get-in (plot/network star {:edge-mapping {:color :value}}) [:charts 0 :options :color])) "mapped colour: no fixed option")
+      (is (= 30 (:size (drawn-style (get-in p [:charts 1]) {:chart {:network-node {:size 30}}}))) "a theme restyles the nodes")))
   (testing "R1 a mapped node size: range [6 24] in area unless the scales set them"
     (is (= {:range [6 24] :area true} (get-in (plot/network star {:mapping {:size :degree}}) [:scales :size])))
     (is (= {:range [2 8] :area true} (get-in (plot/network star {:mapping {:size :degree} :scales {:size {:range [2 8]}}}) [:scales :size])))

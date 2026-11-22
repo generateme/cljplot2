@@ -52,6 +52,7 @@
    :options (-> [:map {:closed true}]
                 (into style-entries)
                 (into data/common-options)
+                (into theme/theme-style-entries)
                 (conj (schema/optional :style {:description ":candle (wick and body) or :ohlc (a low-high bar with open and close ticks)"
                                                :default :candle}
                                        [:enum :candle :ohlc])
@@ -67,7 +68,7 @@
 
 (defn- style
   [options theme]
-  (merge (get-in theme [:chart :candlestick]) (select-keys options [:up-color :down-color :body-width :wick-width :stroke-color :up-pattern
+  (merge (theme/chart-style theme :candlestick options) (select-keys options [:up-color :down-color :body-width :wick-width :stroke-color :up-pattern
                                                                  :down-pattern :pattern-color])))
 
 (defn- finite? [v] (and (number? v) (Double/isFinite (double v))))

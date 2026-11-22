@@ -21,7 +21,8 @@
             [cljplot2.data.rows :as data]
             [cljplot2.data.strip :as strip]
             [cljplot2.graphics.shape :as shape]
-            [cljplot2.schema :as schema])
+            [cljplot2.schema :as schema]
+            [cljplot2.theme :as theme])
   (:import [fastmath.vector Vec2]))
 
 (set! *warn-on-reflection* true)
@@ -40,6 +41,7 @@
    :options (-> [:map {:closed true}]
                 (into style-entries)
                 (into data/common-options)
+                (into theme/theme-style-entries)
                 (into strip/options)
                 (conj (schema/nilable :fit {:description "squeeze a swarm wider than its item's cross range into it (points may then overlap)"
                                              :default true}
@@ -61,7 +63,7 @@
 
 (defn- style
   [options theme]
-  (merge (get-in theme [:chart :beeswarm]) (select-keys options [:size :color :stroke-color :stroke-width :shape])))
+  (merge (theme/chart-style theme :beeswarm options) (select-keys options [:size :color :stroke-color :stroke-width :shape])))
 
 (def ^:private ^:const eps 1.0e-9)
 

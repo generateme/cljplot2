@@ -52,6 +52,7 @@
    :options (-> [:map {:closed true}]
                 (into style-entries)
                 (into data/common-options)
+                (into theme/theme-style-entries)
                 (into (remove #(= :curve (first %))) curve/options)
                 (conj (schema/optional :fill-gradient {:description "clojure2d gradient (preset, colours or function of t) filling the bands; wins over :fill"}
                                        polyline/fill-gradient-schema)
@@ -72,7 +73,7 @@
 
 (defn- style
   [options theme]
-  (merge (get-in theme [:chart :ribbon]) (select-keys options [:color :fill :alpha :stroke-color :stroke-width :dash :pattern
+  (merge (theme/chart-style theme :ribbon options) (select-keys options [:color :fill :alpha :stroke-color :stroke-width :dash :pattern
                                                                 :pattern-color])))
 
 (defn- sortable? [xs] (or (every? number? xs) (every? data/temporal? xs)))

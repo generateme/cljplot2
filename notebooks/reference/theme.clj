@@ -189,6 +189,19 @@
                                  {:columns 2 :widths [3 2]})
                    {:width 800 :height 300})
 
+;; Labels of builders - network, sankey, dendrogram groups, alluvial, node-link trees and the names of a scatter-plot
+;; matrix (`plot/pairs` `:diagonal :names`) - each in a role of its own, so a theme restyles them all:
+
+(nu/options-table (describe/theme-rows :text) :builder-text)
+
+(plot/render-image (plot/arrange [(plot/sankey [{:from "in" :to "a" :value 3} {:from "in" :to "b" :value 2}]
+                                               {:theme {:text {:sankey-label {:size 12 :font-style :bold}}}})
+                                  (plot/pairs (take 40 iris) {:variables [:sepal-length :petal-length]
+                                                          :diagonal :names
+                                                          :theme {:text {:pairs-name {:size 10 :color [178 34 34]}}}})]
+                                 {:columns 2})
+                   {:width 800 :height 320})
+
 ;; The keys of a text style:
 
 (nu/options-table (describe/fragment-rows :text-style))
@@ -201,7 +214,9 @@
 ;; ## Chart
 
 ;; The style of each chart kind, `[:chart kind]` - its keys and defaults are the rows with a theme default in the
-;; chart's table. Options given to a chart override its theme style.
+;; chart's table. Options given to a chart override its theme style. `[:chart name]` entries that aren't kinds are
+;; named styles, partial styles a chart picks with `:theme-style` over its kind's (see Shared options); builders
+;; draw with theirs (`:network-node`, `:tree-link` ... - each listed on its builder's page).
 
 (nu/options-table (describe/theme-rows :chart))
 

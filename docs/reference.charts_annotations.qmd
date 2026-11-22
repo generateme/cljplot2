@@ -163,7 +163,7 @@ Its options: literal positions - one or a vector of them, across x (`:x`) or alo
 :::
 
 
-Shared options: [Line style](reference.shared_options.html#line-style) (`:color` `:width` `:dash`); [Data and mapping](reference.shared_options.html#data-and-mapping) (`:data` `:mapping`); [Annotation options](reference.shared_options.html#annotation-options) (`:extent`).
+Shared options: [Line style](reference.shared_options.html#line-style) (`:color` `:width` `:dash`); [Data and mapping](reference.shared_options.html#data-and-mapping) (`:data` `:mapping`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`); [Annotation options](reference.shared_options.html#annotation-options) (`:extent`).
 
 
 ## rect
@@ -222,7 +222,7 @@ how much of a band a level end covers:
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:stroke-color</td><td>:darker or a clojure2d color or :none</td><td>:none</td><td>outline colour: a colour, :none or :darker (the darkened fill; no outline without a fill)</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>outline width in pixels</td></tr><tr><td>:fill</td><td>a clojure2d color or :none or vector of a clojure2d color or :none (at least 1)</td><td>[0 0 0 30]</td><td>fill colour, or a vector of 1 or n colours paired with literal intervals (a mapped :color wins)</td></tr><tr><td>:alpha</td><td>a number in [0 1]</td><td>colours as they are</td><td>fill opacity</td></tr><tr><td>:x</td><td>[a finite number, a java.time value or a level (string / keyword) or nil, a finite number, a java.time value or a level (string / keyword) or nil] or vector of [a finite number, a java.time value or a level (string / keyword) or nil, a finite number, a java.time value or a level (string / keyword) or nil] (at least 1) or nil</td><td></td><td>literal x interval(s) [a b] (an end nil - the panel edge), alone a band across the panel (wins over the mapping)</td></tr><tr><td>:y</td><td>[a finite number, a java.time value or a level (string / keyword) or nil, a finite number, a java.time value or a level (string / keyword) or nil] or vector of [a finite number, a java.time value or a level (string / keyword) or nil, a finite number, a java.time value or a level (string / keyword) or nil] (at least 1) or nil</td><td></td><td>literal y interval(s) [a b] (an end nil - the panel edge), alone a band across the panel (wins over the mapping)</td></tr><tr><td>:band-width</td><td>a finite number, > 0, <= 1</td><td>1.0</td><td>fraction of its band step a level end covers, centred</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:stroke-color</td><td>:darker or a clojure2d color or :none</td><td>:none</td><td>outline colour: a colour, :none or :darker (the darkened fill; no outline without a fill)</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>outline width in pixels</td></tr><tr><td>:fill</td><td>a clojure2d color or :none or vector of a clojure2d color or :none (at least 1)</td><td>[0.0 0.0 0.0 30.0]</td><td>fill colour, or a vector of 1 or n colours paired with literal intervals (a mapped :color wins)</td></tr><tr><td>:alpha</td><td>a number in [0 1]</td><td>colours as they are</td><td>fill opacity</td></tr><tr><td>:x</td><td>[a finite number, a java.time value or a level (string / keyword) or nil, a finite number, a java.time value or a level (string / keyword) or nil] or vector of [a finite number, a java.time value or a level (string / keyword) or nil, a finite number, a java.time value or a level (string / keyword) or nil] (at least 1) or nil</td><td></td><td>literal x interval(s) [a b] (an end nil - the panel edge), alone a band across the panel (wins over the mapping)</td></tr><tr><td>:y</td><td>[a finite number, a java.time value or a level (string / keyword) or nil, a finite number, a java.time value or a level (string / keyword) or nil] or vector of [a finite number, a java.time value or a level (string / keyword) or nil, a finite number, a java.time value or a level (string / keyword) or nil] (at least 1) or nil</td><td></td><td>literal y interval(s) [a b] (an end nil - the panel edge), alone a band across the panel (wins over the mapping)</td></tr><tr><td>:band-width</td><td>a finite number, > 0, <= 1</td><td>1.0</td><td>fraction of its band step a level end covers, centred</td></tr></tbody></table>
 ```
 
 :::
@@ -266,7 +266,7 @@ how much of a band a level end covers:
 :::
 
 
-Shared options: [Fill patterns](reference.shared_options.html#fill-patterns) (`:pattern` `:pattern-color`); [Data and mapping](reference.shared_options.html#data-and-mapping) (`:data` `:mapping`); [Annotation options](reference.shared_options.html#annotation-options) (`:extent`); [Rounded corners](reference.shared_options.html#rounded-corners) (`:corner-radius`).
+Shared options: [Fill patterns](reference.shared_options.html#fill-patterns) (`:pattern` `:pattern-color`); [Data and mapping](reference.shared_options.html#data-and-mapping) (`:data` `:mapping`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`); [Annotation options](reference.shared_options.html#annotation-options) (`:extent`); [Rounded corners](reference.shared_options.html#rounded-corners) (`:corner-radius`).
 
 
 ## text
@@ -322,7 +322,7 @@ row per group, and room kept for labels past the data:
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:x</td><td>[:panel f], f in [0 1] or a finite number, a java.time value or a level (string / keyword) or [:panel f], f in [0 1] or vector of a finite number, a java.time value or a level (string / keyword) or [:panel f], f in [0 1] (at least 1) or nil</td><td></td><td>literal x position(s): a position, [:panel f] (fraction f of the panel, not in the extents) or a vector of 1 or n (wins over the mapping)</td></tr><tr><td>:y</td><td>[:panel f], f in [0 1] or a finite number, a java.time value or a level (string / keyword) or [:panel f], f in [0 1] or vector of a finite number, a java.time value or a level (string / keyword) or [:panel f], f in [0 1] (at least 1) or nil</td><td></td><td>literal y position(s): a position, [:panel f] (fraction f of the panel, not in the extents) or a vector of 1 or n (wins over the mapping)</td></tr><tr><td>:text</td><td>any value or nil</td><td></td><td>literal label text: a value or a vector of 1 or n (converted with str)</td></tr><tr><td>:anchor</td><td>[one of :left :center :right, one of :top :middle :bottom]</td><td>[:center :middle]; with :select just past the point; polar :radial - away from the centre</td><td>point of the text box placed at the position, [h v] (h :left :center :right, v :top :middle :bottom)</td></tr><tr><td>:offset</td><td>[a finite number, a finite number]</td><td>[0 0]; with :select 5 pixels past the point</td><td>shift [dx dy] of the text in pixels, dy up</td></tr><tr><td>:rotation</td><td>a finite number or :radial</td><td>0</td><td>text rotation in degrees, clockwise, or :radial (polar: along each label's angle, upright; 0 in cartesian plots) (a mapped :angle wins)</td></tr><tr><td>:select</td><td>one of :last :first</td><td></td><td>end labels from data: keep per group and text only the row with the largest (:last) or smallest (:first) x</td></tr><tr><td>:anchor-frame</td><td>one of :box :text</td><td>:box</td><td>what :anchor points into: :box (the rotated label's bounding box) or :text (the unrotated text, turned about that point)</td></tr><tr><td>:reserve-room</td><td>true or false or :anchor</td><td>false</td><td>keep pixel room past the data for the labels: true - the largest label's diagonal on every side, :anchor - only where the anchored labels reach</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:role</td><td>keyword</td><td>:annotation</td><td>theme text role of the labels (a role of [:text], e.g. a builder's), the style under the inline style keys</td></tr><tr><td>:x</td><td>[:panel f], f in [0 1] or a finite number, a java.time value or a level (string / keyword) or [:panel f], f in [0 1] or vector of a finite number, a java.time value or a level (string / keyword) or [:panel f], f in [0 1] (at least 1) or nil</td><td></td><td>literal x position(s): a position, [:panel f] (fraction f of the panel, not in the extents) or a vector of 1 or n (wins over the mapping)</td></tr><tr><td>:y</td><td>[:panel f], f in [0 1] or a finite number, a java.time value or a level (string / keyword) or [:panel f], f in [0 1] or vector of a finite number, a java.time value or a level (string / keyword) or [:panel f], f in [0 1] (at least 1) or nil</td><td></td><td>literal y position(s): a position, [:panel f] (fraction f of the panel, not in the extents) or a vector of 1 or n (wins over the mapping)</td></tr><tr><td>:text</td><td>any value or nil</td><td></td><td>literal label text: a value or a vector of 1 or n (converted with str)</td></tr><tr><td>:anchor</td><td>[one of :left :center :right, one of :top :middle :bottom]</td><td>[:center :middle]; with :select just past the point; polar :radial - away from the centre</td><td>point of the text box placed at the position, [h v] (h :left :center :right, v :top :middle :bottom)</td></tr><tr><td>:offset</td><td>[a finite number, a finite number]</td><td>[0 0]; with :select 5 pixels past the point</td><td>shift [dx dy] of the text in pixels, dy up</td></tr><tr><td>:rotation</td><td>a finite number or :radial</td><td>0</td><td>text rotation in degrees, clockwise, or :radial (polar: along each label's angle, upright; 0 in cartesian plots) (a mapped :angle wins)</td></tr><tr><td>:select</td><td>one of :last :first</td><td></td><td>end labels from data: keep per group and text only the row with the largest (:last) or smallest (:first) x</td></tr><tr><td>:anchor-frame</td><td>one of :box :text</td><td>:box</td><td>what :anchor points into: :box (the rotated label's bounding box) or :text (the unrotated text, turned about that point)</td></tr><tr><td>:reserve-room</td><td>true or false or :anchor</td><td>false</td><td>keep pixel room past the data for the labels: true - the largest label's diagonal on every side, :anchor - only where the anchored labels reach</td></tr></tbody></table>
 ```
 
 :::
@@ -421,6 +421,31 @@ or the start of the text's top edge:
 :::
 
 
+The labels' style is a theme text role, `:annotation` by default; `:role` picks another - a role the theme adds,
+or a builder's (here `:network-label`, small names on white boxes), the inline style keys still over it:
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image {:data cities
+                    :mapping {:x :lon :y :lat}
+                    :charts [(chart/scatter)
+                             (chart/text {:mapping {:x :lon :y :lat :label :city} :anchor [:left :bottom] :offset [4 2]
+                                          :role :network-label})
+                             (chart/text {:x [:panel 0.5] :y [:panel 0.95] :text "European cities" :role :callout})]
+                    :theme {:text {:callout {:font "DejaVu Sans Mono" :size 13 :font-style :bold :color [178 34 34]
+                                             :padding 2}}}
+                    :labels {:x "longitude" :y "latitude"}}
+                   {:width 550 :height 340})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_annotations_files/image7.png)
+:::
+
+
 Shared options: [Text style](reference.shared_options.html#text-style) (`:font` `:size` `:font-style` `:color` `:padding` `:background`); [Data and mapping](reference.shared_options.html#data-and-mapping) (`:data` `:mapping`); [Annotation options](reference.shared_options.html#annotation-options) (`:extent`).
 
 
@@ -447,7 +472,7 @@ image; it reads no mapping. Here a radial gradient covering the data range [-1 1
 
 
 ::: {.clay-image}
-![](reference.charts_annotations_files/image7.png)
+![](reference.charts_annotations_files/image8.png)
 :::
 
 
@@ -482,7 +507,7 @@ charts' domains (here a scatter's), drawn below them:
 
 
 ::: {.clay-image}
-![](reference.charts_annotations_files/image8.png)
+![](reference.charts_annotations_files/image9.png)
 :::
 
 
@@ -513,7 +538,7 @@ may be mapped to colour or dash by the chart's own mapping.
 
 
 ::: {.clay-image}
-![](reference.charts_annotations_files/image9.png)
+![](reference.charts_annotations_files/image10.png)
 :::
 
 
@@ -550,7 +575,7 @@ mapping:
 
 
 ::: {.clay-image}
-![](reference.charts_annotations_files/image10.png)
+![](reference.charts_annotations_files/image11.png)
 :::
 
 
@@ -583,7 +608,7 @@ A `nil` or non-finite result breaks the curve, or a faint segment bridges the ga
 
 
 ::: {.clay-image}
-![](reference.charts_annotations_files/image11.png)
+![](reference.charts_annotations_files/image12.png)
 :::
 
 
@@ -618,7 +643,7 @@ them, or those within `:y-limits`:
 
 
 ::: {.clay-image}
-![](reference.charts_annotations_files/image12.png)
+![](reference.charts_annotations_files/image13.png)
 :::
 
 
@@ -635,11 +660,11 @@ The padding of the sampled span: none on x (the curve meets the panel's sides), 
 
 
 ::: {.clay-image}
-![](reference.charts_annotations_files/image13.png)
+![](reference.charts_annotations_files/image14.png)
 :::
 
 
-Shared options: [Line style](reference.shared_options.html#line-style) (`:color` `:width` `:dash`).
+Shared options: [Line style](reference.shared_options.html#line-style) (`:color` `:width` `:dash`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`).
 
 
 ```{=html}

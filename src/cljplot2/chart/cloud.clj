@@ -56,7 +56,8 @@
             [cljplot2.graphics.space3d :as space-draw]
             [cljplot2.scale.aesthetic :as aesthetic]
             [cljplot2.scale.position :as scale]
-            [cljplot2.schema :as schema]))
+            [cljplot2.schema :as schema]
+            [cljplot2.theme :as theme]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -78,6 +79,7 @@
              (-> [:map {:closed true}]
                  (into (schema/in-section :style scatter/style-entries))
                  (into data/common-options)
+                 (into theme/theme-style-entries)
                  (into space/frame-options)
                  (conj (schema/optional :type {:cljplot2/section :marks :description (str "marks: :points, :spikes (a line from :base to each point), "
                                                                  ":bars (a box per row from :base to z) or :none (only :projections)")
@@ -114,7 +116,7 @@
 
 (defn- style
   [options theme]
-  (merge (get-in theme [:chart :cloud]) (select-keys options [:size :color :stroke-color :stroke-width :shape])))
+  (merge (theme/chart-style theme :cloud options) (select-keys options [:size :color :stroke-color :stroke-width :shape])))
 
 (defn axis-levels
   "Levels of the position axis `k` (`:x` / `:y`) from its values `vs` over every panel (`nil`s and non-finite numbers

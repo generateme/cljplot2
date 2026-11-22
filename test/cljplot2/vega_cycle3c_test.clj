@@ -2,10 +2,11 @@
   "Vega cycle 3c review: legend key glyphs clipped to whole pixels around their box (no cropped size keys), arc
   diagram `:labels`, the node-link tree (`data.tree/node-link-layout`, `tidy-breadths`, `plot/tree`)."
   (:require [clojure.test :refer [deftest testing is]]
+            [clojure2d.color :as c]
             [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
             [cljplot2.data.tree :as tree]
-            [cljplot2.test-util :refer [error]])
+            [cljplot2.test-util :refer [error drawn-style]])
   (:import [java.awt.image BufferedImage]))
 
 ;; legend
@@ -166,8 +167,8 @@
 (deftest tree-defaults-test
   (let [p (plot/tree small {})]
     (testing "mid-grey links; cartesian labels keep anchored room"
-      (is (= [176 176 176] (get-in p [:charts 0 :options :color])))
-      (is (= 0.9 (get-in p [:charts 0 :options :width])))
+      (is (= (c/to-color [176 176 176]) (c/to-color (:color (drawn-style (get-in p [:charts 0]))))))
+      (is (= 0.9 (:width (drawn-style (get-in p [:charts 0])))))
       (is (= [120 0 0] (get-in (plot/tree small {:link-style {:color [120 0 0]}}) [:charts 0 :options :color]))
           ":link-style wins")
       (is (every? #(= :anchor (get-in % [:options :reserve-room])) (filter #(= :text (:kind %)) (:charts p)))))

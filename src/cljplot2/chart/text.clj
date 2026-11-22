@@ -26,8 +26,8 @@
   label at its position whatever its angle, as radial labels around a circle).
   `:font`, `:size`, `:font-style`, `:color`, `:padding` (pixels around the text - unlike other charts' position
   `:padding {:x [lo hi]}`), `:background` (a color, alpha allowed, filling the text plus padding - a label box, ggplot
-  `geom_label`; the legend key keeps the background with the theme's padding) - over the text role `[:text :annotation]`
-  (the text chart's theme style; a theme `[:chart :text]` entry is rejected); `:extent`, `:data` /
+  `geom_label`; the legend key keeps the background with the theme's padding) - over the text role `[:text role]`
+  of `:role` (default `:annotation`; the text chart's theme style; a theme `[:chart :text]` entry is rejected); `:extent`, `:data` /
   `:mapping`. Text stays upright when the plot is flipped; only the anchor position enters the extents.
   `:reserve-room true` keeps pixel room past the data on every side (`:padding-px` of x and y) for the labels at any
   angle: the largest label's diagonal plus its offset - labels around a circle stay inside the panel. `:reserve-room
@@ -70,13 +70,21 @@
 
 (def ^:private style-keys [:font :size :font-style :color :padding :background])
 
+(defn- text-role
+  "The theme text role of the labels of a text chart with `options`: its `:role`, else `:annotation`."
+  [options]
+  (get options :role :annotation))
+
 (def schemas
-  "Schemas of the text chart: `:options`, `:mapping` (merged); the style is the text role `[:text :annotation]`."
+  "Schemas of the text chart: `:options`, `:mapping` (merged); the style is the text role `[:text role]` of `:role` (default `:annotation`)."
   {:options (-> [:map {:closed true}]
                 (into (filter #(contains? (set style-keys) (first %)) theme/text-style-overrides))
                 (into data/common-options)
                 (into annotation/options)
-                (conj (schema/nilable :x {:description "literal x position(s): a position, [:panel f] (fraction f of the panel, not in the extents) or a vector of 1 or n (wins over the mapping)"}
+                (conj (schema/optional :role {:description "theme text role of the labels (a role of [:text], e.g. a builder's), the style under the inline style keys"
+                                              :default :annotation}
+                                       keyword?)
+                      (schema/nilable :x {:description "literal x position(s): a position, [:panel f] (fraction f of the panel, not in the extents) or a vector of 1 or n (wins over the mapping)"}
                                       text-positions)
                       (schema/nilable :y {:description "literal y position(s): a position, [:panel f] (fraction f of the panel, not in the extents) or a vector of 1 or n (wins over the mapping)"}
                                       text-positions)
@@ -147,7 +155,7 @@
     (measure/call-with-scratch-canvas
      hint
      (fn [c]
-       (let [spec (merge {:kind :label :role :annotation :rotation (numeric-rotation options)} (select-keys options style-keys))
+       (let [spec (merge {:kind :label :role (text-role options) :rotation (numeric-rotation options)} (select-keys options style-keys))
              along (reduce max (map (fn [t] (let [^Vec2 size (measure/natural-size (assoc spec :text (str t)) {:canvas c :theme theme})]
                                               (if flip? (.y size) (.x size))))
                                     texts))
@@ -163,7 +171,7 @@
     (measure/call-with-scratch-canvas
      hint
      (fn [c]
-       (let [spec (merge {:kind :label :role :annotation :rotation 0} (select-keys options style-keys))
+       (let [spec (merge {:kind :label :role (text-role options) :rotation 0} (select-keys options style-keys))
              diagonal (reduce max (map (fn [t] (let [^Vec2 size (measure/natural-size (assoc spec :text (str t)) {:canvas c :theme theme})]
                                                  (m/hypot (.x size) (.y size))))
                                        texts))
@@ -180,7 +188,7 @@
     (measure/call-with-scratch-canvas
      hint
      (fn [c]
-       (let [spec (merge {:kind :label :role :annotation :rotation 0} (select-keys options style-keys))
+       (let [spec (merge {:kind :label :role (text-role options) :rotation 0} (select-keys options style-keys))
              sizes (map (fn [t] (measure/natural-size (assoc spec :text (str t)) {:canvas c :theme theme})) texts)
              w (double (reduce max (map (fn [^Vec2 v] (.x v)) sizes)))
              h (double (reduce max (map (fn [^Vec2 v] (.y v)) sizes)))
@@ -245,9 +253,9 @@
           (with-reserved-room options mapping env)))))
 
 (defn- base-style
-  "Text style keys of `options` over the theme role's colour (the base for the group's `:color`)."
+  "Text style keys of `options` over the colour of the chart's text role (the base for the group's `:color`)."
   [options theme]
-  (merge {:color (get-in theme [:text :annotation :color])} (select-keys options style-keys)))
+  (merge {:color (get-in theme [:text (text-role options) :color])} (select-keys options style-keys)))
 
 (defn draw
   "Draw the labels of one panel through [[cljplot2.content.label/draw-at!]]; unplaceable positions are skipped."
@@ -277,11 +285,11 @@
                   rotation (if (and (number? angle) (m/valid-double? (double angle))) angle rotation)]
             :when (and (m/valid-double? (double px)) (m/valid-double? (double py)))]
       ((if (= :text (:anchor-frame options)) label/draw-at-frame! label/draw-at!)
-       canvas (merge {:kind :label :role :annotation :text (str text) :rotation rotation} st) anchor px py env))))
+       canvas (merge {:kind :label :role (text-role options) :text (str text) :rotation rotation} st) anchor px py env))))
 
 (defn legend
   "Key glyph: the letter `a` in the text style (the role's padding, so it fits the key), centred in `box`."
   [{:keys [options]} attributes canvas {:keys [x y w h]} env]
   (let [st (merge (dissoc (base-style options (:theme env)) :padding) (select-keys attributes [:color]))]
-    (label/draw-at! canvas (merge {:kind :label :role :annotation :text "a"} st) [:center :middle]
+    (label/draw-at! canvas (merge {:kind :label :role (text-role options) :text "a"} st) [:center :middle]
                     (+ (double x) (* 0.5 (double w))) (+ (double y) (* 0.5 (double h))) env)))

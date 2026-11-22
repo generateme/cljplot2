@@ -39,7 +39,8 @@
             [cljplot2.graphics.draw :as draw]
             [cljplot2.scale.aesthetic :as aesthetic]
             [cljplot2.scale.position :as scale]
-            [cljplot2.schema :as schema]))
+            [cljplot2.schema :as schema]
+            [cljplot2.theme :as theme]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -50,6 +51,7 @@
    :options (-> [:map {:closed true}]
                 (into cells/style-entries)
                 (into data/common-options)
+                (into theme/theme-style-entries)
                 (conj (schema/optional :value-label {:description "label in each cell: true (the colour value, numbers to 2 decimals) or a function of {:value :x :y} returning the text (nil - none), drawn in black or white by the fill under it"
                                                      :default false}
                                        [:or :boolean schema/function])))
@@ -65,7 +67,7 @@
 
 (defn- style
   [options theme]
-  (merge (get-in theme [:chart :tile]) (select-keys options cells/style-keys)))
+  (merge (theme/chart-style theme :tile options) (select-keys options cells/style-keys)))
 
 (defn- position-ok?
   "Is `v` a valid position value (dates too - [[axis-info]] rejects them with a message)?"

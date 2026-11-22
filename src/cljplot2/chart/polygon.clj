@@ -39,6 +39,7 @@
    :options (-> [:map {:closed true}]
                 (into style-entries)
                 (into data/common-options)
+                (into theme/theme-style-entries)
                 (conj (schema/optional :padding {:description "padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span"
                                                  :cljplot2/default-doc "0.05 on every side"}
                                        data/position-padding)))
@@ -53,7 +54,7 @@
 
 (defn- style
   [options theme]
-  (merge (get-in theme [:chart :polygon]) (select-keys options [:color :alpha :stroke-color :stroke-width])))
+  (merge (theme/chart-style theme :polygon options) (select-keys options [:color :alpha :stroke-color :stroke-width])))
 
 (defn compute
   "Per panel: `{:polygons [{:x [..] :y [..] :aesthetics}] :style style}` (polygons of at least 3 valid points; a

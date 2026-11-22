@@ -3,6 +3,7 @@
   `:axis :no-grid`, force layouts packing connected components."
   (:require [clojure.test :refer [deftest testing is]]
             [fastmath.random :as r]
+            [clojure2d.color :as c]
             [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
             [cljplot2.data.graph :as graph]
@@ -16,9 +17,9 @@
 
 (deftest theme-colours-test
   (testing "U1 lighter background, alternate panel fill and polar bands"
-    (is (= 0xececf3 (get-in theme/default-theme [:plot :background])))
-    (is (= [0 0 0 12] (get-in theme/default-theme [:panel :alternate-fill])))
-    (is (= [0 0 0 8] (get-in theme/default-theme [:panel :grid :bands-fill])))))
+    (is (= (c/to-color 0xececf3) (c/to-color (get-in theme/default-theme [:plot :background]))))
+    (is (= (c/to-color [0 0 0 12]) (c/to-color (get-in theme/default-theme [:panel :alternate-fill]))))
+    (is (= (c/to-color [0 0 0 8]) (c/to-color (get-in theme/default-theme [:panel :grid :bands-fill]))))))
 
 (def ^:private small-tree (tree/from-parents [{:id 1} {:id 2 :parent 1} {:id 3 :parent 1} {:id 4 :parent 2}] {}))
 

@@ -185,8 +185,8 @@
     (testing "boundary: an unknown theme key, nil - an error keyed :theme-key"
       (is (= :theme-key (:key (error-data #(describe/theme-rows :no-such-key)))))
       (is (= :theme-key (:key (error-data #(describe/theme-rows nil))))))
-    (testing "text roles in their sections: plot, legend, hierarchy and other chart texts"
-      (is (= #{:plot-text :legend-text :hierarchy-text :chart-text} (set (keep :section (describe/theme-rows :text)))))
+    (testing "text roles in their sections: plot, legend, hierarchy, other chart and builder texts"
+      (is (= #{:plot-text :legend-text :hierarchy-text :chart-text :builder-text} (set (keep :section (describe/theme-rows :text)))))
       (is (= :hierarchy-text (:section (by-path [:text :pack-leaf]))))
       (is (= :legend-text (:section (by-path [:text :legend-title])))))))
 

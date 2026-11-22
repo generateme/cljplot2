@@ -46,6 +46,7 @@
    :options (-> [:map {:closed true}]
                 (into style-entries)
                 (into data/common-options)
+                (into theme/theme-style-entries)
                 (conj (schema/optional :rows {:description "grid rows (ignored with :unit)" :default 10} [:int {:min 1 :max max-cells}])
                       (schema/optional :columns {:description "grid columns" :default 10} [:int {:min 1 :max max-cells}])
                       (schema/optional :unit {:description "the value of one cell: a category gets value / unit cells, the grid :columns wide"
@@ -63,7 +64,7 @@
 
 (defn- style
   [options theme]
-  (merge (get-in theme [:chart :waffle]) (select-keys options [:gap :shape :border-color :border-width :pattern :pattern-color])))
+  (merge (theme/chart-style theme :waffle options) (select-keys options [:gap :shape :border-color :border-width :pattern :pattern-color])))
 
 (defn largest-remainder
   "Whole counts summing to `n` (a non-negative integer) in proportion to the non-negative `weights` (largest-remainder

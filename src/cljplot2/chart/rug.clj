@@ -9,7 +9,8 @@
             [cljplot2.data.group :as group]
             [cljplot2.data.rows :as data]
             [cljplot2.data.strip :as strip]
-            [cljplot2.schema :as schema])
+            [cljplot2.schema :as schema]
+            [cljplot2.theme :as theme])
   (:import [fastmath.vector Vec2]))
 
 (set! *warn-on-reflection* true)
@@ -25,6 +26,7 @@
    :options (-> [:map {:closed true}]
                 (into style-entries)
                 (into data/common-options)
+                (into theme/theme-style-entries)
                 (into strip/options)
                 (conj (schema/optional :padding {:description "padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span"
                                          :cljplot2/default-doc "[0.05 0.05] along the value axis; with :place :bottom also :bottom-share below the data"}
@@ -38,7 +40,7 @@
 
 (defn- style
   [options theme]
-  (merge (get-in theme [:chart :rug]) (select-keys options [:color :line-width])))
+  (merge (theme/chart-style theme :rug options) (select-keys options [:color :line-width])))
 
 (defn- compute-in-strip-frame
   "Per panel: `{:items [..] :style st :place p :options o}`; extents (x - the values), padding, `:na`, `:dropped`."

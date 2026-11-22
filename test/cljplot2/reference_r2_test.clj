@@ -159,11 +159,12 @@
         (is (nil? (:fragment (first rows))))))))
 
 (deftest style-defaults-test
-  (testing "style options merged over a default show it as a default text"
+  (testing "style options merged over a default name its registered theme style as the default text"
     (doseq [[v k] [[#'plot/network :node-style] [#'plot/network :edge-style] [#'plot/dendrogram :line-style]
                    [#'plot/tree :node-style] [#'plot/tree :link-style] [#'plot/arc :node-style] [#'plot/arc :edge-style]]]
-      (let [row (first (filter #(= [k] (:path %)) (describe/options v)))]
-        (is (re-find #"^\{" (str (:default-doc row))) [(var-name v) k])
+      (let [row (first (filter #(= [k] (:path %)) (describe/options v)))
+            [_ style-name] (re-find #"^theme \[:chart :([a-z-]+)\]$" (str (:default-doc row)))]
+        (is (contains? cljplot2.theme/named-styles (keyword style-name)) [(var-name v) k])
         (is (not (re-find #"\{:" (:description row))) [(var-name v) k])))))
 
 (def ^:private intended-overrides
