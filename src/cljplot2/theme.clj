@@ -195,17 +195,15 @@
                      keyword?)]))
 
 (defn chart-style
-  "Returns the theme style of a chart: its kind's style `[:chart kind]` with the named style `[:chart s]` of the chart's `:theme-style` option merged over it.
+  "Theme style of a chart: its kind's style `[:chart kind]` with the named style of its `:theme-style` option merged over it.
 
   Parameters:
 
   - `theme` (map): the merged theme.
   - `kind` (keyword): the chart kind (`:scatter`, `:line` ...).
-  - `options` (map): the chart's options; `:theme-style` (keyword, optional) names a theme `[:chart s]` entry - a
-    partial style overriding the kind's key by key (see [[named-styles]]).
+  - `options` (map): the chart's options; `:theme-style` (keyword, optional) names a theme `[:chart s]` entry - a partial style overriding the kind's key by key (see [[named-styles]]).
 
-  Returns the merged style map; without `:theme-style` the kind's style as it is. `build` checks named styles
-  before drawing, so a missing entry never reaches here."
+  Returns the merged style map: without `:theme-style`, or naming an entry the theme hasn't, the kind's style as it is; `nil` when the theme has neither. `build` rejects a `:theme-style` naming no named style (see [[cljplot2.pipeline/build]])."
   [theme kind options]
   (let [chart-theme (:chart theme)]
     (merge (get chart-theme kind) (some->> (:theme-style options) (get chart-theme)))))

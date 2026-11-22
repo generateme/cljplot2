@@ -155,7 +155,7 @@
 (defn network
   "Network plot of edge rows as a plot map: edges as segments under the nodes (scatter), labels beside them, equal units on both axes (`:aspect :iso`) and no axes.
 
-  Directed graphs get arrows ending at the target node's edge (a per-edge `:end-gap` of its radius, from the node size scale - its spec with the nodes' values as the domain); the head is at least 7 px and 3 times the widest edge (`:edge-style {:arrow ..}` wins). Opposite edges of a pair lie on one line.
+  Directed graphs get arrows ending at the target node's edge (a per-edge `:end-gap` of its radius, from the node size scale - its spec with the nodes' values as the domain); the head is at least 7 px and 3 times the widest edge (`:edge-style {:arrow ..}` wins). Opposite edges of a pair lie on one line. Node radii, arrow gaps and heads are computed when the builder runs, from the theme given as `:theme` (and the style options): a theme set on the returned plot later restyles the marks but leaves the arrow ends where they were.
 
   Parameters:
 

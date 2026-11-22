@@ -163,7 +163,8 @@ into the builder's. `cljplot2.core` is the public API (`build`, `render`, `rende
   vector).
 - Mutable caches: a `defonce` atom of a Clojure map, not Java collections.
 - Style defaults (colours, sizes, label boxes) belong to the theme, never private vars or inline literals in
-  builders or charts.
+  builders or charts. Exceptions: defaults already exposed as options (`:edge-color`, acf / horizon `:colors`, the
+  alphas), scale defaults (`node-size-range`, `arc-width-range`), layout geometry and the debug palette.
 
 ## Related repositories
 

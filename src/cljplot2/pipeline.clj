@@ -1365,7 +1365,7 @@
 (def ^{:doc "Render options used when neither the plot nor `build` gives them: the `:default`s of the image entries of [[options-schema]] - `:width`, `:height` (target size in pixels) and `:hint` (rendering hint, see [[cljplot2.graphics.measure/rendering-hints]])."}
   default-options
   (into {} (keep (fn [[k props]] (when (= :image (:cljplot2/section props)) [k (:default props)])))
-        (drop 2 options-schema)))
+        (filter vector? (rest options-schema))))
 
 (defn- merged-mappings
   "The merged mapping of every chart of the plot.
@@ -1535,10 +1535,57 @@
   [chart-theme]
   (into [:enum] (sort (remove #(contains? chart/builtin-styles %) (keys chart-theme)))))
 
-(defn- named-style-checks
-  "Checks of the named theme styles.
+(defn- kind-style-map?
+  "Is the theme style of chart `kind` in `chart-theme` (the merged theme's `:chart` map) a map or absent? A kind style that isn't a map is the kind's own error: no named style is checked over it."
+  [chart-theme kind]
+  (let [base (get chart-theme kind)]
+    (or (nil? base) (map? base))))
 
-  Every registered named style ([[cljplot2.theme/named-styles]]) merged over its kind's style holds that kind's style schema; for each chart with `:theme-style s`, `s` names a style of the theme, and that style merged over the chart's kind style holds the chart's style schema. A kind style that isn't a map is the kind's own error: no named style is checked over it.
+(defn- merged-named-style
+  "The named style `n` of `chart-theme` (the merged theme's `:chart` map) merged over the style of chart `kind`; a named entry that isn't a map as it is (its own error)."
+  [chart-theme kind n]
+  (let [named (get chart-theme n)]
+    (if (map? named) (merge (get chart-theme kind) named) named)))
+
+(defn- chart-theme-checks
+  "Checks of the chart styles of a theme, independent of any plot.
+
+  Parameters:
+
+  - `chart-theme` (map): the merged theme's `:chart` map.
+
+  Returns a sequence of `[schema value in]` checks: every built-in kind's style `[:chart kind]` against its style schema (see [[cljplot2.chart/builtin-styles]]), and every registered named style ([[cljplot2.theme/named-styles]]) merged over its kind's style against that kind's schema (skipped when the kind's style isn't a map)."
+  [chart-theme]
+  (concat
+   (for [[k style] chart/builtin-styles] [style (get chart-theme k) [:theme :chart k]])
+   (for [[n kind] theme/named-styles
+         :when (kind-style-map? chart-theme kind)]
+     [(chart/builtin-styles kind) (merged-named-style chart-theme kind n) [:theme :chart n]])))
+
+(defonce ^{:private true :doc "`[chart-theme errors]` of the last [[chart-theme-errors]] call."}
+  last-chart-theme-errors
+  (atom nil))
+
+(defn- chart-theme-errors
+  "Errors of the chart styles of a theme (see [[chart-theme-checks]]); the result for the last chart theme is reused for an equal one (plots built in a row usually share it).
+
+  Parameters:
+
+  - `chart-theme` (map): the merged theme's `:chart` map.
+
+  Returns a vector of errors, empty when every style holds."
+  [chart-theme]
+  (let [[checked errs] @last-chart-theme-errors]
+    (if (and (some? checked) (= checked chart-theme))
+      errs
+      (let [errs (vec (mapcat (fn [[sch v in]] (schema/errors sch v in)) (chart-theme-checks chart-theme)))]
+        (reset! last-chart-theme-errors [chart-theme errs])
+        errs))))
+
+(defn- named-style-checks
+  "Checks of the `:theme-style` of the charts.
+
+  For each chart with `:theme-style s`: `s` names a style of the theme that isn't a chart kind (else an error at the option, listing the named styles), and that style merged over the chart's kind style holds the chart's style schema - except a registered named style on a chart of its own kind, checked with the theme (see [[chart-theme-checks]]).
 
   Parameters:
 
@@ -1547,21 +1594,19 @@
 
   Returns a sequence of `[schema value in]` checks, see [[chart-checks]]."
   [chart-theme charts]
-  (let [merged (fn [kind n] (let [named (get chart-theme n)] (if (map? named) (merge (get chart-theme kind) named) named)))
-        ;; a kind style that isn't a map is the kind's own error, no named style is checked over it
-        checkable? (fn [kind] (let [base (get chart-theme kind)] (or (nil? base) (map? base))))]
-    (concat
-     (for [[n kind] theme/named-styles
-           :when (checkable? kind)]
-       [(chart/builtin-styles kind) (merged kind n) [:theme :chart n]])
-     (for [[prefix i {:keys [kind options] :as c}] charts
-           :let [s (:theme-style options)
-                 style (get-in c [:schema :style])]
-           :when s
-           check (cond
-                   (not (contains? chart-theme s)) [[(named-style-names chart-theme) s (conj prefix i :options :theme-style)]]
-                   (and style (checkable? kind)) [[style (merged kind s) [:theme :chart s]]])]
-       check))))
+  (for [[prefix i {:keys [kind options] :as c}] charts
+        :let [s (:theme-style options)
+              style (get-in c [:schema :style])]
+        :when s
+        check (cond
+                (or (contains? chart/builtin-styles s) (not (contains? chart-theme s)))
+                [[(named-style-names chart-theme) s (conj prefix i :options :theme-style)]]
+
+                (= kind (get theme/named-styles s)) nil
+
+                (and style (kind-style-map? chart-theme kind))
+                [[style (merged-named-style chart-theme kind s) [:theme :chart s]]])]
+    check))
 
 (defn- text-role-checks
   "Checks of the `:role` of the text charts.
@@ -1581,7 +1626,7 @@
 (defn- chart-checks
   "Checks of the charts' schemas against the plot and its merged theme.
 
-  The checks: the theme style of every built-in kind (see [[cljplot2.chart/builtin-styles]]) and of user kinds present in the theme and the plot, named styles (see [[named-style-checks]]), text roles (see [[text-role-checks]]), each chart's options and merged mapping, and the options of margin charts (their mappings are built from the plot's at compute).
+  The checks: the theme style of user kinds present in the theme and the plot (built-in kinds and registered named styles: [[chart-theme-errors]]), the charts' named styles (see [[named-style-checks]]), text roles (see [[text-role-checks]]), each chart's options and merged mapping, and the options of margin charts (their mappings are built from the plot's at compute).
 
   Parameters:
 
@@ -1599,8 +1644,7 @@
                                                    (plot-margins plot))
                                    [i c] (map-indexed vector (:charts margin))]
                                [[:margins side :charts] i c]))]
-          (concat (for [[k style] chart/builtin-styles] [style (get chart-theme k) [:theme :chart k]])
-                  (named-style-checks chart-theme placed)
+          (concat (named-style-checks chart-theme placed)
                   (text-role-checks (:text theme) placed))))
       (mapcat (fn [i {:keys [kind] :as c} m]
                 (let [{:keys [options style mapping]} (:schema c)]
@@ -1621,7 +1665,7 @@
 (defn- validate!
   "Validate a plot, its merged theme and render options before any stage runs.
 
-  The plot (stage keys removed), the render options and the merged theme are checked against their schemas; when the plot's keys hold, the charts' schemas (see [[chart-checks]]); when all of those hold, the rules across plot keys (see [[rule-errors]]).
+  The plot (stage keys removed), the render options and the merged theme are checked against their schemas; when the plot's keys hold, the theme's chart styles (see [[chart-theme-errors]]) and the charts' schemas (see [[chart-checks]]); when all of those hold, the rules across plot keys (see [[rule-errors]]).
 
   Parameters:
 
@@ -1638,7 +1682,8 @@
                        plot-errors
                        (theme/errors theme)
                        (when (empty? plot-errors)
-                         (mapcat (fn [[s v in]] (schema/errors s v in)) (chart-checks plot theme))))]
+                         (concat (when (map? (:chart theme)) (chart-theme-errors (:chart theme)))
+                                 (mapcat (fn [[s v in]] (schema/errors s v in)) (chart-checks plot theme)))))]
     (schema/throw-errors! (if (seq errors) errors (rule-errors plot)))))
 
 ;; build

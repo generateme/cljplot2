@@ -101,7 +101,13 @@
                  (plot/dendrogram (cl/hclust [[0.0] [1.0] [5.0]] {:method :complete}) {}) (plot/tree levels {})
                  (plot/bundle [{:from "p" :to "r"}] levels {}) (plot/sequences [{:sequence "a-b-end" :n 1}] {:value :n})
                  (plot/acf (map #(Math/sin (* 0.3 (double %))) (range 50)))]]
-      (is (= (set (keys theme/named-styles)) (set (keep #(get-in % [:options :theme-style]) (mapcat :charts plots))))))))
+      (is (= (set (keys theme/named-styles)) (set (keep #(get-in % [:options :theme-style]) (mapcat :charts plots)))))))
+  (testing "the clustered heatmap's trees (arranged cells) draw the dendrogram branch style"
+    (let [cells (get-in (plot/clustered-heatmap [{:r "a" :c "x" :v 1} {:r "a" :c "y" :v 2} {:r "b" :c "x" :v 3} {:r "b" :c "y" :v 0}
+                                                 {:r "c" :c "x" :v 5} {:r "c" :c "y" :v 1}]
+                                                {:row :r :col :c :value :v})
+                        [:arrange :plots])]
+      (is (some #(= :dendrogram-branch (get-in % [:options :theme-style])) (mapcat :charts cells))))))
 
 (deftest theme-style-option-test
   (testing "a chart draws its named style; options win over it; a theme restyles it"
@@ -121,6 +127,9 @@
         "a scatter style on a line chart: its keys aren't line style keys")
     (is (= [:theme :chart :mine :width]
            (:in (error #(plot/build (assoc xy :charts [(chart/scatter {:theme-style :mine})] :theme {:chart {:mine {:width 2}}})))))))
+  (testing "boundary: a chart kind isn't a named style - an error at the option, also for a compatible kind"
+    (is (= [:charts 0 :options :theme-style] (:in (error #(plot/build (assoc xy :charts [(chart/scatter {:theme-style :cloud})]))))))
+    (is (= [:charts 0 :options :theme-style] (:in (error #(plot/build (assoc xy :charts [(chart/scatter {:theme-style :line})])))))))
   (testing "boundary: a kind style that isn't a map - only the kind's error; a named entry that isn't a map - its error"
     (is (= #{[:theme :chart :scatter]} (cljplot2.test-util/error-ins #(plot/build (assoc xy :charts [(chart/scatter)] :theme {:chart {:scatter 5}})))))
     (is (= #{[:theme :chart :network-node]}
@@ -131,6 +140,24 @@
     (is (every? (fn [kind] (some #(= :theme-style (:key %)) (describe/options (@((describe/chart-constructors) kind)))))
                 (remove #{:image} (keys chart/builtin-styles)))
         "every other kind with a theme style takes it")))
+
+(deftest chart-theme-errors-test
+  (let [errors #'pipeline/chart-theme-errors
+        last-errors @#'pipeline/last-chart-theme-errors
+        chart-theme (:chart theme/default-theme)]
+    (testing "the default chart styles hold; a bad named style - its error, without any plot"
+      (is (= [] (errors chart-theme)))
+      (is (= [[:theme :chart :tree-node :size]] (map :in (errors (assoc-in chart-theme [:tree-node :size] -1))))))
+    (testing "an equal chart theme reuses the last result; another one is checked anew"
+      (let [bad (assoc-in chart-theme [:tree-node :size] -1)]
+        (errors bad)
+        (is (identical? (errors bad) (errors (into {} bad))) "equal value, same result")
+        (is (= [] (errors chart-theme)))
+        (is (= chart-theme (first @last-errors)))))
+    (testing "boundary: a registered named style used on a chart of its kind isn't checked twice"
+      (is (= 1 (count (filter #(= [:theme :chart :network-node :size] (:in %))
+                              (:errors (error-data #(plot/build (assoc xy :charts [(chart/scatter {:theme-style :network-node})]
+                                                                       :theme {:chart {:network-node {:size -1}}})))))))))))
 
 (deftest text-role-test
   (testing "a text chart draws in its :role; default :annotation"
@@ -148,6 +175,15 @@
   (testing "boundary: a line style (sectioned in the line chart's own table) - one table, no sections"
     (is (every? nil? (map :section (describe/style-rows :tree-link))))
     (is (<= (count (describe/style-rows :tree-link)) 12)))
+  (testing "only the given style keys, in the kind's order"
+    (is (= [:color :width :dash] (map :key (describe/style-rows :tree-link [:dash :color :width]))))
+    (is (= [:width] (map :key (describe/style-rows :tree-link [:width]))))
+    (is (= [[:bridge] [:bridge :alpha] [:bridge :width] [:bridge :dash]] (map :path (describe/style-rows :tree-link [:bridge])))
+        "a map key with its nested rows"))
+  (testing "boundary: no keys, a key the kind hasn't - an error keyed :style-keys; nil - every key"
+    (is (= :style-keys (:key (error-data #(describe/style-rows :tree-link [])))))
+    (is (= :style-keys (:key (error-data #(describe/style-rows :tree-link [:color :size])))))
+    (is (= (describe/style-rows :tree-link) (describe/style-rows :tree-link nil))))
   (testing "boundary: an unregistered name - an error keyed :style-name"
     (is (= :style-name (:key (error-data #(describe/style-rows :nope)))))
     (is (= :style-name (:key (error-data #(describe/style-rows nil)))))))

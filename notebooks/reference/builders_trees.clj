@@ -65,10 +65,10 @@
                                  {:columns 2})
                    {:width 1000 :height 400})
 
-;; The branches draw in the theme style `[:chart :dendrogram-branch]` (a line style; the clustered heatmap's trees
-;; too), the group names in the text role `:dendrogram-group-label`:
+;; The branches draw in the theme style `[:chart :dendrogram-branch]` (a line style - its colour, width and dash
+;; shown; the clustered heatmap's trees too), the group names in the text role `:dendrogram-group-label`:
 
-(nu/options-table (describe/style-rows :dendrogram-branch))
+(nu/options-table (describe/style-rows :dendrogram-branch [:color :width :dash]))
 
 ;; Thin blue branches through the theme:
 
@@ -103,7 +103,7 @@
                    {:width 1000 :height 420})
 
 ;; The theme styles of a node-link tree - nodes in `[:chart :tree-node]` (scatter), links in `[:chart :tree-link]`
-;; (line), names in the text role `:tree-label`:
+;; (line - its colour, width and dash shown), names in the text role `:tree-label`:
 
 (nu/options-table (describe/style-rows :tree-node))
 
@@ -112,7 +112,7 @@
 (plot/render-image (plot/tree office-tree {:theme {:chart {:tree-node {:size 5 :color [60 60 60] :stroke-color :none}}}})
                    {:width 600 :height 360})
 
-(nu/options-table (describe/style-rows :tree-link))
+(nu/options-table (describe/style-rows :tree-link [:color :width :dash]))
 
 ;; Darker, thicker links and bold names through the theme:
 
@@ -199,10 +199,10 @@
                                  {:columns 2 :widths [1 1.3]})
                    {:width 1000 :height 480})
 
-;; The theme styles of edge bundling - edges in `[:chart :bundle-edge]` (line), leaves in `[:chart :bundle-leaf]`
-;; (scatter):
+;; The theme styles of edge bundling - edges in `[:chart :bundle-edge]` (line - its colour, width and dash shown),
+;; leaves in `[:chart :bundle-leaf]` (scatter):
 
-(nu/options-table (describe/style-rows :bundle-edge))
+(nu/options-table (describe/style-rows :bundle-edge [:color :width :dash]))
 
 ;; Thicker edges through the theme:
 

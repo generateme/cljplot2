@@ -346,17 +346,29 @@
   Parameters:
 
   - `style-name` (keyword): a key of [[cljplot2.theme/named-styles]], e.g. `:network-node`.
+  - `style-keys` (sequence of keywords, optional): only the rows of these top-level style keys (a map key with its nested rows) - those the builder's marks show (e.g. a line style's colour, width and dash, not its area fill); default every style key of the kind.
 
-  Returns the style keys of its chart kind, each with its default from the default theme - the named style merged over the kind's (see [[cljplot2.theme/chart-style]]); one table, without the sections slicing the kind's own options table. Throws `ex-info {:key :style-name}` for a name that isn't registered."
-  [style-name]
-  (let [kind (get theme/named-styles style-name)]
-    (when-not kind
-      (schema/fail! (str "Unknown named style " (pr-str style-name) ", known: "
-                         (str/join " " (sort (keys theme/named-styles))) ".")
-                    {:key :style-name :value style-name}))
-    (mapv #(assoc % :section nil)
-          (with-defaults (schema-rows (get cljplot2.chart/builtin-styles kind))
-                         (theme/chart-style theme/default-theme kind {:theme-style style-name})))))
+  Returns the style keys of its chart kind, each with its default from the default theme - the named style merged over the kind's (see [[cljplot2.theme/chart-style]]); one table, without the sections slicing the kind's own options table.
+
+  Throws `ex-info {:key :style-name}` for a name that isn't registered, `{:key :style-keys}` for `style-keys` empty or holding a key that isn't a style key of the kind."
+  ([style-name] (style-rows style-name nil))
+  ([style-name style-keys]
+   (let [kind (get theme/named-styles style-name)]
+     (when-not kind
+       (schema/fail! (str "Unknown named style " (pr-str style-name) ", known: "
+                          (str/join " " (sort (keys theme/named-styles))) ".")
+                     {:key :style-name :value style-name}))
+     (let [rows (mapv #(assoc % :section nil)
+                      (with-defaults (schema-rows (get cljplot2.chart/builtin-styles kind))
+                                     (theme/chart-style theme/default-theme kind {:theme-style style-name})))
+           top-keys (distinct (map (comp first :path) rows))]
+       (when (and (some? style-keys) (or (empty? style-keys) (not-every? (set top-keys) style-keys)))
+         (schema/fail! (str "Style keys of " (pr-str style-name) " should be some of: "
+                            (str/join " " (map pr-str top-keys)) ".")
+                       {:key :style-keys :value style-keys}))
+       (if style-keys
+         (filterv #(contains? (set style-keys) (first (:path %))) rows)
+         rows)))))
 
 (defn fragment-rows
   "Returns the option rows of a shared group's entries.

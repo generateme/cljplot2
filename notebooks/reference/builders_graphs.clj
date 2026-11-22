@@ -142,7 +142,7 @@
                    {:width 900 :height 320})
 
 ;; The theme styles of an arc diagram - nodes in `[:chart :arc-node]` (scatter), arcs in `[:chart :arc-edge]`
-;; (line):
+;; (line; its colour, width and dash shown - the other line style keys apply too, see the line chart):
 
 (nu/options-table (describe/style-rows :arc-node))
 
@@ -151,7 +151,7 @@
 (plot/render-image (plot/arc friends {:theme {:chart {:arc-node {:shape \o :color [200 60 40] :size 10}}}})
                    {:width 500 :height 300})
 
-(nu/options-table (describe/style-rows :arc-edge))
+(nu/options-table (describe/style-rows :arc-edge [:color :width :dash]))
 
 ;; Thick dark arcs through the theme:
 

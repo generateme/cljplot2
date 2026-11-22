@@ -8,6 +8,7 @@
             [clojure.java.io :as io]
             [clojure.string :as str]
             [clojure.walk :as walk]
+            [fastmath.core :as m]
             [scicloj.kindly.v4.api :as kindly]
             [scicloj.kindly.v4.kind :as kind]
             [wadogo.scale :as ws]
@@ -181,8 +182,8 @@
 (defn- readable-color
   "`Vec4` colour `c` as a vector of its rounded channels, `[r g b]` when opaque (alpha 255), else `[r g b a]`."
   [c]
-  (let [channels (mapv #(Math/round (double %)) c)]
-    (if (== 255 (long (peek channels))) (pop channels) channels)))
+  (let [channels (mapv (fn [^double v] (m/round v)) c)]
+    (if (m/== 255 (long (peek channels))) (pop channels) channels)))
 
 (defn- readable-value
   "`v` with colours and functions readable when printed: a `Vec4` colour as [[readable-color]], an integer under a

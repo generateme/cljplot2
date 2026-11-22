@@ -1693,7 +1693,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="clay-image">
 <p><img src="reference.builders_graphs_files/image6.png" class="img-fluid"></p>
 </div>
-<p>The theme styles of an arc diagram - nodes in <code>[:chart :arc-node]</code> (scatter), arcs in <code>[:chart :arc-edge]</code> (line):</p>
+<p>The theme styles of an arc diagram - nodes in <code>[:chart :arc-node]</code> (scatter), arcs in <code>[:chart :arc-edge]</code> (line; its colour, width and dash shown - the other line style keys apply too, see the line chart):</p>
 <div class="clay-table">
 <div class="table-responsive">
 <table class="table table-hover clay-table caption-top">
@@ -1757,7 +1757,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <th data-quarto-table-cell-role="th">Type</th>
 <th data-quarto-table-cell-role="th">Default</th>
 <th data-quarto-table-cell-role="th">Description</th>
-<th data-quarto-table-cell-role="th">Group</th>
 </tr>
 </thead>
 <tbody>
@@ -1766,77 +1765,18 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td>a clojure2d color or :none</td>
 <td>[120.0 120.0 120.0 255.0]</td>
 <td>line colour (a mapped :color wins)</td>
-<td>Line style</td>
 </tr>
 <tr class="even">
 <td>:width</td>
 <td>a non-negative number</td>
 <td>1</td>
 <td>line width in pixels</td>
-<td>Line style</td>
 </tr>
 <tr class="odd">
 <td>:dash</td>
 <td>:none, a dash style (:dashed :dot-dash :dot-dot-dash :dotted :long-dash :loose-dot :solid :two-dash) or a sequence of positive numbers or nil</td>
 <td>:none</td>
 <td>dash style of the line (a mapped :dash wins)</td>
-<td>Line style</td>
-</tr>
-<tr class="even">
-<td>:fill</td>
-<td>:color or a clojure2d color or :none</td>
-<td>:none</td>
-<td>area between the line and y = 0: :color (the line colour at :alpha), a colour or :none</td>
-<td></td>
-</tr>
-<tr class="odd">
-<td>:alpha</td>
-<td>a number in [0 1]</td>
-<td>0.6</td>
-<td>area fill opacity of :fill :color and of stacked areas</td>
-<td></td>
-</tr>
-<tr class="even">
-<td>:bridge</td>
-<td>map</td>
-<td></td>
-<td>style of the segments bridging gaps with :gaps :bridge: :alpha (a fraction of the line alpha), optional :width and :dash</td>
-<td></td>
-</tr>
-<tr class="odd">
-<td>:bridge :alpha (required)</td>
-<td>a number in [0 1]</td>
-<td>0.3; 0.3 in the theme's :bridge (a given :bridge replaces it whole)</td>
-<td>bridge opacity, a fraction of the line's alpha</td>
-<td></td>
-</tr>
-<tr class="even">
-<td>:bridge :width</td>
-<td>a non-negative number</td>
-<td>the line's width</td>
-<td>bridge width in pixels</td>
-<td></td>
-</tr>
-<tr class="odd">
-<td>:bridge :dash</td>
-<td>:none, a dash style (:dashed :dot-dash :dot-dot-dash :dotted :long-dash :loose-dot :solid :two-dash) or a sequence of positive numbers or nil</td>
-<td>the line's dash</td>
-<td>dash style of the bridge</td>
-<td></td>
-</tr>
-<tr class="even">
-<td>:pattern</td>
-<td>a pattern name (:back-hatch :cross :dense-dots :diagonal-cross :dots :hatch :horizontal :solid :vertical) or a pattern map</td>
-<td>:solid</td>
-<td>pattern drawn over the fill (a mapped :pattern wins)</td>
-<td>Fill patterns</td>
-</tr>
-<tr class="odd">
-<td>:pattern-color</td>
-<td>:darker or a clojure2d color or :none</td>
-<td>:darker</td>
-<td>pattern ink: a colour, :none or :darker (the darkened fill)</td>
-<td>Fill patterns</td>
 </tr>
 </tbody>
 </table>
