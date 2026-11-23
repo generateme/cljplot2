@@ -313,7 +313,7 @@
 
   Parameters:
 
-  - `options` (map, optional): the chart's options - its own options (see [[cljplot2.chart.cloud]]), `:data` and `:mapping` (taken by every chart), and the style keys over the theme style `[:chart :cloud]`, and `:theme-style` - a named theme style merged over it (see [[cljplot2.theme/chart-style]]).
+  - `options` (map, optional): the chart's options - its own options (see [[cljplot2.chart.cloud]]), `:data` and `:mapping` (taken by every chart), and the point style keys over the theme style `[:chart :cloud]` (`:projection-alpha` and `:band-alpha` are theme only, not options), and `:theme-style` - a named theme style merged over it (see [[cljplot2.theme/chart-style]]).
 
   Returns a chart value of kind `:cloud` - a 3D chart, drawn only with other 3D charts. Options are validated by `build` (see [[cljplot2.pipeline/build]]), not here.
 
@@ -368,7 +368,7 @@
 
   Parameters:
 
-  - `options` (map, optional): the chart's options - its own options (see [[cljplot2.chart.venn]]), `:data` and `:mapping` (taken by every chart), and the style keys over the theme style `[:chart :venn]`, and `:theme-style` - a named theme style merged over it (see [[cljplot2.theme/chart-style]]).
+  - `options` (map, optional): the chart's options - its own options (see [[cljplot2.chart.venn]]), `:data` and `:mapping` (taken by every chart), and the style keys over the theme style `[:chart :venn]` (`:label-gap` is theme only, not an option), and `:theme-style` - a named theme style merged over it (see [[cljplot2.theme/chart-style]]).
 
   Returns a chart value of kind `:venn`. Options are validated by `build` (see [[cljplot2.pipeline/build]]), not here.
 

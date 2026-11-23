@@ -3,12 +3,15 @@
   ([[cljplot2.theme/resolved-style]]), the shared padding and golden angle, and the exposed constants: cloud
   projection theme keys and options, the venn label gap, the correlation glyph size."
   (:require [clojure.test :refer [deftest testing is]]
+            [clojure2d.color :as c]
             [clojure2d.core :as c2d]
             [cljplot2.chart :as chart]
+            [cljplot2.chart.line :as line]
             [cljplot2.core :as plot]
             [cljplot2.data.position :as position]
             [cljplot2.data.rows :as rows]
             [cljplot2.describe :as describe]
+            [cljplot2.scale.coord :as coord]
             [cljplot2.schema :as schema]
             [cljplot2.test-util :refer [error]]
             [cljplot2.theme :as theme])
@@ -118,3 +121,37 @@
          (map (juxt :key :default) (describe/style-rows :cloud [:projection-alpha :band-alpha]))))
   (is (= [[:label-gap 4]] (map (juxt :key :default) (describe/style-rows :venn [:label-gap]))))
   (is (= :style-name (:key (error #(describe/style-rows :nope)))) "boundary: neither a named style nor a kind"))
+
+(deftest arc-trail-widths-test
+  (let [run-widths (fn [segment-points]
+                     (with-redefs [coord/line-path (fn [_ pts _] (if (= 1 (count pts))
+                                                                   [[0.0 0.0]]
+                                                                   (mapv (fn [i] [(double i) 0.0]) (range segment-points))))]
+                       (nth (#'line/arc-trail-run nil [:a :b] [1.0 5.0] [0 1]) 2)))]
+    (testing "the width linear along a densified arc segment (fractions, not integer division)"
+      (is (= [1.0 2.0 3.0 4.0 5.0] (run-widths 5))))
+    (testing "boundary: a segment of one step - the end width"
+      (is (= [1.0 5.0] (run-widths 2))))))
+
+(deftest strip-charts-without-data-test
+  (let [renders? (fn [p] (some? (plot/render p {:width 300 :height 200})))
+        flat [{:c "a" :v 1} {:c "a" :v 1} {:c "b" :v 3}]]
+    (testing "boundary: no data - an empty panel, no error (levels on :y and on :x; no levels)"
+      (is (renders? {:data [] :mapping {:y :c :measures :v} :charts [(chart/bullet)]}) "bullet")
+      (doseq [kind [:box :beeswarm :dotplot :stripplot :rug :violin :bar :extent]
+              mapping [{:y :c :x :v} {:x :c :y :v} {:x :v}]
+              :let [ch @(get (describe/chart-constructors) kind)]
+              :when (not (and (= kind :bar) (= mapping {:x :v})))]
+        (is (renders? {:data [] :mapping mapping :charts [(ch)]}) (str kind " " mapping))))
+    (testing "boundary: data but nothing placeable - violins without spread, density ridges of constant levels"
+      (is (renders? {:data flat :mapping {:y :c :x :v} :charts [(chart/violin)]}))
+      (is (renders? {:data flat :mapping {:y :c :x :v} :charts [(chart/density)]})))
+    (testing "an empty chart beside a drawn one leaves the drawn one"
+      (is (renders? {:data flat :mapping {:y :c :x :v} :charts [(chart/box) (chart/violin)]})))))
+
+(deftest tile-size-key-fill-test
+  (let [p {:data (vec (for [x (range 4) y (range 3)] {:x x :y y :g (str "g" y) :s (+ x y)})) :mapping {:x :x :y :y :color :g :size :s} :charts [(chart/tile)]}]
+    (is (= (pixels p) (pixels (assoc p :theme {:chart {:tile {:size-key-fill (c/gray 110)}}}))) "the default grey")
+    (is (not= (pixels p) (pixels (assoc p :theme {:chart {:tile {:size-key-fill :red}}}))) "a theme colour fills the size keys")
+    (is (= [:theme :chart :tile :size-key-fill] (:in (error #(plot/build (assoc p :theme {:chart {:tile {:size-key-fill "nope"}}}))))))
+    (is (= [:charts 0 :options :size-key-fill] (:in (error #(plot/build (assoc p :charts [(chart/tile {:size-key-fill :red})]))))) "theme only")))

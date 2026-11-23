@@ -9,7 +9,7 @@
   * `{:kind :path :points [Vec2 ..] :closed? b :color c :width w}` - a polyline
   * `{:kind :region :rings [[Vec2 ..] ..] :fill c}` - an even-odd filled region (holes open)
 
-  [[frame-margin]] - the pixels the frame needs around the box. The frame is drawn in two parts around the data:
+  [[frame-margin]], [[frame-margins]] - the pixels the frame needs around the box. The frame is drawn in two parts around the data:
   [[draw-frame-back!]] - grids on the floor and the back walls (theme `[:panel :grid :x]`, z lines `[:panel :grid :y]`)
   and the hidden box edges (dashed);
   [[draw-frame-front!]] - the visible box edges and, per axis, ticks, horizontal tick labels and a title along its
@@ -103,25 +103,45 @@
     (or (first (filter #(ends-ticked? % domain) (map #(axis-ticks k domain %) (range (long n) 1 -1))))
         (axis-ticks k domain n))))
 
+(defn- tick-label-sizes
+  "Sizes of every tick label the axes of a `frame` (`:domains`, `:levels`) may draw in a `w` x `h` panel: of the most
+  ticks an edge can ask for (see [[tick-count]], [[edge-ticks]]), of every level of a categorical axis (an edge thins
+  its own, any of them may be drawn). `env` - `:canvas`, `:theme`."
+  [{:keys [domains levels]} [w h] env]
+  (let [longest (m/min (double w) (double h))]
+    (map #(text-size :tick-label % env)
+         (mapcat #(if-let [ls (get levels %)]
+                    (map level-text ls)
+                    (:labels (edge-ticks % (domains %) nil (tick-count env % longest))))
+                 space/axes))))
+
 (defn frame-margin
   "Pixels to keep around the box for the axes of a `frame` (`:domains`, `:levels`, `:titles` - `{:x t ..}`, `nil` -
-  none) when `:axes?`: tick length, label gaps, the largest tick label (of the most ticks an edge in a `w` x `h` panel
-  can ask for, see [[tick-count]], [[edge-ticks]]; of every level of a categorical axis) and a title line. `env` - `:canvas`, `:theme`."
-  [{:keys [domains levels titles axes?]} [w h] env]
+  none) when `:axes?`: tick length, label gaps, the largest tick label (see [[tick-label-sizes]]) and a title line;
+  4 without axes. `env` - `:canvas`, `:theme`."
+  [{:keys [titles axes?] :as frame} [w h] env]
   (if-not axes?
     4.0
     (let [{:keys [tick-length label-gap]} (get-in env [:theme :axis :x])
-          longest (m/min (double w) (double h))
-          ;; every level label: an edge thins its own (see edge-ticks), any of them may be drawn
-          labels (mapcat #(if-let [ls (get levels %)]
-                            (map level-text ls)
-                            (:labels (edge-ticks % (domains %) nil (tick-count env % longest))))
-                         space/axes)
-          widest (double (reduce max 0.0 (map #(let [^Vec2 s (text-size :tick-label % env)] (m/max (.x s) (.y s))) labels)))
+          widest (double (reduce max 0.0 (map (fn [^Vec2 s] (m/max (.x s) (.y s))) (tick-label-sizes frame [w h] env))))
           title (double (reduce max 0.0 (keep (fn [k] (when-some [t (get titles k)]
                                                          (.y (text-size :axis-title (str t) env))))
                                                space/axes)))]
       (+ (double tick-length) (* 2.0 (double label-gap)) widest title 2.0))))
+
+(defn frame-margins
+  "Pixels to keep on each side of the box for the axes of a `frame` in a `w` x `h` panel: [[frame-margin]] left, right
+  and below; above only half the tallest tick label and a label gap (the z axis's top tick label - x / y ticks and the
+  titles go on edges low on screen or beside the box, see [[cljplot2.data.space3d/axis-edges]]); 4 every side without
+  axes. The same for every azimuth, so a turned box keeps its place (see [[cljplot2.data.space3d/projector]]).
+  `env` - `:canvas`, `:theme`."
+  [{:keys [axes?] :as frame} [w h] env]
+  (let [full (frame-margin frame [w h] env)]
+    (if-not axes?
+      {:top full :right full :bottom full :left full}
+      (let [label-gap (double (get-in env [:theme :axis :x :label-gap]))
+            tallest (double (reduce max 0.0 (map (fn [^Vec2 s] (.y s)) (tick-label-sizes frame [w h] env))))]
+        {:top (m/+ (m/* 0.5 tallest) label-gap 2.0) :right full :bottom full :left full}))))
 
 (defn- outward
   "Unit pixel direction away from the box at `edge-mid` (pixel `Vec2`) across the edge direction `along`: from the
@@ -305,8 +325,7 @@
   [canvas layers [w h] scales env]
   (let [env (assoc env :canvas canvas)
         frame (scene-frame (map second layers))
-        margin (frame-margin frame [w h] env)
-        proj (space/projector frame {:w w :h h :margin margin})]
+        proj (space/projector frame {:w w :h h :margin (frame-margins frame [w h] env)})]
     (when (pos? (double (:scale proj)))
       (draw-frame-back! canvas proj frame env)
       (draw-primitives! canvas (mapcat (fn [[chart computed]]

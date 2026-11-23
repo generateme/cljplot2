@@ -130,7 +130,7 @@
 (def ^:private variables
   "Schema of `:variables`: at least two entries with different labels."
   (schema/with-rules [:vector variable]
-    [#(when (< (count %) 2) "should have at least 2 variables") nil]
+    [#(when (m/< (count %) 2) "should have at least 2 variables") nil]
     [duplicate-labels nil]))
 
 (def scalings
@@ -299,11 +299,11 @@
             (let [k (variable-key entry)
                   acc (data/row-accessor :variables (if (keyword? entry) entry (second entry)))
                   values (into [] (keep (comp numeric-value acc)) rows)
-                  given-domain (or (some->> (get-in options [:limits k]) (mapv double))
-                                   (when (seq values) [(v/mn values) (v/mx values)]))]
-              (when (and (seq rows) (nil? given-domain))
+                  limits-or-data-domain (or (some->> (get-in options [:limits k]) (mapv double))
+                                            (when (seq values) [(v/mn values) (v/mx values)]))]
+              (when (and (seq rows) (nil? limits-or-data-domain))
                 (schema/fail! (str "Variable " (pr-str k) " has no numeric values.") {:key :variables :value k}))
-              (let [domain (or given-domain [0.0 1.0])
+              (let [domain (or limits-or-data-domain [0.0 1.0])
                     [o s] (affine options (if (seq values) values domain) domain)]
                 {:label (variable-label entry) :key k :accessor acc :domain domain :offset o :scale s})))
           (:variables options)))

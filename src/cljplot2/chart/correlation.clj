@@ -21,7 +21,7 @@
   with a mapped aesthetic (the plot's color then belongs to the mapping - e.g. a continuous `:color` of the other
   charts, which doesn't group) glyphs other than `:number` show the panel's r in the theme color. The `:number` text
   takes the `:correlation` text role's color unless `:color` is given; group lines their group's color. A missing r
-  (fewer than 2 points, a constant variable) shows `NA` for every glyph. The chart adds
+  (fewer than 2 points, a constant variable) shows `NA`: shape glyphs draw a bare `NA`, `:number` shows `NA` as the value. The chart adds
   no x / y extents: it fills whatever panel it is in (e.g. a `pairs` cell with the other charts' domains).
 
   Options (style defaults from theme `[:chart :correlation]`): `:color`, `:stroke-color` (glyph outline: a color,
@@ -328,7 +328,7 @@
   - `scales` (map): the panel's scales.
   - `env` (map): the drawing environment.
 
-  A missing r draws `NA` for every glyph; a shape glyph without a fill (r outside the colour scale) draws nothing."
+  A missing r draws `NA` - a bare `NA` for a shape glyph, `NA` as the value of `:number`; a shape glyph without a fill (r outside the colour scale) draws nothing."
   [_chart {:keys [glyph ^double glyph-size style] ^double coefficient :r :as computed} canvas {:keys [^double w ^double h] :as box} scales env]
   (let [cx (m/* 0.5 w)
         cy (m/* 0.5 h)

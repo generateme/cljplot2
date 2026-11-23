@@ -631,6 +631,19 @@
        :u-mid 0.0
        :v-mid (m/* 0.5 (m/+ v0 v1))})))
 
+(defn- side-margins
+  "Gives the margin of each side of a panel.
+
+  Parameters:
+
+  - `margin`: pixels for every side (a number), `{:top :right :bottom :left}` (each in pixels, a missing side 0) or `nil` (none).
+
+  Returns `{:top :right :bottom :left}` of doubles."
+  [margin]
+  (if (map? margin)
+    (into {} (map (fn [k] [k (double (get margin k 0.0))])) [:top :right :bottom :left])
+    (let [pad (double (or margin 0.0))] {:top pad :right pad :bottom pad :left pad})))
+
 (defn projector
   "Gives the projection of the data box fitted in a panel.
 
@@ -639,7 +652,7 @@
   Parameters:
 
   - `frame` (map): `:domains` (see [[normalizer]]), `:aspect`, `:view`.
-  - `panel` (map): `:w`, `:h` - the panel size in pixels; `:margin` - pixels on every side for axes (default 0).
+  - `panel` (map): `:w`, `:h` - the panel size in pixels; `:margin` - pixels kept free around the box for axes: a number for every side or `{:top :right :bottom :left}` (default 0).
 
   Returns `{:point :corner :centre :scale}`: `:point` - a function of a data point `[x y z]` giving `[pixel depth]` (`pixel` a `Vec2`, y down; `depth` - the view depth, larger - farther); `:corner` - a function of a corner (fractional bits - a point on the box surface) giving its pixel; `:centre` - the box centre's pixel; `:scale` - pixels per box unit, 0 for a panel too small for the margins.
 
@@ -650,13 +663,13 @@
         normalize (normalizer domains sides)
         rotate (rotation view)
         project (perspective view sides)
-        pad (double (or margin 0.0))
-        free-w (m/- w (m/* 2.0 pad))
-        free-h (m/- h (m/* 2.0 pad))
+        {:keys [^double top ^double right ^double bottom ^double left]} (side-margins margin)
+        free-w (m/- w left right)
+        free-h (m/- h top bottom)
         {:keys [^double width ^double height ^double u-mid ^double v-mid]} (turning-fit sides view)
         k (m/max 0.0 (m/min (m// free-w width) (m// free-h height)))
-        cx (m/* 0.5 w)
-        cy (m/* 0.5 h)
+        cx (m/+ left (m/* 0.5 free-w))
+        cy (m/+ top (m/* 0.5 free-h))
         to-pixel (fn [^Vec2 q] (v/vec2 (m/+ cx (m/* k (m/- (.x q) u-mid)))
                                       (m/- cy (m/* k (m/- (.y q) v-mid)))))]
     {:point (fn [p] (let [^Vec3 q (rotate (normalize p))] [(to-pixel (project q)) (.z q)]))

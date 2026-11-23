@@ -168,6 +168,7 @@ into the builder's. `cljplot2.core` is the public API (`build`, `render`, `rende
   a canvas; intermediates stay lazy (`map`, `filter`, `keep`, `for`).
 - fastmath constants instead of computing them: `m/HALF_PI`, `m/QUARTER_PI`, `m/-QUARTER_PI`, `m/TWO_PI`, `m/SQRT5`
   ... (`position/golden-angle` for the golden angle).
+- `m//` of two longs is integer division (`(m// 1 4)` is 0): for a fraction at least one operand must be a double.
 - `m/slice-range` for evenly spaced values (inclusive ends; one value - the midpoint; zero - empty).
 - `fastmath.java.Array` (`Array/aget`, `Array/aset`, `Array/add`) for primitive arrays; object arrays keep core
   `aget` / `aset`.

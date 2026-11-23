@@ -319,7 +319,7 @@
 
   Parameters:
 
-  - `chart` (map): the chart value - `:options` (see the namespace doc).
+  - `chart` (map): the chart value - `:kind`, `:options` (see the namespace doc), `:schema` (its style keys, see [[cljplot2.theme/resolved-style]]).
   - `split` (map): `:groups` - panel -> rows; `:mapping` - the merged mapping.
   - `env` (map): `:theme`.
 

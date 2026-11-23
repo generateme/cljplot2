@@ -191,7 +191,7 @@
         circles (layout-circles panel)
         n (count circles)
         palette (aesthetic/palette-color-fn theme n)
-        fills (mapv #(c/set-alpha (c/to-color (palette %)) (m/* 255.0 (double (:alpha style)))) (range n))
+        fills (mapv #(c/set-alpha (palette %) (m/* 255.0 (double (:alpha style)))) (range n))
         name-contents (mapv (fn [set-name] {:kind :label :role :venn-set :text (str set-name)}) sets)
         name-sizes (mapv #(measure/natural-size % {:canvas canvas :theme theme}) name-contents)
         label-gap (double (:label-gap style))

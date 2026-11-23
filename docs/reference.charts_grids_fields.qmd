@@ -176,6 +176,36 @@ shape and outline are the Cell style group:
 :::
 
 
+A mapped `:size` shrinks each cell by its value; with the colour mapped to another variable the size legend's keys
+have no colour of their own - their fill is a theme key of `[:chart :tile]`, not an option:
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:size-key-fill</td><td>a clojure2d color or :none</td><td>[110.0 110.0 110.0 255.0]</td><td>fill of a size legend key without a colour (theme only, not an option)</td></tr></tbody></table>
+```
+
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image {:data week-hours
+                    :mapping {:x :hour :y :day :color :day :size :visits}
+                    :charts [(chart/tile)]
+                    :scales {:y {:reverse true}}
+                    :theme {:chart {:tile {:size-key-fill [200 120 60]}}}}
+                   {:width 600 :height 300})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_grids_fields_files/image2.png)
+:::
+
+
 Shared options: [Cell style](reference.shared_options.html#cell-style) (`:cell` `:cell-scale` `:stroke-color` `:stroke-width` `:alpha`); [Data and mapping](reference.shared_options.html#data-and-mapping) (`:data` `:mapping`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`).
 
 
@@ -205,7 +235,7 @@ A 2D histogram: points counted in rectangular cells, the count (or another measu
 
 
 ::: {.clay-image}
-![](reference.charts_grids_fields_files/image2.png)
+![](reference.charts_grids_fields_files/image3.png)
 :::
 
 
@@ -245,7 +275,7 @@ ratio and what the colour measures:
 
 
 ::: {.clay-image}
-![](reference.charts_grids_fields_files/image3.png)
+![](reference.charts_grids_fields_files/image4.png)
 :::
 
 
@@ -281,7 +311,7 @@ The fastmath estimates of the grid (the default `:scott-correlated` above) - eac
 
 
 ::: {.clay-image}
-![](reference.charts_grids_fields_files/image4.png)
+![](reference.charts_grids_fields_files/image5.png)
 :::
 
 
@@ -306,7 +336,7 @@ area (the legend shows the scale):
 
 
 ::: {.clay-image}
-![](reference.charts_grids_fields_files/image5.png)
+![](reference.charts_grids_fields_files/image6.png)
 :::
 
 
@@ -346,7 +376,7 @@ point (the Fields group).
 
 
 ::: {.clay-image}
-![](reference.charts_grids_fields_files/image6.png)
+![](reference.charts_grids_fields_files/image7.png)
 :::
 
 
@@ -381,7 +411,7 @@ Its options: the raster's opacity, or a colour per pixel computed by a function 
 
 
 ::: {.clay-image}
-![](reference.charts_grids_fields_files/image7.png)
+![](reference.charts_grids_fields_files/image8.png)
 :::
 
 
@@ -408,7 +438,7 @@ points per axis (a coarse grid shows its cells):
 
 
 ::: {.clay-image}
-![](reference.charts_grids_fields_files/image8.png)
+![](reference.charts_grids_fields_files/image9.png)
 :::
 
 
@@ -452,7 +482,7 @@ Gridded values are interpolated between the lattice points - here a 5 x 5 lattic
 
 
 ::: {.clay-image}
-![](reference.charts_grids_fields_files/image9.png)
+![](reference.charts_grids_fields_files/image10.png)
 :::
 
 
@@ -484,7 +514,7 @@ the domain reaches past the points (`:cut`, in bandwidths):
 
 
 ::: {.clay-image}
-![](reference.charts_grids_fields_files/image10.png)
+![](reference.charts_grids_fields_files/image11.png)
 :::
 
 
@@ -524,7 +554,7 @@ each.
 
 
 ::: {.clay-image}
-![](reference.charts_grids_fields_files/image11.png)
+![](reference.charts_grids_fields_files/image12.png)
 :::
 
 
@@ -559,7 +589,7 @@ colour and the opacity:
 
 
 ::: {.clay-image}
-![](reference.charts_grids_fields_files/image12.png)
+![](reference.charts_grids_fields_files/image13.png)
 :::
 
 
@@ -597,7 +627,7 @@ values and a density with its own bandwidth:
 
 
 ::: {.clay-image}
-![](reference.charts_grids_fields_files/image13.png)
+![](reference.charts_grids_fields_files/image14.png)
 :::
 
 
@@ -630,7 +660,7 @@ The correlation coefficient r of two variables drawn as one glyph filling the pa
 
 
 ::: {.clay-image}
-![](reference.charts_grids_fields_files/image14.png)
+![](reference.charts_grids_fields_files/image15.png)
 :::
 
 
@@ -669,7 +699,7 @@ Every glyph, for one pair of variables (r about 0.82):
 
 
 ::: {.clay-image}
-![](reference.charts_grids_fields_files/image15.png)
+![](reference.charts_grids_fields_files/image16.png)
 :::
 
 
@@ -696,7 +726,7 @@ glyph in one fixed colour with a thick outline:
 
 
 ::: {.clay-image}
-![](reference.charts_grids_fields_files/image16.png)
+![](reference.charts_grids_fields_files/image17.png)
 :::
 
 
@@ -716,7 +746,7 @@ In a correlogram:
 
 
 ::: {.clay-image}
-![](reference.charts_grids_fields_files/image17.png)
+![](reference.charts_grids_fields_files/image18.png)
 :::
 
 

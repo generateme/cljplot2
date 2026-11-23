@@ -172,20 +172,20 @@
   Throws `ex-info {:key :x}` for a non-numeric, non-temporal x or a repeated x in a group."
   [lines position]
   (let [keyed-lines (mapv (fn [{:keys [x y aesthetics] :as line}]
-                       (let [keyed (->> (map vector x y)
-                                        (filter #(some? (second %)))
-                                        (map (fn [[vx vy]] [(or (data/x-key vx)
-                                                                (schema/fail! "Stacked lines need numeric or temporal (java.time) x."
-                                                                              {:key :x :value vx}))
-                                                            vx vy]))
-                                        (sort-by first))
-                             ks (mapv first keyed)
-                             pts (mapv (fn [[_ vx vy]] [vx vy]) keyed)]
-                         (when-not (or (m/< (count ks) 2) (apply m/< ks))
-                           (schema/fail! "Stacked lines need distinct x values within a group." {:key :x :group aesthetics}))
-                         (merge {:ks ks :vs (mapv #(double (second %)) pts) :xs (mapv first pts) :aesthetics aesthetics}
-                                (select-keys line [:size-value]))))
-                     lines)
+                            (let [keyed (->> (map vector x y)
+                                             (filter #(some? (second %)))
+                                             (map (fn [[vx vy]] [(or (data/x-key vx)
+                                                                     (schema/fail! "Stacked lines need numeric or temporal (java.time) x."
+                                                                                   {:key :x :value vx}))
+                                                                 vx vy]))
+                                             (sort-by first))
+                                  ks (mapv first keyed)
+                                  points (mapv (fn [[_ vx vy]] [vx vy]) keyed)]
+                              (when-not (or (m/< (count ks) 2) (apply m/< ks))
+                                (schema/fail! "Stacked lines need distinct x values within a group." {:key :x :group aesthetics}))
+                              (merge {:ks ks :vs (mapv #(double (second %)) points) :xs (mapv first points) :aesthetics aesthetics}
+                                     (select-keys line [:size-value]))))
+                          lines)
         stacked-groups (filterv #(seq (:ks %)) keyed-lines)
         by-key (into (sorted-map) (mapcat (fn [{:keys [ks xs]}] (map vector ks xs)) stacked-groups))
         union (vec (keys by-key))
@@ -614,7 +614,7 @@
   (let [start (coord/line-path geometry [(range-points (first run))] false)
         points (reduce (fn [acc [i j]]
                          (let [seg (rest (coord/line-path geometry [(range-points i) (range-points j)] true))
-                               n (count seg)
+                               n (double (count seg))
                                w0 (double (widths i))
                                w1 (double (widths j))]
                            (into acc (map-indexed (fn [^long k [x y]] [x y (m/+ w0 (m/* (m/- w1 w0) (m// (m/inc k) n)))]) seg))))
@@ -700,8 +700,7 @@
                       color-keys (some->> colors (mapv #(some-> % data/x-key)))
                       group-st (group-style style line scales (:theme env))
                       line-st (if (and group-st (:stroke-alpha options) (not= :none (:color group-st)))
-                                (update group-st :color #(let [col (c/to-color %)]
-                                                           (c/set-alpha col (m/* (double (:stroke-alpha options)) (c/alpha col)))))
+                                (update group-st :color #(c/set-alpha % (m/* (double (:stroke-alpha options)) (c/alpha %))))
                                 group-st)]
                 :when line-st]
           (let [points (mapv (fn [vx vy] (if (nil? vy) (Vec2. ##NaN ##NaN) (projection vx vy))) x y)

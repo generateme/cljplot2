@@ -202,10 +202,10 @@
 
   Returns `nil`."
   [c node rect at color {:keys [style options leaf-color top-color pattern-fill total] :as ctx} env]
-  (let [{box-x :x box-y :y box-w :w box-h :h :as box} (pixel-box rect)
+  (let [{^long box-x :x ^long box-y :y ^long box-w :w ^long box-h :h :as box} (pixel-box rect)
         depth (long (:depth at))
         root? (m/zero? depth)]
-    (when (or root? (and (m/>= (long box-w) 1) (m/>= (long box-h) 1)))
+    (when (or root? (and (m/>= box-w 1) (m/>= box-h 1)))
       (if (:children node)
         (let [padding (double (:padding style))
               {:keys [^double x ^double y ^double w ^double h]} rect
@@ -223,9 +223,9 @@
             (fill-box! c (c/brighten color) box (dissoc style :pattern) pattern-fill))
           (when header?
             (draw-label! c :treemap-group header-text (c/brighten color)
-                         {:x (m/long-add (long box-x) pad-px)
-                          :y (m/long-add (long box-y) pad-px)
-                          :w (m/long-max 0 (m/long-sub (long box-w) (m/long-mult 2 pad-px)))
+                         {:x (m/long-add box-x pad-px)
+                          :y (m/long-add box-y pad-px)
+                          :w (m/long-max 0 (m/long-sub box-w (m/long-mult 2 pad-px)))
                           :h (long (m/ceil header-h))}
                          env))
           (when (and (m/pos? (double (:w content))) (m/pos? (double (:h content))))
@@ -241,7 +241,7 @@
             (fill-box! c fill box style pattern-fill))
           (when-let [text (label-text (:leaf-labels options) node at total)]
             (let [^Vec2 size (label-size :treemap-leaf text env)]
-              (when (and (m/<= (.x size) (double box-w)) (m/<= (.y size) (double box-h)))
+              (when (and (m/<= (.x size) box-w) (m/<= (.y size) box-h))
                 (draw-label! c :treemap-leaf text fill box env)))))))))
 
 (defn draw

@@ -117,8 +117,7 @@
 
   Returns the colour with its alpha multiplied by `:alpha`."
   [{:keys [color ^double alpha] :or {alpha 1.0}}]
-  (let [col (c/to-color color)]
-    (c/set-alpha col (m/* alpha (c/alpha col)))))
+  (c/set-alpha color (m/* alpha (c/alpha color))))
 
 (defn- outline
   "Gives the line style of a polygon's outline.

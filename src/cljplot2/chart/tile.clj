@@ -33,8 +33,7 @@
   heatmap's columns; a column of cells beside it works the same way with a shared y `:domain`.
 
   Functions: [[compute]], [[draw]], [[legend]] - the chart contract; [[resolution]] - the cell size of numeric positions; [[largest-size]], [[size-factor]] - cell sizes from a size scale."
-  (:require [clojure2d.color :as c]
-            [fastmath.core :as m]
+  (:require [fastmath.core :as m]
             [fastmath.vector :as v]
             [cljplot2.content.label :as label]
             [cljplot2.data.cells :as cells]
@@ -50,7 +49,10 @@
 
 (def schemas
   "Schemas of the tile chart: `:style` (theme `[:chart :tile]`), `:options`, `:mapping` (merged)."
-  {:style (into [:map {:closed true}] cells/style-entries)
+  {:style (-> [:map {:closed true}]
+             (into cells/style-entries)
+             (conj (schema/optional :size-key-fill {:description "fill of a size legend key without a colour (theme only, not an option)"}
+                                    schema/color)))
    :options (-> [:map {:closed true}]
                 (into cells/style-entries)
                 (into data/common-options)
@@ -337,10 +339,6 @@
                                                           (or (draw/painted-color canvas (.x centre) (.y centre)) fill))}
                           [:center :middle] (.x centre) (.y centre) env))))))
 
-(def ^:private size-key-fill
-  "Fill of a size legend key without a color attribute: a neutral grey."
-  (c/gray 110))
-
 (defn legend
   "Draws the tile chart's key glyph: the cell shape fitted in the key box.
 
@@ -352,7 +350,7 @@
   - `box` (map): the key box `{:x :y :w :h}`.
   - `env` (map): the drawing environment (`:theme`, `:scales` - the plot's size scale).
 
-  The cell is filled with the key's colour (grey for a size key without one); a size key's cell is scaled by its size factor (see [[size-factor]]); a factor of 0 draws nothing."
+  The cell is filled with the key's colour (the style's `:size-key-fill`, theme `[:chart :tile]`, for a size key without one); a size key's cell is scaled by its size factor (see [[size-factor]]); a factor of 0 draws nothing."
   [chart attributes canvas {:keys [^double x ^double y ^double w ^double h]} env]
   (let [st (theme/resolved-style (:theme env) chart)
         offsets (cells/lattice-offsets (:cell st) 0 0 true true)
@@ -365,4 +363,4 @@
                  1.0)]
     (when (m/pos? factor)
       (cells/draw-cell! canvas (fn [[^double ox ^double oy]] (v/vec2 (m/+ cx (m/* k ox)) (m/- cy (m/* k oy))))
-                        offsets (or (:color attributes) size-key-fill) (assoc st :cell-scale factor)))))
+                        offsets (or (:color attributes) (:size-key-fill st)) (assoc st :cell-scale factor)))))

@@ -44,7 +44,7 @@
 
   Facets: a box per panel, domains shared by all panels. Points, spikes and bar faces are drawn far to near.
 
-  Functions: [[compute]] and [[chart-primitives]] - the chart contract (with [[legend]]); [[axis-levels]] - the levels of a categorical axis; [[bin-counts]] - the cells of a 2D histogram; [[projection-layers]], [[projection-primitives]] - the side projections; [[primitives]] - the points, spikes or bars of a panel; schema pieces [[schemas]], [[distance-rule]], [[projection-kinds]], [[projection-style-entries]]."
+  Functions: [[compute]] and [[chart-primitives]] - the chart contract (with [[legend]]); [[axis-levels]] - the levels of a categorical axis; [[bin-counts]] - the cells of a 2D histogram; [[projection-layers]], [[projection-primitives]] - the side projections; [[primitives]] - the points, spikes or bars of a panel; schema pieces [[schemas]], [[distance-rule]], [[projection-kinds]], [[projection-style-entries]]; option defaults [[default-projection-grid]], [[default-projection-levels]]."
   (:require [clojure2d.color :as c]
             [clojure2d.core :as c2d]
             [fastmath.core :as m]
@@ -58,7 +58,6 @@
             [cljplot2.data.space3d :as space]
             [cljplot2.graphics.draw :as draw]
             [cljplot2.graphics.shape :as shape]
-            [cljplot2.graphics.space3d :as space-draw]
             [cljplot2.scale.aesthetic :as aesthetic]
             [cljplot2.scale.position :as scale]
             [cljplot2.schema :as schema]
@@ -271,7 +270,7 @@
 
   Parameters:
 
-  - `chart` (map): the chart value - `:options` (see the namespace doc).
+  - `chart` (map): the chart value - `:kind`, `:options` (see the namespace doc), `:schema` (its style keys, see [[cljplot2.theme/resolved-style]]).
   - `split` (map): `:groups` - panel -> rows; `:mapping` - the merged mapping.
   - `env` (map): `:theme`, `:na-level?` (default true), `:plot-scales`.
 
@@ -490,7 +489,7 @@
 
   Parameters:
 
-  - `chart` (map): the chart value - its `:type` option picks the glyph.
+  - `chart` (map): the chart value - its `:type` option picks the glyph; `:kind` and `:schema` give its style (see [[cljplot2.theme/resolved-style]]).
   - `attributes` (map): the key's mapped style attributes.
   - `canvas`: the clojure2d canvas.
   - `box` (map): the key box `{:x :y :w :h}` in pixels.

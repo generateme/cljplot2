@@ -50,7 +50,7 @@
   (let [d (r/distribution :real-discrete-distribution {:data values})
         xs (vec (sort (distinct values)))
         last-x (double (peek xs))
-        fs (map (fn [^double x] (if (m/== x last-x) 1.0 (r/cdf d x))) xs)]
+        fs (mapv (fn [^double x] (if (m/== x last-x) 1.0 (r/cdf d x))) xs)]
     (reduce (fn [{:keys [x y]} [xi fi prev]]
               {:x (conj x xi xi) :y (conj y prev fi)})
             {:x [] :y []}

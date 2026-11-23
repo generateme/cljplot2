@@ -64,6 +64,18 @@
                                  {:columns 2 :widths [1 1.15]})
                    {:width 1000 :height 300})
 
+;; A mapped `:size` shrinks each cell by its value; with the colour mapped to another variable the size legend's keys
+;; have no colour of their own - their fill is a theme key of `[:chart :tile]`, not an option:
+
+(nu/options-table (describe/style-rows :tile [:size-key-fill]))
+
+(plot/render-image {:data week-hours
+                    :mapping {:x :hour :y :day :color :day :size :visits}
+                    :charts [(chart/tile)]
+                    :scales {:y {:reverse true}}
+                    :theme {:chart {:tile {:size-key-fill [200 120 60]}}}}
+                   {:width 600 :height 300})
+
 (nu/shared-groups (describe/options (chart/tile)))
 
 ;; ## bin2d

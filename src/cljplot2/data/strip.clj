@@ -1019,6 +1019,19 @@
         (update :data update-vals #(assoc % ::level-axis axis))
         (assoc :level-axis axis))))
 
+(defn placeable?
+  "Tests whether a strip panel's values can be placed: its value scale `:x` (strip frame) exists.
+
+  Parameters:
+
+  - `scales` (map): finalized position scales in the strip frame.
+
+  Returns a truthy value when there is an `:x` scale; `nil` when no chart gave the plot an x extent (no data, or no item with a drawable value) - nothing to draw.
+
+  See also [[placement]], [[draw-oriented]]."
+  [scales]
+  (some? (:x scales)))
+
 (defn draw-oriented
   "Draws one panel of a strip chart whose draw works in the strip frame.
 
@@ -1031,6 +1044,8 @@
   - `computed` (map): the panel's computed data (with `::level-axis`).
   - `canvas`, `box`, `scales`, `env`: as the chart contract's draw.
 
-  Returns what `draw` returns."
+  Returns what `draw` returns; `nil` without drawing when nothing can be placed (see [[placeable?]])."
   [draw chart computed canvas box scales env]
-  (draw chart computed canvas box (if (= :x (::level-axis computed)) (swap-xy scales) scales) env))
+  (let [frame-scales (if (= :x (::level-axis computed)) (swap-xy scales) scales)]
+    (when (placeable? frame-scales)
+      (draw chart computed canvas box frame-scales env))))

@@ -337,10 +337,10 @@
   - `scales` (map): finalized scales.
   - `env` (map): the draw environment - `:theme`.
 
-  Grouped overlay bars get fill alpha `:alpha`; empty bins, bars under half a pixel and bars of groups outside an aesthetic domain are skipped; mirror with `:zero-line` (default on) - the y = 0 line on top. Ridgelines by [[draw-ridges!]]."
+  Grouped overlay bars get fill alpha `:alpha`; empty bins, bars under half a pixel and bars of groups outside an aesthetic domain are skipped; mirror with `:zero-line` (default on) - the y = 0 line on top. Ridgelines by [[draw-ridges!]], none without an x scale (see [[cljplot2.data.strip/placeable?]])."
   [{:keys [options]} {:keys [bars style translucent? ridges zero-line?] :as computed} canvas box scales env]
   (if ridges
-    (draw-ridges! computed canvas box scales env (draw/corner-rounding options))
+    (when (strip/placeable? scales) (draw-ridges! computed canvas box scales env (draw/corner-rounding options)))
     (when (seq bars)
       (let [projection (scale/projection scales)
             stroke-width (double (:stroke-width style))

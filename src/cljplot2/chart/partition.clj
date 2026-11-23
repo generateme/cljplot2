@@ -91,7 +91,7 @@
         cell (fn [node depth path parent-value x0 top-index]
                (let [leaf? (nil? (:children node))
                      x1 (m/+ (double x0) (m// (double (:value node)) total))]
-                 {:x0 (double x0) :x1 x1 :y0 (m/+ (m/dec (double depth)) shift) :y1 (m/+ (double depth) shift)
+                 {:x0 x0 :x1 x1 :y0 (m/+ (m/dec (double depth)) shift) :y1 (m/+ (double depth) shift)
                   :depth depth :leaf? leaf? :color (:color node) :top-index top-index :name (:name node)
                   :label (hierarchy/label-text (if leaf? leaf-labels group-labels) node
                                                (hierarchy/node-info node depth path parent-value total))}))

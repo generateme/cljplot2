@@ -165,7 +165,7 @@
         by-level? (not (or (:color options) (grouped? mapping)))
         ;; a filled band's color - the middle of its level and the next (the top band: up to the largest value)
         color-values (if (and fill? (seq levels))
-                       (map (fn [^double l ^double nxt] (m/* 0.5 (m/+ l nxt))) levels (concat (rest levels) [(m/max (double hi) (double (peek levels)))]))
+                       (mapv (fn [^double l ^double nxt] (m/* 0.5 (m/+ l nxt))) levels (concat (rest levels) [(m/max (double hi) (double (peek levels)))]))
                        levels)
         in-data (fn [grid points] (mapv #(field/to-data grid %) points))
         panels (reduce (fn [acc [panel aesthetics grid]]

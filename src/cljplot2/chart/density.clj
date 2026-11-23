@@ -372,10 +372,10 @@
   - `scales` (map): finalized scales.
   - `env` (map): the draw environment - `:theme`.
 
-  Draws every group's area (under the curve to y = 0 with `:fill`; stacked curves - between `:y0` and `:y`, `:fill` or the group colour with `:alpha`), then every curve's line, then - mirror with `:zero-line` (default on) - the y = 0 line on top (curve tails along y = 0 don't hide it); ridgelines by [[draw-ridges!]]. A group outside its scale's domain is skipped."
+  Draws every group's area (under the curve to y = 0 with `:fill`; stacked curves - between `:y0` and `:y`, `:fill` or the group colour with `:alpha`), then every curve's line, then - mirror with `:zero-line` (default on) - the y = 0 line on top (curve tails along y = 0 don't hide it); ridgelines by [[draw-ridges!]] (none without an x scale, see [[cljplot2.data.strip/placeable?]]). A group outside its scale's domain is skipped."
   [_chart {:keys [curves style zero-line? ridges] :as computed} canvas box scales env]
   (if ridges
-    (draw-ridges! computed canvas box scales env)
+    (when (strip/placeable? scales) (draw-ridges! computed canvas box scales env))
     (when (seq curves)
       (let [projection (scale/projection scales)
             drawn (vec (keep (fn [{:keys [x y y0 aesthetics]}]
