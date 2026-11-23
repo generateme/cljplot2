@@ -48,7 +48,7 @@
   (schema/named-type ::position position? "should be a finite number, a java.time value or a level (string / keyword)"))
 
 (defn positions-schema
-  "Schema of a literal position option: one item or a non-empty vector of them.
+  "Gives the schema of a literal position option: one item or a non-empty vector of them.
 
   Parameters:
 
@@ -67,7 +67,7 @@
                     schema/bool)]))
 
 (defn as-vector
-  "Literal option value as a vector of items.
+  "Gives the literal option value as a vector of items.
 
   Parameters:
 
@@ -85,7 +85,7 @@
 
   Parameters:
 
-  - `keys` (sequence of keywords): the option of each vector, for errors.
+  - `option-keys` (sequence of keywords): the option of each vector, for errors.
   - `vs` (sequence of vectors): each of 1 or `n` items, `n` the longest length.
 
   Returns a vector of `n` tuples, the i-th taking the i-th item of every vector (a single item - in every tuple); `[]` when every vector is empty.
@@ -93,9 +93,9 @@
   Throws `ex-info {:key k}` for a vector whose length is neither 1 nor `n`.
 
   See also [[as-vector]]."
-  [keys vs]
-  (let [n (long (reduce max 0 (map count vs)))]
-    (doseq [[k v] (map vector keys vs)
+  [option-keys vs]
+  (let [n (long (reduce m/long-max 0 (map count vs)))]
+    (doseq [[k v] (map vector option-keys vs)
             :when (not (or (m/one? (count v)) (m/== n (count v))))]
       (schema/fail! (str "Annotation " k " should have 1 or " n " items.") {:key k :value v}))
     (vec (for [i (range n)] (mapv #(if (m/one? (count %)) (first %) (nth % i)) vs)))))
@@ -105,19 +105,19 @@
 
   Parameters:
 
-  - `options` (map): the chart's options.
-  - `keys` (sequence of keywords): its position options.
+  - `chart-options` (map): the chart's options.
+  - `position-keys` (sequence of keywords): its position options.
 
-  Returns a truthy value when some of `keys` is set (not `nil`) in `options`, else `nil`."
-  [options keys]
-  (some #(some? (get options %)) keys))
+  Returns a truthy value when some of `position-keys` is set (not `nil`) in `chart-options`, else `nil`."
+  [chart-options position-keys]
+  (some #(some? (get chart-options %)) position-keys))
 
 (defn extents
-  "Scale extents of an annotation's positions.
+  "Gives the scale extents of an annotation's positions.
 
   Parameters:
 
-  - `options` (map): the chart's options, `:extent` read (false - no extents).
+  - `chart-options` (map): the chart's options, `:extent` read (false - no extents).
   - `dim-values` (map): position dimension -> its values, `{dim [v ...]}`; non-positions such as `nil` or `[:panel f]` are skipped.
 
   Returns `{dim extent}` of the dimensions with positions (see [[cljplot2.data.rows/extent]]); `{}` with `:extent false`.
@@ -125,51 +125,51 @@
   Throws `ex-info {:key :extents}` for numbers mixed with levels in one dimension.
 
   See also [[literal-stats]], [[data-stats]]."
-  [options dim-values]
-  (if (false? (:extent options))
+  [chart-options dim-values]
+  (if (false? (:extent chart-options))
     {}
     (into {} (keep (fn [[k vs]] (when-let [e (data/extent k (filter position? vs))] [k e]))) dim-values)))
 
 (defn literal-stats
-  "Chart stats of a literal annotation, drawn in every panel.
+  "Gives the chart stats of a literal annotation, drawn in every panel.
 
   Parameters:
 
   - `computed`: the draw data.
-  - `options` (map): the chart's options (`:extent`).
+  - `chart-options` (map): the chart's options (`:extent`).
   - `dim-values` (map): its positions `{dim [v ...]}`, see [[extents]].
 
   Returns `{:data :extents :na :dropped}` with `computed` and the extents under `cljplot2.data.facet/all-panels`, no NA dimensions, nothing dropped.
 
   See also [[data-stats]]."
-  [computed options dim-values]
-  (let [e (extents options dim-values)]
+  [computed chart-options dim-values]
+  (let [e (extents chart-options dim-values)]
     {:data {facet/all-panels computed}
      :extents (if (seq e) {facet/all-panels e} {})
      :na #{}
      :dropped {}}))
 
 (defn data-stats
-  "Chart stats of a data annotation, per panel from its rows.
+  "Gives the chart stats of a data annotation, per panel from its rows.
 
   Parameters:
 
   - `chart-split` (map): the chart's split, `:groups` and `:mapping`.
-  - `options` (map): the chart's options (`:extent`).
+  - `chart-options` (map): the chart's options (`:extent`).
   - `env` (map): the compute environment (`:plot-scales` ...).
   - `panel-fn` (function): of a panel's groups (of [[cljplot2.data.group/split]] by the chart's aesthetics) returning `[computed positions]` - the panel's draw data and its positions `{dim [v ...]}`.
 
   Returns `{:data :extents :na :dropped}`: the draw data per panel; per panel the aesthetic extents merged with the position extents (see [[extents]]); NA dimensions and dropped counts of the split.
 
   See also [[literal-stats]]."
-  [chart-split options env panel-fn]
+  [chart-split chart-options env panel-fn]
   (let [{:keys [panels dropped]} (group/split (:groups chart-split) (:mapping chart-split) env)
         per-panel (update-vals panels panel-fn)]
     {:data (update-vals per-panel first)
      :extents (merge-with merge
                           (group/aesthetic-extents panels (:plot-scales env))
                           (into {} (keep (fn [[panel [_ positions]]]
-                                           (let [e (extents options positions)] (when (seq e) [panel e]))))
+                                           (let [e (extents chart-options positions)] (when (seq e) [panel e]))))
                                 per-panel))
      :na (group/na-dims panels)
      :dropped dropped}))
@@ -195,7 +195,7 @@
 ;; pixels
 
 (defn pixel-fn
-  "Pixel function of positions on a finalized position scale.
+  "Gives the pixel function of positions on a finalized position scale.
 
   Parameters:
 
@@ -208,7 +208,7 @@
   (if finalized (scale/forward-fn finalized) (fn ^double [_] ##NaN)))
 
 (defn interval-fn
-  "Pixel interval function of position pairs on a finalized position scale.
+  "Gives the pixel interval function of position pairs on a finalized position scale.
 
   Parameters:
 
@@ -236,7 +236,7 @@
              [(v/mn ps) (v/mx ps)])))))))
 
 (defn axis-pixel-fn
-  "Pixel function of text positions along a finalized scale's axis.
+  "Gives the pixel function of text positions along a finalized scale's axis.
 
   Parameters:
 

@@ -62,7 +62,7 @@
       "mapping can't combine :facet with :facet-col / :facet-row")))
 
 (defn valid-facet-value?
-  "Can `v` be a facet level: anything except NaN or infinite numbers?
+  "Tests whether `v` can be a facet level: anything except NaN or infinite numbers.
 
   `nil` is valid - the NA level."
   [v]
@@ -158,14 +158,14 @@
   (or (get-in facets [:scales k]) :same))
 
 (defn panel-scales?
-  "Do the plot's `:facets` options `facets` ask for panel-local position scales: a `:free` / `:sliced` relation, or panel `:widths` / `:heights`?
+  "Tests whether the plot's `:facets` options `facets` ask for panel-local position scales: a `:free` / `:sliced` relation, or panel `:widths` / `:heights`.
 
   Returns a truthy value or `nil`."
   [facets]
   (or (some #(not= :same (scale-relation facets %)) [:x :y]) (:widths facets) (:heights facets)))
 
 (defn strips?
-  "Does a faceted plot with the `:facets` options `facets` draw strips (`:strips`, default true)?"
+  "Tests whether a faceted plot with the `:facets` options `facets` draws strips (`:strips`, default true)."
   [facets]
   (not (false? (:strips facets))))
 
@@ -174,16 +174,16 @@
 
   Parameters:
 
-  - `levels` (vector): the levels (see [[levels]]).
+  - `dim-levels` (vector): the levels (see [[levels]]).
   - `rows-of` (function): level -> its rows.
   - `spec` (map): the facet scale spec - `:order-by` (a function of a level's rows to a number), `:descending`.
 
-  Returns the levels in ascending (`:descending` - descending) order of `:order-by` (see [[cljplot2.data.levels/order-by-rows]]), the NA level (`nil`) last; `levels` unchanged without `:order-by`."
-  [levels rows-of {:keys [order-by descending]}]
+  Returns the levels in ascending (`:descending` - descending) order of `:order-by` (see [[cljplot2.data.levels/order-by-rows]]), the NA level (`nil`) last; `dim-levels` unchanged without `:order-by`."
+  [dim-levels rows-of {:keys [order-by descending]}]
   (if order-by
-    (cond-> (levels/order-by-rows (remove nil? levels) rows-of order-by descending)
-      (some nil? levels) (conj na-level))
-    levels))
+    (cond-> (levels/order-by-rows (remove nil? dim-levels) rows-of order-by descending)
+      (some nil? dim-levels) (conj na-level))
+    dim-levels))
 
 (defn label
   "Gives the strip text of a facet level.
@@ -208,11 +208,11 @@
   - `rows` (sequence): the rows.
   - `dims` (vector): the facet dimensions (see [[facet-dims]]).
   - `accessors` (map): dimension -> row accessor.
-  - `levels` (map): dimension -> its levels.
+  - `dim-levels` (map): dimension -> its levels.
 
   Returns `{:groups {key rows} :dropped n}`: a key is the level for one dimension, `[col-level row-level]` for two; rows whose value isn't a level are dropped and counted."
-  [rows dims accessors levels]
-  (let [level-sets (into {} (map (fn [d] [d (set (levels d))]) dims))
+  [rows dims accessors dim-levels]
+  (let [level-sets (into {} (map (fn [d] [d (set (dim-levels d))]) dims))
         keyed (map (fn [row]
                      (let [vs (mapv #((accessors %) row) dims)]
                        (when (every? true? (map (fn [d v] (contains? (level-sets d) v)) dims vs))

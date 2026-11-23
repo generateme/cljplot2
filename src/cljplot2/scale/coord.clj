@@ -60,7 +60,7 @@
   (= :polar (:kind coord)))
 
 (defn theta-range
-  "Range of the angular scale of a polar coord.
+  "Gives the range of the angular scale of a polar coord.
 
   Parameters:
 
@@ -79,12 +79,12 @@
   (m/* 0.5 m/PI))
 
 (defn- unit-point
-  "Panel-oriented point (x right, y down) at angle `theta` (radians, 0 up, clockwise) and radius `r` around the origin, as `[x y]`."
+  "Gives the panel-oriented point (x right, y down) at angle `theta` (radians, 0 up, clockwise) and radius `r` around the origin, as `[x y]`."
   [^double theta ^double r]
   [(m/* r (m/sin theta)) (m/- (m/* r (m/cos theta)))])
 
 (defn sector-box
-  "Bounding box of the sector of a polar coord on the unit circle around the origin.
+  "Gives the bounding box of the sector of a polar coord on the unit circle around the origin.
 
   The box is in panel orientation (x right, y down) and holds the outer arc (its ends and the 12, 3, 6 and 9 o'clock points within it) and the centre - or, with an `:inner` radius, the inner arc's ends.
 
@@ -109,7 +109,7 @@
     [(v/mn xs) (v/mn ys) (v/mx xs) (v/mx ys)]))
 
 (defn geometry
-  "Polar layout of a panel for a polar coord.
+  "Gives the polar layout of a panel for a polar coord.
 
   The centre places the sector's bounding box (see [[sector-box]]) in the panel's middle - a full circle's centre is the panel's middle, a half circle's on the panel's edge.
 
@@ -133,23 +133,23 @@
      :arcs (:arcs coord)}))
 
 (defn to-pixel
-  "Panel pixel of a range point.
+  "Gives the panel pixel of a range point.
 
   Parameters:
 
-  - `geometry` (map or `nil`): a polar [[geometry]] (`:cx`, `:cy`), or `nil` - cartesian.
+  - `coord-geometry` (map or `nil`): a polar [[geometry]] (`:cx`, `:cy`), or `nil` - cartesian.
   - `h` (double): the horizontal scale's range position - in polar the angle (radians, 0 up, clockwise).
   - `v` (double): the vertical scale's range position - in polar the radius (pixels).
 
   Returns a `Vec2`: the point itself in cartesian, else the point at angle `h` and radius `v` around the centre."
-  ^Vec2 [geometry ^double h ^double v]
-  (if (= :polar (:kind geometry))
-    (let [{:keys [^double cx ^double cy]} geometry]
+  ^Vec2 [coord-geometry ^double h ^double v]
+  (if (= :polar (:kind coord-geometry))
+    (let [{:keys [^double cx ^double cy]} coord-geometry]
       (Vec2. (m/+ cx (m/* v (m/sin h))) (m/- cy (m/* v (m/cos h)))))
     (Vec2. h v)))
 
 (defn radial-rotation
-  "Rotation of a label laid along a radius.
+  "Gives the rotation of a label laid along a radius.
 
   Parameters:
 
@@ -161,7 +161,7 @@
     (if (m/< 90.0 a 270.0) (m/- a 180.0) a)))
 
 (defn outward-anchor
-  "Anchor of a label placed at an angle and extending away from the centre.
+  "Gives the anchor of a label placed at an angle and extending away from the centre.
 
   Parameters:
 
@@ -183,7 +183,7 @@
   2.0)
 
 (defn- steps
-  "Number of segments a smooth arc needs.
+  "Gives the number of segments a smooth arc needs.
 
   Parameters:
 
@@ -197,63 +197,63 @@
     (m/max 1 (long (m/ceil (m// d step))))))
 
 (defn- segment-points
-  "Pixel points of a range segment, its start excluded.
+  "Gives the pixel points of a range segment, its start excluded.
 
   Parameters:
 
-  - `geometry` (map or `nil`): see [[to-pixel]].
+  - `coord-geometry` (map or `nil`): see [[to-pixel]].
   - `[h0 v0]`, `[h1 v1]`: the segment's start and end range points.
   - `arcs?`: densify along the angle (polar only).
 
   Returns a vector of `Vec2`: the end alone, or - `arcs?` in polar - the segment densified linearly in `h` and `v` (see [[steps]])."
-  [geometry [^double h0 ^double v0] [^double h1 ^double v1] arcs?]
-  (if (and arcs? (= :polar (:kind geometry)))
+  [coord-geometry [^double h0 ^double v0] [^double h1 ^double v1] arcs?]
+  (if (and arcs? (= :polar (:kind coord-geometry)))
     (let [n (steps h0 h1 (m/max (m/abs v0) (m/abs v1)))]
-      (mapv (fn [^long i] (let [t (m// (double i) n)] (to-pixel geometry (m/+ h0 (m/* t (m/- h1 h0))) (m/+ v0 (m/* t (m/- v1 v0))))))
+      (mapv (fn [^long i] (let [t (m// (double i) n)] (to-pixel coord-geometry (m/+ h0 (m/* t (m/- h1 h0))) (m/+ v0 (m/* t (m/- v1 v0))))))
             (range 1 (m/long-inc n))))
-    [(to-pixel geometry h1 v1)]))
+    [(to-pixel coord-geometry h1 v1)]))
 
 (defn line-path
-  "Pixel points of range points joined in a coordinate system.
+  "Gives the pixel points of range points joined in a coordinate system.
 
   Parameters:
 
-  - `geometry` (map or `nil`): see [[to-pixel]].
+  - `coord-geometry` (map or `nil`): see [[to-pixel]].
   - `pts` (sequence): range points `[h v]`.
   - `arcs?`: in polar, segments follow the circle instead of chords.
 
   Returns a vector of `[x y]`: chords between the transformed points, or segments densified along the angle; `[]` for no points.
 
   See also [[rect-path]], [[circle-path]]."
-  [geometry pts arcs?]
+  [coord-geometry pts arcs?]
   (if (empty? pts)
     []
     (let [[[^double h ^double v]] pts
-          ^Vec2 start (to-pixel geometry h v)]
+          ^Vec2 start (to-pixel coord-geometry h v)]
       (into [[(.x start) (.y start)]]
-            (comp (mapcat (fn [[p q]] (segment-points geometry p q arcs?)))
+            (comp (mapcat (fn [[p q]] (segment-points coord-geometry p q arcs?)))
                   (map (fn [^Vec2 p] [(.x p) (.y p)])))
             (partition 2 1 pts)))))
 
 (defn rect-path
-  "Closed polygon of a range rectangle in polar geometry - an annular sector.
+  "Gives the closed polygon of a range rectangle in polar geometry - an annular sector.
 
   Parameters:
 
-  - `geometry` (map): a polar [[geometry]].
+  - `polar-geometry` (map): a polar [[geometry]].
   - `h0`, `h1` (numbers): the angular range.
   - `v0`, `v1` (numbers): the radial range, either order.
 
   Returns pixel `[x y]` points: the outer arc from `h0` to `h1`, the inner one back (a point at the centre for a zero inner radius); arcs densified.
 
   See also [[full-turn-circles]]."
-  [geometry h0 v0 h1 v1]
+  [polar-geometry h0 v0 h1 v1]
   (let [ha (double h0)
         hb (double h1)
         lo (m/min (double v0) (double v1))
         hi (m/max (double v0) (double v1))
-        outer (line-path geometry [[ha hi] [hb hi]] true)
-        inner (if (m/pos? lo) (line-path geometry [[hb lo] [ha lo]] true) (line-path geometry [[hb 0.0]] false))]
+        outer (line-path polar-geometry [[ha hi] [hb hi]] true)
+        inner (if (m/pos? lo) (line-path polar-geometry [[hb lo] [ha lo]] true) (line-path polar-geometry [[hb 0.0]] false))]
     (into outer inner)))
 
 (def ^{:private true :const true :tag 'double} turn-tolerance
@@ -276,40 +276,40 @@
 
   Parameters:
 
-  - `geometry` (map): a polar [[geometry]].
+  - `polar-geometry` (map): a polar [[geometry]].
   - `h0`, `h1` (numbers): the angular range, radians.
 
-  Returns `true` when `geometry` is a [[full-circle?]] and `h0..h1` spans its whole range (within 1e-9)."
-  [geometry h0 h1]
-  (let [[^double t0 ^double t1] (:theta geometry)]
-    (and (full-circle? geometry)
+  Returns `true` when `polar-geometry` is a [[full-circle?]] and `h0..h1` spans its whole range (within 1e-9)."
+  [polar-geometry h0 h1]
+  (let [[^double t0 ^double t1] (:theta polar-geometry)]
+    (and (full-circle? polar-geometry)
          (m/< (m/abs (m/- (m/abs (m/- (double h1) (double h0))) (m/abs (m/- t1 t0)))) turn-tolerance))))
 
 (defn full-turn-circles
-  "Open pixel paths outlining a [[full-turn?]] range rectangle in polar geometry.
+  "Gives the open pixel paths outlining a [[full-turn?]] range rectangle in polar geometry.
 
   Parameters:
 
-  - `geometry` (map): a polar [[geometry]].
+  - `polar-geometry` (map): a polar [[geometry]].
   - `h0`, `h1` (numbers): the angular range (a full turn).
   - `v0`, `v1` (numbers): the radial range, either order.
 
   Returns a vector of paths (see [[line-path]]): the outer circle and, for a positive inner radius, the inner one - the ring's outline without a seam along the start spoke."
-  [geometry h0 v0 h1 v1]
+  [polar-geometry h0 v0 h1 v1]
   (let [lo (m/min (double v0) (double v1))
         hi (m/max (double v0) (double v1))]
-    (cond-> [(line-path geometry [[h0 hi] [h1 hi]] true)]
-      (m/pos? lo) (conj (line-path geometry [[h0 lo] [h1 lo]] true)))))
+    (cond-> [(line-path polar-geometry [[h0 hi] [h1 hi]] true)]
+      (m/pos? lo) (conj (line-path polar-geometry [[h0 lo] [h1 lo]] true)))))
 
 (defn circle-path
-  "Pixel points of a whole circle in polar geometry.
+  "Gives the pixel points of a whole circle in polar geometry.
 
   Parameters:
 
-  - `geometry` (map): a polar [[geometry]].
+  - `polar-geometry` (map): a polar [[geometry]].
   - `v` (number): the radius as a range position, pixels.
 
   Returns the [[line-path]] over the geometry's angular range at radius `v`."
-  [geometry v]
-  (let [[t0 t1] (:theta geometry)]
-    (line-path geometry [[t0 v] [t1 v]] true)))
+  [polar-geometry v]
+  (let [[t0 t1] (:theta polar-geometry)]
+    (line-path polar-geometry [[t0 v] [t1 v]] true)))

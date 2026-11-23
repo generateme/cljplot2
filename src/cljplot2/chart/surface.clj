@@ -30,7 +30,7 @@
 
   * `:style` - `:surface` (default; filled quads), `:wireframe` (quad outlines in their color, `:stroke-width` wide,
     over the panel's background - hidden lines covered) or `:both` (filled quads outlined by `:stroke-color`)
-  * `:shade` - Lambert shading of filled quads (default true); `:ambient` (default 0.4) and `:light` (default `[-0.5 0.6
+  * `:shade` - Lambert shading of filled quads (default true; false - the colour itself, as `:ambient` 1); `:ambient` (default 0.4) and `:light` (default `[-0.5 0.6
     -1.0]`) - the shading's ambient share and light direction (see [[cljplot2.data.space3d/shader]])
 
   Quads are drawn far to near by their centroid depth, with the other 3D charts of the panel (a cloud over a surface:
@@ -73,7 +73,7 @@
                        (schema/optional :color {:description "one colour for all quads (no color scale)"
                                                 :cljplot2/default-doc "each quad's mean height (or c of [z c]) through the plot's color scale"}
                                         schema/color)
-                       (schema/nilable :shade {:description "shading of filled quads by their angle to the light (Lambert)" :default true} schema/bool)
+                       (schema/nilable :shade {:description "shading of filled quads by their angle to the light (Lambert; false - the colour itself, as :ambient 1)" :default true} schema/bool)
                        (schema/optional :f {:description "source: a function of [x y] returning z or [z c], sampled over :domain :x / :y"}
                                         schema/function)
                        (schema/nilable :density {:description "source: the 2D kernel density of the mapped :x, :y" :default false} schema/bool)

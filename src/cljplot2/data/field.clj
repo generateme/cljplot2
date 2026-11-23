@@ -82,19 +82,19 @@
                      n-schema)]))
 
 (defn source-kind
-  "Source kind of a field chart (see the namespace doc).
+  "Gives the source kind of a field chart (see the namespace doc).
 
   Parameters:
 
-  - `options` (map): the chart's options, `:f` read.
+  - `field-options` (map): the chart's options, `:f` read.
   - `mapping` (map): the merged mapping, `:value` read.
 
   Returns `:function` with option `:f`, `:gridded` with a mapped `:value`, else `:points`.
 
   See also [[source-field]]."
-  [options mapping]
+  [field-options mapping]
   (cond
-    (:f options) :function
+    (:f field-options) :function
     (some? (:value mapping)) :gridded
     :else :points))
 
@@ -114,7 +114,7 @@
   {:kernel :kernel :binned? :binned? :bandwidth :bandwidth :bandwidth-options :bandwidth})
 
 (defn density
-  "2D kernel density estimate of points, estimated in the coordinates of the axis transforms.
+  "Gives the 2D kernel density estimate of points, estimated in the coordinates of the axis transforms.
 
   Parameters:
 
@@ -151,7 +151,7 @@
      :domain [(widen us hx (:inverse tx)) (widen vs hy (:inverse ty))]}))
 
 (defn lattice-values
-  "Values of gridded rows on their full lattice.
+  "Gives the values of gridded rows on their full lattice.
 
   Every distinct x must come with every distinct y exactly once, at least 2 of each; rows with a non-finite x or y are left out.
 
@@ -172,19 +172,19 @@
         xs (vec (sort (distinct (map (comp double first) points))))
         ys (vec (sort (distinct (map (comp double second) points))))
         by-point (group-by v/vec2 points)
-        accessor (name value-key)]
+        value-name (name value-key)]
     (when (or (m/< (count xs) 2) (m/< (count ys) 2))
       (schema/fail! "A gridded field needs at least 2 distinct x and 2 distinct y values." {:key value-key :xs (count xs) :ys (count ys)}))
     (when-let [[point] (first (filter #(m/> (count (val %)) 1) by-point))]
-      (schema/fail! (str "A gridded field has one :" accessor " per (x, y); a lattice point repeats.") {:key value-key :value point}))
+      (schema/fail! (str "A gridded field has one :" value-name " per (x, y); a lattice point repeats.") {:key value-key :value point}))
     (when-let [missing (first (for [x xs y ys :when (not (contains? by-point [x y]))] [x y]))]
-      (schema/fail! (str "A gridded field needs a :" accessor " at every (x, y) of its lattice; a point is missing.")
+      (schema/fail! (str "A gridded field needs a :" value-name " at every (x, y) of its lattice; a point is missing.")
                     {:key value-key :value missing}))
     (let [value (fn [x y] (let [v (nth (first (by-point [x y])) 2)] (if (finite? v) (double v) ##NaN)))]
       {:xs xs :ys ys :vss (mapv (fn [x] (mapv (fn [y] (value x y)) ys)) xs)})))
 
 (defn lattice
-  "Interpolated field of gridded rows.
+  "Gives the interpolated field of gridded rows.
 
   Parameters:
 
@@ -202,7 +202,7 @@
     {:f (fn [[x y]] (g x y)) :domain [[(first xs) (peek xs)] [(first ys) (peek ys)]]}))
 
 (defn function-domain
-  "Domain of a function field.
+  "Gives the domain of a function field.
 
   Parameters:
 
@@ -213,7 +213,7 @@
 
   Throws `ex-info {:key :domain}` when an axis has neither."
   [domain plot-scales]
-  (let [explicit (fn [k] (let [d (get-in plot-scales [k :domain])] (when (and (= 2 (count d)) (every? finite? d)) (mapv double d))))
+  (let [explicit (fn [k] (let [d (get-in plot-scales [k :domain])] (when (and (m/== 2 (count d)) (every? finite? d)) (mapv double d))))
         x (or (:x domain) (explicit :x))
         y (or (:y domain) (explicit :y))]
     (when-not (and x y)
@@ -222,7 +222,7 @@
     [(mapv double x) (mapv double y)]))
 
 (defn grid-size
-  "Grid size of the option `:n`.
+  "Gives the grid size of the option `:n`.
 
   Parameters:
 
@@ -236,7 +236,7 @@
     :else [(long n) (long n)]))
 
 (defn union-domain
-  "Smallest domain covering several domains.
+  "Gives the smallest domain covering several domains.
 
   Parameters:
 
@@ -250,7 +250,7 @@
       [(axis 0) (axis 1)])))
 
 (defn- axis-points
-  "Equally spaced values along a grid axis.
+  "Gives equally spaced values along a grid axis.
 
   Parameters:
 
@@ -293,7 +293,7 @@
      {:xs xs :ys ys :nx nx :ny ny :values values :transforms [tx ty]})))
 
 (defn to-data
-  "Data-unit point of a point in a grid's transformed coordinates.
+  "Gives the data-unit point of a point in a grid's transformed coordinates.
 
   Parameters:
 
@@ -305,7 +305,7 @@
   [((:inverse tx) u) ((:inverse ty) v)])
 
 (defn value-range
-  "Range of the values of grids.
+  "Gives the range of the values of grids.
 
   Parameters:
 
@@ -320,7 +320,7 @@
     (when (seq vs) [(v/mn vs) (v/mx vs)])))
 
 (defn- cell-start
-  "Index of the grid cell holding a fractional position on an axis.
+  "Gives the index of the grid cell holding a fractional position on an axis.
 
   Parameters:
 
@@ -332,7 +332,7 @@
   (m/long-min (m/long-sub n 2) (long (m/floor t))))
 
 (defn grid-value
-  "Bilinear value of a grid at a data point.
+  "Gives the bilinear value of a grid at a data point.
 
   Parameters:
 
@@ -360,7 +360,7 @@
             row1 (m/* (m/long-inc j) nx)]
         (m/+ (m/* (m/- 1.0 fx) (m/- 1.0 fy) (Array/aget values (m/long-add i row)))
              (m/* fx (m/- 1.0 fy) (Array/aget values (m/long-add (m/long-inc i) row)))
-             (m/* (m/- 1.0 fx) fy (Array/aget values (m/+ i row1))) (m/* fx fy (Array/aget values (m/long-add (m/long-inc i) row1)))))
+             (m/* (m/- 1.0 fx) fy (Array/aget values (m/long-add i row1))) (m/* fx fy (Array/aget values (m/long-add (m/long-inc i) row1)))))
       ##NaN)))
 
 (defn dropped-positions
@@ -381,7 +381,7 @@
       {:x (bad :x) :y (bad :y)})))
 
 (defn axis-transforms
-  "Stat transforms of the plot's position axes.
+  "Gives the stat transforms of the plot's position axes.
 
   Parameters:
 
@@ -392,12 +392,12 @@
   [(scale/stat-transform (:x plot-scales)) (scale/stat-transform (:y plot-scales))])
 
 (defn source-field
-  "Field of one panel's or group's rows (see the namespace doc).
+  "Gives the field of one panel's or group's rows (see the namespace doc).
 
   Parameters:
 
   - `kind` (keyword): the source kind of [[source-kind]].
-  - `options` (map): the chart's field options (see [[options]]).
+  - `field-options` (map): the chart's field options (see [[options]]).
   - `mapping` (map): the merged mapping.
   - `rows` (sequence): the rows.
   - `plot-scales` (map): the plot's scale specs.
@@ -405,17 +405,17 @@
   Returns `{:f f :domain [[x0 x1] [y0 y1]]}`; `nil` for points or gridded data without rows (points: without finite ones).
 
   Throws the errors of [[function-domain]], [[lattice]] and [[density]]."
-  [kind options mapping rows plot-scales]
+  [kind field-options mapping rows plot-scales]
   (case kind
-    :function {:f (:f options) :domain (function-domain (:domain options) plot-scales)}
+    :function {:f (:f field-options) :domain (function-domain (:domain field-options) plot-scales)}
     :gridded (when (seq rows)
                (lattice rows (data/row-accessor :x (:x mapping)) (data/row-accessor :y (:y mapping))
-                        (data/row-accessor :value (:value mapping)) (:interpolation options)))
+                        (data/row-accessor :value (:value mapping)) (:interpolation field-options)))
     :points (let [x-of (data/row-accessor :x (:x mapping))
                   y-of (data/row-accessor :y (:y mapping))
                   pts (filterv (fn [[x y]] (and (finite? x) (finite? y))) (map (juxt x-of y-of) rows))]
               (when (seq pts)
-                (density (map first pts) (map second pts) options (axis-transforms plot-scales))))))
+                (density (map first pts) (map second pts) field-options (axis-transforms plot-scales))))))
 
 ;; complex domain colouring
 
@@ -446,7 +446,7 @@
   #{:HSI :HSB :HSV :HSL :HCL :HWB})
 
 (defn- complex-color
-  "Colour of a complex number by domain colouring (old cljplot).
+  "Gives the colour of a complex number by domain colouring (old cljplot).
 
   Parameters:
 
@@ -474,20 +474,20 @@
                     (into [:enum] (sort hue-colorspaces)))])
 
 (defn domain-color
-  "Domain colouring of a complex function, as a `:pixel-color` function of [[cljplot2.chart.field]].
+  "Gives the domain colouring of a complex function, as a `:pixel-color` function of [[cljplot2.chart.field]].
 
   Parameters:
 
   - `f` (function): a complex function `Vec2` -> `Vec2` of `fastmath.complex`, e.g. `cx/log`.
-  - `options` (map): `:wrap` - how the magnitude is wrapped for the brightness (default `:log2`, see [[wrap]]); `:colorspace` - one of [[hue-colorspaces]] (default `:HSI` - old cljplot's example).
+  - `opts` (map): `:wrap` - how the magnitude is wrapped for the brightness (default `:log2`, see [[wrap]]); `:colorspace` - one of [[hue-colorspaces]] (default `:HSI` - old cljplot's example).
 
   Returns a function of a point `[x y]` giving the colour of `f(x + iy)`: hue - its argument, brightness - its wrapped magnitude. Zeros and poles get a colour.
 
   Throws `ex-info` for bad options ([[domain-color-options]])."
   {:cljplot2/api true :cljplot2/options domain-color-options}
   ([f] (domain-color f {}))
-  ([f {:keys [wrap colorspace] :or {wrap :log2 colorspace :HSI} :as opts}]
+  ([f {wrap-method :wrap colorspace :colorspace :or {wrap-method :log2 colorspace :HSI} :as opts}]
    (schema/check-options! domain-color-options opts)
    (let [from-space (second (c/colorspaces* colorspace))]
-     (fn [[x y]] (complex-color from-space wrap (f (cx/complex x y)))))))
+     (fn [[x y]] (complex-color from-space wrap-method (f (cx/complex x y)))))))
 

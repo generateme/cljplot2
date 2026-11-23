@@ -217,14 +217,14 @@
   Parameters:
 
   - `f`: the fastmath `Loess` fit (its `:df`, called with `true` - `[fit se]`).
-  - `keys` (sequence of numbers): the grid.
+  - `grid` (sequence of numbers): the grid.
   - `level` (double): the confidence level.
 
   Returns `[lo hi]` vectors: fit ± t((1 + level) / 2, `:df`) · stderr; `NaN` where the stderr is `NaN` (outside the data) or `:df` isn't positive."
-  [f keys level]
+  [f grid level]
   (let [df (double (:df f))
         t (if (m/pos? df) (quantile (t-distribution df) (two-sided level)) ##NaN)
-        fits (mapv #(f % true) keys)]
+        fits (mapv #(f % true) grid)]
     [(mapv (fn [[^double fit ^double se]] (m/- fit (m/* t se))) fits)
      (mapv (fn [[^double fit ^double se]] (m/+ fit (m/* t se))) fits)]))
 
@@ -234,13 +234,13 @@
   Parameters:
 
   - `model`: the fastmath Gaussian process.
-  - `keys` (sequence of numbers): the grid.
+  - `grid` (sequence of numbers): the grid.
   - `level` (double): the confidence level.
 
   Returns `[lo hi]` vectors: mean ± z((1 + level) / 2) · σ."
-  [model keys level]
+  [model grid level]
   (let [z (quantile normal (two-sided level))
-        fits (mapv #(gp/predict model % true) keys)]
+        fits (mapv #(gp/predict model % true) grid)]
     [(mapv (fn [[^double mean ^double sd]] (m/- mean (m/* z sd))) fits)
      (mapv (fn [[^double mean ^double sd]] (m/+ mean (m/* z sd))) fits)]))
 
@@ -251,14 +251,14 @@
 
   - `model-at` (function): the model of a confidence level, see [[regression-model]].
   - `band` (keyword): `:prediction` - the prediction interval, else the confidence interval.
-  - `keys` (sequence of numbers): the grid.
+  - `grid` (sequence of numbers): the grid.
   - `level` (double): the confidence level.
 
   Returns `[lo hi]` vectors of doubles."
-  [model-at band keys level]
+  [model-at band grid level]
   (let [model (model-at level)
         k (if (= :prediction band) :prediction-interval :confidence-interval)
-        intervals (mapv #(k (regression/predict model [%] true)) keys)]
+        intervals (mapv #(k (regression/predict model [%] true)) grid)]
     [(mapv #(double (first %)) intervals) (mapv #(double (second %)) intervals)]))
 
 (defn- bootstrap-band
@@ -267,12 +267,12 @@
   Parameters:
 
   - `b`: the fastmath bootstrap record, a function of x and a level giving `[lo hi]`.
-  - `keys` (sequence of numbers): the grid.
+  - `grid` (sequence of numbers): the grid.
   - `level` (double): the confidence level.
 
   Returns `[lo hi]` vectors."
-  [b keys level]
-  (let [intervals (mapv #(b % level) keys)]
+  [b grid level]
+  (let [intervals (mapv #(b % level) grid)]
     [(mapv first intervals) (mapv second intervals)]))
 
 (defn fit-curve
@@ -287,12 +287,12 @@
     - `:levels` - confidence levels of the bands.
     - `:bootstrap` - the options of `fastmath.interpolation/bootstrap` (`:samples`, `:rng`, `:ci`, `:estimation`).
   - `xs`, `ys` (sequences of numbers): the data, at least the [[fit-requirements]] of the method.
-  - `keys` (sequence of numbers): the grid.
+  - `grid` (sequence of numbers): the grid.
 
   Returns `{:fit [..] :bands [{:level l :lo [..] :hi [..]}]}`: a band at every distinct level, widest first (none for `:band :none`); `NaN` where a band is undefined.
 
   Fit errors propagate."
-  [{:keys [method params band bootstrap] requested-levels :levels} xs ys keys]
+  [{:keys [method params band bootstrap] requested-levels :levels} xs ys grid]
   (let [[fxs fys] (if (interpolation-method? method) (prepared xs ys) [(vec xs) (vec ys)])
         ;; lm / glm: one model per level (the line's - the default level - shared with a band at 0.95)
         model-at (memoize (fn [level] (regression-model method params fxs fys level)))
@@ -305,12 +305,12 @@
         band-at (case band
                   :none nil
                   :bootstrap (let [b (interpolation/bootstrap (fit-fn method params) xs ys bootstrap)]
-                               #(bootstrap-band b keys %))
+                               #(bootstrap-band b grid %))
                   (case method
-                    :loess #(loess-band fitted keys %)
-                    :gp #(gp-band gp-object keys %)
-                    (:lm :glm) #(regression-band model-at band keys %)))]
-    {:fit (mapv #(double (fitted %)) keys)
+                    :loess #(loess-band fitted grid %)
+                    :gp #(gp-band gp-object grid %)
+                    (:lm :glm) #(regression-band model-at band grid %)))]
+    {:fit (mapv #(double (fitted %)) grid)
      :bands (if band-at
               (mapv (fn [level] (let [[lo hi] (band-at level)] {:level level :lo lo :hi hi})) levels)
               [])}))

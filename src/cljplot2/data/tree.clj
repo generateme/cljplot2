@@ -167,11 +167,11 @@
 
   See also [[from-levels]], [[from-hclust]], [[leaf-key]]."
   {:cljplot2/api true :cljplot2/options from-parents-options}
-  [rows {:keys [id parent name] :or {id :id parent :parent} :as options}]
+  [rows {:keys [id parent] name-accessor :name :or {id :id parent :parent} :as options}]
   (schema/check-options! from-parents-options options)
   (let [id-of (data/row-accessor :id id)
         parent-of (data/row-accessor :parent parent)
-        name-of (if name (data/row-accessor :name name) id-of)
+        name-of (if name-accessor (data/row-accessor :name name-accessor) id-of)
         ids (map id-of rows)
         known (set ids)
         _ (when-not (= (count known) (count rows))
@@ -237,9 +237,9 @@
       [(conj nodes (assoc (dissoc node :children) :x (double next-x) :y (double (:height node)) :depth depth
                           :parent parent :leaf? true :cluster cluster))
        (m/long-inc next-x)]
-      (let [[nodes' x' kid-indices] (reduce (fn [[ns x ks] child]
-                                              (let [[ns' x'] (placed child [i (m/long-inc depth) cluster] [ns x] cut-of)]
-                                                [ns' x' (conj ks (count ns))]))
+      (let [[nodes' x' kid-indices] (reduce (fn [[placed-so-far x ks] child]
+                                              (let [[placed' x'] (placed child [i (m/long-inc depth) cluster] [placed-so-far x] cut-of)]
+                                                [placed' x' (conj ks (count placed-so-far))]))
                                             [(conj nodes nil) next-x []] (:children node))
             kids (map nodes' kid-indices)]
         [(assoc nodes' i (assoc (dissoc node :children) :x (m// (v/sum (map :x kids)) (double (count kids)))
@@ -385,7 +385,7 @@
         shift (double-array n)
         ancestor (long-array (range n))
         thread (long-array n -1)
-        leaf? (fn [^long v] (empty? (kids v)))
+        leaf-index? (fn [^long v] (empty? (kids v)))
         left-sibling (fn ^long [^long v]
                        (let [j (Array/aget number v)
                              p (Array/aget parent v)]
@@ -393,8 +393,8 @@
         leftmost-sibling (fn ^long [^long v]
                            (let [p (Array/aget parent v)]
                              (if (m/neg? p) v (long (first (kids p))))))
-        next-left (fn ^long [^long v] (if (leaf? v) (Array/aget thread v) (long (first (kids v)))))
-        next-right (fn ^long [^long v] (if (leaf? v) (Array/aget thread v) (long (peek (kids v)))))
+        next-left (fn ^long [^long v] (if (leaf-index? v) (Array/aget thread v) (long (first (kids v)))))
+        next-right (fn ^long [^long v] (if (leaf-index? v) (Array/aget thread v) (long (peek (kids v)))))
         separation (fn ^double [^long a ^long b] (if (m/== (Array/aget parent a) (Array/aget parent b)) 1.0 2.0))
         move-subtree! (fn [^long wl ^long wr ^double sh]
                         (let [subtrees (double (m/- (Array/aget number wr) (Array/aget number wl)))
@@ -455,7 +455,7 @@
                                       default-ancestor)))))))))
         first-walk (fn first-walk [^long v]
                      (let [w (long (left-sibling v))]
-                       (if (leaf? v)
+                       (if (leaf-index? v)
                          (Array/aset prelim v (if (m/neg? w) 0.0 (m/+ (Array/aget prelim w) (double (separation v w)))))
                          (let [ks (kids v)
                                first-kid (long (first ks))
@@ -533,12 +533,12 @@
 
   See also [[layout]], [[tidy-breadths]]."
   {:cljplot2/api true :cljplot2/options node-link-layout-options}
-  [root {:keys [layout links circular ^double span] :or {layout :tidy links :diagonal span 360.0} :as options}]
+  [root {:keys [links circular ^double span] layout-kind :layout :or {layout-kind :tidy links :diagonal span 360.0} :as options}]
   (schema/check-options! node-link-layout-options options)
   (let [[placed-nodes] (placed root [nil 0 nil] [[] 0] (constantly nil))
-        breadths (if (= :cluster layout) (mapv :x placed-nodes) (tidy-breadths placed-nodes))
+        breadths (if (= :cluster layout-kind) (mapv :x placed-nodes) (tidy-breadths placed-nodes))
         max-depth (m/max 1.0 (v/mx (map :depth placed-nodes)))
-        depth-pos-of (fn ^double [node] (if (and (= :cluster layout) (:leaf? node)) max-depth (double (:depth node))))
+        depth-pos-of (fn ^double [node] (if (and (= :cluster layout-kind) (:leaf? node)) max-depth (double (:depth node))))
         lo (v/mn breadths)
         hi (v/mx breadths)
         breadth-nodes (mapv (fn [node ^double b] (assoc node :breadth (m/- b lo) :depth-pos (depth-pos-of node))) placed-nodes breadths)

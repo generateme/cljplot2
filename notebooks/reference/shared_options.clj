@@ -364,10 +364,16 @@
 
 (nu/options-table (describe/fragment-rows :shading))
 
-(plot/render-image {:charts [(chart/surface {:f (fn [[x y]] (m/sin (m/* x y)))
-                                             :domain {:x [-2 2] :y [-2 2]} :color [120 160 220]
-                                             :ambient 0.2 :light [1.0 1.0 -0.5]})]}
-                   {:width 500 :height 400})
+;; The default shading beside a darker ambient share lit from the right.
+
+(plot/render-image (plot/arrange [{:charts [(chart/surface {:f (fn [[x y]] (m/sin (m/* x y)))
+                                                            :domain {:x [-2 2] :y [-2 2]} :color [120 160 220]})]
+                                   :labels {:title "default shading"}}
+                                  {:charts [(chart/surface {:f (fn [[x y]] (m/sin (m/* x y)))
+                                                            :domain {:x [-2 2] :y [-2 2]} :color [120 160 220]
+                                                            :ambient 0.2 :light [1.0 1.0 -0.5]})]
+                                   :labels {:title ":ambient 0.2 :light [1 1 -0.5]"}}])
+                   {:width 800 :height 400})
 
 ;; ### Text style
 

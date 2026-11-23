@@ -1,11 +1,11 @@
 (ns cljplot2.data.dots
   "Dot plot bins: values grouped into bins of one width, each bin a stack of dots (see [[cljplot2.chart.dotplot]]).
 
-  * [[dot-density-bins]] - Wilkinson's dot density (ggplot `geom_dotplot` `method \"dotdensity\"`, Vega `dotbin`): a
+  * [[dot-density-bins]] - Wilkinson's dot density (ggplot `geom_dotplot` `method = dotdensity`, Vega `dotbin`): a
     bin starts at the smallest value not yet binned and holds the values below `start + binwidth`; its centre is the
     midpoint of its smallest and largest value - so neighbouring centres can be closer than one bin width (and dots
     one bin wide overlap a little), as in ggplot
-  * [[fixed-bins]] - histogram bins of one width from an origin (ggplot `method \"histodot\"`, Vega `bin` + `stack`)
+  * [[fixed-bins]] - histogram bins of one width from an origin (ggplot `method = histodot`, Vega `bin` + `stack`)
 
   A bin is `{:center c :values [v ...]}` (values increasing).
 
@@ -17,7 +17,7 @@
 (set! *unchecked-math* :warn-on-boxed)
 
 (defn default-binwidth
-  "Default bin width of a dot plot: the range of the values over 30 (ggplot's default).
+  "Gives the default bin width of a dot plot: the range of the values over 30 (ggplot's default).
 
   Parameters:
 
@@ -32,7 +32,7 @@
     (if (m/> hi lo) (m// (m/- hi lo) 30.0) 1.0)))
 
 (defn dot-density-bins
-  "Wilkinson dot density bins of sorted values (see the namespace doc).
+  "Gives the Wilkinson dot density bins of sorted values (see the namespace doc).
 
   Parameters:
 
@@ -52,7 +52,7 @@
         (recur (seq more) (conj bins {:center (m/* 0.5 (m/+ start (double (peek bin-values)))) :values bin-values}))))))
 
 (defn fixed-bins
-  "Histogram bins of one width from an origin, as stacks of dots.
+  "Gives the histogram bins of one width from an origin, as stacks of dots.
 
   Parameters:
 

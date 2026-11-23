@@ -13,7 +13,7 @@
 (set! *unchecked-math* :warn-on-boxed)
 
 (defn estimate
-  "Kernel density estimate of a sample with the span its curve is drawn over.
+  "Gives the kernel density estimate of a sample with the span its curve is drawn over.
 
   Parameters:
 
@@ -37,22 +37,21 @@
      :hi (m/+ (v/mx values) (m/* reach h))}))
 
 (defn grid-points
-  "Equally spaced points from `lo` to `hi`, both included.
+  "Gives equally spaced points from `lo` to `hi`, both included.
 
   Parameters:
 
   - `lo`, `hi` (doubles): the first and the last point.
-  - `n` (long): the number of points, at least 2 (1 gives `[NaN]` or an infinite step).
+  - `n` (long): the number of points, at least 2 (the callers' option schemas require it).
 
   Returns a vector of `n` doubles.
 
   See also [[curve]]."
   [^double lo ^double hi ^long n]
-  (let [step (m// (m/- hi lo) (m/long-dec n))]
-    (mapv (fn [^double v] (m/+ lo (m/* step v))) (range n))))
+  (vec (m/slice-range lo hi n)))
 
 (defn curve
-  "Curve of a density estimate at the given points.
+  "Gives the curve of a density estimate at the given points.
 
   Parameters:
 

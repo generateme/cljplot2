@@ -142,26 +142,26 @@
 
   Parameters:
 
-  - `options` (map): chart options - `:place`, `:bottom-share`.
+  - `chart-options` (map): chart options - `:place`, `:bottom-share`.
   - `mapping` (map): the chart's merged mapping.
   - `default-place`: the chart's placement without a `:y` mapping.
 
   Returns the explicit `:place`, else `:band` with a `:y` mapping, else `default-place`.
 
   Throws `ex-info {:key :place}` for `:band` without a `:y` mapping or another placement with one, `ex-info {:key :bottom-share}` for `:bottom-share` without `:place :bottom`."
-  [options mapping default-place]
+  [chart-options mapping default-place]
   (let [y? (some? (:y mapping))
-        place (get options :place (if y? :band default-place))]
+        place (get chart-options :place (if y? :band default-place))]
     (cond
-      (and (some? (:bottom-share options)) (not= :bottom place))
-      (schema/fail! "Strip :bottom-share needs :place :bottom." {:key :bottom-share :value (:bottom-share options)})
+      (and (some? (:bottom-share chart-options)) (not= :bottom place))
+      (schema/fail! "Strip :bottom-share needs :place :bottom." {:key :bottom-share :value (:bottom-share chart-options)})
       (and (= :band place) (not y?)) (schema/fail! "Strip :place :band needs a :y mapping." {:key :place :value place})
       (and y? (not= :band place)) (schema/fail! "A strip with a :y mapping is placed in bands (:place :band)."
                                                  {:key :place :value place})
       :else place)))
 
 (defn- categorical-level?
-  "Is `v` a categorical level by itself: a string, keyword or interval (shingle / bin)?"
+  "Tests whether `v` is a categorical level by itself: a string, keyword or interval (shingle / bin)."
   [v]
   (or (string? v) (keyword? v) (shingle/interval? v)))
 
@@ -213,26 +213,26 @@
 
   Parameters:
 
-  - `options` (map): chart options - `::mirror` (the dimension), `:position`.
+  - `chart-options` (map): chart options - `::mirror` (the dimension), `:position`.
   - `dims` (vector): the grouping dimensions.
 
   Returns the index, `nil` without `::mirror`.
 
   Throws `ex-info {:key :mirror}` when the dimension isn't a grouping dimension or comes with `:position :mirror`."
-  [options dims]
-  (when-let [k (::mirror options)]
+  [chart-options dims]
+  (when-let [k (::mirror chart-options)]
     (let [i (.indexOf ^java.util.List dims k)]
       (when (m/neg? i)
         (schema/fail! "Strip :mirror should be a mapped grouping dimension (an ordinal aesthetic or :group)."
                       {:key :mirror :value k}))
-      (when (= :mirror (:position options))
+      (when (= :mirror (:position chart-options))
         (schema/fail! "Strip :mirror doesn't combine with :position :mirror (half slots)." {:key :mirror :value k}))
       i)))
 
 (defn- without-index
-  "Group key `key` (a vector) without its value at index `i`."
-  [key ^long i]
-  (into (subvec key 0 i) (subvec key (m/long-inc i))))
+  "Gives the group key `group-key` (a vector) without its value at index `i`."
+  [group-key ^long i]
+  (into (subvec group-key 0 i) (subvec group-key (m/long-inc i))))
 
 (defn- mirrored-level
   "Gives the level of the mirror dimension drawn on the negative side.
@@ -253,7 +253,7 @@
     (levels 1)))
 
 (defn- shared-levels?
-  "Does some level hold items of two or more slots?
+  "Tests whether some level holds items of two or more slots.
 
   Parameters:
 
@@ -285,7 +285,7 @@
   Parameters:
 
   - `chart-split` (map): `{:groups {panel rows} :mapping m}` - the chart's rows per panel and merged mapping.
-  - `options` (map): chart options (see [[options]]) and the internal options of charts built on strips:
+  - `chart-options` (map): chart options (see [[options]]) and the internal options of charts built on strips:
     - `::count-rows true` - `:x` isn't read: every item has `:values []` and `:n` - its count of rows (an item per level with rows; no `:x` errors or drops)
     - `::rows true` - items also carry their `:rows`
     - `::mirror k` - the chart's `:mirror` dimension (see the namespace doc): items carry `:mirrored?`, the result `:mirror? true`; charts without a negative side never pass it
@@ -296,15 +296,15 @@
   Returns `{:place :position :items :group-keys :slot-keys :shared-levels? :mirror? :dims :panels :dropped}`: `:items` - `{panel [item ...]}`, an item `{:level :key :aesthetics :values :n :slot}` (`:level` `nil` without bands, `:values` - the finite `:x` numbers, `:n` - their count); `:dims` - the grouping dimensions (the order of a group key's values); `:slot-keys` - the keys slots are given to (group keys without the mirror dimension); `:shared-levels?` - some level holds two or more of them (the default `:position` is then `:dodge`, else `:overlay`); `:panels` - the split groups; `:dropped` - `{dim n}`.
 
   Throws `ex-info {:key :mapping}` when values aren't mapped, or there are rows but no finite `:x` value (or, placed in bands, no valid `:y` value); `ex-info {:key :n-format}` for an `:n-format` that can't format a count; `ex-info {:key :mirror}` for a mirror dimension that isn't a grouping dimension, hasn't exactly two levels or comes with `:position :mirror`; `ex-info {:key :place}` for a placement that doesn't fit the mapping or levels."
-  [{:keys [groups mapping]} options default-place env]
-  (let [_ (when-let [fmt (:n-format options)]
+  [{:keys [groups mapping]} chart-options default-place env]
+  (let [_ (when-let [fmt (:n-format chart-options)]
             (try (format fmt 1)
                  (catch Exception e
                    (schema/fail! "Strip :n-format should format a count (e.g. \"n=%d\")."
                                  {:key :n-format :value fmt :cause (ex-message e)}))))
-        place (place-of options mapping default-place)
+        place (place-of chart-options mapping default-place)
         {:keys [panels dims dropped]} (group/split groups (dissoc mapping :y) env)
-        count-rows? (::count-rows options)
+        count-rows? (::count-rows chart-options)
         _ (when (and (not count-rows?) (nil? (:x mapping)))
             (schema/fail! "Strip values aren't mapped: map them on the axis other than the levels (see :level-axis)."
                           {:key :mapping :value :values}))
@@ -318,10 +318,10 @@
         _ (when y-of (check-levels! y-levels (:plot-scales env)))
         level-rank (zipmap (distinct y-levels) (range))
         group-keys (group/ordered-keys (mapcat #(map :key %) (vals panels)) dims (:plot-scales env))
-        mi (mirror-index options dims)
+        mi (mirror-index chart-options dims)
         slot-key (if mi #(without-index % mi) identity)
         slot-keys (vec (distinct (map slot-key group-keys)))
-        mirrored (when (and mi (seq group-keys)) (mirrored-level group-keys mi (::mirror options)))
+        mirrored (when (and mi (seq group-keys)) (mirrored-level group-keys mi (::mirror chart-options)))
         grouped-items (update-vals panels
                            (fn [gs]
                              (vec (for [g gs
@@ -333,13 +333,13 @@
                                     (cond-> {:level level :key (:key g) :aesthetics (:aesthetics g) :values values
                                              :n (if count-rows? (count rows) (count values))}
                                       mi (assoc :mirrored? (= mirrored (nth (:key g) mi)))
-                                      (::rows options) (assoc :rows rows))))))
+                                      (::rows chart-options) (assoc :rows rows))))))
         shared? (shared-levels? grouped-items slot-key)
-        position (get options :position (if shared? :dodge :overlay))
+        position (get chart-options :position (if shared? :dodge :overlay))
         ;; reading order: the first group on top of horizontal strips (the high cross end), on the left of vertical
         ;; (flipped) ones (the low end); ridgelines grow the first group toward the next level (the high end)
-        first-high? (or (::ridge options) (not (:flip? env)))
-        slot-of (if (seq slot-keys) (slots position slot-keys (double (get options :dodge-gap 0.1)) first-high?) {})
+        first-high? (or (::ridge chart-options) (not (:flip? env)))
+        slot-of (if (seq slot-keys) (slots position slot-keys (double (get chart-options :dodge-gap 0.1)) first-high?) {})
         items (update-vals grouped-items (fn [its] (mapv #(assoc % :slot (slot-of (slot-key (:key %)))) its)))
         x-dropped (if x-of
                     (long (count (remove #(let [v (x-of %)] (and (number? v) (m/valid-double? (double v)))) all-rows)))
@@ -384,13 +384,13 @@
   Parameters:
 
   - `place`: the chart's placement.
-  - `options` (map): chart options - `:bottom-share` (default 0.15), `:padding`.
+  - `chart-options` (map): chart options - `:bottom-share` (default 0.15), `:padding`.
 
   Returns `{:x [0.05 0.05]}`, for `:bottom` also `{:y [bottom-share 0]}`, with the `:padding` option merged over it."
-  [place options]
+  [place chart-options]
   (merge {:x [0.05 0.05]}
-         (when (= :bottom place) {:y [(double (get options :bottom-share 0.15)) 0.0]})
-         (:padding options)))
+         (when (= :bottom place) {:y [(double (get chart-options :bottom-share 0.15)) 0.0]})
+         (:padding chart-options)))
 
 (defn explicit-padding
   "Gives the `:padding-explicit` stat of a strip chart (see [[cljplot2.data.rows/explicit-padding]]).
@@ -398,11 +398,11 @@
   Parameters:
 
   - `place`: the chart's placement.
-  - `options` (map): chart options - `:bottom-share` (default 0.15), `:padding`.
+  - `chart-options` (map): chart options - `:bottom-share` (default 0.15), `:padding`.
 
   Returns the requests: for `:bottom` the room below the data, `{:y [bottom-share nil]}`, with the `:padding` option over it; `nil` without any."
-  [place options]
-  (data/explicit-padding (when (= :bottom place) {:y [(double (get options :bottom-share 0.15)) nil]}) options))
+  [place chart-options]
+  (data/explicit-padding (when (= :bottom place) {:y [(double (get chart-options :bottom-share 0.15)) nil]}) chart-options))
 
 (defn extents
   "Gives the position extents of a strip chart per panel.
@@ -535,9 +535,9 @@
   (if (:mirrored? item) -1.0 1.0))
 
 (defn- n-label-text
-  "Gives the n label text of an item: its count `:n` formatted by the option `:n-format` of `options` (default `n=%d`)."
-  [options item]
-  (format (get options :n-format "n=%d") (:n item)))
+  "Gives the n label text of an item: its count `:n` formatted by the option `:n-format` of `chart-options` (default `n=%d`)."
+  [chart-options item]
+  (format (get chart-options :n-format "n=%d") (:n item)))
 
 (defn- label-content
   "Gives the label content of an end label: `{:kind :label :role :text}` - its `:text` in its `:role` (default `:annotation`), with its `:color` when given."
@@ -682,7 +682,7 @@
                labels))))
 
 (defn- boxes-overlap?
-  "Do two pixel boxes `{:x :y :w :h}` overlap (touching edges don't)?"
+  "Tests whether two pixel boxes `{:x :y :w :h}` overlap (touching edges don't)."
   [{^double ax :x ^double ay :y ^double aw :w ^double ah :h} {^double bx :x ^double by :y ^double bw :w ^double bh :h}]
   (and (m/< ax (m/+ bx bw)) (m/< bx (m/+ ax aw))
        (m/< ay (m/+ by bh)) (m/< by (m/+ ay ah))))
@@ -769,14 +769,14 @@
 
   Parameters:
 
-  - `options` (map): chart options - `:n-label` (default false), `:n-format`.
+  - `chart-options` (map): chart options - `:n-label` (default false), `:n-format`.
   - `items` (map): `{panel [item ...]}` (see [[split]]).
   - `env` (map): `:theme`, `:hint`, `:flip?` (see [[end-label-room]]).
 
   Returns room past the largest values for the count labels, past the smallest for `:mirrored?` items; `nil` without n labels or items."
-  [options items env]
-  (when (data/option options :n-label false)
-    (end-label-room (map (fn [item] {:text (n-label-text options item) :side (n-label-side item)}) (mapcat val items))
+  [chart-options items env]
+  (when (data/option chart-options :n-label false)
+    (end-label-room (map (fn [item] {:text (n-label-text chart-options item) :side (n-label-side item)}) (mapcat val items))
                     env)))
 
 (defn draw-n-labels!
@@ -790,22 +790,22 @@
   - `pl` (map): the chart's [[placement]].
   - `items` (sequence): one panel's items.
   - `top-value` (function): item -> its largest drawn value (the smallest for a `:mirrored?` item, which is labelled toward decreasing values).
-  - `options` (map): chart options - `:n-label` (default false), `:n-format` (default `n=%d`).
+  - `chart-options` (map): chart options - `:n-label` (default false), `:n-format` (default `n=%d`).
   - `scales` (map): finalized position scales.
   - `env` (map): the drawing environment.
 
   Returns `nil`. See also [[draw-end-labels!]]."
-  [canvas pl items top-value options scales env]
-  (when (data/option options :n-label false)
+  [canvas pl items top-value chart-options scales env]
+  (when (data/option chart-options :n-label false)
     (draw-end-labels! canvas pl
                       (map (fn [{:keys [level slot] :as item}]
                              {:level level :slot slot :at (top-value item) :side (n-label-side item)
-                              :text (n-label-text options item)})
+                              :text (n-label-text chart-options item)})
                            items)
                       scales env)))
 
 (defn ridges?
-  "Does a histogram or density draw ridgelines?
+  "Tests whether a histogram or density draws ridgelines.
 
   A numeric `:y` otherwise is ignored, as before ridgelines (a plot mapping shared with xy charts).
 
@@ -827,14 +827,14 @@
   Parameters:
 
   - `chart-split` (map): `{:groups {panel rows} :mapping m}`.
-  - `options` (map): chart options - `:position`: `:overlay` (default) or `:mirror` (a double ridgeline: the first group grows toward higher `:y`, the second away from it).
+  - `chart-options` (map): chart options - `:position`: `:overlay` (default) or `:mirror` (a double ridgeline: the first group grows toward higher `:y`, the second away from it).
   - `env` (map): as in [[split]].
 
   Returns the result of [[split]].
 
   Throws `ex-info {:key :position}` for other positions."
-  [chart-split options env]
-  (let [position (get options :position :overlay)]
+  [chart-split chart-options env]
+  (let [position (get chart-options :position :overlay)]
     (when-not (#{:overlay :mirror} position)
       (schema/fail! "Ridgelines (a categorical or bands :y) take :position :overlay or :mirror."
                     {:key :position :value position}))
@@ -908,7 +908,7 @@
     [#(when-not (or (some? (:x %)) (some? (:y %))) "should map :x or :y (the values)") nil]))
 
 (defn- categorical-axis?
-  "Does a mapped dimension hold strip levels?
+  "Tests whether a mapped dimension holds strip levels.
 
   Parameters:
 
@@ -925,7 +925,7 @@
           (some #(categorical-level? (value-of %)) rows)))))
 
 (defn- numeric-axis?
-  "Does a mapped dimension have some finite number among its values?
+  "Tests whether a mapped dimension has some finite number among its values.
 
   Parameters:
 
@@ -944,7 +944,7 @@
 
   Parameters:
 
-  - `options` (map): chart options - `:level-axis` always wins.
+  - `chart-options` (map): chart options - `:level-axis` always wins.
   - `mapping` (map): the chart's merged mapping.
   - `rows` (sequence): the chart's rows (all panels).
   - `plot-scales` (map): the plot's `:scales`.
@@ -952,8 +952,8 @@
   Returns `:x` or `:y`: the categorical axis (see [[categorical-axis?]]); with neither categorical, `:x` when only `:y` is mapped (one vertical level), else `:y` (one level, a count, or an axis without values - the strip frame reports it).
 
   Throws `ex-info {:key :level-axis}` when both axes are categorical, or both have numbers."
-  [options mapping rows plot-scales]
-  (or (:level-axis options)
+  [chart-options mapping rows plot-scales]
+  (or (:level-axis chart-options)
       (let [x-categorical? (categorical-axis? :x mapping rows plot-scales)
             y-categorical? (categorical-axis? :y mapping rows plot-scales)]
         (cond

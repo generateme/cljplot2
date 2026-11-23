@@ -56,27 +56,27 @@
 ;; lattice cells
 
 (defn- floor-half
-  "Half of a long rounded toward negative infinity.
+  "Gives half of a long rounded toward negative infinity.
 
   Parameters:
 
   - `k` (long): any long.
 
   Returns `k / 2` floored, e.g. -1 for -1."
-  ^long [^long k] (Math/floorDiv k 2))
+  ^long [^long k] (m/>> k 1))
 
 (def ^:private lattices
   "Per cell type: `:cell` - fastmath cell `[q r]` of lattice cell `[i j]`; `:origin` - the fastmath-space centre of
   lattice cell `[0 0]`; `:pitch` - fastmath-space distance between neighbouring columns and rows."
   {:square {:cell (fn [^long i ^long j] [i j]) :origin [0.5 0.5] :pitch [1.0 1.0]}
-   :shifted-square {:cell (fn [^long i ^long j] [(- i (floor-half j)) j]) :origin [0.5 0.5] :pitch [1.0 1.0]}
-   :pointy-hex {:cell (fn [^long i ^long j] [(- i (floor-half j)) j]) :origin [0.0 0.0] :pitch [1.0 m/SQRT3_2]}
-   :flat-hex {:cell (fn [^long i ^long j] [i (- j (floor-half i))]) :origin [0.0 0.0] :pitch [m/SQRT3_2 1.0]}
-   :rhombus {:cell (fn [^long i ^long j] [(- i (floor-half j)) j]) :origin [0.25 m/SQRT3_4] :pitch [1.0 m/SQRT3_2]}
-   :triangle {:cell (fn [^long i ^long j] [(- i j) j]) :origin [0.0 m/SQRT3_4] :pitch [0.5 m/SQRT3_2]}})
+   :shifted-square {:cell (fn [^long i ^long j] [(m/long-sub i (floor-half j)) j]) :origin [0.5 0.5] :pitch [1.0 1.0]}
+   :pointy-hex {:cell (fn [^long i ^long j] [(m/long-sub i (floor-half j)) j]) :origin [0.0 0.0] :pitch [1.0 m/SQRT3_2]}
+   :flat-hex {:cell (fn [^long i ^long j] [i (m/long-sub j (floor-half i))]) :origin [0.0 0.0] :pitch [m/SQRT3_2 1.0]}
+   :rhombus {:cell (fn [^long i ^long j] [(m/long-sub i (floor-half j)) j]) :origin [0.25 m/SQRT3_4] :pitch [1.0 m/SQRT3_2]}
+   :triangle {:cell (fn [^long i ^long j] [(m/long-sub i j) j]) :origin [0.0 m/SQRT3_4] :pitch [0.5 m/SQRT3_2]}})
 
 (defn- lattice-cell-offsets
-  "Corners of one lattice cell relative to its indices, in index space (see the namespace doc).
+  "Gives the corners of one lattice cell relative to its indices, in index space (see the namespace doc).
 
   Parameters:
 
@@ -103,7 +103,7 @@
              [t (into {} (for [a [0 1] b [0 1]] [[a b] (lattice-cell-offsets t a b)]))])))
 
 (defn- centred
-  "Corner offsets moved along one axis so their extent is centred on 0.
+  "Gives the corner offsets moved along one axis so their extent is centred on 0.
 
   Parameters:
 
@@ -117,7 +117,7 @@
     (mapv #(update % k (fn [^double v] (m/- v mid))) offsets)))
 
 (defn lattice-offsets
-  "Corners of a lattice cell relative to its indices, in index space (see the namespace doc).
+  "Gives the corners of a lattice cell relative to its indices, in index space (see the namespace doc).
 
   Parameters:
 
@@ -129,12 +129,12 @@
 
   See also [[lattice-extent]], [[lattice-reach]]."
   [cell-type i j centre-x? centre-y?]
-  (cond-> (get-in parity-offsets [cell-type [(Math/floorMod (long i) 2) (Math/floorMod (long j) 2)]])
+  (cond-> (get-in parity-offsets [cell-type [(m/long-mod i 2) (m/long-mod j 2)]])
     centre-x? (centred 0)
     centre-y? (centred 1)))
 
 (defn lattice-extent
-  "Extent of the lattice cells of a type around their points, in index units.
+  "Gives the extent of the lattice cells of a type around their points, in index units.
 
   Parameters:
 
@@ -150,7 +150,7 @@
     [(extent 0) (extent 1)]))
 
 (defn lattice-reach
-  "Reach of the lattice cells of a type from their points, in index units.
+  "Gives the reach of the lattice cells of a type from their points, in index units.
 
   Parameters:
 
@@ -164,7 +164,7 @@
 ;; binned cells
 
 (defn shape-factor
-  "Shape factor `s` of the normalized space of binned cells (see the namespace doc).
+  "Gives the shape factor `s` of the normalized space of binned cells (see the namespace doc).
 
   Parameters:
 
@@ -181,7 +181,7 @@
     :else 1.0))
 
 (defn- span
-  "Low end and span of values.
+  "Gives the low end and span of values.
 
   Parameters:
 
@@ -203,7 +203,7 @@
   :scott-correlated)
 
 (defn- grid-size
-  "Cell size of the binning grid in the normalized space.
+  "Gives the cell size of the binning grid in the normalized space.
 
   Parameters:
 
@@ -219,7 +219,7 @@
     :else (stats/estimate-grid-size points (or bins default-size-method) {:grid cell})))
 
 (defn- proportional-box
-  "Bounding box of normalized points grown to a given proportion.
+  "Gives the bounding box of normalized points grown to a given proportion.
 
   Parameters:
 
@@ -266,7 +266,7 @@
             g (grid/grid cell size)
             unit-cells (update-vals panel-points
                                     (fn [pts]
-                                      (mapv (fn [{:keys [mid count]}] {:corners (grid/corners g mid) :count count})
+                                      (mapv (fn [{:keys [mid] cell-count :count}] {:corners (grid/corners g mid) :count cell-count})
                                             (:bins-maps (stats/histogram2d (map to-unit pts) size {:grid cell})))))
             [[u0 u1] [v0 v1]] (proportional-box (mapcat :corners (mapcat val unit-cells)) s)
             [lo-x lo-y] (from-unit [u0 v0])
@@ -278,7 +278,7 @@
 ;; drawing
 
 (defn shrunk
-  "Cell corners shrunk toward their mean.
+  "Gives the cell corners shrunk toward their mean.
 
   Parameters:
 

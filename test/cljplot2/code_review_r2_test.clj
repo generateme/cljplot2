@@ -7,9 +7,10 @@
             [fastmath.vector :as v]
             [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
+            [cljplot2.data.graph :as graph]
             [cljplot2.data.space3d :as space]
             [cljplot2.describe :as describe]
-            [cljplot2.test-util :refer [error error-data]])
+            [cljplot2.test-util :refer [error]])
   (:import [fastmath.vector Vec3]))
 
 (defn- old-shade
@@ -78,7 +79,12 @@
   (testing "boundary: only the shaded 3D charts take the group"
     (is (every? (fn [ch] (some #(= :light (:key %)) (describe/options ch))) [(chart/surface {}) (chart/cloud {})]))
     (is (not-any? #(#{:ambient :light} (:key %)) (describe/options (chart/image))))
-    (is (some? (error-data #(plot/build {:charts [(chart/text {:text "a" :x 1 :y 1 :ambient 0.5})]}))))))
+    (is (= [:charts 0 :options :ambient] (:in (error #(plot/build {:charts [(chart/text {:text "a" :x 1 :y 1 :ambient 0.5})]})))))
+    (is (= [:charts 0 :options :light] (:in (error #(plot/build {:charts [(chart/text {:text "a" :x 1 :y 1 :light [1 0 0]})]})))))))
+
+(deftest graph-directed-test
+  (testing "boundary: :directed? missing, nil or false - false; true - true (the documented default holds for nil)"
+    (is (= [false false false true] (map #(:directed? (graph/graph [] %)) [{} {:directed? nil} {:directed? false} {:directed? true}])))))
 
 (defn- old-rotation
   "The view rotation before the matrix: the hand-written formula."

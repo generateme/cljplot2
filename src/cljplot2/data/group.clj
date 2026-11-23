@@ -48,7 +48,7 @@
                     {:key :mapping :value k}))))
 
 (defn- kept-value?
-  "Is a grouping value kept?
+  "Tests whether a grouping value is kept.
 
   Parameters:
 
@@ -62,24 +62,19 @@
   (or (if (aesthetic/dim? k) (aesthetic/kept-value? k (get plot-scales k {}) v) (data/valid-value? v))
       (and na-level? (nil? v))))
 
-(defn- level-key
-  "Key of a level in a domain index: a number as a double (so `1` and `1.0` match), other values as they are."
-  [v]
-  (if (number? v) (double v) v))
-
 (defn- level-rank
   "Gives the sort rank of a grouping value.
 
   Parameters:
 
-  - `domain-index` (map): level key (see [[level-key]]) -> its index in an explicit order; `nil` - natural order.
+  - `domain-index` (map): level key (see [[cljplot2.scale.aesthetic/level-key]]) -> its index in an explicit order; `nil` - natural order.
   - `v`: the value.
 
   Returns `[0 index]` for a value of the order (values outside it after the indexed ones), `[1 v]` without an order, `[2 nil]` for NA - last."
   [domain-index v]
   (cond
     (nil? v) [2 nil]
-    domain-index [0 (get domain-index (level-key v) Long/MAX_VALUE)]
+    domain-index [0 (get domain-index (aesthetic/level-key v) Long/MAX_VALUE)]
     :else [1 v]))
 
 (defn ordered-keys
@@ -87,23 +82,23 @@
 
   Parameters:
 
-  - `keys` (collection): group keys, vectors of values over `dims`, in first-appearance order (repeats allowed).
+  - `group-keys` (collection): group keys, vectors of values over `dims`, in first-appearance order (repeats allowed).
   - `dims` (vector): the grouping dimensions.
   - `plot-scales` (map): the plot's `:scales`.
 
   Returns a vector of the distinct keys, per dimension in the explicit ordinal `:domain` order of its plot scale, in first-appearance order for an identity scale, otherwise in natural order; NA (`nil`) last. Keys with incomparable values keep first-appearance order."
-  [keys dims plot-scales]
-  (let [ks (vec (distinct keys))
+  [group-keys dims plot-scales]
+  (let [ks (vec (distinct group-keys))
         indices (vec (map-indexed (fn [i k]
                                     (let [spec (get plot-scales k)
                                           domain (:domain spec)]
                                       (cond
                                         (and (aesthetic/dim? k) (aesthetic/identity-scale? spec))
-                                        (zipmap (distinct (keep #(some-> (nth % i) level-key) ks)) (range))
+                                        (zipmap (distinct (keep #(some-> (nth % i) aesthetic/level-key) ks)) (range))
                                         (and (sequential? domain) (aesthetic/dim? k))
-                                        (zipmap (map level-key domain) (range)))))
+                                        (zipmap (map aesthetic/level-key domain) (range)))))
                                   dims))]
-    (try (vec (sort-by (fn [key] (mapv level-rank indices key)) ks))
+    (try (vec (sort-by (fn [group-key] (mapv level-rank indices group-key)) ks))
          (catch ClassCastException _ ks))))
 
 (defn split
@@ -129,15 +124,15 @@
         (schema/fail! "No valid values for a mapped dimension - check the mapping." {:key :mapping :value k :rows row-count}))
       (check-groupable! k (filter data/valid-value? vs) plot-scales))
     (let [key-of (fn [row] (mapv #(% row) accessors))
-          kept? (fn [key] (every? identity (map #(kept-value? %1 na-level? plot-scales %2) dims key)))
+          kept? (fn [group-key] (every? identity (map #(kept-value? %1 na-level? plot-scales %2) dims group-key)))
           panels (update-vals groups
                               (fn [rows]
-                                (let [keyed (keep (fn [row] (let [key (key-of row)] (when (kept? key) [key row]))) rows)
-                                      by-key (reduce (fn [acc [key row]] (update acc key (fnil conj []) row)) {} keyed)]
-                                  (mapv (fn [key] {:key key
-                                                   :aesthetics (into {} (keep (fn [[k v]] (when (aesthetic/dim? k) [k v])))
-                                                                     (map vector dims key))
-                                                   :rows (by-key key)})
+                                (let [keyed (keep (fn [row] (let [group-key (key-of row)] (when (kept? group-key) [group-key row]))) rows)
+                                      by-key (reduce (fn [acc [group-key row]] (update acc group-key (fnil conj []) row)) {} keyed)]
+                                  (mapv (fn [group-key] {:key group-key
+                                                         :aesthetics (into {} (keep (fn [[k v]] (when (aesthetic/dim? k) [k v])))
+                                                                           (map vector dims group-key))
+                                                         :rows (by-key group-key)})
                                         (ordered-keys (distinct (map first keyed)) dims plot-scales)))))]
       {:panels panels
        :dims dims
@@ -188,17 +183,17 @@
   Parameters:
 
   - `k` (keyword): the aesthetic.
-  - `continuous` (map): the result of [[continuous]].
+  - `continuous-split` (map): the result of [[continuous]].
   - `panel-values` (map): `{panel [value ...]}` of what the chart draws, NA as `nil`.
   - `plot-scales` (map): the plot's `:scales`.
 
-  Returns `{:extents :dropped :na?}`: `{panel {k extent}}` of the non-NA values under the plot's scale spec (panels without values left out), the rows `continuous` dropped, and whether some value is NA (truthy)."
-  [k continuous panel-values plot-scales]
+  Returns `{:extents :dropped :na?}`: `{panel {k extent}}` of the non-NA values under the plot's scale spec (panels without values left out), the rows `continuous-split` dropped, and whether some value is NA (truthy)."
+  [k continuous-split panel-values plot-scales]
   {:extents (into {} (keep (fn [[panel vs]]
                              (when-let [e (aesthetic/value-extent k (get plot-scales k) (remove nil? vs))]
                                [panel {k e}])))
                   panel-values)
-   :dropped (:dropped continuous)
+   :dropped (:dropped continuous-split)
    :na? (some nil? (mapcat val panel-values))})
 
 (defn continuous-color-stats
@@ -206,9 +201,9 @@
 
   Parameters:
 
-  - `continuous`, `panel-values`, `plot-scales`: as in [[continuous-stats]]."
-  [continuous panel-values plot-scales]
-  (continuous-stats :color continuous panel-values plot-scales))
+  - `continuous-split`, `panel-values`, `plot-scales`: as in [[continuous-stats]]."
+  [continuous-split panel-values plot-scales]
+  (continuous-stats :color continuous-split panel-values plot-scales))
 
 (defn aesthetic-extents
   "Gives the aesthetic extents of split groups.

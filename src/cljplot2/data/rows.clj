@@ -175,7 +175,7 @@
     :else (schema/fail! "Mapping accessor must be a keyword or a function." {:key :mapping :value k})))
 
 (defn temporal?
-  "Is `v` a `java.time` value (a `java.time.temporal.Temporal`)?
+  "Tests whether `v` is a `java.time` value (a `java.time.temporal.Temporal`).
 
   Note: `Year` and `YearMonth` are temporal; see [[period-start]]."
   [v]
@@ -207,14 +207,14 @@
 
   Parameters:
 
-  - `key` (double): the x key.
+  - `k` (double): the x key.
   - `like`: an x value whose type the result takes.
 
   Returns a double for a number `like`; a `java.time` value rounded to the millisecond otherwise - a `LocalDate` (or `Year`, `YearMonth`) as a `LocalDateTime` (keys fall between days), an `Instant`, a `ZonedDateTime` / `OffsetDateTime` in the zone / offset of `like`, a `LocalTime` within the day. `nil` for other types. `(x-key (key->x k like))` is `k` for a whole number of milliseconds (in the day, for a `LocalTime`)."
-  [^double key like]
+  [^double k like]
   (if (number? like)
-    key
-    (let [millis (m/round key)
+    k
+    (let [millis (m/round k)
           instant (Instant/ofEpochMilli millis)]
       (cond
         (or (instance? LocalDate like) (instance? LocalDateTime like) (instance? Year like) (instance? YearMonth like))
@@ -252,7 +252,7 @@
   - `ldt` (`LocalDateTime`): the date-time.
   - `like`: a `java.time` value whose type the result takes.
 
-  Returns a date - its day, a time - its time of day, a `Year` / `YearMonth` - the one holding it, an instant in UTC, a zoned / offset date-time in the zone / offset of `like`; `nil` for other types."
+  Returns a `LocalDateTime` - `ldt` itself, a date - its day, a time - its time of day, a `Year` / `YearMonth` - the one holding it, an instant in UTC, a zoned / offset date-time in the zone / offset of `like`; `nil` for other types."
   [^LocalDateTime ldt like]
   (cond
     (instance? Year like) (Year/from ldt)
@@ -269,7 +269,7 @@
 ;; intervals: valid plot values, sorted ascending wherever they are levels.
 
 (defn ordered-level?
-  "Is `v` a categorical level with a natural order - an instance of the marker [[OrderedLevel]] (shingle / bin intervals)?
+  "Tests whether `v` is a categorical level with a natural order - an instance of the marker [[OrderedLevel]] (shingle / bin intervals).
 
   Such levels are valid values, sorted instead of kept in first-appearance order."
   [v]
@@ -288,7 +288,7 @@
         (and (some? r) (.isArray (class r))) (vec (seq r))))
 
 (defn valid-value?
-  "Can `v` be plotted: a finite number, a string, a keyword, a `java.time` value or a level with a natural order ([[ordered-level?]], e.g. an interval)?
+  "Tests whether `v` can be plotted: a finite number, a string, a keyword, a `java.time` value or a level with a natural order ([[ordered-level?]], e.g. an interval).
 
   NaN, infinite numbers, `nil` and other values are not."
   [v]
@@ -310,7 +310,7 @@
     {:values ok :dropped (m/- (count vs) (count ok))}))
 
 (defn- value-kind
-  "Kind of extent a valid value `v` belongs to: `:numeric`, `:temporal` or `:categorical`."
+  "Gives the kind of extent a valid value `v` belongs to: `:numeric`, `:temporal` or `:categorical`."
   [v]
   (cond (number? v) :numeric (temporal? v) :temporal :else :categorical))
 
@@ -327,6 +327,32 @@
     (if (every? ordered-level? ds)
       (try (vec (sort ds)) (catch ClassCastException _ ds))
       ds)))
+
+(defn- temporal-min
+  "Gives the earliest of `java.time` values.
+
+  Parameters:
+
+  - `ts` (non-empty sequence): mutually comparable `java.time` values.
+
+  Returns the first of the smallest values.
+
+  See also [[temporal-max]]."
+  [ts]
+  (reduce (fn [a b] (if (m/neg? (compare b a)) b a)) ts))
+
+(defn- temporal-max
+  "Gives the latest of `java.time` values.
+
+  Parameters:
+
+  - `ts` (non-empty sequence): mutually comparable `java.time` values.
+
+  Returns the first of the largest values.
+
+  See also [[temporal-min]]."
+  [ts]
+  (reduce (fn [a b] (if (m/pos? (compare b a)) b a)) ts))
 
 (defn extent
   "Gives the extent of the valid values of a mapped dimension (see the namespace doc).
@@ -350,8 +376,8 @@
       (case (first kinds)
         :numeric {:kind :numeric :min (v/mn vs) :max (v/mx vs)}
         :temporal {:kind :temporal
-                   :min (reduce #(if (neg? (compare %2 %1)) %2 %1) vs)
-                   :max (reduce #(if (pos? (compare %2 %1)) %2 %1) vs)}
+                   :min (temporal-min vs)
+                   :max (temporal-max vs)}
         :categorical {:kind :categorical :values (categorical-levels vs)}))))
 
 (def ^{:const true :tag 'long} max-levels
@@ -427,8 +453,8 @@
           :categorical {:kind :categorical :values (categorical-levels (mapcat :values es))}
           :numeric {:kind :numeric :min (v/mn (map :min es)) :max (v/mx (map :max es))}
           :temporal {:kind :temporal
-                     :min (reduce #(if (neg? (compare %2 %1)) %2 %1) (map :min es))
-                     :max (reduce #(if (pos? (compare %2 %1)) %2 %1) (map :max es))})
+                     :min (temporal-min (map :min es))
+                     :max (temporal-max (map :max es))})
           (every? :values es) (capped-values (mapcat :values es))
           (every? :ordered? es) (assoc :ordered? true)
           (some :sample es) (assoc :sample (into [] (mapcat :sample) es)))))))

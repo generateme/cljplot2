@@ -40,9 +40,9 @@
   [fit-of xs ys]
   (try (fit-of xs ys)
        (catch clojure.lang.ExceptionInfo e
-         (let [{:keys [type property]} (ex-data e)]
+         (let [{error-type :type property :property} (ex-data e)]
            (cond
              (= :too-few-points property) nil
-             (= :invalid-input type) (error/fail! (str "Interpolation failed: " (ex-message e) ".")
+             (= :invalid-input error-type) (error/fail! (str "Interpolation failed: " (ex-message e) ".")
                                                   {:key :interpolator :value (:method (ex-data e))})
              :else (throw e))))))

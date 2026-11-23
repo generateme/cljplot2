@@ -20,7 +20,7 @@
 (set! *unchecked-math* :warn-on-boxed)
 
 (defn levels
-  "Contour levels for a value range.
+  "Gives the contour levels for a value range.
 
   Parameters:
 
@@ -51,7 +51,7 @@
    11 [[:r :t]] 12 [[:l :r]] 13 [[:b :r]] 14 [[:b :l]]})
 
 (defn- edge-id
-  "Id of an edge of a grid cell, shared by the neighbouring cell.
+  "Gives the id of an edge of a grid cell, shared by the neighbouring cell.
 
   Parameters:
 
@@ -67,7 +67,7 @@
     :r [:v (m/long-inc i) j]))
 
 (defn- crossing
-  "Point where a level crosses a grid edge.
+  "Gives the point where a level crosses a grid edge.
 
   Parameters:
 
@@ -84,7 +84,7 @@
              (m/+ ay (m/* t (m/- by ay)))])))
 
 (defn- edge-ends
-  "The two grid points of an edge.
+  "Gives the two grid points of an edge.
 
   Parameters:
 
@@ -101,7 +101,7 @@
       [(point i j) (point i (m/long-inc j))])))
 
 (defn- segments
-  "Marching-squares segments of a grid at a level.
+  "Gives the marching-squares segments of a grid at a level.
 
   Parameters:
 
@@ -129,7 +129,7 @@
          [(edge-id a i j) (edge-id b i j)])))
 
 (defn- chains
-  "Segments joined into chains at their shared edges.
+  "Gives the segments joined into chains at their shared edges.
 
   Parameters:
 
@@ -168,7 +168,7 @@
     (into open loops)))
 
 (defn isolines
-  "Contour lines of a sampled field at a level (see the namespace doc).
+  "Gives the contour lines of a sampled field at a level (see the namespace doc).
 
   Parameters:
 
@@ -185,7 +185,7 @@
         (chains (segments grid level))))
 
 (defn padded
-  "Sampled field with a border of `-Inf` values one step outside it, so every contour closes.
+  "Gives the sampled field with a border of `-Inf` values one step outside it, so every contour closes.
 
   Parameters:
 
@@ -197,22 +197,22 @@
   [{:keys [^doubles xs ^doubles ys ^long nx ^long ny ^doubles values]}]
   (let [px (m/+ nx 2)
         py (m/+ ny 2)
-        extend (fn ^doubles [^doubles a ^long n]
-                 (let [step (if (m/> n 1) (m/- (Array/aget a 1) (Array/aget a 0)) 1.0)
-                       out (double-array (m/+ n 2))]
-                   (Array/aset out 0 (m/- (Array/aget a 0) step))
-                   (dotimes [i n] (Array/aset out (m/long-inc i) (Array/aget a i)))
-                   (Array/aset out (m/long-inc n) (m/+ (Array/aget a (m/long-dec n)) step))
-                   out))
+        extended-axis (fn ^doubles [^doubles a ^long n]
+                        (let [step (if (m/> n 1) (m/- (Array/aget a 1) (Array/aget a 0)) 1.0)
+                              out (double-array (m/+ n 2))]
+                          (Array/aset out 0 (m/- (Array/aget a 0) step))
+                          (dotimes [i n] (Array/aset out (m/long-inc i) (Array/aget a i)))
+                          (Array/aset out (m/long-inc n) (m/+ (Array/aget a (m/long-dec n)) step))
+                          out))
         out (double-array (m/* px py) ##-Inf)]
     (dotimes [j ny]
       (dotimes [i nx]
         (let [v (Array/aget values (m/+ i (m/* j nx)))]
           (Array/aset out (m/+ (m/long-inc i) (m/* (m/long-inc j) px)) (if (m/nan? v) ##-Inf v)))))
-    {:xs (extend xs nx) :ys (extend ys ny) :nx px :ny py :values out}))
+    {:xs (extended-axis xs nx) :ys (extended-axis ys ny) :nx px :ny py :values out}))
 
 (defn level-rings
-  "Closed rings outlining the region of a sampled field at or above a level, for filling (see the namespace doc).
+  "Gives the closed rings outlining the region of a sampled field at or above a level, for filling (see the namespace doc).
 
   Parameters:
 

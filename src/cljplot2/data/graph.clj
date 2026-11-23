@@ -107,16 +107,16 @@
     - `:value` - accessor of an edge's weight, a finite number >= 0, `nil` read as 1 (default `:value`).
     - `:nodes` - node rows, placed first in their order; ids seen only in edges follow in first-appearance order.
     - `:id` - accessor of a node row's id (default `:id`).
-    - `:directed?` - degrees split into `:in` and `:out` (default `false`).
+    - `:directed?` - degrees split into `:in` and `:out` (default `false`; `nil` - the default).
 
-  Returns `{:nodes :edges :loops :directed? :dropped}`: self-loops go to `:loops`, edges with a `nil` end are counted in `:dropped`.
+  Returns `{:nodes :edges :loops :directed? :dropped}` (`:directed?` - `true` or `false`): self-loops go to `:loops`, edges with a `nil` end are counted in `:dropped`.
 
   Throws `ex-info {:key k}` for an invalid option `k` (checked first, see [[graph-options]]), `{:key :edges}` for edges that aren't rows, `{:key :value}` for an invalid weight, `{:key :nodes}` for a repeated or `nil` node id.
 
   See also [[layout]], [[adjacency->edges]]."
   {:cljplot2/api true :cljplot2/options graph-options}
   ([edges] (graph edges {}))
-  ([edges {:keys [from to value nodes id directed?] :or {from :from to :to value :value id :id directed? false} :as options}]
+  ([edges {:keys [from to value nodes id directed?] :or {from :from to :to value :value id :id} :as options}]
    (schema/check-options! graph-options options)
    (let [from-of (data/row-accessor :from from)
          to-of (data/row-accessor :to to)
@@ -137,7 +137,7 @@
                    ids)
       :edges (vec links)
       :loops (vec loops)
-      :directed? directed?
+      :directed? (true? directed?)
       :dropped (m/- (count all) (count kept))})))
 
 (def adjacency->edges-options
@@ -314,7 +314,7 @@
 (defn- force-positions
   "Lays out nodes by Fruchterman-Reingold from random positions.
 
-  The ideal distance is `k = sqrt(1 / n)`; the temperature falls linearly from 0.1 to 0; a pull to the centroid replaces a frame. The result is scaled into the unit square afterwards (see [[fitted]]).
+  The ideal distance is `k = sqrt(1 / n)`; the temperature falls linearly from 0.1 toward 0 (`0.1 / iterations` at the last step); a pull to the centroid replaces a frame. The result is scaled into the unit square afterwards (see [[fitted]]).
 
   Parameters:
 
@@ -393,7 +393,7 @@
   2.0)
 
 (defn- component-side
-  "Side of the square a component is fitted into.
+  "Gives the side of the square a component is fitted into.
 
   Parameters:
 

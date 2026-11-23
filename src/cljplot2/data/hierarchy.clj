@@ -79,13 +79,13 @@
 
   Parameters:
 
-  - `name`: the node's name.
+  - `node-name`: the node's name.
   - `entries` (sequence of maps): `{:value v :color c}` entries ending here.
 
-  Returns a vector of leaves `{:name name :value v :color c}`, one per distinct colour value in first-appearance order with the values summed - rows differing only in colour stay separate rectangles."
-  [name entries]
+  Returns a vector of leaves `{:name node-name :value v :color c}`, one per distinct colour value in first-appearance order with the values summed - rows differing only in colour stay separate rectangles."
+  [node-name entries]
   (let [by-color (group-by :color entries)]
-    (mapv (fn [col] {:name name :value (v/sum (map :value (by-color col))) :color col})
+    (mapv (fn [col] {:name node-name :value (v/sum (map :value (by-color col))) :color col})
           (distinct (map :color entries)))))
 
 (defn- nodes
@@ -93,20 +93,20 @@
 
   Parameters:
 
-  - `name`: the nodes' name.
+  - `node-name`: the nodes' name.
   - `entries` (sequence of maps): `{:path rest-of-path :value v :color c}` entries, paths relative to the node.
 
-  Returns a vector: the leaves of `name` when no entry goes deeper (see [[leaves]]), otherwise one group `{:name :value :children}` whose children are the deeper nodes (first-appearance order) followed by unnamed leaves for the entries ending at the group."
-  [name entries]
+  Returns a vector: the leaves of `node-name` when no entry goes deeper (see [[leaves]]), otherwise one group `{:name :value :children}` whose children are the deeper nodes (first-appearance order) followed by unnamed leaves for the entries ending at the group."
+  [node-name entries]
   (let [ends (filter #(empty? (:path %)) entries)
         deeper (remove #(empty? (:path %)) entries)]
     (if (empty? deeper)
-      (leaves name ends)
+      (leaves node-name ends)
       (let [by-first (group-by #(first (:path %)) deeper)
             children (-> (into [] (mapcat (fn [k] (nodes k (map #(update % :path subvec 1) (by-first k)))))
                                (distinct (map #(first (:path %)) deeper)))
                          (into (leaves nil ends)))]
-        [{:name name :value (v/sum (map :value children)) :children children}]))))
+        [{:name node-name :value (v/sum (map :value children)) :children children}]))))
 
 (defn root
   "Builds the root group of hierarchy entries.
@@ -237,14 +237,14 @@
     (cond
       named?
       (let [color-fn (aesthetic/attribute-fn :color (:color scales) na)]
-        (fn [{:keys [depth name]}] (if (or (zero? (long depth)) (nil? name)) na (or (color-fn name) na))))
+        (fn [{:keys [^long depth] node-name :name}] (if (or (m/zero? depth) (nil? node-name)) na (or (color-fn node-name) na))))
       colored?
       (let [color-fn (aesthetic/attribute-fn :color (:color scales) na)]
         (fn [{:keys [leaf? color]}] (if leaf? (color-fn color) na)))
       :else
       (let [top-color (top-color-fn theme top-count)]
-        (fn [{:keys [depth top-index]}]
-          (if (zero? (long depth))
+        (fn [{:keys [^long depth top-index]}]
+          (if (m/zero? depth)
             na
             (depth-shade (top-color top-index) depth)))))))
 
@@ -375,9 +375,9 @@
 
   Throws `ex-info {:key :value}` for an invalid weight; `{:key k}` for an invalid option `k` (checked first, see [[sequence-levels-options]])."
   {:cljplot2/api true :cljplot2/options sequence-levels-options}
-  [rows {:keys [sequence value separator end keep-end?] :or {sequence :sequence separator "-" end "end"} :as options}]
+  [rows {:keys [value separator end keep-end?] sequence-accessor :sequence :or {sequence-accessor :sequence separator "-" end "end"} :as options}]
   (schema/check-options! sequence-levels-options options)
-  (let [sequence-of (data/row-accessor :sequence sequence)
+  (let [sequence-of (data/row-accessor :sequence sequence-accessor)
         value-of (if value (data/row-accessor :value value) (constantly nil))
         keyed (mapv (fn [row] [(sequence-steps (sequence-of row) separator [end keep-end?]) (data/weight (value-of row))]) rows)
         kept (filter (comp seq first) keyed)

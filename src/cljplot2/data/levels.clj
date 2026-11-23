@@ -94,27 +94,27 @@
   Parameters:
 
   - `values` (sequence of doubles): finite values.
-  - `bins`: see [[bins]] - a bin-estimation method, a bin count, explicit breaks or quantile bins.
+  - `bin-spec`: see [[bins]] - a bin-estimation method, a bin count, explicit breaks or quantile bins.
 
   Returns a vector of breaks: explicit breaks as they are, else `nil` for no values; a single distinct value gets one bin of width 1 centred on it; quantile bins merge tied breaks (fewer bins).
 
   Throws `ex-info {:key :bins}` for an unknown method or invalid quantile bins."
-  [values bins]
-  (when (map? bins) (schema/explain! [[quantile-bins bins [:bins]]]))
+  [values bin-spec]
+  (when (map? bin-spec) (schema/explain! [[quantile-bins bin-spec [:bins]]]))
   (cond
-    (vector? bins) (mapv double bins)
+    (vector? bin-spec) (mapv double bin-spec)
     (empty? values) nil
     :else (let [lo (v/mn values)
                 hi (v/mx values)]
             (cond
               (m/== lo hi) [(m/- lo 0.5) (m/+ lo 0.5)]
-              (map? bins) (quantile-breaks values bins)
+              (map? bin-spec) (quantile-breaks values bin-spec)
               :else
-              (let [n (long (if (keyword? bins)
-                              (try (long (stats/estimate-bins values bins))
+              (let [n (long (if (keyword? bin-spec)
+                              (try (long (stats/estimate-bins values bin-spec))
                                    (catch IllegalArgumentException _
-                                     (schema/fail! "Unknown :bins method." {:key :bins :value bins})))
-                              (long bins)))]
+                                     (schema/fail! "Unknown :bins method." {:key :bins :value bin-spec})))
+                              (long bin-spec)))]
                 (equal-breaks lo hi (m/max 1 n)))))))
 
 (defn bin-index
@@ -154,14 +154,14 @@
 
   Parameters:
 
-  - `breaks` (sequence of numbers).
+  - `bin-breaks` (sequence of numbers).
 
   Returns a vector of strings: all whole numbers printed as integers, otherwise every break with the [[distinct-digits]] (at least 3) significant digits."
-  [breaks]
-  (if (every? #(m/== (double %) (m/rint (double %))) breaks)
-    (mapv #(.toPlainString (.setScale (java.math.BigDecimal. (double %)) 0)) breaks)
-    (let [digits (distinct-digits breaks 3)]
-      (mapv #(shingle/rounded-str % digits) breaks))))
+  [bin-breaks]
+  (if (every? #(m/== (double %) (m/rint (double %))) bin-breaks)
+    (mapv #(.toPlainString (.setScale (java.math.BigDecimal. (double %)) 0)) bin-breaks)
+    (let [digits (distinct-digits bin-breaks 3)]
+      (mapv #(shingle/rounded-str % digits) bin-breaks))))
 
 ;; bin
 
@@ -225,18 +225,18 @@
 (defn categorical
   "Makes a mapping marker declaring a dimension categorical.
 
-  Rows are read through `accessor` as usual; the scale is resolved as with `:type :categorical` (bands for `:x` / `:y`, ordinal for aesthetics), e.g. `:mapping {:y (categorical :cyl)}` puts numeric cylinder counts in bands.
+  Rows are read through `wrapped-accessor` as usual; the scale is resolved as with `:type :categorical` (bands for `:x` / `:y`, ordinal for aesthetics), e.g. `:mapping {:y (categorical :cyl)}` puts numeric cylinder counts in bands.
 
   Parameters:
 
-  - `accessor` (keyword or function): the wrapped accessor.
+  - `wrapped-accessor` (keyword or function): the wrapped accessor.
 
   Returns a [[cljplot2.data.accessor/->CategoricalAccessor]], callable on a row.
 
   See also [[cljplot2.data.accessor]]."
   {:cljplot2/api true}
-  [accessor]
-  (accessor/->CategoricalAccessor accessor))
+  [wrapped-accessor]
+  (accessor/->CategoricalAccessor wrapped-accessor))
 
 ;; order
 
@@ -349,7 +349,7 @@
   Throws `ex-info` for bad options."
   {:cljplot2/api true :cljplot2/options rank-rows-options}
   ([data x value] (rank-rows data x value {}))
-  ([data x value {:keys [ties descending key] :or {ties :min descending true key :rank} :as opts}]
+  ([data x value {:keys [ties descending] rank-key :key :or {ties :min descending true rank-key :rank} :as opts}]
    (schema/check-options! rank-rows-options opts)
    (let [rs (rows/rows data)
          x-of (rows/row-accessor :x x)
@@ -363,4 +363,4 @@
                                           (map #(if (integer? %) (m/long-inc (long %)) (m/inc (double %)))
                                                (m/rank (mapv #(if descending (m/- (double %)) %) vs) ties))))))
                      (vals (group-by #(x-group (rs %)) (filter rankable? (range (count rs))))))]
-     (vec (map-indexed (fn [i r] (assoc r key (ranked i))) rs)))))
+     (vec (map-indexed (fn [i r] (assoc r rank-key (ranked i))) rs)))))

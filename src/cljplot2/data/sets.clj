@@ -33,8 +33,8 @@
   - `mapping` (map): `:set` and `:item` accessors (keywords or functions).
 
   Returns `[set-of item-of]`, functions of a row."
-  [{:keys [set item]}]
-  [(data/row-accessor :set set) (data/row-accessor :item item)])
+  [{set-accessor :set item-accessor :item}]
+  [(data/row-accessor :set set-accessor) (data/row-accessor :item item-accessor)])
 
 (defn set-order
   "Gives the chosen sets in their order.

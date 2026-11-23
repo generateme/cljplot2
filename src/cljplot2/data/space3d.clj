@@ -22,7 +22,7 @@
   defaults applied) and [[frame-overrides]] (the frame options a chart sets explicitly) - live here too, as do the
   shading options [[shading-options]] of the shaded charts.
 
-  Functions: frame - [[frame-options]], [[frame-settings]], [[frame-overrides]], [[box-aspect]], [[axis-index]]; domains - [[data-domain]], [[nice-domain]], [[widen]], [[reverse-domains]], [[in-domain?]]; projection - [[normalizer]], [[view-matrix]], [[rotation]], [[perspective]], [[box-distance]], [[distance-problem]], [[check-distance!]], [[turning-extent]], [[turning-fit]], [[projector]]; box geometry - [[corners]], [[corner-point]], [[faces]], [[edges]], [[face-orientation]], [[far-side]], [[visible-edges]], [[hidden-edges]], [[axis-edges]]; shading - [[shading-options]], [[shader]], [[view-normal]]."
+  Functions: frame - [[frame-options]], [[frame-settings]], [[frame-overrides]], [[box-aspect]], [[axis-index]]; domains - [[data-domain]], [[nice-domain]], [[widen]], [[reverse-domains]], [[in-domain?]]; projection - [[normalizer]], [[view-matrix]], [[rotation]], [[perspective]], [[box-distance]], [[distance-problem]], [[check-distance!]], [[turning-extent]], [[turning-fit]], [[projector]]; box geometry - [[corners]], [[corner-point]], [[faces]], [[edges]], [[face-orientation]], [[far-side]], [[visible-edges]], [[hidden-edges]], [[axis-edges]]; shading - [[shading-options]], [[shader]]."
   (:require [clojure2d.color :as c]
             [fastmath.core :as m]
             [fastmath.matrix :as mat]
@@ -87,7 +87,7 @@
   [:x :y :z])
 
 (defn box-aspect
-  "Box proportions as a vector.
+  "Gives the box proportions as a vector.
 
   Parameters:
 
@@ -98,7 +98,7 @@
   (vec (or aspect [1.0 1.0 1.0])))
 
 (defn frame-settings
-  "Frame of a 3D chart, the frame options' defaults applied.
+  "Gives the frame of a 3D chart, the frame options' defaults applied.
 
   Parameters:
 
@@ -118,7 +118,7 @@
              (into {} (keep (fn [k] (let [a (accessor/unwrap (get mapping k))] (when (keyword? a) [k (name a)])))) axes))})
 
 (defn frame-overrides
-  "Frame settings a 3D chart sets explicitly.
+  "Gives the frame settings a 3D chart sets explicitly.
 
   A later chart's overrides are merged over the first chart's frame of a scene, see [[cljplot2.graphics.space3d/scene-frame]].
 
@@ -136,7 +136,7 @@
     (contains? options :axis-titles) (assoc :titles (:axis-titles options))))
 
 (defn axis-index
-  "Position of an axis in a point or a corner.
+  "Gives the position of an axis in a point or a corner.
 
   Parameters:
 
@@ -149,7 +149,7 @@
 ;; normalization and rotation
 
 (defn widen
-  "Domain of values made usable for normalization.
+  "Gives the domain of values made usable for normalization.
 
   Parameters:
 
@@ -164,7 +164,7 @@
   5)
 
 (defn nice-domain
-  "Domain extended to nice tick values.
+  "Gives the domain extended to nice tick values.
 
   Parameters:
 
@@ -177,7 +177,7 @@
   (:domain (scale/finalize (scale/scale-spec :x {:domain [lo hi] :nice 1.0}) [0.0 1.0] nice-ticks)))
 
 (defn data-domain
-  "Nice domain of a 3D axis from its values.
+  "Gives the nice domain of a 3D axis from its values.
 
   Parameters:
 
@@ -192,7 +192,7 @@
     [0.0 1.0]))
 
 (defn reverse-domains
-  "Domains with some axes turned the other way.
+  "Gives the domains with some axes turned the other way.
 
   Parameters:
 
@@ -216,7 +216,7 @@
   (or (nil? domain) (let [[^double a ^double b] domain] (m/<= (m/min a b) v (m/max a b)))))
 
 (defn normalizer
-  "Function placing data points in the normalized box.
+  "Gives the function placing data points in the normalized box.
 
   Parameters:
 
@@ -239,7 +239,7 @@
   (mat/mat3x3 1.0 0.0 0.0 0.0 0.0 1.0 0.0 1.0 0.0))
 
 (defn view-matrix
-  "Rotation matrix of `view` taking a normalized point to its view coordinates `(u v d)`.
+  "Gives the rotation matrix of `view` taking a normalized point to its view coordinates `(u v d)`.
 
   Parameters:
 
@@ -255,7 +255,7 @@
                         (mat/rotation-matrix-3d-z (m/- (m/radians azimuth)))))))
 
 (defn rotation
-  "Function giving the view coordinates of a normalized point for `view` (see the namespace doc).
+  "Gives the function giving the view coordinates of a normalized point for `view` (see the namespace doc).
 
   Parameters:
 
@@ -269,7 +269,7 @@
 ;; perspective
 
 (defn- view-distance
-  "Perspective distance of a view.
+  "Gives the perspective distance of a view.
 
   Parameters:
 
@@ -280,7 +280,7 @@
   (or (:distance view) 0.0))
 
 (defn box-distance
-  "Perspective distance of a view in the units of a box.
+  "Gives the perspective distance of a view in the units of a box.
 
   Lattice's `distance` applies to its box scaled to a longest side of 1, so δ is divided by the box's longest side. The eye sits at `1 / box-distance` from the box centre.
 
@@ -294,7 +294,7 @@
   (m// (view-distance view) (v/mx (box-aspect aspect))))
 
 (defn- half-diagonal
-  "Half the diagonal of a box - the radius of its circumscribed sphere.
+  "Gives half the diagonal of a box - the radius of its circumscribed sphere.
 
   Parameters:
 
@@ -341,7 +341,7 @@
     (schema/fail! (str "The 3D box: " problem ".") {:key :distance :in [:view :distance] :value (:distance view)})))
 
 (defn perspective
-  "Function projecting view coordinates onto the screen plane.
+  "Gives the function projecting view coordinates onto the screen plane.
 
   Parameters:
 
@@ -363,7 +363,7 @@
   [[0 0 0] [0 0 1] [0 1 0] [0 1 1] [1 0 0] [1 0 1] [1 1 0] [1 1 1]])
 
 (defn corner-point
-  "Normalized position of a box corner.
+  "Gives the normalized position of a box corner.
 
   Parameters:
 
@@ -400,7 +400,7 @@
          {:axis k :from (assoc base i 0) :to (assoc base i 1)})))
 
 (defn- outward-normal
-  "Rotated outward unit normal of a box face.
+  "Gives the rotated outward unit normal of a box face.
 
   Parameters:
 
@@ -421,7 +421,7 @@
 (def ^{:const true :private true :tag 'double} -facing-tolerance (m/- facing-tolerance))
 
 (defn- turn-away
-  "How far a face turns away from the eye.
+  "Gives how far a face turns away from the eye.
 
   Parameters:
 
@@ -434,7 +434,7 @@
   (m/+ (.z n) (m/* delta (v/dot n c))))
 
 (defn- box-face-turn
-  "Function of the faces of a box giving how far each turns from the eye.
+  "Gives the function of the faces of a box giving how far each turns from the eye.
 
   Parameters:
 
@@ -451,7 +451,7 @@
         (turn-away delta n (v/mult n (m/* 0.5 (double (sides (axis-index axis))))))))))
 
 (defn face-orientation
-  "Function orienting axis-aligned faces drawn inside the data box (bars).
+  "Gives the function orienting axis-aligned faces drawn inside the data box (bars).
 
   Parameters:
 
@@ -468,7 +468,7 @@
         [n (m/< (turn-away delta n (rotate (normalize at))) -facing-tolerance)]))))
 
 (defn far-side
-  "Side of the box face across an axis turned away from the eye - the far wall.
+  "Gives the side of the box face across an axis turned away from the eye - the far wall.
 
   Parameters:
 
@@ -485,7 +485,7 @@
     (when (m/> t facing-tolerance) side)))
 
 (defn- edge-faces
-  "The two faces a box edge belongs to.
+  "Gives the two faces a box edge belongs to.
 
   Parameters:
 
@@ -496,7 +496,7 @@
   (vec (for [[i k] (map-indexed vector axes) :when (not= k axis)] [k (from i)])))
 
 (defn- front-faces
-  "Predicate of the box faces facing the eye.
+  "Gives the predicate of the box faces facing the eye.
 
   Parameters:
 
@@ -509,7 +509,7 @@
     (fn [[k side]] (m/< (double (turn k side)) -facing-tolerance))))
 
 (defn visible-edges
-  "Box edges not hidden behind the box.
+  "Gives the box edges not hidden behind the box.
 
   Parameters:
 
@@ -524,7 +524,7 @@
     (filterv (fn [e] (some front? (edge-faces e))) edges)))
 
 (defn hidden-edges
-  "Box edges behind the box (both their faces turned away).
+  "Gives the box edges behind the box (both their faces turned away).
 
   Parameters:
 
@@ -537,7 +537,7 @@
     (filterv (complement shown) edges)))
 
 (defn axis-edges
-  "Box edge each axis's ticks are drawn on.
+  "Gives the box edge each axis's ticks are drawn on.
 
   An outline edge has one face toward the eye, the other not.
 
@@ -563,7 +563,7 @@
 ;; projection onto a panel
 
 (defn turning-extent
-  "Largest orthographic projection of a box over every azimuth.
+  "Gives the largest orthographic projection of a box over every azimuth.
 
   Parameters:
 
@@ -579,7 +579,7 @@
     [f (m/+ (m/* az (m/abs (m/cos e))) (m/* f (m/abs (m/sin e))))]))
 
 (defn- corner-bounds
-  "Screen bounds of the corners of a box in a view.
+  "Gives the screen bounds of the corners of a box in a view.
 
   Parameters:
 
@@ -605,7 +605,7 @@
 
 
 (defn turning-fit
-  "Extent and centre of a box turned about its vertical axis at a view's elevation and distance.
+  "Gives the extent and centre of a box turned about its vertical axis at a view's elevation and distance.
 
   A panel fitting the extent, centred at the centre, holds the box in every azimuth. Orthographic (δ = 0): [[turning-extent]], centred on the view's own corners (the box centre). Perspective: the corners projected every half degree of azimuth - the largest `|u|` both ways, the `v` range (near corners below grow more than far ones above shrink) - widened by [[turning-pad]] for the azimuths between the samples.
 
@@ -632,7 +632,7 @@
        :v-mid (m/* 0.5 (m/+ v0 v1))})))
 
 (defn projector
-  "Projection of the data box fitted in a panel.
+  "Gives the projection of the data box fitted in a panel.
 
   The scale fits the box's largest projection over all azimuths at the view's elevation (and distance, see [[turning-fit]]) in the panel less the margins, so a box turned about its vertical axis keeps its size and place (views of different elevations may differ).
 
@@ -690,23 +690,8 @@
                              :default default-light}
                      light-schema)]))
 
-(defn view-normal
-  "Unit normal of a plane through three points, in view coordinates.
-
-  Parameters:
-
-  - `view` (map): the view.
-  - `a`, `b`, `c` (`Vec3`): normalized points.
-
-  Returns the unit normal `Vec3` of the rotated plane (right-handed from `a`, `b`, `c`); a zero vector for collinear points."
-  [view a b c]
-  (let [rotate (rotation view)
-        ^Vec3 n (v/cross (v/sub (rotate b) (rotate a)) (v/sub (rotate c) (rotate a)))
-        len (v/mag n)]
-    (if (m/pos? len) (v/div n len) (Vec3. 0.0 0.0 0.0))))
-
 (defn- light-direction
-  "Unit direction toward the light from `light` (`[x y z]`, view coordinates).
+  "Gives the unit direction toward the light from `light` (`[x y z]`, view coordinates).
 
   Throws `ex-info {:key :light}` for a zero vector."
   ^Vec3 [[^double x ^double y ^double z :as light]]
@@ -716,7 +701,7 @@
     (v/normalize l)))
 
 (defn shader
-  "Lambert shading function of a 3D chart's shading options.
+  "Gives the Lambert shading function of a 3D chart's shading options.
 
   Parameters:
 
