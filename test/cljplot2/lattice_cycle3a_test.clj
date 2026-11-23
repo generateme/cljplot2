@@ -185,7 +185,8 @@
 
 (defn- lines-in [f]
   (let [log (atom []) line @#'c2d/line]
-    (with-redefs-fn {#'c2d/line (fn [& args] (swap! log conj (vec (rest args))) (apply line args))} f)
+    ;; the point-pair arity calls the coordinate one: log only that, once per line
+    (with-redefs-fn {#'c2d/line (fn [& args] (when (= 5 (count args)) (swap! log conj (vec (rest args)))) (apply line args))} f)
     @log))
 
 (deftest review-fixes-test

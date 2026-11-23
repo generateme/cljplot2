@@ -28,13 +28,14 @@
   `:color`; `:varwidth` and the fill patterns (`:pattern`, `:pattern-color`) have no effect (nothing has a width
   or a fill).
 
-  Functions: [[box-stats]] and [[identity-stats]] - an item's statistics, [[width-factors]] - `:varwidth` box widths; [[compute]], [[draw]], [[legend]] - the chart contract; [[schemas]] - its style, options and mapping."
+  Functions: [[box-stats]] and [[identity-stats]] - an item's statistics, [[width-factors]] - `:varwidth` box widths; [[legend]] - the chart contract's key glyph (the chart computes and draws through [[cljplot2.data.strip/compute]] and [[cljplot2.data.strip/draw]]); [[schemas]] - its style, options and mapping."
   (:require [clojure2d.color :as c]
             [clojure2d.core :as c2d]
             [fastmath.core :as m]
             [fastmath.stats :as stats]
             [fastmath.vector :as v]
             [cljplot2.data.group :as group]
+            [cljplot2.graphics.measure :as measure]
             [cljplot2.data.rows :as data]
             [cljplot2.data.strip :as strip]
             [cljplot2.graphics.draw :as draw]
@@ -229,25 +230,6 @@
      :na (group/na-dims panels)
      :dropped dropped}))
 
-(defn- line!
-  "Draws a line between two pixel points.
-
-  Parameters:
-
-  - `canvas`: the clojure2d canvas.
-  - `a`, `b` (`Vec2`): the ends in pixels."
-  [canvas ^Vec2 a ^Vec2 b]
-  (c2d/line canvas (.x a) (.y a) (.x b) (.y b)))
-
-(defn- finite?
-  "Tests whether both coordinates of a pixel point are finite.
-
-  Parameters:
-
-  - `p` (`Vec2`): the point."
-  [^Vec2 p]
-  (and (m/valid-double? (.x p)) (m/valid-double? (.y p))))
-
 (defn- mean-marker-size
   "Gives the size of the mean marker: half the style's `:size`, at least 3 pixels.
 
@@ -275,8 +257,8 @@
         stroke (draw/outline-color (:stroke-color st) fill)]
     (c2d/set-stroke-custom canvas {:size (double (:stroke-width st)) :cap :butt})
     (c2d/set-color canvas fill)
-    (line! canvas (p lav c0) (p q1 c0))
-    (line! canvas (p q3 c0) (p uav c0))
+    (c2d/line canvas (p lav c0) (p q1 c0))
+    (c2d/line canvas (p q3 c0) (p uav c0))
     (shape/draw! canvas (:shape st) (p median c0) (assoc st :stroke-color stroke))
     (when outliers?
       (doseq [o outliers]
@@ -314,7 +296,7 @@
             ^Vec2 a (p q1 (m/- c0 hw))
             ^Vec2 b (p q3 (m/+ c0 hw))]
         (cond
-          (not (and (finite? a) (finite? b))) nil
+          (not (and (measure/finite-point? a) (measure/finite-point? b))) nil
           (= :tufte (:variant options)) (draw-tufte! canvas p {:q1 q1 :median median :q3 q3 :lav lav :uav uav
                                                                :outliers outliers :mean mean}
                                                      c0 st outliers? (:mean options))
@@ -326,22 +308,22 @@
                 sw (double (:stroke-width st))]
             (c2d/set-stroke-custom canvas {:size sw :cap :butt})
             (c2d/set-color canvas whisker)
-            (line! canvas (p lav c0) (p q1 c0))
-            (line! canvas (p q3 c0) (p uav c0))
-            (line! canvas (p lav (m/- c0 cap)) (p lav (m/+ c0 cap)))
-            (line! canvas (p uav (m/- c0 cap)) (p uav (m/+ c0 cap)))
+            (c2d/line canvas (p lav c0) (p q1 c0))
+            (c2d/line canvas (p q3 c0) (p uav c0))
+            (c2d/line canvas (p lav (m/- c0 cap)) (p lav (m/+ c0 cap)))
+            (c2d/line canvas (p uav (m/- c0 cap)) (p uav (m/+ c0 cap)))
             (let [x (m/min (.x a) (.x b))
                   y (m/min (.y a) (.y b))
                   w (m/abs (m/- (.x b) (.x a)))
                   h (m/abs (m/- (.y b) (.y a)))]
               (c2d/set-color canvas fill)
               (c2d/rect canvas x y w h)
-              (draw/fill-with-pattern! canvas (pattern-fill st fill) #(c2d/rect canvas x y w h))
+              (draw/fill-with-pattern! canvas (pattern-fill st fill) #(c2d/rect % x y w h))
               (when-not (theme/none? stroke)
                 (c2d/set-color canvas stroke)
                 (c2d/rect canvas x y w h true)))
             (c2d/set-color canvas (draw/contrast-color fill))
-            (line! canvas (p median (m/- c0 hw)) (p median (m/+ c0 hw)))
+            (c2d/line canvas (p median (m/- c0 hw)) (p median (m/+ c0 hw)))
             (when outliers?
               (doseq [o outliers]
                 (shape/draw! canvas (:shape st) (p o c0) (assoc st :stroke-color stroke))))
@@ -353,34 +335,10 @@
                           (fn [{:keys [uav outliers]}] (if (and outliers? (seq outliers)) (reduce m/max uav outliers) uav))
                           options scales env)))
 
-(defn compute
-  "Computes the box chart's stats with its levels on the categorical axis.
+(defmethod strip/in-frame-compute :box [chart chart-split env] (compute-in-strip-frame chart chart-split env))
 
-  Parameters:
-
-  - `chart` (map): the chart value.
-  - `chart-split` (map): the chart's rows split per panel.
-  - `env` (map): the compute environment.
-
-  Returns the stats of [[compute-in-strip-frame]], turned to the mapping axis of the levels (see [[cljplot2.data.strip/compute-oriented]])."
-  [chart chart-split env]
-  (strip/compute-oriented compute-in-strip-frame chart chart-split env))
-
-(defn draw
-  "Draws one panel of the box chart.
-
-  Parameters:
-
-  - `chart` (map): the chart value.
-  - `computed` (map): the panel's stats from [[compute]].
-  - `canvas`: the clojure2d canvas.
-  - `box` (map): the panel box.
-  - `scales` (map): finalized scales.
-  - `env` (map): the draw environment.
-
-  Draws [[draw-in-strip-frame]] in the strip frame (see [[cljplot2.data.strip/draw-oriented]])."
-  [chart computed canvas box scales env]
-  (strip/draw-oriented draw-in-strip-frame chart computed canvas box scales env))
+(defmethod strip/in-frame-draw :box [chart computed canvas box scales env]
+  (draw-in-strip-frame chart computed canvas box scales env))
 
 (defn- tufte-key!
   "Draws the key glyph of the Tufte variant: a point between two short lines, centred in a legend key.
@@ -419,7 +377,7 @@
     (c2d/set-stroke-custom canvas {:size (double (:stroke-width st))})
     (c2d/set-color canvas (:color st))
     (c2d/rect canvas bx by bw bh)
-    (draw/fill-with-pattern! canvas (draw/pattern-fill st (:color st)) #(c2d/rect canvas bx by bw bh))
+    (draw/fill-with-pattern! canvas (draw/pattern-fill st (:color st)) #(c2d/rect % bx by bw bh))
     (let [stroke (draw/outline-color (:stroke-color st) (:color st))]
       (when-not (theme/none? stroke)
         (c2d/set-color canvas stroke)

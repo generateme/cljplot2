@@ -29,12 +29,13 @@
 
   Equivalents: Vega-Lite `facet_bullet`, d3 bullet charts.
 
-  Functions: [[compute]] and [[draw]] - the chart contract (through the strip frame); [[bullet-values]] - an item's values; [[shade]] - the colour of a ranked value."
+  Functions: the chart computes and draws through [[cljplot2.data.strip/compute]] and [[cljplot2.data.strip/draw]]; [[bullet-values]] - an item's values; [[shade]] - the colour of a ranked value."
   (:require [clojure2d.color :as c]
             [clojure2d.core :as c2d]
             [fastmath.core :as m]
             [fastmath.vector :as v]
             [cljplot2.data.rows :as data]
+            [cljplot2.graphics.measure :as measure]
             [cljplot2.data.strip :as strip]
             [cljplot2.scale.aesthetic :as aesthetic]
             [cljplot2.schema :as schema]
@@ -114,7 +115,7 @@
 
   Throws `ex-info {:key :mapping}` for two or more rows of one level and group, or a value that isn't a finite number or a sequential collection of them.
 
-  See also [[compute]]."
+  See also [[cljplot2.data.strip/compute]]."
   [{:keys [rows level aesthetics]} mapping]
   (when (m/not== 1 (count rows))
     (schema/fail! "Bullet takes one row per level and group." {:key :mapping :level level :group aesthetics
@@ -219,8 +220,7 @@
   [canvas p v level c0 c1]
   (let [^Vec2 a (p 0.0 level c0)
         ^Vec2 b (p v level c1)]
-    (when (and (m/valid-double? (.x a)) (m/valid-double? (.y a))
-               (m/valid-double? (.x b)) (m/valid-double? (.y b)))
+    (when (and (measure/finite-point? a) (measure/finite-point? b))
       (c2d/rect canvas (m/min (.x a) (.x b)) (m/min (.y a) (.y b))
                 (m/abs (m/- (.x b) (.x a))) (m/abs (m/- (.y b) (.y a)))))))
 
@@ -276,31 +276,10 @@
           (doseq [v markers
                   :let [^Vec2 a (point v level (m/- c0 reach))
                         ^Vec2 b (point v level (m/+ c0 reach))]
-                  :when (and (m/valid-double? (.x a)) (m/valid-double? (.y a)) (m/valid-double? (.y b)))]
-            (c2d/line canvas (.x a) (.y a) (.x b) (.y b))))))))
+                  :when (and (measure/finite-point? a) (m/valid-double? (.y b)))]
+            (c2d/line canvas a b)))))))
 
-(defn compute
-  "Computes the chart's stats with its levels on the categorical axis.
+(defmethod strip/in-frame-compute :bullet [chart chart-split env] (compute-in-strip-frame chart chart-split env))
 
-  Parameters:
-
-  - `chart` (map): the chart value.
-  - `chart-split` (map): `:groups`, `:mapping`.
-  - `env` (map): the compute environment.
-
-  Returns the stats of [[compute-in-strip-frame]] oriented to the level axis (see [[cljplot2.data.strip/compute-oriented]])."
-  [chart chart-split env]
-  (strip/compute-oriented compute-in-strip-frame chart chart-split env))
-
-(defn draw
-  "Draws one panel of the chart.
-
-  Parameters:
-
-  - `chart` (map): the chart value.
-  - `computed` (map): the panel's computed data.
-  - `canvas`, `box`, `scales`, `env`: as the chart contract's draw.
-
-  Draws [[draw-in-strip-frame]] in the strip frame (see [[cljplot2.data.strip/draw-oriented]])."
-  [chart computed canvas box scales env]
-  (strip/draw-oriented draw-in-strip-frame chart computed canvas box scales env))
+(defmethod strip/in-frame-draw :bullet [chart computed canvas box scales env]
+  (draw-in-strip-frame chart computed canvas box scales env))

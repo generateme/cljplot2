@@ -28,6 +28,7 @@
   (measured) after `:x-overhang`, and an item `:legends` spanning the panel rows (from the top strip) with
   `{:kind :legends}` content: the legends stacked top-down, wrapping into further columns when too tall."
   (:require [fastmath.core :as m]
+            [fastmath.vector :as v]
             [cljplot2.data.facet :as facet]
             [cljplot2.data.shingle :as shingle]
             [cljplot2.content.label :as label]
@@ -35,7 +36,8 @@
             [cljplot2.graphics.measure :as measure]
             [cljplot2.scale.position :as scale]
             [cljplot2.schema :as schema]
-            [clojure.set :as set]))
+            [clojure.set :as set])
+  (:import [fastmath.vector Vec2]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -60,23 +62,29 @@
         plot-labels))
 
 (defn- label-items
-  "Grid items of the plot `labels` (fixed order: title, x, y); a `nil` label adds no item.
-  `spans` (label key -> `{:column :row}`) overrides the single-panel placement."
+  "Gives the grid items of plot labels, in the fixed order title, x, y.
+
+  Parameters:
+
+  - `labels` (map): the plot's `:labels` (see the namespace doc); a `nil` label adds no item.
+  - `spans` (map): label key -> `{:column :row}` overriding the single-panel placement.
+
+  Returns a sequence of items `{:id :column :row :content}`, content kind `:label`."
   [labels spans]
-  (vec (keep (fn [[k {:keys [id defaults column row]}]]
-               (when-some [label (get labels k)]
-                 {:id id :column (get-in spans [k :column] column) :row (get-in spans [k :row] row)
-                  :content (assoc (merge defaults (if (map? label) label {:text label})) :kind :label)}))
-             plot-labels)))
+  (keep (fn [[k {:keys [id defaults column row]}]]
+          (when-some [label (get labels k)]
+            {:id id :column (get-in spans [k :column] column) :row (get-in spans [k :row] row)
+             :content (assoc (merge defaults (if (map? label) label {:text label})) :kind :label)}))
+        plot-labels))
 
 (defn- axis-shown?
-  "Does position scale `k` have a spec in `scale-specs` whose axis is drawn (see
-  [[cljplot2.scale.position/axis-drawn?]])?"
+  "Tests whether position scale `k` has a spec in `scale-specs` whose axis is drawn (see
+  [[cljplot2.scale.position/axis-drawn?]])."
   [scale-specs k]
   (and (contains? scale-specs k) (scale/axis-drawn? (get scale-specs k))))
 
 (defn- axis-items
-  "Items of the axis of scale `k` drawn on `side`: `:bottom` (horizontal scale; axis under the panel, end overhang
+  "Gives the items of the axis of scale `k` drawn on `side`: `:bottom` (horizontal scale; axis under the panel, end overhang
   in the `:x-overhang` column) or `:left` (vertical scale; axis left of the panel, end overhang in the `:y-overhang`
   row); both start overhangs in the corner cell (`:y-axis` column, `:x-axis` row)."
   [side k]
@@ -89,14 +97,14 @@
            {:id :y-axis-end :column :y-axis :row :y-overhang :content {:kind :axis-overhang :scale k :end :end}}]))
 
 (defn- side-scales
-  "`[[side k] ...]` - the scale key drawn on each axis side (`:bottom` horizontal, `:left` vertical) of a plot with
+  "Gives `[[side k] ...]` - the scale key drawn on each axis side (`:bottom` horizontal, `:left` vertical) of a plot with
   `flip?` (`:flip` swaps them)."
   [flip?]
   (let [horizontal (scale/horizontal-key flip?)]
     [[:bottom horizontal] [:left (if (= horizontal :x) :y :x)]]))
 
 (defn- side-labels
-  "Plot `labels` keyed by axis side slot: `:x` - the title under the panel, `:y` - left of it. A flipped plot's
+  "Gives the plot `labels` keyed by axis side slot: `:x` - the title under the panel, `:y` - left of it. A flipped plot's
   `:x` title goes left (the `:x` scale is vertical) and its `:y` title under the panel."
   [labels flip?]
   (if (and flip? (map? labels))
@@ -104,30 +112,37 @@
     labels))
 
 (defn- legend-tracks
-  "Columns added for `legends` (none when empty)."
+  "Gives the columns added for `legends`: a fixed gap (theme `[:legend :gap]`) and a measured legend column; none when `legends` is empty."
   [legends theme]
   (if (seq legends)
     [{:id :legend-gap :size [:fixed (get-in theme [:legend :gap])]} {:id :legend :size [:measured]}]
     []))
 
 (defn- legend-items
-  "The `:legends` item over rows `row-span` (none when `legends` is empty)."
+  "Gives the `:legends` item over rows `row-span` in a vector; empty when `legends` is empty."
   [legends row-span]
   (if (seq legends)
     [{:id :legends :column :legend :row row-span :content {:kind :legends :legends legends}}]
     []))
 
-(def ^:private margin-sides {:margin-left :left :margin-right :right :margin-top :top :margin-bottom :bottom})
+(def ^:private margin-sides
+  "Margin track id -> the side its alignment padding is keyed by."
+  {:margin-left :left :margin-right :right :margin-top :top :margin-bottom :bottom})
 
 (defn- margin-track-fn
-  "Fixed margin track of `id` (`:margin-left` ...): theme `[:plot :margin]` plus the plot's internal
-  `:alignment-padding` for that side (set by multiplot panel alignment, see [[cljplot2.multiplot]])."
+  "Gives a function of a margin track id (`:margin-left` ...) to its fixed track.
+
+  Parameters:
+
+  - `plot` (map): `:theme` (`[:plot :margin]`) and the internal `:alignment-padding` (set by multiplot panel alignment, see [[cljplot2.multiplot]]).
+
+  Returns `(fn [id] track)`: the track's size is the theme margin plus that side's alignment padding."
   [{:keys [theme alignment-padding]}]
   (let [margin (double (get-in theme [:plot :margin]))]
-    (fn [id] {:id id :size [:fixed (+ margin (double (get alignment-padding (margin-sides id) 0)))]})))
+    (fn [id] {:id id :size [:fixed (m/+ margin (double (get alignment-padding (margin-sides id) 0)))]})))
 
 (defn- plot-margin-tracks
-  "Tracks of the plot margin of `side` (`:top` - rows above the panel, `:right` - columns right of it): the margin
+  "Gives the tracks of the plot margin of `side` (`:top` - rows above the panel, `:right` - columns right of it): the margin
   panel's fixed `size`, a gap (theme `[:facet :gap]`) next to the main panel and, with `:axis`, a measured track on
   the far side holding the room the magnitude axis's end tick label sticks out; none without that margin."
   [margins side theme]
@@ -135,15 +150,15 @@
     (let [gap {:id (keyword (str (name side) "-margin-gap")) :size [:fixed (get-in theme [:facet :gap])]}
           track {:id (keyword (str (name side) "-margin")) :size [:fixed size]}
           overhang (when axis {:id (keyword (str (name side) "-margin-overhang")) :size [:measured]})]
-      (vec (remove nil? (if (= side :top) [overhang track gap] [gap track overhang]))))
+      (remove nil? (if (= side :top) [overhang track gap] [gap track overhang])))
     []))
 
 (defn- plot-margin-items
-  "Items of the plot `margins`: a margin panel `{:kind :panel :margin side}` beside the main panel and, with `:axis`,
+  "Gives the items of the plot `margins`: a margin panel `{:kind :panel :margin side}` beside the main panel and, with `:axis`,
   its magnitude axis `{:kind :axis :scale :y :margin side}` - the top margin's in the y-axis column, the right
   margin's in the x-axis row - with an overhang item for its end tick label."
   [margins]
-  (vec (mapcat (fn [[side {:keys [axis]}]]
+  (mapcat (fn [[side {:keys [axis]}]]
                  (let [panel-id (keyword (str (name side) "-margin"))
                        [column row axis-column axis-row] (if (= side :top)
                                                            [:panel panel-id :y-axis panel-id]
@@ -157,10 +172,10 @@
                                    :column (if (= side :top) :y-axis overhang-id)
                                    :row (if (= side :top) overhang-id :x-axis)
                                    :content {:kind :axis-overhang :scale :y :end :end :margin side}})))))
-               margins)))
+          margins))
 
 (defn single-panel-grid
-  "Grid of a single-panel plot: its `:labels`, axes of its `:scale-specs`, its plot margins (`:margin-stats`, see
+  "Gives the grid of a single-panel plot: its `:labels`, axes of its `:scale-specs`, its plot margins (`:margin-stats`, see
   [[cljplot2.pipeline]]: a `:top-margin` row above the panel, a `:right-margin` column right of it - before the
   legend - each next to a gap) and the margin of its (merged) `:theme`. `:alternate-panel true` shades the panel as an
   odd facet panel."
@@ -186,17 +201,25 @@
 ;; facets
 
 (defn- strip-content
-  "Strip content for facet `level` with `text`; when every one of `levels` is a shingle interval, also
+  "Gives the strip content for facet `level` with `text`; when every one of `levels` is a shingle interval, also
   `:interval {:lo :hi :min :max}` - the level within the range of all levels (a shaded bar, see
   [[cljplot2.content.strip]])."
   [text level levels]
   (cond-> {:kind :strip :text text}
     (and (seq levels) (every? shingle/interval? levels))
     (assoc :interval {:lo (:lo level) :hi (:hi level)
-                      :min (reduce min (map :lo levels)) :max (reduce max (map :hi levels))})))
+                      :min (v/mn (map :lo levels)) :max (v/mx (map :hi levels))})))
 
 (defn facet-panels
-  "Panels `{:key :label :row :col}` and `[rows cols]` of the facets in `split-facets`."
+  "Gives the panels of a facet split and their layout shape.
+
+  Parameters:
+
+  - `split-facets` (map): `{:dims :levels}` of the split stage.
+  - `scales` (map): the plot's scale specs (facet labels).
+  - `facets` (map): the plot's `:facets` options (`:order`, wrap shape).
+
+  Returns `{:rows :cols :wrap? :panels}`: panels `{:key :label :row :col}` (a wrap layout) or `{:key :row :col}` with `:col-levels`, `:row-levels`, `:col-labels`, `:row-labels` (a grid layout)."
   [{:keys [dims levels]} scales {:keys [order] :as facets}]
   (if (= dims [:facet])
     (let [ls (:facet levels)
@@ -217,7 +240,7 @@
                       {:key (key-of cl rl) :row r :col c}))})))
 
 (defn panel-layout
-  "`{:columns c :rows r}` of the plot's panels: the facet layout of `split-facets` (see the split stage) with plot
+  "Gives `{:columns c :rows r}` of the plot's panels: the facet layout of `split-facets` (see the split stage) with plot
   `facets` options (as [[facet-grid]] lays it out, strips not formatted), `{:columns 1 :rows 1}` without facets.
   Throws as [[cljplot2.data.facet/wrap-shape]] for a wrap layout too small for its panels."
   [{:keys [dims levels]} facets]
@@ -230,16 +253,23 @@
   "Stand-in tick label of an axis whose ticks are unknown (before stats)."
   "00")
 
-(defn- size-height ^double [size] (if size (.y ^fastmath.vector.Vec2 size) 0.0))
-(defn- size-width ^double [size] (if size (.x ^fastmath.vector.Vec2 size) 0.0))
+(defn- size-height
+  "Gives the height of a natural size (`Vec2`); 0 for `nil`."
+  ^double [size]
+  (if size (.y ^Vec2 size) 0.0))
+
+(defn- size-width
+  "Gives the width of a natural size (`Vec2`); 0 for `nil`."
+  ^double [size]
+  (if size (.x ^Vec2 size) 0.0))
 
 (defn- axis-room
-  "Pixels an axis `k` takes across itself for tick labels `across` pixels deep (theme tick length and label gap)."
+  "Gives the pixels an axis `k` takes across itself for tick labels `across` pixels deep (theme tick length and label gap)."
   ^double [theme k ^double across]
-  (+ (double (get-in theme [:axis k :tick-length])) (double (get-in theme [:axis k :label-gap])) across))
+  (m/+ (double (get-in theme [:axis k :tick-length])) (double (get-in theme [:axis k :label-gap])) across))
 
 (defn estimated-panel-size
-  "Expected `[w h]` (pixels, at least 1) of one panel of `plot` before its stats are known: the plot's `:width` /
+  "Gives the expected `[w h]` (pixels, at least 1) of one panel of `plot` before its stats are known: the plot's `:width` /
   `:height` less the room this grid gives the plot margins, the title and axis titles (`:labels`), the axes (stand-in
   two-digit tick labels, no end overhangs), plot `margins` (`{side {:size px}}`), the `legends` (contents, e.g.
   [[cljplot2.content.legend/provisional-legends]]) and the facet strips and gaps of `panel-layout` (`{:columns
@@ -247,55 +277,54 @@
   every row), split among the panels; a wrap layout with free / sliced scales (plot `:facets`) also loses the room of
   an axis per panel row / column. Measured on a scratch canvas; an estimate - real tick labels and wrapped legends
   differ."
-  [{:keys [options theme labels flip facets]} legends margins {:keys [columns rows]} facets? grid?]
+  [{:keys [options theme labels flip facets]} legends margins {^long columns :columns ^long rows :rows} facets? grid?]
   (measure/call-with-scratch-canvas
    (:hint options)
    (fn [canvas]
      (let [env {:canvas canvas :theme theme}
-           size (fn [content] (measure/natural-size content env))
+           natural (fn [content] (measure/natural-size content env))
            text-size (fn [role l] (when (some? l)
-                                    (size (merge {:kind :label :role role} (if (map? l) (dissoc l :rotation) {:text (str l)})))))
+                                    (natural (merge {:kind :label :role role} (if (map? l) (dissoc l :rotation) {:text (str l)})))))
            {:keys [x y title]} (side-labels labels flip)
            margin (double (get-in theme [:plot :margin]))
-           tick (size {:kind :label :role :tick-label :text estimate-tick-label})
+           tick (natural {:kind :label :role :tick-label :text estimate-tick-label})
            tick-w (size-width tick) tick-h (size-height tick)
            gap (double (get-in theme [:facet :gap]))
-           strip (if facets? (size-height (size {:kind :strip :text "Xg"})) 0.0)
-           margin-room (fn ^double [side] (if-let [{:keys [size]} (get margins side)] (+ (double size) gap) 0.0))
+           strip (if facets? (size-height (natural {:kind :strip :text "Xg"})) 0.0)
+           margin-room (fn ^double [side] (if-let [{:keys [size]} (get margins side)] (m/+ (double size) gap) 0.0))
            legend-room (if (seq legends)
-                         (+ (double (get-in theme [:legend :gap])) (size-width (size {:kind :legends :legends legends})))
+                         (m/+ (double (get-in theme [:legend :gap])) (size-width (natural {:kind :legends :legends legends})))
                          0.0)
-           columns (long columns) rows (long rows)
            horizontal (scale/horizontal-key flip)
            free? (fn [k] (and (not grid?) (not= :same (facet/scale-relation facets k))))
-           inner-y-axes (if (free? (if (= horizontal :x) :y :x)) (* (dec columns) (axis-room theme :y tick-w)) 0.0)
-           inner-x-axes (if (free? horizontal) (* (dec rows) (axis-room theme :x tick-h)) 0.0)
-           w (- (double (:width options)) (* 2.0 margin) (size-height (text-size :axis-title y))
-                (axis-room theme :y tick-w) (double (margin-room :right)) legend-room
-                (* gap (dec columns)) (if grid? strip 0.0) inner-y-axes)
-           h (- (double (:height options)) (* 2.0 margin) (size-height (text-size :title title))
-                (double (margin-room :top)) (axis-room theme :x tick-h)
-                (size-height (text-size :axis-title x)) (* gap (dec rows)) (if grid? strip (* strip rows)) inner-x-axes)]
-       [(m/max 1.0 (/ w columns)) (m/max 1.0 (/ h rows))]))))
+           inner-y-axes (if (free? (if (= horizontal :x) :y :x)) (m/* (m/long-dec columns) (axis-room theme :y tick-w)) 0.0)
+           inner-x-axes (if (free? horizontal) (m/* (m/long-dec rows) (axis-room theme :x tick-h)) 0.0)
+           w (m/- (double (:width options)) (m/* 2.0 margin) (size-height (text-size :axis-title y))
+                  (axis-room theme :y tick-w) (double (margin-room :right)) legend-room
+                  (m/* gap (m/long-dec columns)) (if grid? strip 0.0) inner-y-axes)
+           h (m/- (double (:height options)) (m/* 2.0 margin) (size-height (text-size :title title))
+                  (double (margin-room :top)) (axis-room theme :x tick-h)
+                  (size-height (text-size :axis-title x)) (m/* gap (m/long-dec rows)) (if grid? strip (m/* strip rows)) inner-x-axes)]
+       [(m/max 1.0 (m// w columns)) (m/max 1.0 (m// h rows))]))))
 
 (defn- panel-weights
-  "Weights of the `n` panel columns (`k` `:widths`) or rows (`:heights`) from plot `facets`: `nil` (equal) when not
+  "Gives the weights of the `n` panel columns (`k` `:widths`) or rows (`:heights`) from plot `facets`: `nil` (equal) when not
   given; a count other than `n` throws `ex-info {:key k}`."
   [facets k ^long n]
   (when-let [ws (get facets k)]
-    (when (not= n (count ws))
+    (when (m/not== n (count ws))
       (schema/fail! (str "Facet " k " needs one weight per panel " (if (= k :widths) "column" "row") " (" n "), got "
                          (count ws) ".")
                     {:key k :in [:facets k] :value ws}))
     (vec ws)))
 
 (defn- panel-track
-  "Flexible track `[:panel i]`, weighted by `(weights i)` when `weights` is given."
+  "Gives the flexible track `[:panel i]`, weighted by `(weights i)` when `weights` is given."
   [weights i]
   {:id [:panel i] :size (if weights [:flexible (weights i)] [:flexible])})
 
 (defn- facet-axis-items
-  "Axis items of a facet layout for the horizontal scale `h-key` (under the panels) and the vertical `v-key` (left of
+  "Gives the axis items of a facet layout for the horizontal scale `h-key` (under the panels) and the vertical `v-key` (left of
   them), each with the `:panel` key whose scales it draws (see [[cljplot2.scale.position/panel-scales-of]]):
   `free-h?` / `free-v?` (wrap layout with a free / sliced relation) - an axis at every panel, in its own `[:x-axis r]`
   row / `[:y-axis c]` column; otherwise an axis per panel column (`:x-axis` row) / row (`:y-axis` column) drawn with
@@ -318,11 +347,11 @@
         bottom-of (fn [c] (last (sort-by :row (filter #(= c (:col %)) panels))))
         first-of (fn [r] (first (sort-by :col (filter #(= r (:row %)) panels))))
         rows (sort (distinct (map :row panels)))
-        last-row (peek (vec rows))
+        last-row (last rows)
         next-row (fn [r] (second (drop-while #(not= r %) rows)))
         with-panel (fn [item panel] (cond-> item panel (assoc-in [:content :panel] (:key panel))))
-        [x-start x-end] (rest (axis-items :bottom h-key))
-        x-start (cond-> x-start free-v? (assoc :column [:y-axis 0]))
+        [bottom-start x-end] (rest (axis-items :bottom h-key))
+        x-start (cond-> bottom-start free-v? (assoc :column [:y-axis 0]))
         [y-start y-end] (rest (axis-items :left v-key))]
     (concat
      (when h-shown?
@@ -330,7 +359,7 @@
          (concat
           (for [{:keys [row col] :as panel} panels]
             (with-panel {:id [:x-axis row col] :column [:panel col] :row [:x-axis row]
-                         :content (h-axis {:kind :axis :scale h-key} (at [row (inc (long col))]))}
+                         :content (h-axis {:kind :axis :scale h-key} (at [row (m/long-inc (long col))]))}
               panel))
           (mapcat (fn [r]
                     (let [in-row (sort-by :col (filter #(= r (:row %)) panels))]
@@ -341,15 +370,15 @@
           (for [c (range cols)]
             (with-panel {:id [:x-axis c] :column [:panel c] :row :x-axis
                          :content (h-axis {:kind :axis :scale h-key}
-                                          (when (< (long c) (dec (long cols))) (bottom-of (inc (long c)))))}
+                                          (when (m/< (long c) (m/long-dec (long cols))) (bottom-of (m/long-inc (long c)))))}
               (bottom-of c)))
-          [(with-panel x-start (bottom-of 0)) (with-panel x-end (bottom-of (dec (long cols))))])))
+          [(with-panel x-start (bottom-of 0)) (with-panel x-end (bottom-of (m/long-dec (long cols))))])))
      (when v-shown?
        (concat
         (if free-v?
           (for [{:keys [row col] :as panel} panels]
             (with-panel {:id [:y-axis row col] :column [:y-axis col] :row [:panel row]
-                         :content (v-axis {:kind :axis :scale v-key} (at [(inc (long row)) col]))}
+                         :content (v-axis {:kind :axis :scale v-key} (at [(m/long-inc (long row)) col]))}
               panel))
           (for [r rows]
             (with-panel {:id [:y-axis r] :column :y-axis :row [:panel r]
@@ -358,7 +387,7 @@
         [(with-panel y-start (at [last-row 0])) (with-panel y-end (at [(first rows) 0]))])))))
 
 (defn facet-grid
-  "Grid of a faceted plot (see [[cljplot2.data.facet]]): panels `[:panel r c]` in a `rows` x `cols` layout with gaps
+  "Gives the grid of a faceted plot (see [[cljplot2.data.facet]]): panels `[:panel r c]` in a `rows` x `cols` layout with gaps
   (theme `[:facet :gap]`), strips (wrap: above each panel; grid: column strips above the top row, row strips on
   the right; none with `:facets {:strips false}`), an x axis under every panel column and a y axis beside every panel
   row, overhangs at the outer ends; a wrap layout with a free / sliced relation (`:facets {:scales ..}`) has an axis
@@ -371,28 +400,27 @@
         margin-track (margin-track-fn plot)
         measured (fn [id] {:id id :size [:measured]})
         strips? (facet/strips? facets)
-        {:keys [rows cols wrap? panels col-labels row-labels levels col-levels row-levels]}
+        {^long rows :rows ^long cols :cols :keys [wrap? panels col-labels row-labels levels col-levels row-levels]}
         (cond-> (facet-panels (:facets split) scales facets)
           (not strips?) (assoc :col-labels nil :row-labels nil))
-        rows (long rows) cols (long cols)
         widths (panel-weights facets :widths cols)
         heights (panel-weights facets :heights rows)
         free-h? (and wrap? (not= :same (facet/scale-relation facets h-key)))
         free-v? (and wrap? (not= :same (facet/scale-relation facets v-key)))
         wrap-strips? (and wrap? strips?)
-        last-col [:panel (dec cols)]
-        last-row [:panel (dec rows)]
+        last-col [:panel (m/long-dec cols)]
+        last-row [:panel (m/long-dec rows)]
         gap-track (fn [prefix i] {:id [prefix i] :size [:fixed gap]})
-        column-tracks (vec (butlast (mapcat (fn [c] (cond-> []
-                                                      free-v? (conj (measured [:y-axis c]))
-                                                      true (conj (panel-track widths c) (gap-track :gap c))))
-                                            (range cols))))
-        row-tracks (vec (butlast (mapcat (fn [r] (cond-> []
-                                                   wrap-strips? (conj (measured [:strip r]))
-                                                   true (conj (panel-track heights r))
-                                                   free-h? (conj (measured [:x-axis r]))
-                                                   true (conj (gap-track :gap r))))
-                                         (range rows))))]
+        column-tracks (butlast (mapcat (fn [c] (cond-> []
+                                                 free-v? (conj (measured [:y-axis c]))
+                                                 true (conj (panel-track widths c) (gap-track :gap c))))
+                                       (range cols)))
+        row-tracks (butlast (mapcat (fn [r] (cond-> []
+                                              wrap-strips? (conj (measured [:strip r]))
+                                              true (conj (panel-track heights r))
+                                              free-h? (conj (measured [:x-axis r]))
+                                              true (conj (gap-track :gap r))))
+                                    (range rows)))]
     {:columns (-> [(margin-track :margin-left) (measured :y-title) (measured :y-axis)]
                   (into column-tracks)
                   (cond-> row-labels (conj (measured :row-strip)))
@@ -403,9 +431,9 @@
                (cond-> col-labels (conj (measured :col-strip)))
                (into row-tracks)
                (into [(measured :x-axis) (measured :x-title) (margin-track :margin-bottom)]))
-     :items (-> (mapv (fn [{:keys [key row col]}]
+     :items (-> (mapv (fn [{panel-key :key :keys [row col]}]
                         {:id [:panel row col] :column [:panel col] :row [:panel row]
-                         :content {:kind :panel :panel key :alternate (odd? (+ (long row) (long col)))}})
+                         :content {:kind :panel :panel panel-key :alternate (odd? (m/long-add (long row) (long col)))}})
                       panels)
                 (into (facet-axis-items panels cols gap {:h-key h-key :v-key v-key :free-h? free-h? :free-v? free-v?
                                                          :local-h? (or (not= :same (facet/scale-relation facets h-key)) (some? widths))
@@ -413,9 +441,9 @@
                                                          :stacked? (or wrap-strips? free-h?)
                                                          :h-shown? (axis-shown? scale-specs h-key)
                                                          :v-shown? (axis-shown? scale-specs v-key)}))
-                (cond-> wrap-strips? (into (map (fn [{:keys [key label row col]}]
+                (cond-> wrap-strips? (into (map (fn [{panel-key :key :keys [label row col]}]
                                                   {:id [:strip row col] :column [:panel col] :row [:strip row]
-                                                   :content (strip-content label key levels)})
+                                                   :content (strip-content label panel-key levels)})
                                                 panels)))
                 (cond-> col-labels (into (map-indexed (fn [c text] {:id [:col-strip c] :column [:panel c] :row :col-strip
                                                                     :content (strip-content text (col-levels c) col-levels)})
@@ -430,7 +458,7 @@
                                                    :to last-row})))}))
 
 (defn titled-custom-grid
-  "`custom-grid` under a title row: rows `:margin-top` (theme `[:plot :margin]`) | `:title` (measured) | `:body`
+  "Gives `custom-grid` under a title row: rows `:margin-top` (theme `[:plot :margin]`) | `:title` (measured) | `:body`
   (flexible, holding `custom-grid` nested). Only `:title` of `labels` is used (the plot schema allows no other)."
   [custom-grid labels theme]
   (if (nil? (:title labels))
@@ -442,28 +470,34 @@
                   (label-items {:title (:title labels)} {:title {:column :body :row :title}}))}))
 
 (defn- arrange-shape
-  "`[rows cols]` for `n` plots and optional `columns` / `rows` (default one column)."
+  "Gives `[rows cols]` (longs) for `n` plots and optional `columns` / `rows`: both given - as given; one - the other from the plot count (rounded up); none - one column."
   [^long n columns rows]
   (cond
     (and rows columns) [(long rows) (long columns)]
-    columns [(long (Math/ceil (/ (double n) (double columns)))) (long columns)]
-    rows [(long rows) (long (Math/ceil (/ (double n) (double rows))))]
+    columns [(long (m/ceil (m// (double n) (double columns)))) (long columns)]
+    rows [(long rows) (long (m/ceil (m// (double n) (double rows))))]
     :else [n 1]))
 
 (defn- arrange-problem
-  "Why the `:arrange` spec (valid entries) can't be laid out, or `nil`: too few cells, or `:widths` / `:heights` not
-  one per column / row."
+  "Gives why an `:arrange` spec (valid entries) can't be laid out, or `nil`.
+
+  Parameters:
+
+  - `arrange` (map): `:plots`, `:columns`, `:rows`, `:widths`, `:heights`.
+
+  Returns a message: too few cells, `:widths` / `:heights` not one per column / row, or a `:measured` width over a column with a plot that isn't `:legend-only`."
   [{:keys [plots columns rows widths heights]}]
-  (let [n (count plots)
+  (let [cells (vec plots)
+        n (count cells)
         [^long r ^long c] (arrange-shape n columns rows)]
     (cond
-      (< (* r c) n) (str "layout " r "x" c " is too small for " n " plots")
-      (and widths (not= c (count widths))) (str ":widths should have one weight per column (" c ")")
+      (m/< (m/* r c) n) (str "layout " r "x" c " is too small for " n " plots")
+      (and widths (m/not== c (count widths))) (str ":widths should have one weight per column (" c ")")
       (some (fn [j] (and (= :measured (nth widths j))
-                         (not-every? :legend-only (keep (fn [i] (get (vec plots) (+ (long j) (* c (long i))))) (range r)))))
+                         (not-every? :legend-only (keep (fn [i] (get cells (m/long-add (long j) (m/* c (long i))))) (range r)))))
             (range (count widths)))
       ":widths :measured sizes a column of :legend-only plots only"
-      (and heights (not= r (count heights))) (str ":heights should have one weight per row (" r ")"))))
+      (and heights (m/not== r (count heights))) (str ":heights should have one weight per row (" r ")"))))
 
 (def arrange-entries
   "Map entries of a multiplot layout (plot `:arrange`): a shared group (`:arrange`), so other multiplot options can
@@ -491,18 +525,19 @@
    [arrange-problem]))
 
 (defn- arrange-weights
+  "Gives the weights of `n` arrange columns or rows: the given `ws`, or `n` equal weights when `nil`."
   [ws ^long n]
-  (if (nil? ws) (vec (repeat n 1)) (vec ws)))
+  (or ws (repeat n 1)))
 
 (defn- weighted-tracks
-  "Tracks `[prefix i]` - flexible, weighted by `ws`; an entry `[:fixed px]` is a fixed track - fixed gaps
-  `[gap-prefix i]` between them."
+  "Gives the tracks `[prefix i]` - flexible, weighted by `ws`; an entry `[:fixed px]` is a fixed track - with fixed gaps
+  `[gap-prefix i]` of `gap` pixels between them."
   [prefix gap-prefix ws gap]
-  (vec (butlast (mapcat (fn [i w] [{:id [prefix i] :size (if (vector? w) w [:flexible w])} {:id [gap-prefix i] :size [:fixed gap]}])
-                        (range) ws))))
+  (butlast (mapcat (fn [i w] [{:id [prefix i] :size (if (vector? w) w [:flexible w])} {:id [gap-prefix i] :size [:fixed gap]}])
+                   (range) ws)))
 
 (defn legend-only-grid
-  "Grid of a plot with `:legend-only true`: only its legends (`legends` - contents, see
+  "Gives the grid of a plot with `:legend-only true`: only its legends (`legends` - contents, see
   [[cljplot2.content.legend/legends]]) in a measured column between the plot margins, under an optional title row
   (`labels` - only `:title`); no panel, axes or axis titles."
   [legends labels theme]
@@ -516,14 +551,13 @@
                 (into (label-items (select-keys labels [:title]) {:title {:column :legend :row :title}})))}))
 
 (defn arrange-grid
-  "Grid of the plot `:arrange` spec `{:plots [p ...] :columns :rows :widths :heights}` in `theme`: cells `[:plot i]`
+  "Gives the grid of the plot `:arrange` spec `{:plots [p ...] :columns :rows :widths :heights}` in `theme`: cells `[:plot i]`
   filled row by row (columns `[:column c]`, rows `[:row r]`) with `[:multiplot :gap]` between them, `[:plot :margin]`
   around, and an optional title row (`labels` - only `:title`) above the cells, inside the margins.
   `arrange` is valid by [[arrange-schema]], its `:measured` widths resolved to `[:fixed px]` (see the pipeline's
   grid stage)."
   [{:keys [plots columns rows widths heights]} labels theme]
-  (let [plots (vec plots)
-        [^long r ^long c] (arrange-shape (count plots) columns rows)
+  (let [[^long r ^long c] (arrange-shape (count plots) columns rows)
         gap (get-in theme [:multiplot :gap])
         margin (get-in theme [:plot :margin])
         margin-track (fn [id] {:id id :size [:fixed margin]})]
@@ -534,16 +568,14 @@
                (into (weighted-tracks :row :row-gap (arrange-weights heights r) gap))
                (conj (margin-track :margin-bottom)))
      :items (-> (vec (map-indexed (fn [i p]
-                                    {:id [:plot i] :column [:column (rem (long i) c)] :row [:row (quot (long i) c)]
+                                    {:id [:plot i] :column [:column (m/long-rem (long i) c)] :row [:row (m/long-quot (long i) c)]
                                      :content {:kind :plot :plot p}})
                                   plots))
                 (into (label-items (select-keys labels [:title])
-                                   {:title {:column {:from [:column 0] :to [:column (dec c)]} :row :title}})))}))
-
-(def ^:private iso-spacers #{:iso-before :iso-after})
+                                   {:title {:column {:from [:column 0] :to [:column (m/long-dec c)]} :row :title}})))}))
 
 (defn- with-iso-spacers
-  "`grid` with spacer tracks `:iso-before` / `:iso-after` (fixed 0) inside its outer margin tracks, both axes."
+  "Gives `grid` with spacer tracks `:iso-before` / `:iso-after` (fixed 0) inside its outer margin tracks, both axes."
   [grid]
   (let [insert (fn [tracks] (-> [(first tracks) {:id :iso-before :size [:fixed 0]}]
                                 (into (butlast (rest tracks)))
@@ -551,22 +583,21 @@
     (-> grid (update :columns insert) (update :rows insert))))
 
 (defn iso-grid
-  "Generated `grid` (with iso spacers) with `column-total` / `row-total` whole pixels of spacer per axis, split
+  "Gives the generated `grid` (with iso spacers) with `column-total` / `row-total` whole pixels of spacer per axis, split
   between the two sides (`:iso-before` gets the floor of half); panels stay flexible and take the rest, the panel
   block centred."
   [grid column-total row-total]
-  (let [resize (fn [tracks total]
-                 (let [total (long total)
-                       before (quot total 2)]
+  (let [resize (fn [tracks ^long total]
+                 (let [before (m/long-quot total 2)]
                    (mapv (fn [t] (case (:id t)
                                    :iso-before (assoc t :size [:fixed before])
-                                   :iso-after (assoc t :size [:fixed (- total before)])
+                                   :iso-after (assoc t :size [:fixed (m/long-sub total before)])
                                    t))
                          tracks)))]
     (-> grid (update :columns resize column-total) (update :rows resize row-total))))
 
 (defn plot-grid
-  "The generated grid: [[facet-grid]] when the plot is faceted (`[:split :facets :dims]` non-empty), else
+  "Gives the generated grid: [[facet-grid]] when the plot is faceted (`[:split :facets :dims]` non-empty), else
   [[single-panel-grid]]; plots with `:aspect :iso` get spacer tracks around the panel block (see [[iso-grid]])."
   [plot]
   (cond-> (if (seq (get-in plot [:split :facets :dims]))

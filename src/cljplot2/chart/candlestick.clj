@@ -132,9 +132,7 @@
                               (and (m/<= l (m/min o c)) (m/<= (m/max o c) h))))
         valid? (fn [r] (and (complete? r) (consistent? r)))
         rows (mapcat val groups)
-        _ (doseq [[k f] accessors]
-            (when (and (seq rows) (not-any? #(if (= :x k) (data/valid-value? (f %)) (schema/finite? (f %))) rows))
-              (schema/fail! "No valid values for a mapped dimension - check the mapping." {:key :mapping :value k :rows (count rows)})))
+        _ (data/check-mapped! rows accessors (fn [k v] (if (= :x k) (data/valid-value? v) (schema/finite? v))))
         candle (fn [r] (into {} (map (fn [[k f]] [k (let [value (f r)] (if (= :x k) value (double value)))])) accessors))
         st (theme/resolved-style theme chart)
         data (update-vals groups (fn [rs] {:candles (mapv candle (filter valid? rs))
@@ -231,7 +229,7 @@
                                            (pattern-fill {:pattern (if up? (:up-pattern style) (:down-pattern style))
                                                           :pattern-color (:pattern-color style)}
                                                          color)
-                                           #(c2d/rect canvas rx ry rw rh))
+                                           #(c2d/rect % rx ry rw rh))
                   (when-not (theme/none? (:stroke-color style))
                     (c2d/set-stroke canvas 1.0)
                     (c2d/set-color canvas (:stroke-color style))

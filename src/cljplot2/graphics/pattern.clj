@@ -1,70 +1,105 @@
 (ns cljplot2.graphics.pattern
   "Fill patterns as seamless texture tiles (see [[cljplot2.schema/pattern-styles]]): a tile holds one period of the
-  pattern - marks in the ink colour on a transparent background - and a `TexturePaint` repeats it over a fill (see
+  pattern - marks in the ink colour on a transparent background - and a texture paint repeats it over a fill (see
   [[cljplot2.graphics.draw/fill-with-pattern!]]).
 
   Periods are whole pixels: `spacing` for lines at 0° / 90° and dots, `spacing · √2` for lines at 45° / 135°
-  (rounded, at least 2), so tiles repeat without seams."
-  (:require [clojure2d.color :as c]
+  (rounded, at least 2), so tiles repeat without seams.
+
+  Functions: [[spec-of]], [[period]], [[tile]]."
+  (:require [clojure2d.core :as c2d]
             [fastmath.core :as m]
             [cljplot2.schema :as schema])
-  (:import [java.awt BasicStroke Graphics2D RenderingHints]
-           [java.awt.geom Ellipse2D$Double Line2D$Double]
-           [java.awt.image BufferedImage]))
+  (:import [java.awt.image BufferedImage]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
 (defn spec-of
-  "Pattern spec of a valid `pattern` (a name of [[cljplot2.schema/pattern-styles]] or a spec map); `nil` for `:solid`
-  or `nil` - no pattern."
+  "Gives the pattern spec of a valid pattern.
+
+  Parameters:
+
+  - `pattern`: a name of [[cljplot2.schema/pattern-styles]] or a spec map.
+
+  Returns the spec map; `nil` for `:solid` or `nil` - no pattern."
   [pattern]
   (let [spec (get schema/pattern-styles pattern pattern)]
     (when (map? spec) spec)))
 
 (defn period
-  "Whole-pixel period of the tile of pattern `spec` (see the namespace doc)."
-  ^long [{:keys [kind angle spacing]}]
-  (let [s (double spacing)]
-    (m/max 2 (m/round (if (and (not= :dots kind) (contains? #{45 135} (long angle))) (* s m/SQRT2) s)))))
+  "Gives the whole-pixel period of a pattern's tile (see the namespace doc).
+
+  Parameters:
+
+  - `spec` (map): the pattern spec - `:kind`, `:angle`, `:spacing`.
+
+  Returns the period in pixels, at least 2."
+  ^long [{:keys [kind angle ^double spacing]}]
+  (m/max 2 (m/round (if (and (not= :dots kind) (contains? #{45 135} (long angle))) (m/* spacing m/SQRT2) spacing))))
 
 (defn- line-angles
-  "Angles of the line families of a line or cross `spec`."
+  "Gives the angles of the line families of a line or cross spec.
+
+  Parameters:
+
+  - `spec` (map): `:kind`, `:angle`.
+
+  Returns a vector of angles in degrees: one, or two at right angles for `:cross`."
   [{:keys [kind angle]}]
-  (if (= :cross kind) [(long angle) (+ 90 (long angle))] [(long angle)]))
+  (if (= :cross kind) [(long angle) (m/long-add 90 (long angle))] [(long angle)]))
 
 (defn- draw-lines!
-  "One period of parallel lines at `angle` (0, 45, 90, 135 or 180 - 0 again) across the `p`-pixel tile, copies one
-  period away on both sides so marks crossing the edges wrap."
-  [^Graphics2D g ^long angle ^long p]
-  (let [p (double p)
-        mid (+ (m/floor (* 0.5 p)) 0.5)
-        shifts [(- p) 0.0 p]
-        segments (case (rem angle 180)
-                   0 [[0.0 mid p mid]]
-                   90 [[mid 0.0 mid p]]
-                   45 (map (fn [^double d] [d p (+ d p) 0.0]) shifts)
-                   135 (map (fn [^double d] [d 0.0 (+ d p) p]) shifts))]
+  "Draws one period of parallel lines across a tile, with copies one period away on both sides so marks crossing the edges wrap.
+
+  Parameters:
+
+  - `canvas`: the tile's canvas in graphics context (stroke and colour set).
+  - `angle` (long): 0, 45, 90, 135 or 180 (0 again) degrees.
+  - `p` (long): the tile side in pixels.
+
+  Returns `nil`."
+  [canvas ^long angle ^long p]
+  (let [side (double p)
+        mid (m/+ (m/floor (m/* 0.5 side)) 0.5)
+        shifts [(m/- side) 0.0 side]
+        segments (case (m/long-rem angle 180)
+                   0 [[0.0 mid side mid]]
+                   90 [[mid 0.0 mid side]]
+                   45 (map (fn [^double d] [d side (m/+ d side) 0.0]) shifts)
+                   135 (map (fn [^double d] [d 0.0 (m/+ d side) side]) shifts))]
     (doseq [[x0 y0 x1 y1] segments]
-      (.draw g (Line2D$Double. x0 y0 x1 y1)))))
+      (c2d/line canvas x0 y0 x1 y1))))
 
 (defn tile
-  "Tile image of pattern `spec` (see [[spec-of]]) in `ink` (a clojure2d colour): `period` pixels square, transparent
-  background, antialiased marks."
+  "Gives the tile image of a pattern: one period square, transparent background, antialiased marks.
+
+  The tile canvas uses the Java2D default rendering hints except antialiasing on and pure stroke control, so marks land on the same pixels at every scale.
+
+  Parameters:
+
+  - `spec` (map): the pattern spec (see [[spec-of]]) - `:kind` (`:dots` - a centred dot of `:size` pixels, else lines of `:width` pixels, square caps, mitred).
+  - `ink`: the marks' colour (any clojure2d representation).
+
+  Returns a `BufferedImage` [[period]] pixels square."
   ^BufferedImage [{:keys [kind width size] :as spec} ink]
   (let [p (period spec)
-        img (BufferedImage. p p BufferedImage/TYPE_INT_ARGB)
-        g (.createGraphics img)]
-    (try
-      (.setRenderingHint g RenderingHints/KEY_ANTIALIASING RenderingHints/VALUE_ANTIALIAS_ON)
-      (.setRenderingHint g RenderingHints/KEY_STROKE_CONTROL RenderingHints/VALUE_STROKE_PURE)
-      (.setColor g (c/awt-color ink))
+        canvas (c2d/canvas p p :low)]
+    (c2d/with-canvas [c canvas]
+      (-> c
+          (c2d/set-rendering-hint :antialiasing :on)
+          (c2d/set-rendering-hint :interpolation :nearest-neighbor)
+          (c2d/set-rendering-hint :alpha-interpolation :default)
+          (c2d/set-rendering-hint :color-rendering :default)
+          (c2d/set-rendering-hint :rendering :default)
+          (c2d/set-rendering-hint :fractional-metrics :default)
+          (c2d/set-rendering-hint :text-antialiasing :default)
+          (c2d/set-rendering-hint :stroke-control :pure)
+          (c2d/set-color ink))
       (if (= :dots kind)
-        (let [d (double size)
-              o (- (* 0.5 (double p)) (* 0.5 d))]
-          (.fill g (Ellipse2D$Double. o o d d)))
-        (do (.setStroke g (BasicStroke. (float width) BasicStroke/CAP_SQUARE BasicStroke/JOIN_MITER))
+        (let [d (double size)]
+          (c2d/ellipse c (m/* 0.5 (double p)) (m/* 0.5 (double p)) d d))
+        (do (c2d/set-stroke c (double width) :square :miter 10.0)
             (doseq [a (line-angles spec)]
-              (draw-lines! g (long a) p))))
-      img
-      (finally (.dispose g)))))
+              (draw-lines! c (long a) p)))))
+    (c2d/get-image canvas)))

@@ -147,7 +147,7 @@
   (testing "parallel axes and color bars follow the same rule; a zero-length parallel domain - one tick"
     (is (>= (count (parallel/axis-ticks [-2100.0 4500.0] 70.0 50.0)) 2))
     (is (= 1 (count (parallel/axis-ticks [3.0 3.0] 70.0 50.0))))
-    (is (>= (count (:ticks (#'legend/colorbar-content {:kind :linear :domain [2330.0 2390.0]} nil))) 2)))
+    (is (>= (count (:ticks (#'legend/colorbar-content {:kind :linear :domain [2330.0 2390.0]} nil 5))) 2)))
   (testing "a faceted plot of short panels: every y axis at least two ticks"
     (let [rows (for [[g k] [["a" 1.0] ["b" 3000.0] ["c" 0.01]] i (range 20)] {:g g :x i :y (* k (m/sin i))})
           b (plot/build {:data rows :mapping {:x :x :y :y :facet :g} :charts [(chart/line)]

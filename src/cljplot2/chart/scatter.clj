@@ -186,7 +186,7 @@
         points (jitter-points kept-points options plot-scales)]
     (doseq [[i k] (map-indexed vector dims)]
       (when (and (m/pos? row-count) (not-any? #(aesthetic/valid-value? k (get plot-scales k) (% i)) all-values))
-        (schema/fail! "No valid values for a mapped dimension - check the mapping." {:key :mapping :value k :rows row-count})))
+        (schema/fail! data/no-valid-values {:key :mapping :value k :rows row-count})))
     {:data points
      :extents (update-vals points (fn [p] (into {:x (data/extent :x (:x p)) :y (data/extent :y (:y p))}
                                                 (map (fn [k] [k (aesthetic/value-extent k (get plot-scales k) (remove nil? (p k)))]))
@@ -253,5 +253,4 @@
   Draws the chart's shape fitted and centred in `box` (see [[cljplot2.graphics.shape/draw-key!]])."
   [chart attributes canvas box env]
   (let [st (merge (theme/resolved-style (:theme env) chart) attributes)]
-    (c2d/set-stroke-custom canvas {:size (double (:stroke-width st))})
-    (shape/draw-key! canvas (:shape st) box st)))
+    (shape/styled-key! canvas box st true)))

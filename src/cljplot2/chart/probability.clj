@@ -330,7 +330,7 @@
                    panels)]
     (doseq [k data-dims]
       (when (and (m/pos? row-count) (m/== row-count (long (side-dropped k))))
-        (schema/fail! "No valid values for a mapped dimension - check the mapping." {:key :mapping :value k :rows row-count})))
+        (schema/fail! data/no-valid-values {:key :mapping :value k :rows row-count})))
     {:data data
      :extents (merge-with merge (group/aesthetic-extents panels plot-scales)
                           (into {} (keep (fn [[panel {panel-groups :groups}]]
@@ -454,5 +454,4 @@
   See also [[cljplot2.graphics.shape/draw-key!]]."
   [chart attributes canvas box env]
   (let [st (merge (theme/resolved-style (:theme env) chart) attributes)]
-    (c2d/set-stroke-custom canvas {:size (double (:stroke-width st))})
-    (shape/draw-key! canvas (:shape st) box st)))
+    (shape/styled-key! canvas box st true)))

@@ -228,7 +228,7 @@
                             {:kind :numeric :min (m/- (v/mn vs) cell-reach) :max (m/+ (v/mx vs) cell-reach)})
                           (if (every? number? vs) {:kind :categorical :values (vec (distinct vs))} (data/extent k vs)))))]
     (when (and (seq all) (not-any? #(aesthetic/valid-value? :color (get plot-scales :color) (nth % 2)) all))
-      (schema/fail! "No valid values for a mapped dimension - check the mapping." {:key :mapping :value :color :rows (count all)}))
+      (schema/fail! data/no-valid-values {:key :mapping :value :color :rows (count all)}))
     {:data (update-vals cells-of (fn [cs] {:cells cs :axes axes :style st :value-label (:value-label options) :sized? sized?}))
      :extents (update-vals cells-of (fn [cs] (into {} (filter val)
                                                    {:x (axis-extent :x (map first cs))

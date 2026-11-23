@@ -1,13 +1,17 @@
 (ns cljplot2.graphics.measure
-  "Natural sizes of grid item content.
+  "Natural sizes of grid item content, and pixel geometry shared by layout and drawing.
 
   Text metrics depend on the rendering hint (fractional metrics), not on canvas size,
-  so content is measured on a 1x1 scratch canvas created with the target canvas's hint."
+  so content is measured on a 1x1 scratch canvas created with the target canvas's hint.
+
+  Functions: measuring [[natural-size]], [[validate-content]], [[content-kind]], [[scratch-canvas]],
+  [[call-with-scratch-canvas]]; label thinning [[spans-overlap?]], [[kept-label-indices]], [[label-boxes-overlap?]],
+  [[kept-box-indices]]; geometry [[boxes-overlap?]], [[finite-point?]], [[max-size]]."
   (:require [cljplot2.schema :as schema]
             [clojure2d.core :as c2d]
             [fastmath.core :as m]
-            [fastmath.vector :as v]
-            [cljplot2.graphics.canvas :as canvas]))
+            [fastmath.vector :as v])
+  (:import [fastmath.vector Vec2]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -17,25 +21,48 @@
   #{:low :mid :high :highest})
 
 (defn scratch-canvas
-  "1x1 canvas for measuring, with the given rendering `hint` (one of [[rendering-hints]]).
-  Draw or measure on it within a graphics context, see [[call-with-scratch-canvas]]."
+  "Gives a 1x1 canvas for measuring; draw or measure on it within a graphics context (see [[call-with-scratch-canvas]]).
+
+  Parameters:
+
+  - `hint` (keyword): the rendering hint, one of [[rendering-hints]].
+
+  Returns a clojure2d canvas."
   [hint]
   (c2d/canvas 1 1 hint))
 
 (defn call-with-scratch-canvas
-  "Call `(f canvas)` with a [[scratch-canvas]] in graphics context; the graphics are released even when `f` throws."
+  "Calls a function with a [[scratch-canvas]] in graphics context; the graphics are released even when it throws.
+
+  Parameters:
+
+  - `hint` (keyword): the rendering hint.
+  - `f` (fn of a canvas): the measuring.
+
+  Returns the result of `f`."
   [hint f]
-  (canvas/call-with-graphics (scratch-canvas hint) f))
+  (c2d/with-canvas [c (scratch-canvas hint)] (f c)))
 
 (defn spans-overlap?
-  "Do two labels with centres `ci`, `cj` and extents `ei`, `ej` along one axis overlap by more than 1 px (natural sizes
-  are rounded up)?"
+  "Tests whether two labels along one axis overlap by more than 1 px (natural sizes are rounded up).
+
+  Parameters:
+
+  - `ci`, `ei` (doubles): the first label's centre and extent.
+  - `cj`, `ej` (doubles): the second label's centre and extent.
+
+  Returns true or false."
   [^double ci ^double ei ^double cj ^double ej]
   (m/< (m/abs (m/- cj ci)) (m/- (m/* 0.5 (m/+ ei ej)) 1.0)))
 
 (defn kept-label-indices
-  "Indices of labels (`centres`, `extents` along one axis, in tick order) to draw without collisions: the first, then
-  each label not overlapping the last kept one ([[spans-overlap?]]); empty for no labels."
+  "Gives the indices of labels along one axis to draw without collisions: the first, then each label not overlapping the last kept one (see [[spans-overlap?]]).
+
+  Parameters:
+
+  - `centres`, `extents` (vectors of numbers): the labels' centres and extents, in tick order.
+
+  Returns a vector of indices; empty for no labels."
   [centres extents]
   (loop [i (long 0) last-kept nil kept []]
     (if (m/>= i (count centres))
@@ -44,6 +71,31 @@
                                          (centres i) (extents i)))
         (recur (m/long-inc i) last-kept kept)
         (recur (m/long-inc i) i (conj kept i))))))
+
+(defn finite-point?
+  "Tests whether a pixel point can be drawn: both coordinates are finite numbers.
+
+  Parameters:
+
+  - `p`: a `Vec2` or an `[x y]` vector.
+
+  Returns a truthy value for finite coordinates; false for a `NaN` or infinite coordinate, a non-number or `nil` (as `p` or a coordinate)."
+  [p]
+  (if (instance? Vec2 p)
+    (and (m/valid-double? (.x ^Vec2 p)) (m/valid-double? (.y ^Vec2 p)))
+    (let [[x y] p]
+      (and (number? x) (number? y) (m/valid-double? (double x)) (m/valid-double? (double y))))))
+
+(defn max-size
+  "Gives the largest width and the largest height of a collection of sizes, each taken separately.
+
+  Parameters:
+
+  - `sizes` (sequence): sizes as `Vec2` `[w h]` (e.g. natural sizes of labels).
+
+  Returns a `Vec2` `[max-w max-h]`; `[0 0]` for no sizes."
+  ^Vec2 [sizes]
+  (reduce (fn [^Vec2 acc ^Vec2 s] (Vec2. (m/max (.x acc) (.x s)) (m/max (.y acc) (.y s)))) (Vec2. 0.0 0.0) sizes))
 
 (defn boxes-overlap?
   "Tests whether two pixel boxes overlap; touching edges don't.
@@ -60,52 +112,73 @@
        (m/< ay (m/+ by bh)) (m/< by (m/+ ay ah))))
 
 (defn label-boxes-overlap?
-  "Do pixel boxes `a` and `b` (`{:x :y :w :h}`) overlap by more than 1 px both across and along (natural sizes are
-  rounded up)?"
+  "Tests whether two label boxes overlap by more than 1 px both across and along (natural sizes are rounded up).
+
+  Parameters:
+
+  - `a`, `b` (maps): pixel boxes `{:x :y :w :h}`.
+
+  Returns true or false.
+
+  See also [[boxes-overlap?]] (any overlap)."
   [a b]
   (let [over (fn ^double [^double a0 ^double aw ^double b0 ^double bw]
-               (m/- (m/min (+ a0 aw) (+ b0 bw)) (m/max a0 b0)))]
+               (m/- (m/min (m/+ a0 aw) (m/+ b0 bw)) (m/max a0 b0)))]
     (and (m/> (double (over (:x a) (:w a) (:x b) (:w b))) 1.0)
          (m/> (double (over (:y a) (:h a) (:y b) (:h b))) 1.0))))
 
 (defn kept-box-indices
-  "Indices of label `boxes` (`{:x :y :w :h}`, in tick order) to draw without collisions: each box overlapping no box
-  kept before it ([[label-boxes-overlap?]]) - around a circle the last label is checked against the first too; empty
-  for no boxes."
+  "Gives the indices of label boxes to draw without collisions: each box overlapping no box kept before it (see [[label-boxes-overlap?]]) - around a circle the last label is checked against the first too.
+
+  Parameters:
+
+  - `boxes` (vector of maps): pixel boxes `{:x :y :w :h}`, in tick order.
+
+  Returns a vector of indices; empty for no boxes."
   [boxes]
   (reduce (fn [kept i]
             (if (some #(label-boxes-overlap? (boxes i) (boxes %)) kept) kept (conj kept i)))
           [] (range (count boxes))))
 
 (defn content-kind
-  "Dispatch value of item content: `::empty` for `nil` (an empty box), otherwise its `:kind`."
+  "Gives the dispatch value of item content.
+
+  Parameters:
+
+  - `content`: the item content (a map) or `nil` (an empty box).
+
+  Returns `::empty` for `nil`, otherwise its `:kind`."
   [content]
   (if (nil? content) ::empty (:kind content)))
 
 (defmulti validate-content
-  "Check item `content` once, before layout; throw `ex-info` naming the offending key.
-  Dispatched on [[content-kind]]; kinds without a method aren't checked here.
-  [[natural-size]] and [[cljplot2.graphics.draw/draw-content]] may assume validated content."
+  "Checks item content once, before layout, dispatched on [[content-kind]].
+
+  Parameters:
+
+  - `content` (map): the item content.
+
+  Returns `nil`; throws `ex-info` naming the offending key. Kinds without a method aren't checked here; [[natural-size]] and [[cljplot2.graphics.draw/draw-content]] may assume validated content."
   content-kind)
 
 (defmethod validate-content :default [_] nil)
 
 (defmulti natural-size
-  "Natural size of item `content` as `Vec2` `[width height]`, dispatched on [[content-kind]].
+  "Gives the natural size of item content, dispatched on [[content-kind]].
 
-  `env` keys:
+  Parameters:
 
-  * `:canvas` - scratch canvas in graphics context (absent when measuring without one)
-  * `:box` - the item's box from the previous layout round, `nil` in the first round
-  * `:scales` - scales finalized for the previous layout round
-  * `:theme` - the plot theme, see [[cljplot2.theme]]
+  - `content`: the item content; `nil` - an empty box.
+  - `env` (map): `:canvas` - a scratch canvas in graphics context (absent when measuring without one), `:box` - the item's box from the previous layout round (`nil` in the first round), `:scales` - scales finalized for the previous layout round, `:theme` - the plot theme (see [[cljplot2.theme]]).
 
-  `nil` content (an empty box) has zero natural size; other content without a known `:kind` is an error."
+  Returns a `Vec2` `[width height]`; zero for `nil` content. Content without a known `:kind` is an error keyed `:kind`."
   (fn [content _env] (content-kind content)))
 
 (defmethod natural-size ::empty [_ _] (v/vec2 0.0 0.0))
 
-(def ^:private placeholder-schema [:map [:size [:tuple number? number?]]])
+(def ^:private placeholder-schema
+  "Schema of placeholder content: a fixed `:size` `[w h]`."
+  [:map [:size [:tuple number? number?]]])
 
 (defmethod natural-size :placeholder
   [{:keys [size] :as content} _]

@@ -71,8 +71,8 @@
   Returns a vector of breaks; tied breaks merged (fewer bins)."
   [values {:keys [quantiles estimation]}]
   (let [ps (if (vector? quantiles)
-             (vec (concat [0.0] (map double quantiles) [1.0]))
-             (vec (m/slice-range (m/long-inc (long quantiles)))))]
+             (concat [0.0] (map double quantiles) [1.0])
+             (m/slice-range (m/long-inc (long quantiles))))]
     (vec (distinct (stats/quantiles values ps (or estimation :legacy))))))
 
 (defn- equal-breaks
@@ -358,9 +358,9 @@
          x-group (fn [r] (let [v (x-of r)] (when (rows/valid-value? v) (or (rows/x-key v) v))))
          rankable? (fn [i] (and (finite (value-of (rs i))) (some? (x-group (rs i)))))
          ranked (into {} (mapcat (fn [indices]
-                                   (let [vs (mapv #(finite (value-of (rs %))) indices)]
+                                   (let [vs (map #(finite (value-of (rs %))) indices)]
                                      (map vector indices
                                           (map #(if (integer? %) (m/long-inc (long %)) (m/inc (double %)))
-                                               (m/rank (mapv #(if descending (m/- (double %)) %) vs) ties))))))
+                                               (m/rank (map #(if descending (m/- (double %)) %) vs) ties))))))
                      (vals (group-by #(x-group (rs %)) (filter rankable? (range (count rs))))))]
      (vec (map-indexed (fn [i r] (assoc r rank-key (ranked i))) rs)))))

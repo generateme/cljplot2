@@ -58,9 +58,8 @@
   Axis title suggested for the value axis: the count measure (`Count` ...), `Proportion` for `:normalize`,
   `<stat> of <x>` for `:sum`, `:mean`, `:median` of a keyword `:x` when some bar has more than one value.
 
-  Functions: [[compute]], [[draw]], [[legend]] - the chart contract."
+  Functions: [[legend]] - the chart contract's key glyph (the chart computes and draws through [[cljplot2.data.strip/compute]] and [[cljplot2.data.strip/draw]])."
   (:require [clojure.string :as str]
-            [clojure2d.color :as c]
             [fastmath.core :as m]
             [fastmath.vector :as v]
             [fastmath.stats :as stats]
@@ -540,7 +539,7 @@
             :when (m/not== y0 y1)
             :let [c0 (strip/in-slot slot 0.0)
                   hw (m/* (strip/slot-half slot) width-factor)
-                  fill (if translucent? (c/set-alpha (:color st) (m/* 255.0 (double (:alpha style)))) (:color st))]]
+                  fill (if translucent? (draw/with-alpha (:color st) (:alpha style)) (:color st))]]
       (let [[base end] (if rounding (draw/value-ends y0 y1) [y0 y1])]
         (draw/range-bar! canvas geometry (range-point base level (m/- c0 hw)) (range-point end level (m/+ c0 hw))
                          fill (draw/outline-color (:stroke-color st) (:color st)) stroke-width (pattern-fill st fill)
@@ -560,31 +559,10 @@
           placements (fitting-placements canvas pl (strip/end-label-placements pl ordered scales) env)]
       (strip/draw-label-placements! canvas (strip/without-collisions canvas placements env) env))))
 
-(defn compute
-  "Computes the chart's stats with its levels on the categorical axis.
+(defmethod strip/in-frame-compute :bar [chart chart-split env] (compute-in-strip-frame chart chart-split env))
 
-  Parameters:
-
-  - `chart` (map): the chart value.
-  - `chart-split` (map): `:groups`, `:mapping`.
-  - `env` (map): the compute environment.
-
-  Returns the stats of [[compute-in-strip-frame]] oriented to the level axis (see [[cljplot2.data.strip/compute-oriented]])."
-  [chart chart-split env]
-  (strip/compute-oriented compute-in-strip-frame chart chart-split env))
-
-(defn draw
-  "Draws one panel of the chart.
-
-  Parameters:
-
-  - `chart` (map): the chart value.
-  - `computed` (map): the panel's computed data.
-  - `canvas`, `box`, `scales`, `env`: as the chart contract's draw.
-
-  Draws [[draw-in-strip-frame]] in the strip frame (see [[cljplot2.data.strip/draw-oriented]])."
-  [chart computed canvas box scales env]
-  (strip/draw-oriented draw-in-strip-frame chart computed canvas box scales env))
+(defmethod strip/in-frame-draw :bar [chart computed canvas box scales env]
+  (draw-in-strip-frame chart computed canvas box scales env))
 
 (defn legend
   "Draws the key glyph: a filled square (see [[cljplot2.graphics.draw/bar-key!]]).
@@ -597,7 +575,7 @@
   - `box` (map): the key box.
   - `env` (map): the drawing environment (`:theme`, `:chart-stats`).
 
-  The square is translucent with a mapped `:color` when the bars are (overlay groups sharing a level, see [[compute]]) and rounded as the bars."
+  The square is translucent with a mapped `:color` when the bars are (overlay groups sharing a level, see [[cljplot2.data.strip/compute]]) and rounded as the bars."
   [{:keys [options] :as chart} attributes canvas box env]
   (draw/bar-key! canvas box (merge (theme/resolved-style (:theme env) chart) (select-keys attributes [:color :pattern]))
                  (and (contains? attributes :color) (some :translucent? (vals (get-in env [:chart-stats :data]))))

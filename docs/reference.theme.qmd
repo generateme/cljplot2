@@ -37,7 +37,8 @@ section below lists its keys with their default values and changes some of them.
 ::: {.sourceClojure}
 ```clojure
 (ns reference.theme
-  (:require [cljplot2.chart :as chart]
+  (:require [fastmath.core :as m]
+            [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
             [cljplot2.describe :as describe]
             [notebook-utils :as nu]))
@@ -334,7 +335,7 @@ Legend key sizes, spacing, the legend box and the colour bar.
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:legend</td><td>map</td><td></td><td>legends and colour bars</td></tr><tr><td>:legend :gap</td><td>a non-negative number</td><td>5</td><td>pixels between key and label and between legends</td></tr><tr><td>:legend :key-size</td><td>a non-negative number</td><td>14</td><td>side of a legend key box in pixels</td></tr><tr><td>:legend :fill</td><td>a clojure2d color or :none</td><td>:none</td><td>legend box fill</td></tr><tr><td>:legend :border-color</td><td>a clojure2d color or :none</td><td>:none</td><td>legend box border colour</td></tr><tr><td>:legend :border-width</td><td>a non-negative number</td><td>1</td><td>legend box border width in pixels</td></tr><tr><td>:legend :bar-length</td><td>:stretch or a positive number</td><td>:stretch</td><td>colour bar length: :stretch (the space left) or pixels</td></tr><tr><td>:legend :bar-width</td><td>a positive number or nil</td><td></td><td>colour bar width in pixels (nil - the key size)</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:legend</td><td>map</td><td></td><td>legends and colour bars</td></tr><tr><td>:legend :gap</td><td>a non-negative number</td><td>5</td><td>pixels between key and label and between legends</td></tr><tr><td>:legend :key-size</td><td>a non-negative number</td><td>14</td><td>side of a legend key box in pixels</td></tr><tr><td>:legend :fill</td><td>a clojure2d color or :none</td><td>:none</td><td>legend box fill</td></tr><tr><td>:legend :border-color</td><td>a clojure2d color or :none</td><td>:none</td><td>legend box border colour</td></tr><tr><td>:legend :border-width</td><td>a non-negative number</td><td>1</td><td>legend box border width in pixels</td></tr><tr><td>:legend :bar-length</td><td>:stretch or a positive number</td><td>:stretch</td><td>colour bar length: :stretch (the space left) or pixels</td></tr><tr><td>:legend :bar-width</td><td>a positive number or nil</td><td></td><td>colour bar width in pixels (nil - the key size)</td></tr><tr><td>:legend :bar-ticks</td><td>a positive integer</td><td>5</td><td>colour bar tick count (a scale's :ticks wins)</td></tr><tr><td>:legend :bar-tick-length</td><td>a non-negative number</td><td>3</td><td>colour bar tick length in pixels (labels follow it)</td></tr><tr><td>:legend :bar-tick-width</td><td>a non-negative number</td><td>1</td><td>colour bar tick width in pixels (0 - no tick lines)</td></tr></tbody></table>
 ```
 
 :::
@@ -351,6 +352,55 @@ Legend key sizes, spacing, the legend box and the colour bar.
 
 ::: {.clay-image}
 ![](reference.theme_files/image8.png)
+:::
+
+
+A colour bar with more, longer and thicker ticks.
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image {:data iris
+                    :mapping {:x :sepal-length :y :petal-length :color :petal-width}
+                    :charts [(chart/scatter)]
+                    :theme {:legend {:bar-ticks 10 :bar-tick-length 8 :bar-tick-width 2}}}
+                   {:width 500 :height 300})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.theme_files/image9.png)
+:::
+
+
+
+## 3D frame
+
+The dash of a 3D box's hidden edges; the box edges and axes take the x axis style (`[:axis :x]`).
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:frame-3d</td><td>map</td><td></td><td>3D box frames (their axes and edges take [:axis :x])</td></tr><tr><td>:frame-3d :hidden-edge-dash</td><td>:none, a dash style (:dashed :dot-dash :dot-dot-dash :dotted :long-dash :loose-dot :solid :two-dash) or a sequence of positive numbers</td><td>[3 3]</td><td>dash of the hidden box edges (:none - solid)</td></tr></tbody></table>
+```
+
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image {:charts [(chart/surface {:f (fn [[x y]] (m/sin (m/* x y))) :domain {:x [-2 2] :y [-2 2]}})]
+                    :theme {:frame-3d {:hidden-edge-dash [8 2 2 2]}
+                            :axis {:x {:line-width 2}}}}
+                   {:width 500 :height 400})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.theme_files/image10.png)
 :::
 
 
@@ -381,7 +431,7 @@ numbers, shapes, sizes, dashes and patterns.
 
 
 ::: {.clay-image}
-![](reference.theme_files/image9.png)
+![](reference.theme_files/image11.png)
 :::
 
 
@@ -418,7 +468,7 @@ Titles, strips and axis texts:
 
 
 ::: {.clay-image}
-![](reference.theme_files/image10.png)
+![](reference.theme_files/image12.png)
 :::
 
 
@@ -444,7 +494,7 @@ Legend texts:
 
 
 ::: {.clay-image}
-![](reference.theme_files/image11.png)
+![](reference.theme_files/image13.png)
 :::
 
 
@@ -490,7 +540,7 @@ the default):
 
 
 ::: {.clay-image}
-![](reference.theme_files/image12.png)
+![](reference.theme_files/image14.png)
 :::
 
 
@@ -524,7 +574,7 @@ Venn counts and tile values in the contrast colour of what's behind them by defa
 
 
 ::: {.clay-image}
-![](reference.theme_files/image13.png)
+![](reference.theme_files/image15.png)
 :::
 
 
@@ -555,7 +605,7 @@ matrix (`plot/pairs` `:diagonal :names`) - each in a role of its own, so a theme
 
 
 ::: {.clay-image}
-![](reference.theme_files/image14.png)
+![](reference.theme_files/image16.png)
 :::
 
 
@@ -582,7 +632,7 @@ The keys of a text style:
 
 
 ::: {.clay-image}
-![](reference.theme_files/image15.png)
+![](reference.theme_files/image17.png)
 :::
 
 
@@ -670,7 +720,7 @@ The kinds with a theme style:
 
 
 ::: {.clay-image}
-![](reference.theme_files/image16.png)
+![](reference.theme_files/image18.png)
 :::
 
 

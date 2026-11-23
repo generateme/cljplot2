@@ -434,7 +434,7 @@
                   top (if wrap? (m/- y row-height component-gap) y)
                   height (if wrap? 0.0 row-height)
                   index (zipmap part (range))
-                  local (filterv (fn [[i j]] (and (index i) (index j))) ends)
+                  local (filter (fn [[i j]] (and (index i) (index j))) ends)
                   [^doubles px ^doubles py] (fitted (force-positions g (count part) (mapv (fn [[i j w]] [(index i) (index j) w]) local) opts))]
               (doseq [[^long k ^long i] (map-indexed vector part)]
                 (Array/aset xs i (m/+ left (m/* s (Array/aget px k))))
@@ -561,7 +561,7 @@
     (if (m/< n 3)
       ids
       (let [w (weight-matrix g ids)
-            rows (mapv (fn [i] (unit-row (mapv (fn [j] (m/+ (weight-at w i j) (weight-at w j i))) (range n)))) (range n))]
+            rows (map (fn [i] (unit-row (mapv (fn [j] (m/+ (weight-at w i j) (weight-at w j i))) (range n)))) (range n))]
         (mapv ids (:order (:tree (cl/hclust rows {:method :average :distance :euclidean}))))))))
 
 (defn node-order
@@ -602,7 +602,7 @@
 
   Returns `[x y]` points at [[bezier-steps]] steps, ends excluded."
   [[^double x0 ^double y0] [^double x1 ^double y1]]
-  (mapv (fn [^long s] (let [t (m// (double s) bezier-steps)
+  (map (fn [^long s] (let [t (m// (double s) bezier-steps)
                             u (m/- 1.0 t)]
                         [(m/+ (m/* u u x0) (m/* t t x1))
                          (m/+ (m/* u u y0) (m/* t t y1))]))
@@ -1136,7 +1136,7 @@
                                 (assoc edge :link link :sy sy :ty ty :width w
                                        ::source-x (m/+ (double (x0-of s)) node-width) ::target-x (x0-of t))))
                             links)
-               order (vec (mapcat (fn [column] (sort-by #(Array/aget y0s (long %)) column)) column-cells))
+               order (mapcat (fn [column] (sort-by #(Array/aget y0s (long %)) column)) column-cells)
                node-of (fn [^long i] (let [x0 (double (x0-of i))]
                                        (assoc (flow-nodes i) :layer (layers i) :x0 x0 :x1 (m/+ x0 node-width)
                                               :y0 (up (Array/aget y1s i)) :y1 (up (Array/aget y0s i)) :value (values i))))

@@ -33,6 +33,7 @@
             [fastmath.core :as m]
             [fastmath.vector :as v]
             [cljplot2.data.rows :as data]
+            [cljplot2.graphics.measure :as measure]
             [cljplot2.data.group :as group]
             [cljplot2.data.kde :as kde]
             [cljplot2.data.position :as position]
@@ -220,7 +221,7 @@
         curve-ys (fn [curves] (concat (mapcat :y curves) (mapcat :y0 curves)))
         [lo hi] (position/symmetric-extent (curve-ys (mapcat :curves (vals data))))]
     (when (and (m/pos? row-count) (m/== row-count x-dropped))
-      (schema/fail! "No valid values for a mapped dimension - check the mapping." {:key :mapping :value :x :rows row-count}))
+      (schema/fail! data/no-valid-values {:key :mapping :value :x :rows row-count}))
     {:data data
      :extents (merge-with merge (group/aesthetic-extents panels (:plot-scales env))
                           (into {} (keep (fn [[panel {:keys [curves]}]]
@@ -260,15 +261,6 @@
                                                 {:key :fill-gradient-axis :value (:fill-gradient-axis options)})
     :else (flat-compute chart chart-split env)))
 
-(defn- finite-point?
-  "Tests whether both coordinates of a pixel point `[x y]` are finite.
-
-  Parameters:
-
-  - `point` (`[x y]`): pixel coordinates."
-  [[^double x ^double y]]
-  (and (m/valid-double? x) (m/valid-double? y)))
-
 (defn- fill-gradient-quads!
   "Fills between two paired point runs quad by quad, each quad in the gradient's colour at its middle position.
 
@@ -289,7 +281,7 @@
                   b (upper (m/long-inc i))
                   c (lower (m/long-inc i))
                   d (lower i)]
-            :when (and (finite-point? a) (finite-point? b) (finite-point? c) (finite-point? d))]
+            :when (and (measure/finite-point? a) (measure/finite-point? b) (measure/finite-point? c) (measure/finite-point? d))]
       (let [t (if (m/pos? span) (m// (m/- (m/* 0.5 (m/+ (double (ps i)) (double (ps (m/long-inc i))))) p0) span) 0.5)
             quad [a b c d]]
         (c2d/set-color canvas (gradient (m/constrain t 0.0 1.0)))
@@ -348,13 +340,13 @@
                   polygon (into (mapv pixel-pair curve) (rseq (mapv pixel-pair base)))]
               (polyline/fill-gradient-paint! canvas [polygon] gradient
                                              (pixel-pair (point x0 level side 0.0)) (pixel-pair (point x0 level side 1.0)))
-              (draw/fill-with-pattern! canvas (draw/pattern-fill st (gradient 0.5)) #(c2d/path canvas polygon true false)))
+              (draw/fill-with-pattern! canvas (draw/pattern-fill st (gradient 0.5)) #(c2d/path % polygon true false)))
             gradient
             (let [upper (mapv pixel-pair curve)
                   lower (mapv pixel-pair base)
                   polygon (into upper (rseq lower))]
               (fill-gradient-quads! canvas upper lower xs gradient (:domain (:x scales)))
-              (draw/fill-with-pattern! canvas (draw/pattern-fill st (gradient 0.5)) #(c2d/path canvas polygon true false)))
+              (draw/fill-with-pattern! canvas (draw/pattern-fill st (gradient 0.5)) #(c2d/path % polygon true false)))
             :else
             (let [fill (polyline/area-color st true)]
               (polyline/fill-under! canvas px py bx by fill (draw/pattern-fill st fill))))

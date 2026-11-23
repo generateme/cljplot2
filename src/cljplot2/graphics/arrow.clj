@@ -8,11 +8,14 @@
   base), `:open` - two strokes.
   A head points along the run's last stretch of at least its length (the tangent of a curve). Gaps (pixels) shorten
   the run along its length first - an arrow pointing at a node of that radius; a run no longer than its gaps isn't
-  drawn."
+  drawn.
+
+  Functions: [[schema]], [[trimmed]], [[draw-run!]]."
   (:require [clojure2d.core :as c2d]
             [fastmath.core :as m]
             [cljplot2.graphics.polyline :as polyline]
-            [cljplot2.schema :as schema]))
+            [cljplot2.schema :as schema]
+            [cljplot2.theme :as theme]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -28,19 +31,31 @@
    (schema/optional :shape {:description ":closed (a filled triangle) or :open (two strokes)" :default :closed}
                     [:enum :closed :open])])
 
-(def ^:private defaults {:end true :start false :size 8.0 :angle 20.0 :shape :closed})
+(def ^:private defaults
+  "The `:arrow` option's defaults (as in [[schema]])."
+  {:end true :start false :size 8.0 :angle 20.0 :shape :closed})
+
+(def ^{:private true :const true :tag 'double} closed-head-trim
+  "Share of a closed head's length the line stops short of the tip: the line ends inside the filled head, not at its point."
+  0.9)
 
 (defn- point-at
-  "Point at `d` pixels from the start of the run `[p0 p1 ..]` along its length; `[point index]` - `index` of the
-  segment holding it; `nil` past the end."
+  "Gives the point at a distance from a run's start along its length.
+
+  Parameters:
+
+  - `run` (vector of `[x y]`): the pixel points.
+  - `d` (double): the distance in pixels.
+
+  Returns `[point index]` - `index` of the segment holding it; `nil` past the end (or for fewer than 2 points)."
   [run ^double d]
   (loop [i (long 0)
          acc 0.0]
     (when (m/< i (m/long-dec (count run)))
       (let [[^double x0 ^double y0] (run i)
             [^double x1 ^double y1] (run (m/long-inc i))
-            dx (- x1 x0)
-            dy (- y1 y0)
+            dx (m/- x1 x0)
+            dy (m/- y1 y0)
             l (m/hypot dx dy)]
         (if (and (m/pos? l) (m/<= d (m/+ acc l)))
           (let [t (m// (m/- d acc) l)]
@@ -49,7 +64,14 @@
           (recur (m/long-inc i) (m/+ acc l)))))))
 
 (defn- trim-start
-  "The run without its first `d` pixels (the run itself for `d` 0; `nil` when not longer than `d`)."
+  "Gives a run without its first pixels along its length.
+
+  Parameters:
+
+  - `run` (vector of `[x y]`): the pixel points.
+  - `d` (double): the pixels to cut.
+
+  Returns the shortened run (a vector); the run itself for `d` 0 or less; `nil` when it isn't longer than `d`."
   [run ^double d]
   (if (m/not-pos? d)
     run
@@ -59,21 +81,35 @@
         nil))))
 
 (defn trimmed
-  "`run` shortened by `start-gap` / `end-gap` pixels along its length; `nil` when nothing is left."
+  "Gives a run shortened at both ends along its length.
+
+  Parameters:
+
+  - `run` (sequence of `[x y]`): the pixel points.
+  - `start-gap`, `end-gap` (doubles): the pixels cut at the start and at the end.
+
+  Returns the shortened run (a vector); `nil` when nothing is left."
   [run ^double start-gap ^double end-gap]
   (some-> (trim-start (vec run) start-gap)
           rseq vec (trim-start end-gap) rseq vec))
 
 (defn- head-points
-  "`[tip left right]` of a head of `size` and half-angle `angle` (degrees) at the end of `run` (pointing from the point
-  `size` pixels back)."
+  "Gives the corners of a head at a run's end, pointing from the point `size` pixels back.
+
+  Parameters:
+
+  - `run` (vector of `[x y]`): the pixel points.
+  - `size` (double): the head's length in pixels.
+  - `angle` (double): degrees between each side and the line.
+
+  Returns `[tip left right]`; `nil` when the tip and the point back coincide."
   [run ^double size ^double angle]
   (let [tip (peek run)
         back (or (first (point-at (vec (rseq run)) size)) (first run))
         [^double tx ^double ty] tip
         [^double bx ^double by] back
-        dx (- tx bx)
-        dy (- ty by)
+        dx (m/- tx bx)
+        dy (m/- ty by)
         l (m/hypot dx dy)]
     (when (m/pos? l)
       (let [ux (m// dx l)
@@ -86,7 +122,16 @@
          [(m/+ base-x (m/* uy half)) (m/- base-y (m/* ux half))]]))))
 
 (defn- draw-head!
-  "Draw the head `[tip left right]` in line `style` (filled for `:closed`)."
+  "Draws a head in a line style.
+
+  Parameters:
+
+  - `canvas`: the canvas in graphics context.
+  - `head` (`[tip left right]`): the corners (see [[head-points]]).
+  - `shape` (keyword): `:closed` - filled in the style's colour, else two strokes.
+  - `style` (map): the line style.
+
+  Returns `nil`."
   [canvas [tip left right] shape style]
   (if (= :closed shape)
     (do (c2d/set-color canvas (:color style))
@@ -94,19 +139,27 @@
     (polyline/stroke-runs! canvas [[left tip right]] style)))
 
 (defn draw-run!
-  "Stroke `run` in line `style` with `arrow` (an `:arrow` option or `nil`) and the gaps `[start end]` (pixels): trimmed,
-  shortened under closed heads, then the heads drawn."
+  "Strokes a run with its arrowheads and end gaps: trimmed by the gaps, shortened under closed heads, then the heads drawn.
+
+  Parameters:
+
+  - `canvas`: the canvas in graphics context.
+  - `run` (sequence of `[x y]`): the pixel points.
+  - `style` (map): the line style (heads take its colour; `nil` or `:none` - no heads).
+  - `[arrow start-gap end-gap]`: the `:arrow` option (see [[schema]]) or `nil`, the gaps in pixels (`nil` - 0).
+
+  Returns `nil`; a run no longer than its gaps draws nothing."
   [canvas run style [arrow start-gap end-gap]]
-  (when-let [run (trimmed run (or start-gap 0.0) (or end-gap 0.0))]
+  (when-let [kept (trimmed run (or start-gap 0.0) (or end-gap 0.0))]
     (let [{:keys [end start ^double size ^double angle shape]
            :or {size 0.0 angle 20.0}} (when arrow (merge defaults arrow))
-          head-end (when end (head-points run size angle))
-          head-start (when start (head-points (vec (rseq run)) size angle))
+          head-end (when end (head-points kept size angle))
+          head-start (when start (head-points (vec (rseq kept)) size angle))
           closed? (= :closed shape)
           stroked (if closed?
-                    (trimmed run (if head-start (m/* 0.9 size) 0.0) (if head-end (m/* 0.9 size) 0.0))
-                    run)]
+                    (trimmed kept (if head-start (m/* closed-head-trim size) 0.0) (if head-end (m/* closed-head-trim size) 0.0))
+                    kept)]
       (when stroked (polyline/stroke-runs! canvas [stroked] style))
-      (when (and (some? (:color style)) (not= :none (:color style)))
+      (when (and (some? (:color style)) (not (theme/none? (:color style))))
         (doseq [h [head-end head-start] :when h]
           (draw-head! canvas h shape style))))))

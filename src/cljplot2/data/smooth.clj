@@ -138,7 +138,7 @@
 
   Returns the model."
   [method params xs ys level]
-  (let [xss (mapv vector xs)
+  (let [xss (map vector xs)
         alpha (m/- 1.0 (double level))]
     (case method
       :lm (regression/lm ys xss (assoc (lm-options params xs) :alpha alpha))
@@ -301,7 +301,7 @@
                  (:lm :glm) (let [model (model-at default-level)] (fn [x] (regression/predict model [x])))
                  :gp (fn [x] (gp/predict gp-object x false))
                  ((fit-fn method params) fxs fys))
-        levels (vec (sort > (distinct requested-levels)))
+        levels (sort > (distinct requested-levels))
         band-at (case band
                   :none nil
                   :bootstrap (let [b (interpolation/bootstrap (fit-fn method params) xs ys bootstrap)]

@@ -136,7 +136,8 @@
           {:keys [q1 q3]} (box/box-stats (map :v box-rows))
           forward (scale/forward-fn (get-in b [:finalized-scales :y]))
           [lo hi] (sort [(forward q1) (forward q3)])
-          lines (calls #'cljplot2.chart.box/line! #(image p))
+          lines (filter (fn [args] (and (= 3 (count args)) (instance? fastmath.vector.Vec2 (nth args 1))))
+                        (calls #'c2d/line #(image p)))
           lines (mapv (fn [[_ a b]] [nil (.x ^fastmath.vector.Vec2 a) (.y ^fastmath.vector.Vec2 a) (.x ^fastmath.vector.Vec2 b) (.y ^fastmath.vector.Vec2 b)]) lines)]
       (is (empty? (calls #'c2d/rect #(image p))))
       (is (= 2 (count lines)))

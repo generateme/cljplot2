@@ -256,8 +256,8 @@
           draw (fn [taken] (c2d/with-canvas [c (c2d/canvas 400 300)] (#'space-draw/draw-axis! c :x edge proj frame taken (assoc env :canvas c))))
           drawn (draw [])]
       (is (seq drawn))
-      (is (empty? (draw [[-1e6 -1e6 1e6 1e6]])) "everything taken")
-      (is (= drawn (draw [[-10 -10 -5 -5]])) "a box elsewhere"))))
+      (is (empty? (draw [{:x -1e6 :y -1e6 :w 2e6 :h 2e6}])) "everything taken")
+      (is (= drawn (draw [{:x -10.0 :y -10.0 :w 5.0 :h 5.0}])) "a box elsewhere"))))
 
 (deftest density-cut-test
   (let [rows (for [i (range 30)] {:x (m/sin i) :y (m/cos (* 3 i))})

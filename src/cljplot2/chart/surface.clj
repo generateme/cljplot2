@@ -144,11 +144,6 @@
 
 ;; meshes
 
-(defn- finite-number?
-  "Tests whether `v` is a finite number."
-  [v]
-  (and (number? v) (m/valid-double? (double v))))
-
 (defn mesh
   "Builds a mesh of `nu` x `nv` nodes, row by row.
 
@@ -160,11 +155,11 @@
   Returns `{:nu :nv :nodes [..] :tones [..]}`: `:nodes` - `[x y z]` (doubles), `nil` for a non-finite coordinate; `:tones` - each node's colour value (`tone`, else `z`), `##NaN` when missing or not finite."
   [nu nv node-at]
   (let [raw (vec (for [j (range nv) i (range nu)] (node-at i j)))
-        ok? (fn [n] (and (sequential? n) (every? finite-number? (take 3 n))))]
+        ok? (fn [n] (and (sequential? n) (every? schema/finite? (take 3 n))))]
     {:nu (long nu) :nv (long nv)
      :nodes (mapv (fn [n] (when (ok? n) (mapv double (take 3 n)))) raw)
      :tones (mapv (fn [n] (let [t (if (m/> (count n) 3) (nth n 3) (nth n 2 nil))]
-                            (if (and (ok? n) (finite-number? t)) (double t) ##NaN)))
+                            (if (and (ok? n) (schema/finite? t)) (double t) ##NaN)))
                   raw)}))
 
 (defn- axis-values
@@ -241,7 +236,7 @@
   [rows mapping cut]
   (let [x-of (data/row-accessor :x (:x mapping))
         y-of (data/row-accessor :y (:y mapping))
-        pts (filterv (fn [[x y]] (and (finite-number? x) (finite-number? y))) (map (juxt x-of y-of) rows))]
+        pts (filterv (fn [[x y]] (and (schema/finite? x) (schema/finite? y))) (map (juxt x-of y-of) rows))]
     (when (seq pts)
       (field/density (map first pts) (map second pts) {:cut cut} [(scale/stat-transform nil) (scale/stat-transform nil)]))))
 
@@ -323,7 +318,7 @@
   - `split` (map): `:groups` - panel -> rows; `:mapping` - the merged mapping.
   - `env` (map): `:theme`.
 
-  Returns `{:data {panel computed} :extents :dropped}`; per panel `{:mesh m :domains {:x :y :z} :frame f :frame-overrides o :style st :shading sh}` - see [[mesh]], [[cljplot2.data.space3d/frame-settings]]; `st` - the resolved style ([[cljplot2.theme/resolved-style]]) with the `:color` option, `:surface-style` (the `:style` option) and `:shade?`; `sh` - the chart's `:ambient` / `:light`. No position extents (the chart lays out its panel); colour extents - the finite tones (computed colour only); `:dropped` - gridded or density rows without a finite x / y.
+  Returns `{:data {panel computed} :extents :dropped}`; per panel `{:mesh m :domains {:x :y :z} :frame f :frame-overrides o :style st :shading sh}` - see [[mesh]], [[cljplot2.data.space3d/frame-settings]]; `st` - the resolved style ([[cljplot2.theme/resolved-style]]) with the `:color` option, `:surface-style` (the `:style` option) and `:shade?`; `sh` - the chart's `:ambient` / `:light`. No position extents (the chart lays out its panel); colour extents - the finite tones (computed colour only); `:dropped` - gridded or density rows without a finite x / y, `:field` - panels with rows but no mesh (see [[cljplot2.data.field/panels-without-field]]).
 
   Throws `ex-info {:key :mapping}` for a missing position ([[check-mapping!]]), `{:key :domain}` for a function without a domain."
   [{:keys [options] :as chart} {:keys [groups mapping]} {:keys [theme]}]
@@ -350,7 +345,9 @@
                                       (if (and colored? (seq ts))
                                         {:color {:kind :numeric :min (v/mn ts) :max (v/mx ts)}}
                                         {}))))
-     :dropped (if (#{:gridded :density} kind) (field/dropped-positions :gridded mapping groups) {})}))
+     :dropped (if (#{:gridded :density} kind)
+                (assoc (field/dropped-positions :gridded mapping groups) :field (field/panels-without-field groups (set (keys meshes))))
+                {})}))
 
 ;; drawing
 

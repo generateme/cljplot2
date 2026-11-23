@@ -183,17 +183,17 @@
         h (m/long-sub y1 y0)
         circle? (= :circle (:shape st))
         shape! (if circle?
-                 #(c2d/ellipse canvas (m/+ x0 (m/* 0.5 w)) (m/+ y0 (m/* 0.5 h)) w h %)
-                 #(c2d/rect canvas x0 y0 w h %))
+                 (fn [c stroke?] (c2d/ellipse c (m/+ x0 (m/* 0.5 w)) (m/+ y0 (m/* 0.5 h)) w h stroke?))
+                 (fn [c stroke?] (c2d/rect c x0 y0 w h stroke?)))
         sw (double (:border-width st))]
     (when (and (m/pos? w) (m/pos? h))
       (c2d/set-color canvas fill)
-      (shape! false)
-      (draw/fill-with-pattern! canvas pattern-fill #(shape! false))
+      (shape! canvas false)
+      (draw/fill-with-pattern! canvas pattern-fill #(shape! % false))
       (when (and (m/pos? sw) (not (theme/none? (:border-color st))))
         (c2d/set-stroke-custom canvas {:size sw})
         (c2d/set-color canvas (:border-color st))
-        (shape! true)))))
+        (shape! canvas true)))))
 
 (defn draw
   "Draws one panel's grid: the categories in order, cell by cell from the bottom-left.
@@ -235,14 +235,9 @@
   - `canvas`: the clojure2d canvas.
   - `box` (map): the key box `:x`, `:y`, `:w`, `:h`.
   - `env` (map): the drawing environment (`:theme`)."
-  [chart attributes canvas {:keys [^double x ^double y ^double w ^double h] :as box} env]
+  [chart attributes canvas box env]
   (let [st (theme/resolved-style (:theme env) chart)]
     (if (= :circle (:shape st))
-      (let [d (m/* 0.7 (m/min w h))
-            cx (m/+ x (m/* 0.5 w))
-            cy (m/+ y (m/* 0.5 h))]
-        (c2d/set-color canvas (:color attributes))
-        (c2d/ellipse canvas cx cy d d)
-        (draw/fill-with-pattern! canvas (draw/pattern-fill st (:color attributes)) #(c2d/ellipse canvas cx cy d d)))
+      (draw/circle-key! canvas box (:color attributes) (draw/pattern-fill st (:color attributes)))
       (draw/bar-key! canvas box (assoc (select-keys st [:pattern :pattern-color]) :color (:color attributes) :stroke-width 0)
                      false))))

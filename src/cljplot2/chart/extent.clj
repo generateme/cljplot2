@@ -16,12 +16,13 @@
   [[cljplot2.data.strip]]);
   `:padding {:x [lo hi]}` (default `[0.05 0.05]`), plus the strip options and `:data` / `:mapping`.
 
-  Functions: [[compute]], [[draw]], [[legend]] - the chart contract; [[interval]] - an interval of values by a method; [[bootstrap-interval]] - a bootstrap interval; [[extent-methods]], [[bootstrap-intervals]] - the methods."
+  Functions: [[legend]] - the chart contract's key glyph (the chart computes and draws through [[cljplot2.data.strip/compute]] and [[cljplot2.data.strip/draw]]); [[interval]] - an interval of values by a method; [[bootstrap-interval]] - a bootstrap interval; [[extent-methods]], [[bootstrap-intervals]] - the methods."
   (:require [clojure2d.core :as c2d]
             [fastmath.core :as m]
             [fastmath.stats :as stats]
             [fastmath.stats.bootstrap :as boot]
             [cljplot2.data.group :as group]
+            [cljplot2.graphics.measure :as measure]
             [cljplot2.data.rng :as rng]
             [cljplot2.data.rows :as data]
             [cljplot2.data.strip :as strip]
@@ -198,16 +199,6 @@
      :dropped dropped
      :tick-format (when mirror? {:x :absolute})}))
 
-(defn- line!
-  "Draws a line between two pixel points.
-
-  Parameters:
-
-  - `canvas`: the clojure2d canvas.
-  - `a`, `b` (`Vec2`): the ends."
-  [canvas ^Vec2 a ^Vec2 b]
-  (c2d/line canvas (.x a) (.y a) (.x b) (.y b)))
-
 (defn- draw-in-strip-frame
   "Draws the intervals of one panel in the strip frame: the line, end caps (half the item's cross range) and the centre mark.
 
@@ -235,40 +226,19 @@
                   cap (m/* 0.5 (strip/slot-half slot))
                   p (fn [v cross] (point v level cross))
                   ^Vec2 a (p lo c0)]
-            :when (and st (m/valid-double? (.x a)) (m/valid-double? (.y a)))]
+            :when (and st (measure/finite-point? a))]
       (c2d/set-color canvas (:color st))
       (c2d/set-stroke-custom canvas {:size (double (:line-width st)) :cap :butt})
-      (line! canvas a (p hi c0))
-      (line! canvas (p lo (m/- c0 cap)) (p lo (m/+ c0 cap)))
-      (line! canvas (p hi (m/- c0 cap)) (p hi (m/+ c0 cap)))
+      (c2d/line canvas a (p hi c0))
+      (c2d/line canvas (p lo (m/- c0 cap)) (p lo (m/+ c0 cap)))
+      (c2d/line canvas (p hi (m/- c0 cap)) (p hi (m/+ c0 cap)))
       (when (and center? center)
         (shape/draw! canvas (:shape st) (p center c0) (assoc st :stroke-color :none))))))
 
-(defn compute
-  "Computes the chart's stats with its levels on the categorical axis.
+(defmethod strip/in-frame-compute :extent [chart chart-split env] (compute-in-strip-frame chart chart-split env))
 
-  Parameters:
-
-  - `chart` (map): the chart value.
-  - `chart-split` (map): `:groups`, `:mapping`.
-  - `env` (map): the compute environment.
-
-  Returns the stats of [[compute-in-strip-frame]] oriented to the level axis (see [[cljplot2.data.strip/compute-oriented]])."
-  [chart chart-split env]
-  (strip/compute-oriented compute-in-strip-frame chart chart-split env))
-
-(defn draw
-  "Draws one panel of the chart.
-
-  Parameters:
-
-  - `chart` (map): the chart value.
-  - `computed` (map): the panel's computed data.
-  - `canvas`, `box`, `scales`, `env`: as the chart contract's draw.
-
-  Draws [[draw-in-strip-frame]] in the strip frame (see [[cljplot2.data.strip/draw-oriented]])."
-  [chart computed canvas box scales env]
-  (strip/draw-oriented draw-in-strip-frame chart computed canvas box scales env))
+(defmethod strip/in-frame-draw :extent [chart computed canvas box scales env]
+  (draw-in-strip-frame chart computed canvas box scales env))
 
 (defn legend
   "Draws the key glyph: a horizontal capped line with the centre mark.

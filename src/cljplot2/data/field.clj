@@ -98,16 +98,16 @@
     (some? (:value mapping)) :gridded
     :else :points))
 
-(defn- finite?
-  "Tests whether a value is a finite number.
+(defn- explicit-bandwidth?
+  "Tests whether a `:bandwidth` option gives every axis's bandwidth as a number (no selector to estimate).
 
   Parameters:
 
-  - `v`: any value.
+  - `bandwidth`: the option - a number, a selector keyword, a pair of them, or `nil` (the default selector).
 
-  Returns true for a number neither infinite nor `NaN`, else false."
-  [v]
-  (and (number? v) (m/valid-double? (double v))))
+  Returns true for a number or a pair of numbers, else false."
+  [bandwidth]
+  (or (number? bandwidth) (and (sequential? bandwidth) (every? number? bandwidth))))
 
 (def ^:private estimate-error-keys
   "fastmath `:property` of a density error -> the chart option to blame."
@@ -118,13 +118,13 @@
 
   Parameters:
 
-  - `xs`, `ys` (sequences of finite numbers): the points' coordinates, equal counts, at least one point.
+  - `xs`, `ys` (sequences of finite numbers): the points' coordinates, equal counts.
   - `options` (map): `:kernel` (default `:gaussian`), `:bandwidth` (default `:nrd` per axis), `:binned?` (default false), `:cut` - bandwidths the domain extends past the points (default 3); see the namespace doc.
   - `[tx ty]`: the axis stat transforms (see [[cljplot2.scale.position/stat-transform]]); points a transform can't place are left out.
 
-  Returns `{:f f :domain [[x0 x1] [y0 y1]]}`: `f` - the density, a function of a point `[x y]` in data units (per log10 unit on a log axis); the domain - the points' transformed range widened by `:cut` bandwidths, in data units.
+  Returns `{:f f :domain [[x0 x1] [y0 y1]]}`: `f` - the density, a function of a point `[x y]` in data units (per log10 unit on a log axis); the domain - the points' transformed range widened by `:cut` bandwidths, in data units. `nil` for one placed point without numeric bandwidths: a selector needs at least 2 points.
 
-  Throws `ex-info {:key :x}` when no point can be placed, and `ex-info` keyed by the option fastmath blames (`:kernel`, `:binned?`, else `:bandwidth`) when it can't estimate (e.g. a selector on one point).
+  Throws `ex-info {:key :x}` when no point can be placed, and `ex-info` keyed by the option fastmath blames (`:kernel`, `:binned?`, else `:bandwidth`) when it can't estimate.
 
   See also [[source-field]]."
   [xs ys {:keys [kernel bandwidth binned? cut]} [tx ty]]
@@ -133,22 +133,23 @@
         pts (filterv (fn [[^double u ^double v]] (and (m/valid-double? u) (m/valid-double? v)))
                      (map (fn [^double x ^double y] [(fx x) (fy y)]) xs ys))
         _ (when (empty? pts)
-            (schema/fail! "No points the axis scales can place (e.g. only non-positive values on a log axis)." {:key :x}))
-        us (mapv first pts)
-        vs (mapv second pts)
-        {:keys [kde h]} (try (k/kernel-density-2d (or kernel :gaussian) us vs
-                                                  {:bandwidth (or bandwidth :nrd)
-                                                   :binned? binned?} true)
-                             (catch clojure.lang.ExceptionInfo e
-                               (schema/fail! (str "Density estimation failed: " (ex-message e))
-                                             {:key (get estimate-error-keys (:property (ex-data e)) :bandwidth) :cause (ex-data e)})))
-        [^double hx ^double hy] h
-        reach (double (if (nil? cut) 3.0 cut))
-        widen (fn [ws ^double hw inverse]
-                [(inverse (m/- (v/mn ws) (m/* reach hw)))
-                 (inverse (m/+ (v/mx ws) (m/* reach hw)))])]
-    {:f (fn [[^double x ^double y]] (kde (fx x) (fy y)))
-     :domain [(widen us hx (:inverse tx)) (widen vs hy (:inverse ty))]}))
+            (schema/fail! "No points the axis scales can place (e.g. only non-positive values on a log axis)." {:key :x}))]
+    (when (or (m/> (count pts) 1) (explicit-bandwidth? bandwidth))
+      (let [us (mapv first pts)
+            vs (mapv second pts)
+            {:keys [kde h]} (try (k/kernel-density-2d (or kernel :gaussian) us vs
+                                                      {:bandwidth (or bandwidth :nrd)
+                                                       :binned? binned?} true)
+                                 (catch clojure.lang.ExceptionInfo e
+                                   (schema/fail! (str "Density estimation failed: " (ex-message e))
+                                                 {:key (get estimate-error-keys (:property (ex-data e)) :bandwidth) :cause (ex-data e)})))
+            [^double hx ^double hy] h
+            reach (double (if (nil? cut) 3.0 cut))
+            widen (fn [ws ^double hw inverse]
+                    [(inverse (m/- (v/mn ws) (m/* reach hw)))
+                     (inverse (m/+ (v/mx ws) (m/* reach hw)))])]
+        {:f (fn [[^double x ^double y]] (kde (fx x) (fy y)))
+         :domain [(widen us hx (:inverse tx)) (widen vs hy (:inverse ty))]}))))
 
 (defn lattice-values
   "Gives the values of gridded rows on their full lattice.
@@ -168,7 +169,7 @@
   See also [[lattice]]."
   [rows x-of y-of value-of value-key]
   (let [points (->> (map (juxt x-of y-of value-of) rows)
-                    (filterv (fn [[x y]] (and (finite? x) (finite? y)))))
+                    (filterv (fn [[x y]] (and (schema/finite? x) (schema/finite? y)))))
         xs (vec (sort (distinct (map (comp double first) points))))
         ys (vec (sort (distinct (map (comp double second) points))))
         by-point (group-by v/vec2 points)
@@ -180,7 +181,7 @@
     (when-let [missing (first (for [x xs y ys :when (not (contains? by-point [x y]))] [x y]))]
       (schema/fail! (str "A gridded field needs a :" value-name " at every (x, y) of its lattice; a point is missing.")
                     {:key value-key :value missing}))
-    (let [value (fn [x y] (let [v (nth (first (by-point [x y])) 2)] (if (finite? v) (double v) ##NaN)))]
+    (let [value (fn [x y] (let [v (nth (first (by-point [x y])) 2)] (if (schema/finite? v) (double v) ##NaN)))]
       {:xs xs :ys ys :vss (mapv (fn [x] (mapv (fn [y] (value x y)) ys)) xs)})))
 
 (defn lattice
@@ -213,7 +214,7 @@
 
   Throws `ex-info {:key :domain}` when an axis has neither."
   [domain plot-scales]
-  (let [explicit (fn [k] (let [d (get-in plot-scales [k :domain])] (when (and (m/== 2 (count d)) (every? finite? d)) (mapv double d))))
+  (let [explicit (fn [k] (let [d (get-in plot-scales [k :domain])] (when (and (m/== 2 (count d)) (every? schema/finite? d)) d)))
         x (or (:x domain) (explicit :x))
         y (or (:y domain) (explicit :y))]
     (when-not (and x y)
@@ -289,7 +290,7 @@
      (dotimes [j ny]
        (dotimes [i nx]
          (let [v (f (Vec2. (ix (Array/aget xs i)) (iy (Array/aget ys j))))]
-           (Array/aset values (m/+ i (m/* j nx)) (if (finite? v) (double v) ##NaN)))))
+           (Array/aset values (m/+ i (m/* j nx)) (if (schema/finite? v) (double v) ##NaN)))))
      {:xs xs :ys ys :nx nx :ny ny :values values :transforms [tx ty]})))
 
 (defn to-data
@@ -377,8 +378,20 @@
   (if (= kind :function)
     {:x 0 :y 0}
     (let [rows (mapcat val groups)
-          bad (fn [k] (let [acc (data/row-accessor k (mapping k))] (count (remove (comp finite? acc) rows))))]
+          bad (fn [k] (let [acc (data/row-accessor k (mapping k))] (count (remove (comp schema/finite? acc) rows))))]
       {:x (bad :x) :y (bad :y)})))
+
+(defn panels-without-field
+  "Counts the panels with rows that got no field (e.g. one point under a bandwidth selector, see [[density]]).
+
+  Parameters:
+
+  - `groups` (map): the split rows, panel -> rows.
+  - `field-panels` (set): the panels that got a field.
+
+  Returns the count (a long), reported as `:dropped {:field n}`."
+  ^long [groups field-panels]
+  (count (filter (fn [[panel rows]] (and (seq rows) (not (contains? field-panels panel)))) groups)))
 
 (defn axis-transforms
   "Gives the stat transforms of the plot's position axes.
@@ -402,7 +415,7 @@
   - `rows` (sequence): the rows.
   - `plot-scales` (map): the plot's scale specs.
 
-  Returns `{:f f :domain [[x0 x1] [y0 y1]]}`; `nil` for points or gridded data without rows (points: without finite ones).
+  Returns `{:f f :domain [[x0 x1] [y0 y1]]}`; `nil` for points or gridded data without rows (points: without finite ones, or one point without numeric bandwidths - see [[density]]).
 
   Throws the errors of [[function-domain]], [[lattice]] and [[density]]."
   [kind field-options mapping rows plot-scales]
@@ -413,7 +426,7 @@
                         (data/row-accessor :value (:value mapping)) (:interpolation field-options)))
     :points (let [x-of (data/row-accessor :x (:x mapping))
                   y-of (data/row-accessor :y (:y mapping))
-                  pts (filterv (fn [[x y]] (and (finite? x) (finite? y))) (map (juxt x-of y-of) rows))]
+                  pts (filterv (fn [[x y]] (and (schema/finite? x) (schema/finite? y))) (map (juxt x-of y-of) rows))]
               (when (seq pts)
                 (density (map first pts) (map second pts) field-options (axis-transforms plot-scales))))))
 

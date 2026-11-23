@@ -8,7 +8,6 @@
             [clojure2d.core :as c2d]
             [clojure2d.color :as c]
             [clojure2d.pixels :as p]
-            [cljplot2.graphics.canvas :as canvas]
             [cljplot2.graphics.draw :as draw]
             [cljplot2.graphics.shape :as shape]
             [cljplot2.layout.grid :as grid]
@@ -16,8 +15,7 @@
             [cljplot2.content.legend :as legend]
             [cljplot2.content.subplot :as subplot]
             [cljplot2.theme :as theme])
-  (:import [java.awt Graphics2D Rectangle]
-           [java.awt.image BufferedImage]))
+  (:import [java.awt.image BufferedImage]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -66,16 +64,14 @@
   - `box` (map): `{:x :y :w :h}` in whole pixels.
   - `debug?` (boolean): debug boxes inside the sub-plot too, see [[draw-built!]]."
   [canvas built {:keys [^long x ^long y ^long w ^long h]} debug?]
-  (canvas/call-with-isolated-graphics
-   canvas
-   (fn [c]
-     (c2d/translate c x y)
-     (.clip ^Graphics2D (:graphics c) (Rectangle. 0 0 (int w) (int h)))
-     (let [background (get-in built [:theme :plot :background])]
-       (when-not (theme/none? background)
-         (c2d/set-color c background)
-         (c2d/rect c 0 0 w h)))
-     (draw-built! c built debug?))))
+  (c2d/with-isolated-canvas [c canvas]
+    (c2d/translate c x y)
+    (c2d/add-clip c 0 0 w h)
+    (let [background (get-in built [:theme :plot :background])]
+      (when-not (theme/none? background)
+        (c2d/set-color c background)
+        (c2d/rect c 0 0 w h)))
+    (draw-built! c built debug?)))
 
 (defn- draw-contents!
   "Draws the content of every item of a grid at its box, recursing into nested grids.
@@ -95,7 +91,7 @@
       (grid/grid? content) (draw-contents! canvas content (:layout item-layout) env)
       (subplot/plot-content? content) (when-let [built (get-in env [:subplots (:id item)])]
                                         (draw-subplot! canvas built box (:debug? env)))
-      :else (canvas/call-with-isolated-graphics canvas #(draw/draw-content content % box env)))))
+      :else (c2d/with-isolated-canvas [c canvas] (draw/draw-content content c box env)))))
 
 (defn- draw-built!
   "Draws a built plot's items onto a canvas at the origin.
@@ -163,14 +159,12 @@
   ([plot options]
    (let [built (pipeline/build plot (dissoc options :until))
          {:keys [width height hint]} (:options built)
-         drawn (canvas/call-with-graphics
-                (c2d/canvas width height hint)
-                (fn [target]
-                  (let [background (get-in built [:theme :plot :background])]
-                    (when-not (theme/none? background) ;; canvas is transparent until painted
-                      (c2d/set-background target background)))
-                  (draw-built! target built (get-in built [:options :debug]))
-                  target))]
+         drawn (c2d/with-canvas [target (c2d/canvas width height hint)]
+                 (let [background (get-in built [:theme :plot :background])]
+                   (when-not (theme/none? background) ;; canvas is transparent until painted
+                     (c2d/set-background target background)))
+                 (draw-built! target built (get-in built [:options :debug]))
+                 target)]
      (if-let [deficiency (get-in built [:options :cvd])]
        (p/set-canvas-pixels! drawn (cvd-pixels (p/to-pixels drawn) deficiency))
        drawn))))

@@ -22,8 +22,7 @@
   default 1 - the whole step, rects of neighbouring levels touch), `:extent`, plus `:data` / `:mapping`.
 
   Functions: [[compute]], [[draw]], [[legend]] - the chart contract."
-  (:require [clojure2d.color :as c]
-            [clojure2d.core :as c2d]
+  (:require [clojure2d.core :as c2d]
             [fastmath.core :as m]
             [cljplot2.data.annotation :as annotation]
             [cljplot2.data.group :as group]
@@ -102,18 +101,6 @@
   [theme {:keys [options] :as chart}]
   (merge (theme/resolved-style theme (cond-> chart (not (schema/color? (:fill options))) (update :options dissoc :fill)))
          (select-keys options [:alpha])))
-
-(defn- with-alpha
-  "Gives a fill with the style's alpha.
-
-  Parameters:
-
-  - `fill`: a colour or `:none`.
-  - `alpha` (fraction or `nil`): the alpha share.
-
-  Returns `fill` with alpha `255 alpha`; `:none` and a `nil` alpha leave it unchanged."
-  [fill alpha]
-  (if (or (nil? alpha) (theme/none? fill)) fill (c/set-alpha fill (m/* 255.0 (double alpha)))))
 
 (defn- interval?
   "Tests whether a literal value is one interval `[a b]` rather than a vector of intervals.
@@ -265,7 +252,7 @@
             :when (and px py)]
       (let [[h0 h1] (if x-horizontal? px py)
             [v0 v1] (if x-horizontal? py px)
-            fill (with-alpha (or rect-fill g-fill) (:alpha style))
+            fill (draw/with-alpha (or rect-fill g-fill) (:alpha style))
             stroke (outline stroke-option fill)]
         (if geometry
           (do (c2d/set-stroke-custom canvas {:size sw :join :miter})
@@ -290,7 +277,7 @@
   (when-not (theme/none? fill)
     (c2d/set-color canvas fill)
     (c2d/rect canvas left top rw rh)
-    (draw/fill-with-pattern! canvas (pattern-fill st fill) #(c2d/rect canvas left top rw rh)))
+    (draw/fill-with-pattern! canvas (pattern-fill st fill) #(c2d/rect % left top rw rh)))
   (when (and (not (theme/none? stroke)) (m/pos? sw))
     (c2d/set-stroke-custom canvas {:size sw :join :miter})
     (c2d/set-color canvas stroke)
@@ -332,10 +319,10 @@
   - `env` (map): the drawing environment (`:theme`)."
   [{:keys [options] :as chart} attributes canvas {:keys [^double x ^double y ^double w ^double h]} env]
   (let [st (merge (rect-style (:theme env) chart) (select-keys attributes [:pattern]))
-        fill (with-alpha (get attributes :color (:fill st)) (:alpha st))
+        fill (draw/with-alpha (get attributes :color (:fill st)) (:alpha st))
         stroke (outline (:stroke-color st) fill)
         sw (double (:stroke-width st))
-        side (m/round (m/* 0.7 (m/min w h)))
+        side (m/round (m/* draw/key-glyph-share (m/min w h)))
         left (m/round (m/+ x (m/* 0.5 (m/- w side))))
         top (m/round (m/+ y (m/* 0.5 (m/- h side))))]
     (draw-pixel-rect! canvas [left top (m/long-add left side) (m/long-add top side)] fill st [stroke sw] draw/pattern-fill

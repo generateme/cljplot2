@@ -7,10 +7,11 @@
 
   - `:plot` - `:background` (fills the canvas), `:margin` (pixels on every side).
   - `:panel` - `:fill`, `:border-color`, `:border-width` (pixels, rounded, drawn inside the panel box); `:alternate-fill` - drawn over the fill of facet panels with odd `row + col` (`:none` turns it off); `:grid {:x line :y line :minor line}` - grid lines at tick positions (`:minor` - at the minor ticks of scales with `:minor-ticks`, default `:none`), `line` is `{:color :width :dash}` or `:none` (`:dash` - a sequence of positive dash lengths, a dash style name of [[cljplot2.schema/dash-styles]], or `:none` for a solid line); `:grid :bands` - the grid line style used instead of `:x` / `:y` for a bands scale (default dotted, as lattice `dotplot`; `:x` / `:y` `:none` still turns that scale's lines off); `:grid :bands-fill` - fill of every second band of a bands scale (from the second level), behind the charts, so levels with dodged groups read apart (default a light shade; `:none` turns it off).
-  - `:axis {:x axis :y axis}` - `axis` is `{:line-color :line-width :tick-color :tick-length :tick-width :label-gap :tick-spacing :label-rotation :minor-tick-length}` (pixels; `:minor-tick-length` - ticks of a scale's `:minor-ticks`; `:tick-spacing` > 0 is the target distance between ticks; a line or tick of width 0 isn't drawn; `:label-rotation` - tick labels rotated clockwise by -90..90 degrees, see [[cljplot2.content.axis]]). Keyed by scale, also when a flipped plot draws `:x` vertically.
+  - `:axis {:x axis :y axis}` - `axis` is `{:line-color :line-width :tick-color :tick-length :tick-width :label-gap :tick-spacing :label-rotation :minor-tick-length}` (pixels; `:minor-tick-length` - ticks of a scale's `:minor-ticks`; `:tick-spacing` > 0 is the target distance between ticks; a line or tick of width 0 isn't drawn; `:label-rotation` - tick labels rotated clockwise by -90..90 degrees, see [[cljplot2.content.axis]]). Keyed by scale, also when a flipped plot draws `:x` vertically. 3D boxes draw their axes, edges and ticks with `[:axis :x]` (`:line-color`, `:line-width` - the box edges too).
+  - `:frame-3d` - `:hidden-edge-dash` - the dash of a 3D box's hidden edges (a dash as in `:panel :grid`).
   - `:strip` - `:fill`, `:border-color`, `:border-width` of facet strips, `:shingle-fill` (bar of a shingle level); `:facet {:gap px}` between panels; `:multiplot {:gap px}` between arranged plots.
   - `:palette` - aesthetic defaults, see [[cljplot2.scale.aesthetic]]: `:color` (palette name or colours, old cljplot `:category20`), `:gradient` (colours or palette name; `:k2` reversed), `:shape` (shape sequence), `:size` (`[min max]` pixels), `:dash` (dash sequence: the [[cljplot2.schema/dash-styles]] names, adjacent styles far apart), `:pattern` (pattern sequence: the [[cljplot2.schema/pattern-styles]] names without `:solid`), `:na` (colour of NA values).
-  - `:legend` - `:gap` (pixels between key and label and between legends), `:key-size` (key box side, pixels), `:fill`, `:border-color`, `:border-width`, colour bar `:bar-length` (`:stretch` - over the space left, or a number, clamped to it) and `:bar-width` (`nil` - `:key-size`); text roles `:legend-title` and `:legend-label`.
+  - `:legend` - `:gap` (pixels between key and label and between legends), `:key-size` (key box side, pixels), `:fill`, `:border-color`, `:border-width`, colour bar `:bar-length` (`:stretch` - over the space left, or a number, clamped to it), `:bar-width` (`nil` - `:key-size`), `:bar-ticks` (tick count unless the scale's `:ticks` gives one), `:bar-tick-length` and `:bar-tick-width` (pixels; width 0 - no tick lines); text roles `:legend-title` and `:legend-label`.
   - `:chart` - per chart kind styles, each checked against its chart's style schema: `:scatter`, `:histogram`, `:density`, `:line`, `:ecdf` (old cljplot blue `[69 117 180]` - clojure2d `(last (palette :rdylbu-9))` - with cljplot's alphas: scatter 180, stripplot 100, rug 100), `:treemap` (`:padding`, `:border-color`, `:border-width`), `:partition` (`:border-color`, `:border-width`), `:pack` (`:padding`, `:border-color`, `:border-width`), `:waffle` (`:gap`, `:shape`, borders), `:cloud` (the point style; `:projection-alpha`, `:band-alpha` - alpha factors of projected points and density bands), `:venn` (`:alpha`, borders, `:label-gap` - pixels between a circle and its set name), `:tile` / `:bin2d` (`:cell`, `:cell-scale`, `:stroke-color`, `:stroke-width`, `:alpha`; tile `:size-key-fill` - a size legend key without a colour), `:field` (`:alpha`), `:contour` (`:color`, `:width`, `:dash`, `:alpha`), `:correlation` (`:color`, `:stroke-color`, `:stroke-width`), strip charts `:box`, `:violin`, `:stripplot`, `:beeswarm`, `:dotplot`, `:rug`, `:extent`, `:bar`, annotations `:rule`, `:rect`, `:function`, bands `:ribbon`, `:smooth` (band `:alpha` 0.3), `:segment`, `:polygon`, probability plots `:qq` / `:pp` (scatter's point style, `:line-width`), `:image` (no style), `:candlestick` (green up, red down), `:parallel` (radar `:fill` `:alpha` 0.25); line and function `:bridge` - the style of bridges over gaps (`:alpha` multiplies the line alpha, optional `:width`, `:dash`); line `:alpha` - opacity of `:fill :color` and stacked areas. Entries that aren't kinds are named styles (see [[named-styles]], [[chart-style]]).
   - `:text` - a text role (`:title`, `:strip`, ..., `:contour-label` - contour level labels, `:annotation` - text charts and strip n labels, see [[text-roles]]) -> a text style: `:font` (font family name or `java.awt.Font`, see [[cljplot2.graphics.font/resolve-font]]), `:size` (points), `:font-style` (`:plain`, `:bold`, `:italic` or `:bold-italic`), `:color` (any clojure2d colour), `:padding` (pixels added on every side of the text), `:align` (`[h v]` placement of the text in its box; optional, default `[:center :middle]`, see [[cljplot2.content.label]]), `:background` (a colour, alpha allowed, filling the label's box; optional, default none, `:none` - none: for labels charts place at a point - text chart, tile values ... - the text plus `:padding`; for layout labels - titles, axis titles, strips, legend labels - the whole item box).
 
@@ -70,7 +71,9 @@
              :dash [:solid :dashed :dotted :dot-dash :long-dash :dot-dot-dash :two-dash :loose-dot]
              :pattern [:hatch :back-hatch :horizontal :vertical :cross :diagonal-cross :dots :dense-dots]
              :na (c/gray 150)}
-   :legend {:gap 5 :key-size 14 :fill :none :border-color :none :border-width 1 :bar-length :stretch :bar-width nil}
+   :legend {:gap 5 :key-size 14 :fill :none :border-color :none :border-width 1 :bar-length :stretch :bar-width nil
+            :bar-ticks 5 :bar-tick-length 3 :bar-tick-width 1}
+   :frame-3d {:hidden-edge-dash [3 3]}
    :chart {:scatter {:size 6 :color (c/color 69 117 180 180) :stroke-color :none :stroke-width 1 :shape \O}
            :cloud {:size 6 :color (c/color 69 117 180 180) :stroke-color :none :stroke-width 1 :shape \O :projection-alpha 0.35 :band-alpha 0.15}
            :surface {:stroke-color (c/gray 60) :stroke-width 0.5}
@@ -344,7 +347,13 @@
      [:border-color {:description "legend box border colour"} schema/color]
      [:border-width {:description "legend box border width in pixels"} schema/non-neg]
      [:bar-length {:description "colour bar length: :stretch (the space left) or pixels"} (schema/keyword-or :stretch schema/pos)]
-     [:bar-width {:description "colour bar width in pixels (nil - the key size)"} [:maybe schema/pos]]]]
+     [:bar-width {:description "colour bar width in pixels (nil - the key size)"} [:maybe schema/pos]]
+     [:bar-ticks {:description "colour bar tick count (a scale's :ticks wins)"} schema/pos-int]
+     [:bar-tick-length {:description "colour bar tick length in pixels (labels follow it)"} schema/non-neg]
+     [:bar-tick-width {:description "colour bar tick width in pixels (0 - no tick lines)"} schema/non-neg]]]
+   [:frame-3d {:description "3D box frames (their axes and edges take [:axis :x])"}
+    [:map {:closed true}
+     [:hidden-edge-dash {:description "dash of the hidden box edges (:none - solid)"} schema/dash]]]
    [:chart {:description "per chart kind styles, see each chart's style options"}
     [:and {:cljplot2/type-doc "map of chart kind to its style"} [:map-of keyword? :map]
      [:map (schema/optional :text (schema/forbidden "isn't used: text charts take the text role [:text :annotation]"))]]]
@@ -376,9 +385,9 @@
 
   Returns the errors (`{:in :value :message}`, paths under `[:theme]`, see [[cljplot2.schema/errors]]), empty when valid. Checking resolves every colour and font, so the result for the last theme is reused for an equal one (plots built in a row usually share it)."
   [theme]
-  (let [[validated errs] @last-validated]
+  (let [[validated cached-errs] @last-validated]
     (if (and validated (= validated theme))
-      errs
+      cached-errs
       (let [errs (schema/errors theme-schema theme [:theme])]
         (reset! last-validated [theme errs])
         errs))))

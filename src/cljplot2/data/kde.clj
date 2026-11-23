@@ -22,10 +22,13 @@
 
   Returns `{:kde f :lo lo :hi hi}`: `f` - the density, a function of a number; `lo`, `hi` - the span `[min - cut h, max + cut h]` (`h` - the bandwidth).
 
-  Throws `ex-info {:key :density}` when fastmath can't estimate (the cause's data under `:cause`).
+  Throws `ex-info {:key :density}` for fewer than 2 distinct values (the callers skip those samples) and when fastmath can't estimate (the cause's data under `:cause`).
 
   See also [[curve]], [[grid-points]]."
   [values {:keys [kernel bandwidth cut]}]
+  (let [distinct-count (count (distinct values))]
+    (when (m/< distinct-count 2)
+      (schema/fail! "Density estimation needs at least 2 distinct values." {:key :density :value distinct-count})))
   (let [kernel-name (or kernel :gaussian)
         bandwidth-spec (or bandwidth :nrd0)
         reach (if (nil? cut) 3.0 (double cut))

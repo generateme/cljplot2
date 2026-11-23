@@ -60,6 +60,7 @@
             [cljplot2.chart.violin :as violin]
             [cljplot2.chart.waffle :as waffle]
             [cljplot2.data.measure :as measure]
+            [cljplot2.data.strip :as strip]
             [cljplot2.graphics.space3d :as space-draw]))
 
 (set! *warn-on-reflection* true)
@@ -253,7 +254,7 @@
 
   See also [[cljplot2.chart.bar]], [[cljplot2.data.strip]]."
   ([] (bar {}))
-  ([options] (polar (chart-value :bar bar/compute bar/draw bar/legend bar/schemas options))))
+  ([options] (polar (chart-value :bar strip/compute strip/draw bar/legend bar/schemas options))))
 
 (defn parallel
   "Parallel coordinates of wide rows over `:variables` (one axis per variable, affine `:scaling`); a radar chart under a polar `:coord`.
@@ -469,7 +470,7 @@
 
   See also [[cljplot2.chart.box]], [[cljplot2.data.strip]]."
   ([] (box {}))
-  ([options] (chart-value :box box/compute box/draw box/legend box/schemas options)))
+  ([options] (chart-value :box strip/compute strip/draw box/legend box/schemas options)))
 
 (defn bullet
   "Bullet chart of ranges, measures and markers per level (the categorical axis, `:level-axis`) and group.
@@ -482,7 +483,7 @@
 
   See also [[cljplot2.chart.bullet]], [[cljplot2.data.strip]]."
   ([] (bullet {}))
-  ([options] (chart-value :bullet bullet/compute bullet/draw nil bullet/schemas options)))
+  ([options] (chart-value :bullet strip/compute strip/draw nil bullet/schemas options)))
 
 (defn violin
   "Violin plot of the values per level (the categorical axis, `:level-axis`) and group.
@@ -495,7 +496,7 @@
 
   See also [[cljplot2.chart.violin]], [[cljplot2.data.strip]]."
   ([] (violin {}))
-  ([options] (chart-value :violin violin/compute violin/draw violin/legend violin/schemas options)))
+  ([options] (chart-value :violin strip/compute strip/draw violin/legend violin/schemas options)))
 
 (defn stripplot
   "Jittered strip plot of the values per level (the categorical axis, `:level-axis`) and group.
@@ -508,7 +509,7 @@
 
   See also [[cljplot2.chart.stripplot]], [[cljplot2.data.strip]]."
   ([] (stripplot {}))
-  ([options] (chart-value :stripplot stripplot/compute stripplot/draw stripplot/legend stripplot/schemas options)))
+  ([options] (chart-value :stripplot strip/compute strip/draw stripplot/legend stripplot/schemas options)))
 
 (defn beeswarm
   "Beeswarm of the values per level (the categorical axis, `:level-axis`) and group (points packed without overlap).
@@ -521,7 +522,7 @@
 
   See also [[cljplot2.chart.beeswarm]], [[cljplot2.data.strip]]."
   ([] (beeswarm {}))
-  ([options] (chart-value :beeswarm beeswarm/compute beeswarm/draw beeswarm/legend beeswarm/schemas options)))
+  ([options] (chart-value :beeswarm strip/compute strip/draw beeswarm/legend beeswarm/schemas options)))
 
 (defn dotplot
   "Dot plot of the values per level (the categorical axis, `:level-axis`): binned values as stacks of dots (Wilkinson dot density or fixed bins).
@@ -534,7 +535,7 @@
 
   See also [[cljplot2.chart.dotplot]], [[cljplot2.data.strip]]."
   ([] (dotplot {}))
-  ([options] (chart-value :dotplot dotplot/compute dotplot/draw dotplot/legend dotplot/schemas options)))
+  ([options] (chart-value :dotplot strip/compute strip/draw dotplot/legend dotplot/schemas options)))
 
 (defn rug
   "Rug of the values (per level of the categorical axis when one is mapped, `:level-axis`).
@@ -547,7 +548,7 @@
 
   See also [[cljplot2.chart.rug]], [[cljplot2.data.strip]]."
   ([] (rug {}))
-  ([options] (chart-value :rug rug/compute rug/draw rug/legend rug/schemas options)))
+  ([options] (chart-value :rug strip/compute strip/draw rug/legend rug/schemas options)))
 
 (defn extent
   "Interval of the values per level (the categorical axis, `:level-axis`) and group (fastmath.stats extents).
@@ -560,7 +561,7 @@
 
   See also [[cljplot2.chart.extent]], [[cljplot2.data.strip]]."
   ([] (extent {}))
-  ([options] (chart-value :extent extent/compute extent/draw extent/legend extent/schemas options)))
+  ([options] (chart-value :extent strip/compute strip/draw extent/legend extent/schemas options)))
 
 (defn rule
   "Reference lines (`:x`, `:y`, `:slope` / `:intercept`).

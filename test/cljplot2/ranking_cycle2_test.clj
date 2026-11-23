@@ -223,7 +223,7 @@
       (is (not (identical? a (cache {:pattern :dots} [255 255 255]))))
       (is (not (identical? a (cache {:pattern :hatch} [0 0 0]))))
       (is (nil? (cache {:pattern :solid} [0 0 0])))
-      (is (instance? java.awt.TexturePaint (:paint a)))))
+      (is (instance? java.awt.image.BufferedImage (:tile a)))))
   (testing "T3 angles as doubles"
     (is (schema/pattern? {:kind :lines :angle 45.0 :spacing 6 :width 1}))
     (is (not (schema/pattern? {:kind :lines :angle 45.5 :spacing 6 :width 1})))

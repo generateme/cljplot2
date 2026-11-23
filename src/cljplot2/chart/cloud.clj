@@ -45,9 +45,7 @@
   Facets: a box per panel, domains shared by all panels. Points, spikes and bar faces are drawn far to near.
 
   Functions: [[compute]] and [[chart-primitives]] - the chart contract (with [[legend]]); [[axis-levels]] - the levels of a categorical axis; [[bin-counts]] - the cells of a 2D histogram; [[projection-layers]], [[projection-primitives]] - the side projections; [[primitives]] - the points, spikes or bars of a panel; schema pieces [[schemas]], [[distance-rule]], [[projection-kinds]], [[projection-style-entries]]; option defaults [[default-projection-grid]], [[default-projection-levels]]."
-  (:require [clojure2d.color :as c]
-            [clojure2d.core :as c2d]
-            [fastmath.core :as m]
+  (:require [fastmath.core :as m]
             [fastmath.vector :as v]
             [cljplot2.chart.scatter :as scatter]
             [cljplot2.chart.tile :as tile]
@@ -432,11 +430,6 @@
                     :bars (bar-faces point orientation shade p base half st)))))
             (range (count x)))))
 
-(defn- faded
-  "Gives a colour with its alpha multiplied by `k` (a fraction)."
-  [color ^double k]
-  (c/set-alpha color (m/* k (c/alpha color))))
-
 (defn projection-primitives
   "Gives the primitives of one panel's side projections on the far walls.
 
@@ -457,11 +450,11 @@
                   (case kind
                     :points (keep (fn [i] (when-let [st (styles i)]
                                             {:kind :point :at (place [((points a) i) ((points b) i)]) :depth ##Inf
-                                             :style (assoc st :color (faded (:color st) (:projection-alpha style)) :stroke-color :none)}))
+                                             :style (assoc st :color (draw/faded (:color st) (:projection-alpha style)) :stroke-color :none)}))
                                   (range (count (points a))))
                     :density (when grid
                                (for [level levels :let [rings (contour/level-rings grid level)] :when (seq rings)]
-                                 {:kind :region :rings (mapv #(mapv place %) rings) :depth ##Inf :fill (faded (:color style) (:band-alpha style))}))
+                                 {:kind :region :rings (mapv #(mapv place %) rings) :depth ##Inf :fill (draw/faded (:color style) (:band-alpha style))}))
                     :contour (when grid
                                (for [level levels {line-points :points closed? :closed?} (contour/isolines grid level)]
                                  {:kind :path :points (mapv place line-points) :closed? closed? :depth ##Inf
@@ -496,12 +489,9 @@
   - `env` (map): the drawing environment (`:theme`).
 
   Returns `nil`; draws the point (points), a vertical line (spikes) or a filled square (bars), styled by the chart's resolved style with the attributes over it."
-  [chart attributes canvas {:keys [^double x ^double y ^double w ^double h] :as box} env]
-  (let [st (merge (theme/resolved-style (:theme env) chart) attributes)
-        cx (m/+ x (m/* 0.5 w))]
+  [chart attributes canvas box env]
+  (let [st (merge (theme/resolved-style (:theme env) chart) attributes)]
     (case (get-in chart [:options :type] :points)
       :bars (draw/bar-key! canvas box {:color (:color st) :stroke-color (:stroke-color st) :stroke-width (:stroke-width st)} false)
-      :spikes (do (c2d/set-color canvas (:color st))
-                  (c2d/set-stroke-custom canvas {:size (double (:stroke-width st)) :cap :butt})
-                  (c2d/line canvas cx (m/+ y (m/* 0.15 h)) cx (m/+ y (m/* 0.85 h))))
+      :spikes (draw/spike-key! canvas box {:color (:color st) :width (:stroke-width st) :span [0.15 0.85]})
       (shape/draw-key! canvas (:shape st) box st))))

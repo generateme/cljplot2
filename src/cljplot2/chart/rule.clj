@@ -163,7 +163,7 @@
             :let [^Vec2 p (projection x0 (m/+ a (m/* b x0)))
                   ^Vec2 q (projection x1 (m/+ a (m/* b x1)))]
             :when (and (m/valid-double? (.x p)) (m/valid-double? (.y p)) (m/valid-double? (.x q)) (m/valid-double? (.y q)))]
-      (c2d/line canvas (.x p) (.y p) (.x q) (.y q)))))
+      (c2d/line canvas p q))))
 
 (defn draw
   "Draws the rules of one panel.

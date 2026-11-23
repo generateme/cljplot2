@@ -76,7 +76,7 @@
     (is (= [2.5] (mapv :value (aesthetic/legend-entries :size (size-spec {:integer-ticks true :ticks [2.5]}))))))
   (testing "a colour bar: whole ticks with :integer-ticks"
     (let [spec (aesthetic/scale-spec :color {:integer-ticks true} {:kind :numeric :min 0.0 :max 1.0} false (:palette theme/default-theme))]
-      (is (= [0.0 1.0] (:ticks (#'legend/colorbar-content spec [:vs]))))))
+      (is (= [0.0 1.0] (:ticks (#'legend/colorbar-content spec [:vs] 5))))))
   (testing "boundary: other kinds and dimensions, dates - errors keyed :integer-ticks; false is fine everywhere"
     (is (= :integer-ticks (:key (error-data #(plot/build {:data [{:x 1 :y 1 :s "a"}] :mapping {:x :x :y :y :shape :s}
                                                            :charts [(chart/scatter)] :scales {:shape {:integer-ticks true}}})))))
@@ -89,7 +89,7 @@
 
 (deftest integer-ticks-colorbar-boundary-test
   (let [bar (fn [spec extent] (:ticks (#'legend/colorbar-content
-                                       (aesthetic/scale-spec :color spec extent false (:palette theme/default-theme)) [:v])))]
+                                       (aesthetic/scale-spec :color spec extent false (:palette theme/default-theme)) [:v] 5)))]
     (testing "an explicit :midpoint tick is drawn as given, among the whole ticks"
       (is (= [2.0 2.5 3.0] (bar {:integer-ticks true :midpoint 2.5} {:kind :numeric :min 2.0 :max 3.0}))))
     (testing "a log colour bar keeps its whole powers of ten - one on [0.01 1]; several on [1 1000]"

@@ -1,120 +1,147 @@
 (ns cljplot2.graphics.shape
   "Point shapes (old cljplot set), drawn centered at a position with a size (bounding box side, pixels).
 
-  * `\\O` / `\\o` - filled / outlined circle
-  * `\\S` / `\\s` - filled / outlined square
-  * `\\A \\V \\{ \\}` - filled triangle pointing up / down / left / right
-  * `\\^ \\v \\< \\>` - outlined triangle pointing up / down / left / right
-  * `\\-` `\\|` `\\\\` `\\/` - horizontal, vertical and diagonal strokes
-  * `\\+` - plus, `\\x` - cross
+  Built-in shapes are characters (see [[shapes]]):
+
+  * `O` / `o` - filled / outlined circle
+  * `S` / `s` - filled / outlined square
+  * `A` `V` and the braces - filled triangle pointing up / down / left / right
+  * the caret, `v` and the angle brackets - outlined triangle pointing up / down / left / right
+  * the hyphen, the bar, the backslash and the slash - horizontal, vertical and diagonal strokes
+  * `+` - plus, `x` - cross
 
   Filled shapes use the fill color and an optional outline; outlined shapes and strokes use the line color.
 
   A shape may also be a map (see [[shape-problem]]), fitted into the size square (aspect kept, centred):
 
-  * `{:path \"M0 0 L10 0 L5 8 Z\"}` - SVG path data, filled with the color, outlined like a filled shape
-  * `{:text \"🐄\"}` - a text outline filled with the color; `:font` (default [[*text-font*]] - the plot theme's
-    annotation font while a plot draws), characters it lacks from the bundled monochrome `\"Noto Emoji\"` (see
+  * `{:path d}` - SVG path data (e.g. `M0 0 L10 0 L5 8 Z`), filled with the color, outlined like a filled shape
+  * `{:text t}` - a text outline (e.g. an emoji) filled with the color; `:font` (default [[*text-font*]] - the plot
+    theme's annotation font while a plot draws), characters it lacks from the bundled monochrome Noto Emoji (see
     [[cljplot2.graphics.font]])
   * `{:svg source}` - an SVG file path, classpath resource or URL (string, `java.io.File`, `java.net.URL`), in its own
-    colors; transcoded once per source and pixel size
-  * `{:image img}` - a `BufferedImage` or clojure2d image, in its own colors"
+    colors; transcoded once per source and pixel size (see [[svg-image]])
+  * `{:image img}` - a `BufferedImage` or clojure2d image, in its own colors
+
+  Functions: [[shape-problem]], [[shape?]], [[draw!]], [[draw-key!]], [[styled-key!]], [[svg-image]]."
   (:require [clojure.java.io :as io]
             [clojure2d.core :as c2d]
+            [clojure2d.core.shape :as sh]
             [clojure2d.protocols :as pr]
             [fastmath.core :as m]
             [fastmath.vector :as v]
+            [cljplot2.cache :as cache]
             [cljplot2.error :as error]
             [cljplot2.graphics.font :as font])
   (:import [fastmath.vector Vec2 Vec3]
-           [java.awt Font Graphics2D RenderingHints Shape]
-           [java.awt.font FontRenderContext TextAttribute TextLayout]
-           [java.awt.geom AffineTransform Path2D Path2D$Double]
+           [java.awt Shape]
            [java.awt.image BufferedImage]
-           [java.io File StringReader]
-           [java.net URL]
-           [java.text AttributedString]
-           [org.apache.batik.parser AWTPathProducer]))
+           [java.io File]
+           [java.net URL]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
-(def filled-shapes #{\O \S \A \V \{ \}})
-(def line-shapes #{\o \s \^ \v \< \> \- \| \\ \/ \+ \x})
-(def shapes (into filled-shapes line-shapes))
+(def filled-shapes
+  "Built-in shapes filled with the fill colour (and outlined)."
+  #{\O \S \A \V \{ \}})
+
+(def line-shapes
+  "Built-in shapes stroked with the line colour."
+  #{\o \s \^ \v \< \> \- \| \\ \/ \+ \x})
+
+(def shapes
+  "Every built-in shape character."
+  (into filled-shapes line-shapes))
 
 (def shape-kinds
   "Keys of a shape map, one per map: SVG path data, a text, an SVG source, an image."
   #{:path :text :svg :image})
 
 (defn- unit-shape
-  "`shape` (java.awt) moved and scaled so its bounding box is centred at the origin with the longer side 1; `nil`
-  for an empty shape."
+  "Gives a shape moved and scaled so its bounding box is centred at the origin with the longer side 1.
+
+  Parameters:
+
+  - `shape` (java.awt `Shape`): the shape.
+
+  Returns the unit shape; `nil` for an empty shape."
   ^Shape [^Shape shape]
   (let [b (.getBounds2D shape)
         side (m/max (.getWidth b) (.getHeight b))
         rside (m// side)]
     (when (m/pos? side)
-      (let [t (AffineTransform/getScaleInstance rside rside)]
-        (.translate t (m/- (.getCenterX b)) (m/- (.getCenterY b)))
-        (.createTransformedShape t shape)))))
+      (sh/transform-shape shape [[:scale rside] [:translate (m/- (.getCenterX b)) (m/- (.getCenterY b))]]))))
 
 (defn- parse-path
-  "java.awt shape of SVG path data `d` (non-zero winding); `nil` when it doesn't parse."
-  ^Shape [^String d]
-  (try (AWTPathProducer/createShape (StringReader. d) Path2D/WIND_NON_ZERO)
+  "Gives the java.awt shape of SVG path data (non-zero winding).
+
+  Parameters:
+
+  - `d` (string): the path data.
+
+  Returns the shape; `nil` when the data doesn't parse."
+  ^Shape [d]
+  (try (sh/svg-path d)
        (catch Exception _ nil)))
 
 (def ^{:private true :const true :tag 'double} text-font-size
   "Point size text outlines are built at (scaled to the shape size when drawn)."
   100.0)
 
-(defn- text-runs
-  "`[start end font]` runs of `text`: `main` where it can show the character, the bundled emoji font elsewhere."
-  [^String text ^Font main]
-  (let [emoji (font/resolve-font "Noto Emoji" :plain text-font-size)
-        n (.length text)]
-    (loop [i (long 0)
-           runs []]
-      (if (m/>= i n)
-        runs
-        (let [cp (.codePointAt text (int i))
-              j (m/+ i (Character/charCount cp))
-              f (if (.canDisplay main (int cp)) main emoji)
-              [s _ g :as last-run] (peek runs)]
-          (recur j (if (and last-run (identical? g f)) (conj (pop runs) [s j f]) (conj runs [i j f]))))))))
-
 (defn- text-outline
-  "java.awt outline of `text` in `font` (a font name or `java.awt.Font`, see [[cljplot2.graphics.font/resolve-font]]),
-  characters the font lacks from the bundled emoji font."
-  ^Shape [^String text font]
-  (let [main (font/resolve-font font :plain text-font-size)
-        attributed (AttributedString. text)]
-    (doseq [[s e f] (text-runs text main)]
-      (.addAttribute attributed TextAttribute/FONT f (int s) (int e)))
-    (.getOutline (TextLayout. (.getIterator attributed) (FontRenderContext. nil RenderingHints/VALUE_TEXT_ANTIALIAS_ON RenderingHints/VALUE_FRACTIONALMETRICS_ON)) nil)))
+  "Gives the java.awt outline of a text, at [[text-font-size]] points.
+
+  Parameters:
+
+  - `text` (string): the text.
+  - `font`: a font name or `java.awt.Font` (see [[cljplot2.graphics.font/resolve-font]]); characters it lacks come from the bundled emoji font.
+
+  Returns the outline shape (empty for an empty text)."
+  ^Shape [text font]
+  (sh/text-outline (font/resolve-font font :plain text-font-size) text (font/resolve-font "Noto Emoji" :plain text-font-size)))
 
 (def ^:dynamic *text-font*
   "Font of a text shape without `:font`: the default theme's annotation font; while a plot draws, its theme's
   `[:text :annotation :font]` (bound by [[cljplot2.render]])."
   "DejaVu Sans Mono")
 
-(def ^:private outline-of
-  "Unit shape (see [[unit-shape]]) of a `:path` shape map or a `:text` one with its `:font`; `nil` when it draws
-  nothing. Cached."
-  (memoize (fn [{:keys [path text font]}]
-             (unit-shape (if path
-                           (or (parse-path path) (Path2D$Double.))
-                           (text-outline text font))))))
+(def ^{:private true :const true :tag 'long} outline-cache-limit
+  "Unit outlines [[outlines]] keeps."
+  256)
+
+(defonce ^{:private true :doc "Unit outlines by shape map, the least recently used evicted beyond [[outline-cache-limit]]."}
+  outlines
+  (cache/lru-cache outline-cache-limit))
+
+(defn- outline-of
+  "Gives the unit shape (see [[unit-shape]]) of a `:path` shape map or a `:text` one with its `:font`; `nil` when it
+  draws nothing. Cached in [[outlines]]."
+  [shape]
+  (cache/lookup-or-compute outlines shape
+                           (fn [{:keys [path text font]}]
+                             (unit-shape (if path
+                                           (or (parse-path path) (sh/path [] false))
+                                           (text-outline text font))))))
 
 (defn- unit-outline
-  "[[outline-of]] `shape`, a text without `:font` in [[*text-font*]]."
+  "Gives the unit outline (see [[outline-of]]) of a shape map, a text without `:font` in [[*text-font*]].
+
+  Parameters:
+
+  - `shape` (map): a `:path` or `:text` shape map.
+
+  Returns the unit shape; `nil` when it draws nothing."
   [shape]
   (outline-of (if (and (:text shape) (nil? (:font shape))) (assoc shape :font *text-font*) shape)))
 
 (defn- svg-uri
-  "URI string of the SVG `source`: an existing file, a classpath resource or a URL (string with a scheme or
-  `java.net.URL`); `nil` when none is found."
+  "Gives the URI string of an SVG source.
+
+  Parameters:
+
+  - `source`: an existing file (path string or `java.io.File`), a classpath resource or a URL (string with a scheme or `java.net.URL`).
+
+  Returns the URI string; `nil` when none is found."
   [source]
   (cond
     (instance? URL source) (str source)
@@ -125,13 +152,21 @@
                          (io/resource source) (str (io/resource source))
                          (re-find #"^[a-zA-Z][a-zA-Z0-9+.-]*://" source) source))))
 
-(defn- image? [v] (or (instance? BufferedImage v) (satisfies? pr/ImageProto v)))
+(defn- image?
+  "Tests whether a value is a `BufferedImage` or a clojure2d image."
+  [v]
+  (or (instance? BufferedImage v) (satisfies? pr/ImageProto v)))
 
 (defn shape-problem
-  "Why `v` isn't a shape, or `nil`: a built-in character of [[shapes]], or a map with exactly one of
-  [[shape-kinds]] - `:path` (non-empty SVG path data that parses), `:text` (a non-empty string, optional `:font` -
-  a bundled, installed or logical font name or `java.awt.Font`), `:svg` (a file, resource or URL that exists),
-  `:image` (an image)."
+  "Gives the reason a value isn't a shape.
+
+  A shape is a built-in character of [[shapes]], or a map with exactly one of [[shape-kinds]] - `:path` (non-empty SVG path data that parses), `:text` (a non-empty string, optional `:font` - a bundled, installed or logical font name or `java.awt.Font`), `:svg` (a file, resource or URL that exists), `:image` (an image).
+
+  Parameters:
+
+  - `v`: any value.
+
+  Returns the reason (a string); `nil` for a shape."
   [v]
   (if-not (map? v)
     (when-not (contains? shapes v)
@@ -157,34 +192,61 @@
         :else (when-not (image? (:image v)) "an :image shape should be a BufferedImage or a clojure2d image")))))
 
 (defn shape?
-  "Is `v` a shape (see [[shape-problem]])?"
+  "Tests whether a value is a shape (see [[shape-problem]]).
+
+  Parameters:
+
+  - `v`: any value.
+
+  Returns true or false."
   [v]
   (nil? (shape-problem v)))
 
 (def ^{:private true :const true :tag 'long} svg-cache-limit
-  "Transcoded SVG images kept (the cache is emptied when full)."
-  1024)
+  "Transcoded SVG images [[svg-images]] keeps."
+  256)
 
-(def ^:private svg-images (atom {}))
+(defonce ^{:private true :doc "Transcoded SVG images by source and pixel size, the least recently used evicted beyond [[svg-cache-limit]]."}
+  svg-images
+  (cache/lru-cache svg-cache-limit))
 
 (defn- transcode
-  "SVG `source` transcoded into an `n` x `n` image (aspect kept, centred); `ex-info {:key :shape}` when it fails."
+  "Gives an SVG source transcoded into a square image (aspect kept, centred).
+
+  Parameters:
+
+  - `source`: the SVG source (see [[svg-uri]]).
+  - `n` (long): the image side in pixels.
+
+  Returns a `BufferedImage`; throws `ex-info {:key :shape}` when it fails."
   ^BufferedImage [source ^long n]
   (try (c2d/transcode-svg (c2d/load-svg (svg-uri source)) n n)
        (catch Exception e
          (error/fail! (str "the :svg shape can't be drawn (" (ex-message e) ")") {:key :shape :value source}))))
 
 (defn svg-image
-  "The SVG `source` as an `n` x `n` image, transcoded once per source and size (see [[transcode]])."
+  "Gives the SVG `source` as an `n` x `n` image, transcoded once per source and size while cached (see [[transcode]],
+  [[svg-images]]).
+
+  Parameters:
+
+  - `source`: an SVG file path, classpath resource or URL (string, `java.io.File`, `java.net.URL`).
+  - `n` (long): the image side in pixels.
+
+  Returns a `BufferedImage`; a source that can't be transcoded is an error keyed `:shape` (nothing cached)."
   ^BufferedImage [source ^long n]
-  (let [k [source n]]
-    (or (@svg-images k)
-        (let [img (transcode source n)]
-          (swap! svg-images #(assoc (if (m/>= (count %) svg-cache-limit) {} %) k img))
-          img))))
+  (cache/lookup-or-compute svg-images [source n] (fn [[s side]] (transcode s side))))
 
 (defn- triangle
-  "Corners of a triangle inscribed in the square of half side `r` around (x, y), pointing `dir`."
+  "Gives the corners of a triangle inscribed in a square around a point.
+
+  Parameters:
+
+  - `x`, `y` (doubles): the square's centre.
+  - `r` (double): the square's half side.
+  - `dir` (keyword): `:up`, `:down`, `:left` or `:right` - where the triangle points.
+
+  Returns `[x1 y1 x2 y2 x3 y3]`."
   [^double x ^double y ^double r dir]
   (case dir
     :up [x (m/- y r) (m/+ x r) (m/+ y r) (m/- x r) (m/+ y r)]
@@ -192,10 +254,20 @@
     :left [(m/- x r) y (m/+ x r) (m/- y r) (m/+ x r) (m/+ y r)]
     :right [(m/+ x r) y (m/- x r) (m/- y r) (m/- x r) (m/+ y r)]))
 
-(def ^:private triangle-dirs {\A :up \V :down \{ :left \} :right \^ :up \v :down \< :left \> :right})
+(def ^:private triangle-dirs
+  "Triangle shape character -> the direction it points."
+  {\A :up \V :down \{ :left \} :right \^ :up \v :down \< :left \> :right})
 
 (defn- outline!
-  "Draw `shape` outline (or stroke) around center `c` - `Vec3` (x, y, half size)."
+  "Draws a built-in shape's outline (or stroke) with the canvas stroke and colour.
+
+  Parameters:
+
+  - `canvas`: the canvas in graphics context.
+  - `shape` (character): a built-in shape.
+  - `c` (`Vec3`): the centre x, y and the half size.
+
+  Returns the canvas."
   [canvas shape ^Vec3 c]
   (let [x (.x c) y (.y c) r (.z c) d (m/* 2.0 r)]
     (case shape
@@ -213,8 +285,17 @@
              (c2d/line canvas (m/- x r) (m/+ y r) (m/+ x r) (m/- y r))))))
 
 (defn- fill!
+  "Fills a built-in filled shape with the canvas colour.
+
+  Parameters:
+
+  - `canvas`: the canvas in graphics context.
+  - `shape` (character): one of [[filled-shapes]].
+  - `c` (`Vec3`): the centre x, y and the half size.
+
+  Returns the canvas."
   [canvas shape ^Vec3 c]
-  (let [x (.x c) y (.y c) r (.z c) d (* 2.0 r)]
+  (let [x (.x c) y (.y c) r (.z c) d (m/* 2.0 r)]
     (case shape
       \O (c2d/ellipse canvas x y d d false)
       \S (c2d/crect canvas x y d d false)
@@ -222,27 +303,46 @@
         (c2d/triangle canvas x1 y1 x2 y2 x3 y3 false)))))
 
 (defn- draw-image!
-  "Draw `img` scaled to `side` pixels along its longer side, centred at `center`."
+  "Draws an image scaled to a side along its longer side, centred at a point.
+
+  Parameters:
+
+  - `canvas`: the canvas in graphics context (its transform is restored afterwards).
+  - `img`: a `BufferedImage` or clojure2d image.
+  - `center` (`Vec2`): the centre in pixels.
+  - `side` (double): the longer side in pixels.
+
+  Returns the canvas."
   [canvas img ^Vec2 center ^double side]
-  (let [^BufferedImage img (pr/get-image img)
-        w (.getWidth img)
-        h (.getHeight img)
-        k (m// side (m/max w h))
-        t (AffineTransform/getTranslateInstance (m/- (.x center) (m/* 0.5 k w)) (- (.y center) (* 0.5 k h)))]
-    (.scale t k k)
-    (.drawImage ^Graphics2D (:graphics canvas) img t nil)))
+  (let [^BufferedImage image (pr/get-image img)
+        w (.getWidth image)
+        h (.getHeight image)
+        k (m// side (m/max w h))]
+    (-> canvas
+        (c2d/push-matrix)
+        (c2d/translate (m/- (.x center) (m/* 0.5 k w)) (m/- (.y center) (m/* 0.5 k h)))
+        (c2d/scale k k)
+        (c2d/image image 0 0 w h)
+        (c2d/pop-matrix))))
 
 (defn- draw-map!
-  "Draw the shape map `shape` (see [[shape-problem]]) centred at `center` in `style` (see [[draw!]])."
+  "Draws a shape map fitted into its size square.
+
+  Parameters:
+
+  - `canvas`: the canvas in graphics context.
+  - `shape` (map): the shape map (see [[shape-problem]]).
+  - `center` (`Vec2`): the centre in pixels.
+  - `style` (map): see [[draw!]].
+
+  Returns `nil`."
   [canvas shape ^Vec2 center {:keys [^double size color stroke-color ^double stroke-width]}]
   (cond
     (:svg shape) (let [n (m/max 1 (m/round size))]
                    (draw-image! canvas (svg-image (:svg shape) n) center n))
     (:image shape) (draw-image! canvas (:image shape) center size)
     :else (when-let [unit (unit-outline shape)]
-            (let [t (AffineTransform/getTranslateInstance (.x center) (.y center))
-                  _ (.scale t size size)
-                  outline (.createTransformedShape t unit)]
+            (let [outline (sh/transform-shape unit [[:translate (.x center) (.y center)] [:scale size]])]
               (when-not (= :none color)
                 (c2d/set-color canvas color)
                 (c2d/shape canvas outline false))
@@ -253,34 +353,60 @@
 (declare draw!)
 
 (defn draw-key!
-  "Draw `shape` as a legend key glyph centred in `box` (`{:x :y :w :h}`) in `style` (see [[draw!]]), its `:size`
-  fitted into the box: a size larger than the box (a constant chart `:size` above the key size) shrinks to the box's
-  shorter side, so glyphs don't cross into the next row."
+  "Draws a shape as a legend key glyph centred in a key box.
+
+  Parameters:
+
+  - `canvas`: the canvas in graphics context.
+  - `shape`: the shape.
+  - `box` (map): the key box `{:x :y :w :h}` in pixels.
+  - `style` (map): see [[draw!]]; a `:size` larger than the box (a constant chart `:size` above the key size) shrinks to the box's shorter side, so glyphs don't cross into the next row.
+
+  Returns `nil`."
   [canvas shape {:keys [^double x ^double y ^double w ^double h]} style]
   (let [side (m/min w h)]
     (draw! canvas shape (Vec2. (m/+ x (m/* 0.5 w)) (m/+ y (m/* 0.5 h)))
            (update style :size #(m/min (double %) side)))))
 
+(defn styled-key!
+  "Draws a point chart's key glyph: its style's shape fitted and centred in a legend key box (see [[draw-key!]]).
+
+  Parameters:
+
+  - `canvas`: the clojure2d canvas.
+  - `box` (map): the key box `{:x :y :w :h}` (pixels).
+  - `st` (map): the chart's style with the key's attributes merged - `:shape`, `:size`, `:color`, `:stroke-color`, `:stroke-width`.
+  - `stroke?`: truthy - the canvas stroke is set to `:stroke-width` first (line shapes and outlines drawn at the chart's width); else the caller's stroke stays."
+  [canvas box st stroke?]
+  (when stroke?
+    (c2d/set-stroke-custom canvas {:size (double (:stroke-width st))}))
+  (draw-key! canvas (:shape st) box st))
+
 (defn draw!
-  "Draw `shape` centered at `center` (`Vec2`). `style` - `{:size :color :stroke-color :stroke-width}`, `:size` is
-  the bounding box side: filled shapes are filled with `:color` (`:none` - no fill) and outlined with `:stroke-color`
-  (`:none` or `:stroke-width` 0 skips the outline); outlined shapes and strokes are drawn with `:color` (`:none` -
-  nothing). Lines use the canvas
-  stroke - the caller sets it once (width `:stroke-width`) for many points. A shape map (see [[shape-problem]]) is
-  fitted into the size square: `:path` filled and outlined as a filled shape, `:text` filled, `:svg` / `:image` in
-  their own colors."
+  "Draws a shape centred at a point.
+
+  Lines use the canvas stroke - the caller sets it once (width `:stroke-width`) for many points.
+
+  Parameters:
+
+  - `canvas`: the canvas in graphics context.
+  - `shape`: a built-in shape character or a shape map (see [[shape-problem]]).
+  - `center` (`Vec2`): the centre in pixels.
+  - `style` (map): `:size` - the bounding box side in pixels; `:color` - fills filled shapes and strokes the others (`:none` - nothing); `:stroke-color` and `:stroke-width` - the outline of filled shapes (`:none` or width 0 - none).
+
+  Returns `nil`. A shape map is fitted into the size square: `:path` filled and outlined as a filled shape, `:text` filled, `:svg` / `:image` in their own colours."
   [canvas shape ^Vec2 center {:keys [^double size color stroke-color stroke-width] :as style}]
   (if (map? shape)
     (draw-map! canvas shape center style)
-    (let [c (v/vec3 (.x center) (.y center) (m/* 0.5 size))
+    (let [centre-size (v/vec3 (.x center) (.y center) (m/* 0.5 size))
           ink? (not= :none color)]
       (if (filled-shapes shape)
         (do (when ink?
               (c2d/set-color canvas color)
-              (fill! canvas shape c))
-            (when (and (not= :none stroke-color) (pos? (double stroke-width)))
+              (fill! canvas shape centre-size))
+            (when (and (not= :none stroke-color) (m/pos? (double stroke-width)))
               (c2d/set-color canvas stroke-color)
-              (outline! canvas shape c)))
+              (outline! canvas shape centre-size)))
         (when ink?
           (c2d/set-color canvas color)
-          (outline! canvas shape c))))))
+          (outline! canvas shape centre-size))))))

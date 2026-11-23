@@ -15,75 +15,110 @@
 (set! *unchecked-math* :warn-on-boxed)
 
 (defn lens-area
-  "Area of the intersection of circles with radii `r1`, `r2` at centre distance `d`."
+  "Gives the area of the intersection of two circles.
+
+  Parameters:
+
+  - `d` (double): the centre distance.
+  - `r1`, `r2` (doubles): the radii.
+
+  Returns the lens area: 0 for circles apart (`d >= r1 + r2`), the smaller circle's area when one holds the other."
   ^double [^double d ^double r1 ^double r2]
   (cond
-    (>= d (+ r1 r2)) 0.0
-    (<= d (m/abs (- r1 r2))) (* m/PI (m/sq (m/min r1 r2)))
-    :else (let [a1 (m/acos (m/constrain (/ (+ (* d d) (* r1 r1) (- (* r2 r2))) (* 2.0 d r1)) -1.0 1.0))
-                a2 (m/acos (m/constrain (/ (+ (* d d) (* r2 r2) (- (* r1 r1))) (* 2.0 d r2)) -1.0 1.0))
-                k (* (+ (- d) r1 r2) (+ d r1 (- r2)) (+ d (- r1) r2) (+ d r1 r2))]
-            (- (+ (* r1 r1 a1) (* r2 r2 a2)) (* 0.5 (m/sqrt (m/max 0.0 k)))))))
+    (m/>= d (m/+ r1 r2)) 0.0
+    (m/<= d (m/abs (m/- r1 r2))) (m/* m/PI (m/sq (m/min r1 r2)))
+    :else (let [a1 (m/acos (m/constrain (m// (m/+ (m/* d d) (m/* r1 r1) (m/- (m/* r2 r2))) (m/* 2.0 d r1)) -1.0 1.0))
+                a2 (m/acos (m/constrain (m// (m/+ (m/* d d) (m/* r2 r2) (m/- (m/* r1 r1))) (m/* 2.0 d r2)) -1.0 1.0))
+                k (m/* (m/+ (m/- d) r1 r2) (m/+ d r1 (m/- r2)) (m/+ d (m/- r1) r2) (m/+ d r1 r2))]
+            (m/- (m/+ (m/* r1 r1 a1) (m/* r2 r2 a2)) (m/* 0.5 (m/sqrt (m/max 0.0 k)))))))
 
-(def ^:private ^:const disjoint-gap
+(def ^{:private true :const true :tag 'double} disjoint-gap
   "Gap between disjoint circles, a fraction of the smaller radius."
   0.1)
 
 (defn- centre-distance
-  "Centre distance of circles `r1`, `r2` whose lens area is `overlap` (see the namespace doc)."
+  "Gives the centre distance of two circles whose lens area is `overlap` (see the namespace doc).
+
+  Parameters:
+
+  - `r1`, `r2` (doubles): the radii.
+  - `overlap` (double): the wanted lens area.
+
+  Returns the distance: `r1 + r2` for a zero radius; disjoint circles a small gap apart (see [[disjoint-gap]]) for no overlap; `|r1 - r2|` (the smaller touching the larger from inside) for an overlap of the smaller circle's area or more."
   ^double [^double r1 ^double r2 ^double overlap]
   (cond
-    (or (zero? r1) (zero? r2)) (+ r1 r2)
-    (<= overlap 0.0) (* (+ r1 r2) (+ 1.0 (* disjoint-gap (/ (m/min r1 r2) (+ r1 r2)))))
-    (>= overlap (* m/PI (m/sq (m/min r1 r2)))) (m/abs (- r1 r2))
-    :else (solver/find-root #(- (lens-area (double %) r1 r2) overlap) (m/abs (- r1 r2)) (+ r1 r2))))
+    (or (m/zero? r1) (m/zero? r2)) (m/+ r1 r2)
+    (m/<= overlap 0.0) (m/* (m/+ r1 r2) (m/+ 1.0 (m/* disjoint-gap (m// (m/min r1 r2) (m/+ r1 r2)))))
+    (m/>= overlap (m/* m/PI (m/sq (m/min r1 r2)))) (m/abs (m/- r1 r2))
+    :else (solver/find-root #(m/- (lens-area (double %) r1 r2) overlap) (m/abs (m/- r1 r2)) (m/+ r1 r2))))
 
 (defn two-sets
-  "Circles `[{:x :y :r} {:x :y :r}]` of sets with `size-a`, `size-b` items, `overlap` of them in both (non-negative,
-  at most the smaller size): areas and lens area proportional, or (`proportional?` false) unit circles one radius
-  apart. The first circle on the left, both on y = 0."
+  "Gives the circles of two sets.
+
+  Parameters:
+
+  - `size-a`, `size-b` (numbers): the sets' sizes.
+  - `overlap` (number): the items in both, non-negative, at most the smaller size.
+  - `proportional?`: truthy - circle areas and the lens area proportional to the sizes; falsy - unit circles one radius apart.
+
+  Returns `[{:x :y :r} {:x :y :r}]`: the first circle on the left, both on y = 0."
   [size-a size-b overlap proportional?]
   (if proportional?
-    (let [r1 (m/sqrt (/ (double size-a) m/PI)) r2 (m/sqrt (/ (double size-b) m/PI))
+    (let [r1 (m/sqrt (m// (double size-a) m/PI)) r2 (m/sqrt (m// (double size-b) m/PI))
           d (centre-distance r1 r2 (double overlap))]
       [{:x 0.0 :y 0.0 :r r1} {:x d :y 0.0 :r r2}])
     [{:x 0.0 :y 0.0 :r 1.0} {:x 1.0 :y 0.0 :r 1.0}]))
 
-(def ^:private ^:const three-set-offset
+(def ^{:private true :const true :tag 'double} three-set-offset
   "Distance of the three unit circles' centres from the common centre."
   0.65)
 
 (def ^:private three-set-directions
   "Unit directions of the three circles from the common centre: upper left, upper right, bottom."
-  [[(- (m/cos (m/radians 30.0))) -0.5] [(m/cos (m/radians 30.0)) -0.5] [0.0 1.0]])
+  [[(m/- (m/cos (m/radians 30.0))) -0.5] [(m/cos (m/radians 30.0)) -0.5] [0.0 1.0]])
+
+(def ^{:private true :const true :tag 'double} single-label-distance
+  "Distance of a three-set layout's single-set label points from the common centre."
+  1.1)
+
+(def ^{:private true :const true :tag 'double} pair-label-distance
+  "Distance of a three-set layout's pair label points from the common centre (opposite the third circle)."
+  0.75)
+
+(def ^{:private true :const true :tag 'double} containment-tolerance
+  "Relative slack of [[contains-circle?]] for rounding."
+  1e-9)
 
 (defn three-sets
-  "Circles of the classic three-set layout (see the namespace doc), around the origin."
+  "Gives the circles `[{:x :y :r} ..]` of the classic three-set layout (see the namespace doc), around the origin."
   []
-  (mapv (fn [[dx dy]] {:x (* three-set-offset (double dx)) :y (* three-set-offset (double dy)) :r 1.0}) three-set-directions))
+  (mapv (fn [[^double dx ^double dy]] {:x (m/* three-set-offset dx) :y (m/* three-set-offset dy) :r 1.0}) three-set-directions))
 
 (defn- contains-circle?
-  [{ax :x ay :y ar :r} {bx :x by :y br :r}]
-  (<= (+ (m/hypot (- (double bx) (double ax)) (- (double by) (double ay))) (double br)) (* (double ar) (+ 1.0 1e-9))))
+  "Tests whether circle `a` holds circle `b` (`{:x :y :r}` each), touching from inside included."
+  [{^double ax :x ^double ay :y ^double ar :r} {^double bx :x ^double by :y ^double br :r}]
+  (m/<= (m/+ (m/hypot (m/- bx ax) (m/- by ay)) br) (m/* ar (m/+ 1.0 containment-tolerance))))
 
 (defn region-points
-  "`{region [x y]}` - a label point for every region of `circles` (2 or 3, as [[two-sets]] / [[three-sets]] give
-  them) that exists in the layout: 2 sets - midpoints of the region's stretch of the centre line (the widest part);
-  3 sets - fixed points of the classic layout."
+  "Gives a label point for every region of a Venn layout that exists in it.
+
+  Parameters:
+
+  - `circles` (vector): 2 or 3 circles, as [[two-sets]] / [[three-sets]] give them.
+
+  Returns `{region [x y]}` (regions keyed by sets of circle indices): 2 sets - midpoints of the region's stretch of the centre line (the widest part), a region missing when a circle is empty or held by the other, the intersection when the circles overlap; 3 sets - fixed points of the classic layout."
   [circles]
-  (if (= 3 (count circles))
-    (let [single 1.1 pair 0.75
-          dir (fn [i] (three-set-directions i))]
-      (into {#{0 1 2} [0.0 0.0]}
-            (concat (for [i (range 3) :let [[dx dy] (dir i)]] [#{i} [(* single (double dx)) (* single (double dy))]])
-                    (for [i (range 3) j (range (inc (long i)) 3)
-                          :let [[dx dy] (dir (first (remove #{i j} (range 3))))]]
-                      [#{i j} [(* pair -1.0 (double dx)) (* pair -1.0 (double dy))]]))))
-    (let [[{x1 :x r1 :r :as a} {x2 :x r2 :r :as b}] circles
-          x1 (double x1) r1 (double r1) x2 (double x2) r2 (double r2)
-          mid (fn [^double p ^double q] [(* 0.5 (+ p q)) 0.0])
-          a-left (- x1 r1) a-right (+ x1 r1) b-left (- x2 r2) b-right (+ x2 r2)]
+  (if (m/== 3 (count circles))
+    (into {#{0 1 2} [0.0 0.0]}
+          (concat (for [i (range 3) :let [[^double dx ^double dy] (three-set-directions i)]]
+                    [#{i} [(m/* single-label-distance dx) (m/* single-label-distance dy)]])
+                  (for [i (range 3) j (range (m/long-inc (long i)) 3)
+                        :let [[^double dx ^double dy] (three-set-directions (first (remove #{i j} (range 3))))]]
+                    [#{i j} [(m/* pair-label-distance -1.0 dx) (m/* pair-label-distance -1.0 dy)]])))
+    (let [[{^double x1 :x ^double r1 :r :as a} {^double x2 :x ^double r2 :r :as b}] circles
+          mid (fn [^double p ^double q] [(m/* 0.5 (m/+ p q)) 0.0])
+          a-left (m/- x1 r1) a-right (m/+ x1 r1) b-left (m/- x2 r2) b-right (m/+ x2 r2)]
       (cond-> {}
-        (and (pos? r1) (not (contains-circle? b a))) (assoc #{0} (mid a-left (m/min b-left a-right)))
-        (and (pos? r2) (not (contains-circle? a b))) (assoc #{1} (mid (m/max a-right b-left) b-right))
-        (and (pos? r1) (pos? r2) (< (- x2 x1) (+ r1 r2))) (assoc #{0 1} (mid (m/max a-left b-left) (m/min a-right b-right)))))))
+        (and (m/pos? r1) (not (contains-circle? b a))) (assoc #{0} (mid a-left (m/min b-left a-right)))
+        (and (m/pos? r2) (not (contains-circle? a b))) (assoc #{1} (mid (m/max a-right b-left) b-right))
+        (and (m/pos? r1) (m/pos? r2) (m/< (m/- x2 x1) (m/+ r1 r2))) (assoc #{0 1} (mid (m/max a-left b-left) (m/min a-right b-right)))))))

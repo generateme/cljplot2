@@ -782,13 +782,13 @@ decreasing order) or slice-and-dice (strips along x at even depths, along y at o
 
 
 ```{=html}
-<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>x</th><th>y</th><th>w</th><th>h</th></tr></thead><tbody><tr><td>0.0</td><td>0.0</td><td>46.15384615384616</td><td>60.0</td></tr><tr><td>46.15384615384616</td><td>0.0</td><td>32.30769230769231</td><td>42.85714285714286</td></tr><tr><td>78.46153846153847</td><td>0.0</td><td>21.538461538461537</td><td>42.85714285714286</td></tr><tr><td>46.15384615384616</td><td>42.85714285714286</td><td>26.92307692307693</td><td>17.14285714285714</td></tr><tr><td>73.0769230769231</td><td>42.85714285714286</td><td>26.92307692307693</td><td>17.14285714285714</td></tr></tbody></table></div>
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>x</th><th>y</th><th>w</th><th>h</th></tr></thead><tbody><tr><td>0</td><td>0</td><td>46.15384615384616</td><td>60.0</td></tr><tr><td>46.15384615384616</td><td>0</td><td>32.30769230769231</td><td>42.85714285714286</td></tr><tr><td>78.46153846153847</td><td>0</td><td>21.538461538461537</td><td>42.85714285714286</td></tr><tr><td>46.15384615384616</td><td>42.85714285714286</td><td>26.92307692307693</td><td>17.14285714285714</td></tr><tr><td>73.0769230769231</td><td>42.85714285714286</td><td>26.92307692307693</td><td>17.14285714285714</td></tr></tbody></table></div>
 ```
 
 
 
 ```{=html}
-<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>x</th><th>y</th><th>w</th><th>h</th></tr></thead><tbody><tr><td>0.0</td><td>0.0</td><td>46.15384615384615</td><td>60.0</td></tr><tr><td>46.15384615384615</td><td>0.0</td><td>23.076923076923077</td><td>60.0</td></tr><tr><td>69.23076923076923</td><td>0.0</td><td>15.384615384615385</td><td>60.0</td></tr><tr><td>84.61538461538461</td><td>0.0</td><td>7.6923076923076925</td><td>60.0</td></tr><tr><td>92.3076923076923</td><td>0.0</td><td>7.6923076923076925</td><td>60.0</td></tr></tbody></table></div>
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>x</th><th>y</th><th>w</th><th>h</th></tr></thead><tbody><tr><td>0.0</td><td>0</td><td>46.15384615384615</td><td>60</td></tr><tr><td>46.15384615384615</td><td>0</td><td>23.076923076923077</td><td>60</td></tr><tr><td>69.23076923076923</td><td>0</td><td>15.384615384615385</td><td>60</td></tr><tr><td>84.61538461538461</td><td>0</td><td>7.6923076923076925</td><td>60</td></tr><tr><td>92.3076923076923</td><td>0</td><td>7.6923076923076925</td><td>60</td></tr></tbody></table></div>
 ```
 
 

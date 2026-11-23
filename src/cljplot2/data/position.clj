@@ -41,7 +41,7 @@
 
   Parameters:
 
-  - `heights` (vector of vectors of doubles): one vector per group, in group order.
+  - `heights` (sequence of sequences of doubles): one sequence per group, in group order.
   - `n` (long): the shared length of the groups.
 
   Returns `[[0 ...] [h0 ...] [h0+h1 ...] ...]` - one vector per group, the first all zeros."
@@ -60,10 +60,10 @@
   Returns per group per index `[y0 y1]`."
   ([heights n] (stacked heights n false))
   ([heights ^long n reverse-negative?]
-   (let [above (cumulative (mapv #(mapv (fn [^double h] (m/max 0.0 h)) %) heights) n)
-         negative (mapv #(mapv (fn [^double h] (m/min 0.0 h)) %) heights)
+   (let [above (cumulative (map #(map (fn [^double h] (m/max 0.0 h)) %) heights) n)
+         negative (map #(map (fn [^double h] (m/min 0.0 h)) %) heights)
          below (if reverse-negative?
-                 (vec (rseq (cumulative (vec (rseq negative)) n)))
+                 (rseq (cumulative (reverse negative) n))
                  (cumulative negative n))]
      (mapv (fn [hs ups downs]
              (mapv (fn [^double h ^double up ^double down] (if (m/neg? h) [(m/+ down h) down] [up (m/+ up h)])) hs ups downs))

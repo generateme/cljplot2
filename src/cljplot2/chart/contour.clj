@@ -27,8 +27,7 @@
   On a `:log` axis the field is sampled (a density estimated) in log10 coordinates, see [[cljplot2.data.field]].
 
   Functions: [[computed-aesthetics]] - the computed color; [[compute]], [[draw]], [[legend]] - the chart contract; [[line-midpoint]] - where a line's label goes."
-  (:require [clojure2d.color :as c]
-            [clojure2d.core :as c2d]
+  (:require [clojure2d.core :as c2d]
             [fastmath.core :as m]
             [fastmath.vector :as v]
             [cljplot2.chart.field :as field-chart]
@@ -150,7 +149,7 @@
   - `split` (map): `:groups` (`{panel rows}`), `:mapping` (merged).
   - `env` (map): `:theme`, `:plot-scales` and grouping settings.
 
-  Returns per panel `{:contours [{:level l :color-value v :aesthetics a :lines [{:points :closed?} ..]} ..] :style st :fill? b :by-level? b :labels l}` (filled: `:rings [[..] ..]` instead of `:lines`); extents x / y - the sampled domain, color - the value range with the levels (by level: the lowest line or band isn't the gradient's end), or the groups' values; no padding, `:na`, `:dropped`.
+  Returns per panel `{:contours [{:level l :color-value v :aesthetics a :lines [{:points :closed?} ..]} ..] :style st :fill? b :by-level? b :labels l}` (filled: `:rings [[..] ..]` instead of `:lines`); extents x / y - the sampled domain, color - the value range with the levels (by level: the lowest line or band isn't the gradient's end), or the groups' values; no padding, `:na`, `:dropped` (rows without finite x / y; `:field` - panels with rows but no field, see [[cljplot2.data.field/panels-without-field]]).
 
   See also [[cljplot2.data.contour/isolines]], [[cljplot2.data.contour/level-rings]]."
   [{:keys [options] :as chart} {:keys [groups mapping]} {:keys [theme plot-scales] :as env}]
@@ -197,7 +196,8 @@
                     (keys panels))
      :padding {:x [0.0 0.0] :y [0.0 0.0]}
      :na (if (some (fn [[_ a]] (some nil? (vals a))) fields) (set (for [[_ a] fields [k v] a :when (nil? v)] k)) #{})
-     :dropped (field/dropped-positions (field/source-kind options mapping) mapping groups)}))
+     :dropped (assoc (field/dropped-positions (field/source-kind options mapping) mapping groups)
+                     :field (field/panels-without-field groups (set (map first fields))))}))
 
 (defn- level-style
   "Gives the line or fill style of one contour.
@@ -216,21 +216,6 @@
     (when-let [col (aesthetic/attribute-fn :color (:color scales) (get-in env [:theme :palette :na]))]
       (some->> (col color-value) (assoc st :color)))
     (group/style st aesthetics scales (:theme env))))
-
-(defn- with-alpha
-  "Gives a colour with its alpha multiplied.
-
-  Parameters:
-
-  - `color`: any clojure2d colour.
-  - `alpha` (fraction or `nil`): the factor; `nil` - the colour unchanged.
-
-  Returns the colour with `alpha` times its alpha."
-  [color alpha]
-  (if alpha
-    (let [rgba (c/to-color color)]
-      (c/set-alpha rgba (m/* (double alpha) (c/alpha rgba))))
-    color))
 
 (defn line-midpoint
   "Finds the point halfway along a pixel polyline.
@@ -337,12 +322,12 @@
                       (sort-by :level contours))]
     (doseq [[contour st] visible]
       (if fill?
-        (do (c2d/set-color canvas (with-alpha (:color st) alpha))
+        (do (c2d/set-color canvas (cond-> (:color st) alpha (draw/faded alpha)))
             (c2d/shape canvas (polyline/rings-path (map to-pixels (:rings contour))) false))
         (polyline/stroke-runs! canvas
                                (map (fn [{:keys [points closed?]}] (to-pixels (if closed? (conj points (first points)) points)))
                                     (:lines contour))
-                               (assoc st :color (with-alpha (:color st) alpha)))))
+                               (assoc st :color (cond-> (:color st) alpha (draw/faded alpha))))))
     (when (and labels (not fill?))
       (draw-labels! canvas (map first visible) to-pixels labels (assoc env :panel box)))))
 

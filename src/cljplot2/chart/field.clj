@@ -28,6 +28,7 @@
             [clojure2d.pixels :as p]
             [fastmath.core :as m]
             [cljplot2.data.field :as field]
+            [cljplot2.graphics.draw :as draw]
             [cljplot2.data.rows :as data]
             [cljplot2.scale.aesthetic :as aesthetic]
             [cljplot2.scale.position :as scale]
@@ -106,7 +107,7 @@
   - `groups` (map): `{panel rows}`.
   - `plot-scales` (map): the plot's `:scales` (axis transforms, explicit domains).
 
-  Returns `{:grids {panel grid} :domain d :dropped {..}}`: panels without a field left out; `:dropped` - rows without finite x / y (points and gridded sources).
+  Returns `{:grids {panel grid} :domain d :dropped {..}}`: panels without a field left out; `:dropped` - rows without finite x / y (points and gridded sources), `:field` - panels with rows but no field (see [[cljplot2.data.field/panels-without-field]]).
 
   See also [[cljplot2.data.field/sample]]."
   [options mapping groups plot-scales]
@@ -117,7 +118,7 @@
         size (field/grid-size (:n options))]
     {:grids (update-vals fields (fn [{:keys [f]}] (field/sample f domain size (field/axis-transforms plot-scales))))
      :domain domain
-     :dropped (field/dropped-positions kind mapping groups)}))
+     :dropped (assoc (field/dropped-positions kind mapping groups) :field (field/panels-without-field groups (set (keys fields))))}))
 
 (defn- domain-extents
   "Gives the x / y extents of a field's domain.
@@ -221,7 +222,7 @@
                              b (double (inverse-v (m/+ 0.5 y)))]
                          (if-let [col (color-at (if flipped? (Vec2. b a) (Vec2. a b)))]
                            (let [rgba (c/to-color col)]
-                             (if alpha (c/set-alpha rgba (m/* (double alpha) (c/alpha rgba))) rgba))
+                             (if alpha (draw/faded rgba alpha) rgba))
                            transparent)))
             pixels (p/filter-colors-xy pixel-at (p/pixels width height))]
         (c2d/image canvas pixels 0 0 width height)))))

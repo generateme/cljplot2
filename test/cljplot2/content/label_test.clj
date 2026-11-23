@@ -3,7 +3,6 @@
             [cljplot2.test-util :refer [error-data error error-ins]]
             [clojure2d.core :as c2d]
             [fastmath.core :as m]
-            [cljplot2.graphics.canvas :as canvas]
             [cljplot2.core :as plot]
             [cljplot2.graphics.draw :as draw]
             [cljplot2.graphics.font :as font]
@@ -35,14 +34,12 @@
 (defn- oracle-size
   "Independent measurement: text block of `lines` in `style`, rounded up, plus padding."
   [lines style hint]
-  (canvas/call-with-graphics
-   (c2d/canvas 1 1 hint)
-   (fn [c]
-     (c2d/set-font c (font/resolve-font (:font style) (:font-style style) (:size style)))
-     (let [boxes (map #(c2d/text-bounding-box c %) lines)
-           p (* 2.0 (:padding style))]
-       [(+ p (m/ceil (apply max (map #(nth % 2) boxes))))
-        (+ p (m/ceil (* (count lines) (nth (first boxes) 3))))]))))
+  (c2d/with-canvas [c (c2d/canvas 1 1 hint)]
+    (c2d/set-font c (font/resolve-font (:font style) (:font-style style) (:size style)))
+    (let [boxes (map #(c2d/text-bounding-box c %) lines)
+          p (* 2.0 (:padding style))]
+      [(+ p (m/ceil (apply max (map #(nth % 2) boxes))))
+       (+ p (m/ceil (* (count lines) (nth (first boxes) 3))))])))
 
 (def ^:private axis-style (get-in theme/default-theme [:text :axis-title]))
 
@@ -285,16 +282,16 @@
     (is (> (- x1 x0) (* 3 (- y1 y0))))))
 
 (defn- in-graphics [w h f]
-  (canvas/call-with-graphics (c2d/canvas w h) (fn [c] (c2d/set-background c :white) (f c) c)))
+  (c2d/with-canvas [c (c2d/canvas w h)] (c2d/set-background c :white) (f c) c))
 
 (deftest outer-clip-test
   (let [outer-clip (atom nil)
         c (in-graphics 200 60
                        (fn [c]
                          (.setClip ^java.awt.Graphics2D (:graphics c) 0 0 100 60)
-                         (canvas/call-with-isolated-graphics
-                          c #(draw/draw-content (label "XXXXXXXXXXXXXXXXXXXX" :size 20) % {:x 0 :y 0 :w 200 :h 60}
-                                                {:theme theme/default-theme}))
+                         (c2d/with-isolated-canvas [ic c]
+                           (draw/draw-content (label "XXXXXXXXXXXXXXXXXXXX" :size 20) ic {:x 0 :y 0 :w 200 :h 60}
+                                              {:theme theme/default-theme}))
                          (reset! outer-clip (.getBounds (.getClip ^java.awt.Graphics2D (:graphics c))))))]
     (testing "label clip intersects the outer clip"
       (is (some? (ink-box c (constantly true) 0 100)))
@@ -308,9 +305,9 @@
                  (fn [c]
                    (let [g ^java.awt.Graphics2D (:graphics c)
                          before [(.getFont g) (.getColor g) (.getTransform g) (.getClip g)]]
-                     (canvas/call-with-isolated-graphics
-                      c #(draw/draw-content (label "abc" :role :title :color :red :rotation 270) % {:x 10 :y 5 :w 40 :h 50}
-                                            {:theme theme/default-theme}))
+                     (c2d/with-isolated-canvas [ic c]
+                       (draw/draw-content (label "abc" :role :title :color :red :rotation 270) ic {:x 10 :y 5 :w 40 :h 50}
+                                          {:theme theme/default-theme}))
                      (reset! state [before [(.getFont g) (.getColor g) (.getTransform g) (.getClip g)]]))))
     (is (= (first @state) (second @state)))))
 
@@ -321,8 +318,7 @@
                    (let [g ^java.awt.Graphics2D (:graphics c)
                          transform (.getTransform g)]
                      (is (thrown? clojure.lang.ExceptionInfo
-                                  (canvas/call-with-isolated-graphics
-                                   c (fn [c'] (c2d/translate c' 5 5) (throw (ex-info "boom" {}))))))
+                                  (c2d/with-isolated-canvas [ic c] (c2d/translate ic 5 5) (throw (ex-info "boom" {})))))
                      (reset! g-state [transform (.getTransform g)]))))
     (is (= (first @g-state) (second @g-state)))))
 

@@ -74,10 +74,6 @@
         span-angle (m/radians span)]
     [start-angle (if (= :counter-clockwise direction) (m/- start-angle span-angle) (m/+ start-angle span-angle))]))
 
-(def ^{:const true :private true :tag 'double} quarter-turn
-  "A quarter of a turn, radians."
-  (m/* 0.5 m/PI))
-
 (defn- unit-point
   "Gives the panel-oriented point (x right, y down) at angle `theta` (radians, 0 up, clockwise) and radius `r` around the origin, as `[x y]`."
   [^double theta ^double r]
@@ -100,7 +96,7 @@
         a (m/min t0 t1)
         b (m/max t0 t1)
         inner (double (get coord :inner 0.0))
-        quarters (map #(m/* quarter-turn (double %)) (range (m/ceil (m// a quarter-turn)) (m/inc (m/floor (m// b quarter-turn)))))
+        quarters (map #(m/* m/HALF_PI (double %)) (range (m/ceil (m// a m/HALF_PI)) (m/inc (m/floor (m// b m/HALF_PI)))))
         points (concat [(unit-point a 1.0) (unit-point b 1.0)]
                        (map #(unit-point % 1.0) quarters)
                        (if (m/pos? inner) [(unit-point a inner) (unit-point b inner)] [[0.0 0.0]]))

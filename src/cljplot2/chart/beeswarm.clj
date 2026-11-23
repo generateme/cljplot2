@@ -16,7 +16,7 @@
   `:shape` (as scatter, see [[cljplot2.graphics.shape]]); `:fit`, `:pack`, `:padding {:x [lo hi]}` (default
   `[0.05 0.05]`), plus the strip options and `:data` / `:mapping`.
 
-  Functions: [[swarm-offsets]], [[around-offsets]] and [[fit-offsets]] - the packing; [[compute]], [[draw]], [[legend]] - the chart contract; [[schemas]] - its style, options and mapping."
+  Functions: [[swarm-offsets]], [[around-offsets]] and [[fit-offsets]] - the packing; [[legend]] - the chart contract's key glyph (the chart computes and draws through [[cljplot2.data.strip/compute]] and [[cljplot2.data.strip/draw]]); [[schemas]] - its style, options and mapping."
   (:require [fastmath.core :as m]
             [fastmath.vector :as v]
             [cljplot2.data.group :as group]
@@ -279,34 +279,10 @@
           (shape/draw! canvas (:shape st) p st))))
     (strip/draw-n-labels! canvas pl items (fn [{:keys [values]}] (v/mx values)) options scales env)))
 
-(defn compute
-  "Computes the beeswarm's stats with its levels on the categorical axis.
+(defmethod strip/in-frame-compute :beeswarm [chart chart-split env] (compute-in-strip-frame chart chart-split env))
 
-  Parameters:
-
-  - `chart` (map): the chart value.
-  - `chart-split` (map): the chart's rows split per panel.
-  - `env` (map): the compute environment.
-
-  Returns the stats of [[compute-in-strip-frame]], turned to the mapping axis of the levels (see [[cljplot2.data.strip/compute-oriented]])."
-  [chart chart-split env]
-  (strip/compute-oriented compute-in-strip-frame chart chart-split env))
-
-(defn draw
-  "Draws one panel of the beeswarm.
-
-  Parameters:
-
-  - `chart` (map): the chart value.
-  - `computed` (map): the panel's stats from [[compute]].
-  - `canvas`: the clojure2d canvas.
-  - `box` (map): the panel box.
-  - `scales` (map): finalized scales.
-  - `env` (map): the draw environment.
-
-  Draws [[draw-in-strip-frame]] in the strip frame (see [[cljplot2.data.strip/draw-oriented]])."
-  [chart computed canvas box scales env]
-  (strip/draw-oriented draw-in-strip-frame chart computed canvas box scales env))
+(defmethod strip/in-frame-draw :beeswarm [chart computed canvas box scales env]
+  (draw-in-strip-frame chart computed canvas box scales env))
 
 (defn legend
   "Draws the beeswarm's key glyph: its point shape fitted and centred in a legend key.
@@ -321,5 +297,4 @@
 
   See also [[cljplot2.graphics.shape/draw-key!]]."
   [chart attributes canvas box env]
-  (let [st (merge (theme/resolved-style (:theme env) chart) attributes)]
-    (shape/draw-key! canvas (:shape st) box st)))
+  (shape/styled-key! canvas box (merge (theme/resolved-style (:theme env) chart) attributes) false))

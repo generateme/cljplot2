@@ -22,7 +22,6 @@
             [fastmath.core :as m]
             [fastmath.vector :as v]
             [cljplot2.scale.aesthetic :as aesthetic]
-            [cljplot2.graphics.canvas :as canvas]
             [cljplot2.data.hierarchy :as hierarchy]
             [cljplot2.data.rows :as data]
             [cljplot2.graphics.draw :as draw]
@@ -127,8 +126,8 @@
 
   Returns `nil`; the canvas graphics state is kept (isolated graphics)."
   [c role text fill box env]
-  (canvas/call-with-isolated-graphics
-   c #(draw/draw-content {:kind :label :role role :text text :color (draw/text-color (:theme env) role fill)} % box env)))
+  (c2d/with-isolated-canvas [ic c]
+    (draw/draw-content {:kind :label :role role :text text :color (draw/text-color (:theme env) role fill)} ic box env)))
 
 (defn- fill-box!
   "Fills a box and draws its inner border.
@@ -145,7 +144,7 @@
   [c color {:keys [x y w h] :as box} {:keys [border-color border-width] :as st} pattern-fill]
   (c2d/set-color c color)
   (c2d/rect c (long x) (long y) (long w) (long h))
-  (draw/fill-with-pattern! c (pattern-fill st color) #(c2d/rect c (long x) (long y) (long w) (long h)))
+  (draw/fill-with-pattern! c (pattern-fill st color) #(c2d/rect % (long x) (long y) (long w) (long h)))
   (draw/inner-border! c box border-color border-width))
 
 (defn- children-rects

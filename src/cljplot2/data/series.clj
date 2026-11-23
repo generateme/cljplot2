@@ -307,7 +307,7 @@
   (let [groups (if series
                  (let [order (distinct (map #(get % series) rows))
                        by (group-by #(get % series) rows)]
-                   (mapv (fn [s] [s (by s)]) order))
+                   (map (fn [s] [s (by s)]) order))
                  [[nil rows]])
         top (v/mx (into [0.0] (keep #(when-let [value (get % y)] (m/abs (double value)))) rows))
         h (double (or band-height (if (m/pos? top) (m// top (double bands)) 1.0)))

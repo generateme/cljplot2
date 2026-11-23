@@ -131,9 +131,7 @@
         accessors [x-of y-of xend-of yend-of]
         valid? (fn [r] (every? #(data/valid-value? (% r)) accessors))
         rows (mapcat (fn [gs] (mapcat :rows gs)) (vals panels))
-        _ (doseq [[k f] (cond-> [[:x x-of] [:y y-of]] xend-mapped? (conj [:xend xend-of]) yend-mapped? (conj [:yend yend-of]))]
-            (when (and (seq rows) (not-any? #(data/valid-value? (f %)) rows))
-              (schema/fail! "No valid values for a mapped dimension - check the mapping." {:key :mapping :value k :rows (count rows)})))
+        _ (data/check-mapped! rows (cond-> [[:x x-of] [:y y-of]] xend-mapped? (conj [:xend xend-of]) yend-mapped? (conj [:yend yend-of])))
         data (update-vals panels
                           (fn [gs]
                             {:segments (mapv (fn [g]

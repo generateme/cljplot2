@@ -1,7 +1,17 @@
 (ns cljplot2.graphics.draw
-  "Drawing grid item content - the counterpart of [[cljplot2.graphics.measure/natural-size]]."
+  "Drawing grid item content - the counterpart of [[cljplot2.graphics.measure/natural-size]] - and the marks and
+  colours charts share.
+
+  Functions: content [[draw-content]], [[inner-border!]], [[zero-line!]], [[pixel-center]]; colours
+  [[contrast-color]], [[plot-backdrop]], [[resolved-text-color]], [[text-color]], [[painted-color]],
+  [[outline-color]], [[with-alpha]], [[faded]]; patterns [[pattern-ink]], [[pattern-fill]], [[pattern-fill-cache]],
+  [[fill-with-pattern!]]; bars [[rect-of]], [[visible-bar?]], [[corner-rounding]], [[value-axis]], [[value-ends]],
+  [[bar-rounding]], [[whole-pixel]], [[shape-bar!]], [[bar!]], [[rounded-sector-path]], [[range-bar!]]; legend keys
+  [[key-rounding]], [[key-glyph-share]], [[bar-key!]], [[circle-key!]], [[spike-key!]]; [[cvd-filter-fn]]."
   (:require [clojure2d.color :as c]
             [clojure2d.core :as c2d]
+            [clojure2d.core.shape :as sh]
+            [clojure2d.pixels :as p]
             [fastmath.core :as m]
             [cljplot2.graphics.measure :as measure]
             [cljplot2.graphics.pattern :as pattern]
@@ -10,8 +20,7 @@
             [cljplot2.schema :as schema]
             [cljplot2.theme :as theme])
   (:import [fastmath.vector Vec2]
-           [java.awt Graphics2D Shape TexturePaint]
-           [java.awt.geom Path2D$Double]))
+           [java.awt Shape]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -28,118 +37,195 @@
    [(schema/optional :pattern {:description "pattern drawn over the fill (a mapped :pattern wins)"} schema/pattern)
     (schema/optional :pattern-color {:description "pattern ink: a colour, :none or :darker (the darkened fill)"} stroke-color)]))
 
+(def ^:private white
+  "Opaque white: the contrast colour on dark fills and the backdrop without a plot background."
+  (c/gray 255))
+
+(def ^:private black
+  "Opaque black: the contrast colour on light fills."
+  (c/gray 0))
+
 (defn contrast-color
-  "Black or white, whichever reads better on `color` (by luma): text and lines drawn over a fill."
+  "Gives black or white, whichever reads better on a colour (by luma): text and lines drawn over a fill.
+
+  Parameters:
+
+  - `color`: the colour under the text (any clojure2d representation).
+
+  Returns opaque white for a luma below 127.5, else opaque black."
   [color]
-  (if (> 127.5 (double (c/luma color))) :white :black))
+  (if (m/> 127.5 (double (c/luma color))) white black))
 
 (defn plot-backdrop
-  "What text outside any chart fill is drawn over: the theme's plot background, white when it is `:none`."
+  "Gives what text outside any chart fill is drawn over.
+
+  Parameters:
+
+  - `theme` (map): the plot theme.
+
+  Returns the theme's plot background; opaque white when it is `:none`."
   [theme]
   (let [background (get-in theme [:plot :background])]
-    (if (theme/none? background) :white background)))
+    (if (theme/none? background) white background)))
 
 (defn resolved-text-color
-  "Text colour `color` (see `cljplot2.schema/text-color`) drawn over the colour `backdrop`: `color` itself, or for
-  `:contrast` black or white by `backdrop` ([[contrast-color]])."
+  "Gives a text colour as drawn over a backdrop.
+
+  Parameters:
+
+  - `color`: the text colour (see [[cljplot2.schema/text-color]]) - a colour or `:contrast`.
+  - `backdrop`: the colour under the text.
+
+  Returns `color` itself; for `:contrast` black or white by `backdrop` (see [[contrast-color]])."
   [color backdrop]
   (if (= :contrast color) (contrast-color backdrop) color))
 
 (defn text-color
-  "Colour of text in the `theme` role `role` drawn over the colour `backdrop` (e.g. the fill under a label): the
-  role's `:color`, resolved by [[resolved-text-color]]."
+  "Gives the colour of text in a theme role drawn over a backdrop.
+
+  Parameters:
+
+  - `theme` (map): the plot theme.
+  - `role` (keyword): the text role.
+  - `backdrop`: the colour under the text (e.g. the fill under a label).
+
+  Returns the role's `:color` resolved by [[resolved-text-color]]."
   [theme role backdrop]
   (resolved-text-color (get-in theme [:text role :color]) backdrop))
 
 (defn painted-color
-  "Color already painted on `canvas` at user-space point `(x, y)` (through the canvas transform, e.g. a panel's
-  translation); `nil` outside the image."
+  "Gives the colour already painted on a canvas at a user-space point.
+
+  Parameters:
+
+  - `canvas`: the canvas in graphics context.
+  - `x`, `y` (doubles): the point in user space (through the canvas transform, e.g. a panel's translation).
+
+  Returns the pixel's colour (a `Vec4`); `nil` outside the image."
   [canvas ^double x ^double y]
-  (let [^Graphics2D g (:graphics canvas)
-        ^java.awt.image.BufferedImage img (c2d/get-image canvas)
-        p (.transform (.getTransform g) (java.awt.geom.Point2D$Double. x y) nil)
-        px (long (m/floor (.getX p))) py (long (m/floor (.getY p)))]
-    (when (and (< -1 px (.getWidth img)) (< -1 py (.getHeight img)))
-      (c/to-color (.getRGB img px py)))))
+  (let [^Vec2 at (c2d/transform canvas x y)
+        px (long (m/floor (.x at))) py (long (m/floor (.y at)))]
+    (when (and (m/< -1 px (c2d/width canvas)) (m/< -1 py (c2d/height canvas)))
+      (p/get-color canvas px py))))
 
 (defn outline-color
-  "Outline color of a mark filled with `fill` for `:stroke-color` `stroke` (see [[stroke-color]]); `:none` stays `:none`."
+  "Gives the outline colour of a mark.
+
+  Parameters:
+
+  - `stroke`: the `:stroke-color` (see [[stroke-color]]) - a colour, `:none` or `:darker`.
+  - `fill`: the mark's fill.
+
+  Returns the darkened fill for `:darker`, else `stroke` (`:none` stays `:none`)."
   [stroke fill]
   (if (= :darker stroke) (c/darken fill) stroke))
 
 (defn pattern-ink
-  "Ink of a fill pattern over `fill` for `:pattern-color` `ink` (a color or `:darker` - the darkened fill), no more
-  opaque than the fill: a translucent fill (e.g. overlaid groups) gets translucent ink."
+  "Gives the ink of a fill pattern, no more opaque than the fill: a translucent fill (e.g. overlaid groups) gets translucent ink.
+
+  Parameters:
+
+  - `ink`: the `:pattern-color` - a colour or `:darker` (the darkened fill).
+  - `fill`: the mark's fill.
+
+  Returns the ink colour with alpha at most the fill's."
   [ink fill]
-  (let [ink (outline-color ink fill)
-        alpha (m/min (c/alpha ink) (c/alpha fill))]
-    (if (< alpha (c/alpha ink)) (c/set-alpha ink alpha) ink)))
+  (let [resolved (outline-color ink fill)
+        alpha (m/min (c/alpha resolved) (c/alpha fill))]
+    (if (m/< alpha (c/alpha resolved)) (c/set-alpha resolved alpha) resolved)))
 
 (defn pattern-fill
-  "Pattern fill `{:pattern p :ink c :paint texture}` of a mark filled with `fill` in style `st` (`:pattern`,
-  `:pattern-color` - see [[pattern-ink]]; `:paint` - the tile's `TexturePaint`, anchored at the user origin); `nil`
-  without a pattern (`:solid`, `nil`), an ink (`:pattern-color :none`) or a fill (`:none`, `nil`). Many marks of one
-  style share it: build it once per group, or use [[pattern-fill-cache]]."
+  "Gives the pattern fill of a mark.
+
+  Many marks of one style share it: build it once per group, or use [[pattern-fill-cache]].
+
+  Parameters:
+
+  - `st` (map): the style - `:pattern` (see [[cljplot2.schema/pattern]]), `:pattern-color` (see [[pattern-ink]], default `:darker`).
+  - `fill`: the mark's fill.
+
+  Returns `{:pattern p :ink c :tile img :period n}` - `img` the tile image (see [[cljplot2.graphics.pattern/tile]]), `n` its side in pixels, repeated from the user origin; `nil` without a pattern (`:solid`, `nil`), an ink (`:pattern-color :none`) or a fill (`:none`, `nil`)."
   [st fill]
-  (let [p (:pattern st)
+  (let [pattern-name (:pattern st)
         ink (:pattern-color st :darker)]
-    (when-let [spec (pattern/spec-of p)]
+    (when-let [spec (pattern/spec-of pattern-name)]
       (when (and (some? fill) (not (theme/none? fill)) (not (theme/none? ink)))
-        (let [ink (pattern-ink ink fill)
-              period (double (pattern/period spec))]
-          {:pattern p :ink ink
-           :paint (TexturePaint. (pattern/tile spec ink) (java.awt.geom.Rectangle2D$Double. 0.0 0.0 period period))})))))
+        (let [pattern-color (pattern-ink ink fill)]
+          {:pattern pattern-name :ink pattern-color
+           :tile (pattern/tile spec pattern-color) :period (pattern/period spec)})))))
 
 (defn pattern-fill-cache
-  "A function of `st` and `fill` giving [[pattern-fill]], built once per pattern, ink and fill - for one draw call
-  over many marks (bars, boxes, rects)."
+  "Gives a function of a style and a fill giving [[pattern-fill]], built once per pattern, ink and fill - for one draw
+  call over many marks (bars, boxes, rects).
+
+  Returns a function `(fn [st fill] pattern-fill)`; its cache lives as long as the function."
   []
-  (let [cached (memoize (fn [p ink fill] (pattern-fill {:pattern p :pattern-color ink} fill)))]
+  (let [cached (memoize (fn [pattern-name ink fill] (pattern-fill {:pattern pattern-name :pattern-color ink} fill)))]
     (fn [st fill] (cached (:pattern st) (:pattern-color st :darker) fill))))
 
 (defn fill-with-pattern!
-  "Draw the pattern of `pattern-fill` (see [[pattern-fill]]; `nil` - nothing) over a fill: `draw-fn` (no arguments)
-  fills the same shapes again while the canvas paints the pattern's tile; the previous paint is restored. `draw-fn`
-  must not set a colour."
-  [canvas pattern-fill draw-fn]
-  (when-let [^TexturePaint texture (:paint pattern-fill)]
-    (let [^Graphics2D g (:graphics canvas)
-          paint (.getPaint g)]
-      (.setPaint g texture)
-      (try (draw-fn) (finally (.setPaint g paint))))))
+  "Draws a pattern over a fill: the same shapes filled again with the pattern's tile as the paint.
 
-(declare pixel-center)
+  Parameters:
+
+  - `canvas`: the canvas in graphics context (its paint is kept).
+  - `fill-pattern`: see [[pattern-fill]]; `nil` draws nothing.
+  - `draw-fn` (fn of a canvas): fills the shapes on the canvas it gets; it must not set a colour.
+
+  Returns `nil`."
+  [canvas fill-pattern draw-fn]
+  (when-let [{:keys [tile ^long period]} fill-pattern]
+    (c2d/with-isolated-canvas [patterned canvas]
+      (c2d/pattern-mode patterned tile 0 0 period period)
+      (draw-fn patterned)
+      nil)))
+
+(defn pixel-center
+  "Gives the centre of the pixel containing a coordinate: thin lines drawn there cover whole pixels (no antialiasing smear).
+
+  Parameters:
+
+  - `p` (double): the coordinate in pixels.
+
+  Returns `floor(p) + 0.5`."
+  ^double [^double p]
+  (m/+ (m/floor p) 0.5))
 
 (defn zero-line!
-  "The line at 0 of value scale `k` (default `:y`) across the panel `box` (`{:w :h}`; flip-aware) in style
-  `:zero-line-color` / `:zero-line-width` (mirror densities, histograms and bars); nothing when 0 isn't in the scale
-  or the line draws nothing."
+  "Draws the line at 0 of a value scale across a panel (mirror densities, histograms and bars).
+
+  Parameters:
+
+  - `canvas`: the canvas in graphics context.
+  - `box` (map): the panel's `{:w :h}` in pixels (flip-aware).
+  - `scales` (map): the panel's finalized scales.
+  - `style` (map): `:zero-line-color`, `:zero-line-width`.
+  - `k` (keyword): the value scale, default `:y`.
+
+  Returns `nil`; nothing is drawn when 0 isn't in the scale, the colour is `:none` or the width 0."
   ([canvas box scales style] (zero-line! canvas box scales style :y))
   ([canvas {:keys [w h]} scales {:keys [zero-line-color zero-line-width]} k]
-   (let [p (if (k scales) (scale/forward (k scales) 0.0) ##NaN)
+   (let [at (if (k scales) (scale/forward (k scales) 0.0) ##NaN)
          width (double zero-line-width)]
-     (when (and (not (m/nan? p)) (not (theme/none? zero-line-color)) (pos? width))
-       (let [p (pixel-center p)]
+     (when (and (not (m/nan? at)) (not (theme/none? zero-line-color)) (m/pos? width))
+       (let [px (pixel-center at)]
          (c2d/set-color canvas zero-line-color)
          (c2d/set-stroke-custom canvas {:size width :cap :butt})
          (if (scale/horizontal? k (k scales))
-           (c2d/line canvas p 0 p h)
-           (c2d/line canvas 0 p w p)))))))
-
-(defn pixel-center
-  "Center of the pixel containing coordinate `p`; thin lines drawn there cover whole pixels (no antialiasing smear)."
-  ^double [^double p]
-  (+ (m/floor p) 0.5))
+           (c2d/line canvas px 0 px h)
+           (c2d/line canvas 0 px w px)))))))
 
 (defmulti draw-content
-  "Draw item `content` onto `canvas` (in graphics context) inside `box` (`{:x :y :w :h}`),
-  dispatched like [[cljplot2.graphics.measure/natural-size]].
+  "Draws item content onto a canvas inside a box, dispatched like [[cljplot2.graphics.measure/natural-size]].
 
-  `env` keys: `:theme` - the plot theme, `:scales` - finalized scales (see [[cljplot2.scale.position/finalize]]).
+  A method may change any graphics state (clip, transform, font, colour, ...) without restoring it; callers isolate each call (`c2d/with-isolated-canvas`). To restrict drawing to the box a method intersects the clip (`c2d/add-clip`) rather than replacing it, so an outer clip still applies.
 
-  A method may change any graphics state (clip, transform, font, color, ...) without restoring it;
-  callers isolate each call (see [[cljplot2.graphics.canvas/call-with-isolated-graphics]]). To restrict drawing
-  to `box`, intersect the clip (`Graphics2D.clip`) rather than replacing it, so an outer clip still applies.
+  Parameters:
+
+  - `content` (map): the item content.
+  - `canvas`: the canvas in graphics context.
+  - `box` (map): `{:x :y :w :h}` in pixels.
+  - `env` (map): `:theme` - the plot theme, `:scales` - finalized scales (see [[cljplot2.scale.position/finalize]]).
 
   Content kinds without a method draw nothing."
   (fn [content _canvas _box _env] (measure/content-kind content)))
@@ -147,37 +233,55 @@
 (defmethod draw-content :default [_ _ _ _] nil)
 
 (defn inner-border!
-  "Draw a border of `width` (rounded, at most half the box) and `color` inside box `{:x :y :w :h}` as four filled
-  bands - exact pixels, nothing outside the box. `:none` color or width 0 draws nothing."
-  [canvas {:keys [x y w h]} color width]
-  (let [x (long x) y (long y) w (long w) h (long h)
-        bw (m/min (m/round (double width)) (quot w 2) (quot h 2))]
-    (when (and (not= :none color) (pos? bw))
+  "Draws a border inside a box as four filled bands - exact pixels, nothing outside the box.
+
+  Parameters:
+
+  - `canvas`: the canvas in graphics context.
+  - `box` (map): `{:x :y :w :h}` in whole pixels.
+  - `color`: the border colour; `:none` draws nothing.
+  - `width` (number): the width in pixels, rounded, at most half the box; 0 draws nothing.
+
+  Returns `nil`."
+  [canvas {:keys [^long x ^long y ^long w ^long h]} color width]
+  (let [bw (m/min (m/round (double width)) (m/long-quot w 2) (m/long-quot h 2))]
+    (when (and (not= :none color) (m/pos? bw))
       (c2d/set-color canvas color)
       (c2d/rect canvas x y w bw)
-      (c2d/rect canvas x (- (+ y h) bw) w bw)
+      (c2d/rect canvas x (m/long-sub (m/long-add y h) bw) w bw)
       (c2d/rect canvas x y bw h)
-      (c2d/rect canvas (- (+ x w) bw) y bw h))))
+      (c2d/rect canvas (m/long-sub (m/long-add x w) bw) y bw h))))
 
 (defn rect-of
-  "Pixel rectangle `{:x :y :w :h}` (whole pixels) spanned by the data corners `[x0 y0]` and `[x1 y1]` placed with
-  `projection` (see [[cljplot2.scale.position/projection]]): both corners rounded, then normalized (non-negative
-  width and height), so it works for flipped scales too."
+  "Gives the whole-pixel rectangle spanned by two data corners.
+
+  Parameters:
+
+  - `projection` (fn of x y): places a data point as a `Vec2` (see [[cljplot2.scale.position/projection]]).
+  - `x0`, `y0`, `x1`, `y1`: the corners `[x0 y0]` and `[x1 y1]` in data units.
+
+  Returns `{:x :y :w :h}`: both corners rounded, then normalized (non-negative width and height), so flipped scales work too."
   [projection x0 y0 x1 y1]
   (let [^Vec2 a (projection x0 y0)
         ^Vec2 b (projection x1 y1)
         ax (m/round (.x a)) ay (m/round (.y a))
         bx (m/round (.x b)) by (m/round (.y b))]
-    {:x (m/min ax bx) :y (m/min ay by) :w (m/abs (- bx ax)) :h (m/abs (- by ay))}))
+    {:x (m/min ax bx) :y (m/min ay by) :w (m/abs (m/long-sub bx ax)) :h (m/abs (m/long-sub by ay))}))
 
-(def ^:private ^:const min-bar-pixels
+(def ^{:private true :const true :tag 'double} min-bar-pixels
   "Bars thinner than this (pixels, along either side) aren't drawn: sub-pixel slivers only smear the baseline."
   0.5)
 
 (defn visible-bar?
-  "Is a bar `w` x `h` pixels drawn (both sides at least half a pixel)?"
+  "Tests whether a bar is drawn: both sides at least [[min-bar-pixels]].
+
+  Parameters:
+
+  - `w`, `h` (doubles): the bar's sides in pixels.
+
+  Returns true or false."
   [^double w ^double h]
-  (and (>= w min-bar-pixels) (>= h min-bar-pixels)))
+  (and (m/>= w min-bar-pixels) (m/>= h min-bar-pixels)))
 
 (def corner-radius-option
   "Option entry `:corner-radius`: pixels, every corner of a bar rounded (default 0 - square)."
@@ -194,276 +298,409 @@
                             schema/non-neg)])))
 
 (defn corner-rounding
-  "Corner rounding `{:radius r :end? e}` of a bar chart's `options` (see [[corner-radius-option]],
-  [[corner-radius-end-option]]): `:corner-radius-end` - only the value-end corners - wins over `:corner-radius`;
-  `nil` for square corners (both absent or 0). A drawn bar adds `:axis` (see [[value-axis]]) for end rounding."
+  "Gives the corner rounding of a bar chart.
+
+  Parameters:
+
+  - `options` (map): the chart options - `:corner-radius`, `:corner-radius-end` (see [[corner-radius-option]], [[corner-radius-end-option]]).
+
+  Returns `{:radius r :end? e}` - `:corner-radius-end` (only the value-end corners) wins over `:corner-radius`; `nil` for square corners (both absent or 0). A drawn bar adds `:axis` (see [[bar-rounding]])."
   [options]
   (let [end (:corner-radius-end options)
         r (double (or end (:corner-radius options) 0.0))]
-    (when (pos? r) {:radius r :end? (some? end)})))
+    (when (m/pos? r) {:radius r :end? (some? end)})))
 
 (defn value-axis
-  "Range axis (`:h` or `:v`) a bar's value runs along: the axis where range points `base` (at the baseline) and
-  `end` (at the value end, the same bar edge) differ (`[h v]` or `Vec2`)."
-  [[bh _] [eh _]]
-  (if (== (double bh) (double eh)) :v :h))
+  "Gives the range axis a bar's value runs along.
+
+  Parameters:
+
+  - `base`, `end` (`[h v]` or `Vec2`): range points at the baseline and at the value end, on the same bar edge.
+
+  Returns `:v` when their `h` coordinates are equal, else `:h`."
+  [[^double bh _] [^double eh _]]
+  (if (m/== bh eh) :v :h))
 
 (defn value-ends
-  "`[base end]` of a bar spanning values `y0..y1` (any order): the value end is the one farther from 0 - stacked
-  segments `[below above]`, negative ones and a mirror's downward bars `[far near]` (see
-  [[cljplot2.data.position/stack-values]])."
+  "Gives the base and the value end of a bar spanning two values.
+
+  Parameters:
+
+  - `y0`, `y1` (numbers): the bar's values, any order.
+
+  Returns `[base end]`: the value end is the one farther from 0 - stacked segments `[below above]`, negative ones and a mirror's downward bars `[far near]` (see [[cljplot2.data.position/stack-values]])."
   [y0 y1]
-  (if (> (m/abs (double y0)) (m/abs (double y1))) [y1 y0] [y0 y1]))
+  (if (m/> (m/abs (double y0)) (m/abs (double y1))) [y1 y0] [y0 y1]))
 
 (defn bar-rounding
-  "`rounding` (see [[corner-rounding]], may be `nil`) of one bar with its `:axis` (see [[value-axis]] of `base` and
-  `end`)."
+  "Gives the rounding of one bar.
+
+  Parameters:
+
+  - `rounding`: see [[corner-rounding]], may be `nil`.
+  - `base`, `end`: the bar's range points (see [[value-axis]]).
+
+  Returns `rounding` with its `:axis`; `nil` for `nil`."
   [rounding base end]
   (some-> rounding (assoc :axis (value-axis base end))))
 
 (defn whole-pixel
-  "`p` (`Vec2`) with both coordinates rounded to whole pixels."
+  "Gives a point with both coordinates rounded to whole pixels.
+
+  Parameters:
+
+  - `p` (`Vec2`): the point.
+
+  Returns a `Vec2`."
   ^Vec2 [^Vec2 p]
   (Vec2. (m/round (.x p)) (m/round (.y p))))
 
 (defn- rounded-corners
-  "Rounded corners of the range rectangle `[h0 v0]`-`[h1 v1]` (the second corner at the value end) under `rounding`
-  (see [[corner-rounding]]): a set of `[i j]` - the corner at `hi` and `vj` (0 or 1); every corner, or with `:end?`
-  the two at the value end along `:axis`."
+  "Gives the rounded corners of a range rectangle `[h0 v0]`-`[h1 v1]` (the second corner at the value end).
+
+  Parameters:
+
+  - `rounding` (map): `:end?`, `:axis` (see [[corner-rounding]], [[bar-rounding]]).
+
+  Returns a set of `[i j]` - the corner at `hi` and `vj` (0 or 1): every corner, or with `:end?` the two at the value end along `:axis`."
   [{:keys [end? axis]}]
   (cond
     (not end?) #{[0 0] [1 0] [1 1] [0 1]}
     (= :h axis) #{[1 0] [1 1]}
     :else #{[0 1] [1 1]}))
 
-(def ^:private ^:const kappa
-  "Control point distance of a cubic Bezier quarter circle, as a fraction of the radius."
-  0.5522847498307936)
-
-(defn rounded-rect
-  "Shape of the pixel rectangle `{:x :y :w :h}` with corner radii `[top-left top-right bottom-right bottom-left]`
-  (pixels, each clamped to half the shorter side; 0 - square), the corners quarter circles."
-  ^Shape [{:keys [x y w h]} radii]
-  (let [x (double x) y (double y) w (double w) h (double h)
-        limit (* 0.5 (m/min w h))
-        [tl tr br bl] (mapv #(m/min limit (double %)) radii)
-        tl (double tl) tr (double tr) br (double br) bl (double bl)
-        x1 (+ x w) y1 (+ y h)
-        path (Path2D$Double.)]
-    (.moveTo path (+ x tl) y)
-    (.lineTo path (- x1 tr) y)
-    (.curveTo path (+ (- x1 tr) (* kappa tr)) y x1 (- (+ y tr) (* kappa tr)) x1 (+ y tr))
-    (.lineTo path x1 (- y1 br))
-    (.curveTo path x1 (+ (- y1 br) (* kappa br)) (+ (- x1 br) (* kappa br)) y1 (- x1 br) y1)
-    (.lineTo path (+ x bl) y1)
-    (.curveTo path (- (+ x bl) (* kappa bl)) y1 x (+ (- y1 bl) (* kappa bl)) x (- y1 bl))
-    (.lineTo path x (+ y tl))
-    (.curveTo path x (- (+ y tl) (* kappa tl)) (- (+ x tl) (* kappa tl)) y (+ x tl) y)
-    (.closePath path)
-    path))
-
 (defn- pixel-rect-radii
-  "Corner radii `[top-left top-right bottom-right bottom-left]` of the pixel rectangle spanned by `a` and `b` (`Vec2`,
-  `b` at the value end) rounded with `rounding` (see [[rounded-corners]])."
+  "Gives the corner radii of the pixel rectangle spanned by two corners.
+
+  Parameters:
+
+  - `a`, `b` (`Vec2`): the corners, `b` at the value end.
+  - `rounding` (map): see [[rounded-corners]], with `:radius`.
+
+  Returns `[top-left top-right bottom-right bottom-left]`, the radius at rounded corners, 0.0 elsewhere."
   [^Vec2 a ^Vec2 b rounding]
   (let [corners (rounded-corners rounding)
         r (double (:radius rounding))
-        left (if (<= (.x a) (.x b)) 0 1) top (if (<= (.y a) (.y b)) 0 1)
+        left (if (m/<= (.x a) (.x b)) 0 1) top (if (m/<= (.y a) (.y b)) 0 1)
         radius (fn [i j] (if (corners [i j]) r 0.0))]
-    [(radius left top) (radius (- 1 left) top) (radius (- 1 left) (- 1 top)) (radius left (- 1 top))]))
+    [(radius left top) (radius (m/long-sub 1 left) top) (radius (m/long-sub 1 left) (m/long-sub 1 top)) (radius left (m/long-sub 1 top))]))
 
 (defn shape-bar!
-  "Fill the java.awt `shape` with `fill` and the pattern of `pattern-fill` (see [[pattern-fill]], `nil` - none),
-  outline it with `stroke` (a color or `:none`, `stroke-width` pixels, mitred) when `stroke-width` is positive."
-  [canvas ^Shape shape fill stroke stroke-width pattern-fill]
-  (let [stroke-width (double stroke-width)]
+  "Fills a shape with a colour and a pattern and outlines it.
+
+  Parameters:
+
+  - `canvas`: the canvas in graphics context.
+  - `shape` (java.awt `Shape`): the bar.
+  - `fill`: the fill colour.
+  - `stroke`: the outline colour or `:none`.
+  - `stroke-width` (number): the outline width in pixels (mitred); 0 - no outline.
+  - `fill-pattern`: see [[pattern-fill]], `nil` - none.
+
+  Returns `nil`."
+  [canvas ^Shape shape fill stroke stroke-width fill-pattern]
+  (let [width (double stroke-width)]
     (c2d/set-color canvas fill)
     (c2d/shape canvas shape false)
-    (fill-with-pattern! canvas pattern-fill #(c2d/shape canvas shape false))
-    (when (and (pos? stroke-width) (not (theme/none? stroke)))
-      (c2d/set-stroke-custom canvas {:size stroke-width :join :miter})
+    (fill-with-pattern! canvas fill-pattern #(c2d/shape % shape false))
+    (when (and (m/pos? width) (not (theme/none? stroke)))
+      (c2d/set-stroke-custom canvas {:size width :join :miter})
       (c2d/set-color canvas stroke)
       (c2d/shape canvas shape true))))
 
 (defn bar!
-  "Fill the rectangle with pixel corners `a` and `b` (`Vec2`, any order) with `fill` and the pattern of
-  `pattern-fill` (see [[pattern-fill]], `nil` - none), outline it with `stroke` (a color or `:none`, `stroke-width`
-  pixels, mitred) when `stroke-width` is positive; nothing for a bar that isn't [[visible-bar?]]. `rounding` (see
-  [[corner-rounding]], `nil` - square) rounds its corners; end rounding needs `b` at the value end."
+  "Fills the rectangle between two pixel corners with a colour and a pattern and outlines it.
+
+  Parameters:
+
+  - `canvas`: the canvas in graphics context.
+  - `a`, `b` (`Vec2`): the corners, any order (`b` at the value end for end rounding).
+  - `fill`: the fill colour.
+  - `stroke`: the outline colour or `:none`.
+  - `stroke-width` (number): the outline width in pixels (mitred); 0 - no outline.
+  - `fill-pattern`: see [[pattern-fill]], `nil` (default) - none.
+  - `rounding`: see [[corner-rounding]], `nil` (default) - square corners.
+
+  Returns `nil`; nothing for a bar that isn't [[visible-bar?]]."
   ([canvas a b fill stroke stroke-width] (bar! canvas a b fill stroke stroke-width nil nil))
-  ([canvas a b fill stroke stroke-width pattern-fill] (bar! canvas a b fill stroke stroke-width pattern-fill nil))
-  ([canvas ^Vec2 a ^Vec2 b fill stroke stroke-width pattern-fill rounding]
-   (let [stroke-width (double stroke-width)
+  ([canvas a b fill stroke stroke-width fill-pattern] (bar! canvas a b fill stroke stroke-width fill-pattern nil))
+  ([canvas ^Vec2 a ^Vec2 b fill stroke stroke-width fill-pattern rounding]
+   (let [width (double stroke-width)
          x (m/min (.x a) (.x b)) y (m/min (.y a) (.y b))
-         w (m/abs (- (.x b) (.x a))) h (m/abs (- (.y b) (.y a)))]
+         w (m/abs (m/- (.x b) (.x a))) h (m/abs (m/- (.y b) (.y a)))]
      (when (visible-bar? w h)
        (if rounding
-         (shape-bar! canvas (rounded-rect {:x x :y y :w w :h h} (pixel-rect-radii a b rounding))
-                     fill stroke stroke-width pattern-fill)
+         (shape-bar! canvas (sh/rounded-rect x y w h (pixel-rect-radii a b rounding))
+                     fill stroke width fill-pattern)
          (do (c2d/set-color canvas fill)
              (c2d/rect canvas x y w h)
-             (fill-with-pattern! canvas pattern-fill #(c2d/rect canvas x y w h))
-             (when (and (pos? stroke-width) (not (theme/none? stroke)))
-               (c2d/set-stroke-custom canvas {:size stroke-width :join :miter})
+             (fill-with-pattern! canvas fill-pattern #(c2d/rect % x y w h))
+             (when (and (m/pos? width) (not (theme/none? stroke)))
+               (c2d/set-stroke-custom canvas {:size width :join :miter})
                (c2d/set-color canvas stroke)
                (c2d/rect canvas x y w h true))))))))
 
-(def ^:private ^:const corner-step-angle
+(def ^{:private true :const true :tag 'double} corner-step-angle
   "Largest angle (radians) between points of a rounded corner's arc."
   (m/radians 10.0))
 
 (defn- corner-arc
-  "Pixel points of the arc of radius `r` around pixel `c` from pixel `p` to pixel `q` (both `r` from `c`), the
-  shorter way, densified."
+  "Gives the pixel points of an arc around a centre, the shorter way, densified.
+
+  Parameters:
+
+  - `c` (`Vec2`): the centre.
+  - `r` (double): the radius.
+  - `p`, `q` (`Vec2`): the arc's ends, both `r` from `c`.
+
+  Returns a vector of `[x y]` from `p` to `q`, at most [[corner-step-angle]] (and 2 / r) radians apart."
   [^Vec2 c ^double r ^Vec2 p ^Vec2 q]
-  (let [a0 (m/atan2 (- (.y p) (.y c)) (- (.x p) (.x c)))
-        a1 (m/atan2 (- (.y q) (.y c)) (- (.x q) (.x c)))
-        d (- (double (mod (+ (- a1 a0) m/PI) m/TWO_PI)) m/PI)
-        step (if (pos? r) (m/min corner-step-angle (/ 2.0 r)) corner-step-angle)
-        n (m/max 1 (long (m/ceil (/ (m/abs d) step))))]
-    (mapv (fn [^long i] (let [a (+ a0 (* d (/ (double i) n)))]
-                          [(+ (.x c) (* r (m/cos a))) (+ (.y c) (* r (m/sin a)))]))
-          (range (inc n)))))
+  (let [a0 (m/atan2 (m/- (.y p) (.y c)) (m/- (.x p) (.x c)))
+        a1 (m/atan2 (m/- (.y q) (.y c)) (m/- (.x q) (.x c)))
+        d (m/- (m/mod (m/+ (m/- a1 a0) m/PI) m/TWO_PI) m/PI)
+        step (if (m/pos? r) (m/min corner-step-angle (m// 2.0 r)) corner-step-angle)
+        n (m/max 1 (long (m/ceil (m// (m/abs d) step))))]
+    ;; the corner's points are reversed with rseq by rounded-sector-path
+    (mapv (fn [^long i] (let [a (m/+ a0 (m/* d (m// (double i) (double n))))]
+                          [(m/+ (.x c) (m/* r (m/cos a))) (m/+ (.y c) (m/* r (m/sin a)))]))
+          (range (m/long-inc n)))))
 
 (defn- sector-corner
-  "Rounded corner of radius `r` where the radial edge at angle `a` (radians) meets the arc of radius `arc`; `inward` -
-  the angular direction (+1 / -1) into the sector, `outer?` - the outer arc (the corner circle inside it), else the
-  inner one (outside it). `{:delta d :edge points}`: `d` - the angle the arc gives up, `points` - the corner from the
-  arc to the edge (pixels; one point - square)."
-  [geometry {:keys [a inward arc outer? r]}]
-  (let [a (double a) arc (double arc) r (double r) inward (double inward)]
-    (if (pos? r)
-      (let [c (if outer? (- arc r) (+ arc r))
-            delta (m/asin (/ r c))
-            at (+ a (* inward delta))
-            tangent-arc (coord/to-pixel geometry at arc)
-            tangent-edge (coord/to-pixel geometry a (m/sqrt (- (* c c) (* r r))))]
-        {:delta delta :edge (corner-arc (coord/to-pixel geometry at c) r tangent-arc tangent-edge)})
-      (let [^Vec2 p (coord/to-pixel geometry a arc)]
-        {:delta 0.0 :edge [[(.x p) (.y p)]]}))))
+  "Gives a rounded corner where a radial edge meets an arc of an annular sector.
+
+  Parameters:
+
+  - `geometry` (map): the panel's polar geometry.
+  - `corner` (map): `:a` - the edge's angle (radians), `:inward` - the angular direction (+1 / -1) into the sector, `:arc` - the arc's radius, `:outer?` - the outer arc (the corner circle inside it), else the inner one (outside it), `:r` - the corner radius.
+
+  Returns `{:delta d :edge points}`: `d` - the angle the arc gives up, `points` - the corner from the arc to the edge (pixels; one point - a square corner)."
+  [geometry {:keys [^double a ^double inward ^double arc outer? ^double r]}]
+  (if (m/pos? r)
+    (let [centre-r (if outer? (m/- arc r) (m/+ arc r))
+          delta (m/asin (m// r centre-r))
+          at (m/+ a (m/* inward delta))
+          tangent-arc (coord/to-pixel geometry at arc)
+          tangent-edge (coord/to-pixel geometry a (m/sqrt (m/- (m/* centre-r centre-r) (m/* r r))))]
+      {:delta delta :edge (corner-arc (coord/to-pixel geometry at centre-r) r tangent-arc tangent-edge)})
+    (let [^Vec2 corner (coord/to-pixel geometry a arc)]
+      {:delta 0.0 :edge [[(.x corner) (.y corner)]]})))
 
 (defn- sector-radius-limit
-  "Largest corner radius of the annular sector spanning `span` radians between radii `lo` and `hi`: half the radial
-  thickness, and the corners of one arc not overlapping (outer arc; inner arc when `lo` > 0)."
+  "Gives the largest corner radius of an annular sector: half the radial thickness, and the corners of one arc not overlapping (outer arc; inner arc when the inner radius is positive).
+
+  Parameters:
+
+  - `span` (double): the sector's angle in radians.
+  - `lo`, `hi` (doubles): the inner and outer radius.
+
+  Returns the radius limit."
   ^double [^double span ^double lo ^double hi]
-  (let [s (m/sin (m/min (* 0.5 span) m/HALF_PI))]
-    (cond-> (m/min (* 0.5 (- hi lo)) (/ (* hi s) (+ 1.0 s)))
-      (and (pos? lo) (< s 1.0)) (m/min (/ (* lo s) (- 1.0 s))))))
+  (let [s (m/sin (m/min (m/* 0.5 span) m/HALF_PI))]
+    (cond-> (m/min (m/* 0.5 (m/- hi lo)) (m// (m/* hi s) (m/inc s)))
+      (and (m/pos? lo) (m/< s 1.0)) (m/min (m// (m/* lo s) (m/- 1.0 s))))))
+
+(def ^{:private true :const true :tag 'double} full-turn
+  "Angular span (radians) treated as a whole circle: 2π less a tolerance."
+  (m/- m/TWO_PI 1.0e-9))
 
 (defn rounded-sector-path
-  "Closed polygon (pixel `[x y]` points) of the range rectangle `[h0 v0]`-`[h1 v1]` (the second corner at the value
-  end) in polar `geometry`, rounded with `rounding` (see [[corner-rounding]]): an annular sector with circular corners,
-  the radius clamped by [[sector-radius-limit]]; no inner corners at a zero inner radius (a wedge); a full ring has no
-  corners ([[cljplot2.scale.coord/rect-path]])."
-  [geometry [h0 v0] [h1 v1] rounding]
-  (let [h0 (double h0) h1 (double h1) v0 (double v0) v1 (double v1)
-        lo (m/min v0 v1) hi (m/max v0 v1)
-        span (m/abs (- h1 h0))]
-    (if (>= span (- m/TWO_PI 1.0e-9))
+  "Gives the closed polygon of a range rectangle in polar geometry with rounded corners: an annular sector with circular corners.
+
+  Parameters:
+
+  - `geometry` (map): the panel's polar geometry.
+  - `[h0 v0]`, `[h1 v1]`: the range rectangle's corners (numbers), the second at the value end.
+  - `rounding` (map): see [[corner-rounding]], [[bar-rounding]].
+
+  Returns a vector of pixel `[x y]` points; the radius clamped by [[sector-radius-limit]]; no inner corners at a zero inner radius (a wedge); a full ring has no corners (see [[cljplot2.scale.coord/rect-path]])."
+  [geometry [^double h0 ^double v0] [^double h1 ^double v1] rounding]
+  (let [lo (m/min v0 v1) hi (m/max v0 v1)
+        span (m/abs (m/- h1 h0))]
+    (if (m/>= span full-turn)
       (coord/rect-path geometry h0 v0 h1 v1)
       (let [corners (rounded-corners rounding)
             r (m/min (double (:radius rounding)) (sector-radius-limit span lo hi))
-            sigma (if (<= h0 h1) 1.0 -1.0)
-            outer-j (if (>= v1 v0) 1 0)
-            corner (fn [i outer?]
-                     (sector-corner geometry {:a (if (zero? (long i)) h0 h1) :inward (if (zero? (long i)) sigma (- sigma))
+            sigma (if (m/<= h0 h1) 1.0 -1.0)
+            outer-j (if (m/>= v1 v0) 1 0)
+            corner (fn [^long i outer?]
+                     (sector-corner geometry {:a (if (m/zero? i) h0 h1) :inward (if (m/zero? i) sigma (m/- sigma))
                                               :arc (if outer? hi lo) :outer? outer?
-                                              :r (if (corners [i (if outer? outer-j (- 1 outer-j))]) r 0.0)}))
+                                              :r (if (corners [i (if outer? outer-j (m/long-sub 1 outer-j))]) r 0.0)}))
             o0 (corner 0 true) o1 (corner 1 true)
-            outer (coord/line-path geometry [[(+ h0 (* sigma (double (:delta o0)))) hi]
-                                             [(- h1 (* sigma (double (:delta o1)))) hi]] true)
-            inner (if (pos? lo)
+            outer (coord/line-path geometry [[(m/+ h0 (m/* sigma (double (:delta o0)))) hi]
+                                             [(m/- h1 (m/* sigma (double (:delta o1)))) hi]] true)
+            inner (if (m/pos? lo)
                     (let [i1 (corner 1 false) i0 (corner 0 false)]
                       (concat (rseq (:edge i1))
-                              (coord/line-path geometry [[(- h1 (* sigma (double (:delta i1)))) lo]
-                                                         [(+ h0 (* sigma (double (:delta i0)))) lo]] true)
+                              (coord/line-path geometry [[(m/- h1 (m/* sigma (double (:delta i1)))) lo]
+                                                         [(m/+ h0 (m/* sigma (double (:delta i0)))) lo]] true)
                               (:edge i0)))
                     (coord/line-path geometry [[h1 0.0]] false))]
+        ;; the polygon is checked, filled and stroked by range-bar!
         (vec (concat outer (:edge o1) inner (rseq (:edge o0))))))))
 
-(defn- polygon-shape
-  "java.awt shape of the closed polygon `points` (pixel `[x y]`)."
-  ^Shape [points]
-  (let [path (Path2D$Double.)
-        [[x y] & more] points]
-    (.moveTo path (double x) (double y))
-    (doseq [[x y] more] (.lineTo path (double x) (double y)))
-    (.closePath path)
-    path))
-
 (defn range-bar!
-  "[[bar!]] of the range rectangle with corners `[h0 v0]` and `[h1 v1]` (see [[cljplot2.scale.coord]]): in cartesian
-  plots (`geometry` `nil`) the pixel rectangle itself; in polar ones (`geometry` - the panel's polar geometry) the
-  annular sector, filled with `fill` and the pattern of `pattern-fill`, outlined with `stroke` when `stroke-width`
-  is positive (a sector going once around the whole circle - a disc or ring - without the seam along its start
-  spoke, [[cljplot2.scale.coord/full-turn-circles]]). `rounding` (see [[corner-rounding]], `nil` - square) rounds the corners (polar - see
-  [[rounded-sector-path]]); end rounding needs the second corner at the value end."
-  ([canvas geometry a b fill stroke stroke-width pattern-fill]
-   (range-bar! canvas geometry a b fill stroke stroke-width pattern-fill nil))
-  ([canvas geometry [h0 v0 :as a] [h1 v1 :as b] fill stroke stroke-width pattern-fill rounding]
+  "Draws [[bar!]] of a range rectangle: the pixel rectangle in cartesian plots, the annular sector in polar ones.
+
+  Parameters:
+
+  - `canvas`: the canvas in graphics context.
+  - `geometry`: the panel's polar geometry; `nil` - cartesian.
+  - `a`, `b` (`[h v]`): the range rectangle's corners (see [[cljplot2.scale.coord]]), `b` at the value end for end rounding.
+  - `fill`, `stroke`, `stroke-width`, `fill-pattern`: as [[bar!]].
+  - `rounding`: see [[corner-rounding]], `nil` (default) - square corners (polar - see [[rounded-sector-path]]).
+
+  Returns `nil`. A sector going once around the whole circle - a disc or ring - is outlined without the seam along its start spoke (see [[cljplot2.scale.coord/full-turn-circles]]); a sector with a non-finite point draws nothing."
+  ([canvas geometry a b fill stroke stroke-width fill-pattern]
+   (range-bar! canvas geometry a b fill stroke stroke-width fill-pattern nil))
+  ([canvas geometry [^double h0 ^double v0 :as a] [^double h1 ^double v1 :as b] fill stroke stroke-width fill-pattern rounding]
    (if-not geometry
-     (bar! canvas (Vec2. (double h0) (double v0)) (Vec2. (double h1) (double v1)) fill stroke stroke-width pattern-fill
-           rounding)
+     (bar! canvas (Vec2. h0 v0) (Vec2. h1 v1) fill stroke stroke-width fill-pattern rounding)
      (let [polygon (if rounding
                      (rounded-sector-path geometry a b rounding)
                      (coord/rect-path geometry h0 v0 h1 v1))
-           stroke-width (double stroke-width)]
-       (when (every? (fn [[x y]] (and (m/valid-double? (double x)) (m/valid-double? (double y)))) polygon)
+           width (double stroke-width)]
+       (when (every? (fn [[^double x ^double y]] (and (m/valid-double? x) (m/valid-double? y))) polygon)
          (if rounding
-           (shape-bar! canvas (polygon-shape polygon) fill stroke stroke-width pattern-fill)
+           (shape-bar! canvas (sh/path polygon true) fill stroke width fill-pattern)
            (do (c2d/set-color canvas fill)
                (c2d/path canvas polygon true false)
-               (fill-with-pattern! canvas pattern-fill #(c2d/path canvas polygon true false))
-               (when (and (pos? stroke-width) (not (theme/none? stroke)))
-                 (c2d/set-stroke-custom canvas {:size stroke-width :join :miter})
+               (fill-with-pattern! canvas fill-pattern #(c2d/path % polygon true false))
+               (when (and (m/pos? width) (not (theme/none? stroke)))
+                 (c2d/set-stroke-custom canvas {:size width :join :miter})
                  (c2d/set-color canvas stroke)
                  (if (coord/full-turn? geometry h0 h1)
                    (doseq [circle (coord/full-turn-circles geometry h0 v0 h1 v1)] (c2d/path canvas circle false true))
                    (c2d/path canvas polygon true true))))))))))
 
-(def ^:private ^:const key-radius-fraction
+(def ^{:private true :const true :tag 'double} key-radius-fraction
   "Largest corner radius of a legend key square, as a fraction of its side: the key reads as a rounded square whatever
   the bars' radius (pixels of a large bar would make a small key a circle)."
   0.25)
 
 (defn key-rounding
-  "`rounding` (see [[corner-rounding]], may be `nil`) of a legend key square of `side` pixels: the radius at most
-  [[key-radius-fraction]] of the side, end rounding at its top (an upright bar)."
+  "Gives the rounding of a legend key square.
+
+  Parameters:
+
+  - `rounding`: see [[corner-rounding]], may be `nil`.
+  - `side` (number): the key square's side in pixels.
+
+  Returns `rounding` with the radius at most [[key-radius-fraction]] of the side and end rounding at its top (an upright bar); `nil` for `nil`."
   [rounding side]
   (some-> rounding
           (assoc :axis :v)
-          (update :radius #(m/min (double %) (* key-radius-fraction (double side))))))
+          (update :radius #(m/min (double %) (m/* key-radius-fraction (double side))))))
+
+(def ^{:const true :tag 'double} key-glyph-share
+  "Share of a legend key box's shorter side a filled key glyph (square, circle, dot) takes."
+  0.7)
+
+(defn circle-key!
+  "Draws a filled circle key glyph centred in a legend key box, with a pattern over it.
+
+  Parameters:
+
+  - `canvas`: the clojure2d canvas.
+  - `box` (map): the key box `{:x :y :w :h}` (pixels).
+  - `fill`: the circle's colour.
+  - `fill-pattern`: the pattern over the fill (see [[pattern-fill]]), `nil` - none.
+
+  The circle's diameter is [[key-glyph-share]] of the box's shorter side.
+
+  See also [[bar-key!]] (a square glyph)."
+  [canvas {:keys [^double x ^double y ^double w ^double h]} fill fill-pattern]
+  (let [d (m/* key-glyph-share (m/min w h))
+        cx (m/+ x (m/* 0.5 w))
+        cy (m/+ y (m/* 0.5 h))]
+    (c2d/set-color canvas fill)
+    (c2d/ellipse canvas cx cy d d)
+    (fill-with-pattern! canvas fill-pattern #(c2d/ellipse % cx cy d d))))
+
+(defn spike-key!
+  "Draws a vertical line key glyph through the middle of a legend key box.
+
+  Parameters:
+
+  - `canvas`: the clojure2d canvas.
+  - `box` (map): the key box `{:x :y :w :h}` (pixels).
+  - `line` (map): `:color`, `:width` (pixels, butt caps) and `:span` - `[from to]`, the line's ends as fractions of the box height from its top.
+
+  See also [[circle-key!]], [[bar-key!]]."
+  [canvas {:keys [^double x ^double y ^double w ^double h]} {:keys [color width span]}]
+  (let [[^double from ^double to] span
+        cx (m/+ x (m/* 0.5 w))]
+    (c2d/set-color canvas color)
+    (c2d/set-stroke-custom canvas {:size (double width) :cap :butt})
+    (c2d/line canvas cx (m/+ y (m/* from h)) cx (m/+ y (m/* to h)))))
+
+(defn with-alpha
+  "Gives a colour with its alpha set to a fraction of full opacity.
+
+  Parameters:
+
+  - `color`: a colour (any clojure2d representation) or `:none`.
+  - `alpha` (fraction or `nil`): the opacity, 0 - transparent, 1 - opaque.
+
+  Returns `color` with alpha `255 alpha`; `:none` and a `nil` alpha give `color` unchanged.
+
+  See also [[faded]] (an existing alpha scaled)."
+  [color alpha]
+  (if (or (nil? alpha) (theme/none? color)) color (c/set-alpha color (m/* 255.0 (double alpha)))))
+
+(defn faded
+  "Gives a colour with its alpha scaled.
+
+  Parameters:
+
+  - `color`: a colour (any clojure2d representation).
+  - `k` (number): the factor of the colour's alpha, e.g. 0.5 halves its opacity.
+
+  Returns `color` with alpha `k` times its own (not clamped: a factor in `[0, 1]` keeps it in range).
+
+  See also [[with-alpha]] (alpha set to a fraction)."
+  [color ^double k]
+  (c/set-alpha color (m/* k (c/alpha color))))
 
 (defn bar-key!
-  "Legend key glyph of a bar chart (histogram, bar): a filled square inset in `box` with its pattern (see
-  [[pattern-fill]]), outlined by `:stroke-color` (see [[outline-color]]) when `:stroke-width` is positive;
-  `translucent?` - the fill gets `:alpha` (grouped overlay bars); `rounding` (see [[corner-rounding]], `nil` -
-  square) rounds its corners as an upright bar's (see [[key-rounding]]). `st` - `{:color :stroke-color :stroke-width
-  :alpha :pattern :pattern-color}`."
+  "Draws the legend key glyph of a bar chart (histogram, bar): a filled square inset in a key box with its pattern, outlined.
+
+  Parameters:
+
+  - `canvas`: the canvas in graphics context.
+  - `box` (map): the key box `{:x :y :w :h}` in pixels; the square's side is [[key-glyph-share]] of its shorter side.
+  - `st` (map): `:color`, `:stroke-color` (see [[outline-color]]), `:stroke-width` (0 - no outline), `:alpha`, `:pattern`, `:pattern-color` (see [[pattern-fill]]).
+  - `translucent?`: truthy - the fill gets `:alpha` (grouped overlay bars).
+  - `rounding`: see [[corner-rounding]], `nil` (default) - square; rounds the corners as an upright bar's (see [[key-rounding]]).
+
+  Returns `nil`."
   ([canvas box st translucent?] (bar-key! canvas box st translucent? nil))
-  ([canvas {:keys [x y w h]} st translucent? rounding]
-   (let [side (* 0.7 (m/min (double w) (double h)))
-         cx (+ (double x) (* 0.5 (double w)))
-         cy (+ (double y) (* 0.5 (double h)))
-         fill (if translucent? (c/set-alpha (:color st) (* 255.0 (double (:alpha st)))) (:color st))
+  ([canvas {:keys [^double x ^double y ^double w ^double h]} st translucent? rounding]
+   (let [side (m/* key-glyph-share (m/min w h))
+         cx (m/+ x (m/* 0.5 w))
+         cy (m/+ y (m/* 0.5 h))
+         fill (if translucent? (with-alpha (:color st) (:alpha st)) (:color st))
          stroke (outline-color (:stroke-color st) (:color st))
          stroke-width (double (:stroke-width st))]
      (if rounding
-       (let [half (* 0.5 side)]
-         (bar! canvas (Vec2. (- cx half) (+ cy half)) (Vec2. (+ cx half) (- cy half)) fill stroke stroke-width
+       (let [half (m/* 0.5 side)]
+         (bar! canvas (Vec2. (m/- cx half) (m/+ cy half)) (Vec2. (m/+ cx half) (m/- cy half)) fill stroke stroke-width
                (pattern-fill st fill) (key-rounding rounding side)))
        (do (c2d/set-color canvas fill)
            (c2d/crect canvas cx cy side side)
-           (fill-with-pattern! canvas (pattern-fill st fill) #(c2d/crect canvas cx cy side side))
-           (when (and (pos? stroke-width) (not (theme/none? stroke)))
+           (fill-with-pattern! canvas (pattern-fill st fill) #(c2d/crect % cx cy side side))
+           (when (and (m/pos? stroke-width) (not (theme/none? stroke)))
              (c2d/set-stroke-custom canvas {:size stroke-width})
              (c2d/set-color canvas stroke)
              (c2d/crect canvas cx cy side side true)))))))
 
 (defn cvd-filter-fn
-  "Color function simulating the color vision deficiency `deficiency` - a clojure2d `cvd-filter` keyword
-  (`:protanopia`, `:deuteranopia`, `:tritanopia`, `:achromatopsia`) or `[keyword severity]` (`:protanomaly`,
-  `:deuteranomaly`, `:tritanomaly`, `:achromatomaly`; severity in `[0 1]`). Throws `ex-info` (clojure2d's) for an
-  unknown deficiency or severity."
+  "Gives the colour function simulating a colour vision deficiency.
+
+  Parameters:
+
+  - `deficiency`: a clojure2d `cvd-filter` keyword (`:protanopia`, `:deuteranopia`, `:tritanopia`, `:achromatopsia`) or `[keyword severity]` (`:protanomaly`, `:deuteranomaly`, `:tritanomaly`, `:achromatomaly`; severity in `[0 1]`).
+
+  Returns a function of a colour. An unknown deficiency or severity throws clojure2d's `ex-info`."
   [deficiency]
   (if (vector? deficiency) (apply c/cvd-filter deficiency) (c/cvd-filter deficiency)))

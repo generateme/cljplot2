@@ -328,6 +328,27 @@
     (or (string? v) (keyword? v) (temporal? v)) true
     :else (ordered-level? v)))
 
+(def no-valid-values
+  "Error message of a mapped dimension without one valid value (see [[check-mapped!]])."
+  "No valid values for a mapped dimension - check the mapping.")
+
+(defn check-mapped!
+  "Checks that every mapped dimension has at least one valid value among the rows.
+
+  Parameters:
+
+  - `chart-rows` (sequence): the chart's rows (all panels and groups).
+  - `accessors` (sequence): `[dimension accessor]` pairs, an accessor a function of a row.
+  - `valid?` (function, optional): of a dimension and a value, default [[valid-value?]] of the value.
+
+  Returns `nil`. Empty `chart-rows` pass. Throws `ex-info {:key :mapping :value dimension :rows n}` ([[no-valid-values]]) for the first dimension without a valid value."
+  ([chart-rows accessors] (check-mapped! chart-rows accessors (fn [_ v] (valid-value? v))))
+  ([chart-rows accessors valid?]
+   (when (seq chart-rows)
+     (doseq [[k f] accessors]
+       (when (not-any? #(valid? k (f %)) chart-rows)
+         (schema/fail! no-valid-values {:key :mapping :value k :rows (count chart-rows)}))))))
+
 (defn finite-numbers
   "Picks the finite numbers of a collection of values.
 

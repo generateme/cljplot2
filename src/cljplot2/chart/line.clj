@@ -46,8 +46,7 @@
   Functions: [[positions]] and [[schemas]] - the chart's positions and schemas; [[compute]] - the lines of every
   panel (stacked by [[stacked-lines]]); [[stacked-band-points]] - stacked bands in pixels; [[draw]] - one panel's
   lines; [[legend]] - the key glyph."
-  (:require [clojure2d.color :as c]
-            [clojure2d.core :as c2d]
+  (:require [clojure2d.core :as c2d]
             [fastmath.core :as m]
             [cljplot2.data.rows :as data]
             [cljplot2.data.group :as group]
@@ -300,10 +299,7 @@
         y-of (data/row-accessor :y (:y colored-mapping))
         sort? (data/option options :sort true)
         rows (mapcat (fn [gs] (mapcat :rows gs)) (vals panels))
-        row-count (count rows)
-        _ (doseq [[k f] [[:x x-of] [:y y-of]]]
-            (when (and (m/pos? row-count) (not-any? #(data/valid-value? (f %)) rows))
-              (schema/fail! "No valid values for a mapped dimension - check the mapping." {:key :mapping :value k :rows row-count})))
+        _ (data/check-mapped! rows [[:x x-of] [:y y-of]])
         line-data (update-vals panels
                                (fn [gs]
                                  {:lines (mapv (fn [g]
@@ -700,7 +696,7 @@
                       color-keys (some->> colors (mapv #(some-> % data/x-key)))
                       group-st (group-style style line scales (:theme env))
                       line-st (if (and group-st (:stroke-alpha options) (not= :none (:color group-st)))
-                                (update group-st :color #(c/set-alpha % (m/* (double (:stroke-alpha options)) (c/alpha %))))
+                                (update group-st :color draw/faded (:stroke-alpha options))
                                 group-st)]
                 :when line-st]
           (let [points (mapv (fn [vx vy] (if (nil? vy) (Vec2. ##NaN ##NaN) (projection vx vy))) x y)

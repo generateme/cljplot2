@@ -12,11 +12,12 @@
   `:shape` (as scatter, see [[cljplot2.graphics.shape]]); `:jitter`, `:rng`, `:padding {:x [lo hi]}` (default
   `[0.05 0.05]`), plus the strip options and `:data` / `:mapping`.
 
-  Functions: [[jitter-offsets]] - the jitter of an item's points; [[compute]], [[draw]], [[legend]] - the chart contract; [[schemas]] - its style, options and mapping."
+  Functions: [[jitter-offsets]] - the jitter of an item's points; [[legend]] - the chart contract's key glyph (the chart computes and draws through [[cljplot2.data.strip/compute]] and [[cljplot2.data.strip/draw]]); [[schemas]] - its style, options and mapping."
   (:require [fastmath.core :as m]
             [fastmath.random :as r]
             [fastmath.vector :as v]
             [cljplot2.data.group :as group]
+            [cljplot2.graphics.measure :as measure]
             [cljplot2.data.rng :as rng]
             [cljplot2.data.rows :as data]
             [cljplot2.data.strip :as strip]
@@ -133,38 +134,14 @@
             :when st
             [v off] (map vector values offsets)
             :let [^Vec2 p (point v level (strip/in-slot slot (double off)))]
-            :when (and (m/valid-double? (.x p)) (m/valid-double? (.y p)))]
+            :when (measure/finite-point? p)]
       (shape/draw! canvas (:shape st) p st))
     (strip/draw-n-labels! canvas pl items (fn [{:keys [values]}] (v/mx values)) options scales env)))
 
-(defn compute
-  "Computes the strip plot's stats with its levels on the categorical axis.
+(defmethod strip/in-frame-compute :stripplot [chart chart-split env] (compute-in-strip-frame chart chart-split env))
 
-  Parameters:
-
-  - `chart` (map): the chart value.
-  - `chart-split` (map): the chart's rows split per panel.
-  - `env` (map): the compute environment.
-
-  Returns the stats of [[compute-in-strip-frame]], turned to the mapping axis of the levels (see [[cljplot2.data.strip/compute-oriented]])."
-  [chart chart-split env]
-  (strip/compute-oriented compute-in-strip-frame chart chart-split env))
-
-(defn draw
-  "Draws one panel of the strip plot.
-
-  Parameters:
-
-  - `chart` (map): the chart value.
-  - `computed` (map): the panel's stats from [[compute]].
-  - `canvas`: the clojure2d canvas.
-  - `box` (map): the panel box.
-  - `scales` (map): finalized scales.
-  - `env` (map): the draw environment.
-
-  Draws [[draw-in-strip-frame]] in the strip frame (see [[cljplot2.data.strip/draw-oriented]])."
-  [chart computed canvas box scales env]
-  (strip/draw-oriented draw-in-strip-frame chart computed canvas box scales env))
+(defmethod strip/in-frame-draw :stripplot [chart computed canvas box scales env]
+  (draw-in-strip-frame chart computed canvas box scales env))
 
 (defn legend
   "Draws the strip plot's key glyph: its point shape fitted and centred in a legend key.
@@ -179,5 +156,4 @@
 
   See also [[cljplot2.graphics.shape/draw-key!]]."
   [chart attributes canvas box env]
-  (let [st (merge (theme/resolved-style (:theme env) chart) attributes)]
-    (shape/draw-key! canvas (:shape st) box st)))
+  (shape/styled-key! canvas box (merge (theme/resolved-style (:theme env) chart) attributes) false))

@@ -5,7 +5,8 @@
 ;; section below lists its keys with their default values and changes some of them.
 
 (ns reference.theme
-  (:require [cljplot2.chart :as chart]
+  (:require [fastmath.core :as m]
+            [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
             [cljplot2.describe :as describe]
             [notebook-utils :as nu]))
@@ -116,6 +117,25 @@
 
 (plot/render-image (assoc iris-plot :theme {:legend {:key-size 24 :gap 10 :fill :white :border-color [150 150 150]}})
                    {:width 500 :height 300})
+
+;; A colour bar with more, longer and thicker ticks.
+
+(plot/render-image {:data iris
+                    :mapping {:x :sepal-length :y :petal-length :color :petal-width}
+                    :charts [(chart/scatter)]
+                    :theme {:legend {:bar-ticks 10 :bar-tick-length 8 :bar-tick-width 2}}}
+                   {:width 500 :height 300})
+
+;; ## 3D frame
+
+;; The dash of a 3D box's hidden edges; the box edges and axes take the x axis style (`[:axis :x]`).
+
+(nu/options-table (describe/theme-rows :frame-3d))
+
+(plot/render-image {:charts [(chart/surface {:f (fn [[x y]] (m/sin (m/* x y))) :domain {:x [-2 2] :y [-2 2]}})]
+                    :theme {:frame-3d {:hidden-edge-dash [8 2 2 2]}
+                            :axis {:x {:line-width 2}}}}
+                   {:width 500 :height 400})
 
 ;; ## Palette
 

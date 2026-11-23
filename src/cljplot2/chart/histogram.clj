@@ -35,11 +35,11 @@
   `:mirror` (two groups, the second growing away from the next level).
 
   Functions: [[compute]], [[draw]], [[legend]] - the chart contract; [[schemas]] - its style, options and mapping."
-  (:require [clojure2d.color :as c]
-            [clojure2d.core :as c2d]
+  (:require [clojure2d.core :as c2d]
             [fastmath.core :as m]
             [fastmath.stats :as stats]
             [cljplot2.data.rows :as data]
+            [cljplot2.graphics.measure :as graphics-measure]
             [cljplot2.data.group :as group]
             [cljplot2.data.levels :as levels]
             [cljplot2.data.measure :as measure]
@@ -49,8 +49,7 @@
             [cljplot2.scale.position :as scale]
             [cljplot2.schema :as schema]
             [cljplot2.theme :as theme])
-  (:import [fastmath.java Array]
-           [fastmath.vector Vec2]))
+  (:import [fastmath.java Array]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -223,7 +222,7 @@
           all-values (into [] (comp (mapcat identity) (mapcat :values)) (vals xs))
           all-count (long (reduce m/long-add 0 (map count (mapcat #(map :rows %) (vals panels)))))
           _ (when (and (m/pos? all-count) (empty? all-values))
-              (schema/fail! "No valid values for a mapped dimension - check the mapping." {:key :mapping :value :x :rows all-count}))
+              (schema/fail! data/no-valid-values {:key :mapping :value :x :rows all-count}))
           brks (levels/breaks all-values (get options :bins :sturges))
           group-keys (group/ordered-keys (mapcat #(map :key %) (vals panels)) dims (:plot-scales env))
           n-groups (count group-keys)
@@ -272,15 +271,6 @@
        :axis-titles {:y (if (= position :normalize) "Proportion" (measure-title y))}
        :tick-format (when (= position :mirror) {:y :absolute})})))
 
-(defn- finite-pixel?
-  "Tests whether both coordinates of a pixel point are finite.
-
-  Parameters:
-
-  - `p` (`Vec2`): the point."
-  [^Vec2 p]
-  (and (m/valid-double? (.x p)) (m/valid-double? (.y p))))
-
 (defn- translucent-fill
   "Gives a bar's fill colour, with the style's `:alpha` when the bars are translucent.
 
@@ -290,7 +280,7 @@
   - `alpha`: the chart style's `:alpha`, a fraction.
   - `translucent?`: grouped overlay bars."
   [color alpha translucent?]
-  (if translucent? (c/set-alpha color (m/* 255.0 (double alpha))) color))
+  (if translucent? (draw/with-alpha color alpha) color))
 
 (defn- draw-ridges!
   "Draws the ridgeline histograms of one panel, farthest level first.
@@ -321,7 +311,7 @@
               :when (m/pos? h)
               :let [a (point x0 level side 0.0)
                     b (point x1 level side (m// h top))]
-              :when (and (finite-pixel? a) (finite-pixel? b))]
+              :when (and (graphics-measure/finite-point? a) (graphics-measure/finite-point? b))]
         (draw/bar! canvas a b fill (draw/outline-color (:stroke-color st) fill) stroke-width (pattern-fill st fill)
                    (draw/bar-rounding rounding a (point x0 level side (m// h top))))))))
 
@@ -363,7 +353,7 @@
               (when (draw/visible-bar? (double w) (double h))
                 (c2d/set-color canvas drawn-fill)
                 (c2d/rect canvas left top w h)
-                (draw/fill-with-pattern! canvas (pattern-fill st drawn-fill) #(c2d/rect canvas left top w h))
+                (draw/fill-with-pattern! canvas (pattern-fill st drawn-fill) #(c2d/rect % left top w h))
                 (when (and (m/pos? stroke-width) (not (theme/none? stroke)))
                   (c2d/set-color canvas stroke)
                   (c2d/rect canvas left top w h true))))))

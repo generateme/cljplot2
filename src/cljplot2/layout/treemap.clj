@@ -6,52 +6,74 @@
     the shorter side of the free rectangle; a value joins the current row while that doesn't worsen the row's worst
     aspect ratio.
   * [[slice-dice]] - the rectangle is cut along x at even depths and along y at odd depths, in value order."
-  (:require [fastmath.core :as m]))
+  (:require [fastmath.core :as m]
+            [fastmath.vector :as v]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
 (defn- worst-ratio
-  "Worst aspect ratio of a row with `areas` (sum `total`) laid along a side of length `side`."
+  "Gives the worst aspect ratio of a row of rectangles laid along a side.
+
+  Parameters:
+
+  - `areas` (non-empty sequence of doubles): the row's areas.
+  - `total` (double): their sum.
+  - `side` (double): the length of the side the row lies along.
+
+  Returns the largest of `side^2 max / total^2` and `total^2 / (side^2 min)`; `##Inf` for a zero area or total."
   ^double [areas ^double total ^double side]
-  (let [s2 (* side side)
-        t2 (* total total)
-        amax (double (reduce max areas))
-        amin (double (reduce min areas))]
-    (if (or (zero? amin) (zero? t2))
+  (let [s2 (m/* side side)
+        t2 (m/* total total)
+        amax (v/mx areas)
+        amin (v/mn areas)]
+    (if (or (m/zero? amin) (m/zero? t2))
       ##Inf
-      (m/max (/ (* s2 amax) t2) (/ t2 (* s2 amin))))))
+      (m/max (m// (m/* s2 amax) t2) (m// t2 (m/* s2 amin))))))
 
 (defn- place-row
-  "Rectangles of a row with `areas` in free rectangle `free`, and the remaining free rectangle.
-  A wide free rectangle gets a column at its left, a tall one a row at its top."
-  [areas {:keys [x y w h] :as free}]
-  (let [x (double x) y (double y) w (double w) h (double h)
-        total (double (reduce + areas))]
-    (if (>= w h)
-      (let [cw (if (pos? h) (/ total h) 0.0)]
+  "Gives the rectangles of a row in a free rectangle and the free rectangle left.
+
+  A wide free rectangle gets a column at its left, a tall one a row at its top.
+
+  Parameters:
+
+  - `areas` (non-empty sequence of doubles): the row's areas.
+  - `free` (map): the free rectangle `{:x :y :w :h}`.
+
+  Returns `[rects free']`: a vector of `{:x :y :w :h}` per area, in order, and the remaining free rectangle; a zero-size free rectangle gives zero-size rectangles."
+  [areas {^double x :x ^double y :y ^double w :w ^double h :h}]
+  (let [total (v/sum areas)]
+    (if (m/>= w h)
+      (let [cw (if (m/pos? h) (m// total h) 0.0)]
         [(first (reduce (fn [[rects ^double cy] ^double a]
-                          (let [ah (if (pos? cw) (/ a cw) 0.0)]
-                            [(conj rects {:x x :y cy :w cw :h ah}) (+ cy ah)]))
+                          (let [ah (if (m/pos? cw) (m// a cw) 0.0)]
+                            [(conj rects {:x x :y cy :w cw :h ah}) (m/+ cy ah)]))
                         [[] y] areas))
-         {:x (+ x cw) :y y :w (m/max 0.0 (- w cw)) :h h}])
-      (let [rh (if (pos? w) (/ total w) 0.0)]
+         {:x (m/+ x cw) :y y :w (m/max 0.0 (m/- w cw)) :h h}])
+      (let [rh (if (m/pos? w) (m// total w) 0.0)]
         [(first (reduce (fn [[rects ^double cx] ^double a]
-                          (let [aw (if (pos? rh) (/ a rh) 0.0)]
-                            [(conj rects {:x cx :y y :w aw :h rh}) (+ cx aw)]))
+                          (let [aw (if (m/pos? rh) (m// a rh) 0.0)]
+                            [(conj rects {:x cx :y y :w aw :h rh}) (m/+ cx aw)]))
                         [[] x] areas))
-         {:x x :y (+ y rh) :w w :h (m/max 0.0 (- h rh))}]))))
+         {:x x :y (m/+ y rh) :w w :h (m/max 0.0 (m/- h rh))}]))))
 
 (defn squarify
-  "Squarified rectangles for positive `values` (in the given order, normally descending) inside `rect`.
-  An empty `values` gives `[]`; a zero-size `rect` gives zero-size rectangles."
-  [values {:keys [w h] :as rect}]
+  "Gives squarified rectangles for positive values inside a rectangle.
+
+  Parameters:
+
+  - `values` (sequence of positive numbers): in the given order, normally descending.
+  - `rect` (map): `{:x :y :w :h}` (doubles).
+
+  Returns a vector of `{:x :y :w :h}`, one per value in order; `[]` for empty `values`; a zero-size `rect` gives zero-size rectangles.
+
+  See also [[slice-dice]]."
+  [values {^double w :w ^double h :h :as rect}]
   (if (empty? values)
     []
-    (let [total (double (reduce + values))
-          scale (/ (* (double w) (double h)) total)
-          areas (mapv #(* scale (double %)) values)]
-      (loop [remaining areas
+    (let [scale (m// (m/* w h) (v/sum values))]
+      (loop [remaining (map #(m/* scale (double %)) values)
              row []
              free rect
              placed []]
@@ -60,25 +82,32 @@
             (and (empty? remaining) (empty? row)) placed
             (empty? remaining) (into placed (first (place-row row free)))
             :else
-            (let [a (double (first remaining))
-                  candidate (conj row a)]
+            (let [candidate (conj row (first remaining))]
               (if (or (empty? row)
-                      (<= (worst-ratio candidate (double (reduce + candidate)) side)
-                          (worst-ratio row (double (reduce + row)) side)))
+                      (m/<= (worst-ratio candidate (v/sum candidate) side)
+                            (worst-ratio row (v/sum row) side)))
                 (recur (rest remaining) candidate free placed)
-                (let [[rects free'] (place-row row free)]
-                  (recur remaining [] free' (into placed rects)))))))))))
+                (let [[rects free-left] (place-row row free)]
+                  (recur remaining [] free-left (into placed rects)))))))))))
 
 (defn slice-dice
-  "Slice-and-dice rectangles for positive `values` inside `rect` at tree `depth`: even depths cut along x (full
-  height slices), odd depths along y (full width slices)."
-  [values {:keys [x y w h]} depth]
-  (let [x (double x) y (double y) w (double w) h (double h)
-        total (double (reduce + 0.0 values))
+  "Gives slice-and-dice rectangles for positive values inside a rectangle at a tree depth.
+
+  Parameters:
+
+  - `values` (sequence of positive numbers): in the given order.
+  - `rect` (map): `{:x :y :w :h}` (doubles).
+  - `depth` (long): even depths cut along x (full height slices), odd depths along y (full width slices).
+
+  Returns a vector of `{:x :y :w :h}`, one per value in order; values summing to 0 give zero-size rectangles.
+
+  See also [[squarify]]."
+  [values {^double x :x ^double y :y ^double w :w ^double h :h} depth]
+  (let [total (v/sum values)
         along-x? (even? (long depth))]
-    (first (reduce (fn [[rects ^double offset] v]
-                     (let [share (if (pos? total) (/ (double v) total) 0.0)]
+    (first (reduce (fn [[rects ^double offset] value]
+                     (let [share (if (m/pos? total) (m// (double value) total) 0.0)]
                        (if along-x?
-                         (let [sw (* share w)] [(conj rects {:x (+ x offset) :y y :w sw :h h}) (+ offset sw)])
-                         (let [sh (* share h)] [(conj rects {:x x :y (+ y offset) :w w :h sh}) (+ offset sh)]))))
+                         (let [sw (m/* share w)] [(conj rects {:x (m/+ x offset) :y y :w sw :h h}) (m/+ offset sw)])
+                         (let [sh (m/* share h)] [(conj rects {:x x :y (m/+ y offset) :w w :h sh}) (m/+ offset sh)]))))
                    [[] 0.0] values))))

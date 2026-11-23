@@ -121,7 +121,7 @@
         columns (mapv (fn [acc] (mapv acc all-rows)) accessors)]
     (doseq [[k vs] (map vector dims columns)]
       (when (and (m/pos? row-count) (aesthetic/dim? k) (not-any? #(aesthetic/valid-value? k (get plot-scales k) %) vs))
-        (schema/fail! "No valid values for a mapped dimension - check the mapping." {:key :mapping :value k :rows row-count}))
+        (schema/fail! data/no-valid-values {:key :mapping :value k :rows row-count}))
       (check-groupable! k (filter data/valid-value? vs) plot-scales))
     (let [key-of (fn [row] (mapv #(% row) accessors))
           kept? (fn [group-key] (every? identity (map #(kept-value? %1 na-level? plot-scales %2) dims group-key)))

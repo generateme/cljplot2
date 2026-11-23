@@ -22,6 +22,7 @@
   bands; [[legend]] - the key glyph."
   (:require [fastmath.core :as m]
             [cljplot2.data.rows :as data]
+            [cljplot2.graphics.measure :as measure]
             [cljplot2.data.group :as group]
             [cljplot2.graphics.curve :as curve]
             [cljplot2.graphics.draw :as draw]
@@ -111,10 +112,7 @@
         {:keys [panels dropped]} (group/split groups mapping env)
         accessors (into {} (map (fn [k] [k (data/row-accessor k (k mapping))])) [:x :ymin :ymax])
         rows (mapcat (fn [gs] (mapcat :rows gs)) (vals panels))
-        row-count (count rows)
-        _ (doseq [[k f] accessors]
-            (when (and (m/pos? row-count) (not-any? #(data/valid-value? (f %)) rows))
-              (schema/fail! "No valid values for a mapped dimension - check the mapping." {:key :mapping :value k :rows row-count})))
+        _ (data/check-mapped! rows accessors)
         data (update-vals panels (fn [gs] {:bands (mapv #(band % (:x accessors) (:ymin accessors) (:ymax accessors)) gs)
                                            :style st}))]
     {:data data
@@ -174,8 +172,7 @@
   [xs los his projection opts]
   (let [upper (mapv #(pixel projection %1 %2) xs his)
         lower (mapv #(pixel projection %1 %2) xs los)
-        finite? (fn [^Vec2 p] (and (m/valid-double? (.x p)) (m/valid-double? (.y p))))
-        paired? (fn [i] (and (finite? (upper i)) (finite? (lower i))))
+        paired? (fn [i] (and (measure/finite-point? (upper i)) (measure/finite-point? (lower i))))
         point (fn [^Vec2 p] (curve/drawn-point [(.x p) (.y p)]))
         pairs (into [] (comp (partition-by paired?)
                              (filter #(and (paired? (first %)) (m/> (count %) 1)))

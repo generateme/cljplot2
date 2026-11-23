@@ -146,7 +146,7 @@
   (let [d (m/* 2.0 r)]
     (c2d/set-color canvas fill)
     (c2d/ellipse canvas x y d d)
-    (draw/fill-with-pattern! canvas pattern-fill #(c2d/ellipse canvas x y d d))
+    (draw/fill-with-pattern! canvas pattern-fill #(c2d/ellipse % x y d d))
     (when (and (m/pos? (double stroke-width)) (not (theme/none? stroke)))
       (c2d/set-stroke-custom canvas {:size stroke-width})
       (c2d/set-color canvas stroke)
@@ -263,12 +263,6 @@
   - `env` (map): the legend environment (`:theme`).
 
   Returns `nil`."
-  [chart attributes canvas {:keys [^double x ^double y ^double w ^double h]} env]
-  (let [st (theme/resolved-style (:theme env) chart)
-        d (m/* 0.7 (m/min w h))
-        cx (m/+ x (m/* 0.5 w))
-        cy (m/+ y (m/* 0.5 h))
-        fill (:color attributes)]
-    (c2d/set-color canvas fill)
-    (c2d/ellipse canvas cx cy d d)
-    (draw/fill-with-pattern! canvas (draw/pattern-fill st fill) #(c2d/ellipse canvas cx cy d d))))
+  [chart attributes canvas box env]
+  (let [fill (:color attributes)]
+    (draw/circle-key! canvas box fill (draw/pattern-fill (theme/resolved-style (:theme env) chart) fill))))

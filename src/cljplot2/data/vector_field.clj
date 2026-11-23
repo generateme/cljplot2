@@ -13,6 +13,7 @@
   (:require [fastmath.core :as m]
             [fastmath.vector :as v]
             [cljplot2.data.rows :as data]
+            [cljplot2.graphics.measure :as measure]
             [cljplot2.schema :as schema])
   (:import [fastmath.vector Vec2]))
 
@@ -213,6 +214,6 @@
   (vec (mapcat (fn [id [x y]]
                  (let [path (->> (iterate #(when % (trace-step f % step)) (v/vec2 x y))
                                  (take (m/long-inc steps))
-                                 (take-while #(and % (m/valid-double? (.x ^Vec2 %)) (m/valid-double? (.y ^Vec2 %)))))]
+                                 (take-while measure/finite-point?))]
                    (map-indexed (fn [i ^Vec2 p] {:id id :i i :x (.x p) :y (.y p)}) path)))
                (range) seeds)))

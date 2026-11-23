@@ -15,10 +15,11 @@
   `:padding {:x [lo hi]}` (default `[0.05 0.05]`). Items with fewer than 2 distinct values have no violin and are
   counted in `:dropped {:group n}`.
 
-  Functions: [[compute]], [[draw]], [[legend]] - the chart contract; [[schemas]] - its style, options and mapping."
+  Functions: [[legend]] - the chart contract's key glyph (the chart computes and draws through [[cljplot2.data.strip/compute]] and [[cljplot2.data.strip/draw]]); [[schemas]] - its style, options and mapping."
   (:require [clojure2d.core :as c2d]
             [fastmath.core :as m]
             [cljplot2.chart.box :as box]
+            [cljplot2.graphics.measure :as measure]
             [cljplot2.data.group :as group]
             [cljplot2.data.kde :as kde]
             [cljplot2.data.rows :as data]
@@ -137,16 +138,6 @@
      :na (group/na-dims panels)
      :dropped (assoc dropped :group no-violin)}))
 
-(defn- line!
-  "Draws a line between two pixel points.
-
-  Parameters:
-
-  - `canvas`: the clojure2d canvas.
-  - `a`, `b` (`Vec2`): the ends in pixels."
-  [canvas ^Vec2 a ^Vec2 b]
-  (c2d/line canvas (.x a) (.y a) (.x b) (.y b)))
-
 (defn- width-at
   "Gives the width of a violin at a value, linearly interpolated on its grid.
 
@@ -207,11 +198,11 @@
             p (fn [v cross] (point v level cross))
             across (fn [v] (let [w (m/* extent (width-at xs widths (double v)))]
                              (if mirror? [(p v base) (p v (m/+ base w))] [(p v (m/- base w)) (p v (m/+ base w))])))]
-        (when (every? #(and (m/valid-double? (.x ^Vec2 %)) (m/valid-double? (.y ^Vec2 %))) polygon)
+        (when (every? measure/finite-point? polygon)
           (let [pixels (mapv (fn [^Vec2 q] [(.x q) (.y q)]) polygon)]
             (c2d/set-color canvas fill)
             (c2d/path canvas pixels true false)
-            (draw/fill-with-pattern! canvas (pattern-fill st fill) #(c2d/path canvas pixels true false))
+            (draw/fill-with-pattern! canvas (pattern-fill st fill) #(c2d/path % pixels true false))
             (when-not (theme/none? stroke)
               (c2d/set-stroke-custom canvas {:size sw :join :round})
               (c2d/set-color canvas stroke)
@@ -219,21 +210,21 @@
           (c2d/set-color canvas inner-color)
           (case inner
             :box (do (c2d/set-stroke-custom canvas {:size (m/max 1.0 sw) :cap :butt})
-                     (line! canvas (p lav base) (p uav base))
+                     (c2d/line canvas (p lav base) (p uav base))
                      (c2d/set-stroke-custom canvas {:size 5.0 :cap :butt})
-                     (line! canvas (p q1 base) (p q3 base))
+                     (c2d/line canvas (p q1 base) (p q3 base))
                      (c2d/set-color canvas fill)
                      (let [^Vec2 median-pixel (p median base)] (c2d/ellipse canvas (.x median-pixel) (.y median-pixel) 4 4)))
             :quartiles (do (c2d/set-stroke-custom canvas {:size (m/max 1.0 sw) :cap :butt :dash [4.0 3.0]})
-                           (doseq [q [q1 q3]] (apply line! canvas (across q)))
+                           (doseq [q [q1 q3]] (apply c2d/line canvas (across q)))
                            (c2d/set-stroke-custom canvas {:size (m/max 1.0 sw) :cap :butt})
-                           (apply line! canvas (across median)))
+                           (apply c2d/line canvas (across median)))
             :rug (let [t (m/* 0.15 extent)]
                    (c2d/set-stroke-custom canvas {:size 1.0 :cap :butt})
                    (doseq [v values]
                      (if mirror?
-                       (line! canvas (p v base) (p v (m/+ base t)))
-                       (line! canvas (p v (m/- base t)) (p v (m/+ base t))))))
+                       (c2d/line canvas (p v base) (p v (m/+ base t)))
+                       (c2d/line canvas (p v (m/- base t)) (p v (m/+ base t))))))
             :points (doseq [v values :let [^Vec2 q (p v base)]] (c2d/ellipse canvas (.x q) (.y q) 3 3))
             :none nil))))
     (strip/draw-n-labels! canvas pl items (fn [{:keys [xs]}] (peek xs)) options scales env)))
@@ -242,34 +233,10 @@
   "Segments along each side of the legend's violin silhouette."
   24)
 
-(defn compute
-  "Computes the violin chart's stats with its levels on the categorical axis.
+(defmethod strip/in-frame-compute :violin [chart chart-split env] (compute-in-strip-frame chart chart-split env))
 
-  Parameters:
-
-  - `chart` (map): the chart value.
-  - `chart-split` (map): the chart's rows split per panel.
-  - `env` (map): the compute environment.
-
-  Returns the stats of [[compute-in-strip-frame]], turned to the mapping axis of the levels (see [[cljplot2.data.strip/compute-oriented]])."
-  [chart chart-split env]
-  (strip/compute-oriented compute-in-strip-frame chart chart-split env))
-
-(defn draw
-  "Draws one panel of the violin chart.
-
-  Parameters:
-
-  - `chart` (map): the chart value.
-  - `computed` (map): the panel's stats from [[compute]].
-  - `canvas`: the clojure2d canvas.
-  - `box` (map): the panel box.
-  - `scales` (map): finalized scales.
-  - `env` (map): the draw environment.
-
-  Draws [[draw-in-strip-frame]] in the strip frame (see [[cljplot2.data.strip/draw-oriented]])."
-  [chart computed canvas box scales env]
-  (strip/draw-oriented draw-in-strip-frame chart computed canvas box scales env))
+(defmethod strip/in-frame-draw :violin [chart computed canvas box scales env]
+  (draw-in-strip-frame chart computed canvas box scales env))
 
 (defn legend
   "Draws the violin chart's key glyph: a small horizontal violin silhouette centred in a legend key.
@@ -295,7 +262,7 @@
         stroke (draw/outline-color (:stroke-color st) (:color st))]
     (c2d/set-color canvas (:color st))
     (c2d/path canvas outline true false)
-    (draw/fill-with-pattern! canvas (draw/pattern-fill st (:color st)) #(c2d/path canvas outline true false))
+    (draw/fill-with-pattern! canvas (draw/pattern-fill st (:color st)) #(c2d/path % outline true false))
     (when-not (theme/none? stroke)
       (c2d/set-stroke-custom canvas {:size (double (:stroke-width st)) :join :round})
       (c2d/set-color canvas stroke)

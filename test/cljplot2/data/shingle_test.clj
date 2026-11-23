@@ -90,7 +90,7 @@
         strips (filter #(= :strip (get-in % [:content :kind])) (get-in built [:grid :items]))]
     (testing "interval levels sorted by lo; strips carry the interval within the levels' range"
       (is (= ["[0, 4]" "[5, 9]"] (map str (get-in built [:split :facets :levels :facet]))))
-      (is (= [{:lo 0 :hi 4 :min 0 :max 9} {:lo 5 :hi 9 :min 0 :max 9}] (map #(get-in % [:content :interval]) strips))))
+      (is (= [{:lo 0 :hi 4 :min 0.0 :max 9.0} {:lo 5 :hi 9 :min 0.0 :max 9.0}] (map #(get-in % [:content :interval]) strips))))
     (testing "the first interval shades the strip's left end, the last its right end"
       (let [c (plot/render p {:width 600 :height 300})
             box (fn [id] (grid/item-box (:layout built) id))

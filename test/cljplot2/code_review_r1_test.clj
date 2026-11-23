@@ -4,6 +4,7 @@
   (:require [clojure.test :refer [deftest testing is]]
             [clojure2d.color :as c]
             [fastmath.ml.clustering :as cl]
+            [cljplot2.cache :as cache]
             [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
             [cljplot2.data.tree :as tree]
@@ -33,22 +34,27 @@
     (is (= :colors (:key (error-data #(horizon-colors {:positive [:a]} 2)))))))
 
 (deftest explainers-cache-test
-  (let [cache @#'schema/explainers]
+  (let [explainers @#'schema/explainers]
     (testing "an equal schema (another value) reuses the cached explainer"
-      (reset! cache {})
+      (cache/clear! explainers)
       (is (seq (schema/errors [:map [:a int?]] {:a "x"} [])))
-      (is (= 1 (count @cache)))
+      (is (= 1 (cache/entry-count explainers)))
       (is (seq (schema/errors (vector :map (vector :a int?)) {:a "y"} [])))
-      (is (= 1 (count @cache))))
-    (testing "boundary: 300 distinct schemas never hold more than the cap; at the cap the cache restarts"
-      (reset! cache {})
-      (doseq [i (range 300)] (schema/errors [:enum i] i []))
-      (is (<= (count @cache) 256))
-      (is (= (- 300 256) (count @cache)) "emptied once at 256, then refilled"))
+      (is (= 1 (cache/entry-count explainers))))
+    (testing "boundary: 300 distinct schemas never hold more than the cap; a schema in use survives"
+      (cache/clear! explainers)
+      (doseq [i (range 300)]
+        (schema/errors [:enum i] i [])
+        (schema/errors [:enum :kept] :kept []))
+      (is (= 256 (cache/entry-count explainers)))
+      (let [built (atom 0)]
+        (with-redefs [malli.core/explainer (fn [s] (swap! built inc) (constantly nil))]
+          (schema/errors [:enum :kept] :kept [])
+          (is (zero? @built) "least recently used evicted, not the schema in use"))))
     (testing "boundary: a valid value - no errors, still cached"
-      (reset! cache {})
+      (cache/clear! explainers)
       (is (empty? (schema/errors int? 1 [])))
-      (is (= 1 (count @cache))))))
+      (is (= 1 (cache/entry-count explainers))))))
 
 (deftest default-options-test
   (testing "render option defaults are the schema's image defaults"

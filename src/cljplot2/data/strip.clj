@@ -6,7 +6,8 @@
   vertical strips, `{:x value :y level}` horizontal ones; option `:level-axis` (`:x` / `:y`) decides when both or
   neither axis is categorical (and always wins). Charts compute and draw in the **strip frame** - levels on `:y`,
   values on `:x`, as described below - through [[compute-oriented]] / [[draw-oriented]], which transpose input,
-  stats and scales for levels on `:x`. `:flip true` exchanges the drawn axes on top of that.
+  stats and scales for levels on `:x`. A strip chart value takes [[compute]] and [[draw]], which call its kind's
+  strip-frame methods [[in-frame-compute]] and [[in-frame-draw]]. `:flip true` exchanges the drawn axes on top of that.
 
   Contract: a strip chart computes, per panel, **items** - one per `:y` level and group -
   `{:level l :key k :aesthetics a :values [..] :slot [lo hi]}` plus its own statistics, all in data units along the
@@ -60,7 +61,8 @@
   - geometry: [[placement]], [[in-slot]], [[slot-half]], [[slot-side]]
   - end labels: [[end-label-room]], [[end-label-placements]], [[without-collisions]], [[draw-label-placements!]], [[draw-end-labels!]], [[outer-label-room]], [[n-label-room]], [[draw-n-labels!]]
   - ridgelines: [[ridges?]], [[ridge-split]], [[ridge-scale-defaults]], [[ridge-point]], [[ridge-order]]
-  - orientation: [[level-axis]], [[compute-oriented]], [[draw-oriented]]"
+  - orientation: [[level-axis]], [[compute-oriented]], [[draw-oriented]]
+  - chart contract: [[compute]], [[draw]], [[in-frame-compute]], [[in-frame-draw]]"
   (:require [clojure2d.core :as c2d]
             [fastmath.core :as m]
             [fastmath.vector :as v]
@@ -317,7 +319,7 @@
         all-rows (mapcat :rows (mapcat val panels))
         y-levels (when y-of (filter data/valid-value? (map y-of all-rows)))
         _ (when (and y-of (seq all-rows) (empty? y-levels))
-            (schema/fail! "No valid values for a mapped dimension - check the mapping."
+            (schema/fail! data/no-valid-values
                           {:key :mapping :value :y :rows (count all-rows)}))
         _ (when y-of (check-levels! y-levels (:plot-scales env)))
         level-rank (zipmap (distinct y-levels) (range))
@@ -349,7 +351,7 @@
                     (long (count (remove #(let [v (x-of %)] (and (number? v) (m/valid-double? (double v)))) all-rows)))
                     0)]
     (when (and x-of (seq all-rows) (m/== x-dropped (count all-rows)))
-      (schema/fail! "No valid values for a mapped dimension - check the mapping."
+      (schema/fail! data/no-valid-values
                     {:key :mapping :value :x :rows (count all-rows)}))
     {:place place
      :position position
@@ -1001,20 +1003,20 @@
 
   Parameters:
 
-  - `compute` (function): the chart's compute in the strip frame (levels on `:y`, values on `:x`), of `chart`, `chart-split`, `env`.
+  - `frame-compute` (function): the chart's compute in the strip frame (levels on `:y`, values on `:x`), of `chart`, `chart-split`, `env`.
   - `chart` (map): the chart value.
   - `chart-split` (map): `{:groups {panel rows} :mapping m}`.
   - `env` (map): the compute environment (`:plot-scales`, `:flip?`, ...).
 
   Returns the stats with `:level-axis`, every panel's data with `::level-axis` (for [[draw-oriented]])."
-  [compute chart {:keys [groups mapping] :as chart-split} env]
+  [frame-compute chart {:keys [groups mapping] :as chart-split} env]
   (let [axis (level-axis (:options chart) mapping (mapcat val groups) (:plot-scales env))
         stats (if (= :y axis)
-                (compute chart chart-split env)
+                (frame-compute chart chart-split env)
                 (transposed-stats
-                 (compute (cond-> chart (get-in chart [:options :padding]) (update-in [:options :padding] swap-xy))
-                          (assoc chart-split :mapping (swap-xy mapping))
-                          (-> env (update :flip? not) (update :plot-scales swap-xy)))))]
+                 (frame-compute (cond-> chart (get-in chart [:options :padding]) (update-in [:options :padding] swap-xy))
+                                (assoc chart-split :mapping (swap-xy mapping))
+                                (-> env (update :flip? not) (update :plot-scales swap-xy)))))]
     (-> stats
         (update :data update-vals #(assoc % ::level-axis axis))
         (assoc :level-axis axis))))
@@ -1039,13 +1041,67 @@
 
   Parameters:
 
-  - `draw` (function): the chart's draw in the strip frame, of `chart`, `computed`, `canvas`, `box`, `scales`, `env`.
+  - `frame-draw` (function): the chart's draw in the strip frame, of `chart`, `computed`, `canvas`, `box`, `scales`, `env`.
   - `chart` (map): the chart value.
   - `computed` (map): the panel's computed data (with `::level-axis`).
   - `canvas`, `box`, `scales`, `env`: as the chart contract's draw.
 
-  Returns what `draw` returns; `nil` without drawing when nothing can be placed (see [[placeable?]])."
-  [draw chart computed canvas box scales env]
+  Returns what `frame-draw` returns; `nil` without drawing when nothing can be placed (see [[placeable?]])."
+  [frame-draw chart computed canvas box scales env]
   (let [frame-scales (if (= :x (::level-axis computed)) (swap-xy scales) scales)]
     (when (placeable? frame-scales)
-      (draw chart computed canvas box frame-scales env))))
+      (frame-draw chart computed canvas box frame-scales env))))
+
+(defmulti in-frame-compute
+  "Computes a strip chart's stats in the strip frame (levels on `:y`, values on `:x`); a method per strip chart kind.
+
+  Parameters:
+
+  - `chart` (map): the chart value, dispatched on its `:kind`.
+  - `chart-split` (map): `{:groups {panel rows} :mapping m}` in the strip frame.
+  - `env` (map): the compute environment in the strip frame.
+
+  Returns the chart's stats (see the chart contract in [[cljplot2.chart]]).
+
+  See also [[compute]]."
+  (fn [chart _chart-split _env] (:kind chart)))
+
+(defmulti in-frame-draw
+  "Draws one panel of a strip chart in the strip frame; a method per strip chart kind.
+
+  Parameters:
+
+  - `chart` (map): the chart value, dispatched on its `:kind`.
+  - `computed` (map): the panel's computed data.
+  - `canvas`, `box`: as the chart contract's draw.
+  - `scales` (map): the panel's position scales in the strip frame.
+  - `env` (map): the drawing environment.
+
+  See also [[draw]]."
+  (fn [chart _computed _canvas _box _scales _env] (:kind chart)))
+
+(defn compute
+  "Computes a strip chart's stats with its levels on the categorical axis: the chart contract's compute of every strip chart.
+
+  Parameters:
+
+  - `chart` (map): the chart value; its kind has an [[in-frame-compute]] method.
+  - `chart-split` (map): `{:groups {panel rows} :mapping m}`.
+  - `env` (map): the compute environment.
+
+  Returns the stats of [[in-frame-compute]] turned to the mapping axis of the levels (see [[compute-oriented]])."
+  [chart chart-split env]
+  (compute-oriented in-frame-compute chart chart-split env))
+
+(defn draw
+  "Draws one panel of a strip chart: the chart contract's draw of every strip chart.
+
+  Parameters:
+
+  - `chart` (map): the chart value; its kind has an [[in-frame-draw]] method.
+  - `computed` (map): the panel's computed data (from [[compute]]).
+  - `canvas`, `box`, `scales`, `env`: as the chart contract's draw.
+
+  Draws [[in-frame-draw]] in the strip frame (see [[draw-oriented]]); `nil` when nothing can be placed."
+  [chart computed canvas box scales env]
+  (draw-oriented in-frame-draw chart computed canvas box scales env))

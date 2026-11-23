@@ -3,7 +3,7 @@
   transforms, `java.time` values (and `Year` / `YearMonth`) on colour and position scales, date colour bar ticks,
   legend texts."
   (:require [clojure.test :refer [deftest testing is]]
-            [clojure2d.color]
+            [clojure2d.color :as c]
             [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
             [cljplot2.content.legend :as legend]
@@ -55,14 +55,14 @@
         (is (same-pixels? (with-role-color p :title :contrast) (with-role-color p :title :black) o))
         (is (same-pixels? (-> p (assoc-in [:theme :plot :background] :black) (with-role-color :title :contrast))
                           (-> p (assoc-in [:theme :plot :background] :black) (with-role-color :title :white)) o))
-        (is (= :white (draw/plot-backdrop {:plot {:background :none}})))))
+        (is (= (c/to-color :white) (c/to-color (draw/plot-backdrop {:plot {:background :none}}))))))
     (testing "the text colour type: a colour or :contrast; anything else fails at the role"
       (is (= :color (peek (:in (first (:errors (error-data #(plot/build (with-role-color small-plot :title :contrastt)))))))))
       (is (nil? (error-data #(plot/build (with-role-color small-plot :title [10 20 30]))))))
     (testing "resolution: a colour stays; :contrast is white on dark, black on light"
       (is (= [10 20 30] (draw/resolved-text-color [10 20 30] :black)))
-      (is (= :white (draw/resolved-text-color :contrast :black)))
-      (is (= :black (draw/resolved-text-color :contrast :white))))))
+      (is (= (c/to-color :white) (c/to-color (draw/resolved-text-color :contrast :black))))
+      (is (= (c/to-color :black) (c/to-color (draw/resolved-text-color :contrast :white)))))))
 
 (deftest colour-functions-test
   (testing "the same results as clojure2d.color, every arity"

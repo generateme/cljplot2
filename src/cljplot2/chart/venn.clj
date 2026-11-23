@@ -21,8 +21,7 @@
   over its edges.
 
   Functions: [[schemas]] - the chart's schemas; [[compute]] - per panel the sets and region counts; [[draw]] - one panel's diagram; [[legend]] - none."
-  (:require [clojure2d.color :as c]
-            [clojure2d.core :as c2d]
+  (:require [clojure2d.core :as c2d]
             [fastmath.core :as m]
             [fastmath.vector :as v]
             [cljplot2.content.label :as label]
@@ -191,12 +190,13 @@
         circles (layout-circles panel)
         n (count circles)
         palette (aesthetic/palette-color-fn theme n)
-        fills (mapv #(c/set-alpha (palette %) (m/* 255.0 (double (:alpha style)))) (range n))
+        fills (mapv #(draw/with-alpha (palette %) (:alpha style)) (range n))
         name-contents (mapv (fn [set-name] {:kind :label :role :venn-set :text (str set-name)}) sets)
         name-sizes (mapv #(measure/natural-size % {:canvas canvas :theme theme}) name-contents)
         label-gap (double (:label-gap style))
-        mx (m/+ label-gap (double (reduce m/max 0.0 (map #(.x ^Vec2 %) name-sizes))))
-        my (m/+ label-gap (double (reduce m/max 0.0 (map #(.y ^Vec2 %) name-sizes))))
+        ^Vec2 largest (measure/max-size name-sizes)
+        mx (m/+ label-gap (.x largest))
+        my (m/+ label-gap (.y largest))
         ;; set names only while their room leaves the diagram at least half the panel each way
         names? (and (:set-labels options) (m/< (m/* 4.0 mx) w) (m/< (m/* 4.0 my) h))
         to-pixel (if names? (fit circles w h mx my) (fit circles w h 0.0 0.0))

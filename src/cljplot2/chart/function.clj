@@ -124,7 +124,7 @@
                       (schema/optional :t {:cljplot2/section :curve :description "t span [lo hi] of :parametric (required there): numbers or java.time values"} span-schema)
                       (schema/optional :sample-step {:cljplot2/section :curve :description "distance between samples: pixels along x or {:count n} (:parametric - only {:count n})"
                                                      :cljplot2/default-doc "1 pixel for :f, {:count 500} for :parametric"}
-                                       curve/sample-step)
+                                       curve/sample-step-schema)
                       (schema/optional :y-limits {:cljplot2/section :extent :description "[lo hi] - samples outside don't count for the y extent (the curve is only clipped)"}
                                        schema/finite-interval)
                       (schema/optional :y-extent {:cljplot2/section :extent :description "y extent of the samples without :y-limits or an explicit y domain: :quantiles (1% and 99%), {:quantiles [p q]}, :min-max or :none"

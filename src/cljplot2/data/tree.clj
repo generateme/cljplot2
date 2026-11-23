@@ -541,7 +541,7 @@
         depth-pos-of (fn ^double [node] (if (and (= :cluster layout-kind) (:leaf? node)) max-depth (double (:depth node))))
         lo (v/mn breadths)
         hi (v/mx breadths)
-        breadth-nodes (mapv (fn [node ^double b] (assoc node :breadth (m/- b lo) :depth-pos (depth-pos-of node))) placed-nodes breadths)
+        breadth-nodes (map (fn [node ^double b] (assoc node :breadth (m/- b lo) :depth-pos (depth-pos-of node))) placed-nodes breadths)
         span-b (m/- hi lo)
         step (m// (m/radians span) (if (m/>= span 360.0) (m/inc span-b) (m/max span-b 1.0)))
         polar (fn [[^double d ^double b]] (let [a (m/* b step)
@@ -589,7 +589,7 @@
         on-b (set (ancestors-of nodes b))
         lca (first (filter on-b up-a))
         to-lca (vec (take-while #(not= lca %) up-a))
-        from-lca (vec (reverse (take-while #(not= lca %) (ancestors-of nodes b))))]
+        from-lca (reverse (take-while #(not= lca %) (ancestors-of nodes b)))]
     (-> to-lca (conj lca) (into from-lca))))
 
 (defn- straightened

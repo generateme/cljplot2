@@ -5,11 +5,12 @@
   Options (style defaults from theme `[:chart :rug]`): `:color`, `:line-width` (pixels; `:width` is the strip option); `:padding {:x [lo hi]}`
   (default `[0.05 0.05]`), plus the strip options and `:data` / `:mapping`.
 
-  Functions: [[compute]] and [[draw]] - the chart contract (in the strip frame, see [[cljplot2.data.strip/compute-oriented]]), [[legend]] - its key glyph; [[schemas]] - its style, options and mapping."
+  Functions: [[legend]] - its key glyph (the chart computes and draws through [[cljplot2.data.strip/compute]] and [[cljplot2.data.strip/draw]]); [[schemas]] - its style, options and mapping."
   (:require [clojure2d.core :as c2d]
             [fastmath.core :as m]
             [fastmath.vector :as v]
             [cljplot2.data.group :as group]
+            [cljplot2.graphics.draw :as draw]
             [cljplot2.data.rows :as data]
             [cljplot2.data.strip :as strip]
             [cljplot2.schema :as schema]
@@ -93,37 +94,13 @@
                     ^Vec2 a (point v level lo)
                     ^Vec2 b (point v level hi)]
               :when (and (m/valid-double? (.x a)) (m/valid-double? (.y a)) (m/valid-double? (.y b)))]
-        (c2d/line canvas (.x a) (.y a) (.x b) (.y b))))
+        (c2d/line canvas a b)))
     (strip/draw-n-labels! canvas pl items (fn [{:keys [values]}] (v/mx values)) options scales env)))
 
-(defn compute
-  "Computes the rug's stats with its levels on the categorical axis.
+(defmethod strip/in-frame-compute :rug [chart chart-split env] (compute-in-strip-frame chart chart-split env))
 
-  Parameters:
-
-  - `chart` (map): the chart value.
-  - `chart-split` (map): the chart's rows split per panel.
-  - `env` (map): the compute environment.
-
-  Returns the stats of [[compute-in-strip-frame]], turned to the mapping axis of the levels (see [[cljplot2.data.strip/compute-oriented]])."
-  [chart chart-split env]
-  (strip/compute-oriented compute-in-strip-frame chart chart-split env))
-
-(defn draw
-  "Draws one panel of the rug.
-
-  Parameters:
-
-  - `chart` (map): the chart value.
-  - `computed` (map): the panel's stats from [[compute]].
-  - `canvas`: the clojure2d canvas.
-  - `box` (map): the panel box.
-  - `scales` (map): finalized scales.
-  - `env` (map): the draw environment.
-
-  Draws [[draw-in-strip-frame]] in the strip frame (see [[cljplot2.data.strip/draw-oriented]])."
-  [chart computed canvas box scales env]
-  (strip/draw-oriented draw-in-strip-frame chart computed canvas box scales env))
+(defmethod strip/in-frame-draw :rug [chart computed canvas box scales env]
+  (draw-in-strip-frame chart computed canvas box scales env))
 
 (defn legend
   "Draws the rug's key glyph: a short vertical line in the middle of a legend key.
@@ -137,9 +114,6 @@
   - `env` (map): the legend environment - `:theme`.
 
   The line spans the middle 60% of the box height, at least 1 pixel wide."
-  [chart attributes canvas {:keys [^double x ^double y ^double w ^double h]} env]
-  (let [st (merge (theme/resolved-style (:theme env) chart) (select-keys attributes [:color]))
-        cx (m/+ x (m/* 0.5 w))]
-    (c2d/set-color canvas (:color st))
-    (c2d/set-stroke-custom canvas {:size (m/max 1.0 (double (:line-width st))) :cap :butt})
-    (c2d/line canvas cx (m/+ y (m/* 0.2 h)) cx (m/+ y (m/* 0.8 h)))))
+  [chart attributes canvas box env]
+  (let [st (merge (theme/resolved-style (:theme env) chart) (select-keys attributes [:color]))]
+    (draw/spike-key! canvas box {:color (:color st) :width (m/max 1.0 (double (:line-width st))) :span [0.2 0.8]})))

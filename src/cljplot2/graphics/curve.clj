@@ -16,29 +16,30 @@
   * `:sample-step` - the distance between evaluated positions: pixels (default 1.0) or `{:count n}` (n >= 2 per run).
 
   A run with fewer points than the method needs (fastmath `:too-few-points`) is drawn straight; one point draws
-  nothing."
-  (:require [clojure2d.core.shape :as sh]
+  nothing.
+
+  Functions: options [[options]], [[sample-step-schema]]; sampling [[sample-grid]], [[sample-columns]]; drawn points [[curve-points]] ([[functional-points]], [[parametric-points]], [[bezier-points]]), [[curved?]], [[drawn-point]]; around lines [[bridges]], [[area-baseline]], [[draw-runs!]]."
+  (:require [clojure2d.core :as c2d]
+            [clojure2d.core.shape :as sh]
             [fastmath.core :as m]
             [cljplot2.data.interpolation :as fit]
             [cljplot2.graphics.draw :as draw]
             [cljplot2.graphics.polyline :as polyline]
             [cljplot2.scale.position :as scale]
-            [cljplot2.schema :as schema])
-  (:import [java.awt.geom Path2D PathIterator]))
+            [cljplot2.schema :as schema]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
-(def ^:const default-sample-step
+(def ^{:const true :tag 'double} default-sample-step
   "Pixels between evaluated positions."
   1.0)
 
-
-(def sample-step
+(def sample-step-schema
   "Schema of `:sample-step`: positive pixels or `{:count n}`, n >= 2."
   (schema/named-type ::sample-step
-                     #(or (and (schema/finite? %) (pos? (double %)))
-                          (and (map? %) (= [:count] (keys %)) (integer? (:count %)) (>= (long (:count %)) 2)))
+                     #(or (and (schema/finite? %) (m/pos? (double %)))
+                          (and (map? %) (= [:count] (keys %)) (integer? (:count %)) (m/>= (long (:count %)) 2)))
                      "should be a positive number of pixels or {:count n}, n >= 2"))
 
 (def options
@@ -52,100 +53,146 @@
                      [:enum :parametric :bezier])
     (schema/optional :sample-step {:description "distance between evaluated positions: pixels or {:count n} per run"
                                    :default default-sample-step}
-                     sample-step)]))
+                     sample-step-schema)]))
 
 ;; sampling
 
 (defn sample-grid
-  "Evenly spaced positions from `p0` to `p1`, both included: `sample-step` pixels - the span split into the fewest
-  equal intervals no longer than the step; `{:count n}` - n positions. `[p0]` when the ends are equal."
-  [^double p0 ^double p1 sample-step]
-  (let [span (- p1 p0)
-        n (long (if (map? sample-step)
-                  (dec (long (:count sample-step)))
-                  (m/max 1.0 (m/ceil (/ (m/abs span) (double sample-step))))))]
-    (if (zero? span)
+  "Gives evenly spaced positions between two ends, both included.
+
+  Parameters:
+
+  - `p0`, `p1` (doubles): the first and the last position.
+  - `step`: pixels - the span split into the fewest equal intervals no longer than the step; or `{:count n}` - n positions (see [[sample-step-schema]]).
+
+  Returns a vector of doubles, the last exactly `p1` (positions are `p0 + span i / n`, no accumulated rounding); `[p0]` when the ends are equal."
+  [^double p0 ^double p1 step]
+  (let [span (m/- p1 p0)
+        n (long (if (map? step)
+                  (m/long-dec (long (:count step)))
+                  (m/max 1.0 (m/ceil (m// (m/abs span) (double step))))))]
+    (if (m/zero? span)
       [p0]
-      (mapv (fn [^long i] (if (== i n) p1 (+ p0 (* span (/ (double i) (double n)))))) (range (inc n))))))
+      (mapv (fn [^long i] (if (m/== i n) p1 (m/+ p0 (m/* span (m// (double i) (double n)))))) (range (m/long-inc n))))))
 
 ;; fitting
 
 (defn- strictly-monotone
-  "`:increasing` / `:decreasing` when `vs` strictly increase / decrease, else `nil`."
+  "Gives the direction of values that strictly increase or decrease.
+
+  Parameters:
+
+  - `vs` (sequence of numbers): the values.
+
+  Returns `:increasing` or `:decreasing` (either for fewer than 2 values: `:increasing`), `nil` otherwise."
   [vs]
   (let [pairs (partition 2 1 vs)]
     (cond
-      (every? (fn [[a b]] (< (double a) (double b))) pairs) :increasing
-      (every? (fn [[a b]] (> (double a) (double b))) pairs) :decreasing)))
+      (every? (fn [[a b]] (m/< (double a) (double b))) pairs) :increasing
+      (every? (fn [[a b]] (m/> (double a) (double b))) pairs) :decreasing)))
 
-(defn- axis-index ^long [along] (if (= :y along) 1 0))
+(defn- axis-index
+  "Gives the index of a pixel axis in an `[x y]` point: 1 for `:y`, else 0."
+  ^long [along]
+  (if (= :y along) 1 0))
 
 (defn functional-points
-  "Points of `run` interpolated by `fit` (see [[cljplot2.data.interpolation/fit-fn]]) along pixel axis `along` (`:x` / `:y`), evaluated every
-  `sample-step`; the run in its direction. The run as is with fewer than 2 points or too few for the method; not
-  strictly monotone along the axis - `ex-info {:key :interpolator}`."
-  [fit-of run along sample-step]
-  (if (< (count run) 2)
+  "Gives the points of a run interpolated along one pixel axis.
+
+  Parameters:
+
+  - `fit-of`: the fitting function (see [[cljplot2.data.interpolation/fit-fn]]).
+  - `run` (vector of `[x y]`): the run's pixel points.
+  - `along` (keyword): the axis the run is a function of, `:x` or `:y`.
+  - `step`: the sample step (see [[sample-grid]]).
+
+  Returns the evaluated points (a vector) in the run's direction; the run as is with fewer than 2 points or too few for the method. A run not strictly monotone along the axis throws `ex-info {:key :interpolator}`."
+  [fit-of run along step]
+  (if (m/< (count run) 2)
     run
     (let [a (axis-index along)
-          b (- 1 a)
+          b (m/long-sub 1 a)
           direction (strictly-monotone (map #(nth % a) run))
           _ (when-not direction
               (schema/fail! (str "Interpolation needs strictly monotone positions along " (name along)
                                  " in every run (no repeated x; with :sort false, x in order).")
                             {:key :interpolator :value (mapv #(nth % a) run)}))
+          ;; reversed: rseq of the run vector, indexed by peek below
           ordered (if (= direction :decreasing) (vec (rseq run)) run)
+          ;; the fitted knots go to fastmath interpolation as vectors
           f (fit/fitted fit-of (mapv #(double (nth % a)) ordered) (mapv #(double (nth % b)) ordered))]
       (if (nil? f)
         run
-        (let [ts (sample-grid (double (nth (first run) a)) (double (nth (peek run) a)) sample-step)]
-          (mapv (fn [t] (if (zero? a) [t (double (f t))] [(double (f t)) t])) ts))))))
+        (let [ts (sample-grid (double (nth (first run) a)) (double (nth (peek run) a)) step)]
+          ;; drawn runs are vectors (callers take their last point with peek)
+          (mapv (fn [^double t] (if (m/zero? a) [t (double (f t))] [(double (f t)) t])) ts))))))
 
-(defn- distinct-consecutive [run] (mapv first (partition-by identity run)))
+(defn- distinct-consecutive
+  "Gives a run without consecutive repeated points (a vector)."
+  [run]
+  (mapv first (partition-by identity run)))
 
 (defn- chord-lengths
-  "Cumulative distances along `run` from its first point."
+  "Gives the cumulative distances along a run from its first point.
+
+  Parameters:
+
+  - `run` (sequence of `[x y]`): the points.
+
+  Returns a vector of doubles starting at 0.0, one per point."
   [run]
-  (vec (reductions + 0.0 (map (fn [[x0 y0] [x1 y1]] (m/hypot (- (double x1) (double x0)) (- (double y1) (double y0))))
-                              run (rest run)))))
+  (vec (reductions m/+ 0.0 (map (fn [[^double x0 ^double y0] [^double x1 ^double y1]] (m/hypot (m/- x1 x0) (m/- y1 y0)))
+                               run (rest run)))))
 
 (defn parametric-points
-  "Points of `run` interpolated by `fit` as x(t), y(t) over the cumulative chord length t, evaluated every
-  `sample-step` of t; consecutive repeated points removed first. The run as is with fewer than 2 distinct points or
-  too few for the method."
-  [fit-of run sample-step]
-  (let [run (distinct-consecutive run)]
-    (if (< (count run) 2)
-      run
-      (let [ts (chord-lengths run)
-            fx (fit/fitted fit-of ts (mapv #(double (first %)) run))
-            fy (fit/fitted fit-of ts (mapv #(double (second %)) run))]
-        (if (or (nil? fx) (nil? fy))
-          run
-          (mapv (fn [t] [(double (fx t)) (double (fy t))]) (sample-grid 0.0 (double (peek ts)) sample-step)))))))
+  "Gives the points of a run interpolated as x(t), y(t) over the cumulative chord length t.
 
-(def ^:private ^:const bezier-flatness
+  Consecutive repeated points are removed first.
+
+  Parameters:
+
+  - `fit-of`: the fitting function (see [[cljplot2.data.interpolation/fit-fn]]).
+  - `run` (vector of `[x y]`): the run's pixel points.
+  - `step`: the sample step of t (see [[sample-grid]]).
+
+  Returns the evaluated points (a vector); the run as is with fewer than 2 distinct points or too few for the method."
+  [fit-of run step]
+  (let [distinct-run (distinct-consecutive run)]
+    (if (m/< (count distinct-run) 2)
+      distinct-run
+      (let [ts (chord-lengths distinct-run)
+            fx (fit/fitted fit-of ts (mapv #(double (first %)) distinct-run))
+            fy (fit/fitted fit-of ts (mapv #(double (second %)) distinct-run))]
+        (if (or (nil? fx) (nil? fy))
+          distinct-run
+          (mapv (fn [t] [(double (fx t)) (double (fy t))]) (sample-grid 0.0 (double (peek ts)) step)))))))
+
+(def ^{:private true :const true :tag 'double} bezier-flatness
   "Largest distance (pixels) of the flattened bezier polyline from the curve."
   0.1)
 
 (defn bezier-points
-  "Points of clojure2d `path-bezier` through `run`, flattened to a polyline (within [[bezier-flatness]] px)."
+  "Gives the points of clojure2d `path-bezier` through a run, flattened to a polyline.
+
+  Parameters:
+
+  - `run` (vector of `[x y]`): the run's pixel points.
+
+  Returns a vector of points within [[bezier-flatness]] px of the curve; the run as is with fewer than 2 points."
   [run]
-  (if (< (count run) 2)
+  (if (m/< (count run) 2)
     run
-    (let [^Path2D path (sh/path-bezier run false)
-          it (.getPathIterator path nil bezier-flatness)
-          buf (double-array 6)]
-      (loop [acc []]
-        (if (.isDone it)
-          acc
-          (let [t (.currentSegment it buf)]
-            (.next it)
-            (recur (if (== t PathIterator/SEG_CLOSE) acc (conj acc [(aget buf 0) (aget buf 1)])))))))))
+    (vec (c2d/shape->points (sh/path-bezier run false) bezier-flatness))))
 
 (defn curve-points
-  "The drawn points of `run` under the curve options `opts` (see the namespace doc); the run as is without
-  `:interpolator` and `:curve`."
+  "Gives the drawn points of a run under the curve options (see the namespace doc).
+
+  Parameters:
+
+  - `run` (vector of `[x y]`): the run's pixel points.
+  - `opts` (map): `:interpolator`, `:interpolator-params`, `:curve`, `:sample-step` (default [[default-sample-step]]), `:along` (default `:x`).
+
+  Returns the points; the run as is without `:interpolator` and `:curve`. `:curve :bezier` with `:interpolator` throws `ex-info {:key :curve}`."
   [run {:keys [interpolator interpolator-params curve sample-step along] :or {along :x}}]
   (let [step (or sample-step default-sample-step)]
     (cond
@@ -158,40 +205,59 @@
       :else run)))
 
 (defn- segment-index
-  "Index `i` of the segment `[ps(i) ps(i+1)]` of the increasing positions `ps` (at least 2) holding `t` (the first or
-  the last segment beyond the ends)."
+  "Gives the index of the segment of increasing positions holding a position.
+
+  Parameters:
+
+  - `ps` (vector of doubles): increasing positions, at least 2.
+  - `t` (double): the position.
+
+  Returns `i` of the segment `[ps(i) ps(i+1)]`; beyond the ends the first or the last segment."
   ^long [ps ^double t]
-  (loop [lo 0 hi (- (count ps) 2)]
-    (if (>= lo hi)
+  (loop [lo 0 hi (m/long-sub (count ps) 2)]
+    (if (m/>= lo hi)
       lo
-      (let [mid (quot (+ lo hi 1) 2)]
-        (if (< t (double (ps mid))) (recur lo (dec mid)) (recur mid hi))))))
+      (let [mid (m/long-quot (m/long-add lo hi 1) 2)]
+        (if (m/< t (double (ps mid))) (recur lo (m/long-dec mid)) (recur mid hi))))))
 
 (defn- keep-sign
-  "Sample `v` at `t` kept to the sign of the two knot values around it (`ps` increasing, `vs`) when they share it."
+  "Gives a sample kept to the sign of the two knot values around it when they share it.
+
+  Parameters:
+
+  - `ps` (vector of doubles): increasing knot positions.
+  - `vs` (vector of doubles): the knot values.
+  - `t` (double): the sample position.
+  - `v` (double): the sample value.
+
+  Returns `v`, clamped to 0 when both knots around `t` are on its other side."
   ^double [ps vs ^double t ^double v]
   (let [i (segment-index ps t)
-        a (double (vs i)) b (double (vs (inc i)))]
+        a (double (vs i)) b (double (vs (m/long-inc i)))]
     (cond
-      (and (>= a 0.0) (>= b 0.0)) (m/max 0.0 v)
-      (and (<= a 0.0) (<= b 0.0)) (m/min 0.0 v)
+      (and (m/>= a 0.0) (m/>= b 0.0)) (m/max 0.0 v)
+      (and (m/<= a 0.0) (m/<= b 0.0)) (m/min 0.0 v)
       :else v)))
 
 (defn sample-columns
-  "Columns of values sampled on one grid: `positions` - strictly monotone pixel positions shared by the columns,
-  `columns` - one vector of values per column (one per position), fitted with `opts` `:interpolator` /
-  `:interpolator-params` and evaluated on the [[sample-grid]] (`:sample-step`) from the first position to the last.
-  `keep-sign?` - a sample between two knots of one sign keeps it (heights of stacked bands never cross 0 where the
-  data doesn't). A column too short for the method is fitted linearly (all columns share the grid); fewer than 2
-  positions - as given. Returns `[grid sampled-columns]`. Not strictly monotone positions throw `ex-info {:key
-  :interpolator}`."
+  "Gives columns of values sampled on one grid.
+
+  Parameters:
+
+  - `positions` (vector of numbers): strictly monotone pixel positions shared by the columns.
+  - `columns` (vector of vectors): one vector of values per column, one value per position.
+  - `opts` (map): `:interpolator`, `:interpolator-params`, `:sample-step` (see [[sample-grid]]).
+  - `keep-sign?`: truthy - a sample between two knots of one sign keeps it (heights of stacked bands never cross 0 where the data doesn't).
+
+  Returns `[grid sampled-columns]`: the [[sample-grid]] from the first position to the last and each column fitted and evaluated on it; a column too short for the method is fitted linearly (all columns share the grid); fewer than 2 positions - `[positions columns]` as given. Not strictly monotone positions throw `ex-info {:key :interpolator}`."
   [positions columns {:keys [interpolator interpolator-params sample-step]} keep-sign?]
-  (if (< (count positions) 2)
+  (if (m/< (count positions) 2)
     [positions columns]
     (let [direction (strictly-monotone positions)
           _ (when-not direction
               (schema/fail! "Interpolation needs strictly monotone x positions." {:key :interpolator :value positions}))
           rev? (= direction :decreasing)
+          ;; knots: indexed by keep-sign and passed to fastmath interpolation
           ps (mapv double (if rev? (rseq positions) positions))
           grid (sample-grid (double (first positions)) (double (peek positions)) (or sample-step default-sample-step))
           fit-of (fit/fit-fn interpolator interpolator-params)
@@ -199,49 +265,77 @@
       [grid (mapv (fn [column]
                     (let [vs (mapv double (if rev? (rseq column) column))
                           f (or (fit/fitted fit-of ps vs) (fit/fitted linear ps vs))]
-                      (mapv (fn [t] (let [v (double (f t))] (if keep-sign? (keep-sign ps vs t v) v))) grid)))
+                      (mapv (fn [^double t] (let [v (double (f t))] (if keep-sign? (keep-sign ps vs t v) v))) grid)))
                   columns)])))
 
 (defn curved?
-  "Do the curve options `opts` change the drawn points (an `:interpolator` or a `:curve`)?"
+  "Tests whether curve options change the drawn points.
+
+  Parameters:
+
+  - `opts` (map): the curve options.
+
+  Returns truthy for an `:interpolator` or a `:curve`, else `nil`."
   [opts]
-  (boolean (or (:interpolator opts) (:curve opts))))
+  (or (:interpolator opts) (:curve opts)))
 
 ;; gaps
 
 (defn bridges
-  "Straight segments `[[x0 y0] [x1 y1]]` over the gaps between consecutive runs (the last point of one, the first of
-  the next); empty runs skipped."
+  "Gives the straight segments over the gaps between consecutive runs.
+
+  Parameters:
+
+  - `runs` (sequence of vectors of `[x y]`): the runs; empty ones skipped.
+
+  Returns a sequence of `[[x0 y0] [x1 y1]]` - the last point of one run and the first of the next; empty for fewer than 2 runs."
   [runs]
-  (let [runs (filterv seq runs)]
-    (mapv (fn [a b] [(peek a) (first b)]) runs (rest runs))))
+  ;; consumed twice (the runs and their rest)
+  (let [non-empty (filterv seq runs)]
+    (map (fn [a b] [(peek a) (first b)]) non-empty (rest non-empty))))
 
 ;; pixels
 
-(def ^:const pixel-limit
+(def ^{:const true :tag 'double} pixel-limit
   "Largest pixel coordinate magnitude drawn: farther points are clamped to it (Java2D draws float coordinates, values
   as 1e300 overflow); the direction of a clamped segment inside the panel changes by under limit / panel size."
   1.0e6)
 
-(def ^:private ^:const pixel-resolution
+(def ^{:private true :const true :tag 'double} pixel-resolution
   "Pixel coordinates are rounded to multiples of 1 / pixel-resolution: rounding noise of sampled curves (a flat run at
   `155.0` sampled as `154.99999999999997`) would otherwise cross pixel boundaries under Java2D's stroke normalization
   and draw dots at the joins of thick lines."
   1.0e6)
 
+(def ^{:private true :const true :tag 'double} -pixel-limit
+  "The negated [[pixel-limit]]."
+  (m/- pixel-limit))
+
 (defn- drawn-coordinate
+  "Gives a pixel coordinate as drawn: clamped to ±[[pixel-limit]] and rounded to 1 / [[pixel-resolution]]."
   ^double [^double v]
-  (/ (Math/rint (* (m/constrain v (- pixel-limit) pixel-limit) pixel-resolution)) pixel-resolution))
+  (m// (m/rint (m/* (m/constrain v -pixel-limit pixel-limit) pixel-resolution)) pixel-resolution))
 
 (defn drawn-point
-  "`[x y]` as drawn: each coordinate clamped to ±[[pixel-limit]] and rounded to 1e-6 pixel (see
-  [[pixel-resolution]])."
-  [[x y]]
-  [(drawn-coordinate (double x)) (drawn-coordinate (double y))])
+  "Gives a pixel point as drawn.
+
+  Parameters:
+
+  - `[x y]`: the point (numbers).
+
+  Returns `[x y]`, each coordinate clamped to ±[[pixel-limit]] and rounded to 1e-6 pixel (see [[pixel-resolution]])."
+  [[^double x ^double y]]
+  [(drawn-coordinate x) (drawn-coordinate y)])
 
 (defn area-baseline
-  "Pixel position of the area baseline along the finalized `y-scale`: y = 0 clamped into the panel (`w` x `h`) in the
-  scale's direction, the scale's range start when it can't place 0."
+  "Gives the pixel position of the area baseline along a finalized y scale.
+
+  Parameters:
+
+  - `y-scale` (map): the finalized y scale.
+  - `w`, `h` (doubles): the panel size in pixels.
+
+  Returns y = 0 clamped into the panel in the scale's direction; the scale's range start when it can't place 0."
   ^double [y-scale ^double w ^double h]
   (let [zero (scale/forward y-scale 0.0)]
     (if (m/nan? zero)
@@ -251,11 +345,17 @@
 ;; drawing
 
 (defn draw-runs!
-  "Draw the drawn runs `point-runs` (pixels, see [[curve-points]]) of one line in line `style` (plus `:fill`,
-  `:bridge`): the area first - `area` `{:baseline px :horizontal? h}` (to the baseline, see
-  [[cljplot2.graphics.polyline/fill-runs-to-baseline!]]), `:closed` (each run's own polygon) or `nil` (none) - then
-  the stroke, then with `gaps` `:bridge` the bridges between the runs (see [[bridges]]) in the bridge style. The area
-  gets the style's `:pattern` (see [[cljplot2.graphics.draw/pattern-fill]])."
+  "Draws the drawn runs of one line: the area, the stroke, the bridges.
+
+  Parameters:
+
+  - `canvas`: the canvas in graphics context.
+  - `point-runs` (sequence of vectors of `[x y]`): the drawn runs in pixels (see [[curve-points]]).
+  - `style` (map): the line style with `:fill` (default `:none`; its `:pattern` too, see [[cljplot2.graphics.draw/pattern-fill]]) and `:bridge`.
+  - `area`: `{:baseline px :horizontal? h}` - filled to the baseline (see [[cljplot2.graphics.polyline/fill-runs-to-baseline!]]), `:closed` - each run's own polygon, `nil` - none.
+  - `gaps`: `:bridge` strokes the [[bridges]] between the runs in the bridge style; else none.
+
+  Returns `nil`."
   [canvas point-runs style area gaps]
   (let [fill (:fill style :none)
         pattern-fill (draw/pattern-fill style fill)]

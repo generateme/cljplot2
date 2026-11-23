@@ -3,6 +3,7 @@
   path data, texts (emoji from the bundled font), SVG files and images, line trails (width per point)."
   (:require [clojure.test :refer [deftest testing is]]
             [clojure2d.core :as c2d]
+            [clojure2d.core.shape :as sh]
             [fastmath.core :as m]
             [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
@@ -70,13 +71,13 @@
       (is (= red (px img 30 25)))
       (is (= red (px img 10 25)) "the side midpoint")))
   (testing "a radius above the bar size is clamped to half the shorter side (6 px bar - 3)"
-    (let [sh (draw/rounded-rect {:x 0 :y 0 :w 6 :h 20} [100 100 100 100])]
+    (let [sh (sh/rounded-rect 0 0 6 20 [100 100 100 100])]
       (is (.contains sh 3.0 3.0))
       (is (.contains sh 0.5 10.0))
       (is (not (.contains sh 0.3 0.3)))
       (is (= [0.0 0.0 6.0 20.0] (let [b (.getBounds2D sh)] [(.getX b) (.getY b) (.getWidth b) (.getHeight b)])))))
   (testing "radius 0 corners stay square"
-    (let [sh (draw/rounded-rect {:x 0 :y 0 :w 10 :h 10} [0 0 0 0])]
+    (let [sh (sh/rounded-rect 0 0 10 10 [0 0 0 0])]
       (is (.contains sh 0.1 0.1))))
   (testing "end rounding: the value-end corners only (upright bar, value at the top)"
     (let [img (drawn 60 50 #(draw/bar! % (Vec2. 10 40) (Vec2. 50 10) :red :none 0 nil {:radius 8.0 :end? true :axis :v}))]

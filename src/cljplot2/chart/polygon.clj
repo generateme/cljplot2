@@ -15,9 +15,10 @@
 
   Functions: [[schemas]] - the chart's schemas; [[compute]] - the panels' polygons; [[draw]] - one panel's polygons;
   [[legend]] - the key glyph."
-  (:require [clojure2d.color :as c]
-            [fastmath.core :as m]
+  (:require [fastmath.core :as m]
             [cljplot2.data.group :as group]
+            [cljplot2.graphics.draw :as draw]
+            [cljplot2.graphics.measure :as measure]
             [cljplot2.data.rows :as data]
             [cljplot2.graphics.curve :as curve]
             [cljplot2.graphics.polyline :as polyline]
@@ -82,9 +83,7 @@
         y-of (data/row-accessor :y (:y mapping))
         valid? (fn [r] (and (data/valid-value? (x-of r)) (data/valid-value? (y-of r))))
         rows (mapcat (fn [gs] (mapcat :rows gs)) (vals split-panels))
-        _ (doseq [[k f] [[:x x-of] [:y y-of]]]
-            (when (and (seq rows) (not-any? #(data/valid-value? (f %)) rows))
-              (schema/fail! "No valid values for a mapped dimension - check the mapping." {:key :mapping :value k :rows (count rows)})))
+        _ (data/check-mapped! rows [[:x x-of] [:y y-of]])
         polygon (fn [g] (let [rs (filterv valid? (:rows g))]
                           (cond-> {:x (mapv x-of rs) :y (mapv y-of rs) :aesthetics (:aesthetics g)}
                             continuous (assoc :color-value (some-> (first (:rows g)) color-of)))))
@@ -117,7 +116,7 @@
 
   Returns the colour with its alpha multiplied by `:alpha`."
   [{:keys [color ^double alpha] :or {alpha 1.0}}]
-  (c/set-alpha color (m/* alpha (c/alpha color))))
+  (draw/faded color alpha))
 
 (defn- outline
   "Gives the line style of a polygon's outline.
@@ -170,7 +169,7 @@
             :when st
             :let [points (into [] (keep (fn [[vx vy]]
                                           (let [^Vec2 q (projection vx vy)]
-                                            (when (and (m/valid-double? (.x q)) (m/valid-double? (.y q)))
+                                            (when (measure/finite-point? q)
                                               (curve/drawn-point [(.x q) (.y q)])))))
                                (map vector x y))]
             :when (m/>= (count points) min-points)]

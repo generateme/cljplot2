@@ -19,13 +19,11 @@
   chart's cells inside [[call-with-cell-rendering]] (abutting cells without seams).
 
   Functions: options - [[cell-schema]], [[style-entries]], [[style-keys]]; lattice cells - [[lattice-offsets]], [[lattice-extent]], [[lattice-reach]]; binned cells - [[shape-factor]], [[size-methods]], [[bin-points]]; drawing - [[shrunk]], [[call-with-cell-rendering]], [[draw-cell!]]."
-  (:require [clojure2d.color :as c]
-            [clojure2d.core :as c2d]
+  (:require [clojure2d.core :as c2d]
             [fastmath.core :as m]
             [fastmath.vector :as v]
             [fastmath.grid :as grid]
             [fastmath.stats :as stats]
-            [cljplot2.graphics.canvas :as canvas]
             [cljplot2.graphics.draw :as draw]
             [cljplot2.schema :as schema]
             [cljplot2.theme :as theme])
@@ -310,7 +308,10 @@
   See also [[draw-cell!]]."
   [canvas {:keys [cell-scale]} f]
   (if (m/>= (double (or cell-scale 1.0)) 1.0)
-    (canvas/call-without-antialiasing canvas f)
+    ;; antialiasing off: cells side by side share their edges exactly (no seams of the background between them)
+    (c2d/with-isolated-canvas [c canvas]
+      (c2d/set-rendering-hint c :antialiasing :off)
+      (f c))
     (f canvas)))
 
 (defn draw-cell!
@@ -330,7 +331,7 @@
   [canvas to-pixel corners fill {:keys [cell-scale stroke-color stroke-width alpha]}]
   (let [points (mapv (fn [p] (to-pixel p)) (shrunk corners (or cell-scale 1.0)))]
     (when-not (some (fn [^Vec2 p] (or (m/nan? (.x p)) (m/nan? (.y p)))) points)
-      (let [cell-fill (if alpha (c/set-alpha fill (m/* (c/alpha fill) (double alpha))) fill)
+      (let [cell-fill (if alpha (draw/faded fill alpha) fill)
             stroke (draw/outline-color stroke-color cell-fill)]
         (c2d/set-color canvas cell-fill)
         (c2d/path canvas points true false)

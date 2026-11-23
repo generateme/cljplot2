@@ -28,6 +28,7 @@
             [fastmath.core :as m]
             [malli.core :as malli]
             [malli.error :as me]
+            [cljplot2.cache :as cache]
             [cljplot2.data.accessor :as accessor]
             [cljplot2.error :as error]
             [cljplot2.graphics.font :as font]
@@ -43,49 +44,73 @@
 
   Parameters:
 
-  - `type` (qualified keyword): the type's name, printed in schema forms.
+  - `type-name` (qualified keyword): the type's name, printed in schema forms.
   - `pred` (function): the predicate a valid value satisfies.
   - `message` (string or function): the error message, or a function of the invalid value returning it.
   - `type-doc` (string, optional): the type's text in option tables (type property `:cljplot2/type-doc`, see [[cljplot2.describe]]); without it the tables take a string `message` without its leading `should be`.
 
   Returns a malli schema (an `IntoSchema` value) usable in any schema form."
-  ([type pred message] (named-type type pred message nil))
-  ([type pred message type-doc]
-   (malli/-simple-schema {:type type :pred pred
+  ([type-name pred message] (named-type type-name pred message nil))
+  ([type-name pred message type-doc]
+   (malli/-simple-schema {:type type-name :pred pred
                           :type-properties (cond-> (if (fn? message)
                                                      {:error/fn (fn [{:keys [value]} _] (message value))}
                                                      {:error/message message})
                                              type-doc (assoc :cljplot2/type-doc type-doc))})))
 
 (defn- non-neg-number?
-  "Is `v` a number greater than or equal to zero?"
+  "Tests whether `v` is a number greater than or equal to zero.
+
+  Parameters:
+
+  - `v`: any value.
+
+  Returns true for such a number, else false."
   [v]
   (and (number? v) (m/not-neg? (double v))))
 
 (defn- pos-number?
-  "Is `v` a number greater than zero?"
+  "Tests whether `v` is a number greater than zero.
+
+  Parameters:
+
+  - `v`: any value.
+
+  Returns true for such a number, else false."
   [v]
   (and (number? v) (m/pos? (double v))))
 
 (defn finite?
-  "Is `v` a finite number (not `NaN`, not infinite)?
+  "Tests whether `v` is a finite number (not `NaN`, not infinite).
 
-  Returns `false` for non-numbers. See also [[finite]]."
+  Parameters:
+
+  - `v`: any value.
+
+  Returns true for a finite number, false for other numbers and non-numbers. See also [[finite]]."
   [v]
   (and (number? v) (m/valid-double? v)))
 
 (defn color?
-  "Is `v` `:none` or a colour clojure2d resolves (any clojure2d colour representation)?
+  "Tests whether `v` is `:none` or a colour clojure2d resolves (any clojure2d colour representation).
 
-  Returns `false` for `nil` and booleans, and for values clojure2d can't convert. See also [[solid-color?]], [[color]]."
+  Parameters:
+
+  - `v`: any value.
+
+  Returns true for `:none` or a resolvable colour; false for `nil`, booleans and values clojure2d can't convert. See also [[solid-color?]], [[color]]."
   [v]
   (or (= :none v)
       (and (some? v) (not (boolean? v)) (try (some? (c/to-color v)) (catch Exception _ false)))))
 
 (defn solid-color?
-  "Is `v` a colour clojure2d resolves, `:none` excluded?
+  "Tests whether `v` is a colour clojure2d resolves, `:none` excluded.
 
-  See also [[color?]], [[solid-color]]."
+  Parameters:
+
+  - `v`: any value.
+
+  Returns true for a resolvable colour other than `:none`, else false. See also [[color?]], [[solid-color]]."
   [v]
   (and (not= :none v) (color? v)))
 
@@ -149,9 +174,13 @@
    :loose-dot [1.0 4.0]})
 
 (defn dash?
-  "Is `v` a dash: `:none`, a name of [[dash-styles]] or a non-empty sequence of positive lengths (pixels)?
+  "Tests whether `v` is a dash: `:none`, a name of [[dash-styles]] or a non-empty sequence of positive lengths (pixels).
 
-  See also [[dash]]."
+  Parameters:
+
+  - `v`: any value.
+
+  Returns truthy for a dash, falsey (`false` or `nil`) otherwise; an empty sequence isn't a dash. See also [[dash]]."
   [v]
   (or (= :none v) (contains? dash-styles v) (and (sequential? v) (seq v) (every? pos-number? v))))
 
@@ -196,7 +225,13 @@
   #{0 45 90 135})
 
 (defn- pattern-spec?
-  "Is `v` a pattern spec map: `{:kind :lines :angle a :spacing s :width w}` or `{:kind :cross ...}` (`a` one of [[pattern-angles]]), or `{:kind :dots :spacing s :size d}` - exactly these keys, positive pixels?"
+  "Tests whether `v` is a pattern spec map: `{:kind :lines :angle a :spacing s :width w}` or `{:kind :cross ...}` (`a` one of [[pattern-angles]]), or `{:kind :dots :spacing s :size d}` - exactly these keys, positive pixels.
+
+  Parameters:
+
+  - `v`: any value.
+
+  Returns truthy for such a map, falsey otherwise (an unknown `:kind` or an extra key included)."
   [{:keys [kind angle spacing width size] :as v}]
   (and (map? v)
        (case kind
@@ -207,9 +242,15 @@
          false)))
 
 (defn pattern?
-  "Is `v` a fill pattern: `:solid`, a name of [[pattern-styles]] or a spec map?
+  "Tests whether `v` is a fill pattern: `:solid`, a name of [[pattern-styles]] or a spec map.
 
-  A spec is `{:kind :lines :angle a :spacing s :width w}` or `{:kind :cross ...}` (`a` one of [[pattern-angles]]), or `{:kind :dots :spacing s :size d}` - positive pixels. See also [[pattern]]."
+  A spec is `{:kind :lines :angle a :spacing s :width w}` or `{:kind :cross ...}` (`a` one of [[pattern-angles]]), or `{:kind :dots :spacing s :size d}` - positive pixels.
+
+  Parameters:
+
+  - `v`: any value.
+
+  Returns truthy for a pattern, falsey otherwise. See also [[pattern]]."
   [v]
   (or (contains? pattern-styles v) (pattern-spec? v)))
 
@@ -391,7 +432,13 @@
   [:fn {:error/message message :cljplot2/forbidden true} (constantly false)])
 
 (defn forbidden?
-  "Is `schema` (a malli schema or form) a [[forbidden]] one, also under `:maybe` (as [[nilable]] wraps it)?"
+  "Tests whether a schema is a [[forbidden]] one, also under `:maybe` (as [[nilable]] wraps it).
+
+  Parameters:
+
+  - `schema`: a malli schema or form.
+
+  Returns true for a forbidden schema, else false."
   [schema]
   (let [s (malli/schema schema)]
     (if (= :maybe (malli/type s))
@@ -415,20 +462,23 @@
 ;; explaining
 
 (def ^{:private true :const true :tag 'long} max-cached-explainers
-  "The most explainers [[explainers]] holds before it is emptied."
+  "The most explainers [[explainers]] keeps."
   256)
 
-(defonce ^{:private true :doc "Malli explainers by schema value; emptied when it holds [[max-cached-explainers]], so schemas made per call can't fill memory."}
+(defonce ^{:private true :doc "Malli explainers by schema value, the least recently used evicted beyond [[max-cached-explainers]] (schemas made per call can't fill memory)."}
   explainers
-  (atom {}))
+  (cache/lru-cache max-cached-explainers))
 
 (defn- explainer
-  "Returns the malli explainer of `schema`, cached by schema value (see [[explainers]])."
+  "Gives the malli explainer of a schema, cached by schema value (see [[explainers]]).
+
+  Parameters:
+
+  - `schema`: a malli schema or form.
+
+  Returns the explainer, a function of a value giving its errors or `nil`."
   [schema]
-  (or (get @explainers schema)
-      (let [e (malli/explainer schema)]
-        (swap! explainers (fn [cache] (assoc (if (m/>= (count cache) max-cached-explainers) {} cache) schema e)))
-        e)))
+  (cache/lookup-or-compute explainers schema malli/explainer))
 
 (defn- abbreviated-key
   "Finds the known key an unknown key abbreviates (such as `:cols` for `:columns`).
@@ -446,13 +496,19 @@
         (when (m/one? (count matches)) (first matches))))))
 
 (defn- swapped-neighbours?
-  "Is string `a` string `b` with two adjacent characters swapped (a typo such as `szie` for `size`)?"
+  "Tests whether string `a` is string `b` with two adjacent characters swapped (a typo such as `szie` for `size`).
+
+  Parameters:
+
+  - `a`, `b` (strings): the unknown and the known key names.
+
+  Returns true for exactly one swapped pair of neighbours, else false (equal strings and other lengths included)."
   [^String a ^String b]
   (and (m/== (count a) (count b))
        (let [diffs (filterv (fn [^long id] (not= (get a id) (get b id)))
                             (range (count a)))]
          (and (m/== 2 (count diffs))
-              (m/== (m/inc (long (diffs 0))) (long (diffs 1)))
+              (m/== (m/long-inc (long (diffs 0))) (long (diffs 1)))
               (= (get a (diffs 0)) (get b (diffs 1)))
               (= (get a (diffs 1)) (get b (diffs 0)))))))
 

@@ -252,9 +252,7 @@
         x-of (data/row-accessor :x (:x mapping))
         y-of (data/row-accessor :y (:y mapping))
         rows (mapcat (fn [gs] (mapcat :rows gs)) (vals panels))
-        _ (doseq [[k f] [[:x x-of] [:y y-of]]]
-            (when (and (seq rows) (not-any? #(data/valid-value? (f %)) rows))
-              (schema/fail! "No valid values for a mapped dimension - check the mapping." {:key :mapping :value k :rows (count rows)})))
+        _ (data/check-mapped! rows [[:x x-of] [:y y-of]])
         transforms [(scale/stat-transform (:x plot-scales)) (scale/stat-transform (:y plot-scales))]
         points (update-vals panels (fn [gs] (mapv #(group-points % x-of y-of transforms) gs)))
         fittable? (fn [pts] (and (m/>= (count pts) (long required-rows)) (m/>= (count (distinct (map first pts))) (long required-x))))

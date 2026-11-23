@@ -19,11 +19,13 @@
   `:binwidth`, `:origin` (`:histogram` only - `ex-info {:key :origin}` otherwise), `:at`, `:stack-dir`, `:padding {:x
   [lo hi]}` (default `[0.05 0.05]`), plus the strip options and `:data` / `:mapping`.
 
-  Functions: [[compute]], [[draw]], [[legend]] - the chart contract; [[schemas]] - its style, options and mapping."
+  Functions: [[legend]] - the chart contract's key glyph (the chart computes and draws through [[cljplot2.data.strip/compute]] and [[cljplot2.data.strip/draw]]); [[schemas]] - its style, options and mapping."
   (:require [clojure2d.core :as c2d]
             [fastmath.core :as m]
             [fastmath.vector :as v]
             [cljplot2.data.dots :as dots]
+            [cljplot2.graphics.draw :as draw]
+            [cljplot2.graphics.measure :as measure]
             [cljplot2.data.group :as group]
             [cljplot2.data.rows :as data]
             [cljplot2.data.strip :as strip]
@@ -262,38 +264,14 @@
                 {:keys [x rank aesthetics]} dots
                 :let [st (group/style style aesthetics scales (:theme env))
                       ^Vec2 p (point x level (cross-of slot stacking [rank n] (m// d s)))]
-                :when (and st (m/valid-double? (.x p)) (m/valid-double? (.y p)))]
+                :when (and st (measure/finite-point? p))]
           (shape/draw! canvas (:shape st) p (update st :size #(if (some? %) % d))))))
     (strip/draw-n-labels! canvas pl items :label-x options scales env)))
 
-(defn compute
-  "Computes the dot plot's stats with its levels on the categorical axis.
+(defmethod strip/in-frame-compute :dotplot [chart chart-split env] (compute-in-strip-frame chart chart-split env))
 
-  Parameters:
-
-  - `chart` (map): the chart value.
-  - `chart-split` (map): the chart's rows split per panel.
-  - `env` (map): the compute environment.
-
-  Returns the stats of [[compute-in-strip-frame]], turned to the mapping axis of the levels (see [[cljplot2.data.strip/compute-oriented]])."
-  [chart chart-split env]
-  (strip/compute-oriented compute-in-strip-frame chart chart-split env))
-
-(defn draw
-  "Draws one panel of the dot plot.
-
-  Parameters:
-
-  - `chart` (map): the chart value.
-  - `computed` (map): the panel's stats from [[compute]].
-  - `canvas`: the clojure2d canvas.
-  - `box` (map): the panel box.
-  - `scales` (map): finalized scales.
-  - `env` (map): the draw environment.
-
-  Draws [[draw-in-strip-frame]] in the strip frame (see [[cljplot2.data.strip/draw-oriented]])."
-  [chart computed canvas box scales env]
-  (strip/draw-oriented draw-in-strip-frame chart computed canvas box scales env))
+(defmethod strip/in-frame-draw :dotplot [chart computed canvas box scales env]
+  (draw-in-strip-frame chart computed canvas box scales env))
 
 (defn legend
   "Draws the dot plot's key glyph: its point shape fitted and centred in a legend key.
@@ -311,6 +289,5 @@
   See also [[cljplot2.graphics.shape/draw-key!]]."
   [chart attributes canvas {:keys [^double w ^double h] :as box} env]
   (let [st (update (merge (theme/resolved-style (:theme env) chart) attributes)
-                   :size #(if (some? %) % (m/* 0.7 (m/min w h))))]
-    (c2d/set-stroke-custom canvas {:size (double (:stroke-width st))})
-    (shape/draw-key! canvas (:shape st) box st)))
+                   :size #(if (some? %) % (m/* draw/key-glyph-share (m/min w h))))]
+    (shape/styled-key! canvas box st true)))

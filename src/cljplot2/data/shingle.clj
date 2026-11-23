@@ -223,7 +223,7 @@
         series (cond (string? label) label (true? label) (name value-accessor))
         ivs (mapv #(assoc % :label series)
                   (if (some? intervals)
-                    (mapv (fn [[lo hi]] (->Interval lo hi nil nil nil)) intervals)
+                    (map (fn [[lo hi]] (->Interval lo hi nil nil nil)) intervals)
                     (equal-count (map acc rs) (select-keys opts [:count :overlap]))))
         out (into [] (mapcat (fn [row]
                                (let [v (acc row)]

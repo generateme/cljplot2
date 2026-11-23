@@ -135,8 +135,7 @@
                                 :centre (fastmath.vector/vec2 (+ 10.0 (* 0.5 (double length))) 0.0)}
                                {:domains {:x [0 1e9 ]} :levels {} :titles {}}
                                [] {:theme cljplot2.theme/default-theme :canvas c}))))
-        overlap? (fn [[ax0 ay0 ax1 ay1] [bx0 by0 bx1 by1]]
-                   (and (< ax0 bx1) (< bx0 ax1) (< ay0 by1) (< by0 ay1)))
+        overlap? measure/boxes-overlap?
         pairwise-free? (fn [bs] (every? true? (for [[i a] (map-indexed vector bs) [j b] (map-indexed vector bs) :when (< i j)]
                                                 (not (overlap? a b)))))]
     (testing "a short edge with wide labels: the labels drawn don't overlap each other"

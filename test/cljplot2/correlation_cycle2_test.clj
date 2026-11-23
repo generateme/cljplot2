@@ -55,8 +55,8 @@
       (is (m/delta-eq (kde (m/log10 2.0) 0.1) (f [2.0 0.1])))
       (is (pos? (double (ffirst domain))))
       (is (= :x (:key (error #(field/density [-1 0] [1 2] {} log-x-axes)))) "nothing a log axis can place")))
-  (testing "2.5 one point with a selector: {:key :bandwidth}; with a number it estimates"
-    (is (= :bandwidth (:key (error #(field/density [1] [1] {} identity-axes)))))
+  (testing "2.5 one point with a selector: no field (B3); with a number it estimates"
+    (is (nil? (field/density [1] [1] {} identity-axes)))
     (is (some? (field/density [1] [1] {:bandwidth 0.5} identity-axes))))
   (testing "F5 fastmath errors keyed by the option to blame"
     (is (= :kernel (:key (error #(field/density [1 2 3] [1 2 4] {:kernel :bogus} identity-axes)))))))
@@ -196,7 +196,7 @@
     (is (some? (error #(stats {:data cloud :mapping {:x :x :y :y :color :x} :charts [(chart/field)]})))))
   (testing "2.5 empty data: no field; invalid positions dropped and counted"
     (let [s (stats {:data (conj cloud {:x nil :y 1} {:x 1 :y ##NaN}) :mapping {:x :x :y :y} :charts [(chart/field {:n 5})]})]
-      (is (= {:x 1 :y 1} (:dropped s))))
+      (is (= {:x 1 :y 1 :field 0} (:dropped s))))
     (is (empty? (:data (stats {:data [] :mapping {:x :x :y :y} :charts [(chart/field)]}))))))
 
 (deftest field-options-test
