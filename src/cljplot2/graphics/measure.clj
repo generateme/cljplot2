@@ -31,19 +31,19 @@
   "Do two labels with centres `ci`, `cj` and extents `ei`, `ej` along one axis overlap by more than 1 px (natural sizes
   are rounded up)?"
   [^double ci ^double ei ^double cj ^double ej]
-  (< (Math/abs (- cj ci)) (- (* 0.5 (+ ei ej)) 1.0)))
+  (m/< (m/abs (m/- cj ci)) (m/- (m/* 0.5 (m/+ ei ej)) 1.0)))
 
 (defn kept-label-indices
   "Indices of labels (`centres`, `extents` along one axis, in tick order) to draw without collisions: the first, then
   each label not overlapping the last kept one ([[spans-overlap?]]); empty for no labels."
   [centres extents]
-  (loop [i 0 last-kept nil kept []]
-    (if (>= i (count centres))
+  (loop [i (long 0) last-kept nil kept []]
+    (if (m/>= i (count centres))
       kept
-      (if (and last-kept (spans-overlap? (double (centres last-kept)) (double (extents last-kept))
-                                         (double (centres i)) (double (extents i))))
-        (recur (inc i) last-kept kept)
-        (recur (inc i) i (conj kept i))))))
+      (if (and last-kept (spans-overlap? (centres last-kept) (extents last-kept)
+                                         (centres i) (extents i)))
+        (recur (m/long-inc i) last-kept kept)
+        (recur (m/long-inc i) i (conj kept i))))))
 
 (defn boxes-overlap?
   "Tests whether two pixel boxes overlap; touching edges don't.
@@ -63,9 +63,10 @@
   "Do pixel boxes `a` and `b` (`{:x :y :w :h}`) overlap by more than 1 px both across and along (natural sizes are
   rounded up)?"
   [a b]
-  (let [over (fn [a0 aw b0 bw] (- (min (+ (double a0) (double aw)) (+ (double b0) (double bw))) (max (double a0) (double b0))))]
-    (and (> (double (over (:x a) (:w a) (:x b) (:w b))) 1.0)
-         (> (double (over (:y a) (:h a) (:y b) (:h b))) 1.0))))
+  (let [over (fn ^double [^double a0 ^double aw ^double b0 ^double bw]
+               (m/- (m/min (+ a0 aw) (+ b0 bw)) (m/max a0 b0)))]
+    (and (m/> (double (over (:x a) (:w a) (:x b) (:w b))) 1.0)
+         (m/> (double (over (:y a) (:h a) (:y b) (:h b))) 1.0))))
 
 (defn kept-box-indices
   "Indices of label `boxes` (`{:x :y :w :h}`, in tick order) to draw without collisions: each box overlapping no box

@@ -8,6 +8,7 @@
   (:require [clojure2d.color :as c]
             [clojure2d.core :as c2d]
             [fastmath.core :as m]
+            [fastmath.vector :as v]
             [cljplot2.graphics.draw :as draw]
             [cljplot2.scale.position :as scale]
             [cljplot2.schema :as schema]
@@ -62,7 +63,7 @@
   draws nothing."
   [canvas point-runs style]
   (when (set-style! canvas style)
-    (doseq [run point-runs :when (> (count run) 1)]
+    (doseq [run point-runs :when (m/> (count run) 1)]
       (c2d/path canvas run false true))))
 
 (defn draw!
@@ -73,11 +74,11 @@
 (defn bridge-style
   "Line style of a bridge over a gap of a line with `style`: its color with the alpha multiplied by `bridge` `:alpha`
   (a fraction), `bridge` `:width` / `:dash` over the line's when given."
-  [style {:keys [alpha] :as bridge}]
+  [style {:keys [^double alpha] :as bridge}]
   (let [color (:color style)]
     (cond-> (merge style (select-keys bridge [:width :dash]))
       (not (theme/none? color)) (assoc :color (let [c (c/to-color color)]
-                                                (c/set-alpha c (* (double alpha) (double (c/alpha c)))))))))
+                                                (c/set-alpha c (m/* alpha (c/alpha c))))))))
 
 (def bridge-schema
   "Theme `:bridge` of a line style: `:alpha` (fraction of the line alpha), optional `:width`, `:dash`."
@@ -91,8 +92,9 @@
 (defn path-length
   "Length of the polyline through `points` (pixels)."
   ^double [points]
-  (reduce + 0.0 (map (fn [[x0 y0] [x1 y1]] (m/hypot (- (double x1) (double x0)) (- (double y1) (double y0))))
-                     points (rest points))))
+  (v/sum (map (fn [[^double x0 ^double y0] [^double x1 ^double y1]]
+                (m/hypot (- x1 x0) (- y1 y0)))
+              points (rest points))))
 
 (defn draw-segments!
   "Stroke every segment of `xs` / `ys` (pixels) between consecutive finite points - segment `i` from point `i` to

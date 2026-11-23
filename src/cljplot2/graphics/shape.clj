@@ -52,10 +52,11 @@
   for an empty shape."
   ^Shape [^Shape shape]
   (let [b (.getBounds2D shape)
-        side (m/max (.getWidth b) (.getHeight b))]
-    (when (pos? side)
-      (let [t (AffineTransform/getScaleInstance (/ 1.0 side) (/ 1.0 side))]
-        (.translate t (- (.getCenterX b)) (- (.getCenterY b)))
+        side (m/max (.getWidth b) (.getHeight b))
+        rside (m// side)]
+    (when (m/pos? side)
+      (let [t (AffineTransform/getScaleInstance rside rside)]
+        (.translate t (m/- (.getCenterX b)) (m/- (.getCenterY b)))
         (.createTransformedShape t shape)))))
 
 (defn- parse-path
@@ -64,7 +65,7 @@
   (try (AWTPathProducer/createShape (StringReader. d) Path2D/WIND_NON_ZERO)
        (catch Exception _ nil)))
 
-(def ^:private text-font-size
+(def ^{:private true :const true :tag 'double} text-font-size
   "Point size text outlines are built at (scaled to the shape size when drawn)."
   100.0)
 
@@ -73,11 +74,12 @@
   [^String text ^Font main]
   (let [emoji (font/resolve-font "Noto Emoji" :plain text-font-size)
         n (.length text)]
-    (loop [i 0 runs []]
-      (if (>= i n)
+    (loop [i (long 0)
+           runs []]
+      (if (m/>= i n)
         runs
         (let [cp (.codePointAt text (int i))
-              j (+ i (Character/charCount cp))
+              j (m/+ i (Character/charCount cp))
               f (if (.canDisplay main (int cp)) main emoji)
               [s _ g :as last-run] (peek runs)]
           (recur j (if (and last-run (identical? g f)) (conj (pop runs) [s j f]) (conj runs [i j f]))))))))
@@ -138,7 +140,7 @@
     (let [kinds (filter shape-kinds (keys v))
           extra (remove (conj shape-kinds :font) (keys v))]
       (cond
-        (not= 1 (count kinds)) "a shape map should have exactly one of :path, :text, :svg, :image"
+        (m/not== 1 (count kinds)) "a shape map should have exactly one of :path, :text, :svg, :image"
         (seq extra) (str "a shape map doesn't take " (pr-str (vec extra)))
         (and (contains? v :font) (not (contains? v :text))) "only a :text shape takes :font"
         (contains? v :path) (let [d (:path v)]
@@ -159,7 +161,7 @@
   [v]
   (nil? (shape-problem v)))
 
-(def ^:private svg-cache-limit
+(def ^{:private true :const true :tag 'long} svg-cache-limit
   "Transcoded SVG images kept (the cache is emptied when full)."
   1024)
 
@@ -178,35 +180,37 @@
   (let [k [source n]]
     (or (@svg-images k)
         (let [img (transcode source n)]
-          (swap! svg-images #(assoc (if (>= (count %) (long svg-cache-limit)) {} %) k img))
+          (swap! svg-images #(assoc (if (m/>= (count %) svg-cache-limit) {} %) k img))
           img))))
 
 (defn- triangle
   "Corners of a triangle inscribed in the square of half side `r` around (x, y), pointing `dir`."
   [^double x ^double y ^double r dir]
   (case dir
-    :up [x (- y r) (+ x r) (+ y r) (- x r) (+ y r)]
-    :down [x (+ y r) (+ x r) (- y r) (- x r) (- y r)]
-    :left [(- x r) y (+ x r) (- y r) (+ x r) (+ y r)]
-    :right [(+ x r) y (- x r) (- y r) (- x r) (+ y r)]))
+    :up [x (m/- y r) (m/+ x r) (m/+ y r) (m/- x r) (m/+ y r)]
+    :down [x (m/+ y r) (m/+ x r) (m/- y r) (m/- x r) (m/- y r)]
+    :left [(m/- x r) y (m/+ x r) (m/- y r) (m/+ x r) (m/+ y r)]
+    :right [(m/+ x r) y (m/- x r) (m/- y r) (m/- x r) (m/+ y r)]))
 
 (def ^:private triangle-dirs {\A :up \V :down \{ :left \} :right \^ :up \v :down \< :left \> :right})
 
 (defn- outline!
   "Draw `shape` outline (or stroke) around center `c` - `Vec3` (x, y, half size)."
   [canvas shape ^Vec3 c]
-  (let [x (.x c) y (.y c) r (.z c) d (* 2.0 r)]
+  (let [x (.x c) y (.y c) r (.z c) d (m/* 2.0 r)]
     (case shape
       (\O \o) (c2d/ellipse canvas x y d d true)
       (\S \s) (c2d/crect canvas x y d d true)
       (\A \V \{ \} \^ \v \< \>) (let [[x1 y1 x2 y2 x3 y3] (triangle x y r (triangle-dirs shape))]
                                   (c2d/triangle canvas x1 y1 x2 y2 x3 y3 true))
-      \- (c2d/line canvas (- x r) y (+ x r) y)
-      \| (c2d/line canvas x (- y r) x (+ y r))
-      \\ (c2d/line canvas (- x r) (- y r) (+ x r) (+ y r))
-      \/ (c2d/line canvas (- x r) (+ y r) (+ x r) (- y r))
-      \+ (do (c2d/line canvas (- x r) y (+ x r) y) (c2d/line canvas x (- y r) x (+ y r)))
-      \x (do (c2d/line canvas (- x r) (- y r) (+ x r) (+ y r)) (c2d/line canvas (- x r) (+ y r) (+ x r) (- y r))))))
+      \- (c2d/line canvas (m/- x r) y (m/+ x r) y)
+      \| (c2d/line canvas x (m/- y r) x (m/+ y r))
+      \\ (c2d/line canvas (m/- x r) (m/- y r) (m/+ x r) (m/+ y r))
+      \/ (c2d/line canvas (m/- x r) (m/+ y r) (m/+ x r) (m/- y r))
+      \+ (do (c2d/line canvas (m/- x r) y (m/+ x r) y)
+             (c2d/line canvas x (m/- y r) x (m/+ y r)))
+      \x (do (c2d/line canvas (m/- x r) (m/- y r) (m/+ x r) (m/+ y r))
+             (c2d/line canvas (m/- x r) (m/+ y r) (m/+ x r) (m/- y r))))))
 
 (defn- fill!
   [canvas shape ^Vec3 c]
@@ -221,30 +225,30 @@
   "Draw `img` scaled to `side` pixels along its longer side, centred at `center`."
   [canvas img ^Vec2 center ^double side]
   (let [^BufferedImage img (pr/get-image img)
-        w (.getWidth img) h (.getHeight img)
-        k (/ side (double (m/max w h)))
-        t (AffineTransform/getTranslateInstance (- (.x center) (* 0.5 k w)) (- (.y center) (* 0.5 k h)))]
+        w (.getWidth img)
+        h (.getHeight img)
+        k (m// side (m/max w h))
+        t (AffineTransform/getTranslateInstance (m/- (.x center) (m/* 0.5 k w)) (- (.y center) (* 0.5 k h)))]
     (.scale t k k)
     (.drawImage ^Graphics2D (:graphics canvas) img t nil)))
 
 (defn- draw-map!
   "Draw the shape map `shape` (see [[shape-problem]]) centred at `center` in `style` (see [[draw!]])."
-  [canvas shape ^Vec2 center {:keys [size color stroke-color stroke-width]}]
-  (let [size (double size)]
-    (cond
-      (:svg shape) (let [n (m/max 1 (m/round size))]
-                     (draw-image! canvas (svg-image (:svg shape) n) center (double n)))
-      (:image shape) (draw-image! canvas (:image shape) center size)
-      :else (when-let [unit (unit-outline shape)]
-              (let [t (AffineTransform/getTranslateInstance (.x center) (.y center))
-                    _ (.scale t size size)
-                    outline (.createTransformedShape t unit)]
-                (when-not (= :none color)
-                  (c2d/set-color canvas color)
-                  (c2d/shape canvas outline false))
-                (when (and (:path shape) (not= :none stroke-color) (pos? (double stroke-width)))
-                  (c2d/set-color canvas stroke-color)
-                  (c2d/shape canvas outline true)))))))
+  [canvas shape ^Vec2 center {:keys [^double size color stroke-color ^double stroke-width]}]
+  (cond
+    (:svg shape) (let [n (m/max 1 (m/round size))]
+                   (draw-image! canvas (svg-image (:svg shape) n) center n))
+    (:image shape) (draw-image! canvas (:image shape) center size)
+    :else (when-let [unit (unit-outline shape)]
+            (let [t (AffineTransform/getTranslateInstance (.x center) (.y center))
+                  _ (.scale t size size)
+                  outline (.createTransformedShape t unit)]
+              (when-not (= :none color)
+                (c2d/set-color canvas color)
+                (c2d/shape canvas outline false))
+              (when (and (:path shape) (not= :none stroke-color) (m/pos? stroke-width))
+                (c2d/set-color canvas stroke-color)
+                (c2d/shape canvas outline true))))))
 
 (declare draw!)
 
@@ -252,9 +256,9 @@
   "Draw `shape` as a legend key glyph centred in `box` (`{:x :y :w :h}`) in `style` (see [[draw!]]), its `:size`
   fitted into the box: a size larger than the box (a constant chart `:size` above the key size) shrinks to the box's
   shorter side, so glyphs don't cross into the next row."
-  [canvas shape {:keys [x y w h]} style]
-  (let [side (m/min (double w) (double h))]
-    (draw! canvas shape (Vec2. (+ (double x) (* 0.5 (double w))) (+ (double y) (* 0.5 (double h))))
+  [canvas shape {:keys [^double x ^double y ^double w ^double h]} style]
+  (let [side (m/min w h)]
+    (draw! canvas shape (Vec2. (m/+ x (m/* 0.5 w)) (m/+ y (m/* 0.5 h)))
            (update style :size #(m/min (double %) side)))))
 
 (defn draw!
@@ -265,10 +269,10 @@
   stroke - the caller sets it once (width `:stroke-width`) for many points. A shape map (see [[shape-problem]]) is
   fitted into the size square: `:path` filled and outlined as a filled shape, `:text` filled, `:svg` / `:image` in
   their own colors."
-  [canvas shape ^Vec2 center {:keys [size color stroke-color stroke-width] :as style}]
+  [canvas shape ^Vec2 center {:keys [^double size color stroke-color stroke-width] :as style}]
   (if (map? shape)
     (draw-map! canvas shape center style)
-    (let [c (v/vec3 (.x center) (.y center) (* 0.5 (double size)))
+    (let [c (v/vec3 (.x center) (.y center) (m/* 0.5 size))
           ink? (not= :none color)]
       (if (filled-shapes shape)
         (do (when ink?

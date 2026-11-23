@@ -34,30 +34,35 @@
   "Point at `d` pixels from the start of the run `[p0 p1 ..]` along its length; `[point index]` - `index` of the
   segment holding it; `nil` past the end."
   [run ^double d]
-  (loop [i 0 acc 0.0]
-    (when (< i (dec (count run)))
-      (let [[x0 y0] (run i) [x1 y1] (run (inc i))
-            l (m/hypot (- (double x1) (double x0)) (- (double y1) (double y0)))]
-        (if (and (pos? l) (<= d (+ acc l)))
-          (let [t (/ (- d acc) l)]
-            [[(+ (double x0) (* t (- (double x1) (double x0)))) (+ (double y0) (* t (- (double y1) (double y0))))] i])
-          (recur (inc i) (+ acc l)))))))
+  (loop [i (long 0)
+         acc 0.0]
+    (when (m/< i (m/long-dec (count run)))
+      (let [[^double x0 ^double y0] (run i)
+            [^double x1 ^double y1] (run (m/long-inc i))
+            dx (- x1 x0)
+            dy (- y1 y0)
+            l (m/hypot dx dy)]
+        (if (and (m/pos? l) (m/<= d (m/+ acc l)))
+          (let [t (m// (m/- d acc) l)]
+            [[(m/+ x0 (m/* t dx))
+              (m/+ y0 (m/* t dy))] i])
+          (recur (m/long-inc i) (m/+ acc l)))))))
 
 (defn- trim-start
   "The run without its first `d` pixels (the run itself for `d` 0; `nil` when not longer than `d`)."
   [run ^double d]
-  (if (<= d 0.0)
+  (if (m/not-pos? d)
     run
-    (when-let [[p i] (point-at run d)]
-      (if (< (+ d 1.0e-9) (polyline/path-length run))
-        (into [p] (subvec run (inc (long i))))
+    (when-let [[p ^long i] (point-at run d)]
+      (if (m/< (m/+ d 1.0e-9) (polyline/path-length run))
+        (into [p] (subvec run (m/long-inc i)))
         nil))))
 
 (defn trimmed
   "`run` shortened by `start-gap` / `end-gap` pixels along its length; `nil` when nothing is left."
-  [run start-gap end-gap]
-  (some-> (trim-start (vec run) (double start-gap))
-          rseq vec (trim-start (double end-gap)) rseq vec))
+  [run ^double start-gap ^double end-gap]
+  (some-> (trim-start (vec run) start-gap)
+          rseq vec (trim-start end-gap) rseq vec))
 
 (defn- head-points
   "`[tip left right]` of a head of `size` and half-angle `angle` (degrees) at the end of `run` (pointing from the point
@@ -65,14 +70,20 @@
   [run ^double size ^double angle]
   (let [tip (peek run)
         back (or (first (point-at (vec (rseq run)) size)) (first run))
-        [tx ty] tip [bx by] back
-        dx (- (double tx) (double bx)) dy (- (double ty) (double by))
+        [^double tx ^double ty] tip
+        [^double bx ^double by] back
+        dx (- tx bx)
+        dy (- ty by)
         l (m/hypot dx dy)]
-    (when (pos? l)
-      (let [ux (/ dx l) uy (/ dy l)
-            half (* size (m/tan (m/radians angle)))
-            base-x (- (double tx) (* ux size)) base-y (- (double ty) (* uy size))]
-        [tip [(- base-x (* uy half)) (+ base-y (* ux half))] [(+ base-x (* uy half)) (- base-y (* ux half))]]))))
+    (when (m/pos? l)
+      (let [ux (m// dx l)
+            uy (m// dy l)
+            half (m/* size (m/tan (m/radians angle)))
+            base-x (m/- tx (m/* ux size))
+            base-y (m/- ty (m/* uy size))]
+        [tip
+         [(m/- base-x (m/* uy half)) (m/+ base-y (m/* ux half))]
+         [(m/+ base-x (m/* uy half)) (m/- base-y (m/* ux half))]]))))
 
 (defn- draw-head!
   "Draw the head `[tip left right]` in line `style` (filled for `:closed`)."
@@ -87,14 +98,13 @@
   shortened under closed heads, then the heads drawn."
   [canvas run style [arrow start-gap end-gap]]
   (when-let [run (trimmed run (or start-gap 0.0) (or end-gap 0.0))]
-    (let [{:keys [end start size angle shape]} (when arrow (merge defaults arrow))
-          size (double (or size 0.0))
-          angle (double (or angle 20.0))
+    (let [{:keys [end start ^double size ^double angle shape]
+           :or {size 0.0 angle 20.0}} (when arrow (merge defaults arrow))
           head-end (when end (head-points run size angle))
           head-start (when start (head-points (vec (rseq run)) size angle))
           closed? (= :closed shape)
           stroked (if closed?
-                    (trimmed run (if head-start (* 0.9 size) 0.0) (if head-end (* 0.9 size) 0.0))
+                    (trimmed run (if head-start (m/* 0.9 size) 0.0) (if head-end (m/* 0.9 size) 0.0))
                     run)]
       (when stroked (polyline/stroke-runs! canvas [stroked] style))
       (when (and (some? (:color style)) (not= :none (:color style)))
