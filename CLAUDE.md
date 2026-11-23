@@ -154,7 +154,20 @@ into the builder's. `cljplot2.core` is the public API (`build`, `render`, `rende
   not `Math/...` or `clojure.core` operators.
 - Primitive longs in loops are always forced: `(long ...)`.
 - A primitive put into a Clojure collection is boxed anyway - don't force it with `double` / `long` there.
-- No `boolean` coercion: `nil` and `false` are false, everything else true.
+- No `boolean` coercion: `nil` and `false` are false, everything else true; predicates return truthy / `nil`. A
+  returned data field with a documented boolean default stays `true` / `false` for a nilable option: `(true?
+  directed?)` - `:or` defaults don't apply to a key given as `nil`.
+- `m/inc` / `m/dec` for doubles, `m/long-inc` / `m/long-dec` / `m/long-add` / `m/long-sub` / `m/long-mod` for longs;
+  `v/mx` / `v/mn` / `v/sum` instead of `reduce max` / `min` / `+` (they throw on an empty seq - guard it).
+- `m/slice-range` for evenly spaced values (inclusive ends; one value - the midpoint; zero - empty).
+- `fastmath.java.Array` (`Array/aget`, `Array/aset`, `Array/add`) for primitive arrays; object arrays keep core
+  `aget` / `aset`.
+- Rotations from fastmath (`fastmath.matrix` rotation matrices, `fastmath.vector`, `fastmath.quaternion`), built
+  once per view.
+- No shadowing: a local never reuses an enclosing local's name, an earlier binding's name, or the name of a
+  `clojure.core` or same-namespace var (`{layout-kind :layout}`, not `{:keys [layout]}` beside `layout`).
+- Docstring openings are statements (`Gives ...`, `Tests whether ...`), never questions.
+- Reuse fastmath, clojure2d and cljplot2 functions before writing new ones (e.g. `aesthetic/level-key`).
 - Compute constants once (a `def`, e.g. `(def ^{:private true :const true :tag 'double} frame-padding+ (m/inc
   frame-padding))`), never per call; `:const` defs carry `:tag`.
 - `delay` only to defer a computation that may not be needed; a value used anyway is computed once in a `let`.
