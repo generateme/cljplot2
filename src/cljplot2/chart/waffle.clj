@@ -17,9 +17,12 @@
 
   Drawing (style defaults from theme `[:chart :waffle]`): square cells as large as the panel allows, the grid centred;
   `:gap` - the space between cells, a fraction of a cell; `:shape` `:square` or `:circle`; `:border-color`,
-  `:border-width`, `:pattern`, `:pattern-color`. The legend key takes the cell shape."
+  `:border-width`, `:pattern`, `:pattern-color`. The legend key takes the cell shape.
+
+  Functions: [[compute]], [[draw]], [[legend]] - the chart contract; [[largest-remainder]] - whole counts in proportion to weights; [[cell-position]] - a cell's place in the grid."
   (:require [clojure2d.core :as c2d]
             [fastmath.core :as m]
+            [fastmath.vector :as v]
             [cljplot2.data.group :as group]
             [cljplot2.data.rows :as data]
             [cljplot2.graphics.draw :as draw]
@@ -30,16 +33,16 @@
 (set! *unchecked-math* :warn-on-boxed)
 
 (def ^:private style-entries
+  "Map entries of the waffle style (theme `[:chart :waffle]`, also options)."
   (into [(schema/optional :gap {:description "space between cells, a fraction of a cell"} [:and schema/finite [:>= 0] [:< 1]])
          (schema/optional :shape {:description "cell shape: :square or :circle"} [:enum :square :circle])
          (schema/optional :border-color {:description "cell border colour"} schema/color)
          (schema/optional :border-width {:description "cell border width in pixels"} schema/non-neg)]
         draw/pattern-style-entries))
 
-(def ^:const max-cells
+(def ^{:const true :tag 'long} max-cells
   "Most cells a waffle panel draws; more (a small `:unit`, a large grid) throw - cells would shrink below a pixel."
   10000)
-
 (def schemas
   "Schemas of the waffle: `:style` (theme `[:chart :waffle]`), `:options`, `:mapping` (merged)."
   {:style (into [:map {:closed true}] style-entries)
@@ -62,53 +65,81 @@
                              schema/accessor)
              (schema/nilable :pattern {:description "fill pattern, splitting categories too"} schema/accessor)]})
 
-(defn- style
-  [options theme]
-  (merge (theme/chart-style theme :waffle options) (select-keys options [:gap :shape :border-color :border-width :pattern :pattern-color])))
-
 (defn largest-remainder
-  "Whole counts summing to `n` (a non-negative integer) in proportion to the non-negative `weights` (largest-remainder
-  rounding: the floors of the exact shares, then one more for the largest remainders, earlier weights first on
-  ties). All zeros when the weights sum to 0."
-  [weights n]
-  (let [total (double (reduce + 0.0 weights))
-        n (long n)]
-    (if-not (pos? total)
+  "Gives whole counts summing to `n` in proportion to weights, by largest-remainder rounding.
+
+  The floors of the exact shares come first, then one more for the largest remainders, earlier weights first on ties.
+
+  Parameters:
+
+  - `weights` (vector of non-negative numbers): the weights.
+  - `n` (long): the total, a non-negative integer.
+
+  Returns a vector of longs, one per weight; all zeros when the weights sum to 0."
+  [weights ^long n]
+  (let [total (v/sum weights)]
+    (if-not (m/pos? total)
       (vec (repeat (count weights) 0))
-      (let [exact (mapv #(/ (* (double %) n) total) weights)
+      (let [exact (mapv #(m// (m/* (double %) n) total) weights)
             floors (mapv #(long (m/floor (double %))) exact)
-            missing (- n (long (reduce + 0 floors)))
-            extra (set (take missing (sort-by (fn [i] (- (double (exact i)) (double (floors i)))) #(compare %2 %1)
+            missing (m/long-sub n (long (reduce m/long-add 0 floors)))
+            extra (set (take missing (sort-by (fn [i] (m/- (double (exact i)) (double (floors i)))) #(compare %2 %1)
                                               (range (count weights)))))]
-        (vec (map-indexed (fn [i f] (if (extra i) (inc (long f)) f)) floors))))))
+        (vec (map-indexed (fn [i ^long f] (if (extra i) (m/long-inc f) f)) floors))))))
 
 (defn- cell-counts
-  "`[counts columns rows]` of a panel's category `weights` for the options (see the namespace doc). Throws
-  `ex-info {:key :unit}` (`{:key :rows}` for a grid) for more than [[max-cells]] cells."
+  "Gives a panel's cell counts and grid size.
+
+  Parameters:
+
+  - `weights` (vector of numbers): the categories' weights.
+  - `options` (map): `:rows`, `:columns` - the grid; `:unit` - the value of one cell (`nil` - the categories share the grid).
+
+  Returns `[counts columns rows]`: with `:unit` each category `weight / unit` cells (largest remainder of the total over the unit), `:columns` wide and as many rows as needed; else the categories' shares of `rows x columns` (see [[largest-remainder]]).
+
+  Throws `ex-info {:key :unit}` (`{:key :rows}` for a grid) for more than [[max-cells]] cells."
   [weights {:keys [rows columns unit]}]
   (if unit
-    (let [cells (m/round (/ (double (reduce + 0.0 weights)) (double unit)))]
-      (when (> cells max-cells)
+    (let [cells (m/round (m// (v/sum weights) (double unit)))]
+      (when (m/> cells max-cells)
         (schema/fail! (str "A waffle of " cells " cells (at most " max-cells "): raise :unit.") {:key :unit :value unit}))
-      [(largest-remainder weights cells) columns (max 1 (long (m/ceil (/ (double cells) (double columns)))))])
-    (let [cells (* (long rows) (long columns))]
-      (when (> cells max-cells)
+      [(largest-remainder weights cells) columns (m/long-max 1 (m/ceil (m// (double cells) (double columns))))])
+    (let [cells (m/* (long rows) (long columns))]
+      (when (m/> cells max-cells)
         (schema/fail! (str "A waffle of " cells " cells (at most " max-cells "): use fewer :rows / :columns.")
                       {:key :rows :value rows}))
       [(largest-remainder weights cells) columns rows])))
 
-(defn- value-ok? [v] (and (number? v) (m/valid-double? (double v)) (>= (double v) 0.0)))
+(defn- value-ok?
+  "Tests whether a row weight is valid.
+
+  Parameters:
+
+  - `v`: the weight.
+
+  Returns a truthy value for a non-negative finite number."
+  [v]
+  (and (number? v) (m/valid-double? (double v)) (m/>= (double v) 0.0)))
 
 (defn compute
-  "Per panel: `{:categories [{:aesthetics a :cells n} ..] :columns c :rows r :fill-order o :style st}`; aesthetic
-  extents, `:na`, `:dropped` (`:value` - rows with an invalid weight)."
-  [{:keys [options]} {:keys [groups mapping]} {:keys [theme plot-scales] :as env}]
+  "Computes the waffle's cells per panel.
+
+  Parameters:
+
+  - `chart` (map): the chart value (`:options` - `:rows`, `:columns`, `:unit`, `:fill-order`).
+  - `chart-split` (map): `:groups` - panel -> rows, `:mapping`.
+  - `env` (map): the compute environment (`:theme`, `:plot-scales` ...).
+
+  Returns per panel `{:categories [{:aesthetics a :cells n} ..] :columns c :rows r :fill-order o :style st}`; aesthetic extents, `:na`, `:dropped` (`:value` - rows with an invalid weight).
+
+  Throws as [[cell-counts]]."
+  [{:keys [options] :as chart} {:keys [groups mapping]} {:keys [theme plot-scales] :as env}]
   (let [value-of (when (some? (:value mapping)) (data/row-accessor :value (:value mapping)))
         kept (if value-of (update-vals groups #(filterv (comp value-ok? value-of) %)) groups)
         {:keys [panels dropped]} (group/split kept mapping env)
         opts (merge {:rows 10 :columns 10 :fill-order :rows} (select-keys options [:rows :columns :unit :fill-order]))
-        st (style options theme)
-        weight (fn [rows] (if value-of (reduce + 0.0 (map #(double (value-of %)) rows)) (double (count rows))))]
+        st (theme/resolved-style theme chart)
+        weight (fn [group-rows] (if value-of (v/sum (map value-of group-rows)) (double (count group-rows))))]
     {:data (update-vals panels (fn [gs]
                                  (let [[counts columns rows] (cell-counts (mapv (comp weight :rows) gs) opts)]
                                    {:categories (mapv (fn [g n] {:aesthetics (:aesthetics g) :cells n}) gs counts)
@@ -116,64 +147,100 @@
      :extents (group/aesthetic-extents panels plot-scales)
      :na (group/na-dims panels)
      :dropped (cond-> dropped
-                value-of (assoc :value (- (count (mapcat val groups)) (count (mapcat val kept)))))}))
+                value-of (assoc :value (m/long-sub (count (mapcat val groups)) (count (mapcat val kept)))))}))
 
 ;; drawing
 
 (defn cell-position
-  "`[column row]` of the `k`-th cell (0-based, row 0 at the bottom) in a `columns` x `rows` grid filled in
-  `fill-order`."
-  [k columns rows fill-order]
-  (let [k (long k)]
-    (if (= fill-order :columns)
-      [(quot k (long rows)) (rem k (long rows))]
-      [(rem k (long columns)) (quot k (long columns))])))
+  "Gives the grid position of a cell.
+
+  Parameters:
+
+  - `k` (long): the cell's index, from 0.
+  - `columns`, `rows` (longs): the grid.
+  - `fill-order`: `:columns` (up the first column, then right) or else row by row from the bottom.
+
+  Returns `[column row]`, row 0 at the bottom."
+  [^long k ^long columns ^long rows fill-order]
+  (if (= fill-order :columns)
+    [(m/long-quot k rows) (m/long-rem k rows)]
+    [(m/long-rem k columns) (m/long-quot k columns)]))
 
 (defn- cell!
-  "Draw one cell over the pixel square `x0..x1` x `y0..y1` (whole pixels) in style `st` with `fill`."
-  [canvas x0 y0 x1 y1 fill st pattern-fill]
-  (let [x0 (long x0) y0 (long y0) w (- (long x1) x0) h (- (long y1) y0)
+  "Draws one cell over a pixel square.
+
+  Parameters:
+
+  - `canvas`: the clojure2d canvas.
+  - `[x0 y0 x1 y1]` (longs): the square's whole-pixel corners.
+  - `fill`: the cell colour.
+  - `st` (map): the cell style - `:shape`, `:border-color`, `:border-width`.
+  - `pattern-fill`: the cell's pattern fill (see [[cljplot2.graphics.draw/pattern-fill]]).
+
+  Nothing is drawn for an empty square; the border only for a positive width and a colour."
+  [canvas [^long x0 ^long y0 ^long x1 ^long y1] fill st pattern-fill]
+  (let [w (m/long-sub x1 x0)
+        h (m/long-sub y1 y0)
         circle? (= :circle (:shape st))
         shape! (if circle?
-                 #(c2d/ellipse canvas (+ x0 (* 0.5 w)) (+ y0 (* 0.5 h)) w h %)
+                 #(c2d/ellipse canvas (m/+ x0 (m/* 0.5 w)) (m/+ y0 (m/* 0.5 h)) w h %)
                  #(c2d/rect canvas x0 y0 w h %))
         sw (double (:border-width st))]
-    (when (and (pos? w) (pos? h))
+    (when (and (m/pos? w) (m/pos? h))
       (c2d/set-color canvas fill)
       (shape! false)
       (draw/fill-with-pattern! canvas pattern-fill #(shape! false))
-      (when (and (pos? sw) (not (theme/none? (:border-color st))))
+      (when (and (m/pos? sw) (not (theme/none? (:border-color st))))
         (c2d/set-stroke-custom canvas {:size sw})
         (c2d/set-color canvas (:border-color st))
         (shape! true)))))
 
 (defn draw
-  "Draw one panel's grid: categories in order, cell by cell from the bottom-left."
-  [_chart {:keys [categories columns rows fill-order style]} canvas {:keys [w h]} scales env]
-  (let [columns (long columns) rows (long rows)
-        side (m/min (/ (double w) columns) (/ (double h) rows))
-        left (* 0.5 (- (double w) (* side columns)))
-        top (* 0.5 (- (double h) (* side rows)))
-        inset (* 0.5 side (double (:gap style)))
+  "Draws one panel's grid: the categories in order, cell by cell from the bottom-left.
+
+  Parameters:
+
+  - `_chart` (map): the chart value.
+  - `computed` (map): the panel's `:categories`, `:columns`, `:rows`, `:fill-order`, `:style`.
+  - `canvas`: the clojure2d canvas.
+  - `box` (map): the panel's `:w`, `:h`.
+  - `scales` (map): the plot's scales (aesthetics).
+  - `env` (map): the drawing environment (`:theme`).
+
+  Cells are square, as large as the panel allows, the grid centred, `:gap` (a fraction of a cell) between cells; a category outside its scale isn't drawn."
+  [_chart {:keys [categories ^long columns ^long rows fill-order style]} canvas {:keys [^double w ^double h]} scales env]
+  (let [side (m/min (m// w columns) (m// h rows))
+        left (m/* 0.5 (m/- w (m/* side columns)))
+        top (m/* 0.5 (m/- h (m/* side rows)))
+        inset (m/* 0.5 side (double (:gap style)))
         pattern-fill (draw/pattern-fill-cache)
-        starts (reductions + 0 (map :cells categories))]
-    (doseq [[{:keys [aesthetics cells]} start] (map vector categories starts)
+        starts (reductions m/long-add 0 (map :cells categories))]
+    (doseq [[{:keys [aesthetics ^long cells]} ^long start] (map vector categories starts)
             :let [st (group/style style aesthetics scales (:theme env))]
             :when st
-            k (range start (+ (long start) (long cells)))
-            :let [[col row] (cell-position k columns rows fill-order)
-                  x (+ left (* side (double col)))
-                  y (+ top (* side (double (- rows 1 (long row)))))]]
-      (cell! canvas (m/round (+ x inset)) (m/round (+ y inset)) (m/round (- (+ x side) inset)) (m/round (- (+ y side) inset))
+            k (range start (m/long-add start cells))
+            :let [[^long col ^long row] (cell-position k columns rows fill-order)
+                  x (m/+ left (m/* side col))
+                  y (m/+ top (m/* side (m/long-sub (m/long-dec rows) row)))]]
+      (cell! canvas [(m/round (m/+ x inset)) (m/round (m/+ y inset)) (m/round (m/- (m/+ x side) inset)) (m/round (m/- (m/+ y side) inset))]
              (:color st) st (pattern-fill st (:color st))))))
 
 (defn legend
-  "Key glyph: a filled square or circle (the cell `:shape`) inset in `box`, with the chart's `:pattern`."
-  [{:keys [options]} attributes canvas {:keys [x y w h] :as box} env]
-  (let [st (style options (:theme env))]
+  "Draws the key glyph: a filled square or circle (the cell `:shape`) inset in the key box, with the chart's `:pattern`.
+
+  Parameters:
+
+  - `chart` (map): the chart value.
+  - `attributes` (map): the key's attributes (`:color`).
+  - `canvas`: the clojure2d canvas.
+  - `box` (map): the key box `:x`, `:y`, `:w`, `:h`.
+  - `env` (map): the drawing environment (`:theme`)."
+  [chart attributes canvas {:keys [^double x ^double y ^double w ^double h] :as box} env]
+  (let [st (theme/resolved-style (:theme env) chart)]
     (if (= :circle (:shape st))
-      (let [d (* 0.7 (m/min (double w) (double h)))
-            cx (+ (double x) (* 0.5 (double w))) cy (+ (double y) (* 0.5 (double h)))]
+      (let [d (m/* 0.7 (m/min w h))
+            cx (m/+ x (m/* 0.5 w))
+            cy (m/+ y (m/* 0.5 h))]
         (c2d/set-color canvas (:color attributes))
         (c2d/ellipse canvas cx cy d d)
         (draw/fill-with-pattern! canvas (draw/pattern-fill st (:color attributes)) #(c2d/ellipse canvas cx cy d d)))

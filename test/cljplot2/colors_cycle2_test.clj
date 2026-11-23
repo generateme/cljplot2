@@ -92,7 +92,7 @@
     (let [canvas (c2d/canvas 20 20)]
       (c2d/with-canvas-> canvas (c2d/set-background :white))
       (c2d/with-canvas [c canvas]
-        (rect/legend {:options {:stroke-color :black :stroke-width 1}} {:color :red} c {:x 0 :y 0 :w 20 :h 20}
+        (rect/legend (chart/rect {:x [0 1] :stroke-color :black :stroke-width 1}) {:color :red} c {:x 0 :y 0 :w 20 :h 20}
                      {:theme (:theme (build {:charts [(chart/rect {:x [0 1]})]}))}))
       (let [img (c2d/get-image canvas)]
         (is (near (rgb img 10 10) [255 0 0]) "filled")

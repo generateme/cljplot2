@@ -240,4 +240,14 @@
                                  {:columns 2})
                    {:width 900 :height 380})
 
+;; The gap between a circle and its set name is a theme key of `[:chart :venn]`, not an option:
+
+(nu/options-table (describe/style-rows :venn [:label-gap]))
+
+(plot/render-image {:data memberships
+                    :mapping {:set :club :item :member}
+                    :charts [(chart/venn)]
+                    :theme {:chart {:venn {:label-gap 16}}}}
+                   {:width 500 :height 420})
+
 (nu/shared-groups (describe/options (chart/venn)))

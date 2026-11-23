@@ -335,8 +335,8 @@
                                  {:columns 3})
                    {:width 900 :height 560})
 
-;; The three coefficients of the same pair (Kendall's tau, counting concordant pairs, is the lowest), and one fixed
-;; glyph colour with a thick outline:
+;; The three coefficients of the same pair (Kendall's tau, counting concordant pairs, is the lowest), and a smaller
+;; glyph in one fixed colour with a thick outline:
 
 (plot/render-image (plot/arrange [{:data iris :mapping {:x :sepal-length :y :petal-width}
                                    :charts [(chart/correlation {:method :pearson})] :labels {:title ":method :pearson"}}
@@ -345,9 +345,9 @@
                                   {:data iris :mapping {:x :sepal-length :y :petal-width}
                                    :charts [(chart/correlation {:method :kendall})] :labels {:title ":method :kendall"}}
                                   {:data iris :mapping {:x :sepal-length :y :petal-width}
-                                   :charts [(chart/correlation {:glyph :circle :color [120 160 90] :stroke-color :black
-                                                                :stroke-width 3})]
-                                   :labels {:title ":color, :stroke-width 3"}}]
+                                   :charts [(chart/correlation {:glyph :circle :glyph-size 0.6 :color [120 160 90]
+                                                                :stroke-color :black :stroke-width 3})]
+                                   :labels {:title ":glyph-size 0.6, :stroke-width 3"}}]
                                  {:columns 4})
                    {:width 1000 :height 280})
 

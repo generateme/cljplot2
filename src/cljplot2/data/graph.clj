@@ -32,6 +32,7 @@
             [fastmath.ml.clustering :as cl]
             [fastmath.random :as r]
             [fastmath.vector :as v]
+            [cljplot2.data.position :as position]
             [cljplot2.data.rng :as rng]
             [cljplot2.data.rows :as data]
             [cljplot2.data.tree :as tree]
@@ -215,10 +216,6 @@
   "Distance below which two nodes of the force layout count as coincident."
   1.0e-9)
 
-(def ^{:const true :private true :tag 'double} golden-angle
-  "The golden angle in radians: directions pushing coincident nodes apart, by the sum of their indices."
-  2.399963)
-
 (defn- repel!
   "Adds the Fruchterman-Reingold repulsion between every pair of nodes to their displacements.
 
@@ -238,7 +235,7 @@
                 ey (m/- (Array/aget ys i) (Array/aget ys j))
                 d0 (m/hypot ex ey)
                 close? (m/< d0 coincident-distance)
-                a (m/* golden-angle (m/+ i j))
+                a (m/* position/golden-angle (m/+ i j))
                 d (if close? coincident-distance d0)
                 f (m// k2 d)
                 fx (m/* f (if close? (m/cos a) (m// ex d0)))

@@ -14,8 +14,12 @@
   fit whatever the padding). A row with an invalid value is dropped (counted per key), as is one whose values
   don't hold `low <= open, close <= high` (counted as `:ohlc`). Colour means up / down: an aesthetic or `:group` in
   the chart's own `:mapping` throws `ex-info {:key :mapping}`; ones inherited from the plot mapping are ignored (the
-  candles draw nothing into their legend keys)."
+  candles draw nothing into their legend keys).
+
+  Functions: [[compute]], [[draw]], [[legend]] - the chart contract."
   (:require [clojure2d.core :as c2d]
+            [fastmath.core :as m]
+            [fastmath.vector :as v]
             [cljplot2.data.rows :as data]
             [cljplot2.graphics.draw :as draw]
             [cljplot2.graphics.polyline :as polyline]
@@ -29,11 +33,12 @@
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
-(def ^:private ^:const single-body-width
-  "Body width (pixels) when a panel has one distinct x."
+(def ^{:private true :const true :tag 'double} single-body-width
+  "Body width in pixels when a panel has one distinct x: a fallback geometry with no gap to take `:body-width` of, not a style (kept, not exposed)."
   10.0)
 
 (def ^:private style-entries
+  "Map entries of the candlestick style (theme `[:chart :candlestick]`, also options)."
   [(schema/optional :up-color {:description "colour of a candle closing at or above its open"} schema/color)
    (schema/optional :down-color {:description "colour of a candle closing below its open"} schema/color)
    (schema/optional :body-width {:description "body width, a fraction of the smallest pixel gap between distinct x (of a band's width on a bands scale)"}
@@ -44,7 +49,9 @@
    (schema/optional :down-pattern {:description "pattern drawn over the bodies of down candles"} schema/pattern)
    (schema/optional :pattern-color {:description "pattern ink: a colour, :none or :darker (the darkened body colour)"} draw/stroke-color)])
 
-(def ^:private value-keys [:open :high :low :close])
+(def ^:private value-keys
+  "Mapping keys of a candle's prices."
+  [:open :high :low :close])
 
 (def schemas
   "Schemas of the candlestick chart: `:style` (theme `[:chart :candlestick]`), `:options`, `:mapping` (merged)."
@@ -66,52 +73,72 @@
              [:low {:description "lowest price"} schema/accessor]
              [:close {:description "closing price"} schema/accessor]]})
 
-(defn- style
-  [options theme]
-  (merge (theme/chart-style theme :candlestick options) (select-keys options [:up-color :down-color :body-width :wick-width :stroke-color :up-pattern
-                                                                 :down-pattern :pattern-color])))
+(defn- smallest-gap
+  "Gives the smallest positive gap between neighbouring sorted numbers.
 
-(defn- finite? [v] (and (number? v) (Double/isFinite (double v))))
+  Parameters:
+
+  - `sorted-values` (sequence of numbers): ascending; repeats allowed.
+
+  Returns the smallest positive difference of neighbours as a double; `nil` without two distinct values."
+  [sorted-values]
+  (let [gaps (filter (fn [^double g] (m/pos? g))
+                     (map (fn [^double a ^double b] (m/- b a)) sorted-values (rest sorted-values)))]
+    (when (seq gaps) (v/mn gaps))))
 
 (defn- half-gap-ends
-  "`xs` with ends half the smallest gap between distinct x beyond the data, so the outer bodies fit with any
-  padding: numbers and `java.time` values by [[cljplot2.data.rows/x-key]] - a `LocalDate` by whole
-  days, keeping its type; `xs` unchanged with fewer than 2 distinct keyed values or levels."
+  "Extends x values by half the smallest gap between distinct x beyond the data, so the outer bodies fit with any padding.
+
+  Parameters:
+
+  - `xs` (sequence): the x values - numbers or `java.time` values, keyed by [[cljplot2.data.rows/x-key]].
+
+  Returns `xs` with two more values, half the smallest gap below the lowest and above the highest (a `LocalDate` moved by whole days, keeping its type); `xs` unchanged with fewer than 2 distinct keyed values or with values that have no key (levels)."
   [xs]
   (let [keyed (sort-by first (distinct (keep (fn [x] (when-let [k (data/x-key x)] [k x])) xs)))
-        gaps (filter pos? (map (fn [[a _] [b _]] (- (double b) (double a))) keyed (rest keyed)))]
-    (if (or (not= (count keyed) (count (distinct xs))) (empty? gaps))
+        gap (smallest-gap (map first keyed))]
+    (if (or (m/not== (count keyed) (count (distinct xs))) (nil? gap))
       xs
-      (let [half (* 0.5 (double (reduce min gaps)))
-            [k0 x0] (first keyed)
-            [k1 x1] (last keyed)
-            beyond (fn [k x sign]
+      (let [half (m/* 0.5 (double gap))
+            [^double k0 x0] (first keyed)
+            [^double k1 x1] (last keyed)
+            beyond (fn [^double k x ^long sign]
                      (if (instance? LocalDate x)
-                       (.plusDays ^LocalDate x (* (long sign) (long (Math/ceil (/ half 86400000.0)))))
-                       (data/key->x (+ (double k) (* (double sign) half)) x)))]
-        (conj (vec xs) (beyond k0 x0 -1) (beyond k1 x1 1))))))
+                       (.plusDays ^LocalDate x (m/* sign (long (m/ceil (m// half 86400000.0)))))
+                       (data/key->x (m/+ k (m/* sign half)) x)))]
+        (concat xs [(beyond k0 x0 -1) (beyond k1 x1 1)])))))
 
 (defn compute
-  "Per panel: `{:candles [{:x :open :high :low :close}] :style style :kind :candle|:ohlc}`; extents (y over all four
-  values), padding, `:dropped` (`:x`, every value key, `:ohlc` - inconsistent values)."
-  [{:keys [options]} {:keys [groups mapping]} {:keys [theme]}]
+  "Computes the candles per panel.
+
+  Parameters:
+
+  - `chart` (map): the chart value (`:options` - `:style`, `:padding`, the chart's own `:mapping`).
+  - `chart-split` (map): `:groups` - panel -> rows, `:mapping`.
+  - `env` (map): the compute environment (`:theme`).
+
+  Returns per panel `{:candles [{:x :open :high :low :close}] :style style :kind :candle|:ohlc}`; extents (x reaching half the smallest gap beyond the data, see [[half-gap-ends]]; y over all four values), padding, `:dropped` (`:x`, every value key, `:ohlc` - inconsistent values).
+
+  Throws `ex-info {:key :mapping}` for aesthetics or `:group` in the chart's own mapping, or a mapped dimension without a valid value."
+  [{:keys [options] :as chart} {:keys [groups mapping]} {:keys [theme]}]
   (when-let [dims (let [own (:mapping options)] (seq (cond-> (aesthetic/mapped-dims own) (some? (:group own)) (conj :group))))]
     (schema/fail! "Candlestick colours mean up / down; it takes no aesthetics or :group (unmap them in the chart's :mapping)."
                   {:key :mapping :value (vec dims)}))
   (let [accessors (into {:x (data/row-accessor :x (:x mapping))}
                         (map (fn [k] [k (data/row-accessor k (get mapping k))]))
                         value-keys)
-        complete? (fn [r] (and (data/valid-value? ((:x accessors) r)) (every? #(finite? ((accessors %) r)) value-keys)))
+        complete? (fn [r] (and (data/valid-value? ((:x accessors) r)) (every? #(schema/finite? ((accessors %) r)) value-keys)))
         consistent? (fn [r] (let [[^double o ^double h ^double l ^double c] (mapv #(double ((accessors %) r)) value-keys)]
-                              (and (<= l (Math/min o c)) (<= (Math/max o c) h))))
+                              (and (m/<= l (m/min o c)) (m/<= (m/max o c) h))))
         valid? (fn [r] (and (complete? r) (consistent? r)))
         rows (mapcat val groups)
         _ (doseq [[k f] accessors]
-            (when (and (seq rows) (not-any? #(if (= :x k) (data/valid-value? (f %)) (finite? (f %))) rows))
+            (when (and (seq rows) (not-any? #(if (= :x k) (data/valid-value? (f %)) (schema/finite? (f %))) rows))
               (schema/fail! "No valid values for a mapped dimension - check the mapping." {:key :mapping :value k :rows (count rows)})))
-        candle (fn [r] (into {} (map (fn [[k f]] [k (let [v (f r)] (if (= :x k) v (double v)))])) accessors))
+        candle (fn [r] (into {} (map (fn [[k f]] [k (let [value (f r)] (if (= :x k) value (double value)))])) accessors))
+        st (theme/resolved-style theme chart)
         data (update-vals groups (fn [rs] {:candles (mapv candle (filter valid? rs))
-                                           :style (style options theme)
+                                           :style st
                                            :kind (get options :style :candle)}))]
     {:data data
      :extents (into {} (keep (fn [[panel {:keys [candles]}]]
@@ -119,31 +146,58 @@
                                  [panel {:x (data/extent :x (half-gap-ends (map :x candles)))
                                          :y (data/extent :y (mapcat (apply juxt value-keys) candles))}])))
                     data)
-     :padding (merge {:x [0.05 0.05] :y [0.05 0.05]} (:padding options))
+     :padding (merge data/default-padding (:padding options))
      :padding-explicit (data/explicit-padding {} options)
      :na #{}
      :dropped (into {:x (count (remove #(data/valid-value? ((:x accessors) %)) rows))
                      :ohlc (count (remove consistent? (filter complete? rows)))}
-                    (map (fn [k] [k (count (remove #(finite? ((accessors k) %)) rows))]))
+                    (map (fn [k] [k (count (remove #(schema/finite? ((accessors k) %)) rows))]))
                     value-keys)}))
 
 (defn- body-width
-  "Body width in pixels: `fraction` of the smallest gap between the distinct pixel positions `ps` along x, of the
-  bandwidth on a bands x scale, [[single-body-width]] for one position."
-  ^double [ps fraction x-scale]
-  (let [fraction (double fraction)]
-    (if-let [bandwidth (:bandwidth (scale/band-geometry x-scale))]
-      (* fraction (double bandwidth))
-      (let [sorted (sort (distinct (filter #(Double/isFinite (double %)) ps)))
-            gaps (filter pos? (map (fn [a b] (- (double b) (double a))) sorted (rest sorted)))]
-        (if (seq gaps) (* fraction (double (reduce min gaps))) single-body-width)))))
+  "Gives the body width in pixels.
+
+  Parameters:
+
+  - `ps` (sequence of doubles): the candles' pixel positions along x (`NaN` - not placed).
+  - `fraction` (double): the `:body-width` fraction.
+  - `x-scale` (map): the finalized x scale.
+
+  Returns `fraction` of the bandwidth on a bands x scale, else of the smallest gap between the distinct finite positions; [[single-body-width]] for one position."
+  ^double [ps ^double fraction x-scale]
+  (if-let [bandwidth (:bandwidth (scale/band-geometry x-scale))]
+    (m/* fraction (double bandwidth))
+    (if-let [gap (smallest-gap (sort (distinct (filter (fn [^double p] (m/valid-double? p)) ps))))]
+      (m/* fraction (double gap))
+      single-body-width)))
 
 (defn- stroke!
+  "Strokes one polyline.
+
+  Parameters:
+
+  - `canvas`: the clojure2d canvas.
+  - `color`: the line colour.
+  - `width` (double): the line width in pixels.
+  - `points` (sequence): the pixel points `[x y]`.
+
+  See also [[cljplot2.graphics.polyline/stroke-runs!]]."
   [canvas color width points]
   (polyline/stroke-runs! canvas [points] {:color color :width width}))
 
 (defn draw
-  "Draw the candles (or OHLC bars) of one panel; candles whose values the scales can't place are skipped."
+  "Draws the candles (or OHLC bars) of one panel.
+
+  Parameters:
+
+  - `_chart` (map): the chart value.
+  - `computed` (map): the panel's `:candles`, `:style`, `:kind`.
+  - `canvas`: the clojure2d canvas.
+  - `_box` (map): the panel box.
+  - `scales` (map): the finalized position scales.
+  - `_env` (map): the drawing environment.
+
+  A candle whose values the scales can't place is skipped; open equal to close draws a tick across the body."
   [_chart {:keys [candles style kind]} canvas _box scales _env]
   (when (seq candles)
     (let [projection (scale/projection scales)
@@ -153,30 +207,30 @@
           across (fn [^Vec2 p] (if flipped? (.x p) (.y p)))
           point (fn [a c] (if flipped? [c a] [a c]))
           xs (mapv #(along (projection (:x %) (:low %))) candles)
-          half (* 0.5 (body-width xs (:body-width style) (:x scales)))
+          half (m/* 0.5 (body-width xs (:body-width style) (:x scales)))
           wick (double (:wick-width style))
           pattern-fill (draw/pattern-fill-cache)]
-      (doseq [[c a] (map vector candles xs)
-              :let [a (double a)
-                    [^double o ^double h ^double l ^double cl] (mapv #(double (across (projection (:x c) (% c)))) value-keys)
-                    up? (>= (double (:close c)) (double (:open c)))
+      (doseq [[c ^double a] (map vector candles xs)
+              :let [[^double o ^double h ^double l ^double cl] (mapv #(double (across (projection (:x c) (% c)))) value-keys)
+                    up? (m/>= (double (:close c)) (double (:open c)))
                     color (if up? (:up-color style) (:down-color style))]
-              :when (every? #(Double/isFinite (double %)) [a o h l cl])]
+              :when (and (m/valid-double? a) (m/valid-double? o) (m/valid-double? h) (m/valid-double? l) (m/valid-double? cl))]
         (if (= :ohlc kind)
           (do (stroke! canvas color wick [(point a l) (point a h)])
-              (stroke! canvas color wick [(point (- a half) o) (point a o)])
-              (stroke! canvas color wick [(point a cl) (point (+ a half) cl)]))
+              (stroke! canvas color wick [(point (m/- a half) o) (point a o)])
+              (stroke! canvas color wick [(point a cl) (point (m/+ a half) cl)]))
           (do (stroke! canvas color wick [(point a l) (point a h)])
-              (if (== o cl)
-                (stroke! canvas color (max 1.0 wick) [(point (- a half) o) (point (+ a half) o)])
-                (let [lo (Math/min o cl) span (Math/abs (- o cl))
-                      [rx ry rw rh] (if flipped? [lo (- a half) span (* 2.0 half)] [(- a half) lo (* 2.0 half) span])]
+              (if (m/== o cl)
+                (stroke! canvas color (m/max 1.0 wick) [(point (m/- a half) o) (point (m/+ a half) o)])
+                (let [lo (m/min o cl)
+                      span (m/abs (m/- o cl))
+                      [rx ry rw rh] (if flipped? [lo (m/- a half) span (m/* 2.0 half)] [(m/- a half) lo (m/* 2.0 half) span])]
                   (c2d/set-color canvas color)
                   (c2d/rect canvas rx ry rw rh)
                   (draw/fill-with-pattern! canvas
                                            (pattern-fill {:pattern (if up? (:up-pattern style) (:down-pattern style))
-                                                               :pattern-color (:pattern-color style)}
-                                                              color)
+                                                          :pattern-color (:pattern-color style)}
+                                                         color)
                                            #(c2d/rect canvas rx ry rw rh))
                   (when-not (theme/none? (:stroke-color style))
                     (c2d/set-stroke canvas 1.0)
@@ -184,6 +238,12 @@
                     (c2d/rect canvas rx ry rw rh true))))))))))
 
 (defn legend
-  "Key glyph: nothing - candle colours mean up / down, not an inherited aesthetic's level."
+  "Draws no key glyph: candle colours mean up / down, not an inherited aesthetic's level.
+
+  Parameters:
+
+  - `_chart`, `_attributes`, `_canvas`, `_box`, `_env`: as the chart contract's legend.
+
+  Returns `nil`."
   [_chart _attributes _canvas _box _env]
   nil)

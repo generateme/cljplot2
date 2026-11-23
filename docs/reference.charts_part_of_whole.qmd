@@ -523,6 +523,34 @@ Without set names, and with thick outlines in the darkened set colours:
 :::
 
 
+The gap between a circle and its set name is a theme key of `[:chart :venn]`, not an option:
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:label-gap</td><td>a non-negative number</td><td>4</td><td>pixels between a circle and its set name (theme only, not an option)</td></tr></tbody></table>
+```
+
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image {:data memberships
+                    :mapping {:set :club :item :member}
+                    :charts [(chart/venn)]
+                    :theme {:chart {:venn {:label-gap 16}}}}
+                   {:width 500 :height 420})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_part_of_whole_files/image13.png)
+:::
+
+
 Shared options: [Data and mapping](reference.shared_options.html#data-and-mapping) (`:data` `:mapping`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`).
 
 

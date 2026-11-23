@@ -51,7 +51,10 @@ charts don't validate their own input.
 - Optional keys: `:computed-aesthetics` (e.g. a computed colour), `:coords` (`#{:cartesian :polar}`),
   `:inherit-mapping :facets` (annotation charts inherit only facet keys; data under `facet/all-panels` is drawn in
   every panel).
-- Every built-in kind has a theme entry `[:chart kind]` checked against `chart/builtin-styles`. A chart's style is
+- Every built-in kind has a theme entry `[:chart kind]` checked against `chart/builtin-styles`. A chart draws with
+  `(theme/resolved-style theme chart)` - its style keys are the entries of its `:schema` `:style` (extras a chart
+  takes outside it are merged explicitly); a style key that isn't an option (theme only, e.g. cloud
+  `:projection-alpha`) is shown on the chart page with `describe/style-rows kind keys`. The theme style is
   `(theme/chart-style theme kind options)`: `[:chart kind]` with the named style of its `:theme-style` option
   (shared group `:theme-style`, every kind with a theme style) merged over it, its own style options over both.
   Named styles are partial `[:chart name]` entries; builders draw with registered ones (`theme/named-styles` - name
@@ -158,7 +161,13 @@ into the builder's. `cljplot2.core` is the public API (`build`, `render`, `rende
   returned data field with a documented boolean default stays `true` / `false` for a nilable option: `(true?
   directed?)` - `:or` defaults don't apply to a key given as `nil`.
 - `m/inc` / `m/dec` for doubles, `m/long-inc` / `m/long-dec` / `m/long-add` / `m/long-sub` / `m/long-mod` for longs;
-  `v/mx` / `v/mn` / `v/sum` instead of `reduce max` / `min` / `+` (they throw on an empty seq - guard it).
+  `v/mx` / `v/mn` / `v/sum` instead of `reduce max` / `min` / `+` for input known non-empty (they throw on an empty
+  seq); where empty input has a meaning, keep its initial value: `(reduce m/max init xs)`.
+- Collections are realized when consumed: `vec` / `mapv` only for stored results (a chart's computed data, extents,
+  padding), indexed access, `peek` / `pop` / `assoc`, several consumers, or realization inside a dynamic binding or
+  a canvas; intermediates stay lazy (`map`, `filter`, `keep`, `for`).
+- fastmath constants instead of computing them: `m/HALF_PI`, `m/QUARTER_PI`, `m/-QUARTER_PI`, `m/TWO_PI`, `m/SQRT5`
+  ... (`position/golden-angle` for the golden angle).
 - `m/slice-range` for evenly spaced values (inclusive ends; one value - the midpoint; zero - empty).
 - `fastmath.java.Array` (`Array/aget`, `Array/aset`, `Array/add`) for primitive arrays; object arrays keep core
   `aget` / `aset`.

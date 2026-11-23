@@ -29,7 +29,10 @@
   invalid x or y are left out (counted). Groups (see [[cljplot2.data.group]]) come from ordinal aesthetics (`:color`)
   and `:group`, one fit per group; a group with fewer distinct x or rows than the method needs (see
   [[cljplot2.data.smooth/fit-requirements]]) has no curve and is counted in `:dropped {:group n}`; other fit errors
-  throw `ex-info {:key :method}` naming the group. A band undefined at a point (loess outside the data) breaks there."
+  throw `ex-info {:key :method}` naming the group. A band undefined at a point (loess outside the data) breaks there.
+
+  Functions: [[schemas]] - the chart's schemas; [[compute]] - the fitted curves and bands of every panel; [[draw]] -
+  one panel's bands and curves; [[legend]] - the key glyph."
   (:require [cljplot2.chart.ribbon :as ribbon]
             [cljplot2.data.rows :as data]
             [cljplot2.data.group :as group]
@@ -47,9 +50,12 @@
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
-(def ^:private ^:const default-n 200)
+(def ^{:private true :const true :tag 'long} default-n
+  "Grid points a curve is evaluated at, unless `:n` says otherwise."
+  200)
 
 (def ^:private style-entries
+  "Map entries of the smooth style: the line style, the band `:fill` and `:alpha`, the band pattern."
   (into (conj polyline/style-entries
               (schema/optional :fill {:cljplot2/section :band :description "band fill: :color (the line colour at :alpha), a colour or :none (no band, as :band :none)"}
                                [:or [:= :color] schema/color])
@@ -57,6 +63,7 @@
         draw/pattern-style-entries))
 
 (def ^:private method-schema
+  "Schema of `:method`: a function `(fn [xs ys] f)` or a fit method name of [[cljplot2.data.smooth/smooth-methods]]."
   (schema/named-type ::method #(or (fn? %) (contains? smooth/smooth-methods %))
                      (str "should be a function (fn [xs ys] f) or one of " (vec (sort smooth/smooth-methods)))))
 
@@ -104,29 +111,30 @@
              (schema/nilable :pattern {:description "band fill pattern per group"} schema/accessor)
              (schema/nilable :group {:description "groups without a visual aesthetic, each its own fit"} schema/accessor)]})
 
-(defn- style
-  [options theme]
-  (merge (theme/chart-style theme :smooth options) (select-keys options [:color :width :dash :fill :alpha :pattern :pattern-color])))
-
 (defn- fit-spec
-  "The fit of the chart `options` with style `st`: `{:method :params :band :levels :bootstrap}` (`:band :none` for a
-  `:fill :none`; the bootstrap `:rng` copied for this build). Throws `ex-info` for `:degree` with a method other than
-  `:lm` (a positive integer) or `:loess` (1 or 2), a loess `:bandwidth` outside (0, 1] (`{:key :method-params}`), a
-  band the method has none of
-  (`{:key :band}`)."
+  "Gives the fit of a smooth chart.
+
+  Parameters:
+
+  - `options` (map): the chart's options - `:method` (default `:loess`), `:method-params`, `:band` (default by the method), `:level` (default 0.95), `:bootstrap`.
+  - `st` (map): the resolved style - `:fill`.
+
+  Returns `{:method :params :band :levels :bootstrap}`: `:band :none` for a `:fill :none`; `:levels` a vector; the bootstrap `:rng` copied for this build.
+
+  Throws `ex-info {:key :method-params}` for a loess `:bandwidth` outside (0, 1], a `:degree` with a method other than `:lm` (a positive integer) or `:loess` (1 or 2); `{:key :band}` for a band the method has none of."
   [options st]
   (let [method (get options :method :loess)
         params (:method-params options)
         band (get options :band (smooth/default-band method))
         level (get options :level 0.95)]
     (when (and (= :loess method) (contains? params :bandwidth)
-               (not (and (number? (:bandwidth params)) (< 0.0 (double (:bandwidth params))) (<= (double (:bandwidth params)) 1.0))))
+               (not (and (number? (:bandwidth params)) (m/< 0.0 (double (:bandwidth params))) (m/<= (double (:bandwidth params)) 1.0))))
       (schema/fail! ":method-params :bandwidth of loess should be a number in (0 1]." {:key :method-params :value (:bandwidth params)}))
     (when (and (contains? params :degree) (not (#{:lm :loess} method)))
       (schema/fail! ":method-params :degree is for :method :lm or :loess." {:key :method-params :value params}))
     (when (and (= :loess method) (contains? params :degree) (not (#{1 2} (:degree params))))
       (schema/fail! ":method-params :degree of loess should be 1 or 2." {:key :method-params :value (:degree params)}))
-    (when (and (= :lm method) (contains? params :degree) (not (and (integer? (:degree params)) (pos? (long (:degree params))))))
+    (when (and (= :lm method) (contains? params :degree) (not (and (integer? (:degree params)) (m/pos? (long (:degree params))))))
       (schema/fail! ":method-params :degree should be a positive integer." {:key :method-params :value (:degree params)}))
     (when (and (= :confidence band) (not (contains? smooth/error-methods method)))
       (schema/fail! (str "The method " (pr-str method) " has no confidence band; use :band :bootstrap (or :none).")
@@ -137,10 +145,17 @@
      :bootstrap (when (= :bootstrap band) (update (:bootstrap options) :rng rng/for-build))}))
 
 (defn- group-points
-  "`[[key x y] ..]` of the rows of group `g` with a valid x and a finite y, `key` ([[cljplot2.data.rows/x-key]]) and
-  `y` in the fit coordinates of the axis transforms `[tx ty]` (see [[cljplot2.scale.position/stat-transform]]);
-  points a transform can't place (e.g. 0 on a log axis) are left out. A valid x without a key (not numeric, not
-  temporal) throws `ex-info {:key :x}`."
+  "Gives the fit points of one group.
+
+  Parameters:
+
+  - `g` (map): the group - `:rows`.
+  - `x-of`, `y-of` (functions): the x and y accessors.
+  - `[tx ty]`: the axes' stat transforms (see [[cljplot2.scale.position/stat-transform]]).
+
+  Returns a vector of `[key x y]` of the rows with a valid x and a finite y: `key` ([[cljplot2.data.rows/x-key]]) and `y` in the fit coordinates; points a transform can't place (e.g. 0 on a log axis) are left out.
+
+  Throws `ex-info {:key :x}` for a valid x without a key (not numeric, not temporal)."
   [g x-of y-of [tx ty]]
   (let [fx (:forward tx) fy (:forward ty)]
     (into [] (keep (fn [r]
@@ -154,46 +169,81 @@
           (:rows g))))
 
 (defn- ends
-  "`[[lo-key lo-x] [hi-key hi-x]]` of `points` (`[key x ..]`)."
+  "Gives the ends of fit points.
+
+  Parameters:
+
+  - `points` (non-empty sequence): `[key x ..]`.
+
+  Returns `[[lo-key lo-x] [hi-key hi-x]]` - the points of the smallest and the largest key."
   [points]
   [(let [p (apply min-key first points)] [(first p) (second p)])
    (let [p (apply max-key first points)] [(first p) (second p)])])
 
 (defn- domain-ends
-  "`[[lo-key lo-x] [hi-key hi-x]]` of the plot's x `:domain` in `plot-scales` (numbers or `java.time` values; keys in
-  the x transform `tx`'s coordinates), else `nil`."
+  "Gives the ends of the plot's x domain.
+
+  Parameters:
+
+  - `plot-scales` (map): the plot's `:scales` - `[:x :domain]` (numbers or `java.time` values).
+  - `tx` (map): the x stat transform - `:forward`.
+
+  Returns `[[lo-key lo-x] [hi-key hi-x]]`, keys in the transform's coordinates; `nil` without a keyed domain."
   [plot-scales tx]
   (let [domain (get-in plot-scales [:x :domain])]
     (when (and (sequential? domain) (seq domain) (every? data/x-key domain))
       (ends (map (fn [x] [((:forward tx) (double (data/x-key x))) x]) domain)))))
 
 (defn- fitted-curve
-  "Curve of a group's `points` (fit coordinates, see [[group-points]]) over the range `[[k0 x0] [k1 x1]]` for the
-  fit `spec`, taken back to data units by the transforms `[tx ty]`: `{:x [..] :y [..] :bands [..] :ends [x0 x1]
-  :aesthetics}`; fit errors throw `ex-info {:key :method}` naming the group."
-  [points [[k0 x0] [k1 x1]] spec n aesthetics [tx ty]]
+  "Fits the curve of one group.
+
+  Parameters:
+
+  - `points` (vector): the group's fit points (see [[group-points]]).
+  - `[[k0 x0] [k1 x1]]`: the range the curve spans, keys and x values.
+  - `spec` (map): the fit (see [[fit-spec]]).
+  - `n` (long): grid points over the range.
+  - `aesthetics` (map): the group's aesthetic values, for errors.
+  - `[tx ty]`: the axes' stat transforms - the curve taken back to data units.
+
+  Returns `{:x [..] :y [..] :bands [{:level :lo :hi}] :ends [x0 x1] :aesthetics}`.
+
+  Throws `ex-info {:key :method}` naming the group for a failed fit."
+  [points [[^double k0 x0] [^double k1 x1]] spec n aesthetics [tx ty]]
   (let [like (second (first points))
-        ix (:inverse tx) iy (:inverse ty)
-        keys (curve/sample-grid (double k0) (double k1) {:count n})
-        {:keys [fit bands]} (try (smooth/fit-curve spec (mapv first points) (mapv #(nth % 2) points) keys)
+        ix (:inverse tx)
+        iy (:inverse ty)
+        grid-keys (curve/sample-grid k0 k1 {:count n})
+        {:keys [fit bands]} (try (smooth/fit-curve spec (mapv first points) (mapv #(nth % 2) points) grid-keys)
                                  (catch Exception e
                                    (schema/fail! (str "Smooth fit failed: " (ex-message e)
                                                       (when (seq aesthetics) (str " Group: " (pr-str aesthetics) ".")))
                                                  {:key :method :value (:method spec) :group aesthetics :cause (ex-message e)})))]
-    {:x (mapv #(data/key->x (ix (double %)) like) keys)
+    {:x (mapv #(data/key->x (ix (double %)) like) grid-keys)
      :y (mapv #(iy (double %)) fit)
      :bands (mapv (fn [band] (-> band (update :lo #(mapv (fn [v] (iy (double v))) %)) (update :hi #(mapv (fn [v] (iy (double v))) %))))
                   bands)
      :ends [x0 x1] :aesthetics aesthetics}))
 
-(defn- finite [vs] (filter #(m/valid-double? (double %)) vs))
+(defn- finite
+  "Picks the finite values of numbers."
+  [vs]
+  (filter #(m/valid-double? (double %)) vs))
 
 (defn compute
-  "Per panel: `{:curves [{:x [..] :y [..] :bands [{:level :lo :hi}] :ends [x0 x1] :aesthetics}] :style style}`;
-  extents (x over the curves' ends, y over the fits and finite band bounds), padding, `:na`, `:dropped` (`:x`, `:y`,
-  `:group`)."
-  [{:keys [options]} {:keys [groups mapping]} {:keys [theme plot-scales] :as env}]
-  (let [st (style options theme)
+  "Computes the fitted curves of every panel.
+
+  Parameters:
+
+  - `chart` (map): the chart value - `:options` (see the namespace doc).
+  - `split` (map): `:groups` - panel -> rows, `:mapping` - the merged mapping.
+  - `env` (map): `:theme`, `:plot-scales` - the plot's `:scales` (axis transforms, the x `:domain`).
+
+  Returns `{:data :extents :padding :padding-explicit :na :dropped}`: per panel `{:curves [{:x [..] :y [..] :bands [{:level :lo :hi}] :ends [x0 x1] :aesthetics}] :style st}` (see [[fitted-curve]]), `st` the resolved style; extents - x over the curves' ends, y over the fits and finite band bounds; `:dropped` - `:x`, `:y`, `:group` (groups too small for the method).
+
+  Throws `ex-info {:key :mapping}` when `:x` or `:y` has no valid value in non-empty data, and the errors of [[fit-spec]], [[group-points]], [[fitted-curve]]."
+  [{:keys [options] :as chart} {:keys [groups mapping]} {:keys [theme plot-scales] :as env}]
+  (let [st (theme/resolved-style theme chart)
         spec (fit-spec options st)
         {required-x :distinct-x required-rows :rows} (smooth/fit-requirements (:method spec) (:params spec))
         n (long (or (:n options) default-n))
@@ -207,7 +257,7 @@
               (schema/fail! "No valid values for a mapped dimension - check the mapping." {:key :mapping :value k :rows (count rows)})))
         transforms [(scale/stat-transform (:x plot-scales)) (scale/stat-transform (:y plot-scales))]
         points (update-vals panels (fn [gs] (mapv #(group-points % x-of y-of transforms) gs)))
-        fittable? (fn [pts] (and (>= (count pts) (long required-rows)) (>= (count (distinct (map first pts))) (long required-x))))
+        fittable? (fn [pts] (and (m/>= (count pts) (long required-rows)) (m/>= (count (distinct (map first pts))) (long required-x))))
         data (into {} (map (fn [[panel gs]]
                              (let [pts (points panel)
                                    panel-range (when full-range?
@@ -228,7 +278,7 @@
                                                                                 (finite (mapcat (fn [c] (mapcat #(concat (:lo %) (:hi %)) (:bands c)))
                                                                                                 curves))))}])))
                                 data))
-     :padding (merge {:x [0.05 0.05] :y [0.05 0.05]} (:padding options))
+     :padding (merge data/default-padding (:padding options))
      :padding-explicit (data/explicit-padding {} options)
      :na (group/na-dims panels)
      :dropped (assoc dropped
@@ -237,8 +287,16 @@
                      :group (count (remove fittable? (mapcat val points))))}))
 
 (defn draw
-  "Draw the curves of one panel: the bands of every group (widest first, see
-  [[cljplot2.chart.ribbon/draw-bands!]]), then every line."
+  "Draws the curves of one panel: the bands of every group (widest first, see [[cljplot2.chart.ribbon/draw-bands!]]), then every line.
+
+  Parameters:
+
+  - `computed` (map): `:curves`, `:style` (see [[compute]]).
+  - `canvas`: the clojure2d canvas.
+  - `scales` (map): the finalized scales.
+  - `env` (map): `:theme`.
+
+  A group whose aesthetic value is outside its scale isn't drawn."
   [_chart {:keys [curves style]} canvas _box scales env]
   (when (seq curves)
     (let [projection (scale/projection scales)
@@ -254,9 +312,17 @@
         (polyline/draw! canvas (mapv first points) (mapv second points) st)))))
 
 (defn legend
-  "Key glyph: a filled square in the band colour (without a band - none) under a horizontal line in the line style."
-  [{:keys [options]} attributes canvas box env]
-  (let [st (merge (style options (:theme env)) (select-keys attributes [:color :dash :pattern]))
+  "Draws the chart's key glyph: a filled square in the band colour (without a band - none) under a horizontal line in the line style.
+
+  Parameters:
+
+  - `chart` (map): the chart value - `:options` `:band`, `:method`.
+  - `attributes` (map): the key's mapped attributes - `:color`, `:dash`, `:pattern`.
+  - `canvas`: the clojure2d canvas.
+  - `box` (map): the key's box.
+  - `env` (map): `:theme`."
+  [{:keys [options] :as chart} attributes canvas box env]
+  (let [st (merge (theme/resolved-style (:theme env) chart) (select-keys attributes [:color :dash :pattern]))
         band (get options :band (smooth/default-band (get options :method :loess)))]
     (when-not (= :none band)
       (polyline/key-glyph! canvas box {:color :none :width 0} (ribbon/band-fill st) (draw/pattern-fill st (ribbon/band-fill st))))

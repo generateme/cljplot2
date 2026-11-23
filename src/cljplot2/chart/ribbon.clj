@@ -15,7 +15,11 @@
   `:ymax` is filled the same as swapped.
   Groups (see [[cljplot2.data.group]]) come from ordinal aesthetics (`:color`) and `:group`.
 
-  [[band-runs]] and [[draw-bands!]] are shared with the smooth chart."
+  [[band-runs]] and [[draw-bands!]] are shared with the smooth chart.
+
+  Functions: [[schemas]] - the chart's schemas; [[compute]] - the bands of every panel; [[band-runs]] - a band's
+  paired pixel runs; [[band-fill]] - a band's fill; [[draw-bands!]] - fills, then edges; [[draw]] - one panel's
+  bands; [[legend]] - the key glyph."
   (:require [fastmath.core :as m]
             [cljplot2.data.rows :as data]
             [cljplot2.data.group :as group]
@@ -71,36 +75,45 @@
              (schema/nilable :pattern {:description "fill pattern per group"} schema/accessor)
              (schema/nilable :group {:description "groups without a visual aesthetic, each its own band"} schema/accessor)]})
 
-(defn- style
-  [options theme]
-  (merge (theme/chart-style theme :ribbon options) (select-keys options [:color :fill :alpha :stroke-color :stroke-width :dash :pattern
-                                                                :pattern-color])))
-
-(defn- sortable? [xs] (or (every? number? xs) (every? data/temporal? xs)))
-
 (defn- band
-  "Band of group `g`: points with a valid x (ordered by x when sortable), `nil` bounds where a value is invalid."
+  "Gives the band of one group.
+
+  Parameters:
+
+  - `g` (map): the group - `:rows`, `:aesthetics`.
+  - `x-of`, `lo-of`, `hi-of` (functions): accessors of x, `:ymin`, `:ymax`.
+
+  Returns `{:x [..] :ymin [..] :ymax [..] :aesthetics}` of the rows with a valid x, ordered by x when sortable (see [[sortable?]]); a bound is `nil` where its value is invalid (the band breaks there)."
   [g x-of lo-of hi-of]
   (let [valid (fn [v] (when (data/valid-value? v) v))
-        pts (->> (:rows g)
-                 (map (fn [r] [(x-of r) (valid (lo-of r)) (valid (hi-of r))]))
-                 (filter #(data/valid-value? (first %))))
-        pts (if (sortable? (map first pts)) (sort-by first pts) pts)]
-    {:x (mapv first pts) :ymin (mapv second pts) :ymax (mapv #(nth % 2) pts) :aesthetics (:aesthetics g)}))
+        points (->> (:rows g)
+                    (map (fn [r] [(x-of r) (valid (lo-of r)) (valid (hi-of r))]))
+                    (filter #(data/valid-value? (first %))))
+        ordered (if (data/sortable? (map first points)) (sort-by first points) points)]
+    {:x (mapv first ordered) :ymin (mapv second ordered) :ymax (mapv #(nth % 2) ordered) :aesthetics (:aesthetics g)}))
 
 (defn compute
-  "Per panel: `{:bands [{:x [..] :ymin [..] :ymax [..] :aesthetics}] :style style}` (a bound `nil` where the band
-  breaks); extents (y over both bounds), padding, `:na`, `:dropped` (`:x`, `:ymin`, `:ymax`)."
-  [{:keys [options]} {:keys [groups mapping]} {:keys [theme] :as env}]
+  "Computes the bands of every panel.
+
+  Parameters:
+
+  - `chart` (map): the chart value - `:options` (see the namespace doc).
+  - `split` (map): `:groups` - panel -> rows, `:mapping` - the merged mapping.
+  - `env` (map): `:theme`, `:plot-scales` (and the grouping keys of [[cljplot2.data.group/split]]).
+
+  Returns `{:data :extents :padding :padding-explicit :na :dropped}`: per panel `{:bands [{:x [..] :ymin [..] :ymax [..] :aesthetics}] :style st}` (see [[band]]), `st` the resolved style; extents - y over both bounds; `:dropped` - invalid `:x`, `:ymin`, `:ymax` values.
+
+  Throws `ex-info {:key :fill-gradient-axis}` for `:fill-gradient-axis` without `:fill-gradient`, `{:key :mapping}` when `:x`, `:ymin` or `:ymax` has no valid value in non-empty data."
+  [{:keys [options] :as chart} {:keys [groups mapping]} {:keys [theme] :as env}]
   (when (and (:fill-gradient-axis options) (nil? (:fill-gradient options)))
     (schema/fail! ":fill-gradient-axis needs :fill-gradient." {:key :fill-gradient-axis :value (:fill-gradient-axis options)}))
-  (let [st (style options theme)
+  (let [st (theme/resolved-style theme chart)
         {:keys [panels dropped]} (group/split groups mapping env)
         accessors (into {} (map (fn [k] [k (data/row-accessor k (k mapping))])) [:x :ymin :ymax])
         rows (mapcat (fn [gs] (mapcat :rows gs)) (vals panels))
         row-count (count rows)
         _ (doseq [[k f] accessors]
-            (when (and (pos? row-count) (not-any? #(data/valid-value? (f %)) rows))
+            (when (and (m/pos? row-count) (not-any? #(data/valid-value? (f %)) rows))
               (schema/fail! "No valid values for a mapped dimension - check the mapping." {:key :mapping :value k :rows row-count})))
         data (update-vals panels (fn [gs] {:bands (mapv #(band % (:x accessors) (:ymin accessors) (:ymax accessors)) gs)
                                            :style st}))]
@@ -111,16 +124,33 @@
                                              (when (seq ys)
                                                [panel {:x (data/extent :x (mapcat :x bands)) :y (data/extent :y ys)}]))))
                                 data))
-     :padding (merge {:x [0.05 0.05] :y [0.05 0.05]} (:padding options))
+     :padding (merge data/default-padding (:padding options))
      :padding-explicit (data/explicit-padding {} options)
      :na (group/na-dims panels)
      :dropped (into dropped (map (fn [[k f]] [k (count (remove #(data/valid-value? (f %)) rows))])) accessors)}))
 
-(defn- pixel ^Vec2 [projection x v] (if (nil? v) (Vec2. ##NaN ##NaN) (projection x v)))
+(defn- pixel
+  "Gives the pixel of a band bound.
+
+  Parameters:
+
+  - `projection` (function): data `x`, `y` -> pixel `Vec2`.
+  - `x`: the x value.
+  - `v`: the bound's value; `nil` - a break.
+
+  Returns the projected `Vec2`; a `Vec2` of `##NaN` for `nil`."
+  ^Vec2 [projection x v]
+  (if (nil? v) (Vec2. ##NaN ##NaN) (projection x v)))
 
 (defn- smoothed
-  "`[upper lower]` runs of the pair `[upper lower]` with both bounds sampled under the curve options `opts` along
-  `:along` (`:x` - pixel x, `:y` - pixel y; see [[cljplot2.graphics.curve/sample-columns]])."
+  "Samples both bounds of a paired run under an interpolator.
+
+  Parameters:
+
+  - `[upper lower]`: the run's pixel points of both bounds.
+  - `opts` (map): the curve options (see [[cljplot2.graphics.curve/sample-columns]]); `:along` - `:x` (pixel x, default) or `:y`, the pixel axis of x.
+
+  Returns `[upper lower]`, both sampled on one grid along `:along`."
   [[upper lower] {:keys [along] :as opts}]
   (let [[a b] (if (= :y along) [1 0] [0 1])
         [grid [us ls]] (curve/sample-columns (mapv #(nth % a) upper) [(mapv #(nth % b) upper) (mapv #(nth % b) lower)]
@@ -129,10 +159,18 @@
     [(mapv point grid us) (mapv point grid ls)]))
 
 (defn band-runs
-  "Paired `[upper lower]` pixel runs of a band: `xs` with the bounds `his` / `los` (`nil` breaks) placed by
-  `projection`; a pair with a non-finite coordinate ends a run, runs of fewer than 2 pairs are left out. With an
-  `:interpolator` in the curve options `opts` (`:along` the pixel axis of x) the bounds of every run are sampled
-  (see [[smoothed]])."
+  "Gives the paired pixel runs of a band.
+
+  Parameters:
+
+  - `xs` (vector): the x values.
+  - `los`, `his` (vectors): the lower and upper bounds; `nil` - a break.
+  - `projection` (function): data `x`, `y` -> pixel `Vec2`.
+  - `opts` (map): curve options - `:interpolator` (with `:interpolator-params`, `:sample-step`) samples the bounds of every run, `:along` - the pixel axis of x (see [[smoothed]]).
+
+  Returns a vector of `[upper lower]` runs of pixel points: a pair with a non-finite coordinate ends a run, runs of fewer than 2 pairs are left out; `[]` for none.
+
+  Throws `ex-info {:key :interpolator}` for a repeated x in a run under an interpolator."
   [xs los his projection opts]
   (let [upper (mapv #(pixel projection %1 %2) xs his)
         lower (mapv #(pixel projection %1 %2) xs los)
@@ -140,22 +178,34 @@
         paired? (fn [i] (and (finite? (upper i)) (finite? (lower i))))
         point (fn [^Vec2 p] (curve/drawn-point [(.x p) (.y p)]))
         pairs (into [] (comp (partition-by paired?)
-                             (filter #(and (paired? (first %)) (> (count %) 1)))
+                             (filter #(and (paired? (first %)) (m/> (count %) 1)))
                              (map (fn [run] [(mapv #(point (upper %)) run) (mapv #(point (lower %)) run)])))
                     (range (count xs)))]
     (if (:interpolator opts) (mapv #(smoothed % opts) pairs) pairs)))
 
 (defn band-fill
-  "Fill of a band with style `st` (group attributes merged): `:fill :color` - the group colour at `:alpha`, a colour,
-  or `:none`."
+  "Gives the fill of a band.
+
+  Parameters:
+
+  - `st` (map): the band's style (group attributes merged) - `:fill` (`:color` - the group colour at `:alpha`, a colour, or `:none`), `:color`, `:alpha`.
+
+  Returns the fill colour (or `:none`), see [[cljplot2.graphics.polyline/area-color]]."
   [st]
   (polyline/area-color st false))
 
 (defn draw-bands!
-  "Draw `bands` - `{:runs [[upper lower] ..] :fill color :edge line-style :pattern-fill pf}` (`:edge` `nil` - no
-  edge; `:pattern-fill` - see [[cljplot2.graphics.draw/pattern-fill]], `nil` - none): every band filled (`gradient`
-  along `axis` of `scales` when given, else its `:fill`) with its pattern, then the edges of every band - both
-  bounds - stroked."
+  "Draws bands: every band filled first, then the edges of every band.
+
+  Parameters:
+
+  - `canvas`: the clojure2d canvas.
+  - `bands` (sequence): `{:runs [[upper lower] ..] :fill color :edge line-style :pattern-fill pf}` - `:edge` `nil` for no edge, `:pattern-fill` (see [[cljplot2.graphics.draw/pattern-fill]]) `nil` for none.
+  - `gradient` (function or `nil`): a fill gradient of `t`, winning over `:fill`.
+  - `axis` (keyword): the scale the gradient runs along, `:x` or `:y`.
+  - `scales` (map): the finalized scales.
+
+  Fills each run with its pattern, then strokes both bounds of every band with an edge."
   [canvas bands gradient axis scales]
   (doseq [{:keys [runs fill pattern-fill]} bands
           [upper lower] runs]
@@ -164,15 +214,30 @@
     (polyline/stroke-runs! canvas (mapcat identity runs) edge)))
 
 (defn- edge-style
-  "Line style of the edge of a band with style `st`: `:stroke-color` (`:color` - the group colour), `:stroke-width`,
-  `:dash`; `nil` without an edge."
+  "Gives the line style of a band's edge.
+
+  Parameters:
+
+  - `st` (map): the band's style - `:stroke-color` (`:color` - the group colour; default `:none`), `:stroke-width` (default 1), `:dash`.
+
+  Returns `{:color :width :dash}`; `nil` for no edge."
   [st]
   (let [color (if (= :color (:stroke-color st)) (:color st) (:stroke-color st :none))]
     (when-not (theme/none? color)
       {:color color :width (:stroke-width st 1) :dash (:dash st)})))
 
 (defn draw
-  "Draw the bands of one panel: all fills first, then the edges."
+  "Draws the bands of one panel: all fills first, then the edges (see [[draw-bands!]]).
+
+  Parameters:
+
+  - `chart` (map): the chart value - `:options` (`:interpolator`, `:interpolator-params`, `:sample-step`, `:fill-gradient`, `:fill-gradient-axis`).
+  - `computed` (map): `:bands`, `:style` (see [[compute]]).
+  - `canvas`: the clojure2d canvas.
+  - `scales` (map): the finalized scales.
+  - `env` (map): `:theme`.
+
+  A group whose aesthetic value is outside its scale isn't drawn."
   [{:keys [options]} {:keys [bands style]} canvas _box scales env]
   (when (seq bands)
     (let [projection (scale/projection scales)
@@ -188,8 +253,16 @@
                    gradient (:fill-gradient-axis options :x) scales))))
 
 (defn legend
-  "Key glyph: a filled square in the band colour (`:fill-gradient` - its middle colour), outlined with the edge."
-  [{:keys [options]} attributes canvas box env]
-  (let [st (merge (style options (:theme env)) (select-keys attributes [:color :dash :pattern]))
+  "Draws the chart's key glyph: a filled square in the band colour (`:fill-gradient` - its middle colour), outlined with the edge.
+
+  Parameters:
+
+  - `chart` (map): the chart value - `:options` `:fill-gradient`.
+  - `attributes` (map): the key's mapped attributes - `:color`, `:dash`, `:pattern`.
+  - `canvas`: the clojure2d canvas.
+  - `box` (map): the key's box.
+  - `env` (map): `:theme`."
+  [{:keys [options] :as chart} attributes canvas box env]
+  (let [st (merge (theme/resolved-style (:theme env) chart) (select-keys attributes [:color :dash :pattern]))
         area (if-let [g (:fill-gradient options)] ((polyline/gradient-fn g) 0.5) (band-fill st))]
     (polyline/key-glyph! canvas box (or (edge-style st) {:color :none :width 0}) area (draw/pattern-fill st area))))

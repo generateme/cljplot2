@@ -547,6 +547,22 @@
                    (if (seen (first entry)) [schema seen] [(conj schema entry) (conj seen (first entry))]))
                  [[:map {:closed true}] #{}] (apply concat groups))))
 
+(defn entry-keys
+  "Gives the keys of the entries of a map schema.
+
+  Parameters:
+
+  - `schema`: a map schema - a vector `[:map props? entries...]` (as [[options-map]] builds) or a malli schema; `nil` - none.
+
+  Returns a sequence of the entry keys in order; empty for `nil`.
+
+  See also [[options-map]]."
+  [schema]
+  (cond
+    (nil? schema) ()
+    (vector? schema) (keep #(when (vector? %) (first %)) (rest schema))
+    :else (map first (malli/children (malli/schema schema)))))
+
 (defn check-options!
   "Validates the options of a builder or user-facing function before it reads its data.
 

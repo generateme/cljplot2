@@ -3292,6 +3292,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td>:number</td>
 <td>how r is drawn: :number (text, a line per group), :shade (the panel in r's colour), :square / :circle (area ~ |r|), :ellipse (normal contour) or :pie (a disk filled |r|)</td>
 </tr>
+<tr class="even">
+<td>:glyph-size</td>
+<td>a number in [0 1]</td>
+<td>0.9</td>
+<td>glyph side (:square, :circle, :ellipse, :pie) as a fraction of the panel's shorter side</td>
+</tr>
 </tbody>
 </table>
 </div>
@@ -3316,7 +3322,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="clay-image">
 <p><img src="reference.charts_grids_fields_files/image15.png" class="img-fluid"></p>
 </div>
-<p>The three coefficients of the same pair (Kendall’s tau, counting concordant pairs, is the lowest), and one fixed glyph colour with a thick outline:</p>
+<p>The three coefficients of the same pair (Kendall’s tau, counting concordant pairs, is the lowest), and a smaller glyph in one fixed colour with a thick outline:</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb23"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> iris <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:sepal-length</span> <span class="at">:y</span> <span class="at">:petal-width</span>}</span>
 <span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/correlation {<span class="at">:method</span> <span class="at">:pearson</span>})] <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":method :pearson"</span>}}</span>
@@ -3325,9 +3331,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> iris <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:sepal-length</span> <span class="at">:y</span> <span class="at">:petal-width</span>}</span>
 <span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/correlation {<span class="at">:method</span> <span class="at">:kendall</span>})] <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":method :kendall"</span>}}</span>
 <span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> iris <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:sepal-length</span> <span class="at">:y</span> <span class="at">:petal-width</span>}</span>
-<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/correlation {<span class="at">:glyph</span> <span class="at">:circle</span> <span class="at">:color</span> [<span class="dv">120</span> <span class="dv">160</span> <span class="dv">90</span>] <span class="at">:stroke-color</span> <span class="at">:black</span></span>
-<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a>                                                                <span class="at">:stroke-width</span> <span class="dv">3</span>})]</span>
-<span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":color, :stroke-width 3"</span>}}]</span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/correlation {<span class="at">:glyph</span> <span class="at">:circle</span> <span class="at">:glyph-size</span> <span class="fl">0.6</span> <span class="at">:color</span> [<span class="dv">120</span> <span class="dv">160</span> <span class="dv">90</span>]</span>
+<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a>                                                                <span class="at">:stroke-color</span> <span class="at">:black</span> <span class="at">:stroke-width</span> <span class="dv">3</span>})]</span>
+<span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":glyph-size 0.6, :stroke-width 3"</span>}}]</span>
 <span id="cb23-11"><a href="#cb23-11" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">4</span>})</span>
 <span id="cb23-12"><a href="#cb23-12" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">280</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>

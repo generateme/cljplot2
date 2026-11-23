@@ -30,8 +30,11 @@
   Colour bar beside a heatmap (pheatmap-style annotation): a one-row tile (`:y` constant, `:color` the annotation)
   above the heatmap in `(plot/arrange [bar heatmap] {:columns 1 :heights [1 6]})`, both plots with the same explicit
   x `:domain` (the bar's x axis hidden with `:axis false`) - the arranged panels align, so its cells sit over the
-  heatmap's columns; a column of cells beside it works the same way with a shared y `:domain`."
-  (:require [fastmath.core :as m]
+  heatmap's columns; a column of cells beside it works the same way with a shared y `:domain`.
+
+  Functions: [[compute]], [[draw]], [[legend]] - the chart contract; [[resolution]] - the cell size of numeric positions; [[largest-size]], [[size-factor]] - cell sizes from a size scale."
+  (:require [clojure2d.color :as c]
+            [fastmath.core :as m]
             [fastmath.vector :as v]
             [cljplot2.content.label :as label]
             [cljplot2.data.cells :as cells]
@@ -65,52 +68,84 @@
              (schema/nilable :size {:description "cell size: each cell shrinks by :cell-scale times its size over the size scale's largest"}
                              schema/accessor)]})
 
-(defn- style
-  [options theme]
-  (merge (theme/chart-style theme :tile options) (select-keys options cells/style-keys)))
-
 (defn- position-ok?
-  "Is `v` a valid position value (dates too - [[axis-info]] rejects them with a message)?"
+  "Tests whether `v` is a valid position value (dates too - [[axis-info]] rejects them with a message)."
   [v]
   (data/valid-value? v))
 
 (defn- color-kept?
+  "Tests whether a colour value is kept.
+
+  Parameters:
+
+  - `na-level?`: `nil` values form the NA level.
+  - `plot-scales` (map): the plot's `:scales`.
+  - `v`: the colour value.
+
+  Returns truthy for a value the plot's colour scale keeps (see [[cljplot2.scale.aesthetic/kept-value?]]) or, with `na-level?`, `nil`."
   [na-level? plot-scales v]
   (or (aesthetic/kept-value? :color (get plot-scales :color {}) v) (and na-level? (nil? v))))
 
 (defn- size-kept?
-  "Is `v` a kept size: not `nil` and valid under the plot's size scale (no NA level for cell sizes)."
+  "Tests whether `v` is a kept size: not `nil` and valid under the plot's size scale (no NA level for cell sizes)."
   [plot-scales v]
   (and (some? v) (aesthetic/kept-value? :size (get plot-scales :size {}) v)))
 
 (defn largest-size
-  "Largest size of finalized / phase-1 size scale `spec`: the maximum of its `:range` (sizes or a level -> size map),
-  1.0 for an identity scale (or none)."
+  "Gives the largest size of a size scale.
+
+  Parameters:
+
+  - `spec` (map): a finalized or phase-1 size scale - `:kind`, `:range` (sizes, or a level -> size map); `nil` - none.
+
+  Returns the maximum of its `:range` as a double; 1.0 for an identity scale, no scale or an empty range.
+
+  See also [[size-factor]]."
   ^double [spec]
-  (let [range (:range spec)
-        sizes (if (map? range) (vals range) range)]
+  (let [size-range (:range spec)
+        sizes (if (map? size-range) (vals size-range) size-range)]
     (if (and (not= :identity (:kind spec)) (seq sizes))
-      (double (reduce max (map double sizes)))
+      (v/mx sizes)
       1.0)))
 
 (defn size-factor
-  "Shrink factor of a cell of `size` (an attribute of the size scale) under a scale whose largest size is `largest`:
-  `size / largest` clamped to `[0 1]` (identity sizes above 1 give 1; 0 for a non-positive largest size)."
-  ^double [size ^double largest]
-  (if (pos? largest) (m/constrain (/ (double size) largest) 0.0 1.0) 0.0))
+  "Gives the shrink factor of a cell of a given size.
+
+  Parameters:
+
+  - `size` (number): an attribute of the size scale.
+  - `largest` (double): the scale's largest size (see [[largest-size]]).
+
+  Returns `size / largest` clamped to `[0 1]` (identity sizes above 1 give 1); 0 for a non-positive largest size."
+  ^double [^double size ^double largest]
+  (if (m/pos? largest) (m/constrain (m// size largest) 0.0 1.0) 0.0))
 
 (defn resolution
-  "Smallest positive gap between the distinct numbers `vs` (1.0 for fewer than two)."
+  "Gives the smallest positive gap between distinct numbers.
+
+  Parameters:
+
+  - `vs` (sequence of numbers): the values.
+
+  Returns the smallest gap between consecutive distinct values; 1.0 for fewer than two distinct values."
   ^double [vs]
-  (let [ds (vec (sort (distinct (map double vs))))]
-    (if (< (count ds) 2)
+  (let [ds (sort (distinct (map double vs)))]
+    (if (m/< (count ds) 2)
       1.0
-      (double (reduce min (map (fn [a b] (- (double b) (double a))) ds (rest ds)))))))
+      (v/mn (map (fn [^double a ^double b] (m/- b a)) ds (rest ds))))))
 
 (defn- axis-info
-  "Layout of position axis `k` from its values `vs` over all panels: `{:kind :categorical}` (category values, or a
-  plot scale declared categorical - `:kind :bands` in `plot-scales`) or `{:kind :numeric :min m :resolution r}`.
-  Temporal values throw `ex-info {:key :mapping}`."
+  "Gives the layout of a position axis from its values over all panels.
+
+  Parameters:
+
+  - `k` (keyword): `:x` or `:y`.
+  - `vs` (sequence): the axis's kept values.
+  - `plot-scales` (map): the plot's `:scales` (a `:kind :bands` scale is categorical).
+
+  Returns `{:kind :categorical}` (category values, or a plot scale declared categorical) or `{:kind :numeric :min m :resolution r}` (no values: min 0, resolution 1).
+
+  Throws `ex-info {:key :mapping}` for temporal values."
   [k vs plot-scales]
   (let [e (data/extent k vs)]
     (case (if (= :bands (get-in plot-scales [k :kind])) :categorical (:kind e))
@@ -121,33 +156,54 @@
       :categorical {:kind :categorical})))
 
 (defn- last-per-position
-  "Rows `[x y color]` (`[x y color size]` with a size mapping) of a panel, one per (x, y) - the last - in first-appearance order of the positions; and the
-  count of the others."
+  "Keeps one cell per position of a panel - the last.
+
+  Parameters:
+
+  - `rows` (sequence): the panel's cells `[x y color]` (`[x y color size]` with a size mapping).
+
+  Returns `[cells duplicates]`: one cell per (x, y) - the last - in the first-appearance order of the positions (numbers compared as doubles), and the count of the others."
   [rows]
-  (let [key-of (fn [[x y]] [(if (number? x) (double x) x) (if (number? y) (double y) y)])
-        last-row (reduce (fn [acc r] (assoc acc (key-of r) r)) {} rows)
+  (let [key-of (fn [[x y]] [(aesthetic/level-key x) (aesthetic/level-key y)])
+        last-row (reduce (fn [acc row] (assoc acc (key-of row) row)) {} rows)
         order (distinct (map key-of rows))]
-    [(mapv last-row order) (- (count rows) (count last-row))]))
+    [(mapv last-row order) (m/- (count rows) (count last-row))]))
+
+(def ^{:private true :const true :tag 'double} half-band+
+  "Reach past which a cell leaves its band: half a band plus a rounding tolerance."
+  (m/+ 0.5 1.0e-9))
 
 (defn- band-room
-  "Bands attributes keeping room for cells reaching `[lo hi]` (index units) from their band centres: no inner
-  padding; outer padding (in steps, each side - total twice it) for the reach past the outer half bands, put on the
-  side that needs it. `:align-outer` is the share of the outer space on the low-pixel side: the first band's side of
-  a horizontal axis, the last band's of a `vertical?` one (its range runs upward)."
-  [[lo hi] vertical?]
-  (let [beyond (fn ^double [^double reach] (if (> reach (+ 0.5 1.0e-9)) (- reach 0.5) 0.0))
-        first-side (double (beyond (- (double lo))))
-        last-side (double (beyond (double hi)))
-        total (+ first-side last-side)]
-    (cond-> {:padding-in 0.0 :padding-out (* 0.5 total)}
-      (pos? total) (assoc :align-outer (/ (if vertical? last-side first-side) total)))))
+  "Gives the bands attributes keeping room for cells reaching past their bands.
+
+  Parameters:
+
+  - `reach` (`[lo hi]`): how far cells reach from their band centres, in index units (see [[cljplot2.data.cells/lattice-extent]]).
+  - `vertical?`: the axis is vertical (its range runs upward).
+
+  Returns `{:padding-in 0 :padding-out p}` - outer padding (in steps, each side - total twice it) for the reach past the outer half bands - with `:align-outer` (the share of the outer space on the low-pixel side: the first band's side of a horizontal axis, the last band's of a vertical one) when there is any."
+  [[^double lo ^double hi] vertical?]
+  (let [beyond (fn ^double [^double reach] (if (m/> reach half-band+) (m/- reach 0.5) 0.0))
+        first-side (double (beyond (m/- lo)))
+        last-side (double (beyond hi))
+        total (m/+ first-side last-side)]
+    (cond-> {:padding-in 0.0 :padding-out (m/* 0.5 total)}
+      (m/pos? total) (assoc :align-outer (m// (if vertical? last-side first-side) total)))))
 
 (defn compute
-  "Per panel: `{:cells [[x y color size?] ..] :axes {:x info :y info} :style st :value-label f :sized? b}` (axis info - see
-  [[axis-info]]); extents (numeric axes: the values widened by the cells' reach; categorical: the levels), color
-  value extents (and size values with a `:size` mapping), no padding, `:scale-defaults` (categorical axes: see [[band-room]]; numeric axes: no nice domain - cells fill the panel), `:na`, `:dropped` (`:x`, `:y`, `:color`, `:duplicate`; `:size` with a `:size` mapping)."
-  [{:keys [options]} {:keys [groups mapping]} {:keys [theme na-level? plot-scales flip?] :or {na-level? true}}]
-  (let [st (style options theme)
+  "Computes the tile chart's stats: one cell per position, per panel.
+
+  Parameters:
+
+  - `chart` (map): the chart value - `:options` (the cell style, `:value-label`).
+  - `split` (map): `:groups` (`{panel rows}`), `:mapping` (merged; `:x`, `:y`, `:color`, optional `:size`).
+  - `env` (map): `:theme`, `:na-level?` (default true), `:plot-scales`, `:flip?`.
+
+  Returns per panel `{:cells [[x y color size?] ..] :axes {:x info :y info} :style st :value-label f :sized? b}` (axis info - see [[axis-info]]); extents (numeric axes: the values widened by the cells' reach; categorical: the levels), color value extents (and size values with a `:size` mapping), no padding, `:scale-defaults` (categorical axes: see [[band-room]]; numeric axes: no nice domain - cells fill the panel), `:na`, `:dropped` (`:x`, `:y`, `:color`, `:duplicate`; `:size` with a `:size` mapping).
+
+  Throws `ex-info {:key :mapping}` when no row has a valid colour, or for temporal positions."
+  [{:keys [options] :as chart} {:keys [groups mapping]} {:keys [theme na-level? plot-scales flip?] :or {na-level? true}}]
+  (let [st (theme/resolved-style theme chart)
         sized? (some? (:size mapping))
         accessors (mapv #(data/row-accessor % (mapping %)) (cond-> [:x :y :color] sized? (conj :size)))
         values (update-vals groups (fn [rows] (mapv (fn [row] (mapv #(% row) accessors)) rows)))
@@ -166,8 +222,8 @@
         axis-extent (fn [k vs]
                       (when (seq vs)
                         (if (numeric? k)
-                          (let [r (* (double (reach k)) (double (:resolution (axes k))))]
-                            {:kind :numeric :min (- (double (reduce min vs)) r) :max (+ (double (reduce max vs)) r)})
+                          (let [cell-reach (m/* (double (reach k)) (double (:resolution (axes k))))]
+                            {:kind :numeric :min (m/- (v/mn vs) cell-reach) :max (m/+ (v/mx vs) cell-reach)})
                           (if (every? number? vs) {:kind :categorical :values (vec (distinct vs))} (data/extent k vs)))))]
     (when (and (seq all) (not-any? #(aesthetic/valid-value? :color (get plot-scales :color) (nth % 2)) all))
       (schema/fail! "No valid values for a mapped dimension - check the mapping." {:key :mapping :value :color :rows (count all)}))
@@ -187,39 +243,62 @@
      :dropped (cond-> {:x (count (remove #(position-ok? (first %)) all))
                        :y (count (remove #(position-ok? (second %)) all))
                        :color (count (remove #(color-kept? na-level? plot-scales (nth % 2)) all))
-                       :duplicate (reduce + 0 (map second (vals kept)))}
+                       :duplicate (reduce m/long-add 0 (map second (vals kept)))}
                 sized? (assoc :size (count (remove size-ok? all))))}))
 
 ;; drawing
 
 (defn- axis-placement
-  "`{:pixel (fn [value offset] px) :index (fn [value] i)}` of a position axis: categorical - the band centre plus
-  `offset` band steps, the level's index in the scale domain; numeric - the pixel of `value + offset * resolution`,
-  the value's step from the axis minimum. `##NaN` pixels for values the scale can't place."
-  [{:keys [kind min resolution]} finalized]
+  "Gives the pixel placement of cells along a position axis.
+
+  Parameters:
+
+  - `info` (map): the axis's layout (see [[axis-info]]) - `:kind`, `:min`, `:resolution`.
+  - `finalized` (map): the axis's finalized position scale.
+
+  Returns `{:pixel (fn [value offset] px) :index (fn [value] i)}`: categorical - the band centre plus `offset` band steps (signed by the range's direction), the level's index in the scale domain; numeric - the pixel of `value + offset * resolution`, the value's step from the axis minimum. `##NaN` pixels for values the scale can't place."
+  [{:keys [kind] axis-min :min step-size :resolution} finalized]
   (let [f (scale/forward-fn finalized)]
     (if (= kind :categorical)
-      (let [domain (vec (:domain finalized))
-            index (zipmap (map #(if (number? %) (double %) %) domain) (range))
-            {:keys [step]} (scale/band-geometry finalized)
-            [start end] (:range finalized)
-            step (* (double step) (m/signum (- (double end) (double start))))]
-        {:pixel (fn [value ^double offset] (+ (double (f value)) (* offset step)))
-         :index (fn [value] (get index (if (number? value) (double value) value) 0))})
-      (let [lo (double min) r (double resolution)]
-        {:pixel (fn [value ^double offset] (double (f (+ (double value) (* offset r)))))
-         :index (fn [value] (m/round (/ (- (double value) lo) r)))}))))
+      (let [index (zipmap (map aesthetic/level-key (:domain finalized)) (range))
+            {:keys [^double step]} (scale/band-geometry finalized)
+            [^double start ^double end] (:range finalized)
+            signed-step (m/* step (m/signum (m/- end start)))]
+        {:pixel (fn [value ^double offset] (m/+ (double (f value)) (m/* offset signed-step)))
+         :index (fn [value] (get index (aesthetic/level-key value) 0))})
+      (let [lo (double axis-min)
+            r (double step-size)]
+        {:pixel (fn [^double value ^double offset] (double (f (m/+ value (m/* offset r)))))
+         :index (fn [^double value] (m/round (m// (m/- value lo) r)))}))))
 
 (defn- label-text
-  "Text of the value label of a cell (`value-label` - the option), `nil` - none: a function's result as text; for
-  `true` a number to at most 2 decimals (whole numbers without them), a keyword's name, other values as text."
+  "Gives the value label text of a cell.
+
+  Parameters:
+
+  - `value-label`: the `:value-label` option - `true` or a function of `{:value :x :y}`.
+  - `value`: the cell's colour value.
+  - `x`, `y`: the cell's position values.
+
+  Returns the function's result as text (`nil` - no label); for `true` a number to at most 2 decimals (whole numbers without them), a keyword's name, other values as text (see [[cljplot2.content.label/value-text]])."
   [value-label value x y]
-  (cond
-    (fn? value-label) (some-> (value-label {:value value :x x :y y}) str)
-    :else (label/value-text value)))
+  (if (fn? value-label)
+    (some-> (value-label {:value value :x x :y y}) str)
+    (label/value-text value)))
 
 (defn draw
-  "Draw one panel's cells (fills, then value labels on top)."
+  "Draws one panel's cells: fills, then the value labels on top.
+
+  Parameters:
+
+  - `_chart`: the chart value (unused).
+  - `computed` (map): the panel's stats (see [[compute]]).
+  - `canvas`: the panel's canvas.
+  - `_box`: the panel box (unused).
+  - `scales` (map): the panel's finalized scales.
+  - `env` (map): the drawing environment.
+
+  A cell whose colour is outside the colour scale, or whose size factor is 0, isn't drawn; labels take black or white by the colour painted under them (text role `:tile-value`)."
   [_chart {:keys [cells axes style value-label sized?]} canvas _box scales env]
   (when (seq cells)
     (let [px (axis-placement (:x axes) (:x scales))
@@ -234,12 +313,12 @@
                         (fn [cell] (some-> (size-of (nth cell 3)) (size-factor largest))))
                       (constantly 1.0))
           placed (keep (fn [[x y value :as cell]]
-                         (when-let [fill (when (pos? (double (or (factor-of cell) 0.0))) (color-of value))]
+                         (when-let [fill (when (m/pos? (double (or (factor-of cell) 0.0))) (color-of value))]
                            (let [to-pixel (fn [[ox oy]]
                                             (let [a ((:pixel px) x ox) b ((:pixel py) y oy)]
                                               (if flipped? (v/vec2 b a) (v/vec2 a b))))]
                              {:x x :y y :value value :fill fill :to-pixel to-pixel
-                              :cell-scale (* (double (or (:cell-scale style) 1.0)) (double (factor-of cell)))
+                              :cell-scale (m/* (double (or (:cell-scale style) 1.0)) (double (factor-of cell)))
                               :offsets (cells/lattice-offsets (:cell style) ((:index px) x) ((:index py) y) centre-x? centre-y?)})))
                        cells)]
       (let [draw-cells! (fn [c] (doseq [{:keys [to-pixel offsets fill cell-scale]} placed]
@@ -250,8 +329,8 @@
         (doseq [{:keys [x y value fill to-pixel offsets]} placed
                 :let [text (label-text value-label value x y)
                       ^fastmath.vector.Vec2 centre (to-pixel (let [n (double (count offsets))]
-                                                               [(/ (double (reduce + (map first offsets))) n)
-                                                                (/ (double (reduce + (map second offsets))) n)]))]
+                                                               [(m// (v/sum (map first offsets)) n)
+                                                                (m// (v/sum (map second offsets)) n)]))]
                 :when (and text (not (m/nan? (.x centre))) (not (m/nan? (.y centre))))]
           (label/draw-at! canvas {:kind :label :role :tile-value :text text
                                   :color (draw/text-color (:theme env) :tile-value
@@ -260,20 +339,30 @@
 
 (def ^:private size-key-fill
   "Fill of a size legend key without a color attribute: a neutral grey."
-  [110 110 110])
+  (c/gray 110))
 
 (defn legend
-  "Key glyph: the cell shape filled with the key's color (grey for a size key), fitted in `box`; a size key's cell
-  scaled by its size factor (see [[size-factor]], the plot's size scale in `env` `:scales`)."
-  [{:keys [options]} attributes canvas {:keys [x y w h]} env]
-  (let [st (style options (:theme env))
+  "Draws the tile chart's key glyph: the cell shape fitted in the key box.
+
+  Parameters:
+
+  - `chart` (map): the chart value.
+  - `attributes` (map): the legend entry's mapped attributes (`:color`, `:size`).
+  - `canvas`: the legend's canvas.
+  - `box` (map): the key box `{:x :y :w :h}`.
+  - `env` (map): the drawing environment (`:theme`, `:scales` - the plot's size scale).
+
+  The cell is filled with the key's colour (grey for a size key without one); a size key's cell is scaled by its size factor (see [[size-factor]]); a factor of 0 draws nothing."
+  [chart attributes canvas {:keys [^double x ^double y ^double w ^double h]} env]
+  (let [st (theme/resolved-style (:theme env) chart)
         offsets (cells/lattice-offsets (:cell st) 0 0 true true)
-        [rx ry] (cells/lattice-reach (:cell st) true true)
-        k (/ (* 0.4 (m/min (double w) (double h))) (m/max (double rx) (double ry)))
-        cx (+ (double x) (* 0.5 (double w))) cy (+ (double y) (* 0.5 (double h)))
+        [^double rx ^double ry] (cells/lattice-reach (:cell st) true true)
+        k (m// (m/* 0.4 (m/min w h)) (m/max rx ry))
+        cx (m/+ x (m/* 0.5 w))
+        cy (m/+ y (m/* 0.5 h))
         factor (if-let [size (:size attributes)]
                  (size-factor size (largest-size (get-in env [:scales :size])))
                  1.0)]
-    (when (pos? factor)
-      (cells/draw-cell! canvas (fn [[ox oy]] (v/vec2 (+ cx (* k (double ox))) (- cy (* k (double oy)))))
+    (when (m/pos? factor)
+      (cells/draw-cell! canvas (fn [[^double ox ^double oy]] (v/vec2 (m/+ cx (m/* k ox)) (m/- cy (m/* k oy))))
                         offsets (or (:color attributes) size-key-fill) (assoc st :cell-scale factor)))))

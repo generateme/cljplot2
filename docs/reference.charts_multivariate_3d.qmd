@@ -366,7 +366,7 @@ Points, spikes from a base, bars, or nothing but the side projections of the poi
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:type</td><td>one of :points :spikes :bars :none</td><td>:points</td><td>marks: :points, :spikes (a line from :base to each point), :bars (a box per row from :base to z) or :none (only :projections)</td></tr><tr><td>:base</td><td>a finite number</td><td>the low z limit (0 with :bins)</td><td>z where spikes and bars start (kept within an explicit z domain)</td></tr><tr><td>:bar-size</td><td>[a number in [0 1], a number in [0 1]]</td><td>[0.8 0.8]</td><td>bar footprint [fx fy], fractions of the x / y resolution (of a cell with :bins)</td></tr><tr><td>:projections</td><td>map</td><td></td><td>side projections of the points on the far walls, per plane</td></tr><tr><td>:projections :xy</td><td>one of :points :density :contour</td><td></td><td>xy wall: :points, :density (KDE bands) or :contour (KDE lines)</td></tr><tr><td>:projections :xz</td><td>one of :points :density :contour</td><td></td><td>xz wall: :points, :density (KDE bands) or :contour (KDE lines)</td></tr><tr><td>:projections :yz</td><td>one of :points :density :contour</td><td></td><td>yz wall: :points, :density (KDE bands) or :contour (KDE lines)</td></tr><tr><td>:bins</td><td>[integer (1..1000), integer (1..1000)]</td><td></td><td>a 2D histogram: rows counted on an [nx ny] grid over x / y, counts as z</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:type</td><td>one of :points :spikes :bars :none</td><td>:points</td><td>marks: :points, :spikes (a line from :base to each point), :bars (a box per row from :base to z) or :none (only :projections)</td></tr><tr><td>:base</td><td>a finite number</td><td>the low z limit (0 with :bins)</td><td>z where spikes and bars start (kept within an explicit z domain)</td></tr><tr><td>:bar-size</td><td>[a number in [0 1], a number in [0 1]]</td><td>[0.8 0.8]</td><td>bar footprint [fx fy], fractions of the x / y resolution (of a cell with :bins)</td></tr><tr><td>:projections</td><td>map</td><td></td><td>side projections of the points on the far walls, per plane</td></tr><tr><td>:projections :xy</td><td>one of :points :density :contour</td><td></td><td>xy wall: :points, :density (KDE bands) or :contour (KDE lines)</td></tr><tr><td>:projections :xz</td><td>one of :points :density :contour</td><td></td><td>xz wall: :points, :density (KDE bands) or :contour (KDE lines)</td></tr><tr><td>:projections :yz</td><td>one of :points :density :contour</td><td></td><td>yz wall: :points, :density (KDE bands) or :contour (KDE lines)</td></tr><tr><td>:projection-grid</td><td>integer (2..500)</td><td>50</td><td>grid points per axis of a :density / :contour projection</td></tr><tr><td>:projection-levels</td><td>integer (1..100)</td><td>6</td><td>levels of the :density bands / :contour lines of the projections</td></tr><tr><td>:bins</td><td>[integer (1..1000), integer (1..1000)]</td><td></td><td>a 2D histogram: rows counted on an [nx ny] grid over x / y, counts as z</td></tr></tbody></table>
 ```
 
 :::
@@ -417,6 +417,36 @@ Points, spikes from a base, bars, or nothing but the side projections of the poi
 :::
 
 
+A coarser density grid with fewer levels (`:projection-grid`, `:projection-levels`); how strongly projected points
+and density bands are faded is a theme key of `[:chart :cloud]`, not an option:
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:projection-alpha</td><td>a number in [0 1]</td><td>0.35</td><td>alpha factor of projected points (their style's colour)</td></tr><tr><td>:band-alpha</td><td>a number in [0 1]</td><td>0.15</td><td>alpha factor of a projected density band (the chart's colour)</td></tr></tbody></table>
+```
+
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image {:data iris
+                    :mapping {:x :sepal-length :y :sepal-width :z :petal-length}
+                    :charts [(chart/cloud {:type :none :projections {:xy :density :xz :contour :yz :points}
+                                           :projection-grid 20 :projection-levels 3})]
+                    :theme {:chart {:cloud {:projection-alpha 0.8 :band-alpha 0.3}}}}
+                   {:width 600 :height 480})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_multivariate_3d_files/image9.png)
+:::
+
+
 The 3D frame (Shared options) on the same points: the eye moved round and up, the box flattened and the x axis
 reversed, the box and axes left out:
 
@@ -444,7 +474,7 @@ reversed, the box and axes left out:
 
 
 ::: {.clay-image}
-![](reference.charts_multivariate_3d_files/image9.png)
+![](reference.charts_multivariate_3d_files/image10.png)
 :::
 
 
@@ -492,7 +522,7 @@ a parametric surface, or the 2D density of mapped points; heights coloured throu
 
 
 ::: {.clay-image}
-![](reference.charts_multivariate_3d_files/image10.png)
+![](reference.charts_multivariate_3d_files/image11.png)
 :::
 
 
@@ -534,7 +564,7 @@ size, and the drawing - filled, wireframe or both, shaded, in one colour:
 
 
 ::: {.clay-image}
-![](reference.charts_multivariate_3d_files/image11.png)
+![](reference.charts_multivariate_3d_files/image12.png)
 :::
 
 
@@ -565,7 +595,7 @@ high), and the quad outlines' width:
 
 
 ::: {.clay-image}
-![](reference.charts_multivariate_3d_files/image12.png)
+![](reference.charts_multivariate_3d_files/image13.png)
 :::
 
 
@@ -591,7 +621,7 @@ The 3D frame (Shared options) on a surface: seen from another side and from abov
 
 
 ::: {.clay-image}
-![](reference.charts_multivariate_3d_files/image13.png)
+![](reference.charts_multivariate_3d_files/image14.png)
 :::
 
 

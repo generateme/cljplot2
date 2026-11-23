@@ -48,9 +48,12 @@
   `:axes`, `:missing`, `:curve`, `:smoothness`, `:padding {:y [lo hi]}` (fractions of the scaled extent, default 0.05
   each side; the variables' `:x` is a bands scale).
   Groups (see [[cljplot2.data.group]]) come from ordinal aesthetics (`:color`, `:dash`) and `:group`; a line per
-  row, in its group's style."
+  row, in its group's style.
+
+  Functions: [[schemas]] - the chart's schemas; [[scalings]], [[robust-spreads]] - the scaling values; [[variable-key]], [[variable-label]] - a variable's limits key and label; [[variable-axes]] - the axes over the rows; [[compute]] - per panel the scaled lines; [[smooth-segment]] - a smooth connection between axes; [[axis-ticks]] - an axis's ticks and labels; [[draw]] - one panel; [[legend]] - the key glyph."
   (:require [fastmath.core :as m]
             [fastmath.stats :as stats]
+            [fastmath.vector :as v]
             [wadogo.scale :as s]
             [cljplot2.content.label :as label]
             [cljplot2.data.group :as group]
@@ -69,29 +72,63 @@
 
 ;; variables
 
-(defn- labelled-variable? [v] (and (vector? v) (= 2 (count v)) (string? (first v)) (or (keyword? (second v)) (fn? (second v)))))
+(defn- labelled-variable?
+  "Tests whether a `:variables` entry is a `[label accessor]` pair.
+
+  Parameters:
+
+  - `v`: the entry.
+
+  Returns a truthy value for a vector of a string and a keyword or function, else a falsy one."
+  [v]
+  (and (vector? v) (m/== 2 (count v)) (string? (first v)) (or (keyword? (second v)) (fn? (second v)))))
 
 (def ^:private variable
+  "Schema of one `:variables` entry: a keyword or a `[label accessor]` pair."
   (schema/named-type ::variable #(or (keyword? %) (labelled-variable? %))
                      "should be a keyword or a [label accessor] pair (a string and a keyword or function)"))
 
 (defn variable-key
-  "Key of a `:variables` entry in `:limits`: the keyword, or the pair's label."
+  "Gives the key of a `:variables` entry in `:limits`.
+
+  Parameters:
+
+  - `v`: the entry - a keyword or a `[label accessor]` pair.
+
+  Returns the keyword, or the pair's label.
+
+  See also [[variable-label]]."
   [v]
   (if (keyword? v) v (first v)))
 
 (defn variable-label
-  "Axis label of a `:variables` entry: the keyword's name, or the pair's label."
+  "Gives the axis label of a `:variables` entry.
+
+  Parameters:
+
+  - `v`: the entry - a keyword or a `[label accessor]` pair.
+
+  Returns the keyword's name, or the pair's label.
+
+  See also [[variable-key]]."
   [v]
   (if (keyword? v) (name v) (first v)))
 
 (defn- duplicate-labels
+  "Explains why the labels of `:variables` entries repeat.
+
+  Parameters:
+
+  - `vs` (sequence): the entries.
+
+  Returns the error message naming the repeated labels, or `nil` when every label differs."
   [vs]
   (let [labels (map variable-label vs)]
     (when (not= (count labels) (count (distinct labels)))
-      (str "variable labels must differ, repeated: " (pr-str (vec (for [[l n] (frequencies labels) :when (> (long n) 1)] l)))))))
+      (str "variable labels must differ, repeated: " (pr-str (vec (for [[l n] (frequencies labels) :when (m/> (long n) 1)] l)))))))
 
 (def ^:private variables
+  "Schema of `:variables`: at least two entries with different labels."
   (schema/with-rules [:vector variable]
     [#(when (< (count %) 2) "should have at least 2 variables") nil]
     [duplicate-labels nil]))
@@ -104,11 +141,13 @@
   "Named `:robust-spread` estimators (`fastmath.stats/robust-stddev` methods)."
   #{:mad :iqr :sn :qn :tukey :biweight :stddev :meanad :gini})
 
-(def ^:private robust-spread
-  (schema/named-type ::robust-spread #(or (contains? robust-spreads %) (and (schema/finite? %) (< 0.0 (double %) 0.5)))
+(def ^:private robust-spread-schema
+  "Schema of `:robust-spread`: a named estimator or a quantile in (0 0.5)."
+  (schema/named-type ::robust-spread #(or (contains? robust-spreads %) (and (schema/finite? %) (m/< 0.0 (double %) 0.5)))
                      (str "should be one of " (pr-str (vec (sort robust-spreads))) " or a quantile p, 0 < p < 0.5")))
 
 (def ^:private style-entries
+  "Map entries of the parallel style (theme `[:chart :parallel]`; also options): the line style, the radar fill and its alpha, the pattern."
   (into (conj polyline/style-entries
               (schema/optional :fill {:cljplot2/section :style :description "radar polygon fill (polar only): :none, :color (the line's colour at :alpha) or a colour"}
                                [:or [:= :color] schema/color])
@@ -116,6 +155,13 @@
         draw/pattern-style-entries))
 
 (defn- unknown-limits
+  "Explains which `:limits` keys name no variable.
+
+  Parameters:
+
+  - `options` (map): `:variables`, `:limits`.
+
+  Returns the error message listing the unknown keys, or `nil` (also when either option is missing or malformed)."
   [{vs :variables lims :limits}]
   (when (and (vector? vs) (map? lims))
     (let [ks (set (map variable-key vs))
@@ -124,7 +170,15 @@
         (str ":limits keys should be variables (keywords, or pair labels), unknown: " (pr-str (vec unknown)))))))
 
 (defn- needs
-  "Rule: option `k` is used only when `(pred options)`; `message` otherwise."
+  "Makes an options rule: an option is used only when a predicate of the options holds.
+
+  Parameters:
+
+  - `k` (keyword): the option.
+  - `pred` (function): of the options.
+  - `message` (string): the error message.
+
+  Returns a `[problem path]` rule (see [[cljplot2.schema/with-rules]]) giving `message` at `[k]` for options holding `k` where `pred` fails."
   [k pred message]
   [(fn [options] (when (and (contains? options k) (not (pred options))) message)) [k]])
 
@@ -154,7 +208,7 @@
                         (schema/optional :robust-spread {:cljplot2/section :axes :description (str "spread of :scaling :robust: a fastmath.stats/robust-stddev "
                                                                            "estimator (:mad, :iqr, :sn, :qn, ...) or a quantile p in (0 0.5)")
                                                          :cljplot2/default-doc ":mad (only with :scaling :robust)"}
-                                         robust-spread)
+                                         robust-spread-schema)
                         (schema/optional :curve {:cljplot2/section :style :description "join consecutive axes with smooth curves (:smooth)"
                                                  :cljplot2/default-doc "straight segments"}
                                          [:enum :smooth])
@@ -176,65 +230,105 @@
                      (schema/nilable :pattern {:description "radar fill pattern, grouping the rows"} schema/accessor)
                      (schema/nilable :group {:description "groups without a visual aesthetic"} schema/accessor)]]})
 
-(defn- style
-  [options theme]
-  (merge (theme/chart-style theme :parallel options) (select-keys options [:color :width :dash :fill :alpha :pattern :pattern-color])))
-
 ;; scaling
 
 (defn- numeric-value
-  "`v` as a double when it is a finite number, else `nil` (missing)."
+  "Gives a value as a number of an axis.
+
+  Parameters:
+
+  - `v`: the value.
+
+  Returns `v` as a double when it is a finite number, else `nil` (missing)."
   [v]
   (when (and (number? v) (m/valid-double? (double v))) (double v)))
 
 (defn- affine
-  "`[offset scale]` of the `:scaling` of `options` for a variable with finite `values` and domain `[lo hi]`; a zero
-  (or undefined) spread gives the values 0.5 (`:uniminmax`) or 0."
+  "Gives the affine scaling of a variable, `(v - offset) / scale`.
+
+  Parameters:
+
+  - `options` (map): `:scaling` (default `:uniminmax`), `:robust-center` (default `:median`), `:robust-spread` (default `:mad`) - see the namespace doc.
+  - `values` (sequence): the variable's finite values (its domain ends without values).
+  - `[lo hi]`: the variable's domain.
+
+  Returns `[offset scale]`; a zero or undefined spread gives the values 0.5 (`:uniminmax`) or 0 (scale 1)."
   [{:keys [scaling robust-center robust-spread] :or {scaling :uniminmax robust-center :median robust-spread :mad}}
    values [^double lo ^double hi]]
-  (let [[o s] (case scaling
-                :uniminmax [lo (- hi lo)]
-                :std [(stats/mean values) (stats/stddev values)]
-                :robust [(if (= :mean robust-center) (stats/mean values) (stats/median values))
-                         (stats/robust-stddev values robust-spread)]
-                :center [(stats/mean values) 1.0]
-                :globalminmax [0.0 1.0])
-        o (double o) s (double s)]
+  (let [[centre spread] (case scaling
+                          :uniminmax [lo (m/- hi lo)]
+                          :std [(stats/mean values) (stats/stddev values)]
+                          :robust [(if (= :mean robust-center) (stats/mean values) (stats/median values))
+                                   (stats/robust-stddev values robust-spread)]
+                          :center [(stats/mean values) 1.0]
+                          :globalminmax [0.0 1.0])
+        o (double centre)
+        s (double spread)]
     (cond
-      (and (m/valid-double? s) (pos? s)) [o s]
-      (= :uniminmax scaling) [(- lo 0.5) 1.0]
+      (and (m/valid-double? s) (m/pos? s)) [o s]
+      (= :uniminmax scaling) [(m/- lo 0.5) 1.0]
       :else [o 1.0])))
 
 (defn- scaled
-  "Scaled value of `v` on `axis` (`{:offset :scale}`)."
+  "Gives a value scaled on an axis.
+
+  Parameters:
+
+  - `axis` (map): `:offset`, `:scale` (see [[affine]]).
+  - `v` (double): the value in original units.
+
+  Returns `(v - offset) / scale`."
   ^double [{:keys [^double offset ^double scale]} ^double v]
-  (/ (- v offset) scale))
+  (m// (m/- v offset) scale))
 
 (defn variable-axes
-  "Axis of every variable of `options` over `rows` (all panels): `{:label :key :accessor :domain [lo hi] :offset
-  :scale}` (see the namespace doc). Throws `ex-info {:key :variables}` for a variable without a numeric value in
-  non-empty `rows` and no `:limits`."
+  "Gives the axis of every variable over the rows of all panels.
+
+  Parameters:
+
+  - `options` (map): `:variables`, `:limits` and the scaling options (see the namespace doc).
+  - `rows` (sequence): the rows of all panels.
+
+  Returns a vector of `{:label :key :accessor :domain [lo hi] :offset :scale}` in `:variables` order: the domain from `:limits`, else the finite data range, `[0 1]` without rows.
+
+  Throws `ex-info {:key :variables}` for a variable without a numeric value in non-empty `rows` and no `:limits`.
+
+  See also [[affine]]."
   [options rows]
-  (mapv (fn [v]
-            (let [k (variable-key v)
-                  acc (data/row-accessor :variables (if (keyword? v) v (second v)))
+  (mapv (fn [entry]
+            (let [k (variable-key entry)
+                  acc (data/row-accessor :variables (if (keyword? entry) entry (second entry)))
                   values (into [] (keep (comp numeric-value acc)) rows)
-                  domain (or (some->> (get-in options [:limits k]) (mapv double))
-                             (when (seq values) [(reduce min values) (reduce max values)]))]
-              (when (and (seq rows) (nil? domain))
+                  given-domain (or (some->> (get-in options [:limits k]) (mapv double))
+                                   (when (seq values) [(v/mn values) (v/mx values)]))]
+              (when (and (seq rows) (nil? given-domain))
                 (schema/fail! (str "Variable " (pr-str k) " has no numeric values.") {:key :variables :value k}))
-              (let [domain (or domain [0.0 1.0])
+              (let [domain (or given-domain [0.0 1.0])
                     [o s] (affine options (if (seq values) values domain) domain)]
-                {:label (variable-label v) :key k :accessor acc :domain domain :offset o :scale s})))
+                {:label (variable-label entry) :key k :accessor acc :domain domain :offset o :scale s})))
           (:variables options)))
 
 (defn- row-values
-  "Scaled value of every axis of `axes` for `row` (`nil` - missing)."
+  "Gives a row's scaled value on every axis.
+
+  Parameters:
+
+  - `axes` (sequence): the axes (see [[variable-axes]]).
+  - `row` (map): the row.
+
+  Returns a vector of scaled values in axis order, `nil` where the value is missing (see [[numeric-value]])."
   [axes row]
   (mapv (fn [axis] (some->> ((:accessor axis) row) numeric-value (scaled axis))) axes))
 
 (defn- y-extent
-  "Extent of the scaled `values` (all rows) and every axis end."
+  "Gives the extent of the chart's `:y`: the scaled values and every axis end.
+
+  Parameters:
+
+  - `axes` (sequence): the axes (see [[variable-axes]]).
+  - `values` (sequence): the scaled values of all rows, `nil` where missing.
+
+  Returns the `:y` extent (see [[cljplot2.data.rows/extent]])."
   [axes values]
   (data/extent :y (into (vec (remove nil? values))
                         (mapcat (fn [{[lo hi] :domain :as axis}] [(scaled axis lo) (scaled axis hi)]))
@@ -243,7 +337,16 @@
 ;; compute
 
 (defn- check-fill!
-  "Throw `ex-info {:key :fill}` for a `:fill` option in a cartesian plot (`coord` - the plot's `:coord`)."
+  "Checks that a radar fill is asked for only in a polar plot.
+
+  Parameters:
+
+  - `options` (map): the chart's options - `:fill`.
+  - `coord` (map or `nil`): the plot's `:coord`.
+
+  Returns `nil`.
+
+  Throws `ex-info {:key :fill}` for a `:fill` other than `:none` in a cartesian plot."
   [options coord]
   (let [fill (:fill options)]
     (when (and (not (coord/polar? coord)) (some? fill) (not= :none fill))
@@ -251,12 +354,18 @@
                     {:key :fill :value fill}))))
 
 (defn compute
-  "Per panel: `{:lines [{:rows [[scaled-or-nil ..] ..] :aesthetics}] :axes axes :style style}` (`axes` - see
-  [[variable-axes]], without accessors); extents (`:x` - the variable labels, ordered; `:y` - the scaled values and
-  axis ends), aesthetic extents, `:na`, `:dropped` (`:variables` - rows with a missing value), `:scale-defaults`
-  hiding the plot's y axis (in a flipped polar plot also padding the value angle, `:expand`), `:style` - the chart
-  style (`:fill :none` in cartesian plots; the legend's too)."
-  [{:keys [options]} {:keys [groups mapping]} {:keys [theme plot-scales coord flip?] :as env}]
+  "Computes the parallel chart's stats: per panel every row's scaled values, by group.
+
+  Parameters:
+
+  - `chart` (map): the chart value - `:options` (see the namespace doc), `:kind`, `:schema` (its style keys).
+  - `split` (map): `:groups` - `{panel rows}`, `:mapping` - the merged mapping.
+  - `env` (map): `:theme`, `:plot-scales`, `:coord`, `:flip?` and the rest of the compute environment.
+
+  Returns `{:data :extents :padding :na :dropped :scale-defaults :style}`: per panel `{:lines [{:rows [[scaled-or-nil ..] ..] :aesthetics}] :axes axes :style st}` (`axes` - see [[variable-axes]], without accessors; rows with a missing value left out with `:missing :drop`); extents `:x` (the variable labels, ordered) and `:y` (the scaled values and axis ends) and the aesthetic extents; `:padding` - [[cljplot2.data.rows/default-padding]] under the `:padding` option; `:dropped :variables` - rows with a missing value; `:scale-defaults` hiding the plot's y axis (in a flipped polar plot also padding the value angle, `:expand`); `:style` - the chart style (`:fill :none` in cartesian plots; the legend's too).
+
+  Throws `ex-info {:key :fill}` for a radar fill in a cartesian plot, `{:key :variables}` for a variable without numbers (see [[variable-axes]])."
+  [{:keys [options] :as chart} {:keys [groups mapping]} {:keys [theme plot-scales coord flip?] :as env}]
   (check-fill! options coord)
   (let [{:keys [panels dropped]} (group/split groups mapping env)
         axes (variable-axes options (mapcat (fn [gs] (mapcat :rows gs)) (vals panels)))
@@ -272,8 +381,8 @@
         labels (mapv :label axes)
         x-extent (assoc (data/extent :x labels) :ordered? true)
         y (y-extent axes (mapcat (fn [ls] (mapcat (comp (partial apply concat) :rows) ls)) (vals panel-lines)))
-        st (cond-> (style options theme) (not (coord/polar? coord)) (assoc :fill :none))
-        padding (merge {:x [0.05 0.05] :y [0.05 0.05]} (:padding options))
+        st (cond-> (theme/resolved-style theme chart) (not (coord/polar? coord)) (assoc :fill :none))
+        padding (merge data/default-padding (:padding options))
         drawn-axes (mapv #(dissoc % :accessor) axes)]
     {:data (update-vals panel-lines (fn [ls] {:lines (mapv #(dissoc % :incomplete) ls) :axes drawn-axes :style st}))
      :extents (merge-with merge
@@ -281,128 +390,215 @@
                           (update-vals panels (constantly {:x x-extent :y y})))
      :padding padding
      :na (group/na-dims panels)
-     :dropped (assoc dropped :variables (reduce + 0 (mapcat #(map :incomplete %) (vals panel-lines))))
+     :dropped (assoc dropped :variables (reduce m/long-add 0 (mapcat #(map :incomplete %) (vals panel-lines))))
      :scale-defaults {:y (cond-> {:axis false} (and (coord/polar? coord) flip?) (assoc :expand (:y padding)))}
      :style st}))
 
 ;; draw
 
 (defn- closed
-  "Range points `pts` of a row, closed with its first point a turn further on when `closes?` (a radar with the
-  variables on the angles of a full circle), so arcs and smooth curves to it run forward."
+  "Closes a radar row's range points.
+
+  Parameters:
+
+  - `geometry` (map or `nil`): the polar geometry (its `:theta` range).
+  - `closes?`: does the row close (a radar with the variables on the angles of a full circle)?
+  - `pts` (vector): the row's range points `[h v]`.
+
+  Returns `pts` with its first point a turn further on appended when `closes?`, so arcs and smooth curves to it run forward; else `pts`."
   [geometry closes? pts]
   (if closes?
-    (let [[h v] (first pts)
-          [t0 t1] (:theta geometry)]
-      (conj pts [(+ (double h) (- (double t1) (double t0))) v]))
+    (let [[^double h v] (first pts)
+          [^double t0 ^double t1] (:theta geometry)]
+      (conj pts [(m/+ h (m/- t1 t0)) v]))
     pts))
 
-(def ^:private ^:const smooth-step-pixels
-  "Largest distance (pixels, measured along the straight or arc connection) between samples of a smooth curve."
+(def ^{:private true :const true :tag 'double} smooth-step-pixels
+  "Largest distance (pixels, measured along the straight or arc connection) between samples of a smooth curve (render quality, not an option)."
   2.0)
 
-(def ^:private ^:const max-smooth-steps
-  "Most samples of one smooth connection."
+(def ^{:private true :const true :tag 'double} max-smooth-steps
+  "Most samples of one smooth connection (a safety limit, not an option)."
   1000.0)
 
 (defn smooth-segment
-  "Range points of the smooth connection from `p` to `q` (`[h v]` each; `p` left out), `n` samples: a cubic bezier
-  whose control points differ from the ends only along the axis coordinate - the value coordinate (index
-  `value-index` of a point) eases from `p`'s value to `q`'s (smoothstep), the axis coordinate runs between the axes
-  with its control points `smoothness` / 2 of the gap in from each end. The curve meets both axes perpendicularly and
-  stays between the two values."
+  "Gives the range points of a smooth connection between two axes.
+
+  The connection is a cubic bezier whose control points differ from the ends only along the axis coordinate: the value coordinate eases from `p`'s value to `q`'s (smoothstep), the axis coordinate runs between the axes with its control points `smoothness` / 2 of the gap in from each end. The curve meets both axes perpendicularly and stays between the two values.
+
+  Parameters:
+
+  - `p`, `q`: the ends `[h v]` in range space.
+  - `value-index` (long): the index of the value coordinate in a point (0 or 1).
+  - `smoothness` (number): in (0 1], how far the bend spreads over the gap.
+  - `n` (long): the number of samples.
+
+  Returns a vector of `n` points `[h v]`, `p` left out, `q` last.
+
+  See also [[smooth-run]]."
   [p q value-index smoothness n]
-  (let [value-index (long value-index)
-        n (long n)
-        axis-index (- 1 value-index)
-        a0 (double (nth p axis-index)) da (- (double (nth q axis-index)) a0)
-        b0 (double (nth p value-index)) db (- (double (nth q value-index)) b0)
-        c (* 0.5 (double smoothness))]
+  ;; more than 4 arguments: no primitive hints
+  (let [vi (long value-index)
+        steps (long n)
+        axis-index (m/long-sub 1 vi)
+        a0 (double (nth p axis-index))
+        da (m/- (double (nth q axis-index)) a0)
+        b0 (double (nth p vi))
+        db (m/- (double (nth q vi)) b0)
+        c (m/* 0.5 (double smoothness))]
     (mapv (fn [^long i]
-            (let [t (/ (double i) (double n))
-                  u (- 1.0 t)
-                  a (+ a0 (* da (+ (* 3.0 u u t c) (* 3.0 u t t (- 1.0 c)) (* t t t))))
-                  b (+ b0 (* db t t (- 3.0 (* 2.0 t))))]
-              (if (zero? value-index) [b a] [a b])))
-          (range 1 (inc n)))))
+            (let [t (m// (double i) (double steps))
+                  u (m/- 1.0 t)
+                  a (m/+ a0 (m/* da (m/+ (m/* 3.0 u u t c) (m/* 3.0 u t t (m/- 1.0 c)) (m/* t t t))))
+                  b (m/+ b0 (m/* db t t (m/- 3.0 (m/* 2.0 t))))]
+              (if (m/zero? vi) [b a] [a b])))
+          (range 1 (m/long-inc steps)))))
 
 (defn- smooth-run
-  "Range points of the run `run` (finite `[h v]` points) joined by smooth connections (see [[smooth-segment]]) in
-  `geometry`, sampled every [[smooth-step-pixels]] along the straight or arc connection."
+  "Joins a run of range points by smooth connections.
+
+  Parameters:
+
+  - `geometry` (map or `nil`): the polar geometry; `nil` - cartesian.
+  - `smooth` (map): `:value-index`, `:smoothness` (see [[smooth-segment]]).
+  - `run` (sequence): finite range points `[h v]`, at least one.
+
+  Returns a vector of range points: the first point, then each connection sampled every [[smooth-step-pixels]] along the straight or arc connection (2 to [[max-smooth-steps]] samples)."
   [geometry {:keys [value-index smoothness]} run]
   (into [(first run)]
         (mapcat (fn [[p q]]
                   (let [length (polyline/path-length (coord/line-path geometry [p q] true))]
                     (smooth-segment p q value-index smoothness
-                                    (long (m/constrain (m/ceil (/ length smooth-step-pixels)) 2.0 max-smooth-steps))))))
+                                    (long (m/constrain (m/ceil (m// length smooth-step-pixels)) 2.0 max-smooth-steps))))))
         (partition 2 1 run)))
 
 (defn- point-runs
-  "Drawn pixel runs of range points `pts` (`[h v]`, `NaN` where missing) in `geometry`: each run of finite points
-  joined - smooth curves with `smooth` (`{:value-index :smoothness}`, see [[smooth-segment]]), else straight - by
-  chords, or arcs with the geometry's `:arcs`."
+  "Gives the drawn pixel runs of a row's range points.
+
+  Each run of finite points is joined - by smooth curves with `smooth`, else straight - by chords, or by arcs with the geometry's `:arcs`.
+
+  Parameters:
+
+  - `geometry` (map or `nil`): the polar geometry; `nil` - cartesian.
+  - `pts` (sequence): range points `[h v]`, `NaN` where missing.
+  - `smooth` (map or `nil`): `{:value-index :smoothness}` (see [[smooth-segment]]); `nil` - straight.
+
+  Returns a vector of runs, each a vector of drawn pixel points."
   [geometry pts smooth]
   (mapv (fn [run] (mapv curve/drawn-point (coord/line-path geometry (cond->> run smooth (smooth-run geometry smooth))
                                                           (:arcs geometry))))
         (polyline/runs (mapv first pts) (mapv second pts))))
 
 (defn- axis-frame
-  "Placement of a tick mark and its label at range point `h` (its first coordinate): `:normal` - the unit pixel
-  direction from the axis toward the label, `:anchor` - the label anchor. Right of a vertical axis, below a horizontal
-  one (flipped plots); polar - beside a spoke (toward decreasing angles, as the plot's radial labels), or outward from
-  a ring at the tick's angle `h` (flipped)."
-  [geometry flipped? h]
+  "Places a tick mark and its label relative to an axis.
+
+  Right of a vertical axis, below a horizontal one (flipped plots); polar - beside a spoke (toward decreasing angles, as the plot's radial labels), or outward from a ring at the tick's angle (flipped).
+
+  Parameters:
+
+  - `geometry` (map or `nil`): the polar geometry; `nil` - cartesian.
+  - `flipped?`: is the plot flipped?
+  - `h` (number): the tick's first range coordinate (its angle in polar plots).
+
+  Returns `{:normal [nx ny] :anchor a}`: the unit pixel direction from the axis toward the label and the label anchor."
+  [geometry flipped? ^double h]
   (cond
-    geometry (let [side (if flipped? (double h) (- (double h) m/HALF_PI))]
-               {:normal [(m/sin side) (- (m/cos side))] :anchor (coord/outward-anchor side)})
+    geometry (let [side (if flipped? h (m/- h m/HALF_PI))]
+               {:normal [(m/sin side) (m/- (m/cos side))] :anchor (coord/outward-anchor side)})
     flipped? {:normal [0.0 1.0] :anchor [:center :top]}
     :else {:normal [1.0 0.0] :anchor [:left :middle]}))
 
 (defn axis-ticks
-  "Ticks (original units) and their labels `[[tick label] ..]` of an axis over `domain` `[lo hi]` about `length`
-  pixels long, with theme `spacing` pixels between ticks - at least two (see
-  [[cljplot2.scale.position/ticks-inside]]); a single tick for a zero-length domain."
+  "Gives the ticks and labels of a variable's axis.
+
+  Parameters:
+
+  - `[lo hi]`: the axis domain in original units.
+  - `length` (double): the axis length in pixels.
+  - `spacing` (double): theme pixels between ticks.
+
+  Returns a vector of `[tick label]`: at least two ticks inside the domain (see [[cljplot2.scale.position/ticks-inside]]); a single tick for a zero-length domain."
   [[^double lo ^double hi] ^double length ^double spacing]
-  (if (== lo hi)
-    (let [sc (s/scale :linear {:domain [(- lo 1.0) (+ hi 1.0)] :ticks 2})]
+  (if (m/== lo hi)
+    (let [sc (s/scale :linear {:domain [(m/- lo 1.0) (m/+ hi 1.0)] :ticks 2})]
       [[lo (first (scale/tick-labels sc {:kind :linear} [lo]))]])
     (let [{sc :scale ticks :ticks} (scale/ticks-inside #(s/scale :linear {:domain [lo hi] :ticks %})
                                                        (scale/tick-hint length spacing)
-                                                       #(<= lo (double %) hi))]
+                                                       #(m/<= lo (double %) hi))]
       (mapv vector ticks (scale/tick-labels sc {:kind :linear} ticks)))))
 
-(defn- pixel [geometry [h v]]
-  (let [^fastmath.vector.Vec2 p (coord/to-pixel geometry (double h) (double v))] [(.x p) (.y p)]))
+(defn- pixel
+  "Gives the pixel of a range point.
+
+  Parameters:
+
+  - `geometry` (map or `nil`): the polar geometry; `nil` - cartesian.
+  - `[h v]`: the range point.
+
+  Returns `[x y]` (see [[cljplot2.scale.coord/to-pixel]])."
+  [geometry [^double h ^double v]]
+  (let [^fastmath.vector.Vec2 p (coord/to-pixel geometry h v)] [(.x p) (.y p)]))
 
 (defn- axis-ends
-  "Range points `[start end]` of `axis` (its scaled `lo` and `hi`) through `rp`; `nil` when the scales can't place
-  them."
+  "Gives the range points of an axis's ends.
+
+  Parameters:
+
+  - `rp` (function): the range projection of a label and a scaled value.
+  - `axis` (map): `:label`, `:domain` and the scaling (see [[variable-axes]]).
+
+  Returns `[start end]` - its scaled `lo` and `hi`; `nil` when the scales can't place them."
   [rp {:keys [label domain] :as axis}]
   (let [ends [(rp label (scaled axis (first domain))) (rp label (scaled axis (second domain)))]]
     (when (every? #(m/valid-double? (double %)) (apply concat ends)) ends)))
 
 (defn- axis-path
-  "Pixel points of an axis from range point `start` to `end`: a spoke, a straight line, or (variables on rings) an
-  arc."
+  "Gives the pixel points of an axis between two range points.
+
+  Parameters:
+
+  - `geometry` (map or `nil`): the polar geometry; `nil` - cartesian.
+  - `start`, `end`: the range points.
+
+  Returns the pixel points: a spoke, a straight line, or (variables on rings) an arc."
   [geometry start end]
   (coord/line-path geometry [start end] true))
 
 (defn- axis-labels
-  "Tick label placements `[[content anchor x y] ...]` of every variable's axis (`[[start end] ticks]` per axis, ticks
-  `[[tick text] ...]`), without collisions across all axes: each whose box overlaps no label kept before it
-  ([[cljplot2.graphics.measure/kept-box-indices]] - e.g. the 0 labels meeting at a radar's centre)."
+  "Gives the tick labels of every axis to draw, without collisions across all axes.
+
+  A label is kept when its box overlaps no label kept before it (e.g. the 0 labels meeting at a radar's centre keep the first).
+
+  Parameters:
+
+  - `canvas`: the canvas (for measuring).
+  - `placed` (sequence): per axis `{:ticks [{:label [content anchor x y]} ..]}`.
+  - `env` (map): the drawing environment.
+
+  Returns a vector of `[content anchor x y]`.
+
+  See also [[cljplot2.graphics.measure/kept-box-indices]]."
   [canvas placed env]
   (let [labels (vec (for [{:keys [ticks]} placed, {:keys [label]} ticks] label))]
     (mapv labels (measure/kept-box-indices (mapv (fn [[content anchor x y]] (label/box-at canvas content anchor x y env))
                                                  labels)))))
 
 (defn- draw-axes!
-  "Each variable's axis: its line, ticks and tick labels (see the namespace doc); colliding labels dropped (see
-  [[axis-labels]])."
+  "Draws each variable's axis: its line, ticks and tick labels in theme `[:axis :y]`.
+
+  Parameters:
+
+  - `canvas`: the panel canvas.
+  - `axes` (sequence): the axes (see [[variable-axes]]).
+  - `rp` (function): the range projection.
+  - `geometry` (map or `nil`): the polar geometry.
+  - `flipped?`: is the plot flipped?
+  - `env` (map): the drawing environment (`:theme`).
+
+  Returns `nil`; an axis the scales can't place is skipped, colliding labels are dropped (see [[axis-labels]])."
   [canvas axes rp geometry flipped? env]
-  (let [{:keys [line-color line-width tick-color tick-length tick-width label-gap tick-spacing]} (get-in env [:theme :axis :y])
-        tick-length (double tick-length)
-        off (+ tick-length (double label-gap))
+  (let [{:keys [line-color line-width tick-color ^double tick-length tick-width ^double label-gap tick-spacing]} (get-in env [:theme :axis :y])
+        off (m/+ tick-length label-gap)
         placed (vec (for [{:keys [label domain] :as axis} axes
                           :let [[start end] (axis-ends rp axis)]
                           :when start
@@ -410,12 +606,11 @@
                       {:path path
                        :ticks (vec (for [[tick text] (axis-ticks domain (polyline/path-length path) (double tick-spacing))
                                          :let [tp (rp label (scaled axis (double tick)))
-                                               [px py] (pixel geometry tp)
-                                               {[nx ny] :normal anchor :anchor} (axis-frame geometry flipped? (first tp))
-                                               px (double px) py (double py) nx (double nx) ny (double ny)]]
-                                     {:mark [[px py] [(+ px (* nx tick-length)) (+ py (* ny tick-length))]]
+                                               [^double px ^double py] (pixel geometry tp)
+                                               {[^double nx ^double ny] :normal anchor :anchor} (axis-frame geometry flipped? (first tp))]]
+                                     {:mark [[px py] [(m/+ px (m/* nx tick-length)) (m/+ py (m/* ny tick-length))]]
                                       :label [{:kind :label :role :tick-label :text text} anchor
-                                              (+ px (* nx off)) (+ py (* ny off))]}))}))]
+                                              (m/+ px (m/* nx off)) (m/+ py (m/* ny off))]}))}))]
     (doseq [{:keys [path ticks]} placed]
       (polyline/stroke-runs! canvas [path] {:color line-color :width line-width})
       (doseq [{:keys [mark]} ticks]
@@ -424,22 +619,43 @@
       (label/draw-at! canvas content anchor x y env))))
 
 (defn- draw-web!
-  "Radar web: lines joining the axes at equal fractions of their length (ticks of 0..1 over the longest axis) -
-  closed polygons when `closes?`, else open lines (partial circles, rings) - in theme `[:panel :grid :y]`."
+  "Draws the radar web: lines joining the axes at equal fractions of their length, in theme `[:panel :grid :y]`.
+
+  The fractions are the ticks of 0..1 over the longest axis; closed polygons when `closes?`, else open lines (partial circles, rings).
+
+  Parameters:
+
+  - `canvas`: the panel canvas.
+  - `axes` (sequence): the axes (see [[variable-axes]]).
+  - `rp` (function): the range projection.
+  - `geometry` (map): the polar geometry.
+  - `closes?`: do the rows close?
+  - `env` (map): the drawing environment (`:theme`).
+
+  Returns `nil`; nothing is drawn with a `:none` grid line, an axis the scales can't place, or zero-length axes."
   [canvas axes rp geometry closes? env]
   (let [line (get-in env [:theme :panel :grid :y])
-        placed (keep #(when-let [ends (axis-ends rp %)] [(:label %) ends]) axes)
-        length (double (reduce max 0.0 (map (fn [[_ [start end]]] (polyline/path-length (axis-path geometry start end))) placed)))
+        placed (keep #(when-let [axis-end-points (axis-ends rp %)] [(:label %) axis-end-points]) axes)
+        length (double (reduce m/max 0.0 (map (fn [[_ [start end]]] (polyline/path-length (axis-path geometry start end))) placed)))
         ends (mapv (fn [{:keys [label domain] :as axis}] [label (scaled axis (first domain)) (scaled axis (second domain))]) axes)]
-    (when (and (not (theme/none? line)) (= (count placed) (count axes)) (pos? length))
-      (doseq [[f _] (axis-ticks [0.0 1.0] length (double (get-in env [:theme :axis :y :tick-spacing])))
-              :let [f (double f)
-                    pts (mapv (fn [[label ^double lo ^double hi]] (rp label (+ lo (* f (- hi lo))))) ends)]]
+    (when (and (not (theme/none? line)) (m/== (count placed) (count axes)) (m/pos? length))
+      (doseq [[^double f _] (axis-ticks [0.0 1.0] length (double (get-in env [:theme :axis :y :tick-spacing])))
+              :let [pts (mapv (fn [[label ^double lo ^double hi]] (rp label (m/+ lo (m/* f (m/- hi lo))))) ends)]]
         (polyline/stroke-runs! canvas (point-runs geometry (closed geometry closes? pts) nil) line)))))
 
 (defn draw
-  "Draw one panel: the radar web (polar, while the plot's y axis is hidden), every row's line (filled radar polygons
-  first), then the variable axes."
+  "Draws one panel: the radar web (polar, while the plot's y axis is hidden), every row's line (filled radar polygons first), then the variable axes.
+
+  Parameters:
+
+  - `chart` (map): the chart value - `:options` (`:curve`, `:smoothness`, `:axes`).
+  - `computed` (map): the panel's stats - `:lines`, `:axes`, `:style` (see [[compute]]).
+  - `canvas`: the panel canvas.
+  - `_box`: the panel box (unused - the scales place the lines).
+  - `scales` (map): the finalized scales.
+  - `env` (map): the drawing environment (`:theme`).
+
+  Returns `nil`; a row whose group style is `nil` (an aesthetic outside its scale) isn't drawn, a row with a missing value isn't filled."
   [{:keys [options]} {:keys [lines axes style]} canvas _box scales env]
   (let [geometry (scale/coord-geometry scales)
         flipped? (scale/flipped? scales)
@@ -465,11 +681,23 @@
       (draw-axes! canvas axes rp geometry flipped? env))))
 
 (defn legend
-  "Key glyph: a line through the middle of `box`; with a radar `:fill` a filled square outlined in the line style,
-  see [[cljplot2.graphics.polyline/key-glyph!]]. The style is the computed one (env `:chart-stats`), so a theme fill
-  shows only where it is drawn."
-  [{:keys [options]} attributes canvas box env]
-  (let [st (merge (or (get-in env [:chart-stats :style]) (style options (:theme env)))
+  "Draws the key glyph: a line through the middle of the key box; with a radar fill a filled square outlined in the line style.
+
+  The style is the computed one (env `:chart-stats`), so a theme fill shows only where it is drawn.
+
+  Parameters:
+
+  - `chart` (map): the chart value (its style options, used without computed stats).
+  - `attributes` (map): the key's attributes - `:color`, `:dash`, `:pattern`.
+  - `canvas`: the legend canvas.
+  - `box` (map): the key box.
+  - `env` (map): the legend environment (`:theme`, `:chart-stats`).
+
+  Returns `nil`.
+
+  See also [[cljplot2.graphics.polyline/key-glyph!]]."
+  [chart attributes canvas box env]
+  (let [st (merge (or (get-in env [:chart-stats :style]) (theme/resolved-style (:theme env) chart))
                   (select-keys attributes [:color :dash :pattern]))
         area (polyline/area-color st false)]
     (polyline/key-glyph! canvas box st area (draw/pattern-fill st area))))

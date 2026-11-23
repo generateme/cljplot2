@@ -12,7 +12,9 @@
   * `:domain {:x [lo hi] :y [lo hi]}` - the data range the image covers: added to the extents without padding or nice
     ends; without it the image follows the other charts' domains (a plot of only an image needs it).
 
-  The callback is user code, called once per panel and render: seed its randomness, mind its cost."
+  The callback is user code, called once per panel and render: seed its randomness, mind its cost.
+
+  Functions: [[compute]] - the callback in every panel, extents of `:domain`; [[draw]] - the callback's image over a panel."
   (:require [clojure2d.core :as c2d]
             [clojure2d.protocols :as pr]
             [fastmath.core :as m]
@@ -24,8 +26,9 @@
 (set! *unchecked-math* :warn-on-boxed)
 
 (def ^:private range-schema
+  "Schema of a `:domain` range `[lo hi]`: finite numbers, `lo < hi`."
   (schema/with-rules [:tuple schema/finite schema/finite]
-    [#(when-not (< (double (first %)) (double (second %))) "should be [lo hi] with lo < hi")]))
+    [(fn [[^double lo ^double hi]] (when-not (m/< lo hi) "should be [lo hi] with lo < hi"))]))
 
 (def schemas
   "Schemas of the image chart: `:style` (none), `:options`, `:mapping` (merged; only facet keys)."
@@ -41,7 +44,16 @@
    :mapping [:map]})
 
 (defn compute
-  "Every panel (`facet/all-panels`): `{:f f}`; extents and no padding of `:domain` when given."
+  "Computes the image chart's stats: the callback in every panel.
+
+  Parameters:
+
+  - `chart` (map): the chart value; its `:options` - `:f` (the callback), `:domain` (`{:x [lo hi] :y [lo hi]}`, optional).
+  - `_chart-split`, `_env`: unused - the chart reads no data.
+
+  Returns `{:data {facet/all-panels {:f f}} :extents .. :na #{} :dropped {}}`: with `:domain` its ranges as numeric extents, no padding and no nice ends (`:scale-defaults`); without it no extents.
+
+  See also [[draw]]."
   [{:keys [options]} _chart-split _env]
   (let [{:keys [f domain]} options]
     (cond-> {:data {facet/all-panels {:f f}}
@@ -54,7 +66,15 @@
                     :scale-defaults {:x {:nice false} :y {:nice false}}))))
 
 (defn- image-of
-  "`BufferedImage` of the callback's `result`, `nil` for `nil`; throws `ex-info {:key :f}` for anything else."
+  "Gives the `BufferedImage` of a callback's result.
+
+  Parameters:
+
+  - `result`: what the `:f` callback returned.
+
+  Returns a `BufferedImage` of anything clojure2d gets an image from (an image, a canvas, pixels), `nil` for `nil`.
+
+  Throws `ex-info {:key :f}` for any other value."
   [result]
   (cond
     (nil? result) nil
@@ -63,15 +83,29 @@
                         {:key :f :value (type result)})))
 
 (defn draw
-  "Call the callback for this panel (`env` `:panel-key`) and draw its image over the panel box."
-  [_chart {:keys [f]} canvas {:keys [w h]} scales env]
-  (let [w (long (m/round (double w))) h (long (m/round (double h)))
+  "Draws the callback's image of one panel over the panel box.
+
+  Parameters:
+
+  - `_chart`: the chart value (unused).
+  - `computed` (map): the panel's stats - `:f` the callback.
+  - `canvas`: the panel's canvas.
+  - `box` (map): the panel box, `:w` and `:h` in pixels (rounded to whole pixels).
+  - `scales` (map): the panel's finalized position scales `:x`, `:y`.
+  - `env` (map): the drawing environment; `:panel-key` - the panel's facet level.
+
+  Calls `:f` with `{:x-scale :y-scale :x-domain :y-domain :facet :size}` (see the namespace doc) and draws the image it returns scaled to the panel; nothing for an empty panel or a `nil` result.
+
+  Throws `ex-info {:key :f}` for a result that isn't an image (see [[image-of]])."
+  [_chart {:keys [f]} canvas {:keys [^double w ^double h]} scales env]
+  (let [width (m/round w)
+        height (m/round h)
         panel-key (:panel-key env)]
-    (when (and (pos? w) (pos? h))
+    (when (and (m/pos? width) (m/pos? height))
       (when-let [img (image-of (f {:x-scale (scale/forward-fn (:x scales))
                                    :y-scale (scale/forward-fn (:y scales))
                                    :x-domain (:domain (:x scales))
                                    :y-domain (:domain (:y scales))
                                    :facet (when-not (= panel-key facet/single-panel) panel-key)
-                                   :size [w h]}))]
-        (c2d/image canvas img 0 0 w h)))))
+                                   :size [width height]}))]
+        (c2d/image canvas img 0 0 width height)))))

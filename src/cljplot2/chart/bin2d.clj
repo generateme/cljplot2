@@ -26,7 +26,9 @@
     `:alpha` (fill alpha, a fraction)
 
   Only occupied cells are drawn. On a `:log` axis the points are binned in log10 coordinates (cells regular on
-  screen; `:binwidth` and the `:density` cell area in log10 units of that axis)."
+  screen; `:binwidth` and the `:density` cell area in log10 units of that axis).
+
+  Functions: [[compute]] - the occupied cells of every panel and their measure; [[draw]] - a panel's cells."
   (:require [cljplot2.data.cells :as cells]
             [cljplot2.data.measure :as measure]
             [cljplot2.data.rows :as data]
@@ -63,37 +65,40 @@
              [:color {:optional true :description "must be nil (the cell colour is the measure): set it so in the chart's mapping when the plot maps :color"}
               :nil]]})
 
-(defn- style
-  [options theme]
-  (merge (theme/chart-style theme :bin2d options) (select-keys options cells/style-keys)))
-
-(defn- finite? [v] (and (number? v) (m/valid-double? (double v))))
-
 (defn compute
-  "Per panel: `{:cells [{:corners [[x y] ..] :value v} ..] :style st}` - occupied cells; extents (panels with
-  cells): x / y - the cells' box in the normalized space's proportions (see [[cljplot2.data.cells/bin-points]]),
-  color - the values over all panels; no padding, `:scale-defaults` without nice domains (keeps the
-  cells' shape), `:dropped` (`:x`, `:y` - rows without a finite number, or one the axis can't place - e.g. 0 on a log
-  axis)."
-  [{:keys [options]} {:keys [groups mapping]} {:keys [theme plot-scales] :as env}]
-  (let [st (style options theme)
+  "Computes the bin2d chart's stats: the occupied cells of one grid over every panel.
+
+  Parameters:
+
+  - `chart` (map): the chart value - `:options` (`:cell`, `:bins`, `:binwidth`, `:shape`, `:measure`, the cell style).
+  - `split` (map): `:groups` (`{panel rows}`), `:mapping` (merged; `:x`, `:y`).
+  - `env` (map): `:theme`, `:plot-scales` (axis transforms) and the plot's size for the binning shape (see [[cljplot2.data.cells/bin-points]]).
+
+  Returns per panel `{:cells [{:corners [[x y] ..] :value v} ..] :style st}` - the occupied cells with their measure; extents (panels with cells): x / y - the cells' box in the normalized space's proportions, color - the values over all panels; no padding, `:scale-defaults` without nice domains (keeps the cells' shape), `:dropped` (`:x`, `:y` - rows without a finite number, or one the axis can't place - e.g. 0 on a log axis).
+
+  See also [[cljplot2.data.measure/heights]]."
+  [{:keys [options] :as chart} {:keys [groups mapping]} {:keys [theme plot-scales] :as env}]
+  (let [st (theme/resolved-style theme chart)
         measure (get options :measure :count)
         x-of (data/row-accessor :x (:x mapping))
         y-of (data/row-accessor :y (:y mapping))
-        [tx ty] [(scale/stat-transform (:x plot-scales)) (scale/stat-transform (:y plot-scales))]
-        fx (:forward tx) fy (:forward ty) ix (:inverse tx) iy (:inverse ty)
+        tx (scale/stat-transform (:x plot-scales))
+        ty (scale/stat-transform (:y plot-scales))
+        fx (:forward tx)
+        fy (:forward ty)
+        ix (:inverse tx)
+        iy (:inverse ty)
         ;; positions in the axes' screen-linear coordinates (log10 on a log axis)
-        transformed (fn [v f] (when (finite? v) (let [u (double (f (double v)))] (when (m/valid-double? u) u))))
+        transformed (fn [v f] (when (schema/finite? v) (let [u (double (f (double v)))] (when (m/valid-double? u) u))))
         pairs (update-vals groups (fn [rows] (mapv (fn [row] [(transformed (x-of row) fx) (transformed (y-of row) fy)]) rows)))
         all (apply concat (vals pairs))
         points (update-vals pairs (fn [ps] (filterv (fn [[x y]] (and x y)) ps)))
-        to-data (fn [[u v]] [(ix (double u)) (iy (double v))])
+        to-data (fn [[u v]] [(ix u) (iy v)])
         {:keys [panels area extent]} (cells/bin-points points (merge {:cell (:cell st) :bins cells/default-size-method}
                                                               (select-keys options [:bins :binwidth :shape]))
                                                 env)
         valued (update-vals panels (fn [cs]
-                                     (let [counts (mapv :count cs)
-                                           values (measure/heights measure counts (repeat (count cs) area))]
+                                     (let [values (measure/heights measure (map :count cs) (repeat (count cs) area))]
                                        (mapv (fn [c value] {:corners (mapv to-data (:corners c)) :value value}) cs values))))
         color-extent (aesthetic/value-extent :color (get plot-scales :color) (map :value (mapcat val valued)))
         position-extent (fn [[lo hi] inverse] {:kind :numeric :min (double (inverse lo)) :max (double (inverse hi))})]
@@ -107,7 +112,18 @@
                :y (count (remove second all))}}))
 
 (defn draw
-  "Draw one panel's occupied cells."
+  "Draws one panel's occupied cells.
+
+  Parameters:
+
+  - `_chart`: the chart value (unused).
+  - `computed` (map): the panel's stats - `:cells` (`{:corners :value}`), `:style`.
+  - `canvas`: the panel's canvas.
+  - `_box`: the panel box (unused).
+  - `scales` (map): the panel's finalized scales - positions and `:color`.
+  - `env` (map): the drawing environment (the theme's NA colour).
+
+  Each cell filled by its value's colour, with the cell rendering of [[cljplot2.data.cells/call-with-cell-rendering]]; a value outside the colour scale isn't drawn."
   [_chart {:keys [cells style]} canvas _box scales env]
   (when (seq cells)
     (let [projection (scale/projection scales)

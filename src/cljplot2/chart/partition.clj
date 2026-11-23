@@ -26,7 +26,9 @@
   info `{:name :value :depth :path :share :parent-share}` (see [[cljplot2.data.hierarchy/node-info]]) returning the
   text, `nil` / `\"\"` - none; unnamed nodes get no label), text roles `:partition-group` / `:partition-leaf`
   (the text in black or white by the cell's fill), centred in the cell and drawn only when they fit: horizontal in cartesian plots (within the cell), along the
-  radius in polar ones (the text's width within the ring, its height within the arc at the middle radius)."
+  radius in polar ones (the text's width within the ring, its height within the arc at the middle radius).
+
+  Functions: [[schemas]] - the chart's schemas; [[cells]] - the laid out cells of a tree; [[computed-aesthetics]] - the computed colour of `:color-by :name`; [[compute]] - per panel the cells; [[draw]] - one panel's cells and labels; [[legend]] - the key glyph."
   (:require [fastmath.core :as m]
             [cljplot2.content.label :as label]
             [cljplot2.data.hierarchy :as hierarchy]
@@ -44,6 +46,7 @@
 (set! *unchecked-math* :warn-on-boxed)
 
 (def ^:private style-entries
+  "Map entries of the partition style (theme `[:chart :partition]`; also options)."
   (into [(schema/optional :border-color {:description "cell border colour"} schema/color)
          (schema/optional :border-width {:description "cell border width in pixels"} schema/non-neg)]
         draw/pattern-style-entries))
@@ -66,42 +69,58 @@
                 (into hierarchy/label-entries))
    :mapping hierarchy/mapping-schema})
 
-(def ^:private defaults {:order :value :root false :group-labels true :leaf-labels true})
-
-(defn- style
-  [options theme]
-  (merge (theme/chart-style theme :partition options) (select-keys options [:border-color :border-width :pattern :pattern-color])))
+(def ^:private defaults
+  "Option defaults the layout and labels read."
+  {:order :value :root false :group-labels true :leaf-labels true})
 
 (defn cells
-  "Cells of `tree` (a root, see [[cljplot2.data.hierarchy]]) for `options` (`:order`, `:root`, `:group-labels`,
-  `:leaf-labels`): `[{:x0 :x1 :y0 :y1 :depth :leaf? :color :top-index :label} ..]`, parents before their children;
-  `x` - fractions of the root's value, `y` - depth bands (see the namespace doc); `:label` - the text or `nil`."
+  "Lays out the cells of a tree in data units.
+
+  A node spans `x` over its fraction of the root's value, inside its parent's span in `:order`; a node at depth `d` (top level 1) spans `y` from `d - 1` to `d`, every level one up with `:root` (see the namespace doc).
+
+  Parameters:
+
+  - `tree` (map): a root (see [[cljplot2.data.hierarchy]]).
+  - `options` (map): `:order` (`:value` or `:data`), `:root` (draw the root too), `:group-labels`, `:leaf-labels` (see [[cljplot2.data.hierarchy/label-text]]).
+
+  Returns a vector of `{:x0 :x1 :y0 :y1 :depth :leaf? :color :top-index :name :label}`, parents before their children; `:label` - the text or `nil`. A root without children gives no cells (the root's own with `:root`)."
   [tree {:keys [order root group-labels leaf-labels]}]
   (let [total (double (:value tree))
         shift (if root 1.0 0.0)
+        ;; more than 4 arguments: no primitive hints
         cell (fn [node depth path parent-value x0 top-index]
                (let [leaf? (nil? (:children node))
-                     x1 (+ (double x0) (/ (double (:value node)) total))]
-                 {:x0 (double x0) :x1 x1 :y0 (+ (dec (double depth)) shift) :y1 (+ (double depth) shift)
+                     x1 (m/+ (double x0) (m// (double (:value node)) total))]
+                 {:x0 (double x0) :x1 x1 :y0 (m/+ (m/dec (double depth)) shift) :y1 (m/+ (double depth) shift)
                   :depth depth :leaf? leaf? :color (:color node) :top-index top-index :name (:name node)
                   :label (hierarchy/label-text (if leaf? leaf-labels group-labels) node
                                                (hierarchy/node-info node depth path parent-value total))}))
         walk (fn walk [node depth path x0 top-index]
                (when (:children node)
-                 (loop [[child & more] (hierarchy/ordered-children node order) x x0 out []]
+                 (loop [[child & more] (hierarchy/ordered-children node order)
+                        x x0
+                        out []]
                    (if-not child
                      out
-                     (let [path' (cond-> path (some? (:name child)) (conj (:name child)))
-                           top (if (zero? (long depth)) (:top-index child) top-index)
-                           c (cell child (inc (long depth)) path' (:value node) x top)]
-                       (recur more (:x1 c) (-> out (conj c) (into (walk child (inc (long depth)) path' x top)))))))))]
+                     (let [child-path (cond-> path (some? (:name child)) (conj (:name child)))
+                           top (if (m/zero? (long depth)) (:top-index child) top-index)
+                           c (cell child (m/long-inc (long depth)) child-path (:value node) x top)]
+                       (recur more (:x1 c) (-> out (conj c) (into (walk child (m/long-inc (long depth)) child-path x top)))))))))]
     (cond->> (walk tree 0 [] 0.0 nil)
       root (cons (cell tree 0 [] total 0.0 nil))
       true vec)))
 
 (defn computed-aesthetics
-  "The partition's computed color with `:color-by :name` (no title); `nil` otherwise. Throws `ex-info {:key
-  :color-by}` when `:color` is mapped too."
+  "Gives the partition's computed colour aesthetic.
+
+  Parameters:
+
+  - `options` (map): the chart's options - `:color-by`.
+  - `mapping` (map): the merged mapping.
+
+  Returns `{:color nil}` (a computed colour without a title) with `:color-by :name`, else `nil`.
+
+  Throws `ex-info {:key :color-by}` when `:color-by :name` meets a mapped `:color`."
   [options mapping]
   (when (= :name (:color-by options))
     (when (some? (:color mapping))
@@ -110,7 +129,16 @@
     {:color nil}))
 
 (defn- name-extents
-  "`{panel {:color extent}}` of the node names of every panel's tree (`trees`) under the plot's color spec."
+  "Gives the colour extents of the node names of every panel's tree.
+
+  Parameters:
+
+  - `trees` (map): `{panel root}`.
+  - `plot-scales` (map): the plot's `:scales` (its `:color` spec).
+
+  Returns `{panel {:color extent}}`; a panel without named nodes is left out.
+
+  See also [[cljplot2.scale.aesthetic/value-extent]]."
   [trees plot-scales]
   (into {} (keep (fn [[panel tree]]
                    (when-let [e (aesthetic/value-extent :color (get plot-scales :color {})
@@ -119,22 +147,27 @@
         trees))
 
 (defn compute
-  "Per panel: `{:cells [..] :top-count n :style style :colored? bool :named? bool}` (see [[cells]]; `:named?` -
-  `:color-by :name`); extents `:x` `[0 1]`, `:y` `[0 levels]` (the deepest panel's), aesthetic extents (the node
-  names' with `:color-by :name`), no padding, `:scale-defaults` hiding both axes and grids, `:na`, `:dropped {:value
-  n :color n}`."
-  [{:keys [options]} {:keys [groups mapping]} {:keys [theme plot-scales] :as env}]
+  "Computes the partition's stats: per panel the laid out cells.
+
+  Parameters:
+
+  - `chart` (map): the chart value - `:options` (see the namespace doc), `:kind`, `:schema` (its style keys).
+  - `split` (map): `:groups` - `{panel rows}`, `:mapping` - the merged mapping.
+  - `env` (map): `:theme`, `:plot-scales` and the rest of the compute environment.
+
+  Returns `{:data {panel {:cells [..] :top-count n :style st :colored? b :named? b}} :extents :padding :na :dropped :scale-defaults}`: cells - see [[cells]]; `:named?` - `:color-by :name`; extents `:x` `[0 1]`, `:y` `[0 levels]` (the deepest panel's, at least 1) and the aesthetic extents (the node names' with `:color-by :name`); no padding; `:scale-defaults` hiding both axes; `:dropped {:value n :color n}`."
+  [{:keys [options] :as chart} {:keys [groups mapping]} {:keys [theme plot-scales] :as env}]
   (let [{:keys [trees top-count extents na dropped]} (hierarchy/panel-trees groups mapping env)
         named? (= :name (:color-by options))
-        extents (if named? (name-extents trees plot-scales) extents)
-        opts (merge defaults (into {} (remove (comp nil? val)) (select-keys options (keys defaults))))
-        st (style options theme)
+        aesthetic-extents (if named? (name-extents trees plot-scales) extents)
+        opts (data/options-with-defaults defaults options)
+        st (theme/resolved-style theme chart)
         panel-cells (update-vals trees #(cells % opts))
-        levels (reduce max 1.0 (map :y1 (mapcat val panel-cells)))
+        levels (reduce m/max 1.0 (map :y1 (mapcat val panel-cells)))
         position-extents {:x (data/extent :x [0.0 1.0]) :y (data/extent :y [0.0 levels])}]
     {:data (update-vals panel-cells (fn [cs] {:cells cs :top-count top-count :style st :colored? (some? (:color mapping))
                                               :named? named?}))
-     :extents (merge-with merge extents (update-vals panel-cells (constantly position-extents)))
+     :extents (merge-with merge aesthetic-extents (update-vals panel-cells (constantly position-extents)))
      :padding {:x [0 0] :y [0 0]}
      :na na
      :dropped dropped
@@ -143,45 +176,70 @@
 ;; drawing
 
 (defn- line-room
-  "Room for the label's height in the cell between range points `[h0 v0]` and `[h1 v1]`: the cell's height, the arc
-  at the middle radius in polar plots."
-  ^double [geometry [h0 v0] [h1 v1]]
-  (let [h0 (double h0) v0 (double v0) h1 (double h1) v1 (double v1)]
-    (if geometry
-      (* (m/abs (- h1 h0)) (m/abs (* 0.5 (+ v0 v1))))
-      (m/abs (- v1 v0)))))
+  "Gives the room for a label's height in a cell.
+
+  Parameters:
+
+  - `geometry` (map or `nil`): the polar geometry; `nil` - cartesian.
+  - `[h0 v0]`, `[h1 v1]`: the cell's corners in range space.
+
+  Returns pixels: the cell's height; in polar plots the arc at the cell's middle radius."
+  ^double [geometry [^double h0 ^double v0] [^double h1 ^double v1]]
+  (if geometry
+    (m/* (m/abs (m/- h1 h0)) (m/abs (m/* 0.5 (m/+ v0 v1))))
+    (m/abs (m/- v1 v0))))
 
 (defn- label-fit
-  "`[pixel-x pixel-y rotation]` of a label of natural (unrotated) `size` centred in the cell between range points
-  `[h0 v0]` and `[h1 v1]`, or `nil` when it doesn't fit (see the namespace doc)."
-  [geometry [h0 v0] [h1 v1] ^Vec2 size]
-  (let [h0 (double h0) v0 (double v0) h1 (double h1) v1 (double v1)
-        hm (* 0.5 (+ h0 h1)) vm (* 0.5 (+ v0 v1))]
+  "Places a label centred in a cell, if it fits.
+
+  Cartesian: the label horizontal within the cell. Polar: along the radius, its width within the ring and its height within the arc at the middle radius.
+
+  Parameters:
+
+  - `geometry` (map or `nil`): the polar geometry; `nil` - cartesian.
+  - `[h0 v0]`, `[h1 v1]`: the cell's corners in range space.
+  - `size` (`Vec2`): the label's natural (unrotated) size.
+
+  Returns `[pixel-x pixel-y rotation]`, or `nil` when the label doesn't fit."
+  [geometry [^double h0 ^double v0] [^double h1 ^double v1] ^Vec2 size]
+  (let [hm (m/* 0.5 (m/+ h0 h1))
+        vm (m/* 0.5 (m/+ v0 v1))]
     (if geometry
-      (when (and (<= (.x size) (m/abs (- v1 v0))) (<= (.y size) (* (m/abs (- h1 h0)) (m/abs vm))))
+      (when (and (m/<= (.x size) (m/abs (m/- v1 v0))) (m/<= (.y size) (m/* (m/abs (m/- h1 h0)) (m/abs vm))))
         (let [^Vec2 p (coord/to-pixel geometry hm vm)]
           [(.x p) (.y p) (coord/radial-rotation hm)]))
-      (when (and (<= (.x size) (m/abs (- h1 h0))) (<= (.y size) (m/abs (- v1 v0))))
+      (when (and (m/<= (.x size) (m/abs (m/- h1 h0))) (m/<= (.y size) (m/abs (m/- v1 v0))))
         [hm vm 0.0]))))
 
 (defn draw
-  "Draw one panel's cells (fills, outlines), then their labels."
-  [_chart {:keys [cells style] :as panel} canvas _box scales env]
+  "Draws one panel's cells - fills and outlines - then their labels.
+
+  Parameters:
+
+  - `_chart`: the chart value (unused).
+  - `computed` (map): the panel's stats - `:cells`, `:style` and the colour keys read by [[cljplot2.data.hierarchy/fill-fn]] (see [[compute]]).
+  - `canvas`: the panel canvas.
+  - `_box`: the panel box (unused - the scales place the cells).
+  - `scales` (map): the finalized scales.
+  - `env` (map): the drawing environment (`:theme`).
+
+  Returns `nil`. A label is drawn only when the cell has room for a line of its role's font size and the label fits (see [[label-fit]])."
+  [_chart {panel-cells :cells style :style :as panel} canvas _box scales env]
   (let [geometry (scale/coord-geometry scales)
         range-point (scale/range-projection scales)
         fill-of (hierarchy/fill-fn panel scales (:theme env))
         pattern-fill (draw/pattern-fill-cache)
-        corners (mapv (fn [{:keys [x0 x1 y0 y1]}] [(range-point x0 y0) (range-point x1 y1)]) cells)
+        corners (mapv (fn [{:keys [x0 x1 y0 y1]}] [(range-point x0 y0) (range-point x1 y1)]) panel-cells)
         stroke (:border-color style)
         sw (double (:border-width style))]
-    (doseq [[cell [a b]] (map vector cells corners)
+    (doseq [[cell [a b]] (map vector panel-cells corners)
             :let [fill (fill-of cell)]]
       (draw/range-bar! canvas geometry a b fill stroke sw (pattern-fill style fill)))
-    (doseq [[{:keys [label leaf?] :as cell} [a b]] (map vector cells corners)
+    (doseq [[{:keys [label leaf?] :as cell} [a b]] (map vector panel-cells corners)
             :when (and label (every? #(m/valid-double? (double %)) (concat a b)))
             :let [role (if leaf? :partition-leaf :partition-group)]
             ;; a line is at least the font size tall: cells without that room aren't measured
-            :when (>= (line-room geometry a b) (double (get-in env [:theme :text role :size])))
+            :when (m/>= (line-room geometry a b) (double (get-in env [:theme :text role :size])))
             :let [content {:kind :label :role role :text label}
                   size (measure/natural-size content {:canvas canvas :theme (:theme env)})
                   [x y rotation] (label-fit geometry a b size)]
@@ -190,8 +248,20 @@
                       [:center :middle] x y env))))
 
 (defn legend
-  "Key glyph: a filled square inset in `box`, with the chart's `:pattern`."
-  [{:keys [options]} attributes canvas box env]
-  (let [st (style options (:theme env))]
+  "Draws the key glyph: a filled square inset in the key box, with the chart's pattern.
+
+  Parameters:
+
+  - `chart` (map): the chart value (its style options).
+  - `attributes` (map): the key's attributes - `:color`.
+  - `canvas`: the legend canvas.
+  - `box` (map): the key box.
+  - `env` (map): the legend environment (`:theme`).
+
+  Returns `nil`.
+
+  See also [[cljplot2.graphics.draw/bar-key!]]."
+  [chart attributes canvas box env]
+  (let [st (theme/resolved-style (:theme env) chart)]
     (draw/bar-key! canvas box (assoc (select-keys st [:pattern :pattern-color]) :color (:color attributes) :stroke-width 0)
                    false)))

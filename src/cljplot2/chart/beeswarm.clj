@@ -14,10 +14,13 @@
 
   Options (style defaults from theme `[:chart :beeswarm]`): `:size`, `:color`, `:stroke-color`, `:stroke-width`,
   `:shape` (as scatter, see [[cljplot2.graphics.shape]]); `:fit`, `:pack`, `:padding {:x [lo hi]}` (default
-  `[0.05 0.05]`), plus the strip options and `:data` / `:mapping`."
+  `[0.05 0.05]`), plus the strip options and `:data` / `:mapping`.
+
+  Functions: [[swarm-offsets]], [[around-offsets]] and [[fit-offsets]] - the packing; [[compute]], [[draw]], [[legend]] - the chart contract; [[schemas]] - its style, options and mapping."
   (:require [fastmath.core :as m]
             [fastmath.vector :as v]
             [cljplot2.data.group :as group]
+            [cljplot2.data.position :as position]
             [cljplot2.data.rows :as data]
             [cljplot2.data.strip :as strip]
             [cljplot2.graphics.shape :as shape]
@@ -29,6 +32,7 @@
 (set! *unchecked-math* :warn-on-boxed)
 
 (def ^:private style-entries
+  "Map entries of the beeswarm's point style (theme `[:chart :beeswarm]`), also its options."
   [(schema/optional :size {:description "point size in pixels, also the packing diameter (a mapped :size wins)"} schema/non-neg)
    (schema/optional :color {:description "point colour (a mapped :color wins)"} schema/color)
    (schema/optional :stroke-color {:description "point outline colour (or :none)"} schema/color)
@@ -61,106 +65,154 @@
                (schema/nilable :size {:description "groups, each with its own point size"} schema/accessor)
                (schema/nilable :group {:description "groups without a visual aesthetic"} schema/accessor)])})
 
-(defn- style
-  [options theme]
-  (merge (theme/chart-style theme :beeswarm options) (select-keys options [:size :color :stroke-color :stroke-width :shape])))
-
-(def ^:private ^:const eps 1.0e-9)
+(def ^{:const true :private true :tag 'double} eps
+  "Tolerance (pixels) of the packing: offsets closer than this to an interval end count as on it."
+  1.0e-9)
 
 (defn- nearest-free
-  "The offset nearest 0 (`one-sided?` - non-negative) outside every open interval of `intervals` (`[lo hi]` pairs,
-  sorted by `lo`); ties prefer the positive side. Overlapping intervals are merged; the ends of a merged interval
-  lie in no interval."
+  "Gives the offset nearest 0 that lies in none of some open intervals.
+
+  Parameters:
+
+  - `intervals` (sequence of `[lo hi]`): forbidden open intervals, sorted by `lo`.
+  - `one-sided?`: only non-negative offsets.
+
+  Returns the offset: 0 when 0 is free, else an end of the merged interval holding 0 (overlapping intervals are merged, so its ends lie in no interval) - its upper end with `one-sided?`, else the nearer end, ties preferring the positive side."
   ^double [intervals one-sided?]
-  (let [merged (reduce (fn [acc [lo hi]]
-                         (let [[plo phi] (peek acc)]
-                           (if (and plo (< (double lo) (- (double phi) eps)))
-                             (conj (pop acc) [plo (m/max (double phi) (double hi))])
+  (let [merged (reduce (fn [acc [^double lo ^double hi]]
+                         (let [[plo ^double phi] (peek acc)]
+                           (if (and plo (m/< lo (m/- phi eps)))
+                             (conj (pop acc) [plo (m/max phi hi)])
                              (conj acc [lo hi]))))
                        [] intervals)
-        [lo hi] (first (filter (fn [[lo hi]] (< (+ (double lo) eps) 0.0 (- (double hi) eps))) merged))]
+        [low high] (first (filter (fn [[^double lo ^double hi]] (m/< (m/+ lo eps) 0.0 (m/- hi eps))) merged))]
     (cond
-      (nil? lo) 0.0
-      one-sided? (double hi)
-      (< (- (double lo)) (- (double hi) eps)) (double lo)
-      :else (double hi))))
+      (nil? low) 0.0
+      one-sided? (double high)
+      (m/< (m/- (double low)) (m/- (double high) eps)) (double low)
+      :else (double high))))
 
 (defn swarm-offsets
-  "Cross offsets (pixels) packing circles of `diameter` at the pixel `positions` along the value axis (increasing):
-  each at the smallest absolute offset (`one-sided?` - smallest non-negative) where it is at least `diameter` from
-  every circle placed before it; ties prefer the positive side. Each earlier circle within a diameter along the
-  axis forbids an open offset interval; the answer is the free offset nearest 0 - `O(k log k)` for `k` such circles."
+  "Gives the cross offsets packing circles along the value axis without overlap.
+
+  Each circle, in order, takes the smallest absolute offset where it is at least `diameter` from every circle placed before it; each earlier circle within a diameter along the axis forbids an open offset interval, and the answer is the free offset nearest 0 (see [[nearest-free]]) - `O(k log k)` for `k` such circles.
+
+  Parameters:
+
+  - `positions` (sequence of doubles): the circles' pixel positions along the value axis, increasing.
+  - `diameter` (double): the circle diameter in pixels.
+  - `one-sided?`: only non-negative offsets (a mirrored group).
+
+  Returns a vector of offsets in pixels, one per position; ties prefer the positive side.
+
+  See also [[around-offsets]], [[fit-offsets]]."
   [positions ^double diameter one-sided?]
-  (let [d2 (* diameter diameter)]
-    (loop [ps (seq positions) placed [] offsets (transient [])]
+  (let [d2 (m/* diameter diameter)]
+    (loop [ps (seq positions)
+           placed []
+           offsets (transient [])]
       (if-not ps
         (persistent! offsets)
         (let [p (double (first ps))
               ;; forbidden intervals of the circles placed before within one diameter (positions are increasing)
-              intervals (loop [i (dec (count placed)) acc []]
-                          (let [[q c] (when (>= i 0) (placed i))]
-                            (if (and q (< (- p (double q)) diameter))
-                              (let [dp (- p (double q))
-                                    h (m/sqrt (m/max 0.0 (- d2 (* dp dp))))]
-                                (recur (dec i) (if (> h eps) (conj acc [(- (double c) h) (+ (double c) h)]) acc)))
+              intervals (loop [i (m/long-dec (count placed))
+                               acc []]
+                          (let [[q c] (when (m/>= i 0) (placed i))]
+                            (if (and q (m/< (m/- p (double q)) diameter))
+                              (let [dp (m/- p (double q))
+                                    h (m/sqrt (m/max 0.0 (m/- d2 (m/* dp dp))))]
+                                (recur (m/long-dec i) (if (m/> h eps) (conj acc [(m/- (double c) h) (m/+ (double c) h)]) acc)))
                               acc)))
               o (nearest-free (sort-by first intervals) one-sided?)]
           (recur (next ps) (conj placed [p o]) (conj! offsets o)))))))
 
-(def ^:private ^:const golden-angle (* Math/PI (- 3.0 (Math/sqrt 5.0))))
-
-(def ^:const max-spiral-steps
+(def ^{:const true :tag 'long} max-spiral-steps
   "Most spiral spots [[around-offsets]] tests for one circle."
   100000)
 
 (defn- free-spot?
-  "Is a circle of `diameter` at `[u c]` clear of every circle in `grid` (cell `[i j]` of side `diameter` -> centres)?"
+  "Tests whether a circle is clear of every circle placed before it.
+
+  Parameters:
+
+  - `grid` (map): cell `[i j]` of side `diameter` -> the centres `[u c]` placed in it.
+  - `u`, `c` (doubles): the circle's centre - along the value axis and across it, pixels.
+  - `diameter` (double): the circle diameter.
+
+  Returns true when no centre in the 3 x 3 cells around it is closer than `diameter`."
   [grid ^double u ^double c ^double diameter]
-  (let [i (long (m/floor (/ u diameter))) j (long (m/floor (/ c diameter))) limit (- (* diameter diameter) eps)]
-    (not-any? (fn [[^double pu ^double pc]] (< (+ (m/sq (- u pu)) (m/sq (- c pc))) limit))
-              (for [di [-1 0 1] dj [-1 0 1] pt (get grid [(+ i (long di)) (+ j (long dj))])] pt))))
+  (let [i (long (m/floor (m// u diameter)))
+        j (long (m/floor (m// c diameter)))
+        limit (m/- (m/* diameter diameter) eps)]
+    (not-any? (fn [[^double pu ^double pc]] (m/< (m/+ (m/sq (m/- u pu)) (m/sq (m/- c pc))) limit))
+              (for [di [-1 0 1] dj [-1 0 1] pt (get grid [(m/long-add i di) (m/long-add j dj)])] pt))))
 
 (defn around-offsets
-  "Offsets `[along cross]` (pixels) packing circles of `diameter` around the pixel `positions` along the value axis
-  (increasing): each circle, in order, at the first spot of a Vogel spiral around `[position 0]` (spacing a quarter
-  diameter - the free spot nearest its target, closely) where it is at least `diameter` from every circle placed
-  before (`one-sided?` - spots with a non-negative cross offset only). Deterministic; a grid of cell side `diameter`
-  keeps each test local. A zero `diameter` gives zero offsets. Each search restarts at the target, so many equal
-  values cost more steps per point (a cluster of `k` circles - about 16 `k` spots for the last one); a circle with no
-  free spot within [[max-spiral-steps]] stays at its target (overlapping)."
+  "Gives the offsets packing circles around their value positions in both directions.
+
+  Each circle, in order, takes the first spot of a Vogel spiral around `[position 0]` (spacing a quarter diameter, turning by [[cljplot2.data.position/golden-angle]] - closely the free spot nearest its target) where it is at least `diameter` from every circle placed before. Deterministic; a grid of cell side `diameter` keeps each test local. Each search restarts at the target, so many equal values cost more steps per point (a cluster of `k` circles - about 16 `k` spots for the last one).
+
+  Parameters:
+
+  - `positions` (sequence of doubles): the circles' pixel positions along the value axis, increasing.
+  - `diameter` (double): the circle diameter in pixels.
+  - `one-sided?`: spots with a non-negative cross offset only.
+
+  Returns a vector of `[along cross]` offsets in pixels, one per position; all zero for a zero `diameter`; a circle with no free spot within [[max-spiral-steps]] stays at its target (overlapping).
+
+  See also [[swarm-offsets]]."
   [positions ^double diameter one-sided?]
-  (if-not (pos? diameter)
+  (if-not (m/pos? diameter)
     (mapv (constantly [0.0 0.0]) positions)
-    (let [step (* 0.25 diameter)]
-      (loop [ps (seq positions) grid {} offsets (transient [])]
+    (let [step (m/* 0.25 diameter)]
+      (loop [ps (seq positions)
+             grid {}
+             offsets (transient [])]
         (if-not ps
           (persistent! offsets)
           (let [p (double (first ps))
-                [u c] (or (first (for [k (range max-spiral-steps)
-                                       :let [r (* step (m/sqrt (double k))) a (* (double k) golden-angle)
-                                             u (+ p (* r (m/cos a))) c (* r (m/sin a))
-                                             c (if one-sided? (m/abs c) c)]
-                                       :when (free-spot? grid u c diameter)]
-                                   [u c]))
-                          [p 0.0])
-                cell [(long (m/floor (/ (double u) diameter))) (long (m/floor (/ (double c) diameter)))]]
-            (recur (next ps) (update grid cell conj [u c]) (conj! offsets [(- (double u) p) c]))))))))
+                [^double u ^double c] (or (first (for [k (range max-spiral-steps)
+                                                       :let [r (m/* step (m/sqrt (double k)))
+                                                             a (m/* (double k) position/golden-angle)
+                                                             spot-u (m/+ p (m/* r (m/cos a)))
+                                                             spiral-c (m/* r (m/sin a))
+                                                             spot-c (if one-sided? (m/abs spiral-c) spiral-c)]
+                                                       :when (free-spot? grid spot-u spot-c diameter)]
+                                                   [spot-u spot-c]))
+                                          [p 0.0])
+                cell [(long (m/floor (m// u diameter))) (long (m/floor (m// c diameter)))]]
+            (recur (next ps) (update grid cell conj [u c]) (conj! offsets [(m/- u p) c]))))))))
 
 (defn fit-offsets
-  "`offsets` squeezed proportionally so none is farther than `room` from 0 (unchanged when they fit)."
+  "Squeezes offsets proportionally into a room.
+
+  Parameters:
+
+  - `offsets` (sequence of doubles): cross offsets in pixels.
+  - `room` (double): the largest absolute offset allowed.
+
+  Returns a vector of the offsets, each scaled by `room / widest` when the widest exceeds `room`, else unchanged."
   [offsets ^double room]
-  (let [widest (double (reduce max 0.0 (map #(m/abs (double %)) offsets)))]
-    (if (> widest room) (mapv #(* (double %) (/ room widest)) offsets) (vec offsets))))
+  (let [widest (double (reduce m/max 0.0 (map #(m/abs (double %)) offsets)))]
+    (if (m/> widest room) (mapv #(m/* (double %) (m// room widest)) offsets) (vec offsets))))
 
 (defn- compute-in-strip-frame
-  "Per panel: `{:items [..] :style st :place p :options o :one-sided? b}`; extents (x - the values), padding, `:na`,
-  `:dropped`."
-  [{:keys [options]} chart-split {:keys [theme] :as env}]
-  (let [{:keys [place position items panels dropped]} (strip/split chart-split options :center env)]
-    {:data (update-vals items (fn [its] {:items its :style (style options theme) :place place :options options
+  "Computes the beeswarm's stats in the strip frame (levels on `:y`).
+
+  Parameters:
+
+  - `chart` (map): the chart value - `:options` (the strip options, style options).
+  - `chart-split` (map): the chart's rows split per panel.
+  - `env` (map): the compute environment - `:theme`, `:plot-scales` ...
+
+  Returns `{:data :extents :padding :padding-explicit :padding-px :na :dropped}`: per panel `{:items [..] :style st :place p :options o :one-sided? b}` (`:one-sided?` - mirrored groups swarm to their own side); x extents - the values. The packing happens at draw, in pixels."
+  [{:keys [options] :as chart} chart-split {:keys [theme] :as env}]
+  (let [{:keys [place position items panels dropped]} (strip/split chart-split options :center env)
+        point-style (theme/resolved-style theme chart)]
+    {:data (update-vals items (fn [its] {:items its :style point-style :place place :options options
                                          :one-sided? (= :mirror position)}))
      :extents (merge-with merge (group/aesthetic-extents panels (:plot-scales env))
-                          (strip/extents place items (fn [{:keys [values]}] [(reduce min values) (reduce max values)])))
+                          (strip/extents place items (fn [{:keys [values]}] [(v/mn values) (v/mx values)])))
      :padding (strip/padding place options)
      :padding-explicit (strip/explicit-padding place options)
      :padding-px (strip/n-label-room options items env)
@@ -168,60 +220,106 @@
      :dropped dropped}))
 
 (defn- value-direction
-  "Unit pixel vector of increasing value along the value axis at `v` (`point` - value, level, cross -> pixel), from a
-  nearby value; a zero vector when the axis doesn't move there."
-  ^Vec2 [point v level cross]
-  (let [v (double v)
-        ^Vec2 a (point v level cross)
-        ^Vec2 b (point (+ v (* 1.0e-3 (m/max 1.0 (m/abs v)))) level cross)
+  "Gives the unit pixel vector of increasing value along the value axis at a value.
+
+  Parameters:
+
+  - `point` (function): of a value, a level and a cross position giving the pixel `Vec2`.
+  - `v` (double): the value.
+  - `level`: the item's level.
+  - `cross` (double): the cross position.
+
+  Returns the direction from a nearby value (`v` + 0.1% of its magnitude, at least 0.001); a zero vector when the axis doesn't move there."
+  ^Vec2 [point ^double v level cross]
+  (let [^Vec2 a (point v level cross)
+        ^Vec2 b (point (m/+ v (m/* 1.0e-3 (m/max 1.0 (m/abs v)))) level cross)
         d (v/sub b a)
         len (v/mag d)]
-    (if (and (m/valid-double? len) (pos? len)) (v/div d len) (v/vec2 0.0 0.0))))
+    (if (and (m/valid-double? len) (m/pos? len)) (v/div d len) (v/vec2 0.0 0.0))))
 
 (defn- draw-in-strip-frame
-  "Draw the points of one panel, each item swarmed by [[swarm-offsets]] around its centre line (one-sided: from 0
-  outward), fitted into its slot with `:fit`."
+  "Draws the points of one panel in the strip frame, each item swarmed around its centre line.
+
+  Parameters:
+
+  - `_chart` (map): the chart value (unused).
+  - `computed` (map): the panel's stats - `:items`, `:style`, `:place`, `:options` (`:pack` default `:across`, `:fit` default true), `:one-sided?` (mirrored groups swarm from 0 outward).
+  - `canvas`: the clojure2d canvas.
+  - `box` (map): the panel box.
+  - `scales` (map): finalized scales (in the strip frame).
+  - `env` (map): the draw environment - `:theme`.
+
+  Packs each item's values by [[swarm-offsets]] (`:pack :around` - [[around-offsets]]) at the point size, fitted into its slot with `:fit` ([[fit-offsets]]); skips a group outside its scale's domain, a level without span and points the scales can't place; then the n labels."
   [_chart {:keys [items style place options one-sided?]} canvas box scales env]
   (let [{:keys [point span value-pixel] :as pl} (strip/placement box scales options place)
-        fit? (data/option options :fit true)]
+        fit? (data/option options :fit true)
+        around? (= :around (:pack options))]
     (doseq [{:keys [level slot values aesthetics]} items
             :let [st (group/style style aesthetics scales (:theme env))
                   s (double (span level))]
-            :when (and st (pos? s))]
-      (let [[lo hi] slot
+            :when (and st (m/pos? s))]
+      (let [[^double lo ^double hi] slot
             side (strip/slot-side slot)
             base (if one-sided? 0.0 (strip/in-slot slot 0.0))
-            room (* s (if one-sided? (m/abs (+ (double lo) (double hi))) (strip/slot-half slot)))
+            room (m/* s (if one-sided? (m/abs (m/+ lo hi)) (strip/slot-half slot)))
             ;; [value pixel] pairs in increasing pixel order (a reversed value axis reverses the values)
             kept (sort-by second (filter #(m/valid-double? (double (second %))) (map (juxt identity value-pixel) values)))
-            around? (= :around (:pack options))
+            diameter (double (:size st))
             pairs (if around?
-                    (around-offsets (map second kept) (double (:size st)) one-sided?)
-                    (mapv (fn [o] [0.0 o]) (swarm-offsets (map second kept) (double (:size st)) one-sided?)))
-            crosses (cond-> (mapv second pairs) fit? (fit-offsets room))]
-        (doseq [[[v] [along] o] (map vector kept pairs crosses)
-                :let [cross (+ base (/ (* (if one-sided? side 1.0) (double o)) s))
-                      ^Vec2 p (point v level cross)
-                      ^Vec2 p (if (zero? (double along))
-                                p
-                                (v/add p (v/mult (value-direction point v level cross) (double along))))]
+                    (around-offsets (map second kept) diameter one-sided?)
+                    (mapv (fn [o] [0.0 o]) (swarm-offsets (map second kept) diameter one-sided?)))
+            crosses (cond->> (map second pairs) fit? (#(fit-offsets % room)))]
+        (doseq [[[v] [^double along] ^double o] (map vector kept pairs crosses)
+                :let [cross (m/+ base (m// (m/* (if one-sided? side 1.0) o) s))
+                      ^Vec2 at (point v level cross)
+                      ^Vec2 p (if (m/zero? along)
+                                at
+                                (v/add at (v/mult (value-direction point v level cross) along)))]
                 :when (and (m/valid-double? (.x p)) (m/valid-double? (.y p)))]
           (shape/draw! canvas (:shape st) p st))))
-    (strip/draw-n-labels! canvas pl items (fn [{:keys [values]}] (reduce max values)) options scales env)))
-
+    (strip/draw-n-labels! canvas pl items (fn [{:keys [values]}] (v/mx values)) options scales env)))
 
 (defn compute
-  "Stats of the chart with its levels on the categorical axis (see [[cljplot2.data.strip/compute-oriented]]):
-  [[compute-in-strip-frame]] in the strip frame."
+  "Computes the beeswarm's stats with its levels on the categorical axis.
+
+  Parameters:
+
+  - `chart` (map): the chart value.
+  - `chart-split` (map): the chart's rows split per panel.
+  - `env` (map): the compute environment.
+
+  Returns the stats of [[compute-in-strip-frame]], turned to the mapping axis of the levels (see [[cljplot2.data.strip/compute-oriented]])."
   [chart chart-split env]
   (strip/compute-oriented compute-in-strip-frame chart chart-split env))
 
 (defn draw
-  "Draw one panel (see [[cljplot2.data.strip/draw-oriented]]): [[draw-in-strip-frame]] in the strip frame."
+  "Draws one panel of the beeswarm.
+
+  Parameters:
+
+  - `chart` (map): the chart value.
+  - `computed` (map): the panel's stats from [[compute]].
+  - `canvas`: the clojure2d canvas.
+  - `box` (map): the panel box.
+  - `scales` (map): finalized scales.
+  - `env` (map): the draw environment.
+
+  Draws [[draw-in-strip-frame]] in the strip frame (see [[cljplot2.data.strip/draw-oriented]])."
   [chart computed canvas box scales env]
   (strip/draw-oriented draw-in-strip-frame chart computed canvas box scales env))
+
 (defn legend
-  "Key glyph: the chart's shape fitted and centred in `box` (see [[cljplot2.graphics.shape/draw-key!]])."
-  [{:keys [options]} attributes canvas box env]
-  (let [st (merge (style options (:theme env)) attributes)]
+  "Draws the beeswarm's key glyph: its point shape fitted and centred in a legend key.
+
+  Parameters:
+
+  - `chart` (map): the chart value.
+  - `attributes` (map): the key's mapped style attributes, over the chart's style.
+  - `canvas`: the clojure2d canvas.
+  - `box` (map): the key box in pixels.
+  - `env` (map): the legend environment - `:theme`.
+
+  See also [[cljplot2.graphics.shape/draw-key!]]."
+  [chart attributes canvas box env]
+  (let [st (merge (theme/resolved-style (:theme env) chart) attributes)]
     (shape/draw-key! canvas (:shape st) box st)))

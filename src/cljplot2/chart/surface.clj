@@ -21,7 +21,7 @@
   function - the same in every panel), domains shared.
 
   Colors: by default each quad's mean height (or `c` of `[z c]`) through the plot's color scale - a computed color
-  with a color bar titled by the `:z` accessor's name (\"Density\" for a density, none for a function); option
+  with a color bar titled by the `:z` accessor's name (Density for a density, none for a function); option
   `:color` - one color for all quads (no color scale). A quad whose value is outside an explicit color domain isn't
   drawn. The computed color is the plot's color scale: another chart of the plot (e.g. a cloud over the surface)
   can't map `:color` then - give the surface a fixed `:color`.
@@ -34,7 +34,9 @@
     -1.0]`) - the shading's ambient share and light direction (see [[cljplot2.data.space3d/shader]])
 
   Quads are drawn far to near by their centroid depth, with the other 3D charts of the panel (a cloud over a surface:
-  both with every `:domain` explicit)."
+  both with every `:domain` explicit).
+
+  Functions: [[compute]], [[chart-primitives]] and [[computed-aesthetics]] - the chart contract; [[source-kind]] - the source of a chart; meshes - [[mesh]], [[function-mesh]], [[parametric-mesh]], [[gridded-mesh]], [[panel-meshes]], [[clip-mesh]]; [[quad-corners]] - the nodes of a quad; [[schemas]], [[default-n]], [[seam-width]]."
   (:require [clojure2d.color :as c]
             [fastmath.core :as m]
             [fastmath.vector :as v]
@@ -52,10 +54,17 @@
 (set! *unchecked-math* :warn-on-boxed)
 
 (def ^:private style-entries
+  "Style entries of the surface (theme `[:chart :surface]`): the quad outline."
   [(schema/optional :stroke-color {:description "quad outline colour of :style :both"} schema/color)
    (schema/optional :stroke-width {:description "quad outline width in pixels (:style :both and :wireframe)"} schema/non-neg)])
 
-(def ^:private range-schema [:tuple schema/finite schema/finite])
+(def ^:private range-schema
+  "Schema of a parameter range `[lo hi]`."
+  [:tuple schema/finite schema/finite])
+
+(def ^{:const true :tag 'long} default-n
+  "Grid points per axis of a sampled surface, unless `:n` says otherwise."
+  30)
 
 (def schemas
   "Schemas of the surface chart: `:style` (theme `[:chart :surface]`), `:options`, `:mapping` (merged)."
@@ -80,12 +89,12 @@
                        (schema/optional :fu {:description "source: a parametric surface, a function of [u v] returning [x y z]"} schema/function)
                        (schema/optional :u {:description "the u range [lo hi] of :fu"} range-schema)
                        (schema/optional :v {:description "the v range [lo hi] of :fu"} range-schema)
-                       (schema/optional :n {:description "grid points per axis of :f, :fu, :density: n or [nx ny]" :default 30}
+                       (schema/optional :n {:description "grid points per axis of :f, :fu, :density: n or [nx ny]" :default default-n}
                                         field/n-schema)
                        (schema/optional :cut {:description "how many bandwidths the density domain extends past the points on each side"
                                               :cljplot2/default-doc "3 (only with :density)"}
                                         schema/finite-non-neg)))
-             [#(when (> (count (filter % [:f :fu :density])) 1) "a surface takes one source: :f, :fu or :density true") nil]
+             [#(when (m/> (count (filter % [:f :fu :density])) 1) "a surface takes one source: :f, :fu or :density true") nil]
              [#(when (and (:fu %) (not (and (:u %) (:v %)))) "a parametric surface needs :u and :v ranges") [:fu]]
              [#(when (and (or (:u %) (:v %)) (not (:fu %))) ":u and :v are the ranges of a parametric :fu") [:u]]
              [#(when (and (some? (:cut %)) (not (:density %))) ":cut widens a :density surface") [:cut]]
@@ -96,11 +105,25 @@
                      (schema/nilable :z {:description "height of a lattice node (gridded source)"} schema/accessor)]]})
 
 (defn source-kind
-  "The source of a surface chart's `options`: `:function` (`:f`), `:parametric` (`:fu`), `:density`, else `:gridded`."
+  "Gives the source of a surface chart.
+
+  Parameters:
+
+  - `options` (map): the chart's options.
+
+  Returns `:function` (`:f`), `:parametric` (`:fu`), `:density` (`:density true`), else `:gridded`."
   [options]
   (cond (:f options) :function (:fu options) :parametric (:density options) :density :else :gridded))
 
 (defn- value-title
+  "Gives the title of the surface's computed colour.
+
+  Parameters:
+
+  - `options` (map): the chart's options.
+  - `mapping` (map): the merged mapping.
+
+  Returns the `:z` keyword's name for a gridded surface (`nil` for a function accessor), `Density` for a density, `nil` for a function or a parametric surface."
   [options mapping]
   (case (source-kind options)
     :gridded (let [a (:z mapping)] (when (keyword? a) (name a)))
@@ -108,77 +131,143 @@
     nil))
 
 (defn computed-aesthetics
-  "The surface chart's computed color (titled by the `:z` accessor's name, \"Density\", or none) unless a fixed
-  `:color` option colors it."
+  "Gives the surface's computed aesthetics.
+
+  Parameters:
+
+  - `options` (map): the chart's options.
+  - `mapping` (map): the merged mapping.
+
+  Returns `{:color title}` - the quads coloured by value, titled by the `:z` accessor's name, Density, or none (see [[value-title]]); `{}` when a fixed `:color` option colours them."
   [options mapping]
   (if (:color options) {} {:color (value-title options mapping)}))
 
 ;; meshes
 
-(defn- finite-number? [v] (and (number? v) (m/valid-double? (double v))))
+(defn- finite-number?
+  "Tests whether `v` is a finite number."
+  [v]
+  (and (number? v) (m/valid-double? (double v))))
 
 (defn mesh
-  "`{:nu :nv :nodes [..] :tones [..]}` of `nu` x `nv` nodes, row by row (`i + j nu`), `node-at` - a function of `i`,
-  `j` giving `[x y z]` or `[x y z tone]`: `:nodes` - `[x y z]` (doubles) or `nil` for a non-finite coordinate,
-  `:tones` - each node's color value (`tone`, else `z`; `##NaN` when missing or not finite)."
+  "Builds a mesh of `nu` x `nv` nodes, row by row.
+
+  Parameters:
+
+  - `nu`, `nv` (longs): nodes per row and rows.
+  - `node-at` (function): of `i`, `j` giving the node at `i + j nu` - `[x y z]` or `[x y z tone]`.
+
+  Returns `{:nu :nv :nodes [..] :tones [..]}`: `:nodes` - `[x y z]` (doubles), `nil` for a non-finite coordinate; `:tones` - each node's colour value (`tone`, else `z`), `##NaN` when missing or not finite."
   [nu nv node-at]
   (let [raw (vec (for [j (range nv) i (range nu)] (node-at i j)))
         ok? (fn [n] (and (sequential? n) (every? finite-number? (take 3 n))))]
     {:nu (long nu) :nv (long nv)
      :nodes (mapv (fn [n] (when (ok? n) (mapv double (take 3 n)))) raw)
-     :tones (mapv (fn [n] (let [t (if (> (count n) 3) (nth n 3) (nth n 2 nil))]
+     :tones (mapv (fn [n] (let [t (if (m/> (count n) 3) (nth n 3) (nth n 2 nil))]
                             (if (and (ok? n) (finite-number? t)) (double t) ##NaN)))
                   raw)}))
 
 (defn- axis-values
-  [[lo hi] n]
-  (vec (m/slice-range (double lo) (double hi) (long n))))
+  "Gives `n` evenly spaced values over `[lo hi]`, ends included, as a vector."
+  [[^double lo ^double hi] ^long n]
+  (vec (m/slice-range lo hi n)))
 
 (defn- height-node
-  "Node of a height function's result `r` at `x`, `y`: `z`, or `[z c]` as any sequential value or array (see
-  [[cljplot2.data.rows/as-coordinates]])."
+  "Builds the node of a height function's result at a point.
+
+  Parameters:
+
+  - `x`, `y`: the point.
+  - `r`: the function's result - `z`, or `[z c]` as any sequential value or array (see [[cljplot2.data.rows/as-coordinates]]).
+
+  Returns `[x y z c]` for a pair, else `[x y r]`."
   [x y r]
   (if-let [[z c] (data/as-coordinates r)] [x y z c] [x y r]))
 
 (defn function-mesh
-  "Mesh (see [[mesh]]) of the height function `f` of a point `[x y]` (a `Vec2`; `z` or `[z c]`) over `[[x0 x1] [y0 y1]]` at
-  `[nx ny]` points."
+  "Samples a height function into a mesh (see [[mesh]]).
+
+  Parameters:
+
+  - `f` (function): of a point `[x y]` (a `Vec2`) giving `z` or `[z c]`.
+  - `[xd yd]`: the x and y ranges `[lo hi]`.
+  - `[nx ny]` (longs): grid points per axis.
+
+  Returns the mesh of `f` at `nx` x `ny` evenly spaced points, ends included."
   [f [xd yd] [nx ny]]
-  (let [xs (axis-values xd nx) ys (axis-values yd ny)]
+  (let [xs (axis-values xd nx)
+        ys (axis-values yd ny)]
     (mesh nx ny (fn [i j] (let [x (xs i) y (ys j)] (height-node x y (f (Vec2. x y))))))))
 
 (defn parametric-mesh
-  "Mesh of the parametric function `fu` (`[x y z]` - any sequential value or array - of a point `[u v]`, a `Vec2`) over the ranges `u`, `v` at `[nu nv]` points."
+  "Samples a parametric surface into a mesh (see [[mesh]]).
+
+  Parameters:
+
+  - `fu` (function): of a point `[u v]` (a `Vec2`) giving `[x y z]` - any sequential value or array.
+  - `u`, `v`: the parameter ranges `[lo hi]`.
+  - `[nu nv]` (longs): grid points per parameter.
+
+  Returns the mesh of `fu` at `nu` x `nv` evenly spaced parameter points, ends included."
   [fu u v [nu nv]]
-  (let [us (axis-values u nu) vs (axis-values v nv)]
+  (let [us (axis-values u nu)
+        vs (axis-values v nv)]
     (mesh nu nv (fn [i j] (data/as-coordinates (fu (Vec2. (us i) (vs j))))))))
 
 (defn gridded-mesh
-  "Mesh of the gridded `rows` (accessors of `mapping` `:x`, `:y`, `:z`): a node per lattice point."
+  "Builds the mesh of gridded rows: a node per lattice point.
+
+  Parameters:
+
+  - `rows` (sequence of maps): one row per lattice node.
+  - `mapping` (map): `:x`, `:y`, `:z` accessors.
+
+  Returns the mesh (see [[mesh]]) over every distinct x with every distinct y (see [[cljplot2.data.field/lattice-values]], errors keyed `:z`)."
   [rows mapping]
   (let [{:keys [xs ys vss]} (field/lattice-values rows (data/row-accessor :x (:x mapping)) (data/row-accessor :y (:y mapping))
                                                   (data/row-accessor :z (:z mapping)) :z)]
     (mesh (count xs) (count ys) (fn [i j] [(xs i) (ys j) (get-in vss [i j])]))))
 
 (defn- points-density
-  "`{:f :domain}` - the 2D KDE of the finite `:x`, `:y` of `rows` (see [[cljplot2.data.field/density]], widened by
-  `cut` bandwidths), `f` a function of `[x y]`; `nil` without points."
+  "Estimates the 2D kernel density of the finite points of rows.
+
+  Parameters:
+
+  - `rows` (sequence of maps): the panel's rows.
+  - `mapping` (map): `:x`, `:y` accessors.
+  - `cut`: bandwidths the density's domain extends past the points (`nil` - the default, see [[cljplot2.data.field/density]]).
+
+  Returns `{:f :domain}` - `f` a function of `[x y]`; `nil` without finite points."
   [rows mapping cut]
-  (let [x-of (data/row-accessor :x (:x mapping)) y-of (data/row-accessor :y (:y mapping))
+  (let [x-of (data/row-accessor :x (:x mapping))
+        y-of (data/row-accessor :y (:y mapping))
         pts (filterv (fn [[x y]] (and (finite-number? x) (finite-number? y))) (map (juxt x-of y-of) rows))]
     (when (seq pts)
       (field/density (map first pts) (map second pts) {:cut cut} [(scale/stat-transform nil) (scale/stat-transform nil)]))))
 
-(defn- grid-size [n] (field/grid-size (or n 30)))
+(defn- grid-size
+  "Gives `[nx ny]` of the `:n` option, [[default-n]] when absent (see [[cljplot2.data.field/grid-size]])."
+  [n]
+  (field/grid-size (or n default-n)))
 
 (defn- explicit-xy
-  "The sampling domain `[[x0 x1] [y0 y1]]`: the explicit `:x` / `:y` of `domain`, else `fallback`'s."
+  "Gives the sampling ranges `[[x0 x1] [y0 y1]]`: the explicit `:x` / `:y` of `domain`, else the fallback's `[fx fy]`."
   [domain [fx fy]]
   [(or (:x domain) fx) (or (:y domain) fy)])
 
 (defn panel-meshes
-  "`{panel mesh}` of the split `groups` (`{panel rows}`) by the source `kind` (see the namespace doc); panels without
-  rows (gridded, density) left out."
+  "Builds the mesh of every panel by the chart's source.
+
+  Parameters:
+
+  - `kind` (keyword): the source (see [[source-kind]]).
+  - `options` (map): the chart's options - `:f`, `:fu`, `:u`, `:v`, `:n`, `:cut`, `:domain`.
+  - `mapping` (map): the merged mapping.
+  - `groups` (map): panel -> rows.
+
+  Returns panel -> mesh: a function or a parametric surface - the same mesh in every panel; gridded and density - from the panel's rows, panels without rows (or without a density) left out; a density's domain is the union of the panels' (unless explicit).
+
+  Throws `ex-info {:key :domain}` for a function surface without `:domain` `:x` and `:y`."
   [kind options mapping groups]
   (let [size (grid-size (:n options))
         domain (:domain options)]
@@ -186,41 +275,58 @@
       :function (let [{:keys [x y]} domain]
                   (when-not (and x y)
                     (schema/fail! "A surface of :f needs a :domain with :x and :y." {:key :domain}))
-                  (let [m (function-mesh (:f options) [x y] size)] (update-vals groups (constantly m))))
-      :parametric (let [m (parametric-mesh (:fu options) (:u options) (:v options) size)] (update-vals groups (constantly m)))
+                  (let [shared (function-mesh (:f options) [x y] size)] (update-vals groups (constantly shared))))
+      :parametric (let [shared (parametric-mesh (:fu options) (:u options) (:v options) size)] (update-vals groups (constantly shared)))
       :gridded (into {} (keep (fn [[panel rows]] (when (seq rows) [panel (gridded-mesh rows mapping)]))) groups)
       :density (let [fields (into {} (keep (fn [[panel rows]] (some->> (points-density rows mapping (:cut options)) (vector panel)))) groups)
                      xy (explicit-xy domain (field/union-domain (map :domain (vals fields))))]
                  (update-vals fields (fn [{:keys [f]}] (function-mesh f xy size)))))))
 
 (defn clip-mesh
-  "`mesh` without the nodes outside the explicit `domains` (`{:x [a b] ..}`, each optional): those nodes `nil`, their
-  tones `##NaN`."
-  [mesh domains]
-  (let [inside? (fn [n] (and n (every? true? (map-indexed (fn [i k] (space/in-domain? (get domains k) (n i))) space/axes))))
-        kept (mapv inside? (:nodes mesh))]
-    (-> mesh
-        (update :nodes (fn [ns] (mapv (fn [n k] (when k n)) ns kept)))
-        (update :tones (fn [ts] (mapv (fn [t k] (if k t ##NaN)) ts kept))))))
+  "Leaves out the nodes of a mesh outside explicit domains.
+
+  Parameters:
+
+  - `node-mesh` (map): a mesh (see [[mesh]]).
+  - `domains` (map): `{:x [a b] ..}`, each optional (see [[cljplot2.data.space3d/in-domain?]]).
+
+  Returns the mesh with the nodes outside the domains `nil` and their tones `##NaN`."
+  [node-mesh domains]
+  (let [inside? (fn [n] (and n (every? identity (map-indexed (fn [i k] (space/in-domain? (get domains k) (n i))) space/axes))))
+        kept (mapv inside? (:nodes node-mesh))]
+    (-> node-mesh
+        (update :nodes (fn [nodes] (mapv (fn [n k] (when k n)) nodes kept)))
+        (update :tones (fn [tones] (mapv (fn [t k] (if k t ##NaN)) tones kept))))))
 
 (defn- check-mapping!
+  "Checks a surface's mapping has the positions its source reads.
+
+  Parameters:
+
+  - `kind` (keyword): the source - gridded needs `:x`, `:y`, `:z`; density `:x`, `:y`; the others none.
+  - `mapping` (map): the merged mapping.
+
+  Returns `nil`.
+
+  Throws `ex-info {:key :mapping}` for a missing position."
   [kind mapping]
   (doseq [k (case kind :gridded [:x :y :z] :density [:x :y] [])
           :when (nil? (get mapping k))]
     (schema/fail! (str "A " (name kind) " surface needs a mapped " k ".") {:key :mapping :in [:mapping k]})))
 
-(defn- style
-  [options theme]
-  (merge (theme/chart-style theme :surface options)
-         (select-keys options [:stroke-color :stroke-width :color])
-         {:surface-style (get options :style :surface)
-          :shade? (not (false? (:shade options)))}))
-
 (defn compute
-  "Per panel: `{:mesh m :domains {:x :y :z} :frame f :style st :shading sh}` (`sh` - the chart's `:ambient` / `:light`; see [[mesh]], [[cljplot2.data.space3d/frame-settings]]);
-  no position extents (the chart lays out its panel), color extents - the finite tones (computed color only),
-  `:dropped` - gridded / density rows without a finite x / y."
-  [{:keys [options]} {:keys [groups mapping]} {:keys [theme]}]
+  "Computes the surface's stats: a mesh per panel in a box (the chart contract, see [[cljplot2.chart]]).
+
+  Parameters:
+
+  - `chart` (map): the chart value - `:options` (see the namespace doc).
+  - `split` (map): `:groups` - panel -> rows; `:mapping` - the merged mapping.
+  - `env` (map): `:theme`.
+
+  Returns `{:data {panel computed} :extents :dropped}`; per panel `{:mesh m :domains {:x :y :z} :frame f :frame-overrides o :style st :shading sh}` - see [[mesh]], [[cljplot2.data.space3d/frame-settings]]; `st` - the resolved style ([[cljplot2.theme/resolved-style]]) with the `:color` option, `:surface-style` (the `:style` option) and `:shade?`; `sh` - the chart's `:ambient` / `:light`. No position extents (the chart lays out its panel); colour extents - the finite tones (computed colour only); `:dropped` - gridded or density rows without a finite x / y.
+
+  Throws `ex-info {:key :mapping}` for a missing position ([[check-mapping!]]), `{:key :domain}` for a function without a domain."
+  [{:keys [options] :as chart} {:keys [groups mapping]} {:keys [theme]}]
   (let [kind (source-kind options)
         _ (check-mapping! kind mapping)
         explicit (:domain options)
@@ -231,62 +337,95 @@
                  (:reverse options))
         frame (cond-> (space/frame-settings options mapping)
                 (and (= kind :density) (not (contains? options :axis-titles))) (assoc-in [:titles :z] "Density"))
-        st (style options theme)
+        st (merge (theme/resolved-style theme chart)
+                  (select-keys options [:color])
+                  {:surface-style (get options :style :surface)
+                   :shade? (not (false? (:shade options)))})
         colored? (nil? (:color options))]
-    {:data (update-vals meshes (fn [mesh] {:mesh mesh :domains domains :frame frame
-                                           :frame-overrides (space/frame-overrides options) :style st
-                                           :shading (select-keys options [:ambient :light])}))
+    {:data (update-vals meshes (fn [panel-mesh] {:mesh panel-mesh :domains domains :frame frame
+                                                 :frame-overrides (space/frame-overrides options) :style st
+                                                 :shading (select-keys options [:ambient :light])}))
      :extents (update-vals meshes (fn [{:keys [tones]}]
                                     (let [ts (remove m/nan? tones)]
                                       (if (and colored? (seq ts))
-                                        {:color {:kind :numeric :min (reduce min ts) :max (reduce max ts)}}
+                                        {:color {:kind :numeric :min (v/mn ts) :max (v/mx ts)}}
                                         {}))))
      :dropped (if (#{:gridded :density} kind) (field/dropped-positions :gridded mapping groups) {})}))
 
 ;; drawing
 
 (defn- quad-normal
-  "View-space unit normal of the quad of normalized corners `[a b c d]` (in order around it): the cross product of its
-  diagonals rotated by `rotate` (a linear map, see [[cljplot2.data.space3d/rotation]]); zero for a degenerate quad."
+  "Gives the view-space unit normal of a quad.
+
+  Parameters:
+
+  - `rotate` (function): the view rotation, a linear map (see [[cljplot2.data.space3d/rotation]]).
+  - `[a b c d]`: the quad's normalized corners, in order around it.
+
+  Returns the cross product of its diagonals rotated, normalized; a zero vector for a degenerate quad."
   ^Vec3 [rotate [a b c d]]
   (let [^Vec3 n (rotate (v/cross (v/sub c a) (v/sub d b)))
         len (v/mag n)]
-    (if (pos? len) (v/div n len) n)))
+    (if (m/pos? len) (v/div n len) n)))
 
 (defn- tone-color
-  "Function of a tone giving a quad's color: the fixed `color`, else the color `scale`'s (`na` for `##NaN` or no
-  scale; `nil` outside the scale's domain)."
+  "Gives the colour function of the quads.
+
+  Parameters:
+
+  - `color`: the fixed `:color` option, `nil` - none.
+  - `scale` (map): the plot's colour scale, `nil` - none.
+  - `na`: the NA colour.
+
+  Returns a function of a tone giving a quad's colour: `color` when fixed; else the scale's, `na` for `##NaN`, `nil` outside the scale's domain; `na` without a scale."
   [color scale na]
   (cond color (constantly color)
         scale (let [f (aesthetic/attribute-fn :color scale na)] (fn [^double t] (if (m/nan? t) na (f t))))
         :else (constantly na)))
 
 (defn- background
-  "The panel's fill, else the plot's background: a wireframe's quads cover the lines behind them with it."
+  "Gives the panel's fill, else the plot's background: a wireframe's quads cover the lines behind them with it."
   [env]
   (let [fill (get-in env [:theme :panel :fill])]
     (if (theme/none? fill) (get-in env [:theme :plot :background]) fill)))
 
-(def ^:const seam-width
-  "Pixels of the outline of an opaque `:surface` quad in its own fill, covering the anti-aliased seams between quads."
+(def ^{:const true :tag 'double} seam-width
+  "Pixels of the outline of an opaque `:surface` quad in its own fill, covering the anti-aliased seams between quads (an artefact fix, not an option)."
   1.0)
 
 (defn- opaque?
+  "Tests whether a colour is fully opaque."
   [color]
-  (>= (double (c/alpha (c/to-color color))) 255.0))
+  (m/>= (c/alpha color) 255.0))
 
 (defn quad-corners
-  "Node indices of the quad at `i`, `j` of a mesh `nu` nodes wide, in order around it."
+  "Gives the node indices of a quad, in order around it.
+
+  Parameters:
+
+  - `nu` (long): nodes per mesh row.
+  - `i`, `j` (longs): the quad's column and row.
+
+  Returns `[a (a + 1) (b + 1) b]` with `a = i + j nu`, `b = a + nu`."
   [^long nu ^long i ^long j]
-  (let [a (+ i (* j nu)) b (+ a nu)]
-    [a (inc a) (inc b) b]))
+  (let [a (m/+ i (m/* j nu))
+        b (m/+ a nu)]
+    [a (m/long-inc a) (m/long-inc b) b]))
 
 (defn chart-primitives
-  "The surface's quads for one panel's `computed` data and the projection `point` (data -> `[pixel depth]`; the 3D
-  chart contract, see [[cljplot2.graphics.space3d/draw-scene!]]): a `:polygon` per quad with four nodes, at its corners'
-  mean depth, colored by its corners' mean tone, styled by `:style` (see the namespace doc)."
-  [_chart {:keys [mesh domains frame style shading]} point scales env]
-  (let [{:keys [nu nv nodes tones]} mesh
+  "Gives the surface's quads for one panel (the 3D chart contract, see [[cljplot2.graphics.space3d/draw-scene!]]).
+
+  Parameters:
+
+  - `chart` (map): the chart value (unused).
+  - `computed` (map): the panel's computed data - `:mesh`, `:domains`, `:frame`, `:style`, `:shading` (see [[compute]]).
+  - `point` (function): the projection, data point -> `[pixel depth]`.
+  - `scales` (map): the plot's scales (`:color`).
+  - `env` (map): the drawing environment (`:theme`).
+
+  Returns a `:polygon` per quad whose four nodes are present, at its corners' mean depth, coloured by its corners' mean tone (a quad whose colour is outside the scale is left out): `:wireframe` - outlined in its colour over the background; `:both` - filled, shaded and outlined by `:stroke-color`; `:surface` - filled and shaded, an opaque fill outlined in itself ([[seam-width]])."
+  [_chart {:keys [domains frame style shading] panel-mesh :mesh} point scales env]
+  (let [{:keys [nu nv nodes tones]} panel-mesh
         shade (space/shader shading)
         {:keys [view aspect]} frame
         normalize (space/normalizer domains aspect)
@@ -295,14 +434,14 @@
         look (:surface-style style)
         width (:stroke-width style)
         back (background env)]
-    (for [j (range (dec (long nv))) i (range (dec (long nu)))
+    (for [j (range (m/long-dec nv)) i (range (m/long-dec nu))
           :let [ids (quad-corners nu i j)
                 ps (mapv nodes ids)]
           :when (every? some? ps)
-          :let [col (color-of (/ (double (reduce + (map tones ids))) 4.0))]
+          :let [col (color-of (m// (v/sum (map tones ids)) 4.0))]
           :when (some? col)
           :let [projected (mapv point ps)
-                depth (/ (double (reduce + (map second projected))) 4.0)
+                depth (m// (v/sum (map second projected)) 4.0)
                 pixels (mapv first projected)]]
       (if (= look :wireframe)
         {:kind :polygon :points pixels :depth depth :fill back :stroke col :stroke-width width}

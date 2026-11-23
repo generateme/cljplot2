@@ -11,7 +11,7 @@
   - `:strip` - `:fill`, `:border-color`, `:border-width` of facet strips, `:shingle-fill` (bar of a shingle level); `:facet {:gap px}` between panels; `:multiplot {:gap px}` between arranged plots.
   - `:palette` - aesthetic defaults, see [[cljplot2.scale.aesthetic]]: `:color` (palette name or colours, old cljplot `:category20`), `:gradient` (colours or palette name; `:k2` reversed), `:shape` (shape sequence), `:size` (`[min max]` pixels), `:dash` (dash sequence: the [[cljplot2.schema/dash-styles]] names, adjacent styles far apart), `:pattern` (pattern sequence: the [[cljplot2.schema/pattern-styles]] names without `:solid`), `:na` (colour of NA values).
   - `:legend` - `:gap` (pixels between key and label and between legends), `:key-size` (key box side, pixels), `:fill`, `:border-color`, `:border-width`, colour bar `:bar-length` (`:stretch` - over the space left, or a number, clamped to it) and `:bar-width` (`nil` - `:key-size`); text roles `:legend-title` and `:legend-label`.
-  - `:chart` - per chart kind styles, each checked against its chart's style schema: `:scatter`, `:histogram`, `:density`, `:line`, `:ecdf` (old cljplot blue `[69 117 180]` - clojure2d `(last (palette :rdylbu-9))` - with cljplot's alphas: scatter 180, stripplot 100, rug 100), `:treemap` (`:padding`, `:border-color`, `:border-width`), `:partition` (`:border-color`, `:border-width`), `:pack` (`:padding`, `:border-color`, `:border-width`), `:waffle` (`:gap`, `:shape`, borders), `:venn` (`:alpha`, borders), `:tile` / `:bin2d` (`:cell`, `:cell-scale`, `:stroke-color`, `:stroke-width`, `:alpha`), `:field` (`:alpha`), `:contour` (`:color`, `:width`, `:dash`, `:alpha`), `:correlation` (`:color`, `:stroke-color`, `:stroke-width`), strip charts `:box`, `:violin`, `:stripplot`, `:beeswarm`, `:dotplot`, `:rug`, `:extent`, `:bar`, annotations `:rule`, `:rect`, `:function`, bands `:ribbon`, `:smooth` (band `:alpha` 0.3), `:segment`, `:polygon`, probability plots `:qq` / `:pp` (scatter's point style, `:line-width`), `:image` (no style), `:candlestick` (green up, red down), `:parallel` (radar `:fill` `:alpha` 0.25); line and function `:bridge` - the style of bridges over gaps (`:alpha` multiplies the line alpha, optional `:width`, `:dash`); line `:alpha` - opacity of `:fill :color` and stacked areas. Entries that aren't kinds are named styles (see [[named-styles]], [[chart-style]]).
+  - `:chart` - per chart kind styles, each checked against its chart's style schema: `:scatter`, `:histogram`, `:density`, `:line`, `:ecdf` (old cljplot blue `[69 117 180]` - clojure2d `(last (palette :rdylbu-9))` - with cljplot's alphas: scatter 180, stripplot 100, rug 100), `:treemap` (`:padding`, `:border-color`, `:border-width`), `:partition` (`:border-color`, `:border-width`), `:pack` (`:padding`, `:border-color`, `:border-width`), `:waffle` (`:gap`, `:shape`, borders), `:cloud` (the point style; `:projection-alpha`, `:band-alpha` - alpha factors of projected points and density bands), `:venn` (`:alpha`, borders, `:label-gap` - pixels between a circle and its set name), `:tile` / `:bin2d` (`:cell`, `:cell-scale`, `:stroke-color`, `:stroke-width`, `:alpha`), `:field` (`:alpha`), `:contour` (`:color`, `:width`, `:dash`, `:alpha`), `:correlation` (`:color`, `:stroke-color`, `:stroke-width`), strip charts `:box`, `:violin`, `:stripplot`, `:beeswarm`, `:dotplot`, `:rug`, `:extent`, `:bar`, annotations `:rule`, `:rect`, `:function`, bands `:ribbon`, `:smooth` (band `:alpha` 0.3), `:segment`, `:polygon`, probability plots `:qq` / `:pp` (scatter's point style, `:line-width`), `:image` (no style), `:candlestick` (green up, red down), `:parallel` (radar `:fill` `:alpha` 0.25); line and function `:bridge` - the style of bridges over gaps (`:alpha` multiplies the line alpha, optional `:width`, `:dash`); line `:alpha` - opacity of `:fill :color` and stacked areas. Entries that aren't kinds are named styles (see [[named-styles]], [[chart-style]]).
   - `:text` - a text role (`:title`, `:strip`, ..., `:contour-label` - contour level labels, `:annotation` - text charts and strip n labels, see [[text-roles]]) -> a text style: `:font` (font family name or `java.awt.Font`, see [[cljplot2.graphics.font/resolve-font]]), `:size` (points), `:font-style` (`:plain`, `:bold`, `:italic` or `:bold-italic`), `:color` (any clojure2d colour), `:padding` (pixels added on every side of the text), `:align` (`[h v]` placement of the text in its box; optional, default `[:center :middle]`, see [[cljplot2.content.label]]), `:background` (a colour, alpha allowed, filling the label's box; optional, default none, `:none` - none: for labels charts place at a point - text chart, tile values ... - the text plus `:padding`; for layout labels - titles, axis titles, strips, legend labels - the whole item box).
 
   Functions and vars: [[default-theme]], [[plot-theme]], [[deep-merge]], [[none?]]; chart styles [[chart-style]], [[named-styles]], [[theme-style-entries]]; text [[text-style]], [[style-keys]], [[text-roles]], [[text-style-schema]], [[text-style-overrides]]; validation [[theme-schema]], [[errors]]."
@@ -72,7 +72,7 @@
              :na (c/gray 150)}
    :legend {:gap 5 :key-size 14 :fill :none :border-color :none :border-width 1 :bar-length :stretch :bar-width nil}
    :chart {:scatter {:size 6 :color (c/color 69 117 180 180) :stroke-color :none :stroke-width 1 :shape \O}
-           :cloud {:size 6 :color (c/color 69 117 180 180) :stroke-color :none :stroke-width 1 :shape \O}
+           :cloud {:size 6 :color (c/color 69 117 180 180) :stroke-color :none :stroke-width 1 :shape \O :projection-alpha 0.35 :band-alpha 0.15}
            :surface {:stroke-color (c/gray 60) :stroke-width 0.5}
            :histogram {:color (c/color 69 117 180) :stroke-color :darker :stroke-width 1 :alpha 0.6 :zero-line-color :black
                        :pattern :solid :pattern-color :darker
@@ -91,7 +91,7 @@
            :partition {:border-color :white :border-width 1 :pattern :solid :pattern-color :darker}
            :pack {:padding 3 :border-color :white :border-width 1 :pattern :solid :pattern-color :darker}
            :waffle {:gap 0.1 :shape :square :border-color :none :border-width 1 :pattern :solid :pattern-color :darker}
-           :venn {:alpha 0.4 :border-color :darker :border-width 1}
+           :venn {:alpha 0.4 :border-color :darker :border-width 1 :label-gap 4}
            :tile {:cell :square :cell-scale 1.0 :stroke-color :none :stroke-width 1 :alpha 1.0}
            :bin2d {:cell :pointy-hex :cell-scale 1.0 :stroke-color :none :stroke-width 1 :alpha 1.0}
            :field {:alpha 1.0}
@@ -209,6 +209,22 @@
   [theme kind options]
   (let [chart-theme (:chart theme)]
     (merge (get chart-theme kind) (some->> (:theme-style options) (get chart-theme)))))
+
+(defn resolved-style
+  "Gives the style a chart draws with: its theme style with its own style options over it.
+
+  The style options of a chart are the entries of its style schema (`:schema` `:style`), so an option added to the schema is resolved without listing it again.
+
+  Parameters:
+
+  - `theme` (map): the merged theme.
+  - `chart` (map): a chart value - `:kind`, `:options`, `:schema` (`:style` - the kind's style schema; `nil` for a user chart without one - its theme style only).
+
+  Returns [[chart-style]] of the chart with the options' values of its style keys merged over it; options outside the style schema aren't taken (a chart merges such extras itself).
+
+  See also [[cljplot2.schema/entry-keys]]."
+  [theme {:keys [kind options schema]}]
+  (merge (chart-style theme kind options) (select-keys options (schema/entry-keys (:style schema)))))
 
 ;; schema
 

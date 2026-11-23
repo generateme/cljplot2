@@ -9,7 +9,7 @@
 
   Functions:
 
-  - schemas and options: [[mapping-keys]], [[mapping-schema]], [[data-schema]], [[common-options]], [[position-padding]], [[explicit-padding]], [[option]]
+  - schemas and options: [[mapping-keys]], [[mapping-schema]], [[data-schema]], [[common-options]], [[position-padding]], [[axis-padding]], [[default-padding]], [[explicit-padding]], [[option]], [[options-with-defaults]]
   - rows and accessors: [[rows]], [[row-accessor]], [[as-coordinates]], [[weight]]
   - time: [[temporal?]], [[period-start]], [[x-key]], [[key->x]], [[->local-date-time]], [[local-date-time->like]]
   - values and extents: [[valid-value?]], [[ordered-level?]] ([[OrderedLevel]]), [[finite-numbers]], [[extent]], [[value-extent]] (with the distinct values, at most [[max-levels]]), [[sorted-levels]], [[merge-extents]]"
@@ -82,6 +82,14 @@
     (schema/optional :mapping {:description "the chart's mapping, merged over the plot's mapping (a key set to nil removes it)"}
                      mapping-schema)]))
 
+(def axis-padding
+  "Default padding of one position axis, `[lo hi]`: 5% of the data span on each side."
+  [0.05 0.05])
+
+(def default-padding
+  "Default chart padding `{:x [lo hi] :y [lo hi]}`: [[axis-padding]] on both position axes (see [[position-padding]])."
+  {:x axis-padding :y axis-padding})
+
 (def position-padding
   "Schema of the chart option `:padding`: `{:x [lo hi] :y [lo hi]}`, fractions of the data span."
   [:map-of [:enum :x :y] schema/padding])
@@ -140,6 +148,18 @@
   [options k default]
   (let [v (get options k)] (if (nil? v) default v)))
 
+(defn options-with-defaults
+  "Reads several options at once, treating `nil` as not set (see [[option]]).
+
+  Parameters:
+
+  - `defaults` (map): option -> its default; its keys are the options read.
+  - `options` (map): chart options.
+
+  Returns `defaults` with every option of its keys that `options` sets to a non-`nil` value merged over it; other options left out."
+  [defaults options]
+  (merge defaults (into {} (remove (comp nil? val)) (select-keys options (keys defaults)))))
+
 (defn period-start
   "Turns a `java.time.Year` or `YearMonth` into the `LocalDate` its period starts.
 
@@ -180,6 +200,17 @@
   Note: `Year` and `YearMonth` are temporal; see [[period-start]]."
   [v]
   (instance? java.time.temporal.Temporal v))
+
+(defn sortable?
+  "Tests whether values can be ordered along a continuous axis: all numbers or all `java.time` values.
+
+  Parameters:
+
+  - `xs` (sequence): the values; empty - vacuously sortable.
+
+  Returns a truthy value when they can be ordered."
+  [xs]
+  (or (every? number? xs) (every? temporal? xs)))
 
 (defn x-key
   "Gives the number aligning an x value across rows and charts.

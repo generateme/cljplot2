@@ -16,7 +16,10 @@
 
   Arrows (see [[cljplot2.graphics.arrow]]): `:arrow {:end :start :size :shape}`; `:start-gap` / `:end-gap` (pixels)
   shorten the ends, a mapped `:end-gap` (a number of pixels per row; `nil` - the option) wins over the option - e.g.
-  the radius of the node an edge points at."
+  the radius of the node an edge points at.
+
+  Functions: [[schemas]] - the chart's schemas; [[compute]] - the segments of every panel; [[draw]] - one panel's
+  segments; [[legend]] - the key glyph."
   (:require [fastmath.core :as m]
             [cljplot2.data.annotation :as annotation]
             [cljplot2.graphics.arrow :as arrow]
@@ -66,13 +69,17 @@
              (schema/nilable :dash {:description "dash style per group"} schema/accessor)
              (schema/nilable :group {:description "groups without a visual aesthetic (one stroke setup per group)"} schema/accessor)]})
 
-(defn- style
-  [options theme]
-  (merge (theme/chart-style theme :segment options) (select-keys options [:color :width :dash])))
-
 (defn- end-accessor
-  "Row accessor of the end coordinate `k` (`:xend` / `:yend`): the literal option, the mapped accessor, or the start
-  accessor `start-of`; `[accessor mapped?]`."
+  "Gives the row accessor of a segment's end coordinate.
+
+  Parameters:
+
+  - `k` (keyword): `:xend` or `:yend`.
+  - `options` (map): the chart's options - the literal end wins.
+  - `mapping` (map): the merged mapping - the mapped end.
+  - `start-of` (function): the start coordinate's accessor - used without either.
+
+  Returns `[accessor mapped?]`, `mapped?` - whether the end is mapped (its invalid values are counted)."
   [k options mapping start-of]
   (cond
     (some? (get options k)) [(constantly (get options k)) false]
@@ -80,34 +87,47 @@
     :else [start-of false]))
 
 (defn- baseline-request
-  "Padding request `[lo hi]` of one axis (see [[cljplot2.data.rows/explicit-padding]]): zero on the side where the
-  literal end `end` (`nil` - none) is the axis extent's end over the panels' `extents` - stems stand on the baseline,
-  as bars on 0 - else `nil` (no request); `nil` without such a side."
+  "Gives the padding request of one axis for a literal segment end (see [[cljplot2.data.rows/explicit-padding]]).
+
+  Parameters:
+
+  - `end`: the literal `:xend` / `:yend`; `nil` - none.
+  - `extents` (sequence): the axis's extents over the panels (`nil`s ignored).
+
+  Returns `[lo hi]` with 0 on the side where `end` is the merged extent's end (stems stand on the baseline, as bars on 0) and `nil` on the other; `nil` without such a side or for a categorical axis."
   [end extents]
   (let [e (data/merge-extents :end (remove nil? extents))
-        at? (fn [bound] (and (some? end) (some? bound) (not= :categorical (:kind e)) (zero? (compare (if (number? end) (double end) end) bound))))
+        at? (fn [bound] (and (some? end) (some? bound) (not= :categorical (:kind e)) (m/zero? (compare (if (number? end) (double end) end) bound))))
         request [(when (at? (:min e)) 0.0) (when (at? (:max e)) 0.0)]]
     (when (some some? request) request)))
 
 (defn compute
-  "Per panel: `{:segments [{:x [..] :y [..] :xend [..] :yend [..] :aesthetics}] :style style}` (a segment coloured
-  along a linear / binned `:color` also has `:colors`); extents (x over x and xend, y over y and yend), padding,
-  `:na`, `:dropped` (`:x`, `:y`, mapped `:xend` / `:yend`)."
-  [{:keys [options]} {:keys [groups mapping]} {:keys [theme plot-scales] :as env}]
-  (let [st (style options theme)
+  "Computes the segments of every panel.
+
+  Parameters:
+
+  - `chart` (map): the chart value - `:options` (see the namespace doc).
+  - `split` (map): `:groups` - panel -> rows, `:mapping` - the merged mapping.
+  - `env` (map): `:theme`, `:plot-scales` - the plot's `:scales` (and the grouping keys of [[cljplot2.data.group/split]]).
+
+  Returns `{:data :extents :padding :padding-explicit :na :dropped}`: per panel `{:segments [{:x [..] :y [..] :xend [..] :yend [..] :aesthetics}] :style st}` (a segment coloured along a linear / binned `:color` also has `:colors`, sized by a linear `:size` `:sizes`, with a mapped `:end-gap` `:end-gaps`), `st` the resolved style; extents - x over x and xend, y over y and yend; padding 5% except a zero request where a literal end is the extent's end (see [[baseline-request]]); `:dropped` - `:x`, `:y`, mapped `:xend` / `:yend`, `:color`, `:size`.
+
+  Throws `ex-info {:key :mapping}` when a needed mapped dimension has no valid value in non-empty data."
+  [{:keys [options] :as chart} {:keys [groups mapping]} {:keys [theme plot-scales] :as env}]
+  (let [st (theme/resolved-style theme chart)
         continuous (group/continuous-color groups mapping env)
         color-of (:color-of continuous)
-        [groups mapping] (if continuous [(:groups continuous) (:mapping continuous)] [groups mapping])
-        sized (group/continuous :size groups mapping env)
+        [colored-groups colored-mapping] (if continuous [(:groups continuous) (:mapping continuous)] [groups mapping])
+        sized (group/continuous :size colored-groups colored-mapping env)
         size-of (:value-of sized)
-        gap-of (when (some? (:end-gap mapping)) (data/row-accessor :end-gap (:end-gap mapping)))
+        gap-of (when (some? (:end-gap colored-mapping)) (data/row-accessor :end-gap (:end-gap colored-mapping)))
         {:keys [panels dropped]} (if sized
                                    (group/split (:groups sized) (:mapping sized) env)
-                                   (group/split groups mapping env))
-        x-of (data/row-accessor :x (:x mapping))
-        y-of (data/row-accessor :y (:y mapping))
-        [xend-of xend-mapped?] (end-accessor :xend options mapping x-of)
-        [yend-of yend-mapped?] (end-accessor :yend options mapping y-of)
+                                   (group/split colored-groups colored-mapping env))
+        x-of (data/row-accessor :x (:x colored-mapping))
+        y-of (data/row-accessor :y (:y colored-mapping))
+        [xend-of xend-mapped?] (end-accessor :xend options colored-mapping x-of)
+        [yend-of yend-mapped?] (end-accessor :yend options colored-mapping y-of)
         accessors [x-of y-of xend-of yend-of]
         valid? (fn [r] (every? #(data/valid-value? (% r)) accessors))
         rows (mapcat (fn [gs] (mapcat :rows gs)) (vals panels))
@@ -141,7 +161,9 @@
     {:data data
      :extents (merge-with merge (group/aesthetic-extents panels plot-scales) (:extents color-stats) (:extents size-stats)
                           position-extents)
-     :padding (merge (into {} (map (fn [k] [k (mapv #(if (nil? %) 0.05 %) (get requests k [nil nil]))])) [:x :y])
+     :padding (merge (into {} (map (fn [k] [k (mapv (fn [request default] (if (nil? request) default request))
+                                                     (get requests k [nil nil]) data/axis-padding)]))
+                           [:x :y])
                      (:padding options))
      :padding-explicit (data/explicit-padding requests options)
      :na (cond-> (group/na-dims panels) (:na? color-stats) (conj :color) (:na? size-stats) (conj :size))
@@ -152,33 +174,64 @@
                 sized (assoc :size (:dropped size-stats)))}))
 
 (defn- segment-colors
-  "Colour of every segment of a group: its row's colour value under the finalized `:color` scale (`colors` `nil` -
-  the group style's colour); the theme NA colour for NA; `nil` (skipped) outside the domain."
+  "Gives the colour of every segment of a group.
+
+  Parameters:
+
+  - `colors` (sequence or `nil`): the rows' linear / binned colour values; `nil` - the group style's colour for all.
+  - `n` (long): the segment count.
+  - `st` (map): the group style.
+  - `scales` (map): the finalized scales - `:color`.
+  - `theme` (map): the merged theme - `[:palette :na]`.
+
+  Returns a sequence of `n` colours: a value's colour under the colour scale, the NA colour for `nil`, `nil` (the segment skipped) outside the scale's domain."
   [colors n st scales theme]
   (if colors
     (let [na (get-in theme [:palette :na])
           color-of (if-let [sc (:color scales)] (aesthetic/attribute-fn :color sc na) (constantly na))]
-      (mapv #(if (nil? %) na (color-of %)) colors))
-    (vec (repeat n (:color st)))))
+      (map #(if (nil? %) na (color-of %)) colors))
+    (repeat n (:color st))))
 
 (defn- row-widths
-  "Line width of every segment of a group: its row's size under the finalized `:size` scale (`sizes` `nil` - the group
-  style's width; NA - the style width); `nil` (skipped) outside the domain."
+  "Gives the line width of every segment of a group.
+
+  Parameters:
+
+  - `sizes` (sequence or `nil`): the rows' linear size values; `nil` - the group style's width for all.
+  - `n` (long): the segment count.
+  - `st` (map): the group style - `:width` (also for NA).
+  - `scales` (map): the finalized scales - `:size`.
+
+  Returns a sequence of `n` widths; `nil` (the segment skipped) for a value outside the size scale's domain."
   [sizes n st scales]
   (if sizes
     (let [width-of (if-let [sc (:size scales)] (aesthetic/attribute-fn :size sc (:width st)) (constantly (:width st)))]
-      (mapv width-of sizes))
-    (vec (repeat n (:width st)))))
+      (map width-of sizes))
+    (repeat n (:width st))))
 
 (defn- gap
-  "End gap of a row: its mapped gap when a finite number >= 0, else the option's (0 without one)."
+  "Gives the end gap of a segment.
+
+  Parameters:
+
+  - `row-gap`: the row's mapped gap (pixels); used when a finite number >= 0.
+  - `option`: the `:end-gap` option; `nil` - 0.
+
+  Returns the gap in pixels."
   ^double [row-gap option]
-  (if (and (number? row-gap) (m/valid-double? (double row-gap)) (>= (double row-gap) 0.0))
+  (if (and (number? row-gap) (m/valid-double? (double row-gap)) (m/not-neg? (double row-gap)))
     (double row-gap)
     (double (or option 0.0))))
 
 (defn- draw-each!
-  "Draw every segment of a group on its own: its colour, width, gaps and arrows (see [[cljplot2.graphics.arrow]])."
+  "Draws every segment of a group on its own, with its colour, width, gaps and arrows (see [[cljplot2.graphics.arrow]]).
+
+  Parameters:
+
+  - `canvas`: the clojure2d canvas.
+  - `paths` (sequence): the segments' pixel paths.
+  - `st` (map): the group style.
+  - `[colors widths end-gaps options]`: per segment colours and widths (a `nil` one - skipped), mapped end gaps (`nil` - none), and the chart's options (`:arrow`, `:start-gap`, `:end-gap`)."
   [canvas paths st [colors widths end-gaps options]]
   (doseq [[path color width row-gap] (map vector paths colors widths (or end-gaps (repeat nil)))
           :when (and (some? color) (some? width))]
@@ -186,27 +239,37 @@
                      [(:arrow options) (:start-gap options) (gap row-gap (:end-gap options))])))
 
 (defn draw
-  "Draw the segments of one panel, consecutive segments of one colour with one stroke setup (each segment on its own
-  with per-row widths, gaps or arrows); ends the scales can't place skip the segment."
+  "Draws the segments of one panel.
+
+  Parameters:
+
+  - `chart` (map): the chart value - `:options` (`:arrow`, `:start-gap`, `:end-gap`).
+  - `computed` (map): `:segments`, `:style` (see [[compute]]).
+  - `canvas`: the clojure2d canvas.
+  - `scales` (map): the finalized scales.
+  - `env` (map): `:theme`.
+
+  Consecutive segments of one colour are stroked with one stroke setup; with per-row widths, gaps or arrows each segment is drawn on its own (polar: chords, arcs with `:arcs`). A segment with an end the scales can't place is skipped."
   [{:keys [options]} {:keys [segments style]} canvas _box scales env]
   (let [geometry (scale/coord-geometry scales)
         point (if geometry
                 (scale/range-projection scales)
                 (let [projection (scale/projection scales)] (fn [vx vy] (let [^Vec2 p (projection vx vy)] [(.x p) (.y p)]))))
         theme (:theme env)
-        placed? (fn [[[x0 y0] [x1 y1]]] (every? #(Double/isFinite (double %)) [x0 y0 x1 y1]))
+        placed? (fn [[[^double x0 ^double y0] [^double x1 ^double y1]]]
+                  (and (m/valid-double? x0) (m/valid-double? y0) (m/valid-double? x1) (m/valid-double? y1)))
         ;; polar: range ends to pixels - a chord, or an arc with :arcs
         drawn (if geometry #(coord/line-path geometry % (:arcs geometry)) identity)]
     (doseq [{:keys [x y xend yend colors sizes end-gaps aesthetics]} segments
-            :let [st (group/style style aesthetics scales theme)
-                  st (when st (cond-> st (:size st) (-> (assoc :width (:size st)) (dissoc :size))))]
+            :let [group-st (group/style style aesthetics scales theme)
+                  st (when group-st (cond-> group-st (:size group-st) (-> (assoc :width (:size group-st)) (dissoc :size))))]
             :when st
             :when (or (not (or sizes end-gaps (:arrow options) (:start-gap options) (:end-gap options)))
                       (let [n (count x)
                             pairs (mapv (fn [vx vy vxe vye] [(point vx vy) (point vxe vye)]) x y xend yend)
                             keep? (mapv placed? pairs)
-                            pick (fn [v] (vec (keep-indexed (fn [i e] (when (keep? i) e)) v)))]
-                        (draw-each! canvas (mapv #(mapv curve/drawn-point (drawn %)) (filter placed? pairs)) st
+                            pick (fn [v] (keep-indexed (fn [i e] (when (keep? i) e)) v))]
+                        (draw-each! canvas (map #(mapv curve/drawn-point (drawn %)) (filter placed? pairs)) st
                                     [(pick (segment-colors colors n st scales theme)) (pick (row-widths sizes n st scales))
                                      (some-> end-gaps pick) options])
                         false))
@@ -214,12 +277,20 @@
                                                  x y xend yend (segment-colors colors (count x) st scales theme)))
             :let [color (second (first same-color))]
             :when (some? color)]
-      (polyline/stroke-runs! canvas (mapv #(mapv curve/drawn-point (drawn %)) (filter placed? (map first same-color)))
+      (polyline/stroke-runs! canvas (map #(mapv curve/drawn-point (drawn %)) (filter placed? (map first same-color)))
                              (assoc st :color color)))))
 
 (defn legend
-  "Key glyph: a horizontal line through the middle of `box` in the segment style."
-  [{:keys [options]} attributes canvas box env]
-  (polyline/key-glyph! canvas box (cond-> (merge (style options (:theme env)) (select-keys attributes [:color :dash]))
+  "Draws the chart's key glyph: a horizontal line through the middle of the key's box in the segment style.
+
+  Parameters:
+
+  - `chart` (map): the chart value.
+  - `attributes` (map): the key's mapped attributes - `:color`, `:dash`, `:size` (the line width).
+  - `canvas`: the clojure2d canvas.
+  - `box` (map): the key's box.
+  - `env` (map): `:theme`."
+  [chart attributes canvas box env]
+  (polyline/key-glyph! canvas box (cond-> (merge (theme/resolved-style (:theme env) chart) (select-keys attributes [:color :dash]))
                                     (:size attributes) (assoc :width (:size attributes)))
                        :none))

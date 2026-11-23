@@ -33,8 +33,11 @@
   angle: the largest label's diagonal plus its offset - labels around a circle stay inside the panel. `:reserve-room
   :anchor` keeps on each side only the room the labels reach past their positions, from `:anchor`, `:offset` and the
   largest label's size (e.g. `[:left :middle]` - the width on the high x side, half the height below and above;
-  flipped plots exchange the axes); labels with a `:rotation` or a mapped `:angle` - as `true`."
+  flipped plots exchange the axes); labels with a `:rotation` or a mapped `:angle` - as `true`.
+
+  Functions: [[compute]], [[draw]], [[legend]] - the chart contract."
   (:require [fastmath.core :as m]
+            [fastmath.vector :as v]
             [cljplot2.content.label :as label]
             [cljplot2.data.annotation :as annotation]
             [cljplot2.data.group :as group]
@@ -50,28 +53,54 @@
 (set! *unchecked-math* :warn-on-boxed)
 
 (defn- numeric-rotation
-  "The `:rotation` option in degrees: `:radial` (polar only) counts as 0."
+  "Gives the `:rotation` option in degrees.
+
+  Parameters:
+
+  - `options` (map): the chart options; `:rotation` - degrees or `:radial` (default 0).
+
+  Returns the rotation; `:radial` (polar only) counts as 0."
   [options]
   (let [r (get options :rotation 0)] (if (number? r) r 0)))
 
-(defn- panel-position? [p] (and (vector? p) (= 2 (count p)) (= :panel (first p))))
+(defn- panel-position?
+  "Tests whether a position is a panel position `[:panel f]`.
+
+  Parameters:
+
+  - `p`: a position.
+
+  Returns a truthy value for a two-element vector starting with `:panel`."
+  [p]
+  (and (vector? p) (m/== 2 (count p)) (= :panel (first p))))
 
 (def ^:private panel-position
-  (schema/named-type ::panel-position #(and (panel-position? %) (number? (second %)) (<= 0.0 (double (second %)) 1.0))
+  "Schema of a panel position `[:panel f]`, `f` in `[0 1]` - a fraction of the panel from its low-value end."
+  (schema/named-type ::panel-position #(and (panel-position? %) (number? (second %)) (m/<= 0.0 (double (second %)) 1.0))
                      "should be [:panel f], f in [0 1]"))
 
-(def ^:private text-position [:or annotation/position panel-position])
+(def ^:private text-position
+  "Schema of one text position: a data position or a panel position."
+  [:or annotation/position panel-position])
 
 (def ^:private text-positions
-  ;; a vector starting with :panel is always a panel position, never a vector of positions
+  "Schema of the literal `:x` / `:y`: a position or a vector of 1 or n; a vector starting with `:panel` is always a panel position, never a vector of positions."
   [:multi {:dispatch #(and (vector? %) (= :panel (first %)))}
    [true panel-position]
    [false (annotation/positions-schema text-position)]])
 
-(def ^:private style-keys [:font :size :font-style :color :padding :background])
+(def ^:private style-keys
+  "Text style keys the chart takes as options, over its text role."
+  [:font :size :font-style :color :padding :background])
 
 (defn- text-role
-  "The theme text role of the labels of a text chart with `options`: its `:role`, else `:annotation`."
+  "Gives the theme text role of the chart's labels.
+
+  Parameters:
+
+  - `options` (map): the chart options.
+
+  Returns `:role`, else `:annotation`."
   [options]
   (get options :role :annotation))
 
@@ -114,22 +143,44 @@
              (schema/nilable :color {:description "text colour per group (gives legend keys)"} schema/accessor)
              (schema/nilable :group {:description "groups without a visual aesthetic (labels per group with :select)"} schema/accessor)]})
 
-(defn- one? [v] (not (and (vector? v) (not (panel-position? v)))))
+(defn- one?
+  "Tests whether a literal value is one item rather than a vector of items.
+
+  Parameters:
+
+  - `v`: the literal value.
+
+  Returns a truthy value for anything but a vector, and for a panel position."
+  [v]
+  (not (and (vector? v) (not (panel-position? v)))))
 
 (defn- label-positions
-  "`[{:x :y :text} ..]` of positions `xs`, `ys` and texts `ts` (vectors of 1 or n, paired)."
+  "Gives the literal labels.
+
+  Parameters:
+
+  - `xs`, `ys`, `ts` (vectors of 1 or n): the positions and texts.
+
+  Returns `[{:x :y :text} ..]`, the vectors paired (see [[cljplot2.data.annotation/broadcast]]).
+
+  Throws as [[cljplot2.data.annotation/broadcast]] for vectors of different lengths."
   [xs ys ts]
   (mapv (fn [[x y t]] {:x x :y y :text t}) (annotation/broadcast [:x :y :text] [xs ys ts])))
 
 (defn- selected
-  "The labels of `labels` (valid positions, data order) kept by `select` (`nil` - all): per label text the one with the
-  largest (`:last`) / smallest (`:first`) x key (see [[cljplot2.data.rows/x-key]]; ties - the later label), or the
-  last / first in data order when some x has no key."
+  "Gives the labels kept by `:select`.
+
+  Parameters:
+
+  - `labels` (vector of maps): labels with valid positions, in data order.
+  - `select`: `:last`, `:first` or `nil` - all.
+
+  Returns per label text the label with the largest (`:last`) / smallest (`:first`) x key (see [[cljplot2.data.rows/x-key]]; ties - the later label), or the last / first in data order when some x has no key; `labels` for `nil`."
   [labels select]
   (if-not select
     labels
     (let [by-text (vals (group-by :text labels))
-          later? (if (= :last select) >= <=)
+          later? (if (= :last select) m/>= m/<=)
           pick (fn [ls]
                  (let [ks (mapv #(data/x-key (:x %)) ls)]
                    (if (every? some? ks)
@@ -138,51 +189,75 @@
       (mapv pick by-text))))
 
 (defn- select-placement
-  "`:anchor` / `:offset` defaults of `select` (`:last` / `:first`), flipped plots (`flip?`) placing along the vertical."
+  "Gives the `:anchor` / `:offset` defaults of end labels.
+
+  Parameters:
+
+  - `select`: `:last` or `:first`.
+  - `flip?`: is the plot flipped (labels placed along the vertical)?
+
+  Returns `{:anchor [h v] :offset [dx dy]}` - just past the point, 5 pixels away."
   [select flip?]
-  (case [select (boolean flip?)]
-    [:last false] {:anchor [:left :middle] :offset [5 0]}
-    [:first false] {:anchor [:right :middle] :offset [-5 0]}
-    [:last true] {:anchor [:center :bottom] :offset [0 5]}
-    [:first true] {:anchor [:center :top] :offset [0 -5]}))
+  (case select
+    :last (if flip? {:anchor [:center :bottom] :offset [0 5]} {:anchor [:left :middle] :offset [5 0]})
+    :first (if flip? {:anchor [:center :top] :offset [0 -5]} {:anchor [:right :middle] :offset [-5 0]})))
 
 (defn- label-room
-  "`:padding-px` `{:x [lo hi]}` of selected labels `texts` drawn with `options` (style keys, `:rotation`, `:select`, `:offset`):
-  the widest text (the tallest when `flip?`) plus the offset along x, on the high side for `:last`, the low side for
-  `:first`; `nil` without texts."
+  "Gives the pixel room end labels need past the data.
+
+  Parameters:
+
+  - `texts` (sequence): the selected labels' texts.
+  - `options` (map): style keys, `:role`, `:rotation`, `:select`, `:offset`.
+  - `env` (map): `:theme`, `:flip?`, `:hint`.
+
+  Returns `:padding-px` `{:x [lo hi]}`: the widest text (the tallest when flipped) plus the offset along x, on the high side for `:last`, the low side for `:first`; `nil` without texts."
   [texts options {:keys [theme flip? hint]}]
   (when (seq texts)
     (measure/call-with-scratch-canvas
      hint
      (fn [c]
        (let [spec (merge {:kind :label :role (text-role options) :rotation (numeric-rotation options)} (select-keys options style-keys))
-             along (reduce max (map (fn [t] (let [^Vec2 size (measure/natural-size (assoc spec :text (str t)) {:canvas c :theme theme})]
-                                              (if flip? (.y size) (.x size))))
-                                    texts))
+             along (v/mx (map (fn [t] (let [^Vec2 size (measure/natural-size (assoc spec :text (str t)) {:canvas c :theme theme})]
+                                        (if flip? (.y size) (.x size))))
+                              texts))
              [dx dy] (:offset options)
-             room (+ (double along) (m/abs (double (if flip? dy dx))))]
+             room (m/+ along (m/abs (double (if flip? dy dx))))]
          {:x (if (= :last (:select options)) [0.0 room] [room 0.0])})))))
 
 (defn- reserved-room
-  "`:padding-px` `{:x [r r] :y [r r]}` for labels `texts` drawn with `options` at any angle: `r` - the largest text's
-  diagonal (unrotated, style keys of `options`) plus the larger offset component; `nil` without texts."
+  "Gives the pixel room labels need at any angle.
+
+  Parameters:
+
+  - `texts` (sequence): the labels' texts.
+  - `options` (map): style keys, `:role`, `:offset`.
+  - `env` (map): `:theme`, `:hint`.
+
+  Returns `:padding-px` `{:x [r r] :y [r r]}`, `r` - the largest text's diagonal (unrotated) plus the larger offset component; `nil` without texts."
   [texts options {:keys [theme hint]}]
   (when (seq texts)
     (measure/call-with-scratch-canvas
      hint
      (fn [c]
        (let [spec (merge {:kind :label :role (text-role options) :rotation 0} (select-keys options style-keys))
-             diagonal (reduce max (map (fn [t] (let [^Vec2 size (measure/natural-size (assoc spec :text (str t)) {:canvas c :theme theme})]
-                                                 (m/hypot (.x size) (.y size))))
-                                       texts))
+             diagonal (v/mx (map (fn [t] (let [^Vec2 size (measure/natural-size (assoc spec :text (str t)) {:canvas c :theme theme})]
+                                           (m/hypot (.x size) (.y size))))
+                                 texts))
              [dx dy] (:offset options [0 0])
-             r (+ (double diagonal) (max (m/abs (double dx)) (m/abs (double dy))))]
+             r (m/+ diagonal (m/max (m/abs (double dx)) (m/abs (double dy))))]
          {:x [r r] :y [r r]})))))
 
 (defn- anchored-room
-  "`:padding-px` for labels `texts` reaching from their positions as `options` place them (`:anchor`, `:offset`, no
-  rotation): per side the part of the largest text box (width and height measured separately) past the position;
-  `flip?` - x room on the vertical scale and y room on the horizontal one; `nil` without texts."
+  "Gives the pixel room labels reach past their positions as anchored.
+
+  Parameters:
+
+  - `texts` (sequence): the labels' texts.
+  - `options` (map): style keys, `:role`, `:anchor`, `:offset` (no rotation).
+  - `env` (map): `:theme`, `:hint`, `:flip?` - x room on the vertical scale and y room on the horizontal one.
+
+  Returns `:padding-px` `{:x [lo hi] :y [lo hi]}`: per side the part of the largest text box (width and height measured separately) past the position; `nil` without texts."
   [texts options {:keys [theme hint flip?]}]
   (when (seq texts)
     (measure/call-with-scratch-canvas
@@ -190,20 +265,27 @@
      (fn [c]
        (let [spec (merge {:kind :label :role (text-role options) :rotation 0} (select-keys options style-keys))
              sizes (map (fn [t] (measure/natural-size (assoc spec :text (str t)) {:canvas c :theme theme})) texts)
-             w (double (reduce max (map (fn [^Vec2 v] (.x v)) sizes)))
-             h (double (reduce max (map (fn [^Vec2 v] (.y v)) sizes)))
+             w (v/mx (map (fn [^Vec2 size] (.x size)) sizes))
+             h (v/mx (map (fn [^Vec2 size] (.y size)) sizes))
              [ha va] (:anchor options [:center :middle])
              [dx dy] (:offset options [0 0])
-             x0 (- (double dx) (case ha :left 0.0 :center (* 0.5 w) :right w))
-             y0 (- (double dy) (case va :bottom 0.0 :middle (* 0.5 h) :top h))
-             horizontal [(max 0.0 (- x0)) (max 0.0 (+ x0 w))]
-             vertical [(max 0.0 (- y0)) (max 0.0 (+ y0 h))]]
+             x0 (m/- (double dx) (case ha :left 0.0 :center (m/* 0.5 w) :right w))
+             y0 (m/- (double dy) (case va :bottom 0.0 :middle (m/* 0.5 h) :top h))
+             horizontal [(m/max 0.0 (m/- x0)) (m/max 0.0 (m/+ x0 w))]
+             vertical [(m/max 0.0 (m/- y0)) (m/max 0.0 (m/+ y0 h))]]
          (if flip? {:x vertical :y horizontal} {:x horizontal :y vertical}))))))
 
 (defn- with-reserved-room
-  "Chart `stats` with [[reserved-room]] (`:reserve-room :anchor` without a rotation or mapped angle - [[anchored-room]])
-  for the texts of its labels merged into its `:padding-px` (per side the larger) when `options` ask for
-  `:reserve-room`."
+  "Adds the room `:reserve-room` asks for to chart stats.
+
+  Parameters:
+
+  - `stats` (map): the chart's stats.
+  - `options` (map): the chart options (`:reserve-room`, `:rotation`, ...).
+  - `mapping` (map or `nil`): the chart's mapping (`:angle`).
+  - `env` (map): the compute environment.
+
+  Returns `stats` with [[reserved-room]] (`:reserve-room :anchor` without a rotation or a mapped angle - [[anchored-room]]) for the texts of its labels merged into its `:padding-px` (per side the larger); `stats` unchanged without `:reserve-room`."
   [stats options mapping env]
   (if-not (:reserve-room options)
     stats
@@ -212,12 +294,20 @@
                          (contains? #{nil 0 0.0} (:rotation options)))
           room (if anchored? (anchored-room texts options env) (reserved-room texts options env))]
       (cond-> stats
-        room (update :padding-px #(merge-with (fn [a b] (mapv max a b)) % room))))))
+        room (update :padding-px #(merge-with (fn [a b] (mapv m/max a b)) % room))))))
 
 (defn compute
-  "Literal: `{:labels [{:x :y :text}] :options o}` in every panel, extents of the positions. Data: per panel the
-  labels of each group (with `:aesthetics`), with `:select` - one per group and text, the `:anchor` / `:offset`
-  defaults in `o` and `:padding-px` room."
+  "Computes the labels of the chart.
+
+  Parameters:
+
+  - `chart` (map): the chart value (`:options` - literal `:x`, `:y`, `:text`, `:select`, ...).
+  - `chart-split` (map): `:groups`, `:mapping` (the chart's own: `:x`, `:y`, `:label`, `:angle`, aesthetics).
+  - `env` (map): the compute environment (`:flip?`, `:theme`, `:hint` ...).
+
+  Returns literal - `{:groups [{:labels [{:x :y :text}]}] :options o}` in every panel, extents of the positions; data - per panel the labels of each group (with `:aesthetics`), with `:select` one per group and text, the `:anchor` / `:offset` defaults in `o` and `:padding-px` room; `:reserve-room` room (see [[with-reserved-room]]).
+
+  Throws `ex-info {:key :select}` for `:select` with literal labels, `{:key k}` for a missing literal `:x`, `:y` or `:text`, `{:key :mapping}` without a mapped `:x :y :label`."
   [{:keys [options]} {:keys [mapping] :as chart-split} env]
   (if (annotation/literal? options [:x :y :text])
     (let [_ (when (:select options)
@@ -235,34 +325,52 @@
           [x-of y-of t-of] (map #(data/row-accessor % (get mapping %)) [:x :y :label])
           angle-of (when (some? (:angle mapping)) (data/row-accessor :angle (:angle mapping)))
           select (:select options)
-          options (cond->> options select (merge (select-placement select (:flip? env))))
+          placed-options (cond->> options select (merge (select-placement select (:flip? env))))
           labels-of (fn [rows] (selected (vec (for [r rows
                                                     :let [x (x-of r) y (y-of r)]
                                                     :when (and (annotation/position? x) (annotation/position? y))]
                                                 (cond-> {:x x :y y :text (t-of r)}
                                                   angle-of (assoc :angle (angle-of r)))))
                                          select))
-          stats (annotation/data-stats chart-split options env
+          stats (annotation/data-stats chart-split placed-options env
                                        (fn [gs]
                                          (let [groups (mapv (fn [g] {:labels (labels-of (:rows g)) :aesthetics (:aesthetics g)}) gs)
                                                ls (mapcat :labels groups)]
-                                           [{:groups groups :options options} {:x (map :x ls) :y (map :y ls)}])))]
+                                           [{:groups groups :options placed-options} {:x (map :x ls) :y (map :y ls)}])))]
       (-> (cond-> stats
             select (assoc :padding-px (label-room (distinct (map :text (mapcat :labels (mapcat :groups (vals (:data stats))))))
-                                                  options env)))
-          (with-reserved-room options mapping env)))))
+                                                  placed-options env)))
+          (with-reserved-room placed-options mapping env)))))
 
 (defn- base-style
-  "Text style keys of `options` over the colour of the chart's text role (the base for the group's `:color`)."
+  "Gives the base text style of the labels, the group's `:color` drawn over it.
+
+  Parameters:
+
+  - `options` (map): the chart options (style keys, `:role`).
+  - `theme` (map): the merged theme.
+
+  Returns the colour of the chart's text role with the style keys of `options` over it."
   [options theme]
   (merge {:color (get-in theme [:text (text-role options) :color])} (select-keys options style-keys)))
 
 (defn draw
-  "Draw the labels of one panel through [[cljplot2.content.label/draw-at!]]; unplaceable positions are skipped."
+  "Draws the labels of one panel.
+
+  Parameters:
+
+  - `_chart` (map): the chart value.
+  - `computed` (map): the panel's `:groups` (labels per group) and `:options`.
+  - `canvas`: the clojure2d canvas.
+  - `_box` (map): the panel box.
+  - `scales` (map): the finalized scales.
+  - `env` (map): the drawing environment (`:theme`).
+
+  Labels are drawn through [[cljplot2.content.label/draw-at!]] (`:anchor-frame :text` - [[cljplot2.content.label/draw-at-frame!]]), turned by a mapped `:angle`, else `:rotation` (`:radial` along each label's angle in a polar plot); unplaceable positions are skipped."
   [_chart {:keys [groups options]} canvas _box scales env]
   (let [geometry (scale/coord-geometry scales)
         radial? (and geometry (= :radial (:rotation options)))
-        [dx dy] (get options :offset [0 0])
+        [^double dx ^double dy] (get options :offset [0 0])
         [hk vk] (if (scale/flipped? scales) [:y :x] [:x :y])
         h-pixel (annotation/axis-pixel-fn (get scales hk))
         v-pixel (annotation/axis-pixel-fn (get scales vk))
@@ -270,26 +378,34 @@
         place (if geometry
                 (fn [^double h ^double v]
                   (let [^Vec2 p (coord/to-pixel geometry h v)]
-                    [(+ (.x p) (double dx)) (- (.y p) (double dy))
+                    [(m/+ (.x p) dx) (m/- (.y p) dy)
                      (if radial? (coord/radial-rotation h) (numeric-rotation options))
                      (get options :anchor (if radial? (coord/outward-anchor h) [:center :middle]))]))
                 (let [rotation (numeric-rotation options)
                       anchor (get options :anchor [:center :middle])]
-                  (fn [^double h ^double v] [(+ h (double dx)) (- v (double dy)) rotation anchor])))]
+                  (fn [^double h ^double v] [(m/+ h dx) (m/- v dy) rotation anchor])))]
     (doseq [{:keys [labels aesthetics]} groups
             :let [st (group/style (base-style options (:theme env)) aesthetics scales (:theme env))]
             :when st
             {:keys [x y text angle]} labels
             :let [pos {:x x :y y}
-                  [px py rotation anchor] (place (double (h-pixel (pos hk))) (double (v-pixel (pos vk))))
-                  rotation (if (and (number? angle) (m/valid-double? (double angle))) angle rotation)]
-            :when (and (m/valid-double? (double px)) (m/valid-double? (double py)))]
+                  [^double px ^double py placed-rotation anchor] (place (double (h-pixel (pos hk))) (double (v-pixel (pos vk))))
+                  rotation (if (and (number? angle) (m/valid-double? (double angle))) angle placed-rotation)]
+            :when (and (m/valid-double? px) (m/valid-double? py))]
       ((if (= :text (:anchor-frame options)) label/draw-at-frame! label/draw-at!)
        canvas (merge {:kind :label :role (text-role options) :text (str text) :rotation rotation} st) anchor px py env))))
 
 (defn legend
-  "Key glyph: the letter `a` in the text style (the role's padding, so it fits the key), centred in `box`."
-  [{:keys [options]} attributes canvas {:keys [x y w h]} env]
+  "Draws the key glyph: the letter `a` in the text style (the role's padding, so it fits the key), centred in the key box.
+
+  Parameters:
+
+  - `chart` (map): the chart value.
+  - `attributes` (map): the key's attributes (`:color`).
+  - `canvas`: the clojure2d canvas.
+  - `box` (map): the key box `:x`, `:y`, `:w`, `:h`.
+  - `env` (map): the drawing environment (`:theme`)."
+  [{:keys [options]} attributes canvas {:keys [^double x ^double y ^double w ^double h]} env]
   (let [st (merge (dissoc (base-style options (:theme env)) :padding) (select-keys attributes [:color]))]
     (label/draw-at! canvas (merge {:kind :label :role (text-role options) :text "a"} st) [:center :middle]
-                    (+ (double x) (* 0.5 (double w))) (+ (double y) (* 0.5 (double h))) env)))
+                    (m/+ x (m/* 0.5 w)) (m/+ y (m/* 0.5 h)) env)))

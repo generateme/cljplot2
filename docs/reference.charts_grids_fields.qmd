@@ -639,7 +639,7 @@ Its options: the coefficient, the glyph and its colours (by default r on a diver
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:color</td><td>a clojure2d color or :none</td><td>[69.0 117.0 180.0 255.0]; grouped shape glyphs: the theme's; ungrouped: r on a diverging scale; :number: the :correlation text role's colour, group lines mapped or black</td><td>one fixed glyph colour, the :number text's too</td></tr><tr><td>:stroke-color</td><td>:darker or a clojure2d color or :none</td><td>:darker</td><td>outline colour: a colour, :none or :darker (the darkened fill)</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>outline width in pixels</td></tr><tr><td>:method</td><td>one of :pearson :spearman :kendall</td><td>:pearson</td><td>correlation coefficient: :pearson, :spearman or :kendall</td></tr><tr><td>:glyph</td><td>one of :number :shade :square :circle :ellipse :pie</td><td>:number</td><td>how r is drawn: :number (text, a line per group), :shade (the panel in r's colour), :square / :circle (area ~ |r|), :ellipse (normal contour) or :pie (a disk filled |r|)</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:color</td><td>a clojure2d color or :none</td><td>[69.0 117.0 180.0 255.0]; grouped shape glyphs: the theme's; ungrouped: r on a diverging scale; :number: the :correlation text role's colour, group lines mapped or black</td><td>one fixed glyph colour, the :number text's too</td></tr><tr><td>:stroke-color</td><td>:darker or a clojure2d color or :none</td><td>:darker</td><td>outline colour: a colour, :none or :darker (the darkened fill)</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>outline width in pixels</td></tr><tr><td>:method</td><td>one of :pearson :spearman :kendall</td><td>:pearson</td><td>correlation coefficient: :pearson, :spearman or :kendall</td></tr><tr><td>:glyph</td><td>one of :number :shade :square :circle :ellipse :pie</td><td>:number</td><td>how r is drawn: :number (text, a line per group), :shade (the panel in r's colour), :square / :circle (area ~ |r|), :ellipse (normal contour) or :pie (a disk filled |r|)</td></tr><tr><td>:glyph-size</td><td>a number in [0 1]</td><td>0.9</td><td>glyph side (:square, :circle, :ellipse, :pie) as a fraction of the panel's shorter side</td></tr></tbody></table>
 ```
 
 :::
@@ -673,8 +673,8 @@ Every glyph, for one pair of variables (r about 0.82):
 :::
 
 
-The three coefficients of the same pair (Kendall's tau, counting concordant pairs, is the lowest), and one fixed
-glyph colour with a thick outline:
+The three coefficients of the same pair (Kendall's tau, counting concordant pairs, is the lowest), and a smaller
+glyph in one fixed colour with a thick outline:
 
 
 ::: {.sourceClojure}
@@ -686,9 +686,9 @@ glyph colour with a thick outline:
                                   {:data iris :mapping {:x :sepal-length :y :petal-width}
                                    :charts [(chart/correlation {:method :kendall})] :labels {:title ":method :kendall"}}
                                   {:data iris :mapping {:x :sepal-length :y :petal-width}
-                                   :charts [(chart/correlation {:glyph :circle :color [120 160 90] :stroke-color :black
-                                                                :stroke-width 3})]
-                                   :labels {:title ":color, :stroke-width 3"}}]
+                                   :charts [(chart/correlation {:glyph :circle :glyph-size 0.6 :color [120 160 90]
+                                                                :stroke-color :black :stroke-width 3})]
+                                   :labels {:title ":glyph-size 0.6, :stroke-width 3"}}]
                                  {:columns 4})
                    {:width 1000 :height 280})
 ```

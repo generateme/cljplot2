@@ -26,10 +26,12 @@
   on, so nearer ridges cover farther ones. `:position` `:overlay` (default) or `:mirror` (two groups, the second
   growing away from the next level); `:fill-gradient` (ridges only) - fill colour: a clojure2d gradient (keyword
   preset, colour list or function of `t` in `[0 1]`) along `:fill-gradient-axis` - `:x` (default, over the x scale's
-  domain) or `:y` (from each ridge's baseline to the top of the tallest curve)."
-  (:require [clojure2d.color :as c]
-            [clojure2d.core :as c2d]
+  domain) or `:y` (from each ridge's baseline to the top of the tallest curve).
+
+  Functions: [[compute]], [[draw]], [[legend]] - the chart contract; [[schemas]] - its style, options and mapping."
+  (:require [clojure2d.core :as c2d]
             [fastmath.core :as m]
+            [fastmath.vector :as v]
             [cljplot2.data.rows :as data]
             [cljplot2.data.group :as group]
             [cljplot2.data.kde :as kde]
@@ -46,6 +48,7 @@
 (set! *unchecked-math* :warn-on-boxed)
 
 (def ^:private style-entries
+  "Map entries of the density style (theme `[:chart :density]`), also its options."
   (into (conj polyline/style-entries
               (schema/optional :fill {:cljplot2/section :style :description "area under the curve: a colour, :color (the curve's colour with opacity :alpha) or :none; stacked positions and ridgelines fill with the curve's colour unless set"}
                                [:or [:= :color] schema/color])
@@ -54,9 +57,13 @@
               (schema/optional :zero-line-width {:cljplot2/section :style :description "width in pixels of the y = 0 line drawn with :position :mirror"} schema/non-neg))
         draw/pattern-style-entries))
 
-(def ^:private positions (into (disj position/positions :dodge) position/stream-positions))
+(def ^:private positions
+  "Positions of grouped curves: [[cljplot2.data.position/positions]] without `:dodge`, plus the streamgraphs."
+  (into (disj position/positions :dodge) position/stream-positions))
 
-(def ^:private stacked-positions (into #{:stack :normalize} position/stream-positions))
+(def ^:private stacked-positions
+  "Positions that stack the curves, filling their areas."
+  (into #{:stack :normalize} position/stream-positions))
 
 (def schemas
   "Schemas of the density chart: `:style` (theme `[:chart :density]`), `:options`, `:mapping` (merged)."
@@ -100,71 +107,99 @@
              (schema/nilable :pattern {:description "groups, each area with its own fill pattern"} schema/accessor)
              (schema/nilable :group {:description "groups without a visual aesthetic, each its own curve"} schema/accessor)]})
 
-(defn- style
-  [options theme]
-  (merge (theme/chart-style theme :density options) (select-keys options [:color :width :dash :fill :alpha :zero-line-color :zero-line-width :pattern
-                                                                 :pattern-color])))
+(def ^{:const true :private true :tag 'long} default-points
+  "Evaluation points of each curve when `:n` isn't given."
+  512)
 
 (defn- panel-curves
-  "Curves of a panel's groups `gs` (with their `group-values`) for `position`; `group-keys` - all groups in order.
-  Overlay and mirror: each group on its own range (mirror: the second group of `group-keys` negated). Stack and fill:
-  every group on one common range of the panel's curves, `:y0` / `:y` from
-  [[cljplot2.data.position/stack-values]]."
+  "Gives the density curves of a panel's groups for a position.
+
+  Overlay and mirror: each group on its own range (mirror: the second group of `group-keys` negated). Stacked positions (`:stack`, `:normalize`, `:silhouette`, `:wiggle`): every group on one common range of the panel's curves, `:y0` / `:y` from [[cljplot2.data.position/stack-values]].
+
+  Parameters:
+
+  - `gs` (sequence of maps): the panel's groups - `:key`, `:aesthetics`.
+  - `group-values` (sequence of maps): per group its valid values `{:values [..]}`.
+  - `group-keys` (sequence): every group key of the plot, in order.
+  - `position` (keyword): the chart's `:position`.
+  - `options` (map): the chart's options - `:kernel`, `:bandwidth`, `:cut`, `:n` (default 512).
+
+  Returns a vector of curves `{:x [..] :y [..] :aesthetics}` (stacked - also `:y0 [..]`); a group with fewer than 2 distinct values has none."
   [gs group-values group-keys position options]
-  (let [n (long (or (:n options) 512))
+  (let [n (long (or (:n options) default-points))
         estimates (vec (keep (fn [[g {:keys [values]}]]
-                               (when (>= (count (distinct values)) 2)
+                               (when (m/>= (count (distinct values)) 2)
                                  (assoc (kde/estimate values options) :group g)))
                              (map vector gs group-values)))]
     (case position
       (:stack :normalize :silhouette :wiggle) (if (empty? estimates)
-                       []
-                       (let [xs (kde/grid-points (reduce min (map :lo estimates)) (reduce max (map :hi estimates)) n)
-                             curves (mapv #(kde/curve % xs) estimates)
-                             ys (position/stack-values position (mapv :y curves))]
-                         (mapv (fn [{:keys [group]} c y01]
-                                 (assoc c :y0 (mapv first y01) :y (mapv second y01) :aesthetics (:aesthetics group)))
-                               estimates curves ys)))
+                                                []
+                                                (let [xs (kde/grid-points (v/mn (map :lo estimates)) (v/mx (map :hi estimates)) n)
+                                                      curves (mapv #(kde/curve % xs) estimates)
+                                                      ys (position/stack-values position (mapv :y curves))]
+                                                  (mapv (fn [{:keys [group]} c y01]
+                                                          (assoc c :y0 (mapv first y01) :y (mapv second y01) :aesthetics (:aesthetics group)))
+                                                        estimates curves ys)))
       (mapv (fn [{:keys [group lo hi] :as e}]
               (let [c (kde/curve e (kde/grid-points lo hi n))
                     down? (and (= position :mirror) (= (:key group) (second group-keys)))]
                 (cond-> (assoc c :aesthetics (:aesthetics group))
-                  down? (update :y #(mapv - %)))))
+                  down? (update :y #(mapv m/- %)))))
             estimates))))
 
 (defn- ridge-compute
-  "Ridgeline stats (categorical or bands `:y`): per panel `{:ridges [item ...] :top max-density :overlap o :style st :gradient g}`,
-  items (see [[cljplot2.data.strip/ridge-split]]) with `:xs` / `:ds` - the curve; one `:top` over all panels."
-  [options chart-split {:keys [theme] :as env}]
+  "Computes the density stats of ridgelines (a categorical or bands `:y`).
+
+  Parameters:
+
+  - `chart` (map): the chart value - `:options` (`:overlap` default 0.9, `:position`, `:fill-gradient`, `:fill-gradient-axis` default `:x`, the density options, style options).
+  - `chart-split` (map): the chart's rows split per panel.
+  - `env` (map): the compute environment - `:theme`, `:plot-scales`, `:flip?` ...
+
+  Returns the chart stats with `:ridges? true`: per panel `{:ridges [item ...] :top max-density :overlap o :style st :gradient g :gradient-axis a}`, items (see [[cljplot2.data.strip/ridge-split]]) with `:xs` / `:ds` - the curve; one `:top` over all panels; `:dropped` `:group` - items with fewer than 2 distinct values.
+
+  Throws `ex-info {:key :fill-gradient-axis}` for `:fill-gradient-axis` without `:fill-gradient`."
+  [{:keys [options] :as chart} chart-split {:keys [theme] :as env}]
   (when (and (:fill-gradient-axis options) (nil? (:fill-gradient options)))
     (schema/fail! ":fill-gradient-axis needs :fill-gradient." {:key :fill-gradient-axis :value (:fill-gradient-axis options)}))
   (let [{:keys [position items panels dropped]} (strip/ridge-split chart-split options env)
-        n (long (or (:n options) 512))
-        curve? #(>= (count (distinct (:values %))) 2)
+        n (long (or (:n options) default-points))
+        curve? #(m/>= (count (distinct (:values %))) 2)
         no-curve (count (remove curve? (mapcat val items)))
-        items (update-vals items (fn [its]
-                                   (mapv (fn [it] (let [e (kde/estimate (:values it) options)
-                                                        {:keys [x y]} (kde/curve e (kde/grid-points (:lo e) (:hi e) n))]
-                                                    (assoc it :xs x :ds y)))
-                                         (filter curve? its))))
-        top (double (reduce max 0.0 (mapcat :ds (mapcat val items))))
-        overlap (double (get options :overlap 0.9))
-        gradient (some-> (:fill-gradient options) polyline/gradient-fn)]
-    {:data (update-vals items (fn [its] {:ridges its :top top :overlap overlap :style (style options theme)
-                                         :gradient gradient :gradient-axis (:fill-gradient-axis options :x)}))
+        curved (update-vals items (fn [its]
+                                    (mapv (fn [it] (let [e (kde/estimate (:values it) options)
+                                                         {:keys [x y]} (kde/curve e (kde/grid-points (:lo e) (:hi e) n))]
+                                                     (assoc it :xs x :ds y)))
+                                          (filter curve? its))))
+        top (double (reduce m/max 0.0 (mapcat :ds (mapcat val curved))))
+        overlap (double (get options :overlap strip/default-ridge-overlap))
+        gradient (some-> (:fill-gradient options) polyline/gradient-fn)
+        ridge-style (theme/resolved-style theme chart)]
+    {:data (update-vals curved (fn [its] {:ridges its :top top :overlap overlap :style ridge-style
+                                          :gradient gradient :gradient-axis (:fill-gradient-axis options :x)}))
      :ridges? true
      :extents (merge-with merge (group/aesthetic-extents panels (:plot-scales env))
-                          (strip/extents :band items (fn [{:keys [xs]}] [(first xs) (peek xs)])))
-     :padding (merge {:x [0.05 0.05]} (:padding options))
+                          (strip/extents :band curved (fn [{:keys [xs]}] [(first xs) (peek xs)])))
+     :padding (merge {:x data/axis-padding} (:padding options))
      :padding-explicit (data/explicit-padding {} options)
      :scale-defaults (strip/ridge-scale-defaults overlap (= :mirror position) (:flip? env) (get-in env [:plot-scales :y]))
      :na (group/na-dims panels)
      :dropped (assoc dropped :group no-curve)}))
 
 (defn- flat-compute
-  "Density stats without a `:y` mapping (see [[compute]])."
-  [{:keys [options]} {:keys [groups mapping]} {:keys [theme] :as env}]
-  (let [st (style options theme)
+  "Computes the density stats without ridgelines (no categorical or bands `:y`).
+
+  Parameters:
+
+  - `chart` (map): the chart value - `:options` (`:position` default `:overlay`, `:symmetric`, `:zero-line`, `:padding`, the density options, style options).
+  - `chart-split` (map): `:groups` (`{panel rows}`) and the merged `:mapping`.
+  - `env` (map): the compute environment - `:theme`, `:plot-scales` ...
+
+  Returns the chart stats: per panel `{:curves [..] :style st :zero-line? b}` (see [[panel-curves]]); y extents from 0 (mirror with `:symmetric` - one range `[-M M]` over all panels); `:dropped` `:x` - rows without a finite x, `:group` - groups without a curve; y titled `Density` (`:normalize` - `Proportion`); mirror ticks show magnitudes.
+
+  Throws `ex-info {:key :position}` for `:mirror` without exactly two groups, `{:key :mapping}` when rows exist but none has a finite x."
+  [{:keys [options] :as chart} {:keys [groups mapping]} {:keys [theme] :as env}]
+  (let [st (theme/resolved-style theme chart)
         position (get options :position :overlay)
         {:keys [panels dims dropped]} (group/split groups mapping env)
         group-keys (group/ordered-keys (mapcat #(map :key %) (vals panels)) dims (:plot-scales env))
@@ -172,18 +207,19 @@
         ;; per group: valid x values and the count of invalid ones
         xs (update-vals panels (fn [gs] (mapv #(data/finite-numbers (map x-of (:rows %))) gs)))
         x-results (mapcat identity (vals xs))
-        row-count (long (reduce + 0 (map count (mapcat #(map :rows %) (vals panels)))))
-        x-dropped (long (reduce + 0 (map :dropped x-results)))
-        no-curve (count (filter #(< (count (distinct (:values %))) 2) x-results))
-        _ (when (and (= position :mirror) (not= 2 (count group-keys)) (seq x-results))
+        row-count (long (reduce m/long-add 0 (map count (mapcat #(map :rows %) (vals panels)))))
+        x-dropped (long (reduce m/long-add 0 (map :dropped x-results)))
+        no-curve (count (filter #(m/< (count (distinct (:values %))) 2) x-results))
+        _ (when (and (= position :mirror) (m/not== 2 (count group-keys)) (seq x-results))
             (schema/fail! "Density :position :mirror needs exactly two groups." {:key :position :groups (count group-keys)}))
+        centred? (#{:mirror :silhouette :wiggle} position)
         data (into {} (map (fn [[panel gs]]
                              [panel {:curves (panel-curves gs (xs panel) group-keys position options) :style st
                                      :zero-line? (and (= position :mirror) (data/option options :zero-line true))}]))
                    panels)
         curve-ys (fn [curves] (concat (mapcat :y curves) (mapcat :y0 curves)))
         [lo hi] (position/symmetric-extent (curve-ys (mapcat :curves (vals data))))]
-    (when (and (pos? row-count) (= row-count x-dropped))
+    (when (and (m/pos? row-count) (m/== row-count x-dropped))
       (schema/fail! "No valid values for a mapped dimension - check the mapping." {:key :mapping :value :x :rows row-count}))
     {:data data
      :extents (merge-with merge (group/aesthetic-extents panels (:plot-scales env))
@@ -193,73 +229,131 @@
                                                      :y (if (and (= position :mirror) (:symmetric options))
                                                           {:kind :numeric :min lo :max hi}
                                                           {:kind :numeric
-                                                           :min (double (reduce min 0.0 (curve-ys curves)))
-                                                           :max (double (reduce max 0.0 (curve-ys curves)))})}])))
+                                                           :min (double (reduce m/min 0.0 (curve-ys curves)))
+                                                           :max (double (reduce m/max 0.0 (curve-ys curves)))})}])))
                                 data))
-     :padding (merge {:x [0.05 0.05] :y (if (#{:mirror :silhouette :wiggle} position) [0.05 0.05] [0.0 0.05])} (:padding options))
-     :padding-explicit (data/explicit-padding (when-not (#{:mirror :silhouette :wiggle} position) {:y [0.0 nil]}) options)
+     :padding (merge {:x data/axis-padding :y (if centred? data/axis-padding [0.0 0.05])} (:padding options))
+     :padding-explicit (data/explicit-padding (when-not centred? {:y [0.0 nil]}) options)
      :na (group/na-dims panels)
      :dropped (assoc dropped :x x-dropped :group no-curve)
      :axis-titles {:y (if (= position :normalize) "Proportion" "Density")}
      :tick-format (when (= position :mirror) {:y :absolute})}))
 
 (defn compute
-  "Per panel: `{:curves [{:x [..] :y [..] :aesthetics}] :style style}`; extents, padding, `:na`, `:dropped`
-  (`:x` invalid values, `:group` groups without a curve), `:axis-titles`. With a categorical or bands `:y` -
-  ridgelines, see [[ridge-compute]]."
+  "Computes the density chart's stats.
+
+  Parameters:
+
+  - `chart` (map): the chart value - `:options`.
+  - `chart-split` (map): the chart's rows split per panel, with the merged `:mapping`.
+  - `env` (map): the compute environment.
+
+  Returns ridgeline stats for a categorical or bands `:y` ([[ridge-compute]]), else per panel `{:curves [{:x [..] :y [..] :aesthetics}] :style st}` with extents, padding, `:na`, `:dropped` and `:axis-titles` ([[flat-compute]]).
+
+  Throws `ex-info {:key :fill-gradient}` / `{:key :fill-gradient-axis}` for those options without ridgelines."
   [{:keys [options] :as chart} chart-split env]
   (cond
-    (strip/ridges? chart-split env) (ridge-compute options chart-split env)
+    (strip/ridges? chart-split env) (ridge-compute chart chart-split env)
     (:fill-gradient options) (schema/fail! "Density :fill-gradient is for ridgelines (a categorical or bands :y)."
                                            {:key :fill-gradient :value (:fill-gradient options)})
     (:fill-gradient-axis options) (schema/fail! "Density :fill-gradient-axis is for ridgelines with :fill-gradient."
                                                 {:key :fill-gradient-axis :value (:fill-gradient-axis options)})
     :else (flat-compute chart chart-split env)))
 
+(defn- finite-point?
+  "Tests whether both coordinates of a pixel point `[x y]` are finite.
+
+  Parameters:
+
+  - `point` (`[x y]`): pixel coordinates."
+  [[^double x ^double y]]
+  (and (m/valid-double? x) (m/valid-double? y)))
+
 (defn- fill-gradient-quads!
-  "Fill between the paired point runs `upper` and `lower` (`[x y]` pixels) quad by quad, each coloured by `gradient`
-  at its middle position (`ps`, one per point) relative to `[p0 p1]`; quads with a non-finite corner are skipped."
-  [canvas upper lower ps gradient [p0 p1]]
-  (let [p0 (double p0) span (- (double p1) p0)
-        ok? (fn [[x y]] (and (m/valid-double? (double x)) (m/valid-double? (double y))))]
+  "Fills between two paired point runs quad by quad, each quad in the gradient's colour at its middle position.
+
+  Parameters:
+
+  - `canvas`: the clojure2d canvas.
+  - `upper`, `lower` (vectors of `[x y]`): the paired pixel runs (the curve and its base).
+  - `ps` (vector of numbers): one position per point - the gradient's axis values.
+  - `gradient` (function): of `t` in `[0 1]` giving a colour.
+  - `[p0 p1]`: the positions at `t` 0 and 1 (`t` 0.5 for an empty range).
+
+  A quad with a non-finite corner is skipped."
+  [canvas upper lower ps gradient [^double p0 ^double p1]]
+  (let [span (m/- p1 p0)]
     (c2d/set-stroke-custom canvas {:size 1.0 :join :miter})
-    (doseq [^long i (range (dec (count upper)))
-            :let [a (upper i) b (upper (inc i)) c (lower (inc i)) d (lower i)]
-            :when (and (ok? a) (ok? b) (ok? c) (ok? d))]
-      (let [t (if (pos? span) (/ (- (* 0.5 (+ (double (ps i)) (double (ps (inc i))))) p0) span) 0.5)
+    (doseq [^long i (range (m/long-dec (count upper)))
+            :let [a (upper i)
+                  b (upper (m/long-inc i))
+                  c (lower (m/long-inc i))
+                  d (lower i)]
+            :when (and (finite-point? a) (finite-point? b) (finite-point? c) (finite-point? d))]
+      (let [t (if (m/pos? span) (m// (m/- (m/* 0.5 (m/+ (double (ps i)) (double (ps (m/long-inc i))))) p0) span) 0.5)
             quad [a b c d]]
         (c2d/set-color canvas (gradient (m/constrain t 0.0 1.0)))
         (c2d/path canvas quad true false)
         (c2d/path canvas quad true true)))))
 
+(defn- pixel-pair
+  "Gives a pixel point as a pair `[x y]`.
+
+  Parameters:
+
+  - `p` (`Vec2`): the pixel point."
+  [^Vec2 p]
+  [(.x p) (.y p)])
+
+(defn- coordinates
+  "Gives the coordinate vectors of pixel points.
+
+  Parameters:
+
+  - `points` (sequence of `Vec2`): pixel points.
+
+  Returns `[xs ys]`, two vectors."
+  [points]
+  [(mapv #(.x ^Vec2 %) points) (mapv #(.y ^Vec2 %) points)])
+
 (defn- draw-ridges!
-  "Draw ridgelines of one panel, farthest level first: area (gradient, `:fill` or the colour with `:alpha`), line."
-  [{:keys [ridges top overlap style gradient gradient-axis]} canvas box scales env]
+  "Draws the ridgelines of one panel, farthest level first: the area (a gradient, `:fill` or the colour with `:alpha`), then the line.
+
+  Parameters:
+
+  - `computed` (map): the panel's ridgeline stats - `:ridges`, `:top`, `:overlap`, `:style`, `:gradient`, `:gradient-axis`.
+  - `canvas`: the clojure2d canvas.
+  - `box` (map): the panel box.
+  - `scales` (map): finalized scales.
+  - `env` (map): the draw environment - `:theme`.
+
+  Nothing is drawn when every density is 0; a group outside its scale's domain is skipped.
+
+  See also [[cljplot2.data.strip/ridge-point]], [[cljplot2.data.strip/ridge-order]]."
+  [{:keys [ridges ^double top ^double overlap style gradient gradient-axis]} canvas box scales env]
   (let [pl (strip/placement box scales {} :band)
-        point (strip/ridge-point pl (double overlap))
-        top (double top)
-        coords (fn [points] [(mapv #(.x ^Vec2 %) points) (mapv #(.y ^Vec2 %) points)])]
-    (when (pos? top)
+        point (strip/ridge-point pl overlap)]
+    (when (m/pos? top)
       (doseq [{:keys [level slot xs ds aesthetics]} (strip/ridge-order pl ridges)
               :let [st (group/style style aesthetics scales (:theme env))]
               :when st]
         (let [side (strip/slot-side slot)
-              curve (mapv (fn [x d] (point x level side (/ (double d) top))) xs ds)
+              curve (mapv (fn [x d] (point x level side (m// (double d) top))) xs ds)
               base (mapv (fn [x] (point x level side 0.0)) xs)
-              [px py] (coords curve)
-              [bx by] (coords base)]
+              [px py] (coordinates curve)
+              [bx by] (coordinates base)]
           (cond
             (and gradient (= :y gradient-axis))
             (let [x0 (first xs)
-                  pixel (fn [^Vec2 p] [(.x p) (.y p)])
-                  polygon (into (mapv pixel curve) (rseq (mapv pixel base)))]
+                  polygon (into (mapv pixel-pair curve) (rseq (mapv pixel-pair base)))]
               (polyline/fill-gradient-paint! canvas [polygon] gradient
-                                             (pixel (point x0 level side 0.0)) (pixel (point x0 level side 1.0)))
+                                             (pixel-pair (point x0 level side 0.0)) (pixel-pair (point x0 level side 1.0)))
               (draw/fill-with-pattern! canvas (draw/pattern-fill st (gradient 0.5)) #(c2d/path canvas polygon true false)))
             gradient
-            (let [pixel (fn [^Vec2 p] [(.x p) (.y p)])
-                  polygon (into (mapv pixel curve) (rseq (mapv pixel base)))]
-              (fill-gradient-quads! canvas (mapv pixel curve) (mapv pixel base) xs gradient (:domain (:x scales)))
+            (let [upper (mapv pixel-pair curve)
+                  lower (mapv pixel-pair base)
+                  polygon (into upper (rseq lower))]
+              (fill-gradient-quads! canvas upper lower xs gradient (:domain (:x scales)))
               (draw/fill-with-pattern! canvas (draw/pattern-fill st (gradient 0.5)) #(c2d/path canvas polygon true false)))
             :else
             (let [fill (polyline/area-color st true)]
@@ -267,23 +361,32 @@
           (polyline/draw! canvas px py st))))))
 
 (defn draw
-  "Draw the curves of one panel: every group's area (under the curve to y = 0, `:fill`; stacked curves - between
-  `:y0` and `:y`, `:fill` or the group colour with `:alpha`), then every curve's line, then - mirror with
-  `:zero-line` (default on) - the y = 0 line on top (curve tails running along y = 0 don't hide it)."
+  "Draws the curves of one panel.
+
+  Parameters:
+
+  - `_chart` (map): the chart value (unused).
+  - `computed` (map): the panel's stats - `:curves`, `:style`, `:zero-line?`, or ridgeline stats (`:ridges`).
+  - `canvas`: the clojure2d canvas.
+  - `box` (map): the panel box.
+  - `scales` (map): finalized scales.
+  - `env` (map): the draw environment - `:theme`.
+
+  Draws every group's area (under the curve to y = 0 with `:fill`; stacked curves - between `:y0` and `:y`, `:fill` or the group colour with `:alpha`), then every curve's line, then - mirror with `:zero-line` (default on) - the y = 0 line on top (curve tails along y = 0 don't hide it); ridgelines by [[draw-ridges!]]. A group outside its scale's domain is skipped."
   [_chart {:keys [curves style zero-line? ridges] :as computed} canvas box scales env]
   (if ridges
     (draw-ridges! computed canvas box scales env)
     (when (seq curves)
       (let [projection (scale/projection scales)
-            coords (fn [points] [(mapv #(.x ^Vec2 %) points) (mapv #(.y ^Vec2 %) points)])
             drawn (vec (keep (fn [{:keys [x y y0 aesthetics]}]
                                (when-let [st (group/style style aesthetics scales (:theme env))]
                                  {:st st :y0? (some? y0)
-                                  :curve (coords (mapv projection x y))
-                                  :base (coords (mapv projection x (or y0 (repeat 0.0))))}))
+                                  :curve (coordinates (mapv projection x y))
+                                  :base (coordinates (mapv projection x (or y0 (repeat 0.0))))}))
                              curves))]
         (doseq [{:keys [st y0? curve base]} drawn
-                :let [[px py] curve [bx by] base]]
+                :let [[px py] curve
+                      [bx by] base]]
           (if y0?
             (let [fill (polyline/area-color st true)] (polyline/fill-between! canvas px py bx by fill (draw/pattern-fill st fill)))
             (let [fill (polyline/area-color st false)] (polyline/fill-under! canvas px py bx by fill (draw/pattern-fill st fill)))))
@@ -294,9 +397,20 @@
           (draw/zero-line! canvas box scales style))))))
 
 (defn legend
-  "Key glyph: a horizontal line through the middle of `box`; when the chart fills areas (`:fill`, or `:stack` /
-  `:normalize` positions, ridgelines) a filled square (the area colour) outlined in the line colour."
-  [{:keys [options]} attributes canvas box env]
-  (let [st (merge (style options (:theme env)) (select-keys attributes [:color :dash :pattern]))
+  "Draws the density chart's key glyph in a legend key.
+
+  A horizontal line through the middle of the key; when the chart fills areas (`:fill`, stacked positions, ridgelines) a filled square in the area colour outlined in the line colour.
+
+  Parameters:
+
+  - `chart` (map): the chart value - `:options` `:position`.
+  - `attributes` (map): the key's mapped style attributes - `:color`, `:dash`, `:pattern` are used.
+  - `canvas`: the clojure2d canvas.
+  - `box` (map): the key box in pixels.
+  - `env` (map): the legend environment - `:theme`, `:chart-stats` (`:ridges?`).
+
+  See also [[cljplot2.graphics.polyline/key-glyph!]]."
+  [{:keys [options] :as chart} attributes canvas box env]
+  (let [st (merge (theme/resolved-style (:theme env) chart) (select-keys attributes [:color :dash :pattern]))
         area (polyline/area-color st (or (contains? stacked-positions (:position options)) (:ridges? (:chart-stats env))))]
     (polyline/key-glyph! canvas box st area (draw/pattern-fill st area))))

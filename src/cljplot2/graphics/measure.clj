@@ -5,6 +5,7 @@
   so content is measured on a 1x1 scratch canvas created with the target canvas's hint."
   (:require [cljplot2.schema :as schema]
             [clojure2d.core :as c2d]
+            [fastmath.core :as m]
             [fastmath.vector :as v]
             [cljplot2.graphics.canvas :as canvas]))
 
@@ -43,6 +44,20 @@
                                          (double (centres i)) (double (extents i))))
         (recur (inc i) last-kept kept)
         (recur (inc i) i (conj kept i))))))
+
+(defn boxes-overlap?
+  "Tests whether two pixel boxes overlap; touching edges don't.
+
+  Parameters:
+
+  - `a`, `b` (maps): boxes `{:x :y :w :h}` (pixels, top-left corner and size).
+
+  Returns `true` when their interiors intersect, else `false`.
+
+  See also [[label-boxes-overlap?]] (overlaps of more than 1 px, for measured labels)."
+  [{^double ax :x ^double ay :y ^double aw :w ^double ah :h} {^double bx :x ^double by :y ^double bw :w ^double bh :h}]
+  (and (m/< ax (m/+ bx bw)) (m/< bx (m/+ ax aw))
+       (m/< ay (m/+ by bh)) (m/< by (m/+ ay ah))))
 
 (defn label-boxes-overlap?
   "Do pixel boxes `a` and `b` (`{:x :y :w :h}`) overlap by more than 1 px both across and along (natural sizes are

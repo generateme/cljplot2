@@ -6,7 +6,7 @@
   The field is sampled on a grid over the domain of every panel together; each panel pixel is inverse-projected to
   `(x, y)` and colored by the grid's bilinear value (smooth at any grid size; `##NaN` and points outside the domain
   stay transparent, as values outside an explicit color domain). Facets: a field per panel (points / gridded data of the panel). The color is computed, so `:color`
-  can't be mapped (set it to `nil` in the chart's mapping when the plot maps it); its legend title is \"Density\" for
+  can't be mapped (set it to `nil` in the chart's mapping when the plot maps it); its legend title is `Density` for
   points, the `:value` accessor's name for gridded data, none for a function (a plot `:scales {:color {:title t}}`
   wins). Position scales keep their data domains (no nice extension): the raster fills the panel.
 
@@ -20,7 +20,9 @@
   domains); not with `:f` (`ex-info {:key :pixel-color}`); the mapping and the other field options are ignored (as
   with `:f`). It's called w x h times per panel - keep it cheap.
 
-  Options (style defaults from theme `[:chart :field]`): `:alpha` (multiplies the colors' alpha, a fraction)."
+  Options (style defaults from theme `[:chart :field]`): `:alpha` (multiplies the colors' alpha, a fraction).
+
+  Functions: [[value-title]], [[computed-aesthetics]] - the computed color and its title; [[panel-grids]] - the panels' sampled grids; [[compute]], [[draw]] - the chart contract."
   (:require [clojure2d.color :as c]
             [clojure2d.core :as c2d]
             [clojure2d.pixels :as p]
@@ -36,7 +38,13 @@
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
-(def ^:private style-entries [(schema/optional :alpha {:description "opacity multiplying the colours' alpha"} schema/fraction)])
+(def ^:private style-entries
+  "Style entries of the field chart (theme `[:chart :field]`)."
+  [(schema/optional :alpha {:description "opacity multiplying the colours' alpha"} schema/fraction)])
+
+(def ^:private transparent
+  "Colour of a pixel without a value."
+  (c/color 0 0 0 0))
 
 (def schemas
   "Schemas of the field chart: `:style` (theme `[:chart :field]`), `:options`, `:mapping` (merged)."
@@ -57,13 +65,17 @@
                      [:color {:optional true :description "must be nil (the colour is the field's value): set it so in the chart's mapping when the plot maps :color"}
                       :nil]]]})
 
-(defn- style
-  [options theme]
-  (merge (theme/chart-style theme :field options) (select-keys options [:alpha])))
-
 (defn value-title
-  "Legend title of a field's computed value from the chart `options` and merged `mapping`: \"Density\" for points, the
-  `:value` accessor's name (a keyword) for gridded data, `nil` for a function."
+  "Gives the legend title of a field's computed value.
+
+  Parameters:
+
+  - `options` (map): the chart's options (they pick the source, see [[cljplot2.data.field/source-kind]]).
+  - `mapping` (map): the merged mapping.
+
+  Returns `Density` for points, the `:value` accessor's name for gridded data (`nil` for a function accessor), `nil` for a function field.
+
+  See also [[computed-aesthetics]]."
   [options mapping]
   (case (field/source-kind options mapping)
     :points "Density"
@@ -71,14 +83,32 @@
     :function nil))
 
 (defn computed-aesthetics
-  "The field chart's computed color, titled by [[value-title]]; none with `:pixel-color`."
+  "Gives the field chart's computed aesthetics.
+
+  Parameters:
+
+  - `options` (map): the chart's options.
+  - `mapping` (map): the merged mapping.
+
+  Returns `{:color title}` - the field's value colours the raster, titled by [[value-title]]; `{}` with `:pixel-color` (no colour scale)."
   [options mapping]
   (if (:pixel-color options) {} {:color (value-title options mapping)}))
 
 (defn panel-grids
-  "`{:grids {panel grid} :domain d :dropped {..}}` of a field chart's split `groups` (`{panel rows}`): each panel's
-  field (see [[cljplot2.data.field/source-field]]) sampled on one grid over the union of the panels' domains; panels
-  without a field left out; `:dropped` - rows without finite x / y (points and gridded sources)."
+  "Samples every panel's field on one grid.
+
+  Each panel's field (see [[cljplot2.data.field/source-field]]) is sampled over the union of the panels' domains, so the panels share one grid.
+
+  Parameters:
+
+  - `options` (map): the chart's options - the source and `:n` (see [[cljplot2.data.field]]).
+  - `mapping` (map): the merged mapping.
+  - `groups` (map): `{panel rows}`.
+  - `plot-scales` (map): the plot's `:scales` (axis transforms, explicit domains).
+
+  Returns `{:grids {panel grid} :domain d :dropped {..}}`: panels without a field left out; `:dropped` - rows without finite x / y (points and gridded sources).
+
+  See also [[cljplot2.data.field/sample]]."
   [options mapping groups plot-scales]
   (let [kind (field/source-kind options mapping)
         fields (into {} (keep (fn [[panel rows]] (some->> (field/source-field kind options mapping rows plot-scales) (vector panel))))
@@ -90,12 +120,30 @@
      :dropped (field/dropped-positions kind mapping groups)}))
 
 (defn- domain-extents
+  "Gives the x / y extents of a field's domain.
+
+  Parameters:
+
+  - `domain`: `[[x0 x1] [y0 y1]]`.
+
+  Returns `{:x extent :y extent}`, numeric extents of the two ranges."
   [[[x0 x1] [y0 y1]]]
   {:x {:kind :numeric :min (double x0) :max (double x1)}
    :y {:kind :numeric :min (double y0) :max (double y1)}})
 
 (defn- pixel-color-stats
-  "Stats of a `:pixel-color` field: the function in every panel of `groups`, extents of its domain."
+  "Computes the stats of a `:pixel-color` field.
+
+  Parameters:
+
+  - `options` (map): the chart's options - `:pixel-color`, `:domain`.
+  - `groups` (map): `{panel rows}` - only the panels are read.
+  - `plot-scales` (map): the plot's `:scales` (explicit x / y domains when `:domain` is absent).
+  - `st` (map): the chart's style.
+
+  Returns the chart stats: the function in every panel, extents of its domain (see [[cljplot2.data.field/function-domain]]), no padding, no nice domains, nothing dropped.
+
+  Throws `ex-info {:key :pixel-color}` with `:f` too."
   [options groups plot-scales st]
   (when (:f options)
     (schema/fail! "A field takes :pixel-color or :f, not both." {:key :pixel-color}))
@@ -107,11 +155,17 @@
      :dropped {:x 0 :y 0}}))
 
 (defn compute
-  "Per panel: `{:grid grid :style st}` (see [[cljplot2.data.field/sample]]); extents x / y - the sampled domain, color -
-  the finite values of every panel; no padding, `:scale-defaults` without nice domains, `:dropped`.
-  With `:pixel-color`: `{:pixel-color f :style st}` per panel, extents x / y - the function domain, no color."
-  [{:keys [options]} {:keys [groups mapping]} {:keys [theme plot-scales]}]
-  (let [st (style options theme)]
+  "Computes the field chart's stats.
+
+  Parameters:
+
+  - `chart` (map): the chart value - `:options` (source, `:n`, `:alpha`, `:pixel-color` ...).
+  - `split` (map): `:groups` (`{panel rows}`), `:mapping` (merged).
+  - `env` (map): `:theme`, `:plot-scales`.
+
+  Returns per panel `{:grid grid :style st}` (see [[cljplot2.data.field/sample]]); extents x / y - the sampled domain, color - the finite values of every panel; no padding, `:scale-defaults` without nice domains, `:dropped`. With `:pixel-color` per panel `{:pixel-color f :style st}`, extents x / y - the function domain, no color (see [[pixel-color-stats]])."
+  [{:keys [options] :as chart} {:keys [groups mapping]} {:keys [theme plot-scales]}]
+  (let [st (theme/resolved-style theme chart)]
     (if (:pixel-color options)
       (pixel-color-stats options groups plot-scales st)
       (let [{:keys [grids domain dropped]} (panel-grids options mapping groups plot-scales)
@@ -124,31 +178,50 @@
          :dropped dropped}))))
 
 (defn- grid-color-fn
-  "Color of the grid's value at data `(x, y)` through the plot's color scale, `nil` for `##NaN` or a value outside
-  the scale's domain."
+  "Gives the colour function of a sampled grid.
+
+  Parameters:
+
+  - `grid` (map): the panel's sampled grid.
+  - `scales` (map): the panel's scales - `:color` colours the values.
+  - `env` (map): the drawing environment (the theme's NA colour).
+
+  Returns a function of a data point `[x y]` giving the colour of the grid's bilinear value there; `nil` for `##NaN` or a value outside the colour scale's domain."
   [grid scales env]
   (let [color-of (aesthetic/attribute-fn :color (:color scales) (get-in env [:theme :palette :na]))]
-    (fn [[x y]] (let [v (field/grid-value grid (double x) (double y))] (when-not (m/nan? v) (color-of v))))))
+    (fn [[^double x ^double y]] (let [v (field/grid-value grid x y)] (when-not (m/nan? v) (color-of v))))))
 
 (defn draw
-  "Draw one panel's raster: a pixel image of the panel box (see the namespace doc); `:pixel-color` - its color at
-  every pixel's data point."
-  [_chart {:keys [grid pixel-color style]} canvas {:keys [w h]} scales env]
-  (let [w (long (m/round (double w))) h (long (m/round (double h)))
+  "Draws one panel's raster: a pixel image of the panel box.
+
+  Every pixel is inverse-projected to its data point (the pixel centre) and coloured there (see the namespace doc).
+
+  Parameters:
+
+  - `_chart`: the chart value (unused).
+  - `computed` (map): the panel's stats - `:grid` (or `:pixel-color`, a function of a point giving a colour), `:style` (`:alpha`).
+  - `canvas`: the panel's canvas.
+  - `box` (map): the panel box, `:w` and `:h` in pixels (rounded to whole pixels).
+  - `scales` (map): the panel's finalized scales.
+  - `env` (map): the drawing environment.
+
+  Draws nothing for an empty panel, or a grid without a colour scale."
+  [_chart {:keys [grid pixel-color style]} canvas {:keys [^double w ^double h]} scales env]
+  (let [width (m/round w)
+        height (m/round h)
         color-at (cond pixel-color pixel-color
                        (and grid (:color scales)) (grid-color-fn grid scales env))]
-    (when (and color-at (pos? w) (pos? h))
+    (when (and color-at (m/pos? width) (m/pos? height))
       (let [flipped? (scale/flipped? scales)
             inverse-h (scale/inverse-fn (if flipped? (:y scales) (:x scales)))
             inverse-v (scale/inverse-fn (if flipped? (:x scales) (:y scales)))
             alpha (:alpha style)
-            transparent (c/color 0 0 0 0)
-            pixel-color (fn [_ x y]
-                          (let [a (double (inverse-h (+ 0.5 (double x))))
-                                b (double (inverse-v (+ 0.5 (double y))))]
-                            (if-let [col (color-at (if flipped? (Vec2. b a) (Vec2. a b)))]
-                              (let [col (c/to-color col)]
-                                (if alpha (c/set-alpha col (* (double alpha) (double (c/alpha col)))) col))
-                              transparent)))
-            pixels (p/filter-colors-xy pixel-color (p/pixels w h))]
-        (c2d/image canvas pixels 0 0 w h)))))
+            pixel-at (fn [_ ^long x ^long y]
+                       (let [a (double (inverse-h (m/+ 0.5 x)))
+                             b (double (inverse-v (m/+ 0.5 y)))]
+                         (if-let [col (color-at (if flipped? (Vec2. b a) (Vec2. a b)))]
+                           (let [rgba (c/to-color col)]
+                             (if alpha (c/set-alpha rgba (m/* (double alpha) (c/alpha rgba))) rgba))
+                           transparent)))
+            pixels (p/filter-colors-xy pixel-at (p/pixels width height))]
+        (c2d/image canvas pixels 0 0 width height)))))

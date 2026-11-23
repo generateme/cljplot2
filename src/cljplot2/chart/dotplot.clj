@@ -17,9 +17,12 @@
   Options (style defaults from theme `[:chart :dotplot]`): `:color`, `:stroke-color`, `:stroke-width`, `:shape` (as
   scatter, see [[cljplot2.graphics.shape]]), `:size` (the drawn dot size; default the diameter above); `:method`,
   `:binwidth`, `:origin` (`:histogram` only - `ex-info {:key :origin}` otherwise), `:at`, `:stack-dir`, `:padding {:x
-  [lo hi]}` (default `[0.05 0.05]`), plus the strip options and `:data` / `:mapping`."
+  [lo hi]}` (default `[0.05 0.05]`), plus the strip options and `:data` / `:mapping`.
+
+  Functions: [[compute]], [[draw]], [[legend]] - the chart contract; [[schemas]] - its style, options and mapping."
   (:require [clojure2d.core :as c2d]
             [fastmath.core :as m]
+            [fastmath.vector :as v]
             [cljplot2.data.dots :as dots]
             [cljplot2.data.group :as group]
             [cljplot2.data.rows :as data]
@@ -33,6 +36,7 @@
 (set! *unchecked-math* :warn-on-boxed)
 
 (def ^:private style-entries
+  "Map entries of the dot plot's point style (theme `[:chart :dotplot]`), also its options."
   [(schema/optional :size {:description "dot size in pixels (a mapped :size wins)"
                            :cljplot2/default-doc "the dot diameter: the bin width in pixels, shrunk so the tallest stack fits its slot"} schema/non-neg)
    (schema/optional :color {:description "point colour (a mapped :color wins)"} schema/color)
@@ -75,33 +79,48 @@
                (schema/nilable :size {:description "groups, each with its own point size"} schema/accessor)
                (schema/nilable :group {:description "groups without a visual aesthetic (sharing stacks unless dodged)"} schema/accessor)])})
 
-(defn- style
-  [options theme]
-  (merge (theme/chart-style theme :dotplot options) (select-keys options [:size :color :stroke-color :stroke-width :shape])))
-
 (defn- bins-of
-  "Bins (see [[cljplot2.data.dots]]) of the increasing `values` under the chart `options` and `binwidth`; `origin` -
-  the `:histogram` default origin."
+  "Gives the bins of increasing values under the chart's method.
+
+  Parameters:
+
+  - `values` (sequence of doubles): the values, increasing.
+  - `options` (map): the chart's options - `:method` (`:histogram` - fixed bins, else dot density), `:origin`.
+  - `binwidth` (double): the bin width in data units.
+  - `origin` (double): the `:histogram` origin when `:origin` isn't given.
+
+  Returns the bins (see [[cljplot2.data.dots/fixed-bins]], [[cljplot2.data.dots/dot-density-bins]])."
   [values options ^double binwidth ^double origin]
   (if (= :histogram (:method options))
     (dots/fixed-bins values binwidth (double (get options :origin origin)))
     (dots/dot-density-bins values binwidth)))
 
 (defn- stack-dots
-  "Dot stacks of the `items` of one slot (one level): their values binned together - `[{:dots [{:x :rank
-  :aesthetics}] :n}]` per bin, dots ordered by item (group) order, then value; `:x` the bin centre, or with `:at
-  :value` the dot's value."
+  "Gives the dot stacks of the items of one slot, their values binned together.
+
+  Parameters:
+
+  - `items` (sequence of maps): the slot's items - `:values`, `:aesthetics`, in group order.
+  - `options` (map): the chart's options - `:method`, `:origin`, `:at` (`:value` - each dot at its own value).
+  - `binwidth` (double): the bin width in data units.
+  - `origin` (double): the default `:histogram` origin.
+
+  Returns a vector per bin of `{:dots [{:x :rank :aesthetics}] :n}`: dots ordered by item (group), then value; `:x` the bin centre, or with `:at :value` the dot's value.
+
+  See also [[bins-of]]."
   [items options binwidth origin]
   (let [dots (sort-by :value (for [[i {:keys [values aesthetics]}] (map-indexed vector items)
                                    v values]
                                {:value (double v) :item i :aesthetics aesthetics}))
         bins (bins-of (map :value dots) options binwidth origin)
         at-value? (= :value (:at options))]
-    (loop [bins bins dots dots acc []]
-      (if-let [{:keys [center values]} (first bins)]
-        (let [[in more] (split-at (count values) dots)
-              ordered (sort-by (juxt :item :value) in)]
-          (recur (rest bins) more
+    (loop [bins-left bins
+           dots-left dots
+           acc []]
+      (if-let [{:keys [center values]} (first bins-left)]
+        (let [[in-bin more] (split-at (count values) dots-left)
+              ordered (sort-by (juxt :item :value) in-bin)]
+          (recur (rest bins-left) more
                  (conj acc {:n (count ordered)
                             :dots (vec (map-indexed (fn [rank {:keys [value aesthetics]}]
                                                       {:x (if at-value? value center) :rank rank :aesthetics aesthetics})
@@ -109,78 +128,125 @@
         acc))))
 
 (defn- slot-stacks
-  "Stacks of one panel's `items`: items of one level and slot binned together (see [[stack-dots]]) -
-  `[{:level :slot :stacks [..]}]`."
+  "Gives the stacks of one panel's items, the items of one level and slot binned together.
+
+  Parameters:
+
+  - `items` (sequence of maps): the panel's items - `:level`, `:slot`, `:values`, `:aesthetics`.
+  - `options`, `binwidth`, `origin`: as [[stack-dots]].
+
+  Returns a vector of `{:level :slot :stacks [..]}`, one per level and slot (see [[stack-dots]])."
   [items options binwidth origin]
   (vec (for [[[level slot] its] (group-by (juxt :level :slot) items)]
          {:level level :slot slot :stacks (stack-dots its options binwidth origin)})))
 
 (defn- with-label-x
-  "`items` of one panel with `:label-x` - the far edge (value units) of the farthest dot of their slot in `slots`
-  (see [[slot-stacks]]; `half` - half the bin width): where the n label goes."
+  "Gives a panel's items with the value where their n label goes.
+
+  Parameters:
+
+  - `items` (sequence of maps): the panel's items - `:level`, `:slot`.
+  - `slots` (sequence of maps): the panel's stacks (see [[slot-stacks]]).
+  - `half` (double): half the bin width.
+
+  Returns a vector of the items, each with `:label-x` - the far edge (value units) of the farthest dot of its slot."
   [items slots ^double half]
   (let [far (into {} (for [{:keys [level slot stacks]} slots]
-                       [[level slot] (+ half (double (reduce max (for [st stacks d (:dots st)] (:x d)))))]))]
+                       [[level slot] (m/+ half (v/mx (for [st stacks d (:dots st)] (:x d))))]))]
     (mapv #(assoc % :label-x (far [(:level %) (:slot %)])) items)))
 
 (defn- compute-in-strip-frame
-  "Per panel: `{:slots [..] :items [..] :style st :place p :options o :binwidth w :max-count n}` (see
-  [[slot-stacks]]; `:max-count` - the tallest stack over all panels); extents (x - the dots' positions widened by
-  half a bin), padding, `:na`, `:dropped`. Throws `ex-info {:key :origin}` for `:origin` without `:method
-  :histogram`."
-  [{:keys [options]} chart-split {:keys [theme] :as env}]
+  "Computes the dot plot's stats in the strip frame (levels on `:y`).
+
+  Parameters:
+
+  - `chart` (map): the chart value - `:options` (`:method`, `:binwidth` default the value range / 30, `:origin`, `:at`, `:position` default `:overlay`, the strip options, style options).
+  - `chart-split` (map): the chart's rows split per panel.
+  - `env` (map): the compute environment - `:theme`, `:plot-scales` ...
+
+  Returns `{:data :extents :padding :padding-explicit :padding-px :na :dropped}`: per panel `{:slots [..] :items [..] :style st :place p :options o :binwidth w :max-count n :mirror? b}` (see [[slot-stacks]]; `:max-count` - the tallest stack over all panels, at least 1); x extents - the dots' positions widened by half a bin.
+
+  Throws `ex-info {:key :origin}` for `:origin` without `:method :histogram`."
+  [{:keys [options] :as chart} chart-split {:keys [theme] :as env}]
   (when (and (some? (:origin options)) (not= :histogram (:method options)))
     (schema/fail! "Dot plot :origin anchors fixed bins: it needs :method :histogram." {:key :origin :value (:origin options)}))
   (let [split-options (cond-> options (nil? (:position options)) (assoc :position :overlay))
         {:keys [place position items panels dropped]} (strip/split chart-split split-options :center env)
         all-values (mapcat :values (mapcat val items))
         binwidth (if (seq all-values) (double (get options :binwidth (dots/default-binwidth all-values))) 1.0)
-        origin (if (seq all-values) (double (reduce min all-values)) 0.0)
+        origin (if (seq all-values) (v/mn all-values) 0.0)
         slots (update-vals items #(slot-stacks % options binwidth origin))
-        half (* 0.5 binwidth)
-        items (into {} (map (fn [[panel its]] [panel (with-label-x its (slots panel) half)]) items))
-        max-count (long (reduce max 1 (for [ss (vals slots) s ss st (:stacks s)] (:n st))))]
+        half (m/* 0.5 binwidth)
+        labelled (into {} (map (fn [[panel its]] [panel (with-label-x its (slots panel) half)]) items))
+        max-count (long (reduce m/long-max 1 (for [ss (vals slots) s ss st (:stacks s)] (:n st))))
+        dot-style (theme/resolved-style theme chart)]
     {:data (into {} (map (fn [[panel ss]]
-                           [panel {:slots ss :items (items panel) :style (style options theme) :place place :options options
+                           [panel {:slots ss :items (labelled panel) :style dot-style :place place :options options
                                    :binwidth binwidth :max-count max-count :mirror? (= :mirror position)}])
                          slots))
      :extents (merge-with merge (group/aesthetic-extents panels (:plot-scales env))
                           (strip/extents place
-                                         (update-vals slots (fn [ss] (mapv #(assoc % :xs (for [st (:stacks %) d (:dots st)] (:x d))) ss)))
-                                         (fn [{:keys [xs]}] [(- (double (reduce min xs)) half) (+ (double (reduce max xs)) half)])))
+                                         (update-vals slots (fn [ss] (map #(assoc % :xs (for [st (:stacks %) d (:dots st)] (:x d))) ss)))
+                                         (fn [{:keys [xs]}] [(m/- (v/mn xs) half) (m/+ (v/mx xs) half)])))
      :padding (strip/padding place options)
      :padding-explicit (strip/explicit-padding place options)
-     :padding-px (strip/n-label-room options items env)
+     :padding-px (strip/n-label-room options labelled env)
      :na (group/na-dims panels)
      :dropped dropped}))
 
 (defn- dot-diameter
-  "Pixel diameter of the dots of a panel: the bin width (`binwidth`) in pixels along the value axis (`value-pixel`,
-  measured from value `x0`), at most the cross length of every slot (`slots`, pixels via `span`) over `max-count`
-  dots."
-  ^double [value-pixel span slots {:keys [x0 binwidth max-count]}]
-  (let [x0 (double x0) binwidth (double binwidth)
-        bw (m/abs (- (double (value-pixel (+ x0 binwidth))) (double (value-pixel x0))))
-        fit (reduce min ##Inf (for [{:keys [level slot]} slots
-                                    :let [[lo hi] slot s (double (span level))]
-                                    :when (pos? s)]
-                                (/ (* s (- (double hi) (double lo))) (double max-count))))]
+  "Gives the pixel diameter of the dots of a panel.
+
+  Parameters:
+
+  - `value-pixel` (function): of a value giving its pixel along the value axis.
+  - `span` (function): of a level giving the pixel length of its cross range.
+  - `slots` (sequence of maps): the panel's stacks - `:level`, `:slot`.
+  - `sizes` (map): `:x0` - a value to measure the bin width from, `:binwidth` - data units, `:max-count` - the tallest stack.
+
+  Returns the bin width in pixels, at most the cross length of every slot over `:max-count` dots."
+  ^double [value-pixel span slots {:keys [^double x0 ^double binwidth max-count]}]
+  (let [bw (m/abs (m/- (double (value-pixel (m/+ x0 binwidth))) (double (value-pixel x0))))
+        fit (reduce m/min ##Inf (for [{:keys [level slot]} slots
+                                      :let [[^double lo ^double hi] slot
+                                            s (double (span level))]
+                                      :when (m/pos? s)]
+                                  (m// (m/* s (m/- hi lo)) (double max-count))))]
     (m/min bw (double fit))))
 
 (defn- cross-of
-  "Cross coordinate of the dot `[rank n]` (its rank in a stack of `n`) in `slot` (cross units; `d` - the diameter in
-  cross units; `stacking` - `{:stack-dir :mirror?}`):
-  `:up` - from the slot's low edge (mirror: from the centre line toward the slot's side), `:center` - centred."
-  ^double [slot {:keys [stack-dir mirror?]} [rank n] d]
-  (let [[lo hi] slot lo (double lo) hi (double hi)
-        rank (long rank) n (long n) d (double d)]
+  "Gives the cross coordinate of a dot in its stack.
+
+  Parameters:
+
+  - `slot` (`[lo hi]`): the stack's slot, cross units.
+  - `stacking` (map): `:stack-dir` (`:up` - from the slot's low edge, `:center` - centred on the slot), `:mirror?` (from the centre line toward the slot's side).
+  - `[rank n]` (longs): the dot's rank in a stack of `n`.
+  - `d` (double): the diameter in cross units.
+
+  Returns the dot centre's cross coordinate."
+  ^double [slot {:keys [stack-dir mirror?]} [^long rank ^long n] ^double d]
+  (let [[^double lo ^double hi] slot]
     (cond
-      (= :center stack-dir) (+ (* 0.5 (+ lo hi)) (* d (- (double rank) (* 0.5 (dec n)))))
-      mirror? (* (strip/slot-side slot) d (+ (double rank) 0.5))
-      :else (+ lo (* d (+ (double rank) 0.5))))))
+      (= :center stack-dir) (m/+ (m/* 0.5 (m/+ lo hi)) (m/* d (m/- (double rank) (m/* 0.5 (m/long-dec n)))))
+      mirror? (m/* (strip/slot-side slot) d (m/+ (double rank) 0.5))
+      :else (m/+ lo (m/* d (m/+ (double rank) 0.5))))))
 
 (defn- draw-in-strip-frame
-  "Draw the dot stacks of one panel (see [[dot-diameter]], [[cross-of]]), then the n labels."
+  "Draws the dot stacks of one panel in the strip frame, then the n labels.
+
+  Parameters:
+
+  - `_chart` (map): the chart value (unused).
+  - `computed` (map): the panel's stats - `:slots`, `:items`, `:style`, `:place`, `:options` (`:stack-dir` default `:up`), `:binwidth`, `:max-count`, `:mirror?`.
+  - `canvas`: the clojure2d canvas.
+  - `box` (map): the panel box.
+  - `scales` (map): finalized scales (in the strip frame).
+  - `env` (map): the draw environment - `:theme`.
+
+  Dots are drawn at [[dot-diameter]] unless the style has a `:size`; a group outside its scale's domain, a level without span and dots the scales can't place are skipped.
+
+  See also [[cross-of]]."
   [_chart {:keys [slots items style place options binwidth max-count mirror?]} canvas box scales env]
   (let [{:keys [point span value-pixel] :as pl} (strip/placement box scales options place)
         x0 (some (fn [{:keys [stacks]}] (some #(:x (first (:dots %))) stacks)) slots)
@@ -191,31 +257,60 @@
         (c2d/set-stroke-custom canvas {:size (double (:stroke-width style))})
         (doseq [{:keys [level slot stacks]} slots
                 :let [s (double (span level))]
-                :when (pos? s)
+                :when (m/pos? s)
                 {:keys [n dots]} stacks
                 {:keys [x rank aesthetics]} dots
                 :let [st (group/style style aesthetics scales (:theme env))
-                      ^Vec2 p (point x level (cross-of slot stacking [rank n] (/ d s)))]
+                      ^Vec2 p (point x level (cross-of slot stacking [rank n] (m// d s)))]
                 :when (and st (m/valid-double? (.x p)) (m/valid-double? (.y p)))]
           (shape/draw! canvas (:shape st) p (update st :size #(if (some? %) % d))))))
     (strip/draw-n-labels! canvas pl items :label-x options scales env)))
 
 (defn compute
-  "Stats of the chart with its levels on the categorical axis (see [[cljplot2.data.strip/compute-oriented]]):
-  [[compute-in-strip-frame]] in the strip frame."
+  "Computes the dot plot's stats with its levels on the categorical axis.
+
+  Parameters:
+
+  - `chart` (map): the chart value.
+  - `chart-split` (map): the chart's rows split per panel.
+  - `env` (map): the compute environment.
+
+  Returns the stats of [[compute-in-strip-frame]], turned to the mapping axis of the levels (see [[cljplot2.data.strip/compute-oriented]])."
   [chart chart-split env]
   (strip/compute-oriented compute-in-strip-frame chart chart-split env))
 
 (defn draw
-  "Draw one panel (see [[cljplot2.data.strip/draw-oriented]]): [[draw-in-strip-frame]] in the strip frame."
+  "Draws one panel of the dot plot.
+
+  Parameters:
+
+  - `chart` (map): the chart value.
+  - `computed` (map): the panel's stats from [[compute]].
+  - `canvas`: the clojure2d canvas.
+  - `box` (map): the panel box.
+  - `scales` (map): finalized scales.
+  - `env` (map): the draw environment.
+
+  Draws [[draw-in-strip-frame]] in the strip frame (see [[cljplot2.data.strip/draw-oriented]])."
   [chart computed canvas box scales env]
   (strip/draw-oriented draw-in-strip-frame chart computed canvas box scales env))
 
 (defn legend
-  "Key glyph: the chart's shape fitted and centred in `box` (see [[cljplot2.graphics.shape/draw-key!]]); without a
-  `:size` the key box's size."
-  [{:keys [options]} attributes canvas {:keys [w h] :as box} env]
-  (let [st (merge (style options (:theme env)) attributes)
-        st (update st :size #(if (some? %) % (* 0.7 (m/min (double w) (double h)))))]
+  "Draws the dot plot's key glyph: its point shape fitted and centred in a legend key.
+
+  Parameters:
+
+  - `chart` (map): the chart value.
+  - `attributes` (map): the key's mapped style attributes, over the chart's style.
+  - `canvas`: the clojure2d canvas.
+  - `box` (map): the key box `{:x :y :w :h}` in pixels.
+  - `env` (map): the legend environment - `:theme`.
+
+  Without a `:size` the dot is 70% of the key box's smaller side.
+
+  See also [[cljplot2.graphics.shape/draw-key!]]."
+  [chart attributes canvas {:keys [^double w ^double h] :as box} env]
+  (let [st (update (merge (theme/resolved-style (:theme env) chart) attributes)
+                   :size #(if (some? %) % (m/* 0.7 (m/min w h))))]
     (c2d/set-stroke-custom canvas {:size (double (:stroke-width st))})
     (shape/draw-key! canvas (:shape st) box st)))

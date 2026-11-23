@@ -32,7 +32,9 @@
   numeric `:y` otherwise is ignored): one histogram per level and group (the common breaks, `:y` measure per item),
   bars growing from the band's centre toward the next level, all on one height scale - the tallest bar is `:overlap`
   (default 0.9) band steps high; the y scale leaves room for the outer ridges. Drawn from the farthest level on; `:position` `:overlay` (default; with groups translucent, `:alpha`) or
-  `:mirror` (two groups, the second growing away from the next level)."
+  `:mirror` (two groups, the second growing away from the next level).
+
+  Functions: [[compute]], [[draw]], [[legend]] - the chart contract; [[schemas]] - its style, options and mapping."
   (:require [clojure2d.color :as c]
             [clojure2d.core :as c2d]
             [fastmath.core :as m]
@@ -47,12 +49,14 @@
             [cljplot2.scale.position :as scale]
             [cljplot2.schema :as schema]
             [cljplot2.theme :as theme])
-  (:import [fastmath.vector Vec2]))
+  (:import [fastmath.java Array]
+           [fastmath.vector Vec2]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
 (def ^:private style-entries
+  "Map entries of the histogram style (theme `[:chart :histogram]`), also its options."
   (into [(schema/optional :color {:description "bar fill colour (a mapped :color wins)"} schema/solid-color)
          (schema/optional :stroke-color {:description "outline colour: a colour, :none or :darker (the darkened fill)"} draw/stroke-color)
          (schema/optional :stroke-width {:description "outline width in pixels"} schema/non-neg)
@@ -100,111 +104,150 @@
              (schema/nilable :pattern {:description "groups, each with its own fill pattern"} schema/accessor)
              (schema/nilable :group {:description "groups without a visual aesthetic"} schema/accessor)]})
 
-(defn- style
-  [options theme]
-  (merge (theme/chart-style theme :histogram options) (select-keys options [:color :stroke-color :stroke-width :alpha :zero-line-color :zero-line-width :pattern :pattern-color])))
-
 (defn- bin-counts
-  "Counts of `values` per bin of `brks` (last bin closed) and the number outside."
+  "Counts values per bin.
+
+  Parameters:
+
+  - `brks` (sequence of doubles): the increasing breaks; the last bin is closed.
+  - `values` (sequence of numbers): the values.
+
+  Returns `{:counts [..] :outside n}`: a count per bin and the number of values outside the breaks."
   [brks values]
   (let [arr (double-array brks)
-        counts (long-array (dec (alength arr)))]
+        counts (long-array (m/long-dec (alength arr)))]
     (doseq [v values
             :let [bin (levels/bin-index arr (double v))]
-            :when (not (neg? bin))]
-      (aset counts bin (inc (aget counts bin))))
-    {:counts (vec counts) :outside (- (count values) (long (reduce + 0 (vec counts))))}))
+            :when (not (m/neg? bin))]
+      (Array/inc counts bin))
+    (let [per-bin (vec counts)]
+      {:counts per-bin :outside (m/long-sub (count values) (long (reduce m/long-add 0 per-bin)))})))
 
 (defn- heights
-  "Bar heights of `counts` (bins `brks`, in order) for count measure `y` (see [[cljplot2.data.measure/heights]]);
-  `:cumulative` - the count of the bin and every bin before it (ggplot `after_stat(cumsum(count))`)."
+  "Gives the bar heights of bin counts for a count measure.
+
+  Parameters:
+
+  - `y` (keyword): the measure - `:cumulative` (the count of the bin and every bin before it, ggplot `after_stat(cumsum(count))`) or a measure of [[cljplot2.data.measure/heights]].
+  - `brks` (sequence of doubles): the breaks of the bins.
+  - `counts` (sequence of longs): a count per bin, in order.
+
+  Returns a vector of heights, one per bin."
   [y brks counts]
   (if (= :cumulative y)
-    (vec (rest (reductions + 0.0 counts)))
-    (measure/heights y counts (map (fn [[^double a ^double b]] (- b a)) (partition 2 1 brks)))))
+    (vec (rest (reductions m/+ 0.0 counts)))
+    (measure/heights y counts (map (fn [[^double a ^double b]] (m/- b a)) (partition 2 1 brks)))))
 
 (defn- measure-title
-  "Value axis title of measure `y`."
+  "Gives the value axis title of a measure.
+
+  Parameters:
+
+  - `y` (keyword): the measure (`:cumulative` - `Cumulative Count`, else [[cljplot2.data.measure/titles]])."
   [y]
   (if (= :cumulative y) "Cumulative Count" (measure/titles y)))
 
+(defn- outside-count
+  "Counts the values outside the breaks.
+
+  Parameters:
+
+  - `brks` (vector of doubles or `nil`): the breaks; `nil` - none, nothing outside.
+  - `values` (sequence of numbers): the values.
+
+  Returns the number of values below the first break or above the last."
+  [brks values]
+  (if brks
+    (let [lo (double (first brks))
+          hi (double (peek brks))]
+      (count (remove #(m/<= lo (double %) hi) values)))
+    0))
+
 (defn- ridge-compute
-  "Ridgeline stats (categorical or bands `:y`): per panel `{:ridges [item ...] :top h :overlap o :style st :translucent? b}`, items
-  (see [[cljplot2.data.strip/ridge-split]]) with `:bars [[x0 x1 height] ...]`; one `:top` over all panels."
-  [options chart-split {:keys [theme] :as env}]
+  "Computes the histogram stats of ridgelines (a categorical or bands `:y`).
+
+  Parameters:
+
+  - `chart` (map): the chart value - `:options` (`:y` default `:percent`, `:bins` default `:sturges`, `:overlap` default 0.9, `:position`, style options).
+  - `chart-split` (map): the chart's rows split per panel.
+  - `env` (map): the compute environment - `:theme`, `:plot-scales`, `:flip?` ...
+
+  Returns the chart stats with `:ridges? true`: per panel `{:ridges [item ...] :top h :overlap o :style st :translucent? b}`, items (see [[cljplot2.data.strip/ridge-split]]) with `:bars [[x0 x1 height] ...]` on the common breaks; one `:top` over all panels; values outside the breaks counted in `:dropped` `:x`."
+  [{:keys [options] :as chart} chart-split {:keys [theme] :as env}]
   (let [y (get options :y :percent)
         {:keys [position items panels dropped group-keys]} (strip/ridge-split chart-split options env)
         all-values (into [] (comp (mapcat val) (mapcat :values)) items)
         brks (levels/breaks all-values (get options :bins :sturges))
-        items (if brks
-                (update-vals items (fn [its] (mapv (fn [it] (assoc it :bars (mapv (fn [[a b] h] [a b h])
-                                                                                  (partition 2 1 brks)
-                                                                                  (heights y brks (:counts (bin-counts brks (:values it)))))))
-                                                   its)))
-                {})
-        outside (if brks
-                  (let [lo (double (first brks)) hi (double (peek brks))]
-                    (count (remove #(<= lo (double %) hi) all-values)))
-                  0)
-        top (double (reduce max 0.0 (map #(nth % 2) (mapcat :bars (mapcat val items)))))
-        overlap (double (get options :overlap 0.9))]
-    {:data (update-vals items (fn [its] {:ridges its :top top :overlap overlap :style (style options theme)
-                                         :translucent? (and (> (count group-keys) 1) (= :overlay position))}))
+        binned (if brks
+                 (update-vals items (fn [its] (mapv (fn [it] (assoc it :bars (mapv (fn [[a b] h] [a b h])
+                                                                                   (partition 2 1 brks)
+                                                                                   (heights y brks (:counts (bin-counts brks (:values it)))))))
+                                                    its)))
+                 {})
+        outside (outside-count brks all-values)
+        top (double (reduce m/max 0.0 (map #(nth % 2) (mapcat :bars (mapcat val binned)))))
+        overlap (double (get options :overlap strip/default-ridge-overlap))
+        bar-style (theme/resolved-style theme chart)]
+    {:data (update-vals binned (fn [its] {:ridges its :top top :overlap overlap :style bar-style
+                                          :translucent? (and (m/> (count group-keys) 1) (= :overlay position))}))
      :ridges? true
      :extents (merge-with merge (group/aesthetic-extents panels (:plot-scales env))
-                          (strip/extents :band items (fn [_] [(first brks) (peek brks)])))
-     :padding (merge {:x [0.05 0.05]} (:padding options))
+                          (strip/extents :band binned (fn [_] [(first brks) (peek brks)])))
+     :padding (merge {:x data/axis-padding} (:padding options))
      :padding-explicit (data/explicit-padding {} options)
      :scale-defaults (strip/ridge-scale-defaults overlap (= :mirror position) (:flip? env) (get-in env [:plot-scales :y]))
      :na (group/na-dims panels)
-     :dropped (update dropped :x #(+ (long (or % 0)) (long outside)))}))
+     :dropped (update dropped :x #(m/long-add (long (or % 0)) outside))}))
 
 (defn compute
-  "Per panel: `{:bars [{:x0 :x1 :y0 :y1 :aesthetics}] :style style :translucent? bool}` in data units (bars in group
-  order, `:y0`/`:y1` placed by [[cljplot2.data.position/stack-values]]; `:translucent?` - grouped overlay, fill drawn
-  with `:alpha`); `:tick-format {:y :absolute}` for mirror; extents (x - outer breaks, y - over 0 and every bar's ends,
-  or `[-M M]` for `:symmetric` mirror), padding, `:na`, `:dropped`, `:axis-titles`. With a categorical or bands
-  `:y` - ridgelines, see [[ridge-compute]]."
-  [{:keys [options]} {:keys [groups mapping] :as chart-split} {:keys [theme] :as env}]
+  "Computes the histogram's stats.
+
+  Parameters:
+
+  - `chart` (map): the chart value - `:options` (`:bins` default `:sturges`, `:y` default `:percent`, `:position` default `:overlay`, `:symmetric`, `:zero-line`, `:padding`, style options).
+  - `chart-split` (map): `:groups` (`{panel rows}`) and the merged `:mapping`.
+  - `env` (map): the compute environment - `:theme`, `:plot-scales` ...
+
+  Returns ridgeline stats for a categorical or bands `:y` ([[ridge-compute]]), else per panel `{:bars [{:x0 :x1 :y0 :y1 :aesthetics}] :style st :translucent? b :zero-line? b}` in data units (bars in group order, `:y0` / `:y1` placed by [[cljplot2.data.position/stack-values]]; `:translucent?` - grouped overlay, fill drawn with `:alpha`); x extents - the outer breaks, y - over 0 and every bar's ends, or `[-M M]` for a `:symmetric` mirror; `:dropped` `:x` - invalid values and values outside the breaks; `:tick-format {:y :absolute}` for mirror; the y axis titled by the measure (`:normalize` - `Proportion`).
+
+  Throws `ex-info {:key :mapping}` when rows exist but none has a finite x, `{:key :position}` for `:mirror` without exactly two groups."
+  [{:keys [options] :as chart} {:keys [groups mapping] :as chart-split} {:keys [theme] :as env}]
   (if (strip/ridges? chart-split env)
-    (ridge-compute options chart-split env)
-    (let [st (style options theme)
+    (ridge-compute chart chart-split env)
+    (let [st (theme/resolved-style theme chart)
           y (get options :y :percent)
           position (get options :position :overlay)
           {:keys [panels dims dropped]} (group/split groups (dissoc mapping :y) env)
           x-of (data/row-accessor :x (:x mapping))
           xs (update-vals panels (fn [gs] (mapv #(data/finite-numbers (map x-of (:rows %))) gs)))
           all-values (into [] (comp (mapcat identity) (mapcat :values)) (vals xs))
-          all-count (long (reduce + 0 (map count (mapcat #(map :rows %) (vals panels)))))
-          _ (when (and (pos? all-count) (empty? all-values))
+          all-count (long (reduce m/long-add 0 (map count (mapcat #(map :rows %) (vals panels)))))
+          _ (when (and (m/pos? all-count) (empty? all-values))
               (schema/fail! "No valid values for a mapped dimension - check the mapping." {:key :mapping :value :x :rows all-count}))
           brks (levels/breaks all-values (get options :bins :sturges))
           group-keys (group/ordered-keys (mapcat #(map :key %) (vals panels)) dims (:plot-scales env))
           n-groups (count group-keys)
-          _ (when (and (= position :mirror) (not= 2 n-groups) (seq all-values))
+          _ (when (and (= position :mirror) (m/not== 2 n-groups) (seq all-values))
               (schema/fail! "Histogram :position :mirror needs exactly two groups." {:key :position :groups n-groups}))
-          outside (if brks
-                    (let [lo (double (first brks)) hi (double (peek brks))]
-                      (count (remove #(<= lo (double %) hi) all-values)))
-                    0)
+          outside (outside-count brks all-values)
           ;; per panel: heights of every group (all of them, absent ones 0, so slots and mirror halves stay global)
           panel-bars (fn [gs group-values]
                        (let [present (zipmap (map :key gs) (map vector gs group-values))
                              group-heights (mapv (fn [k] (if-let [[_ {:keys [values]}] (present k)]
                                                            (heights y brks (:counts (bin-counts brks values)))
-                                                           (vec (repeat (dec (count brks)) 0.0))))
+                                                           (vec (repeat (m/long-dec (count brks)) 0.0))))
                                                  group-keys)
                              ys (position/stack-values position group-heights)]
                          (vec (for [[i k] (map-indexed vector group-keys)
                                     :let [[g] (present k)]
                                     :when g
                                     [[a b] [y0 y1]] (map vector (partition 2 1 brks) (ys i))]
-                                (let [[a b] (if (= position :dodge) (position/dodge-interval [a b] i n-groups) [a b])]
-                                  {:x0 a :x1 b :y0 y0 :y1 y1 :aesthetics (:aesthetics g)})))))
+                                (let [[x0 x1] (if (= position :dodge) (position/dodge-interval [a b] i n-groups) [a b])]
+                                  {:x0 x0 :x1 x1 :y0 y0 :y1 y1 :aesthetics (:aesthetics g)})))))
           data (if brks
                  (into {} (map (fn [[panel gs]]
                                  [panel {:bars (panel-bars gs (xs panel)) :style st
-                                         :translucent? (and (> n-groups 1) (= position :overlay))
+                                         :translucent? (and (m/> n-groups 1) (= position :overlay))
                                          :zero-line? (and (= position :mirror) (data/option options :zero-line true))}]))
                        panels)
                  {})
@@ -213,50 +256,88 @@
                                           (when (seq bars)
                                             {:x {:kind :numeric :min (first brks) :max (peek brks)}
                                              :y {:kind :numeric
-                                                 :min (reduce min 0.0 (bar-ys bars))
-                                                 :max (reduce max 0.0 (bar-ys bars))}})))
+                                                 :min (reduce m/min 0.0 (bar-ys bars))
+                                                 :max (reduce m/max 0.0 (bar-ys bars))}})))
           [lo hi] (position/symmetric-extent (bar-ys (mapcat :bars (vals data))))
-          bar-extents (if (and (= position :mirror) (:symmetric options))
-                        (update-vals bar-extents #(some-> % (assoc :y {:kind :numeric :min lo :max hi})))
-                        bar-extents)
+          panel-extents (if (and (= position :mirror) (:symmetric options))
+                          (update-vals bar-extents #(some-> % (assoc :y {:kind :numeric :min lo :max hi})))
+                          bar-extents)
           aesthetic-extents (group/aesthetic-extents panels (:plot-scales env))]
       {:data data
-       :extents (merge-with merge aesthetic-extents (into {} (filter val) bar-extents))
-       :padding (merge {:x [0.05 0.05] :y (if (= position :mirror) [0.05 0.05] [0.0 0.05])} (:padding options))
+       :extents (merge-with merge aesthetic-extents (into {} (filter val) panel-extents))
+       :padding (merge {:x data/axis-padding :y (if (= position :mirror) data/axis-padding [0.0 0.05])} (:padding options))
        :padding-explicit (data/explicit-padding (when-not (= position :mirror) {:y [0.0 nil]}) options)
        :na (group/na-dims panels)
-       :dropped (assoc dropped :x (+ (long (reduce + 0 (map :dropped (mapcat identity (vals xs))))) (long outside)))
+       :dropped (assoc dropped :x (m/long-add (reduce m/long-add 0 (map :dropped (mapcat identity (vals xs)))) outside))
        :axis-titles {:y (if (= position :normalize) "Proportion" (measure-title y))}
        :tick-format (when (= position :mirror) {:y :absolute})})))
 
+(defn- finite-pixel?
+  "Tests whether both coordinates of a pixel point are finite.
+
+  Parameters:
+
+  - `p` (`Vec2`): the point."
+  [^Vec2 p]
+  (and (m/valid-double? (.x p)) (m/valid-double? (.y p))))
+
+(defn- translucent-fill
+  "Gives a bar's fill colour, with the style's `:alpha` when the bars are translucent.
+
+  Parameters:
+
+  - `color`: the bar colour.
+  - `alpha`: the chart style's `:alpha`, a fraction.
+  - `translucent?`: grouped overlay bars."
+  [color alpha translucent?]
+  (if translucent? (c/set-alpha color (m/* 255.0 (double alpha))) color))
+
 (defn- draw-ridges!
-  "Draw ridgeline histograms of one panel, farthest level first; empty bins skipped; corners rounded by `rounding`
-  (see [[cljplot2.graphics.draw/corner-rounding]])."
-  [{:keys [ridges top overlap style translucent?]} canvas box scales env rounding]
+  "Draws the ridgeline histograms of one panel, farthest level first.
+
+  Parameters:
+
+  - `computed` (map): the panel's ridgeline stats - `:ridges`, `:top`, `:overlap`, `:style`, `:translucent?`.
+  - `canvas`: the clojure2d canvas.
+  - `box` (map): the panel box.
+  - `scales` (map): finalized scales.
+  - `env` (map): the draw environment - `:theme`.
+  - `rounding`: the corner rounding (see [[cljplot2.graphics.draw/corner-rounding]]).
+
+  Nothing is drawn when every bin is empty; empty bins, groups outside their scale's domain and bars the scales can't place are skipped."
+  [{:keys [ridges ^double top ^double overlap style translucent?]} canvas box scales env rounding]
   (let [pl (strip/placement box scales {} :band)
-        point (strip/ridge-point pl (double overlap))
-        top (double top)
+        point (strip/ridge-point pl overlap)
         stroke-width (double (:stroke-width style))
-        pattern-fill (draw/pattern-fill-cache)
-        ok? (fn [^Vec2 p] (and (m/valid-double? (.x p)) (m/valid-double? (.y p))))]
-    (when (pos? top)
+        pattern-fill (draw/pattern-fill-cache)]
+    (when (m/pos? top)
       (c2d/set-stroke-custom canvas {:size stroke-width :join :miter})
       (doseq [{:keys [level slot bars aesthetics]} (strip/ridge-order pl ridges)
               :let [st (group/style style aesthetics scales (:theme env))]
               :when st
               :let [side (strip/slot-side slot)
-                    fill (if translucent? (c/set-alpha (:color st) (* 255.0 (double (:alpha style)))) (:color st))]
-              [x0 x1 h] bars
-              :when (pos? (double h))
-              :let [a (point x0 level side 0.0) b (point x1 level side (/ (double h) top))]
-              :when (and (ok? a) (ok? b))]
+                    fill (translucent-fill (:color st) (:alpha style) translucent?)]
+              [x0 x1 ^double h] bars
+              :when (m/pos? h)
+              :let [a (point x0 level side 0.0)
+                    b (point x1 level side (m// h top))]
+              :when (and (finite-pixel? a) (finite-pixel? b))]
         (draw/bar! canvas a b fill (draw/outline-color (:stroke-color st) fill) stroke-width (pattern-fill st fill)
-                   (draw/bar-rounding rounding a (point x0 level side (/ (double h) top))))))))
+                   (draw/bar-rounding rounding a (point x0 level side (m// h top))))))))
 
 (defn draw
-  "Draw the bars of one panel; grouped overlay bars get fill alpha `:alpha`; empty bins, bars under half a pixel and
-  bars of groups outside an aesthetic domain are skipped; mirror with `:zero-line` (default on) - the y = 0 line on
-  top."
+  "Draws the bars of one panel.
+
+  Parameters:
+
+  - `chart` (map): the chart value - `:options` (corner radii).
+  - `computed` (map): the panel's stats - `:bars`, `:style`, `:translucent?`, `:zero-line?`, or ridgeline stats (`:ridges`).
+  - `canvas`: the clojure2d canvas.
+  - `box` (map): the panel box.
+  - `scales` (map): finalized scales.
+  - `env` (map): the draw environment - `:theme`.
+
+  Grouped overlay bars get fill alpha `:alpha`; empty bins, bars under half a pixel and bars of groups outside an aesthetic domain are skipped; mirror with `:zero-line` (default on) - the y = 0 line on top. Ridgelines by [[draw-ridges!]]."
   [{:keys [options]} {:keys [bars style translucent? ridges zero-line?] :as computed} canvas box scales env]
   (if ridges
     (draw-ridges! computed canvas box scales env (draw/corner-rounding options))
@@ -267,13 +348,13 @@
             rounding (draw/corner-rounding options)]
         (c2d/set-stroke-custom canvas {:size stroke-width :join :miter})
         (doseq [{:keys [x0 x1 y0 y1 aesthetics]} bars
-                :when (not (== (double y0) (double y1)))
+                :when (m/not== (double y0) (double y1))
                 :let [st (group/style style aesthetics scales (:theme env))]
                 :when st]
           (let [{left :x top :y w :w h :h} (draw/rect-of projection x0 y0 x1 y1)
                 fill (:color st)
                 stroke (draw/outline-color (:stroke-color st) fill)
-                drawn-fill (if translucent? (c/set-alpha fill (* 255.0 (double (:alpha style)))) fill)]
+                drawn-fill (translucent-fill fill (:alpha style) translucent?)]
             (if rounding
               (let [[base end] (draw/value-ends y0 y1)
                     a (projection x0 base)]
@@ -283,16 +364,27 @@
                 (c2d/set-color canvas drawn-fill)
                 (c2d/rect canvas left top w h)
                 (draw/fill-with-pattern! canvas (pattern-fill st drawn-fill) #(c2d/rect canvas left top w h))
-                (when (and (pos? stroke-width) (not (theme/none? stroke)))
+                (when (and (m/pos? stroke-width) (not (theme/none? stroke)))
                   (c2d/set-color canvas stroke)
                   (c2d/rect canvas left top w h true))))))
         (when zero-line?
           (draw/zero-line! canvas box scales style))))))
 
 (defn legend
-  "Key glyph: a filled square (outlined by `:stroke-color`) inset in `box`; with a mapped `:color` and `:overlay` position (the
-  groups' bars are translucent) the fill gets `:alpha` too."
-  [{:keys [options]} attributes canvas box env]
-  (draw/bar-key! canvas box (merge (style options (:theme env)) (select-keys attributes [:color :pattern]))
+  "Draws the histogram's key glyph: a filled square, outlined by `:stroke-color`, inset in a legend key.
+
+  Parameters:
+
+  - `chart` (map): the chart value - `:options` (`:position`, corner radii).
+  - `attributes` (map): the key's mapped style attributes - `:color` and `:pattern` are used.
+  - `canvas`: the clojure2d canvas.
+  - `box` (map): the key box in pixels.
+  - `env` (map): the legend environment - `:theme`.
+
+  With a mapped `:color` and the `:overlay` position (translucent grouped bars) the fill gets `:alpha` too; corners rounded as the bars'.
+
+  See also [[cljplot2.graphics.draw/bar-key!]]."
+  [{:keys [options] :as chart} attributes canvas box env]
+  (draw/bar-key! canvas box (merge (theme/resolved-style (:theme env) chart) (select-keys attributes [:color :pattern]))
                  (and (contains? attributes :color) (= :overlay (get options :position :overlay)))
                  (draw/corner-rounding options)))

@@ -41,7 +41,11 @@
   dropped (counted); without a linear size the group's width (`:width` or an ordinal size level). Size scale and
   legend unchanged, one colour per group; polar trails follow the circle with the plot's `:arcs`, else chords. A trail can't take `:fill`,
   `:fill-gradient`, a stacked `:position`, `:arrow` / `:start-gap` / `:end-gap`, `:dash`, `:interpolator`, `:curve`,
-  `:gaps :bridge` or a colour along its length - `ex-info {:key :trail}`."
+  `:gaps :bridge` or a colour along its length - `ex-info {:key :trail}`.
+
+  Functions: [[positions]] and [[schemas]] - the chart's positions and schemas; [[compute]] - the lines of every
+  panel (stacked by [[stacked-lines]]); [[stacked-band-points]] - stacked bands in pixels; [[draw]] - one panel's
+  lines; [[legend]] - the key glyph."
   (:require [clojure2d.color :as c]
             [clojure2d.core :as c2d]
             [fastmath.core :as m]
@@ -63,6 +67,7 @@
 (set! *unchecked-math* :warn-on-boxed)
 
 (def ^:private style-entries
+  "Map entries of the line style: the line style, area `:fill` and `:alpha`, `:bridge`, the area pattern."
   (into (conj polyline/style-entries
               (schema/optional :fill {:cljplot2/section :style :description "area between the line and y = 0: :color (the line colour at :alpha), a colour or :none"}
                                [:or [:= :color] schema/color])
@@ -76,7 +81,9 @@
   [[cljplot2.data.position]])."
   (into #{:overlay :stack :normalize} position/stream-positions))
 
-(def ^:private stacked-positions (disj positions :overlay))
+(def ^:private stacked-positions
+  "The positions stacking the lines' areas: all but `:overlay`."
+  (disj positions :overlay))
 
 (def schemas
   "Schemas of the line chart: `:style` (theme `[:chart :line]`), `:options`, `:mapping` (merged)."
@@ -119,39 +126,52 @@
              (schema/nilable :pattern {:description "area fill pattern per group"} schema/accessor)
              (schema/nilable :group {:description "groups without a visual aesthetic, each its own line"} schema/accessor)]})
 
-(defn- style
-  [options theme]
-  (merge (theme/chart-style theme :line options) (select-keys options [:color :width :dash :fill :alpha :bridge :pattern :pattern-color])))
-
-(defn- sortable? [xs] (or (every? number? xs) (every? data/temporal? xs)))
-
 (defn- aligned-heights
-  "Heights of a group with points at x keys `ks` (strictly increasing) and values `vs` at the union keys `union`
-  (increasing): linear between its points, 0 outside its range (one walk over both)."
+  "Gives a group's heights at the union of the groups' x keys.
+
+  Parameters:
+
+  - `ks` (vector): the group's x keys, strictly increasing.
+  - `vs` (vector): its values at `ks`.
+  - `union` (vector): the union keys, increasing.
+
+  Returns a vector of heights at `union`: linear between the group's points, 0 outside its range (one walk over both)."
   [ks vs union]
   (let [n (count ks)
-        lo (double (first ks)) hi (double (peek ks))]
-    (loop [i 0 us (seq union) acc []]
+        lo (double (first ks))
+        hi (double (peek ks))]
+    (loop [i 0
+           us (seq union)
+           acc []]
       (if-not us
         acc
         (let [u (double (first us))]
           (cond
-            (or (< u lo) (> u hi)) (recur i (next us) (conj acc 0.0))
-            (and (< i (- n 2)) (> u (double (ks (inc i))))) (recur (inc i) us acc)
-            (== n 1) (recur i (next us) (conj acc (double (vs 0))))
-            :else (let [k0 (double (ks i)) k1 (double (ks (inc i)))
-                        v0 (double (vs i)) v1 (double (vs (inc i)))
-                        f (if (== k0 k1) 0.0 (/ (- u k0) (- k1 k0)))]
-                    (recur i (next us) (conj acc (+ v0 (* f (- v1 v0))))))))))))
+            (or (m/< u lo) (m/> u hi)) (recur i (next us) (conj acc 0.0))
+            (and (m/< i (m/long-sub n 2)) (m/> u (double (ks (m/long-inc i))))) (recur (m/long-inc i) us acc)
+            (m/== n 1) (recur i (next us) (conj acc (double (vs 0))))
+            :else (let [k0 (double (ks i))
+                        k1 (double (ks (m/long-inc i)))
+                        v0 (double (vs i))
+                        v1 (double (vs (m/long-inc i)))
+                        f (if (m/== k0 k1) 0.0 (m// (m/- u k0) (m/- k1 k0)))]
+                    (recur i (next us) (conj acc (m/+ v0 (m/* f (m/- v1 v0))))))))))))
 
 (defn- stacked-lines
-  "The lines of one panel stacked by `position` (see [[cljplot2.data.position/stack-values]]): every group on the
-  union of the groups' x (keys of [[cljplot2.data.rows/x-key]]), interpolated linearly inside its own range and 0 outside; NA y points
-  left out (interpolated across); points in x order whatever `:sort` says. Each line `{:x union :y upper :y0 lower
-  :heights aligned :aesthetics}` (`:heights` - the group's aligned values, for smoothing at drawing). Non-numeric,
-  non-temporal x or a repeated x in a group throws `ex-info {:key :x}`."
+  "Stacks the lines of one panel.
+
+  Every group is put on the union of the groups' x (keys of [[cljplot2.data.rows/x-key]]), interpolated linearly inside its own range and 0 outside; NA y points are left out (interpolated across); points are in x order whatever `:sort` says.
+
+  Parameters:
+
+  - `lines` (sequence): the panel's lines `{:x [..] :y [..] :aesthetics}` (optional `:size-value`).
+  - `position` (keyword): a stacked position (see [[cljplot2.data.position/stack-values]]).
+
+  Returns a vector of lines `{:x union :y upper :y0 lower :heights aligned :aesthetics}` (`:heights` - the group's aligned values, for smoothing at drawing); groups without points are left out.
+
+  Throws `ex-info {:key :x}` for a non-numeric, non-temporal x or a repeated x in a group."
   [lines position]
-  (let [groups (mapv (fn [{:keys [x y aesthetics] :as line}]
+  (let [keyed-lines (mapv (fn [{:keys [x y aesthetics] :as line}]
                        (let [keyed (->> (map vector x y)
                                         (filter #(some? (second %)))
                                         (map (fn [[vx vy]] [(or (data/x-key vx)
@@ -161,25 +181,32 @@
                                         (sort-by first))
                              ks (mapv first keyed)
                              pts (mapv (fn [[_ vx vy]] [vx vy]) keyed)]
-                         (when-not (or (< (count ks) 2) (apply < ks))
+                         (when-not (or (m/< (count ks) 2) (apply m/< ks))
                            (schema/fail! "Stacked lines need distinct x values within a group." {:key :x :group aesthetics}))
                          (merge {:ks ks :vs (mapv #(double (second %)) pts) :xs (mapv first pts) :aesthetics aesthetics}
                                 (select-keys line [:size-value]))))
                      lines)
-        groups (filterv #(seq (:ks %)) groups)
-        by-key (into (sorted-map) (mapcat (fn [{:keys [ks xs]}] (map vector ks xs)) groups))
+        stacked-groups (filterv #(seq (:ks %)) keyed-lines)
+        by-key (into (sorted-map) (mapcat (fn [{:keys [ks xs]}] (map vector ks xs)) stacked-groups))
         union (vec (keys by-key))
-        heights (mapv (fn [{:keys [ks vs]}] (aligned-heights ks vs union)) groups)
+        heights (mapv (fn [{:keys [ks vs]}] (aligned-heights ks vs union)) stacked-groups)
         ys (position/stack-values position heights)
         xs (vec (vals by-key))]
     (mapv (fn [{:keys [aesthetics] :as g} hs y01]
             (merge {:x xs :y (mapv second y01) :y0 (mapv first y01) :heights hs :aesthetics aesthetics}
                    (select-keys g [:size-value])))
-          groups heights ys)))
+          stacked-groups heights ys)))
 
 (defn- check-stacking!
-  "Throw `ex-info` for options a stacked `position` can't take: a line colored along its length (`gradient?`),
-  `:curve`, `:gaps`."
+  "Checks the options of stacked lines.
+
+  Parameters:
+
+  - `position` (keyword): the chart's position.
+  - `gradient?` (boolean): is the line coloured along its length?
+  - `options` (map): the chart's options - `:curve`, `:gaps`.
+
+  Returns `nil`; throws `ex-info {:key :position}` for a line coloured along its length, `{:key :curve}`, `{:key :gaps}` - options a stacked position can't take."
   [position gradient? options]
   (when (stacked-positions position)
     (cond
@@ -190,8 +217,14 @@
                                     {:key :gaps :value (:gaps options)}))))
 
 (defn- check-polar!
-  "Throw `ex-info {:key k}` for an option polar lines don't support (`coord` - the plot's `:coord`): `:interpolator`,
-  `:curve`, a stacked or stream `:position`, an area (`:fill`, `:fill-gradient`)."
+  "Checks the options of polar lines.
+
+  Parameters:
+
+  - `options` (map): the chart's options.
+  - `coord` (map): the plot's `:coord`.
+
+  Returns `nil`; under a polar coord throws `ex-info {:key :coord :value k}` for an option polar lines don't support: `:interpolator`, `:curve`, a stacked or stream `:position`, an area (`:fill`, `:fill-gradient`)."
   [options coord]
   (when (coord/polar? coord)
     (let [problem (cond
@@ -205,9 +238,15 @@
                       {:key :coord :value problem})))))
 
 (defn- check-trail!
-  "Throw `ex-info {:key :trail}` for an option a trail (`:trail true`) can't take: an area (`:fill`, `:fill-gradient`),
-  a stacked `position`, arrows or end gaps, `:dash`, `:interpolator`, `:curve`, `:gaps :bridge`, a colour along the
-  length (`gradient?`)."
+  "Checks the options of a trail (`:trail true`).
+
+  Parameters:
+
+  - `options` (map): the chart's options.
+  - `position` (keyword): the chart's position.
+  - `gradient?` (boolean): is the line coloured along its length?
+
+  Returns `nil`; throws `ex-info {:key :trail}` for an option a trail can't take: an area (`:fill`, `:fill-gradient`), a stacked position, arrows or end gaps, `:dash`, `:interpolator`, `:curve`, `:gaps :bridge`, a colour along the length."
   [options position gradient?]
   (when (data/option options :trail false)
     (let [problem (cond
@@ -225,12 +264,20 @@
                       {:key :trail :value problem})))))
 
 (defn compute
-  "Per panel: `{:lines [{:x [..] :y [..] :aesthetics}] :style style}` (`y` `nil` where the line breaks; a gradient
-  line also has `:colors` - the color value of every point; a trail with a linear size `:sizes` - the size value of
-  every point); extents, padding, `:na`, `:dropped`."
-  [{:keys [options]} {:keys [groups mapping]} {:keys [theme plot-scales] :as env}]
+  "Computes the lines of every panel.
+
+  Parameters:
+
+  - `chart` (map): the chart value - `:options` (see the namespace doc).
+  - `split` (map): `:groups` - panel -> rows, `:mapping` - the merged mapping.
+  - `env` (map): `:theme`, `:plot-scales`, `:coord` (and the grouping keys of [[cljplot2.data.group/split]]).
+
+  Returns `{:data :extents :padding :padding-explicit :axis-titles :na :dropped}`: per panel `{:lines [{:x [..] :y [..] :aesthetics}] :style st}` - `y` `nil` where the line breaks; a line coloured along its length also has `:colors` (every point's colour value), a trail with a linear size `:sizes` (every point's size value), a line sized by a linear size `:size-value`; stacked positions - the lines of [[stacked-lines]]; `st` the resolved style. Padding 5% each side, stacked y `[0 0.05]` without negative values; `:axis-titles` - `Proportion` for `:normalize`.
+
+  Throws `ex-info` for options the lines can't take (see [[check-polar!]], [[check-trail!]], [[check-stacking!]]; `{:key :fill-gradient-axis}` without `:fill-gradient`, `{:key :fill-gradient}` on a line coloured along its length), `{:key :mapping}` when `:x` or `:y` has no valid value in non-empty data, and the errors of [[stacked-lines]]."
+  [{:keys [options] :as chart} {:keys [groups mapping]} {:keys [theme plot-scales] :as env}]
   (check-polar! options (:coord env))
-  (let [st (style options theme)
+  (let [st (theme/resolved-style theme chart)
         position (get options :position :overlay)
         trail? (data/option options :trail false)
         continuous (group/continuous-color groups mapping env)
@@ -242,47 +289,48 @@
         _ (when (and gradient? (:fill-gradient options))
             (schema/fail! "A line colored along its length can't take :fill-gradient." {:key :fill-gradient :value (:fill-gradient options)}))
         color-of (:color-of continuous)
-        [groups mapping] (if continuous [(:groups continuous) (:mapping continuous)] [groups mapping])
-        sized (group/continuous :size groups mapping (cond-> env trail? (assoc :na-level? false)))
+        [colored-groups colored-mapping] (if continuous [(:groups continuous) (:mapping continuous)] [groups mapping])
+        sized (group/continuous :size colored-groups colored-mapping (cond-> env trail? (assoc :na-level? false)))
         size-of (:value-of sized)
         sizes? (and trail? (some? sized))
         {:keys [panels dropped]} (if sized
                                    (group/split (:groups sized) (:mapping sized) env)
-                                   (group/split groups mapping env))
-        x-of (data/row-accessor :x (:x mapping))
-        y-of (data/row-accessor :y (:y mapping))
+                                   (group/split colored-groups colored-mapping env))
+        x-of (data/row-accessor :x (:x colored-mapping))
+        y-of (data/row-accessor :y (:y colored-mapping))
         sort? (data/option options :sort true)
         rows (mapcat (fn [gs] (mapcat :rows gs)) (vals panels))
         row-count (count rows)
         _ (doseq [[k f] [[:x x-of] [:y y-of]]]
-            (when (and (pos? row-count) (not-any? #(data/valid-value? (f %)) rows))
+            (when (and (m/pos? row-count) (not-any? #(data/valid-value? (f %)) rows))
               (schema/fail! "No valid values for a mapped dimension - check the mapping." {:key :mapping :value k :rows row-count})))
-        data (update-vals panels
-                          (fn [gs]
-                            {:lines (mapv (fn [g]
-                                            (let [pts (->> (:rows g)
-                                                           (map (fn [r] [(x-of r) (y-of r) (when color-of (color-of r))
-                                                                         (when sizes? (size-of r))]))
-                                                           (filter #(data/valid-value? (first %))))
-                                                  pts (if (and sort? (sortable? (map first pts))) (sort-by first pts) pts)]
-                                              (cond-> {:x (mapv first pts)
-                                                       :y (mapv #(let [v (second %)] (when (data/valid-value? v) v)) pts)
-                                                       :aesthetics (:aesthetics g)}
-                                                gradient? (assoc :colors (mapv #(nth % 2) pts))
-                                                sizes? (assoc :sizes (mapv #(nth % 3) pts))
-                                                (and sized (not sizes?)) (assoc :size-value (some-> (first (:rows g)) size-of)))))
-                                          gs)
-                             :style st}))
+        line-data (update-vals panels
+                               (fn [gs]
+                                 {:lines (mapv (fn [g]
+                                                 (let [points (->> (:rows g)
+                                                                   (map (fn [r] [(x-of r) (y-of r) (when color-of (color-of r))
+                                                                                 (when sizes? (size-of r))]))
+                                                                   (filter #(data/valid-value? (first %))))
+                                                       ordered (if (and sort? (data/sortable? (map first points))) (sort-by first points) points)]
+                                                   (cond-> {:x (mapv first ordered)
+                                                            :y (mapv #(let [v (second %)] (when (data/valid-value? v) v)) ordered)
+                                                            :aesthetics (:aesthetics g)}
+                                                     gradient? (assoc :colors (mapv #(nth % 2) ordered))
+                                                     sizes? (assoc :sizes (mapv #(nth % 3) ordered))
+                                                     (and sized (not sizes?)) (assoc :size-value (some-> (first (:rows g)) size-of)))))
+                                               gs)
+                                  :style st}))
         data (if (stacked-positions position)
-               (update-vals data #(update % :lines stacked-lines position))
-               data)
-        negative? (some neg? (mapcat (fn [{:keys [lines]}] (mapcat :y0 lines)) (vals data)))]
-    (let [color-stats (when gradient?
-                        (group/continuous-color-stats continuous (update-vals data #(mapcat :colors (:lines %))) plot-scales))
-          size-stats (when sized
-                       (group/continuous-stats :size sized (update-vals data #(mapcat (fn [line] (or (:sizes line) [(:size-value line)]))
-                                                                                       (:lines %)))
-                                               plot-scales))]
+               (update-vals line-data #(update % :lines stacked-lines position))
+               line-data)
+        negative? (some m/neg? (mapcat (fn [{:keys [lines]}] (mapcat :y0 lines)) (vals data)))
+        stacked-from-zero? (and (#{:stack :normalize} position) (not negative?))
+        color-stats (when gradient?
+                      (group/continuous-color-stats continuous (update-vals data #(mapcat :colors (:lines %))) plot-scales))
+        size-stats (when sized
+                     (group/continuous-stats :size sized (update-vals data #(mapcat (fn [line] (or (:sizes line) [(:size-value line)]))
+                                                                                     (:lines %)))
+                                             plot-scales))]
     {:data data
      :extents (merge-with merge (group/aesthetic-extents panels (:plot-scales env))
                           (:extents color-stats)
@@ -292,26 +340,32 @@
                                              (when (seq ys)
                                                [panel {:x (data/extent :x xs) :y (data/extent :y ys)}]))))
                                 data))
-     :padding (merge {:x [0.05 0.05]
-                      :y (if (and (#{:stack :normalize} position) (not negative?)) [0.0 0.05] [0.05 0.05])}
+     :padding (merge {:x data/axis-padding
+                      :y (if stacked-from-zero? [0.0 0.05] data/axis-padding)}
                      (:padding options))
-     :padding-explicit (data/explicit-padding (when (and (#{:stack :normalize} position) (not negative?)) {:y [0.0 nil]})
-                                              options)
+     :padding-explicit (data/explicit-padding (when stacked-from-zero? {:y [0.0 nil]}) options)
      :axis-titles (when (= :normalize position) {:y "Proportion"})
      :na (cond-> (group/na-dims panels) (:na? color-stats) (conj :color) (:na? size-stats) (conj :size))
      :dropped (cond-> (assoc dropped
                      :x (count (remove #(data/valid-value? (x-of %)) rows))
                      :y (count (remove #(data/valid-value? (y-of %)) rows)))
                 gradient? (assoc :color (:dropped color-stats))
-                sized (assoc :size (:dropped size-stats)))})))
+                sized (assoc :size (:dropped size-stats)))}))
 
 (defn- group-style
-  "Style of `line` (a computed line or band) from the chart `style`: its group's aesthetics applied (see
-  [[cljplot2.data.group/style]]), the width from an ordinal `:size` level or from its `:size-value` under the
-  finalized linear size scale (NA - the style width); `nil` when a value is outside its scale's domain (not drawn)."
+  "Gives the style a line is drawn with.
+
+  Parameters:
+
+  - `style` (map): the chart's resolved style.
+  - `line` (map): a computed line or band - `:aesthetics`, optional `:size-value`.
+  - `scales` (map): the finalized scales.
+  - `theme` (map): the merged theme.
+
+  Returns `style` with the group's aesthetics applied (see [[cljplot2.data.group/style]]) and the width from an ordinal `:size` level or from `:size-value` under the linear size scale (NA - the style width); `nil` when a value is outside its scale's domain (not drawn)."
   [style line scales theme]
-  (when-let [st (group/style style (:aesthetics line) scales theme)]
-    (let [st (cond-> st (:size st) (-> (assoc :width (:size st)) (dissoc :size)))]
+  (when-let [aesthetic-st (group/style style (:aesthetics line) scales theme)]
+    (let [st (cond-> aesthetic-st (:size aesthetic-st) (-> (assoc :width (:size aesthetic-st)) (dissoc :size)))]
       (if (contains? line :size-value)
         (when-let [w (if-let [sc (:size scales)]
                        ((aesthetic/attribute-fn :size sc (:width st)) (:size-value line))
@@ -320,50 +374,90 @@
         st))))
 
 (defn- value-colors
-  "Colors of the color values `values` under the finalized color `scale`: the theme NA color for `nil` (every value
-  without a scale - all values NA)."
+  "Gives the colours of colour values.
+
+  Parameters:
+
+  - `values` (sequence): the colour values; `nil` - NA.
+  - `scale` (map or `nil`): the finalized colour scale; `nil` - every value NA.
+  - `theme` (map): the merged theme - `[:palette :na]`.
+
+  Returns a vector of colours: a value's colour under the scale, the NA colour for `nil` (`nil` outside the domain)."
   [values scale theme]
   (let [na (get-in theme [:palette :na])
         color-of (if scale (aesthetic/attribute-fn :color scale na) (constantly na))]
     (mapv #(if (nil? %) na (color-of %)) values)))
 
 (defn- segment-colors
-  "Colors of the segments of a gradient line with point color values `colors` under the finalized color `scale`:
-  segment `i` - the color of the mean of values `i` and `i + 1`, the theme NA color when either is NA (every
-  segment without a scale - all values NA)."
+  "Gives the colours of the segments of a line coloured along its length.
+
+  Parameters:
+
+  - `colors` (vector): the points' colour values; `nil` - NA.
+  - `scale` (map or `nil`): the finalized colour scale.
+  - `theme` (map): the merged theme.
+
+  Returns a vector of colours, segment `i` - the colour of the mean of values `i` and `i + 1`, the NA colour when either is NA (see [[value-colors]])."
   [colors scale theme]
-  (value-colors (mapv (fn [a b] (when (and (some? a) (some? b)) (* 0.5 (+ (double a) (double b))))) colors (rest colors))
+  (value-colors (map (fn [a b] (when (and (some? a) (some? b)) (m/* 0.5 (m/+ (double a) (double b))))) colors (rest colors))
                 scale theme))
 
 (defn- lerp-values
-  "Values at positions `ts` interpolated linearly from `values` at strictly monotone `positions` (`nil` where an
-  enclosing value is `nil`); positions outside take the nearest segment. `ts` run in the direction of `positions`
-  (one walk over both)."
-  [positions values ts]
-  (let [reversed? (> (double (first positions)) (double (peek positions)))
-        [ps vs ts] (if reversed? [(vec (rseq positions)) (vec (rseq values)) (reverse ts)] [positions values ts])
-        last-segment (- (long (count ps)) 2)
-        lerped (loop [i 0 ts (seq ts) acc []]
-                 (if-not ts
+  "Interpolates values linearly at target positions.
+
+  Parameters:
+
+  - `anchors` (vector): strictly monotone positions of the values.
+  - `values` (vector): the values at `anchors`; `nil` - NA.
+  - `targets` (sequence): positions to interpolate at, running in the direction of `anchors`.
+
+  Returns a vector of values at `targets` (one walk over both): `nil` where an enclosing value is `nil`; targets outside take the nearest segment."
+  [anchors values targets]
+  (let [reversed? (m/> (double (first anchors)) (double (peek anchors)))
+        [ps vs ordered-targets] (if reversed? [(vec (rseq anchors)) (vec (rseq values)) (reverse targets)] [anchors values targets])
+        last-segment (m/long-sub (count ps) 2)
+        lerped (loop [i 0
+                      remaining (seq ordered-targets)
+                      acc []]
+                 (if-not remaining
                    acc
-                   (let [t (double (first ts))]
-                     (if (and (< i last-segment) (> t (double (ps (inc i)))))
-                       (recur (inc i) ts acc)
-                       (let [a (vs i) b (vs (inc i))
-                             p0 (double (ps i)) p1 (double (ps (inc i)))
-                             f (if (== p0 p1) 0.0 (/ (- t p0) (- p1 p0)))]
-                         (recur i (next ts) (conj acc (when (and (some? a) (some? b))
-                                                        (+ (double a) (* f (- (double b) (double a))))))))))))]
+                   (let [t (double (first remaining))]
+                     (if (and (m/< i last-segment) (m/> t (double (ps (m/long-inc i)))))
+                       (recur (m/long-inc i) remaining acc)
+                       (let [a (vs i)
+                             b (vs (m/long-inc i))
+                             p0 (double (ps i))
+                             p1 (double (ps (m/long-inc i)))
+                             f (if (m/== p0 p1) 0.0 (m// (m/- t p0) (m/- p1 p0)))]
+                         (recur i (next remaining) (conj acc (when (and (some? a) (some? b))
+                                                               (m/+ (double a) (m/* f (m/- (double b) (double a))))))))))))]
     (if reversed? (vec (rseq lerped)) lerped)))
 
 (defn- curve-options
-  "Curve options of the chart `options` for a line whose x runs along pixel axis `:y` when `flipped?`."
+  "Gives the curve options of a line.
+
+  Parameters:
+
+  - `options` (map): the chart's options - `:interpolator`, `:interpolator-params`, `:curve`, `:sample-step`.
+  - `flipped?` (boolean): does x run along the pixel y axis?
+
+  Returns the curve options with `:along` - `:y` when flipped, else `:x` (see [[cljplot2.graphics.curve]])."
   [options flipped?]
   (assoc (select-keys options [:interpolator :interpolator-params :curve :sample-step]) :along (if flipped? :y :x)))
 
 (defn- drawn-runs
-  "Drawn point runs (pixels) of the index runs `index-runs` of `px` / `py` under `opts`; a curve error names the
-  line's group `aesthetics`."
+  "Gives the drawn point runs of a curved line.
+
+  Parameters:
+
+  - `index-runs` (sequence): runs of point indices.
+  - `px`, `py` (vectors): the points' pixel coordinates.
+  - `opts` (map): the curve options (see [[curve-options]]).
+  - `aesthetics` (map): the line's group, named in errors.
+
+  Returns a vector of pixel runs, each the curve through its points as drawn (see [[cljplot2.graphics.curve/curve-points]]).
+
+  Throws `ex-info {:key :interpolator}` naming the group for a curve error of the interpolator."
   [index-runs px py opts aesthetics]
   (try (mapv (fn [run] (mapv curve/drawn-point (curve/curve-points (mapv (fn [i] [(px i) (py i)]) run) opts))) index-runs)
        (catch clojure.lang.ExceptionInfo e
@@ -373,60 +467,83 @@
                            (cond-> (dissoc (ex-data e) :errors) (seq aesthetics) (assoc :group aesthetics))))
            (throw e)))))
 
-(def ^:private ^:const color-chunk
-  "Pixels of a sampled gradient line drawn in one color (colors change in steps this long, so the segments of a step
-  join into one path)."
+(def ^{:private true :const true :tag 'double} color-chunk
+  "Pixels of a sampled gradient line drawn in one colour (colours change in steps this long, so the segments of a step join into one path)."
   4.0)
 
 (defn- chunk-colors
-  "Color of every segment of the sampled `points` of a curved gradient run: the color value interpolated (see
-  [[lerp-values]]) from the run's data `positions` / `values` along axis index `a` at the middle of the segment's
-  [[color-chunk]] (chunks by length along the curve)."
-  [points positions values a scale theme]
-  (let [lengths (vec (reductions + 0.0 (map (fn [[x0 y0] [x1 y1]] (m/hypot (- (double x1) (double x0)) (- (double y1) (double y0))))
-                                            points (rest points))))
-        chunk-of (mapv #(long (quot (double (lengths %)) color-chunk)) (range (dec (count points))))
-        chunks (partition-by chunk-of (range (dec (count points))))
-        middles (mapv (fn [segments] (let [i (long (nth segments (quot (count segments) 2)))]
-                                       (* 0.5 (+ (double (nth (points i) a)) (double (nth (points (inc i)) a))))))
-                      chunks)
-        colors (value-colors (lerp-values positions values middles) scale theme)]
+  "Gives the colour of every segment of a curved run of a line coloured along its length.
+
+  Parameters:
+
+  - `points` (vector): the run's sampled pixel points.
+  - `anchors`, `values` (vectors): the run's data points' pixel positions along `a` and their colour values (see [[lerp-values]]).
+  - `a` (long): the pixel axis index of x - 0 or 1.
+  - `scale` (map or `nil`): the finalized colour scale.
+  - `theme` (map): the merged theme.
+
+  Returns a vector of segment colours: the colour value interpolated at the middle of the segment's [[color-chunk]] (chunks by length along the curve)."
+  [points anchors values a scale theme]
+  (let [lengths (vec (reductions m/+ 0.0 (map (fn [[^double x0 ^double y0] [^double x1 ^double y1]] (m/hypot (m/- x1 x0) (m/- y1 y0)))
+                                              points (rest points))))
+        segment-count (m/long-dec (count points))
+        chunk-of (mapv #(long (m/quot (double (lengths %)) color-chunk)) (range segment-count))
+        chunks (partition-by chunk-of (range segment-count))
+        middles (map (fn [segments] (let [i (long (nth segments (m/long-quot (count segments) 2)))]
+                                      (m/* 0.5 (m/+ (double (nth (points i) a)) (double (nth (points (m/long-inc i)) a))))))
+                     chunks)
+        colors (value-colors (lerp-values anchors values middles) scale theme)]
     (vec (mapcat (fn [segments color] (repeat (count segments) color)) chunks colors))))
 
 (declare draw-gradient-bridges!)
 
 (defn- draw-gradient!
-  "Stroke a gradient line: `index-runs` of the data points `px` / `py` with color values `colors`, drawn as
-  `point-runs`; curved runs take color values interpolated along `along` in [[color-chunk]] steps (see
-  [[chunk-colors]]); bridges (`gaps` `:bridge`) the color of their end values (see [[draw-gradient-bridges!]])."
+  "Strokes a line coloured along its length.
+
+  Parameters:
+
+  - `canvas`: the clojure2d canvas.
+  - `px`, `py` (vectors): the data points' pixel coordinates.
+  - `colors` (vector): the points' colour values (numbers; `nil` - NA).
+  - `index-runs`, `point-runs`: the runs as point indices and as drawn pixel points.
+  - `curved?` (boolean): are the runs curves? Then segments take colour values interpolated along `along` (`:x` / `:y`) in [[color-chunk]] steps (see [[chunk-colors]]); else segment colours (see [[segment-colors]]).
+  - `st` (map): the line's style.
+  - `gaps` (keyword): `:bridge` - bridges in the colour of their end values (see [[draw-gradient-bridges!]]).
+  - `scales` (map): the finalized scales - `:color`.
+  - `theme` (map): the merged theme."
   [canvas px py colors index-runs point-runs curved? along st gaps scales theme]
   (let [a (if (= :y along) 1 0)]
     (if curved?
       (doseq [[run points] (map vector index-runs point-runs)
-              :when (> (count points) 1)]
+              :when (m/> (count points) 1)]
         (polyline/draw-segments! canvas (mapv first points) (mapv second points)
-                                 (chunk-colors points (mapv #(if (zero? a) (px %) (py %)) run) (mapv colors run) a
+                                 (chunk-colors points (mapv #(if (m/zero? a) (px %) (py %)) run) (mapv colors run) a
                                                (:color scales) theme)
                                  st))
       (polyline/draw-segments! canvas px py (segment-colors colors (:color scales) theme) st))
     (draw-gradient-bridges! canvas px py colors index-runs st gaps scales theme)))
 
 (defn- draw-arc-gradient!
-  "Stroke a gradient line of a polar plot with `:arcs`: each data segment between consecutive points of `index-runs`
-  (range points `range-points`) densified along the circle in `geometry` and stroked in the segment's colour (see
-  [[segment-colors]]); bridges as [[draw-gradient!]] (pixel points `px` / `py`)."
+  "Strokes a line coloured along its length in a polar plot with `:arcs`.
+
+  Each data segment between consecutive points of `index-runs` (range points `range-points`) is densified along the circle of `geometry` and stroked in the segment's colour (see [[segment-colors]]); bridges as [[draw-gradient!]] (pixel points `px` / `py`).
+
+  Parameters: `canvas`, the polar `geometry`, `range-points` (vector), `px`, `py`, `colors`, `index-runs`, `st`, `gaps`, `scales`, `theme` - as [[draw-gradient!]]."
   [canvas geometry range-points px py colors index-runs st gaps scales theme]
   (let [segment-color (segment-colors colors (:color scales) theme)]
     (doseq [run index-runs
             [i j] (partition 2 1 run)
             :let [points (mapv curve/drawn-point (coord/line-path geometry [(range-points i) (range-points j)] true))]]
       (polyline/draw-segments! canvas (mapv first points) (mapv second points)
-                               (vec (repeat (dec (count points)) (segment-color i))) st)))
+                               (vec (repeat (m/long-dec (count points)) (segment-color i))) st)))
   (draw-gradient-bridges! canvas px py colors index-runs st gaps scales theme))
 
 (defn- draw-gradient-bridges!
-  "With `gaps` `:bridge`, the bridges between the runs `index-runs` of a gradient line (pixel points `px` / `py`):
-  straight, in the colour of their end values, in the bridge style."
+  "Draws the bridges between the runs of a line coloured along its length.
+
+  Parameters: `canvas`; `px`, `py` - the points' pixel coordinates; `colors` - their colour values; `index-runs`; `st` - the line style (`:bridge`); `gaps` - nothing drawn unless `:bridge`; `scales`; `theme`.
+
+  A bridge is straight, in the colour of its end values (see [[segment-colors]]), in the bridge style."
   [canvas px py colors index-runs st gaps scales theme]
   (when (= :bridge gaps)
     (doseq [[r0 r1] (map vector index-runs (rest index-runs))
@@ -435,11 +552,16 @@
                              (polyline/bridge-style (assoc st :color color) (:bridge st))))))
 
 (defn stacked-band-points
-  "Drawn `[upper lower]` pixel runs of every stacked line of a panel (`lines` from [[stacked-lines]], one shared x).
-  Without an `:interpolator` in `opts` the data boundaries; with one, the groups' heights are sampled on one pixel
-  grid (see [[cljplot2.graphics.curve/sample-columns]], signs kept) and stacked there again by `position` -
-  `:wiggle` on its baseline interpolated from the data (its offsets accumulate per index) - so adjacent bands share
-  their boundaries and no band turns inside out."
+  "Gives the drawn pixel bands of the stacked lines of a panel.
+
+  Parameters:
+
+  - `lines` (sequence): the stacked lines (see [[stacked-lines]], one shared x).
+  - `position` (keyword): the stacked position.
+  - `scales` (map): the finalized scales.
+  - `opts` (map): curve options - `:interpolator` (with its parameters, `:sample-step`, `:along`).
+
+  Returns a vector of `[upper lower]` pixel runs per line. Without an interpolator - the data boundaries; with one the groups' heights are sampled on one pixel grid (see [[cljplot2.graphics.curve/sample-columns]], signs kept) and stacked there again by `position` - `:wiggle` on its baseline interpolated from the data (its offsets accumulate per index) - so adjacent bands share their boundaries and no band turns inside out."
   [lines position scales opts]
   (let [projection (scale/projection scales)
         pixel (fn [vx vy] (let [^Vec2 p (projection vx vy)] (curve/drawn-point [(.x p) (.y p)])))]
@@ -448,20 +570,22 @@
       (let [flipped? (scale/flipped? scales)
             x-fwd (scale/forward-fn (:x scales))
             y-fwd (scale/forward-fn (:y scales))
-            positions (mapv x-fwd (:x (first lines)))
-            [grid hs] (curve/sample-columns positions (mapv :heights lines) opts true)
+            x-pixels (mapv x-fwd (:x (first lines)))
+            [grid hs] (curve/sample-columns x-pixels (mapv :heights lines) opts true)
             stacks (if (= :wiggle position)
-                     (let [[_ [base]] (curve/sample-columns positions [(:y0 (first lines))] opts false)]
-                       (mapv (fn [ys] (mapv (fn [[^double y0 ^double y1] ^double b] [(+ y0 b) (+ y1 b)]) ys base))
+                     (let [[_ [base]] (curve/sample-columns x-pixels [(:y0 (first lines))] opts false)]
+                       (mapv (fn [ys] (mapv (fn [[^double y0 ^double y1] ^double b] [(m/+ y0 b) (m/+ y1 b)]) ys base))
                              (position/stack-values :stack hs)))
                      (position/stack-values position hs))
             point (fn [t v] (let [q (double (y-fwd v))] (curve/drawn-point (if flipped? [q t] [t q]))))]
         (mapv (fn [ys] [(mapv (fn [t [_ y1]] (point t y1)) grid ys) (mapv (fn [t [y0 _]] (point t y0)) grid ys)]) stacks)))))
 
 (defn- draw-stacked!
-  "Draw the stacked lines of a panel (see [[stacked-band-points]]): every band filled - `gradient` along `axis`, else
-  `:fill` or the group colour at `:alpha` - then every upper boundary stroked; groups outside an aesthetic domain are
-  stacked but not drawn."
+  "Draws the stacked lines of a panel (see [[stacked-band-points]]): every band filled - `gradient` along `axis`, else `:fill` or the group colour at `:alpha` - then every upper boundary stroked.
+
+  Parameters: `canvas`; `lines` - the stacked lines; `style` - the chart's resolved style; `position`; `opts` - curve options; `gradient` (function or `nil`) and `axis` - the fill gradient; `scales`; `theme`.
+
+  Groups outside an aesthetic domain are stacked but not drawn."
   [canvas lines style position opts gradient axis scales theme]
   (let [bands (vec (keep (fn [[line [upper lower]]]
                            (when-let [st (group-style style line scales theme)]
@@ -476,25 +600,39 @@
       (polyline/stroke-runs! canvas [upper] st))))
 
 (defn- arc-trail-run
-  "Pixel points `[xs ys widths]` of the trail run `run` (point indices) in polar `geometry` with `:arcs`: each segment
-  between consecutive range points `range-points` densified along the circle (see
-  [[cljplot2.scale.coord/line-path]]), the width linear along its points."
+  "Gives the points of a trail run in a polar plot with `:arcs`.
+
+  Parameters:
+
+  - `geometry` (map): the polar geometry.
+  - `range-points` (vector): the points' range points.
+  - `widths` (vector): the points' widths in pixels.
+  - `run` (sequence): the run's point indices.
+
+  Returns `[xs ys widths]` (vectors): each segment between consecutive range points densified along the circle (see [[cljplot2.scale.coord/line-path]]), the width linear along its points."
   [geometry range-points widths run]
   (let [start (coord/line-path geometry [(range-points (first run))] false)
-        pts (reduce (fn [acc [i j]]
-                      (let [seg (rest (coord/line-path geometry [(range-points i) (range-points j)] true))
-                            n (count seg)
-                            w0 (double (widths i)) w1 (double (widths j))]
-                        (into acc (map-indexed (fn [k [x y]] [x y (+ w0 (* (- w1 w0) (/ (double (inc (long k))) n)))]) seg))))
-                    [(conj (first start) (widths (first run)))]
-                    (partition 2 1 run))]
-    [(mapv first pts) (mapv second pts) (mapv #(nth % 2) pts)]))
+        points (reduce (fn [acc [i j]]
+                         (let [seg (rest (coord/line-path geometry [(range-points i) (range-points j)] true))
+                               n (count seg)
+                               w0 (double (widths i))
+                               w1 (double (widths j))]
+                           (into acc (map-indexed (fn [^long k [x y]] [x y (m/+ w0 (m/* (m/- w1 w0) (m// (m/inc k) n)))]) seg))))
+                       [(conj (first start) (widths (first run)))]
+                       (partition 2 1 run))]
+    [(mapv first points) (mapv second points) (mapv #(nth % 2) points)]))
 
 (defn- draw-trail!
-  "Fill the trail of `line` (see [[cljplot2.graphics.polyline/trail-shape]]) through pixel points `px` / `py`, one
-  shape per run of `index-runs`, in style `st`: the width at every point from its `:sizes` value under the finalized
-  size scale, else `:width`. With `arcs` (`{:geometry g :range-points rp}` - a polar plot with `:arcs`) segments
-  follow the circle (see [[arc-trail-run]])."
+  "Fills the trail of a line (see [[cljplot2.graphics.polyline/trail-shape]]), one shape per run.
+
+  Parameters:
+
+  - `canvas`: the clojure2d canvas.
+  - `trail` (map): `:line` (`:sizes` - the points' size values), `:px` / `:py` (pixel coordinates), `:index-runs`, `:arcs` (`{:geometry g :range-points rp}` in a polar plot with `:arcs` - segments follow the circle, see [[arc-trail-run]]; else `nil`).
+  - `st` (map): the line's style - `:color`, `:width`.
+  - `scales` (map): the finalized scales - `:size`.
+
+  The width at every point is its size value under the size scale, else `:width`. Nothing is drawn for a `:none` colour."
   [canvas {:keys [line px py index-runs arcs]} st scales]
   (let [width (double (:width st))
         width-of (if-let [sc (and (:sizes line) (:size scales))]
@@ -510,15 +648,32 @@
         (c2d/shape canvas (polyline/trail-shape xs ys ws) false)))))
 
 (defn- base-run
-  "The base points of `run` on the area baseline `{:baseline px :horizontal? h}`."
+  "Gives the base points of a run on an area baseline.
+
+  Parameters:
+
+  - `run` (sequence): pixel points `[x y]`.
+  - `area` (map): `:baseline` (pixels), `:horizontal?` - the baseline runs horizontally.
+
+  Returns a vector of the points moved onto the baseline."
   [run {:keys [baseline horizontal?]}]
   (mapv (fn [[x y]] (if horizontal? [x baseline] [baseline y])) run))
 
 (defn draw
-  "Draw the lines of one panel (area fill first, if any); `nil` y values and values the scales can't place break a
-  line (bridged with `:gaps :bridge`). The fill baseline is y = 0 clamped into the panel (`box`) along the y scale's
-  direction, see [[cljplot2.graphics.curve/area-baseline]]; stacked lines fill their bands. `:fill-gradient` colours
-  areas along `:fill-gradient-axis`."
+  "Draws the lines of one panel, the area fill first.
+
+  Parameters:
+
+  - `chart` (map): the chart value - `:options` (curves, `:gaps`, `:fill-gradient`, `:stroke-alpha`, `:trail`, arrows).
+  - `computed` (map): `:lines`, `:style` (see [[compute]]).
+  - `canvas`: the clojure2d canvas.
+  - `box` (map): the panel's `:w`, `:h`.
+  - `scales` (map): the finalized scales.
+  - `env` (map): `:theme`.
+
+  `nil` y values and values the scales can't place break a line (bridged with `:gaps :bridge`). The fill baseline is y = 0 clamped into the panel along the y scale's direction (see [[cljplot2.graphics.curve/area-baseline]]); stacked lines fill their bands; `:fill-gradient` colours areas along `:fill-gradient-axis`.
+
+  Throws `ex-info {:key :curve}` for `:curve` on a line coloured along its length, `{:key :arrow}` for arrows or end gaps on a line that isn't plainly stroked."
   [{:keys [options]} {:keys [lines style]} canvas {:keys [w h]} scales env]
   (when (seq lines)
     (let [projection (scale/projection scales)
@@ -542,13 +697,13 @@
         (draw-stacked! canvas lines style (:position options) opts gradient axis scales (:theme env))
         (doseq [{:keys [x y aesthetics colors] :as line} lines
                 :let [;; colour values as numbers for interpolation (dates - epoch milliseconds, as the colour scale)
-                      colors (some->> colors (mapv #(some-> % data/x-key)))
-                      st (group-style style line scales (:theme env))
-                      st (if (and st (:stroke-alpha options) (not= :none (:color st)))
-                           (update st :color #(let [col (c/to-color %)]
-                                                (c/set-alpha col (* (double (:stroke-alpha options)) (double (c/alpha col))))))
-                           st)]
-                :when st]
+                      color-keys (some->> colors (mapv #(some-> % data/x-key)))
+                      group-st (group-style style line scales (:theme env))
+                      line-st (if (and group-st (:stroke-alpha options) (not= :none (:color group-st)))
+                                (update group-st :color #(let [col (c/to-color %)]
+                                                           (c/set-alpha col (m/* (double (:stroke-alpha options)) (c/alpha col)))))
+                                group-st)]
+                :when line-st]
           (let [points (mapv (fn [vx vy] (if (nil? vy) (Vec2. ##NaN ##NaN) (projection vx vy))) x y)
                 px (mapv #(.x ^Vec2 %) points)
                 py (mapv #(.y ^Vec2 %) points)
@@ -562,35 +717,41 @@
                              range-points (mapv (fn [run] (mapv curve/drawn-point (coord/line-path geometry (mapv range-points run) true)))
                                                 index-runs)
                              :else (mapv (fn [run] (mapv (fn [i] (curve/drawn-point [(px i) (py i)])) run)) index-runs))
-                st (assoc st :fill (polyline/area-color st false))]
+                st (assoc line-st :fill (polyline/area-color line-st false))]
             (cond
               (:trail options)
               (draw-trail! canvas {:line line :px px :py py :index-runs index-runs
                                    :arcs (when range-points {:geometry geometry :range-points range-points})}
                            st scales)
-              colors
+              color-keys
               (do (polyline/fill-runs-to-baseline! canvas point-runs (:baseline area) (:horizontal? area) (:fill st)
                                                    (draw/pattern-fill st (:fill st)))
                   (if range-points
-                    (draw-arc-gradient! canvas geometry range-points px py colors index-runs st gaps scales (:theme env))
-                    (draw-gradient! canvas px py colors index-runs point-runs curved? (:along opts) st gaps scales (:theme env))))
+                    (draw-arc-gradient! canvas geometry range-points px py color-keys index-runs st gaps scales (:theme env))
+                    (draw-gradient! canvas px py color-keys index-runs point-runs curved? (:along opts) st gaps scales (:theme env))))
               gradient
-              (do (doseq [run point-runs :when (> (count run) 1)]
+              (do (doseq [run point-runs :when (m/> (count run) 1)]
                     (polyline/fill-area! canvas run (base-run run area) nil gradient axis scales
                                          (draw/pattern-fill st (gradient 0.5))))
                   (curve/draw-runs! canvas point-runs (assoc st :fill :none) nil gaps))
               (some options [:arrow :start-gap :end-gap])
-              (doseq [run point-runs :when (> (count run) 1)]
+              (doseq [run point-runs :when (m/> (count run) 1)]
                 (arrow/draw-run! canvas run st [(:arrow options) (:start-gap options) (:end-gap options)]))
               :else
               (curve/draw-runs! canvas point-runs st area gaps))))))))
 
 (defn legend
-  "Key glyph: a horizontal line through the middle of `box`; with an area (`:fill`, a stacked position or
-  `:fill-gradient` - its middle colour) a filled square outlined in the line style, see
-  [[cljplot2.graphics.polyline/key-glyph!]]."
-  [{:keys [options]} attributes canvas box env]
-  (let [st (cond-> (merge (style options (:theme env)) (select-keys attributes [:color :dash :pattern]))
+  "Draws the chart's key glyph: a horizontal line through the middle of the key's box; with an area (`:fill`, a stacked position or `:fill-gradient` - its middle colour) a filled square outlined in the line style (see [[cljplot2.graphics.polyline/key-glyph!]]).
+
+  Parameters:
+
+  - `chart` (map): the chart value - `:options` `:fill-gradient`, `:position`.
+  - `attributes` (map): the key's mapped attributes - `:color`, `:dash`, `:pattern`, `:size` (the line width).
+  - `canvas`: the clojure2d canvas.
+  - `box` (map): the key's box.
+  - `env` (map): `:theme`."
+  [{:keys [options] :as chart} attributes canvas box env]
+  (let [st (cond-> (merge (theme/resolved-style (:theme env) chart) (select-keys attributes [:color :dash :pattern]))
              (:size attributes) (assoc :width (:size attributes)))
         area (if-let [g (:fill-gradient options)]
                ((polyline/gradient-fn g) 0.5)

@@ -14,7 +14,9 @@
   `:mirror` - a grouping dimension with two levels: the second level's intervals on the negative side (negated, as
   mirrored bars - error bars over `chart/bar` with the same `:mirror`; value tick labels show magnitudes, see
   [[cljplot2.data.strip]]);
-  `:padding {:x [lo hi]}` (default `[0.05 0.05]`), plus the strip options and `:data` / `:mapping`."
+  `:padding {:x [lo hi]}` (default `[0.05 0.05]`), plus the strip options and `:data` / `:mapping`.
+
+  Functions: [[compute]], [[draw]], [[legend]] - the chart contract; [[interval]] - an interval of values by a method; [[bootstrap-interval]] - a bootstrap interval; [[extent-methods]], [[bootstrap-intervals]] - the methods."
   (:require [clojure2d.core :as c2d]
             [fastmath.core :as m]
             [fastmath.stats :as stats]
@@ -62,6 +64,7 @@
    :percentile-bca stats/percentile-bca-extent})
 
 (def ^:private style-entries
+  "Map entries of the extent style (theme `[:chart :extent]`, also options)."
   [(schema/optional :color {:description "interval colour (a mapped :color wins)"} schema/color)
    (schema/optional :line-width {:description "interval line width in pixels"} schema/non-neg)
    (schema/optional :shape {:description "shape of the centre mark (a mapped :shape wins)"} schema/shape)
@@ -103,24 +106,36 @@
                (schema/nilable :size {:description "centre mark size per group"} schema/accessor)
                (schema/nilable :group {:description "groups without a visual aesthetic (dodged as other groups)"} schema/accessor)])})
 
-(defn- style
-  [options theme]
-  (merge (theme/chart-style theme :extent options) (select-keys options [:color :line-width :shape :size])))
-
 (defn bootstrap-interval
-  "Bootstrap interval `ci` (a key of [[bootstrap-intervals]]) of `statistic` (default fastmath `mean`) of `values`,
-  resampled with `rng` (fastmath.stats.bootstrap `bootstrap`): `[lo hi centre]`; `alpha` (default 0.05) and
-  `samples` (default 500)."
+  "Gives a bootstrap interval of a statistic of values.
+
+  Parameters:
+
+  - `ci` (keyword): a key of [[bootstrap-intervals]].
+  - `rng`: the fastmath random generator resampling the values.
+  - `statistic` (function or `nil`): a function of the values; `nil` - fastmath `mean`.
+  - `values` (sequence of numbers): the values.
+  - `alpha` (double, optional): the interval's significance level (default 0.05).
+  - `samples` (long, optional): the number of bootstrap samples (default 500).
+
+  Returns `[lo hi centre]` (see fastmath.stats.bootstrap `bootstrap`)."
   ([ci rng statistic values] (bootstrap-interval ci rng statistic values 0.05))
   ([ci rng statistic values alpha] (bootstrap-interval ci rng statistic values alpha 500))
   ([ci rng statistic values alpha samples]
    ((bootstrap-intervals ci) (boot/bootstrap values (or statistic stats/mean) {:samples samples :rng rng}) alpha)))
 
 (defn interval
-  "`{:lo :hi :center}` of `values` by `method` (keyword of [[extent-methods]] or [[bootstrap-intervals]], or a
-  function) with `method-args`; bootstrap methods resample with `rng` and use `statistic`. `:center` `nil` when the
-  method gives none. Throws `ex-info {:key :method-args}` when the method rejects the arguments and
-  `{:key :method}` for a result that isn't 2 or 3 numbers."
+  "Gives the interval of values by an extent method.
+
+  Parameters:
+
+  - `values` (sequence of numbers): the values.
+  - `method`: a keyword of [[extent-methods]] or [[bootstrap-intervals]], or a function of the values (and the arguments) returning `[lo hi]` or `[lo hi centre]`.
+  - `options` (map): `:method-args` - extra arguments passed after the values; `:rng`, `:statistic` - of the bootstrap methods (see [[bootstrap-interval]]).
+
+  Returns `{:lo :hi :center}` as doubles; `:center` `nil` when the method gives none.
+
+  Throws `ex-info {:key :method-args}` when the method rejects the arguments, `{:key :method}` for a result that isn't 2 or 3 numbers."
   [values method {:keys [method-args rng statistic]}]
   (let [f (cond
             (contains? bootstrap-intervals method) (partial bootstrap-interval method rng statistic)
@@ -135,31 +150,47 @@
                                     (schema/fail! (str "Extent :method " (pr-str method) " can't use :method-args "
                                                        (pr-str method-args) ".")
                                                   {:key :method-args :value method-args :cause (ex-message e)})))]
-    (when-not (and (sequential? result) (<= 2 (count result) 3) (every? number? result))
+    (when-not (and (sequential? result) (m/<= 2 (count result) 3) (every? number? result))
       (schema/fail! "Extent :method should return [lo hi] or [lo hi centre]." {:key :method :value result}))
     {:lo (double lo) :hi (double hi) :center (some-> c double)}))
 
 (defn- mirrored
-  "Interval `{:lo :hi :center}` on the negative side: `{:lo -hi :hi -lo :center -center}`."
+  "Gives an interval on the negative side.
+
+  Parameters:
+
+  - `interval` (map): `:lo`, `:hi` (doubles), `:center` (or `nil`).
+
+  Returns `{:lo -hi :hi -lo :center -center}` (`:center` `nil` stays `nil`)."
   [{:keys [^double lo ^double hi center]}]
-  {:lo (- hi) :hi (- lo) :center (when center (- (double center)))})
+  {:lo (m/- hi) :hi (m/- lo) :center (when center (m/- (double center)))})
 
 (defn- compute-in-strip-frame
-  "Per panel: `{:items [..] :style st :place p :options o}`, items with [[interval]] (negated for `:mirrored?`
-  items); extents (x - the intervals and centres), padding, `:na`, `:dropped`, `:tick-format` (mirror)."
-  [{:keys [options]} chart-split {:keys [theme] :as env}]
-  (let [{:keys [place items panels dropped mirror?]} (strip/split chart-split (cond-> options (:mirror options) (assoc ::strip/mirror (:mirror options)))
-                                                                    :center env)
+  "Computes the chart's stats in the strip frame.
+
+  Parameters:
+
+  - `chart` (map): the chart value (`:options` - `:method`, `:method-args`, `:rng`, `:statistic`, `:mirror`, `:padding` ...).
+  - `chart-split` (map): `:groups`, `:mapping`.
+  - `env` (map): the compute environment (`:theme`, `:plot-scales` ...).
+
+  Returns per panel `{:items [..] :style st :place p :options o}`, items with their [[interval]] (negated for `:mirrored?` items); extents (x - the intervals and centres), padding, `:na`, `:dropped`, `:tick-format` (`:absolute` with a mirror).
+
+  Throws as [[interval]]."
+  [{:keys [options] :as chart} chart-split {:keys [theme] :as env}]
+  (let [{:keys [place panels dropped mirror?] split-items :items} (strip/split chart-split (cond-> options (:mirror options) (assoc ::strip/mirror (:mirror options)))
+                                                                               :center env)
         method (get options :method :min-max)
         rng (rng/for-build (:rng options))
         side (fn [it iv] (if (:mirrored? it) (mirrored iv) iv))
-        items (update-vals items (fn [its] (mapv #(merge % (side % (interval (:values %) method {:method-args (:method-args options) :rng rng
-                                                                                        :statistic (:statistic options)}))) its)))]
-    {:data (update-vals items (fn [its] {:items its :style (style options theme) :place place :options options}))
+        items (update-vals split-items (fn [its] (mapv #(merge % (side % (interval (:values %) method {:method-args (:method-args options) :rng rng
+                                                                                              :statistic (:statistic options)}))) its)))
+        st (theme/resolved-style theme chart)]
+    {:data (update-vals items (fn [its] {:items its :style st :place place :options options}))
      :extents (merge-with merge (group/aesthetic-extents panels (:plot-scales env))
-                          (strip/extents place items (fn [{:keys [lo hi center]}]
-                                                       [(m/min (double lo) (double (or center lo)))
-                                                        (m/max (double hi) (double (or center hi)))])))
+                          (strip/extents place items (fn [{:keys [^double lo ^double hi center]}]
+                                                       [(m/min lo (double (or center lo)))
+                                                        (m/max hi (double (or center hi)))])))
      :padding (strip/padding place options)
      :padding-explicit (strip/explicit-padding place options)
      :padding-px (strip/n-label-room options items env)
@@ -167,54 +198,98 @@
      :dropped dropped
      :tick-format (when mirror? {:x :absolute})}))
 
-(defn- line! [canvas ^Vec2 a ^Vec2 b] (c2d/line canvas (.x a) (.y a) (.x b) (.y b)))
+(defn- line!
+  "Draws a line between two pixel points.
+
+  Parameters:
+
+  - `canvas`: the clojure2d canvas.
+  - `a`, `b` (`Vec2`): the ends."
+  [canvas ^Vec2 a ^Vec2 b]
+  (c2d/line canvas (.x a) (.y a) (.x b) (.y b)))
 
 (defn- draw-in-strip-frame
-  "Draw the intervals of one panel: the line, end caps (half the item's cross range) and the centre mark."
+  "Draws the intervals of one panel in the strip frame: the line, end caps (half the item's cross range) and the centre mark.
+
+  Parameters:
+
+  - `_chart` (map): the chart value.
+  - `computed` (map): the panel's `:items`, `:style`, `:place`, `:options` (`:center` - `:none` leaves the centre mark out).
+  - `canvas`: the clojure2d canvas.
+  - `box` (map): the panel box.
+  - `scales` (map): the finalized scales (strip frame).
+  - `env` (map): the drawing environment.
+
+  An item whose low end can't be placed, or whose aesthetics are outside their scales, isn't drawn; n labels go past the far end (the near one of a mirrored item)."
   [_chart {:keys [items style place options]} canvas box scales env]
   (let [{:keys [point] :as pl} (strip/placement box scales options place)
         center? (not= :none (get options :center :method))]
-    (strip/draw-n-labels! canvas pl items (fn [{:keys [lo hi center mirrored?]}]
+    (strip/draw-n-labels! canvas pl items (fn [{:keys [^double lo ^double hi center mirrored?]}]
                                             (if mirrored?
-                                              (min (double lo) (double (or center lo)))
-                                              (max (double hi) (double (or center hi)))))
+                                              (m/min lo (double (or center lo)))
+                                              (m/max hi (double (or center hi)))))
                           options scales env)
     (doseq [{:keys [level slot lo hi center aesthetics]} items
             :let [st (group/style style aesthetics scales (:theme env))
                   c0 (strip/in-slot slot 0.0)
-                  cap (* 0.5 (strip/slot-half slot))
+                  cap (m/* 0.5 (strip/slot-half slot))
                   p (fn [v cross] (point v level cross))
                   ^Vec2 a (p lo c0)]
             :when (and st (m/valid-double? (.x a)) (m/valid-double? (.y a)))]
       (c2d/set-color canvas (:color st))
       (c2d/set-stroke-custom canvas {:size (double (:line-width st)) :cap :butt})
       (line! canvas a (p hi c0))
-      (line! canvas (p lo (- c0 cap)) (p lo (+ c0 cap)))
-      (line! canvas (p hi (- c0 cap)) (p hi (+ c0 cap)))
+      (line! canvas (p lo (m/- c0 cap)) (p lo (m/+ c0 cap)))
+      (line! canvas (p hi (m/- c0 cap)) (p hi (m/+ c0 cap)))
       (when (and center? center)
         (shape/draw! canvas (:shape st) (p center c0) (assoc st :stroke-color :none))))))
 
-
 (defn compute
-  "Stats of the chart with its levels on the categorical axis (see [[cljplot2.data.strip/compute-oriented]]):
-  [[compute-in-strip-frame]] in the strip frame."
+  "Computes the chart's stats with its levels on the categorical axis.
+
+  Parameters:
+
+  - `chart` (map): the chart value.
+  - `chart-split` (map): `:groups`, `:mapping`.
+  - `env` (map): the compute environment.
+
+  Returns the stats of [[compute-in-strip-frame]] oriented to the level axis (see [[cljplot2.data.strip/compute-oriented]])."
   [chart chart-split env]
   (strip/compute-oriented compute-in-strip-frame chart chart-split env))
 
 (defn draw
-  "Draw one panel (see [[cljplot2.data.strip/draw-oriented]]): [[draw-in-strip-frame]] in the strip frame."
+  "Draws one panel of the chart.
+
+  Parameters:
+
+  - `chart` (map): the chart value.
+  - `computed` (map): the panel's computed data.
+  - `canvas`, `box`, `scales`, `env`: as the chart contract's draw.
+
+  Draws [[draw-in-strip-frame]] in the strip frame (see [[cljplot2.data.strip/draw-oriented]])."
   [chart computed canvas box scales env]
   (strip/draw-oriented draw-in-strip-frame chart computed canvas box scales env))
+
 (defn legend
-  "Key glyph: a horizontal capped line with the centre mark."
-  [{:keys [options]} attributes canvas {:keys [x y w h]} env]
-  (let [st (merge (style options (:theme env)) (select-keys attributes [:color]))
-        x0 (+ (double x) (* 0.15 (double w))) x1 (+ (double x) (* 0.85 (double w)))
-        cy (+ (double y) (* 0.5 (double h))) cap (* 0.25 (double h))]
+  "Draws the key glyph: a horizontal capped line with the centre mark.
+
+  Parameters:
+
+  - `chart` (map): the chart value.
+  - `attributes` (map): the key's attributes (`:color`).
+  - `canvas`: the clojure2d canvas.
+  - `box` (map): the key box `:x`, `:y`, `:w`, `:h`.
+  - `env` (map): the drawing environment (`:theme`)."
+  [chart attributes canvas {:keys [^double x ^double y ^double w ^double h]} env]
+  (let [st (merge (theme/resolved-style (:theme env) chart) (select-keys attributes [:color]))
+        x0 (m/+ x (m/* 0.15 w))
+        x1 (m/+ x (m/* 0.85 w))
+        cy (m/+ y (m/* 0.5 h))
+        cap (m/* 0.25 h)]
     (c2d/set-color canvas (:color st))
     (c2d/set-stroke-custom canvas {:size (m/max 1.0 (double (:line-width st))) :cap :butt})
     (c2d/line canvas x0 cy x1 cy)
-    (c2d/line canvas x0 (- cy cap) x0 (+ cy cap))
-    (c2d/line canvas x1 (- cy cap) x1 (+ cy cap))
-    (shape/draw! canvas (:shape st) (Vec2. (* 0.5 (+ x0 x1)) cy) (assoc st :size (m/min (double (:size st)) (* 0.6 (double h)))
-                                                                        :stroke-color :none))))
+    (c2d/line canvas x0 (m/- cy cap) x0 (m/+ cy cap))
+    (c2d/line canvas x1 (m/- cy cap) x1 (m/+ cy cap))
+    (shape/draw! canvas (:shape st) (Vec2. (m/* 0.5 (m/+ x0 x1)) cy) (assoc st :size (m/min (double (:size st)) (m/* 0.6 h))
+                                                                          :stroke-color :none))))

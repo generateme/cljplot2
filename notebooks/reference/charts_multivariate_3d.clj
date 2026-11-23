@@ -195,6 +195,18 @@
                     :charts [(chart/cloud {:type :none :projections {:xy :points :xz :points :yz :points}})]}
                    {:width 600 :height 480})
 
+;; A coarser density grid with fewer levels (`:projection-grid`, `:projection-levels`); how strongly projected points
+;; and density bands are faded is a theme key of `[:chart :cloud]`, not an option:
+
+(nu/options-table (describe/style-rows :cloud [:projection-alpha :band-alpha]))
+
+(plot/render-image {:data iris
+                    :mapping {:x :sepal-length :y :sepal-width :z :petal-length}
+                    :charts [(chart/cloud {:type :none :projections {:xy :density :xz :contour :yz :points}
+                                           :projection-grid 20 :projection-levels 3})]
+                    :theme {:chart {:cloud {:projection-alpha 0.8 :band-alpha 0.3}}}}
+                   {:width 600 :height 480})
+
 ;; The 3D frame (Shared options) on the same points: the eye moved round and up, the box flattened and the x axis
 ;; reversed, the box and axes left out:
 

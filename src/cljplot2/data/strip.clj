@@ -55,7 +55,7 @@
 
   Functions:
 
-  - options: [[options]], [[mirror-option]], [[ridge-options]], [[values-mapping]]
+  - options: [[options]], [[mirror-option]], [[ridge-options]], [[default-ridge-overlap]], [[values-mapping]]
   - items and stats: [[split]], [[y-extent]], [[padding]], [[explicit-padding]], [[extents]]
   - geometry: [[placement]], [[in-slot]], [[slot-half]], [[slot-side]]
   - end labels: [[end-label-room]], [[end-label-placements]], [[without-collisions]], [[draw-label-placements!]], [[draw-end-labels!]], [[outer-label-room]], [[n-label-room]], [[draw-n-labels!]]
@@ -129,12 +129,16 @@
           [(schema/optional :mirror {:description "a grouping dimension with exactly two levels; the second level's items are drawn on the negative side"}
                             (into [:enum] (conj aesthetic/dims :group)))])))
 
+(def ^{:const true :tag 'double} default-ridge-overlap
+  "Height of the tallest ridge in band steps when `:overlap` isn't given (see [[ridge-options]])."
+  0.9)
+
 (def ridge-options
   "Map entries of the ridgeline options (shared group `:ridge`) of histogram and density with a categorical `:y`."
   (schema/in-fragment
    :ridge
    [(schema/optional :overlap {:description "height of the tallest ridge in band steps (above 1 - ridges overlap the next level)"
-                               :default 0.9}
+                               :default default-ridge-overlap}
                      schema/non-neg)]))
 
 (defn- place-of
@@ -681,12 +685,6 @@
                        {:label l :content (label-content l) :anchor anchor :x (.x p) :y (.y p)}))))
                labels))))
 
-(defn- boxes-overlap?
-  "Tests whether two pixel boxes `{:x :y :w :h}` overlap (touching edges don't)."
-  [{^double ax :x ^double ay :y ^double aw :w ^double ah :h} {^double bx :x ^double by :y ^double bw :w ^double bh :h}]
-  (and (m/< ax (m/+ bx bw)) (m/< bx (m/+ ax aw))
-       (m/< ay (m/+ by bh)) (m/< by (m/+ ay ah))))
-
 (defn without-collisions
   "Drops end-label placements overlapping one kept before them - earlier placements win.
 
@@ -700,7 +698,7 @@
   [canvas placements env]
   (reduce (fn [kept {:keys [content anchor x y] :as p}]
             (let [box (label/box-at canvas content anchor x y env)]
-              (if (some #(boxes-overlap? box (:box %)) kept)
+              (if (some #(measure/boxes-overlap? box (:box %)) kept)
                 kept
                 (conj kept (assoc p :box box)))))
           []

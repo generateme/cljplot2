@@ -12,7 +12,10 @@
   through the chart's own mapping style the lines and give legend keys.
 
   Options (style defaults from theme `[:chart :rule]`): `:color`, `:width`, `:dash`, `:extent`, plus `:data` /
-  `:mapping`."
+  `:mapping`.
+
+  Functions: [[schemas]] - the chart's schemas; [[compute]] - the rules of every panel; [[draw-ablines!]] - lines
+  `y = intercept + slope * x`; [[draw]] - one panel's rules; [[legend]] - the key glyph."
   (:require [clojure2d.core :as c2d]
             [fastmath.core :as m]
             [cljplot2.data.annotation :as annotation]
@@ -29,7 +32,9 @@
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
-(def ^:private position-keys [:x :y :slope :intercept])
+(def ^:private position-keys
+  "Options that make a rule chart literal (see [[cljplot2.data.annotation/literal?]])."
+  [:x :y :slope :intercept])
 
 (def schemas
   "Schemas of the rule chart: `:style` (theme `[:chart :rule]`), `:options`, `:mapping` (merged)."
@@ -58,12 +63,17 @@
              (schema/nilable :dash {:description "dash style per group (gives legend keys)"} schema/accessor)
              (schema/nilable :group {:description "groups without a visual aesthetic"} schema/accessor)]})
 
-(defn- style
-  [options theme]
-  (merge (theme/chart-style theme :rule options) (select-keys options [:color :width :dash])))
-
 (defn- abline-pairs
-  "`[[slope intercept] ..]` of `slopes` / `intercepts` (vectors); both or neither, else `ex-info {:key k}`."
+  "Pairs the slopes and intercepts of ab lines.
+
+  Parameters:
+
+  - `slopes` (vector): slopes, 1 or n.
+  - `intercepts` (vector): intercepts, 1 or n.
+
+  Returns `[[slope intercept] ..]` (a single value repeated, see [[cljplot2.data.annotation/broadcast]]); `[]` for neither.
+
+  Throws `ex-info {:key :intercept}` for slopes without intercepts, `{:key :slope}` for intercepts without slopes, `{:key k}` for lengths neither 1 nor n."
   [slopes intercepts]
   (cond
     (and (empty? slopes) (empty? intercepts)) []
@@ -72,18 +82,34 @@
     :else (annotation/broadcast [:slope :intercept] [slopes intercepts])))
 
 (defn- lines
-  "`{:xs [..] :ys [..] :ablines [[slope intercept] ..]}` of one group's rows (data mode) or the literal options."
+  "Gives the rule set of one group's rows (data mode) or of the literal options.
+
+  Parameters:
+
+  - `xs`, `ys` (sequences): positions of the vertical and horizontal lines.
+  - `slopes`, `intercepts` (sequences): of the ab lines (see [[abline-pairs]]).
+
+  Returns `{:xs [..] :ys [..] :ablines [[slope intercept] ..]}`."
   [xs ys slopes intercepts]
   {:xs (vec xs) :ys (vec ys) :ablines (abline-pairs (vec slopes) (vec intercepts))})
 
 (defn compute
-  "Literal: `{:rules [{:xs :ys :ablines}] :style st}` in every panel, extents of `:x` / `:y`. Data: per panel one
-  rule set per group (with `:aesthetics`); rows with an invalid value of a mapped key are skipped."
-  [{:keys [options]} {:keys [mapping] :as chart-split} {:keys [theme] :as env}]
+  "Computes the rules of every panel.
+
+  Parameters:
+
+  - `chart` (map): the chart value - `:options` (see the namespace doc).
+  - `chart-split` (map): `:groups`, `:mapping` - the chart's own mapping merged.
+  - `env` (map): `:theme`, `:coord` (and the keys of [[cljplot2.data.annotation/data-stats]]).
+
+  Returns the chart stats: literal - `{:rules [{:xs :ys :ablines}] :style st}` in every panel with the extents of `:x` / `:y` (see [[cljplot2.data.annotation/literal-stats]]); data - per panel a rule set per group (with `:aesthetics`), rows with an invalid value of a mapped key skipped. `st` - the resolved style.
+
+  Throws `ex-info {:key :coord}` for `:slope` / `:intercept` under `:coord :polar`, `{:key :mapping}` for data mode without a position mapping, and the errors of [[abline-pairs]]."
+  [{:keys [options] :as chart} {:keys [mapping] :as chart-split} {:keys [theme] :as env}]
   (when (and (coord/polar? (:coord env)) (or (some? (:slope options)) (some? (:intercept options))
                                              (some? (:slope mapping)) (some? (:intercept mapping))))
     (schema/fail! "Rule :slope / :intercept lines aren't supported with :coord :polar." {:key :coord :value :slope}))
-  (let [st (style options theme)
+  (let [st (theme/resolved-style theme chart)
         many (fn [v] (annotation/as-vector v #(not (vector? %))))]
     (if (annotation/literal? options position-keys)
       (let [r (lines (many (:x options)) (many (:y options)) (many (:slope options)) (many (:intercept options)))]
@@ -108,28 +134,52 @@
                                    [{:rules rules :style st} {:x (mapcat :xs rules) :y (mapcat :ys rules)}])))))))
 
 (defn- linear!
-  "Throw `ex-info {:key :slope}` unless scale `k` is linear."
+  "Checks that a finalized position scale is linear (ab lines need it).
+
+  Parameters:
+
+  - `k` (keyword): the scale's key, for the error.
+  - `finalized` (map): the finalized scale.
+
+  Returns `nil`; throws `ex-info {:key :slope}` for another kind."
   [k finalized]
   (when-not (= :linear (:kind finalized))
     (schema/fail! "Rule :slope / :intercept needs linear x and y scales." {:key :slope :value [k (:kind finalized)]})))
 
 (defn draw-ablines!
-  "Draw the lines `y = intercept + slope * x` of `ablines` (`[[slope intercept] ..]`) between the ends of the x scale's
-  domain in the canvas' current style; linear x and y `scales` (the caller checks). Lines with a non-finite end are
-  skipped."
+  "Draws lines `y = intercept + slope * x` between the ends of the x scale's domain, in the canvas' current style.
+
+  Parameters:
+
+  - `canvas`: the clojure2d canvas.
+  - `scales` (map): the finalized scales; linear x and y (the caller checks).
+  - `ablines` (sequence): `[[slope intercept] ..]`.
+
+  Lines with a non-finite end are skipped."
   [canvas scales ablines]
   (let [projection (scale/projection scales)
-        [x0 x1] (:domain (:x scales))]
-    (doseq [[b a] ablines
-            :let [^Vec2 p (projection x0 (+ (double a) (* (double b) (double x0))))
-                  ^Vec2 q (projection x1 (+ (double a) (* (double b) (double x1))))]
-            :when (every? #(m/valid-double? (double %)) [(.x p) (.y p) (.x q) (.y q)])]
+        [^double x0 ^double x1] (:domain (:x scales))]
+    (doseq [[^double b ^double a] ablines
+            :let [^Vec2 p (projection x0 (m/+ a (m/* b x0)))
+                  ^Vec2 q (projection x1 (m/+ a (m/* b x1)))]
+            :when (and (m/valid-double? (.x p)) (m/valid-double? (.y p)) (m/valid-double? (.x q)) (m/valid-double? (.y q)))]
       (c2d/line canvas (.x p) (.y p) (.x q) (.y q)))))
 
 (defn draw
-  "Draw the rules of one panel: `:x` / `:y` lines across the panel (whole-pixel centred), ab lines between the x
-  domain ends; unplaceable positions are skipped."
-  [_chart {:keys [rules style]} canvas {:keys [w h]} scales env]
+  "Draws the rules of one panel.
+
+  Parameters:
+
+  - `computed` (map): `:rules`, `:style` (see [[compute]]).
+  - `canvas`: the clojure2d canvas.
+  - `box` (map): the panel's `:w`, `:h`.
+  - `scales` (map): the finalized scales.
+  - `env` (map): `:theme`.
+
+  Draws `:x` / `:y` lines across the panel (whole-pixel centred; polar - spokes and circles) and ab lines between the x domain ends (see [[draw-ablines!]]). Unplaceable positions are skipped.
+
+  Throws `ex-info {:key :slope}` for ab lines on a scale that isn't linear."
+  [_chart {:keys [rules style]} canvas {:keys [^double w ^double h]} scales env]
   (let [x-pixel (annotation/pixel-fn (:x scales))
         y-pixel (annotation/pixel-fn (:y scales))
         x-horizontal? (scale/horizontal? :x (:x scales))
@@ -145,11 +195,11 @@
                                 false true)))
                   (fn [horizontal-axis? p]
                     (when (m/valid-double? p)
-                      (let [p (draw/pixel-center p)]
+                      (let [centred (draw/pixel-center p)]
                         ;; a position on a horizontal axis is a vertical line
                         (if horizontal-axis?
-                          (c2d/line canvas p 0.0 p (double h))
-                          (c2d/line canvas 0.0 p (double w) p))))))]
+                          (c2d/line canvas centred 0.0 centred h)
+                          (c2d/line canvas 0.0 centred w centred))))))]
     (doseq [{:keys [xs ys ablines aesthetics]} rules
             :let [st (group/style style aesthetics scales (:theme env))]
             :when (and st (polyline/set-style! canvas st))]
@@ -161,6 +211,14 @@
         (draw-ablines! canvas scales ablines)))))
 
 (defn legend
-  "Key glyph: a horizontal line through the middle of `box`."
-  [{:keys [options]} attributes canvas box env]
-  (polyline/key-glyph! canvas box (merge (style options (:theme env)) (select-keys attributes [:color :dash])) :none))
+  "Draws the chart's key glyph: a horizontal line through the middle of the key's box.
+
+  Parameters:
+
+  - `chart` (map): the chart value.
+  - `attributes` (map): the key's mapped attributes - `:color`, `:dash`.
+  - `canvas`: the clojure2d canvas.
+  - `box` (map): the key's box.
+  - `env` (map): `:theme`."
+  [chart attributes canvas box env]
+  (polyline/key-glyph! canvas box (merge (theme/resolved-style (:theme env) chart) (select-keys attributes [:color :dash])) :none))

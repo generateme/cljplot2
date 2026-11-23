@@ -17,12 +17,16 @@
   `stackOffsetWiggle`, Byron & Wattenberg; the slope per index, not per x distance). `:normalize` and the stream
   positions need non-negative heights.
 
-  Functions: [[stack-values]] - per group per index `[y0 y1]` of a position; [[dodge-interval]] - a group's share of a dodged interval; [[symmetric-extent]] - an extent symmetric about 0."
+  Functions: [[golden-angle]] - the angle spacing spiral and radial placements evenly; [[stack-values]] - per group per index `[y0 y1]` of a position; [[dodge-interval]] - a group's share of a dodged interval; [[symmetric-extent]] - an extent symmetric about 0."
   (:require [fastmath.core :as m]
             [cljplot2.schema :as schema]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
+
+(def ^{:const true :tag 'double} golden-angle
+  "The golden angle in radians, `π (3 - √5)`: successive turns by it spread points around a centre without lining them up (Vogel's spiral)."
+  (m/* m/PI (m/- 3.0 m/SQRT5)))
 
 (def positions
   "Group positions of every grouping chart."

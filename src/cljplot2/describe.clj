@@ -342,21 +342,22 @@
      rows)))
 
 (defn style-rows
-  "Returns the option rows of a named theme style (a builder's).
+  "Returns the option rows of a named theme style (a builder's) or of a chart kind's theme style.
 
   Parameters:
 
-  - `style-name` (keyword): a key of [[cljplot2.theme/named-styles]], e.g. `:network-node`.
+  - `style-name` (keyword): a key of [[cljplot2.theme/named-styles]], e.g. `:network-node`, or a built-in chart kind (a key of [[cljplot2.chart/builtin-styles]]) - its own theme style, e.g. keys a theme sets that aren't chart options.
   - `style-keys` (sequence of keywords, optional): only the rows of these top-level style keys (a map key with its nested rows) - those the builder's marks show (e.g. a line style's colour, width and dash, not its area fill); default every style key of the kind.
 
   Returns the style keys of its chart kind, each with its default from the default theme - the named style merged over the kind's (see [[cljplot2.theme/chart-style]]); one table, without the sections slicing the kind's own options table.
 
-  Throws `ex-info {:key :style-name}` for a name that isn't registered, `{:key :style-keys}` for `style-keys` empty or holding a key that isn't a style key of the kind."
+  Throws `ex-info {:key :style-name}` for a name that is neither registered nor a chart kind, `{:key :style-keys}` for `style-keys` empty or holding a key that isn't a style key of the kind."
   ([style-name] (style-rows style-name nil))
   ([style-name style-keys]
-   (let [kind (get theme/named-styles style-name)]
+   (let [kind (or (get theme/named-styles style-name)
+                  (when (contains? cljplot2.chart/builtin-styles style-name) style-name))]
      (when-not kind
-       (schema/fail! (str "Unknown named style " (pr-str style-name) ", known: "
+       (schema/fail! (str "Unknown named style or chart kind " (pr-str style-name) ", known styles: "
                           (str/join " " (sort (keys theme/named-styles))) ".")
                      {:key :style-name :value style-name}))
      (let [rows (mapv #(assoc % :section nil)
