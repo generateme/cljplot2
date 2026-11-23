@@ -60,8 +60,8 @@
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
-(def ^{:doc "Shared groups of options (`:cljplot2/fragment` of their entries): keyword -> `{:title t :doc d :entries [entry ...]}` (the group's map entries, see [[fragment-rows]])."}
-  fragments
+(def fragments
+  "Shared groups of options (`:cljplot2/fragment` of their entries): keyword -> `{:title t :doc d :entries [entry ...]}` (the group's map entries, see [[fragment-rows]])."
   {:common {:title "Data and mapping" :doc "the chart's own data and mapping, taken by every chart"
             :entries rows/common-options}
    :strip {:title "Strip options" :doc "placement, width and grouping of strip charts - one item per level on a categorical axis"
@@ -79,6 +79,7 @@
    :hierarchy-labels {:title "Hierarchy labels" :doc "group and leaf labels of the hierarchy charts (treemap, partition, pack)"
                       :entries hierarchy/label-entries}
    :frame-3d {:title "3D frame" :doc "view, proportions, frame and domains of a 3D chart" :entries space/frame-options}
+   :shading {:title "3D shading" :doc "ambient share and light direction of the shaded 3D charts" :entries space/shading-options}
    :line-style {:title "Line style" :doc "colour, width and dash of a line" :entries polyline/style-entries}
    :pattern {:title "Fill patterns" :doc "the pattern drawn over a filled mark" :entries draw/pattern-style-entries}
    :builder {:title "Builder options" :doc "title, scales and theme of a built plot (a builder takes the ones it uses)"
@@ -115,15 +116,15 @@
 
 ;; types
 
-(def ^{:private true :doc "Predicate symbol -> its type text."}
-  predicate-texts
+(def ^:private predicate-texts
+  "Predicate symbol -> its type text."
   {'keyword? "keyword" 'fn? "function" 'ifn? "function" 'string? "string" 'boolean? "true or false"
    'number? "number" 'int? "integer" 'integer? "integer" 'map? "map" 'any? "any value" 'some? "any value but nil"
    'vector? "vector" 'sequential? "sequence" 'set? "set" 'double? "number" 'pos-int? "positive integer"
    'nat-int? "non-negative integer"})
 
-(def ^{:private true :doc "Built-in malli type -> its type text."}
-  builtin-texts
+(def ^:private builtin-texts
+  "Built-in malli type -> its type text."
   {:string "string" :boolean "true or false" :keyword "keyword" :int "integer" :double "number" :any "any value"
    :nil "nil"})
 
@@ -468,15 +469,15 @@
               :when (chart-value? c)]
           [(:kind c) v])))
 
-(def ^{:doc "The built-in values of attribute options, sorted: `:shape` - point shape characters (shape maps are open), `:dash` - dash style names (dash arrays are open), `:pattern` - fill pattern names (pattern maps are open), `:cell` - grid cell types."}
-  attribute-values
+(def attribute-values
+  "The built-in values of attribute options, sorted: `:shape` - point shape characters (shape maps are open), `:dash` - dash style names (dash arrays are open), `:pattern` - fill pattern names (pattern maps are open), `:cell` - grid cell types."
   {:shape (vec (sort-by str shape/shapes))
    :dash (vec (sort (keys schema/dash-styles)))
    :pattern (vec (sort (keys schema/pattern-styles)))
    :cell (vec (sort grid/cell-names))})
 
-(def ^{:doc "Every non-chart schema users write: name -> schema (the aesthetic scale specs one per dimension; margins also as the map form of one margin)."}
-  plot-level-schemas
+(def plot-level-schemas
+  "Every non-chart schema users write: name -> schema (the aesthetic scale specs one per dimension; margins also as the map form of one margin)."
   (into {:plot pipeline/plot-schema
          :render-options pipeline/options-schema
          :mapping rows/mapping-schema

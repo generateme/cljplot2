@@ -1,8 +1,7 @@
 (ns cljplot2.scale.aesthetic
-  "Aesthetics: the non-positional dimensions `:color`, `:shape`, `:size`, `:dash` and `:pattern` (fill patterns of
-  filled marks; charts without fills - points, plain lines - use it only to group, as `:shape` on lines) mapped from
-  data (D4), and their
-  scales (D5).
+  "Aesthetic scales: the non-positional dimensions `:color`, `:shape`, `:size`, `:dash` and `:pattern` mapped from data.
+
+  `:pattern` - fill patterns of filled marks; charts without fills (points, plain lines) use it only to group, as `:shape` on lines.
 
   Mapping: an accessor (keyword or function), `nil` = not mapped. A row's value is kept when it is valid
   ([[cljplot2.data.rows/valid-value?]]) or `nil` - the NA level, drawn with the NA attribute and listed last as \"NA\"
@@ -56,7 +55,9 @@
   pixel range, `nice` or padding. [[attribute-fn]] maps data values to style attributes: NA (`nil`) to the NA
   attribute; values outside the domain (not a level, or outside `[lo hi]`) to `nil` - such points are skipped.
   Charts drop values outside an explicit domain already at compute ([[in-domain?]]), counted in `:dropped`, so
-  extents only cover what is drawn."
+  extents only cover what is drawn.
+
+  Functions: dimensions [[dims]], [[mapped-dims]], [[computed-aesthetics]], [[computed-scale-attributes]]; schemas [[scale-spec-schema]], [[palette-schema]]; values [[continuous-value?]], [[continuous-values?]], [[valid-attribute?]], [[valid-value?]], [[identity-scale?]], [[in-domain?]], [[kept-value?]], [[value-extent]]; scales [[inferred-kind]], [[scale-spec]], [[value-transform]]; attributes [[attribute-fn]], [[bin-colors]], [[palette-color-fn]]; legends [[legend-entries]], [[explicit-ticks]], [[integer-ticks]]."
   (:require [clojure2d.color :as c]
             [wadogo.scale :as s]
             [fastmath.core :as m]
@@ -77,41 +78,71 @@
   "Aesthetic dimensions whose scales are never linear or binned (their attributes have no order)."
   #{:shape :dash :pattern})
 
-(def dim? (set dims))
+(def dim?
+  "Predicate (a set) of the aesthetic dimensions [[dims]]."
+  (set dims))
 
-(def kinds #{:ordinal :linear :binned :identity})
+(def kinds
+  "Aesthetic scale kinds."
+  #{:ordinal :linear :binned :identity})
 
 (def transform-names
   "The named linear color `:transform`s."
   #{:sqrt :log :sq :exp})
 
-(def ^:private ^:const default-bins 5)
+(def ^{:private true :const true :tag 'long} default-bins
+  "Equal bins of a binned scale without `:bins`."
+  5)
 
-(def ^:private ^:const size-legend-ticks 5)
+(def ^{:private true :const true :tag 'long} size-legend-ticks
+  "Tick count of a linear size legend without `:ticks`."
+  5)
 
 (defn mapped-dims
-  "Aesthetic dimensions with a non-nil accessor in `mapping`."
+  "Aesthetic dimensions a mapping maps.
+
+  Parameters:
+
+  - `mapping` (map): dimension -> accessor.
+
+  Returns a vector of the [[dims]] with a non-`nil` accessor, in legend order."
   [mapping]
   (filterv #(some? (get mapping %)) dims))
 
 (defn computed-scale-attributes
-  "Scale attributes a computed aesthetic suggests from its `computed-aesthetics` value (see [[computed-aesthetics]]):
-  a title (string or `nil`) - `{:title t}`; a map - its `:title`, `:legend` and `:range` (e.g. a diverging palette)."
+  "Scale attributes a computed aesthetic suggests.
+
+  Parameters:
+
+  - `v`: the aesthetic's [[computed-aesthetics]] value - a title (string or `nil`) or a map.
+
+  Returns `{:title v}` for a title; for a map its `:title`, `:legend` and `:range` (e.g. a diverging palette)."
   [v]
   (if (map? v) (select-keys v [:title :legend :range]) {:title v}))
 
 (defn computed-aesthetics
-  "`{dim title-or-attributes}` of the aesthetics chart value `chart` computes itself with its merged `mapping` (a
-  title, or `{:title t :legend b}` - see [[computed-scale-attributes]]): its
-  `:computed-aesthetics` - a map, or a function of the chart's options and the mapping returning one (e.g. a color
-  computed only when nothing groups the chart, a title named after a mapped accessor; a top-level function keeps chart
-  values comparable as data); `{}` without one."
+  "Aesthetics a chart computes itself.
+
+  A chart's `:computed-aesthetics` is a map, or a function of the chart's options and the mapping returning one (e.g. a colour computed only when nothing groups the chart, a title named after a mapped accessor); a top-level function keeps chart values comparable as data.
+
+  Parameters:
+
+  - `chart` (map): a chart value.
+  - `mapping` (map): the chart's merged mapping.
+
+  Returns `{dim title-or-attributes}` (see [[computed-scale-attributes]]); `{}` without computed aesthetics."
   [chart mapping]
   (let [computed (:computed-aesthetics chart)]
     (or (if (fn? computed) (computed (:options chart) mapping) computed) {})))
 
 (defn- palette-colors
-  "Colors of palette `p` (a palette name or a non-empty sequence of colors), `nil` when it isn't one."
+  "Colours of a palette.
+
+  Parameters:
+
+  - `p`: a clojure2d palette name or a sequence of colours.
+
+  Returns a vector of the colours, or `nil` when `p` isn't a palette (an unknown name, an empty sequence, or a value that isn't a solid colour)."
   [p]
   (let [colors (cond
                  (keyword? p) (try (vec (c/palette p)) (catch Exception _ nil))
@@ -120,39 +151,68 @@
       colors)))
 
 (def ^:private palette
+  "Schema of a palette: a palette name or a non-empty sequence of colours."
   (schema/named-type ::palette (comp some? palette-colors) "should be a palette name or a non-empty sequence of colors"))
 
 (def ^:private size-range
-  (schema/named-type ::size-range #(and (vector? %) (= 2 (count %)) (every? (fn [v] (and (number? v) (>= (double v) 0.0))) %)
-                                        (<= (double (% 0)) (double (% 1))))
+  "Schema of a size range `[min max]`: non-negative numbers, `min <= max`."
+  (schema/named-type ::size-range #(and (vector? %) (m/== 2 (count %)) (every? (fn [v] (and (number? v) (m/not-neg? (double v)))) %)
+                                        (m/<= (double (% 0)) (double (% 1))))
                      "should be [min max], non-negative numbers, min <= max"))
 
-(def ^:private shapes [:sequential {:min 1} schema/shape])
+(def ^:private shapes
+  "Schema of a shape range: shapes, cycled."
+  [:sequential {:min 1} schema/shape])
 
-(def ^:private dashes [:sequential {:min 1} schema/dash])
+(def ^:private dashes
+  "Schema of a dash range: dashes, cycled."
+  [:sequential {:min 1} schema/dash])
 
-(def ^:private patterns [:sequential {:min 1} schema/pattern])
+(def ^:private patterns
+  "Schema of a pattern range: fill patterns, cycled."
+  [:sequential {:min 1} schema/pattern])
 
-(def ^:private gradient [:multi {:dispatch fn?} [true schema/function] [false palette]])
+(def ^:private gradient
+  "Schema of the theme gradient: a function of `t` or a palette."
+  [:multi {:dispatch fn?} [true schema/function] [false palette]])
 
 (defn- gradient-name?
-  "Is `p` a clojure2d gradient name (a keyword that names a gradient, not a palette)?"
+  "Tests whether a value names a clojure2d gradient (and not a palette).
+
+  Parameters:
+
+  - `p`: any value.
+
+  Returns a truthy value for a keyword naming a gradient but no palette."
   [p]
   (and (keyword? p) (nil? (palette-colors p)) (try (fn? (c/gradient p)) (catch Exception _ false))))
 
 (def ^:private color-range
+  "Schema of a colour range: a function of `t`, a palette or gradient name, or colours."
   [:multi {:dispatch fn?}
    [true schema/function]
    [false (schema/named-type ::color-range #(or (some? (palette-colors %)) (gradient-name? %))
                              "should be a palette or gradient name, or a non-empty sequence of colors")]])
 
 (defn- level-map
-  "Schema of a level map `:range` - `{level attribute}`, attributes valid by `attribute-schema`."
+  "Schema of a level map `:range`.
+
+  Parameters:
+
+  - `attribute-schema`: schema of one attribute.
+
+  Returns the schema of a non-empty map `{level attribute}`."
   [attribute-schema]
   [:map-of {:min 1} any? attribute-schema])
 
 (defn- range-schema
-  "Schema of the scale `:range` of aesthetic `k`: a level map (ordinal scales) or the dimension's plain range."
+  "Schema of the scale `:range` of an aesthetic.
+
+  Parameters:
+
+  - `k` (keyword): the dimension, one of [[dims]].
+
+  Returns the schema of a level map (ordinal scales, see [[level-map]]) or the dimension's plain range (colours, shapes, a size range, dashes, patterns)."
   [k]
   (let [plain (case k
                 :color color-range
@@ -160,7 +220,11 @@
                 :size size-range
                 :dash dashes
                 :pattern patterns)
-        attribute (case k :color schema/solid-color :shape schema/shape :size schema/non-neg :dash schema/dash
+        attribute (case k
+                    :color schema/solid-color
+                    :shape schema/shape
+                    :size schema/non-neg
+                    :dash schema/dash
                     :pattern schema/pattern)]
     [:multi {:dispatch map?} [true (level-map attribute)] [false plain]]))
 
@@ -176,55 +240,102 @@
    [:na {:description "colour of NA values"} schema/solid-color]])
 
 (defn- level-key
-  "Identity of an ordinal level: numbers compare as doubles (`1931` = `1931.0`), other values as themselves."
+  "Identity of an ordinal level.
+
+  Parameters:
+
+  - `v`: a level.
+
+  Returns a number as a double (so `1931` equals `1931.0`), any other value as itself."
   [v]
   (if (number? v) (double v) v))
 
 (defn continuous-value?
-  "Can value `v` of aesthetic `k` sit on a linear scale: a number, or a `java.time` value for `:color`?"
+  "Tests whether a value can sit on a linear scale of an aesthetic.
+
+  Parameters:
+
+  - `k` (keyword): the dimension.
+  - `v`: the value.
+
+  Returns true for a number, and for a `java.time` value of `:color`.
+
+  See also [[continuous-values?]]."
   [k v]
   (or (number? v) (and (= :color k) (data/temporal? v))))
 
 (defn continuous-values?
-  "Are the non-`nil` `values` of aesthetic `k` some, and all [[continuous-value?]]?"
+  "Tests whether the values of an aesthetic suit a linear scale.
+
+  Parameters:
+
+  - `k` (keyword): the dimension.
+  - `values` (sequence): data values, `nil` (NA) ignored.
+
+  Returns a truthy value when some value is non-`nil` and every non-`nil` one is a [[continuous-value?]], else a falsy one."
   [k values]
   (let [present (remove nil? values)]
-    (boolean (and (seq present) (every? #(continuous-value? k %) present)))))
+    (and (seq present) (every? #(continuous-value? k %) present))))
 
 (defn- continuous-extent?
-  "Is the data `extent` of aesthetic `k` continuous: numeric, or temporal for `:color`?"
+  "Tests whether a data extent of an aesthetic is continuous.
+
+  Parameters:
+
+  - `k` (keyword): the dimension.
+  - `extent` (map or `nil`): a [[cljplot2.data.rows/value-extent]].
+
+  Returns true for a numeric extent, and a temporal one of `:color`."
   [k extent]
   (or (= :numeric (:kind extent)) (and (= :color k) (= :temporal (:kind extent)))))
 
 (defn- explicit-kind
-  "Kind of aesthetic `k` with an explicit domain in `spec`: the spec's `:kind`; `:ordinal` with `:type :categorical`
-  (e.g. two years as levels); else `:linear` for two numbers (not `:shape` / `:dash` / `:pattern`) or two dates
-  (`:color`), else `:ordinal`."
+  "Kind of an aesthetic scale with an explicit domain.
+
+  Parameters:
+
+  - `k` (keyword): the dimension.
+  - `spec` (map): the scale spec - `:kind`, `:type`, `:domain`.
+
+  Returns the spec's `:kind`; `:ordinal` with `:type :categorical` (e.g. two years as levels); else `:linear` for a domain of two numbers (not `:shape` / `:dash` / `:pattern`) or two dates (`:color`), else `:ordinal`."
   [k {:keys [kind type domain]}]
   (or kind
       (when (= :categorical type) :ordinal)
-      (if (and (not (ordinal-only k)) (= 2 (count domain)) (every? #(continuous-value? k %) domain)) :linear :ordinal)))
+      (if (and (not (ordinal-only k)) (m/== 2 (count domain)) (every? #(continuous-value? k %) domain)) :linear :ordinal)))
 
 (defn- domain-problem
-  "Why the explicit `:domain` of aesthetic scale `spec` of `k` is invalid, or `nil`."
+  "Why the explicit domain of an aesthetic scale spec is invalid.
+
+  Parameters:
+
+  - `k` (keyword): the dimension.
+  - `spec` (map): the scale spec; its kind as in [[explicit-kind]].
+
+  Returns the error message, or `nil` for a valid or absent `:domain`: ordinal - distinct non-`nil` levels; linear / binned - `[lo hi]`, finite numbers (dates for `:color`), `lo < hi`; identity - anything (rejected elsewhere)."
   [k {:keys [domain] :as spec}]
   (when (some? domain)
     (case (explicit-kind k spec)
       :ordinal (when-not (and (seq domain) (not-any? nil? domain) (apply distinct? (map level-key domain)))
                  "ordinal domain should be a non-empty sequence of distinct non-nil values")
       (:linear :binned) (let [[lo hi] (map data/x-key domain)]
-                          (when-not (and (= 2 (count domain)) (every? #(continuous-value? k %) domain)
-                                         (schema/finite? lo) (schema/finite? hi) (< (double lo) (double hi)))
+                          (when-not (and (m/== 2 (count domain)) (every? #(continuous-value? k %) domain)
+                                         (schema/finite? lo) (schema/finite? hi) (m/< (double lo) (double hi)))
                             "linear domain should be [lo hi], finite numbers (or dates for :color), lo < hi"))
       :identity nil)))
 
 (defn- option-problems
-  "`[[key message] ...]` - options of aesthetic `k`'s scale `spec` that its `kind` doesn't allow or that contradict
-  each other (a level map `:range`, `:spread`, `:midpoint`, `:reverse`, `:area`, `:bins`, `:ticks`,
-  `:integer-ticks`, identity's `:domain` / `:range`)."
+  "Options of an aesthetic scale spec its kind doesn't allow, or that contradict each other.
+
+  Parameters:
+
+  - `k` (keyword): the dimension.
+  - `kind` (keyword): the scale's resolved kind.
+  - `spec` (map): the scale spec - checked `:range` (a level map, a function or gradient name), `:spread`, `:midpoint`, `:transform`, `:reverse`, `:area`, `:bins`, `:ticks`, `:integer-ticks` and an identity scale's `:domain` / `:range`.
+
+  Returns `[[key message] ...]`, in a fixed order; `[]` when the options hold."
   [k kind {:keys [range spread midpoint reverse area bins domain transform ticks integer-ticks] :as spec}]
   (let [level-map? (map? range)
-        bins-domain (when (and (vector? bins) (>= (count bins) 2)) [(double (first bins)) (double (peek bins))])]
+        bins-domain (when (and (vector? bins) (m/>= (count bins) 2)) [(double (first bins)) (double (peek bins))])]
     (cond-> []
       (and (= kind :linear) (ordinal-only k)) (conj [:kind (str (name k) " scale can't be :linear")])
       (and (= kind :binned) (not= k :color)) (conj [:kind "only a :color scale can be :binned"])
@@ -249,18 +360,32 @@
       (conj [:ticks ":ticks needs a linear :size or :color scale (its legend entries or color bar ticks)"])
       (and integer-ticks (or (not (#{:color :size} k)) (not= kind :linear)))
       (conj [:integer-ticks ":integer-ticks needs a linear :size or :color scale (its legend entries or color bar ticks)"])
-      (and (= kind :binned) bins-domain (sequential? domain) (= 2 (count domain))
+      (and (= kind :binned) bins-domain (sequential? domain) (m/== 2 (count domain))
            (not= bins-domain (mapv double domain)))
       (conj [:bins "breaks should span the explicit :domain (first and last break = its ends)"]))))
 
 (defn- known-kind
-  "Kind of aesthetic `k` known from `spec` alone (an explicit `:kind` or `:domain`), else `nil`."
+  "Kind of an aesthetic scale known from its spec alone.
+
+  Parameters:
+
+  - `k` (keyword): the dimension.
+  - `spec` (map): the scale spec.
+
+  Returns the [[explicit-kind]] when the spec has a `:kind` or a sequential `:domain`, else `nil`."
   [k spec]
   (when (or (:kind spec) (sequential? (:domain spec)))
     (explicit-kind k spec)))
 
 (defn- option-rule
-  "Schema rule reporting the [[option-problems]] entry of `key` when the kind is known from the spec."
+  "Schema rule of one option of an aesthetic scale spec.
+
+  Parameters:
+
+  - `k` (keyword): the dimension.
+  - `key` (keyword): the option.
+
+  Returns a [[cljplot2.schema/with-rules]] rule `[problem [key]]` reporting the [[option-problems]] message of `key` when the kind is known from the spec (see [[known-kind]])."
   [k key]
   [(fn [spec]
      (when-let [kind (known-kind k spec)]
@@ -268,7 +393,13 @@
    [key]])
 
 (defn scale-spec-schema
-  "Schema of the plot scale spec of aesthetic `k`."
+  "Schema of the plot scale spec of an aesthetic (see the namespace doc).
+
+  Parameters:
+
+  - `k` (keyword): the dimension, one of [[dims]].
+
+  Returns a closed map schema with rules: a valid `:domain` ([[domain-problem]]) and the options allowed by the kind known from the spec ([[option-problems]])."
   [k]
   (apply schema/with-rules
          [:map {:closed true :cljplot2/type-doc "an aesthetic scale spec"}
@@ -307,8 +438,14 @@
          (map #(option-rule k %) [:kind :domain :range :spread :midpoint :transform :reverse :area :bins :ticks :integer-ticks])))
 
 (defn- resolve-range
-  "Concrete range of dimension `k` from the (validated) range value `r`: a level map or a function as given, the
-  gradient (function) of a gradient name, colors of a palette name or sequence."
+  "Concrete range of an aesthetic from its validated range value.
+
+  Parameters:
+
+  - `k` (keyword): the dimension.
+  - `r`: the range value (spec `:range` or the theme palette's).
+
+  Returns a level map or a function as given; for `:color` the gradient (function) of a gradient name, else the colours of a palette name or sequence; shapes, dashes and patterns as a vector; a size range as given."
   [k r]
   (cond
     (or (map? r) (fn? r)) r
@@ -317,12 +454,30 @@
     (ordinal-only k) (vec r)
     :else r))
 
+(defn- first-of-levels
+  "Values of `vs` without later repeats of a level ([[level-key]]), in their order."
+  [vs]
+  (first (reduce (fn [[acc seen] v]
+                   (let [key (level-key v)]
+                     (if (contains? seen key) [acc seen] [(conj acc v) (conj seen key)])))
+                 [[] #{}] vs)))
+
 (defn- ordinal-domain
+  "Levels of an ordinal aesthetic scale.
+
+  Parameters:
+
+  - `k` (keyword): the dimension.
+  - `explicit` (sequence or `nil`): the spec's `:domain`.
+  - `extent` (map or `nil`): the merged data extent - `:values`, `:ordered?`.
+
+  Returns the explicit domain; else the data's levels (one value per level, see [[level-key]]) in their order when the extent is `:ordered?`, otherwise sorted ([[cljplot2.data.rows/sorted-levels]]).
+
+  Throws `ex-info {:key :domain}` without an explicit domain for data of too many levels (no `:values`)."
   [k explicit extent]
   (cond
     explicit (vec explicit)
-    (and (:ordered? extent) (:values extent)) (first (reduce (fn [[acc seen] v] (if (contains? seen (level-key v)) [acc seen] [(conj acc v) (conj seen (level-key v))]))
-                                                             [[] #{}] (:values extent)))
+    (and (:ordered? extent) (:values extent)) (first-of-levels (:values extent))
     (:values extent) (data/sorted-levels k (vals (reduce (fn [acc v] (if (contains? acc (level-key v)) acc (assoc acc (level-key v) v)))
                                                          {} (:values extent)))
                                          :domain)
@@ -331,8 +486,17 @@
                         {:key :domain :in [:scales k :domain]})))
 
 (defn- linear-domain
-  "`[lo hi]` of a linear scale of `k`: the explicit domain or the data `extent`, numbers or dates as
-  [[cljplot2.data.rows/x-key]] numbers (epoch milliseconds)."
+  "Domain of a linear aesthetic scale.
+
+  Parameters:
+
+  - `k` (keyword): the dimension.
+  - `explicit` (sequence or `nil`): the spec's `:domain`.
+  - `extent` (map or `nil`): the merged data extent.
+
+  Returns `[lo hi]` as numbers ([[cljplot2.data.rows/x-key]] - epoch milliseconds for dates): the explicit domain, else the extent's `:min` / `:max`.
+
+  Throws `ex-info {:key :kind}` without an explicit domain for data that isn't continuous ([[continuous-extent?]])."
   [k explicit extent]
   (cond
     explicit [(data/x-key (first explicit)) (data/x-key (second explicit))]
@@ -340,73 +504,119 @@
     :else (schema/fail! "A :linear aesthetic scale needs numeric data (or dates for :color)." {:key :kind :in [:scales k :kind]})))
 
 (defn inferred-kind
-  "Scale kind of aesthetic `k` with plot scale `spec` (may be `{}`) for data that is continuous (`continuous-data?` -
-  numbers, or dates for `:color`, see [[continuous-values?]]) or not: the spec's `:kind`; else `:linear` for a
-  continuous two-value explicit domain or, without a domain, continuous data (`:color`, `:size`); else `:ordinal`.
-  `:shape`, `:dash` and `:pattern` are always ordinal (or identity)."
+  "Scale kind of an aesthetic.
+
+  Parameters:
+
+  - `k` (keyword): the dimension.
+  - `spec` (map): the plot's scale spec (may be `{}`).
+  - `continuous-data?`: the data is continuous - numbers, or dates for `:color` (see [[continuous-values?]]).
+
+  Returns the kind of an explicit domain ([[explicit-kind]]); else the spec's `:kind`; else `:linear` for continuous data of `:color` / `:size`, otherwise `:ordinal`. `:shape`, `:dash` and `:pattern` are always ordinal (or identity)."
   [k spec continuous-data?]
   (if (sequential? (:domain spec))
     (explicit-kind k spec)
     (or (:kind spec) (if (and continuous-data? (not (ordinal-only k))) :linear :ordinal))))
 
 (defn- spec-domain
-  "Explicit domain of scale `spec`: its `:domain` (non-empty), else a binned scale's breaks ends `[first last]`."
-  [spec]
-  (let [domain (:domain spec)
-        bins (:bins spec)]
-    (cond
-      (and (sequential? domain) (seq domain)) domain
-      (and (= :binned (:kind spec)) (vector? bins) (>= (count bins) 2)) [(first bins) (peek bins)])))
+  "Explicit domain of an aesthetic scale spec.
+
+  Parameters:
+
+  - `spec` (map): the scale spec - `:domain`, `:kind`, `:bins`.
+
+  Returns a non-empty `:domain`; else, for a binned scale with a breaks vector, its ends `[first last]`; else `nil`."
+  [{:keys [domain kind bins]}]
+  (cond
+    (and (sequential? domain) (seq domain)) domain
+    (and (= :binned kind) (vector? bins) (m/>= (count bins) 2)) [(first bins) (peek bins)]))
 
 (defn in-domain?
-  "Is data value `v` of aesthetic `k` inside the explicit domain of the plot's scale `spec` (may be `{}`)?
-  True without an explicit domain (a data domain holds all data; identity scales have none), for `nil` (NA is
-  handled separately) and for a malformed domain (rejected later by [[scale-spec]]). Ordinal: one of the levels (numbers
-  equal as doubles); linear / binned: a number within `[lo hi]` (binned: also the ends of a `:bins` breaks vector)."
+  "Tests whether a data value of an aesthetic is inside the explicit domain of the plot's scale.
+
+  Parameters:
+
+  - `k` (keyword): the dimension.
+  - `spec` (map): the plot's scale spec (may be `{}`).
+  - `v`: the data value.
+
+  Returns a truthy value when `v` is in the domain, else a falsy one: ordinal - one of the levels (numbers equal as doubles); linear / binned - a number within `[lo hi]` (binned: also the ends of a `:bins` breaks vector). Always truthy without an explicit domain (a data domain holds all data; identity scales have none), for `nil` (NA is handled separately) and for a malformed domain (rejected later by [[scale-spec]]).
+
+  See also [[kept-value?]]."
   [k spec v]
   (let [domain (spec-domain spec)]
     (if (or (nil? v) (nil? domain))
       true
       (case (inferred-kind k spec (continuous-value? k v))
-        :ordinal (boolean (some #(= (level-key %) (level-key v)) domain))
+        :ordinal (some #(= (level-key %) (level-key v)) domain)
         (:linear :binned) (let [[lo hi] (map data/x-key domain)
                                 x (data/x-key v)]
-                            (if (and (= 2 (count domain)) lo hi)
-                              (boolean (and x (<= (double lo) (double x) (double hi))))
+                            (if (and (m/== 2 (count domain)) lo hi)
+                              (and x (m/<= (double lo) (double x) (double hi)))
                               true))))))
 
 (defn valid-attribute?
-  "Is `v` an attribute of aesthetic `k` as such: a color (not `:none`), a shape, a non-negative finite size, a dash
-  ([[cljplot2.schema/dash?]]), a pattern ([[cljplot2.schema/pattern?]])?"
+  "Tests whether a value is an attribute of an aesthetic as such.
+
+  Parameters:
+
+  - `k` (keyword): the dimension.
+  - `v`: the value.
+
+  Returns true for a solid colour (not `:none`) of `:color`, a shape of `:shape`, a non-negative finite number of `:size`, a dash ([[cljplot2.schema/dash?]]) of `:dash`, a pattern ([[cljplot2.schema/pattern?]]) of `:pattern`."
   [k v]
   (case k
     :color (schema/solid-color? v)
     :shape (shape/shape? v)
-    :size (and (schema/finite? v) (>= (double v) 0.0))
+    :size (and (schema/finite? v) (m/not-neg? (double v)))
     :dash (schema/dash? v)
     :pattern (schema/pattern? v)))
 
 (defn identity-scale?
-  "Does the plot's scale `spec` (may be `nil`) declare `:kind :identity`?"
+  "Tests whether a plot scale spec declares an identity scale.
+
+  Parameters:
+
+  - `spec` (map or `nil`): the plot's scale spec.
+
+  Returns true for `:kind :identity`."
   [spec]
   (= :identity (:kind spec)))
 
 (defn valid-value?
-  "Is `v` a valid value of aesthetic `k` under the plot's scale `spec` (may be `nil`), the domain aside: with an
-  identity scale a valid attribute, otherwise [[cljplot2.data.rows/valid-value?]]."
+  "Tests whether a value is valid for an aesthetic under the plot's scale, the domain aside.
+
+  Parameters:
+
+  - `k` (keyword): the dimension.
+  - `spec` (map or `nil`): the plot's scale spec.
+  - `v`: the value.
+
+  Returns, with an identity scale, whether `v` is a [[valid-attribute?]]; otherwise [[cljplot2.data.rows/valid-value?]]."
   [k spec v]
   (if (identity-scale? spec) (valid-attribute? k v) (data/valid-value? v)))
 
 (defn- sampled-bins?
-  "Does scale `spec` bin by the data values themselves: `:kind :binned` with a method keyword or quantile `:bins`?"
-  [spec]
-  (and (= :binned (:kind spec)) (let [bins (:bins spec)] (or (keyword? bins) (map? bins)))))
+  "Tests whether a scale spec bins by the data values themselves.
+
+  Parameters:
+
+  - `spec` (map or `nil`): the scale spec.
+
+  Returns a truthy value for `:kind :binned` with a method keyword or quantile map `:bins`."
+  [{:keys [kind bins]}]
+  (and (= :binned kind) (or (keyword? bins) (map? bins))))
 
 (defn value-extent
-  "Extent of the non-NA values `vs` of aesthetic `k` under the plot's scale `spec` (may be `nil`), `nil` when empty:
-  an identity scale needs no domain, so its values aren't inspected (`{:kind :categorical :values []}` - colors of
-  any form may mix); otherwise [[cljplot2.data.rows/value-extent]], with every finite value as `:sample` when the
-  scale's bins come from the data (method or quantile `:bins`, see [[cljplot2.data.levels/bins]])."
+  "Extent of the values of an aesthetic under the plot's scale.
+
+  Parameters:
+
+  - `k` (keyword): the dimension.
+  - `spec` (map or `nil`): the plot's scale spec.
+  - `vs` (sequence): the non-NA values.
+
+  Returns `nil` for no values; with an identity scale `{:kind :categorical :values []}` (no domain needed, so values aren't inspected - colours of any form may mix); otherwise [[cljplot2.data.rows/value-extent]], with every finite value as `:sample` when the bins come from the data (method or quantile `:bins`, see [[cljplot2.data.levels/bins]])."
   [k spec vs]
   (cond
     (identity-scale? spec) (when (seq vs) {:kind :categorical :values []})
@@ -415,11 +625,17 @@
     :else (data/value-extent k vs)))
 
 (defn kept-value?
-  "Is the non-`nil` data value `v` of aesthetic `k` drawn under the plot's scale `spec` (may be `{}`): with an identity
-  scale a valid attribute ([[valid-attribute?]]) - any other value throws `ex-info {:key :mapping}`; otherwise a
-  valid value ([[cljplot2.data.rows/valid-value?]]) inside the explicit domain ([[in-domain?]]) - a non-number on a
-  scale declared linear or binned (its `:kind`, or a two-number domain) throws `ex-info {:key :kind}`. `nil` gives
-  false (callers decide about NA)."
+  "Tests whether a non-`nil` data value of an aesthetic is drawn under the plot's scale.
+
+  Parameters:
+
+  - `k` (keyword): the dimension.
+  - `spec` (map): the plot's scale spec (may be `{}`).
+  - `v`: the data value.
+
+  Returns, with an identity scale, true for a [[valid-attribute?]]; otherwise true for a valid value ([[cljplot2.data.rows/valid-value?]]) inside the explicit domain ([[in-domain?]]). `nil` gives false - callers decide about NA.
+
+  Throws `ex-info {:key :mapping}` for an invalid value of an identity scale, and `ex-info {:key :kind}` for a non-number on a scale declared linear (dates allowed for `:color`) or binned - by its `:kind` or a two-number domain."
   [k spec v]
   (cond
     (nil? v) false
@@ -427,63 +643,83 @@
                                (schema/fail! (str "An identity " (name k) " scale needs " (name k) " values.")
                                              {:key :mapping :in [:mapping k] :value v}))
     :else (and (data/valid-value? v)
-               (do (let [kind (inferred-kind k spec false)]
-                     (when (or (and (= :linear kind) (not (continuous-value? k v)))
-                               (and (= :binned kind) (not (number? v))))
-                       (schema/fail! (str "A " kind " aesthetic scale needs numeric data"
-                                          (when (= :linear kind) " (or dates for :color)") ".")
-                                     {:key :kind :in [:scales k :kind] :value v})))
-                   (in-domain? k spec v)))))
+               (let [kind (inferred-kind k spec false)]
+                 (when (or (and (= :linear kind) (not (continuous-value? k v)))
+                           (and (= :binned kind) (not (number? v))))
+                   (schema/fail! (str "A " kind " aesthetic scale needs numeric data"
+                                      (when (= :linear kind) " (or dates for :color)") ".")
+                                 {:key :kind :in [:scales k :kind] :value v}))
+                 (in-domain? k spec v)))))
 
 (defn- binned-breaks
-  "Breaks of binned scale `spec` of `k` (explicit `:domain` `explicit`, data `extent`): a `:bins` vector as given; a
-  count of equal bins over the domain (default 5); a method or quantile `:bins` from the extent's `:sample` - with an
-  explicit domain its ends are the outer breaks (one bin over it without data)."
+  "Breaks of a binned aesthetic scale.
+
+  Parameters:
+
+  - `k` (keyword): the dimension.
+  - `spec` (map): the scale spec - `:bins`.
+  - `explicit` (sequence or `nil`): the explicit domain.
+  - `extent` (map or `nil`): the merged data extent (`:sample` for data bins).
+
+  Returns the breaks: a `:bins` vector as given (doubles); a count of equal bins over the domain (default [[default-bins]]); a method or quantile `:bins` from the extent's `:sample` ([[cljplot2.data.levels/breaks]]) - with an explicit domain its ends are the outer breaks (one bin over it without data)."
   [k {:keys [bins]} explicit extent]
   (if (vector? bins)
     (mapv double bins)
-    (let [[lo hi] (linear-domain k explicit extent)]
+    (let [[^double lo ^double hi] (linear-domain k explicit extent)]
       (if (or (keyword? bins) (map? bins))
         (let [brks (levels/breaks (:sample extent) bins)]
           (cond
             (nil? brks) [lo hi]
-            explicit (vec (distinct (concat [lo] (filter #(< (double lo) (double %) (double hi)) brks) [hi])))
+            explicit (vec (distinct (concat [lo] (filter #(m/< lo (double %) hi) brks) [hi])))
             :else brks))
         (levels/breaks [lo hi] (or bins default-bins))))))
 
 (def ^:private value-transforms
-  "Named linear color `:transform`s: `{:forward f :inverse g}`."
-  {:sqrt {:forward (fn ^double [^double v] (m/sqrt v)) :inverse (fn ^double [^double v] (* v v))}
+  "Named linear colour `:transform`s: `{:forward f :inverse g}`, functions of a double."
+  {:sqrt {:forward (fn ^double [^double v] (m/sqrt v)) :inverse (fn ^double [^double v] (m/* v v))}
    :log {:forward (fn ^double [^double v] (m/log10 v)) :inverse (fn ^double [^double v] (m/pow 10.0 v))}
-   :sq {:forward (fn ^double [^double v] (* v v)) :inverse (fn ^double [^double v] (m/sqrt v))}
+   :sq {:forward (fn ^double [^double v] (m/* v v)) :inverse (fn ^double [^double v] (m/sqrt v))}
    :exp {:forward (fn ^double [^double v] (m/exp v)) :inverse (fn ^double [^double v] (m/log v))}})
 
-(def ^:private identity-transform {:forward (fn ^double [^double v] v) :inverse (fn ^double [^double v] v)})
+(def ^:private identity-transform
+  "The transform of a linear scale without `:transform`: both ways the value itself."
+  {:forward (fn ^double [^double v] v) :inverse (fn ^double [^double v] v)})
 
-(def ^:private ^:const inverse-steps
+(def ^{:private true :const true :tag 'long} inverse-steps
   "Bisection steps of a numerically inverted transform (the interval shrinks 2^steps times)."
   64)
 
 (defn- monotonic-inverse
-  "Inverse of `forward` - a function monotonic over `[lo hi]` - by bisection: a function of a transformed value giving
-  the value in `[lo hi]` mapped to it (the nearest end for values outside the transformed range)."
+  "Numeric inverse of a monotonic function by bisection.
+
+  Parameters:
+
+  - `forward`: a function of a number, monotonic over `[lo hi]`.
+  - `lo`, `hi` (double): the interval.
+
+  Returns a function of a transformed value giving the value in `[lo hi]` mapped to it ([[inverse-steps]] bisection steps); the nearest end for values outside the transformed range. Building it never calls `forward` (see [[transformable!]])."
   [forward ^double lo ^double hi]
   (let [f #(double (forward %))
-        ;; evaluated on first use: building the inverse never calls `forward` (see transformable!)
-        increasing? (delay (<= (double (f lo)) (double (f hi))))]
+        increasing? (delay (m/<= (double (f lo)) (double (f hi))))]
     (fn ^double [^double y]
-      (loop [a lo b hi i 0]
-        (let [mid (* 0.5 (+ a b))]
-          (if (>= i (long inverse-steps))
+      (loop [a lo
+             b hi
+             i 0]
+        (let [mid (m/* 0.5 (m/+ a b))]
+          (if (m/>= i inverse-steps)
             mid
-            (if (= @increasing? (< (double (f mid)) y))
-              (recur mid b (inc i))
-              (recur a mid (inc i)))))))))
+            (if (= @increasing? (m/< (double (f mid)) y))
+              (recur mid b (m/long-inc i))
+              (recur a mid (m/long-inc i)))))))))
 
 (defn value-transform
-  "`{:forward f :inverse g}` (functions of a double) of the linear scale `spec`'s `:transform` (see the namespace
-  doc): a named one, a user function (its inverse numeric over the spec's `:domain`, see [[monotonic-inverse]]), or
-  the identity without one."
+  "Transform of a linear scale spec (see the namespace doc).
+
+  Parameters:
+
+  - `spec` (map): the scale spec - `:transform` (a name of [[transform-names]], a function or `nil`), `:domain` `[lo hi]`.
+
+  Returns `{:forward f :inverse g}`, functions of a double: a named transform, a user function (its inverse numeric over the domain, see [[monotonic-inverse]]), or the identity without one."
   [{:keys [transform domain]}]
   (if (fn? transform)
     (let [[lo hi] domain]
@@ -492,9 +728,17 @@
     (get value-transforms transform identity-transform)))
 
 (defn- transformable!
-  "`transform` when the linear `domain` of aesthetic `k` suits it (`:sqrt` and `:sq` - from 0, `:log` - above 0) and
-  it gives finite values at both domain ends (a function that throws there doesn't), else throws
-  `ex-info {:key :transform}`."
+  "Checks a linear colour transform against its domain.
+
+  Parameters:
+
+  - `k` (keyword): the dimension.
+  - `transform`: a name of [[transform-names]] or a function.
+  - `domain`: `[lo hi]`.
+
+  Returns `transform` when the domain suits it (`:sqrt` and `:sq` - from 0, `:log` - above 0) and it gives finite values at both domain ends.
+
+  Throws `ex-info {:key :transform}` otherwise (a function that throws at an end fails)."
   [k transform [lo hi :as domain]]
   (let [fail! #(schema/fail! (str "Scale :transform " (if (fn? transform) "function" transform) " " %)
                              {:key :transform :in [:scales k :transform] :value transform})
@@ -502,21 +746,28 @@
         finite-at? (fn [v] (try (m/valid-double? (double (forward (double v))))
                                 (catch Exception _ false)))]
     (cond
-      (and (= :log transform) (<= (double lo) 0.0)) (fail! (str "needs a domain above 0, got " lo " as its start."))
-      (and (#{:sqrt :sq} transform) (neg? (double lo))) (fail! (str "needs a domain from 0, got " lo " as its start."))
+      (and (= :log transform) (m/<= (double lo) 0.0)) (fail! (str "needs a domain above 0, got " lo " as its start."))
+      (and (#{:sqrt :sq} transform) (m/neg? (double lo))) (fail! (str "needs a domain from 0, got " lo " as its start."))
       (not (and (finite-at? lo) (finite-at? hi)))
       (fail! (str "should give finite values at the domain ends " lo " and " hi "."))
       :else transform)))
 
 (defn scale-spec
-  "Scale of aesthetic dimension `k` from the plot's scale `spec` (may be `{}`), the merged data `extent`
-  (a [[cljplot2.data.rows/value-extent]], may be `nil`), `na?` (some mapped value is NA) and theme `palette`.
-  `nil` when there is neither an explicit domain nor data. Throws `ex-info` (`:key` - the offending option) for
-  options the resolved kind doesn't allow.
-  Returns `{:kind :domain :range :na?}` (identity: no `:domain` / `:range`; binned: also `:breaks`, the domain being
-  their ends; a linear scale over dates: the domain in epoch milliseconds and `:temporal-sample` - a date of the
-  data's type, for the color bar's labels) plus the spec's `:spread`, `:midpoint`, `:reverse`, `:area`,
-  `:formatter`, `:ticks`, `:integer-ticks`, `:title`, `:legend` when given."
+  "Scale of an aesthetic dimension - plain data, also the finalized scale (no pixel range, `nice` or padding).
+
+  Parameters:
+
+  - `k` (keyword): the dimension, one of [[dims]].
+  - `spec` (map): the plot's scale spec (may be `{}`), see the namespace doc.
+  - `extent` (map or `nil`): the merged data extent ([[cljplot2.data.rows/value-extent]]).
+  - `na?`: some mapped value is NA.
+  - `palette` (map): the theme `:palette` (default ranges).
+
+  Returns `{:kind :domain :range :na?}` (identity: no `:domain` / `:range`; binned: also `:breaks`, the domain being their ends; a linear scale over dates: the domain in epoch milliseconds and `:temporal-sample` - a date of the data's type, for the colour bar's labels) plus the spec's `:spread`, `:midpoint`, `:transform`, `:reverse`, `:area`, `:formatter`, `:ticks`, `:integer-ticks`, `:title`, `:legend` when given; `nil` when there is neither an explicit domain nor data.
+
+  Throws `ex-info` keyed by the offending option for options the resolved kind doesn't allow ([[option-problems]]), `:ticks` of the wrong type, numeric-only options on dates, a level map `:range` missing a level, or a domain a `:transform` doesn't suit ([[transformable!]]).
+
+  See also [[attribute-fn]], [[legend-entries]]."
   [k spec extent na? palette]
   (let [explicit (:domain spec)]
     (when (or explicit extent)
@@ -550,7 +801,7 @@
             (when-let [missing (seq (remove #(contains? index (level-key %)) domain))]
               (schema/fail! (str "Level map :range has no attribute for " (pr-str (vec missing)) ".")
                             {:key :range :in [:scales k :range] :value range}))))
-        (cond-> {:kind kind :na? (boolean na?)}
+        (cond-> {:kind kind :na? na?}
           (not= kind :identity) (assoc :domain domain :range range)
           breaks (assoc :breaks breaks)
           (:spread spec) (assoc :spread true)
@@ -566,100 +817,148 @@
           (contains? spec :legend) (assoc :legend (:legend spec)))))))
 
 (defn- evenly
-  "`n` values evenly spread over `[lo hi]` (the midpoint for one)."
-  [^long n [lo hi]]
-  (let [lo (double lo) hi (double hi)]
-    (if (= n 1)
-      [(* 0.5 (+ lo hi))]
-      (mapv #(+ lo (* (- hi lo) (/ (double %) (double (dec n))))) (range n)))))
+  "Values evenly spread over an interval.
+
+  Parameters:
+
+  - `n` (long): the count, at least 1.
+  - `[lo hi]`: the interval.
+
+  Returns a vector of `n` doubles from `lo` to `hi`; the midpoint for one."
+  [^long n [^double lo ^double hi]]
+  (if (m/one? n)
+    [(m/* 0.5 (m/+ lo hi))]
+    (mapv #(m/+ lo (m/* (m/- hi lo) (m// (double %) (double (m/long-dec n))))) (range n))))
 
 (defn- size-fn
-  "Function of `t` in `[0 1]` giving the size within `[a b]` (`range`): linear, or with `area?` the size whose square
-  (the shape's area) is linear in `t`."
-  [[a b] area?]
-  (let [a (double a) b (double b)]
-    (if area?
-      (let [a2 (* a a) b2 (* b b)] (fn ^double [^double t] (m/sqrt (+ a2 (* t (- b2 a2))))))
-      (fn ^double [^double t] (+ a (* t (- b a)))))))
+  "Size mapping of a size range.
+
+  Parameters:
+
+  - `[a b]`: the size range.
+  - `area?`: the shape's area (the size squared), not its size, is linear in `t`.
+
+  Returns a function of `t` in `[0 1]` giving the size within `[a b]`: `a + t (b - a)`, or with `area?` the square root of `a² + t (b² - a²)`."
+  [[^double a ^double b] area?]
+  (if area?
+    (let [a2 (m/* a a)
+          b2 (m/* b b)]
+      (fn ^double [^double t] (m/sqrt (m/+ a2 (m/* t (m/- b2 a2))))))
+    (fn ^double [^double t] (m/+ a (m/* t (m/- b a))))))
 
 (defn- ordinal-attributes
-  "Attribute of every level of ordinal scale `spec` of dimension `k`: from a level map; sizes evenly over the range
-  (in area with `:area`); `:spread` colors resampled from the range; otherwise the range cycled. Reversed with
-  `:reverse`."
+  "Attributes of the levels of an ordinal aesthetic scale.
+
+  Parameters:
+
+  - `k` (keyword): the dimension.
+  - `spec` (map): the scale - `:domain`, `:range`, `:spread`, `:reverse`, `:area`.
+
+  Returns a vector, one attribute per level: from a level map; sizes evenly over the range (in area with `:area`, see [[size-fn]]); `:spread` colours resampled from the range; otherwise the range cycled. Reversed with `:reverse`."
   [k {:keys [domain range spread reverse area]}]
   (let [n (count domain)
         attributes (cond
                      (map? range) (let [index (update-keys range level-key)] (mapv #(get index (level-key %)) domain))
                      (= k :size) (mapv (size-fn range area) (evenly n [0.0 1.0]))
-                     spread (vec (c/resample range (max 1 n)))
+                     spread (vec (c/resample range (m/max 1 n)))
                      :else (mapv #(nth range (mod (long %) (count range))) (clojure.core/range n)))]
     (if reverse (vec (rseq attributes)) attributes)))
 
 (defn- unit
-  "`v` (within `[lo hi]`) normalized into `[0 1]`; 0.5 for a zero span."
+  "Position of a value in an interval.
+
+  Parameters:
+
+  - `lo`, `hi` (double): the interval.
+  - `v` (double): the value, within it.
+
+  Returns `v` normalized into `[0 1]`; 0.5 for a zero span."
   ^double [^double lo ^double hi ^double v]
-  (if (== lo hi) 0.5 (/ (- v lo) (- hi lo))))
+  (if (m/== lo hi) 0.5 (m// (m/- v lo) (m/- hi lo))))
 
 (defn- unit-fn
-  "Function of a value within `[lo hi]` giving its position `t` in `[0 1]`: linear, or - with a `midpoint` -
-  symmetric: the midpoint at 0.5, both sides scaled by the larger distance to it (a midpoint outside the domain
-  colours one side only)."
+  "Normalization of a linear domain, optionally around a midpoint.
+
+  Parameters:
+
+  - `lo`, `hi` (numbers): the domain.
+  - `midpoint` (number or `nil`): the value placed at 0.5.
+
+  Returns a function of a value within `[lo hi]` giving its position `t` in `[0 1]`: linear ([[unit]]), or with a `midpoint` symmetric - both sides scaled by the larger distance to it (a midpoint outside the domain colours one side only; 0.5 everywhere for a zero distance)."
   [lo hi midpoint]
-  (let [lo (double lo) hi (double hi)]
+  (let [a (double lo)
+        b (double hi)]
     (if (some? midpoint)
       (let [mid (double midpoint)
-            d (m/max (m/abs (- lo mid)) (m/abs (- hi mid)))]
-        (fn ^double [^double v] (if (zero? d) 0.5 (+ 0.5 (/ (- v mid) (* 2.0 d))))))
-      (fn ^double [^double v] (unit lo hi v)))))
+            d (m/max (m/abs (m/- a mid)) (m/abs (m/- b mid)))]
+        (fn ^double [^double v] (if (m/zero? d) 0.5 (m/+ 0.5 (m// (m/- v mid) (m/* 2.0 d))))))
+      (fn ^double [^double v] (unit a b v)))))
 
 (defn- gradient-of
-  "Gradient (function of `t` in `[0 1]`) of a color range: a function as is, colors through clojure2d."
+  "Gradient of a colour range.
+
+  Parameters:
+
+  - `range`: a function of `t` or colours.
+
+  Returns a function of `t` in `[0 1]` giving a colour: the function as is, else the colours' clojure2d gradient."
   [range]
   (if (fn? range) range (c/gradient range)))
 
 (defn bin-colors
-  "Colors of the bins of binned scale `spec`: the range resampled to one color per bin (a palette of exactly that
-  many colors gives its colors); with `:midpoint` the gradient at each bin centre's symmetric position. Reversed
-  with `:reverse`."
+  "Colours of the bins of a binned scale.
+
+  Parameters:
+
+  - `spec` (map): the binned scale - `:breaks`, `:range`, `:midpoint`, `:reverse`, `:domain`.
+
+  Returns a vector, one colour per bin: the range resampled to the bin count (a palette of exactly that many colours gives its colours); with `:midpoint` the gradient at each bin centre's symmetric position (see [[unit-fn]]). Reversed with `:reverse`."
   [{:keys [breaks range midpoint reverse domain]}]
-  (let [n (dec (count breaks))
+  (let [n (m/long-dec (count breaks))
         colors (if (some? midpoint)
                  (let [g (gradient-of range)
                        t (unit-fn (first domain) (second domain) midpoint)]
-                   (mapv (fn [[a b]] (g (t (* 0.5 (+ (double a) (double b)))))) (partition 2 1 breaks)))
-                 (vec (c/resample range (max 1 n))))]
+                   (mapv (fn [[^double a ^double b]] (g (t (m/* 0.5 (m/+ a b))))) (partition 2 1 breaks)))
+                 (vec (c/resample range (m/max 1 n))))]
     (if reverse (vec (rseq colors)) colors)))
 
 (defn attribute-fn
-  "Function of a data value of dimension `k` with scale `spec` giving its style attribute (color, shape, size):
-  `nil` (NA) gives `na`; a value outside the domain (not a level; not a number within `[lo hi]`) gives `nil` -
-  callers skip it. Identity: the value itself (`nil` for an invalid one)."
+  "Mapping of data values of an aesthetic to style attributes.
+
+  Parameters:
+
+  - `k` (keyword): the dimension.
+  - `spec` (map): the scale ([[scale-spec]]).
+  - `na`: the NA attribute.
+
+  Returns a function of a data value giving its attribute (colour, shape, size, dash, pattern): `nil` (NA) gives `na`; a value outside the domain (not a level; not a number within `[lo hi]`; not in a bin) gives `nil` - callers skip it. Identity: the value itself (a size as a double; `nil` for an invalid value).
+
+  See also [[ordinal-attributes]], [[bin-colors]]."
   [k spec na]
   (case (:kind spec)
     :ordinal (let [index (zipmap (map level-key (:domain spec)) (ordinal-attributes k spec))]
                (fn [v] (if (nil? v) na (get index (level-key v)))))
-    :linear (let [[lo hi] (:domain spec)
-                  lo (double lo) hi (double hi)
+    :linear (let [[^double lo ^double hi] (:domain spec)
                   range (:range spec)
                   {:keys [forward]} (value-transform spec)
                   mid (:midpoint spec)
                   t-in (unit-fn (forward lo) (forward hi) (when (some? mid) (forward (double mid))))
-                  t-of (fn ^double [^double v] (double (t-in (double (forward v)))))
-                  t-of (if (:reverse spec) (fn ^double [^double v] (- 1.0 (double (t-of v)))) t-of)
+                  t-forward (fn ^double [^double v] (double (t-in (double (forward v)))))
+                  t-of (if (:reverse spec) (fn ^double [^double v] (m/- 1.0 (double (t-forward v)))) t-forward)
                   f (if (= k :color)
                       (let [g (gradient-of range)] (fn [^double t] (g t)))
                       (size-fn range (:area spec)))]
               (fn [v]
-                (cond
-                  (nil? v) na
-                  :else (let [x (data/x-key v)]
-                          (when (and x (<= lo (double x) hi)) (f (t-of (double x))))))))
+                (if (nil? v)
+                  na
+                  (let [x (data/x-key v)]
+                    (when (and x (m/<= lo (double x) hi)) (f (t-of (double x))))))))
     :binned (let [arr (double-array (:breaks spec))
                   colors (bin-colors spec)]
               (fn [v]
                 (cond
                   (nil? v) na
-                  (number? v) (let [i (levels/bin-index arr (double v))] (when-not (neg? i) (colors i)))
+                  (number? v) (let [i (levels/bin-index arr (double v))] (when-not (m/neg? i) (colors i)))
                   :else nil)))
     :identity (fn [v]
                 (cond
@@ -668,64 +967,90 @@
                   :else nil))))
 
 (defn palette-color-fn
-  "`(f i)` - the `i`-th color (0 <= i < `n`) of the theme's `[:palette :color]` as an ordinal scale over `n` levels
-  would give it (the NA color for other `i`)."
+  "Colours of the theme palette as an ordinal scale gives them.
+
+  Parameters:
+
+  - `theme` (map): a theme (`[:palette :color]`, `[:palette :na]`).
+  - `n` (long): the level count.
+
+  Returns `(f i)` - the `i`-th colour (0 <= i < `n`) an ordinal colour scale over `n` levels gives; the NA colour for other `i`."
   [theme n]
-  (attribute-fn :color (scale-spec :color {:kind :ordinal :domain (vec (range (max 1 (long n))))} nil false (:palette theme))
+  (attribute-fn :color (scale-spec :color {:kind :ordinal :domain (vec (range (m/max 1 (long n))))} nil false (:palette theme))
                 (get-in theme [:palette :na])))
 
 (defn explicit-ticks
-  "Legend ticks of an explicit `:ticks` vector `ticks` (numbers, or dates of a scale over dates) over the domain
-  `[lo hi]` (numbers - epoch milliseconds for dates, see [[cljplot2.data.rows/x-key]]): the values inside it, sorted,
-  equal ones once (`5` and `5.0` alike - the first given kept); `[]` when none is inside."
-  [ticks lo hi]
-  (let [lo (double lo) hi (double hi)]
-    (->> ticks
-         (filter #(<= lo (double (data/x-key %)) hi))
-         (reduce (fn [acc t] (let [key (double (data/x-key t))] (if (contains? acc key) acc (assoc acc key t)))) (sorted-map))
-         vals
-         vec)))
+  "Legend ticks of an explicit `:ticks` vector.
+
+  Parameters:
+
+  - `ticks` (sequence): numbers, or dates of a scale over dates.
+  - `lo`, `hi` (numbers): the domain - epoch milliseconds for dates (see [[cljplot2.data.rows/x-key]]).
+
+  Returns a vector of the ticks inside `[lo hi]`, sorted, equal ones once (`5` and `5.0` alike - the first given kept); `[]` when none is inside."
+  [ticks ^double lo ^double hi]
+  (->> ticks
+       (filter #(m/<= lo (double (data/x-key %)) hi))
+       (reduce (fn [acc t] (let [key (double (data/x-key t))] (if (contains? acc key) acc (assoc acc key t)))) (sorted-map))
+       vals
+       vec))
 
 (defn integer-ticks
-  "Counted ticks `ticks` (inside `[lo hi]`) of a scale with `:integer-ticks`: the whole numbers among them; when fewer
-  than two are whole, the whole numbers of `[lo hi]` if there are one to `n` of them; else `ticks` as they are (no
-  whole number in the domain to show, or more than `n` - the whole ticks found, if any)."
-  [ticks lo hi n]
-  (let [lo (double lo) hi (double hi) n (long n)
-        whole (filterv #(== (double %) (m/floor (double %))) ticks)
-        in-range (mapv double (range (long (m/ceil lo)) (inc (long (m/floor hi)))))]
+  "Counted ticks of a scale with `:integer-ticks`.
+
+  Parameters:
+
+  - `ticks` (sequence): the counted ticks, inside the domain.
+  - `lo`, `hi` (double): the domain.
+  - `n` (long): the tick count asked for.
+
+  Returns the whole numbers among `ticks`; when fewer than two are whole, the whole numbers of `[lo hi]` if there are one to `max(n, 2)` of them; else the whole ticks found, if any; else `ticks` as they are."
+  [ticks ^double lo ^double hi ^long n]
+  (let [whole (filterv #(m/== (double %) (m/floor (double %))) ticks)
+        in-range (mapv double (range (long (m/ceil lo)) (m/long-inc (long (m/floor hi)))))]
     (cond
-      (<= 2 (count whole)) whole
-      (<= 1 (count in-range) (max n 2)) in-range
+      (m/<= 2 (count whole)) whole
+      (m/<= 1 (count in-range) (m/max n 2)) in-range
       (seq whole) whole
       :else ticks)))
 
+(defn- linear-legend-ticks
+  "Legend entries of a linear size scale.
+
+  Parameters:
+
+  - `spec` (map): the scale - `:domain`, `:ticks`, `:integer-ticks`, `:formatter`.
+
+  Returns `[{:label :value}]` at ticks of the domain, labelled as axis ticks: `:ticks` a count (default [[size-legend-ticks]]) or the values themselves ([[explicit-ticks]]); counted ticks at whole numbers with `:integer-ticks` ([[integer-ticks]]); one tick for a zero span."
+  [{:keys [domain formatter] explicit :ticks whole-ticks? :integer-ticks}]
+  (let [lo (double (first domain))
+        hi (double (second domain))
+        n (if (integer? explicit) explicit size-legend-ticks)
+        ws (s/scale :linear (cond-> {:domain (if (m/== lo hi) [lo (m/inc lo)] [lo hi])
+                                     :ticks n}
+                              formatter (assoc :formatter formatter)))
+        ticks (cond
+                (sequential? explicit) (explicit-ticks explicit lo hi)
+                (m/== lo hi) [lo]
+                :else (cond-> (filterv #(m/<= lo (double %) hi) (s/ticks ws))
+                        whole-ticks? (integer-ticks lo hi n)))]
+    (mapv (fn [t l] {:label l :value t}) ticks
+          (scale/tick-labels ws {:kind :linear :formatter formatter} ticks))))
+
 (defn legend-entries
-  "Legend entries `[{:label :value}]` of scale `spec` of dimension `k` (`:value nil` - the NA entry, last), or `nil`
-  when it has no legend: `:legend false`, an identity scale, or linear / binned color (a color bar instead).
-  Ordinal: one per level (`(str level)` or `:formatter`); linear size: ticks of the domain (labels as axis ticks) -
-  `:ticks` a count (default 5) or the values themselves (see [[explicit-ticks]]); counted ticks at whole numbers with
-  `:integer-ticks` (see [[integer-ticks]])."
+  "Legend entries of an aesthetic scale.
+
+  Parameters:
+
+  - `k` (keyword): the dimension.
+  - `spec` (map): the scale ([[scale-spec]]).
+
+  Returns `[{:label :value}]` (`:value nil` - the NA entry, last when the scale has `:na?`): ordinal - one per level (`(str level)`, or through `:formatter`); linear size - ticks of the domain ([[linear-legend-ticks]]). `nil` when the scale has no legend: `:legend false`, an identity scale, or linear / binned colour (a colour bar instead)."
   [k spec]
   (when-not (or (false? (:legend spec)) (= :identity (:kind spec))
                 (and (= k :color) (#{:linear :binned} (:kind spec))))
     (let [fmt (or (:formatter spec) str)
           entries (if (= :ordinal (:kind spec))
                     (mapv (fn [level] {:label (str (fmt level)) :value level}) (:domain spec))
-                    (let [[lo hi] (:domain spec)
-                          lo (double lo) hi (double hi)]
-                      (let [explicit (:ticks spec)
-                            n (if (integer? explicit) explicit size-legend-ticks)
-                            ws (s/scale :linear (cond-> {:domain (if (== lo hi) [lo (inc lo)] [lo hi])
-                                                         :ticks n}
-                                                  (:formatter spec) (assoc :formatter (:formatter spec))))
-                            in-domain #(<= lo (double %) hi)
-                            ticks (cond
-                                    (sequential? explicit) (explicit-ticks explicit lo hi)
-                                    (== lo hi) [lo]
-                                    :else (cond-> (filterv in-domain (s/ticks ws))
-                                            (:integer-ticks spec)
-                                            (integer-ticks lo hi n)))]
-                        (mapv (fn [t l] {:label l :value t}) ticks
-                              (scale/tick-labels ws {:kind :linear :formatter (:formatter spec)} ticks)))))]
+                    (linear-legend-ticks spec))]
       (cond-> entries (:na? spec) (conj {:label "NA" :value nil})))))

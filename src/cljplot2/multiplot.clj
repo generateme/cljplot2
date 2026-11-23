@@ -18,8 +18,8 @@
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
-(def ^{:doc "Option entries every builder takes (a shared group, `:builder`): the plot title, scales deep-merged into the builder's and a theme; their values are validated with the built plot."}
-  builder-entries
+(def builder-entries
+  "Option entries every builder takes (a shared group, `:builder`): the plot title, scales deep-merged into the builder's and a theme; their values are validated with the built plot."
   (schema/in-fragment
    :builder
    [(schema/optional :title {:description "plot title (a text or label options)"} any?)
@@ -38,8 +38,8 @@
   (let [by-key (into {} (map (juxt first identity)) builder-entries)]
     (mapv by-key ks)))
 
-(def ^{:doc "Schema of the `options` of [[arrange]]: the plot `:arrange` layout entries but `:plots` (the shared group `:arrange`, see [[cljplot2.layout.plot-grid/arrange-entries]]) and the builder's `:title` and `:theme` (a multiplot takes no `:scales` - each sub-plot has its own)."}
-  arrange-options
+(def arrange-options
+  "Schema of the `options` of [[arrange]]: the plot `:arrange` layout entries but `:plots` (the shared group `:arrange`, see [[cljplot2.layout.plot-grid/arrange-entries]]) and the builder's `:title` and `:theme` (a multiplot takes no `:scales` - each sub-plot has its own)."
   (-> [:map {:closed true}]
       (into (remove #(= :plots (first %))) plot-grid/arrange-entries)
       (into (builder-entries-of [:title :theme]))))
@@ -71,7 +71,8 @@
 
 ;; scatter-plot matrix
 
-(def ^{:const true :tag 'long :doc "Most variables [[pairs]] takes (each cell is a sub-plot)."} max-pairs-variables
+(def ^{:const true :tag 'long} max-pairs-variables
+  "Most variables [[pairs]] takes (each cell is a sub-plot)."
   20)
 
 (defn- variable-domain
@@ -123,13 +124,13 @@
   [v]
   (map? v))
 
-(def ^{:private true :doc "Schema of a pairs slot: a chart, a sequence of charts or `nil` (none)."}
-  slot-schema
+(def ^:private slot-schema
+  "Schema of a pairs slot: a chart, a sequence of charts or `nil` (none)."
   [:maybe [:multi {:dispatch chart-value? :cljplot2/type-doc "a chart or a vector of charts"}
            [true pipeline/chart-schema] [false [:sequential pipeline/chart-schema]]]])
 
-(def ^{:doc "Schema of the `options` of [[pairs]] (the variables' count and values are checked against the data)."}
-  pairs-options
+(def pairs-options
+  "Schema of the `options` of [[pairs]] (the variables' count and values are checked against the data)."
   (-> [:map {:closed true}
        [:variables {:description "the numeric columns, in matrix order"}
         [:sequential {:min 2 :max max-pairs-variables} keyword?]]

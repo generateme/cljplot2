@@ -24,28 +24,28 @@
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
-(def ^{:private true :doc "Size scale attributes of a mapped network node `:size`: pixel range and area-proportional sizes."}
-  node-size-range
+(def ^:private node-size-range
+  "Size scale attributes of a mapped network node `:size`: pixel range and area-proportional sizes."
   {:range [6 24] :area true})
 
-(def ^{:private true :const true :tag 'double :doc "Room around a network's unit square layout, a fraction of its side."}
-  frame-padding
+(def ^{:private true :const true :tag 'double} frame-padding
+  "Room around a network's unit square layout, a fraction of its side."
   0.06)
 
-(def ^{:private true :const true :tag 'double :doc "Upper end of a network axis domain: 1 plus [[frame-padding]]."}
-  frame-padding+
+(def ^{:private true :const true :tag 'double} frame-padding+
+  "Upper end of a network axis domain: 1 plus [[frame-padding]]."
   (m/inc frame-padding))
 
-(def ^{:private true :const true :tag 'double :doc "Room right of a labelled network: three times [[frame-padding]]."}
-  frame-padding3
+(def ^{:private true :const true :tag 'double} frame-padding3
+  "Room right of a labelled network: three times [[frame-padding]]."
   (m/* 3.0 frame-padding))
 
-(def ^{:private true :const true :tag 'double :doc "Lower end of a network axis domain: minus [[frame-padding]]."}
-  -frame-padding
+(def ^{:private true :const true :tag 'double} -frame-padding
+  "Lower end of a network axis domain: minus [[frame-padding]]."
   (m/- frame-padding))
 
-(def ^{:private true :const true :tag 'double :doc "Smallest arrow head of a directed network, in pixels."}
-  min-arrow
+(def ^{:private true :const true :tag 'double} min-arrow
+  "Smallest arrow head of a directed network, in pixels."
   7.0)
 
 (defn- keys-of
@@ -59,12 +59,12 @@
   [entries]
   (mapv first entries))
 
-(def ^{:private true :doc "Option keys forwarded to [[cljplot2.data.graph/graph]]."}
-  graph-keys
+(def ^:private graph-keys
+  "Option keys forwarded to [[cljplot2.data.graph/graph]]."
   (keys-of graph/graph-entries))
 
-(def ^{:private true :doc "Schema of a mapping or a chart options map passed on to a chart (validated by the chart, at build)."}
-  node-map
+(def ^:private node-map
+  "Schema of a mapping or a chart options map passed on to a chart (validated by the chart, at build)."
   [:map-of keyword? any?])
 
 (defn- node-radius-fn
@@ -132,8 +132,8 @@
   [merged-theme kind style-name style]
   (merge (theme/chart-style merged-theme kind {:theme-style style-name}) style))
 
-(def ^{:doc "Options schema of [[network]]: its own entries, those of [[cljplot2.data.graph/graph]] and [[cljplot2.data.graph/layout]] (forwarded) and the builder's."}
-  network-options
+(def network-options
+  "Options schema of [[network]]: its own entries, those of [[cljplot2.data.graph/graph]] and [[cljplot2.data.graph/layout]] (forwarded) and the builder's."
   (schema/options-map
    [(schema/nilable :mapping {:description "node aesthetics (:color, :size, :shape): accessors of the nodes (their row's columns, :degree, :in, :out)"}
                     node-map)
@@ -293,12 +293,12 @@
       (seq left) (conj (chart/text {:data (mapv row left) :mapping {:x :x :y :y :label :label :angle :angle}
                                     :anchor [:right :middle] :anchor-frame :text :size size :reserve-room true})))))
 
-(def ^{:private true :const true :tag 'double :doc "Room past the root on a dendrogram's height axis (a fraction of the root height): its cross line stays inside the panel instead of on (and clipped at) its border."}
-  root-room
+(def ^{:private true :const true :tag 'double} root-room
+  "Room past the root on a dendrogram's height axis (a fraction of the root height): its cross line stays inside the panel instead of on (and clipped at) its border."
   0.03)
 
-(def ^{:private true :const true :tag 'double :doc "Factor of the root height giving the top of a dendrogram's height axis: 1 plus [[root-room]]."}
-  root-room+
+(def ^{:private true :const true :tag 'double} root-room+
+  "Factor of the root height giving the top of a dendrogram's height axis: 1 plus [[root-room]]."
   (m/inc root-room))
 
 (defn- height-axis
@@ -312,12 +312,12 @@
   [^double top]
   {:domain [0.0 (m/* root-room+ (if (m/pos? top) top 1.0))] :nice false :expand [0.0 0.0]})
 
-(def ^{:private true :doc "Both axes of a circular plot: the unit circle and the radial labels' start (radius 1.03), hidden; the labels keep their own pixel room past it (text `:reserve-room`, see [[radial-labels]]), whatever their length and the panel size."}
-  circle-axis
+(def ^:private circle-axis
+  "Both axes of a circular plot: the unit circle and the radial labels' start (radius 1.03), hidden; the labels keep their own pixel room past it (text `:reserve-room`, see [[radial-labels]]), whatever their length and the panel size."
   {:domain [-1.05 1.05] :nice false :expand [0.0 0.0] :axis false})
 
-(def ^{:doc "Options schema of [[dendrogram]]: its own entries, those of [[cljplot2.data.tree/layout]] (forwarded) and the builder's."}
-  dendrogram-options
+(def dendrogram-options
+  "Options schema of [[dendrogram]]: its own entries, those of [[cljplot2.data.tree/layout]] (forwarded) and the builder's."
   (schema/options-map
    [(schema/nilable :labels {:description "names of an hclust result's observations, in order (one per observation)"
                              :cljplot2/default-doc "the observations' indices"}
@@ -408,8 +408,8 @@
       (seq leaves) (conj (text leaves [:left :middle] 6))
       (seq groups) (conj (text groups [:right :middle] -6)))))
 
-(def ^{:doc "Options schema of [[tree]]: its own entries, those of [[cljplot2.data.tree/node-link-layout]] (forwarded) and the builder's."}
-  tree-options
+(def tree-options
+  "Options schema of [[tree]]: its own entries, those of [[cljplot2.data.tree/node-link-layout]] (forwarded) and the builder's."
   (schema/options-map
    [(schema/optional :labels? {:description "node names (cartesian - leaves right of their node, groups left; circular - leaf names outward)"
                                :default true}
@@ -515,8 +515,8 @@
   [matrix]
   (apply mapv vector matrix))
 
-(def ^{:doc "Options schema of [[clustered-heatmap]]: its own entries and the builder's."}
-  clustered-heatmap-options
+(def clustered-heatmap-options
+  "Options schema of [[clustered-heatmap]]: its own entries and the builder's."
   (schema/options-map
    [[:row {:description "accessor of a row's tile row"} schema/accessor]
     [:col {:description "accessor of a row's tile column"} schema/accessor]
@@ -598,12 +598,12 @@
                     col-tree? (assoc :heights [th (m/- 1.0 th)])
                     title (assoc :title title)))))
 
-(def ^{:private true :doc "Default colour of bundled edges not coloured by group (`:edge-color`)."}
-  bundle-edge-color
+(def ^:private bundle-edge-color
+  "Default colour of bundled edges not coloured by group (`:edge-color`)."
   (c/color 70 110 180))
 
-(def ^{:doc "Options schema of [[bundle]]: its own entries, those of [[cljplot2.data.tree/bundle-paths]] (forwarded) and the builder's."}
-  bundle-options
+(def bundle-options
+  "Options schema of [[bundle]]: its own entries, those of [[cljplot2.data.tree/bundle-paths]] (forwarded) and the builder's."
   (schema/options-map
    [(schema/optional :alpha {:description "opacity of the edges (leaf points and legend keys stay opaque)" :default 0.4}
                      schema/fraction)
@@ -669,8 +669,8 @@
 
 ;; ordered layouts
 
-(def ^{:doc "Options schema of [[chord]]: its own entries, those of [[cljplot2.data.graph/graph]] and [[cljplot2.data.graph/chord-layout]] (forwarded) and the builder's."}
-  chord-options
+(def chord-options
+  "Options schema of [[chord]]: its own entries, those of [[cljplot2.data.graph/graph]] and [[cljplot2.data.graph/chord-layout]] (forwarded) and the builder's."
   (schema/options-map
    [(schema/optional :alpha {:description "opacity of the ribbons" :default 0.6} schema/fraction)
     (schema/optional :labels? {:description "node names outward from the sectors' middles (nodes without flow unlabelled)" :default true}
@@ -718,20 +718,20 @@
              :labels {:title title :x nil :y nil}}
       user-theme (assoc :theme user-theme))))
 
-(def ^{:private true :doc "Size scale range of mapped arc widths, in pixels."}
-  arc-width-range
+(def ^:private arc-width-range
+  "Size scale range of mapped arc widths, in pixels."
   {:range [0.5 4]})
 
-(def ^{:private true :const true :tag 'double :doc "Room below the node line and above the highest arc (a fraction of its height): nodes and the top arc stay inside the panel."}
-  arc-room
+(def ^{:private true :const true :tag 'double} arc-room
+  "Room below the node line and above the highest arc (a fraction of its height): nodes and the top arc stay inside the panel."
   0.04)
 
-(def ^{:private true :const true :tag 'double :doc "Factor of the highest arc giving the top of an arc diagram's y domain: 1 plus [[arc-room]]."}
-  arc-room+
+(def ^{:private true :const true :tag 'double} arc-room+
+  "Factor of the highest arc giving the top of an arc diagram's y domain: 1 plus [[arc-room]]."
   (m/inc arc-room))
 
-(def ^{:doc "Options schema of [[arc]]: its own entries, those of [[cljplot2.data.graph/graph]] and [[cljplot2.data.graph/arc-layout]] (forwarded) and the builder's."}
-  arc-options
+(def arc-options
+  "Options schema of [[arc]]: its own entries, those of [[cljplot2.data.graph/graph]] and [[cljplot2.data.graph/arc-layout]] (forwarded) and the builder's."
   (schema/options-map
    [(schema/nilable :mapping {:description "node aesthetics (:color, :size, :shape): accessors of the nodes (their row's columns, :degree, :in, :out)"}
                     node-map)
@@ -813,8 +813,8 @@
 
 ;; sankey, alluvial
 
-(def ^{:private true :doc "An axis of the unit square of a sankey, hidden, with a little room around."}
-  unit-axis
+(def ^:private unit-axis
+  "An axis of the unit square of a sankey, hidden, with a little room around."
   {:domain [-0.01 1.01] :nice false :expand [0.0 0.0] :axis false})
 
 (defn- node-label
@@ -845,8 +845,8 @@
       (seq right) (conj (chart/text {:role :sankey-label :data (mapv #(row (:x0 %) %) right) :mapping {:x :x :y :y :label :label}
                                      :anchor [:right :middle] :offset [-4 0]})))))
 
-(def ^{:doc "Options schema of [[sankey]]: its own entries, those of [[cljplot2.data.graph/graph]] (but `:directed?` - flows are directed) and [[cljplot2.data.graph/sankey-layout]] (forwarded) and the builder's."}
-  sankey-options
+(def sankey-options
+  "Options schema of [[sankey]]: its own entries, those of [[cljplot2.data.graph/graph]] (but `:directed?` - flows are directed) and [[cljplot2.data.graph/sankey-layout]] (forwarded) and the builder's."
   (schema/options-map
    [(schema/nilable :mapping {:description "node aesthetics: only :color"}
                     [:map {:closed true}
@@ -919,8 +919,8 @@
   [axis]
   (if (keyword? axis) (name axis) (str axis)))
 
-(def ^{:doc "Options schema of [[alluvial]]: its own entries, those of [[cljplot2.data.graph/alluvial-graph]] (forwarded) and the builder's."}
-  alluvial-options
+(def alluvial-options
+  "Options schema of [[alluvial]]: its own entries, those of [[cljplot2.data.graph/alluvial-graph]] (forwarded) and the builder's."
   (schema/options-map
    [(schema/optional :alpha {:description "opacity of the strands" :default 0.6} schema/fraction)
     (schema/optional :node-width {:description "stratum width, a fraction of the plot width" :default 0.12} schema/open-fraction)
@@ -986,8 +986,8 @@
 
 ;; sequences
 
-(def ^{:doc "Options schema of [[sequences]]: its own entries, those of [[cljplot2.data.hierarchy/sequence-levels]] (forwarded; `:keep-end?` the builder's own, default `true`) and the builder's."}
-  sequences-options
+(def sequences-options
+  "Options schema of [[sequences]]: its own entries, those of [[cljplot2.data.hierarchy/sequence-levels]] (forwarded; `:keep-end?` the builder's own, default `true`) and the builder's."
   (schema/options-map
    [(schema/optional :inner {:description "radius of the centre hole, a fraction of the outer one" :default 0.3}
                      [:and schema/finite [:>= 0] [:< 1]])

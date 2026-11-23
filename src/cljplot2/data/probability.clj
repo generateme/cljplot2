@@ -9,11 +9,14 @@
     two data sides of different sizes pair the smaller sample's sorted values with the larger one linearly
     interpolated at as many evenly spaced positions (R `qqplot`)
   * P-P ([[probability-pairs]]): the two sides' CDFs at common values - the empirical CDF of a data side (the share
-    of values `<=` v), `cdf` of a distribution side"
+    of values `<=` v), `cdf` of a distribution side
+
+  Functions: [[distribution]], [[distribution-name]] - a distribution side; [[quantile-pairs]], [[probability-pairs]] - the points; [[quartile-line]] - the reference line; [[plotting-positions]], [[interpolated]], [[pooled-values]], [[grid]] - helpers."
   (:require [fastmath.core :as m]
             [fastmath.random :as r]
             [fastmath.stats :as stats]
-            [cljplot2.schema :as schema]))
+            [cljplot2.schema :as schema])
+  (:import [fastmath.java Array]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -25,58 +28,114 @@
    [:and vector? [:cat :keyword [:? :map]]]])
 
 (defn distribution
-  "The fastmath distribution of a validated `spec` (see [[distribution-schema]]); fastmath's exceptions propagate."
+  "Gives the fastmath distribution of a distribution spec.
+
+  Parameters:
+
+  - `spec`: a validated spec (see [[distribution-schema]]) - a fastmath distribution object, `[:name]` or `[:name params]`.
+
+  Returns the distribution object (an object spec itself).
+
+  Fastmath's exceptions for an unknown name or bad parameters propagate."
   [spec]
   (if (r/distribution? spec)
     spec
     (let [[k params] spec] (r/distribution k (or params {})))))
 
 (defn distribution-name
-  "The name of a distribution `spec`: the keyword's name of `[:name ..]`, `nil` for an object."
+  "Gives the name of a distribution spec.
+
+  Parameters:
+
+  - `spec`: a distribution spec (see [[distribution-schema]]).
+
+  Returns the name of the keyword of `[:name ..]` as a string, `nil` for a distribution object."
   [spec]
   (when (vector? spec) (name (first spec))))
 
 (defn plotting-positions
-  "The `n` probabilities `(i - 0.5) / n`, `i` = 1..n."
+  "Gives the plotting positions of a data side (R `ppoints`).
+
+  Parameters:
+
+  - `n` (long): the count of values.
+
+  Returns the `n` probabilities `(i - 0.5) / n`, `i` = 1..n, as a vector."
   [^long n]
-  (mapv (fn [^long i] (/ (- i 0.5) n)) (range 1 (inc n))))
+  (mapv (fn [^long i] (m// (m/- i 0.5) n)) (range 1 (m/long-inc n))))
 
 (defn- interpolate-at
-  "Value of sorted `values` at fractional index `t` (linear between neighbours)."
+  "Gives the value of sorted numbers at a fractional index, linear between neighbours.
+
+  Parameters:
+
+  - `values` (double array): the sorted values, not empty.
+  - `t` (double): the index, from 0.
+
+  Returns the value as a double; an index at or past the last one gives the last value."
   ^double [^doubles values ^double t]
   (let [i (long (m/floor t))
-        last-i (dec (alength values))]
-    (if (>= i last-i)
-      (aget values last-i)
-      (let [a (aget values i)]
-        (+ a (* (- t i) (- (aget values (inc i)) a)))))))
+        last-i (m/long-dec (alength values))]
+    (if (m/>= i last-i)
+      (Array/aget values last-i)
+      (let [a (Array/aget values i)]
+        (m/+ a (m/* (m/- t i) (m/- (Array/aget values (m/long-inc i)) a)))))))
 
 (defn interpolated
-  "`m` values of `sorted` (ascending, not empty) at evenly spaced positions from the first to the last value, linear
-  between neighbours (R `approx(seq_along(x), x, n = m)`); `m` 1 - the first value."
-  [sorted ^long m]
-  (let [values (double-array sorted)
-        span (double (dec (alength values)))]
-    (if (= 1 m)
-      [(aget values 0)]
-      (mapv (fn [^long j] (interpolate-at values (/ (* span j) (dec m)))) (range m)))))
+  "Resamples sorted values at evenly spaced positions (R `approx(seq_along(x), x, n = m)`).
 
-(defn- sorted-values [side] (vec (sort (:values side))))
+  Parameters:
+
+  - `sorted` (sequence of numbers): ascending, not empty.
+  - `m` (long): the count of values wanted, positive.
+
+  Returns a vector of `m` doubles at evenly spaced positions from the first to the last value, linear between neighbours; `m` 1 gives the first value."
+  [sorted ^long m]
+  (let [values (double-array sorted)]
+    (if (m/one? m)
+      [(Array/aget values 0)]
+      (mapv (fn [^double t] (interpolate-at values t)) (m/slice-range 0.0 (m/long-dec (alength values)) m)))))
+
+(defn- sorted-values
+  "Gives the values of a data side sorted ascending.
+
+  Parameters:
+
+  - `side` (map): `{:values [..]}`.
+
+  Returns a vector."
+  [side]
+  (vec (sort (:values side))))
 
 (defn- quantiles-at
-  "Quantiles of a distribution side at probabilities `ps`."
+  "Gives quantiles of a distribution side.
+
+  Parameters:
+
+  - `side` (map): `{:distribution d}`.
+  - `ps` (sequence of numbers): probabilities.
+
+  Returns a vector of doubles, the inverse CDF at each of `ps`."
   [side ps]
   (let [d (:distribution side)] (mapv #(double (r/icdf d %)) ps)))
 
 (defn quantile-pairs
-  "`{:x [..] :y [..]}` Q-Q points of sides `x-side` / `y-side` (`{:values [..]}` - not empty - or `{:distribution
-  d}`), see the namespace doc; `points` - the count of probabilities when both sides are distributions."
+  "Computes the points of a Q-Q plot (see the namespace doc).
+
+  Parameters:
+
+  - `x-side`, `y-side` (maps): `{:values [..]}` (not empty) or `{:distribution d}`.
+  - `points` (long): the count of probabilities when both sides are distributions.
+
+  Returns `{:x [..] :y [..]}` - the two sides' quantiles at common probabilities.
+
+  See also [[probability-pairs]]."
   [x-side y-side ^long points]
   (let [data? (comp some? :values)]
     (cond
       (and (data? x-side) (data? y-side))
-      (let [n (min (count (:values x-side)) (count (:values y-side)))
-            side-quantiles (fn [side] (let [s (sorted-values side)] (if (= n (count s)) s (interpolated s n))))]
+      (let [n (m/min (count (:values x-side)) (count (:values y-side)))
+            side-quantiles (fn [side] (let [s (sorted-values side)] (if (m/== n (count s)) s (interpolated s n))))]
         {:x (side-quantiles x-side) :y (side-quantiles y-side)})
       (data? x-side) (let [s (sorted-values x-side)]
                        {:x s :y (quantiles-at y-side (plotting-positions (count s)))})
@@ -86,58 +145,107 @@
               {:x (quantiles-at x-side ps) :y (quantiles-at y-side ps)}))))
 
 (defn- count-at-most
-  "The count of values of sorted `values` that are `<= v`."
+  "Counts the sorted values at most a value (binary search).
+
+  Parameters:
+
+  - `values` (double array): sorted ascending.
+  - `v` (double): the bound.
+
+  Returns the count of values `<= v` as a long."
   ^long [^doubles values ^double v]
-  (loop [lo 0 hi (alength values)]
-    (if (< lo hi)
-      (let [mid (unsigned-bit-shift-right (+ lo hi) 1)]
-        (if (<= (aget values mid) v) (recur (inc mid) hi) (recur lo mid)))
+  (loop [lo 0
+         hi (alength values)]
+    (if (m/< lo hi)
+      (let [mid (unsigned-bit-shift-right (m/+ lo hi) 1)]
+        (if (m/<= (Array/aget values mid) v) (recur (m/long-inc mid) hi) (recur lo mid)))
       lo)))
 
 (defn- cdf-fn
-  "CDF of a side: the empirical CDF of data values, `cdf` of a distribution."
+  "Makes the CDF of a side.
+
+  Parameters:
+
+  - `side` (map): `{:values [..]}` or `{:distribution d}`.
+
+  Returns a function of a number giving a double: the empirical CDF of data values (the share of values `<=` it), `cdf` of a distribution."
   [side]
   (if-let [vs (:values side)]
     (let [values (double-array vs)
           n (double (alength values))]
       (java.util.Arrays/sort values)
-      (fn [v] (/ (count-at-most values (double v)) n)))
+      (fn [v] (m// (count-at-most values (double v)) n)))
     (let [d (:distribution side)] (fn [v] (double (r/cdf d v))))))
 
 (defn pooled-values
-  "Sorted distinct values of the data sides among `sides`."
+  "Pools the values of data sides.
+
+  Parameters:
+
+  - `sides` (sequence of maps): sides, `{:values [..]}` or `{:distribution d}` (no values).
+
+  Returns the sorted distinct values of the data sides as a vector."
   [sides]
   (vec (sort (distinct (mapcat :values sides)))))
 
 (defn probability-pairs
-  "`{:x [..] :y [..]}` P-P points of sides `x-side` / `y-side` (as [[quantile-pairs]]) at values `at`."
+  "Computes the points of a P-P plot (see the namespace doc).
+
+  Parameters:
+
+  - `x-side`, `y-side` (maps): as in [[quantile-pairs]].
+  - `at` (sequence of numbers): the common values.
+
+  Returns `{:x [..] :y [..]}` - the two sides' CDFs at `at`.
+
+  See also [[pooled-values]], [[grid]]."
   [x-side y-side at]
-  (let [fx (cdf-fn x-side) fy (cdf-fn y-side)]
+  (let [fx (cdf-fn x-side)
+        fy (cdf-fn y-side)]
     {:x (mapv fx at) :y (mapv fy at)}))
 
 (defn grid
-  "`n` (>= 2) evenly spaced values from `lo` to `hi`."
-  [[lo hi] ^long n]
-  (let [lo (double lo) step (/ (- (double hi) lo) (dec n))]
-    (mapv (fn [^long i] (+ lo (* step i))) (range n))))
+  "Gives evenly spaced values over an interval.
+
+  Parameters:
+
+  - `interval` (`[lo hi]`, numbers).
+  - `n` (long): the count of values, at least 2.
+
+  Returns a vector of `n` doubles from `lo` to `hi`, both included."
+  [[^double lo ^double hi] ^long n]
+  (vec (m/slice-range lo hi n)))
 
 (defn- quartiles
-  "First and third quartiles of a side: R type 7 sample quantiles of data, `icdf` of a distribution."
+  "Gives the first and third quartiles of a side.
+
+  Parameters:
+
+  - `side` (map): `{:values [..]}` or `{:distribution d}`.
+
+  Returns `[q1 q3]` (doubles): R type 7 sample quantiles of data, the inverse CDF of a distribution."
   [side]
   (if-let [vs (:values side)]
     (mapv double (stats/quantiles vs [0.25 0.75] :r7))
     (quantiles-at side [0.25 0.75])))
 
 (defn quartile-line
-  "`[slope intercept]` of the line through the sides' first and third quartile pairs (R `qqline`), `nil` when the x
-  quartiles coincide or the line isn't finite."
+  "Computes the reference line of a Q-Q plot (R `qqline`).
+
+  Parameters:
+
+  - `x-side`, `y-side` (maps): as in [[quantile-pairs]].
+
+  Returns `[slope intercept]` of the line through the sides' first and third quartile pairs, `nil` when the x quartiles coincide or the line isn't finite.
+
+  See also [[identity-line]]."
   [x-side y-side]
-  (let [[x1 x3] (quartiles x-side)
-        [y1 y3] (quartiles y-side)
-        dx (- (double x3) (double x1))]
-    (when-not (zero? dx)
-      (let [slope (/ (- (double y3) (double y1)) dx)
-            intercept (- (double y1) (* slope (double x1)))]
+  (let [[^double x1 ^double x3] (quartiles x-side)
+        [^double y1 ^double y3] (quartiles y-side)
+        dx (m/- x3 x1)]
+    (when-not (m/zero? dx)
+      (let [slope (m// (m/- y3 y1) dx)
+            intercept (m/- y1 (m/* slope x1))]
         (when (and (m/valid-double? slope) (m/valid-double? intercept))
           [slope intercept])))))
 

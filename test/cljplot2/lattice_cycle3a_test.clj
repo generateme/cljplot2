@@ -84,11 +84,12 @@
       (is (= (c/to-color :red) (c/to-color (.getRGB ^BufferedImage (render red-near) 28 25))))
       (is (= (c/to-color :red) (c/to-color (.getRGB ^BufferedImage (render (reverse red-near)) 28 25))))))
   (testing "1.4 a face turned to the light is brighter than one edge-on"
-    (let [lit (space/shade [200 200 200] (v/normalize (Vec3. -0.5 0.6 -1.0)))
-          side (space/shade [200 200 200] (v/normalize (Vec3. 1.0 0.0 -0.5)))]
+    (let [shade (space/shader {})
+          lit (shade [200 200 200] (v/normalize (Vec3. -0.5 0.6 -1.0)))
+          side (shade [200 200 200] (v/normalize (Vec3. 1.0 0.0 -0.5)))]
       (is (> (c/luma lit) (c/luma side)))
       (is (= 200.0 (c/red lit)) "full light keeps the color")
-      (is (= 255.0 (c/alpha (space/shade [200 200 200] (Vec3. 0 0 0)))) "alpha kept; no normal - ambient only"))))
+      (is (= 255.0 (c/alpha (shade [200 200 200] (Vec3. 0 0 0)))) "alpha kept; no normal - ambient only"))))
 
 (deftest frame-test
   (testing "1.5 visible edges: 9 in a general view, 4 face-on; hidden ones the rest"

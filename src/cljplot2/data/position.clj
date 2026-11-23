@@ -15,7 +15,9 @@
   Stream positions ([[stream-positions]], streamgraphs): the stack shifted by a baseline per index -
   `:silhouette` centred on 0 (d3 `stackOffsetSilhouette`), `:wiggle` minimising the slopes of the layers (d3
   `stackOffsetWiggle`, Byron & Wattenberg; the slope per index, not per x distance). `:normalize` and the stream
-  positions need non-negative heights."
+  positions need non-negative heights.
+
+  Functions: [[stack-values]] - per group per index `[y0 y1]` of a position; [[dodge-interval]] - a group's share of a dodged interval; [[symmetric-extent]] - an extent symmetric about 0."
   (:require [fastmath.core :as m]
             [cljplot2.schema :as schema]))
 
@@ -31,85 +33,139 @@
   #{:silhouette :wiggle})
 
 (defn- cumulative
-  "Per group (in order) the running sums of `heights` before it: `[[0 ...] [h0 ...] [h0+h1 ...] ...]`."
+  "Computes per group the running sums of the heights of the groups before it.
+
+  Parameters:
+
+  - `heights` (vector of vectors of doubles): one vector per group, in group order.
+  - `n` (long): the shared length of the groups.
+
+  Returns `[[0 ...] [h0 ...] [h0+h1 ...] ...]` - one vector per group, the first all zeros."
   [heights ^long n]
-  (vec (reductions (fn [acc hs] (mapv + acc hs)) (vec (repeat n 0.0)) (butlast heights))))
+  (vec (reductions (fn [acc hs] (mapv m/+ acc hs)) (vec (repeat n 0.0)) (butlast heights))))
 
 (defn- stacked
-  "Per group per index `[y0 y1]`: positive heights stacked upward from 0 in group order, negative ones downward - in
-  group order, or in reverse with `reverse-negative?` (`n` - the shared length)."
+  "Stacks groups of heights: positive ones upward from 0, negative ones downward.
+
+  Parameters:
+
+  - `heights` (vector of vectors of doubles): one vector per group, in group order.
+  - `n` (long): the shared length of the groups.
+  - `reverse-negative?` (optional, default `false`): stack negative heights in reverse group order - the last group nearest 0.
+
+  Returns per group per index `[y0 y1]`."
   ([heights n] (stacked heights n false))
-  ([heights n reverse-negative?]
-   (let [n (long n)
-         above (cumulative (mapv #(mapv (fn [^double h] (m/max 0.0 h)) %) heights) n)
+  ([heights ^long n reverse-negative?]
+   (let [above (cumulative (mapv #(mapv (fn [^double h] (m/max 0.0 h)) %) heights) n)
          negative (mapv #(mapv (fn [^double h] (m/min 0.0 h)) %) heights)
          below (if reverse-negative?
                  (vec (rseq (cumulative (vec (rseq negative)) n)))
                  (cumulative negative n))]
-    (mapv (fn [hs ups downs]
-            (mapv (fn [^double h ^double up ^double down] (if (neg? h) [(+ down h) down] [up (+ up h)])) hs ups downs))
-          heights above below))))
+     (mapv (fn [hs ups downs]
+             (mapv (fn [^double h ^double up ^double down] (if (m/neg? h) [(m/+ down h) down] [up (m/+ up h)])) hs ups downs))
+           heights above below))))
 
 (defn- silhouette-baseline
-  "Per index: minus half the total height (the stack centred on 0)."
+  "Computes the silhouette baseline of stacked groups: minus half the total height per index, centring the stack on 0.
+
+  Parameters:
+
+  - `heights` (vector of vectors of doubles): one vector per group, all of one length.
+
+  Returns a vector of doubles, one per index."
   [heights]
-  (mapv #(* -0.5 (double %)) (apply mapv + heights)))
+  (mapv (fn [^double total] (m/* -0.5 total)) (apply mapv m/+ heights)))
 
 (defn- wiggle-baseline
-  "Per index the baseline of d3 `stackOffsetWiggle`: 0 at the first index, then moved by `-s2 / s1` - `s1` the total
-  height, `s2` the heights weighted by the slope of each layer's middle (half its own change plus the changes of the
-  layers below)."
+  "Computes the baseline of d3 `stackOffsetWiggle` (Byron and Wattenberg), minimising the slopes of the layers.
+
+  The baseline is 0 at the first index, then moves by `-s2 / s1` per index: `s1` the total height, `s2` the heights weighted by the slope of each layer's middle (half its own change plus the changes of the layers below); an index of total height 0 keeps the previous baseline.
+
+  Parameters:
+
+  - `heights` (vector of vectors of doubles): one vector per group, in group order.
+  - `n` (long): the shared length of the groups.
+
+  Returns a vector of `n` doubles."
   [heights ^long n]
   (vec (reductions (fn [^double y ^long j]
                      (let [[^double s1 ^double s2]
-                           (reduce (fn [[^double s1 ^double s2 ^double below] hs]
-                                     (let [h (double (hs j)) dh (- h (double (hs (dec j))))]
-                                       [(+ s1 h) (+ s2 (* h (+ below (* 0.5 dh)))) (+ below dh)]))
+                           (reduce (fn [[^double total ^double weighted ^double below] hs]
+                                     (let [h (double (hs j))
+                                           dh (m/- h (double (hs (m/long-dec j))))]
+                                       [(m/+ total h) (m/+ weighted (m/* h (m/+ below (m/* 0.5 dh)))) (m/+ below dh)]))
                                    [0.0 0.0 0.0] heights)]
-                       (if (zero? s1) y (- y (/ s2 s1)))))
+                       (if (m/zero? s1) y (m/- y (m// s2 s1)))))
                    0.0 (range 1 n))))
 
 (defn- shifted
-  "Stacked `[y0 y1]` per group per index moved by `baseline` (one value per index)."
+  "Moves stacked groups by a baseline.
+
+  Parameters:
+
+  - `stack` (vector): per group per index `[y0 y1]`.
+  - `baseline` (sequence of doubles): one shift per index.
+
+  Returns `stack` with both ends of every `[y0 y1]` moved by the index's shift."
   [stack baseline]
-  (mapv (fn [ys] (mapv (fn [[^double y0 ^double y1] ^double b] [(+ y0 b) (+ y1 b)]) ys baseline)) stack))
+  (mapv (fn [ys] (mapv (fn [[^double y0 ^double y1] ^double b] [(m/+ y0 b) (m/+ y1 b)]) ys baseline)) stack))
 
 (defn stack-values
-  "Per group per index `[y0 y1]` of `heights` (one vector per group, in group order, all of the same length - one
-  value per shared index) for `position` (see the namespace doc); `options` - `:negative-order` `:forward` (default)
-  or `:reverse` (`:stack`). No groups give `[]`.
-  Throws `ex-info` `{:key :position}` for `:mirror` with other than two groups, and for negative heights with
-  `:normalize` or a stream position."
+  "Computes where the marks of several groups sharing indices go for a group position.
+
+  Parameters:
+
+  - `position` (keyword): one of [[positions]] or [[stream-positions]] (see the namespace doc).
+  - `heights` (sequence of sequences of numbers): one sequence per group, in group order, all of one length - one value per shared index.
+  - `options` (map, optional): `:negative-order` - `:forward` (default) or `:reverse`, the order negative heights stack in with `:stack`.
+
+  Returns per group per index `[y0 y1]` (doubles); no groups give `[]`.
+
+  Throws `ex-info {:key :heights}` for groups of different lengths, `{:key :position}` for `:mirror` with other than two groups, for negative heights with `:normalize` or a stream position, and for an unknown position."
   ([position heights] (stack-values position heights nil))
   ([position heights {:keys [negative-order]}]
-  (let [heights (mapv #(mapv double %) heights)
-        n (long (count (first heights)))]
-    (when-not (apply = n (map count heights))
-      (throw (ex-info "Group heights should have the same length." {:key :heights :value (mapv count heights)})))
-    (when (and (contains? (conj stream-positions :normalize) position) (some neg? (apply concat heights)))
-      (schema/fail! (str "Position " position " needs non-negative values.") {:key :position :value position}))
-    (cond
-      (empty? heights) []
-      (#{:overlay :dodge} position) (mapv (fn [hs] (mapv (fn [h] [0.0 h]) hs)) heights)
-      (= :mirror position) (if (= 2 (count heights))
-                             [(mapv (fn [h] [0.0 h]) (heights 0)) (mapv (fn [^double h] [(- h) 0.0]) (heights 1))]
-                             (schema/fail! "Position :mirror needs exactly two groups." {:key :position :groups (count heights)}))
-      (= :stack position) (stacked heights n (= :reverse negative-order))
-      (= :normalize position) (let [totals (apply mapv + heights)
-                                    scale (mapv (fn [^double t] (if (pos? t) (/ 1.0 t) 0.0)) totals)]
-                                (stacked (mapv #(mapv * % scale) heights) n))
-      (= :silhouette position) (shifted (stacked heights n) (silhouette-baseline heights))
-      (= :wiggle position) (shifted (stacked heights n) (wiggle-baseline heights n))
-      :else (throw (ex-info (str "Unknown position " (pr-str position) ".") {:key :position :value position}))))))
+   (let [values (mapv #(mapv double %) heights)
+         n (long (count (first values)))]
+     (when-not (apply = n (map count values))
+       (throw (ex-info "Group heights should have the same length." {:key :heights :value (mapv count values)})))
+     (when (and (contains? (conj stream-positions :normalize) position) (some m/neg? (apply concat values)))
+       (schema/fail! (str "Position " position " needs non-negative values.") {:key :position :value position}))
+     (cond
+       (empty? values) []
+       (#{:overlay :dodge} position) (mapv (fn [hs] (mapv (fn [h] [0.0 h]) hs)) values)
+       (= :mirror position) (if (m/== 2 (count values))
+                              [(mapv (fn [h] [0.0 h]) (values 0)) (mapv (fn [^double h] [(m/- h) 0.0]) (values 1))]
+                              (schema/fail! "Position :mirror needs exactly two groups." {:key :position :groups (count values)}))
+       (= :stack position) (stacked values n (= :reverse negative-order))
+       (= :normalize position) (let [totals (apply mapv m/+ values)
+                                     scale (mapv (fn [^double t] (if (m/pos? t) (m// t) 0.0)) totals)]
+                                 (stacked (mapv #(mapv m/* % scale) values) n))
+       (= :silhouette position) (shifted (stacked values n) (silhouette-baseline values))
+       (= :wiggle position) (shifted (stacked values n) (wiggle-baseline values n))
+       :else (throw (ex-info (str "Unknown position " (pr-str position) ".") {:key :position :value position}))))))
 
 (defn dodge-interval
-  "The `i`-th of `n` equal sub-intervals of `[a b]` (`n` positive)."
-  [[a b] ^long i ^long n]
-  (let [a (double a) w (/ (- (double b) a) n)]
-    [(+ a (* i w)) (+ a (* (inc i) w))]))
+  "Gives one of `n` equal sub-intervals of an interval - a group's share of a dodged position.
+
+  Parameters:
+
+  - `interval` (`[a b]`, numbers): the shared interval.
+  - `i` (long): the sub-interval's index, from 0.
+  - `n` (long): the count of sub-intervals, positive.
+
+  Returns `[lo hi]` (doubles), the `i`-th sub-interval from `a`."
+  [[^double a ^double b] ^long i ^long n]
+  (let [w (m// (m/- b a) n)]
+    [(m/+ a (m/* i w)) (m/+ a (m/* (m/long-inc i) w))]))
 
 (defn symmetric-extent
-  "`[-M M]` of numbers `values`, `M` the largest magnitude (`[0.0 0.0]` for none)."
+  "Gives an extent symmetric about 0 covering numbers.
+
+  Parameters:
+
+  - `values` (sequence of numbers).
+
+  Returns `[-M M]` (doubles), `M` the largest magnitude of `values`; `M` is 0 for none."
   [values]
-  (let [mx (double (reduce (fn [^double acc v] (m/max acc (m/abs (double v)))) 0.0 values))]
-    [(- mx) mx]))
+  (let [magnitude (double (reduce (fn [^double acc v] (m/max acc (m/abs (double v)))) 0.0 values))]
+    [(m/- magnitude) magnitude]))

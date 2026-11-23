@@ -139,8 +139,9 @@ into the builder's. `cljplot2.core` is the public API (`build`, `render`, `rende
 - Errors: `cljplot2.schema/fail!` with `{:key option …}`; namespaces `cljplot2.schema` itself requires (e.g.
   `graphics.shape`) use `cljplot2.error/fail!` (the same function, no dependency cycle).
 - Docstrings follow the user's `docstring` skill (statement, context, parameters with map keys and defaults, return
-  value, corner cases and errors, `[[links]]`; no implementation details). A `def`'s doc goes in metadata:
-  `(def ^{:doc "..."} name value)`, never positional after the name.
+  value, corner cases and errors, `[[links]]`; no implementation details). A `def`'s doc goes positionally after
+  the name, metadata before it: `(def ^{:private true :const true :tag 'double} name "..." value)`; only `defonce`
+  (no docstring arity) keeps it in metadata: `(defonce ^{:private true :doc "..."} name value)`.
 
 ### Clojure style (user review)
 

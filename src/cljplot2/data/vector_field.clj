@@ -7,7 +7,9 @@
   `(fastmath.fields/field :sinusoidal)` - and `(fn [[x y]] ..)` both work, see Points in [[cljplot2.data.field]]) and returns a pair `[u v]` - any sequential value
   or array (a `Vec2`, a vector, a list, a double array; see [[cljplot2.data.rows/as-coordinates]]).
   A result that isn't a pair throws `ex-info {:key :f}`; a pair with a non-finite coordinate is skipped (no row).
-  Exceptions thrown by `f` propagate."
+  Exceptions thrown by `f` propagate.
+
+  Functions: [[field-value]] - the field at a point; [[mapped-points]], [[arrows]] (on [[grid-points]]) and [[traces]] - the rows."
   (:require [fastmath.core :as m]
             [fastmath.vector :as v]
             [cljplot2.data.rows :as data]
@@ -18,30 +20,61 @@
 (set! *unchecked-math* :warn-on-boxed)
 
 (defn- pair?
-  "Is `r` a pair - any sequential value or array of 2 values (see [[cljplot2.data.rows/as-coordinates]])?"
+  "Tests whether a value is a pair.
+
+  Parameters:
+
+  - `r`: any value.
+
+  Returns `true` for any sequential value or array of 2 values (see [[cljplot2.data.rows/as-coordinates]]), else `false`."
   [r]
-  (= 2 (count (data/as-coordinates r))))
+  (m/== 2 (count (data/as-coordinates r))))
 
 (defn field-value
-  "`f` at `(x, y)` as a `Vec2`, `nil` when a coordinate isn't finite; throws `ex-info {:key :f}` when `f` doesn't
-  return a pair."
+  "Evaluates a vector field at a point.
+
+  Parameters:
+
+  - `f` (function): the field, a function of a `Vec2` returning a pair `[u v]` (see the namespace doc).
+  - `x`, `y` (numbers): the point.
+
+  Returns the value as a `Vec2`, or `nil` when a coordinate of it isn't a finite number.
+
+  Throws `ex-info {:key :f}` when `f` doesn't return a pair; exceptions thrown by `f` propagate."
   [f x y]
   (let [r (f (v/vec2 x y))
         uv (data/as-coordinates r)]
-    (when-not (= 2 (count uv))
+    (when-not (m/== 2 (count uv))
       (schema/fail! "A vector field should return a pair [u v]." {:key :f :value r}))
     (let [[u w] uv]
       (when (and (number? u) (number? w) (m/valid-double? (double u)) (m/valid-double? (double w)))
         (v/vec2 u w)))))
 
 (defn- check-seeds!
+  "Checks seeds of mapped points or traces.
+
+  Parameters:
+
+  - `seeds`: the seeds, expected a sequence of pairs `[x y]` of numbers.
+
+  Returns `nil`.
+
+  Throws `ex-info {:key :seeds}` for anything else."
   [seeds]
   (when-not (and (sequential? seeds) (every? #(and (pair? %) (every? number? %)) seeds))
     (schema/fail! "Seeds should be a sequence of pairs [x y]." {:key :seeds})))
 
 (defn mapped-points
-  "Rows `{:x :y :x0 :y0}` of `seeds` (pairs `[x y]`) mapped through the field `f`: `(x, y)` = f(x0, y0); seeds whose
-  image isn't finite are left out."
+  "Maps seed points through a vector field.
+
+  Parameters:
+
+  - `f` (function): the field (see the namespace doc).
+  - `seeds` (sequence of pairs `[x y]`): the points.
+
+  Returns a vector of rows `{:x :y :x0 :y0}`: `(x, y)` = f(x0, y0); seeds whose image isn't finite are left out.
+
+  Throws `ex-info {:key :seeds}` for bad seeds, `{:key :f}` for a field not returning a pair."
   {:cljplot2/api true}
   [f seeds]
   (check-seeds! seeds)
@@ -66,52 +99,89 @@
                     schema/finite-pos)])
 
 (defn- grid-counts
-  "`[nx ny]` of `:n` (a positive integer or a pair of them)."
+  "Gives the cell counts of an arrow grid.
+
+  Parameters:
+
+  - `n`: a positive integer or a pair of them.
+
+  Returns `[nx ny]` (longs)."
   [n]
   (if (sequential? n) (mapv long n) [(long n) (long n)]))
 
 (defn- arrow-length
-  "Length of the arrow of a vector of magnitude `magnitude` in a cell of side `cell`: `scale * cell * (1 - e^-|v|)`."
+  "Computes the length of an arrow of a field vector.
+
+  Parameters:
+
+  - `scale` (double): the length factor.
+  - `cell` (double): the grid cell side.
+  - `magnitude` (double): the vector's magnitude.
+
+  Returns `scale * cell * (1 - e^-magnitude)` - below `scale * cell`."
   ^double [^double scale ^double cell ^double magnitude]
-  (* scale cell (- 1.0 (m/exp (- magnitude)))))
+  (m/* scale cell (m/- 1.0 (m/exp (m/- magnitude)))))
 
 (defn grid-points
-  "Arrow starts over `domain` `{:x [lo hi] :y [lo hi]}`: `nx` x `ny` cell centres, rows bottom to top; with
-  `shifted?` every second row (from the second) moved half a cell along x. Returns `{:points [[x y] ..] :cell c}`,
-  `c` - the smaller cell side."
-  [{:keys [x y]} [nx ny] shifted?]
-  (let [[x0 x1] x [y0 y1] y
-        dx (/ (- (double x1) (double x0)) (long nx))
-        dy (/ (- (double y1) (double y0)) (long ny))]
-    {:points (vec (for [j (range ny) i (range nx)]
-                    [(+ (double x0) (* dx (+ 0.5 (long i))) (if (and shifted? (odd? (long j))) (* 0.5 dx) 0.0))
-                     (+ (double y0) (* dy (+ 0.5 (long j))))]))
-     :cell (min dx dy)}))
+  "Computes the arrow starts of a grid over a domain.
+
+  Parameters:
+
+  - `domain` (map): `:x`, `:y` - `[lo hi]` intervals.
+  - `counts` (`[nx ny]`, longs): cells per axis.
+  - `shifted?`: move every second row (from the second) half a cell along x.
+
+  Returns `{:points [[x y] ..] :cell c}`: the `nx` x `ny` cell centres, rows bottom to top; `c` - the smaller cell side."
+  [{[^double x0 ^double x1] :x [^double y0 ^double y1] :y} [^long nx ^long ny] shifted?]
+  (let [dx (m// (m/- x1 x0) nx)
+        dy (m// (m/- y1 y0) ny)]
+    {:points (vec (for [^long j (range ny) ^long i (range nx)]
+                    [(m/+ x0 (m/* dx (m/+ 0.5 i)) (if (and shifted? (odd? j)) (m/* 0.5 dx) 0.0))
+                     (m/+ y0 (m/* dy (m/+ 0.5 j)))]))
+     :cell (m/min dx dy)}))
 
 (defn arrows
-  "Rows `{:x :y :xend :yend :magnitude}` of the field `f` on a grid over `:domain` `{:x [lo hi] :y [lo hi]}`
-  (required): an arrow from each cell centre along f, of length `:scale * cell * (1 - e^-|f|)` (below a cell for
-  `:scale` 1 - old cljplot's vector field), `:magnitude` |f|. `:n` - cells per axis (default 20, or `[nx ny]`);
-  `:grid` - `:square` (default) or `:shifted` (every second row moved half a cell); `:scale` - default 1.0. Zero
-  and non-finite vectors are left out.
-  Throws `ex-info` for bad options ([[arrows-options]])."
+  "Computes arrows of a vector field on a grid (old cljplot's vector field).
+
+  Parameters:
+
+  - `f` (function): the field (see the namespace doc).
+  - `opts` (map, see [[arrows-options]]):
+    - `:domain` - `{:x [lo hi] :y [lo hi]}`, the grid's domain (required).
+    - `:n` - cells per axis, or `[nx ny]` (default 20).
+    - `:grid` - `:square` (default; cell centres) or `:shifted` (every second row moved half a cell along x).
+    - `:scale` - the arrow length factor (default 1.0).
+
+  Returns a vector of rows `{:x :y :xend :yend :magnitude}`: an arrow from each grid point along f, of length `:scale * cell * (1 - e^-|f|)` (below a cell for `:scale` 1), `:magnitude` |f|. Zero and non-finite vectors are left out.
+
+  Throws `ex-info` for bad options, `{:key :f}` for a field not returning a pair.
+
+  See also [[grid-points]], [[traces]]."
   {:cljplot2/api true :cljplot2/options arrows-options}
-  [f {:keys [domain n grid scale] :or {n 20 grid :square scale 1.0} :as opts}]
+  [f {:keys [domain n grid ^double scale] :or {n 20 grid :square scale 1.0} :as opts}]
   (schema/check-options! arrows-options opts)
   (let [{:keys [points cell]} (grid-points domain (grid-counts n) (= grid :shifted))]
     (vec (keep (fn [[x y]]
                  (when-let [p (field-value f x y)]
                    (let [magnitude (v/mag p)]
-                     (when (pos? magnitude)
-                       (let [^Vec2 d (v/mult (v/div p magnitude) (arrow-length (double scale) cell magnitude))]
-                         {:x x :y y :xend (+ (double x) (.x d)) :yend (+ (double y) (.y d)) :magnitude magnitude})))))
+                     (when (m/pos? magnitude)
+                       (let [^Vec2 d (v/mult (v/div p magnitude) (arrow-length scale cell magnitude))]
+                         {:x x :y y :xend (m/+ (double x) (.x d)) :yend (m/+ (double y) (.y d)) :magnitude magnitude})))))
                points))))
 
 (defn- trace-step
-  "Next point of a trace at `p`: `p + f(p) * (1 - e^-|f(p)|) * step`, `nil` when f isn't finite there."
+  "Computes the next point of a trace following a vector field.
+
+  Parameters:
+
+  - `f` (function): the field.
+  - `p` (`Vec2`): the current point.
+  - `step` (double): the step factor.
+
+  Returns `p + f(p) * (1 - e^-|f(p)|) * step` as a `Vec2`, `nil` when f isn't finite at `p`."
   [f ^Vec2 p ^double step]
   (when-let [d (field-value f (.x p) (.y p))]
-    (v/add p (v/mult d (* step (- 1.0 (m/exp (- (v/mag d)))))))))
+    (v/add p (v/mult d (m/* step (m/- 1.0 (m/exp (m/- (v/mag d)))))))))
 
 (def traces-options
   "Options of [[traces]]."
@@ -121,17 +191,28 @@
                     schema/finite-pos)])
 
 (defn traces
-  "Rows `{:id :i :x :y}` of paths following the field `f` from `seeds` (pairs `[x y]`; `:id` - the seed's index, `:i`
-  - the step, 0 at the seed): each step `p + f(p) * (1 - e^-|f(p)|) * :step` (old cljplot's trace), `:steps` steps
-  (default 100, `:step` default 0.01); a path ends before a non-finite point.
-  Throws `ex-info` for bad options ([[traces-options]]) or seeds (`{:key :seeds}`)."
+  "Computes paths following a vector field from seed points (old cljplot's trace).
+
+  Parameters:
+
+  - `f` (function): the field (see the namespace doc).
+  - `seeds` (sequence of pairs `[x y]`): the path starts.
+  - `opts` (map, see [[traces-options]]):
+    - `:steps` - the number of steps of every path (default 100).
+    - `:step` - the step factor (default 0.01): each step moves `p` by `f(p) * (1 - e^-|f(p)|) * step`.
+
+  Returns a vector of rows `{:id :i :x :y}`: `:id` - the seed's index, `:i` - the step, 0 at the seed; a path ends before a non-finite point.
+
+  Throws `ex-info` for bad options, `{:key :seeds}` for bad seeds, `{:key :f}` for a field not returning a pair.
+
+  See also [[arrows]], [[mapped-points]]."
   {:cljplot2/api true :cljplot2/options traces-options}
-  [f seeds {:keys [steps step] :or {steps 100 step 0.01} :as opts}]
+  [f seeds {:keys [^long steps ^double step] :or {steps 100 step 0.01} :as opts}]
   (schema/check-options! traces-options opts)
   (check-seeds! seeds)
   (vec (mapcat (fn [id [x y]]
-                 (let [path (->> (iterate #(when % (trace-step f % (double step))) (v/vec2 x y))
-                                 (take (inc (long steps)))
+                 (let [path (->> (iterate #(when % (trace-step f % step)) (v/vec2 x y))
+                                 (take (m/long-inc steps))
                                  (take-while #(and % (m/valid-double? (.x ^Vec2 %)) (m/valid-double? (.y ^Vec2 %)))))]
                    (map-indexed (fn [i ^Vec2 p] {:id id :i i :x (.x p) :y (.y p)}) path)))
                (range) seeds)))

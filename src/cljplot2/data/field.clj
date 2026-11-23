@@ -1,5 +1,5 @@
 (ns cljplot2.data.field
-  "Fields: a value at every point of a 2D domain, sampled on a regular grid, for [[cljplot2.chart.field]] (raster)
+  "Fields - a value at every point of a 2D domain - sampled on a regular grid for [[cljplot2.chart.field]] (raster)
   and [[cljplot2.chart.contour]] (contour lines).
 
   Sources ([[source-kind]]):
@@ -24,10 +24,13 @@
   Points: every function of a 2D point here (`:f`, `:pixel-color`, [[domain-color]]'s result, the 3D surfaces' `:f`
   / `:fu`, vector fields) receives one argument, a `fastmath.vector.Vec2` - sequential and indexed, so `(fn [[x y]]
   ..)`, `nth`, `seq` and fastmath vector functions all work; point-valued results may be any sequential value or array
-  (see [[cljplot2.data.rows/as-coordinates]])."
+  (see [[cljplot2.data.rows/as-coordinates]]).
+
+  Functions: options - [[options]], [[bandwidth-schema]], [[n-schema]], [[grid-size]]; sources - [[source-kind]], [[source-field]], [[density]], [[lattice]], [[lattice-values]], [[function-domain]]; grids - [[sample]], [[union-domain]], [[to-data]], [[value-range]], [[grid-value]], [[axis-transforms]], [[dropped-positions]]; complex domain colouring - [[domain-color]], [[wrap]]."
   (:require [clojure2d.color :as c]
             [fastmath.complex :as cx]
             [fastmath.core :as m]
+            [fastmath.vector :as v]
             [fastmath.interpolation :as interp]
             [fastmath.kernel :as k]
             [cljplot2.data.rows :as data]
@@ -79,59 +82,100 @@
                      n-schema)]))
 
 (defn source-kind
-  "The source of a field chart: `:function` with option `:f`, `:gridded` with a mapped `:value`, else `:points`."
+  "Source kind of a field chart (see the namespace doc).
+
+  Parameters:
+
+  - `options` (map): the chart's options, `:f` read.
+  - `mapping` (map): the merged mapping, `:value` read.
+
+  Returns `:function` with option `:f`, `:gridded` with a mapped `:value`, else `:points`.
+
+  See also [[source-field]]."
   [options mapping]
   (cond
     (:f options) :function
     (some? (:value mapping)) :gridded
     :else :points))
 
-(defn- finite? [v] (and (number? v) (m/valid-double? (double v))))
+(defn- finite?
+  "Tests whether a value is a finite number.
+
+  Parameters:
+
+  - `v`: any value.
+
+  Returns true for a number neither infinite nor `NaN`, else false."
+  [v]
+  (and (number? v) (m/valid-double? (double v))))
 
 (def ^:private estimate-error-keys
   "fastmath `:property` of a density error -> the chart option to blame."
   {:kernel :kernel :binned? :binned? :bandwidth :bandwidth :bandwidth-options :bandwidth})
 
 (defn density
-  "`{:f f :domain [[x0 x1] [y0 y1]]}` - the 2D KDE of the points `xs`, `ys` (finite numbers, equal counts, at least
-  one; see the namespace doc for `:kernel`, `:bandwidth`, `:binned?`, `:cut`), estimated in the coordinates of the
-  axis `transforms` (`[tx ty]`, see [[cljplot2.scale.position/stat-transform]]; points a transform can't place left
-  out): `f` takes a point `[x y]` in data units, the domain - the points' transformed range widened by `:cut` bandwidths - is in data
-  units. On a log axis the density is per log10 unit. Throws `ex-info` keyed by the option fastmath blames (`:kernel`,
-  `:binned?`, else `:bandwidth`) when it can't estimate (e.g. a selector on one point)."
+  "2D kernel density estimate of points, estimated in the coordinates of the axis transforms.
+
+  Parameters:
+
+  - `xs`, `ys` (sequences of finite numbers): the points' coordinates, equal counts, at least one point.
+  - `options` (map): `:kernel` (default `:gaussian`), `:bandwidth` (default `:nrd` per axis), `:binned?` (default false), `:cut` - bandwidths the domain extends past the points (default 3); see the namespace doc.
+  - `[tx ty]`: the axis stat transforms (see [[cljplot2.scale.position/stat-transform]]); points a transform can't place are left out.
+
+  Returns `{:f f :domain [[x0 x1] [y0 y1]]}`: `f` - the density, a function of a point `[x y]` in data units (per log10 unit on a log axis); the domain - the points' transformed range widened by `:cut` bandwidths, in data units.
+
+  Throws `ex-info {:key :x}` when no point can be placed, and `ex-info` keyed by the option fastmath blames (`:kernel`, `:binned?`, else `:bandwidth`) when it can't estimate (e.g. a selector on one point).
+
+  See also [[source-field]]."
   [xs ys {:keys [kernel bandwidth binned? cut]} [tx ty]]
-  (let [fx (:forward tx) fy (:forward ty)
-        pts (filterv (fn [[u v]] (and (m/valid-double? u) (m/valid-double? v)))
-                     (map (fn [x y] [(fx (double x)) (fy (double y))]) xs ys))
+  (let [fx (:forward tx)
+        fy (:forward ty)
+        pts (filterv (fn [[^double u ^double v]] (and (m/valid-double? u) (m/valid-double? v)))
+                     (map (fn [^double x ^double y] [(fx x) (fy y)]) xs ys))
         _ (when (empty? pts)
             (schema/fail! "No points the axis scales can place (e.g. only non-positive values on a log axis)." {:key :x}))
-        us (mapv first pts) vs (mapv second pts)
+        us (mapv first pts)
+        vs (mapv second pts)
         {:keys [kde h]} (try (k/kernel-density-2d (or kernel :gaussian) us vs
-                                                   {:bandwidth (or bandwidth :nrd) :binned? (boolean binned?)} true)
+                                                  {:bandwidth (or bandwidth :nrd)
+                                                   :binned? binned?} true)
                              (catch clojure.lang.ExceptionInfo e
                                (schema/fail! (str "Density estimation failed: " (ex-message e))
                                              {:key (get estimate-error-keys (:property (ex-data e)) :bandwidth) :cause (ex-data e)})))
-        [hx hy] h
-        cut (double (if (nil? cut) 3.0 cut))
+        [^double hx ^double hy] h
+        reach (double (if (nil? cut) 3.0 cut))
         widen (fn [ws ^double hw inverse]
-                [(inverse (- (double (reduce min ws)) (* cut hw))) (inverse (+ (double (reduce max ws)) (* cut hw)))])]
-    {:f (fn [[x y]] (kde (fx (double x)) (fy (double y))))
-     :domain [(widen us (double hx) (:inverse tx)) (widen vs (double hy) (:inverse ty))]}))
+                [(inverse (m/- (v/mn ws) (m/* reach hw)))
+                 (inverse (m/+ (v/mx ws) (m/* reach hw)))])]
+    {:f (fn [[^double x ^double y]] (kde (fx x) (fy y)))
+     :domain [(widen us hx (:inverse tx)) (widen vs hy (:inverse ty))]}))
 
 (defn lattice-values
-  "`{:xs [..] :ys [..] :vss [[..] ..]}` of the gridded `rows` (`x-of`, `y-of`, `value-of` - row accessors): the sorted
-  distinct x and y values and per x the values at every y (`##NaN` for a non-finite value); every distinct x with every
-  distinct y exactly once, at least 2 of each. Rows with a non-finite x or y are left out; a missing or repeated
-  lattice point, or fewer than 2 x / y values, throws `ex-info {:key value-key}`."
+  "Values of gridded rows on their full lattice.
+
+  Every distinct x must come with every distinct y exactly once, at least 2 of each; rows with a non-finite x or y are left out.
+
+  Parameters:
+
+  - `rows` (sequence): the data rows.
+  - `x-of`, `y-of`, `value-of` (functions): row accessors of x, y and the value.
+  - `value-key` (keyword): the option or mapping key errors are keyed by.
+
+  Returns `{:xs [..] :ys [..] :vss [[..] ..]}`: the sorted distinct x and y values (doubles) and per x the values at every y (`##NaN` for a non-finite value).
+
+  Throws `ex-info {:key value-key}` for fewer than 2 distinct x or y values, a repeated or a missing lattice point.
+
+  See also [[lattice]]."
   [rows x-of y-of value-of value-key]
-  (let [points (filterv (fn [[x y]] (and (finite? x) (finite? y))) (map (juxt x-of y-of value-of) rows))
-        xs (vec (sort (distinct (map #(double (first %)) points))))
-        ys (vec (sort (distinct (map #(double (second %)) points))))
-        by-point (group-by (fn [[x y]] [(double x) (double y)]) points)
+  (let [points (->> (map (juxt x-of y-of value-of) rows)
+                    (filterv (fn [[x y]] (and (finite? x) (finite? y)))))
+        xs (vec (sort (distinct (map (comp double first) points))))
+        ys (vec (sort (distinct (map (comp double second) points))))
+        by-point (group-by v/vec2 points)
         accessor (name value-key)]
-    (when (or (< (count xs) 2) (< (count ys) 2))
+    (when (or (m/< (count xs) 2) (m/< (count ys) 2))
       (schema/fail! "A gridded field needs at least 2 distinct x and 2 distinct y values." {:key value-key :xs (count xs) :ys (count ys)}))
-    (when-let [[point] (first (filter #(> (count (val %)) 1) by-point))]
+    (when-let [[point] (first (filter #(m/> (count (val %)) 1) by-point))]
       (schema/fail! (str "A gridded field has one :" accessor " per (x, y); a lattice point repeats.") {:key value-key :value point}))
     (when-let [missing (first (for [x xs y ys :when (not (contains? by-point [x y]))] [x y]))]
       (schema/fail! (str "A gridded field needs a :" accessor " at every (x, y) of its lattice; a point is missing.")
@@ -140,18 +184,34 @@
       {:xs xs :ys ys :vss (mapv (fn [x] (mapv (fn [y] (value x y)) ys)) xs)})))
 
 (defn lattice
-  "`{:f f :domain [[x0 x1] [y0 y1]]}` - the interpolation (`interpolation`, see the namespace doc; `f` of a point
-  `[x y]`) of the gridded
-  `rows` (`x-of`, `y-of`, `value-of` - row accessors), see [[lattice-values]] (errors keyed `:value`)."
+  "Interpolated field of gridded rows.
+
+  Parameters:
+
+  - `rows` (sequence): the data rows on a full lattice (see [[lattice-values]]).
+  - `x-of`, `y-of`, `value-of` (functions): row accessors of x, y and the value.
+  - `interpolation` (keyword): `:bilinear` (default when `nil`), `:bicubic` or `:cubic-2d` (`fastmath.interpolation`).
+
+  Returns `{:f f :domain [[x0 x1] [y0 y1]]}`: `f` - the interpolation, a function of a point `[x y]`; the domain - the lattice's.
+
+  Throws the errors of [[lattice-values]], keyed `:value`."
   [rows x-of y-of value-of interpolation]
   (let [{:keys [xs ys vss]} (lattice-values rows x-of y-of value-of :value)
-        make (case (or interpolation :bilinear) :bilinear interp/bilinear :bicubic interp/bicubic :cubic-2d interp/cubic-2d)]
-    (let [g (make xs ys vss)]
-      {:f (fn [[x y]] (g x y)) :domain [[(first xs) (peek xs)] [(first ys) (peek ys)]]})))
+        make (case (or interpolation :bilinear) :bilinear interp/bilinear :bicubic interp/bicubic :cubic-2d interp/cubic-2d)
+        g (make xs ys vss)]
+    {:f (fn [[x y]] (g x y)) :domain [[(first xs) (peek xs)] [(first ys) (peek ys)]]}))
 
 (defn function-domain
-  "`[[x0 x1] [y0 y1]]` of a function field: option `domain` (`{:x [lo hi] :y [lo hi]}`), else the explicit numeric
-  `:domain`s of the plot's `:x` / `:y` scales (`plot-scales`). Throws `ex-info {:key :domain}` without either."
+  "Domain of a function field.
+
+  Parameters:
+
+  - `domain` (map): the option `{:x [lo hi] :y [lo hi]}`, or `nil`.
+  - `plot-scales` (map): the plot's scale specs; the explicit numeric `:domain`s of `:x` and `:y` used when the option lacks an axis.
+
+  Returns `[[x0 x1] [y0 y1]]` of doubles.
+
+  Throws `ex-info {:key :domain}` when an axis has neither."
   [domain plot-scales]
   (let [explicit (fn [k] (let [d (get-in plot-scales [k :domain])] (when (and (= 2 (count d)) (every? finite? d)) (mapv double d))))
         x (or (:x domain) (explicit :x))
@@ -162,85 +222,157 @@
     [(mapv double x) (mapv double y)]))
 
 (defn grid-size
-  "`[nx ny]` of option `n` (an integer for both axes or a pair; default 100)."
+  "Grid size of the option `:n`.
+
+  Parameters:
+
+  - `n`: an integer for both axes, a pair `[nx ny]`, or `nil` (default 100).
+
+  Returns `[nx ny]` of longs."
   [n]
-  (cond (nil? n) [100 100] (sequential? n) (mapv long n) :else [(long n) (long n)]))
+  (cond
+    (nil? n) [100 100]
+    (sequential? n) (mapv long n)
+    :else [(long n) (long n)]))
 
 (defn union-domain
-  "The smallest domain `[[x0 x1] [y0 y1]]` covering `domains`; `nil` for none."
+  "Smallest domain covering several domains.
+
+  Parameters:
+
+  - `domains` (sequence): domains `[[x0 x1] [y0 y1]]`.
+
+  Returns the covering domain `[[x0 x1] [y0 y1]]`; `nil` for no domains."
   [domains]
   (when (seq domains)
-    (let [axis (fn [k] [(reduce min (map #(first (nth % k)) domains)) (reduce max (map #(second (nth % k)) domains))])]
+    (let [axis (fn [k] [(v/mn (map #(first (nth % k)) domains))
+                       (v/mx (map #(second (nth % k)) domains))])]
       [(axis 0) (axis 1)])))
 
 (defn- axis-points
-  "`n` equally spaced values from `lo` to `hi` (a zero-width axis: all at `lo`)."
-  ^doubles [lo hi ^long n]
-  (let [lo (double lo) step (/ (- (double hi) lo) (dec n))
-        a (double-array n)]
-    (dotimes [i n] (Array/aset a i (+ lo (* step i))))
-    a))
+  "Equally spaced values along a grid axis.
+
+  Parameters:
+
+  - `lo`, `hi` (doubles): the first and the last value.
+  - `n` (long): the number of values.
+
+  Returns a new double array of `n` values from `lo` to `hi` (a zero-width axis: all at `lo`)."
+  ^doubles [^double lo ^double hi ^long n]
+  (double-array (m/slice-range lo hi n)))
 
 (defn sample
-  "The grid of field function `f` (of a point `[x y]`, data units) over `domain` (`[[x0 x1] [y0 y1]]`, data units) with `[nx ny]`
-  points evenly spaced in the coordinates of the axis `transforms` (`[tx ty]`, see
-  [[cljplot2.scale.position/stat-transform]]; `nil` - identity): `{:xs doubles :ys doubles :nx :ny :values doubles
-  :transforms [tx ty]}` - `xs`, `ys` in transformed coordinates, `values` row by row (`i + j nx` for `xs[i]`,
-  `ys[j]`), `##NaN` where `f` doesn't return a finite number. Exceptions `f` throws propagate."
+  "Samples a field function on a regular grid.
+
+  Parameters:
+
+  - `f` (function): of a point `Vec2` `[x y]` in data units, returning a number.
+  - `[[x0 x1] [y0 y1]]`: the domain, data units.
+  - `[nx ny]`: points per axis, evenly spaced in the transformed coordinates.
+  - `transforms`: `[tx ty]` - the axis stat transforms (see [[cljplot2.scale.position/stat-transform]]); `nil` or omitted - identity.
+
+  Returns `{:xs :ys :nx :ny :values :transforms [tx ty]}`: `xs`, `ys` - double arrays in transformed coordinates; `values` - a double array row by row (`i + j nx` for `xs[i]`, `ys[j]`), `##NaN` where `f` doesn't return a finite number.
+
+  Exceptions `f` throws propagate.
+
+  See also [[grid-value]], [[value-range]], [[to-data]]."
   ([f domain size] (sample f domain size nil))
-  ([f [[x0 x1] [y0 y1]] [nx ny] transforms]
+  ([f [[^double x0 ^double x1] [^double y0 ^double y1]] [^long nx ^long ny] transforms]
    (let [[tx ty] (or transforms [(scale/stat-transform nil) (scale/stat-transform nil)])
-         nx (long nx) ny (long ny)
-         fx (:forward tx) fy (:forward ty) ix (:inverse tx) iy (:inverse ty)
-         ^doubles xs (axis-points (fx (double x0)) (fx (double x1)) nx)
-         ^doubles ys (axis-points (fy (double y0)) (fy (double y1)) ny)
-         values (double-array (* nx ny))]
+         fx (:forward tx)
+         fy (:forward ty)
+         ix (:inverse tx)
+         iy (:inverse ty)
+         ^doubles xs (axis-points (fx x0) (fx x1) nx)
+         ^doubles ys (axis-points (fy y0) (fy y1) ny)
+         values (double-array (m/long-mult nx ny))]
      (dotimes [j ny]
        (dotimes [i nx]
          (let [v (f (Vec2. (ix (Array/aget xs i)) (iy (Array/aget ys j))))]
-           (Array/aset values (+ i (* j nx)) (if (finite? v) (double v) ##NaN)))))
+           (Array/aset values (m/+ i (m/* j nx)) (if (finite? v) (double v) ##NaN)))))
      {:xs xs :ys ys :nx nx :ny ny :values values :transforms [tx ty]})))
 
 (defn to-data
-  "Data-unit point `[x y]` of a point `[u v]` in `grid`'s transformed coordinates."
-  [{[tx ty] :transforms} [u v]]
-  [((:inverse tx) (double u)) ((:inverse ty) (double v))])
+  "Data-unit point of a point in a grid's transformed coordinates.
+
+  Parameters:
+
+  - `grid` (map): a grid of [[sample]], its `:transforms` used.
+  - `[u v]`: the point in transformed coordinates.
+
+  Returns `[x y]` in data units."
+  [{[tx ty] :transforms} [^double u ^double v]]
+  [((:inverse tx) u) ((:inverse ty) v)])
 
 (defn value-range
-  "`[lo hi]` of the finite values of `grids`; `nil` without any."
+  "Range of the values of grids.
+
+  Parameters:
+
+  - `grids` (sequence): grids of [[sample]].
+
+  Returns `[lo hi]` of their non-`NaN` values; `nil` without any."
   [grids]
-  (let [vs (for [{:keys [^doubles values]} grids i (range (alength values))
-                 :let [v (Array/aget values (long i))] :when (not (m/nan? v))] v)]
-    (when (seq vs) [(reduce min vs) (reduce max vs)])))
+  (let [vs (for [{:keys [^doubles values]} grids
+                 ^long i (range (alength values))
+                 :let [v (Array/aget values i)]
+                 :when (not (m/nan? v))] v)]
+    (when (seq vs) [(v/mn vs) (v/mx vs)])))
 
 (defn- cell-start
-  "Index of the first of the two grid points around fractional position `t` (in steps from the first point) on an
-  axis of `n` points: the last cell for `t` at the far end."
+  "Index of the grid cell holding a fractional position on an axis.
+
+  Parameters:
+
+  - `t` (double): the position in steps from the first point, non-negative.
+  - `n` (long): the axis's number of points, at least 2.
+
+  Returns the index of the first of the two points around `t`; the last cell for `t` at the far end."
   ^long [^double t ^long n]
-  (min (- n 2) (long (m/floor t))))
+  (m/long-min (m/long-sub n 2) (long (m/floor t))))
 
 (defn grid-value
-  "Bilinear value of `grid` (see [[sample]]) at data point `x`, `y` (taken into the grid's coordinates): `##NaN`
-  outside its domain or next to a `##NaN` value."
-  ^double [{:keys [^doubles xs ^doubles ys nx ny ^doubles values] [tx ty] :transforms} ^double x ^double y]
-  (let [x (double ((:forward tx) x)) y (double ((:forward ty) y))
-        nx (long nx) ny (long ny)
-        x0 (Array/aget xs 0) y0 (Array/aget ys 0)
-        sx (/ (- (Array/aget xs (dec nx)) x0) (dec nx))
-        sy (/ (- (Array/aget ys (dec ny)) y0) (dec ny))
-        tx (/ (- x x0) sx)
-        ty (/ (- y y0) sy)]
-    (if (and (>= tx 0.0) (<= tx (double (dec nx))) (>= ty 0.0) (<= ty (double (dec ny))))
-      (let [i (cell-start tx nx) j (cell-start ty ny)
-            fx (- tx i) fy (- ty j)
-            row (* j nx) row1 (* (inc j) nx)]
-        (+ (* (- 1.0 fx) (- 1.0 fy) (Array/aget values (+ i row))) (* fx (- 1.0 fy) (Array/aget values (+ (inc i) row)))
-           (* (- 1.0 fx) fy (Array/aget values (+ i row1))) (* fx fy (Array/aget values (+ (inc i) row1)))))
+  "Bilinear value of a grid at a data point.
+
+  Parameters:
+
+  - `grid` (map): a grid of [[sample]].
+  - `x`, `y` (doubles): the point in data units, taken into the grid's coordinates.
+
+  Returns the interpolated value; `##NaN` outside the grid's domain or next to a `##NaN` value."
+  ^double [{:keys [^doubles xs ^doubles ys ^long nx ^long ny ^doubles values] [tx ty] :transforms} ^double x ^double y]
+  (let [gx (double ((:forward tx) x))
+        gy (double ((:forward ty) y))
+        x0 (Array/aget xs 0)
+        y0 (Array/aget ys 0)
+        nx- (m/long-dec nx)
+        ny- (m/long-dec ny)
+        sx (m// (m/- (Array/aget xs nx-) x0) nx-)
+        sy (m// (m/- (Array/aget ys ny-) y0) ny-)
+        steps-x (m// (m/- gx x0) sx)
+        steps-y (m// (m/- gy y0) sy)]
+    (if (and (m/not-neg? steps-x) (m/<= steps-x nx-) (m/not-neg? steps-y) (m/<= steps-y ny-))
+      (let [i (cell-start steps-x nx)
+            j (cell-start steps-y ny)
+            fx (m/- steps-x i)
+            fy (m/- steps-y j)
+            row (m/* j nx)
+            row1 (m/* (m/long-inc j) nx)]
+        (m/+ (m/* (m/- 1.0 fx) (m/- 1.0 fy) (Array/aget values (m/long-add i row)))
+             (m/* fx (m/- 1.0 fy) (Array/aget values (m/long-add (m/long-inc i) row)))
+             (m/* (m/- 1.0 fx) fy (Array/aget values (m/+ i row1))) (m/* fx fy (Array/aget values (m/long-add (m/long-inc i) row1)))))
       ##NaN)))
 
 (defn dropped-positions
-  "`{:x n :y n}` - rows of the split `groups` (`{panel rows}`) without a finite x / y in `mapping` (zero for a
-  function source, which reads no rows)."
+  "Counts of the rows a field chart drops for a non-finite position.
+
+  Parameters:
+
+  - `kind` (keyword): the source kind (see [[source-kind]]).
+  - `mapping` (map): the merged mapping, `:x` and `:y` read.
+  - `groups` (map): the split rows, panel -> rows.
+
+  Returns `{:x n :y n}` - the rows without a finite x and y; zeros for a function source, which reads no rows."
   [kind mapping groups]
   (if (= kind :function)
     {:x 0 :y 0}
@@ -249,14 +381,30 @@
       {:x (bad :x) :y (bad :y)})))
 
 (defn axis-transforms
-  "`[tx ty]` - the stat transforms of the plot's `:x` / `:y` scale specs (see
-  [[cljplot2.scale.position/stat-transform]])."
+  "Stat transforms of the plot's position axes.
+
+  Parameters:
+
+  - `plot-scales` (map): the plot's scale specs, `:x` and `:y` read.
+
+  Returns `[tx ty]` (see [[cljplot2.scale.position/stat-transform]])."
   [plot-scales]
   [(scale/stat-transform (:x plot-scales)) (scale/stat-transform (:y plot-scales))])
 
 (defn source-field
-  "`{:f f :domain d}` of the field of one panel / group's `rows` from a chart's `options`, merged `mapping` and the
-  plot's scale specs `plot-scales` (see the namespace doc); `nil` for points / gridded data without rows."
+  "Field of one panel's or group's rows (see the namespace doc).
+
+  Parameters:
+
+  - `kind` (keyword): the source kind of [[source-kind]].
+  - `options` (map): the chart's field options (see [[options]]).
+  - `mapping` (map): the merged mapping.
+  - `rows` (sequence): the rows.
+  - `plot-scales` (map): the plot's scale specs.
+
+  Returns `{:f f :domain [[x0 x1] [y0 y1]]}`; `nil` for points or gridded data without rows (points: without finite ones).
+
+  Throws the errors of [[function-domain]], [[lattice]] and [[density]]."
   [kind options mapping rows plot-scales]
   (case kind
     :function {:f (:f options) :domain (function-domain (:domain options) plot-scales)}
@@ -276,15 +424,20 @@
   #{:log2 :log10 :sin :exp :sigmoid :frac})
 
 (defn wrap
-  "Magnitude `v` (>= 0) wrapped into `[0 1]` by `method` (old cljplot's complex plot): `:log2` / `:log10` - the
-  fraction of log(v + 1) (bands where |f| + 1 doubles / grows tenfold), `:sin` - sin v scaled to `[0 1]`, `:exp` -
-  1 - e^-v, `:sigmoid`, `:frac` - the fraction of v."
+  "Wraps a magnitude into `[0 1]` (old cljplot's complex plot).
+
+  Parameters:
+
+  - `method` (keyword): one of [[wrap-methods]] - `:log2` and `:log10` - the fraction of log(v + 1) (bands where |f| + 1 doubles or grows tenfold), `:sin` - sin v scaled to `[0 1]`, `:exp` - 1 - e^-v, `:sigmoid`, `:frac` - the fraction of v.
+  - `v` (double): the magnitude, non-negative.
+
+  Returns the wrapped value as a double (`NaN` or infinite for a non-finite `v`)."
   ^double [method ^double v]
   (case method
-    :log2 (m/frac (m/log2 (inc v)))
-    :log10 (m/frac (m/log10 (inc v)))
+    :log2 (m/frac (m/log2 (m/inc v)))
+    :log10 (m/frac (m/log10 (m/inc v)))
     :sin (m/norm (m/sin v) -1.0 1.0 0.0 1.0)
-    :exp (- 1.0 (m/exp (- v)))
+    :exp (m/- 1.0 (m/exp (m/- v)))
     :sigmoid (m/sigmoid v)
     :frac (m/frac v)))
 
@@ -293,16 +446,22 @@
   #{:HSI :HSB :HSV :HSL :HCL :HWB})
 
 (defn- complex-color
-  "Color of complex `z` (old cljplot) through `from-space` (a clojure2d `from-*` converter of a hue-first space):
-  hue - arg z, the third channel - the wrapped |z|, the second - 3/4 to full along it; a non-finite argument counts
-  as 0, a non-finite wrapped magnitude (a pole) as 1."
+  "Colour of a complex number by domain colouring (old cljplot).
+
+  Parameters:
+
+  - `from-space` (function): a clojure2d `from-*` converter of a hue-first colour space.
+  - `method` (keyword): the magnitude wrap, see [[wrap]].
+  - `z` (`Vec2`): the complex number.
+
+  Returns the colour: hue - arg z, the third channel - the wrapped |z|, the second - 3/4 to full along it; a non-finite argument counts as 0, a non-finite wrapped magnitude (a pole) as 1."
   [from-space method ^Vec2 z]
-  (let [angle (cx/arg z)
-        angle (if (m/valid-double? angle) angle 0.0)
-        bright (wrap method (cx/abs z))
-        bright (if (m/valid-double? bright) bright 1.0)
-        b (* 255.0 bright)]
-    (from-space (c/color (m/norm angle m/-PI m/PI 0.0 255.0) (- 255.0 (/ (- 255.0 b) 4.0)) b))))
+  (let [raw-angle (cx/arg z)
+        angle (if (m/valid-double? raw-angle) raw-angle 0.0)
+        wrapped (wrap method (cx/abs z))
+        bright (if (m/valid-double? wrapped) wrapped 1.0)
+        b (m/* 255.0 bright)]
+    (from-space (c/color (m/norm angle m/-PI m/PI 0.0 255.0) (m/- 255.0 (m// (m/- 255.0 b) 4.0)) b))))
 
 (def domain-color-options
   "Options of [[domain-color]]."
@@ -315,10 +474,15 @@
                     (into [:enum] (sort hue-colorspaces)))])
 
 (defn domain-color
-  "A `:pixel-color` function (see [[cljplot2.chart.field]]) colouring a complex function `f` (a `Vec2` -> `Vec2`
-  function of `fastmath.complex`, e.g. `cx/log`) by domain colouring: the point `(x, y)` is `x + iy`, the hue the
-  argument of f there (the returned function takes a point `[x y]`), the brightness its magnitude wrapped by `:wrap` (default `:log2`, see [[wrap]]), in
-  `:colorspace` (default `:HSI` - old cljplot's example; one of [[hue-colorspaces]]). Zeros and poles get a colour.
+  "Domain colouring of a complex function, as a `:pixel-color` function of [[cljplot2.chart.field]].
+
+  Parameters:
+
+  - `f` (function): a complex function `Vec2` -> `Vec2` of `fastmath.complex`, e.g. `cx/log`.
+  - `options` (map): `:wrap` - how the magnitude is wrapped for the brightness (default `:log2`, see [[wrap]]); `:colorspace` - one of [[hue-colorspaces]] (default `:HSI` - old cljplot's example).
+
+  Returns a function of a point `[x y]` giving the colour of `f(x + iy)`: hue - its argument, brightness - its wrapped magnitude. Zeros and poles get a colour.
+
   Throws `ex-info` for bad options ([[domain-color-options]])."
   {:cljplot2/api true :cljplot2/options domain-color-options}
   ([f] (domain-color f {}))
@@ -326,3 +490,4 @@
    (schema/check-options! domain-color-options opts)
    (let [from-space (second (c/colorspaces* colorspace))]
      (fn [[x y]] (complex-color from-space wrap (f (cx/complex x y)))))))
+

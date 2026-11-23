@@ -5,7 +5,8 @@
 ;; group with its title.
 
 (ns reference.shared-options
-  (:require [fastmath.random :as r]
+  (:require [fastmath.core :as m]
+            [fastmath.random :as r]
             [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
             [cljplot2.data.levels :as levels]
@@ -354,6 +355,18 @@
 (plot/render-image {:data iris
                     :mapping {:x :sepal-length :y :sepal-width :z :petal-length}
                     :charts [(chart/cloud {:domain {:x [4 8] :y [2 4.5] :z [0 7]}})]}
+                   {:width 500 :height 400})
+
+;; ### 3D shading
+
+;; Shaded 3D faces (surface quads, cloud bars) are lit by Lambert's law: an ambient share of the colour plus the rest
+;; by the face's angle to the light, whose direction is given in view coordinates (x right, y up, z away from the eye).
+
+(nu/options-table (describe/fragment-rows :shading))
+
+(plot/render-image {:charts [(chart/surface {:f (fn [[x y]] (m/sin (m/* x y)))
+                                             :domain {:x [-2 2] :y [-2 2]} :color [120 160 220]
+                                             :ambient 0.2 :light [1.0 1.0 -0.5]})]}
                    {:width 500 :height 400})
 
 ;; ### Text style

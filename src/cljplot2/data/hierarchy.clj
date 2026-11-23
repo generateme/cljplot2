@@ -1,18 +1,20 @@
 (ns cljplot2.data.hierarchy
-  "Hierarchies of rows for the treemap and the partition: a tree from a `:value` and the `:hierarchy` levels.
+  "Hierarchies of rows for the hierarchy charts (treemap, partition, pack): a tree from a `:value` and the `:hierarchy` levels.
 
-  Row path: the level values of a row up to the first `nil` or `\"\"` - the row ends at that path's last node. Rows with
-  an identical path merge (values summed); with a mapped `:color` rows with the same path but different colors stay
-  separate leaves. A row whose path stops at a group that also has deeper rows becomes an unnamed leaf of that group
-  (after its named children).
+  A row's path is its level values up to the first `nil` or empty text - the row ends at that path's last node. Rows with an identical path merge (values summed); with a mapped `:color` rows with the same path but different colors stay separate leaves. A row whose path stops at a group that also has deeper rows becomes an unnamed leaf of that group (after its named children).
 
-  Node: a group `{:name :value :children}` or a leaf `{:name :value :color}`; `:value` is the sum of the leaves below.
-  The root is always a group with `:name nil`; its children carry `:top-index` (see [[panel-trees]]).
+  A node is a group `{:name :value :children}` or a leaf `{:name :value :color}`; `:value` is the sum of the leaves below. The root is always a group with `:name nil`; its children carry `:top-index` (see [[panel-trees]]).
 
-  Sequences (e.g. page visits) become such level rows with [[sequence-levels]] - a flow sunburst."
+  Functions:
+
+  - trees: [[level-accessors]], [[path-of]], [[root]], [[panel-trees]] (a chart's trees per panel), [[ordered-children]], [[ordered-tree]].
+  - fills: [[top-color-fn]], [[depth-shade]], [[fill-fn]].
+  - labels: [[node-info]], [[label-text]]; schemas [[label-option]], [[label-entries]], [[mapping-schema]].
+  - sequences: [[sequence-levels]] - sequences (e.g. page visits) as level rows for a flow sunburst; options [[sequence-levels-options]]."
   (:require [clojure.string :as str]
             [clojure2d.color :as c]
             [fastmath.core :as m]
+            [fastmath.vector :as v]
             [cljplot2.scale.aesthetic :as aesthetic]
             [cljplot2.data.rows :as data]
             [cljplot2.schema :as schema])
@@ -48,27 +50,53 @@
                     label-option)]))
 
 (defn level-accessors
-  "Row accessors of the `:hierarchy` mapping (a vector of accessors, outer level first)."
+  "Makes the row accessors of the hierarchy levels.
+
+  Parameters:
+
+  - `hierarchy` (sequence): the `:hierarchy` mapping - level accessors, outer level first.
+
+  Returns a vector of row functions, one per level (see [[cljplot2.data.rows/row-accessor]]).
+
+  See also [[path-of]]."
   [hierarchy]
   (mapv #(data/row-accessor :hierarchy %) hierarchy))
 
 (defn path-of
-  "Level values of `row` up to the first `nil` / `\"\"`."
+  "Reads a row's path in the hierarchy.
+
+  Parameters:
+
+  - `accessors` (sequence of functions): the level accessors (see [[level-accessors]]).
+  - `row` (map): a data row.
+
+  Returns the vector of the row's level values up to the first `nil` or empty text (excluded); empty when the first level has none."
   [accessors row]
   (vec (take-while #(not (or (nil? %) (= "" %))) (map #(% row) accessors))))
 
 (defn- leaves
-  "Leaves named `name` from `entries` ending here: one per distinct color value (first-appearance order), values
-  summed - rows differing only in color stay separate rectangles."
+  "Makes the leaves of the entries ending at a node.
+
+  Parameters:
+
+  - `name`: the node's name.
+  - `entries` (sequence of maps): `{:value v :color c}` entries ending here.
+
+  Returns a vector of leaves `{:name name :value v :color c}`, one per distinct colour value in first-appearance order with the values summed - rows differing only in colour stay separate rectangles."
   [name entries]
   (let [by-color (group-by :color entries)]
-    (mapv (fn [col] {:name name :value (reduce + 0.0 (map :value (by-color col))) :color col})
+    (mapv (fn [col] {:name name :value (v/sum (map :value (by-color col))) :color col})
           (distinct (map :color entries)))))
 
 (defn- nodes
-  "Nodes named `name` from `entries` (`{:path rest-of-path :value v :color c}`): the leaves of `name` when no entry
-  goes deeper, otherwise one group whose children are the deeper groups (first-appearance order) followed by unnamed
-  leaves for the entries ending at the group."
+  "Builds the nodes of the entries below a name.
+
+  Parameters:
+
+  - `name`: the nodes' name.
+  - `entries` (sequence of maps): `{:path rest-of-path :value v :color c}` entries, paths relative to the node.
+
+  Returns a vector: the leaves of `name` when no entry goes deeper (see [[leaves]]), otherwise one group `{:name :value :children}` whose children are the deeper nodes (first-appearance order) followed by unnamed leaves for the entries ending at the group."
   [name entries]
   (let [ends (filter #(empty? (:path %)) entries)
         deeper (remove #(empty? (:path %)) entries)]
@@ -78,29 +106,44 @@
             children (-> (into [] (mapcat (fn [k] (nodes k (map #(update % :path subvec 1) (by-first k)))))
                                (distinct (map #(first (:path %)) deeper)))
                          (into (leaves nil ends)))]
-        [{:name name :value (reduce + 0.0 (map :value children)) :children children}]))))
+        [{:name name :value (v/sum (map :value children)) :children children}]))))
 
 (defn root
-  "Root group of `entries` (`{:path :value :color}`, at least one): its children are the top-level nodes (always a
-  group, also for a single leaf)."
+  "Builds the root group of hierarchy entries.
+
+  Parameters:
+
+  - `entries` (sequence of maps, at least one): `{:path p :value v :color c}`, `p` a path from the root (see [[path-of]]).
+
+  Returns the root group `{:name nil :value v :children [..]}` with the top-level nodes as its children - always a group, also for a single leaf.
+
+  See also [[panel-trees]]."
   [entries]
   (let [[n & more] (nodes nil entries)]
     (if (and (:children n) (nil? more))
       n
-      {:name nil :value (reduce + 0.0 (map :value (cons n more))) :children (vec (cons n more))})))
+      {:name nil :value (v/sum (map :value (cons n more))) :children (vec (cons n more))})))
 
 (defn panel-trees
-  "Trees of a hierarchy chart's panels from `groups` (panel -> rows) and the merged `mapping` (`:value`,
-  `:hierarchy`, optional `:color`): rows with a positive finite value (and a kept color) only.
-  `{:trees {panel root} :top-count n :extents {panel {:color e}} :na #{..} :dropped {:value n :color n}}` - panels
-  without kept rows left out; top-level children carry `:top-index` (first-appearance order over all panels, so
-  default colors agree across panels; `:top-count` of them). `env` - `:plot-scales`, `:na-level?`."
+  "Builds the trees of a hierarchy chart's panels.
+
+  Only rows with a positive finite value (and a kept colour) count.
+
+  Parameters:
+
+  - `groups` (map): panel -> rows.
+  - `mapping` (map): the merged mapping - `:value`, `:hierarchy`, optional `:color`.
+  - `env` (map): `:plot-scales` - the plot's scale specs (the `:color` one decides which colours are kept); `:na-level?` - keep rows with a `nil` colour (default true).
+
+  Returns `{:trees {panel root} :top-count n :extents {panel {:color e}} :na #{..} :dropped {:value n :color n}}` - panels without kept rows left out; top-level children carry `:top-index` (first-appearance order over all panels, so default colours agree across panels, `:top-count` of them); `:na` - `#{:color}` when a leaf has a `nil` colour; `:dropped` - rows without a valid value, and (with a mapped colour) rows whose colour isn't kept.
+
+  See also [[root]], [[fill-fn]]."
   [groups mapping {:keys [na-level? plot-scales] :or {na-level? true}}]
   (let [value-of (data/row-accessor :value (:value mapping))
         accessors (level-accessors (:hierarchy mapping))
         color-of (when (some? (:color mapping)) (data/row-accessor :color (:color mapping)))
         color-spec (get plot-scales :color {})
-        value-ok? #(let [v (value-of %)] (and (number? v) (m/valid-double? (double v)) (pos? (double v))))
+        value-ok? #(let [value (value-of %)] (and (number? value) (m/valid-double? (double value)) (m/pos? (double value))))
         color-ok? (fn [row] (or (nil? color-of)
                                 (let [cv (color-of row)]
                                   (if (nil? cv)
@@ -131,38 +174,64 @@
                 color-of (assoc :color (count (remove color-ok? (filter value-ok? all-rows)))))}))
 
 (defn top-color-fn
-  "Default fill of the top-level node with `:top-index` i (`(f i)`): the theme's `[:palette :color]` over `top-count`
-  top-level nodes."
+  "Makes the default fill function of the top-level nodes.
+
+  Parameters:
+
+  - `theme` (map): the merged theme; its `[:palette :color]` gives the colours.
+  - `top-count` (long): the number of top-level nodes.
+
+  Returns a function of a node's `:top-index` giving its palette colour.
+
+  See also [[fill-fn]], [[depth-shade]]."
   [theme top-count]
   (aesthetic/palette-color-fn theme top-count))
 
-(def ^:private ^:const lightness-ceiling
+(def ^{:private true :const true :tag 'double} lightness-ceiling
   "CIELAB lightness L* that deeper levels approach (white is 100)."
   90.0)
 
-(def ^:private ^:const lightening-per-level
+(def ^{:private true :const true :tag 'double} lightening-per-level
   "Fraction of the way to [[lightness-ceiling]] each level below the top one goes."
   0.25)
 
+(def ^{:private true :const true :tag 'double} remaining-per-level
+  "Fraction of the way to [[lightness-ceiling]] left after each level below the top one."
+  (m/- 1.0 lightening-per-level))
+
 (defn depth-shade
-  "`color` of a top-level node shaded for `depth` (1 - the top level, `color` itself): L* moves towards
-  [[lightness-ceiling]] by [[lightening-per-level]] per level (colors lighter than the ceiling stay)."
-  [color depth]
-  (if (<= (long depth) 1)
+  "Shades a top-level node's colour for a deeper level.
+
+  CIELAB lightness L* moves towards 90 by a quarter of the remaining way per level below the top one.
+
+  Parameters:
+
+  - `color`: the top-level node's colour.
+  - `depth` (long): the node's depth (1 - the top level).
+
+  Returns `color` itself at depth 1 or less, or when it is lighter than the ceiling; else the lightened colour, alpha kept.
+
+  See also [[fill-fn]]."
+  [color ^long depth]
+  (if (m/<= depth 1)
     color
     (let [^Vec4 lab (c/to-LAB color)
           l (.x lab)
-          f (- 1.0 (m/pow (- 1.0 lightening-per-level) (dec (long depth))))]
-      (if (< l lightness-ceiling)
-        (c/clamp (c/from-LAB (Vec4. (+ l (* (- lightness-ceiling l) f)) (.y lab) (.z lab) (.w lab))))
+          f (m/- 1.0 (m/pow remaining-per-level (m/long-dec depth)))]
+      (if (m/< l lightness-ceiling)
+        (c/clamp (c/from-LAB (Vec4. (m/+ l (m/* (m/- lightness-ceiling l) f)) (.y lab) (.z lab) (.w lab))))
         color))))
 
 (defn fill-fn
-  "Fill of a drawn node `{:depth :top-index :leaf? :color :name}` of a panel `{:top-count :colored? :named?}`
-  (`:colored?` - a mapped `:color`, `:named?` - colors by node name): without a mapped color the top-level node's
-  palette color (see [[top-color-fn]]) shaded by depth ([[depth-shade]]), the root `[:palette :na]`; with one leaves
-  take their mapped color, groups and the root `[:palette :na]`; by name - every named node its name's color under
-  the color scale, the root and unnamed nodes `[:palette :na]`."
+  "Makes the fill function of a hierarchy chart's drawn nodes.
+
+  Parameters:
+
+  - `panel` (map): `:top-count` - the number of top-level nodes; `:colored?` - `:color` is mapped; `:named?` - colours by node name.
+  - `scales` (map): the plot's aesthetic scales; `:color` used when colouring by a mapped colour or by name.
+  - `theme` (map): the merged theme; `[:palette :na]` fills the root and nodes without a colour.
+
+  Returns a function of a drawn node `{:depth :top-index :leaf? :color :name}` giving its fill: by name - every named node its name's colour under the colour scale, the root and unnamed nodes the NA colour; with a mapped colour - leaves their colour under the scale, groups and the root the NA colour; else the top-level node's palette colour ([[top-color-fn]]) shaded by depth ([[depth-shade]]), the root the NA colour."
   [{:keys [top-count colored? named?]} scales theme]
   (let [na (get-in theme [:palette :na])]
     (cond
@@ -180,35 +249,66 @@
             (depth-shade (top-color top-index) depth)))))))
 
 (defn ordered-children
-  "Children of group `node` in `order`: `:value` - descending values (ties in data order), `:data` - first
-  appearance (an unnamed leaf last)."
+  "Orders a group's children.
+
+  Parameters:
+
+  - `node` (map): a group.
+  - `order` (keyword): `:value` - descending values (ties in data order), `:data` - first appearance (an unnamed leaf last).
+
+  Returns the vector of the children in that order.
+
+  See also [[ordered-tree]]."
   [node order]
   (let [cs (:children node)]
     (if (= order :data)
       cs
-      (vec (sort-by (comp - double :value) cs)))))
+      (vec (sort-by #(m/- (double (:value %))) cs)))))
 
 (defn ordered-tree
-  "`tree` with every group's children in `order` (see [[ordered-children]])."
+  "Orders the children of every group of a tree.
+
+  Parameters:
+
+  - `tree` (map): the root.
+  - `order` (keyword): `:value` or `:data`, see [[ordered-children]].
+
+  Returns `tree` with every group's children in `order`."
   [tree order]
   (if (:children tree)
     (assoc tree :children (mapv #(ordered-tree % order) (ordered-children tree order)))
     tree))
 
 (defn node-info
-  "What label functions get for `node` at `depth` (root 0) with level values `path` from the root, in a tree of
-  `total` value under a parent of `parent-value`: `{:name :value :depth :path :share :parent-share}` - `:share` of
-  the total, `:parent-share` of the parent (1.0 for the root)."
+  "Describes a node for label functions.
+
+  Parameters:
+
+  - `node` (map): the node.
+  - `depth` (long): its depth (the root 0).
+  - `path` (vector): its level values from the root.
+  - `parent-value` (double): its parent's value (the root's own value for the root).
+  - `total` (double): the tree's total value.
+
+  Returns `{:name :value :depth :path :share :parent-share}` - `:share` of the total, `:parent-share` of the parent (1.0 for the root).
+
+  See also [[label-text]]."
   [node depth path parent-value total]
-  (let [v (double (:value node))]
-    {:name (:name node) :value v :depth depth :path path
-     :share (/ v (double total))
-     :parent-share (/ v (double parent-value))}))
+  (let [value (double (:value node))]
+    {:name (:name node) :value value :depth depth :path path
+     :share (m// value (double total))
+     :parent-share (m// value (double parent-value))}))
 
 (defn label-text
-  "Text of a node label for a `:leaf-labels` / `:group-labels` option `labels` (`true` - the name, a function of
-  `info` (see [[node-info]]) - its result, `false` / `nil` - none): `nil` for no label, also for an unnamed node,
-  `nil` or `\"\"` results."
+  "Gives the text of a node's label.
+
+  Parameters:
+
+  - `labels`: the `:leaf-labels` / `:group-labels` option - `true` (the node's name), a function of `info` (its result), `false` or `nil` (none).
+  - `node` (map): the node.
+  - `info` (map): the node's description (see [[node-info]]).
+
+  Returns the label as text; `nil` for no label - also for an unnamed node and for `nil` or empty results."
   [labels node info]
   (when (some? (:name node))
     (let [t (cond (fn? labels) (labels info)
@@ -219,14 +319,21 @@
 ;; sequences
 
 (defn- sequence-steps
-  "Steps of sequence `s`: a string split at the literal `separator`, or the elements of a sequential value; empty
-  (`nil`, `\"\"`) steps removed, a final `end` marker too unless `keep-end?`."
+  "Splits a sequence into its steps.
+
+  Parameters:
+
+  - `s`: the sequence - a string or a sequential value (anything else has no steps).
+  - `separator`: the literal text a string is split at.
+  - `[end keep-end?]`: the end marker and whether a final one is kept.
+
+  Returns the vector of steps without empty ones (`nil`, empty text) and without a final `end` marker unless `keep-end?`."
   [s separator [end keep-end?]]
-  (let [steps (cond
-                (string? s) (str/split s (re-pattern (java.util.regex.Pattern/quote (str separator))))
-                (sequential? s) s
-                :else [])
-        steps (filterv #(not (or (nil? %) (= "" %))) steps)]
+  (let [raw-steps (cond
+                    (string? s) (str/split s (re-pattern (java.util.regex.Pattern/quote (str separator))))
+                    (sequential? s) s
+                    :else [])
+        steps (filterv #(not (or (nil? %) (= "" %))) raw-steps)]
     (if (and (not keep-end?) (seq steps) (= end (peek steps))) (pop steps) steps)))
 
 (def sequence-levels-entries
@@ -252,15 +359,21 @@
   (into [:map {:closed true}] sequence-levels-entries))
 
 (defn sequence-levels
-  "Hierarchy rows of sequences (e.g. page visits) for a flow sunburst (`chart/partition` under polar, see
-  [[cljplot2.graphs/sequences]]): every row's `:sequence` (an accessor of a string split at `:separator`, default
-  `\"-\"`, or of a sequence of steps; empty steps left out; a final `:end` marker, default `\"end\"`, removed - a
-  sequence ending before others continue becomes its group's unnamed leaf - or kept as a step of its own with
-  `:keep-end? true`) with `:value` (an accessor, default 1 per row; see [[cljplot2.data.rows/weight]]; summed over
-  identical sequences). Returns `{:rows [{:step-1 s1 .. :step-k sk :value v}] :hierarchy [:step-1 ..
-  :step-k] :dropped n}` - `k` the longest sequence, shorter ones padded with `nil`, rows in first-appearance order;
-  `:dropped` - rows without steps. Throws `ex-info {:key :value}` for an invalid weight; `{:key k}` for an invalid
-  option `k` (checked first, see [[sequence-levels-options]])."
+  "Turns sequences (e.g. page visits) into hierarchy rows for a flow sunburst (`chart/partition` under polar, see [[cljplot2.graphs/sequences]]).
+
+  Parameters:
+
+  - `rows` (sequence of maps): one sequence per row.
+  - `options` (map):
+    - `:sequence` - accessor of a row's sequence: a string split at `:separator`, or a sequence of steps; empty steps left out (default `:sequence`).
+    - `:value` - accessor of a row's weight, a finite number >= 0 (see [[cljplot2.data.rows/weight]]); identical sequences summed (default 1 per row).
+    - `:separator` - literal text splitting a string sequence (default `-`).
+    - `:end` - the end marker: a final step equal to it is removed, so a sequence ending before others continue becomes its group's unnamed leaf (default `end`; `nil` - none).
+    - `:keep-end?` - keep a final end marker as a step of its own (default false).
+
+  Returns `{:rows [{:step-1 s1 .. :step-k sk :value v} ..] :hierarchy [:step-1 .. :step-k] :dropped n}` - `k` the longest sequence, shorter ones padded with `nil`, rows in first-appearance order; `:dropped` - rows without steps.
+
+  Throws `ex-info {:key :value}` for an invalid weight; `{:key k}` for an invalid option `k` (checked first, see [[sequence-levels-options]])."
   {:cljplot2/api true :cljplot2/options sequence-levels-options}
   [rows {:keys [sequence value separator end keep-end?] :or {sequence :sequence separator "-" end "end"} :as options}]
   (schema/check-options! sequence-levels-options options)
@@ -268,10 +381,10 @@
         value-of (if value (data/row-accessor :value value) (constantly nil))
         keyed (mapv (fn [row] [(sequence-steps (sequence-of row) separator [end keep-end?]) (data/weight (value-of row))]) rows)
         kept (filter (comp seq first) keyed)
-        sums (reduce (fn [acc [steps v]] (update acc steps (fnil + 0.0) (double v))) {} kept)
+        sums (reduce (fn [acc [steps weight]] (update acc steps (fnil m/+ 0.0) (double weight))) {} kept)
         order (distinct (map first kept))
-        depth (long (reduce max 0 (map count order)))
-        ks (mapv #(keyword (str "step-" %)) (range 1 (inc depth)))]
+        depth (long (reduce m/max 0 (map count order)))
+        ks (mapv #(keyword (str "step-" %)) (range 1 (m/long-inc depth)))]
     {:rows (mapv (fn [steps] (assoc (zipmap ks (concat steps (repeat nil))) :value (sums steps))) order)
      :hierarchy ks
-     :dropped (- (count keyed) (count kept))}))
+     :dropped (m/- (count keyed) (count kept))}))

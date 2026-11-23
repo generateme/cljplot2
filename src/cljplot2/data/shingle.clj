@@ -7,7 +7,9 @@
   `[lo, hi)`); a facet strip of Interval levels shows a shaded bar of the interval
   within the range of all levels (see [[cljplot2.content.strip]]).
 
-  Equal-count intervals come from `fastmath.core/co-intervals` (R `co.intervals`)."
+  Equal-count intervals come from `fastmath.core/co-intervals` (R `co.intervals`).
+
+  Functions: [[shingle]] - the repeated rows; [[equal-count]] - equal-count intervals; [[interval]], [[interval?]], [[contains-value?]] - intervals; [[rounded-str]] - a bound's text; [[check-accessor!]] - the accessor and `:label` check shared with [[cljplot2.data.levels/bin]]."
   (:require [fastmath.core :as m]
             [cljplot2.data.rows :as rows]
             [cljplot2.schema :as schema])
@@ -18,25 +20,39 @@
 
 (declare rounded-str)
 
-(def ^:private ^:const bound-digits
+(def ^{:private true :const true :tag 'long} bound-digits
   "Significant digits of an exact (shingle) bound's text: enough for any data value, few enough to drop the noise of
   floating-point arithmetic (`4.6499999999999995` prints `4.65`)."
   10)
 
 (defn- bound-str
-  "Text of an exact interval bound `v`: whole numbers without decimals, others at [[bound-digits]] significant digits
-  (trailing zeros dropped; scientific notation below 1e-4 or above 1e15 in magnitude); non-finite values as `str`."
+  "Gives the text of an exact interval bound (shingles).
+
+  Parameters:
+
+  - `v` (number): the bound.
+
+  Returns whole numbers below 1e15 in magnitude without decimals, other finite numbers at [[bound-digits]] significant digits with trailing zeros dropped - plain notation from 1e-4 to 1e15 in magnitude, scientific beyond; non-finite values as `str`."
   [v]
   (let [d (double v)]
     (cond
       (not (m/valid-double? d)) (str v)
-      (and (== d (m/floor d)) (< (m/abs d) 1.0e15)) (str (long d))
+      (and (m/== d (m/floor d)) (m/< (m/abs d) 1.0e15)) (str (long d))
       ;; plain notation within [1e-4 1e15), scientific beyond (a 1e300 bound prints 1E+300, not 301 digits)
-      (<= 1.0e-4 (m/abs d) 1.0e15) (rounded-str d bound-digits)
+      (m/<= 1.0e-4 (m/abs d) 1.0e15) (rounded-str d bound-digits)
       :else (-> (java.math.BigDecimal. d) (.round (java.math.MathContext. (int bound-digits))) (.stripTrailingZeros) (.toString)))))
 
 (defn rounded-str
-  "`v` rounded to `digits` significant digits, plain notation, trailing zeros dropped (bin bounds)."
+  "Gives the text of a number rounded to significant digits (bin bounds).
+
+  Parameters:
+
+  - `v` (number): finite.
+  - `digits` (long): significant digits, positive.
+
+  Returns the text in plain notation, trailing zeros dropped.
+
+  Throws `NumberFormatException` for a non-finite `v`."
   [v ^long digits]
   (-> (java.math.BigDecimal. (double v))
       (.round (java.math.MathContext. (int digits)))
@@ -59,34 +75,55 @@
 (def ^:private bounds
   "`[lo hi]`, finite numbers, `lo <= hi`."
   (schema/with-rules [:tuple schema/finite schema/finite]
-    [(fn [[lo hi]] (when (> (double lo) (double hi)) "should be [lo hi] with lo <= hi"))]))
+    [(fn [[^double lo ^double hi]] (when (m/> lo hi) "should be [lo hi] with lo <= hi"))]))
 
 (def interval-args
   "Arguments of [[interval]]: `{:bounds [lo hi] :label label}`."
   [:map [:bounds bounds] [:label [:maybe string?]]])
 
 (defn interval
-  "Interval `[lo hi]` (closed), `lo <= hi`, finite numbers, with an optional `label` (the data series name, printed
-  before the range: `\"mag: [4, 5]\"`). Throws `ex-info` (see [[cljplot2.schema]]) for bad arguments."
+  "Makes a closed interval level.
+
+  Parameters:
+
+  - `lo`, `hi` (finite numbers): the bounds, `lo <= hi`.
+  - `label` (string, optional): the data series name, printed before the range (`mag: [4, 5]`).
+
+  Returns an [[Interval]].
+
+  Throws `ex-info` (see [[cljplot2.schema]]) for bad arguments."
   ([lo hi] (interval lo hi nil))
   ([lo hi label]
    (schema/explain! [[interval-args {:bounds [lo hi] :label label} [:interval]]])
    (->Interval lo hi label nil nil)))
 
 (defn interval?
-  "Is `v` an [[Interval]]?"
+  "Tests whether a value is an [[Interval]].
+
+  Parameters:
+
+  - `v`: any value.
+
+  Returns `true` or `false`."
   [v]
   (instance? Interval v))
 
 (defn contains-value?
-  "Does closed interval `iv` contain number `v`?"
+  "Tests whether a closed interval contains a number.
+
+  Parameters:
+
+  - `iv` ([[Interval]]): the interval, bounds included.
+  - `v` (number).
+
+  Returns `true` when `lo <= v <= hi`."
   [^Interval iv v]
-  (<= (double (.-lo iv)) (double v) (double (.-hi iv))))
+  (m/<= (double (.-lo iv)) (double v) (double (.-hi iv))))
 
 (def ^:private finite-number? schema/finite?)
 
 (def ^:private overlap
-  (schema/named-type ::overlap #(and (number? %) (<= 0.0 (double %)) (< (double %) 1.0)) "should be a number in [0 1)"))
+  (schema/named-type ::overlap #(and (number? %) (m/<= 0.0 (double %)) (m/< (double %) 1.0)) "should be a number in [0 1)"))
 
 (def equal-count-options
   "Options of [[equal-count]]: `:count` (positive integer, default 6), `:overlap` (in `[0 1)`, default 0.5)."
@@ -113,24 +150,46 @@
                    [:or string? boolean?])])
 
 (defn check-accessor!
-  "Check the `accessor` (see [[cljplot2.schema/accessor]]) of a function with a `:label` option (see [[shingle]],
-  [[cljplot2.data.levels/bin]]): `:label true` needs a keyword accessor (its name is the label). Throws `ex-info`
-  (`{:key :accessor}` / `{:key :label}`)."
+  "Checks the accessor of a data function with a `:label` option ([[shingle]], [[cljplot2.data.levels/bin]]).
+
+  Parameters:
+
+  - `accessor`: the accessor (see [[cljplot2.schema/accessor]]).
+  - `label`: the `:label` option; `true` needs a keyword accessor (its name is the label).
+
+  Returns `nil`.
+
+  Throws `ex-info {:key :accessor}` for a bad accessor, `{:key :label}` for `:label true` with a function accessor."
   [accessor label]
   (schema/explain! [[schema/accessor accessor [:accessor]]])
   (when (and (true? label) (not (keyword? accessor)))
     (schema/fail! "label true needs a keyword accessor (its name is the label)" {:key :label :in [:label] :value label})))
 
 (defn- non-numeric-value!
+  "Checks that values to shingle are numbers.
+
+  Parameters:
+
+  - `values` (sequence): the values; `nil` allowed.
+
+  Returns `nil`.
+
+  Throws `ex-info {:key :shingle}` for a value neither `nil` nor a number."
   [values]
   (when-let [bad (first (remove #(or (nil? %) (number? %)) values))]
     (schema/fail! "Shingle values must be numbers." {:key :shingle :value bad})))
 
 (defn equal-count
-  "Equal-count overlapping intervals of `values` (`nil` and NaN ignored): `{:count n :overlap f}` (defaults 6 and 0.5,
-  `0 <= f < 1`), as [[Interval]]s. Fewer intervals when the data can't support `n` distinct ones; none for no values.
-  Throws `ex-info` for bad options ([[equal-count-options]], see [[cljplot2.schema]]) or non-numeric values
-  (`{:key :shingle}`)."
+  "Computes equal-count overlapping intervals of values (R `co.intervals`).
+
+  Parameters:
+
+  - `values` (sequence of numbers): `nil` and NaN ignored.
+  - `opts` (map, see [[equal-count-options]]): `:count` - the number of intervals (default 6); `:overlap` - the fraction of points shared by neighbouring intervals, in `[0 1)` (default 0.5).
+
+  Returns a vector of [[Interval]]s; fewer when the data can't support `:count` distinct ones, none for no values.
+
+  Throws `ex-info` for bad options (see [[cljplot2.schema]]), `{:key :shingle}` for non-numeric values."
   [values {n :count overlap :overlap :or {n 6 overlap 0.5} :as opts}]
   (schema/explain! [[equal-count-options opts [:options]]])
   (non-numeric-value! values)
@@ -140,13 +199,20 @@
       (mapv (fn [[lo hi]] (->Interval lo hi nil nil nil)) (m/co-intervals xs (long n) (double overlap))))))
 
 (defn shingle
-  "Rows of `data` (see [[cljplot2.data.rows/rows]]) repeated once per interval containing the value of `accessor`
-  (keyword or function), the interval stored under `(:as opts)`. Intervals: `(:intervals opts)` - `[[lo hi] ...]`,
-  or equal-count ones from `:count` / `:overlap` (see [[equal-count]]). `:label` names the data series in every
-  interval (and so in facet strips): a string, or `true` for the accessor's name (keyword accessors only); default
-  none. Rows with a `nil`, NaN or uncovered value are left out; the result's metadata holds `{:dropped n}`.
-  Throws `ex-info` for bad options ([[shingle-options]], see [[cljplot2.schema]]), a bad accessor or non-numeric
-  values (`{:key :shingle}`)."
+  "Repeats rows once per interval containing their value (lattice `equal.count`).
+
+  Parameters:
+
+  - `data`: rows or columns (see [[cljplot2.data.rows/rows]]).
+  - `accessor` (keyword or function): the numeric value of a row.
+  - `opts` (map, see [[shingle-options]]):
+    - `:as` - the key the interval is stored under (required).
+    - `:intervals` - `[[lo hi] ...]`, closed; default equal-count ones from `:count` / `:overlap` (see [[equal-count]]).
+    - `:label` - the data series name printed in every interval (and so in facet strips): a string, or `true` for the accessor's name (keyword accessors only); default none.
+
+  Returns a vector of rows, each with its [[Interval]] under `:as`; rows with a `nil`, NaN or uncovered value are left out, the result's metadata holds `{:dropped n}`.
+
+  Throws `ex-info` for bad options (see [[cljplot2.schema]]), a bad accessor (see [[check-accessor!]]) or non-numeric values (`{:key :shingle}`)."
   {:cljplot2/api true :cljplot2/options shingle-options}
   [data accessor {:keys [intervals as label] :as opts}]
   (schema/check-options! shingle-options opts)
@@ -155,14 +221,14 @@
         acc (rows/row-accessor :shingle accessor)
         _ (non-numeric-value! (map acc rs))
         series (cond (string? label) label (true? label) (name accessor))
-        ivs (if (some? intervals)
-              (mapv (fn [[lo hi]] (->Interval lo hi nil nil nil)) intervals)
-              (equal-count (map acc rs) (select-keys opts [:count :overlap])))
-        ivs (mapv #(assoc % :label series) ivs)
+        ivs (mapv #(assoc % :label series)
+                  (if (some? intervals)
+                    (mapv (fn [[lo hi]] (->Interval lo hi nil nil nil)) intervals)
+                    (equal-count (map acc rs) (select-keys opts [:count :overlap]))))
         out (into [] (mapcat (fn [row]
                                (let [v (acc row)]
                                  (when (finite-number? v)
                                    (keep (fn [iv] (when (contains-value? iv v) (assoc row as iv))) ivs)))))
                   rs)
         covered (count (filter (fn [row] (let [v (acc row)] (and (finite-number? v) (some #(contains-value? % v) ivs)))) rs))]
-    (with-meta out {:dropped (- (count rs) covered)})))
+    (with-meta out {:dropped (m/- (count rs) covered)})))

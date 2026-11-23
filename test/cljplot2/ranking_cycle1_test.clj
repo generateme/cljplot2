@@ -101,7 +101,7 @@
                         :charts [(chart/bar {:position :stack})]})))))
     (testing "1.3.4 overlay groups are translucent, a single group isn't"
       (is (true? (get-in (stats (p {:position :overlay}) 0) [:data :panel :translucent?])))
-      (is (false? (get-in (stats {:data two-groups :mapping {:x :v :y :l} :charts [(chart/bar {:position :overlay})]} 0)
+      (is (not (get-in (stats {:data two-groups :mapping {:x :v :y :l} :charts [(chart/bar {:position :overlay})]} 0)
                           [:data :panel :translucent?]))))
     (testing "1.3.3 negative values: down from 0, stacked separately; normalize rejects them"
       (let [neg [{:l "p" :c "x" :v -2} {:l "p" :c "y" :v 3} {:l "p" :c "z" :v -1}]

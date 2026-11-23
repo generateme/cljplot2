@@ -51,14 +51,14 @@
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
-(def ^{:const true :tag 'long :doc "Upper bound on measure, solve and finalize-scales rounds of [[solve-layout]]."}
-  max-layout-rounds
+(def ^{:const true :tag 'long} max-layout-rounds
+  "Upper bound on measure, solve and finalize-scales rounds of [[solve-layout]]."
   3)
 
 ;; stages
 
-(def ^{:private true :doc "The position scale keys."}
-  position-scales
+(def ^:private position-scales
+  "The position scale keys."
   #{:x :y})
 
 (defn- without-facet-values?
@@ -149,20 +149,20 @@
 
 ;; margins
 
-(def ^{:private true :const true :tag 'long :doc "Tick count hint of a provisional finalization (before the first layout round)."}
-  provisional-tick-hint
+(def ^{:private true :const true :tag 'long} provisional-tick-hint
+  "Tick count hint of a provisional finalization (before the first layout round)."
   10)
 
-(def ^{:private true :doc "Plot margin sides, in grid order."}
-  margin-sides
+(def ^:private margin-sides
+  "Plot margin sides, in grid order."
   [:top :right])
 
-(def ^{:private true :doc "Chart kinds with a magnitude dimension (counts, densities) a margin axis can show."}
-  magnitude-chart-kinds
+(def ^:private magnitude-chart-kinds
+  "Chart kinds with a magnitude dimension (counts, densities) a margin axis can show."
   #{:histogram :density})
 
-(def ^{:private true :const true :tag 'long :doc "Thickness of a plot margin in pixels when its spec gives none."}
-  default-margin-size
+(def ^{:private true :const true :tag 'long} default-margin-size
+  "Thickness of a plot margin in pixels when its spec gives none."
   80)
 
 (defn- chart-value?
@@ -943,8 +943,8 @@
           (assoc layout :rounds round)
           (recur (m/inc round) remeasured))))))
 
-(def ^{:const true :tag 'long :doc "Upper bound on refits of iso panel sizes (nice domains and measured tracks may change with the panel size), see [[iso-layout]]."}
-  max-iso-rounds
+(def ^{:const true :tag 'long} max-iso-rounds
+  "Upper bound on refits of iso panel sizes (nice domains and measured tracks may change with the panel size), see [[iso-layout]]."
   6)
 
 (defn- span
@@ -1143,8 +1143,8 @@
         (assoc-in [:arrange :heights] (equal-panel-tracks (mapv row-size (range r)) row-insets))
         (update :arrange dissoc :equal-panels))))
 
-(def ^{:private true :const true :tag 'long :doc "Upper bound on corrections of `:equal-panels` tracks, see [[equalized-arrange]]."}
-  max-equal-panel-rounds
+(def ^{:private true :const true :tag 'long} max-equal-panel-rounds
+  "Upper bound on corrections of `:equal-panels` tracks, see [[equalized-arrange]]."
   3)
 
 (defn- arranged-panel-sizes
@@ -1238,16 +1238,16 @@
           (equalized-arrange (rebuild (equal-panel-plot plot cells subplots)) rebuild))
         (assoc plot :subplots subplots)))))
 
-(def ^{:doc "Pipeline stages in execution order."}
-  stage-order
+(def stage-order
+  "Pipeline stages in execution order."
   [:split :stats :extents :scale-specs :grid :layout :finalized-scales :subplots])
 
-(def ^{:private true :doc "Per stage, the plot keys it adds besides its own (each stage stores its result under its name): dropped with the stage keys before a rebuild, so a stage adding a key lists it here."}
-  stage-extra-keys
+(def ^:private stage-extra-keys
+  "Per stage, the plot keys it adds besides its own (each stage stores its result under its name): dropped with the stage keys before a rebuild, so a stage adding a key lists it here."
   {:stats [:margin-stats] :scale-specs [:panel-scale-specs] :finalized-scales [:margin-env :panel-scales]})
 
-(def ^{:private true :doc "Stage key to its stage function (plot map to plot map with the stage's key added)."}
-  stage-fns
+(def ^:private stage-fns
+  "Stage key to its stage function (plot map to plot map with the stage's key added)."
   {:split split-stage
    :stats stats-stage
    :extents extents-stage
@@ -1259,15 +1259,15 @@
 
 ;; validation
 
-(def ^{:private true :doc "Schema of a chart value's `:schema`: malli schemas of its options, theme style and merged mapping."}
-  chart-schemas
+(def ^:private chart-schemas
+  "Schema of a chart value's `:schema`: malli schemas of its options, theme style and merged mapping."
   [:map {:closed true}
    (schema/optional :options {:description "schema of the chart's options"} schema/malli-schema)
    (schema/optional :style {:description "schema of the chart's theme style [:chart kind]"} schema/malli-schema)
    (schema/optional :mapping {:description "schema of the merged mapping"} schema/malli-schema)])
 
-(def ^{:doc "Schema of a chart value, see [[cljplot2.chart]]; open (a chart value may carry the user's own keys)."}
-  chart-schema
+(def chart-schema
+  "Schema of a chart value, see [[cljplot2.chart]]; open (a chart value may carry the user's own keys)."
   [:map {:cljplot2/type-doc "a chart value (see cljplot2.chart)"}
    (schema/nilable :kind {:description "chart kind, the key of its theme style [:chart kind]"} keyword?)
    (schema/nilable :options {:description "the chart's options"} :map)
@@ -1284,8 +1284,8 @@
    (schema/nilable :schema {:description "malli schemas of the chart's :options, :style and :mapping, checked by build"}
                    chart-schemas)])
 
-(def ^{:doc "Schema of plot `:scales`: position (`:x`, `:y`), facet and aesthetic scale specs."}
-  scales-schema
+(def scales-schema
+  "Schema of plot `:scales`: position (`:x`, `:y`), facet and aesthetic scale specs."
   (-> [:map {:closed true}]
       (into (map #(schema/optional % {:description (str "the " (name %) " position scale")} scale/scale-spec-schema)) [:x :y])
       (into (map #(schema/optional % {:description (str "the " (name %) " facet levels (order, strip text)")} facet/scale-spec-schema))
@@ -1293,30 +1293,30 @@
       (into (map #(schema/optional % {:description (str "the " (name %) " aesthetic scale")} (aesthetic/scale-spec-schema %)))
             aesthetic/dims)))
 
-(def ^{:doc "Schema of a plot margin as a map `{:charts c :size px :axis bool}` (the other forms of a margin are its charts alone)."}
-  margin-spec-schema
+(def margin-spec-schema
+  "Schema of a plot margin as a map `{:charts c :size px :axis bool}` (the other forms of a margin are its charts alone)."
   [:map {:closed true}
    [:charts {:description "a chart or a vector of charts"}
     [:multi {:dispatch chart-value?} [true chart-schema] [false [:vector {:min 1} chart-schema]]]]
    (schema/optional :size {:description "margin thickness in pixels" :default 80} schema/pos)
    (schema/optional :axis {:description "draw the magnitude axis of histogram and density margins" :default false} schema/bool)])
 
-(def ^{:private true :doc "Schema of one plot margin: a chart, a vector of charts or a [[margin-spec-schema]] map."}
-  margin-schema
+(def ^:private margin-schema
+  "Schema of one plot margin: a chart, a vector of charts or a [[margin-spec-schema]] map."
   [:multi {:dispatch #(cond (chart-value? %) :chart (map? %) :spec :else :charts)
            :cljplot2/type-doc "a chart, a vector of charts or {:charts c :size px :axis bool}"}
    [:chart chart-schema]
    [:charts [:vector {:min 1} chart-schema]]
    [:spec margin-spec-schema]])
 
-(def ^{:doc "Schema of plot `:margins`: `{:top m :right m}`, `m` - a chart, a vector of charts or `{:charts c :size px :axis bool}`."}
-  margins-schema
+(def margins-schema
+  "Schema of plot `:margins`: `{:top m :right m}`, `m` - a chart, a vector of charts or `{:charts c :size px :axis bool}`."
   [:map {:closed true}
    (schema/optional :top {:description "charts above the panel sharing its horizontal scale"} margin-schema)
    (schema/optional :right {:description "charts right of the panel sharing its vertical scale"} margin-schema)])
 
-(def ^{:doc "Schema of a plot map (keys in the namespace doc); `:theme` and `:options` are checked merged ([[cljplot2.theme/theme-schema]], [[options-schema]])."}
-  plot-schema
+(def plot-schema
+  "Schema of a plot map (keys in the namespace doc); `:theme` and `:options` are checked merged ([[cljplot2.theme/theme-schema]], [[options-schema]])."
   [:map {:closed true}
    (schema/nilable :data {:cljplot2/section :content :description "rows (a sequence of maps) or columns (a map of sequences) the charts read"} data/data-schema)
    (schema/nilable :mapping {:cljplot2/section :content :description "accessors of the dimensions the charts read (keywords or functions), merged under each chart's"}
@@ -1349,8 +1349,8 @@
    (schema/nilable :options {:cljplot2/section :render :description "render options, merged under the ones given to build / render"} :map)
    (schema/optional :theme {:cljplot2/section :style :description "theme overrides, deep-merged over the default theme"} any?)])
 
-(def ^{:doc "Schema of the merged render options of `build` (see [[default-options]]): image size and hint, `:debug` and `:cvd` (used by [[cljplot2.render/render]]) and `:until`."}
-  options-schema
+(def options-schema
+  "Schema of the merged render options of `build` (see [[default-options]]): image size and hint, `:debug` and `:cvd` (used by [[cljplot2.render/render]]) and `:until`."
   [:map {:closed true :cljplot2/merged true}
    [:width {:cljplot2/section :image :description "target width in pixels" :default 600} schema/pos-int]
    [:height {:cljplot2/section :image :description "target height in pixels" :default 600} schema/pos-int]
@@ -1362,8 +1362,8 @@
    (schema/optional :until {:cljplot2/section :inspection :description "build stops after this pipeline stage (inspect the intermediate data)"}
                     (into [:enum] stage-order))])
 
-(def ^{:doc "Render options used when neither the plot nor `build` gives them: the `:default`s of the image entries of [[options-schema]] - `:width`, `:height` (target size in pixels) and `:hint` (rendering hint, see [[cljplot2.graphics.measure/rendering-hints]])."}
-  default-options
+(def default-options
+  "Render options used when neither the plot nor `build` gives them: the `:default`s of the image entries of [[options-schema]] - `:width`, `:height` (target size in pixels) and `:hint` (rendering hint, see [[cljplot2.graphics.measure/rendering-hints]])."
   (into {} (keep (fn [[k props]] (when (= :image (:cljplot2/section props)) [k (:default props)])))
         (filter vector? (rest options-schema))))
 

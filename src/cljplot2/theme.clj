@@ -22,19 +22,21 @@
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
-(def ^{:doc "Keys of a text style; content (a label, a text chart) may override them inline."}
-  style-keys
+(def style-keys
+  "Keys of a text style; content (a label, a text chart) may override them inline."
   [:font :size :font-style :color :padding :align :background])
 
-(def ^{:private true :doc "Alignment of a centred text, `[:center :middle]`."} centered [:center :middle])
+(def ^:private centered
+  "Alignment of a centred text, `[:center :middle]`."
+  [:center :middle])
 
 (defn none?
   "Is `color` the draw-nothing value `:none`?"
   [color]
   (= :none color))
 
-(def ^{:doc "Named chart styles of the default theme: name -> the chart kind whose style it overrides. Each is a partial theme `[:chart name]` style merged over `[:chart kind]` for charts with `:theme-style name` (see [[chart-style]]); builders draw with them, so a theme restyles a builder's marks. `build` checks each against its kind's style schema."}
-  named-styles
+(def named-styles
+  "Named chart styles of the default theme: name -> the chart kind whose style it overrides. Each is a partial theme `[:chart name]` style merged over `[:chart kind]` for charts with `:theme-style name` (see [[chart-style]]); builders draw with them, so a theme restyles a builder's marks. `build` checks each against its kind's style schema."
   {:network-node :scatter
    :network-edge :segment
    :arc-node :scatter
@@ -49,8 +51,8 @@
    :sequences-cell :partition
    :acf-point :scatter})
 
-(def ^{:doc "The default theme in old cljplot style: a light lavender-gray background, 10 px margin, panels without fill and border; every key of [[theme-schema]] has a value (see the namespace doc for the keys)."}
-  default-theme
+(def default-theme
+  "The default theme in old cljplot style: a light lavender-gray background, 10 px margin, panels without fill and border; every key of [[theme-schema]] has a value (see the namespace doc for the keys)."
   {:plot {:background (c/color 236 236 243) :margin 10}
    :panel {:fill :none :alternate-fill (c/gray 0 12) :border-color :none :border-width 1
            :grid {:x {:color (c/gray 180) :width 0.5 :dash [4.0]}
@@ -187,8 +189,8 @@
     (and (map? a) (map? b)) (merge-with deep-merge a b)
     :else b))
 
-(def ^{:doc "Map entry of the chart option `:theme-style` (shared group `:theme-style`), taken by every chart kind with a theme style: the name of a theme `[:chart name]` style merged over the kind's, see [[chart-style]]."}
-  theme-style-entries
+(def theme-style-entries
+  "Map entry of the chart option `:theme-style` (shared group `:theme-style`), taken by every chart kind with a theme style: the name of a theme `[:chart name]` style merged over the kind's, see [[chart-style]]."
   (schema/in-fragment
    :theme-style
    [(schema/optional :theme-style {:description "name of a theme [:chart name] style (a builder's, or one the theme adds) merged over the kind's style"}
@@ -210,13 +212,13 @@
 
 ;; schema
 
-(def ^{:private true :doc "`[key schema]` of the required text style keys."}
-  text-style-entries
+(def ^:private text-style-entries
+  "`[key schema]` of the required text style keys."
   [[:font schema/font] [:size schema/pos] [:font-style schema/font-style] [:color schema/text-color]
    [:padding schema/non-neg]])
 
-(def ^{:private true :doc "Text style key -> its description in option tables."}
-  text-style-descriptions
+(def ^:private text-style-descriptions
+  "Text style key -> its description in option tables."
   {:font "font name (bundled, installed or logical) or a java.awt.Font"
    :size "font size in points"
    :font-style "font style"
@@ -225,22 +227,22 @@
    :align "alignment [horizontal vertical] of the text at its anchor"
    :background "box colour behind the text (:none - no box)"})
 
-(def ^{:doc "Schema of a text role's style: `:font :size :font-style :color :padding` required, `:align` and `:background` optional."}
-  text-style-schema
+(def text-style-schema
+  "Schema of a text role's style: `:font :size :font-style :color :padding` required, `:align` and `:background` optional."
   (-> [:map {:closed true :cljplot2/type-doc "a text style (:font :size :font-style :color :padding :align :background)"}]
       (into (map (fn [[k s]] [k {:description (text-style-descriptions k)} s])) text-style-entries)
       (conj (schema/optional :align {:description (text-style-descriptions :align)} schema/align)
             (schema/optional :background {:description (text-style-descriptions :background)} schema/color))))
 
-(def ^{:doc "Map entries of the text style keys content may override (all optional, shared group `:text-style`), see [[style-keys]]."}
-  text-style-overrides
+(def text-style-overrides
+  "Map entries of the text style keys content may override (all optional, shared group `:text-style`), see [[style-keys]]."
   (schema/in-fragment
    :text-style
    (mapv (fn [[k s]] (schema/optional k {:description (text-style-descriptions k)} s))
          (conj text-style-entries [:align schema/align] [:background schema/color]))))
 
-(def ^{:doc "The text roles of the default theme: role -> `{:section s :description d}` - what the role styles and who draws it (`:plot-text` - titles, strips, axes; `:legend-text`; `:hierarchy-text` - treemap, partition and pack labels; `:chart-text` - texts of other charts; `:builder-text` - labels of builders: network, sankey, dendrogram, alluvial, tree, pairs). A theme may add roles of its own, used by labels' and text charts' `:role`."}
-  text-roles
+(def text-roles
+  "The text roles of the default theme: role -> `{:section s :description d}` - what the role styles and who draws it (`:plot-text` - titles, strips, axes; `:legend-text`; `:hierarchy-text` - treemap, partition and pack labels; `:chart-text` - texts of other charts; `:builder-text` - labels of builders: network, sankey, dendrogram, alluvial, tree, pairs). A theme may add roles of its own, used by labels' and text charts' `:role`."
   {:title {:section :plot-text :description "plot and multiplot titles"}
    :strip {:section :plot-text :description "facet strip texts"}
    :axis-title {:section :plot-text :description "axis titles"}
@@ -267,15 +269,15 @@
    :tree-label {:section :builder-text :description "node-link tree node labels"}
    :pairs-name {:section :builder-text :description "variable names on the diagonal of a scatter-plot matrix"}})
 
-(def ^{:private true :doc "Schema of a grid line style `{:color :width :dash}`, or `:none`."}
-  grid-line
+(def ^:private grid-line
+  "Schema of a grid line style `{:color :width :dash}`, or `:none`."
   (schema/keyword-or :none [:map {:closed true :cljplot2/type-doc "a line {:color :width :dash}"}
                             [:color {:description "line colour"} schema/color]
                             [:width {:description "line width in pixels"} schema/non-neg]
                             [:dash {:description "dash style (:none - solid)"} schema/dash]]))
 
-(def ^{:private true :doc "Schema of one axis style (see the namespace doc, `:axis`)."}
-  axis-style
+(def ^:private axis-style
+  "Schema of one axis style (see the namespace doc, `:axis`)."
   [:map {:closed true}
    [:line-color {:description "axis line colour"} schema/color]
    [:line-width {:description "axis line width in pixels (0 - not drawn)"} schema/non-neg]
@@ -287,8 +289,8 @@
    [:label-rotation {:description "tick labels rotated clockwise, degrees"} [:and number? [:>= -90] [:<= 90]]]
    [:minor-tick-length {:description "minor tick length in pixels"} schema/non-neg]])
 
-(def ^{:doc "Schema of the merged theme (see [[default-theme]]; every key has a value there - overrides are partial). `:chart` subtrees are checked against the charts' style schemas by `build`, see [[cljplot2.pipeline/build]]."}
-  theme-schema
+(def theme-schema
+  "Schema of the merged theme (see [[default-theme]]; every key has a value there - overrides are partial). `:chart` subtrees are checked against the charts' style schemas by `build`, see [[cljplot2.pipeline/build]]."
   [:map {:closed true :cljplot2/merged true}
    [:plot {:description "the whole canvas"}
     [:map {:closed true}

@@ -15,23 +15,29 @@
 
   [[projector]] fits the projected box (plus a margin for axes) in a panel and gives pixel positions with depths;
   primitives are drawn far to near by depth (painter's algorithm, see [[cljplot2.graphics.space3d]]). Faces are
-  shaded by Lambert lighting ([[shade]]); [[visible-edges]] - box edges not hidden behind it, [[axis-edges]] - the box
+  shaded by Lambert lighting ([[shader]], options [[shading-options]]); [[visible-edges]] - box edges not hidden behind it, [[axis-edges]] - the box
   edge each axis is drawn on.
 
   The 3D charts' shared frame options - [[frame-options]] (schema), [[frame-settings]] (a chart's frame, the options'
-  defaults applied) and [[frame-overrides]] (the frame options a chart sets explicitly) - live here too."
+  defaults applied) and [[frame-overrides]] (the frame options a chart sets explicitly) - live here too, as do the
+  shading options [[shading-options]] of the shaded charts.
+
+  Functions: frame - [[frame-options]], [[frame-settings]], [[frame-overrides]], [[box-aspect]], [[axis-index]]; domains - [[data-domain]], [[nice-domain]], [[widen]], [[reverse-domains]], [[in-domain?]]; projection - [[normalizer]], [[view-matrix]], [[rotation]], [[perspective]], [[box-distance]], [[distance-problem]], [[check-distance!]], [[turning-extent]], [[turning-fit]], [[projector]]; box geometry - [[corners]], [[corner-point]], [[faces]], [[edges]], [[face-orientation]], [[far-side]], [[visible-edges]], [[hidden-edges]], [[axis-edges]]; shading - [[shading-options]], [[shader]], [[view-normal]]."
   (:require [clojure2d.color :as c]
             [fastmath.core :as m]
+            [fastmath.matrix :as mat]
             [fastmath.vector :as v]
             [cljplot2.data.accessor :as accessor]
             [cljplot2.scale.position :as scale]
             [cljplot2.schema :as schema])
-  (:import [fastmath.vector Vec2 Vec3]))
+  (:import [fastmath.vector Vec2 Vec3 Vec4]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
-(def default-view {:azimuth 40.0 :elevation 30.0})
+(def default-view
+  "The view of a 3D chart without `:view` keys: azimuth 40 and elevation 30 degrees, orthographic."
+  {:azimuth 40.0 :elevation 30.0})
 
 (def view-schema
   "`:view {:azimuth deg :elevation deg :distance δ}` (elevation in [-90 90]; δ >= 0, see the namespace doc)."
@@ -53,7 +59,7 @@
   (into [:map {:closed true}]
         (map #(schema/optional % {:description (str "explicit " (name %) " domain [a b] (a > b reverses the axis)")}
                                (schema/with-rules [:tuple schema/finite schema/finite]
-                                   [(fn [[a b]] (when (== (double a) (double b)) "domain should be two different numbers"))])))
+                                 [(fn [[^double a ^double b]] (when (m/== a b) "domain should be two different numbers"))])))
         [:x :y :z]))
 
 (def frame-options
@@ -76,16 +82,32 @@
                      domains-schema)
     (schema/optional :reverse {:cljplot2/section :view :description "axes running the other way (mirrors the scene)"} [:set [:enum :x :y :z]])]))
 
-(def axes [:x :y :z])
+(def axes
+  "The 3D axes in point order."
+  [:x :y :z])
 
 (defn box-aspect
-  "Box proportions `aspect` as a vector; `nil` - the default cube `[1 1 1]`."
+  "Box proportions as a vector.
+
+  Parameters:
+
+  - `aspect` (sequence of three positive numbers or `nil`): `[ax ay az]`.
+
+  Returns `aspect` as a vector; `nil` - the default cube `[1.0 1.0 1.0]`."
   [aspect]
   (vec (or aspect [1.0 1.0 1.0])))
 
 (defn frame-settings
-  "Frame of a 3D chart from its `options` and merged `mapping`: `{:view :aspect :box? :axes? :titles}` - titles from
-  `:axis-titles`, else the names of keyword accessors."
+  "Frame of a 3D chart, the frame options' defaults applied.
+
+  Parameters:
+
+  - `options` (map): the chart's options - `:view`, `:aspect`, `:box`, `:axes`, `:axis-titles` (see [[frame-options]]).
+  - `mapping` (map): the merged mapping, `:x` `:y` `:z` read for default titles.
+
+  Returns `{:view :aspect :box? :axes? :titles}`: `:view` merged over [[default-view]], `:aspect` of [[box-aspect]], `:box?` and `:axes?` true unless false, `:titles` - `:axis-titles` when given (even `nil`), else the names of keyword accessors.
+
+  See also [[frame-overrides]]."
   [options mapping]
   {:view (merge default-view (:view options))
    :aspect (box-aspect (:aspect options))
@@ -96,9 +118,15 @@
              (into {} (keep (fn [k] (let [a (accessor/unwrap (get mapping k))] (when (keyword? a) [k (name a)])))) axes))})
 
 (defn frame-overrides
-  "The frame settings a 3D chart's `options` set explicitly (keys of [[frame-settings]]; `:view` as given, `:titles`
-  from `:axis-titles`): a later chart's are merged over the first chart's frame of a scene, see
-  [[cljplot2.graphics.space3d/scene-frame]]."
+  "Frame settings a 3D chart sets explicitly.
+
+  A later chart's overrides are merged over the first chart's frame of a scene, see [[cljplot2.graphics.space3d/scene-frame]].
+
+  Parameters:
+
+  - `options` (map): the chart's options.
+
+  Returns a map with the keys of [[frame-settings]] the options set: `:view` as given, `:aspect`, `:box?`, `:axes?`, `:titles` from `:axis-titles`."
   [options]
   (cond-> {}
     (:view options) (assoc :view (:view options))
@@ -108,126 +136,247 @@
     (contains? options :axis-titles) (assoc :titles (:axis-titles options))))
 
 (defn axis-index
-  "Position of axis `k` (`:x` / `:y` / `:z`) in a point or a corner."
+  "Position of an axis in a point or a corner.
+
+  Parameters:
+
+  - `k` (keyword): `:x`, `:y` or `:z`.
+
+  Returns 0, 1 or 2; throws `IllegalArgumentException` for another key."
   ^long [k]
   (case k :x 0 :y 1 :z 2))
 
 ;; normalization and rotation
 
 (defn widen
-  "Domain `[lo hi]` of values; a single value `v` widens to `v ± 0.5` (`[v v]` can't be normalized)."
-  [[lo hi]]
-  (let [lo (double lo) hi (double hi)]
-    (if (< lo hi) [lo hi] [(- lo 0.5) (+ hi 0.5)])))
+  "Domain of values made usable for normalization.
 
-(def ^:const nice-ticks
+  Parameters:
+
+  - `[lo hi]` (doubles): the values' range, `lo` <= `hi`.
+
+  Returns `[lo hi]` when `lo` < `hi`; a single value `v` widens to `[v - 0.5, v + 0.5]` (`[v v]` can't be normalized)."
+  [[^double lo ^double hi]]
+  (if (m/< lo hi) [lo hi] [(m/- lo 0.5) (m/+ hi 0.5)]))
+
+(def ^{:const true :tag 'long} nice-ticks
   "Tick count a data-derived domain is made nice for (see [[data-domain]])."
   5)
 
 (defn nice-domain
-  "`[lo hi]` (`lo` < `hi`) extended to the nearest ticks of about [[nice-ticks]] ticks over it (no extension limit),
-  so its ends can be labelled."
+  "Domain extended to nice tick values.
+
+  Parameters:
+
+  - `[lo hi]`: the domain, `lo` < `hi`.
+
+  Returns the domain extended to the nearest ticks of about [[nice-ticks]] ticks over it (no extension limit), so its ends can be labelled.
+
+  See also [[data-domain]]."
   [[lo hi]]
   (:domain (scale/finalize (scale/scale-spec :x {:domain [lo hi] :nice 1.0}) [0.0 1.0] nice-ticks)))
 
 (defn data-domain
-  "Domain of the numbers `vs` widened by `reach` on both sides (a single value widened, see [[widen]]), made nice
-  ([[nice-domain]]); `[0 1]` without values."
+  "Nice domain of a 3D axis from its values.
+
+  Parameters:
+
+  - `vs` (sequence of numbers): the axis's values.
+  - `reach` (double): data units the domain extends past the values on both sides (e.g. half a bar).
+
+  Returns `[lo hi]`: the values' range (a single value widened, see [[widen]]) widened by `reach` and made nice ([[nice-domain]]); `[0.0 1.0]` without values."
   [vs ^double reach]
   (if (seq vs)
-    (let [[lo hi] (widen [(reduce min vs) (reduce max vs)])]
-      (nice-domain [(- (double lo) reach) (+ (double hi) reach)]))
+    (let [[^double lo ^double hi] (widen [(reduce m/min vs) (reduce m/max vs)])]
+      (nice-domain [(m/- lo reach) (m/+ hi reach)]))
     [0.0 1.0]))
 
 (defn reverse-domains
-  "`domains` (`{:x [a b] ..}`) with the domain of every axis in `reversed` (a set of `:x` / `:y` / `:z`, `nil` -
-  none) turned the other way: `[b a]` - the axis runs from its high end (a reversed domain, see [[normalizer]])."
+  "Domains with some axes turned the other way.
+
+  Parameters:
+
+  - `domains` (map): `{:x [a b] :y [a b] :z [a b]}`.
+  - `reversed` (set or `nil`): the axes to reverse, of `:x` `:y` `:z`; `nil` - none.
+
+  Returns `domains` with each reversed axis's domain as `[b a]` - the axis runs from its high end (see [[normalizer]])."
   [domains reversed]
   (reduce (fn [ds k] (update ds k (comp vec reverse))) domains reversed))
 
 (defn in-domain?
-  "Is `v` within the explicit `domain` (`[a b]`, either direction; `nil` - none: everything is)?"
-  [domain v]
-  (or (nil? domain) (let [[a b] domain] (<= (m/min (double a) (double b)) (double v) (m/max (double a) (double b))))))
+  "Tests whether a value lies within an explicit domain.
+
+  Parameters:
+
+  - `domain` (`[a b]` or `nil`): the domain, either direction; `nil` - none.
+  - `v` (double): the value.
+
+  Returns true when `v` is between `a` and `b` (ends included) or there is no domain, else false."
+  [domain ^double v]
+  (or (nil? domain) (let [[^double a ^double b] domain] (m/<= (m/min a b) v (m/max a b)))))
 
 (defn normalizer
-  "Function of a data point `[x y z]` giving its position in the box of side `aspect` centred at the origin
-  (`domains` - `{:x [a b] ..}`, `a` at the low box side, `b` at the high one; `a` > `b` reverses the axis)."
+  "Function placing data points in the normalized box.
+
+  Parameters:
+
+  - `domains` (map): `{:x [a b] :y [a b] :z [a b]}` - `a` at the low box side, `b` at the high one (`a` > `b` reverses the axis).
+  - `aspect` (vector of three doubles): the box proportions.
+
+  Returns a function of a data point `[x y z]` giving its position `Vec3` in the box of side `aspect` centred at the origin.
+
+  See also [[rotation]]."
   [domains aspect]
   (let [f (fn [k ^double a]
-            (let [[lo hi] (domains k) lo (double lo) span (- (double hi) lo)]
-              (fn ^double [^double value] (* a (- (/ (- value lo) span) 0.5)))))
+            (let [[^double lo ^double hi] (domains k)
+                  span (m/- hi lo)]
+              (fn ^double [^double value] (m/* a (m/- (m// (m/- value lo) span) 0.5)))))
         [fx fy fz] (map f axes aspect)]
-    (fn [[x y z]] (Vec3. (fx (double x)) (fy (double y)) (fz (double z))))))
+    (fn [[x y z]] (Vec3. (fx x) (fy y) (fz z)))))
+
+(def ^:private depth-last
+  "Permutation of the view rotation's `(u d v)` into `(u v d)` - screen right, screen up, depth."
+  (mat/mat3x3 1.0 0.0 0.0 0.0 0.0 1.0 0.0 1.0 0.0))
+
+(defn view-matrix
+  "Rotation matrix of `view` taking a normalized point to its view coordinates `(u v d)`.
+
+  Parameters:
+
+  - `view` (map): `:azimuth` - degrees about the vertical z axis (default 40), `:elevation` - degrees of the eye above the floor (default 30); other keys ignored.
+
+  Returns a `Mat3x3`: the box turned by minus the azimuth about z, tilted by the elevation about the screen's right axis, then reordered to `(u v d)` - `u` right, `v` up, `d` depth (larger - farther).
+
+  See also [[rotation]]."
+  [view]
+  (let [{:keys [^double azimuth ^double elevation]} (merge default-view view)]
+    (mat/mulm depth-last
+              (mat/mulm (mat/rotation-matrix-3d-x (m/radians elevation))
+                        (mat/rotation-matrix-3d-z (m/- (m/radians azimuth)))))))
 
 (defn rotation
-  "Function of a normalized point (`Vec3`) giving its view coordinates `Vec3 (u v d)` for `view` (see the namespace
-  doc): `u` right, `v` up, `d` depth (larger - farther)."
-  [{:keys [azimuth elevation]}]
-  (let [a (m/radians (double (or azimuth (:azimuth default-view))))
-        e (m/radians (double (or elevation (:elevation default-view))))
-        ca (m/cos a) sa (m/sin a) ce (m/cos e) se (m/sin e)]
-    (fn [^Vec3 p]
-      (let [x (.x p) y (.y p) z (.z p)
-            u (+ (* x ca) (* y sa))
-            d0 (- (* y ca) (* x sa))]
-        (Vec3. u (+ (* z ce) (* d0 se)) (- (* d0 ce) (* z se)))))))
+  "Function giving the view coordinates of a normalized point for `view` (see the namespace doc).
+
+  Parameters:
+
+  - `view` (map): `:azimuth`, `:elevation` in degrees (defaults 40 / 30), see [[view-matrix]].
+
+  Returns a function of a `Vec3` point giving its view coordinates `Vec3 (u v d)`: `u` right, `v` up, `d` depth (larger - farther). The map is linear, so it also turns directions (normals)."
+  [view]
+  (let [rotation-matrix (view-matrix view)]
+    (fn [p] (mat/mulv rotation-matrix p))))
 
 ;; perspective
 
 (defn- view-distance
-  "Perspective `:distance` δ of `view` (0 - orthographic)."
+  "Perspective distance of a view.
+
+  Parameters:
+
+  - `view` (map): `:distance` read.
+
+  Returns δ as a double, 0 (orthographic) when absent."
   ^double [view]
-  (double (or (:distance view) 0.0)))
+  (or (:distance view) 0.0))
 
 (defn box-distance
-  "Perspective `:distance` of `view` in the units of a box of side `aspect` (`nil` - a cube): δ over the box's
-  longest side - lattice's `distance` applies to its box scaled to a longest side of 1. The eye sits at `1 /
-  box-distance` from the box centre; 0 - orthographic."
+  "Perspective distance of a view in the units of a box.
+
+  Lattice's `distance` applies to its box scaled to a longest side of 1, so δ is divided by the box's longest side. The eye sits at `1 / box-distance` from the box centre.
+
+  Parameters:
+
+  - `view` (map): `:distance` read (default 0).
+  - `aspect` (sequence of three positive numbers or `nil`): the box proportions; `nil` - a cube.
+
+  Returns the distance as a double; 0 - orthographic."
   ^double [view aspect]
-  (/ (view-distance view) (double (reduce max (box-aspect aspect)))))
+  (m// (view-distance view) (v/mx (box-aspect aspect))))
 
 (defn- half-diagonal
-  "Half the diagonal of a box of side `aspect` - the radius of its circumscribed sphere."
-  ^double [[ax ay az]]
-  (* 0.5 (m/sqrt (+ (m/sq (double ax)) (m/sq (double ay)) (m/sq (double az))))))
+  "Half the diagonal of a box - the radius of its circumscribed sphere.
+
+  Parameters:
+
+  - `aspect` (vector of three doubles): the box proportions.
+
+  Returns the half-diagonal as a double."
+  ^double [aspect]
+  (m/* 0.5 (v/mag aspect)))
 
 (defn distance-problem
-  "`nil` when the eye of `view` is outside the sphere circumscribing a box of side `aspect` (`nil` - a cube) - every
-  point of the box, in any view, is then in front of the eye; else the error message (the largest `:distance` the box
-  takes: its longest side over its half-diagonal, 2/√3 for a cube - any box takes a `:distance` below that)."
+  "Checks that the eye of a view stays outside the sphere circumscribing a box.
+
+  Outside that sphere every point of the box, in any view, is in front of the eye. A box takes a `:distance` below its longest side over its half-diagonal (2/√3 for a cube).
+
+  Parameters:
+
+  - `view` (map): `:distance` read.
+  - `aspect` (sequence of three positive numbers or `nil`): the box proportions; `nil` - a cube.
+
+  Returns `nil` when the eye is outside, else the error message naming the largest distance the box takes.
+
+  See also [[check-distance!]]."
   [view aspect]
-  (let [aspect (box-aspect aspect)]
-    (when (>= (* (box-distance view aspect) (half-diagonal aspect)) 1.0)
+  (let [sides (box-aspect aspect)]
+    (when (m/>= (m/* (box-distance view sides) (half-diagonal sides)) 1.0)
       (format ":distance %s puts the eye within the sphere around the box of :aspect %s - it should be below %.4f"
-              (:distance view) aspect (/ (double (reduce max aspect)) (half-diagonal aspect))))))
+              (:distance view) sides (m// (v/mx sides) (half-diagonal sides))))))
 
 (defn check-distance!
-  "Throw `ex-info {:key :distance}` for the eye of `view` within the sphere around a box of side `aspect` (see
-  [[distance-problem]]; a chart's own options are checked by its schema - this checks the frame merged from several
-  charts). Returns `nil`."
+  "Checks the perspective distance of a merged 3D frame.
+
+  A chart's own options are checked by its schema; this checks the frame merged from several charts.
+
+  Parameters:
+
+  - `view` (map): `:distance` read.
+  - `aspect` (sequence of three positive numbers or `nil`): the box proportions.
+
+  Returns `nil`.
+
+  Throws `ex-info {:key :distance}` for an eye within the sphere around the box (see [[distance-problem]])."
   [view aspect]
   (when-let [problem (distance-problem view aspect)]
     (schema/fail! (str "The 3D box: " problem ".") {:key :distance :in [:view :distance] :value (:distance view)})))
 
 (defn perspective
-  "Function of view coordinates `Vec3 (u v d)` giving the screen position `Vec2` (box units): `(u, v)` scaled by
-  `1 / (1 + δ d)` (δ - [[box-distance]] of `view` and `aspect`); `(u, v)` as they are for δ = 0. Points must be in
-  front of the eye (`1 + δ d > 0`, see [[distance-problem]])."
+  "Function projecting view coordinates onto the screen plane.
+
+  Parameters:
+
+  - `view` (map): `:distance` read.
+  - `aspect` (sequence of three positive numbers or `nil`): the box proportions.
+
+  Returns a function of view coordinates `Vec3 (u v d)` giving the screen position `Vec2` in box units: `(u, v)` scaled by `1 / (1 + δ d)` (δ - [[box-distance]]), `(u, v)` as they are for δ = 0. Points must be in front of the eye (`1 + δ d > 0`, see [[distance-problem]])."
   [view aspect]
   (let [delta (box-distance view aspect)]
     (if (zero? delta)
       (fn [^Vec3 q] (v/vec2 (.x q) (.y q)))
-      (fn [^Vec3 q] (let [s (/ 1.0 (+ 1.0 (* delta (.z q))))] (v/vec2 (* s (.x q)) (* s (.y q))))))))
+      (fn [^Vec3 q] (let [s (m// (m/inc (m/* delta (.z q))))]
+                     (v/vec2 (m/* s (.x q)) (m/* s (.y q))))))))
 
 ;; box geometry - corners as [ix iy iz] bits, 0 low / 1 high
 
-(def corners (vec (for [ix [0 1] iy [0 1] iz [0 1]] [ix iy iz])))
+(def corners
+  "The eight box corners as `[ix iy iz]` bits, 0 low and 1 high."
+  [[0 0 0] [0 0 1] [0 1 0] [0 1 1] [1 0 0] [1 0 1] [1 1 0] [1 1 1]])
 
 (defn corner-point
-  "Normalized position of box corner `[ix iy iz]` in a box of side `aspect`."
-  ^Vec3 [[ix iy iz] [ax ay az]]
-  (Vec3. (* (double ax) (- (double ix) 0.5)) (* (double ay) (- (double iy) 0.5)) (* (double az) (- (double iz) 0.5))))
+  "Normalized position of a box corner.
+
+  Parameters:
+
+  - `[ix iy iz]`: the corner's bits, 0 low and 1 high (fractions give points on the box surface).
+  - `[ax ay az]`: the box proportions.
+
+  Returns the corner's position `Vec3` in the box centred at the origin.
+
+  See also [[corners]]."
+  ^Vec3 [[^double ix ^double iy ^double iz] [^double ax ^double ay ^double az]]
+  (Vec3. (m/* ax (m/- ix 0.5))
+         (m/* ay (m/- iy 0.5))
+         (m/* az (m/- iz 0.5))))
 
 (def faces
   "The six box faces: `{:axis k :side 0|1 :corners [4 corners, in order around the face]}`."
@@ -235,96 +384,170 @@
          {:axis k :side side
           :corners (let [others (vec (remove #{i} [0 1 2]))
                          cycle-of [[0 0] [1 0] [1 1] [0 1]]]
-                     (mapv (fn [[a b]] (assoc (assoc (assoc [0 0 0] i side) (others 0) a) (others 1) b)) cycle-of))})))
+                     (mapv (fn [[a b]] (-> [0 0 0]
+                                          (assoc i side)
+                                          (assoc (others 0) a)
+                                          (assoc (others 1) b))) cycle-of))})))
 
 (def edges
   "The twelve box edges: `{:axis k :from corner :to corner}` (along axis `k`)."
   (vec (for [[i k] (map-indexed vector axes)
              a [0 1] b [0 1]
              :let [others (vec (remove #{i} [0 1 2]))
-                   base (assoc (assoc [0 0 0] (others 0) a) (others 1) b)]]
+                   base (-> [0 0 0]
+                            (assoc (others 0) a)
+                            (assoc (others 1) b))]]
          {:axis k :from (assoc base i 0) :to (assoc base i 1)})))
 
 (defn- outward-normal
-  "Rotated (by `rotate`) outward unit normal of the box face of `axis` / `side`."
-  ^Vec3 [rotate axis side]
-  (let [s (- (* 2.0 (double side)) 1.0)]
-    (rotate (Vec3. (if (= axis :x) s 0.0) (if (= axis :y) s 0.0) (if (= axis :z) s 0.0)))))
+  "Rotated outward unit normal of a box face.
 
-(def ^:const ^:private facing-tolerance
+  Parameters:
+
+  - `rotate` (function): the view rotation of [[rotation]].
+  - `axis` (keyword): the face's axis, `:x` `:y` or `:z`.
+  - `side` (double): 0 - the low face, 1 - the high one.
+
+  Returns the normal `Vec3` in view coordinates."
+  ^Vec3 [rotate axis ^double side]
+  (let [s (m/dec (m/* 2.0 side))]
+    (rotate (Vec3. (if (= axis :x) s 0.0)
+                   (if (= axis :y) s 0.0)
+                   (if (= axis :z) s 0.0)))))
+
+(def ^{:const true :private true :tag 'double} facing-tolerance
   "A face turns toward (away from) the eye beyond this; within it - edge-on, neither."
   1.0e-9)
+(def ^{:const true :private true :tag 'double} -facing-tolerance (m/- facing-tolerance))
 
 (defn- turn-away
-  "How far a face of view-space outward unit normal `n` through the view-space point `c` turns from the eye at
-  distance `delta` (see [[perspective]]): `n.z + δ (n · c)` - `-δ (eye - c) · n`, so negative toward the eye, positive
-  away; `n.z` alone for δ = 0 (orthographic: the direction only)."
+  "How far a face turns away from the eye.
+
+  Parameters:
+
+  - `delta` (double): the perspective distance in box units (see [[box-distance]]), 0 - orthographic.
+  - `n` (`Vec3`): the face's outward unit normal in view coordinates.
+  - `c` (`Vec3`): a point of the face in view coordinates.
+
+  Returns `n.z + δ (n · c)` - proportional to `-(eye - c) · n`: negative toward the eye, positive away; `n.z` alone for δ = 0 (orthographic: the direction only)."
   ^double [^double delta ^Vec3 n ^Vec3 c]
-  (+ (.z n) (* delta (v/dot n c))))
+  (m/+ (.z n) (m/* delta (v/dot n c))))
 
 (defn- box-face-turn
-  "Function of a box face `axis` / `side` of a box of side `aspect` (`nil` - a cube) giving how far it turns from the eye of `view`
-  ([[turn-away]]; its centre is its outward normal times half the box side across it)."
+  "Function of the faces of a box giving how far each turns from the eye.
+
+  Parameters:
+
+  - `view` (map): the view.
+  - `aspect` (sequence of three positive numbers or `nil`): the box proportions; `nil` - a cube.
+
+  Returns a function of a face `axis` and `side` (0 or 1) giving [[turn-away]] of the face through its centre (its outward normal times half the box side across it)."
   [view aspect]
   (let [rotate (rotation view)
         sides (box-aspect aspect)
         delta (box-distance view sides)]
     (fn ^double [axis side]
       (let [^Vec3 n (outward-normal rotate axis side)]
-        (turn-away delta n (v/mult n (* 0.5 (double (nth sides (axis-index axis))))))))))
+        (turn-away delta n (v/mult n (m/* 0.5 (double (sides (axis-index axis))))))))))
 
 (defn face-orientation
-  "Function of an axis-aligned face (of `axis`, data-low `side` 0 / data-high 1) through the data point `at` giving
-  `[normal front?]` - its view-space outward unit normal and whether it faces the eye of the `frame` (`:domains`,
-  `:aspect`, `:view`; a reversed domain turns its low side to the box's high side) - for boxes drawn inside the data
-  box (bars)."
+  "Function orienting axis-aligned faces drawn inside the data box (bars).
+
+  Parameters:
+
+  - `frame` (map): `:domains`, `:aspect`, `:view`; a reversed domain turns its low side to the box's high side.
+
+  Returns a function of `axis`, `side` (data-low 0, data-high 1) and a data point `at` on the face giving `[normal front?]` - the face's outward unit normal in view coordinates and whether it faces the eye."
   [{:keys [domains aspect view]}]
   (let [rotate (rotation view)
         normalize (normalizer domains (box-aspect aspect))
         delta (box-distance view aspect)
-        reversed (into {} (map (fn [k] (let [[a b] (domains k)] [k (> (double a) (double b))]))) axes)]
-    (fn [axis side at]
-      (let [^Vec3 n (outward-normal rotate axis (if (reversed axis) (- 1 (long side)) side))]
-        [n (< (turn-away delta n (rotate (normalize at))) (- facing-tolerance))]))))
+        reversed (into {} (map (fn [k] (let [[^double a ^double b] (domains k)] [k (m/> a b)]))) axes)]
+    (fn [axis ^long side at]
+      (let [^Vec3 n (outward-normal rotate axis (if (reversed axis) (m/long-sub 1 side) side))]
+        [n (m/< (turn-away delta n (rotate (normalize at))) -facing-tolerance)]))))
 
 (defn far-side
-  "Side (0 / 1) of the box face of `axis` turned away from the eye of `view` (box of side `aspect`) - the far wall
-  across that axis; the farther-turned one when the eye is between both (perspective), `nil` when neither turns
-  away (edge-on)."
+  "Side of the box face across an axis turned away from the eye - the far wall.
+
+  Parameters:
+
+  - `view` (map): the view.
+  - `aspect` (sequence of three positive numbers or `nil`): the box proportions.
+  - `axis` (keyword): `:x`, `:y` or `:z`.
+
+  Returns 0 or 1 (the farther-turned face when the eye is between both, in perspective); `nil` when neither turns away (edge-on)."
   [view aspect axis]
   (let [turn (box-face-turn view aspect)
-        low (double (turn axis 0)) high (double (turn axis 1))
-        [side t] (if (>= high low) [1 high] [0 low])]
-    (when (> (double t) facing-tolerance) side)))
+        low (double (turn axis 0))
+        high (double (turn axis 1))
+        [side ^double t] (if (m/>= high low) [1 high] [0 low])]
+    (when (m/> t facing-tolerance) side)))
 
 (defn- edge-faces
-  "The two faces `[axis side]` an `edge` belongs to."
+  "The two faces a box edge belongs to.
+
+  Parameters:
+
+  - `edge` (map): an edge of [[edges]], `:axis` and `:from` read.
+
+  Returns a vector of two faces `[axis side]`."
   [{:keys [axis from]}]
   (vec (for [[i k] (map-indexed vector axes) :when (not= k axis)] [k (from i)])))
 
 (defn- front-faces
-  "Predicate of a box face `[axis side]` facing the eye of `view` (box of side `aspect`; edge-on faces count as back)."
+  "Predicate of the box faces facing the eye.
+
+  Parameters:
+
+  - `view` (map): the view.
+  - `aspect` (sequence of three positive numbers or `nil`): the box proportions.
+
+  Returns a function of a face `[axis side]`, truthy when it faces the eye; edge-on faces count as back."
   [view aspect]
   (let [turn (box-face-turn view aspect)]
-    (fn [[k side]] (< (double (turn k side)) (- facing-tolerance)))))
+    (fn [[k side]] (m/< (double (turn k side)) -facing-tolerance))))
 
 (defn visible-edges
-  "Box edges not hidden behind the box (side `aspect`) in `view`: those with a front-facing face (see [[faces]])."
+  "Box edges not hidden behind the box.
+
+  Parameters:
+
+  - `view` (map): the view.
+  - `aspect` (sequence of three positive numbers or `nil`): the box proportions.
+
+  Returns a vector of the edges (see [[edges]]) with a face toward the eye.
+
+  See also [[hidden-edges]]."
   [view aspect]
   (let [front? (front-faces view aspect)]
     (filterv (fn [e] (some front? (edge-faces e))) edges)))
 
 (defn hidden-edges
-  "Box edges behind the box (side `aspect`) in `view` (both faces turned away): the complement of [[visible-edges]]."
+  "Box edges behind the box (both their faces turned away).
+
+  Parameters:
+
+  - `view` (map): the view.
+  - `aspect` (sequence of three positive numbers or `nil`): the box proportions.
+
+  Returns a vector of edges, the complement of [[visible-edges]]."
   [view aspect]
   (let [shown (set (visible-edges view aspect))]
     (filterv (complement shown) edges)))
 
 (defn axis-edges
-  "Per axis the box edge `{:axis :from :to}` its ticks are drawn on in `view` (box of side `aspect`), given `screen` -
-  a function of a corner giving its pixel `Vec2` (y down): x / y - the outline edge along that axis lowest on screen,
-  z - the leftmost outline edge along z (any edge along the axis when none is on the outline, e.g. a face-on view).
-  An outline edge has one face toward the eye, the other not."
+  "Box edge each axis's ticks are drawn on.
+
+  An outline edge has one face toward the eye, the other not.
+
+  Parameters:
+
+  - `view` (map): the view.
+  - `aspect` (sequence of three positive numbers or `nil`): the box proportions.
+  - `screen` (function): of a corner giving its pixel `Vec2` (y down).
+
+  Returns `{:x edge :y edge :z edge}` (edges `{:axis :from :to}`): x and y - the outline edge along that axis lowest on screen, z - the leftmost outline edge along z; any edge along the axis when none is on the outline (e.g. a face-on view)."
   [view aspect screen]
   (let [front? (front-faces view aspect)
         silhouette? (fn [e] (let [[a b] (map front? (edge-faces e))] (not= a b)))
@@ -333,109 +556,181 @@
                (let [along (filter #(= k (:axis %)) edges)
                      outline (filter silhouette? along)]
                  (first (sort-by better (if (seq outline) outline along)))))]
-    {:x (pick :x #(- (.y ^fastmath.vector.Vec2 (mid %))))
-     :y (pick :y #(- (.y ^fastmath.vector.Vec2 (mid %))))
-     :z (pick :z #(.x ^fastmath.vector.Vec2 (mid %)))}))
+    {:x (pick :x #(m/- (.y ^Vec2 (mid %))))
+     :y (pick :y #(m/- (.y ^Vec2 (mid %))))
+     :z (pick :z #(.x ^Vec2 (mid %)))}))
 
 ;; projection onto a panel
 
 (defn turning-extent
-  "`[width height]` (box units) of the largest projection of a box of side `aspect` over every azimuth at `elevation`
-  (degrees): the floor diagonal `f` across, `az |cos e| + f |sin e|` up."
-  [aspect elevation]
-  (let [[ax ay az] aspect
-        e (m/radians (double elevation))
-        f (m/hypot (double ax) (double ay))]
-    [f (+ (* (double az) (m/abs (m/cos e))) (* f (m/abs (m/sin e))))]))
+  "Largest orthographic projection of a box over every azimuth.
+
+  Parameters:
+
+  - `[ax ay az]` (doubles): the box proportions.
+  - `elevation` (double): the view's elevation, degrees.
+
+  Returns `[width height]` in box units: the floor diagonal `f` across, `az |cos e| + f |sin e|` up.
+
+  See also [[turning-fit]]."
+  [[^double ax ^double ay ^double az] ^double elevation]
+  (let [e (m/radians elevation)
+        f (m/hypot ax ay)]
+    [f (m/+ (m/* az (m/abs (m/cos e))) (m/* f (m/abs (m/sin e))))]))
 
 (defn- corner-bounds
-  "`[u0 u1 v0 v1]` (box units) of the screen positions of the corners of a box of side `aspect` in `view`."
+  "Screen bounds of the corners of a box in a view.
+
+  Parameters:
+
+  - `aspect` (vector of three doubles): the box proportions.
+  - `view` (map): the view.
+
+  Returns `[u0 u1 v0 v1]` in box units - the lowest and highest screen positions of the projected corners."
   [aspect view]
   (let [rotate (rotation view)
         project (perspective view aspect)
         ps (map #(project (rotate (corner-point % aspect))) corners)
         us (map #(.x ^Vec2 %) ps) vs (map #(.y ^Vec2 %) ps)]
-    [(reduce min us) (reduce max us) (reduce min vs) (reduce max vs)]))
+    [(v/mn us) (v/mx us) (v/mn vs) (v/mx vs)]))
 
 (def ^:private turning-azimuths
   "Azimuths a perspective box's turning bounds are sampled at (every half degree)."
   (range 0.0 360.0 0.5))
 
-(def ^:const ^:private turning-pad
-  "Share a perspective box's sampled turning extent is widened by: more than the extent can grow between samples (a
-  corner's screen position is smooth in the azimuth: about `h²/8` of the extent at a step `h` - 1e-5 at half a degree,
-  more near the eye; the tests turn the box at fractional azimuths up to a `:distance` of 1.1)."
+(def ^{:const true :private true :tag 'double} turning-pad
+  "Share a perspective box's sampled turning extent is widened by: more than the extent can grow between samples (a corner's screen position is smooth in the azimuth: about `h²/8` of the extent at a step `h` - 1e-5 at half a degree, more near the eye; the tests turn the box at fractional azimuths up to a `:distance` of 1.1)."
   1.0e-3)
+(def ^{:const true :private true :tag 'double} turning-pad+ (m/inc turning-pad))
+
 
 (defn turning-fit
-  "Extent and centre of a box of side `aspect` turned about its vertical axis at `view`'s elevation and distance:
-  `{:width :height :u-mid :v-mid}` (box units) - a panel fitting `width` x `height` centred at `(u-mid, v-mid)`
-  holds the box in every azimuth. Orthographic (δ = 0): [[turning-extent]], centred on `view`'s own corners (the box
-  centre); perspective: the corners projected every half degree of azimuth - the largest `|u|` both ways, the `v`
-  range (near corners below grow more than far ones above shrink) - widened by [[turning-pad]] for the azimuths
-  between the samples."
+  "Extent and centre of a box turned about its vertical axis at a view's elevation and distance.
+
+  A panel fitting the extent, centred at the centre, holds the box in every azimuth. Orthographic (δ = 0): [[turning-extent]], centred on the view's own corners (the box centre). Perspective: the corners projected every half degree of azimuth - the largest `|u|` both ways, the `v` range (near corners below grow more than far ones above shrink) - widened by [[turning-pad]] for the azimuths between the samples.
+
+  Parameters:
+
+  - `aspect` (vector of three doubles): the box proportions.
+  - `view` (map): `:elevation` (default 30), `:distance`; `:azimuth` used for the orthographic centre.
+
+  Returns `{:width :height :u-mid :v-mid}` in box units."
   [aspect view]
   (if (zero? (view-distance view))
     (let [[tw th] (turning-extent aspect (get view :elevation (:elevation default-view)))
-          [u0 u1 v0 v1] (corner-bounds aspect view)]
+          [^double u0 ^double u1 ^double v0 ^double v1] (corner-bounds aspect view)]
       {:width tw :height th
-       :u-mid (* 0.5 (+ (double u0) (double u1))) :v-mid (* 0.5 (+ (double v0) (double v1)))})
+       :u-mid (m/* 0.5 (m/+ u0 u1))
+       :v-mid (m/* 0.5 (m/+ v0 v1))})
     (let [bounds (map #(corner-bounds aspect (assoc view :azimuth %)) turning-azimuths)
-          u (double (reduce max (mapcat (fn [[u0 u1]] [(m/abs (double u0)) (m/abs (double u1))]) bounds)))
-          v0 (double (reduce min (map #(nth % 2) bounds)))
-          v1 (double (reduce max (map #(nth % 3) bounds)))]
-      {:width (* 2.0 u (+ 1.0 turning-pad)) :height (* (- v1 v0) (+ 1.0 turning-pad)) :u-mid 0.0 :v-mid (* 0.5 (+ v0 v1))})))
+          u (v/mx (mapcat (fn [[^double lu0 ^double lu1]] [(m/abs lu0) (m/abs lu1)]) bounds))
+          v0 (v/mn (map #(nth % 2) bounds))
+          v1 (v/mx (map #(nth % 3) bounds))]
+      {:width (m/* 2.0 u turning-pad+)
+       :height (m/* (m/- v1 v0) turning-pad+)
+       :u-mid 0.0
+       :v-mid (m/* 0.5 (m/+ v0 v1))})))
 
 (defn projector
-  "Projection of the data box (`domains`, `aspect`, `view`) fitted in a `w` x `h` panel with `margin` pixels on every
-  side for axes: `{:point (fn [[x y z]] [Vec2 depth]) :corner (fn [corner] Vec2) :centre Vec2 :scale k}` - pixels
-  per box unit `k` fitting the box's largest projection over all azimuths at the view's elevation (and distance, see
-  [[turning-fit]]) in the panel less the margins, so a box turned about its vertical axis keeps its size and place
-  (views of different elevations may differ); `:centre` - the box centre's pixel; pixel y grows downward; `depth` -
-  the view depth (larger - farther). A corner may have fractional bits (a point on the box surface). A panel too
-  small for the margins gets a scale of 0. Throws `{:key :distance}` for an eye within the sphere around the box
-  ([[check-distance!]])."
-  [{:keys [domains aspect view]} {:keys [w h margin]}]
-  (let [aspect (box-aspect aspect)
-        _ (check-distance! view aspect)
-        normalize (normalizer domains aspect)
+  "Projection of the data box fitted in a panel.
+
+  The scale fits the box's largest projection over all azimuths at the view's elevation (and distance, see [[turning-fit]]) in the panel less the margins, so a box turned about its vertical axis keeps its size and place (views of different elevations may differ).
+
+  Parameters:
+
+  - `frame` (map): `:domains` (see [[normalizer]]), `:aspect`, `:view`.
+  - `panel` (map): `:w`, `:h` - the panel size in pixels; `:margin` - pixels on every side for axes (default 0).
+
+  Returns `{:point :corner :centre :scale}`: `:point` - a function of a data point `[x y z]` giving `[pixel depth]` (`pixel` a `Vec2`, y down; `depth` - the view depth, larger - farther); `:corner` - a function of a corner (fractional bits - a point on the box surface) giving its pixel; `:centre` - the box centre's pixel; `:scale` - pixels per box unit, 0 for a panel too small for the margins.
+
+  Throws `ex-info {:key :distance}` for an eye within the sphere around the box ([[check-distance!]])."
+  [{:keys [domains aspect view]} {:keys [^double w ^double h margin]}]
+  (let [sides (box-aspect aspect)
+        _ (check-distance! view sides)
+        normalize (normalizer domains sides)
         rotate (rotation view)
-        project (perspective view aspect)
-        margin (double (or margin 0.0))
-        free-w (- (double w) (* 2.0 margin)) free-h (- (double h) (* 2.0 margin))
-        {:keys [width height u-mid v-mid]} (turning-fit aspect view)
-        k (m/max 0.0 (m/min (/ free-w (double width)) (/ free-h (double height))))
-        cx (* 0.5 (double w)) cy (* 0.5 (double h))
-        um (double u-mid) vm (double v-mid)
-        to-pixel (fn [^Vec2 q] (v/vec2 (+ cx (* k (- (.x q) um))) (- cy (* k (- (.y q) vm)))))]
+        project (perspective view sides)
+        pad (double (or margin 0.0))
+        free-w (m/- w (m/* 2.0 pad))
+        free-h (m/- h (m/* 2.0 pad))
+        {:keys [^double width ^double height ^double u-mid ^double v-mid]} (turning-fit sides view)
+        k (m/max 0.0 (m/min (m// free-w width) (m// free-h height)))
+        cx (m/* 0.5 w)
+        cy (m/* 0.5 h)
+        to-pixel (fn [^Vec2 q] (v/vec2 (m/+ cx (m/* k (m/- (.x q) u-mid)))
+                                      (m/- cy (m/* k (m/- (.y q) v-mid)))))]
     {:point (fn [p] (let [^Vec3 q (rotate (normalize p))] [(to-pixel (project q)) (.z q)]))
-     :corner (fn [corner] (to-pixel (project (rotate (corner-point corner aspect)))))
+     :corner (fn [corner] (to-pixel (project (rotate (corner-point corner sides)))))
      :centre (to-pixel (v/vec2 0.0 0.0))
      :scale k}))
 
 ;; shading
 
-(def ^:private light
-  "Direction toward the light in view coordinates: from the viewer's upper left."
-  (v/normalize (Vec3. -0.5 0.6 -1.0)))
+(def ^:private default-light
+  "Direction toward the light of [[shading-options]] by default (view coordinates): from the viewer's upper left."
+  [-0.5 0.6 -1.0])
+
+(def ^{:const true :private true :tag 'double} default-ambient
+  "Share of a shaded face's colour independent of the light, by default."
+  0.4)
+
+(def light-schema
+  "Schema of the `:light` direction `[x y z]` (view coordinates): finite, not all zero."
+  (schema/with-rules [:tuple schema/finite schema/finite schema/finite]
+    [(fn [l] (when (every? zero? l) "the light direction should not be a zero vector"))]))
+
+(def shading-options
+  "Option entries shared by the shaded 3D charts (`surface`, `cloud` bars): the ambient share and the light direction of Lambert shading (see [[shader]])."
+  (schema/in-fragment
+   :shading
+   [(schema/optional :ambient {:description "share of a shaded face's colour independent of the light (0 - light only, 1 - no shading)"
+                               :default default-ambient}
+                     schema/fraction)
+    (schema/optional :light {:description "direction toward the light [x y z] in view coordinates (x right, y up, z away from the eye), normalized"
+                             :default default-light}
+                     light-schema)]))
 
 (defn view-normal
-  "Unit normal (view coordinates) of the plane through normalized points `a`, `b`, `c` rotated by `view`; a zero
-  vector for collinear points."
+  "Unit normal of a plane through three points, in view coordinates.
+
+  Parameters:
+
+  - `view` (map): the view.
+  - `a`, `b`, `c` (`Vec3`): normalized points.
+
+  Returns the unit normal `Vec3` of the rotated plane (right-handed from `a`, `b`, `c`); a zero vector for collinear points."
   [view a b c]
   (let [rotate (rotation view)
         ^Vec3 n (v/cross (v/sub (rotate b) (rotate a)) (v/sub (rotate c) (rotate a)))
         len (v/mag n)]
-    (if (pos? len) (v/div n len) (Vec3. 0.0 0.0 0.0))))
+    (if (m/pos? len) (v/div n len) (Vec3. 0.0 0.0 0.0))))
 
-(def ^:const ambient
-  "Share of a shaded face's color that doesn't depend on the light."
-  0.4)
+(defn- light-direction
+  "Unit direction toward the light from `light` (`[x y z]`, view coordinates).
 
-(defn shade
-  "`color` lit by Lambert's law for a face of unit `normal` (view coordinates; two-sided): its channels times
-  `ambient + (1 - ambient) |n·l|`, alpha kept."
-  [color normal]
-  (let [k (+ ambient (* (- 1.0 ambient) (m/abs (double (v/dot normal light)))))
-        col (c/to-color color)]
-    (c/color (* k (c/red col)) (* k (c/green col)) (* k (c/blue col)) (c/alpha col))))
+  Throws `ex-info {:key :light}` for a zero vector."
+  ^Vec3 [[^double x ^double y ^double z :as light]]
+  (let [l (Vec3. x y z)]
+    (when (v/is-zero? l)
+      (schema/fail! "The light direction should not be a zero vector." {:key :light :value light}))
+    (v/normalize l)))
+
+(defn shader
+  "Lambert shading function of a 3D chart's shading options.
+
+  Parameters:
+
+  - `options` (map): `:ambient` - share of a face's colour independent of the light, in `[0 1]` (default 0.4); `:light` - direction toward the light `[x y z]` in view coordinates (default `[-0.5 0.6 -1.0]`, from the viewer's upper left), normalized.
+
+  Returns a function of `color` and a face's unit `normal` (view coordinates) giving the colour lit two-sided: its RGB channels times `ambient + (1 - ambient) |n·l|`, alpha kept. A zero normal gives the ambient share alone; `:ambient` 1 - the colour itself.
+
+  Throws `ex-info {:key :light}` for a zero `:light`.
+
+  See also [[shading-options]]."
+  [{:keys [^double ambient light] :or {ambient default-ambient light default-light}}]
+  (let [diffuse (m/- 1.0 ambient)
+        l (light-direction light)]
+    (fn [color normal]
+      (let [k (m/+ ambient (m/* diffuse (m/abs (v/dot normal l))))
+            ^Vec4 col (c/to-color color)]
+        (c/color (m/* k (.x col)) (m/* k (.y col)) (m/* k (.z col)) (.w col))))))

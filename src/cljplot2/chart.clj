@@ -79,8 +79,8 @@
   [kind compute draw legend schema options]
   {:kind kind :options (if (nil? options) {} options) :compute compute :draw draw :legend legend :schema schema})
 
-(def ^{:doc "Style schema of every built-in chart kind: `build` checks theme `[:chart kind]` against it (and every named style of [[cljplot2.theme/named-styles]] merged over its kind)."}
-  builtin-styles
+(def builtin-styles
+  "Style schema of every built-in chart kind: `build` checks theme `[:chart kind]` against it (and every named style of [[cljplot2.theme/named-styles]] merged over its kind)."
   {:scatter (:style scatter/schemas)
    :histogram (:style histogram/schemas)
    :density (:style density/schemas)

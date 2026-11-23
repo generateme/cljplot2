@@ -323,7 +323,7 @@
 ;; review fixes: explicit domains at compute, counting after the split, area fill
 
 (deftest in-domain-test
-  (are [k spec v ok] (= ok (aesthetic/in-domain? k spec v))
+  (are [k spec v ok] (= ok (boolean (aesthetic/in-domain? k spec v))) ; truthiness: in-domain? returns a truthy / falsy value
     :color {} "z" true
     :color {:domain ["a" "b"]} "a" true
     :color {:domain ["a" "b"]} "z" false

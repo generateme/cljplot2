@@ -1,21 +1,20 @@
 (ns cljplot2.data.facet
-  "Facets: splitting rows into panels by facet values.
+  "Facets: splitting rows into panels by facet values, and the layout of the panels.
 
-  Mapping keys: `:facet` (wrap: one dimension laid out row by row) or `:facet-col` / `:facet-row` (grid: one
-  column per `:facet-col` value, one row per `:facet-row` value; either alone gives one row or one column).
+  Mapping keys: `:facet` (wrap: one dimension laid out row by row) or `:facet-col` / `:facet-row` (grid: one column per `:facet-col` value, one row per `:facet-row` value; either alone gives one row or one column).
 
-  Levels (facet values in panel order) come from an explicit `:scales {k {:domain [...]}}` or from the data,
-  sorted, or ordered by a statistic of each level's rows (`:scales {k {:order-by f :descending b}}`, see
-  [[ordered-levels]]). `nil` values go to an NA level placed last (`:facets {:na-panel false}` drops them instead). Values
-  outside an explicit domain, NaN and infinite numbers are dropped (and counted). Strip text is `(str value)` (`\"NA\"` for the NA level) unless the
-  facet scale has a `:formatter`.
+  Levels (facet values in panel order) come from an explicit `:scales {k {:domain [...]}}` or from the data, sorted, or ordered by a statistic of each level's rows (`:scales {k {:order-by f :descending b}}`, see [[ordered-levels]]). `nil` values go to an NA level placed last (`:facets {:na-panel false}` drops them instead). Values outside an explicit domain, NaN and infinite numbers are dropped (and counted). Strip text is `(str value)` (NA for the NA level) unless the facet scale has a `:formatter`.
 
-  Group keys: the level for wrap, `[col-level row-level]` for grid. Charts whose mapping has no facet key, and
-  charts whose own `:data` has no value for any of their facet keys (e.g. annotation rows), get the group key
-  [[all-panels]] and are drawn in every panel.
+  Group keys: the level for wrap, `[col-level row-level]` for grid. Charts whose mapping has no facet key, and charts whose own `:data` has no value for any of their facet keys (e.g. annotation rows), get the group key [[all-panels]] and are drawn in every panel.
 
-  Layout options (plot `:facets`, see [[facet-options]]): wrap shape and order, the NA panel, position scale
-  relations between panels ([[scale-relations]]), strips on / off, panel column / row weights."
+  Layout options (plot `:facets`, see [[facet-options]]): wrap shape and order, the NA panel, position scale relations between panels ([[scale-relations]]), strips on / off, panel column / row weights.
+
+  Functions:
+
+  - mapping: [[facet-keys]], [[facet-dims]], [[mapping-problem]]
+  - levels and rows: [[valid-facet-value?]], [[levels]], [[ordered-levels]], [[label]], [[group-rows]]
+  - options: [[scale-spec-schema]], [[facet-options]], [[scale-relation]], [[panel-scales?]], [[strips?]]
+  - wrap layout: [[most-squared-shape]], [[wrap-shape]], [[wrap-positions]]"
   (:require [fastmath.core :as m]
             [cljplot2.data.levels :as levels]
             [cljplot2.data.rows :as data]
@@ -24,7 +23,9 @@
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
-(def facet-keys #{:facet :facet-col :facet-row})
+(def facet-keys
+  "Mapping keys of the facet dimensions."
+  #{:facet :facet-col :facet-row})
 (def all-panels
   "Group key of a chart without facet mapping: its data is drawn in every panel."
   ::all-panels)
@@ -37,26 +38,49 @@
   nil)
 
 (defn facet-dims
-  "Facet keys with a non-nil accessor in `mapping`: `[:facet]`, `[:facet-col :facet-row]` (or one of them) or `[]`.
-  A `nil` accessor counts as absent (a chart can opt out of the plot's faceting with `{:facet nil}`)."
+  "Gives the facet dimensions a mapping uses.
+
+  Parameters:
+
+  - `mapping` (map): a (merged) mapping; a `nil` accessor counts as absent (a chart opts out of the plot's faceting with `{:facet nil}`).
+
+  Returns a vector of the facet keys with an accessor, in the order `:facet`, `:facet-col`, `:facet-row` - e.g. `[:facet]`, `[:facet-col :facet-row]`, `[]`."
   [mapping]
   (filterv #(some? (get mapping %)) [:facet :facet-col :facet-row]))
 
 (defn mapping-problem
-  "Why the facet keys of a (merged) `mapping` can't be used together, or `nil`: `:facet` with a grid key."
+  "Tells why the facet keys of a mapping can't be used together.
+
+  Parameters:
+
+  - `mapping` (map): a (merged) mapping.
+
+  Returns the message for `:facet` combined with a grid key (`:facet-col` / `:facet-row`), else `nil`."
   [mapping]
   (let [ks (facet-dims mapping)]
-    (when (and (some #{:facet} ks) (> (count ks) 1))
+    (when (and (some #{:facet} ks) (m/> (count ks) 1))
       "mapping can't combine :facet with :facet-col / :facet-row")))
 
 (defn valid-facet-value?
-  "Can `v` be a facet level: anything except NaN or infinite numbers (`nil` is the NA level)."
+  "Can `v` be a facet level: anything except NaN or infinite numbers?
+
+  `nil` is valid - the NA level."
   [v]
   (or (not (number? v)) (data/valid-value? v)))
 
 (defn levels
-  "Panel-ordered levels of facet dimension `k` from the facet values `values` (`nil` allowed) and the facet scale
-  `spec` (`:domain`), with NA handling per `na-panel?`."
+  "Gives the levels of a facet dimension in panel order.
+
+  Parameters:
+
+  - `k` (keyword): the facet dimension (for the error).
+  - `values` (collection): its facet values, `nil` allowed.
+  - `spec` (map): the facet scale spec; its `:domain` is taken as it is.
+  - `na-panel?` (boolean): does the NA level get a panel?
+
+  Returns a vector: the explicit domain, else the distinct valid values sorted; the NA level (`nil`) appended when `na-panel?` and some value is `nil`.
+
+  Throws `ex-info {:key :facet}` for values that don't compare (see [[cljplot2.data.rows/sorted-levels]])."
   [k values spec na-panel?]
   (let [explicit (:domain spec)
         base (if explicit
@@ -122,23 +146,39 @@
                    [:sequential {:min 1} schema/pos])])
 
 (defn scale-relation
-  "Relation of position scale `k` in plot `facets` options: `:same` (default), `:free` or `:sliced`."
+  "Gives the relation of a position scale between panels.
+
+  Parameters:
+
+  - `facets` (map): the plot's `:facets` options.
+  - `k` (keyword): `:x` or `:y`.
+
+  Returns `:same` (default), `:free` or `:sliced` (see [[scale-relations]])."
   [facets k]
   (or (get-in facets [:scales k]) :same))
 
 (defn panel-scales?
-  "Do plot `facets` options ask for panel-local position scales: a `:free` / `:sliced` relation or panel weights?"
+  "Do the plot's `:facets` options `facets` ask for panel-local position scales: a `:free` / `:sliced` relation, or panel `:widths` / `:heights`?
+
+  Returns a truthy value or `nil`."
   [facets]
-  (boolean (or (some #(not= :same (scale-relation facets %)) [:x :y]) (:widths facets) (:heights facets))))
+  (or (some #(not= :same (scale-relation facets %)) [:x :y]) (:widths facets) (:heights facets)))
 
 (defn strips?
-  "Does a faceted plot with `facets` options draw strips (default true)?"
+  "Does a faceted plot with the `:facets` options `facets` draw strips (`:strips`, default true)?"
   [facets]
   (not (false? (:strips facets))))
 
 (defn ordered-levels
-  "`levels` of a facet dimension in the order of its scale `spec`'s `:order-by` / `:descending` (`rows-of` - level ->
-  rows); unchanged without `:order-by`. The NA level (`nil`) stays last."
+  "Orders the levels of a facet dimension by a statistic of their rows.
+
+  Parameters:
+
+  - `levels` (vector): the levels (see [[levels]]).
+  - `rows-of` (function): level -> its rows.
+  - `spec` (map): the facet scale spec - `:order-by` (a function of a level's rows to a number), `:descending`.
+
+  Returns the levels in ascending (`:descending` - descending) order of `:order-by` (see [[cljplot2.data.levels/order-by-rows]]), the NA level (`nil`) last; `levels` unchanged without `:order-by`."
   [levels rows-of {:keys [order-by descending]}]
   (if order-by
     (cond-> (levels/order-by-rows (remove nil? levels) rows-of order-by descending)
@@ -146,7 +186,14 @@
     levels))
 
 (defn label
-  "Strip text of `level` of facet dimension `k` with facet scale `spec`."
+  "Gives the strip text of a facet level.
+
+  Parameters:
+
+  - `spec` (map): the facet scale spec; its `:formatter` (a function of the level) makes the text.
+  - `level`: the level; `nil` - the NA level.
+
+  Returns NA for the NA level, else the formatter's result or the level as a string."
   [spec level]
   (cond
     (nil? level) "NA"
@@ -154,52 +201,87 @@
     :else (str level)))
 
 (defn group-rows
-  "Rows grouped by facet key for facet `dims` with accessors `accessors` (dim -> fn) and `levels` (dim -> vector).
-  Rows whose value isn't a level are dropped; returns `{:groups {key rows} :dropped n}`."
+  "Groups rows by their facet key.
+
+  Parameters:
+
+  - `rows` (sequence): the rows.
+  - `dims` (vector): the facet dimensions (see [[facet-dims]]).
+  - `accessors` (map): dimension -> row accessor.
+  - `levels` (map): dimension -> its levels.
+
+  Returns `{:groups {key rows} :dropped n}`: a key is the level for one dimension, `[col-level row-level]` for two; rows whose value isn't a level are dropped and counted."
   [rows dims accessors levels]
   (let [level-sets (into {} (map (fn [d] [d (set (levels d))]) dims))
         keyed (map (fn [row]
                      (let [vs (mapv #((accessors %) row) dims)]
                        (when (every? true? (map (fn [d v] (contains? (level-sets d) v)) dims vs))
-                         [(if (= 1 (count dims)) (first vs) vs) row])))
+                         [(if (m/one? (count dims)) (first vs) vs) row])))
                    rows)]
     {:groups (reduce (fn [acc [k row]] (update acc k (fnil conj []) row)) {} (remove nil? keyed))
      :dropped (count (filter nil? keyed))}))
 
 (defn most-squared-shape
-  "`[rows cols]` with `rows * cols >= n` closest to a square, `rows <= cols` (old cljplot rule: minimal
-  `2 (x y - n) + (sqrt n - x)^2 + (sqrt n - y)^2`, ties by smaller x then y). For each x only y from
-  `ceil(n / x)` up to `max(ceil(n / x), ceil(sqrt n) + 1)` can be minimal, so the search is `O(n)`."
+  "Gives the wrap layout shape closest to a square for a number of panels.
+
+  The shape follows the old cljplot rule: the minimal `2 (x y - n) + (sqrt n - x)^2 + (sqrt n - y)^2`, ties by smaller x then y.
+
+  Parameters:
+
+  - `n` (long): the number of panels.
+
+  Returns `[rows cols]` with `rows * cols >= n` and `rows <= cols`; `[1 1]` for `n` up to 1."
   [^long n]
-  (if (<= n 1)
+  (if (m/<= n 1)
     [1 1]
     (let [s (m/sqrt n)
-          top (inc (long (m/ceil s)))
-          [_ ^long x ^long y] (first (sort (for [x (range 1 (inc n))
-                                                 :let [x (long x) y0 (long (m/ceil (/ (double n) (double x))))]
-                                                 y (range y0 (inc (m/max y0 top)))
-                                                 :let [y (long y) d1 (- (* x y) n)]]
-                                             [(+ (* 2.0 d1) (m/sq (- s x)) (m/sq (- s y))) x y])))]
-      [(m/min x y) (m/max x y)])))
+          dn (double n)
+          top (m/long-inc (long (m/ceil s)))
+          [_ ^long x ^long y] (first (sort (for [^long x (range 1 (m/long-inc n))
+                                                 :let [y0 (long (m/ceil (m// dn x)))]
+                                                 ^long y (range y0 (m/long-inc (m/long-max y0 top)))
+                                                 :let [d1 (m/long-sub (m/long-mult x y) n)]]
+                                             [(m/+ (m/* 2.0 d1)
+                                                   (m/sq (m/- s x))
+                                                   (m/sq (m/- s y)))
+                                              x y])))]
+      [(m/long-min x y) (m/long-max x y)])))
 
 (defn wrap-shape
-  "`[rows cols]` for `n` wrapped panels with optional `columns` / `rows` from plot `:facets`."
+  "Gives the shape of a wrap layout.
+
+  Parameters:
+
+  - `n` (long): the number of panels.
+  - `facets` (map): the plot's `:facets` options - `:columns`, `:rows` (each optional; one given - the other fits the panels).
+
+  Returns `[rows cols]`; both given - as they are, neither - [[most-squared-shape]].
+
+  Throws `ex-info {:key :facets}` when `rows * cols` is less than `n`."
   [^long n {:keys [columns rows]}]
   (let [shape (cond
                 (and rows columns) [(long rows) (long columns)]
-                rows [(long rows) (long (m/ceil (/ (double n) (double rows))))]
-                columns [(long (m/ceil (/ (double n) (double columns)))) (long columns)]
+                rows [(long rows) (long (m/ceil (m// n (double rows))))]
+                columns [(long (m/ceil (m// n (double columns)))) (long columns)]
                 :else (most-squared-shape n))
         [^long r ^long c] shape]
-    (when (< (* r c) n)
+    (when (m/< (m/long-mult r c) n)
       (schema/fail! "Facet layout is too small for the panels." {:key :facets :in [:facets] :panels n :rows r :columns c}))
     shape))
 
 (defn wrap-positions
-  "`[row col]` of panel `i` (0-based) in a `rows` x `cols` wrap layout, `order` `:top-down` or `:bottom-up`."
+  "Gives the grid position of a panel in a wrap layout.
+
+  Parameters:
+
+  - `i` (long): the panel's index, 0-based.
+  - `rows`, `cols` (long): the layout shape.
+  - `order` (keyword): `:top-down` (the first panel at the top) or `:bottom-up` (lattice's: at the bottom).
+
+  Returns `[row col]`, 0-based from the top."
   [^long i ^long rows ^long cols order]
-  (let [r (quot i cols)
-        c (rem i cols)]
+  (let [r (m/quot i cols)
+        c (m/rem i cols)]
     (case order
       :top-down [r c]
-      :bottom-up [(- rows 1 r) c])))
+      :bottom-up [(m/long-sub rows 1 r) c])))

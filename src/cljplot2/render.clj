@@ -22,9 +22,12 @@
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
-(def ^{:private true :doc "Fill colours of the debug item boxes, cycled."} debug-palette (c/palette :RColorBrewer/Set3))
+(def ^:private debug-palette
+  "Fill colours of the debug item boxes, cycled."
+  (c/palette :RColorBrewer/Set3))
 
-(def ^{:private true :const true :tag 'long :doc "Number of colours in [[debug-palette]]."} debug-colors
+(def ^{:private true :const true :tag 'long} debug-colors
+  "Number of colours in [[debug-palette]]."
   (count debug-palette))
 
 (defn- draw-debug-items!

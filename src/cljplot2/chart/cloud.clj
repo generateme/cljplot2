@@ -14,7 +14,8 @@
 
   * `:type` - `:points` (default), `:none` (no marks - only `:projections`), `:spikes` (a line from z = `:base` - default the low z limit - to each point, width
     `:stroke-width`, lattice `type = \"h\"`) or `:bars` (a box per row from `:base` to z, `:bar-size [fx fy]` (default
-    `[0.8 0.8]`) of the x / y resolution - the smallest gap between distinct values; faces shaded, outlined by
+    `[0.8 0.8]`) of the x / y resolution - the smallest gap between distinct values; faces shaded - `:ambient`
+    (default 0.4) and `:light` (default `[-0.5 0.6 -1.0]`, see [[cljplot2.data.space3d/shader]]) - outlined by
     `:stroke-color`)
   * `:view {:azimuth deg :elevation deg :distance δ}` (default 40 / 30 / 0), `:aspect [ax ay az]` (box proportions,
     default `[1 1 1]`); `:distance` > 0 - perspective as lattice's `distance` (0.2 there; the eye `L/δ` from the box
@@ -81,6 +82,7 @@
                  (into data/common-options)
                  (into theme/theme-style-entries)
                  (into space/frame-options)
+                 (into space/shading-options)
                  (conj (schema/optional :type {:cljplot2/section :marks :description (str "marks: :points, :spikes (a line from :base to each point), "
                                                                  ":bars (a box per row from :base to z) or :none (only :projections)")
                                                :default :points}
@@ -205,7 +207,7 @@
 
 (defn compute
   "Per panel: `{:points {:x [..] :y [..] :z [..] aesthetic [..]} :domains {:x :y :z} :frame f :style st :type t :base b
-  :half [hx hy]}` (`f` - see [[cljplot2.data.space3d/frame-settings]], `hx` / `hy` - half a bar in data units; with `:bins` the points are
+  :half [hx hy] :shading sh}` (`sh` - the chart's `:ambient` / `:light`, `f` - see [[cljplot2.data.space3d/frame-settings]], `hx` / `hy` - half a bar in data units; with `:bins` the points are
   the non-empty cells, see [[bin-counts]]; with `:projections` also `:projections`, see [[projection-layers]]);
   aesthetic extents only (no position extents: the chart lays out its panel), `:na`, `:dropped` per dimension."
   [{:keys [options]} {:keys [groups mapping]} {:keys [theme na-level? plot-scales] :or {na-level? true}}]
@@ -272,7 +274,8 @@
         layers (when-let [projections (not-empty (:projections options))] (projection-layers projections points domains))]
     {:data (into {} (map (fn [[panel p]]
                            [panel (cond-> {:points p :domains domains :frame frame :frame-overrides (space/frame-overrides options)
-                                           :style st :type type :base base :half [(half :x) (half :y)]}
+                                           :style st :type type :base base :half [(half :x) (half :y)]
+                                           :shading (select-keys options [:ambient :light])}
                                     layers (assoc :projections (layers panel)))]))
                  points)
      :extents (update-vals points (fn [p] (into {} (map (fn [k] [k (aesthetic/value-extent k (get plot-scales k) (remove nil? (p k)))]))
@@ -295,9 +298,9 @@
 (defn- bar-faces
   "Visible faces of the bar at `x`, `y` from `base` to `z` (half sizes `hx`, `hy`) as polygon primitives: the box's
   faces facing the eye (`orientation` - see [[cljplot2.data.space3d/face-orientation]], by each face's centre), each
-  shaded by its normal, all with the depth of the bar's footprint centre on the base - bars sort as wholes by where they stand (a face's own depth would rise with its height and draw a tall back bar over a
+  shaded by its normal (`shade` - see [[cljplot2.data.space3d/shader]]), all with the depth of the bar's footprint centre on the base - bars sort as wholes by where they stand (a face's own depth would rise with its height and draw a tall back bar over a
   short front one); a convex box's front faces never overlap, so their order within a bar doesn't matter."
-  [point orientation [x y z] base [hx hy] st]
+  [point orientation shade [x y z] base [hx hy] st]
   (let [x (double x) y (double y) hx (double hx) hy (double hy)
         lo (m/min (double base) (double z)) hi (m/max (double base) (double z))
         at (fn [[ix iy iz]] [(if (zero? (long ix)) (- x hx) (+ x hx)) (if (zero? (long iy)) (- y hy) (+ y hy)) (if (zero? (long iz)) lo hi)])
@@ -309,16 +312,18 @@
                   [normal front?] (orientation axis side centre)]
               (when front?
                 {:kind :polygon :points (mapv #(first (point %)) face) :depth depth
-                 :fill (space/shade (:color st) normal) :stroke stroke :stroke-width (:stroke-width st)})))
+                 :fill (shade (:color st) normal) :stroke stroke :stroke-width (:stroke-width st)})))
           space/faces)))
 
 (defn primitives
   "Primitives of one panel's points (see [[cljplot2.graphics.space3d]]) for the projection `point` (data -> `[pixel
   depth]`), by the chart `type`; bars turn their faces by `frame` - the scene's, with its `:domains` (see
   [[cljplot2.graphics.space3d/draw-scene!]])."
-  [{:keys [points type base half frame]} point styles]
+  [{:keys [points type base half frame shading]} point styles]
   (let [{:keys [x y z]} points
-        orientation (when (= type :bars) (space/face-orientation frame))]
+        bars? (= type :bars)
+        orientation (when bars? (space/face-orientation frame))
+        shade (when bars? (space/shader shading))]
     (mapcat (fn [i]
               (when-let [st (styles i)]
                 (let [p [(x i) (y i) (z i)]
@@ -329,7 +334,7 @@
                     ;; a spike sorts by where it stands, as a bar
                     :spikes (let [[b bd] (point [(x i) (y i) base])]
                               [{:kind :line :from b :to px :depth bd :color (:color st) :width (:stroke-width st)}])
-                    :bars (bar-faces point orientation p base half st)))))
+                    :bars (bar-faces point orientation shade p base half st)))))
             (range (count x)))))
 
 (def ^:const projection-alpha

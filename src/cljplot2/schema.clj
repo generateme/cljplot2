@@ -89,36 +89,56 @@
   [v]
   (and (not= :none v) (color? v)))
 
-(def ^{:doc "Schema of a non-negative number."} non-neg (named-type ::non-neg non-neg-number? "should be a non-negative number"))
-(def ^{:doc "Schema of a positive number."} pos (named-type ::pos pos-number? "should be a positive number"))
-(def ^{:doc "Schema of a positive integer."} pos-int (named-type ::pos-int #(and (integer? %) (m/pos? (long %))) "should be a positive integer"))
-(def ^{:doc "Schema of a finite number, see [[finite?]]."} finite (named-type ::finite finite? "should be a finite number"))
-(def ^{:doc "Schema of a number in `[0 1]`."} fraction (named-type ::fraction #(and (number? %) (m/<= 0.0 (double %) 1.0)) "should be a number in [0 1]"))
-(def ^{:doc "Schema of a number in `(0 1)`, both ends excluded."} open-fraction (named-type ::open-fraction #(and (number? %) (m/< 0.0 (double %) 1.0)) "should be a number in (0 1)"))
-(def ^{:doc "Schema of a positive finite number."} finite-pos (named-type ::finite-pos #(and (finite? %) (m/pos? (double %))) "should be a positive finite number"))
-(def ^{:doc "Schema of a non-negative finite number."} finite-non-neg (named-type ::finite-non-neg #(and (finite? %) (m/not-neg? (double %))) "should be a non-negative finite number"))
-(def ^{:doc "Schema of an interval `[lo hi]` of finite numbers with `lo < hi`."}
-  finite-interval
+(def non-neg
+  "Schema of a non-negative number."
+  (named-type ::non-neg non-neg-number? "should be a non-negative number"))
+(def pos
+  "Schema of a positive number."
+  (named-type ::pos pos-number? "should be a positive number"))
+(def pos-int
+  "Schema of a positive integer."
+  (named-type ::pos-int #(and (integer? %) (m/pos? (long %))) "should be a positive integer"))
+(def finite
+  "Schema of a finite number, see [[finite?]]."
+  (named-type ::finite finite? "should be a finite number"))
+(def fraction
+  "Schema of a number in `[0 1]`."
+  (named-type ::fraction #(and (number? %) (m/<= 0.0 (double %) 1.0)) "should be a number in [0 1]"))
+(def open-fraction
+  "Schema of a number in `(0 1)`, both ends excluded."
+  (named-type ::open-fraction #(and (number? %) (m/< 0.0 (double %) 1.0)) "should be a number in (0 1)"))
+(def finite-pos
+  "Schema of a positive finite number."
+  (named-type ::finite-pos #(and (finite? %) (m/pos? (double %))) "should be a positive finite number"))
+(def finite-non-neg
+  "Schema of a non-negative finite number."
+  (named-type ::finite-non-neg #(and (finite? %) (m/not-neg? (double %))) "should be a non-negative finite number"))
+(def finite-interval
+  "Schema of an interval `[lo hi]` of finite numbers with `lo < hi`."
   (named-type ::finite-interval #(and (vector? %) (m/== 2 (count %)) (every? finite? %) (m/< (double (% 0)) (double (% 1))))
               "should be [lo hi], finite numbers, lo < hi"))
-(def ^{:doc "Schema of `true` or `false`."} bool (named-type ::boolean boolean? "should be true or false"))
-(def ^{:doc "Schema of a value malli accepts as a schema."}
-  malli-schema
+(def bool
+  "Schema of `true` or `false`."
+  (named-type ::boolean boolean? "should be true or false"))
+(def malli-schema
+  "Schema of a value malli accepts as a schema."
   (named-type ::malli-schema #(try (some? (malli/schema %)) (catch Exception _ false)) "should be a malli schema"))
-(def ^{:doc "Schema of a function."} function (named-type ::function fn? "should be a function"))
-(def ^{:doc "Schema of a data accessor: a keyword, a function, or a categorical marker of one (see [[cljplot2.data.accessor/categorical?]])."}
-  accessor
+(def function
+  "Schema of a function."
+  (named-type ::function fn? "should be a function"))
+(def accessor
+  "Schema of a data accessor: a keyword, a function, or a categorical marker of one (see [[cljplot2.data.accessor/categorical?]])."
   (named-type ::accessor #(or (keyword? %) (fn? %)
                                          (and (accessor/categorical? %) (let [a (accessor/unwrap %)] (or (keyword? a) (fn? a)))))
                           "should be a keyword, a function or a categorical marker of one"))
 
-(def ^{:doc "Schema of a padding `[lo hi]` of two non-negative numbers."}
-  padding
+(def padding
+  "Schema of a padding `[lo hi]` of two non-negative numbers."
   (named-type ::padding #(and (vector? %) (m/== 2 (count %)) (every? non-neg-number? %))
               "should be [lo hi], non-negative numbers"))
 
-(def ^{:doc "Named dash styles: name -> dash lengths in pixels (fixed, not scaled by the line width; names after ggplot linetypes). Every pattern shows a gap within 14 pixels (a legend key), so the styles stay apart in legends; `:solid` draws a solid line, as `:none`."}
-  dash-styles
+(def dash-styles
+  "Named dash styles: name -> dash lengths in pixels (fixed, not scaled by the line width; names after ggplot linetypes). Every pattern shows a gap within 14 pixels (a legend key), so the styles stay apart in legends; `:solid` draws a solid line, as `:none`."
   {:solid :none
    :dashed [5.0 3.0]
    :dotted [1.0 2.0]
@@ -135,7 +155,9 @@
   [v]
   (or (= :none v) (contains? dash-styles v) (and (sequential? v) (seq v) (every? pos-number? v))))
 
-(def ^{:private true :doc "The names of [[dash-styles]], sorted, as one text for messages."} dash-names-text (str/join " " (map pr-str (sort (keys dash-styles)))))
+(def ^:private dash-names-text
+  "The names of [[dash-styles]], sorted, as one text for messages."
+  (str/join " " (map pr-str (sort (keys dash-styles)))))
 
 (defn- dash-message
   "Error message of an invalid dash.
@@ -150,15 +172,15 @@
     (str (if suggestion (str "unknown dash style, should be spelled " (pr-str suggestion) "; ") "")
          "should be :none, a dash style (" dash-names-text ") or a non-empty sequence of positive numbers")))
 
-(def ^{:doc "Schema of a dash, see [[dash?]]; a misspelt style name gets a spelling suggestion."}
-  dash
+(def dash
+  "Schema of a dash, see [[dash?]]; a misspelt style name gets a spelling suggestion."
   (malli/-simple-schema {:type ::dash :pred dash?
                          :type-properties {:error/fn (fn [{:keys [value]} _] (dash-message value))
                                            :cljplot2/type-doc (str ":none, a dash style (" dash-names-text
                                                                    ") or a sequence of positive numbers")}}))
 
-(def ^{:doc "Named fill patterns: name -> pattern spec (see [[pattern?]]); pixels, fixed. Every pattern shows at least two marks within 14 pixels (a legend key); `:solid` - no pattern (the plain fill)."}
-  pattern-styles
+(def pattern-styles
+  "Named fill patterns: name -> pattern spec (see [[pattern?]]); pixels, fixed. Every pattern shows at least two marks within 14 pixels (a legend key); `:solid` - no pattern (the plain fill)."
   {:solid :solid
    :hatch {:kind :lines :angle 45 :spacing 6.0 :width 1.0}
    :back-hatch {:kind :lines :angle 135 :spacing 6.0 :width 1.0}
@@ -169,8 +191,8 @@
    :dots {:kind :dots :spacing 6.0 :size 2.0}
    :dense-dots {:kind :dots :spacing 4.0 :size 1.5}})
 
-(def ^{:doc "Angles (degrees) of line and cross patterns: those whose tiles repeat seamlessly."}
-  pattern-angles
+(def pattern-angles
+  "Angles (degrees) of line and cross patterns: those whose tiles repeat seamlessly."
   #{0 45 90 135})
 
 (defn- pattern-spec?
@@ -191,7 +213,9 @@
   [v]
   (or (contains? pattern-styles v) (pattern-spec? v)))
 
-(def ^{:private true :doc "The names of [[pattern-styles]], sorted, as one text for messages."} pattern-names-text (str/join " " (map pr-str (sort (keys pattern-styles)))))
+(def ^:private pattern-names-text
+  "The names of [[pattern-styles]], sorted, as one text for messages."
+  (str/join " " (map pr-str (sort (keys pattern-styles)))))
 
 (defn- pattern-message
   "Error message of an invalid fill pattern.
@@ -207,54 +231,66 @@
          "should be a pattern name (" pattern-names-text "), {:kind :lines|:cross :angle 0|45|90|135 :spacing s :width w}"
          " or {:kind :dots :spacing s :size d} (positive pixels)")))
 
-(def ^{:doc "Schema of a fill pattern, see [[pattern?]]; a misspelt name gets a spelling suggestion."}
-  pattern
+(def pattern
+  "Schema of a fill pattern, see [[pattern?]]; a misspelt name gets a spelling suggestion."
   (malli/-simple-schema {:type ::pattern :pred pattern?
                          :type-properties {:error/fn (fn [{:keys [value]} _] (pattern-message value))
                                            :cljplot2/type-doc (str "a pattern name (" pattern-names-text ") or a pattern map")}}))
 
-(def ^{:doc "fastmath `interpolation` methods taking one-dimensional `xs`, `ys` (the 2D grid methods excluded): line curves and `:interpolated` position scales."}
-  interpolation-methods
+(def interpolation-methods
+  "fastmath `interpolation` methods taking one-dimensional `xs`, `ys` (the 2D grid methods excluded): line curves and `:interpolated` position scales."
   #{:linear :cubic :monotone :pchip :akima :neville :divided-difference :polynomial :sprague :step-before
     :step-after :step :b-spline :barycentric :loess :cubic-smoothing :pava :cir :microsphere-projection :shepard
     :rbf :kriging :gp})
 
-(def ^{:doc "Schema of `:interpolator`: a fastmath 1D method of [[interpolation-methods]] or a function `(fn [xs ys & params] f)`."}
-  interpolator
+(def interpolator
+  "Schema of `:interpolator`: a fastmath 1D method of [[interpolation-methods]] or a function `(fn [xs ys & params] f)`."
   (named-type ::interpolator #(or (fn? %) (contains? interpolation-methods %))
               (str "should be a function (fn [xs ys & params] f) or a fastmath 1D interpolation method: "
                    (str/join " " (sort interpolation-methods)))
               "a fastmath 1D interpolation method keyword or a function (fn [xs ys & params] f)"))
 
-(def ^{:private true :doc "Horizontal alignments."} h-aligns #{:left :center :right})
-(def ^{:private true :doc "Vertical alignments."} v-aligns #{:top :middle :bottom})
+(def ^:private h-aligns
+  "Horizontal alignments."
+  #{:left :center :right})
+(def ^:private v-aligns
+  "Vertical alignments."
+  #{:top :middle :bottom})
 
-(def ^{:doc "Schema of an alignment `[h v]`: `h` one of `:left` `:center` `:right`, `v` one of `:top` `:middle` `:bottom`."}
-  align
+(def align
+  "Schema of an alignment `[h v]`: `h` one of `:left` `:center` `:right`, `v` one of `:top` `:middle` `:bottom`."
   (named-type ::align #(and (vector? %) (m/== 2 (count %)) (contains? h-aligns (% 0)) (contains? v-aligns (% 1)))
               "should be [h v], h one of :left :center :right, v one of :top :middle :bottom"))
 
-(def ^{:doc "Schema of a colour or `:none`, see [[color?]]."} color (named-type ::color color? "should be a clojure2d color or :none"))
+(def color
+  "Schema of a colour or `:none`, see [[color?]]."
+  (named-type ::color color? "should be a clojure2d color or :none"))
 
-(def ^{:doc "Schema of a clojure2d colour vision deficiency (`clojure2d.color/cvd-filter` arguments): a keyword or `[keyword severity]`."}
-  cvd-deficiency
+(def cvd-deficiency
+  "Schema of a clojure2d colour vision deficiency (`clojure2d.color/cvd-filter` arguments): a keyword or `[keyword severity]`."
   (named-type ::cvd-deficiency
               (fn [v] (and (or (keyword? v) (and (vector? v) (m/== 2 (count v)) (keyword? (first v))))
                           (try (some? (if (vector? v) (apply c/cvd-filter v) (c/cvd-filter v))) (catch Exception _ false))))
               "should be a clojure2d color vision deficiency: a keyword (:protanopia, :deuteranopia, :tritanopia, :achromatopsia) or [keyword severity] (:protanomaly, :deuteranomaly, :tritanomaly, :achromatomaly; severity in [0 1])"))
-(def ^{:doc "Schema of a colour, `:none` excluded, see [[solid-color?]]."} solid-color (named-type ::solid-color solid-color? "should be a clojure2d color"))
-(def ^{:doc "Schema of a `java.time` value (a date, a date-time, an instant, a time)."}
-  temporal
+(def solid-color
+  "Schema of a colour, `:none` excluded, see [[solid-color?]]."
+  (named-type ::solid-color solid-color? "should be a clojure2d color"))
+(def temporal
+  "Schema of a `java.time` value (a date, a date-time, an instant, a time)."
   (named-type ::temporal #(instance? java.time.temporal.Temporal %) "should be a java.time value" "a java.time value"))
-(def ^{:doc "Schema of a text colour: a clojure2d colour or `:contrast` - black or white, whichever reads on what's behind the text (see [[cljplot2.graphics.draw/text-color]])."}
-  text-color
+(def text-color
+  "Schema of a text colour: a clojure2d colour or `:contrast` - black or white, whichever reads on what's behind the text (see [[cljplot2.graphics.draw/text-color]])."
   (named-type ::text-color #(or (= :contrast %) (solid-color? %)) "should be a clojure2d color or :contrast"
               "a clojure2d color or :contrast"))
-(def ^{:doc "Schema of a point shape: a built-in character, keyword or a shape map (see [[cljplot2.graphics.shape/shape-problem]], whose message is the error)."}
-  shape
+(def shape
+  "Schema of a point shape: a built-in character, keyword or a shape map (see [[cljplot2.graphics.shape/shape-problem]], whose message is the error)."
   (named-type ::shape shape/shape? shape/shape-problem "a shape character, keyword or shape map"))
-(def ^{:doc "Schema of a font: a bundled, installed or logical font name, or a `java.awt.Font`."} font (named-type ::font font/known-font? "should be a bundled, installed or logical font name, or a java.awt.Font"))
-(def ^{:doc "Schema of a font style: one of the keys of [[cljplot2.graphics.font/font-styles]]."} font-style (into [:enum] (sort (keys font/font-styles))))
+(def font
+  "Schema of a font: a bundled, installed or logical font name, or a `java.awt.Font`."
+  (named-type ::font font/known-font? "should be a bundled, installed or logical font name, or a java.awt.Font"))
+(def font-style
+  "Schema of a font style: one of the keys of [[cljplot2.graphics.font/font-styles]]."
+  (into [:enum] (sort (keys font/font-styles))))
 
 (defn optional
   "Creates a map entry that may be absent.
@@ -378,7 +414,9 @@
 
 ;; explaining
 
-(def ^{:private true :const true :tag 'long :doc "The most explainers [[explainers]] holds before it is emptied."} max-cached-explainers 256)
+(def ^{:private true :const true :tag 'long} max-cached-explainers
+  "The most explainers [[explainers]] holds before it is emptied."
+  256)
 
 (defonce ^{:private true :doc "Malli explainers by schema value; emptied when it holds [[max-cached-explainers]], so schemas made per call can't fill memory."}
   explainers
@@ -466,8 +504,8 @@
                 (str "unknown key, should be spelled " (pr-str suggestion))
                 (or (me/error-message error) "is invalid"))}))
 
-(def ^{:arglists '([errors]) :doc "Throws one `ex-info` listing `errors` (`{:in :value :message}` entries), shaped as in the namespace doc; returns `nil` for no errors. See [[cljplot2.error/throw-errors!]]."}
-  throw-errors!
+(def ^{:arglists '([errors])} throw-errors!
+  "Throws one `ex-info` listing `errors` (`{:in :value :message}` entries), shaped as in the namespace doc; returns `nil` for no errors. See [[cljplot2.error/throw-errors!]]."
   error/throw-errors!)
 
 (defn errors
@@ -522,6 +560,6 @@
   (throw-errors! (vec (sort-by #(if (= "missing required key" (:message %)) 1 0)
                                (errors schema (if (nil? options) {} options) [])))))
 
-(def ^{:arglists '([message data]) :doc "Throws the error of a check done by hand, shaped and worded as [[explain!]]'s: `message` and `data` with at least `:key` (the option), optionally `:in` and `:value`. See [[cljplot2.error/fail!]]."}
-  fail!
+(def ^{:arglists '([message data])} fail!
+  "Throws the error of a check done by hand, shaped and worded as [[explain!]]'s: `message` and `data` with at least `:key` (the option), optionally `:in` and `:value`. See [[cljplot2.error/fail!]]."
   error/fail!)

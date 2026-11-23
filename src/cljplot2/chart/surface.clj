@@ -30,7 +30,8 @@
 
   * `:style` - `:surface` (default; filled quads), `:wireframe` (quad outlines in their color, `:stroke-width` wide,
     over the panel's background - hidden lines covered) or `:both` (filled quads outlined by `:stroke-color`)
-  * `:shade` - Lambert shading of filled quads (default true; see [[cljplot2.data.space3d/shade]])
+  * `:shade` - Lambert shading of filled quads (default true); `:ambient` (default 0.4) and `:light` (default `[-0.5 0.6
+    -1.0]`) - the shading's ambient share and light direction (see [[cljplot2.data.space3d/shader]])
 
   Quads are drawn far to near by their centroid depth, with the other 3D charts of the panel (a cloud over a surface:
   both with every `:domain` explicit)."
@@ -65,6 +66,7 @@
                  (into data/common-options)
                  (into theme/theme-style-entries)
                  (into space/frame-options)
+                 (into space/shading-options)
                  (conj (schema/optional :style {:description "mesh drawing: :surface (filled quads), :wireframe (quad outlines) or :both"
                                                 :default :surface}
                                         [:enum :surface :wireframe :both])
@@ -215,7 +217,7 @@
           :shade? (not (false? (:shade options)))}))
 
 (defn compute
-  "Per panel: `{:mesh m :domains {:x :y :z} :frame f :style st}` (see [[mesh]], [[cljplot2.data.space3d/frame-settings]]);
+  "Per panel: `{:mesh m :domains {:x :y :z} :frame f :style st :shading sh}` (`sh` - the chart's `:ambient` / `:light`; see [[mesh]], [[cljplot2.data.space3d/frame-settings]]);
   no position extents (the chart lays out its panel), color extents - the finite tones (computed color only),
   `:dropped` - gridded / density rows without a finite x / y."
   [{:keys [options]} {:keys [groups mapping]} {:keys [theme]}]
@@ -232,7 +234,8 @@
         st (style options theme)
         colored? (nil? (:color options))]
     {:data (update-vals meshes (fn [mesh] {:mesh mesh :domains domains :frame frame
-                                           :frame-overrides (space/frame-overrides options) :style st}))
+                                           :frame-overrides (space/frame-overrides options) :style st
+                                           :shading (select-keys options [:ambient :light])}))
      :extents (update-vals meshes (fn [{:keys [tones]}]
                                     (let [ts (remove m/nan? tones)]
                                       (if (and colored? (seq ts))
@@ -282,8 +285,9 @@
   "The surface's quads for one panel's `computed` data and the projection `point` (data -> `[pixel depth]`; the 3D
   chart contract, see [[cljplot2.graphics.space3d/draw-scene!]]): a `:polygon` per quad with four nodes, at its corners'
   mean depth, colored by its corners' mean tone, styled by `:style` (see the namespace doc)."
-  [_chart {:keys [mesh domains frame style]} point scales env]
+  [_chart {:keys [mesh domains frame style shading]} point scales env]
   (let [{:keys [nu nv nodes tones]} mesh
+        shade (space/shader shading)
         {:keys [view aspect]} frame
         normalize (space/normalizer domains aspect)
         rotate (space/rotation view)
@@ -302,7 +306,7 @@
                 pixels (mapv first projected)]]
       (if (= look :wireframe)
         {:kind :polygon :points pixels :depth depth :fill back :stroke col :stroke-width width}
-        (let [fill (if (:shade? style) (space/shade col (quad-normal rotate (mapv normalize ps))) col)]
+        (let [fill (if (:shade? style) (shade col (quad-normal rotate (mapv normalize ps))) col)]
           (cond
             (= look :both) {:kind :polygon :points pixels :depth depth :fill fill :stroke (:stroke-color style) :stroke-width width}
             ;; outlined in its own fill: no anti-aliased seams between neighbours (an opaque fill only - a translucent

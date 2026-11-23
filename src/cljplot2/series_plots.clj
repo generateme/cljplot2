@@ -15,22 +15,22 @@
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
-(def ^{:private true :doc "Default colours of a correlogram: the stems and points, the significance band, the points of significant lags."}
-  default-colors
+(def ^:private default-colors
+  "Default colours of a correlogram: the stems and points, the significance band, the points of significant lags."
   {:stem (c/color 69 117 180)
    :band (c/color 69 117 180)
    :significant (c/color 215 48 39)})
 
-(def ^{:private true :doc "The ACF kinds (`acf-rows` `:partial?` values) drawn for each builder `:partial?` value."}
-  kinds-of
+(def ^:private kinds-of
+  "The ACF kinds (`acf-rows` `:partial?` values) drawn for each builder `:partial?` value."
   {false [false] :acf [false] true [true] :pacf [true] :both [false true]})
 
-(def ^{:private true :doc "Display name of an ACF kind (`:partial?` value): panel strip and y axis title."}
-  kind-names
+(def ^:private kind-names
+  "Display name of an ACF kind (`:partial?` value): panel strip and y axis title."
   {false "ACF" true "PACF"})
 
-(def ^{:doc "Options schema of [[acf]]: its own entries, `:lags` / `:alpha` forwarded to [[cljplot2.data.series/acf-rows]] and the builder entries."}
-  acf-options
+(def acf-options
+  "Options schema of [[acf]]: its own entries, `:lags` / `:alpha` forwarded to [[cljplot2.data.series/acf-rows]] and the builder entries."
   (schema/options-map
    [(schema/nilable :partial? {:description "the correlograms drawn: :both (ACF above PACF), :acf or false (ACF), :pacf or true (PACF)"
                                :default :both}
@@ -122,8 +122,8 @@
        (and both? (nil? (get-in scales [:y :domain]))) (assoc :facets {:scales {:y :free}})
        user-theme (assoc :theme user-theme)))))
 
-(def ^{:private true :doc "Lightest and darkest colour of the default horizon band palettes: blues for positive, reds for negative values."}
-  horizon-ends
+(def ^:private horizon-ends
+  "Lightest and darkest colour of the default horizon band palettes: blues for positive, reds for negative values."
   {:positive [(c/color 158 202 225) (c/color 8 69 148)]
    :negative [(c/color 252 174 145) (c/color 165 15 21)]})
 
@@ -157,8 +157,8 @@
   (into (vec (take n (or (:positive colors) (band-colors (:positive horizon-ends) n))))
         (take n (or (:negative colors) (band-colors (:negative horizon-ends) n)))))
 
-(def ^{:doc "Options schema of [[horizon]]: its own entries, those forwarded to [[cljplot2.data.series/horizon-rows]] and the builder entries."}
-  horizon-options
+(def horizon-options
+  "Options schema of [[horizon]]: its own entries, those forwarded to [[cljplot2.data.series/horizon-rows]] and the builder entries."
   (schema/options-map
    [(schema/nilable :colors {:description "band colours per sign, lightest first, at least :bands colours each"}
                     [:map {:closed true}
