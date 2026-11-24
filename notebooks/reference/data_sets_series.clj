@@ -166,11 +166,18 @@
 ;; ## pairwise/matrix-rows
 
 ;; A statistic for every pair of variables, a row per cell: the statistic of the x variable's sample against the y
-;; variable's over their complete rows, with the count of those rows. The built-in statistics:
+;; variable's (`:value`, `nil` when it can't be computed) with the sample size (`:n`). The built-in statistics by
+;; family: `:symmetry` tells how a value changes when the samples swap (`:symmetric` - unchanged, `:antisymmetric` -
+;; negated, `:reciprocal` - inverted, `:complementary` - `1 - v`, `:asymmetric` - otherwise); `:samples` - paired
+;; statistics take the rows where both values are present, independent-sample ones (two groups compared) each
+;; variable's own values; `:signed?` - zero is the neutral value (a shaded `pairwise` chart centres its colours on
+;; it):
 
-(nu/data-table (map (fn [[k {:keys [label symmetry samples description]}]]
-                      {:method k :label label :symmetry symmetry :samples samples :description description})
-                    (sort-by key pairwise/statistics)))
+(nu/data-table (map (fn [[k {:keys [label family symmetry samples signed? description]}]]
+                      {:family family :method k :label label :symmetry symmetry :samples samples
+                       :signed? (true? signed?) :description description})
+                    (sort-by (fn [[k {:keys [family]}]] [({:error 0 :association 1 :effect-size 2 :distance 3} family) (name k)])
+                             pairwise/statistics)))
 
 (nu/options-table (describe/options #'pairwise/matrix-rows))
 
@@ -180,7 +187,8 @@
 
 (nu/data-table iris)
 
-;; The lower triangle of a symmetric statistic, the diagonal included:
+;; The lower triangle of a symmetric statistic, the diagonal included (lower - the y variable after the x variable
+;; in variable order, as the lower cells of `plot/pairs`):
 
 (nu/data-table (pairwise/matrix-rows iris {:variables [:sepal-length :sepal-width :petal-length :petal-width]
                                            :method :spearman :triangle :lower :diagonal? true}))
@@ -189,14 +197,20 @@
 
 (nu/data-table (pairwise/matrix-rows iris {:variables [:sepal-length :petal-length] :method :mse :triangle :upper}))
 
-;; A standalone matrix is a tile per row - Cohen's d of every ordered pair (left), and a rectangular matrix of sepal
-;; against petal measurements with a user function and its label (right):
+;; A standalone matrix is a [tile](reference.charts_grids_fields.html#tile) per row (`:value-label` writes the
+;; values), two side by side through [`plot/arrange`](reference.facets_arrange.html#arrange). Tiles order the
+;; categories as they first appear and y grows upward, so the scales give both axes the variable order - the first
+;; variable on top, as in `plot/pairs`: Cohen's d of every ordered pair, the diagonal included (left; a signed
+;; statistic on a diverging palette centred on 0), and a rectangular matrix of sepal against petal measurements with
+;; a user function and its label (right):
 
 (plot/render-image (plot/arrange [{:data (pairwise/matrix-rows iris {:variables [:sepal-length :sepal-width :petal-length :petal-width]
-                                                                     :method :cohens-d :triangle :full :diagonal? false})
+                                                                     :method :cohens-d :diagonal? true})
                                    :mapping {:x (comp name :x) :y (comp name :y) :color :value}
                                    :charts [(chart/tile {:value-label true})]
-                                   :scales {:color {:range :RColorBrewer/RdBu :domain [-6 6] :title "Cohen's d"}}}
+                                   :scales {:x {:domain ["sepal-length" "sepal-width" "petal-length" "petal-width"]}
+                                            :y {:domain ["petal-width" "petal-length" "sepal-width" "sepal-length"]}
+                                            :color {:range :RColorBrewer/RdBu :domain [-6 6] :title "Cohen's d"}}}
                                   {:data (pairwise/matrix-rows iris {:x-variables [:sepal-length :sepal-width]
                                                                      :y-variables [:petal-length :petal-width]
                                                                      :method (fn [xs ys] (/ (reduce + xs) (reduce + ys)))

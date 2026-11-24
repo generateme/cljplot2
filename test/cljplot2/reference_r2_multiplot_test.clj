@@ -26,7 +26,7 @@
       (is (= [:columns :rows :widths :heights :align :equal-panels :title :theme] ks))
       (is (every? #(= :arrange (:fragment %)) (take 6 (describe/options #'multiplot/arrange))))))
   (testing "pairs"
-    (is (= [:variables :mapping :lower :upper :diagonal :labels :theme :title]
+    (is (= [:variables :mapping :lower :upper :diagonal :labels :scales :color :theme :title]
            (map :key (describe/options #'multiplot/pairs))))))
 
 (deftest defaults-test
@@ -78,7 +78,7 @@
       {:variables [:a :b] :labels {:a 1}} :labels
       {:variables [:a :b] :mapping {:x 1}} :mapping
       {:variables [:a :b] :columns 2} :columns
-      {:variables [:a :b] :scales {}} :scales)
+      {:variables [:a :b] :scales {:size {}}} :scales)
     (is (= :compute (:key (error #(multiplot/pairs nil {:variables [:a :b] :upper [{:kind :scatter}]})))) "a chart without :compute")
     (is (= :a (:key (error #(multiplot/pairs nil {:variables [:a :b] :labels {:a 1}}))))))
   (testing "nil and {} options pass validation, then fail on the missing variables"

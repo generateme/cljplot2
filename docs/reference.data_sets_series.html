@@ -3504,166 +3504,210 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="pairwisematrix-rows" class="level2" data-number="27.7">
 <h2 data-number="27.7" class="anchored" data-anchor-id="pairwisematrix-rows"><span class="header-section-number">27.7</span> pairwise/matrix-rows</h2>
-<p>A statistic for every pair of variables, a row per cell: the statistic of the x variable’s sample against the y variable’s over their complete rows, with the count of those rows. The built-in statistics:</p>
+<p>A statistic for every pair of variables, a row per cell: the statistic of the x variable’s sample against the y variable’s (<code>:value</code>, <code>nil</code> when it can’t be computed) with the sample size (<code>:n</code>). The built-in statistics by family: <code>:symmetry</code> tells how a value changes when the samples swap (<code>:symmetric</code> - unchanged, <code>:antisymmetric</code> - negated, <code>:reciprocal</code> - inverted, <code>:complementary</code> - <code>1 - v</code>, <code>:asymmetric</code> - otherwise); <code>:samples</code> - paired statistics take the rows where both values are present, independent-sample ones (two groups compared) each variable’s own values; <code>:signed?</code> - zero is the neutral value (a shaded <code>pairwise</code> chart centres its colours on it):</p>
 <div class="data-table">
 <div class="table-responsive">
 <table class="table table-hover clay-table caption-top">
 <thead>
 <tr class="header">
+<th data-quarto-table-cell-role="th">family</th>
 <th data-quarto-table-cell-role="th">method</th>
 <th data-quarto-table-cell-role="th">label</th>
 <th data-quarto-table-cell-role="th">symmetry</th>
 <th data-quarto-table-cell-role="th">samples</th>
+<th data-quarto-table-cell-role="th">signed?</th>
 <th data-quarto-table-cell-role="th">description</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
-<td>:ameasure</td>
-<td>A</td>
-<td>:complementary</td>
-<td>:independent</td>
-<td>Vargha-Delaney A, P(x &gt; y)</td>
-</tr>
-<tr class="even">
-<td>:canberra</td>
-<td>Canberra</td>
-<td>:symmetric</td>
-<td>:paired</td>
-<td>Canberra distance</td>
-</tr>
-<tr class="odd">
-<td>:chebyshev</td>
-<td>Chebyshev</td>
-<td>:symmetric</td>
-<td>:paired</td>
-<td>Chebyshev distance</td>
-</tr>
-<tr class="even">
-<td>:cliffs-delta</td>
-<td>Cliff's δ</td>
-<td>:antisymmetric</td>
-<td>:independent</td>
-<td>P(x &gt; y) - P(x &lt; y), non-parametric</td>
-</tr>
-<tr class="odd">
-<td>:cohens-d</td>
-<td>Cohen's d</td>
-<td>:antisymmetric</td>
-<td>:independent</td>
-<td>standardized mean difference, pooled standard deviation</td>
-</tr>
-<tr class="even">
-<td>:cosine</td>
-<td>Cosine</td>
-<td>:symmetric</td>
-<td>:paired</td>
-<td>cosine similarity</td>
-</tr>
-<tr class="odd">
-<td>:covariance</td>
-<td>Cov</td>
-<td>:symmetric</td>
-<td>:paired</td>
-<td>sample covariance</td>
-</tr>
-<tr class="even">
-<td>:euclidean</td>
-<td>Euclidean</td>
-<td>:symmetric</td>
-<td>:paired</td>
-<td>Euclidean distance</td>
-</tr>
-<tr class="odd">
-<td>:glass-delta</td>
-<td>Glass's Δ</td>
-<td>:asymmetric</td>
-<td>:independent</td>
-<td>mean difference over the standard deviation of ys</td>
-</tr>
-<tr class="even">
-<td>:hedges-g</td>
-<td>Hedges' g</td>
-<td>:antisymmetric</td>
-<td>:independent</td>
-<td>standardized mean difference, unbiased pooled standard deviation</td>
-</tr>
-<tr class="odd">
-<td>:kendall</td>
-<td>Kendall</td>
-<td>:symmetric</td>
-<td>:paired</td>
-<td>Kendall rank correlation (tau)</td>
-</tr>
-<tr class="even">
+<td>:error</td>
 <td>:mae</td>
 <td>MAE</td>
 <td>:symmetric</td>
 <td>:paired</td>
+<td>false</td>
 <td>mean absolute error</td>
 </tr>
-<tr class="odd">
-<td>:manhattan</td>
-<td>Manhattan</td>
-<td>:symmetric</td>
-<td>:paired</td>
-<td>Manhattan distance</td>
-</tr>
 <tr class="even">
+<td>:error</td>
 <td>:mape</td>
 <td>MAPE</td>
 <td>:asymmetric</td>
 <td>:paired</td>
+<td>false</td>
 <td>mean absolute percentage error, relative to xs</td>
 </tr>
 <tr class="odd">
+<td>:error</td>
 <td>:me</td>
 <td>ME</td>
 <td>:antisymmetric</td>
 <td>:paired</td>
+<td>true</td>
 <td>mean error, mean of xs - ys</td>
 </tr>
 <tr class="even">
-<td>:means-ratio</td>
-<td>Means ratio</td>
-<td>:reciprocal</td>
-<td>:independent</td>
-<td>mean of xs over mean of ys</td>
-</tr>
-<tr class="odd">
+<td>:error</td>
 <td>:mse</td>
 <td>MSE</td>
 <td>:symmetric</td>
 <td>:paired</td>
+<td>false</td>
 <td>mean squared error</td>
 </tr>
-<tr class="even">
-<td>:pearson</td>
-<td>Pearson</td>
-<td>:symmetric</td>
-<td>:paired</td>
-<td>Pearson correlation</td>
-</tr>
 <tr class="odd">
+<td>:error</td>
 <td>:r2</td>
 <td>R²</td>
 <td>:asymmetric</td>
 <td>:paired</td>
+<td>false</td>
 <td>coefficient of determination of ys predicting xs</td>
 </tr>
 <tr class="even">
+<td>:error</td>
 <td>:rmse</td>
 <td>RMSE</td>
 <td>:symmetric</td>
 <td>:paired</td>
+<td>false</td>
 <td>root mean squared error</td>
 </tr>
 <tr class="odd">
+<td>:association</td>
+<td>:covariance</td>
+<td>Cov</td>
+<td>:symmetric</td>
+<td>:paired</td>
+<td>true</td>
+<td>sample covariance</td>
+</tr>
+<tr class="even">
+<td>:association</td>
+<td>:kendall</td>
+<td>Kendall</td>
+<td>:symmetric</td>
+<td>:paired</td>
+<td>true</td>
+<td>Kendall rank correlation (tau)</td>
+</tr>
+<tr class="odd">
+<td>:association</td>
+<td>:pearson</td>
+<td>Pearson</td>
+<td>:symmetric</td>
+<td>:paired</td>
+<td>true</td>
+<td>Pearson correlation</td>
+</tr>
+<tr class="even">
+<td>:association</td>
 <td>:spearman</td>
 <td>Spearman</td>
 <td>:symmetric</td>
 <td>:paired</td>
+<td>true</td>
 <td>Spearman rank correlation</td>
+</tr>
+<tr class="odd">
+<td>:effect-size</td>
+<td>:ameasure</td>
+<td>A</td>
+<td>:complementary</td>
+<td>:independent</td>
+<td>false</td>
+<td>Vargha-Delaney A, P(x &gt; y) (ties count half)</td>
+</tr>
+<tr class="even">
+<td>:effect-size</td>
+<td>:cliffs-delta</td>
+<td>Cliff's δ</td>
+<td>:antisymmetric</td>
+<td>:independent</td>
+<td>true</td>
+<td>P(x &gt; y) - P(x &lt; y), non-parametric</td>
+</tr>
+<tr class="odd">
+<td>:effect-size</td>
+<td>:cohens-d</td>
+<td>Cohen's d</td>
+<td>:antisymmetric</td>
+<td>:independent</td>
+<td>true</td>
+<td>standardized mean difference, pooled standard deviation</td>
+</tr>
+<tr class="even">
+<td>:effect-size</td>
+<td>:glass-delta</td>
+<td>Glass's Δ</td>
+<td>:asymmetric</td>
+<td>:independent</td>
+<td>true</td>
+<td>mean difference over the standard deviation of ys</td>
+</tr>
+<tr class="odd">
+<td>:effect-size</td>
+<td>:hedges-g</td>
+<td>Hedges' g</td>
+<td>:antisymmetric</td>
+<td>:independent</td>
+<td>true</td>
+<td>Cohen's d corrected for small-sample bias</td>
+</tr>
+<tr class="even">
+<td>:effect-size</td>
+<td>:means-ratio</td>
+<td>Means ratio</td>
+<td>:reciprocal</td>
+<td>:independent</td>
+<td>false</td>
+<td>mean of xs over mean of ys</td>
+</tr>
+<tr class="odd">
+<td>:distance</td>
+<td>:canberra</td>
+<td>Canberra</td>
+<td>:symmetric</td>
+<td>:paired</td>
+<td>false</td>
+<td>Canberra distance</td>
+</tr>
+<tr class="even">
+<td>:distance</td>
+<td>:chebyshev</td>
+<td>Chebyshev</td>
+<td>:symmetric</td>
+<td>:paired</td>
+<td>false</td>
+<td>Chebyshev distance</td>
+</tr>
+<tr class="odd">
+<td>:distance</td>
+<td>:cosine</td>
+<td>Cosine</td>
+<td>:symmetric</td>
+<td>:paired</td>
+<td>true</td>
+<td>cosine similarity</td>
+</tr>
+<tr class="even">
+<td>:distance</td>
+<td>:euclidean</td>
+<td>Euclidean</td>
+<td>:symmetric</td>
+<td>:paired</td>
+<td>false</td>
+<td>Euclidean distance</td>
+</tr>
+<tr class="odd">
+<td>:distance</td>
+<td>:manhattan</td>
+<td>Manhattan</td>
+<td>:symmetric</td>
+<td>:paired</td>
+<td>false</td>
+<td>Manhattan distance</td>
 </tr>
 </tbody>
 </table>
@@ -3685,7 +3729,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td>:variables</td>
 <td>sequential of keyword (at least 2)</td>
 <td></td>
-<td>the variables of a square matrix (x and y both), in matrix order</td>
+<td>the variables of a square matrix (x and y both, distinct), in matrix order</td>
 </tr>
 <tr class="even">
 <td>:x-variables</td>
@@ -3715,7 +3759,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td>:diagonal?</td>
 <td>true or false</td>
 <td>false</td>
-<td>rows of a variable with itself</td>
+<td>rows of a variable with itself (square matrix)</td>
 </tr>
 <tr class="odd">
 <td>:triangle</td>
@@ -4455,7 +4499,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </table>
 </div>
 </div>
-<p>The lower triangle of a symmetric statistic, the diagonal included:</p>
+<p>The lower triangle of a symmetric statistic, the diagonal included (lower - the y variable after the x variable in variable order, as the lower cells of <code>plot/pairs</code>):</p>
 <div class="data-table">
 <div class="table-responsive">
 <table class="table table-hover clay-table caption-top">
@@ -4463,81 +4507,81 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="header">
 <th data-quarto-table-cell-role="th">x</th>
 <th data-quarto-table-cell-role="th">y</th>
-<th data-quarto-table-cell-role="th">statistic</th>
 <th data-quarto-table-cell-role="th">value</th>
 <th data-quarto-table-cell-role="th">n</th>
+<th data-quarto-table-cell-role="th">statistic</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
 <td>:sepal-length</td>
 <td>:sepal-length</td>
-<td>Spearman</td>
 <td>1.0</td>
 <td>150</td>
+<td>Spearman</td>
 </tr>
 <tr class="even">
 <td>:sepal-length</td>
 <td>:sepal-width</td>
-<td>Spearman</td>
 <td>-0.1667776582832349</td>
 <td>150</td>
+<td>Spearman</td>
 </tr>
 <tr class="odd">
 <td>:sepal-width</td>
 <td>:sepal-width</td>
-<td>Spearman</td>
 <td>1.0</td>
 <td>150</td>
+<td>Spearman</td>
 </tr>
 <tr class="even">
 <td>:sepal-length</td>
 <td>:petal-length</td>
-<td>Spearman</td>
-<td>0.8818981264349858</td>
+<td>0.8818981264349859</td>
 <td>150</td>
+<td>Spearman</td>
 </tr>
 <tr class="odd">
 <td>:sepal-width</td>
 <td>:petal-length</td>
-<td>Spearman</td>
-<td>-0.30963508601557777</td>
+<td>-0.30963508601557765</td>
 <td>150</td>
+<td>Spearman</td>
 </tr>
 <tr class="even">
 <td>:petal-length</td>
 <td>:petal-length</td>
-<td>Spearman</td>
 <td>1.0</td>
 <td>150</td>
+<td>Spearman</td>
 </tr>
 <tr class="odd">
 <td>:sepal-length</td>
 <td>:petal-width</td>
-<td>Spearman</td>
 <td>0.8342887759080054</td>
 <td>150</td>
+<td>Spearman</td>
 </tr>
 <tr class="even">
 <td>:sepal-width</td>
 <td>:petal-width</td>
-<td>Spearman</td>
-<td>-0.2890317486605838</td>
+<td>-0.28903174866058395</td>
 <td>150</td>
+<td>Spearman</td>
 </tr>
 <tr class="odd">
 <td>:petal-length</td>
 <td>:petal-width</td>
-<td>Spearman</td>
 <td>0.9376668235763418</td>
 <td>150</td>
+<td>Spearman</td>
 </tr>
 <tr class="even">
 <td>:petal-width</td>
 <td>:petal-width</td>
-<td>Spearman</td>
 <td>1.0</td>
 <td>150</td>
+<td>Spearman</td>
 </tr>
 </tbody>
 </table>
@@ -4551,39 +4595,41 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="header">
 <th data-quarto-table-cell-role="th">x</th>
 <th data-quarto-table-cell-role="th">y</th>
-<th data-quarto-table-cell-role="th">statistic</th>
 <th data-quarto-table-cell-role="th">value</th>
 <th data-quarto-table-cell-role="th">n</th>
+<th data-quarto-table-cell-role="th">statistic</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
 <td>:petal-length</td>
 <td>:sepal-length</td>
-<td>MSE</td>
 <td>5.593600000000002</td>
 <td>150</td>
+<td>MSE</td>
 </tr>
 </tbody>
 </table>
 </div>
 </div>
-<p>A standalone matrix is a tile per row - Cohen’s d of every ordered pair (left), and a rectangular matrix of sepal against petal measurements with a user function and its label (right):</p>
+<p>A standalone matrix is a <a href="reference.charts_grids_fields.html#tile">tile</a> per row (<code>:value-label</code> writes the values), two side by side through <a href="reference.facets_arrange.html#arrange"><code>plot/arrange</code></a>. Tiles order the categories as they first appear and y grows upward, so the scales give both axes the variable order - the first variable on top, as in <code>plot/pairs</code>: Cohen’s d of every ordered pair, the diagonal included (left; a signed statistic on a diverging palette centred on 0), and a rectangular matrix of sepal against petal measurements with a user function and its label (right):</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> (pairwise/matrix-rows iris {<span class="at">:variables</span> [<span class="at">:sepal-length</span> <span class="at">:sepal-width</span> <span class="at">:petal-length</span> <span class="at">:petal-width</span>]</span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>                                                                     <span class="at">:method</span> <span class="at">:cohens-d</span> <span class="at">:triangle</span> <span class="at">:full</span> <span class="at">:diagonal</span>? <span class="va">false</span>})</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>                                                                     <span class="at">:method</span> <span class="at">:cohens-d</span> <span class="at">:diagonal</span>? <span class="va">true</span>})</span>
 <span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> (<span class="kw">comp</span> <span class="kw">name</span> <span class="at">:x</span>) <span class="at">:y</span> (<span class="kw">comp</span> <span class="kw">name</span> <span class="at">:y</span>) <span class="at">:color</span> <span class="at">:value</span>}</span>
 <span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/tile {<span class="at">:value-label</span> <span class="va">true</span>})]</span>
-<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:range</span> <span class="at">:RColorBrewer/RdBu</span> <span class="at">:domain</span> [-<span class="dv">6</span> <span class="dv">6</span>] <span class="at">:title</span> <span class="st">"Cohen's d"</span>}}}</span>
-<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> (pairwise/matrix-rows iris {<span class="at">:x-variables</span> [<span class="at">:sepal-length</span> <span class="at">:sepal-width</span>]</span>
-<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>                                                                     <span class="at">:y-variables</span> [<span class="at">:petal-length</span> <span class="at">:petal-width</span>]</span>
-<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>                                                                     <span class="at">:method</span> (<span class="kw">fn</span> [xs ys] (<span class="kw">/</span> (<span class="kw">reduce</span> <span class="kw">+</span> xs) (<span class="kw">reduce</span> <span class="kw">+</span> ys)))</span>
-<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>                                                                     <span class="at">:label</span> <span class="st">"sum ratio"</span>})</span>
-<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> (<span class="kw">comp</span> <span class="kw">name</span> <span class="at">:x</span>) <span class="at">:y</span> (<span class="kw">comp</span> <span class="kw">name</span> <span class="at">:y</span>) <span class="at">:color</span> <span class="at">:value</span>}</span>
-<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/tile {<span class="at">:value-label</span> <span class="va">true</span>})]</span>
-<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:title</span> <span class="st">"sum ratio"</span>}}}]</span>
-<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">2</span>})</span>
-<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">400</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:scales</span> {<span class="at">:x</span> {<span class="at">:domain</span> [<span class="st">"sepal-length"</span> <span class="st">"sepal-width"</span> <span class="st">"petal-length"</span> <span class="st">"petal-width"</span>]}</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>                                            <span class="at">:y</span> {<span class="at">:domain</span> [<span class="st">"petal-width"</span> <span class="st">"petal-length"</span> <span class="st">"sepal-width"</span> <span class="st">"sepal-length"</span>]}</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>                                            <span class="at">:color</span> {<span class="at">:range</span> <span class="at">:RColorBrewer/RdBu</span> <span class="at">:domain</span> [-<span class="dv">6</span> <span class="dv">6</span>] <span class="at">:title</span> <span class="st">"Cohen's d"</span>}}}</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> (pairwise/matrix-rows iris {<span class="at">:x-variables</span> [<span class="at">:sepal-length</span> <span class="at">:sepal-width</span>]</span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>                                                                     <span class="at">:y-variables</span> [<span class="at">:petal-length</span> <span class="at">:petal-width</span>]</span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>                                                                     <span class="at">:method</span> (<span class="kw">fn</span> [xs ys] (<span class="kw">/</span> (<span class="kw">reduce</span> <span class="kw">+</span> xs) (<span class="kw">reduce</span> <span class="kw">+</span> ys)))</span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>                                                                     <span class="at">:label</span> <span class="st">"sum ratio"</span>})</span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> (<span class="kw">comp</span> <span class="kw">name</span> <span class="at">:x</span>) <span class="at">:y</span> (<span class="kw">comp</span> <span class="kw">name</span> <span class="at">:y</span>) <span class="at">:color</span> <span class="at">:value</span>}</span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/tile {<span class="at">:value-label</span> <span class="va">true</span>})]</span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:title</span> <span class="st">"sum ratio"</span>}}}]</span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">2</span>})</span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">400</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="clay-image">
 <p><img src="reference.data_sets_series_files/image4.png" class="img-fluid"></p>

@@ -479,6 +479,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#marks" id="toc-marks" class="nav-link" data-scroll-target="#marks"><span class="header-section-number">21.2.2</span> Marks</a></li>
   </ul></li>
   <li><a href="#surface" id="toc-surface" class="nav-link" data-scroll-target="#surface"><span class="header-section-number">21.3</span> surface</a></li>
+  <li><a href="#scatter-plot-matrix" id="toc-scatter-plot-matrix" class="nav-link" data-scroll-target="#scatter-plot-matrix"><span class="header-section-number">21.4</span> Scatter-plot matrix</a></li>
   </ul>
 </nav>
     </div>
@@ -516,7 +517,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </style>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js" type="text/javascript"></script>
 <script src="https://code.jquery.com/ui/1.13.1/jquery-ui.min.js" type="text/javascript"></script>
-<p>Many variables at once: a line per row across one axis per variable (<code>parallel</code>, a radar in polar coordinates), points in a 3D box (<code>cloud</code>) and surfaces over a grid (<code>surface</code>). Each chart lists the mapping keys it reads, its own options and the shared option groups it takes (documented once in the Shared options chapter).</p>
+<p>Many variables at once: a line per row across one axis per variable (<code>parallel</code>, a radar in polar coordinates), points in a 3D box (<code>cloud</code>), surfaces over a grid (<code>surface</code>), and a matrix of plots of every pair of variables (scatter-plot matrix, at the end). Each chart lists the mapping keys it reads, its own options and the shared option groups it takes (documented once in the Shared options chapter).</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">ns</span> reference.charts-multivariate<span class="dv">-3</span>d</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  (<span class="at">:require</span> [cljplot2.chart <span class="at">:as</span> chart]</span>
@@ -3360,6 +3361,30 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><img src="reference.charts_multivariate_3d_files/image14.png" class="img-fluid"></p>
 </div>
 <p>Shared options: <a href="reference.shared_options.html#data-and-mapping">Data and mapping</a> (<code>:data</code> <code>:mapping</code>); <a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> (<code>:theme-style</code>); <a href="reference.shared_options.html#d-frame">3D frame</a> (<code>:view</code> <code>:aspect</code> <code>:box</code> <code>:axes</code> <code>:axis-titles</code> <code>:domain</code> <code>:reverse</code>); <a href="reference.shared_options.html#d-shading">3D shading</a> (<code>:ambient</code> <code>:light</code>).</p>
+</section>
+<section id="scatter-plot-matrix" class="level2" data-number="21.4">
+<h2 data-number="21.4" class="anchored" data-anchor-id="scatter-plot-matrix"><span class="header-section-number">21.4</span> Scatter-plot matrix</h2>
+<p>Not a chart but a matrix of plots of the charts above and on the other pages: <a href="reference.facets_arrange.html#scatter-plot-matrix"><code>plot/pairs</code></a> gives every pair of <code>:variables</code> a cell. By default a scatter plot below the diagonal (<code>:lower</code>), the correlation as text above it (<code>:upper</code>) and a density on it (<code>:diagonal</code>):</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/pairs iris {<span class="at">:variables</span> [<span class="at">:sepal-length</span> <span class="at">:sepal-width</span> <span class="at">:petal-length</span> <span class="at">:petal-width</span>]</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>                                     <span class="at">:mapping</span> {<span class="at">:color</span> <span class="at">:species</span>}})</span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">700</span> <span class="at">:height</span> <span class="dv">620</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.charts_multivariate_3d_files/image15.png" class="img-fluid"></p>
+</div>
+<p>A slot takes one chart, a vector of charts (layered in each cell) or <code>nil</code> (empty cells); <code>:diagonal :names</code> writes the variable’s name in the diagonal cell instead:</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb23"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/pairs iris {<span class="at">:variables</span> [<span class="at">:sepal-length</span> <span class="at">:sepal-width</span> <span class="at">:petal-length</span>]</span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>                                     <span class="at">:lower</span> [(chart/scatter {<span class="at">:size</span> <span class="dv">4</span>}) (chart/smooth {<span class="at">:method</span> <span class="at">:lm</span>})]</span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>                                     <span class="at">:upper</span> <span class="va">nil</span></span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>                                     <span class="at">:diagonal</span> <span class="at">:names</span></span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>                                     <span class="at">:title</span> <span class="st">"scatter and a linear fit below, empty above"</span>})</span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">600</span> <span class="at">:height</span> <span class="dv">560</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.charts_multivariate_3d_files/image16.png" class="img-fluid"></p>
+</div>
 <div style="background-color:grey;height:2px;width:100%;"></div>
 <div><pre><small><small>source: notebooks/reference/charts_multivariate_3d.clj</small></small></pre></div>
 

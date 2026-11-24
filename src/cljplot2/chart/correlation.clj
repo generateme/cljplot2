@@ -28,16 +28,15 @@
   `:none` or `:darker`), `:stroke-width`, `:method`, `:glyph`, `:glyph-size` (default 0.9 - the glyph's side as a
   fraction of the panel's shorter side).
 
-  Functions: [[r]] - the coefficient of two samples; [[computed-aesthetics]] - the computed color; [[compute]], [[draw]], [[legend]] - the chart contract."
+  Functions: [[method-labels]] - the coefficient labels; [[computed-aesthetics]] - the computed color; [[compute]], [[draw]], [[legend]] - the chart contract. r is [[cljplot2.data.pairwise/statistic-value]] of the paired samples (shared cell parts: [[cljplot2.chart.statistic-cell]])."
   (:require [clojure2d.core :as c2d]
             [fastmath.core :as m]
-            [fastmath.stats :as stats]
+            [cljplot2.chart.statistic-cell :as cell]
             [cljplot2.content.label :as label]
             [cljplot2.data.group :as group]
             [cljplot2.data.pairwise :as pairwise]
             [cljplot2.data.rows :as data]
             [cljplot2.graphics.draw :as draw]
-            [cljplot2.scale.aesthetic :as aesthetic]
             [cljplot2.schema :as schema]
             [cljplot2.theme :as theme]))
 
@@ -84,13 +83,6 @@
                      (schema/nilable :color {:description "categorical groups, each a line of the :number glyph in its colour"} schema/accessor)
                      (schema/nilable :group {:description "groups without a visual aesthetic, each a line of the :number glyph"} schema/accessor)]]})
 
-(defn- grouped?
-  "Tests whether a mapping groups the chart: an ordinal aesthetic or `:group` (see [[cljplot2.data.group/group-dims]]).
-
-  Returns the grouping dimensions (truthy), else `nil`."
-  [mapping]
-  (seq (group/group-dims mapping)))
-
 (defn computed-aesthetics
   "Gives the correlation chart's computed aesthetics.
 
@@ -99,86 +91,15 @@
   - `options` (map): the chart's options.
   - `mapping` (map): the merged mapping.
 
-  Returns `{:color {:title r :range :RColorBrewer/RdBu}}` - r on a diverging palette, with its colour bar; `{}` when a fixed `:color`, the `:number` glyph or a mapped aesthetic (the plot's colour then belongs to the mapping) colours the glyphs."
+  Returns `{:color {:title r :range range}}` - r on the diverging palette [[cljplot2.chart.statistic-cell/diverging-range]], with its colour bar; `{}` when a fixed `:color`, the `:number` glyph or a mapped aesthetic (the plot's colour then belongs to the mapping) colours the glyphs (see [[cljplot2.chart.statistic-cell/colored-by-value?]])."
   [options mapping]
-  (if (or (:color options) (= :number (get options :glyph :number)) (grouped? mapping))
-    {}
-    {:color {:title "r" :range :RColorBrewer/RdBu}}))
+  (if (cell/colored-by-value? options mapping)
+    {:color {:title "r" :range cell/diverging-range}}
+    {}))
 
 (def method-labels
   "Label of the coefficient of each `:method`."
   {:pearson "Corr" :spearman "Spearman" :kendall "Kendall"})
-
-(defn r
-  "Computes the correlation coefficient of two samples.
-
-  Parameters:
-
-  - `method` (keyword): `:pearson` (any other value), `:spearman` or `:kendall`.
-  - `xs`, `ys` (sequences of doubles): the paired samples, of equal length.
-
-  Returns the coefficient in `[-1 1]`; `##NaN` for fewer than 2 points or a sample without spread.
-
-  See also [[compute]]."
-  ^double [method xs ys]
-  (if (m/< (count xs) 2)
-    ##NaN
-    (let [v (double (case method
-                      :spearman (stats/spearman-correlation xs ys)
-                      :kendall (stats/kendall-correlation xs ys)
-                      (stats/pearson-correlation xs ys)))]
-      (if (m/valid-double? v) v ##NaN))))
-
-(defn computed-aesthetics
-  "Gives the correlation chart's computed aesthetics.
-
-  Parameters:
-
-  - `options` (map): the chart's options.
-  - `mapping` (map): the merged mapping.
-
-  Returns `{:color {:title r :range :RColorBrewer/RdBu}}` - r on a diverging palette, with its colour bar; `{}` when a fixed `:color`, the `:number` glyph or a mapped aesthetic (the plot's colour then belongs to the mapping) colours the glyphs."
-  [options mapping]
-  (if (or (:color options) (= :number (get options :glyph :number)) (grouped? mapping))
-    {}
-    {:color {:title "r" :range :RColorBrewer/RdBu}}))
-
-(def method-labels
-  "Label of the coefficient of each `:method`."
-  {:pearson "Corr" :spearman "Spearman" :kendall "Kendall"})
-
-(defn r
-  "Computes the correlation coefficient of two samples.
-
-  Parameters:
-
-  - `method` (keyword): `:pearson` (any other value), `:spearman` or `:kendall`.
-  - `xs`, `ys` (sequences of doubles): the paired samples, of equal length.
-
-  Returns the coefficient in `[-1 1]`; `##NaN` for fewer than 2 points or a sample without spread.
-
-  See also [[compute]]."
-  ^double [method xs ys]
-  (if (m/< (count xs) 2)
-    ##NaN
-    (let [v (double (case method
-                      :spearman (stats/spearman-correlation xs ys)
-                      :kendall (stats/kendall-correlation xs ys)
-                      (stats/pearson-correlation xs ys)))]
-      (if (m/valid-double? v) v ##NaN))))
-
-(defn- pairs-of
-  "Gives the paired samples of rows.
-
-  Parameters:
-
-  - `rows` (sequence): the panel's (or group's) rows.
-  - `x-of`, `y-of` (functions): the row accessors of x and y.
-
-  Returns `[xs ys]`, vectors of doubles of the rows with a finite x and y."
-  [rows x-of y-of]
-  (let [ps (filterv (fn [[x y]] (and (schema/finite? x) (schema/finite? y))) (map (juxt x-of y-of) rows))]
-    [(mapv #(double (first %)) ps) (mapv #(double (second %)) ps)]))
 
 (defn compute
   "Computes the correlation chart's stats: r of every panel, and of its groups when grouped.
@@ -189,27 +110,22 @@
   - `split` (map): `:groups` (`{panel rows}`), `:mapping` (merged; `:x`, `:y`, grouping aesthetics).
   - `env` (map): `:theme`, `:plot-scales` and grouping settings.
 
-  Returns per panel `{:r r :groups [{:aesthetics a :r r} ..] :glyph g :glyph-size s :method m :by-r? b :style st :text-color c}`; no x / y extents, color extent [-1 1] when colored by r, the groups' aesthetic extents when grouped; `:na`, `:dropped` (`:x`, `:y`).
+  Returns per panel `{:r r :groups [{:aesthetics a :value r} ..] :glyph g :glyph-size s :method m :by-r? b :style st :text-color c}`; no x / y extents, color extent [-1 1] when colored by r, the groups' aesthetic extents when grouped; `:na`, `:dropped` (`:x`, `:y`).
 
-  See also [[r]]."
+  See also [[cljplot2.data.pairwise/statistic-value]] (r is its `:pearson`, `:spearman` or `:kendall`)."
   [{:keys [options] :as chart} {:keys [groups mapping]} {:keys [theme plot-scales] :as env}]
   (let [method (get options :method :pearson)
         glyph (get options :glyph :number)
         x-of (data/row-accessor :x (:x mapping))
         y-of (data/row-accessor :y (:y mapping))
-        ;; groups: ordinal aesthetics and :group only - a continuous color colors other charts' marks
-        continuous (group/continuous-color groups mapping env)
-        grouping (if continuous (:mapping continuous) mapping)
-        grouped (grouped? grouping)
-        split (when grouped (group/split groups grouping env))
-        by-r? (contains? (computed-aesthetics options mapping) :color)
-        all-rows (mapcat val groups)
+        {:keys [grouped split]} (cell/grouping groups mapping env)
+        by-r? (cell/colored-by-value? options mapping)
         st (theme/resolved-style theme chart)
-        rows-r (fn [rows-of] (let [[xs ys] (pairwise/pair-samples rows-of x-of y-of)] (r method xs ys)))]
+        rows-r (fn [rows-of] (let [[xs ys] (pairwise/pair-samples rows-of x-of y-of)] (pairwise/statistic-value method xs ys)))]
     {:data (into {} (map (fn [[panel panel-rows]]
                            [panel {:r (rows-r panel-rows)
                                    :groups (when grouped
-                                             (mapv (fn [{:keys [aesthetics] group-rows :rows}] {:aesthetics aesthetics :r (rows-r group-rows)})
+                                             (mapv (fn [{:keys [aesthetics] group-rows :rows}] {:aesthetics aesthetics :value (rows-r group-rows)})
                                                    (get-in split [:panels panel])))
                                    :glyph glyph
                                    :glyph-size (get options :glyph-size default-glyph-size)
@@ -224,8 +140,7 @@
                                        grouped (merge (get (group/aesthetic-extents (:panels split) plot-scales) panel)))]))
                     (keys groups))
      :na (if grouped (group/na-dims (:panels split)) #{})
-     :dropped {:x (count (remove (comp schema/finite? x-of) all-rows))
-               :y (count (remove (comp schema/finite? y-of) all-rows))}}))
+     :dropped (cell/dropped (mapcat val groups) mapping)}))
 
 ;; drawing
 
@@ -233,23 +148,6 @@
   "Gives the text of a coefficient: 2 decimals, `NA` for `##NaN`."
   [^double v]
   (if (m/nan? v) "NA" (format "%.2f" v)))
-
-(defn- glyph-color
-  "Gives the fill of a glyph.
-
-  Parameters:
-
-  - `coefficient` (double): the panel's r.
-  - `computed` (map): the panel's stats - `:by-r?`, `:style`.
-  - `scales` (map): the panel's scales (`:color` when coloured by r).
-  - `env` (map): the drawing environment (the theme's NA colour).
-
-  Returns r's colour through the colour scale when coloured by r (`nil` for `##NaN` or a value outside the scale - nothing drawn), else the style's `:color`."
-  [^double coefficient {:keys [by-r? style]} scales env]
-  (if by-r?
-    (when-not (m/nan? coefficient)
-      ((aesthetic/attribute-fn :color (:color scales) (get-in env [:theme :palette :na])) coefficient))
-    (:color style)))
 
 (defn- outline!
   "Draws a glyph's outline.
@@ -323,11 +221,9 @@
 
   Each group's line in its group's colour; a group whose aesthetics fall outside their scales gets no line."
   [canvas {:keys [method text-color] panel-r :r panel-groups :groups} {:keys [w h]} scales env]
-  (let [lines (into [{:text (str (method-labels method) ": " (number-text panel-r)) :color text-color}]
-                    (keep (fn [{:keys [aesthetics] group-r :r}]
-                            (when-let [st (group/style {:color :black} aesthetics scales (:theme env))]
-                              {:text (str (or (some-> (first (vals aesthetics)) str) "NA") ": " (number-text group-r)) :color (:color st)})))
-                    panel-groups)]
+  (let [lines (cell/value-lines {:text (str (method-labels method) ": " (number-text panel-r)) :color text-color}
+                                panel-groups number-text
+                                (draw/text-color (:theme env) :correlation (draw/plot-backdrop (:theme env))) scales env)]
     (draw-text-lines! canvas lines (str (method-labels method) ": -0.00") {:w w :h h} env)))
 
 (defn draw
@@ -347,7 +243,7 @@
   (let [cx (m/* 0.5 w)
         cy (m/* 0.5 h)
         side (m/* glyph-size (m/min w h))
-        fill (glyph-color coefficient computed scales env)]
+        fill (cell/value-fill coefficient (:by-r? computed) (:color style) scales env)]
     (if (and (m/nan? coefficient) (not= glyph :number))
       (draw-text-lines! canvas [{:text "NA"}] "NA" box env)
       (case glyph
@@ -372,15 +268,6 @@
                  (when (m/pos? extent) (sector! false))
                  (outline! canvas #(c2d/ellipse canvas cx cy side side %) fill style)))))))
 
-(defn legend
-  "Draws the key glyph of a grouped chart: a filled square in the key's colour.
-
-  Parameters:
-
-  - `_chart`: the chart value (unused).
-  - `attributes` (map): the legend entry's attributes (`:color`).
-  - `canvas`: the legend's canvas.
-  - `box` (map): the key box.
-  - `_env`: unused."
-  [_chart attributes canvas box _env]
-  (draw/bar-key! canvas box {:color (:color attributes) :stroke-width 0} false))
+(def legend
+  "Draws the key glyph of a grouped chart: a filled square in the key's colour (see [[cljplot2.chart.statistic-cell/legend]])."
+  cell/legend)

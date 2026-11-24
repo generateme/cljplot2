@@ -6,6 +6,7 @@
             [cljplot2.test-util :refer [error]]
             [cljplot2.chart :as chart]
             [cljplot2.chart.correlation :as correlation]
+            [cljplot2.data.pairwise :as pairwise]
             [cljplot2.core :as plot]
             [cljplot2.layout.grid :as grid]
             [cljplot2.scale.aesthetic :as aesthetic])
@@ -34,14 +35,14 @@
 (deftest r-test
   (testing "1.1 r of each method equals fastmath"
     (let [xs (mapv :a cloud) ys (mapv :b cloud)]
-      (are [method f] (m/delta-eq (f xs ys) (correlation/r method xs ys))
+      (are [method f] (m/delta-eq (f xs ys) (pairwise/statistic-value method xs ys))
         :pearson stats/pearson-correlation
         :spearman stats/spearman-correlation
         :kendall stats/kendall-correlation)))
   (testing "1.1 fewer than 2 points or a constant variable: NaN"
-    (is (m/nan? (correlation/r :pearson [1.0] [2.0])))
-    (is (m/nan? (correlation/r :pearson [] [])))
-    (is (m/nan? (correlation/r :spearman [1.0 1.0 1.0] [1.0 2.0 3.0]))))
+    (is (m/nan? (pairwise/statistic-value :pearson [1.0] [2.0])))
+    (is (m/nan? (pairwise/statistic-value :pearson [] [])))
+    (is (m/nan? (pairwise/statistic-value :spearman [1.0 1.0 1.0] [1.0 2.0 3.0]))))
   (testing "1.1 per panel and per group; invalid rows dropped and counted"
     (let [s (stats {:data (conj cloud {:a nil :b 1} {:a 1 :b ##NaN}) :mapping {:x :a :y :b :color :g} :charts [(chart/correlation)]})
           d (get-in s [:data :panel])]

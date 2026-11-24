@@ -66,11 +66,14 @@ charts don't validate their own input.
   each not overlapping one drawn (`measure/kept-label-indices` along an axis, `measure/kept-box-indices` for boxes).
   Axes and polar guides draw them all for a scale with `:overlapping-labels :keep` or explicit `:ticks` (without
   `:drop`); colour bars for explicit `:ticks`; 3D frames always thin (no scale spec).
-- Pairwise statistics: the registry `cljplot2.data.pairwise/statistics` (fastmath functions with labels, symmetry,
-  paired or independent samples) serves `chart/pairwise` (one statistic per panel, cells of `plot/pairs`) and
-  `pairwise/matrix-rows` (a standalone matrix is `chart/tile` over its rows); pairs are pairwise-complete rows, a
-  value that can't be computed is `##NaN`. Values have no fixed range, so `pairs` gives every `pairwise` chart without
-  `:domain` the range of its statistic over the whole matrix (`pairwise/with-shared-domain`).
+- Pairwise statistics: the registry `cljplot2.data.pairwise/statistics` (fastmath functions with labels, families,
+  symmetry, paired or independent samples, `:signed?`) serves `chart/pairwise` and `chart/correlation` (one
+  statistic per panel, cells of `plot/pairs`; shared cell parts in `cljplot2.chart.statistic-cell`) and
+  `pairwise/matrix-rows` (a standalone matrix is `chart/tile` over its rows). A cell is always f(x sample, y sample) -
+  in `pairs` f(column variable, row variable). Paired statistics take pairwise-complete rows, independent-sample ones
+  each variable's own values. Values have no fixed range: `pairs` computes a value-coloured statistic once and gives
+  the cells colouring by it its range as `[:scales :color :domain]` (`cljplot2.chart.pairwise/matrix-settings`; a
+  matrix has one colour bar - two shaded statistics are an error); signed statistics use a diverging range centred on 0.
 - Text drawn over a fill takes its colour from its text role through `draw/text-color` (role `:color` `:contrast` -
   black or white by the fill; never a hard-coded contrast colour), so a theme colour always wins.
 

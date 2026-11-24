@@ -159,6 +159,8 @@
        (schema/nilable :labels {:description "display names of the variables, {variable text}"
                                 :cljplot2/default-doc "the variable's name"}
                        [:map-of keyword? string?])
+       (schema/nilable :scales {:description "the colour scale of every cell that colours (one colour bar), {:color spec}; its :domain wins over the matrix's computed one"}
+                       [:map {:closed true} (schema/optional :color {:description "the colour scale spec"} (aesthetic/scale-spec-schema :color))])
        (schema/nilable :theme {:description "theme of every cell and of the matrix (a [:plot :margin] or [:multiplot :gap] given wins over the cells' facet-like spacing)"}
                        any?)]
       (into (builder-entries-of [:title]))))
@@ -175,6 +177,7 @@
     - `:lower` / `:upper` - charts below / above the diagonal: a chart, a vector of charts, `nil` (an empty cell); defaults `(chart/scatter)` and `(chart/correlation {:glyph :number})`;
     - `:diagonal` - charts of the diagonal cells (x - the variable, y their own magnitude scale with its axis hidden), default `(chart/density)`; `:names` - the variable's name in the middle of the cell (text role `:pairs-name`);
     - `:labels` - `{variable text}`, display names (default the variable's name);
+    - `:scales` - `{:color spec}`, the colour scale of every cell that colours (a mapped or computed colour), so the matrix has one colour bar; its `:domain` wins over a computed one;
     - `:theme` - every cell's and the matrix's theme (cells have no plot margin and are `[:facet :gap]` apart, as facet panels; a `[:plot :margin]` / `[:multiplot :gap]` in `:theme` wins);
     - `:title` - a title above the matrix.
 
@@ -194,14 +197,15 @@
   Equivalents: GGally `ggpairs` - the defaults (scatter below, correlation text above - per group when grouped -,
   density on the diagonal); R `corrgram` / `pairs` panel functions - `chart/correlation` glyphs in `:lower` / `:upper`
   (`:shade`, `:pie`, `:ellipse`, ...) with `:diagonal :names`. Other statistics (errors, effect sizes, distances, a
-  user function) are `chart/pairwise` cells: a lower cell shows the statistic of the column variable against the row
-  variable, an upper cell the reverse, and a `pairwise` chart without `:domain` gets the range of its statistic over the
-  whole matrix, so every cell and the colour bar share one domain (see
-  [[cljplot2.chart.pairwise/with-shared-domain]]; the legend column has one colour bar, so shade one statistic per
-  matrix). A matrix as a heatmap (one tile per pair) is `chart/tile` over
+  user function) are `chart/pairwise` cells: every cell shows the statistic of its column variable against its row
+  variable, so the mirrored cell of an asymmetric statistic shows the reverse order. A value-coloured `pairwise`
+  statistic is computed once over its cells, and every cell colouring by it gets its range as the colour domain (symmetric
+  around 0 for a signed statistic), so the cells and the one colour bar agree; pairwise cells share one text size (see
+  [[cljplot2.chart.pairwise/matrix-settings]]). The lower and upper charts colour by one statistic at most - a matrix
+  has one colour bar (else an error keyed `:upper`). A matrix as a heatmap (one tile per pair) is `chart/tile` over
   [[cljplot2.data.pairwise/matrix-rows]] (or `fastmath.stats/correlation-matrix` rows) instead."
   {:cljplot2/options pairs-options}
-  [data {:keys [mapping labels theme title] variable-keys :variables lower-slot :lower upper-slot :upper diagonal-slot :diagonal
+  [data {:keys [mapping labels theme title] matrix-scales :scales variable-keys :variables lower-slot :lower upper-slot :upper diagonal-slot :diagonal
          :or {lower-slot ::default upper-slot ::default diagonal-slot ::default} :as options}]
   (let [_ (schema/check-options! pairs-options options)
         variables (vec variable-keys)
@@ -211,10 +215,16 @@
         rows (data/rows data)
         domains (variable-domains rows variables)
         name-of (fn [k] (get labels k (name k)))
-        ;; pairwise charts share the colour domain of the whole matrix (their values have no fixed range)
-        shared-domain (fn [charts] (mapv #(pairwise/with-shared-domain % rows variables) charts))
-        lower (shared-domain (if (= ::default lower-slot) [(chart/scatter)] (slot-charts lower-slot)))
-        upper (shared-domain (if (= ::default upper-slot) [(chart/correlation {:glyph :number})] (slot-charts upper-slot)))
+        pair-mapping (assoc mapping :x (variables 1) :y (variables 0))
+        ;; pairwise charts share the matrix's colour domain (their values have no fixed range) and one text size
+        settings (pairwise/matrix-settings {:lower (if (= ::default lower-slot) [(chart/scatter)] (slot-charts lower-slot))
+                                            :upper (if (= ::default upper-slot) [(chart/correlation {:glyph :number})] (slot-charts upper-slot))}
+                                           rows variables pair-mapping)
+        lower (get-in settings [:slots :lower])
+        upper (get-in settings [:slots :upper])
+        color-scale (merge (when-let [d (:domain settings)] {:domain d}) (:color matrix-scales))
+        colors? (fn [charts cell-mapping] (or (some? (:color cell-mapping))
+                                              (some #(contains? (aesthetic/computed-aesthetics % cell-mapping) :color) charts)))
         diagonal (if (= ::default diagonal-slot) [(chart/density)] diagonal-slot)
         mapped? (seq (aesthetic/mapped-dims mapping))
         ;; aesthetics with continuous values (e.g. a numeric :color) color marks without grouping: left out on the
@@ -223,7 +233,6 @@
                                          (and (seq vs) (every? number? vs) (not (accessor/categorical? (mapping k))))))
                                 (aesthetic/mapped-dims mapping)))
         diagonal-mapping (apply dissoc mapping continuous)
-        pair-mapping (assoc mapping :x (variables 1) :y (variables 0))
         ;; the legend column: the mapped aesthetics (keys / color bars of the lower charts), else the colors the cell
         ;; charts compute (r color bars)
         legend-charts (cond
@@ -258,9 +267,12 @@
                    (and diag? (or names? (empty? charts))) (assoc-in [:scales :y] {:domain [0 1] :expand [0.0 0.0] :axis (axis left?)
                                                                                    :axis-domain (domains vx)})
                    names? (update :mapping dissoc :y)
+                   (and (seq color-scale) (colors? charts (if diag? (assoc diagonal-mapping :x vx) (assoc mapping :x vx :y vy))))
+                   (assoc-in [:scales :color] color-scale)
                    true (assoc :theme cell-theme))))
         legend-cell (fn [^long i] (cond-> {:legend-only true :theme cell-theme}
-                                   (m/zero? i) (assoc :data rows :mapping pair-mapping :charts legend-charts)))
+                                   (m/zero? i) (assoc :data rows :mapping pair-mapping :charts legend-charts)
+                                   (and (m/zero? i) (seq color-scale) (colors? legend-charts pair-mapping)) (assoc :scales {:color color-scale})))
         plots (vec (for [^long i (range n)
                          ^long j (range (if legend? n+ n))]
                      (if (m/== j n) (legend-cell i) (cell i j))))]

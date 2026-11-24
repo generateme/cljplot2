@@ -364,7 +364,8 @@
                                  {:columns 4})
                    {:width 1000 :height 280})
 
-;; In a correlogram:
+;; In a correlogram - a [`plot/pairs`](reference.facets_arrange.html#scatter-plot-matrix) matrix with correlation
+;; glyphs below (`:lower`) and above (`:upper`) the diagonal, and the variables' names on it (`:diagonal :names`):
 
 (plot/render-image (plot/pairs iris {:variables [:sepal-length :sepal-width :petal-length :petal-width]
                                      :lower (chart/correlation {:glyph :ellipse :stroke-color :none})
@@ -377,8 +378,9 @@
 
 ;; ## pairwise
 
-;; Any statistic of two variables drawn as one cell filling the panel - an error, an association, an effect size,
-;; a distance (the keys of `cljplot2.data.pairwise/statistics`) or a function of the two samples. Unlike r the
+;; Any statistic of two variables drawn as one cell filling the panel: an error, an association, an effect size,
+;; a distance (the keys of `cljplot2.data.pairwise/statistics`, listed with `pairwise/matrix-rows` in the Data
+;; functions part) or a function of the two samples - always of the x sample against the y sample. Unlike r the
 ;; values have no fixed range. Alone it writes the value, one line per group.
 
 (nu/options-table (describe/mapping (chart/pairwise)))
@@ -388,41 +390,45 @@
                     :charts [(chart/pairwise {:method :cohens-d})]}
                    {:width 450 :height 300})
 
-;; Its options: the statistic and its label, the glyph, the colour domain and the number format (by default the
-;; value on the colour scale over the panels' range):
+;; Its options: the statistic and its label, the glyph (by default `:number` - the text alone; a shade colours the
+;; value on the colour scale over the panels' range, symmetric around 0 on a diverging palette for a signed
+;; statistic), and the number format:
 
 (nu/options-table (describe/own-rows (describe/options (chart/pairwise))))
 
-;; The glyphs for one pair (the mean absolute error of sepal against petal length), a user function with its label
-;; and format, and one fixed colour:
+;; The glyphs for one pair (sepal against petal length): the mean absolute error as text, shaded and both, the signed
+;; mean error shaded on the diverging palette, a user function with its label and format, and one fixed colour (the
+;; text over a shade is black or white by the fill):
 
 (plot/render-image (plot/arrange [{:data iris :mapping {:x :sepal-length :y :petal-length}
-                                   :charts [(chart/pairwise {:method :mae :glyph :number})] :labels {:title ":glyph :number"}}
+                                   :charts [(chart/pairwise {:method :mae :glyph :number})] :labels {:title ":number"}}
                                   {:data iris :mapping {:x :sepal-length :y :petal-length}
-                                   :charts [(chart/pairwise {:method :mae :glyph :shade :domain [0 4]})]
-                                   :labels {:title ":glyph :shade, :domain [0 4]"}}
+                                   :charts [(chart/pairwise {:method :mae :glyph :shade})] :labels {:title ":shade"}}
                                   {:data iris :mapping {:x :sepal-length :y :petal-length}
-                                   :charts [(chart/pairwise {:method :mae :glyph :shade-number :domain [0 4]})]
-                                   :labels {:title ":glyph :shade-number"}}
+                                   :charts [(chart/pairwise {:method :mae :glyph :shade-number})] :labels {:title ":shade-number"}}
+                                  {:data iris :mapping {:x :sepal-length :y :petal-length}
+                                   :charts [(chart/pairwise {:method :me :glyph :shade-number})] :labels {:title "signed :me"}}
                                   {:data iris :mapping {:x :sepal-length :y :petal-length}
                                    :charts [(chart/pairwise {:method (fn [xs ys] (- (apply max xs) (apply max ys)))
-                                                             :label "max difference" :format #(format "%+.1f cm" %)})]
-                                   :labels {:title "a function, :label, :format"}}
+                                                             :label "max diff" :format #(format "%+.1f cm" %)})]
+                                   :labels {:title "function, :format"}}
                                   {:data iris :mapping {:x :sepal-length :y :petal-length}
-                                   :charts [(chart/pairwise {:method :rmse :glyph :shade :color [120 160 90]})]
+                                   :charts [(chart/pairwise {:method :rmse :glyph :shade-number :color [120 160 90]})]
                                    :labels {:title ":color"}}]
-                                 {:columns 5})
-                   {:width 1000 :height 260})
+                                 {:columns 3})
+                   {:width 1000 :height 520})
 
-;; In a matrix: a lower cell is the statistic of its column variable against its row variable, an upper cell the
-;; reverse - the mean error (asymmetric: the mirrored cells have opposite signs) below, the mean squared error above,
-;; every cell coloured on the domain of the whole matrix (one colour bar):
+;; In a [`plot/pairs`](reference.facets_arrange.html#scatter-plot-matrix) matrix every cell shows the statistic of
+;; its column variable against its row variable, so the mirrored cells of the asymmetric mean error have opposite
+;; signs - shaded below, as text above, the names on the diagonal (`:diagonal :names`). The statistic is computed
+;; once for the matrix: every shaded cell is coloured on its range (symmetric around 0 for the signed mean error) and
+;; the one colour bar agrees; the cells share one text size:
 
 (plot/render-image (plot/pairs iris {:variables [:sepal-length :sepal-width :petal-length :petal-width]
-                                     :lower (chart/pairwise {:method :me})
-                                     :upper (chart/pairwise {:method :mse :glyph :shade-number})
+                                     :lower (chart/pairwise {:method :me :glyph :shade-number})
+                                     :upper (chart/pairwise {:method :me})
                                      :diagonal :names
-                                     :title "mean error below, mean squared error above"})
+                                     :title "mean error: shaded below, text above"})
                    {:width 700 :height 620})
 
 (nu/shared-groups (describe/options (chart/pairwise)))

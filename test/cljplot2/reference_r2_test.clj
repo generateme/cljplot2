@@ -169,9 +169,10 @@
 
 (def ^:private intended-overrides
   "Builder -> keys whose own entry shadows a forwarded group's (schema/options-map: own entries win), each on purpose:
-  pairs' `:theme` styles the cells and the matrix (not only the built plot); sequences' `:keep-end?` defaults to true
+  pairs' `:theme` styles the cells and the matrix (not only the built plot), its `:scales` is the cells' colour scale only
+  (a matrix has no plot scales); sequences' `:keep-end?` defaults to true
   (a sunburst keeps the end marker); acf's `:partial?` adds `:both`, translated before acf-rows."
-  '{pairs #{:theme} sequences #{:keep-end?} acf #{:partial?}})
+  '{pairs #{:theme :scales} sequences #{:keep-end?} acf #{:partial?}})
 
 (defn- shadowed-keys
   "Own (untagged) top-level option keys of builder `v` that a group it also takes defines."

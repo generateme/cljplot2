@@ -342,7 +342,7 @@
   - `canvas`: the canvas in graphics context, the box at its origin.
   - `text` (map):
     - `:lines` (vector) - `[{:text :color} ..]`, `:color` optional (the role's colour);
-    - `:template` (string) - the widest text a line can hold (an empty string - the lines alone);
+    - `:template` (string or `nil`) - the widest text a line can hold (`nil` - the lines alone);
     - `:role` (keyword) - the text role.
   - `box` (map): `:w` and `:h` in pixels.
   - `env` (map): `:theme`.
@@ -353,7 +353,7 @@
   [canvas {:keys [lines template role]} {:keys [^double w ^double h]} env]
   (let [role-size (double (get-in env [:theme :text role :size]))
         content (fn [{:keys [text color]} size] (cond-> {:kind :label :role role :text text :size size} color (assoc :color color)))
-        widest (m/max 0.0 (v/mx (map #(.x ^Vec2 (measure/natural-size (content % role-size) {:canvas canvas :theme (:theme env)})) (conj lines {:text template}))))
+        widest (m/max 0.0 (v/mx (map #(.x ^Vec2 (measure/natural-size (content % role-size) {:canvas canvas :theme (:theme env)})) (cond-> lines template (conj {:text template})))))
         size (if (m/> widest (m/* fitted-share w)) (m/max min-fitted-size (m/floor (m// (m/* role-size fitted-share w) widest))) role-size)
         line-h (m/* fitted-line-spacing size)
         top (m/- (m/* 0.5 h) (m/* 0.5 line-h (m/long-dec (count lines))))]
