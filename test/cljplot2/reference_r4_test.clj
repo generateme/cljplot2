@@ -37,7 +37,7 @@
 
 (deftest fragment-keys-test
   (testing "groups in the order of their first row, each with the keys the rows hold"
-    (is (= [[:line-style [:width :dash]] [:field [:f :domain :kernel :bandwidth :binned? :cut :interpolation :n]]
+    (is (= [[:line-style [:line-width :dash]] [:field [:f :domain :kernel :bandwidth :binned :cut :interpolation :n]]
             [:common [:data :mapping]] [:theme-style [:theme-style]]]
            (describe/fragment-keys (describe/options (chart/contour))))))
   (testing "a chart takes part of a group: bar - 8 of the 9 strip entries"
@@ -82,7 +82,7 @@
             text (first md)]
         (is (= :kind/md (:kindly/kind (meta md))))
         (is (:kindly/hide-code (meta md)))
-        (is (str/includes? text "[Line style](reference.shared_options.html#line-style) (`:color` `:width` `:dash`)"))
+        (is (str/includes? text "[Line style](reference.shared_options.html#line-style) (`:color` `:line-width` `:dash`)"))
         (is (str/includes? text "[Curves](reference.shared_options.html#curves)"))))
     (testing "boundary: rows without groups throw {:key :rows}"
       (is (= :rows (:key (error-data #(nu/shared-groups (describe/options (chart/image)))))))
@@ -120,7 +120,7 @@
                                   [:scale-specs :color :domain]))]
     (testing "lines coloured over the field's value range - the lowest level isn't the gradient's end"
       (is (= [0.0 2.0] (domain {:levels 4})))
-      (is (= [0.0 2.0] (domain {:levels 4 :fill true})) "filled bands alike"))
+      (is (= [0.0 2.0] (domain {:levels 4 :filled true})) "filled bands alike"))
     (testing "boundary: given levels outside the value range widen it; one level"
       (is (= [-1.0 3.0] (domain {:levels [-1 1 3]})))
       (is (= [0.0 2.0] (domain {:levels [1]}))))))

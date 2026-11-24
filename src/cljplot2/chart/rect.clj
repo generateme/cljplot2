@@ -18,11 +18,12 @@
   Options (style defaults from theme `[:chart :rect]`): `:fill`, `:stroke-color` (a color, `:none` or `:darker` -
   the darkened fill, none without a fill), `:stroke-width`, `:alpha` (the fill's alpha, a fraction; default - colors
   as they are), `:corner-radius` (pixels, every corner rounded, clamped to half the shorter side; polar - the annular
-  sector's corners; default 0), `:band-width` (the fraction of its band step a level end covers, centred, `(0 1]`;
+  sector's corners; default 0), `:width` (the fraction of its band step a level end covers, centred, `(0 1]`;
   default 1 - the whole step, rects of neighbouring levels touch), `:extent`, plus `:data` / `:mapping`.
 
   Functions: [[compute]], [[draw]], [[legend]] - the chart contract."
-  (:require [clojure2d.core :as c2d]
+  (:require [clojure2d.color :as c]
+            [clojure2d.core :as c2d]
             [fastmath.core :as m]
             [cljplot2.data.annotation :as annotation]
             [cljplot2.data.group :as group]
@@ -36,6 +37,10 @@
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
+
+(def ^:private transparent
+  "Fully transparent colour: the fill of an unfilled rect drawn through the bar functions (a `:none` fill draws only the outline)."
+  (c/color 0 0 0 0))
 
 (def ^:private style-entries
   "Map entries of the rect style (theme `[:chart :rect]`); `:fill` as an option also takes a vector of colours."
@@ -75,7 +80,7 @@
                       (schema/nilable :y {:description "literal y interval(s) [a b] (an end nil - the panel edge), alone a band across the panel (wins over the mapping)"}
                                       (annotation/positions-schema interval-schema))
                       draw/corner-radius-option
-                      (schema/optional :band-width {:description "fraction of its band step a level end covers, centred"
+                      (schema/optional :width {:description "fraction of its band step a level end covers, centred"
                                                     :default 1.0}
                                        [:and schema/finite [:> 0] [:<= 1]])))
    :mapping [:map
@@ -140,7 +145,7 @@
   - `chart-split` (map): `:groups`, `:mapping` (the chart's own: `:x0 :x1 :y0 :y1`, aesthetics).
   - `env` (map): the compute environment (`:theme`, `:plot-scales` ...).
 
-  Returns literal - `{:rects [{:x [a b] :y [c d] :fill f}] :style st}` in every panel (`nil` interval - the whole panel side, `:fill` only for a vector of fills), extents of the interval ends; data - per panel the rects of its rows, each with its group's `:aesthetics` when the chart maps any and its `:color-value` when the colour is linear or binned (see [[cljplot2.data.group/continuous-color]]: per rect, not grouped), `:dropped :position` - rows with an invalid end (skipped before grouping).
+  Returns literal - `{:rects [{:x [a b] :y [c d] :fill f}] :style st}` in every panel (`nil` interval - the whole panel side, `:fill` only for a vector of fills), extents of the interval ends; data - per panel the rects of its rows, each with its group's `:aesthetics` when the chart maps any and its `:color-value` when the colour is linear or binned (see [[cljplot2.data.group/continuous-color]]: per rect, not grouped), `:dropped` per mapped end (`:x0 :x1 :y0 :y1`) the rows with an invalid value there (skipped before grouping).
 
   Throws `ex-info {:key :fill}` for a `:fill` vector in data mode, `{:key :mapping}` for one end of a pair mapped or no pair."
   [{:keys [options] :as chart} {:keys [mapping] :as chart-split} {:keys [theme] :as env}]
@@ -152,8 +157,8 @@
       (let [_ (annotation/require-mapping! "Rect" mapping [[:x0 :x1] [:y0 :y1]])
             _ (doseq [[a b] [[:x0 :x1] [:y0 :y1]]
                       :when (not= (some? (get mapping a)) (some? (get mapping b)))]
-                (schema/fail! (str "Rect maps " a " and " b " together (a pair), got only one of them.")
-                              {:key :mapping :value (select-keys mapping [a b])}))
+                (data/fail-mapping! (str "Rect maps " a " and " b " together (a pair), got only one of them.")
+                                    (if (some? (get mapping a)) b a) {}))
             acc (fn [k] (when-let [a (get mapping k)] (data/row-accessor k a)))
             [x0 x1 y0 y1] (map acc [:x0 :x1 :y0 :y1])
             end-ok? (fn [v] (or (nil? v) (annotation/position? v)))
@@ -168,7 +173,8 @@
             all-rows (mapcat val (:groups chart-split))
             ;; rows with an unplaceable end are skipped before grouping
             placed (update-vals (:groups chart-split) #(filterv rect-of %))
-            skipped (m/long-sub (count all-rows) (count (mapcat val placed)))
+            end-dropped (into {} (for [[k end-of] (map vector [:x0 :x1 :y0 :y1] [x0 x1 y0 y1]) :when end-of]
+                                   [k (count (remove #(end-ok? (end-of %)) all-rows))]))
             continuous (group/continuous-color placed mapping env)
             color-of (:color-of continuous)
             stats (annotation/data-stats (if continuous
@@ -187,7 +193,7 @@
                           (group/continuous-color-stats continuous
                                                         (update-vals (:data stats) (fn [d] (map :color-value (:rects d))))
                                                         (:plot-scales env)))]
-        (cond-> (assoc-in stats [:dropped :position] skipped)
+        (cond-> (update stats :dropped merge end-dropped)
           color-stats (-> (update :extents #(merge-with merge % (:extents color-stats)))
                           (assoc-in [:dropped :color] (:dropped color-stats))
                           (cond-> (:na? color-stats) (update :na conj :color))))))))
@@ -211,7 +217,7 @@
 
   Parameters:
 
-  - `chart` (map): the chart value (`:options` - `:corner-radius`, `:band-width`).
+  - `chart` (map): the chart value (`:options` - `:corner-radius`, `:width`).
   - `computed` (map): the panel's `:rects` and `:style`.
   - `canvas`: the clojure2d canvas.
   - `box` (map): the panel's `:w`, `:h`.
@@ -226,8 +232,8 @@
         pattern-fill (draw/pattern-fill-cache)
         x-horizontal? (scale/horizontal? :x (:x scales))
         geometry (scale/coord-geometry scales)
-        band-width (double (get options :band-width 1.0))
-        interval-of {:x (annotation/interval-fn (:x scales) band-width) :y (annotation/interval-fn (:y scales) band-width)}
+        band-fraction (double (data/option options :width 1.0))
+        interval-of {:x (annotation/interval-fn (:x scales) band-fraction) :y (annotation/interval-fn (:y scales) band-fraction)}
         ;; the whole extent along an axis: panel pixels, polar - the angular range or the radii
         panel-side (fn [horizontal?] (cond
                                        (and geometry horizontal?) (vec (sort (:theta geometry)))
@@ -256,7 +262,7 @@
             stroke (outline stroke-option fill)]
         (if geometry
           (do (c2d/set-stroke-custom canvas {:size sw :join :miter})
-              (draw/range-bar! canvas geometry [h0 v0] [h1 v1] (if (theme/none? fill) [0 0 0 0] fill)
+              (draw/range-bar! canvas geometry [h0 v0] [h1 v1] (if (theme/none? fill) transparent fill)
                                (if (m/pos? sw) stroke :none) sw (when-not (theme/none? fill) (pattern-fill st fill)) rounding))
           (draw-pixel-rect! canvas [h0 v0 h1 v1] fill st [stroke sw] pattern-fill rounding))))))
 
@@ -276,10 +282,7 @@
   [canvas [left top rw rh] fill st [stroke ^double sw] pattern-fill]
   (when-not (theme/none? fill)
     (draw/fill-patterned! canvas fill (pattern-fill st fill) #(c2d/rect % left top rw rh)))
-  (when (and (not (theme/none? stroke)) (m/pos? sw))
-    (c2d/set-stroke-custom canvas {:size sw :join :miter})
-    (c2d/set-color canvas stroke)
-    (c2d/rect canvas left top rw rh true)))
+  (draw/outline! canvas stroke sw :miter #(c2d/rect % left top rw rh true)))
 
 (defn- draw-pixel-rect!
   "Draws a rect between range (pixel) positions with whole-pixel edges.
@@ -301,7 +304,7 @@
         rw (m/long-sub (m/round h1) left)
         rh (m/long-sub (m/round v1) top)]
     (if rounding
-      (draw/bar! canvas (Vec2. (double left) (double top)) (Vec2. (double (m/long-add left rw)) (double (m/long-add top rh))) (if (theme/none? fill) [0 0 0 0] fill)
+      (draw/bar! canvas (Vec2. (double left) (double top)) (Vec2. (double (m/long-add left rw)) (double (m/long-add top rh))) (if (theme/none? fill) transparent fill)
                  (if (m/pos? sw) stroke :none) sw (when-not (theme/none? fill) (pattern-fill st fill)) rounding)
       (draw-square-rect! canvas [left top rw rh] fill st [stroke sw] pattern-fill))))
 

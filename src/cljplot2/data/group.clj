@@ -7,7 +7,7 @@
 
   Functions:
 
-  - grouping: [[group-dims]], [[ordered-keys]], [[split]]
+  - grouping: [[group-dims]], [[kept-value?]], [[ordered-keys]], [[panel-group-keys]], [[split]], [[row-count]], [[finite-values]]
   - per-row aesthetics (linear or binned scales): [[continuous]], [[continuous-color]], [[continuous-stats]], [[continuous-color-stats]]
   - aesthetics of split groups: [[aesthetic-extents]], [[na-dims]], [[style]]"
   (:require [fastmath.core :as m]
@@ -40,27 +40,30 @@
 
   Returns `nil`.
 
-  Throws `ex-info {:key :mapping :value k}` when aesthetic `k` would get a linear or binned scale (numeric or date values without an ordinal spec)."
+  Throws `ex-info {:key :mapping :in [:mapping k]}` when aesthetic `k` would get a linear or binned scale (numeric or date values without an ordinal spec)."
   [k values plot-scales]
   (when (aesthetic/dim? k)
     (when (#{:linear :binned} (aesthetic/inferred-kind k (get plot-scales k {}) (aesthetic/continuous-values? k values)))
       (schema/fail! "This chart groups by aesthetics; numeric (or date) values must be declared categorical ({:scales {k {:type :categorical}}} or {:mapping {k (levels/categorical acc)}})."
-                    {:key :mapping :value k}))))
+                    {:key :mapping :in [:mapping k]}))))
 
-(defn- kept-value?
-  "Tests whether a grouping value is kept.
+(defn kept-value?
+  "Tests whether a row value of a dimension is kept by a chart.
 
   Parameters:
 
-  - `k` (keyword): the grouping dimension.
-  - `na-level?` (boolean): do NA (`nil`) values form a group?
+  - `k` (keyword): the dimension - a position (`:x`, `:y`, `:z` ...), an aesthetic or `:group`.
+  - `na-level?` (boolean): do NA (`nil`) values of grouping dimensions (aesthetics and `:group`) form a group?
   - `plot-scales` (map): the plot's `:scales`.
   - `v`: the value.
 
-  Returns truthy for a valid value (an aesthetic's: kept by the plot scale, see [[cljplot2.scale.aesthetic/kept-value?]]) or, with `na-level?`, for `nil`."
+  Returns truthy for a valid value - an aesthetic's when its plot scale keeps it (see [[cljplot2.scale.aesthetic/kept-value?]]), else [[cljplot2.data.rows/valid-value?]] - or, with `na-level?`, for a `nil` value of a grouping dimension; positions never keep `nil`.
+
+  Throws as [[cljplot2.scale.aesthetic/kept-value?]] for a value an aesthetic scale can't take."
   [k na-level? plot-scales v]
-  (or (if (aesthetic/dim? k) (aesthetic/kept-value? k (get plot-scales k {}) v) (data/valid-value? v))
-      (and na-level? (nil? v))))
+  (let [aesthetic? (aesthetic/dim? k)]
+    (or (if aesthetic? (aesthetic/kept-value? k (get plot-scales k {}) v) (data/valid-value? v))
+        (and na-level? (nil? v) (or aesthetic? (= :group k))))))
 
 (defn- level-rank
   "Gives the sort rank of a grouping value.
@@ -101,6 +104,19 @@
     (try (vec (sort-by (fn [group-key] (mapv level-rank indices group-key)) ks))
          (catch ClassCastException _ ks))))
 
+(defn panel-group-keys
+  "Gives the keys of the groups of every panel, ordered as one set.
+
+  Parameters:
+
+  - `panels` (map): `{panel [group ...]}` (see [[split]]).
+  - `dims` (sequence): the grouping dimensions.
+  - `plot-scales` (map): the plot's `:scales`.
+
+  Returns the distinct group keys over all panels in [[ordered-keys]] order."
+  [panels dims plot-scales]
+  (ordered-keys (mapcat #(map :key %) (vals panels)) dims plot-scales))
+
 (defn split
   "Splits the rows of every panel into groups by the grouping dimensions of a mapping (see the namespace doc).
 
@@ -136,6 +152,29 @@
       {:panels panels
        :dims dims
        :dropped (into {} (map (fn [k vs] [k (count (remove #(kept-value? k na-level? plot-scales %) vs))]) dims columns))})))
+
+(defn row-count
+  "Counts the rows of every group of every panel.
+
+  Parameters:
+
+  - `panels` (map): `{panel [group ...]}` (see [[split]]).
+
+  Returns the total number of grouped rows."
+  ^long [panels]
+  (long (reduce m/long-add 0 (map (comp count :rows) (mapcat val panels)))))
+
+(defn finite-values
+  "Gives the finite values of every group of every panel.
+
+  Parameters:
+
+  - `panels` (map): `{panel [group ...]}` (see [[split]]).
+  - `value-of` (function): row -> value.
+
+  Returns `{panel [{:values [..] :dropped n} ...]}`, one entry per group in order (see [[cljplot2.data.rows/finite-numbers]])."
+  [panels value-of]
+  (update-vals panels (fn [groups] (mapv #(data/finite-numbers (map value-of (:rows %))) groups))))
 
 (defn continuous
   "Resolves a per-row aesthetic: one on a linear or binned scale, styled per row instead of grouping.

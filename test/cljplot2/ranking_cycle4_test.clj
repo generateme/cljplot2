@@ -146,7 +146,7 @@
 
 (deftest style-and-legend
   (testing "1.8 theme validation"
-    (is (= [:theme :chart :parallel :width] (:in (error #(build {:data rows3 :theme {:chart {:parallel {:width -1}}}
+    (is (= [:theme :chart :parallel :line-width] (:in (error #(build {:data rows3 :theme {:chart {:parallel {:line-width -1}}}
                                                                     :charts [(chart/parallel {:variables [:a :b]})]})))))
     (is (some? (error #(build {:data rows3 :charts [(chart/parallel {:variables [:a :b] :size 3})]}))) "closed options"))
   (testing "1.8 legend - a line, an area with a radar fill"
@@ -187,7 +187,7 @@
         (is (not (red-in? img b [(+ (double x) 8) (+ (double x) 30)] [(- (double y) 7) (+ (double y) 7)]))))))
   (testing "2.2 the axis line in theme [:axis :y]"
     (let [p {:data rows3 :theme (assoc plain :axis {:y {:line-color red :line-width 2}}) :legend false
-             :charts [(chart/parallel {:variables [:a :b] :color [0 0 255] :width 0})]}
+             :charts [(chart/parallel {:variables [:a :b] :color [0 0 255] :line-width 0})]}
           b (build p) img (plot/render-image p size)]
       (is (red-around? img b (axis-pixels b "b" 0.3)))))
   (testing "2.4 variable labels on the x axis"
@@ -220,7 +220,7 @@
         (is (= [1 3] (mapv count (#'parallel/point-runs g (#'parallel/closed g true pts) nil))))))
     (testing "3.2 spokes in the axis style"
       (let [p {:data square :coord polar :theme (assoc plain :axis {:y {:line-color red :line-width 2}}) :legend false
-               :charts [(chart/parallel {:variables [:a :b :c :d] :color [0 0 255] :width 0})]}
+               :charts [(chart/parallel {:variables [:a :b :c :d] :color [0 0 255] :line-width 0})]}
             b (build p) img (plot/render-image p size)]
         (is (every? #(red-around? img b (radar-pixel b % 0.6)) ["a" "b" "c" "d"]))))
     (testing "3.3 :fill fills complete rows, polar only"
@@ -248,15 +248,15 @@
           "pairs keyed by their label"))
     (testing "3.5 the web joins the axes"
       (let [p {:data square :coord polar :legend false
-               :theme (assoc-in plain [:panel :grid :y] {:color red :width 2 :dash :none})
-               :charts [(chart/parallel {:variables [:a :b :c :d] :color [0 0 255] :width 0 :axes false})]}
+               :theme (assoc-in plain [:panel :grid :y] {:color red :line-width 2 :dash :none})
+               :charts [(chart/parallel {:variables [:a :b :c :d] :color [0 0 255] :line-width 0 :axes false})]}
             b (build p) img (plot/render-image p size)
             [ax ay] (radar-pixel b "a" 1.0) [bx by] (radar-pixel b "b" 1.0)]
         (is (red-around? img b [(* 0.5 (+ (double ax) (double bx))) (* 0.5 (+ (double ay) (double by)))]))))))
 
 (deftest flipped-radar
   (let [p (fn [theme opts] {:data rows3 :coord polar :flip true :legend false :theme theme :scales {:x {:axis false}}
-                            :charts [(chart/parallel (merge {:variables [:a :b] :color [0 0 255] :width 0} opts))]})]
+                            :charts [(chart/parallel (merge {:variables [:a :b] :color [0 0 255] :line-width 0} opts))]})]
     (testing "R1 variables on rings: each axis an arc"
       (let [pl (p (assoc plain :axis {:y {:line-color red :line-width 2}}) {})
             b (build pl) img (plot/render-image pl size)]
@@ -271,7 +271,7 @@
         (is (red-in? img b [(- (.x out) 9) (+ (.x out) 9)] [(- (.y out) 9) (+ (.y out) 9)]) "tick 20 of b (domain 10..40)")
         (is (not (red-in? img b [(- (.x in) 4) (+ (.x in) 4)] [(- (.y in) 4) (+ (.y in) 4)])))))
     (testing "R1 the web: lines across the rings"
-      (let [pl (p (assoc-in plain [:panel :grid :y] {:color red :width 2 :dash :none}) {:axes false})
+      (let [pl (p (assoc-in plain [:panel :grid :y] {:color red :line-width 2 :dash :none}) {:axes false})
             b (build pl) img (plot/render-image pl size)
             [ax ay] (radar-pixel b "a" 1.0) [bx by] (radar-pixel b "b" 1.0)]
         (is (red-around? img b [(* 0.5 (+ (double ax) (double bx))) (* 0.5 (+ (double ay) (double by)))]))))
@@ -280,7 +280,7 @@
             g (scale/coord-geometry (:finalized-scales b))
             rp (scale/range-projection (:finalized-scales b))]
         (is (= [2] (mapv count (#'parallel/point-runs g (#'parallel/closed g false [(rp "a" 0.2) (rp "b" 0.8)]) nil)))))
-      (is (instance? BufferedImage (plot/render-image (p plain {:fill :color :width 1}) size))))))
+      (is (instance? BufferedImage (plot/render-image (p plain {:fill :color :line-width 1}) size))))))
 
 (deftest review-fixes
   (testing "R5 a theme fill is ignored in cartesian plots - drawing and legend share the computed style"
@@ -290,8 +290,8 @@
       (is (= :color (:fill (s {:coord polar}))))))
   (testing "R7 no web while the plot shows its own y axis and grid"
     (let [pl (fn [scales] {:data [{:a 0 :b 0 :c 0 :d 0} {:a 1 :b 1 :c 1 :d 1}] :coord polar :legend false :scales scales
-                           :theme (assoc-in plain [:panel :grid :y] {:color red :width 2 :dash :none})
-                           :charts [(chart/parallel {:variables [:a :b :c :d] :color [0 0 255] :width 0 :axes false})]})
+                           :theme (assoc-in plain [:panel :grid :y] {:color red :line-width 2 :dash :none})
+                           :charts [(chart/parallel {:variables [:a :b :c :d] :color [0 0 255] :line-width 0 :axes false})]})
           probe (fn [b] (let [[ax ay] (radar-pixel b "a" 1.0) [bx by] (radar-pixel b "b" 1.0)]
                           [(* 0.5 (+ (double ax) (double bx))) (* 0.5 (+ (double ay) (double by)))]))
           web? (fn [scales] (let [b (build (pl scales))] (red-around? (plot/render-image (pl scales) size) b (probe b))))]
@@ -331,7 +331,7 @@
     (is (coord/full-circle? {:theta [1.0 (- 1.0 (* 2.0 Math/PI))]}) "counter-clockwise")
     (is (not (coord/full-circle? {:theta [0.0 Math/PI]})))
     (let [p {:data [{:a 0 :b 0 :c 0 :d 0} {:a 1 :b 1 :c 1 :d 1}] :coord {:kind :polar :span 180 :start -90} :legend false
-             :theme plain :charts [(chart/parallel {:variables [:a :b :c :d] :color red :width 2 :axes false :curve :smooth})]}
+             :theme plain :charts [(chart/parallel {:variables [:a :b :c :d] :color red :line-width 2 :axes false :curve :smooth})]}
           b (build p) img (plot/render-image p size)
           [ax ay] (radar-pixel b "a" 1.0) [dx dy] (radar-pixel b "d" 1.0)]
       (is (red-around? img b (radar-pixel b "b" 1.0)) "the row is drawn")

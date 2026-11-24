@@ -2043,7 +2043,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td>line colour (a mapped :color wins)</td>
 </tr>
 <tr class="even">
-<td>:width</td>
+<td>:line-width</td>
 <td>a non-negative number</td>
 <td></td>
 <td>line width in pixels</td>
@@ -2061,7 +2061,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> wave</span>
 <span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:t</span> <span class="at">:y</span> <span class="at">:v</span>}</span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:charts</span> [(chart/line {<span class="at">:color</span> [<span class="dv">178</span> <span class="dv">34</span> <span class="dv">34</span>] <span class="at">:width</span> <span class="dv">3</span> <span class="at">:dash</span> [<span class="dv">6</span> <span class="dv">2</span>]})]}</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:charts</span> [(chart/line {<span class="at">:color</span> [<span class="dv">178</span> <span class="dv">34</span> <span class="dv">34</span>] <span class="at">:line-width</span> <span class="dv">3</span> <span class="at">:dash</span> [<span class="dv">6</span> <span class="dv">2</span>]})]}</span>
 <span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">500</span> <span class="at">:height</span> <span class="dv">250</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="clay-image">
@@ -2070,7 +2070,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Every built-in dash style (a dash may also be a vector of dash and gap lengths, as above):</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:charts</span> (<span class="kw">vec</span> (<span class="kw">mapcat</span> (<span class="kw">fn</span> [i d]</span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>                                           [(chart/rule {<span class="at">:y</span> i <span class="at">:dash</span> d <span class="at">:width</span> <span class="dv">2</span>})</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>                                           [(chart/rule {<span class="at">:y</span> i <span class="at">:dash</span> d <span class="at">:line-width</span> <span class="dv">2</span>})</span>
 <span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>                                            (chart/text {<span class="at">:x</span> <span class="dv">0</span> <span class="at">:y</span> i <span class="at">:text</span> (<span class="kw">str</span> d) <span class="at">:anchor</span> [<span class="at">:left</span> <span class="at">:bottom</span>]})])</span>
 <span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>                                         (<span class="kw">range</span> <span class="dv">1</span> <span class="dv">100</span>) (<span class="at">:dash</span> describe/attribute-values)))</span>
 <span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:scales</span> {<span class="at">:x</span> {<span class="at">:domain</span> [<span class="dv">0</span> <span class="dv">1</span>] <span class="at">:axis</span> <span class="va">false</span>} <span class="at">:y</span> {<span class="at">:domain</span> [<span class="dv">0</span> <span class="dv">9</span>] <span class="at">:reverse</span> <span class="va">true</span> <span class="at">:axis</span> <span class="va">false</span>}}}</span>
@@ -2274,7 +2274,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td>:corner-radius</td>
 <td>a non-negative number</td>
 <td>0</td>
-<td>radius in pixels of every bar corner</td>
+<td>radius in pixels of every corner of a bar or rect</td>
 </tr>
 <tr class="even">
 <td>:corner-radius-end</td>
@@ -2446,9 +2446,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </tr>
 <tr class="even">
 <td>:n-format</td>
-<td>string</td>
+<td>a count format string or a function</td>
 <td>"n=%d"</td>
-<td>format string of the n labels</td>
+<td>text of the n labels: a format string or a function of the count</td>
 </tr>
 </tbody>
 </table>
@@ -2595,10 +2595,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td>cell outline width in pixels</td>
 </tr>
 <tr class="odd">
-<td>:alpha</td>
+<td>:alpha-factor</td>
 <td>a number in [0 1]</td>
 <td></td>
-<td>fill opacity multiplier</td>
+<td>factor multiplying the fill colours' alpha</td>
 </tr>
 </tbody>
 </table>
@@ -2705,7 +2705,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td>bandwidth of the density estimate: a number, a fastmath selector or :scott, or a pair [hx hy] of them</td>
 </tr>
 <tr class="odd">
-<td>:binned?</td>
+<td>:binned</td>
 <td>true or false</td>
 <td>false</td>
 <td>estimate the density from binned points (faster for many points)</td>
@@ -3149,10 +3149,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td>text colour; :contrast - black or white by what is behind (a chart's fill under its labels, else the plot background)</td>
 </tr>
 <tr class="odd">
-<td>:padding</td>
+<td>:inset</td>
 <td>a non-negative number</td>
 <td></td>
-<td>space around the text in pixels</td>
+<td>space between the text and its box edge on every side, in pixels</td>
 </tr>
 <tr class="even">
 <td>:align</td>
@@ -3175,7 +3175,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:t</span> <span class="at">:y</span> <span class="at">:v</span>}</span>
 <span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:charts</span> [(chart/line)</span>
 <span id="cb34-4"><a href="#cb34-4" aria-hidden="true" tabindex="-1"></a>                             (chart/text {<span class="at">:x</span> <span class="dv">15</span> <span class="at">:y</span> <span class="dv">0</span> <span class="at">:text</span> <span class="st">"a styled note"</span> <span class="at">:size</span> <span class="dv">14</span> <span class="at">:font-style</span> <span class="at">:bold</span></span>
-<span id="cb34-5"><a href="#cb34-5" aria-hidden="true" tabindex="-1"></a>                                          <span class="at">:color</span> <span class="at">:white</span> <span class="at">:background</span> [<span class="dv">70</span> <span class="dv">90</span> <span class="dv">140</span>] <span class="at">:padding</span> <span class="dv">6</span>})]}</span>
+<span id="cb34-5"><a href="#cb34-5" aria-hidden="true" tabindex="-1"></a>                                          <span class="at">:color</span> <span class="at">:white</span> <span class="at">:background</span> [<span class="dv">70</span> <span class="dv">90</span> <span class="dv">140</span>] <span class="at">:inset</span> <span class="dv">6</span>})]}</span>
 <span id="cb34-6"><a href="#cb34-6" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">500</span> <span class="at">:height</span> <span class="dv">250</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="clay-image">
@@ -3395,7 +3395,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td>accessor of a node row's id</td>
 </tr>
 <tr class="even">
-<td>:directed?</td>
+<td>:directed</td>
 <td>true or false or nil</td>
 <td>false</td>
 <td>a directed graph: degrees split into :in and :out</td>
@@ -3443,7 +3443,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb39"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/network edges {<span class="at">:from</span> <span class="at">:a</span> <span class="at">:to</span> <span class="at">:b</span> <span class="at">:value</span> <span class="at">:w</span> <span class="at">:directed</span>? <span class="va">true</span> <span class="at">:labels</span> <span class="va">true</span> <span class="at">:rng</span> (r/rng <span class="at">:mersenne</span> <span class="dv">1</span>)})</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb39"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/network edges {<span class="at">:from</span> <span class="at">:a</span> <span class="at">:to</span> <span class="at">:b</span> <span class="at">:value</span> <span class="at">:w</span> <span class="at">:directed</span> <span class="va">true</span> <span class="at">:labels</span> <span class="va">true</span> <span class="at">:rng</span> (r/rng <span class="at">:mersenne</span> <span class="dv">1</span>)})</span>
 <span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">450</span> <span class="at">:height</span> <span class="dv">300</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="clay-image">
@@ -3522,13 +3522,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td>node order: a sequence of ids (those first, the rest after them in input order) or :cluster (nodes linked to the same others side by side)</td>
 </tr>
 <tr class="even">
-<td>:pad</td>
+<td>:gap-angle</td>
 <td>a non-negative finite number</td>
 <td>2.0</td>
 <td>gap after every ring sector in degrees (must leave room for the sectors)</td>
 </tr>
 <tr class="odd">
-<td>:inner</td>
+<td>:inner-radius</td>
 <td>a number in (0 1)</td>
 <td>0.92</td>
 <td>inner radius of the ring, where the ribbons end (the outer one is 1)</td>
@@ -3544,7 +3544,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb41"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/chord flows {<span class="at">:pad</span> <span class="dv">6</span> <span class="at">:inner</span> <span class="fl">0.8</span>}) {<span class="at">:width</span> <span class="dv">450</span> <span class="at">:height</span> <span class="dv">450</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb41"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/chord flows {<span class="at">:gap-angle</span> <span class="dv">6</span> <span class="at">:inner-radius</span> <span class="fl">0.8</span>}) {<span class="at">:width</span> <span class="dv">450</span> <span class="at">:height</span> <span class="dv">450</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="clay-image">
 <p><img src="reference.shared_options_files/image31.png" class="img-fluid"></p>
@@ -3616,7 +3616,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td>node width, a fraction of the unit square's width</td>
 </tr>
 <tr class="even">
-<td>:pad</td>
+<td>:gap</td>
 <td>a non-negative finite number</td>
 <td>0.02</td>
 <td>least gap between the nodes of a column, a fraction of the unit square's height</td>
@@ -3628,17 +3628,17 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td>relaxation sweeps moving the nodes towards their links' ends (0 - spread in the start order)</td>
 </tr>
 <tr class="even">
-<td>:node-sort</td>
-<td>one of :input or nil</td>
-<td></td>
-<td>nil - relaxation reorders a column, :input - the input order kept</td>
+<td>:order</td>
+<td>one of :relaxed :input or nil</td>
+<td>:relaxed</td>
+<td>node order in a column: :relaxed - relaxation reorders it, :input - the input order kept</td>
 </tr>
 </tbody>
 </table>
 </div>
 </div>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb43"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/sankey flows {<span class="at">:align</span> <span class="at">:left</span> <span class="at">:node-width</span> <span class="fl">0.06</span> <span class="at">:pad</span> <span class="fl">0.08</span>}) {<span class="at">:width</span> <span class="dv">500</span> <span class="at">:height</span> <span class="dv">300</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb43"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/sankey flows {<span class="at">:align</span> <span class="at">:left</span> <span class="at">:node-width</span> <span class="fl">0.06</span> <span class="at">:gap</span> <span class="fl">0.08</span>}) {<span class="at">:width</span> <span class="dv">500</span> <span class="at">:height</span> <span class="dv">300</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="clay-image">
 <p><img src="reference.shared_options_files/image33.png" class="img-fluid"></p>
@@ -3660,10 +3660,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </thead>
 <tbody>
 <tr class="odd">
-<td>:axes (required)</td>
+<td>:variables (required)</td>
 <td>sequential of a keyword, a function or a categorical marker of one (at least 2)</td>
 <td></td>
-<td>accessors of the axes, in column order (at least 2)</td>
+<td>accessors of the categorical variables (one column each), in order (at least 2)</td>
 </tr>
 <tr class="even">
 <td>:value</td>
@@ -3672,9 +3672,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td>accessor of a row's weight, a finite number &gt;= 0 (nil - 1)</td>
 </tr>
 <tr class="odd">
-<td>:fill</td>
+<td>:strand-color</td>
 <td>a keyword, a function or a categorical marker of one or nil</td>
-<td>the first axis</td>
+<td>the first column</td>
 <td>accessor of the level the strands are grouped (and coloured) by</td>
 </tr>
 </tbody>
@@ -3684,7 +3684,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb44"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/alluvial [{<span class="at">:class</span> <span class="st">"1st"</span> <span class="at">:sex</span> <span class="st">"f"</span> <span class="at">:n</span> <span class="dv">140</span>} {<span class="at">:class</span> <span class="st">"1st"</span> <span class="at">:sex</span> <span class="st">"m"</span> <span class="at">:n</span> <span class="dv">180</span>}</span>
 <span id="cb44-2"><a href="#cb44-2" aria-hidden="true" tabindex="-1"></a>                                   {<span class="at">:class</span> <span class="st">"3rd"</span> <span class="at">:sex</span> <span class="st">"f"</span> <span class="at">:n</span> <span class="dv">190</span>} {<span class="at">:class</span> <span class="st">"3rd"</span> <span class="at">:sex</span> <span class="st">"m"</span> <span class="at">:n</span> <span class="dv">510</span>}]</span>
-<span id="cb44-3"><a href="#cb44-3" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:axes</span> [<span class="at">:class</span> <span class="at">:sex</span>] <span class="at">:value</span> <span class="at">:n</span> <span class="at">:fill</span> <span class="at">:sex</span>})</span>
+<span id="cb44-3"><a href="#cb44-3" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:variables</span> [<span class="at">:class</span> <span class="at">:sex</span>] <span class="at">:value</span> <span class="at">:n</span> <span class="at">:strand-color</span> <span class="at">:sex</span>})</span>
 <span id="cb44-4"><a href="#cb44-4" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">500</span> <span class="at">:height</span> <span class="dv">300</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="clay-image">
@@ -3872,12 +3872,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td>:end</td>
 <td>any value</td>
 <td>"end"</td>
-<td>the end marker (nil - none): a final step equal to it is removed unless :keep-end?</td>
+<td>the end marker (nil - none): a final step equal to it is removed unless :keep-end</td>
 </tr>
 <tr class="odd">
-<td>:keep-end?</td>
+<td>:keep-end</td>
 <td>true or false or nil</td>
-<td>false</td>
+<td>true</td>
 <td>keep a final end marker as a step of its own (false - a sequence ending before others continue is its group's unnamed leaf)</td>
 </tr>
 </tbody>
@@ -3896,7 +3896,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="autocorrelation-rows" class="level3" data-number="10.3.11">
 <h3 data-number="10.3.11" class="anchored" data-anchor-id="autocorrelation-rows"><span class="header-section-number">10.3.11</span> Autocorrelation rows</h3>
-<p>The lags of the correlogram, the significance level of its bands and which of ACF and PACF to draw.</p>
+<p>The lags of the correlogram, the confidence level of its bands and whether the rows are the partial autocorrelation (<code>plot/acf</code> forwards <code>:lags</code> and <code>:level</code>; it picks the correlograms with its own <code>:correlograms</code>).</p>
 <div class="clay-table">
 <div class="table-responsive">
 <table class="table table-hover clay-table caption-top">
@@ -3916,13 +3916,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td>the largest lag, from 1 to n - 1 for n values</td>
 </tr>
 <tr class="even">
-<td>:alpha</td>
+<td>:level</td>
 <td>a number in (0 1) or nil</td>
-<td>0.05</td>
-<td>significance level of the band (0.05 - a 95% band)</td>
+<td>0.95</td>
+<td>confidence level of the band (0.95 - a 95% band)</td>
 </tr>
 <tr class="odd">
-<td>:partial?</td>
+<td>:partial</td>
 <td>true or false or nil</td>
 <td>false</td>
 <td>the partial autocorrelation (lags from 1, a constant band) instead of the autocorrelation</td>
@@ -3932,7 +3932,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb50"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb50-1"><a href="#cb50-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/acf (<span class="kw">map</span> #(Math/sin (<span class="kw">*</span> <span class="fl">0.5</span> (<span class="kw">double</span> <span class="va">%</span>))) (<span class="kw">range</span> <span class="dv">100</span>)) {<span class="at">:lags</span> <span class="dv">30</span> <span class="at">:partial</span>? <span class="va">true</span>})</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb50"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb50-1"><a href="#cb50-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/acf (<span class="kw">map</span> #(Math/sin (<span class="kw">*</span> <span class="fl">0.5</span> (<span class="kw">double</span> <span class="va">%</span>))) (<span class="kw">range</span> <span class="dv">100</span>)) {<span class="at">:lags</span> <span class="dv">30</span> <span class="at">:correlograms</span> <span class="at">:pacf</span>})</span>
 <span id="cb50-2"><a href="#cb50-2" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">600</span> <span class="at">:height</span> <span class="dv">300</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="clay-image">

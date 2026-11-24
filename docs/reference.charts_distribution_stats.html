@@ -2980,7 +2980,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="clay-image">
 <p><img src="reference.charts_distribution_stats_files/image11.png" class="img-fluid"></p>
 </div>
-<p>Shared options: <a href="reference.shared_options.html#line-style">Line style</a> (<code>:color</code> <code>:width</code> <code>:dash</code>); <a href="reference.shared_options.html#fill-patterns">Fill patterns</a> (<code>:pattern</code> <code>:pattern-color</code>); <a href="reference.shared_options.html#data-and-mapping">Data and mapping</a> (<code>:data</code> <code>:mapping</code>); <a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> (<code>:theme-style</code>); <a href="reference.shared_options.html#ridgelines">Ridgelines</a> (<code>:overlap</code>).</p>
+<p>Shared options: <a href="reference.shared_options.html#line-style">Line style</a> (<code>:color</code> <code>:line-width</code> <code>:dash</code>); <a href="reference.shared_options.html#fill-patterns">Fill patterns</a> (<code>:pattern</code> <code>:pattern-color</code>); <a href="reference.shared_options.html#data-and-mapping">Data and mapping</a> (<code>:data</code> <code>:mapping</code>); <a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> (<code>:theme-style</code>); <a href="reference.shared_options.html#ridgelines">Ridgelines</a> (<code>:overlap</code>).</p>
 </section>
 </section>
 <section id="ecdf" class="level2" data-number="18.3">
@@ -3069,7 +3069,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="clay-image">
 <p><img src="reference.charts_distribution_stats_files/image13.png" class="img-fluid"></p>
 </div>
-<p>Shared options: <a href="reference.shared_options.html#line-style">Line style</a> (<code>:color</code> <code>:width</code> <code>:dash</code>); <a href="reference.shared_options.html#data-and-mapping">Data and mapping</a> (<code>:data</code> <code>:mapping</code>); <a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> (<code>:theme-style</code>).</p>
+<p>Shared options: <a href="reference.shared_options.html#line-style">Line style</a> (<code>:color</code> <code>:line-width</code> <code>:dash</code>); <a href="reference.shared_options.html#data-and-mapping">Data and mapping</a> (<code>:data</code> <code>:mapping</code>); <a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> (<code>:theme-style</code>).</p>
 </section>
 <section id="qq" class="level2" data-number="18.4">
 <h2 data-number="18.4" class="anchored" data-anchor-id="qq"><span class="header-section-number">18.4</span> qq</h2>
@@ -3629,7 +3629,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="distributions" class="level3" data-number="18.4.2">
 <h3 data-number="18.4.2" class="anchored" data-anchor-id="distributions"><span class="header-section-number">18.4.2</span> Distributions</h3>
-<p>Either side may be a distribution instead of data; with both sides distributions the chart draws <code>:points</code> quantile pairs labelled by <code>:label</code>. The reference line through the quartiles may be turned off, and the padding set (none on the right):</p>
+<p>Either side may be a distribution instead of data; with both sides distributions the chart draws <code>:n</code> quantile pairs labelled by <code>:label</code>. The reference line through the quartiles may be turned off, and the padding set (none on the right):</p>
 <div class="clay-table">
 <div class="table-responsive">
 <table class="table table-hover clay-table caption-top">
@@ -3661,7 +3661,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td>reference line, one per group: :quartiles (through the first and third quartile pairs, R qqline) or false (none)</td>
 </tr>
 <tr class="even">
-<td>:points</td>
+<td>:n</td>
 <td>integer (at least 2)</td>
 <td>100; an error with a data side</td>
 <td>both sides distributions only: the number of points (Q-Q plotting positions, P-P values over :domain)</td>
@@ -3686,7 +3686,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:charts</span> [(chart/qq {<span class="at">:x-distribution</span> [<span class="at">:normal</span>] <span class="at">:y-distribution</span> [<span class="at">:t</span> {<span class="at">:degrees-of-freedom</span> <span class="dv">3</span>}]</span>
 <span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>                                                       <span class="at">:label</span> <span class="st">"t(3)"</span> <span class="at">:mapping</span> {<span class="at">:color</span> <span class="at">:label</span>}})</span>
 <span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>                                            (chart/qq {<span class="at">:x-distribution</span> [<span class="at">:normal</span>] <span class="at">:y-distribution</span> [<span class="at">:t</span> {<span class="at">:degrees-of-freedom</span> <span class="dv">30</span>}]</span>
-<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>                                                       <span class="at">:label</span> <span class="st">"t(30)"</span> <span class="at">:mapping</span> {<span class="at">:color</span> <span class="at">:label</span>} <span class="at">:line</span> <span class="va">false</span> <span class="at">:points</span> <span class="dv">30</span>})]</span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>                                                       <span class="at">:label</span> <span class="st">"t(30)"</span> <span class="at">:mapping</span> {<span class="at">:color</span> <span class="at">:label</span>} <span class="at">:line</span> <span class="va">false</span> <span class="at">:n</span> <span class="dv">30</span>})]</span>
 <span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"both sides distributions"</span>}}</span>
 <span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> faithful</span>
 <span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:y</span> <span class="at">:eruptions</span>}</span>
@@ -3836,7 +3836,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="distributions-1" class="level3" data-number="18.5.2">
 <h3 data-number="18.5.2" class="anchored" data-anchor-id="distributions-1"><span class="header-section-number">18.5.2</span> Distributions</h3>
-<p>Either side may be a distribution; with both sides distributions the chart evaluates both CDFs at <code>:points</code> values over <code>:domain</code> (required then); the right panel has no line and wide padding:</p>
+<p>Either side may be a distribution; with both sides distributions the chart evaluates both CDFs at <code>:n</code> values over <code>:domain</code> (required then); the right panel has no line and wide padding:</p>
 <div class="clay-table">
 <div class="table-responsive">
 <table class="table table-hover clay-table caption-top">
@@ -3868,7 +3868,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td>reference line, one per group: :identity (y = x) or false (none)</td>
 </tr>
 <tr class="even">
-<td>:points</td>
+<td>:n</td>
 <td>integer (at least 2)</td>
 <td>100; an error with a data side</td>
 <td>both sides distributions only: the number of points (Q-Q plotting positions, P-P values over :domain)</td>
@@ -3897,9 +3897,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb25"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:charts</span> [(chart/pp {<span class="at">:x-distribution</span> [<span class="at">:normal</span>] <span class="at">:y-distribution</span> [<span class="at">:t</span> {<span class="at">:degrees-of-freedom</span> <span class="dv">2</span>}]</span>
-<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>                                                       <span class="at">:domain</span> [-<span class="dv">5</span> <span class="dv">5</span>] <span class="at">:points</span> <span class="dv">40</span> <span class="at">:label</span> <span class="st">"t(2)"</span> <span class="at">:mapping</span> {<span class="at">:color</span> <span class="at">:label</span>}})</span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>                                                       <span class="at">:domain</span> [-<span class="dv">5</span> <span class="dv">5</span>] <span class="at">:n</span> <span class="dv">40</span> <span class="at">:label</span> <span class="st">"t(2)"</span> <span class="at">:mapping</span> {<span class="at">:color</span> <span class="at">:label</span>}})</span>
 <span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>                                            (chart/pp {<span class="at">:x-distribution</span> [<span class="at">:normal</span>] <span class="at">:y-distribution</span> [<span class="at">:logistic</span>]</span>
-<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a>                                                       <span class="at">:domain</span> [-<span class="dv">5</span> <span class="dv">5</span>] <span class="at">:points</span> <span class="dv">40</span> <span class="at">:label</span> <span class="st">"logistic"</span> <span class="at">:mapping</span> {<span class="at">:color</span> <span class="at">:label</span>}})]</span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a>                                                       <span class="at">:domain</span> [-<span class="dv">5</span> <span class="dv">5</span>] <span class="at">:n</span> <span class="dv">40</span> <span class="at">:label</span> <span class="st">"logistic"</span> <span class="at">:mapping</span> {<span class="at">:color</span> <span class="at">:label</span>}})]</span>
 <span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"both sides distributions, :domain [-5 5]"</span> <span class="at">:y</span> <span class="st">"probabilities"</span>}}</span>
 <span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> faithful</span>
 <span id="cb25-7"><a href="#cb25-7" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:y</span> <span class="at">:waiting</span>}</span>

@@ -1392,10 +1392,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td>text colour; :contrast - black or white by what is behind (a chart's fill under its labels, else the plot background)</td>
 </tr>
 <tr class="odd">
-<td>:padding</td>
+<td>:inset</td>
 <td>a non-negative number</td>
 <td></td>
-<td>space around the text in pixels</td>
+<td>space between the text and its box edge on every side, in pixels</td>
 </tr>
 <tr class="even">
 <td>:align</td>
@@ -1418,7 +1418,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:sepal-length</span> <span class="at">:y</span> <span class="at">:sepal-width</span> <span class="at">:color</span> <span class="at">:species</span>}</span>
 <span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:charts</span> [(chart/scatter)]</span>
 <span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:labels</span> {<span class="at">:title</span> {<span class="at">:text</span> <span class="st">"Iris sepals"</span> <span class="at">:size</span> <span class="dv">18</span> <span class="at">:align</span> [<span class="at">:left</span> <span class="at">:middle</span>] <span class="at">:color</span> [<span class="dv">40</span> <span class="dv">40</span> <span class="dv">120</span>]</span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>                                     <span class="at">:background</span> [<span class="dv">230</span> <span class="dv">230</span> <span class="dv">245</span>] <span class="at">:padding</span> <span class="dv">6</span>}</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>                                     <span class="at">:background</span> [<span class="dv">230</span> <span class="dv">230</span> <span class="dv">245</span>] <span class="at">:inset</span> <span class="dv">6</span>}</span>
 <span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>                             <span class="at">:y</span> {<span class="at">:text</span> <span class="st">"sepal width [cm]"</span> <span class="at">:font-style</span> <span class="at">:italic</span>}}}</span>
 <span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">600</span> <span class="at">:height</span> <span class="dv">350</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
@@ -1619,13 +1619,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>(font/resolve-font <span class="st">"DejaVu Sans Mono"</span> <span class="at">:bold</span> <span class="dv">14</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="printedClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>#object[java.awt.Font <span class="bn">0x3f33f26a</span> <span class="st">"java.awt.Font[family=DejaVu Sans Mono,name=DejaVu Sans Mono Bold,style=plain,size=14]"</span>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>#object[java.awt.Font <span class="bn">0x49592e87</span> <span class="st">"java.awt.Font[family=DejaVu Sans Mono,name=DejaVu Sans Mono Bold,style=plain,size=14]"</span>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>(font/resolve-font <span class="st">"Serif"</span> <span class="at">:italic</span> <span class="dv">12</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="printedClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>#object[java.awt.Font <span class="bn">0x4c89bad3</span> <span class="st">"java.awt.Font[family=Serif,name=Serif,style=italic,size=12]"</span>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>#object[java.awt.Font <span class="bn">0xdc0ae85</span> <span class="st">"java.awt.Font[family=Serif,name=Serif,style=italic,size=12]"</span>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>A resolved font (here a bundled bold face) in a label, and a logical family by name for the axis titles:</p>
 <div class="sourceClojure">

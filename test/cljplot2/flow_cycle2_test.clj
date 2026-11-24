@@ -26,9 +26,9 @@
       (is (= (apply max (:height (:tree result))) (:height t)) "the root - the last merge")
       (is (every? #(zero? (double (:height %))) (tree/leaves t)))
       (is (= #{0 1 2 3 4} (set (map :index (tree/leaves t)))))))
-  (testing "1.1 labels: indices without, a wrong count throws; one observation"
+  (testing "1.1 leaf names: indices without, a wrong count throws; one observation"
     (is (= #{"0" "1" "2" "3" "4"} (set (map :name (tree/leaves (tree/from-hclust result))))))
-    (is (= :labels (:key (error #(tree/from-hclust result ["a" "b"])))))
+    (is (= :leaf-names (:key (error #(tree/from-hclust result ["a" "b"])))))
     (is (= {:name "x" :index 0 :height 0.0} (tree/from-hclust (cl/hclust [[1.0 2.0]] {}) ["x"])))))
 
 (deftest from-levels-test
@@ -103,7 +103,7 @@
 
 (deftest dendrogram-test
   (testing "2.1 an hclust result: paths, leaf ticks and names, height axis"
-    (let [p (plot/dendrogram result {:labels names :k 2})]
+    (let [p (plot/dendrogram result {:leaf-names names :k 2})]
       (is (instance? BufferedImage (plot/render-image p {:width 400 :height 300})))
       (is (= [0 1 2 3 4] (get-in p [:scales :x :ticks])))
       (is (= (names (first (:order (:tree result)))) ((get-in p [:scales :x :formatter]) 0.0)))
@@ -117,14 +117,14 @@
         (is (= :iso (:aspect c)))
         (is (= 3 (count (:charts c))) "branches and two label halves")
         (is (instance? BufferedImage (plot/render-image c {:width 300 :height 300}))))
-      (is (= 1 (count (:charts (plot/dendrogram lt {:circular true :labels? false})))))
-      (is (false? (get-in (plot/dendrogram lt {:labels? false}) [:scales :x :axis])))))
+      (is (= 1 (count (:charts (plot/dendrogram lt {:circular true :labels false})))))
+      (is (false? (get-in (plot/dendrogram lt {:labels false}) [:scales :x :axis])))))
   (testing "2.2 the height axis spans 0 to the root height plus 3 % (H2: the root's line inside the panel)"
     (is (= [0.0 (* 1.03 (double (apply max (:height (:tree result)))))] (get-in (plot/dendrogram result {}) [:scales :y :domain])))
     (is (= [0.0 1.03] (get-in (plot/dendrogram {:name "x" :height 0.0} {}) [:scales :y :domain])) "one leaf - up to 1"))
   (testing "R4 group labels: named groups of level trees"
     (let [lt (tree/from-levels [{:r "A" :c "x"} {:r "A" :c "y"} {:r "B" :c "z"}] {:hierarchy [:r :c]})
-          p (plot/dendrogram lt {:group-labels? true})]
+          p (plot/dendrogram lt {:group-labels true})]
       (is (= ["A" "B"] (sort (map #((get-in (last (:charts p)) [:options :mapping :label]) %) (get-in (last (:charts p)) [:options :data])))))
       (is (= 1 (count (:charts (plot/dendrogram lt {})))))
       (is (instance? BufferedImage (plot/render-image p {:width 300 :height 300})))))
@@ -180,13 +180,13 @@
     (is (= :rows (:key (error #(plot/clustered-heatmap (filterv (fn [c] (= "r1" (:r c))) cells) {:row :r :col :c :value :v})))))
     (is (= :rows (:key (error #(plot/clustered-heatmap (filterv (fn [c] (= "c1" (:c c))) cells) {:row :r :col :c :value :v}))))))
   (testing "3.3 order only; R5 :tree-size"
-    (is (= 2 (count (get-in (plot/clustered-heatmap cells {:row :r :col :c :value :v :row-tree? false :col-tree? false}) [:arrange :plots]))) "tiles and legend")
-    (is (= 4 (count (get-in (plot/clustered-heatmap cells {:row :r :col :c :value :v :row-tree? false}) [:arrange :plots]))))
-    (is (= 3 (count (get-in (plot/clustered-heatmap cells {:row :r :col :c :value :v :col-tree? false}) [:arrange :plots]))))
+    (is (= 2 (count (get-in (plot/clustered-heatmap cells {:row :r :col :c :value :v :row-tree false :col-tree false}) [:arrange :plots]))) "tiles and legend")
+    (is (= 4 (count (get-in (plot/clustered-heatmap cells {:row :r :col :c :value :v :row-tree false}) [:arrange :plots]))))
+    (is (= 3 (count (get-in (plot/clustered-heatmap cells {:row :r :col :c :value :v :col-tree false}) [:arrange :plots]))))
     (is (= [0.7 0.3 :measured] (get-in (plot/clustered-heatmap cells {:row :r :col :c :value :v :tree-size [0.3 0.1]}) [:arrange :widths])))
     (are [ts] (= :tree-size (:key (error #(plot/clustered-heatmap cells {:row :r :col :c :value :v :tree-size ts}))))
       [0 0.2] [0.2 1] [0.2] 0.2)
-    (is (instance? BufferedImage (plot/render-image (plot/clustered-heatmap cells {:row :r :col :c :value :v :col-tree? false}) {:width 400 :height 300})))))
+    (is (instance? BufferedImage (plot/render-image (plot/clustered-heatmap cells {:row :r :col :c :value :v :col-tree false}) {:width 400 :height 300})))))
 
 ;; 4. bundling
 
@@ -221,8 +221,8 @@
         (is (= :iso (:aspect p)))
         (is (= 4 (count (:charts p))))
         (is (instance? BufferedImage (plot/render-image p {:width 400 :height 400})))
-        (is (= 2 (count (:charts (plot/bundle [{:from :a :to :c}] package-tree {:labels? false})))))
-        (is (some? (get-in (plot/bundle [{:from :a :to :c}] package-tree {:color-by-group? false}) [:charts 0 :options :color])))))))
+        (is (= 2 (count (:charts (plot/bundle [{:from :a :to :c}] package-tree {:labels false})))))
+        (is (some? (get-in (plot/bundle [{:from :a :to :c}] package-tree {:color-by :none}) [:charts 0 :options :color])))))))
 
 ;; review: text anchored in its own frame, line stroke alpha
 
@@ -247,12 +247,12 @@
       (is (= (set (pts (img :text 0))) (set (pts (img :box 0)))) "no rotation - the same"))))
 
 (deftest stroke-alpha-test
-  (testing "R3 line :stroke-alpha fades the stroke, not the legend key"
+  (testing "R3 line :stroke-alpha-factor fades the stroke, not the legend key"
     (let [p (fn [a] {:theme {:plot {:background :white} :panel {:fill :white :grid {:x :none :y :none}}}
                      :data [{:x 0 :y 0 :g "a"} {:x 1 :y 1 :g "a"}] :mapping {:x :x :y :y :color :g}
-                     :charts [(chart/line (cond-> {:width 4} a (assoc :stroke-alpha a)))]})
+                     :charts [(chart/line (cond-> {:line-width 4} a (assoc :stroke-alpha-factor a)))]})
           dark (fn [^BufferedImage i] (count (for [x (range 300) y (range 200) :let [v (.getRGB i x y)]
                                                    :when (< (bit-and v 0xff) 200)] 1)))]
       (is (> (dark (plot/render-image (p nil) {:width 300 :height 200}))
              (dark (plot/render-image (p 0.2) {:width 300 :height 200}))))
-      (is (= :stroke-alpha (nth (:in (error #(plot/build (p 1.5) {:width 300 :height 200}))) 3))))))
+      (is (= :stroke-alpha-factor (nth (:in (error #(plot/build (p 1.5) {:width 300 :height 200}))) 3))))))

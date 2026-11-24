@@ -1,6 +1,6 @@
 (ns cljplot2.vega-cycle3a-test
   "Vega cycle 3a review: every chart drawn with the default stroke (no dashed grid leaking into line shapes), rect
-  `:band-width`, signed bar value labels, histogram `:y :cumulative`."
+  `:width`, signed bar value labels, histogram `:y :cumulative`."
   (:require [clojure.test :refer [deftest testing is]]
             [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
@@ -36,11 +36,11 @@
   {:data [{:t "A" :s 1 :e 3} {:t "B" :s 3 :e 5}]
    :charts [(chart/rect (merge {:mapping {:x0 :s :x1 :e :y0 :t :y1 :t}} options))]})
 
-(deftest band-width-test
+(deftest rect-width-test
   (let [y (get-in (plot/build (rect-plot {}) {:width 300 :height 200}) [:finalized-scales :y])
         [lo hi] ((annotation/interval-fn y) "A" "A")
         [lo-half hi-half] ((annotation/interval-fn y 0.5) "A" "A")]
-    (testing "a level covers band-width of its step, centred; default the whole step"
+    (testing "a level covers :width of its step, centred; default the whole step"
       (is (== (* 0.5 (- (double hi) (double lo))) (- (double hi-half) (double lo-half))))
       (is (== (* 0.5 (+ (double lo) (double hi))) (* 0.5 (+ (double lo-half) (double hi-half)))))
       (is (= [lo hi] ((annotation/interval-fn y 1.0) "A" "A"))))
@@ -52,12 +52,12 @@
     (let [x (get-in (plot/build (rect-plot {}) {:width 300 :height 200}) [:finalized-scales :x])]
       (is (= ((annotation/interval-fn x) 1 3) ((annotation/interval-fn x 0.5) 1 3)))
       (is (= ((annotation/interval-fn x) nil 3) ((annotation/interval-fn x 0.5) nil 3)))))
-  (testing "boundary: band-width 1 renders as the default; 0 and above 1 are schema errors"
+  (testing "boundary: :width 1 renders as the default; 0 and above 1 are schema errors"
     (is (= (seq (.getRGB ^BufferedImage (plot/render-image (rect-plot {}) {:width 200 :height 150}) 0 0 200 150 nil 0 200))
-           (seq (.getRGB ^BufferedImage (plot/render-image (rect-plot {:band-width 1}) {:width 200 :height 150}) 0 0 200 150 nil 0 200))))
-    (is (= :band-width (:key (error #(plot/build (rect-plot {:band-width 0}))))))
-    (is (= :band-width (:key (error #(plot/build (rect-plot {:band-width 1.5}))))))
-    (is (some? (plot/render-image (assoc (rect-plot {:band-width 0.5}) :coord {:kind :polar}) {:width 200 :height 200})))))
+           (seq (.getRGB ^BufferedImage (plot/render-image (rect-plot {:width 1}) {:width 200 :height 150}) 0 0 200 150 nil 0 200))))
+    (is (= :width (:key (error #(plot/build (rect-plot {:width 0}))))))
+    (is (= :width (:key (error #(plot/build (rect-plot {:width 1.5}))))))
+    (is (some? (plot/render-image (assoc (rect-plot {:width 0.5}) :coord {:kind :polar}) {:width 200 :height 200})))))
 
 (defn- labels
   "End label texts of the bar chart of plot `p`."

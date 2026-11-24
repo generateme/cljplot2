@@ -103,7 +103,7 @@
             left (+ (double x) (* 0.5 (- (double w) (* 10.0 side))))
             top (+ (double y) (* 0.5 (- (double h) (* 10.0 side))))]
         (is (= [255 255 255] (rgb img (+ left (* 0.05 side)) (- (+ top (* 10.0 side)) (* 0.5 side))))))
-      (let [[_ img {:keys [x y w h]}] (render (p {:gap 0 :shape :circle}) {:width 300 :height 300})
+      (let [[_ img {:keys [x y w h]}] (render (p {:gap 0 :cell-shape :circle}) {:width 300 :height 300})
             side (/ (m/min (double w) (double h)) 10.0)
             left (+ (double x) (* 0.5 (- (double w) (* 10.0 side))))
             bottom (+ (double y) (* 0.5 (+ (double h) (* 10.0 side))))]
@@ -118,7 +118,7 @@
         (is (= [255 0 0] (rgb img (+ left (* 1.5 side)) (- bottom (* 4.5 side)))) "a's last cell: column 1, row 4")
         (is (= [0 0 255] (rgb img (+ left (* 1.5 side)) (- bottom (* 5.5 side)))))))
     (testing "1.5 legend keys follow the shape; theme validated"
-      (let [[built img] (render (p {:shape :circle}) {:width 400 :height 300})
+      (let [[built img] (render (p {:cell-shape :circle}) {:width 400 :height 300})
             {:keys [x y]} (grid/item-box (:layout built) :legends)]
         (is (some? x))
         (is (some #(= [255 0 0] %) (for [i (range (long x) (+ (long x) 30)) j (range (long y) (+ (long y) 40))] (rgb img i j)))))

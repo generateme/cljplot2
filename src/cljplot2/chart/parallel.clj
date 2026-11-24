@@ -43,7 +43,7 @@
   `[:panel :grid :y]`) joins the axes at equal fractions of their length, as the rows do: closed polygons on a full
   circle, else open lines (across the rings with `:flip`).
 
-  Options (style defaults from theme `[:chart :parallel]`): `:color`, `:width`, `:dash`, `:fill`, `:alpha`,
+  Options (style defaults from theme `[:chart :parallel]`): `:color`, `:line-width`, `:dash`, `:fill`, `:alpha`,
   `:pattern`, `:pattern-color`, `:variables`, `:scaling`, `:robust-center`, `:robust-spread`, `:limits {key [lo hi]}`,
   `:axes`, `:missing`, `:curve`, `:smoothness`, `:padding {:y [lo hi]}` (fractions of the scaled extent, default 0.05
   each side; the variables' `:x` is a bands scale).
@@ -88,7 +88,7 @@
   (schema/named-type ::variable #(or (keyword? %) (labelled-variable? %))
                      "should be a keyword or a [label accessor] pair (a string and a keyword or function)"))
 
-(defn variable-key
+(defn- variable-key
   "Gives the key of a `:variables` entry in `:limits`.
 
   Parameters:
@@ -101,7 +101,7 @@
   [v]
   (if (keyword? v) v (first v)))
 
-(defn variable-label
+(defn- variable-label
   "Gives the axis label of a `:variables` entry.
 
   Parameters:
@@ -133,11 +133,11 @@
     [#(when (m/< (count %) 2) "should have at least 2 variables") nil]
     [duplicate-labels nil]))
 
-(def scalings
+(def ^:private scalings
   "Values of `:scaling`."
   #{:uniminmax :std :robust :center :globalminmax})
 
-(def robust-spreads
+(def ^:private robust-spreads
   "Named `:robust-spread` estimators (`fastmath.stats/robust-stddev` methods)."
   #{:mad :iqr :sn :qn :tukey :biweight :stddev :meanad :gini})
 
@@ -232,17 +232,6 @@
 
 ;; scaling
 
-(defn- numeric-value
-  "Gives a value as a number of an axis.
-
-  Parameters:
-
-  - `v`: the value.
-
-  Returns `v` as a double when it is a finite number, else `nil` (missing)."
-  [v]
-  (when (and (number? v) (m/valid-double? (double v))) (double v)))
-
 (defn- affine
   "Gives the affine scaling of a variable, `(v - offset) / scale`.
 
@@ -281,7 +270,7 @@
   ^double [{:keys [^double offset ^double scale]} ^double v]
   (m// (m/- v offset) scale))
 
-(defn variable-axes
+(defn- variable-axes
   "Gives the axis of every variable over the rows of all panels.
 
   Parameters:
@@ -298,7 +287,7 @@
   (mapv (fn [entry]
             (let [k (variable-key entry)
                   acc (data/row-accessor :variables (if (keyword? entry) entry (second entry)))
-                  values (into [] (keep (comp numeric-value acc)) rows)
+                  values (into [] (keep (comp schema/finite-double acc)) rows)
                   limits-or-data-domain (or (some->> (get-in options [:limits k]) (mapv double))
                                             (when (seq values) [(v/mn values) (v/mx values)]))]
               (when (and (seq rows) (nil? limits-or-data-domain))
@@ -316,9 +305,9 @@
   - `axes` (sequence): the axes (see [[variable-axes]]).
   - `row` (map): the row.
 
-  Returns a vector of scaled values in axis order, `nil` where the value is missing (see [[numeric-value]])."
+  Returns a vector of scaled values in axis order, `nil` where the value is missing (see [[cljplot2.schema/finite-double]])."
   [axes row]
-  (mapv (fn [axis] (some->> ((:accessor axis) row) numeric-value (scaled axis))) axes))
+  (mapv (fn [axis] (some->> ((:accessor axis) row) schema/finite-double (scaled axis))) axes))
 
 (defn- y-extent
   "Gives the extent of the chart's `:y`: the scaled values and every axis end.
@@ -349,7 +338,7 @@
   Throws `ex-info {:key :fill}` for a `:fill` other than `:none` in a cartesian plot."
   [options coord]
   (let [fill (:fill options)]
-    (when (and (not (coord/polar? coord)) (some? fill) (not= :none fill))
+    (when (and (not (coord/polar? coord)) (not (theme/none? (data/option options :fill :none))))
       (schema/fail! "Parallel coordinates are lines: :fill fills radar polygons, with :coord :polar."
                     {:key :fill :value fill}))))
 
@@ -362,14 +351,14 @@
   - `split` (map): `:groups` - `{panel rows}`, `:mapping` - the merged mapping.
   - `env` (map): `:theme`, `:plot-scales`, `:coord`, `:flip?` and the rest of the compute environment.
 
-  Returns `{:data :extents :padding :na :dropped :scale-defaults :style}`: per panel `{:lines [{:rows [[scaled-or-nil ..] ..] :aesthetics}] :axes axes :style st}` (`axes` - see [[variable-axes]], without accessors; rows with a missing value left out with `:missing :drop`); extents `:x` (the variable labels, ordered) and `:y` (the scaled values and axis ends) and the aesthetic extents; `:padding` - [[cljplot2.data.rows/default-padding]] under the `:padding` option; `:dropped :variables` - rows with a missing value; `:scale-defaults` hiding the plot's y axis (in a flipped polar plot also padding the value angle, `:expand`); `:style` - the chart style (`:fill :none` in cartesian plots; the legend's too).
+  Returns `{:data :extents :padding :padding-explicit :na :dropped :scale-defaults :style}`: per panel `{:lines [{:rows [[scaled-or-nil ..] ..] :aesthetics}] :axes axes :style st}` (`axes` - see [[variable-axes]], without accessors; rows with a missing value left out with `:missing :drop`); extents `:x` (the variable labels, ordered) and `:y` (the scaled values and axis ends) and the aesthetic extents; `:padding` - [[cljplot2.data.rows/default-padding]] under the `:padding` option; `:dropped :variables` - rows with a missing value; `:scale-defaults` hiding the plot's y axis (in a flipped polar plot also padding the value angle, `:expand`); `:style` - the chart style (`:fill :none` in cartesian plots; the legend's too).
 
   Throws `ex-info {:key :fill}` for a radar fill in a cartesian plot, `{:key :variables}` for a variable without numbers (see [[variable-axes]])."
   [{:keys [options] :as chart} {:keys [groups mapping]} {:keys [theme plot-scales coord flip?] :as env}]
   (check-fill! options coord)
   (let [{:keys [panels dropped]} (group/split groups mapping env)
         axes (variable-axes options (mapcat (fn [gs] (mapcat :rows gs)) (vals panels)))
-        drop? (= :drop (:missing options))
+        drop? (= :drop (data/option options :missing :break))
         panel-lines (update-vals panels
                                  (fn [gs]
                                    (mapv (fn [g]
@@ -382,17 +371,17 @@
         x-extent (assoc (data/extent :x labels) :ordered? true)
         y (y-extent axes (mapcat (fn [ls] (mapcat (comp (partial apply concat) :rows) ls)) (vals panel-lines)))
         st (cond-> (theme/resolved-style theme chart) (not (coord/polar? coord)) (assoc :fill :none))
-        padding (merge data/default-padding (:padding options))
+        {:keys [padding] :as padding-stats} (data/padding-stats data/default-padding {} options)
         drawn-axes (mapv #(dissoc % :accessor) axes)]
-    {:data (update-vals panel-lines (fn [ls] {:lines (mapv #(dissoc % :incomplete) ls) :axes drawn-axes :style st}))
-     :extents (merge-with merge
-                          (group/aesthetic-extents panels plot-scales)
-                          (update-vals panels (constantly {:x x-extent :y y})))
-     :padding padding
-     :na (group/na-dims panels)
-     :dropped (assoc dropped :variables (reduce m/long-add 0 (mapcat #(map :incomplete %) (vals panel-lines))))
-     :scale-defaults {:y (cond-> {:axis false} (and (coord/polar? coord) flip?) (assoc :expand (:y padding)))}
-     :style st}))
+    (into padding-stats
+          {:data (update-vals panel-lines (fn [ls] {:lines (mapv #(dissoc % :incomplete) ls) :axes drawn-axes :style st}))
+           :extents (merge-with merge
+                                (group/aesthetic-extents panels plot-scales)
+                                (update-vals panels (constantly {:x x-extent :y y})))
+           :na (group/na-dims panels)
+           :dropped (assoc dropped :variables (reduce m/long-add 0 (mapcat #(map :incomplete %) (vals panel-lines))))
+           :scale-defaults {:y (cond-> {:axis false} (and (coord/polar? coord) flip?) (assoc :expand (:y padding)))}
+           :style st})))
 
 ;; draw
 
@@ -612,9 +601,9 @@
                                       :label [{:kind :label :role :tick-label :text text} anchor
                                               (m/+ px (m/* nx off)) (m/+ py (m/* ny off))]}))}))]
     (doseq [{:keys [path ticks]} placed]
-      (polyline/stroke-runs! canvas [path] {:color line-color :width line-width})
+      (polyline/stroke-runs! canvas [path] {:color line-color :line-width line-width})
       (doseq [{:keys [mark]} ticks]
-        (polyline/stroke-runs! canvas [mark] {:color tick-color :width tick-width})))
+        (polyline/stroke-runs! canvas [mark] {:color tick-color :line-width tick-width})))
     (doseq [[content anchor x y] (axis-labels canvas placed env)]
       (label/draw-at! canvas content anchor x y env))))
 
@@ -662,7 +651,7 @@
         closes? (and (some? geometry) (not flipped?) (coord/full-circle? geometry))
         rp (scale/range-projection scales)
         smooth (when (= :smooth (:curve options))
-                 {:value-index (if flipped? 0 1) :smoothness (double (:smoothness options 1.0))})
+                 {:value-index (if flipped? 0 1) :smoothness (double (data/option options :smoothness 1.0))})
         theme (:theme env)]
     (when (and geometry (false? (:axis (:y scales))))
       (draw-web! canvas axes rp geometry closes? env))
@@ -677,7 +666,7 @@
       (when (every? some? row)
         (polyline/fill-closed-runs! canvas runs fill pattern-fill))
       (polyline/stroke-runs! canvas runs st))
-    (when (:axes options true)
+    (when (data/option options :axes true)
       (draw-axes! canvas axes rp geometry flipped? env))))
 
 (defn legend

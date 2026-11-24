@@ -62,13 +62,13 @@
 (plot/render-image (plot/arrange [{:data mtcars
                                    :mapping {:x :wt :y :mpg :color :hp :order :hp}
                                    :charts [(chart/scatter {:size 26 :stroke-color :white})]
-                                   :labels {:title ":order :hp, :order-direction :ascending"}
+                                   :labels {:title ":order :hp, ascending (default)"}
                                    :legend false}
                                   {:data mtcars
                                    :mapping {:x :wt :y :mpg :color :hp :order :hp}
-                                   :charts [(chart/scatter {:size 26 :stroke-color :white :order-direction :descending
+                                   :charts [(chart/scatter {:size 26 :stroke-color :white :descending true
                                                            :padding {:x [0 0] :y [0.05 0.05]}})]
-                                   :labels {:title ":order-direction :descending, :padding x 0"}}]
+                                   :labels {:title ":descending true, :padding x 0"}}]
                                  {:columns 2 :widths [1 1.2]})
                    {:width 1000 :height 360})
 
@@ -111,15 +111,15 @@
                                  {:columns 3})
                    {:width 1000 :height 300})
 
-;; The gradient along x instead, and `:stroke-alpha` fading the strokes of overlapping lines:
+;; The gradient along x instead, and `:stroke-alpha-factor` fading the strokes of overlapping lines:
 
 (plot/render-image (plot/arrange [{:data wave :mapping {:x :t :y :v}
                                    :charts [(chart/line {:fill-gradient :mpl/viridis :fill-gradient-axis :x})]
                                    :labels {:title ":fill-gradient-axis :x"}}
                                   {:data stocks
                                    :mapping {:x #(java.time.LocalDate/parse (:date %)) :y :price :color :symbol}
-                                   :charts [(chart/line {:width 3 :stroke-alpha 0.4})]
-                                   :labels {:title ":stroke-alpha 0.4"}}]
+                                   :charts [(chart/line {:line-width 3 :stroke-alpha-factor 0.4})]
+                                   :labels {:title ":stroke-alpha-factor 0.4"}}]
                                  {:columns 2 :widths [1 1.4]})
                    {:width 1000 :height 300})
 
@@ -136,15 +136,15 @@
 
 (plot/render-image (plot/arrange [{:data spiral :mapping {:x :x :y :y}
                                    :charts [(chart/line)]
-                                   :labels {:title ":sort true (default)"}}
+                                   :labels {:title ":order :x (default)"}}
                                   {:data spiral :mapping {:x :x :y :y}
-                                   :charts [(chart/line {:sort false})]
-                                   :labels {:title ":sort false"}}
+                                   :charts [(chart/line {:order :data})]
+                                   :labels {:title ":order :data"}}
                                   {:data spiral :mapping {:x :x :y :v}
-                                   :charts [(chart/line {:sort false :gaps :break :padding {:x [0 0] :y [0 0]}})]
+                                   :charts [(chart/line {:order :data :gaps :break :padding {:x [0 0] :y [0 0]}})]
                                    :labels {:title ":gaps :break, no padding"}}
                                   {:data spiral :mapping {:x :x :y :v}
-                                   :charts [(chart/line {:sort false :gaps :bridge :bridge {:alpha 0.5 :dash :dotted}})]
+                                   :charts [(chart/line {:order :data :gaps :bridge :bridge {:alpha-factor 0.5 :dash :dotted}})]
                                    :labels {:title ":gaps :bridge"}}]
                                  {:columns 2})
                    {:width 900 :height 600})
@@ -203,7 +203,7 @@
 
 (plot/render-image {:data moves
                     :mapping {:x :x :y :y :xend :x2 :yend :y2 :color :from}
-                    :charts [(chart/segment {:width 2})]}
+                    :charts [(chart/segment {:line-width 2})]}
                    {:width 500 :height 320})
 
 ;; Its options: literal ends (here every segment starts at x = 0, a lollipop stem), arrows and gaps:

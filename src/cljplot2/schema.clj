@@ -19,8 +19,8 @@
 
   Functions and vars:
 
-  - Named types: [[named-type]], numbers ([[non-neg]], [[pos]], [[pos-int]], [[finite]], [[fraction]], [[open-fraction]], [[finite-pos]], [[finite-non-neg]], [[finite-interval]], [[padding]]), [[bool]], [[function]], [[accessor]], [[malli-schema]], colours ([[color]], [[solid-color]], [[text-color]], [[cvd-deficiency]]), [[dash]] with [[dash-styles]], [[pattern]] with [[pattern-styles]], [[interpolator]], [[align]], [[temporal]], [[shape]], [[font]], [[font-style]]; predicates [[finite?]], [[color?]], [[solid-color?]], [[dash?]], [[pattern?]].
-  - Entries: [[optional]], [[nilable]], [[in-fragment]], [[in-section]], [[options-map]]; composite schemas [[with-rules]], [[forbidden]] ([[forbidden?]]), [[keyword-or]].
+  - Named types: [[named-type]], numbers ([[non-neg]], [[pos]], [[pos-int]], [[finite]], [[fraction]], [[open-fraction]], [[finite-pos]], [[finite-non-neg]], [[finite-interval]], [[padding]]), [[bool]], [[function]], [[accessor]], [[malli-schema]], colours ([[color]], [[solid-color]], [[text-color]], [[cvd-deficiency]]), [[number-format]], [[count-format]] (with [[text-formatter]]), [[dash]] with [[dash-styles]], [[pattern]] with [[pattern-styles]], [[interpolator]], [[align]], [[temporal]], [[shape]], [[font]], [[font-style]]; predicates [[finite?]] (with [[finite-double]]), [[color?]], [[solid-color?]], [[dash?]], [[pattern?]].
+  - Entries: [[optional]], [[nilable]], [[in-fragment]], [[in-section]], [[options-map]]; composite schemas [[with-rules]], [[forbidden]] ([[forbidden?]]), [[keyword-or]]; entry keys of a map schema [[entry-keys]].
   - Checking: [[errors]], [[explain!]], [[check-options!]], [[throw-errors!]], [[fail!]] (built by [[cljplot2.error]], which namespaces below this one - e.g. [[cljplot2.graphics.shape]] - use directly)."
   (:refer-clojure :exclude [accessor])
   (:require [clojure.string :as str]
@@ -90,6 +90,17 @@
   Returns true for a finite number, false for other numbers and non-numbers. See also [[finite]]."
   [v]
   (and (number? v) (m/valid-double? v)))
+
+(defn finite-double
+  "Gives a value as a double when it is a finite number.
+
+  Parameters:
+
+  - `v`: any value.
+
+  Returns `v` as a double for a finite number; `nil` for `NaN`, infinite numbers and non-numbers. See also [[finite?]]."
+  [v]
+  (when (finite? v) (double v)))
 
 (defn color?
   "Tests whether `v` is `:none` or a colour clojure2d resolves (any clojure2d colour representation).
@@ -220,7 +231,7 @@
    :dots {:kind :dots :spacing 6.0 :size 2.0}
    :dense-dots {:kind :dots :spacing 4.0 :size 1.5}})
 
-(def pattern-angles
+(def ^:private pattern-angles
   "Angles (degrees) of line and cross patterns: those whose tiles repeat seamlessly."
   #{0 45 90 135})
 
@@ -323,6 +334,41 @@
   "Schema of a text colour: a clojure2d colour or `:contrast` - black or white, whichever reads on what's behind the text (see [[cljplot2.graphics.draw/text-color]])."
   (named-type ::text-color #(or (= :contrast %) (solid-color? %)) "should be a clojure2d color or :contrast"
               "a clojure2d color or :contrast"))
+
+(defn- formats?
+  "Tests whether a format string formats a sample value.
+
+  Parameters:
+
+  - `sample`: the value tried.
+  - `v`: any value.
+
+  Returns true for a string `java.lang.String/format` accepts with `sample` as its one argument, else false."
+  [sample v]
+  (and (string? v) (try (format v sample) true (catch Exception _ false))))
+
+(def number-format
+  "Schema of the text format of a number: a `java.lang.String/format` pattern formatting a double (e.g. `%.1f`) or a function of the number giving its text (see [[text-formatter]])."
+  (named-type ::number-format #(or (fn? %) (formats? 1.5 %))
+              "should be a format string of a number (e.g. \"%.1f\") or a function"
+              "a number format string or a function"))
+
+(def count-format
+  "Schema of the text format of a count: a `java.lang.String/format` pattern formatting a long (e.g. `n=%d`) or a function of the count giving its text (see [[text-formatter]])."
+  (named-type ::count-format #(or (fn? %) (formats? 1 %))
+              "should be a format string of a count (e.g. \"n=%d\") or a function"
+              "a count format string or a function"))
+
+(defn text-formatter
+  "Gives the function a text format describes.
+
+  Parameters:
+
+  - `format-spec`: a format string of one argument or a function of the value (see [[number-format]], [[count-format]]), or `nil`.
+
+  Returns a function of a value giving its text: `(format format-spec v)` for a string, the function itself, `nil` for `nil`."
+  [format-spec]
+  (if (string? format-spec) #(format format-spec %) format-spec))
 (def shape
   "Schema of a point shape: a built-in character, keyword or a shape map (see [[cljplot2.graphics.shape/shape-problem]], whose message is the error)."
   (named-type ::shape shape/shape? shape/shape-problem "a shape character, keyword or shape map"))
@@ -561,7 +607,13 @@
                 (or (me/error-message error) "is invalid"))}))
 
 (def ^{:arglists '([errors])} throw-errors!
-  "Throws one `ex-info` listing `errors` (`{:in :value :message}` entries), shaped as in the namespace doc; returns `nil` for no errors. See [[cljplot2.error/throw-errors!]]."
+  "Throws one `ex-info` listing errors, shaped as in the namespace doc.
+
+  Parameters:
+
+  - `errors` (sequence): `{:in :value :message}` entries.
+
+  Returns `nil` for no errors. See [[cljplot2.error/throw-errors!]]."
   error/throw-errors!)
 
 (defn errors
@@ -633,5 +685,12 @@
                                (errors schema (if (nil? options) {} options) [])))))
 
 (def ^{:arglists '([message data])} fail!
-  "Throws the error of a check done by hand, shaped and worded as [[explain!]]'s: `message` and `data` with at least `:key` (the option), optionally `:in` and `:value`. See [[cljplot2.error/fail!]]."
+  "Throws the error of a check done by hand, shaped and worded as [[explain!]]'s.
+
+  Parameters:
+
+  - `message` (string): what is wrong.
+  - `data` (map): `:key` (the option at fault), optionally `:in` (its path) and `:value`, and anything else useful.
+
+  Always throws `ex-info`. See [[cljplot2.error/fail!]]."
   error/fail!)

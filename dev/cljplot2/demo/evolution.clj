@@ -19,7 +19,7 @@
   {:data walks
    :mapping {:x :day :y :value :color :series :facet :series}
    :charts [(chart/line {:mapping {:facet nil :color nil :group :series} :color [200 200 200]})
-            (chart/line {:width 2})]
+            (chart/line {:line-width 2})]
    :labels {:title "Every series in grey behind each panel's own ({:facet nil})"}})
 
 (def end-labels
@@ -63,7 +63,7 @@
     {:data ranked
      :mapping {:x :round :y :rank :color :team}
      :scales {:y {:domain [5.5 0.5] :nice false :ticks [1 2 3 4 5]}}
-     :charts [(chart/line {:interpolator :monotone :width 3})
+     :charts [(chart/line {:interpolator :monotone :line-width 3})
               (chart/scatter {:size 9})
               (chart/text {:mapping {:x :round :y :rank :label :team :color :team} :select :last})]
      :labels {:title "Bump chart: levels/rank-rows, monotone lines, end labels" :y "rank"}}))

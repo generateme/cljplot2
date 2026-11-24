@@ -180,13 +180,13 @@
 
 (plot/render-image (plot/arrange [{:data ohlc :mapping {:x :date :open :open :high :high :low :low :close :close}
                                    :charts [(chart/candlestick {:up-color [33 102 172] :down-color [240 140 30]
-                                                                :body-width 0.4 :stroke-color :black})]
-                                   :labels {:title "colours, :body-width 0.4"}}
+                                                                :width 0.4 :stroke-color :black :stroke-width 1.5})]
+                                   :labels {:title "colours, :width 0.4, outlined"}}
                                   {:data ohlc :mapping {:x :date :open :open :high :high :low :low :close :close}
                                    :charts [(chart/candlestick {:down-pattern :hatch :pattern-color :black})]
                                    :labels {:title ":down-pattern :hatch"}}
                                   {:data ohlc :mapping {:x :date :open :open :high :high :low :low :close :close}
-                                   :charts [(chart/candlestick {:style :ohlc :wick-width 2})]
+                                   :charts [(chart/candlestick {:style :ohlc :line-width 2})]
                                    :labels {:title ":style :ohlc"}}]
                                  {:columns 3})
                    {:width 1000 :height 320})

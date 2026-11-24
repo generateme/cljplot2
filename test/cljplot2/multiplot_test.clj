@@ -70,7 +70,7 @@
   (testing "errors carry the sub-plot id and path"
     (let [bad (assoc p1 :mapping {:x :x :y :nope})
           data (error #(plot/build (plot/arrange [p1 bad])))]
-      (is (= [:mapping :y [:plot 1] [[:plot 1]]] ((juxt :key :value :subplot :subplot-path) data))))
+      (is (= [:mapping [:mapping :y] [:plot 1] [[:plot 1]]] ((juxt :key :in :subplot :subplot-path) data))))
     (let [bad (assoc p1 :mapping {:x :x :y :nope})
           data (error #(plot/build (plot/arrange [p1 (plot/arrange [bad p1])])))]
       (is (= [[:plot 1] [[:plot 1] [:plot 0]]] ((juxt :subplot :subplot-path) data)) "outer id first")))

@@ -6,13 +6,13 @@
   Optional keys of a chart value:
 
   - `:computed-aesthetics` (optional) - `{dim title}`, or a function of the chart's options and merged mapping returning one: aesthetics the chart computes itself instead of mapping (e.g. [[bin2d]]'s color, titled by its measure): a plot `:scales` entry of such an aesthetic is valid without a chart mapping it, another chart can't map it, and `title` (a string or `nil`) is its legend title unless the plot's scale has a `:title` (the first chart's title wins); see [[cljplot2.scale.aesthetic/computed-aesthetics]].
-  - `:coords` (optional, default `#{:cartesian}`) - the coordinate systems the chart draws in (plot `:coord`, see [[cljplot2.scale.coord]]); polar charts: [[bar]], [[segment]], [[scatter]], [[line]], [[text]], [[rule]], [[rect]], [[parallel]] (radar), [[partition]] (sunburst); `#{:three-d}` - 3D charts ([[cloud]], [[surface]]): only with other 3D charts, each with an explicit `:domain` when there are several, see [[cljplot2.data.space3d]]; a 3D chart value also has `:primitives` - `(fn [chart computed point scales env])` giving its primitives for one panel, which the panel draws with every 3D chart's in one scene ([[cljplot2.graphics.space3d/draw-scene!]]).
+  - `:coords` (optional, default `#{:cartesian}`) - the coordinate systems the chart draws in (plot `:coord`, see [[cljplot2.scale.coord]]); polar charts: [[bar]], [[segment]], [[scatter]], [[line]], [[text]], [[rule]], [[rect]], [[parallel]] (radar), [[partition]] (sunburst); `#{:three-d}` - 3D charts ([[cloud]], [[surface]]): only with other 3D charts, each with an explicit `:domain` when there are several, see [[cljplot2.data.space3d]]; a 3D chart value also has `:primitives` - `(fn [chart computed point scales env])` giving its primitives for one panel, which the panel draws with every 3D chart's in one scene ([[cljplot2.content.space3d/draw-scene!]]).
   - `:schema` (optional for user charts) - `{:options s :style s :mapping s}` malli schemas, checked by `build` before any stage runs: `:options` against the chart's options, `:mapping` against the plot mapping merged with the chart's, `:style` against theme `[:chart kind]` (built-in kinds: [[builtin-styles]], always). Charts don't validate their input themselves.
 
   The functions of a chart value:
 
-  - `(compute chart {:groups {panel rows} :mapping mapping} env)` -> data `{:extents {panel {dim extent}} :padding {dim [lo hi]} :data {panel computed} :na #{dim} :dropped {dim n}}` (`:padding` - the chart's padding, fractions of the span; optional `:padding-explicit {dim [lo hi]}` - the sides that are requests, `nil` - default: per side the plot takes the largest request of the charts reaching that end of the merged extent, the largest padding only where none does, see [[cljplot2.data.rows/explicit-padding]]) (an extent with `:companion? true` counts only when another chart has extents of its dimension) and optionally `:axis-titles {:x t :y t}` (suggested axis titles; the first chart's win, plot `:labels` win over all) and `:tick-format {:x f :y f}` (suggested tick label format, `:absolute` - magnitudes; used unless the plot's scale has a `:formatter`) and `:scale-defaults {:x attrs :y attrs}` (suggested position scale attributes, e.g. bands `:padding-out`; dropped when the plot's own `:scales` entry sets any of them) and `:padding-px {dim [lo hi]}` (pixels kept free beyond the data on each side of a continuous position scale, e.g. for labels past the data) (`env` - `{:theme :na-level? :plot-scales :flip? :hint :coord :aspect :panel-size}`, `:plot-scales` - the plot's `:scales`, `:flip?` - the plot's `:flip`, `:hint` - the rendering hint, for measuring text, `:aspect` - the plot's `:aspect`, `:panel-size` - a delay of one panel's estimated `[w h]` in pixels (see [[cljplot2.layout.plot-grid/estimated-panel-size]]; deref only when needed - it measures text)); stored per chart in the plot's `:stats`. Aesthetic extents (`:color`, `:shape`, `:size`, `:dash`) are [[cljplot2.data.rows/value-extent]]s; `:na` lists aesthetics with NA (`nil`) values
-  - `(draw chart computed canvas panel-box scales env)` - draws one panel's `computed` data (`env` also has the panel's `:panel-key` - its facet level, `[col row]` for a grid, `cljplot2.data.facet/single-panel` without facets); called by the panel with isolated graphics clipped to the panel box. Pixel positions come from `cljplot2.scale.position/projection` (data `x`, `y` -> pixel point; `:x` is vertical in a plot with `:flip true`), never from assuming `:x` is horizontal; it gives `##NaN` for values the scale can't place, and such values are skipped. Shapes that must follow a polar plot's circle are built in range space - `cljplot2.scale.position/range-projection` (or the scales' forward functions, `cljplot2.data.strip/placement` `:range-point`) - and turned into pixels by `cljplot2.scale.coord` (`to-pixel`, `line-path`, `rect-path`, `circle-path`; the identity in cartesian plots). Charts compute in their own frame (`:x`, `:y`); flip and polar coordinates are drawing concerns only.
+  - `(compute chart {:groups {panel rows} :mapping mapping} env)` -> data `{:extents {panel {dim extent}} :padding {dim [lo hi]} :data {panel computed} :na #{dim} :dropped {dim n}}` (`:padding` - the chart's padding, fractions of the span; optional `:padding-explicit {dim [lo hi]}` - the sides that are requests, `nil` - default: per side the plot takes the largest request of the charts reaching that end of the merged extent, the largest padding only where none does, see [[cljplot2.data.rows/explicit-padding]]) (an extent with `:companion? true` counts only when another chart has extents of its dimension) and optionally `:axis-titles {:x t :y t}` (suggested axis titles; the first chart's win, plot `:labels` win over all) and `:tick-format {:x f :y f}` (suggested tick label format, `:absolute` - magnitudes; used unless the plot's scale has a `:formatter`) and `:scale-defaults {:x attrs :y attrs}` (suggested position scale attributes, e.g. bands `:padding-out`; dropped when the plot's own `:scales` entry sets any of them) and `:padding-px {dim [lo hi]}` (pixels kept free beyond the data on each side of a continuous position scale, e.g. for labels past the data) (`env` - `{:theme :na-level? :plot-scales :flip? :hint :coord :aspect :panel-size}`, `:plot-scales` - the plot's `:scales`, `:flip?` - the plot's `:flip`, `:hint` - the rendering hint, for measuring text, `:aspect` - the plot's `:aspect`, `:panel-size` - a delay of one panel's estimated `[w h]` in pixels (see [[cljplot2.layout.plot-grid/estimated-panel-size]]; deref only when needed - it measures text)); stored per chart in the plot's `:stats`. Aesthetic extents (`:color`, `:shape`, `:size`, `:dash`) are [[cljplot2.data.rows/value-extent]]s; `:na` lists aesthetics with NA (`nil`) values. `:dropped` counts the rows a chart leaves out: one key per mapped dimension (`:x`, `:y`, an aesthetic, `:xend` ... - rows whose value of it is invalid, outside an explicit domain or NA without an NA level), each row counted once, under the first of its dimensions that drops it; the only other keys are `:group` (groups too small for the chart, e.g. a polygon under 3 points), `:field` (panels or groups without an estimable field), `:duplicate` (rows repeating a cell), `:value` (cells without a computable statistic), `:set` and `:variables` (the set and pairwise charts' inputs). Data functions outside the chart contract (e.g. [[cljplot2.data.graph/graph]]) report a plain count `:dropped n` of the input rows they leave out.
+  - `(draw chart computed canvas panel-box scales env)` - draws one panel's `computed` data (`env` also has the panel's `:panel-key` - its facet level, `[col row]` for a grid, `cljplot2.data.facet/single-panel` without facets); called by the panel with isolated graphics clipped to the panel box. Pixel positions come from `cljplot2.scale.position/projection` (data `x`, `y` -> pixel point; `:x` is vertical in a plot with `:flip true`), never from assuming `:x` is horizontal; it gives `##NaN` for values the scale can't place, and such values are skipped. Shapes that must follow a polar plot's circle are built in range space - `cljplot2.scale.position/range-projection` (or the scales' forward functions, `cljplot2.chart.strip/placement` `:range-point`) - and turned into pixels by `cljplot2.scale.coord` (`to-pixel`, `line-path`, `rect-path`, `circle-path`; the identity in cartesian plots). Charts compute in their own frame (`:x`, `:y`); flip and polar coordinates are drawing concerns only.
   - `(legend chart attributes canvas box env)` - optional; draws the chart's key glyph in a legend key `box`, `attributes` - the entry's mapped style attributes (`{:color c :shape s :size z :dash d}`, NA ones absent except color); `env` also has the chart's computed data (`:chart-stats`, see compute). Every chart mapping a legend's dimension draws into its keys, in chart order.
 
   Options common to all charts: `:data` (own data, see [[cljplot2.data.rows/rows]]) and `:mapping` (merged over the plot's mapping; a chart value with `:inherit-mapping :facets` - the annotation charts - takes only the plot mapping's facet keys).
@@ -22,6 +22,8 @@
   Functions: a constructor per built-in kind, each taking an optional options map - [[scatter]], [[line]], [[segment]], [[bar]], [[histogram]], [[density]], [[ecdf]], [[qq]], [[pp]], [[ribbon]], [[smooth]], [[candlestick]], [[parallel]], [[polygon]], [[treemap]], [[partition]], [[pack]], [[waffle]], [[venn]], [[tile]], [[bin2d]], [[field]], [[contour]], [[correlation]], [[pairwise]], [[cloud]], [[surface]], [[box]], [[bullet]], [[violin]], [[stripplot]], [[beeswarm]], [[dotplot]], [[rug]], [[extent]], [[rule]], [[rect]], [[function]], [[text]], [[image]]; [[builtin-styles]] - the style schema of every built-in kind; [[chart-value?]] - tests for a chart value."
   (:refer-clojure :exclude [partition])
   (:require [cljplot2.chart.bar :as bar]
+            [cljplot2.content.space3d :as space-draw]
+            [cljplot2.chart.legend :as chart-legend]
             [cljplot2.chart.beeswarm :as beeswarm]
             [cljplot2.chart.dotplot :as dotplot]
             [cljplot2.chart.bin2d :as bin2d]
@@ -61,8 +63,9 @@
             [cljplot2.chart.violin :as violin]
             [cljplot2.chart.waffle :as waffle]
             [cljplot2.data.measure :as measure]
-            [cljplot2.data.strip :as strip]
-            [cljplot2.graphics.space3d :as space-draw]))
+            [cljplot2.data.rows :as data]
+            [cljplot2.chart.strip :as strip-chart]
+            [cljplot2.chart.common :as common]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -146,14 +149,21 @@
   (assoc v :coords #{:cartesian :polar}))
 
 (defn- annotation-value
-  "A chart value of an annotation chart, which inherits only the facet keys of the plot mapping.
+  "Gives the chart value of an annotation chart, which inherits only the facet keys of the plot mapping.
 
-  Parameters as [[chart-value]]. Returns the chart value with `:inherit-mapping :facets`."
+  Parameters:
+
+  - `kind` (keyword): the chart kind.
+  - `compute`, `draw`, `legend` (functions): the chart contract functions (`legend` may be `nil`).
+  - `schema` (map): the chart's schemas.
+  - `options` (map): the chart options.
+
+  Returns the chart value of [[chart-value]] with `:inherit-mapping :facets`."
   [kind compute draw legend schema options]
   (assoc (chart-value kind compute draw legend schema options) :inherit-mapping :facets))
 
 (defn scatter
-  "Scatter chart.
+  "Makes a scatter chart.
 
   Parameters:
 
@@ -163,10 +173,10 @@
 
   See also [[cljplot2.chart.scatter]]."
   ([] (scatter {}))
-  ([options] (polar (chart-value :scatter scatter/compute scatter/draw scatter/legend scatter/schemas options))))
+  ([options] (polar (chart-value :scatter scatter/compute scatter/draw chart-legend/stroked-point-legend scatter/schemas options))))
 
 (defn histogram
-  "Histogram of `:x`.
+  "Makes a histogram of `:x`.
 
   Parameters:
 
@@ -179,7 +189,7 @@
   ([options] (chart-value :histogram histogram/compute histogram/draw histogram/legend histogram/schemas options)))
 
 (defn density
-  "Kernel density estimate of `:x`.
+  "Makes a kernel density estimate of `:x`.
 
   Parameters:
 
@@ -192,7 +202,7 @@
   ([options] (chart-value :density density/compute density/draw density/legend density/schemas options)))
 
 (defn line
-  "Line through `(:x, :y)` points.
+  "Makes a line through `(:x, :y)` points.
 
   Parameters:
 
@@ -205,7 +215,7 @@
   ([options] (polar (chart-value :line line/compute line/draw line/legend line/schemas options))))
 
 (defn ribbon
-  "Band between `:ymin` and `:ymax` along `:x`.
+  "Makes a band between `:ymin` and `:ymax` along `:x`.
 
   Parameters:
 
@@ -218,7 +228,7 @@
   ([options] (chart-value :ribbon ribbon/compute ribbon/draw ribbon/legend ribbon/schemas options)))
 
 (defn smooth
-  "Fitted curve of `:y` on `:x` with confidence, prediction or bootstrap bands (`:method` loess, lm, glm, gp, interpolators).
+  "Makes a fitted curve of `:y` on `:x` with confidence, prediction or bootstrap bands (`:method` loess, lm, glm, gp, interpolators).
 
   Parameters:
 
@@ -267,10 +277,10 @@
 
   See also [[cljplot2.chart.bar]], [[cljplot2.data.strip]]."
   ([] (bar {}))
-  ([options] (polar (chart-value :bar strip/compute strip/draw bar/legend bar/schemas options))))
+  ([options] (polar (chart-value :bar strip-chart/compute strip-chart/draw bar/legend bar/schemas options))))
 
 (defn parallel
-  "Parallel coordinates of wide rows over `:variables` (one axis per variable, affine `:scaling`); a radar chart under a polar `:coord`.
+  "Makes parallel coordinates of wide rows over `:variables` (one axis per variable, affine `:scaling`); a radar chart under a polar `:coord`.
 
   Parameters:
 
@@ -283,7 +293,7 @@
   ([options] (polar (chart-value :parallel parallel/compute parallel/draw parallel/legend parallel/schemas options))))
 
 (defn polygon
-  "Closed filled polygons through the `(:x, :y)` points of each group in row order.
+  "Makes closed filled polygons through the `(:x, :y)` points of each group in row order.
 
   Parameters:
 
@@ -296,7 +306,7 @@
   ([options] (chart-value :polygon polygon/compute polygon/draw polygon/legend polygon/schemas options)))
 
 (defn treemap
-  "Treemap of `:value` over the `:hierarchy` levels.
+  "Makes a treemap of `:value` over the `:hierarchy` levels.
 
   Parameters:
 
@@ -306,10 +316,10 @@
 
   See also [[cljplot2.chart.treemap]]."
   ([] (treemap {}))
-  ([options] (chart-value :treemap treemap/compute treemap/draw treemap/legend treemap/schemas options)))
+  ([options] (chart-value :treemap treemap/compute treemap/draw chart-legend/cell-legend treemap/schemas options)))
 
 (defn partition
-  "Partition of `:value` over the `:hierarchy` levels: an icicle, a sunburst under a polar `:coord`.
+  "Makes a partition of `:value` over the `:hierarchy` levels: an icicle, a sunburst under a polar `:coord`.
 
   Parameters:
 
@@ -319,25 +329,25 @@
 
   See also [[cljplot2.chart.partition]]."
   ([] (partition {}))
-  ([options] (polar (assoc (chart-value :partition partition/compute partition/draw partition/legend partition/schemas options)
+  ([options] (polar (assoc (chart-value :partition partition/compute partition/draw chart-legend/cell-legend partition/schemas options)
                            :computed-aesthetics partition/computed-aesthetics))))
 
 (defn cloud
-  "3D scatter (points, spikes, bars; side projections; a 2D histogram with `:bins`) of `:x`, `:y`, `:z` in a projected box.
+  "Makes a 3D scatter (points, spikes, bars; side projections; a 2D histogram with `:bins`) of `:x`, `:y`, `:z` in a projected box.
 
   Parameters:
 
-  - `options` (map, optional): the chart's options - its own options (see [[cljplot2.chart.cloud]]), `:data` and `:mapping` (taken by every chart), and the point style keys over the theme style `[:chart :cloud]` (`:projection-alpha` and `:band-alpha` are theme only, not options), and `:theme-style` - a named theme style merged over it (see [[cljplot2.theme/chart-style]]).
+  - `options` (map, optional): the chart's options - its own options (see [[cljplot2.chart.cloud]]), `:data` and `:mapping` (taken by every chart), and the point style keys over the theme style `[:chart :cloud]` (`:projection-alpha-factor` and `:band-alpha-factor` are theme only, not options), and `:theme-style` - a named theme style merged over it (see [[cljplot2.theme/chart-style]]).
 
   Returns a chart value of kind `:cloud` - a 3D chart, drawn only with other 3D charts. Options are validated by `build` (see [[cljplot2.pipeline/build]]), not here.
 
   See also [[cljplot2.chart.cloud]]."
   ([] (cloud {}))
-  ([options] (assoc (chart-value :cloud cloud/compute space-draw/draw-chart cloud/legend cloud/schemas options)
+  ([options] (assoc (chart-value :cloud cloud/compute space-draw/draw-3d-chart cloud/legend cloud/schemas options)
                     :coords #{:three-d} :primitives cloud/chart-primitives)))
 
 (defn surface
-  "3D surface (gridded `:x :y :z`, a function `:f`, a density, a parametric `:fu`) of shaded quads or a wireframe in a projected box.
+  "Makes a 3D surface (gridded `:x :y :z`, a function `:f`, a density, a parametric `:fu`) of shaded quads or a wireframe in a projected box.
 
   Parameters:
 
@@ -347,12 +357,12 @@
 
   See also [[cljplot2.chart.surface]]."
   ([] (surface {}))
-  ([options] (assoc (chart-value :surface surface/compute space-draw/draw-chart nil surface/schemas options)
+  ([options] (assoc (chart-value :surface surface/compute space-draw/draw-3d-chart nil surface/schemas options)
                     :coords #{:three-d} :primitives surface/chart-primitives
                     :computed-aesthetics surface/computed-aesthetics)))
 
 (defn pack
-  "Circle packing of `:value` over the `:hierarchy` levels.
+  "Makes a circle packing of `:value` over the `:hierarchy` levels.
 
   Parameters:
 
@@ -365,7 +375,7 @@
   ([options] (chart-value :pack pack/compute pack/draw pack/legend pack/schemas options)))
 
 (defn waffle
-  "Waffle of the `:color` categories' shares (or counts with `:unit`) as grid cells.
+  "Makes a waffle of the `:color` categories' shares (or counts with `:unit`) as grid cells.
 
   Parameters:
 
@@ -378,7 +388,7 @@
   ([options] (chart-value :waffle waffle/compute waffle/draw waffle/legend waffle/schemas options)))
 
 (defn venn
-  "Venn diagram of 2 or 3 sets from `:set` / `:item` membership rows.
+  "Makes a Venn diagram of 2 or 3 sets from `:set` / `:item` membership rows.
 
   Parameters:
 
@@ -391,7 +401,7 @@
   ([options] (chart-value :venn venn/compute venn/draw venn/legend venn/schemas options)))
 
 (defn tile
-  "Heatmap cells of any `fastmath.grid` type at (`:x`, `:y`), filled by `:color`.
+  "Makes heatmap cells of any `fastmath.grid` type at (`:x`, `:y`), filled by `:color`.
 
   Parameters:
 
@@ -415,10 +425,10 @@
   See also [[cljplot2.chart.bin2d]]."
   ([] (bin2d {}))
   ([options] (assoc (chart-value :bin2d bin2d/compute bin2d/draw nil bin2d/schemas options)
-                     :computed-aesthetics {:color (measure/titles (get options :measure :count))})))
+                     :computed-aesthetics {:color (measure/titles (data/option options :measure :count))})))
 
 (defn ecdf
-  "Empirical CDF of `:x`.
+  "Makes an empirical CDF of `:x`.
 
   Parameters:
 
@@ -428,7 +438,7 @@
 
   See also [[cljplot2.chart.ecdf]]."
   ([] (ecdf {}))
-  ([options] (chart-value :ecdf ecdf/compute ecdf/draw ecdf/legend ecdf/schemas options)))
+  ([options] (chart-value :ecdf ecdf/compute ecdf/draw chart-legend/line-legend ecdf/schemas options)))
 
 (defn- probability-value
   "A chart value of a probability plot (Q-Q or P-P).
@@ -444,10 +454,10 @@
   [kind compute schema options]
   (let [given (if (nil? options) {} options)]
     ((if (probability/distributions-only? given) annotation-value chart-value)
-     kind compute probability/draw probability/legend schema given)))
+     kind compute probability/draw chart-legend/stroked-point-legend schema given)))
 
 (defn qq
-  "Q-Q plot: quantiles of `:x` / `:x-distribution` against `:y` / `:y-distribution`.
+  "Makes a Q-Q plot: quantiles of `:x` / `:x-distribution` against `:y` / `:y-distribution`.
 
   Parameters:
 
@@ -460,7 +470,7 @@
   ([options] (probability-value :qq probability/qq-compute probability/qq-schemas options)))
 
 (defn pp
-  "P-P plot: probabilities of `:x` / `:x-distribution` against `:y` / `:y-distribution`.
+  "Makes a P-P plot: probabilities of `:x` / `:x-distribution` against `:y` / `:y-distribution`.
 
   Parameters:
 
@@ -473,7 +483,7 @@
   ([options] (probability-value :pp probability/pp-compute probability/pp-schemas options)))
 
 (defn box
-  "Box plot of the values per level (the categorical axis, `:level-axis`) and group.
+  "Makes a box plot of the values per level (the categorical axis, `:level-axis`) and group.
 
   Parameters:
 
@@ -483,10 +493,10 @@
 
   See also [[cljplot2.chart.box]], [[cljplot2.data.strip]]."
   ([] (box {}))
-  ([options] (chart-value :box strip/compute strip/draw box/legend box/schemas options)))
+  ([options] (chart-value :box strip-chart/compute strip-chart/draw box/legend box/schemas options)))
 
 (defn bullet
-  "Bullet chart of ranges, measures and markers per level (the categorical axis, `:level-axis`) and group.
+  "Makes a bullet chart of ranges, measures and markers per level (the categorical axis, `:level-axis`) and group.
 
   Parameters:
 
@@ -496,10 +506,10 @@
 
   See also [[cljplot2.chart.bullet]], [[cljplot2.data.strip]]."
   ([] (bullet {}))
-  ([options] (chart-value :bullet strip/compute strip/draw nil bullet/schemas options)))
+  ([options] (chart-value :bullet strip-chart/compute strip-chart/draw nil bullet/schemas options)))
 
 (defn violin
-  "Violin plot of the values per level (the categorical axis, `:level-axis`) and group.
+  "Makes a violin plot of the values per level (the categorical axis, `:level-axis`) and group.
 
   Parameters:
 
@@ -509,10 +519,10 @@
 
   See also [[cljplot2.chart.violin]], [[cljplot2.data.strip]]."
   ([] (violin {}))
-  ([options] (chart-value :violin strip/compute strip/draw violin/legend violin/schemas options)))
+  ([options] (chart-value :violin strip-chart/compute strip-chart/draw violin/legend violin/schemas options)))
 
 (defn stripplot
-  "Jittered strip plot of the values per level (the categorical axis, `:level-axis`) and group.
+  "Makes a jittered strip plot of the values per level (the categorical axis, `:level-axis`) and group.
 
   Parameters:
 
@@ -522,10 +532,10 @@
 
   See also [[cljplot2.chart.stripplot]], [[cljplot2.data.strip]]."
   ([] (stripplot {}))
-  ([options] (chart-value :stripplot strip/compute strip/draw stripplot/legend stripplot/schemas options)))
+  ([options] (chart-value :stripplot strip-chart/compute strip-chart/draw chart-legend/point-legend stripplot/schemas options)))
 
 (defn beeswarm
-  "Beeswarm of the values per level (the categorical axis, `:level-axis`) and group (points packed without overlap).
+  "Makes a beeswarm of the values per level (the categorical axis, `:level-axis`) and group (points packed without overlap).
 
   Parameters:
 
@@ -535,10 +545,10 @@
 
   See also [[cljplot2.chart.beeswarm]], [[cljplot2.data.strip]]."
   ([] (beeswarm {}))
-  ([options] (chart-value :beeswarm strip/compute strip/draw beeswarm/legend beeswarm/schemas options)))
+  ([options] (chart-value :beeswarm strip-chart/compute strip-chart/draw chart-legend/point-legend beeswarm/schemas options)))
 
 (defn dotplot
-  "Dot plot of the values per level (the categorical axis, `:level-axis`): binned values as stacks of dots (Wilkinson dot density or fixed bins).
+  "Makes a dot plot of the values per level (the categorical axis, `:level-axis`): binned values as stacks of dots (Wilkinson dot density or fixed bins).
 
   Parameters:
 
@@ -548,10 +558,10 @@
 
   See also [[cljplot2.chart.dotplot]], [[cljplot2.data.strip]]."
   ([] (dotplot {}))
-  ([options] (chart-value :dotplot strip/compute strip/draw dotplot/legend dotplot/schemas options)))
+  ([options] (chart-value :dotplot strip-chart/compute strip-chart/draw dotplot/legend dotplot/schemas options)))
 
 (defn rug
-  "Rug of the values (per level of the categorical axis when one is mapped, `:level-axis`).
+  "Makes a rug of the values (per level of the categorical axis when one is mapped, `:level-axis`).
 
   Parameters:
 
@@ -561,10 +571,10 @@
 
   See also [[cljplot2.chart.rug]], [[cljplot2.data.strip]]."
   ([] (rug {}))
-  ([options] (chart-value :rug strip/compute strip/draw rug/legend rug/schemas options)))
+  ([options] (chart-value :rug strip-chart/compute strip-chart/draw rug/legend rug/schemas options)))
 
 (defn extent
-  "Interval of the values per level (the categorical axis, `:level-axis`) and group (fastmath.stats extents).
+  "Makes an interval chart of the values per level (the categorical axis, `:level-axis`) and group (fastmath.stats extents).
 
   Parameters:
 
@@ -574,10 +584,10 @@
 
   See also [[cljplot2.chart.extent]], [[cljplot2.data.strip]]."
   ([] (extent {}))
-  ([options] (chart-value :extent strip/compute strip/draw extent/legend extent/schemas options)))
+  ([options] (chart-value :extent strip-chart/compute strip-chart/draw extent/legend extent/schemas options)))
 
 (defn rule
-  "Reference lines (`:x`, `:y`, `:slope` / `:intercept`).
+  "Makes reference lines (`:x`, `:y`, `:slope` / `:intercept`).
 
   Parameters:
 
@@ -587,7 +597,7 @@
 
   See also [[cljplot2.chart.rule]], [[cljplot2.data.annotation]]."
   ([] (rule {}))
-  ([options] (polar (annotation-value :rule rule/compute rule/draw rule/legend rule/schemas options))))
+  ([options] (polar (annotation-value :rule rule/compute rule/draw chart-legend/line-legend rule/schemas options))))
 
 (defn rect
   "Rectangles and bands (`:x [a b]`, `:y [a b]`).
@@ -617,7 +627,7 @@
                                (function/categorical-labels options))))
 
 (defn text
-  "Text labels at positions.
+  "Makes text labels at positions.
 
   Parameters:
 
@@ -630,7 +640,7 @@
   ([options] (polar (annotation-value :text text/compute text/draw text/legend text/schemas options))))
 
 (defn field
-  "Raster of a 2D field - the density of points, interpolated gridded `:value`s or a function of a point `[x y]` - colored by value.
+  "Makes a raster of a 2D field - the density of points, interpolated gridded `:value`s or a function of a point `[x y]` - colored by value.
 
   Parameters:
 
@@ -644,7 +654,7 @@
                     :computed-aesthetics field/computed-aesthetics)))
 
 (defn image
-  "A free chart: an image of each panel drawn by a callback from the finalized position scales.
+  "Makes a free chart: an image of each panel drawn by a callback from the finalized position scales.
 
   Parameters:
 
@@ -657,7 +667,7 @@
   ([options] (annotation-value :image image/compute image/draw nil image/schemas options)))
 
 (defn contour
-  "Contour lines or filled regions of a 2D field (density, gridded `:value`s, a function).
+  "Makes contour lines or filled regions of a 2D field (density, gridded `:value`s, a function).
 
   Parameters:
 
@@ -671,7 +681,7 @@
                     :computed-aesthetics contour/computed-aesthetics)))
 
 (defn correlation
-  "Correlation coefficient of the panel's `:x` / `:y` drawn as a glyph (number, shade, square, circle, ellipse, pie) - a correlogram cell.
+  "Makes a correlation coefficient chart: the coefficient of the panel's `:x` / `:y` drawn as a glyph (number, shade, square, circle, ellipse, pie) - a correlogram cell.
 
   Parameters:
 

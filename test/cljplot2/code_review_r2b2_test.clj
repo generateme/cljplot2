@@ -76,20 +76,20 @@
     (is (= (pixels cloud-plot)
            (pixels (update-in cloud-plot [:charts 0 :options] merge {:projection-grid 50 :projection-levels 6}))))
     (is (= (pixels cloud-plot)
-           (pixels (assoc cloud-plot :theme {:chart {:cloud {:projection-alpha 0.35 :band-alpha 0.15}}})))))
+           (pixels (assoc cloud-plot :theme {:chart {:cloud {:projection-alpha-factor 0.35 :band-alpha-factor 0.15}}})))))
   (testing "each key changes the drawing"
     (is (not= (pixels cloud-plot) (pixels (update-in cloud-plot [:charts 0 :options] assoc :projection-grid 10))))
     (is (not= (pixels cloud-plot) (pixels (update-in cloud-plot [:charts 0 :options] assoc :projection-levels 2))))
-    (is (not= (pixels cloud-plot) (pixels (assoc cloud-plot :theme {:chart {:cloud {:projection-alpha 1.0}}}))))
-    (is (not= (pixels cloud-plot) (pixels (assoc cloud-plot :theme {:chart {:cloud {:band-alpha 0.6}}})))))
+    (is (not= (pixels cloud-plot) (pixels (assoc cloud-plot :theme {:chart {:cloud {:projection-alpha-factor 1.0}}}))))
+    (is (not= (pixels cloud-plot) (pixels (assoc cloud-plot :theme {:chart {:cloud {:band-alpha-factor 0.6}}})))))
   (testing "boundary: grid 2..500, levels 1..100, alphas fractions; theme keys aren't options"
     (is (map? (plot/build (update-in cloud-plot [:charts 0 :options] merge {:projection-grid 2 :projection-levels 1}))))
     (doseq [[k v] [[:projection-grid 1] [:projection-grid 501] [:projection-grid 2.5] [:projection-levels 0] [:projection-levels 101]]]
       (is (= [:charts 0 :options k] (:in (error #(plot/build (update-in cloud-plot [:charts 0 :options] assoc k v))))) (str k " " v)))
-    (doseq [[k v] [[:projection-alpha 1.5] [:band-alpha -0.1]]]
+    (doseq [[k v] [[:projection-alpha-factor 1.5] [:band-alpha-factor -0.1]]]
       (is (= [:theme :chart :cloud k] (:in (error #(plot/build (assoc cloud-plot :theme {:chart {:cloud {k v}}}))))) (str k " " v)))
-    (is (= [:charts 0 :options :projection-alpha]
-           (:in (error #(plot/build (update-in cloud-plot [:charts 0 :options] assoc :projection-alpha 0.5))))))))
+    (is (= [:charts 0 :options :projection-alpha-factor]
+           (:in (error #(plot/build (update-in cloud-plot [:charts 0 :options] assoc :projection-alpha-factor 0.5))))))))
 
 (def ^:private venn-plot
   {:data (vec (concat (for [i (range 12)] {:s "a" :i i}) (for [i (range 6 18)] {:s "b" :i i})))
@@ -117,8 +117,8 @@
       (is (= [:charts 0 :options :glyph-size] (:in (error #(plot/build (assoc-in correlation-plot [:charts 0 :options :glyph-size] v)))))))))
 
 (deftest style-rows-kind-test
-  (is (= [[:projection-alpha 0.35] [:band-alpha 0.15]]
-         (map (juxt :key :default) (describe/style-rows :cloud [:projection-alpha :band-alpha]))))
+  (is (= [[:projection-alpha-factor 0.35] [:band-alpha-factor 0.15]]
+         (map (juxt :key :default) (describe/style-rows :cloud [:projection-alpha-factor :band-alpha-factor]))))
   (is (= [[:label-gap 4]] (map (juxt :key :default) (describe/style-rows :venn [:label-gap]))))
   (is (= :style-name (:key (error #(describe/style-rows :nope)))) "boundary: neither a named style nor a kind"))
 

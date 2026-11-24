@@ -625,7 +625,7 @@
 (plot/render-image
  {:data (sort-by :age va-deaths)
   :mapping {:x :rate :y :age :color :group}
-  :charts [(chart/line {:sort false}) (chart/scatter)]
+  :charts [(chart/line {:order :data}) (chart/scatter)]
   :labels {:title "Death Rates in Virginia - 1940" :x "Rate (per 1000)" :y nil}}
  {:width 700 :height 450})
 
@@ -797,7 +797,7 @@
 (nu/source-note {:source "Lattice Fig 5.5" :url (figure-url 5 5) :dataset :quakes})
 
 (def quakes-magnitude
-  (shingle/shingle quakes-by-depth :mag {:count 4 :overlap 0.5 :as :magnitude :label "Magnitude"}))
+  (shingle/shingle quakes-by-depth :mag {:n 4 :overlap 0.5 :as :magnitude :label "Magnitude"}))
 
 (nu/data-table quakes-magnitude)
 
@@ -844,12 +844,12 @@
       steps (fn [corner] (concat (mapcat (fn [a b] [a (corner a b)]) sorted (rest sorted)) [(last sorted)]))
       averages (for [[x rs] (sort-by key (group-by :x xy))] {:x x :y (stats/mean (map :y rs))})
       types [["p" xy [(chart/scatter)]]
-             ["l" xy [(chart/line {:sort false})]]
-             ["o" xy [(chart/line {:sort false}) (chart/scatter)]]
+             ["l" xy [(chart/line {:order :data})]]
+             ["o" xy [(chart/line {:order :data}) (chart/scatter)]]
              ["r" xy [(chart/smooth {:method :lm :band :none})]]
              ["g" xy [(chart/scatter {:color [0 0 0 0]})]]
-             ["s" (steps (fn [a b] {:x (:x b) :y (:y a)})) [(chart/line {:sort false})]]
-             ["S" (steps (fn [a b] {:x (:x a) :y (:y b)})) [(chart/line {:sort false})]]
+             ["s" (steps (fn [a b] {:x (:x b) :y (:y a)})) [(chart/line {:order :data})]]
+             ["S" (steps (fn [a b] {:x (:x a) :y (:y b)})) [(chart/line {:order :data})]]
              ["h" xy [(chart/segment {:yend 0})]]
              ["a" averages [(chart/line)]]
              ["smooth" xy [(chart/smooth {:band :none})]]]
@@ -913,11 +913,11 @@
       intercept (:intercept model)
       slope (first (:beta model))]
   (plot/render-image
-   {:data (shingle/shingle earthquake :richter {:count 3 :overlap 0.1 :as :magnitude :label "Magnitude"})
+   {:data (shingle/shingle earthquake :richter {:n 3 :overlap 0.1 :as :magnitude :label "Magnitude"})
     :mapping {:x :distance :y :accel :facet :magnitude}
     :scales log2-axes
     :charts [(chart/scatter)
-             (chart/smooth {:band :none :color :grey :width 2})
+             (chart/smooth {:band :none :color :grey :line-width 2})
              (chart/function {:f (fn [d] (m/pow 2.0 (+ intercept (* slope (m/log2 d))))) :color :black})]
     :facets {:columns 3}
     :labels earthquake-labels}
@@ -1042,7 +1042,7 @@
  (plot/pairs mtcars {:variables [:mpg :disp :hp :drat :wt :qsec]
                      :mapping {:color (levels/categorical :cyl)}
                      :upper (chart/scatter) :diagonal :names
-                     :labels {:mpg "Miles/gallon" :disp "Displacement" :hp "Horsepower"
+                     :variable-names {:mpg "Miles/gallon" :disp "Displacement" :hp "Horsepower"
                               :drat "Axle ratio" :wt "Weight" :qsec "1/4 mile time"}})
  {:width 900 :height 800})
 
@@ -1085,7 +1085,7 @@
 
 (def quakes-magnitude-4
   "quakes with a shingle of four equal-count, half-overlapping magnitude intervals."
-  (shingle/shingle quakes :mag {:count 4 :overlap 0.5 :as :magnitude :label "Magnitude"}))
+  (shingle/shingle quakes :mag {:n 4 :overlap 0.5 :as :magnitude :label "Magnitude"}))
 
 (nu/data-table quakes-magnitude-4)
 
@@ -1161,7 +1161,7 @@
 (nu/data-table env)
 
 (plot/render-image
- {:data (shingle/shingle env :radiation {:count 4 :overlap 0.5 :as :radiation-cut :label "Radiation"})
+ {:data (shingle/shingle env :radiation {:n 4 :overlap 0.5 :as :radiation-cut :label "Radiation"})
   :mapping {:x :wind :y :temperature :z :ozone :facet :radiation-cut}
   :charts [(chart/cloud {:size 4 :view {:azimuth -40 :elevation 30 :distance 0.2}})]
   :facets {:columns 4}}
@@ -1308,7 +1308,7 @@
 (nu/source-note {:source "Lattice Fig 6.13" :url (figure-url 6 13) :dataset :cars93})
 
 (plot/render-image
- (plot/clustered-heatmap cars93-correlations {:row :row :col :column :value :r :row-tree? false :col-tree? false
+ (plot/clustered-heatmap cars93-correlations {:row :row :col :column :value :r :row-tree false :col-tree false
                                               :scales {:color {:domain [-1 1] :range :spectral-11}}})
  {:width 900 :height 800})
 
@@ -1417,7 +1417,7 @@
 
 (plot/render-image
  (assoc va-plot
-        :charts [(chart/segment {:xend 0 :width 2}) (chart/scatter)]
+        :charts [(chart/segment {:xend 0 :line-width 2}) (chart/scatter)]
         :theme {:panel {:grid {:x :none :y :none}}})
  {:width 1000 :height 350})
 
@@ -1437,7 +1437,7 @@
     :mapping {:x :parameter :y :setting}
     :scales {:x {:domain (by-count :parameter true)} :y {:domain (by-count :setting false)}}
     :charts [(chart/scatter {:size 5 :color :black})]
-    :theme {:panel {:grid {:x {:color [160 160 160] :width 0.5 :dash :none} :y {:color [160 160 160] :width 0.5 :dash :none}}}}
+    :theme {:panel {:grid {:x {:color [160 160 160] :line-width 0.5 :dash :none} :y {:color [160 160 160] :line-width 0.5 :dash :none}}}}
     :labels {:x "Graphical parameters" :y "Setting names"}}
    {:width 900 :height 700}))
 
@@ -1473,10 +1473,10 @@
  {:data (shingle/shingle (map-indexed (fn [i row] (assoc row :hour-index i :thousands (/ (:counts row) 1000.0)
                                                          :date (java.time.LocalDateTime/parse (:time row))))
                                       (nu/dataset :bioc-access))
-                         :hour-index {:count 9 :overlap 0.1 :as :slice})
+                         :hour-index {:n 9 :overlap 0.1 :as :slice})
   :mapping {:x :date :y :thousands :facet :slice}
   :scales {:x {:nice false :formatter "MMM dd"}}
-  :charts [(chart/line {:width 0.6 :padding {:x [0 0] :y [0.05 0.05]}})]
+  :charts [(chart/line {:line-width 0.6 :padding {:x [0 0] :y [0.05 0.05]}})]
   :facets {:columns 1 :strips false :scales {:x :free}}
   :labels {:x nil :y "Number of accesses (thousands)"}}
  {:width 900 :height 800})
@@ -1520,7 +1520,7 @@
   :mapping {:x :distance :y :accel}
   :scales {:x {:kind :log :minor-ticks 1} :y {:kind :log}}
   :charts [(chart/scatter)]
-  :theme {:panel {:grid {:minor {:color [180 180 180] :width 0.5 :dash [1.0 2.0]}}}}
+  :theme {:panel {:grid {:minor {:color [180 180 180] :line-width 0.5 :dash [1.0 2.0]}}}}
   :labels earthquake-labels}
  {:width 500 :height 550})
 
@@ -1590,7 +1590,7 @@
       scalers (into {} (map (juxt identity scaled) columns))]
   (plot/render-image
    (plot/clustered-heatmap (for [row us-arrests, k columns] {:state (:state row) :variable (name k) :z ((scalers k) (k row))})
-                           {:row :state :col :variable :value :z :distance :canberra :col-tree? false :tree-size [0.3 0.2]
+                           {:row :state :col :variable :value :z :distance :canberra :col-tree false :tree-size [0.3 0.2]
                             :scales {:color {:range :spectral-11}}})
    {:width 600 :height 800}))
 
@@ -1780,7 +1780,7 @@
 (nu/source-note {:source "Lattice Fig 10.11" :url (figure-url 10 11) :dataset :quakes})
 
 (def quakes-mag-10
-  (shingle/shingle quakes :mag {:count 10 :overlap 0.2 :as :magnitude}))
+  (shingle/shingle quakes :mag {:n 10 :overlap 0.2 :as :magnitude}))
 
 (nu/data-table quakes-mag-10)
 
@@ -1788,7 +1788,7 @@
   (plot/render-image
    (plot/arrange [{:data (map-indexed (fn [i iv] {:level (inc i) :lo (:lo iv) :hi (:hi iv)}) intervals)
                    :mapping {:x :lo :xend :hi :y :level}
-                   :charts [(chart/segment {:width 8 :color [100 200 200]})]
+                   :charts [(chart/segment {:line-width 8 :color [100 200 200]})]
                    :labels {:x "Magnitude (Richter)" :y "Level"}}
                   {:data (map (fn [row] (assoc row :level (inc (.indexOf ^java.util.List intervals (:magnitude row))))) quakes-mag-10)
                    :mapping {:x (levels/categorical :level) :y :stations}
@@ -1888,7 +1888,7 @@
   (plot/render-image
    {:data (map #(assoc % :date (date (:time %)))
                (shingle/shingle (filter #(= "DAX" (:series %)) (nu/dataset :eu-stock-markets)) :time
-                                {:count 6 :overlap 0.1 :as :slice}))
+                                {:n 6 :overlap 0.1 :as :slice}))
     :mapping {:x :date :y :value :facet :slice}
     :scales {:facet {:formatter (fn [slice] (str (date (:lo slice)) " - " (date (:hi slice))))}}
     :charts [(chart/line)]
@@ -2157,7 +2157,7 @@
     :mapping {:x :x :y :y :facet :k}
     :scales {:facet {:domain (mapv ratio-text ps)}
              :x {:domain [-1 1] :axis false} :y {:domain [-1 1] :axis false}}
-    :charts [(chart/line {:sort false :width 0.8})]
+    :charts [(chart/line {:order :data :line-width 0.8})]
     :facets {:columns 4}
     :aspect :iso
     :labels {:x nil :y nil}}
@@ -2178,7 +2178,7 @@
                             {:data (hypotrochoid radius d 15 30)
                              :mapping {:x :x :y :y}
                              :scales {:x {:domain [-1 1] :axis false} :y {:domain [-1 1] :axis false}}
-                             :charts [(chart/line {:sort false :width 0.5})]
+                             :charts [(chart/line {:order :data :line-width 0.5})]
                              :theme {:panel {:grid {:x :none :y :none}}}
                              :aspect :iso
                              :labels {:x nil :y nil}}))))
@@ -2193,7 +2193,7 @@
 (nu/source-note {:source "Lattice Fig 13.3" :url (figure-url 13 3) :dataset :faithful})
 
 (plot/render-image
- {:data (shingle/shingle faithful :eruptions {:count 4 :overlap 0.5 :as :eruption-length :label "Eruptions"})
+ {:data (shingle/shingle faithful :eruptions {:n 4 :overlap 0.5 :as :eruption-length :label "Eruptions"})
   :mapping {:x :waiting :facet :eruption-length}
   :charts [(chart/density)]
   :facets {:columns 4}
@@ -2322,7 +2322,7 @@
 (nu/data-table (nu/dataset :sunspot-year))
 
 (plot/render-image
- {:data (shingle/shingle (nu/dataset :sunspot-year) :time {:count 4 :overlap 0.05 :as :period :label "Time"})
+ {:data (shingle/shingle (nu/dataset :sunspot-year) :time {:n 4 :overlap 0.05 :as :period :label "Time"})
   :mapping {:x :time :y :value :facet :period}
   :charts [(chart/line)]
   :facets {:columns 1 :scales {:x :sliced}}
@@ -2354,7 +2354,7 @@
             {:component component :day (days i) :value (values i)})
     :mapping {:x :day :y :value :facet :component}
     :scales {:facet {:domain ["data" "seasonal" "trend" "remainder"]}}
-    :charts [(chart/line {:width 0.6})]
+    :charts [(chart/line {:line-width 0.6})]
     :facets {:columns 1 :scales {:y :free}}
     :labels {:x "Time (Days)" :y nil}}
    {:width 1000 :height 700}))

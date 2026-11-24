@@ -90,10 +90,10 @@
   (plot/render-image
    (plot/arrange
     [{:data recent :mapping {:x :date :y :psavert}
-      :charts [(chart/line {:width 2 :color [215 48 39]}) (chart/scatter {:size 5 :color [215 48 39]})]
+      :charts [(chart/line {:line-width 2 :color [215 48 39]}) (chart/scatter {:size 5 :color [215 48 39]})]
       :labels {:title "width, colour, points" :x nil :y "savings rate, %"}}
      {:data recent-long :mapping {:x :date :y :value01 :dash :variable}
-      :charts [(chart/line {:width 1.5 :color :black})]
+      :charts [(chart/line {:line-width 1.5 :color :black})]
       :labels {:title ":dash by variable" :x nil :y "rescaled"}}]
     {:columns 2})
    {:width 1000 :height 400}))
@@ -176,7 +176,7 @@
 (let [gappy (map (fn [row] (if (<= 1990 (.getYear ^LocalDate (:date row)) 1992) (assoc row :psavert nil) row))
                  (filter #(<= 1985 (.getYear ^LocalDate (:date %)) 1997) economics))
       panel (fn [title gaps] {:data gappy :mapping {:x :date :y :psavert}
-                              :charts [(chart/line {:gaps gaps :width 1.5})]
+                              :charts [(chart/line {:gaps gaps :line-width 1.5})]
                               :labels {:title title :x nil :y "savings rate, %"}})]
   (plot/render-image
    (plot/arrange [(panel ":gaps :break" :break) (panel ":gaps :bridge" :bridge)] {:columns 2})
@@ -216,7 +216,7 @@
  {:data economics
   :mapping {:x :date :y :unemploy}
   :scales {:x {:domain [(LocalDate/of 2000 1 1) (LocalDate/of 2010 1 1)]} :y {:domain [4000 16000]}}
-  :charts [(chart/line {:width 1.5})]
+  :charts [(chart/line {:line-width 1.5})]
   :labels {:title "Unemployment, 2000-2010" :x nil :y "thousands"}}
  {:width 800 :height 400})
 
@@ -235,7 +235,7 @@
    {:data economics
     :mapping {:x :date :y :unemploy}
     :charts [(chart/rect {:x recessions :fill [0 0 0 35]})
-             (chart/line {:width 1.5})
+             (chart/line {:line-width 1.5})
              (chart/rule {:x (d 2008 9) :dash :dashed :color [215 48 39]})
              (chart/text {:x (d 2008 9) :y 14500 :text "Lehman Brothers" :anchor [:right :middle] :offset [-5 0]
                           :color [215 48 39]})]
@@ -330,7 +330,7 @@
  {:data chicks
   :mapping {:x :time :y :weight}
   :charts [(chart/line {:mapping {:group :chick} :color [190 190 190]})
-           (chart/line {:data (filter #(= "21" (:chick %)) chicks) :width 2.5 :color [215 48 39]})
+           (chart/line {:data (filter #(= "21" (:chick %)) chicks) :line-width 2.5 :color [215 48 39]})
            (chart/text {:data (filter #(= "21" (:chick %)) chicks) :mapping {:x :time :y :weight :label :chick}
                         :select :last :color [215 48 39]})]
   :labels {:title "Chick 21 among all fifty" :x "days" :y "weight, g"}}
@@ -367,7 +367,7 @@
   (plot/render-image
    {:data recent
     :mapping {:x :date :y :value01 :color :variable}
-    :charts [(chart/line {:width 1.5})
+    :charts [(chart/line {:line-width 1.5})
              (chart/text {:mapping {:x :date :y :value01 :label :variable :color :variable} :select :last})]
     :legend false
     :labels {:title "Three economic series since 2005, labelled at the end" :x nil :y "value (0..1)"}}
@@ -389,7 +389,7 @@
    {:data ranked
     :mapping {:x :time :y :rank :color :chick}
     :scales {:y {:domain [8.5 0.5] :nice false :ticks (vec (range 1 9))}}
-    :charts [(chart/line {:interpolator :monotone :width 3})
+    :charts [(chart/line {:interpolator :monotone :line-width 3})
              (chart/scatter {:size 9})
              (chart/text {:mapping {:x :time :y :rank :label :chick :color :chick} :select :last})]
     :legend false
@@ -409,7 +409,7 @@
 (plot/render-image
  {:data economics
   :mapping {:x :date :y :psavert}
-  :charts [(chart/line {:fill :color :alpha 0.4 :width 1.5})]
+  :charts [(chart/line {:fill :color :alpha 0.4 :line-width 1.5})]
   :labels {:title "Personal savings rate" :x nil :y "%"}}
  {:width 800 :height 400})
 
@@ -424,7 +424,7 @@
 (plot/render-image
  {:data economics
   :mapping {:x :date :y :psavert}
-  :charts [(chart/line {:fill-gradient [[255 255 255 0] [33 102 172 200]] :fill-gradient-axis :y :width 1.5
+  :charts [(chart/line {:fill-gradient [[255 255 255 0] [33 102 172 200]] :fill-gradient-axis :y :line-width 1.5
                         :color [33 102 172]})]
   :labels {:title "Savings rate, gradient along y" :x nil :y "%"}}
  {:width 800 :height 400})
@@ -573,16 +573,16 @@
 (plot/render-image
  (plot/arrange
   [{:data lincoln :mapping {:x :date :y :mean-temp :color :mean-temp} :scales {:color {:range :RColorBrewer/RdYlBu :reverse true :title "F"}}
-    :charts [(chart/line {:width 2})] :labels {:title "linear" :x nil :y "mean temperature, F"}}
+    :charts [(chart/line {:line-width 2})] :labels {:title "linear" :x nil :y "mean temperature, F"}}
    {:data lincoln :mapping {:x :date :y :mean-temp :color :mean-temp}
     :scales {:color {:range :RColorBrewer/RdYlBu :kind :binned :reverse true :bins [20 40 60 80] :title "F"}}
-    :charts [(chart/line {:width 2})] :labels {:title "binned" :x nil :y "mean temperature, F"}}]
+    :charts [(chart/line {:line-width 2})] :labels {:title "binned" :x nil :y "mean temperature, F"}}]
   {:columns 2})
  {:width 1000 :height 400})
 
 ;; ### Connected scatter
 
-;; Two variables against each other, joined in time order (`:sort false`); `:curve :bezier` passes a smooth path
+;; Two variables against each other, joined in time order (`:order :data`); `:curve :bezier` passes a smooth path
 ;; through the points, labels mark some years.
 
 (nu/source-note {:source "R Graph Gallery - Connected scatterplot with ggplot2; data-to-viz - Connected scatter"
@@ -598,7 +598,7 @@
   (plot/render-image
    {:data yearly
     :mapping {:x :uempmed :y :psavert}
-    :charts [(chart/line {:sort false :curve :bezier :color [33 102 172]})
+    :charts [(chart/line {:order :data :curve :bezier :color [33 102 172]})
              (chart/scatter {:size 6 :color [33 102 172]})
              (chart/text {:data (filter #(#{2000 2003 2006 2009 2012 2014} (:year %)) yearly) :mapping {:x :uempmed :y :psavert :label :year}
                           :anchor [:left :bottom] :offset [4 4]})]
@@ -656,7 +656,7 @@
 
 (let [recent (filter #(.isAfter ^LocalDate (:date %) (LocalDate/of 2012 1 1)) economics)
       plot-of (fn [title y] {:data recent :mapping {:x :date :y :pop} :scales {:y y}
-                             :charts [(chart/line {:width 1.5})] :labels {:title title :x nil :y "population, thousands"}})]
+                             :charts [(chart/line {:line-width 1.5})] :labels {:title title :x nil :y "population, thousands"}})]
   (plot/render-image
    (plot/arrange [(plot/arrange [(plot-of "y from 0" {:domain [0 330000]}) (plot-of "y cut" {})] {:columns 2})
                   (plot/arrange [(plot-of "wide" {}) (plot-of "narrow" {})] {:columns 2 :widths [4 1]})]

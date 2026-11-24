@@ -75,13 +75,13 @@
 
 (plot/render-image {:data wave
                     :mapping {:x :t :y :v}
-                    :charts [(chart/line {:color [178 34 34] :width 3 :dash [6 2]})]}
+                    :charts [(chart/line {:color [178 34 34] :line-width 3 :dash [6 2]})]}
                    {:width 500 :height 250})
 
 ;; Every built-in dash style (a dash may also be a vector of dash and gap lengths, as above):
 
 (plot/render-image {:charts (vec (mapcat (fn [i d]
-                                           [(chart/rule {:y i :dash d :width 2})
+                                           [(chart/rule {:y i :dash d :line-width 2})
                                             (chart/text {:x 0 :y i :text (str d) :anchor [:left :bottom]})])
                                          (range 1 100) (:dash describe/attribute-values)))
                     :scales {:x {:domain [0 1] :axis false} :y {:domain [0 9] :reverse true :axis false}}}
@@ -387,7 +387,7 @@
                     :mapping {:x :t :y :v}
                     :charts [(chart/line)
                              (chart/text {:x 15 :y 0 :text "a styled note" :size 14 :font-style :bold
-                                          :color :white :background [70 90 140] :padding 6})]}
+                                          :color :white :background [70 90 140] :inset 6})]}
                    {:width 500 :height 250})
 
 ;; ## Builders
@@ -431,7 +431,7 @@
 
 (nu/data-table edges)
 
-(plot/render-image (plot/network edges {:from :a :to :b :value :w :directed? true :labels true :rng (r/rng :mersenne 1)})
+(plot/render-image (plot/network edges {:from :a :to :b :value :w :directed true :labels true :rng (r/rng :mersenne 1)})
                    {:width 450 :height 300})
 
 ;; ### Graph layout
@@ -448,7 +448,7 @@
 
 (nu/options-table (describe/fragment-rows :graph/chord-layout))
 
-(plot/render-image (plot/chord flows {:pad 6 :inner 0.8}) {:width 450 :height 450})
+(plot/render-image (plot/chord flows {:gap-angle 6 :inner-radius 0.8}) {:width 450 :height 450})
 
 ;; ### Arc layout
 
@@ -464,7 +464,7 @@
 
 (nu/options-table (describe/fragment-rows :graph/sankey-layout))
 
-(plot/render-image (plot/sankey flows {:align :left :node-width 0.06 :pad 0.08}) {:width 500 :height 300})
+(plot/render-image (plot/sankey flows {:align :left :node-width 0.06 :gap 0.08}) {:width 500 :height 300})
 
 ;; ### Alluvial graph
 
@@ -474,7 +474,7 @@
 
 (plot/render-image (plot/alluvial [{:class "1st" :sex "f" :n 140} {:class "1st" :sex "m" :n 180}
                                    {:class "3rd" :sex "f" :n 190} {:class "3rd" :sex "m" :n 510}]
-                                  {:axes [:class :sex] :value :n :fill :sex})
+                                  {:variables [:class :sex] :value :n :strand-color :sex})
                    {:width 500 :height 300})
 
 ;; ### Dendrogram layout
@@ -519,11 +519,11 @@
 
 ;; ### Autocorrelation rows
 
-;; The lags of the correlogram, the significance level of its bands and which of ACF and PACF to draw.
+;; The lags of the correlogram, the confidence level of its bands and whether the rows are the partial autocorrelation (`plot/acf` forwards `:lags` and `:level`; it picks the correlograms with its own `:correlograms`).
 
 (nu/options-table (describe/fragment-rows :series/acf-rows))
 
-(plot/render-image (plot/acf (map #(Math/sin (* 0.5 (double %))) (range 100)) {:lags 30 :partial? true})
+(plot/render-image (plot/acf (map #(Math/sin (* 0.5 (double %))) (range 100)) {:lags 30 :correlograms :pacf})
                    {:width 600 :height 300})
 
 ;; ### Horizon rows

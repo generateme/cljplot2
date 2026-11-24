@@ -31,7 +31,7 @@
   ([plot options] (pipeline/build plot options)))
 
 (defn arrange
-  "A plot map arranging plots in a grid of cells.
+  "Builds a plot map arranging plots in a grid of cells.
 
   Parameters:
 
@@ -44,46 +44,46 @@
   ([plots options] (multiplot/arrange plots options)))
 
 (defn pairs
-  "A scatter-plot matrix (or correlogram) of numeric variables as a plot map.
+  "Builds a scatter-plot matrix (or correlogram) of numeric variables as a plot map.
 
   Parameters:
 
-  - `data` (rows or columns): the data.
-  - `options` (map): `:variables` (required), charts of the lower, upper and diagonal cells, `:mapping`, `:labels`, `:title`, `:theme`.
+  - `rows` (rows or columns): the data.
+  - `options` (map): `:variables` (required), the charts of the `:lower`, `:upper` and `:diagonal` cells (`:none` - empty cells), `:mapping`, `:variable-names`, `:title`, `:theme`.
 
-  See [[cljplot2.multiplot/pairs]]."
+  Returns a plot map. See [[cljplot2.multiplot/pairs]]."
   {:cljplot2/options multiplot/pairs-options}
-  [data options]
-  (multiplot/pairs data options))
+  [rows options]
+  (multiplot/pairs rows options))
 
 (defn network
-  "A network plot of edge rows as a plot map: a graph layout, edges as segments, nodes as points, optional labels.
+  "Builds a network plot of edge rows as a plot map: a graph layout, edges as segments, nodes as points, optional labels.
 
   Parameters:
 
   - `edges` (rows): the edges.
-  - `options` (map): graph, layout, aesthetics and style options.
+  - `options` (map, optional): graph, layout, aesthetics and style options.
 
   See [[cljplot2.graphs/network]]."
   {:cljplot2/options graphs/network-options}
-  [edges options]
-  (graphs/network edges options))
+  ([edges] (graphs/network edges {}))
+  ([edges options] (graphs/network edges options)))
 
 (defn dendrogram
-  "A dendrogram of an `hclust` result or a tree as a plot map.
+  "Builds a dendrogram of an `hclust` result or a tree as a plot map.
 
   Parameters:
 
   - `source` (map): a fastmath `hclust` result or a tree of [[cljplot2.data.tree]].
-  - `options` (map): labels, clusters, orientation and style options.
+  - `options` (map, optional): labels, clusters, orientation and style options.
 
   See [[cljplot2.graphs/dendrogram]]."
   {:cljplot2/options graphs/dendrogram-options}
-  [source options]
-  (graphs/dendrogram source options))
+  ([source] (graphs/dendrogram source {}))
+  ([source options] (graphs/dendrogram source options)))
 
 (defn tree
-  "A node-link tree plot as a plot map: tidy or cluster layout, diagonal or straight links, cartesian or radial.
+  "Builds a node-link tree plot as a plot map: tidy or cluster layout, diagonal or straight links, cartesian or radial.
 
   Parameters:
 
@@ -96,7 +96,7 @@
   ([source options] (graphs/tree source options)))
 
 (defn clustered-heatmap
-  "A heatmap with rows and columns ordered by hierarchical clustering, their dendrograms beside it, as a plot map.
+  "Builds a heatmap with rows and columns ordered by hierarchical clustering, their dendrograms beside it, as a plot map.
 
   Parameters:
 
@@ -109,65 +109,67 @@
   (graphs/clustered-heatmap rows options))
 
 (defn bundle
-  "Hierarchical edge bundling of edges between a tree's leaves as a plot map.
+  "Builds a hierarchical edge bundling of edges between a tree's leaves as a plot map.
 
   Parameters:
 
   - `edges` (rows): edges between leaves.
   - `leaf-tree` (map): a tree of [[cljplot2.data.tree]].
-  - `options` (map): bundling strength, colours, labels.
+  - `options` (map, optional): bundling strength, colours, labels.
 
   See [[cljplot2.graphs/bundle]]."
   {:cljplot2/options graphs/bundle-options}
-  [edges leaf-tree options]
-  (graphs/bundle edges leaf-tree options))
+  ([edges leaf-tree] (graphs/bundle edges leaf-tree {}))
+  ([edges leaf-tree options] (graphs/bundle edges leaf-tree options)))
 
 (defn chord
-  "A chord diagram of edge rows as a plot map: ring sectors per node, ribbons per flow.
+  "Builds a chord diagram of edge rows as a plot map: ring sectors per node, ribbons per flow.
 
   Parameters:
 
   - `edges` (rows): the flows.
-  - `options` (map): graph and layout options, ribbon opacity, labels.
+  - `options` (map, optional): graph and layout options, ribbon opacity, labels.
 
   See [[cljplot2.graphs/chord]]."
   {:cljplot2/options graphs/chord-options}
-  [edges options]
-  (graphs/chord edges options))
+  ([edges] (graphs/chord edges {}))
+  ([edges options] (graphs/chord edges options)))
 
 (defn arc
-  "An arc diagram of edge rows as a plot map: nodes on a line, edges as arcs above it.
+  "Builds an arc diagram of edge rows as a plot map: nodes on a line, edges as arcs above it.
 
   Parameters:
 
   - `edges` (rows): the edges.
-  - `options` (map): node order, aesthetics, style options, labels.
+  - `options` (map, optional): node order, aesthetics, style options, labels.
 
   See [[cljplot2.graphs/arc]]."
   {:cljplot2/options graphs/arc-options}
-  [edges options]
-  (graphs/arc edges options))
+  ([edges] (graphs/arc edges {}))
+  ([edges options] (graphs/arc edges options)))
 
 (defn sankey
-  "A sankey diagram of flow rows as a plot map: nodes in columns, bands as wide as their flows between them.
+  "Builds a sankey diagram of flow rows as a plot map: nodes in columns, bands as wide as their flows between them.
 
   Parameters:
 
   - `edges` (rows): the flows.
-  - `options` (map): graph and layout options, band colour and opacity, labels.
+  - `options` (map, optional): graph and layout options, band colour and opacity, labels.
 
   See [[cljplot2.graphs/sankey]]."
   {:cljplot2/options graphs/sankey-options}
-  [edges options]
-  (graphs/sankey edges options))
+  ([edges] (graphs/sankey edges {}))
+  ([edges options] (graphs/sankey edges options)))
 
 (defn alluvial
-  "An alluvial diagram of wide rows over categorical axes as a plot map: strata per level, strands between neighbouring axes.
+  "Builds an alluvial diagram of wide rows over categorical columns as a plot map: strata per level, strands between neighbouring columns.
 
   Parameters:
 
   - `rows` (rows): one row per combination of levels.
-  - `options` (map): `:axes`, weights, fill level, layout and opacity.
+  - `options` (map): `:variables` (required), `:value` (weights), `:strand-color` (the level colouring the strands), `:variable-names`, layout and opacity.
+
+  Returns a plot map.
 
   See [[cljplot2.graphs/alluvial]]."
   {:cljplot2/options graphs/alluvial-options}
@@ -175,20 +177,20 @@
   (graphs/alluvial rows options))
 
 (defn sequences
-  "A flow sunburst of sequences as a plot map: steps as rings from the centre, coloured by name.
+  "Builds a flow sunburst of sequences as a plot map: steps as rings from the centre, coloured by name.
 
   Parameters:
 
   - `rows` (rows): one sequence per row.
-  - `options` (map): sequence and value accessors, separator, end marker, centre hole, labels.
+  - `options` (map, optional): sequence and value accessors, separator, end marker, centre hole, labels.
 
   See [[cljplot2.graphs/sequences]]."
   {:cljplot2/options graphs/sequences-options}
-  [rows options]
-  (graphs/sequences rows options))
+  ([rows] (graphs/sequences rows {}))
+  ([rows options] (graphs/sequences rows options)))
 
 (defn acf
-  "A correlogram of a series as a plot map: ACF and PACF stems with significance bands.
+  "Builds a correlogram of a series as a plot map: ACF and PACF stems with significance bands.
 
   Parameters:
 
@@ -201,7 +203,7 @@
   ([values options] (series-plots/acf values options)))
 
 (defn horizon
-  "A horizon chart of rows as a plot map: bands of one height, negatives mirrored, a panel per series.
+  "Builds a horizon chart of rows as a plot map: bands of one height, negatives mirrored, a panel per series.
 
   Parameters:
 
@@ -238,7 +240,7 @@
   (^BufferedImage [plot options] (render/render-image plot options)))
 
 (defn cvd-image
-  "An image as seen with a colour vision deficiency.
+  "Gives an image as seen with a colour vision deficiency.
 
   Parameters:
 
@@ -276,7 +278,7 @@
   ([group regex] (c/find-gradient group regex)))
 
 (defn palette
-  "A palette - a vector of colours.
+  "Gives a palette - a vector of colours.
 
   Parameters:
 
@@ -291,7 +293,7 @@
   ([p number-of-colors gradient-params] (c/palette p number-of-colors gradient-params)))
 
 (defn gradient
-  "A gradient - a function of `t` in `[0 1]` returning a colour.
+  "Gives a gradient - a function of `t` in `[0 1]` returning a colour.
 
   Parameters:
 

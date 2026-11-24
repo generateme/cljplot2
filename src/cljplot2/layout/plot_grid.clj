@@ -22,11 +22,13 @@
   the `:x` scale's axis and `:labels :x` title left of it.
   Item order: `:panel`, axes and their overhangs (x, then y), `:title`, `:x-title`, `:y-title` (absent ones skipped).
 
-  Faceted plots use [[facet-grid]].
+  Faceted plots use.
 
   Legends ([[cljplot2.content.legend/legends]]) add columns `:legend-gap` (fixed, theme `[:legend :gap]`) and `:legend`
   (measured) after `:x-overhang`, and an item `:legends` spanning the panel rows (from the top strip) with
-  `{:kind :legends}` content: the legends stacked top-down, wrapping into further columns when too tall."
+  `{:kind :legends}` content: the legends stacked top-down, wrapping into further columns when too tall.
+
+  Functions: [[plot-grid]] (with [[panel-layout]], [[facet-panels]], [[estimated-panel-size]]), grids [[iso-grid]], [[titled-custom-grid]], [[legend-only-grid]], arrangements [[arrange-grid]], [[arrange-entries]]; schemas [[arrange-schema]], [[labels-schema]]."
   (:require [fastmath.core :as m]
             [fastmath.vector :as v]
             [cljplot2.data.facet :as facet]
@@ -228,7 +230,7 @@
                                    :content {:kind :axis-overhang :scale :y :end :end :margin side}})))))
           margins))
 
-(defn single-panel-grid
+(defn- single-panel-grid
   "Gives the grid of a single-panel plot.
 
   The grid holds the labels, the axes of the drawn position scales, the legends, the plot margins (a `:top-margin` row above the panel, a `:right-margin` column right of it before the legend, each next to a gap) and the theme margin.
@@ -502,7 +504,7 @@
               (first-of r))))
         [(with-panel y-start (at [last-row 0])) (with-panel y-end (at [(first rows) 0]))])))))
 
-(defn facet-grid
+(defn- facet-grid
   "Gives the grid of a faceted plot (see [[cljplot2.data.facet]]).
 
   Panels `[:panel r c]` are laid out in rows and columns with gaps (theme `[:facet :gap]`), weighted by `:facets` `:widths` / `:heights`; strips go above each panel (wrap) or as column strips above the top row and row strips on the right (grid), none with `:facets {:strips false}`. An x axis goes under every panel column and a y axis beside every panel row, overhangs at the outer ends; a wrap layout with a free or sliced relation has an axis at every panel instead (see [[facet-axis-items]]). Panels with odd `r + c` are shaded (`:alternate`). Legends as in the single-panel grid.

@@ -11,7 +11,8 @@
   Functions and vars: [[font-styles]], [[bundled-fonts]], [[known-font?]], [[resolve-font]]."
   (:require [clojure.java.io :as io]
             [clojure2d.core :as c2d]
-            [fastmath.core :as m])
+            [fastmath.core :as m]
+            [cljplot2.error :as error])
   (:import [java.awt Font]))
 
 (set! *warn-on-reflection* true)
@@ -40,8 +41,8 @@
   (into {} (for [styles (vals bundled-fonts)
                  resource (vals styles)]
              [resource (delay (c2d/load-font (or (io/resource resource)
-                                                 (throw (ex-info "Bundled font file not found."
-                                                                 {:key :font :resource resource})))))])))
+                                                 (error/fail! "Bundled font file not found."
+                                                              {:key :font :resource resource}))))])))
 
 (def ^:private bundled-font-files
   "Delays of the bundled font files; every file is loaded at most once per JVM, also under concurrent first use."
@@ -97,13 +98,13 @@
   ^Font [font font-style size]
   (let [style (font-styles font-style)]
     (when-not style
-      (throw (ex-info "Unknown font style." {:key :font-style :value font-style :allowed (set (keys font-styles))})))
+      (error/fail! "Unknown font style." {:key :font-style :value font-style :allowed (set (keys font-styles))}))
     (when-not (and (number? size) (m/pos? (double size)))
-      (throw (ex-info "Font size must be a positive number." {:key :size :value size})))
+      (error/fail! "Font size must be a positive number." {:key :size :value size}))
     (let [points (float size)]
       (cond
         (instance? Font font) (.deriveFont ^Font font (int style) points)
         (contains? bundled-fonts font) (.deriveFont ^Font @(bundled-font-files (get-in bundled-fonts [font font-style])) points)
         (and (string? font) (known-family? font)) (.deriveFont (Font. ^String font (int style) (int 1)) points)
-        (string? font) (throw (ex-info "Unknown font family." {:key :font :value font}))
-        :else (throw (ex-info "Font must be a font name or java.awt.Font." {:key :font :value font}))))))
+        (string? font) (error/fail! "Unknown font family." {:key :font :value font})
+        :else (error/fail! "Font must be a font name or java.awt.Font." {:key :font :value font})))))

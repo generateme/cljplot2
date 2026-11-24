@@ -57,7 +57,9 @@
   Charts drop values outside an explicit domain already at compute ([[in-domain?]]), counted in `:dropped`, so
   extents only cover what is drawn.
 
-  Functions: dimensions [[dims]], [[mapped-dims]], [[computed-aesthetics]], [[computed-scale-attributes]]; schemas [[scale-spec-schema]], [[palette-schema]]; values [[continuous-value?]], [[continuous-values?]], [[valid-attribute?]], [[valid-value?]], [[identity-scale?]], [[in-domain?]], [[kept-value?]], [[value-extent]]; scales [[inferred-kind]], [[scale-spec]], [[value-transform]]; attributes [[attribute-fn]], [[bin-colors]], [[palette-color-fn]]; legends [[legend-entries]], [[explicit-ticks]], [[integer-ticks]]."
+  Functions: dimensions [[dims]], [[mapped-dims]], [[computed-aesthetics]], [[computed-scale-attributes]]; schemas [[scale-spec-schema]], [[palette-schema]]; values [[continuous-value?]], [[continuous-values?]], [[valid-attribute?]], [[valid-value?]], [[identity-scale?]], [[in-domain?]], [[kept-value?]], [[value-extent]]; scales [[inferred-kind]], [[scale-spec]], [[value-transform]]; attributes [[attribute-fn]], [[bin-colors]], [[palette-color-fn]]; legends [[legend-entries]], [[explicit-ticks]], [[integer-ticks]].
+
+  Also: [[dim?]], [[level-key]], [[kinds]], [[transform-names]]."
   (:require [clojure2d.color :as c]
             [wadogo.scale :as s]
             [fastmath.core :as m]
@@ -82,11 +84,11 @@
   "Predicate (a set) of the aesthetic dimensions [[dims]]."
   (set dims))
 
-(def kinds
+(def ^:private kinds
   "Aesthetic scale kinds."
   #{:ordinal :linear :binned :identity})
 
-(def transform-names
+(def ^:private transform-names
   "The named linear color `:transform`s."
   #{:sqrt :log :sq :exp})
 
@@ -250,7 +252,7 @@
   [v]
   (if (number? v) (double v) v))
 
-(defn continuous-value?
+(defn- continuous-value?
   "Tests whether a value can sit on a linear scale of an aesthetic.
 
   Parameters:
@@ -455,7 +457,13 @@
     :else r))
 
 (defn- first-of-levels
-  "Gives the values of `vs` without later repeats of a level ([[level-key]]), in their order."
+  "Gives values without later repeats of a level.
+
+  Parameters:
+
+  - `vs` (sequence): the values.
+
+  Returns a vector of the values in their order, each level ([[level-key]]) at its first occurrence only."
   [vs]
   (first (reduce (fn [[acc seen] v]
                    (let [level-id (level-key v)]
@@ -555,7 +563,7 @@
                               (and x (m/<= (double lo) (double x) (double hi)))
                               true))))))
 
-(defn valid-attribute?
+(defn- valid-attribute?
   "Tests whether a value is an attribute of an aesthetic as such.
 
   Parameters:
@@ -795,7 +803,7 @@
                      :binned [(first breaks) (peek breaks)]
                      :identity nil)
             default-range (get theme-palette (if (and (= k :color) (#{:linear :binned} kind)) :gradient k))
-            attribute-range (resolve-range k (get spec :range default-range))]
+            attribute-range (resolve-range k (data/option spec :range default-range))]
         (when (map? attribute-range)
           (let [index (update-keys attribute-range level-key)]
             (when-let [missing (seq (remove #(contains? index (level-key %)) domain))]
@@ -891,7 +899,7 @@
   [range-colors]
   (if (fn? range-colors) range-colors (c/gradient range-colors)))
 
-(defn bin-colors
+(defn- bin-colors
   "Gives the colours of the bins of a binned scale.
 
   Parameters:

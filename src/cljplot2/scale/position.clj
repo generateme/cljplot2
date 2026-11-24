@@ -32,11 +32,14 @@
   (consumed by the pipeline). `:reverse true` - the axis runs the other way: the final domain (data or explicit, after
   nice and padding) reversed - bands in reverse level order (not `:interpolated`: reverse its `:stops`).
 
-  Functions: specs [[scale-spec-schema]], [[scale-spec]], [[data-scale-spec]]; finalizing [[finalize]], [[tick-hint]], [[ticks-inside]], [[minor-tick-values]], [[tick-labels]], [[power-label]], [[display-scale]], [[keep-labels?]], [[axis-drawn?]], [[grid-drawn?]]; mapping [[->wadogo]], [[forward-fn]], [[forward]], [[inverse-fn]], [[band-geometry]], [[stat-transform]]; panels and directions [[panel-scales-of]], [[horizontal-key]], [[direction]], [[horizontal?]], [[flipped?]], [[coord-geometry]], [[range-projection]], [[projection]]."
+  Functions: specs [[scale-spec-schema]], [[scale-spec]], [[data-scale-spec]]; finalizing [[finalize]], [[tick-hint]], [[ticks-inside]], [[minor-tick-values]], [[tick-labels]], [[power-label]], [[display-scale]], [[keep-labels?]], [[axis-drawn?]], [[grid-drawn?]]; mapping [[->wadogo]], [[forward-fn]], [[forward]], [[inverse-fn]], [[band-geometry]], [[stat-transform]]; panels and directions [[panel-scales-of]], [[horizontal-key]], [[direction]], [[horizontal?]], [[flipped?]], [[coord-geometry]], [[range-projection]], [[projection]].
+
+  Constants: [[position-kinds]], [[continuous-kinds]], [[max-tick-count]]."
   (:require [fastmath.core :as m]
             [fastmath.vector :as v]
             [wadogo.scale :as s]
             [wadogo.ticks.pretty-datetime :as pretty-datetime]
+            [cljplot2.data.levels :as levels]
             [cljplot2.data.rows :as rows]
             [cljplot2.scale.coord :as coord]
             [cljplot2.schema :as schema])
@@ -51,7 +54,7 @@
 (def continuous-kinds
   "Continuous position scale kinds (numbers or dates along the axis)."
   #{:linear :log :pow :symlog :radial :interpolated :datetime})
-(def position-kinds
+(def ^:private position-kinds
   "Every position scale kind: [[continuous-kinds]] and `:bands`."
   (conj continuous-kinds :bands))
 
@@ -138,7 +141,7 @@
   [[data-scale-spec]]; `:axis false` hides the scale's axis and its grid lines in every panel, `:axis :grid` hides
   the axis (no track, ticks, tick labels) but keeps the grid lines, `:axis :no-grid` keeps the axis without grid lines
   (e.g. a tick per category of many; default true; axis titles are separate, `:labels`)."
-  (schema/with-rules
+  (apply schema/with-rules
    (into [:map {:closed true :cljplot2/type-doc "a position scale spec"}
           (schema/optional :kind {:cljplot2/section :kind-domain :description "scale kind: :linear, :log, :pow, :symlog, :radial, :interpolated, :datetime or :bands"
                                   :cljplot2/default-doc "from the data: :linear for numbers, :bands for levels, :datetime for java.time values"}
@@ -190,10 +193,9 @@
          (map (fn [[k description]] (schema/optional k {:description description :cljplot2/section :wadogo} any?)))
          wadogo-attributes)
    [domain-problem [:domain]]
-   [#(when (and (:order-by %) (:domain %)) "give either :order-by or :domain, not both") [:order-by]]
-   [#(when (and (:descending %) (nil? (:order-by %))) ":descending needs :order-by") [:descending]]
    [#(when-let [[^double lo ^double hi] (:axis-domain %)] (when (m/== lo hi) ":axis-domain should be two different numbers"))
-    [:axis-domain]]))
+    [:axis-domain]]
+   levels/order-by-rules))
 
 (defn- validate-tick-list!
   "Checks an explicit `:ticks` vector against a scale's kind and domain.
@@ -322,7 +324,7 @@
   - `k` (keyword): the scale key (`:x` / `:y`).
   - `spec` (map): wadogo attributes plus `:nice` and the cljplot2 options, valid by [[scale-spec-schema]]; a `:domain` is required.
 
-  Returns `spec` with `:kind` (inferred from the domain when missing, see [[domain-kind]]) and `:nice` (default `true`, `false` for `:interpolated`: extend continuous domains to nice values by at most 10% of the range; a number sets that limit, a fraction; falsy turns it off); `:datetime` gets `:ticks-method :pretty` unless given; a pattern string `:formatter` becomes a function, `:formatter :power` the [[power-label]] of the scale's `:base` (default 10).
+  Returns `spec` with `:kind` (inferred from the domain when missing, see [[domain-kind]]) and `:nice` (default `true`, `false` for `:interpolated`: extend continuous domains to nice values by at most 10% of the range; a number sets that limit, a fraction; `false` turns it off; `nil` - the default); `:datetime` gets `:ticks-method :pretty` unless given; a pattern string `:formatter` becomes a function, `:formatter :power` the [[power-label]] of the scale's `:base` (default 10).
 
   Throws `ex-info {:key :domain}` without a domain or for a domain not suiting the kind (e.g. `:log` with 0), `ex-info {:key :ticks}` for a tick list not matching the kind and domain, `{:key :ticks-params}` for too many calendar ticks, and `ex-info` keyed by the option for options the kind doesn't take ([[kind-option-problem]]).
 
@@ -339,10 +341,10 @@
     (when (sequential? ticks) (validate-tick-list! k kind domain ticks))
     (when (and (= :datetime kind) (get-in spec [:ticks-params :unit]))
       (check-calendar-span! k domain (:ticks-params spec)))
-    (cond-> (assoc spec :kind kind :nice (get spec :nice (not= :interpolated kind)))
+    (cond-> (assoc spec :kind kind :nice (rows/option spec :nice (not= :interpolated kind)))
       (and (= :datetime kind) (nil? (:ticks-method spec))) (assoc :ticks-method :pretty)
       (string? (:formatter spec)) (update :formatter #(pattern-formatter k %))
-      (= :power (:formatter spec)) (assoc :formatter (partial power-label (get spec :base 10.0))))))
+      (= :power (:formatter spec)) (assoc :formatter (partial power-label (rows/option spec :base 10.0))))))
 
 (def ^{:private true :const true :tag 'double} collapse-widening
   "Share of its magnitude a collapsed numeric domain widens by on each side."
@@ -579,7 +581,7 @@
                 ticks)]
     (default-tick-labels scale spec shown)))
 
-(defn ->wadogo
+(defn- ->wadogo
   "Gives the wadogo scale of a finalized scale.
 
   Parameters:
@@ -680,7 +682,14 @@
     (some #(m/<= (m/abs (m/- (double %) x)) (m/* 1.0e-9 (m/max (m/abs (double %)) (m/abs x)))) values)))
 
 (defn- log-minor-ticks
-  "Gives the minor tick candidates of a log scale: the multiples 2 .. base-1 of every power of `base` over `[lo hi]` (none for a base below 3)."
+  "Gives the minor tick candidates of a log scale.
+
+  Parameters:
+
+  - `lo`, `hi` (doubles): the positive domain.
+  - `base` (double): the log base.
+
+  Returns the multiples 2 .. base-1 of every power of `base` over `[lo hi]` (none for a base below 3)."
   [^double lo ^double hi ^double base]
   (let [from (long (m/floor (m// (m/ln lo) (m/ln base))))
         to (long (m/ceil (m// (m/ln hi) (m/ln base))))]
@@ -691,7 +700,15 @@
       v)))
 
 (defn- subdivided-ticks
-  "Gives the minor tick candidates between sorted major ticks `ts` (at least two): `n` subdivisions of each interval, the first and last intervals repeated past the outer ticks while they reach into `[lo hi]`."
+  "Gives the minor tick candidates between major ticks.
+
+  Parameters:
+
+  - `ts` (vector): the sorted major ticks, at least two.
+  - `lo`, `hi` (doubles): the domain.
+  - `n` (long): the subdivisions of each interval.
+
+  Returns the candidates: `n` subdivisions of each interval, the first and last intervals repeated past the outer ticks while they reach into `[lo hi]`."
   [ts ^double lo ^double hi ^long n]
   (let [c (count ts)
         t0 (double (ts 0))
@@ -992,7 +1009,13 @@
     :else false))
 
 (defn- forward-or-nan
-  "Gives the [[forward-fn]] of a finalized scale; a function giving `##NaN` for a missing scale (`nil`)."
+  "Gives the forward function of a finalized scale, or one placing nothing.
+
+  Parameters:
+
+  - `finalized` (map or `nil`): a finalized position scale.
+
+  Returns its [[forward-fn]]; for `nil` a function giving `##NaN`."
   [finalized]
   (if finalized (forward-fn finalized) (fn ^double [_] ##NaN)))
 

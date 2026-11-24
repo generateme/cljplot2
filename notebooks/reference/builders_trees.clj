@@ -46,34 +46,34 @@
 
 ;; ## dendrogram
 
-;; A dendrogram of a clustering (an `hclust` result, its observations named by `:labels`) or of a tree (levels or
+;; A dendrogram of a clustering (an `hclust` result, its observations named by `:leaf-names`) or of a tree (levels or
 ;; parents) - branches at their merge heights, leaves along one axis.
 
 (nu/options-table (describe/own-rows (describe/options #'plot/dendrogram)))
 
-(plot/render-image (plot/dendrogram car-clustering {:labels car-names :k 3 :title "complete linkage, 3 clusters"})
+(plot/render-image (plot/dendrogram car-clustering {:leaf-names car-names :k 3 :title "complete linkage, 3 clusters"})
                    {:width 900 :height 420})
 
 ;; Horizontal, with thicker red branches (`:line-style`, merged over the default), and without leaf names (left); a
 ;; hierarchy with its group names at their nodes (right):
 
-(plot/render-image (plot/arrange [(plot/dendrogram car-clustering {:labels car-names :horizontal true :labels? false
-                                                                   :line-style {:color [200 60 40] :width 2}
-                                                                   :title ":horizontal, :labels? false, :line-style"})
-                                  (plot/dendrogram office-tree {:horizontal false :group-labels? true
-                                                                :title "a hierarchy, :group-labels? true"})]
+(plot/render-image (plot/arrange [(plot/dendrogram car-clustering {:leaf-names car-names :horizontal true :labels false
+                                                                   :line-style {:color [200 60 40] :line-width 2}
+                                                                   :title ":horizontal, :labels false, :line-style"})
+                                  (plot/dendrogram office-tree {:horizontal false :group-labels true
+                                                                :title "a hierarchy, :group-labels true"})]
                                  {:columns 2})
                    {:width 1000 :height 400})
 
 ;; The branches draw in the theme style `[:chart :dendrogram-branch]` (a line style - its colour, width and dash
 ;; shown; the clustered heatmap's trees too), the group names in the text role `:dendrogram-group-label`:
 
-(nu/options-table (describe/style-rows :dendrogram-branch [:color :width :dash]))
+(nu/options-table (describe/style-rows :dendrogram-branch [:color :line-width :dash]))
 
 ;; Thin blue branches through the theme:
 
-(plot/render-image (plot/dendrogram car-clustering {:labels car-names
-                                                    :theme {:chart {:dendrogram-branch {:color [40 90 160] :width 0.6}}}})
+(plot/render-image (plot/dendrogram car-clustering {:leaf-names car-names
+                                                    :theme {:chart {:dendrogram-branch {:color [40 90 160] :line-width 0.6}}}})
                    {:width 700 :height 380})
 
 (nu/shared-groups (describe/options #'plot/dendrogram))
@@ -95,9 +95,9 @@
                                                           :link-style {:dash :dashed :color [90 90 90]}
                                                           :title ":mapping, :node-style, :link-style"
                                                           :scales {:color {:legend false}}})
-                                  (plot/tree office-tree {:labels? false :nodes? false :circular true
+                                  (plot/tree office-tree {:labels false :node-points false :circular true
                                                           :title ":circular true, no names or points"})
-                                  (plot/tree car-clustering {:labels car-names :labels? true :nodes? true
+                                  (plot/tree car-clustering {:leaf-names car-names :labels true :node-points true
                                                              :title "a clustering, :labels"})]
                                  {:columns 3})
                    {:width 1000 :height 420})
@@ -112,11 +112,11 @@
 (plot/render-image (plot/tree office-tree {:theme {:chart {:tree-node {:size 5 :color [60 60 60] :stroke-color :none}}}})
                    {:width 600 :height 360})
 
-(nu/options-table (describe/style-rows :tree-link [:color :width :dash]))
+(nu/options-table (describe/style-rows :tree-link [:color :line-width :dash]))
 
 ;; Darker, thicker links and bold names through the theme:
 
-(plot/render-image (plot/tree office-tree {:theme {:chart {:tree-link {:color [90 90 90] :width 2}}
+(plot/render-image (plot/tree office-tree {:theme {:chart {:tree-link {:color [90 90 90] :line-width 2}}
                                                    :text {:tree-label {:font-style :bold}}}})
                    {:width 600 :height 360})
 
@@ -161,11 +161,11 @@
 ;; default euclidean distance, no trees - only the order (right):
 
 (plot/render-image (plot/arrange [(plot/clustered-heatmap car-scores {:row :car :col :variable :value :z
-                                                                      :col-tree? false :tree-size [0.35 0.2]
-                                                                      :title ":col-tree? false, :tree-size [0.35 0.2]"
+                                                                      :col-tree false :tree-size [0.35 0.2]
+                                                                      :title ":col-tree false, :tree-size [0.35 0.2]"
                                                                       :scales {:color {:legend false}}})
                                   (plot/clustered-heatmap car-scores {:row :car :col :variable :value :z :method :ward
-                                                                      :row-tree? false :col-tree? false
+                                                                      :row-tree false :col-tree false
                                                                       :title ":method :ward, no trees"})]
                                  {:columns 2 :widths [1 1.15]})
                    {:width 1000 :height 450})
@@ -191,22 +191,22 @@
 ;; One edge colour, more opaque, without leaf names (left); coloured by group with the default translucency and
 ;; names (right):
 
-(plot/render-image (plot/arrange [(plot/bundle calls office-tree {:color-by-group? false :edge-color [120 60 160]
-                                                                  :alpha 0.8 :labels? false
-                                                                  :title ":color-by-group? false, :alpha 0.8"})
-                                  (plot/bundle calls office-tree {:color-by-group? true :alpha 0.4 :labels? true
-                                                                  :title ":color-by-group? true"})]
+(plot/render-image (plot/arrange [(plot/bundle calls office-tree {:color-by :none :edge-color [120 60 160]
+                                                                  :alpha 0.8 :labels false
+                                                                  :title ":color-by :none, :alpha 0.8"})
+                                  (plot/bundle calls office-tree {:color-by :group :alpha 0.4 :labels true
+                                                                  :title ":color-by :group"})]
                                  {:columns 2 :widths [1 1.3]})
                    {:width 1000 :height 480})
 
 ;; The theme styles of edge bundling - edges in `[:chart :bundle-edge]` (line - its colour, width and dash shown),
 ;; leaves in `[:chart :bundle-leaf]` (scatter):
 
-(nu/options-table (describe/style-rows :bundle-edge [:color :width :dash]))
+(nu/options-table (describe/style-rows :bundle-edge [:color :line-width :dash]))
 
 ;; Thicker edges through the theme:
 
-(plot/render-image (plot/bundle calls office-tree {:theme {:chart {:bundle-edge {:width 2.5}}}})
+(plot/render-image (plot/bundle calls office-tree {:theme {:chart {:bundle-edge {:line-width 2.5}}}})
                    {:width 500 :height 500})
 
 (nu/options-table (describe/style-rows :bundle-leaf))
@@ -235,12 +235,12 @@
 
 ;; A smaller hole - more room for the rings - and the step names in the cells where they fit (a larger image):
 
-(plot/render-image (plot/sequences visits {:value :n :inner 0.1 :labels? true :title ":inner 0.1, :labels? true"})
+(plot/render-image (plot/sequences visits {:value :n :inner-radius 0.1 :labels true :title ":inner-radius 0.1, :labels true"})
                    {:width 700 :height 600})
 
 ;; Ending sequences left as their group's grey remainder, the end not a step of its own:
 
-(plot/render-image (plot/sequences visits {:value :n :keep-end? false :title ":keep-end? false"})
+(plot/render-image (plot/sequences visits {:value :n :keep-end false :title ":keep-end false"})
                    {:width 550 :height 450})
 
 ;; The cells draw in the theme style `[:chart :sequences-cell]` (a partition style over `[:chart :partition]`):
@@ -249,7 +249,7 @@
 
 ;; Thick white cell borders through the theme:
 
-(plot/render-image (plot/sequences visits {:value :n :theme {:chart {:sequences-cell {:border-width 2}}}})
+(plot/render-image (plot/sequences visits {:value :n :theme {:chart {:sequences-cell {:stroke-width 2}}}})
                    {:width 500 :height 450})
 
 (nu/shared-groups (describe/options #'plot/sequences))

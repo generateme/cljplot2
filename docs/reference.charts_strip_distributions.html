@@ -1961,7 +1961,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td>:stroke-width</td>
 <td>a non-negative number</td>
 <td>1</td>
-<td>outline and whisker width in pixels</td>
+<td>outline and whisker width in pixels (0 - no box outline)</td>
 </tr>
 <tr class="even">
 <td>:shape</td>
@@ -2146,13 +2146,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td>:stroke-width</td>
 <td>a non-negative number</td>
 <td>1</td>
-<td>outline width in pixels</td>
+<td>outline width in pixels (0 - no outline)</td>
 </tr>
 <tr class="even">
 <td>:inner-color</td>
-<td>a clojure2d color or :none</td>
-<td>:none</td>
-<td>colour of the inner marks (:none - black or white, whichever reads better on the fill)</td>
+<td>one of :contrast or a clojure2d color or :none</td>
+<td>:contrast</td>
+<td>colour of the inner marks: a colour, :contrast (black or white, whichever reads better on the fill) or :none (not drawn)</td>
 </tr>
 <tr class="odd">
 <td>:kernel</td>

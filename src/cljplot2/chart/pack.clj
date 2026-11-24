@@ -11,14 +11,14 @@
   (packing leaves gaps), compare leaves within a group. Children are packed in `:order` - `:value` (default,
   descending: the largest near the centre) or `:data` (first appearance). The whole packing fits the panel's
   shorter side, centred; circles stay round in any panel shape. Facet panels pack separately, each filling its own
-  box: circle sizes compare within a panel, not across panels. `:padding` (pixels, as d3's) - the gap between
+  box: circle sizes compare within a panel, not across panels. `:gap` (pixels, as d3's padding) - the gap between
   siblings and between a child and its parent's edge; a panel too small for such gaps gets the widest it holds.
 
   Colors (as the partition): without a mapped `:color` each top-level node takes the next `[:palette :color]` color,
   the nodes below it lighter by depth (see [[cljplot2.data.hierarchy/depth-shade]]); a mapped `:color` colors the
   leaves (legend keys), groups take `[:palette :na]`. `:root true` draws the root circle too (in `[:palette :na]`);
   `:hidden-levels` - a set of depths (root 0, top level 1) whose circles and labels aren't drawn, the layout
-  unchanged. Style (theme `[:chart :pack]`): `:padding`, `:border-color`, `:border-width` (the circles' outlines),
+  unchanged. Style (theme `[:chart :pack]`): `:gap`, `:stroke-color`, `:stroke-width` (the circles' outlines),
   `:pattern`, `:pattern-color`.
 
   Labels: `:group-labels` / `:leaf-labels` (default true - the node's name; `false` - none; a function of the node
@@ -47,10 +47,10 @@
 
 (def ^:private style-entries
   "Map entries of the pack style (theme `[:chart :pack]`; also options)."
-  (into [(schema/optional :padding {:description "gap between siblings and between a child and its parent's edge, in pixels"}
+  (into [(schema/optional :gap {:description "gap between siblings and between a child and its parent's edge, in pixels"}
                           schema/non-neg)
-         (schema/optional :border-color {:description "circle border colour"} schema/color)
-         (schema/optional :border-width {:description "circle border width in pixels"} schema/non-neg)]
+         (schema/optional :stroke-color {:description "circle outline colour"} schema/color)
+         (schema/optional :stroke-width {:description "circle outline width in pixels"} schema/non-neg)]
         draw/pattern-style-entries))
 
 (def schemas
@@ -145,10 +145,7 @@
   ;; more than 4 arguments: `stroke-width` unhinted
   (let [d (m/* 2.0 r)]
     (draw/fill-patterned! canvas fill pattern-fill #(c2d/ellipse % x y d d))
-    (when (and (m/pos? (double stroke-width)) (not (theme/none? stroke)))
-      (c2d/set-stroke-custom canvas {:size stroke-width})
-      (c2d/set-color canvas stroke)
-      (c2d/ellipse canvas x y d d true))))
+    (draw/outline! canvas stroke stroke-width #(c2d/ellipse % x y d d true))))
 
 (defn- label-position
   "Places a label in a circle, if it fits.
@@ -235,12 +232,12 @@
   [_chart {:keys [tree style options] :as panel} canvas {:keys [w h]} scales env]
   (when tree
     (let [theme (:theme env)
-          packed (layout/pack tree {:x 0.0 :y 0.0 :w (double w) :h (double h)} (:padding style))
+          packed (layout/pack tree {:x 0.0 :y 0.0 :w (double w) :h (double h)} (:gap style))
           nodes (filterv #(m/>= (double (:r %)) min-drawn-radius) (drawn-nodes packed options))
           fill-of (hierarchy/fill-fn panel scales theme)
           pattern-fill (draw/pattern-fill-cache)
-          stroke (:border-color style)
-          sw (double (:border-width style))]
+          stroke (:stroke-color style)
+          sw (double (:stroke-width style))]
       (doseq [node nodes
               :let [fill (fill-of node)]]
         (circle! canvas node fill stroke sw (pattern-fill style fill)))

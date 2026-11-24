@@ -93,18 +93,18 @@
 
 (plot/render-image (plot/arrange [{:data readings
                                    :mapping {:color :id}
-                                   :charts [(chart/parallel {:variables [:t1 :t2 :t3 :t4] :missing :break :width 2})]
+                                   :charts [(chart/parallel {:variables [:t1 :t2 :t3 :t4] :missing :break :line-width 2})]
                                    :labels {:title ":missing :break" :x nil :y nil}
                                    :legend false}
                                   {:data readings
                                    :mapping {:color :id}
-                                   :charts [(chart/parallel {:variables [:t1 :t2 :t3 :t4] :missing :drop :width 2})]
+                                   :charts [(chart/parallel {:variables [:t1 :t2 :t3 :t4] :missing :drop :line-width 2})]
                                    :labels {:title ":missing :drop" :x nil :y nil}
                                    :legend false}
                                   {:data readings
                                    :mapping {:color :id}
                                    :charts [(chart/parallel {:variables [:t1 :t2 :t3 :t4] :axes false :padding {:y [0 0]}
-                                                             :width 2})]
+                                                             :line-width 2})]
                                    :labels {:title ":axes false, :padding {:y [0 0]}" :x nil :y nil}}]
                                  {:columns 3 :widths [1 1 1.2]})
                    {:width 1000 :height 320})
@@ -199,13 +199,13 @@
 ;; A coarser density grid with fewer levels (`:projection-grid`, `:projection-levels`); how strongly projected points
 ;; and density bands are faded is a theme key of `[:chart :cloud]`, not an option:
 
-(nu/options-table (describe/style-rows :cloud [:projection-alpha :band-alpha]))
+(nu/options-table (describe/style-rows :cloud [:projection-alpha-factor :band-alpha-factor]))
 
 (plot/render-image {:data iris
                     :mapping {:x :sepal-length :y :sepal-width :z :petal-length}
                     :charts [(chart/cloud {:type :none :projections {:xy :density :xz :contour :yz :points}
                                            :projection-grid 20 :projection-levels 3})]
-                    :theme {:chart {:cloud {:projection-alpha 0.8 :band-alpha 0.3}}}}
+                    :theme {:chart {:cloud {:projection-alpha-factor 0.8 :band-alpha-factor 0.3}}}}
                    {:width 600 :height 480})
 
 ;; The 3D frame (Shared options) on the same points: the eye moved round and up, the box flattened and the x axis
@@ -319,12 +319,12 @@
                                      :mapping {:color :species}})
                    {:width 700 :height 620})
 
-;; A slot takes one chart, a vector of charts (layered in each cell) or `nil` (empty cells); `:diagonal :names` writes
+;; A slot takes one chart, a vector of charts (layered in each cell) or `:none` (empty cells; `nil` - the default); `:diagonal :names` writes
 ;; the variable's name in the diagonal cell instead:
 
 (plot/render-image (plot/pairs iris {:variables [:sepal-length :sepal-width :petal-length]
                                      :lower [(chart/scatter {:size 4}) (chart/smooth {:method :lm})]
-                                     :upper nil
+                                     :upper :none
                                      :diagonal :names
                                      :title "scatter and a linear fit below, empty above"})
                    {:width 600 :height 560})

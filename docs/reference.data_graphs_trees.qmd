@@ -93,7 +93,7 @@ edges with numeric weights. Undirected by default; directed graphs split degrees
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:from</td><td>a keyword, a function or a categorical marker of one</td><td>:from</td><td>accessor of an edge row's source node id</td></tr><tr><td>:to</td><td>a keyword, a function or a categorical marker of one</td><td>:to</td><td>accessor of an edge row's target node id</td></tr><tr><td>:value</td><td>a keyword, a function or a categorical marker of one</td><td>:value</td><td>accessor of an edge row's weight, a finite number >= 0 (nil - 1)</td></tr><tr><td>:nodes</td><td>sequential of map or nil</td><td></td><td>node rows (each with an id), placed first in their order; ids seen only in edges follow</td></tr><tr><td>:id</td><td>a keyword, a function or a categorical marker of one</td><td>:id</td><td>accessor of a node row's id</td></tr><tr><td>:directed?</td><td>true or false or nil</td><td>false</td><td>a directed graph: degrees split into :in and :out</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:from</td><td>a keyword, a function or a categorical marker of one</td><td>:from</td><td>accessor of an edge row's source node id</td></tr><tr><td>:to</td><td>a keyword, a function or a categorical marker of one</td><td>:to</td><td>accessor of an edge row's target node id</td></tr><tr><td>:value</td><td>a keyword, a function or a categorical marker of one</td><td>:value</td><td>accessor of an edge row's weight, a finite number >= 0 (nil - 1)</td></tr><tr><td>:nodes</td><td>sequential of map or nil</td><td></td><td>node rows (each with an id), placed first in their order; ids seen only in edges follow</td></tr><tr><td>:id</td><td>a keyword, a function or a categorical marker of one</td><td>:id</td><td>accessor of a node row's id</td></tr><tr><td>:directed</td><td>true or false or nil</td><td>false</td><td>a directed graph: degrees split into :in and :out</td></tr></tbody></table>
 ```
 
 :::
@@ -182,7 +182,7 @@ the upper triangle (and the diagonal) is read.
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:directed?</td><td>true or false</td><td>true</td><td>read the whole matrix (false - only the upper triangle and the diagonal)</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:whole-matrix</td><td>true or false</td><td>true</td><td>read the whole matrix (false - only the upper triangle and the diagonal)</td></tr></tbody></table>
 ```
 
 :::
@@ -247,7 +247,7 @@ the clustered order (nodes linked to the same others side by side):
                                         [":order :cluster"
                                          (graph/arc-layout (graph/graph flights {:from :src :to :dst :value :n}) {:order :cluster})]]]
                                    {:charts [(chart/line {:data (:arcs laid) :mapping {:x :x :y :y :group :edge :size :value}
-                                                          :sort false})
+                                                          :order :data})
                                              (chart/scatter {:data (:nodes laid) :mapping {:x :x :y :y} :size 10})]
                                     :scales {:x {:ticks (vec (range 5))
                                                  :formatter (let [ids (mapv :id (:nodes laid))] #(get ids (long %) ""))}
@@ -274,7 +274,7 @@ ribbon per linked pair (undirected) or edge (directed) through the centre.
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:order</td><td>:cluster or sequential of any value or nil</td><td>the nodes' input order</td><td>node order: a sequence of ids (those first, the rest after them in input order) or :cluster (nodes linked to the same others side by side)</td></tr><tr><td>:pad</td><td>a non-negative finite number</td><td>2.0</td><td>gap after every ring sector in degrees (must leave room for the sectors)</td></tr><tr><td>:inner</td><td>a number in (0 1)</td><td>0.92</td><td>inner radius of the ring, where the ribbons end (the outer one is 1)</td></tr><tr><td>:min-value</td><td>a non-negative finite number or nil</td><td></td><td>flows of a pair (summed) below it are left out and counted in :dropped (nil - none)</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:order</td><td>:cluster or sequential of any value or nil</td><td>the nodes' input order</td><td>node order: a sequence of ids (those first, the rest after them in input order) or :cluster (nodes linked to the same others side by side)</td></tr><tr><td>:gap-angle</td><td>a non-negative finite number</td><td>2.0</td><td>gap after every ring sector in degrees (must leave room for the sectors)</td></tr><tr><td>:inner-radius</td><td>a number in (0 1)</td><td>0.92</td><td>inner radius of the ring, where the ribbons end (the outer one is 1)</td></tr><tr><td>:min-value</td><td>a non-negative finite number or nil</td><td></td><td>flows of a pair (summed) below it are left out and counted in :dropped (nil - none)</td></tr></tbody></table>
 ```
 
 :::
@@ -296,11 +296,11 @@ graph (a ribbon per edge) in clustered order without flows under 4 (their edges 
 ```clojure
 (plot/render-image (plot/arrange (for [[title {:keys [ribbons arcs]}]
                                        [["defaults" (graph/chord-layout (graph/graph flights {:from :src :to :dst :value :n}))]
-                                        [":pad 12, :inner 0.75"
+                                        [":gap-angle 12, :inner-radius 0.75"
                                          (graph/chord-layout (graph/graph flights {:from :src :to :dst :value :n})
-                                                             {:pad 12 :inner 0.75})]
+                                                             {:gap-angle 12 :inner-radius 0.75})]
                                         [":order :cluster :min-value 4"
-                                         (graph/chord-layout (graph/graph flights {:from :src :to :dst :value :n :directed? true})
+                                         (graph/chord-layout (graph/graph flights {:from :src :to :dst :value :n :directed true})
                                                              {:order :cluster :min-value 4})]]]
                                    {:charts [(chart/polygon {:data ribbons :alpha 0.6 :mapping {:x :x :y :y :group :ribbon :color :from}})
                                              (chart/polygon {:data arcs :mapping {:x :x :y :y :color :group}})]
@@ -328,7 +328,7 @@ flow from its source's right side to its target's left side (edges are flows, wh
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:align</td><td>one of :center :justify :left :right</td><td>:justify</td><td>the column of a node: :justify (sinks in the last column), :left, :right (by the longest path to a sink) or :center</td></tr><tr><td>:layer</td><td>a keyword, a function or a categorical marker of one or nil</td><td>columns from :align</td><td>accessor of the node rows giving the column (integers >= 0, every edge to a later one; wins over :align)</td></tr><tr><td>:node-width</td><td>a number in (0 1)</td><td>0.03</td><td>node width, a fraction of the unit square's width</td></tr><tr><td>:pad</td><td>a non-negative finite number</td><td>0.02</td><td>least gap between the nodes of a column, a fraction of the unit square's height</td></tr><tr><td>:iterations</td><td>integer (at least 0)</td><td>6</td><td>relaxation sweeps moving the nodes towards their links' ends (0 - spread in the start order)</td></tr><tr><td>:node-sort</td><td>one of :input or nil</td><td></td><td>nil - relaxation reorders a column, :input - the input order kept</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:align</td><td>one of :center :justify :left :right</td><td>:justify</td><td>the column of a node: :justify (sinks in the last column), :left, :right (by the longest path to a sink) or :center</td></tr><tr><td>:layer</td><td>a keyword, a function or a categorical marker of one or nil</td><td>columns from :align</td><td>accessor of the node rows giving the column (integers >= 0, every edge to a later one; wins over :align)</td></tr><tr><td>:node-width</td><td>a number in (0 1)</td><td>0.03</td><td>node width, a fraction of the unit square's width</td></tr><tr><td>:gap</td><td>a non-negative finite number</td><td>0.02</td><td>least gap between the nodes of a column, a fraction of the unit square's height</td></tr><tr><td>:iterations</td><td>integer (at least 0)</td><td>6</td><td>relaxation sweeps moving the nodes towards their links' ends (0 - spread in the start order)</td></tr><tr><td>:order</td><td>one of :relaxed :input or nil</td><td>:relaxed</td><td>node order in a column: :relaxed - relaxation reorders it, :input - the input order kept</td></tr></tbody></table>
 ```
 
 :::
@@ -386,7 +386,7 @@ Krakow, a dead end after Warsaw, sits in the last column (`:justify`, `:right`) 
 
 
 Columns given by a node column (`:layer :stage`, winning over `:align`), wide nodes (`:node-width 0.08`) far apart
-(`:pad 0.1`), no relaxation, nodes in input order (left), against the defaults - columns from `:align`, six
+(`:gap 0.1`), no relaxation, nodes in input order (left), against the defaults - columns from `:align`, six
 relaxation sweeps moving the nodes towards their links' ends (right):
 
 
@@ -407,12 +407,12 @@ relaxation sweeps moving the nodes towards their links' ends (right):
 ::: {.sourceClojure}
 ```clojure
 (plot/render-image (plot/arrange (for [[title {:keys [rects bands]}]
-                                       [[":layer, :iterations 0, :node-sort :input"
+                                       [[":layer, :iterations 0, :order :input"
                                          (graph/sankey-layout (graph/graph [{:from "visit" :to "search" :value 6} {:from "visit" :to "browse" :value 9}
                                                                             {:from "search" :to "cart" :value 4} {:from "browse" :to "cart" :value 3}
                                                                             {:from "cart" :to "buy" :value 5} {:from "browse" :to "buy" :value 1}]
                                                                            {:nodes stages})
-                                                              {:layer :stage :node-width 0.08 :pad 0.1 :iterations 0 :node-sort :input})]
+                                                              {:layer :stage :node-width 0.08 :gap 0.1 :iterations 0 :order :input})]
                                         ["defaults"
                                          (graph/sankey-layout (graph/graph [{:from "visit" :to "search" :value 6} {:from "visit" :to "browse" :value 9}
                                                                             {:from "search" :to "cart" :value 4} {:from "browse" :to "cart" :value 3}
@@ -443,7 +443,7 @@ levels of consecutive axes and fill level, with the summed weight - for `sankey-
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:axes (required)</td><td>sequential of a keyword, a function or a categorical marker of one (at least 2)</td><td></td><td>accessors of the axes, in column order (at least 2)</td></tr><tr><td>:value</td><td>a keyword, a function or a categorical marker of one or nil</td><td>1 per row</td><td>accessor of a row's weight, a finite number >= 0 (nil - 1)</td></tr><tr><td>:fill</td><td>a keyword, a function or a categorical marker of one or nil</td><td>the first axis</td><td>accessor of the level the strands are grouped (and coloured) by</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:variables (required)</td><td>sequential of a keyword, a function or a categorical marker of one (at least 2)</td><td></td><td>accessors of the categorical variables (one column each), in order (at least 2)</td></tr><tr><td>:value</td><td>a keyword, a function or a categorical marker of one or nil</td><td>1 per row</td><td>accessor of a row's weight, a finite number >= 0 (nil - 1)</td></tr><tr><td>:strand-color</td><td>a keyword, a function or a categorical marker of one or nil</td><td>the first column</td><td>accessor of the level the strands are grouped (and coloured) by</td></tr></tbody></table>
 ```
 
 :::
@@ -470,24 +470,24 @@ The edges, weighted by `:n` and grouped by the survival level:
 
 
 ```{=html}
-<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>from</th><th>to</th><th>value</th><th>fill</th></tr></thead><tbody><tr><td>[0 "1st"]</td><td>[1 "m"]</td><td>118.0</td><td>no</td></tr><tr><td>[0 "2nd"]</td><td>[1 "m"]</td><td>154.0</td><td>no</td></tr><tr><td>[0 "3rd"]</td><td>[1 "m"]</td><td>422.0</td><td>no</td></tr><tr><td>[0 "3rd"]</td><td>[1 "f"]</td><td>106.0</td><td>no</td></tr><tr><td>[1 "m"]</td><td>[2 "no"]</td><td>694.0</td><td>no</td></tr><tr><td>[1 "f"]</td><td>[2 "no"]</td><td>106.0</td><td>no</td></tr><tr><td>[0 "1st"]</td><td>[1 "m"]</td><td>62.0</td><td>yes</td></tr><tr><td>[0 "3rd"]</td><td>[1 "f"]</td><td>90.0</td><td>yes</td></tr><tr><td>[0 "1st"]</td><td>[1 "f"]</td><td>140.0</td><td>yes</td></tr><tr><td>[0 "2nd"]</td><td>[1 "f"]</td><td>80.0</td><td>yes</td></tr><tr><td>[1 "m"]</td><td>[2 "yes"]</td><td>62.0</td><td>yes</td></tr><tr><td>[1 "f"]</td><td>[2 "yes"]</td><td>310.0</td><td>yes</td></tr></tbody></table></div>
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>from</th><th>to</th><th>value</th><th>strand-color</th></tr></thead><tbody><tr><td>[0 "1st"]</td><td>[1 "m"]</td><td>118.0</td><td>no</td></tr><tr><td>[0 "2nd"]</td><td>[1 "m"]</td><td>154.0</td><td>no</td></tr><tr><td>[0 "3rd"]</td><td>[1 "m"]</td><td>422.0</td><td>no</td></tr><tr><td>[0 "3rd"]</td><td>[1 "f"]</td><td>106.0</td><td>no</td></tr><tr><td>[1 "m"]</td><td>[2 "no"]</td><td>694.0</td><td>no</td></tr><tr><td>[1 "f"]</td><td>[2 "no"]</td><td>106.0</td><td>no</td></tr><tr><td>[0 "1st"]</td><td>[1 "m"]</td><td>62.0</td><td>yes</td></tr><tr><td>[0 "3rd"]</td><td>[1 "f"]</td><td>90.0</td><td>yes</td></tr><tr><td>[0 "1st"]</td><td>[1 "f"]</td><td>140.0</td><td>yes</td></tr><tr><td>[0 "2nd"]</td><td>[1 "f"]</td><td>80.0</td><td>yes</td></tr><tr><td>[1 "m"]</td><td>[2 "yes"]</td><td>62.0</td><td>yes</td></tr><tr><td>[1 "f"]</td><td>[2 "yes"]</td><td>310.0</td><td>yes</td></tr></tbody></table></div>
 ```
 
 
-Laid out by `sankey-layout` with the axes as columns and the input order kept, strands coloured by their fill
-level - by survival (left) and by class, the default first axis (right):
+Laid out by `sankey-layout` with the axes as columns and the input order kept, strands coloured by their
+`:strand-color` level - by survival (left) and by class, the default first column (right):
 
 
 ::: {.sourceClojure}
 ```clojure
 (plot/render-image (plot/arrange (for [[title {:keys [rects bands]}]
-                                       [[":fill :survived"
-                                         (graph/sankey-layout (graph/alluvial-graph passengers {:axes [:class :sex :survived] :value :n :fill :survived})
-                                                              {:layer :layer :node-sort :input :iterations 0})]
-                                        ["default :fill (the first axis)"
-                                         (graph/sankey-layout (graph/alluvial-graph passengers {:axes [:class :sex :survived] :value :n})
-                                                              {:layer :layer :node-sort :input :iterations 0})]]]
-                                   {:charts [(chart/polygon {:data bands :alpha 0.6 :mapping {:x :x :y :y :group :link :color :fill}})
+                                       [[":strand-color :survived"
+                                         (graph/sankey-layout (graph/alluvial-graph passengers {:variables [:class :sex :survived] :value :n :strand-color :survived})
+                                                              {:layer :layer :order :input :iterations 0})]
+                                        ["default :strand-color (the first column)"
+                                         (graph/sankey-layout (graph/alluvial-graph passengers {:variables [:class :sex :survived] :value :n})
+                                                              {:layer :layer :order :input :iterations 0})]]]
+                                   {:charts [(chart/polygon {:data bands :alpha 0.6 :mapping {:x :x :y :y :group :link :color :strand-color}})
                                              (chart/polygon {:data rects :color [90 90 90] :stroke-color :white
                                                              :mapping {:x :x :y :y :group :rect}})]
                                     :scales {:x {:axis false} :y {:axis false}}
@@ -740,7 +740,7 @@ Drawn as lines: plain, cut into 3 clusters, and (also cut) circular - around the
                                         [":span 180"
                                          (tree/layout (tree/from-hclust (cl/hclust car-features) (mapv :model mtcars))
                                                       {:circular true :span 180 :k 3}) true]]]
-                                   (cond-> {:charts [(chart/line {:data paths :sort false
+                                   (cond-> {:charts [(chart/line {:data paths :order :data
                                                                   :mapping (cond-> {:x :x :y :y :group :id}
                                                                              (some :cluster paths) (assoc :color #(some-> (:cluster %) str)))})]
                                             :scales {:x {:axis false} :y {:axis false}}
@@ -800,7 +800,7 @@ Links as lines under the nodes - tidy with curved links, the leaves aligned with
                                         [":span 180"
                                          (tree/node-link-layout (tree/from-levels offices {:hierarchy [:region :country :city]})
                                                                 {:circular true :span 180}) true]]]
-                                   (cond-> {:charts [(chart/line {:data links :sort false :color [150 150 150] :mapping {:x :x :y :y :group :id}})
+                                   (cond-> {:charts [(chart/line {:data links :order :data :color [150 150 150] :mapping {:x :x :y :y :group :id}})
                                                      (chart/scatter {:data nodes :size 8 :mapping {:x :x :y :y} :padding {:x [0.1 0.25] :y [0.1 0.1]}})
                                                      (chart/text {:data (filter :leaf? nodes) :size 7 :anchor [:left :middle] :offset [5 0]
                                                                   :mapping {:x :x :y :y :label #(str (:name %))}})]
@@ -883,7 +883,7 @@ Bundled along the tree (`:beta 1`), the default 0.85, and straight lines (`:beta
                                    {:charts [(chart/line {:data (:paths (tree/bundle-paths imports
                                                                                            (tree/layout (tree/from-parents modules {}) {:circular true})
                                                                                            {:from :module :to :uses :beta beta}))
-                                                          :sort false :mapping {:x :x :y :y :group :id :color :module}})
+                                                          :order :data :mapping {:x :x :y :y :group :id :color :module}})
                                              (chart/text {:data (filter :leaf? (:nodes (tree/layout (tree/from-parents modules {}) {:circular true})))
                                                           :size 8 :mapping {:x :x :y :y :label :id}})]
                                     :aspect :iso
@@ -910,7 +910,7 @@ sequences summed; a final end marker is removed (or kept as a step).
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:sequence</td><td>a keyword, a function or a categorical marker of one</td><td>:sequence</td><td>accessor of a row's sequence: a string split at :separator or a sequence of steps</td></tr><tr><td>:value</td><td>a keyword, a function or a categorical marker of one or nil</td><td>1 per row</td><td>accessor of a row's weight, a finite number >= 0 (nil - 1; identical sequences summed)</td></tr><tr><td>:separator</td><td>string</td><td>"-"</td><td>literal text splitting a string sequence into steps</td></tr><tr><td>:end</td><td>any value</td><td>"end"</td><td>the end marker (nil - none): a final step equal to it is removed unless :keep-end?</td></tr><tr><td>:keep-end?</td><td>true or false or nil</td><td>false</td><td>keep a final end marker as a step of its own (false - a sequence ending before others continue is its group's unnamed leaf)</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:sequence</td><td>a keyword, a function or a categorical marker of one</td><td>:sequence</td><td>accessor of a row's sequence: a string split at :separator or a sequence of steps</td></tr><tr><td>:value</td><td>a keyword, a function or a categorical marker of one or nil</td><td>1 per row</td><td>accessor of a row's weight, a finite number >= 0 (nil - 1; identical sequences summed)</td></tr><tr><td>:separator</td><td>string</td><td>"-"</td><td>literal text splitting a string sequence into steps</td></tr><tr><td>:end</td><td>any value</td><td>"end"</td><td>the end marker (nil - none): a final step equal to it is removed unless :keep-end</td></tr><tr><td>:keep-end</td><td>true or false or nil</td><td>true</td><td>keep a final end marker as a step of its own (false - a sequence ending before others continue is its group's unnamed leaf)</td></tr></tbody></table>
 ```
 
 :::
@@ -932,7 +932,7 @@ sequences summed; a final end marker is removed (or kept as a step).
 ```
 
 
-The step rows - the end marker dropped (left), kept as a step (right):
+The step rows - the end marker dropped with `:keep-end false` (left), kept as a step by default (right):
 
 
 ```{=html}
@@ -951,7 +951,7 @@ The rows as a sunburst - `chart/partition` under polar, the steps as its hierarc
 
 ::: {.sourceClojure}
 ```clojure
-(plot/render-image (let [{:keys [rows hierarchy]} (hierarchy/sequence-levels visits {:sequence :path :value :n :separator ">"})]
+(plot/render-image (let [{:keys [rows hierarchy]} (hierarchy/sequence-levels visits {:sequence :path :value :n :separator ">" :keep-end false})]
                      {:data rows
                       :mapping {:hierarchy hierarchy :value :value}
                       :charts [(chart/partition {:color-by :name})]

@@ -91,7 +91,7 @@
     [(+ 100.0 (- (* x (m/cos a)) (* y (m/sin a)))) (+ 100.0 (* x (m/sin a)) (* y (m/cos a)))]))
 
 (deftest background-test
-  (let [content {:kind :label :role :annotation :text "Label" :padding 6 :background [255 0 0]}
+  (let [content {:kind :label :role :annotation :text "Label" :inset 6 :background [255 0 0]}
         frame (let [canvas (c2d/canvas 10 10)]
                 (c2d/with-canvas [c canvas] (label/text-frame content c theme/default-theme)))]
     (testing "2.1 the frame filled at its padding corner, rotated with the text"
@@ -118,7 +118,7 @@
                       :scales {:x {:domain [0 1]} :y {:domain [0 1]}}})]
     (testing "2.2 text chart :background and :padding: a box around the label"
       (let [small (count-color (image (p {:background [255 0 0]}) {:width 200 :height 200}) [255 0 0])
-            padded (count-color (image (p {:background [255 0 0] :padding 8}) {:width 200 :height 200}) [255 0 0])]
+            padded (count-color (image (p {:background [255 0 0] :inset 8}) {:width 200 :height 200}) [255 0 0])]
         (is (pos? small))
         (is (> padded small) ":padding grows the box"))
       (is (zero? (count-color (image (p {}) {:width 200 :height 200}) [255 0 0]))))
@@ -138,7 +138,7 @@
                           (c2d/get-image canvas)))
             n (count-color (key-image {:background [255 0 0]}) [255 0 0])]
         (is (pos? n))
-        (is (= n (count-color (key-image {:background [255 0 0] :padding 30}) [255 0 0])) "a large :padding doesn't grow the key")))
+        (is (= n (count-color (key-image {:background [255 0 0] :inset 30}) [255 0 0])) "a large :inset doesn't grow the key")))
     (testing "2.3 other label roles via the theme"
       (let [p (fn [t] {:data [{:x 0 :y 0 :v 1} {:x 1 :y 0 :v 2}] :mapping {:x :x :y :y :color :v}
                        :charts [(chart/tile {:value-label true})] :legend false :theme t})]

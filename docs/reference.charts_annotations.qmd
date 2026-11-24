@@ -115,7 +115,7 @@ per row of data, or at literal positions.
 (plot/render-image {:data faithful
                     :mapping {:x :eruptions :y :waiting}
                     :charts [(chart/scatter)
-                             (chart/rule {:data thresholds :mapping {:y :at :color :kind} :width 2})]
+                             (chart/rule {:data thresholds :mapping {:y :at :color :kind} :line-width 2})]
                     :labels {:x "eruptions [min]" :y "waiting [min]"}}
                    {:width 600 :height 360})
 ```
@@ -146,11 +146,11 @@ Its options: literal positions - one or a vector of them, across x (`:x`) or alo
                                    :labels {:title ":x [2 3 4]"}}
                                   {:data faithful :mapping {:x :eruptions :y :waiting}
                                    :charts [(chart/scatter)
-                                            (chart/rule {:slope [10.7 12] :intercept [33.5 25] :width 2
+                                            (chart/rule {:slope [10.7 12] :intercept [33.5 25] :line-width 2
                                                          :color [200 80 40]})]
                                    :labels {:title ":slope, :intercept (two lines)"}}
                                   {:data faithful :mapping {:x :eruptions :y :waiting}
-                                   :charts [(chart/scatter) (chart/rule {:y [55 80] :width 2 :color [40 140 60]})]
+                                   :charts [(chart/scatter) (chart/rule {:y [55 80] :line-width 2 :color [40 140 60]})]
                                    :labels {:title ":y [55 80]"}}]
                                  {:columns 3})
                    {:width 1000 :height 330})
@@ -163,7 +163,7 @@ Its options: literal positions - one or a vector of them, across x (`:x`) or alo
 :::
 
 
-Shared options: [Line style](reference.shared_options.html#line-style) (`:color` `:width` `:dash`); [Data and mapping](reference.shared_options.html#data-and-mapping) (`:data` `:mapping`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`); [Annotation options](reference.shared_options.html#annotation-options) (`:extent`).
+Shared options: [Line style](reference.shared_options.html#line-style) (`:color` `:line-width` `:dash`); [Data and mapping](reference.shared_options.html#data-and-mapping) (`:data` `:mapping`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`); [Annotation options](reference.shared_options.html#annotation-options) (`:extent`).
 
 
 ## rect
@@ -222,7 +222,7 @@ how much of a band a level end covers:
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:stroke-color</td><td>:darker or a clojure2d color or :none</td><td>:none</td><td>outline colour: a colour, :none or :darker (the darkened fill; no outline without a fill)</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>outline width in pixels</td></tr><tr><td>:fill</td><td>a clojure2d color or :none or vector of a clojure2d color or :none (at least 1)</td><td>[0.0 0.0 0.0 30.0]</td><td>fill colour, or a vector of 1 or n colours paired with literal intervals (a mapped :color wins)</td></tr><tr><td>:alpha</td><td>a number in [0 1]</td><td>colours as they are</td><td>fill opacity</td></tr><tr><td>:x</td><td>[a finite number, a java.time value or a level (string / keyword) or nil, a finite number, a java.time value or a level (string / keyword) or nil] or vector of [a finite number, a java.time value or a level (string / keyword) or nil, a finite number, a java.time value or a level (string / keyword) or nil] (at least 1) or nil</td><td></td><td>literal x interval(s) [a b] (an end nil - the panel edge), alone a band across the panel (wins over the mapping)</td></tr><tr><td>:y</td><td>[a finite number, a java.time value or a level (string / keyword) or nil, a finite number, a java.time value or a level (string / keyword) or nil] or vector of [a finite number, a java.time value or a level (string / keyword) or nil, a finite number, a java.time value or a level (string / keyword) or nil] (at least 1) or nil</td><td></td><td>literal y interval(s) [a b] (an end nil - the panel edge), alone a band across the panel (wins over the mapping)</td></tr><tr><td>:band-width</td><td>a finite number, > 0, <= 1</td><td>1.0</td><td>fraction of its band step a level end covers, centred</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:stroke-color</td><td>:darker or a clojure2d color or :none</td><td>:none</td><td>outline colour: a colour, :none or :darker (the darkened fill; no outline without a fill)</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>outline width in pixels</td></tr><tr><td>:fill</td><td>a clojure2d color or :none or vector of a clojure2d color or :none (at least 1)</td><td>[0.0 0.0 0.0 30.0]</td><td>fill colour, or a vector of 1 or n colours paired with literal intervals (a mapped :color wins)</td></tr><tr><td>:alpha</td><td>a number in [0 1]</td><td>colours as they are</td><td>fill opacity</td></tr><tr><td>:x</td><td>[a finite number, a java.time value or a level (string / keyword) or nil, a finite number, a java.time value or a level (string / keyword) or nil] or vector of [a finite number, a java.time value or a level (string / keyword) or nil, a finite number, a java.time value or a level (string / keyword) or nil] (at least 1) or nil</td><td></td><td>literal x interval(s) [a b] (an end nil - the panel edge), alone a band across the panel (wins over the mapping)</td></tr><tr><td>:y</td><td>[a finite number, a java.time value or a level (string / keyword) or nil, a finite number, a java.time value or a level (string / keyword) or nil] or vector of [a finite number, a java.time value or a level (string / keyword) or nil, a finite number, a java.time value or a level (string / keyword) or nil] (at least 1) or nil</td><td></td><td>literal y interval(s) [a b] (an end nil - the panel edge), alone a band across the panel (wins over the mapping)</td></tr><tr><td>:width</td><td>a finite number, > 0, <= 1</td><td>1.0</td><td>fraction of its band step a level end covers, centred</td></tr></tbody></table>
 ```
 
 :::
@@ -251,10 +251,10 @@ how much of a band a level end covers:
                                             (chart/scatter)]
                                    :labels {:title ":y intervals, :fill per interval, :stroke-width 2"}}
                                   {:data levels-data :mapping {:x :k :y :v}
-                                   :charts [(chart/rect {:x ["b" "c"] :band-width 0.6 :fill [255 200 0 110]})
+                                   :charts [(chart/rect {:x ["b" "c"] :width 0.6 :fill [255 200 0 110]})
                                             (chart/bar)]
                                    :scales {:x {:domain ["a" "b" "c" "d"]}}
-                                   :labels {:title ":x [\"b\" \"c\"] :band-width 0.6"}}]
+                                   :labels {:title ":x [\"b\" \"c\"] :width 0.6"}}]
                                  {:columns 2})
                    {:width 900 :height 330})
 ```
@@ -434,7 +434,7 @@ or a builder's (here `:network-label`, small names on white boxes), the inline s
                                           :role :network-label})
                              (chart/text {:x [:panel 0.5] :y [:panel 0.95] :text "European cities" :role :callout})]
                     :theme {:text {:callout {:font "DejaVu Sans Mono" :size 13 :font-style :bold :color [178 34 34]
-                                             :padding 2}}}
+                                             :inset 2}}}
                     :labels {:x "longitude" :y "latitude"}}
                    {:width 550 :height 340})
 ```
@@ -446,7 +446,7 @@ or a builder's (here `:network-label`, small names on white boxes), the inline s
 :::
 
 
-Shared options: [Text style](reference.shared_options.html#text-style) (`:font` `:size` `:font-style` `:color` `:padding` `:background`); [Data and mapping](reference.shared_options.html#data-and-mapping) (`:data` `:mapping`); [Annotation options](reference.shared_options.html#annotation-options) (`:extent`).
+Shared options: [Text style](reference.shared_options.html#text-style) (`:font` `:size` `:font-style` `:color` `:inset` `:background`); [Data and mapping](reference.shared_options.html#data-and-mapping) (`:data` `:mapping`); [Annotation options](reference.shared_options.html#annotation-options) (`:extent`).
 
 
 ## image
@@ -587,7 +587,7 @@ A `nil` or non-finite result breaks the curve, or a faint segment bridges the ga
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:bridge</td><td>map</td><td>{:alpha 0.3}</td><td>style of the segments bridging gaps with :gaps :bridge: :alpha (a fraction of the line alpha), optional :width and :dash</td></tr><tr><td>:bridge :alpha (required)</td><td>a number in [0 1]</td><td>0.3 in the theme's :bridge (a given :bridge replaces it whole)</td><td>bridge opacity, a fraction of the line's alpha</td></tr><tr><td>:bridge :width</td><td>a non-negative number</td><td>the line's width</td><td>bridge width in pixels</td></tr><tr><td>:bridge :dash</td><td>:none, a dash style (:dashed :dot-dash :dot-dot-dash :dotted :long-dash :loose-dot :solid :two-dash) or a sequence of positive numbers or nil</td><td>the line's dash</td><td>dash style of the bridge</td></tr><tr><td>:gaps</td><td>one of :break :bridge</td><td>:break</td><td>nil or non-finite results break the curve: :break (empty space) or :bridge (a straight segment in the :bridge style)</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:bridge</td><td>map</td><td>{:alpha-factor 0.3}</td><td>style of the segments bridging gaps with :gaps :bridge: :alpha-factor (a fraction of the line alpha), optional :line-width and :dash</td></tr><tr><td>:bridge :alpha-factor (required)</td><td>a number in [0 1]</td><td>0.3 in the theme's :bridge (a given :bridge replaces it whole)</td><td>bridge opacity, a fraction of the line's alpha</td></tr><tr><td>:bridge :line-width</td><td>a non-negative number</td><td>the line's width</td><td>bridge line width in pixels</td></tr><tr><td>:bridge :dash</td><td>:none, a dash style (:dashed :dot-dash :dot-dot-dash :dotted :long-dash :loose-dot :solid :two-dash) or a sequence of positive numbers or nil</td><td>the line's dash</td><td>dash style of the bridge</td></tr><tr><td>:gaps</td><td>one of :break :bridge</td><td>:break</td><td>nil or non-finite results break the curve: :break (empty space) or :bridge (a straight segment in the :bridge style)</td></tr></tbody></table>
 ```
 
 :::
@@ -599,7 +599,7 @@ A `nil` or non-finite result breaks the curve, or a faint segment bridges the ga
 (plot/render-image (plot/arrange [{:charts [(chart/function {:f #(Math/sqrt (- 1 (* % %))) :domain [-2 2]})]
                                    :labels {:title ":gaps :break (default)"}}
                                   {:charts [(chart/function {:f #(when-not (< 1 % 2) (Math/sin %)) :domain [0 6]
-                                                             :gaps :bridge :bridge {:alpha 0.6 :dash :dotted}})]
+                                                             :gaps :bridge :bridge {:alpha-factor 0.6 :dash :dotted}})]
                                    :labels {:title ":gaps :bridge"}}]
                                  {:columns 2})
                    {:width 800 :height 300})
@@ -664,7 +664,7 @@ The padding of the sampled span: none on x (the curve meets the panel's sides), 
 :::
 
 
-Shared options: [Line style](reference.shared_options.html#line-style) (`:color` `:width` `:dash`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`).
+Shared options: [Line style](reference.shared_options.html#line-style) (`:color` `:line-width` `:dash`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`).
 
 
 ```{=html}

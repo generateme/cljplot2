@@ -305,11 +305,11 @@
       (is (= [1 5 9] (get-in built [:stats 0 :data :panel :lines 0 :sizes]))))
     (is (some? (plot/render-image {:data trail-rows :mapping {:x :x :y :y :size :s} :charts [(chart/line {:trail true})]}
                                   {:width 200 :height 150}))))
-  (testing "boundary: 1- and 2-point trails, size 0, no size mapping (constant :width)"
+  (testing "boundary: 1- and 2-point trails, size 0, no size mapping (constant :line-width)"
     (doseq [rows [[{:x 0 :y 0 :s 3}] [{:x 0 :y 0 :s 0} {:x 1 :y 1 :s 0}]]]
       (is (some? (plot/render-image {:data rows :mapping {:x :x :y :y :size :s} :charts [(chart/line {:trail true})]}
                                     {:width 200 :height 150}))))
-    (is (some? (plot/render-image {:data trail-rows :mapping {:x :x :y :y} :charts [(chart/line {:trail true :width 5})]}
+    (is (some? (plot/render-image {:data trail-rows :mapping {:x :x :y :y} :charts [(chart/line {:trail true :line-width 5})]}
                                   {:width 200 :height 150}))))
   (testing "options a trail can't take -> {:key :trail}"
     (doseq [opts [{:fill :color} {:fill-gradient :viridis} {:position :stack} {:arrow {:end true}} {:start-gap 3}

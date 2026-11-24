@@ -319,7 +319,7 @@
     (let [p {:data [{:x 0 :y 0} {:x 10 :y 1}] :mapping {:x :x :y :y} :charts [(chart/scatter)] :scales {:x {:minor-ticks 4}}}
           plain (image (dissoc p :scales))]
       (is (not (same-pixels? plain (image p))) "minor axis ticks drawn")
-      (is (not (same-pixels? (image p) (image (assoc p :theme {:panel {:grid {:minor {:color :red :width 1 :dash [1.0]}}}}))))))))
+      (is (not (same-pixels? (image p) (image (assoc p :theme {:panel {:grid {:minor {:color :red :line-width 1 :dash [1.0]}}}}))))))))
 
 ;; 5 builders
 
@@ -329,6 +329,6 @@
           b (built (series-plots/acf values {}))
           domains (map #(get-in % [:y :domain]) (vals (:panel-scales b)))]
       (is (= {:scales {:y :free}} (:facets (series-plots/acf values {}))))
-      (is (nil? (:facets (series-plots/acf values {:partial? :acf}))))
+      (is (nil? (:facets (series-plots/acf values {:correlograms :acf}))))
       (is (nil? (:facets (series-plots/acf values {:scales {:y {:domain [-1 1]}}}))) "an explicit y domain stays shared")
       (is (= 2 (count (distinct domains)))))))

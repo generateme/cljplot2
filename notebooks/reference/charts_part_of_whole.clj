@@ -36,8 +36,8 @@
 
 (plot/render-image (plot/arrange [{:data budget
                                    :mapping {:hierarchy [:dept :team] :value :cost}
-                                   :charts [(chart/treemap {:padding 8 :border-color :black :border-width 2})]
-                                   :labels {:title ":padding 8, black borders"}}
+                                   :charts [(chart/treemap {:gap 8 :stroke-color :black :stroke-width 2})]
+                                   :labels {:title ":gap 8, black borders"}}
                                   {:data budget
                                    :mapping {:hierarchy [:dept :team] :value :cost}
                                    :charts [(chart/treemap {:layout :slice-dice})]
@@ -78,7 +78,7 @@
                                    :labels {:title ":order :data, :root true"}}
                                   {:data budget
                                    :mapping {:hierarchy [:dept :team] :value :cost}
-                                   :charts [(chart/partition {:color-by :name :border-width 2})]
+                                   :charts [(chart/partition {:color-by :name :stroke-width 2})]
                                    :coord {:kind :polar}
                                    :labels {:title ":color-by :name"}
                                    :legend false}]
@@ -93,8 +93,8 @@
                                    :labels {:title ":order :value (default)"}}
                                   {:data budget
                                    :mapping {:hierarchy [:dept :team] :value :cost}
-                                   :charts [(chart/partition {:border-color [40 40 40] :border-width 3})]
-                                   :labels {:title ":border-color, :border-width 3"}}]
+                                   :charts [(chart/partition {:stroke-color [40 40 40] :stroke-width 3})]
+                                   :labels {:title ":stroke-color, :stroke-width 3"}}]
                                  {:columns 2})
                    {:width 1000 :height 360})
 
@@ -118,8 +118,8 @@
 
 (plot/render-image (plot/arrange [{:data budget
                                    :mapping {:hierarchy [:dept :team] :value :cost}
-                                   :charts [(chart/pack {:padding 10 :root true :border-color :black})]
-                                   :labels {:title ":padding 10, :root true"}}
+                                   :charts [(chart/pack {:gap 10 :root true :stroke-color :black})]
+                                   :labels {:title ":gap 10, :root true"}}
                                   {:data budget
                                    :mapping {:hierarchy [:dept :team] :value :cost}
                                    :charts [(chart/pack {:hidden-levels #{1}})]
@@ -140,8 +140,8 @@
                                    :labels {:title ":order :data"}}
                                   {:data budget
                                    :mapping {:hierarchy [:dept :team] :value :cost}
-                                   :charts [(chart/pack {:border-color [40 40 40] :border-width 3})]
-                                   :labels {:title ":border-width 3"}}]
+                                   :charts [(chart/pack {:stroke-color [40 40 40] :stroke-width 3})]
+                                   :labels {:title ":stroke-width 3"}}]
                                  {:columns 3})
                    {:width 1000 :height 360})
 
@@ -170,12 +170,12 @@
 
 (plot/render-image (plot/arrange [{:data energy-mix
                                    :mapping {:color :source :value :share}
-                                   :charts [(chart/waffle {:shape :circle :gap 0.2 :rows 5 :columns 20})]
+                                   :charts [(chart/waffle {:cell-shape :circle :gap 0.2 :rows 5 :columns 20})]
                                    :labels {:title ":circle, 5 × 20"}
                                    :legend false}
                                   {:data energy-mix
                                    :mapping {:color :source :value :share}
-                                   :charts [(chart/waffle {:fill-order :columns :border-color :white :border-width 2
+                                   :charts [(chart/waffle {:fill-order :columns :stroke-color :white :stroke-width 2
                                                            :gap 0})]
                                    :labels {:title ":fill-order :columns"}
                                    :legend false}
@@ -218,7 +218,7 @@
                                   {:data memberships
                                    :mapping {:set :club :item :member}
                                    :charts [(chart/venn {:sets ["chess" "running"] :proportional false :alpha 0.6
-                                                         :border-color :none})]
+                                                         :stroke-color :none})]
                                    :labels {:title ":proportional false"}}
                                   {:data memberships
                                    :mapping {:set :club :item :member}
@@ -235,8 +235,8 @@
                                    :labels {:title ":set-labels false"}}
                                   {:data memberships
                                    :mapping {:set :club :item :member}
-                                   :charts [(chart/venn {:border-width 4})]
-                                   :labels {:title ":border-width 4"}}]
+                                   :charts [(chart/venn {:stroke-width 4})]
+                                   :labels {:title ":stroke-width 4"}}]
                                  {:columns 2})
                    {:width 900 :height 380})
 

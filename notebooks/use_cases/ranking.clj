@@ -336,7 +336,7 @@
    (plot/arrange
     [(assoc base :charts [(chart/segment {:xend 0}) (chart/scatter)]
             :labels {:title "Basic" :x "exports" :y nil})
-     (assoc base :charts [(chart/segment {:xend 0 :color [150 150 150] :width 2})
+     (assoc base :charts [(chart/segment {:xend 0 :color [150 150 150] :line-width 2})
                           (chart/scatter {:size 9 :color [215 48 39] :shape \s})]
             :labels {:title "Styled stems and markers" :x "exports" :y nil})
      (assoc base :charts [(chart/rule {:x mean :dash :dashed})
@@ -371,7 +371,7 @@
       :charts [(dots :season-2 [33 102 172])]
       :labels {:title "Cleveland dot plot: season 2" :x "score" :y nil}}
      {:data scores :scales {:y {:domain order}}
-      :charts [(chart/segment {:mapping {:x :season-1 :xend :season-2 :y :team} :color [170 170 170] :width 2})
+      :charts [(chart/segment {:mapping {:x :season-1 :xend :season-2 :y :team} :color [170 170 170] :line-width 2})
                (dots :season-1 [150 150 150]) (dots :season-2 [33 102 172])]
       :labels {:title "Dumbbell: season 1 (grey) to season 2 (blue)" :x "score" :y nil}}]
     {:columns 2})
@@ -574,7 +574,7 @@
  (plot/arrange
   (vec (for [scaling [:std :robust :uniminmax :globalminmax]]
          {:data iris :mapping {:color :species} :legend false
-          :charts [(chart/parallel {:variables iris-variables :scaling scaling :width 0.5})]
+          :charts [(chart/parallel {:variables iris-variables :scaling scaling :line-width 0.5})]
           :labels {:title (str ":scaling " scaling) :x nil}}))
   {:columns 2})
  {:width 1000 :height 700})
@@ -625,10 +625,10 @@
  (plot/arrange
   [(plot/arrange
     [{:data four-cars :mapping {:color :model} :coord {:kind :polar} :legend false
-      :charts [(chart/parallel {:variables car-variables :fill :color :width 2})]
+      :charts [(chart/parallel {:variables car-variables :fill :color :line-width 2})]
       :labels {:title "Four cars, their own ranges" :x nil}}
      {:data four-cars :mapping {:color :model} :coord {:kind :polar}
-      :charts [(chart/parallel {:variables car-variables :fill :color :width 2 :limits car-limits})]
+      :charts [(chart/parallel {:variables car-variables :fill :color :line-width 2 :limits car-limits})]
       :labels {:title "Ranges of all 32 cars (:limits)" :x nil}}]
     {:columns 2 :widths [2 3]})
    {:data (map #(assoc % :cylinders (str (long (:cyl %)))) mtcars) :mapping {:color :cylinders} :coord {:kind :polar}
@@ -650,7 +650,7 @@
  {:data iris :mapping {:color :species}
   :coord {:kind :polar :inner 0.25} :flip true
   :scales {:color {:range {"setosa" [27 158 119 110] "versicolor" [217 95 2 110] "virginica" [117 112 179 110]}}}
-  :charts [(chart/parallel {:variables iris-variables :width 0.8})]
+  :charts [(chart/parallel {:variables iris-variables :line-width 0.8})]
   :labels {:title "150 iris flowers across four rings" :x nil}}
  {:width 750 :height 700})
 
@@ -712,7 +712,7 @@
  (plot/arrange
   (vec (for [vs [car-variables [:mpg :wt :hp :drat :qsec :disp]]]
          {:data (filter #(= "Mazda RX4" (:model %)) mtcars) :coord {:kind :polar}
-          :charts [(chart/parallel {:variables vs :fill :color :width 2 :limits car-limits})]
+          :charts [(chart/parallel {:variables vs :fill :color :line-width 2 :limits car-limits})]
           :labels {:title (str "Mazda RX4: " (str/join " " (map name vs))) :x nil}}))
   {:columns 2})
  {:width 1000 :height 500})

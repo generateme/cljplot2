@@ -1,16 +1,13 @@
 (ns cljplot2.demo.smooth
   "Smooth and ribbon demo (Evolution cycle 3b): ribbon with a gradient, grouped loess, lm with nested levels, a
   Gaussian process, a bootstrap band of a smoothing spline."
-  (:require [clojure.data.json :as json]
-            [clojure.java.io :as io]
-            [fastmath.kernel :as kernel]
+  (:require [fastmath.kernel :as kernel]
             [fastmath.random :as r]
-            [cljplot2.chart :as chart]))
+            [cljplot2.chart :as chart]
+            [cljplot2.demo.data :as data]))
 
-(defn- read-json [file] (json/read-str (slurp (io/resource file)) :key-fn keyword))
-
-(def faithful (read-json "faithful.json"))
-(def quakes (read-json "quakes.json"))
+(def faithful (data/json-rows "faithful.json"))
+(def quakes (data/json-rows "quakes.json"))
 
 (def noisy-sine
   (let [rng (r/rng :mersenne 42)]

@@ -131,7 +131,7 @@
    (let [values (mapv #(mapv double %) heights)
          n (long (count (first values)))]
      (when-not (apply = n (map count values))
-       (throw (ex-info "Group heights should have the same length." {:key :heights :value (mapv count values)})))
+       (schema/fail! "Group heights should have the same length." {:key :heights :value (mapv count values)}))
      (when (and (contains? (conj stream-positions :normalize) position) (some m/neg? (apply concat values)))
        (schema/fail! (str "Position " position " needs non-negative values.") {:key :position :value position}))
      (cond
@@ -146,7 +146,7 @@
                                  (stacked (mapv #(mapv m/* % scale) values) n))
        (= :silhouette position) (shifted (stacked values n) (silhouette-baseline values))
        (= :wiggle position) (shifted (stacked values n) (wiggle-baseline values n))
-       :else (throw (ex-info (str "Unknown position " (pr-str position) ".") {:key :position :value position}))))))
+       :else (schema/fail! (str "Unknown position " (pr-str position) ".") {:key :position :value position})))))
 
 (defn dodge-interval
   "Gives one of `n` equal sub-intervals of an interval - a group's share of a dodged position.

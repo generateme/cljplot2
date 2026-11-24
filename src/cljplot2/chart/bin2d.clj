@@ -4,7 +4,7 @@
   Mapping: `:x`, `:y` - numbers (rows with another value are dropped and counted). The cell color is the count
   measure, so `:color` can't be mapped (set it to `nil` in the chart's mapping when the plot maps it); groups -
   facets only. All panels share one grid (equal cells), binned in the normalized space of
-  [[cljplot2.data.cells]]: cells are regular in pixels with plot `:aspect :iso` or a `:shape` matching the panel
+  [[cljplot2.data.cells]]: cells are regular in pixels with plot `:aspect :iso` or a chart `:aspect` matching the panel
   (height / width), close to regular otherwise (the shape is estimated from the plot size and the facet layout).
 
   Options (style defaults from theme `[:chart :bin2d]`):
@@ -18,34 +18,34 @@
     noticeable for tens of thousands of points, and overfit coordinates recorded at a coarse precision, e.g. 80-90
     cells across the quakes' longitudes and latitudes)
   * `:binwidth` - cell size in x data units (wins over `:bins`)
-  * `:shape` - the normalized space's height / width ratio (default: estimated, see above)
+  * `:aspect` - the normalized space's height / width ratio (default: estimated, see above)
   * `:measure` - the color: `:count` (default), `:percent` (of the panel's points), `:pmf` (share of the panel's
     points), `:density` (count / (n * cell area in data units)); the legend title names it (a plot `:scales {:color
     {:title t}}` wins)
   * `:cell-scale` (shrink factor, `(0 1]`), `:stroke-color` (a color, `:none` or `:darker`), `:stroke-width`,
-    `:alpha` (fill alpha, a fraction)
+    `:alpha-factor` (multiplies the fill colours' alpha, a fraction)
 
   Only occupied cells are drawn. On a `:log` axis the points are binned in log10 coordinates (cells regular on
   screen; `:binwidth` and the `:density` cell area in log10 units of that axis).
 
   Functions: [[compute]] - the occupied cells of every panel and their measure; [[draw]] - a panel's cells."
   (:require [cljplot2.data.cells :as cells]
+            [cljplot2.graphics.cells :as cell-draw]
             [cljplot2.data.measure :as measure]
             [cljplot2.data.rows :as data]
             [cljplot2.scale.aesthetic :as aesthetic]
             [cljplot2.scale.position :as scale]
             [cljplot2.schema :as schema]
-            [cljplot2.theme :as theme]
-            [fastmath.core :as m]))
+            [cljplot2.theme :as theme]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
 (def schemas
   "Schemas of the bin2d chart: `:style` (theme `[:chart :bin2d]`), `:options`, `:mapping` (merged)."
-  {:style (into [:map {:closed true}] cells/style-entries)
+  {:style (into [:map {:closed true}] cell-draw/style-entries)
    :options (-> [:map {:closed true}]
-                (into cells/style-entries)
+                (into cell-draw/style-entries)
                 (into data/common-options)
                 (into theme/theme-style-entries)
                 (conj (schema/optional :bins {:description "cells across the x range (a positive integer), or a fastmath estimate-grid-size method giving a cell area (:binwidth wins)"
@@ -53,7 +53,7 @@
                                        [:or (into [:enum] cells/size-methods) schema/pos-int])
                       (schema/optional :binwidth {:description "cell size in x data units (log10 units on a :log axis); wins over :bins"}
                                        schema/finite-pos)
-                      (schema/optional :shape {:description "height / width ratio of the normalized binning space (cells are regular in pixels when it matches the panel)"
+                      (schema/optional :aspect {:description "height / width ratio of the normalized binning space (cells are regular in pixels when it matches the panel)"
                                                :cljplot2/default-doc "the panel's height / width (y span / x span with :aspect :iso), estimated from the plot size and facet layout"}
                                        schema/finite-pos)
                       (schema/optional :measure {:description "the cell colour: :count, :percent (of the panel's points), :pmf (share of the panel's points) or :density (count / (n * cell area in data units))"
@@ -70,16 +70,18 @@
 
   Parameters:
 
-  - `chart` (map): the chart value - `:options` (`:cell`, `:bins`, `:binwidth`, `:shape`, `:measure`, the cell style).
+  - `chart` (map): the chart value - `:options` (`:cell`, `:bins`, `:binwidth`, `:aspect`, `:measure`, the cell style).
   - `split` (map): `:groups` (`{panel rows}`), `:mapping` (merged; `:x`, `:y`).
   - `env` (map): `:theme`, `:plot-scales` (axis transforms) and the plot's size for the binning shape (see [[cljplot2.data.cells/bin-points]]).
 
   Returns per panel `{:cells [{:corners [[x y] ..] :value v} ..] :style st}` - the occupied cells with their measure; extents (panels with cells): x / y - the cells' box in the normalized space's proportions, color - the values over all panels; no padding, `:scale-defaults` without nice domains (keeps the cells' shape), `:dropped` (`:x`, `:y` - rows without a finite number, or one the axis can't place - e.g. 0 on a log axis).
 
+  Throws `ex-info {:key :mapping}` when rows exist but none has a finite `:x` (or `:y`).
+
   See also [[cljplot2.data.measure/heights]]."
   [{:keys [options] :as chart} {:keys [groups mapping]} {:keys [theme plot-scales] :as env}]
   (let [st (theme/resolved-style theme chart)
-        measure (get options :measure :count)
+        measure (data/option options :measure :count)
         x-of (data/row-accessor :x (:x mapping))
         y-of (data/row-accessor :y (:y mapping))
         tx (scale/stat-transform (:x plot-scales))
@@ -89,13 +91,14 @@
         ix (:inverse tx)
         iy (:inverse ty)
         ;; positions in the axes' screen-linear coordinates (log10 on a log axis)
-        transformed (fn [v f] (when (schema/finite? v) (let [u (double (f (double v)))] (when (m/valid-double? u) u))))
+        transformed (fn [v f] (some-> (schema/finite-double v) f schema/finite-double))
         pairs (update-vals groups (fn [rows] (mapv (fn [row] [(transformed (x-of row) fx) (transformed (y-of row) fy)]) rows)))
         all (apply concat (vals pairs))
+        _ (data/check-mapped! (mapcat val groups) [[:x x-of] [:y y-of]] (fn [_ v] (schema/finite? v)))
         points (update-vals pairs (fn [ps] (filterv (fn [[x y]] (and x y)) ps)))
         to-data (fn [[u v]] [(ix u) (iy v)])
         {:keys [panels area extent]} (cells/bin-points points (merge {:cell (:cell st) :bins cells/default-size-method}
-                                                              (select-keys options [:bins :binwidth :shape]))
+                                                              (select-keys options [:bins :binwidth :aspect]))
                                                 env)
         valued (update-vals panels (fn [cs]
                                      (let [values (measure/heights measure (map :count cs) (repeat (count cs) area))]
@@ -106,7 +109,7 @@
      :extents (update-vals valued (fn [cs]
                                     (when (seq cs)
                                       {:x (position-extent (:x extent) ix) :y (position-extent (:y extent) iy) :color color-extent})))
-     :padding {:x [0.0 0.0] :y [0.0 0.0]}
+     :padding data/zero-padding
      :scale-defaults (when extent {:x {:nice false} :y {:nice false}})
      :dropped {:x (count (remove first all))
                :y (count (remove second all))}}))
@@ -123,14 +126,14 @@
   - `scales` (map): the panel's finalized scales - positions and `:color`.
   - `env` (map): the drawing environment (the theme's NA colour).
 
-  Each cell filled by its value's colour, with the cell rendering of [[cljplot2.data.cells/call-with-cell-rendering]]; a value outside the colour scale isn't drawn."
+  Each cell filled by its value's colour, with the cell rendering of [[cljplot2.graphics.cells/call-with-cell-rendering]]; a value outside the colour scale isn't drawn."
   [_chart {:keys [cells style]} canvas _box scales env]
   (when (seq cells)
     (let [projection (scale/projection scales)
           to-pixel (fn [[x y]] (projection x y))
           color-of (aesthetic/attribute-fn :color (:color scales) (get-in env [:theme :palette :na]))]
-      (cells/call-with-cell-rendering canvas style
+      (cell-draw/call-with-cell-rendering canvas style
                                       (fn [c] (doseq [{:keys [corners value]} cells
                                                       :let [fill (color-of value)]
                                                       :when fill]
-                                                (cells/draw-cell! c to-pixel corners fill style)))))))
+                                                (cell-draw/draw-cell! c to-pixel corners fill style)))))))

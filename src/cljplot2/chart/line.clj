@@ -1,8 +1,8 @@
 (ns cljplot2.chart.line
   "Line: points `(x, y)` joined per panel and group.
 
-  Options (style defaults from theme `[:chart :line]`): `:sort` (default true - points ordered by numeric or temporal
-  x, ties in data order; `false` keeps data order), `:color`, `:width`, `:dash`, `:fill` (area chart: the area
+  Options (style defaults from theme `[:chart :line]`): `:order` (`:x` - default, points ordered by numeric or temporal
+  x, ties in data order; `:data` keeps data order), `:color`, `:line-width`, `:dash`, `:fill` (area chart: the area
   between the line and y = 0 - or the nearer panel edge when 0 is outside the y range - default `:none`),
   `:padding {:x [lo hi] :y [lo hi]}` (default 5% each side; stacked `[0 0.05]` for y).
   `:fill :color` - the area in the line (group) colour at `:alpha` (0..1, theme default 0.6). `:fill-gradient` (a
@@ -11,7 +11,7 @@
   `:position` (see [[cljplot2.data.position]]): `:overlay` (default), `:stack`, `:normalize` (y title
   \"Proportion\"), streamgraphs `:silhouette` / `:wiggle` - groups aligned on the union of their x values (numeric
   or temporal; linear between a group's points, 0 outside its range; NA y left out and interpolated across; repeated
-  x in a group - `ex-info {:key :x}`), stacked, every band filled (`:fill`, default the group colour at `:alpha`)
+  x in a group - `ex-info {:key :mapping}`), stacked, every band filled (`:fill`, default the group colour at `:alpha`)
   and its top stroked; `:interpolator` smooths the bands; `:curve`, `:gaps` and a line coloured along its length
   can't be stacked.
   Curves (see [[cljplot2.graphics.curve]]): `:interpolator` (a fastmath 1D method or a function) with
@@ -20,7 +20,7 @@
   the curve.
   A row with an invalid x is dropped (counted); an invalid y breaks the line there (counted); `:gaps` - `:break`
   (default, empty space) or `:bridge` (a straight segment over the gap in the theme `:bridge` style - the line alpha
-  multiplied by `:alpha`, optional `:width` / `:dash`; the area stays empty).
+  multiplied by `:alpha-factor`, optional `:line-width` / `:dash`; the area stays empty).
   Groups (see [[cljplot2.data.group]]) come from ordinal aesthetics (`:color` colors the line) and `:group`.
   A `:color` with a linear or binned scale doesn't group: it colors each line along its length - every segment in
   the color of the mean of its two end values (the theme NA color when one is NA), round caps, the dash running on
@@ -29,16 +29,16 @@
   its data points, in steps of a few pixels (`:curve` can't color along the length - `ex-info {:key :curve}`); a bridge takes the color of
   its two end values.
   A mapped `:size` is the line width: per group - its first row's value through a linear size scale (doesn't group;
-  NA in the style `:width`, rows outside the size scale's explicit domain dropped), or the group's level of an
+  NA in the style `:line-width`, rows outside the size scale's explicit domain dropped), or the group's level of an
   ordinal size scale; the legend shows lines of those widths.
-  `:stroke-alpha` (a fraction) multiplies the stroke colour's opacity of unstacked lines (many overlapping lines; the
+  `:stroke-alpha-factor` (a fraction) multiplies the stroke colour's opacity of unstacked lines (many overlapping lines; the
   legend key stays opaque).
   Arrows (see [[cljplot2.graphics.arrow]]): `:arrow {:end :start :size :shape}`, `:start-gap` / `:end-gap` (pixels) -
   at the ends of every run of a plain stroked line (no fill, fill gradient, colour along the length or stacking -
   `ex-info {:key :arrow}`; no bridges between the runs).
   `:trail true` (Vega-Lite trail): a linear `:size` sets the width at every point - a filled shape, the width linear
   between points, round ends and joins (see [[cljplot2.graphics.polyline/trail-shape]]); rows without a size value
-  dropped (counted); without a linear size the group's width (`:width` or an ordinal size level). Size scale and
+  dropped (counted); without a linear size the group's width (`:line-width` or an ordinal size level). Size scale and
   legend unchanged, one colour per group; polar trails follow the circle with the plot's `:arcs`, else chords. A trail can't take `:fill`,
   `:fill-gradient`, a stacked `:position`, `:arrow` / `:start-gap` / `:end-gap`, `:dash`, `:interpolator`, `:curve`,
   `:gaps :bridge` or a colour along its length - `ex-info {:key :trail}`.
@@ -48,6 +48,7 @@
   lines; [[legend]] - the key glyph."
   (:require [clojure2d.core :as c2d]
             [fastmath.core :as m]
+            [cljplot2.chart.common :as common]
             [cljplot2.data.rows :as data]
             [cljplot2.data.group :as group]
             [cljplot2.data.position :as position]
@@ -71,11 +72,11 @@
               (schema/optional :fill {:cljplot2/section :style :description "area between the line and y = 0: :color (the line colour at :alpha), a colour or :none"}
                                [:or [:= :color] schema/color])
               (schema/optional :alpha {:cljplot2/section :style :description "area fill opacity of :fill :color and of stacked areas"} schema/fraction)
-              (schema/optional :bridge {:cljplot2/section :path :description "style of the segments bridging gaps with :gaps :bridge: :alpha (a fraction of the line alpha), optional :width and :dash"}
+              (schema/optional :bridge {:cljplot2/section :path :description "style of the segments bridging gaps with :gaps :bridge: :alpha-factor (a fraction of the line alpha), optional :line-width and :dash"}
                                polyline/bridge-schema))
         draw/pattern-style-entries))
 
-(def positions
+(def ^:private positions
   "Line positions: `:overlay` (default), stacked `:stack` / `:normalize` and the stream positions (see
   [[cljplot2.data.position]])."
   (into #{:overlay :stack :normalize} position/stream-positions))
@@ -84,38 +85,86 @@
   "The positions stacking the lines' areas: all but `:overlay`."
   (disj positions :overlay))
 
+(defn- trail-option-problem
+  "Gives the option a trail (`:trail true`) can't take, from the options alone.
+
+  Parameters:
+
+  - `options` (map): the chart's options.
+
+  Returns the first of `:fill` (an area), `:fill-gradient`, `:position` (stacked), `:arrow` (arrows or end gaps), `:dash`, `:interpolator`, `:curve`, `:gaps` (`:bridge`) the options hold; `nil` without a trail or a problem. A colour along the length is checked at compute (see [[check-trail!]])."
+  [options]
+  (when (data/option options :trail false)
+    (cond
+      (not (theme/none? (data/option options :fill :none))) :fill
+      (:fill-gradient options) :fill-gradient
+      (stacked-positions (data/option options :position :overlay)) :position
+      (some options [:arrow :start-gap :end-gap]) :arrow
+      (some? (:dash options)) :dash
+      (:interpolator options) :interpolator
+      (:curve options) :curve
+      (= :bridge (:gaps options)) :gaps)))
+
+(defn- end-marks-problem
+  "Gives the option that keeps a line from taking arrows or end gaps.
+
+  Parameters:
+
+  - `options` (map): the chart options.
+
+  Returns `:fill` (an area fill other than `:none`), `:fill-gradient` or `:position` (stacked) - the first the options hold; `nil` when none does. A theme fill, a colour along the length and stacked data are checked at draw."
+  [options]
+  (cond
+    (some-> (:fill options) theme/none? not) :fill
+    (:fill-gradient options) :fill-gradient
+    (stacked-positions (data/option options :position :overlay)) :position))
+
+(def ^:private option-rules
+  "Rules (see [[cljplot2.schema/with-rules]]) of the options: `:fill-gradient-axis` needs `:fill-gradient` ([[cljplot2.chart.common/fill-gradient-rule]]); stacked lines take no `:curve` or `:gaps`; a trail takes no option of [[trail-option-problem]]; `:arrow`, `:start-gap` and `:end-gap` need a plain stroked line ([[end-marks-problem]])."
+  (into [common/fill-gradient-rule
+         [#(when (and (stacked-positions (data/option % :position :overlay)) (:curve %)) "stacked lines can't take :curve (use :interpolator)") [:curve]]
+         [#(when (and (stacked-positions (data/option % :position :overlay)) (:gaps %)) "stacked lines interpolate across missing values; :gaps doesn't apply") [:gaps]]
+         [#(when-let [problem (trail-option-problem %)] (str "a trail (:trail true) is a filled shape of varying width: it can't take " problem)) [:trail]]]
+        (for [k [:arrow :start-gap :end-gap]]
+          [(fn [options] (when (some? (get options k))
+                           (when-let [problem (end-marks-problem options)]
+                             (str "arrows and end gaps need a plain stroked line: no " problem))))
+           [k]])))
+
 (def schemas
   "Schemas of the line chart: `:style` (theme `[:chart :line]`), `:options`, `:mapping` (merged)."
   {:style (into [:map {:closed true}] style-entries)
-   :options (-> [:map {:closed true}]
-                (into style-entries)
-                (into data/common-options)
-                (into theme/theme-style-entries)
-                (into curve/options)
-                (conj (schema/nilable :sort {:cljplot2/section :path :description "order the points by numeric or temporal x (false - data order)" :default true}
-                                      schema/bool)
-                      (schema/optional :gaps {:cljplot2/section :path :description "an invalid y breaks the line: :break (empty space) or :bridge (a straight segment in the :bridge style)"
-                                              :cljplot2/default-doc ":break (stacked lines take no :gaps)"}
-                                       [:enum :break :bridge])
-                      (schema/optional :position {:cljplot2/section :path :description "how groups combine: :overlay, stacked :stack / :normalize, or streamgraph :silhouette / :wiggle"
-                                                  :default :overlay}
-                                       (into [:enum] (sort positions)))
-                      (schema/optional :fill-gradient {:cljplot2/section :style :description "clojure2d gradient (preset, colours or function of t) colouring the areas; wins over :fill"}
-                                       polyline/fill-gradient-schema)
-                      (schema/optional :fill-gradient-axis {:cljplot2/section :style :description "axis the :fill-gradient runs along, over that scale's range (needs :fill-gradient)"
-                                                            :cljplot2/default-doc ":x"}
-                                       [:enum :x :y])
-                      (schema/optional :padding {:cljplot2/section :path :description "padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span"
-                                                 :cljplot2/default-doc "0.05 on every side; y [0 0.05] when stacked without negative values"}
-                                       data/position-padding)
-                      (schema/optional :stroke-alpha {:cljplot2/section :style :description "multiplies the stroke colour's opacity of unstacked lines (the legend key stays opaque)"}
-                                       schema/fraction)
-                      (schema/optional :arrow {:cljplot2/section :ends :description "arrowheads at the ends of every run of a plain stroked line"} arrow/schema)
-                      (schema/optional :start-gap {:cljplot2/section :ends :description "shortens every run at its start, in pixels"} schema/non-neg)
-                      (schema/optional :end-gap {:cljplot2/section :ends :description "shortens every run at its end, in pixels"} schema/non-neg)
-                      (schema/nilable :trail {:cljplot2/section :style :description "draw a filled trail whose width follows a linear mapped :size at every point"
-                                              :default false}
-                                      schema/bool)))
+   :options (apply schema/with-rules
+             (-> [:map {:closed true}]
+                 (into style-entries)
+                 (into data/common-options)
+                 (into theme/theme-style-entries)
+                 (into curve/options)
+                 (conj (schema/nilable :order {:cljplot2/section :path :description "point order: :x (numeric or temporal x, ties in data order) or :data" :default :x}
+                                       [:enum :x :data])
+                       (schema/optional :gaps {:cljplot2/section :path :description "an invalid y breaks the line: :break (empty space) or :bridge (a straight segment in the :bridge style)"
+                                               :cljplot2/default-doc ":break (stacked lines take no :gaps)"}
+                                        [:enum :break :bridge])
+                       (schema/optional :position {:cljplot2/section :path :description "how groups combine: :overlay, stacked :stack / :normalize, or streamgraph :silhouette / :wiggle"
+                                                   :default :overlay}
+                                        (into [:enum] (sort positions)))
+                       (schema/optional :fill-gradient {:cljplot2/section :style :description "clojure2d gradient (preset, colours or function of t) colouring the areas; wins over :fill"}
+                                        polyline/fill-gradient-schema)
+                       (schema/optional :fill-gradient-axis {:cljplot2/section :style :description "axis the :fill-gradient runs along, over that scale's range (needs :fill-gradient)"
+                                                             :cljplot2/default-doc ":x"}
+                                        [:enum :x :y])
+                       (schema/optional :padding {:cljplot2/section :path :description "padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span"
+                                                  :cljplot2/default-doc "0.05 on every side; y [0 0.05] when stacked without negative values"}
+                                        data/position-padding)
+                       (schema/optional :stroke-alpha-factor {:cljplot2/section :style :description "multiplies the stroke colour's opacity of unstacked lines (the legend key stays opaque)"}
+                                        schema/fraction)
+                       (schema/optional :arrow {:cljplot2/section :ends :description "arrowheads at the ends of every run of a plain stroked line"} arrow/schema)
+                       (schema/optional :start-gap {:cljplot2/section :ends :description "shortens every run at its start, in pixels"} schema/non-neg)
+                       (schema/optional :end-gap {:cljplot2/section :ends :description "shortens every run at its end, in pixels"} schema/non-neg)
+                       (schema/nilable :trail {:cljplot2/section :style :description "draw a filled trail whose width follows a linear mapped :size at every point"
+                                               :default false}
+                                       schema/bool)))
+             option-rules)
    :mapping [:map
              [:x {:description "x position (data units)"} schema/accessor]
              [:y {:description "y position (data units)"} schema/accessor]
@@ -159,7 +208,7 @@
 (defn- stacked-lines
   "Stacks the lines of one panel.
 
-  Every group is put on the union of the groups' x (keys of [[cljplot2.data.rows/x-key]]), interpolated linearly inside its own range and 0 outside; NA y points are left out (interpolated across); points are in x order whatever `:sort` says.
+  Every group is put on the union of the groups' x (keys of [[cljplot2.data.rows/x-key]]), interpolated linearly inside its own range and 0 outside; NA y points are left out (interpolated across); points are in x order whatever `:order` says.
 
   Parameters:
 
@@ -168,20 +217,20 @@
 
   Returns a vector of lines `{:x union :y upper :y0 lower :heights aligned :aesthetics}` (`:heights` - the group's aligned values, for smoothing at drawing); groups without points are left out.
 
-  Throws `ex-info {:key :x}` for a non-numeric, non-temporal x or a repeated x in a group."
+  Throws `ex-info {:key :mapping :in [:mapping :x]}` (see [[cljplot2.data.rows/fail-mapping!]]) for a non-numeric, non-temporal x or a repeated x in a group."
   [lines position]
   (let [keyed-lines (mapv (fn [{:keys [x y aesthetics] :as line}]
                             (let [keyed (->> (map vector x y)
                                              (filter #(some? (second %)))
                                              (map (fn [[vx vy]] [(or (data/x-key vx)
-                                                                     (schema/fail! "Stacked lines need numeric or temporal (java.time) x."
-                                                                                   {:key :x :value vx}))
+                                                                     (data/fail-mapping! "Stacked lines need numeric or temporal (java.time) x."
+                                                                                         :x {:value vx}))
                                                                  vx vy]))
                                              (sort-by first))
                                   ks (mapv first keyed)
                                   points (mapv (fn [[_ vx vy]] [vx vy]) keyed)]
                               (when-not (or (m/< (count ks) 2) (apply m/< ks))
-                                (schema/fail! "Stacked lines need distinct x values within a group." {:key :x :group aesthetics}))
+                                (data/fail-mapping! "Stacked lines need distinct x values within a group." :x {:group aesthetics}))
                               (merge {:ks ks :vs (mapv #(double (second %)) points) :xs (mapv first points) :aesthetics aesthetics}
                                      (select-keys line [:size-value]))))
                           lines)
@@ -197,23 +246,18 @@
           stacked-groups heights ys)))
 
 (defn- check-stacking!
-  "Checks the options of stacked lines.
+  "Checks that stacked lines aren't coloured along their length (the options alone are checked by the schema, see [[option-rules]]).
 
   Parameters:
 
   - `position` (keyword): the chart's position.
   - `gradient?` (boolean): is the line coloured along its length?
-  - `options` (map): the chart's options - `:curve`, `:gaps`.
 
-  Returns `nil`; throws `ex-info {:key :position}` for a line coloured along its length, `{:key :curve}`, `{:key :gaps}` - options a stacked position can't take."
-  [position gradient? options]
-  (when (stacked-positions position)
-    (cond
-      gradient? (schema/fail! "A line colored along its length (linear or binned :color) can't be stacked."
-                              {:key :position :value position})
-      (:curve options) (schema/fail! "Stacked lines can't take :curve (use :interpolator)." {:key :curve :value (:curve options)})
-      (:gaps options) (schema/fail! "Stacked lines interpolate across missing values; :gaps doesn't apply."
-                                    {:key :gaps :value (:gaps options)}))))
+  Returns `nil`; throws `ex-info {:key :position}` for a stacked line coloured along its length."
+  [position gradient?]
+  (when (and (stacked-positions position) gradient?)
+    (schema/fail! "A line colored along its length (linear or binned :color) can't be stacked."
+                  {:key :position :value position})))
 
 (defn- check-polar!
   "Checks the options of polar lines.
@@ -229,38 +273,26 @@
     (let [problem (cond
                     (:interpolator options) :interpolator
                     (:curve options) :curve
-                    (not= :overlay (get options :position :overlay)) :position
+                    (not= :overlay (data/option options :position :overlay)) :position
                     (:fill-gradient options) :fill-gradient
-                    (and (some? (:fill options)) (not= :none (:fill options))) :fill)]
+                    (not (theme/none? (data/option options :fill :none))) :fill)]
       (when problem
         (schema/fail! (str "Polar lines are straight and unfilled: " problem " isn't supported with :coord :polar.")
                       {:key :coord :value problem})))))
 
 (defn- check-trail!
-  "Checks the options of a trail (`:trail true`).
+  "Checks that a trail (`:trail true`) isn't coloured along its length (its other options are checked by the schema, see [[trail-option-problem]]).
 
   Parameters:
 
   - `options` (map): the chart's options.
-  - `position` (keyword): the chart's position.
   - `gradient?` (boolean): is the line coloured along its length?
 
-  Returns `nil`; throws `ex-info {:key :trail}` for an option a trail can't take: an area (`:fill`, `:fill-gradient`), a stacked position, arrows or end gaps, `:dash`, `:interpolator`, `:curve`, `:gaps :bridge`, a colour along the length."
-  [options position gradient?]
-  (when (data/option options :trail false)
-    (let [problem (cond
-                    (not= :none (:fill options :none)) :fill
-                    (:fill-gradient options) :fill-gradient
-                    (stacked-positions position) :position
-                    (some options [:arrow :start-gap :end-gap]) :arrow
-                    (some? (:dash options)) :dash
-                    (:interpolator options) :interpolator
-                    (:curve options) :curve
-                    (= :bridge (:gaps options)) :gaps
-                    gradient? :color)]
-      (when problem
-        (schema/fail! (str "A trail (:trail true) is a filled shape of varying width: it can't take " problem ".")
-                      {:key :trail :value problem})))))
+  Returns `nil`; throws `ex-info {:key :trail}` for a trail coloured along its length."
+  [options gradient?]
+  (when (and gradient? (data/option options :trail false))
+    (schema/fail! "A trail (:trail true) is a filled shape of varying width: it can't take :color."
+                  {:key :trail :value :color})))
 
 (defn compute
   "Computes the lines of every panel.
@@ -273,18 +305,16 @@
 
   Returns `{:data :extents :padding :padding-explicit :axis-titles :na :dropped}`: per panel `{:lines [{:x [..] :y [..] :aesthetics}] :style st}` - `y` `nil` where the line breaks; a line coloured along its length also has `:colors` (every point's colour value), a trail with a linear size `:sizes` (every point's size value), a line sized by a linear size `:size-value`; stacked positions - the lines of [[stacked-lines]]; `st` the resolved style. Padding 5% each side, stacked y `[0 0.05]` without negative values; `:axis-titles` - `Proportion` for `:normalize`.
 
-  Throws `ex-info` for options the lines can't take (see [[check-polar!]], [[check-trail!]], [[check-stacking!]]; `{:key :fill-gradient-axis}` without `:fill-gradient`, `{:key :fill-gradient}` on a line coloured along its length), `{:key :mapping}` when `:x` or `:y` has no valid value in non-empty data, and the errors of [[stacked-lines]]."
+  Throws `ex-info` for options the lines can't take with the plot or the data (see [[check-polar!]], [[check-trail!]], [[check-stacking!]]; `{:key :fill-gradient}` on a line coloured along its length), `{:key :mapping}` when `:x` or `:y` has no valid value in non-empty data, and the errors of [[stacked-lines]]."
   [{:keys [options] :as chart} {:keys [groups mapping]} {:keys [theme plot-scales] :as env}]
   (check-polar! options (:coord env))
   (let [st (theme/resolved-style theme chart)
-        position (get options :position :overlay)
+        position (data/option options :position :overlay)
         trail? (data/option options :trail false)
         continuous (group/continuous-color groups mapping env)
         gradient? (some? continuous)
-        _ (check-trail! options position gradient?)
-        _ (check-stacking! position gradient? options)
-        _ (when (and (:fill-gradient-axis options) (nil? (:fill-gradient options)))
-            (schema/fail! ":fill-gradient-axis needs :fill-gradient." {:key :fill-gradient-axis :value (:fill-gradient-axis options)}))
+        _ (check-trail! options gradient?)
+        _ (check-stacking! position gradient?)
         _ (when (and gradient? (:fill-gradient options))
             (schema/fail! "A line colored along its length can't take :fill-gradient." {:key :fill-gradient :value (:fill-gradient options)}))
         color-of (:color-of continuous)
@@ -297,7 +327,7 @@
                                    (group/split colored-groups colored-mapping env))
         x-of (data/row-accessor :x (:x colored-mapping))
         y-of (data/row-accessor :y (:y colored-mapping))
-        sort? (data/option options :sort true)
+        x-order? (= :x (data/option options :order :x))
         rows (mapcat (fn [gs] (mapcat :rows gs)) (vals panels))
         _ (data/check-mapped! rows [[:x x-of] [:y y-of]])
         line-data (update-vals panels
@@ -307,7 +337,7 @@
                                                                    (map (fn [r] [(x-of r) (y-of r) (when color-of (color-of r))
                                                                                  (when sizes? (size-of r))]))
                                                                    (filter #(data/valid-value? (first %))))
-                                                       ordered (if (and sort? (data/sortable? (map first points))) (sort-by first points) points)]
+                                                       ordered (if (and x-order? (data/sortable? (map first points))) (sort-by first points) points)]
                                                    (cond-> {:x (mapv first ordered)
                                                             :y (mapv #(let [v (second %)] (when (data/valid-value? v) v)) ordered)
                                                             :aesthetics (:aesthetics g)}
@@ -327,26 +357,23 @@
                      (group/continuous-stats :size sized (update-vals data #(mapcat (fn [line] (or (:sizes line) [(:size-value line)]))
                                                                                      (:lines %)))
                                              plot-scales))]
-    {:data data
-     :extents (merge-with merge (group/aesthetic-extents panels (:plot-scales env))
-                          (:extents color-stats)
-                          (:extents size-stats)
-                          (into {} (keep (fn [[panel {:keys [lines]}]]
-                                           (let [xs (mapcat :x lines) ys (remove nil? (concat (mapcat :y lines) (mapcat :y0 lines)))]
-                                             (when (seq ys)
-                                               [panel {:x (data/extent :x xs) :y (data/extent :y ys)}]))))
-                                data))
-     :padding (merge {:x data/axis-padding
-                      :y (if stacked-from-zero? [0.0 0.05] data/axis-padding)}
-                     (:padding options))
-     :padding-explicit (data/explicit-padding (when stacked-from-zero? {:y [0.0 nil]}) options)
-     :axis-titles (when (= :normalize position) {:y "Proportion"})
-     :na (cond-> (group/na-dims panels) (:na? color-stats) (conj :color) (:na? size-stats) (conj :size))
-     :dropped (cond-> (assoc dropped
-                     :x (count (remove #(data/valid-value? (x-of %)) rows))
-                     :y (count (remove #(data/valid-value? (y-of %)) rows)))
-                gradient? (assoc :color (:dropped color-stats))
-                sized (assoc :size (:dropped size-stats)))}))
+    (into (data/padding-stats {:x data/axis-padding :y (if stacked-from-zero? [0.0 0.05] data/axis-padding)}
+                              (when stacked-from-zero? {:y [0.0 nil]})
+                              options)
+          {:data data
+           :extents (merge-with merge (group/aesthetic-extents panels (:plot-scales env))
+                                (:extents color-stats)
+                                (:extents size-stats)
+                                (into {} (keep (fn [[panel {:keys [lines]}]]
+                                                 (let [xs (mapcat :x lines) ys (remove nil? (concat (mapcat :y lines) (mapcat :y0 lines)))]
+                                                   (when (seq ys)
+                                                     [panel {:x (data/extent :x xs) :y (data/extent :y ys)}]))))
+                                      data))
+           :axis-titles (when (= :normalize position) {:y "Proportion"})
+           :na (cond-> (group/na-dims panels) (:na? color-stats) (conj :color) (:na? size-stats) (conj :size))
+           :dropped (cond-> (assoc dropped :x (data/invalid-count x-of rows) :y (data/invalid-count y-of rows))
+                      gradient? (assoc :color (:dropped color-stats))
+                      sized (assoc :size (:dropped size-stats)))})))
 
 (defn- group-style
   "Gives the style a line is drawn with.
@@ -361,12 +388,12 @@
   Returns `style` with the group's aesthetics applied (see [[cljplot2.data.group/style]]) and the width from an ordinal `:size` level or from `:size-value` under the linear size scale (NA - the style width); `nil` when a value is outside its scale's domain (not drawn)."
   [style line scales theme]
   (when-let [aesthetic-st (group/style style (:aesthetics line) scales theme)]
-    (let [st (cond-> aesthetic-st (:size aesthetic-st) (-> (assoc :width (:size aesthetic-st)) (dissoc :size)))]
+    (let [st (cond-> aesthetic-st (:size aesthetic-st) (-> (assoc :line-width (:size aesthetic-st)) (dissoc :size)))]
       (if (contains? line :size-value)
         (when-let [w (if-let [sc (:size scales)]
-                       ((aesthetic/attribute-fn :size sc (:width st)) (:size-value line))
-                       (:width st))]
-          (assoc st :width w))
+                       ((aesthetic/attribute-fn :size sc (:line-width st)) (:size-value line))
+                       (:line-width st))]
+          (assoc st :line-width w))
         st))))
 
 (defn- value-colors
@@ -624,12 +651,12 @@
 
   - `canvas`: the clojure2d canvas.
   - `trail` (map): `:line` (`:sizes` - the points' size values), `:px` / `:py` (pixel coordinates), `:index-runs`, `:arcs` (`{:geometry g :range-points rp}` in a polar plot with `:arcs` - segments follow the circle, see [[arc-trail-run]]; else `nil`).
-  - `st` (map): the line's style - `:color`, `:width`.
+  - `st` (map): the line's style - `:color`, `:line-width`.
   - `scales` (map): the finalized scales - `:size`.
 
-  The width at every point is its size value under the size scale, else `:width`. Nothing is drawn for a `:none` colour."
+  The width at every point is its size value under the size scale, else `:line-width`. Nothing is drawn for a `:none` colour."
   [canvas {:keys [line px py index-runs arcs]} st scales]
-  (let [width (double (:width st))
+  (let [width (double (:line-width st))
         width-of (if-let [sc (and (:sizes line) (:size scales))]
                    (let [f (aesthetic/attribute-fn :size sc width)] #(double (or (f %) width)))
                    (constantly width))
@@ -659,7 +686,7 @@
 
   Parameters:
 
-  - `chart` (map): the chart value - `:options` (curves, `:gaps`, `:fill-gradient`, `:stroke-alpha`, `:trail`, arrows).
+  - `chart` (map): the chart value - `:options` (curves, `:gaps`, `:fill-gradient`, `:stroke-alpha-factor`, `:trail`, arrows).
   - `computed` (map): `:lines`, `:style` (see [[compute]]).
   - `canvas`: the clojure2d canvas.
   - `box` (map): the panel's `:w`, `:h`.
@@ -678,14 +705,14 @@
           area {:baseline (curve/area-baseline y-scale w h) :horizontal? (not y-horizontal?)}
           opts (curve-options options (scale/flipped? scales))
           curved? (curve/curved? opts)
-          gaps (:gaps options :break)
+          gaps (data/option options :gaps :break)
           gradient (some-> (:fill-gradient options) polyline/gradient-fn)
-          axis (:fill-gradient-axis options :x)]
+          axis (data/option options :fill-gradient-axis :x)]
       (when (and curved? (:curve opts) (some :colors lines))
         (schema/fail! "A line colored along its length can't take :curve (use :interpolator)."
                       {:key :curve :value (:curve opts)}))
       (when (and (some options [:arrow :start-gap :end-gap])
-                 (or (some :y0 lines) (some :colors lines) gradient (not= :none (:fill style :none))))
+                 (or (some :y0 lines) (some :colors lines) gradient (not (theme/none? (data/option style :fill :none)))))
         (schema/fail! "Arrows and end gaps need a plain stroked line (no fill, gradient, colour along the length or stacking)."
                       {:key :arrow}))
       (if (some :y0 lines)
@@ -694,8 +721,8 @@
                 :let [;; colour values as numbers for interpolation (dates - epoch milliseconds, as the colour scale)
                       color-keys (some->> colors (mapv #(some-> % data/x-key)))
                       group-st (group-style style line scales (:theme env))
-                      line-st (if (and group-st (:stroke-alpha options) (not= :none (:color group-st)))
-                                (update group-st :color draw/faded (:stroke-alpha options))
+                      line-st (if (and group-st (:stroke-alpha-factor options) (not (theme/none? (:color group-st))))
+                                (update group-st :color draw/faded (:stroke-alpha-factor options))
                                 group-st)]
                 :when line-st]
           (let [points (mapv (fn [vx vy] (if (nil? vy) (Vec2. ##NaN ##NaN) (projection vx vy))) x y)
@@ -745,8 +772,8 @@
   - `box` (map): the key's box.
   - `env` (map): `:theme`."
   [{:keys [options] :as chart} attributes canvas box env]
-  (let [st (cond-> (merge (theme/resolved-style (:theme env) chart) (select-keys attributes [:color :dash :pattern]))
-             (:size attributes) (assoc :width (:size attributes)))
+  (let [st (cond-> (theme/key-style env chart attributes [:color :dash :pattern])
+             (:size attributes) (assoc :line-width (:size attributes)))
         area (if-let [g (:fill-gradient options)]
                ((polyline/gradient-fn g) 0.5)
                (polyline/area-color st (contains? stacked-positions (:position options))))]

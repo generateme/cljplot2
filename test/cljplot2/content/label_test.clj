@@ -37,7 +37,7 @@
   (c2d/with-canvas [c (c2d/canvas 1 1 hint)]
     (c2d/set-font c (font/resolve-font (:font style) (:font-style style) (:size style)))
     (let [boxes (map #(c2d/text-bounding-box c %) lines)
-          p (* 2.0 (:padding style))]
+          p (* 2.0 (:inset style))]
       [(+ p (m/ceil (apply max (map #(nth % 2) boxes))))
        (+ p (m/ceil (* (count lines) (nth (first boxes) 3))))])))
 
@@ -81,7 +81,7 @@
 (deftest multi-line-test
   (let [[w2 h2] (size (label "ab\nabcd"))
         [w1 h1] (size (label "abcd"))
-        p2 (* 2.0 (:padding axis-style))]
+        p2 (* 2.0 (:inset axis-style))]
     (testing "width of the widest line, height of two lines"
       (is (= w1 w2))
       (is (< (- (* 2.0 (- h1 p2)) 1.0) (- h2 p2) (+ (* 2.0 (- h1 p2)) 1.0))))
@@ -109,8 +109,8 @@
                                         :items [{:id :n :column 0 :row 0 :content (label "a" :align :left)}]}))))))
 
 (deftest padding-test
-  (let [[w0 h0] (size (label "abc" :padding 0))]
-    (is (= [(+ w0 10.0) (+ h0 10.0)] (size (label "abc" :padding 5))))
+  (let [[w0 h0] (size (label "abc" :inset 0))]
+    (is (= [(+ w0 10.0) (+ h0 10.0)] (size (label "abc" :inset 5))))
     (is (= :padding (:key (prepare-error (label "abc" :padding -1)))))))
 
 (deftest style-override-test
@@ -181,7 +181,7 @@
 
 (deftest bundled-metrics-pinned-test
   (testing "bundled font metrics are environment independent (regression value)"
-    (is (= [217.0 14.0] (size {:kind :label :role :axis-title :text "0.123456789 Score: Golden Rain" :padding 0})))))
+    (is (= [217.0 14.0] (size {:kind :label :role :axis-title :text "0.123456789 Score: Golden Rain" :inset 0})))))
 
 ;; 3.x theme
 

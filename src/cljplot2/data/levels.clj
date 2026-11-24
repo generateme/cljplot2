@@ -3,19 +3,21 @@
 
   * [[order-levels]] - categorical levels ordered by a statistic of a value, for a scale `:domain`
     (`:scales {:y {:domain (order-levels barley :variety :yield stats/median)}}`)
-  * [[bin]] - a continuous column cut into bins: half-open intervals (see [[cljplot2.data.shingle/Interval]]),
+  * [[bin]] - a continuous column cut into bins: half-open intervals (see `Interval` (see [[cljplot2.data.shingle/interval]])),
     levels for strips, colours or facets (sorted ascending wherever they are levels)
   * [[breaks]] - the bin breaks shared with the histogram's `:bins`
   * [[categorical]] - a mapping marker declaring a dimension categorical
   * [[rank-rows]] - the rank of a value among the rows at each x (bump charts)
 
-  Helpers shared with charts and scales: [[bin-index]], [[break-labels]], [[distinct-digits]], [[order-by-score]], [[order-by-rows]]."
+  Helpers shared with charts and scales: [[bin-index]], [[break-labels]], [[distinct-digits]], [[order-by-score]], [[order-by-rows]].
+
+  Option schemas: [[bin-options]], [[order-levels-options]], [[rank-rows-options]]; scale-spec rules [[order-by-rules]]; [[bins]] - the bins of a column."
   (:require [fastmath.core :as m]
             [malli.core :as malli]
             [fastmath.stats :as stats]
             [fastmath.vector :as v]
             [cljplot2.data.accessor :as accessor]
-            [cljplot2.data.rows :as rows]
+            [cljplot2.data.rows :as data]
             [cljplot2.data.shingle :as shingle]
             [cljplot2.schema :as schema])
   (:import [fastmath.java Array]))
@@ -107,7 +109,7 @@
     :else (let [lo (v/mn values)
                 hi (v/mx values)]
             (cond
-              (m/== lo hi) [(m/- lo 0.5) (m/+ lo 0.5)]
+              (m/== lo hi) (data/widened-range [lo hi])
               (map? bin-spec) (quantile-breaks values bin-spec)
               :else
               (let [n (long (if (keyword? bin-spec)
@@ -188,34 +190,33 @@
 
   Parameters:
 
-  - `data`: rows or columns (see [[cljplot2.data.rows/rows]]).
+  - `rows`: rows or columns (see [[cljplot2.data.rows/rows]]).
   - `value` (keyword or function): the numeric value of a row.
-  - `opts` (map, see [[bin-options]]):
+  - `options` (map, see [[bin-options]]):
     - `:as` - the key the bin is stored under (required).
     - `:bins` - see [[breaks]] (default `:sturges`; computed on the finite values).
     - `:digits` - the fewest significant digits of the printed bounds (default 3, as R `cut`), more when needed to keep the printed breaks distinct; the bins keep their exact bounds.
     - `:label` - the series name printed in every bin: a string, or `true` for the accessor's name (keyword accessors only).
 
-  Returns a vector of every row with its bin under `:as`: a [[cljplot2.data.shingle/Interval]] `[lo, hi)` (`:closed :left`), the last bin `[lo, hi]`; a `nil`, non-numeric or non-finite value, or one outside explicit breaks, gets a `nil` bin (NA). The result's metadata holds `{:na n}` - the count of `nil` bins.
+  Returns a vector of every row with its bin under `:as`: a `Interval` (see [[cljplot2.data.shingle/interval]]) `[lo, hi)` (`:closed :left`), the last bin `[lo, hi]`; a `nil`, non-numeric or non-finite value, or one outside explicit breaks, gets a `nil` bin (NA). The result's metadata holds `{:na n}` - the count of `nil` bins.
 
   Throws `ex-info` for bad options (see [[cljplot2.schema]]) or a bad accessor."
   {:cljplot2/api true :cljplot2/options bin-options}
-  [data value {:keys [as label] :as opts}]
-  (schema/check-options! bin-options opts)
+  [rows value {:keys [as label] :as options}]
+  (schema/check-options! bin-options options)
   (shingle/check-accessor! value label)
-  (let [rs (rows/rows data)
-        acc (rows/row-accessor :bin value)
-        finite #(and (number? %) (m/valid-double? (double %)))
-        brks (breaks (into [] (comp (map acc) (filter finite) (map double)) rs) (get opts :bins :sturges))
+  (let [rs (data/rows rows)
+        acc (data/row-accessor :bin value)
+        brks (breaks (into [] (comp (map acc) (filter schema/finite?) (map double)) rs) (data/option options :bins :sturges))
         series (cond (string? label) label (true? label) (name value))
         arr (when brks (double-array brks))
         last-bin (m/long-sub (count brks) 2)
-        digits (distinct-digits brks (long (get opts :digits 3)))
+        digits (distinct-digits brks (long (data/option options :digits 3)))
         intervals (vec (map-indexed (fn [^long i [a b]] (shingle/->Interval a b series (when (m/< i last-bin) :left) digits))
                                     (partition 2 1 brks)))
         out (mapv (fn [row]
                     (let [v (acc row)
-                          i (if (and arr (finite v)) (bin-index arr (double v)) -1)]
+                          i (if (and arr (schema/finite? v)) (bin-index arr (double v)) -1)]
                       (assoc row as (when-not (m/neg? i) (intervals i)))))
                   rs)]
     (with-meta out {:na (count (remove as out))})))
@@ -240,17 +241,6 @@
 
 ;; order
 
-(defn- finite-score
-  "Gives a score as a double when it is a finite number.
-
-  Parameters:
-
-  - `s`: any value.
-
-  Returns `s` as a double, `nil` unless it is a finite number."
-  [s]
-  (when (and (number? s) (m/valid-double? (double s))) (double s)))
-
 (defn order-by-score
   "Orders levels by a score.
 
@@ -264,7 +254,7 @@
 
   See also [[order-by-rows]], [[order-levels]]."
   [levels score descending?]
-  (let [scored (keep (fn [l] (when-let [s (finite-score (score l))] [l s])) levels)
+  (let [scored (keep (fn [l] (when-let [s (schema/finite-double (score l))] [l s])) levels)
         ordered (map first (sort-by second (if descending? #(compare %2 %1) compare) scored))
         unscored (remove (set (map first scored)) levels)]
     (into (vec ordered) (try (sort unscored) (catch ClassCastException _ unscored)))))
@@ -283,6 +273,11 @@
   [levels rows-of order-by descending?]
   (order-by-score levels (fn [l] (when-let [rs (seq (rows-of l))] (order-by (vec rs)))) descending?))
 
+(def order-by-rules
+  "Rules (see [[cljplot2.schema/with-rules]]) of a scale spec ordering its levels by [[order-by-rows]]: `:order-by` not with `:domain`, `:descending` only with `:order-by`."
+  [[#(when (and (:order-by %) (:domain %)) "give either :order-by or :domain, not both") [:order-by]]
+   [#(when (and (:descending %) (nil? (:order-by %))) ":descending needs :order-by") [:descending]]])
+
 (def order-levels-options
   "Options of [[order-levels]]."
   [:map {:closed true}
@@ -294,35 +289,35 @@
 
   Parameters:
 
-  - `data`: rows or columns (see [[cljplot2.data.rows/rows]]).
+  - `rows`: rows or columns (see [[cljplot2.data.rows/rows]]).
   - `level` (keyword or function): a row's level.
   - `value` (keyword or function): a row's value; the finite numbers of a level's rows are scored.
   - `stat` (function): a function of a non-empty sequence of numbers to a number (`fastmath.stats/median`, `stats/mode`, `count`, ...).
-  - `opts` (map, optional, see [[order-levels-options]]): `:descending` (default `false`).
+  - `options` (map, optional, see [[order-levels-options]]): `:descending` (default `false`).
 
   Returns a vector of the levels ordered by `(stat values)`; ties keep first-appearance order (ascending and descending); levels without a finite value follow the ordered ones (natural order), as do levels whose statistic isn't a finite number. The `nil` (NA) level is left out: a domain lists values, the NA level is placed by the scale.
 
   Throws `ex-info` for bad options."
   {:cljplot2/api true :cljplot2/options order-levels-options}
-  ([data level value stat] (order-levels data level value stat {}))
-  ([data level value stat {:keys [descending] :as opts}]
-   (schema/check-options! order-levels-options opts)
-   (let [rs (rows/rows data)
-         level-of (rows/row-accessor :level level)
-         value-of (rows/row-accessor :value value)
+  ([rows level value stat] (order-levels rows level value stat {}))
+  ([rows level value stat {:keys [descending] :as options}]
+   (schema/check-options! order-levels-options options)
+   (let [rs (data/rows rows)
+         level-of (data/row-accessor :level level)
+         value-of (data/row-accessor :value value)
          by-level (group-by level-of rs)
-         score (fn [l] (let [vs (filterv #(and (number? %) (m/valid-double? (double %))) (map value-of (by-level l)))]
+         score (fn [l] (let [vs (filterv schema/finite? (map value-of (by-level l)))]
                          (when (seq vs) (stat vs))))]
      (order-by-score (remove nil? (distinct (map level-of rs))) score descending))))
 
-(def rank-ties
+(def ^:private rank-ties
   "Tie strategies of [[rank-rows]] (`fastmath.core/rank`)."
   #{:average :first :last :random :min :max :dense})
 
 (def rank-rows-options
   "Options of [[rank-rows]]."
   [:map {:closed true}
-   (schema/optional :key {:description "the key of the rank column added to every row" :default :rank}
+   (schema/optional :as {:description "the key of the rank column added to every row" :default :rank}
                     [:fn {:error/message "should be the key of the rank column"} some?])
    (schema/optional :descending {:description "rank the highest value first (rank 1)" :default true} schema/bool)
    (schema/optional :ties {:description "the fastmath.core/rank tie strategy (:min gives 1, 1, 3; :average gives doubles)"
@@ -336,29 +331,28 @@
 
   Parameters:
 
-  - `data`: rows or columns (see [[cljplot2.data.rows/rows]]).
+  - `rows`: rows or columns (see [[cljplot2.data.rows/rows]]).
   - `x` (keyword or function): a row's x; rows share an x by its key (numbers and `java.time` values by [[cljplot2.data.rows/x-key]] - `1` and `1.0` are one x - levels by value).
   - `value` (keyword or function): the ranked value.
-  - `opts` (map, optional, see [[rank-rows-options]]):
-    - `:key` - the key of the rank column (default `:rank`).
+  - `options` (map, optional, see [[rank-rows-options]]):
+    - `:as` - the key of the rank column (default `:rank`).
     - `:descending` - the highest value first, rank 1 (default `true`).
     - `:ties` - a `fastmath.core/rank` strategy (default `:min`: 1, 1, 3; `:average` gives doubles).
 
-  Returns a vector of every row with its 1-based rank under `:key`; a row without a finite value or a valid x gets `nil` and isn't ranked.
+  Returns a vector of every row with its 1-based rank under `:as`; a row without a finite value or a valid x gets `nil` and isn't ranked.
 
   Throws `ex-info` for bad options."
   {:cljplot2/api true :cljplot2/options rank-rows-options}
-  ([data x value] (rank-rows data x value {}))
-  ([data x value {:keys [ties descending] rank-key :key :or {ties :min descending true rank-key :rank} :as opts}]
-   (schema/check-options! rank-rows-options opts)
-   (let [rs (rows/rows data)
-         x-of (rows/row-accessor :x x)
-         value-of (rows/row-accessor :value value)
-         finite (fn [v] (when (and (number? v) (m/valid-double? (double v))) (double v)))
-         x-group (fn [r] (let [v (x-of r)] (when (rows/valid-value? v) (or (rows/x-key v) v))))
-         rankable? (fn [i] (and (finite (value-of (rs i))) (some? (x-group (rs i)))))
+  ([rows x value] (rank-rows rows x value {}))
+  ([rows x value {:keys [ties descending] rank-key :as :or {ties :min descending true rank-key :rank} :as options}]
+   (schema/check-options! rank-rows-options options)
+   (let [rs (data/rows rows)
+         x-of (data/row-accessor :x x)
+         value-of (data/row-accessor :value value)
+         x-group (fn [r] (let [v (x-of r)] (when (data/valid-value? v) (or (data/x-key v) v))))
+         rankable? (fn [i] (and (schema/finite-double (value-of (rs i))) (some? (x-group (rs i)))))
          ranked (into {} (mapcat (fn [indices]
-                                   (let [vs (map #(finite (value-of (rs %))) indices)]
+                                   (let [vs (map #(schema/finite-double (value-of (rs %))) indices)]
                                      (map vector indices
                                           (map #(if (integer? %) (m/long-inc (long %)) (m/inc (double %)))
                                                (m/rank (map #(if descending (m/- (double %)) %) vs) ties))))))

@@ -2327,7 +2327,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="clay-image">
 <p><img src="reference.data_mapping_files/image7.png" class="img-fluid"></p>
 </div>
-<p><code>:order</code>: overlapping points listed largest first - in data order the small ones are drawn last, on top (left); ordered by size (ascending, the default <code>:order-direction</code>) the large ones come last and cover them (right):</p>
+<p><code>:order</code>: overlapping points listed largest first - in data order the small ones are drawn last, on top (left); ordered by size (ascending, <code>:descending false</code>, the default) the large ones come last and cover them (right):</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> overlapping </span>(<span class="kw">for</span> [i (<span class="kw">range</span> <span class="dv">24</span>)] {<span class="at">:x</span> (<span class="kw">*</span> <span class="fl">0.2</span> i) <span class="at">:y</span> (<span class="kw">*</span> <span class="fl">0.2</span> i) <span class="at">:s</span> (<span class="kw">-</span> <span class="dv">3</span> (<span class="kw">mod</span> i <span class="dv">4</span>))}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>

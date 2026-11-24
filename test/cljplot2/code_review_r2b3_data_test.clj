@@ -84,7 +84,7 @@
           out (shingle/shingle rows :v {:as :iv :intervals [[0 2] [2 5]]})]
       (is (= 3 (count out)))))
   (testing "boundary: no intervals given - equal count"
-    (is (seq (shingle/shingle (map (fn [i] {:v (double i)}) (range 10)) :v {:as :iv :count 2})))))
+    (is (seq (shingle/shingle (map (fn [i] {:v (double i)}) (range 10)) :v {:as :iv :n 2})))))
 
 (deftest half-pi-test
   (is (== (* 0.5 Math/PI) m/HALF_PI) "the polar quarter turn"))

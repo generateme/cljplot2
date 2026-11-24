@@ -75,7 +75,14 @@
     [start-angle (if (= :counter-clockwise direction) (m/- start-angle span-angle) (m/+ start-angle span-angle))]))
 
 (defn- unit-point
-  "Gives the panel-oriented point (x right, y down) at angle `theta` (radians, 0 up, clockwise) and radius `r` around the origin, as `[x y]`."
+  "Gives a panel-oriented point (x right, y down) around the origin.
+
+  Parameters:
+
+  - `theta` (double): the angle in radians, 0 up, clockwise.
+  - `r` (double): the radius.
+
+  Returns `[x y]`."
   [^double theta ^double r]
   [(m/* r (m/sin theta)) (m/- (m/* r (m/cos theta)))])
 
@@ -153,7 +160,7 @@
 
   Returns clockwise degrees turning the label along `theta`, kept upright on the left half (in `(-90, 90]` or `[270, 360)`)."
   ^double [^double theta]
-  (let [a (double (mod (m/- (m/degrees theta) 90.0) 360.0))]
+  (let [a (m/mod (m/- (m/degrees theta) 90.0) 360.0)]
     (if (m/< 90.0 a 270.0) (m/- a 180.0) a)))
 
 (defn outward-anchor

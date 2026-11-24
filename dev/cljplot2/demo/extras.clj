@@ -35,9 +35,9 @@
    :labels {:title "Q-Q per species and variable (a line per group)" :y "value"}})
 
 (def qq-distributions
-  {:charts [(chart/qq {:x-distribution [:normal] :y-distribution [:t {:degrees-of-freedom 3}] :points 60
+  {:charts [(chart/qq {:x-distribution [:normal] :y-distribution [:t {:degrees-of-freedom 3}] :n 60
                        :label "t(3)" :mapping {:color :label}})
-            (chart/qq {:x-distribution [:normal] :y-distribution [:t {:degrees-of-freedom 30}] :points 60
+            (chart/qq {:x-distribution [:normal] :y-distribution [:t {:degrees-of-freedom 30}] :n 60
                        :label "t(30)" :mapping {:color :label} :line false})]
    :scales {:color {:title nil}}
    :labels {:title "Q-Q of t distributions against the normal"}})
@@ -66,9 +66,9 @@
                                   (r/grandom g) (if (< (r/drandom g) 0.03) 6.0 0.0)))
                      0.0 (range 1 400)))))
 
-(def acf-only (plot/acf seasonal {:partial? :acf :lags 30 :title "ACF of a weekly series"}))
+(def acf-only (plot/acf seasonal {:correlograms :acf :lags 30 :title "ACF of a weekly series"}))
 
-(def acf-stepped (plot/acf seasonal {:partial? :pacf :band :stepped :lags 30 :title "PACF, a stepped band"}))
+(def acf-stepped (plot/acf seasonal {:correlograms :pacf :band :stepped :lags 30 :title "PACF, a stepped band"}))
 
 (def lag-7
   {:data (series/lag-rows seasonal 7) :mapping {:x :x :y :y}
@@ -93,11 +93,11 @@
 (def vector-field
   (let [hyperbolic (f/field :hyperbolic)
         heading (f/heading hyperbolic)]
-    {:data (vf/arrows hyperbolic {:domain {:x [-3 3] :y [-3 3]} :n 24 :grid :shifted :scale 1.5})
+    {:data (vf/arrows hyperbolic {:domain {:x [-3 3] :y [-3 3]} :n 24 :grid :shifted :length-scale 1.5})
      :mapping {:x :x :y :y :xend :xend :yend :yend}
      :charts [(chart/field {:f (fn [[x y]] (m/sin (heading (v/vec2 x y)))) :domain {:x [-3 3] :y [-3 3]} :n 300
 })
-              (chart/segment {:color [90 160 235] :width 1.5 :arrow {:end true :size 5}})]
+              (chart/segment {:color [90 160 235] :line-width 1.5 :arrow {:end true :size 5}})]
      :scales {:color {:range [:black :white] :title "sin heading"}
               :x {:domain [-3 3] :expand [0 0]} :y {:domain [-3 3] :expand [0 0]}}
      :aspect :iso

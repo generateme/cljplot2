@@ -38,7 +38,7 @@
 
   See also [[position]]."
   [v]
-  (or (and (number? v) (m/valid-double? (double v)))
+  (or (schema/finite? v)
       (data/temporal? v)
       (string? v)
       (keyword? v)))
@@ -112,7 +112,7 @@
   [chart-options position-keys]
   (some #(some? (get chart-options %)) position-keys))
 
-(defn extents
+(defn- extents
   "Gives the scale extents of an annotation's positions.
 
   Parameters:
@@ -122,13 +122,16 @@
 
   Returns `{dim extent}` of the dimensions with positions (see [[cljplot2.data.rows/extent]]); `{}` with `:extent false`.
 
-  Throws `ex-info {:key :extents}` for numbers mixed with levels in one dimension.
+  Throws `ex-info {:key :mapping :in [:mapping dim]}` for numbers mixed with levels in one dimension.
 
   See also [[literal-stats]], [[data-stats]]."
   [chart-options dim-values]
   (if (false? (:extent chart-options))
     {}
-    (into {} (keep (fn [[k vs]] (when-let [e (data/extent k (filter position? vs))] [k e]))) dim-values)))
+    (into {} (keep (fn [[k vs]]
+                     (when-let [e (data/extent k (filter position? vs))]
+                       [k e])))
+          dim-values)))
 
 (defn literal-stats
   "Gives the chart stats of a literal annotation, drawn in every panel.
@@ -158,21 +161,24 @@
   - `chart-options` (map): the chart's options (`:extent`).
   - `env` (map): the compute environment (`:plot-scales` ...).
   - `panel-fn` (function): of a panel's groups (of [[cljplot2.data.group/split]] by the chart's aesthetics) returning `[computed positions]` - the panel's draw data and its positions `{dim [v ...]}`.
+  - `invalid-counts` (map, optional): `{dim f}` - per mapped position dimension a function of a row giving a truthy value when the row's value is invalid (the chart skips it).
 
-  Returns `{:data :extents :na :dropped}`: the draw data per panel; per panel the aesthetic extents merged with the position extents (see [[extents]]); NA dimensions and dropped counts of the split.
+  Returns `{:data :extents :na :dropped}`: the draw data per panel; per panel the aesthetic extents merged with the position extents (see [[extents]]); NA dimensions and dropped counts of the split, with the rows of every group counted per dimension of `invalid-counts`.
 
   See also [[literal-stats]]."
-  [chart-split chart-options env panel-fn]
-  (let [{:keys [panels dropped]} (group/split (:groups chart-split) (:mapping chart-split) env)
-        per-panel (update-vals panels panel-fn)]
-    {:data (update-vals per-panel first)
-     :extents (merge-with merge
-                          (group/aesthetic-extents panels (:plot-scales env))
-                          (into {} (keep (fn [[panel [_ positions]]]
-                                           (let [e (extents chart-options positions)] (when (seq e) [panel e]))))
-                                per-panel))
-     :na (group/na-dims panels)
-     :dropped dropped}))
+  ([chart-split chart-options env panel-fn] (data-stats chart-split chart-options env panel-fn nil))
+  ([chart-split chart-options env panel-fn invalid-counts]
+   (let [{:keys [panels dropped]} (group/split (:groups chart-split) (:mapping chart-split) env)
+         per-panel (update-vals panels panel-fn)
+         rows (mapcat :rows (mapcat val panels))]
+     {:data (update-vals per-panel first)
+      :extents (merge-with merge
+                           (group/aesthetic-extents panels (:plot-scales env))
+                           (into {} (keep (fn [[panel [_ positions]]]
+                                            (let [e (extents chart-options positions)] (when (seq e) [panel e]))))
+                                 per-panel))
+      :na (group/na-dims panels)
+      :dropped (into dropped (map (fn [[k invalid?]] [k (count (filter invalid? rows))])) invalid-counts)})))
 
 (defn require-mapping!
   "Checks that a data annotation maps its positions.
@@ -188,9 +194,9 @@
   Throws `ex-info {:key :mapping}` when no alternative is fully mapped."
   [what mapping alternatives]
   (when-not (some (fn [ks] (every? #(some? (get mapping %)) ks)) alternatives)
-    (schema/fail! (str what " needs literal positions in its options or position keys in its own :mapping "
-                       (pr-str alternatives) ".")
-                  {:key :mapping :value (select-keys mapping (distinct (apply concat alternatives)))})))
+    (data/fail-mapping! (str what " needs literal positions in its options or position keys in its own :mapping "
+                             (pr-str alternatives) ".")
+                        (ffirst alternatives) {})))
 
 ;; pixels
 

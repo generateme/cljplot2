@@ -11,7 +11,7 @@
   * `:shade` - the whole panel in the value's colour
   * `:shade-number` - both: the text over the shade, black or white by the fill (text role colour `:contrast`), group lines too
 
-  Options (style default from theme `[:chart :pairwise]`): `:color` (one fixed colour of the shade, or of the `:number` text), `:method`, `:label`, `:glyph`, `:format`.
+  Options (style default from theme `[:chart :pairwise]`): `:color` (one fixed colour of the shade, or of the `:number` text), `:method`, `:label`, `:glyph`, `:value-format`.
 
   Functions: [[value-domain]] - the colour domain of values; [[computed-aesthetics]] - the computed colour; [[matrix-settings]] - what `pairs` shares between cells; [[compute]], [[draw]], [[legend]] - the chart contract (shared cell parts: [[cljplot2.chart.statistic-cell]])."
   (:require [clojure2d.core :as c2d]
@@ -30,7 +30,7 @@
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
-(def glyphs
+(def ^:private glyphs
   "The glyphs a value is drawn as (option `:glyph`)."
   [:number :shade :shade-number])
 
@@ -57,9 +57,9 @@
                       (schema/optional :glyph {:description "how the value is drawn: :number (text, a line per group), :shade (the panel in the value's colour) or :shade-number (both)"
                                                :default :number}
                                        (into [:enum] glyphs))
-                      (schema/nilable :format {:description "the text of a value, a function of the number (a throw or nil - NA)"
-                                               :cljplot2/default-doc "at most 2 decimals, whole numbers without them"}
-                                      schema/function)
+                      (schema/nilable :value-format {:description "the text of a value: a format string or a function of the number (a throw or nil - NA)"
+                                                     :cljplot2/default-doc "at most 2 decimals, whole numbers without them"}
+                                      schema/number-format)
                       (schema/nilable :text-template {:description "the widest text a cell's line holds, so cells get one font size (set by pairs)"
                                                       :cljplot2/internal true}
                                       string?)))
@@ -99,7 +99,7 @@
   Returns `{:color {:title label}}` - the value on the colour scale (the theme's gradient; a signed statistic adds `:range` [[cljplot2.chart.statistic-cell/diverging-range]]), its colour bar titled by the statistic's label; `{}` when the chart doesn't take the value's colour (see [[cljplot2.chart.statistic-cell/colored-by-value?]])."
   [options mapping]
   (if (cell/colored-by-value? options mapping)
-    (let [method (get options :method :pearson)]
+    (let [method (data/option options :method :pearson)]
       {:color (cond-> {:title (pairwise/statistic-label method (:label options))}
                 (pairwise/signed-statistic? method) (assoc :range cell/diverging-range))})
     {}))
@@ -196,10 +196,10 @@
                          (fn [charts]
                            (mapv (fn [chart]
                                    (if (= :pairwise (:kind chart))
-                                     (let [{:keys [method] label-option :label format-fn :format} (:options chart)
+                                     (let [{:keys [method] label-option :label value-format :value-format} (:options chart)
                                            m (or method :pearson)]
                                        (assoc-in chart [:options :text-template]
-                                                 (text-template (pairwise/statistic-label m label-option) (or format-fn label/value-text)
+                                                 (text-template (pairwise/statistic-label m label-option) (or (schema/text-formatter value-format) label/value-text)
                                                                 (map :value (vals (values m))))))
                                      chart))
                                  charts)))}))
@@ -209,7 +209,7 @@
 
   Parameters:
 
-  - `chart` (map): the chart value - `:options` (`:method`, `:label`, `:glyph`, `:format`, the style).
+  - `chart` (map): the chart value - `:options` (`:method`, `:label`, `:glyph`, `:value-format`, the style).
   - `split` (map): `:groups` (`{panel rows}`), `:mapping` (merged; `:x`, `:y`, grouping aesthetics).
   - `env` (map): `:theme`, `:plot-scales` and grouping settings.
 
@@ -217,9 +217,9 @@
 
   See also [[cljplot2.data.pairwise/statistic-value]]."
   [{:keys [options] :as chart} {:keys [groups mapping]} {:keys [theme plot-scales] :as env}]
-  (let [method (get options :method :pearson)
+  (let [method (data/option options :method :pearson)
         label-text (pairwise/statistic-label method (:label options))
-        format-fn (or (:format options) label/value-text)
+        format-fn (or (schema/text-formatter (:value-format options)) label/value-text)
         x-of (data/row-accessor :x (:x mapping))
         y-of (data/row-accessor :y (:y mapping))
         {:keys [grouped split]} (cell/grouping groups mapping env)
@@ -237,7 +237,7 @@
     {:data (into {} (map (fn [panel]
                            [panel {:value (values panel)
                                    :groups (get panel-groups panel)
-                                   :glyph (get options :glyph :number)
+                                   :glyph (data/option options :glyph :number)
                                    :label label-text
                                    :format format-fn
                                    :by-value? by-value?

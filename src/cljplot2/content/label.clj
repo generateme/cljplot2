@@ -10,18 +10,20 @@
 
   `:text` is converted with `str` and split into lines at line breaks (LF or CRLF); `nil` or the empty string is empty
   (zero size).
-  Natural size is the text block rounded up plus padding on every side; rotation `90`/`270` swaps width and height.
+  Natural size is the text block rounded up plus the `:inset` on every side; rotation `90`/`270` swaps width and height.
   Internally (axis tick labels, theme `[:axis k :label-rotation]`) any angle is drawn: the natural size is then the
   rounded-up bounding box of the rotated text frame, the text rotated about the box centre.
   Drawing clips the text to the item box (intersected with any outer clip). A style `:background` fills the text
   frame under the text: the item box (a label placed at a point by [[draw-at!]] gets its natural size - text plus
-  padding; a layout item may be larger), or for an angle that isn't a multiple of 90 the rotated natural frame.
+  its inset; a layout item may be larger), or for an angle that isn't a multiple of 90 the rotated natural frame.
   Content is validated against [[label-options]] by [[cljplot2.graphics.measure/validate-content]] (called from
   `grid/prepare`).
 
   Functions: [[quarter-turn]], [[text-frame]], [[name-text]], [[value-text]], [[box-at]], [[draw-at!]], [[draw-at-frame!]]; schema
   [[label-options]]; methods of [[cljplot2.graphics.measure/validate-content]],
-  [[cljplot2.graphics.measure/natural-size]] and [[cljplot2.graphics.draw/draw-content]] for `:label`."
+  [[cljplot2.graphics.measure/natural-size]] and [[cljplot2.graphics.draw/draw-content]] for `:label`.
+
+  Fitted text: [[draw-fitted-lines!]] (text lines fitted to a box)."
   (:require [clojure.string :as str]
             [clojure2d.core :as c2d]
             [fastmath.core :as m]
@@ -81,19 +83,19 @@
   - `theme` (map): the merged theme.
   - `content` (map): the label content.
 
-  Returns `{:lines :rotation :h-align :v-align :padding :color :background :font}` - the role's style with the
+  Returns `{:lines :rotation :h-align :v-align :inset :color :background :font}` - the role's style with the
   label's inline overrides, the font resolved (see [[cljplot2.graphics.font/resolve-font]]), the colour resolved
   against the plot backdrop."
   [theme content]
   (let [rotation (get content :rotation 0)
         style (theme/text-style theme content)
         align (or (:align style) default-align)
-        padding (:padding style)]
+        inset (:inset style)]
     {:lines (text-lines (:text content))
      :rotation rotation
      :h-align (align 0)
      :v-align (align 1)
-     :padding (double padding)
+     :inset (double inset)
      :color (draw/resolved-text-color (:color style) (draw/plot-backdrop theme))
      :background (:background style)
      :font (font/resolve-font (:font style) (:font-style style) (:size style))}))
@@ -133,7 +135,7 @@
     (when (m/== r (m/* 90.0 (m/floor (m// r 90.0)))) (long r))))
 
 (defn text-frame
-  "Gives the unrotated size of a label's text frame: the text block rounded up plus padding on every side.
+  "Gives the unrotated size of a label's text frame: the text block rounded up plus the `:inset` on every side.
 
   Parameters:
 
@@ -149,8 +151,8 @@
     (if (empty? (:lines spec))
       [0.0 0.0]
       (let [{:keys [^double block-width ^double block-height]} (text-metrics canvas spec)
-            padding2 (m/* 2.0 (double (:padding spec)))]
-        [(m/+ (m/ceil block-width) padding2) (m/+ (m/ceil block-height) padding2)]))))
+            inset2 (m/* 2.0 (double (:inset spec)))]
+        [(m/+ (m/ceil block-width) inset2) (m/+ (m/ceil block-height) inset2)]))))
 
 (defmethod measure/natural-size :label
   [content {:keys [canvas theme]}]
@@ -160,9 +162,9 @@
     (if (empty? (:lines spec))
       (v/vec2 0.0 0.0)
       (let [{:keys [^double block-width ^double block-height]} (text-metrics canvas spec)
-            padding2 (m/* 2.0 (double (:padding spec)))
-            w (m/+ (m/ceil block-width) padding2)
-            h (m/+ (m/ceil block-height) padding2)]
+            inset2 (m/* 2.0 (double (:inset spec)))
+            w (m/+ (m/ceil block-width) inset2)
+            h (m/+ (m/ceil block-height) inset2)]
         (condp contains? (quarter-turn (:rotation spec))
           #{0 180} (v/vec2 w h)
           #{90 270} (v/vec2 h w)
@@ -194,22 +196,22 @@
       (let [{:keys [widths ^double line-height ^double ascent ^double block-width ^double block-height]}
             (text-metrics canvas spec)
             rotation (double (:rotation spec))
-            padding (double (:padding spec))
-            padding2 (m/* 2.0 padding)
+            inset (double (:inset spec))
+            inset2 (m/* 2.0 inset)
             ;; text frame: the box as seen by unrotated text, origin at its top-left corner; for an angle that isn't a
             ;; multiple of 90 the box is the rotated frame's bounding box, the frame its unrotated size
             [^double frame-w ^double frame-h] (condp contains? (quarter-turn rotation)
                                                 #{0 180} [(double w) (double h)]
                                                 #{90 270} [(double h) (double w)]
-                                                [(m/+ (m/ceil block-width) padding2) (m/+ (m/ceil block-height) padding2)])
-            block-x (m/+ padding (align-offset (:h-align spec) (m/- frame-w padding2) block-width))
-            block-y (m/+ padding (align-offset (:v-align spec) (m/- frame-h padding2) block-height))]
+                                                [(m/+ (m/ceil block-width) inset2) (m/+ (m/ceil block-height) inset2)])
+            block-x (m/+ inset (align-offset (:h-align spec) (m/- frame-w inset2) block-width))
+            block-y (m/+ inset (align-offset (:v-align spec) (m/- frame-h inset2) block-height))]
         ;; graphics state is not restored here: callers isolate draw-content calls
         (c2d/add-clip canvas x y w h)
         (c2d/translate canvas (m/+ x (m/* 0.5 w)) (m/+ y (m/* 0.5 h)))
         (c2d/rotate canvas (m/radians rotation))
         (c2d/translate canvas (m/* -0.5 frame-w) (m/* -0.5 frame-h))
-        (when-let [background (when-not (= :none (:background spec)) (:background spec))]
+        (when-let [background (when-not (theme/none? (:background spec)) (:background spec))]
           (c2d/set-color canvas background)
           (c2d/rect canvas 0.0 0.0 frame-w frame-h))
         (c2d/set-color canvas (:color spec))

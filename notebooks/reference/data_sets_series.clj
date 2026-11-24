@@ -86,7 +86,7 @@
 ;; ## series/acf-rows
 
 ;; The autocorrelation function: a row per lag with its value, the significance band and whether the value is
-;; outside it; `:partial? true` - the partial autocorrelation.
+;; outside it; `:partial true` - the partial autocorrelation.
 
 (nu/options-table (describe/options #'series/acf-rows))
 
@@ -95,23 +95,23 @@
 ;; Drawn by hand from the rows - segments to 0, the band as a ribbon, significant lags in red: the autocorrelation
 ;; up to lag 21 at the default 95% band (left) and the partial one with a 99% band (right):
 
-(plot/render-image (plot/arrange [{:data (series/acf-rows weekly {:lags 21 :alpha 0.05})
+(plot/render-image (plot/arrange [{:data (series/acf-rows weekly {:lags 21 :level 0.95})
                                    :mapping {:x :lag :y :value :ymin :lo :ymax :hi}
                                    :charts [(chart/ribbon {:color [69 117 180] :alpha 0.15})
-                                            (chart/segment {:yend 0 :width 2})
+                                            (chart/segment {:yend 0 :line-width 2})
                                             (chart/scatter {:mapping {:color #(if (:significant? %) "yes" "no")}})]
                                    :scales {:color {:domain ["no" "yes"] :range [[90 90 90] [200 40 40]]
                                                     :title "significant"}}
                                    :labels {:title "ACF, 95% band"}
                                    :legend false}
-                                  {:data (series/acf-rows weekly {:lags 21 :alpha 0.01 :partial? true})
+                                  {:data (series/acf-rows weekly {:lags 21 :level 0.99 :partial true})
                                    :mapping {:x :lag :y :value :ymin :lo :ymax :hi}
                                    :charts [(chart/ribbon {:color [69 117 180] :alpha 0.15})
-                                            (chart/segment {:yend 0 :width 2})
+                                            (chart/segment {:yend 0 :line-width 2})
                                             (chart/scatter {:mapping {:color #(if (:significant? %) "yes" "no")}})]
                                    :scales {:color {:domain ["no" "yes"] :range [[90 90 90] [200 40 40]]
                                                     :title "significant"}}
-                                   :labels {:title "PACF, :alpha 0.01"}}]
+                                   :labels {:title "PACF, :level 0.99"}}]
                                  {:columns 2 :widths [1 1.3]})
                    {:width 1000 :height 340})
 
@@ -137,7 +137,7 @@
 
 (plot/render-image (plot/arrange [{:data (:rows (series/horizon-rows temperatures {:x :day :y :anomaly :series :city}))
                                    :mapping {:x :x :y :y :color :band :facet :series}
-                                   :charts [(chart/line {:fill :color :alpha 1.0 :width 0})]
+                                   :charts [(chart/line {:fill :color :alpha 1.0 :line-width 0})]
                                    :scales {:color {:kind :ordinal :domain (series/horizon-bands 2)
                                                     :range [[158 202 225] [8 69 148] [252 174 145] [165 15 21]]}}
                                    :facets {:columns 1}
@@ -147,7 +147,7 @@
                                                                                    :band-height 1.0 :interpolator :monotone
                                                                                    :steps-per-gap 4}))
                                    :mapping {:x :x :y :y :color :band :facet :series}
-                                   :charts [(chart/line {:fill :color :alpha 1.0 :width 0})]
+                                   :charts [(chart/line {:fill :color :alpha 1.0 :line-width 0})]
                                    :scales {:color {:kind :ordinal :domain (series/horizon-bands 3)
                                                     :range [[198 219 239] [107 174 214] [8 81 156]
                                                             [252 187 161] [251 106 74] [165 15 21]]}}
@@ -191,7 +191,7 @@
 ;; in variable order, as the lower cells of `plot/pairs`):
 
 (nu/data-table (pairwise/matrix-rows iris {:variables [:sepal-length :sepal-width :petal-length :petal-width]
-                                           :method :spearman :triangle :lower :diagonal? true}))
+                                           :method :spearman :triangle :lower :self-pairs true}))
 
 ;; The upper triangle of the mean squared error of two variables (one row - the pair once):
 
@@ -205,7 +205,7 @@
 ;; a user function and its label (right):
 
 (plot/render-image (plot/arrange [{:data (pairwise/matrix-rows iris {:variables [:sepal-length :sepal-width :petal-length :petal-width]
-                                                                     :method :cohens-d :diagonal? true})
+                                                                     :method :cohens-d :self-pairs true})
                                    :mapping {:x (comp name :x) :y (comp name :y) :color :value}
                                    :charts [(chart/tile {:value-label true})]
                                    :scales {:x {:domain ["sepal-length" "sepal-width" "petal-length" "petal-width"]}

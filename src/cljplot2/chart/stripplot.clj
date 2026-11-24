@@ -12,13 +12,14 @@
   `:shape` (as scatter, see [[cljplot2.graphics.shape]]); `:jitter`, `:rng`, `:padding {:x [lo hi]}` (default
   `[0.05 0.05]`), plus the strip options and `:data` / `:mapping`.
 
-  Functions: [[jitter-offsets]] - the jitter of an item's points; [[legend]] - the chart contract's key glyph (the chart computes and draws through [[cljplot2.data.strip/compute]] and [[cljplot2.data.strip/draw]]); [[schemas]] - its style, options and mapping."
+  Functions: [[schemas]] - its style, options and mapping. The key glyph is [[cljplot2.chart.legend/point-legend]] (the chart computes and draws through [[cljplot2.chart.strip/compute]] and [[cljplot2.chart.strip/draw]])."
   (:require [fastmath.core :as m]
             [fastmath.random :as r]
             [fastmath.vector :as v]
             [cljplot2.data.group :as group]
             [cljplot2.data.rng :as rng]
             [cljplot2.data.rows :as data]
+            [cljplot2.chart.strip :as strip-chart]
             [cljplot2.data.strip :as strip]
             [cljplot2.graphics.shape :as shape]
             [cljplot2.schema :as schema]
@@ -66,7 +67,7 @@
   "Jitter spread when `:jitter` isn't given, a fraction of an item's cross range."
   0.25)
 
-(defn jitter-offsets
+(defn- jitter-offsets
   "Gives the jitter offsets of an item's points across its strip.
 
   Parameters:
@@ -99,7 +100,7 @@
   [{:keys [options] :as chart} chart-split {:keys [theme] :as env}]
   (let [{:keys [place items panels dropped]} (strip/split chart-split options :center env)
         rng (rng/for-build (:rng options))
-        jitter (double (get options :jitter default-jitter))
+        jitter (double (data/option options :jitter default-jitter))
         jittered (update-vals items (fn [its] (mapv #(assoc % :offsets (jitter-offsets rng (count (:values %)) jitter)) its)))
         point-style (theme/resolved-style theme chart)]
     {:data (update-vals jittered (fn [its] {:items its :style point-style :place place :options options}))
@@ -107,7 +108,7 @@
                           (strip/extents place jittered (fn [{:keys [values]}] [(v/mn values) (v/mx values)])))
      :padding (strip/padding place options)
      :padding-explicit (strip/explicit-padding place options)
-     :padding-px (strip/n-label-room options jittered env)
+     :padding-px (strip-chart/n-label-room options jittered env)
      :na (group/na-dims panels)
      :dropped dropped}))
 
@@ -125,9 +126,9 @@
 
   Draws each value at its offset across the item's slot in the group style (a group outside its scale's domain is skipped, as are points the scales can't place), then the n labels.
 
-  See also [[cljplot2.data.strip/placement]]."
+  See also [[cljplot2.chart.strip/placement]]."
   [_chart {:keys [items style place options]} canvas box scales env]
-  (let [{:keys [point] :as pl} (strip/placement box scales options place)]
+  (let [{:keys [point] :as pl} (strip-chart/placement box scales options place)]
     (doseq [{:keys [level slot values offsets aesthetics]} items
             :let [st (group/style style aesthetics scales (:theme env))]
             :when st
@@ -135,24 +136,10 @@
             :let [^Vec2 p (point v level (strip/in-slot slot (double off)))]
             :when (data/finite-point? p)]
       (shape/draw! canvas (:shape st) p st))
-    (strip/draw-n-labels! canvas pl items (fn [{:keys [values]}] (v/mx values)) options scales env)))
+    (strip-chart/draw-n-labels! canvas pl items (fn [{:keys [values]}] (v/mx values)) options scales env)))
 
-(defmethod strip/in-frame-compute :stripplot [chart chart-split env] (compute-in-strip-frame chart chart-split env))
+(defmethod strip-chart/in-frame-compute :stripplot [chart chart-split env] (compute-in-strip-frame chart chart-split env))
 
-(defmethod strip/in-frame-draw :stripplot [chart computed canvas box scales env]
+(defmethod strip-chart/in-frame-draw :stripplot [chart computed canvas box scales env]
   (draw-in-strip-frame chart computed canvas box scales env))
 
-(defn legend
-  "Draws the strip plot's key glyph: its point shape fitted and centred in a legend key.
-
-  Parameters:
-
-  - `chart` (map): the chart value.
-  - `attributes` (map): the key's mapped style attributes, over the chart's style.
-  - `canvas`: the clojure2d canvas.
-  - `box` (map): the key box in pixels.
-  - `env` (map): the legend environment - `:theme`.
-
-  See also [[cljplot2.graphics.shape/draw-key!]]."
-  [chart attributes canvas box env]
-  (shape/styled-key! canvas box (merge (theme/resolved-style (:theme env) chart) attributes) false))

@@ -2597,7 +2597,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="clay-image">
 <p><img src="reference.charts_grids_fields_files/image2.png" class="img-fluid"></p>
 </div>
-<p>Shared options: <a href="reference.shared_options.html#cell-style">Cell style</a> (<code>:cell</code> <code>:cell-scale</code> <code>:stroke-color</code> <code>:stroke-width</code> <code>:alpha</code>); <a href="reference.shared_options.html#data-and-mapping">Data and mapping</a> (<code>:data</code> <code>:mapping</code>); <a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> (<code>:theme-style</code>).</p>
+<p>Shared options: <a href="reference.shared_options.html#cell-style">Cell style</a> (<code>:cell</code> <code>:cell-scale</code> <code>:stroke-color</code> <code>:stroke-width</code> <code>:alpha-factor</code>); <a href="reference.shared_options.html#data-and-mapping">Data and mapping</a> (<code>:data</code> <code>:mapping</code>); <a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> (<code>:theme-style</code>).</p>
 </section>
 <section id="bin2d" class="level2" data-number="19.2">
 <h2 data-number="19.2" class="anchored" data-anchor-id="bin2d"><span class="header-section-number">19.2</span> bin2d</h2>
@@ -2672,7 +2672,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td>cell size in x data units (log10 units on a :log axis); wins over :bins</td>
 </tr>
 <tr class="odd">
-<td>:shape</td>
+<td>:aspect</td>
 <td>a positive finite number</td>
 <td>the panel's height / width (y span / x span with :aspect :iso), estimated from the plot size and facet layout</td>
 <td>height / width ratio of the normalized binning space (cells are regular in pixels when it matches the panel)</td>
@@ -2695,8 +2695,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:legend</span> <span class="va">false</span>}</span>
 <span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> faithful</span>
 <span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:eruptions</span> <span class="at">:y</span> <span class="at">:waiting</span>}</span>
-<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/bin2d {<span class="at">:binwidth</span> <span class="fl">0.25</span> <span class="at">:shape</span> <span class="fl">0.5</span>})]</span>
-<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":binwidth 0.25 :shape 0.5"</span>}</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/bin2d {<span class="at">:binwidth</span> <span class="fl">0.25</span> <span class="at">:aspect</span> <span class="fl">0.5</span>})]</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":binwidth 0.25 :aspect 0.5"</span>}</span>
 <span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:legend</span> <span class="va">false</span>}</span>
 <span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> faithful</span>
 <span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:eruptions</span> <span class="at">:y</span> <span class="at">:waiting</span>}</span>
@@ -2752,7 +2752,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="clay-image">
 <p><img src="reference.charts_grids_fields_files/image6.png" class="img-fluid"></p>
 </div>
-<p>Shared options: <a href="reference.shared_options.html#cell-style">Cell style</a> (<code>:cell</code> <code>:cell-scale</code> <code>:stroke-color</code> <code>:stroke-width</code> <code>:alpha</code>); <a href="reference.shared_options.html#data-and-mapping">Data and mapping</a> (<code>:data</code> <code>:mapping</code>); <a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> (<code>:theme-style</code>).</p>
+<p>Shared options: <a href="reference.shared_options.html#cell-style">Cell style</a> (<code>:cell</code> <code>:cell-scale</code> <code>:stroke-color</code> <code>:stroke-width</code> <code>:alpha-factor</code>); <a href="reference.shared_options.html#data-and-mapping">Data and mapping</a> (<code>:data</code> <code>:mapping</code>); <a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> (<code>:theme-style</code>).</p>
 </section>
 <section id="field" class="level2" data-number="19.3">
 <h2 data-number="19.3" class="anchored" data-anchor-id="field"><span class="header-section-number">19.3</span> field</h2>
@@ -2827,10 +2827,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </thead>
 <tbody>
 <tr class="odd">
-<td>:alpha</td>
+<td>:alpha-factor</td>
 <td>a number in [0 1]</td>
 <td>1.0</td>
-<td>opacity multiplying the colours' alpha</td>
+<td>factor multiplying the colours' alpha</td>
 </tr>
 <tr class="even">
 <td>:pixel-color</td>
@@ -2845,8 +2845,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> faithful</span>
 <span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:eruptions</span> <span class="at">:y</span> <span class="at">:waiting</span>}</span>
-<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/field {<span class="at">:alpha</span> <span class="fl">0.5</span>}) (chart/scatter {<span class="at">:size</span> <span class="dv">3</span> <span class="at">:color</span> <span class="at">:black</span>})]</span>
-<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":alpha 0.5, points over it"</span>}</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/field {<span class="at">:alpha-factor</span> <span class="fl">0.5</span>}) (chart/scatter {<span class="at">:size</span> <span class="dv">3</span> <span class="at">:color</span> <span class="at">:black</span>})]</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":alpha-factor 0.5, points over it"</span>}</span>
 <span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:legend</span> <span class="va">false</span>}</span>
 <span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:charts</span> [(chart/field {<span class="at">:domain</span> {<span class="at">:x</span> [-<span class="dv">2</span> <span class="dv">2</span>] <span class="at">:y</span> [-<span class="dv">2</span> <span class="dv">2</span>]}</span>
 <span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>                                                          <span class="at">:pixel-color</span> (<span class="kw">fn</span> [[x y]]</span>
@@ -3050,8 +3050,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:legend</span> <span class="va">false</span>}</span>
 <span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> faithful</span>
 <span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:eruptions</span> <span class="at">:y</span> <span class="at">:waiting</span>}</span>
-<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/field {<span class="at">:binned</span>? <span class="va">true</span>})]</span>
-<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":binned? true"</span>}</span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/field {<span class="at">:binned</span> <span class="va">true</span>})]</span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":binned true"</span>}</span>
 <span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:legend</span> <span class="va">false</span>}</span>
 <span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> faithful</span>
 <span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:eruptions</span> <span class="at">:y</span> <span class="at">:waiting</span>}</span>
@@ -3064,7 +3064,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="clay-image">
 <p><img src="reference.charts_grids_fields_files/image11.png" class="img-fluid"></p>
 </div>
-<p>Shared options: <a href="reference.shared_options.html#fields">Fields</a> (<code>:f</code> <code>:domain</code> <code>:kernel</code> <code>:bandwidth</code> <code>:binned?</code> <code>:cut</code> <code>:interpolation</code> <code>:n</code>); <a href="reference.shared_options.html#data-and-mapping">Data and mapping</a> (<code>:data</code> <code>:mapping</code>); <a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> (<code>:theme-style</code>).</p>
+<p>Shared options: <a href="reference.shared_options.html#fields">Fields</a> (<code>:f</code> <code>:domain</code> <code>:kernel</code> <code>:bandwidth</code> <code>:binned</code> <code>:cut</code> <code>:interpolation</code> <code>:n</code>); <a href="reference.shared_options.html#data-and-mapping">Data and mapping</a> (<code>:data</code> <code>:mapping</code>); <a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> (<code>:theme-style</code>).</p>
 </section>
 </section>
 <section id="contour" class="level2" data-number="19.4">
@@ -3158,10 +3158,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td>one colour for every line instead of colouring by level (contour's own :color, not the line style's)</td>
 </tr>
 <tr class="even">
-<td>:alpha</td>
+<td>:alpha-factor</td>
 <td>a number in [0 1]</td>
 <td>1.0; the theme's; grouped filled contours take half of it</td>
-<td>opacity multiplying the colours' alpha</td>
+<td>factor multiplying the colours' alpha</td>
 </tr>
 <tr class="odd">
 <td>:levels</td>
@@ -3170,7 +3170,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td>contour levels: a count evenly spread over the range of every sampled value (the ends left out), or a vector of level values</td>
 </tr>
 <tr class="even">
-<td>:fill</td>
+<td>:filled</td>
 <td>true or false</td>
 <td>false</td>
 <td>fill the region at or above each level, each band coloured by its middle value, instead of drawing lines</td>
@@ -3193,8 +3193,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":levels vector, :labels true"</span>}}</span>
 <span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> volcano</span>
 <span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:column</span> <span class="at">:y</span> <span class="at">:row</span> <span class="at">:value</span> <span class="at">:height</span>}</span>
-<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/contour {<span class="at">:fill</span> <span class="va">true</span> <span class="at">:levels</span> <span class="dv">8</span> <span class="at">:alpha</span> <span class="fl">0.8</span>})]</span>
-<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":fill true :levels 8"</span>}}]</span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/contour {<span class="at">:filled</span> <span class="va">true</span> <span class="at">:levels</span> <span class="dv">8</span> <span class="at">:alpha-factor</span> <span class="fl">0.8</span>})]</span>
+<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":filled true :levels 8"</span>}}]</span>
 <span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">2</span> <span class="at">:widths</span> [<span class="dv">1</span> <span class="fl">1.25</span>]})</span>
 <span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">380</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
@@ -3229,7 +3229,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="clay-image">
 <p><img src="reference.charts_grids_fields_files/image14.png" class="img-fluid"></p>
 </div>
-<p>Shared options: <a href="reference.shared_options.html#line-style">Line style</a> (<code>:width</code> <code>:dash</code>); <a href="reference.shared_options.html#fields">Fields</a> (<code>:f</code> <code>:domain</code> <code>:kernel</code> <code>:bandwidth</code> <code>:binned?</code> <code>:cut</code> <code>:interpolation</code> <code>:n</code>); <a href="reference.shared_options.html#data-and-mapping">Data and mapping</a> (<code>:data</code> <code>:mapping</code>); <a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> (<code>:theme-style</code>).</p>
+<p>Shared options: <a href="reference.shared_options.html#line-style">Line style</a> (<code>:line-width</code> <code>:dash</code>); <a href="reference.shared_options.html#fields">Fields</a> (<code>:f</code> <code>:domain</code> <code>:kernel</code> <code>:bandwidth</code> <code>:binned</code> <code>:cut</code> <code>:interpolation</code> <code>:n</code>); <a href="reference.shared_options.html#data-and-mapping">Data and mapping</a> (<code>:data</code> <code>:mapping</code>); <a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> (<code>:theme-style</code>).</p>
 </section>
 </section>
 <section id="correlation" class="level2" data-number="19.5">
@@ -3479,10 +3479,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td>how the value is drawn: :number (text, a line per group), :shade (the panel in the value's colour) or :shade-number (both)</td>
 </tr>
 <tr class="odd">
-<td>:format</td>
-<td>a function or nil</td>
+<td>:value-format</td>
+<td>a number format string or a function or nil</td>
 <td>at most 2 decimals, whole numbers without them</td>
-<td>the text of a value, a function of the number (a throw or nil - NA)</td>
+<td>the text of a value: a format string or a function of the number (a throw or nil - NA)</td>
 </tr>
 </tbody>
 </table>
@@ -3500,8 +3500,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb27-8"><a href="#cb27-8" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/pairwise {<span class="at">:method</span> <span class="at">:me</span> <span class="at">:glyph</span> <span class="at">:shade-number</span>})] <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"signed :me"</span>}}</span>
 <span id="cb27-9"><a href="#cb27-9" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> iris <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:sepal-length</span> <span class="at">:y</span> <span class="at">:petal-length</span>}</span>
 <span id="cb27-10"><a href="#cb27-10" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/pairwise {<span class="at">:method</span> (<span class="kw">fn</span> [xs ys] (<span class="kw">-</span> (<span class="kw">apply</span> <span class="kw">max</span> xs) (<span class="kw">apply</span> <span class="kw">max</span> ys)))</span>
-<span id="cb27-11"><a href="#cb27-11" aria-hidden="true" tabindex="-1"></a>                                                             <span class="at">:label</span> <span class="st">"max diff"</span> <span class="at">:format</span> #(<span class="kw">format</span> <span class="st">"%+.1f cm"</span> <span class="va">%</span>)})]</span>
-<span id="cb27-12"><a href="#cb27-12" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"function, :format"</span>}}</span>
+<span id="cb27-11"><a href="#cb27-11" aria-hidden="true" tabindex="-1"></a>                                                             <span class="at">:label</span> <span class="st">"max diff"</span> <span class="at">:value-format</span> #(<span class="kw">format</span> <span class="st">"%+.1f cm"</span> <span class="va">%</span>)})]</span>
+<span id="cb27-12"><a href="#cb27-12" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"function, :value-format"</span>}}</span>
 <span id="cb27-13"><a href="#cb27-13" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> iris <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:sepal-length</span> <span class="at">:y</span> <span class="at">:petal-length</span>}</span>
 <span id="cb27-14"><a href="#cb27-14" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/pairwise {<span class="at">:method</span> <span class="at">:rmse</span> <span class="at">:glyph</span> <span class="at">:shade-number</span> <span class="at">:color</span> [<span class="dv">120</span> <span class="dv">160</span> <span class="dv">90</span>]})]</span>
 <span id="cb27-15"><a href="#cb27-15" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":color"</span>}}]</span>

@@ -33,10 +33,10 @@
     (is (= (levels/order-levels rows :g :v count) (levels/order-levels rows :g :v count (explicit #'levels/order-levels {})))))
   (testing "rank-rows"
     (is (= (levels/rank-rows rows :x :v {}) (levels/rank-rows rows :x :v (explicit #'levels/rank-rows {}))))
-    (is (= {:key :rank :descending true :ties :min} (explicit #'levels/rank-rows {}))))
+    (is (= {:as :rank :descending true :ties :min} (explicit #'levels/rank-rows {}))))
   (testing "shingle (equal-count intervals)"
     (is (= (shingle/shingle rows :v {:as :s}) (shingle/shingle rows :v (explicit #'shingle/shingle {:as :s}))))
-    (is (= {:as :s :count 6 :overlap 0.5} (explicit #'shingle/shingle {:as :s}))))
+    (is (= {:as :s :n 6 :overlap 0.5} (explicit #'shingle/shingle {:as :s}))))
   (testing "domain-color (compared on sample points)"
     (let [f (field/domain-color cx/log {})
           g (field/domain-color cx/log (explicit #'field/domain-color {}))]
@@ -45,7 +45,7 @@
         (is (= (f p) (g p)) p))))
   (testing "arrows"
     (is (= (vf/arrows rotation {:domain domain}) (vf/arrows rotation (explicit #'vf/arrows {:domain domain}))))
-    (is (= {:domain domain :n 20 :grid :square :scale 1.0} (explicit #'vf/arrows {:domain domain}))))
+    (is (= {:domain domain :n 20 :grid :square :length-scale 1.0} (explicit #'vf/arrows {:domain domain}))))
   (testing "traces"
     (is (= (vf/traces rotation [[0.5 0.0] [0.0 1.0]] {}) (vf/traces rotation [[0.5 0.0] [0.0 1.0]] (explicit #'vf/traces {}))))
     (is (= {:steps 100 :step 0.01} (explicit #'vf/traces {})))))
@@ -68,21 +68,21 @@
     (is (= :bins (:key (error #(levels/bin nil nil {:as :b :bins 0})))))
     (is (= :descending (:key (error #(levels/order-levels nil nil nil nil {:descending 1})))))
     (is (= :ties (:key (error #(levels/rank-rows nil nil nil {:ties :nope})))))
-    (is (= :count (:key (error #(shingle/shingle nil nil {:as :s :count 0})))))
+    (is (= :n (:key (error #(shingle/shingle nil nil {:as :s :n 0})))))
     (is (= :wrap (:key (error #(field/domain-color nil {:wrap :log3})))))
     (is (= :n (:key (error #(vf/arrows nil {:domain domain :n 0})))))
     (is (= :steps (:key (error #(vf/traces nil nil {:steps 1.5}))))))
   (testing "wrong types"
     (is (= :digits (:key (error #(levels/bin rows :v {:as :b :digits 0})))))
     (is (= :label (:key (error #(levels/bin rows :v {:as :b :label 3})))))
-    (is (= :key (:key (error #(levels/rank-rows rows :x :v {:key nil})))))
+    (is (= :as (:key (error #(levels/rank-rows rows :x :v {:as nil})))))
     (is (= :descending (:key (error #(levels/rank-rows rows :x :v {:descending nil})))))
     (is (= :overlap (:key (error #(shingle/shingle rows :v {:as :s :overlap 1.0})))))
     (is (= :intervals (:key (error #(shingle/shingle rows :v {:as :s :intervals []})))))
     (is (= :colorspace (:key (error #(field/domain-color cx/sin {:colorspace :LAB})))))
     (is (= :x (:key (error #(vf/arrows rotation {:domain {:x [1 1] :y [0 1]}})))))
     (is (= :grid (:key (error #(vf/arrows rotation {:domain domain :grid :hex})))))
-    (is (= :scale (:key (error #(vf/arrows rotation {:domain domain :scale ##Inf})))))
+    (is (= :length-scale (:key (error #(vf/arrows rotation {:domain domain :length-scale ##Inf})))))
     (is (= :step (:key (error #(vf/traces rotation [[0 0]] {:step 0}))))))
   (testing "unknown keys"
     (doseq [[k f] [[:bin #(levels/bin rows :v {:as :b :bin 3})]

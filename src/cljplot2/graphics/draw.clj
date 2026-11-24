@@ -4,10 +4,12 @@
 
   Functions: content [[draw-content]], [[inner-border!]], [[zero-line!]], [[pixel-center]]; colours
   [[contrast-color]], [[plot-backdrop]], [[resolved-text-color]], [[text-color]], [[painted-color]],
-  [[outline-color]], [[with-alpha]], [[faded]]; patterns [[pattern-ink]], [[pattern-fill]], [[pattern-fill-cache]],
+  [[outline-color]], [[with-alpha]], [[faded]], [[translucent-fill]], [[visible-stroke?]], [[outline!]]; patterns [[pattern-ink]], [[pattern-fill]], [[pattern-fill-cache]],
   [[fill-with-pattern!]], [[fill-patterned!]]; bars [[rect-of]], [[visible-bar?]], [[corner-rounding]], [[value-axis]], [[value-ends]],
-  [[bar-rounding]], [[whole-pixel]], [[shape-bar!]], [[bar!]], [[rounded-sector-path]], [[range-bar!]]; legend keys
-  [[key-rounding]], [[key-glyph-share]], [[bar-key!]], [[circle-key!]], [[spike-key!]]; [[cvd-filter-fn]]."
+  [[bar-rounding]], [[whole-pixel]], [[bar!]], [[rounded-sector-path]], [[range-bar!]]; legend keys
+  [[key-rounding]], [[key-glyph-share]], [[bar-key!]], [[circle-key!]], [[spike-key!]]; [[cvd-filter-fn]].
+
+  Schemas: [[stroke-color]], [[pattern-style-entries]], [[corner-radius-option]], [[corner-radius-end-option]]."
   (:require [clojure2d.color :as c]
             [clojure2d.core :as c2d]
             [clojure2d.core.shape :as sh]
@@ -120,6 +122,38 @@
   Returns the darkened fill for `:darker`, else `stroke` (`:none` stays `:none`)."
   [stroke fill]
   (if (= :darker stroke) (c/darken fill) stroke))
+
+(defn visible-stroke?
+  "Tests whether a stroke draws anything: its colour isn't `:none` and its width is positive.
+
+  Parameters:
+
+  - `color`: the stroke colour or `:none`.
+  - `width` (number): the stroke width in pixels.
+
+  Returns a truthy value for a visible stroke."
+  [color width]
+  (and (not (theme/none? color)) (m/pos? (double width))))
+
+(defn outline!
+  "Strokes an outline when it is visible (see [[visible-stroke?]]).
+
+  Parameters:
+
+  - `canvas`: the canvas in graphics context.
+  - `color`: the outline colour or `:none`.
+  - `width` (number): the outline width in pixels.
+  - `join` (keyword, optional): the line join (`:miter`, `:round`, `:bevel`); the canvas default without it.
+  - `stroke-shape!` (function): of the canvas, drawing the outlined shape stroked.
+
+  Returns `nil`; nothing drawn for an invisible stroke."
+  ([canvas color width stroke-shape!] (outline! canvas color width nil stroke-shape!))
+  ([canvas color width join stroke-shape!]
+   (when (visible-stroke? color width)
+     (c2d/set-stroke-custom canvas (cond-> {:size width} join (assoc :join join)))
+     (c2d/set-color canvas color)
+     (stroke-shape! canvas)
+     nil)))
 
 (defn pattern-ink
   "Gives the ink of a fill pattern, no more opaque than the fill: a translucent fill (e.g. overlaid groups) gets translucent ink.
@@ -264,7 +298,7 @@
   Returns `nil`."
   [canvas {:keys [^long x ^long y ^long w ^long h]} color width]
   (let [bw (m/min (m/round (double width)) (m/long-quot w 2) (m/long-quot h 2))]
-    (when (and (not= :none color) (m/pos? bw))
+    (when (and (not (theme/none? color)) (m/pos? bw))
       (c2d/set-color canvas color)
       (c2d/rect canvas x y w bw)
       (c2d/rect canvas x (m/long-sub (m/long-add y h) bw) w bw)
@@ -303,10 +337,10 @@
   (and (m/>= w min-bar-pixels) (m/>= h min-bar-pixels)))
 
 (def corner-radius-option
-  "Option entry `:corner-radius`: pixels, every corner of a bar rounded (default 0 - square)."
+  "Option entry `:corner-radius`: pixels, every corner of a bar or rect rounded (default 0 - square)."
   (first (schema/in-fragment
           :corner-radius
-          [(schema/optional :corner-radius {:description "radius in pixels of every bar corner" :default 0} schema/non-neg)])))
+          [(schema/optional :corner-radius {:description "radius in pixels of every corner of a bar or rect" :default 0} schema/non-neg)])))
 
 (def corner-radius-end-option
   "Option entry `:corner-radius-end`: pixels, only the corners at a bar's value end rounded (Vega-Lite
@@ -404,7 +438,7 @@
         radius (fn [i j] (if (corners [i j]) r 0.0))]
     [(radius left top) (radius (m/long-sub 1 left) top) (radius (m/long-sub 1 left) (m/long-sub 1 top)) (radius left (m/long-sub 1 top))]))
 
-(defn shape-bar!
+(defn- shape-bar!
   "Fills a shape with a colour and a pattern and outlines it.
 
   Parameters:
@@ -420,10 +454,7 @@
   [canvas ^Shape shape fill stroke stroke-width fill-pattern]
   (let [width (double stroke-width)]
     (fill-patterned! canvas fill fill-pattern #(c2d/shape % shape false))
-    (when (and (m/pos? width) (not (theme/none? stroke)))
-      (c2d/set-stroke-custom canvas {:size width :join :miter})
-      (c2d/set-color canvas stroke)
-      (c2d/shape canvas shape true))))
+    (outline! canvas stroke width :miter #(c2d/shape % shape true))))
 
 (defn bar!
   "Fills the rectangle between two pixel corners with a colour and a pattern and outlines it.
@@ -450,10 +481,7 @@
          (shape-bar! canvas (sh/rounded-rect x y w h (pixel-rect-radii a b rounding))
                      fill stroke width fill-pattern)
          (do (fill-patterned! canvas fill fill-pattern #(c2d/rect % x y w h))
-             (when (and (m/pos? width) (not (theme/none? stroke)))
-               (c2d/set-stroke-custom canvas {:size width :join :miter})
-               (c2d/set-color canvas stroke)
-               (c2d/rect canvas x y w h true))))))))
+             (outline! canvas stroke width :miter #(c2d/rect % x y w h true))))))))
 
 (def ^{:private true :const true :tag 'double} corner-step-angle
   "Largest angle (radians) between points of a rounded corner's arc."
@@ -579,12 +607,11 @@
          (if rounding
            (shape-bar! canvas (sh/path polygon true) fill stroke width fill-pattern)
            (do (fill-patterned! canvas fill fill-pattern #(c2d/path % polygon true false))
-               (when (and (m/pos? width) (not (theme/none? stroke)))
-                 (c2d/set-stroke-custom canvas {:size width :join :miter})
-                 (c2d/set-color canvas stroke)
-                 (if (coord/full-turn? geometry h0 h1)
-                   (doseq [circle (coord/full-turn-circles geometry h0 v0 h1 v1)] (c2d/path canvas circle false true))
-                   (c2d/path canvas polygon true true))))))))))
+               (outline! canvas stroke width :miter
+                         (fn [c]
+                           (if (coord/full-turn? geometry h0 h1)
+                             (doseq [circle (coord/full-turn-circles geometry h0 v0 h1 v1)] (c2d/path c circle false true))
+                             (c2d/path c polygon true true)))))))))))
 
 (def ^{:private true :const true :tag 'double} key-radius-fraction
   "Largest corner radius of a legend key square, as a fraction of its side: the key reads as a rounded square whatever
@@ -637,16 +664,16 @@
 
   - `canvas`: the clojure2d canvas.
   - `box` (map): the key box `{:x :y :w :h}` (pixels).
-  - `line` (map): `:color`, `:width` (pixels, butt caps) and `:span` - `[from to]`, the line's ends as fractions of the box height from its top.
+  - `line` (map): `:color`, `:line-width` (pixels, butt caps) and `:span` - `[from to]`, the line's ends as fractions of the box height from its top.
 
   Returns the canvas.
 
   See also [[circle-key!]], [[bar-key!]]."
-  [canvas {:keys [^double x ^double y ^double w ^double h]} {:keys [color width span]}]
+  [canvas {:keys [^double x ^double y ^double w ^double h]} {:keys [color line-width span]}]
   (let [[^double from ^double to] span
         cx (m/+ x (m/* 0.5 w))]
     (c2d/set-color canvas color)
-    (c2d/set-stroke-custom canvas {:size width :cap :butt})
+    (c2d/set-stroke-custom canvas {:size line-width :cap :butt})
     (c2d/line canvas cx (m/+ y (m/* from h)) cx (m/+ y (m/* to h)))))
 
 (defn with-alpha
@@ -677,6 +704,19 @@
   [color ^double k]
   (if (or (nil? color) (theme/none? color)) color (c/scale-alpha color k)))
 
+(defn translucent-fill
+  "Gives the fill colour of a mark drawn translucent or opaque (grouped overlay bars are translucent).
+
+  Parameters:
+
+  - `color`: the mark colour or `:none`.
+  - `alpha` (fraction or `nil`): the opacity of a translucent fill.
+  - `translucent?`: truthy - the fill gets `alpha` (see [[with-alpha]]).
+
+  Returns `color` with alpha `alpha` when `translucent?`, else `color`."
+  [color alpha translucent?]
+  (if translucent? (with-alpha color alpha) color))
+
 (defn bar-key!
   "Draws the legend key glyph of a bar chart (histogram, bar): a filled square inset in a key box with its pattern, outlined.
 
@@ -694,7 +734,7 @@
    (let [side (m/* key-glyph-share (m/min w h))
          cx (m/+ x (m/* 0.5 w))
          cy (m/+ y (m/* 0.5 h))
-         fill (if translucent? (with-alpha (:color st) (:alpha st)) (:color st))
+         fill (translucent-fill (:color st) (:alpha st) translucent?)
          stroke (outline-color (:stroke-color st) (:color st))
          stroke-width (double (:stroke-width st))]
      (if rounding
@@ -702,10 +742,7 @@
          (bar! canvas (Vec2. (m/- cx half) (m/+ cy half)) (Vec2. (m/+ cx half) (m/- cy half)) fill stroke stroke-width
                (pattern-fill st fill) (key-rounding rounding side)))
        (do (fill-patterned! canvas fill (pattern-fill st fill) #(c2d/crect % cx cy side side))
-           (when (and (m/pos? stroke-width) (not (theme/none? stroke)))
-             (c2d/set-stroke-custom canvas {:size stroke-width})
-             (c2d/set-color canvas stroke)
-             (c2d/crect canvas cx cy side side true)))))))
+           (outline! canvas stroke stroke-width #(c2d/crect % cx cy side side true)))))))
 
 (defn cvd-filter-fn
   "Gives the colour function simulating a colour vision deficiency.

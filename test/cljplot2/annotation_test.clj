@@ -71,7 +71,7 @@
     (is (= (x-domain (chart/text {:x 5 :y [:panel 0.5] :text "a very long label indeed"}))
            (x-domain (chart/text {:x 5 :y [:panel 0.5] :text "a"}))) "text: only the anchor")
     (is (<= (double (first (x-domain (chart/rect {:x [-50 nil]})))) -50.0) "nil end adds nothing")
-    (is (= :extents (:key (error #(built {:data rows :mapping {:x :v} :charts [(chart/density) (chart/rule {:x [1 "a"]})]})))))))
+    (is (= :mapping (:key (error #(built {:data rows :mapping {:x :v} :charts [(chart/density) (chart/rule {:x [1 "a"]})]})))))))
 
 (deftest flip-test
   (testing "a flipped :x rule is horizontal"
@@ -161,7 +161,7 @@
                                                         (chart/rect {:data [{:a 1 :b 2} {:a nil :b 3} {:a "x" :b ##NaN}]
                                                                      :mapping {:x0 :a :x1 :b}})]})]
       (is (= [{:x [1 2]} {:x [nil 3]}] (get-in b [:stats 1 :data facet/single-panel :rects])))
-      (is (= {:position 1} (get-in b [:stats 1 :dropped])))))
+      (is (= {:x0 0 :x1 1} (get-in b [:stats 1 :dropped])))))
   (testing "rect listed first stays behind"
     (let [ps (reds {:data rows :mapping {:x :v} :charts [(chart/rect {:x [0 30] :fill :red}) (chart/histogram {:color :black})]})
           ps2 (reds {:data rows :mapping {:x :v} :charts [(chart/histogram {:color :black}) (chart/rect {:x [0 30] :fill :red})]})]

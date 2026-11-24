@@ -99,7 +99,7 @@ direction at each depth:
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:padding</td><td>a non-negative number</td><td>3</td><td>gap inside every group around its header and children, in pixels</td></tr><tr><td>:border-color</td><td>a clojure2d color or :none</td><td>:white</td><td>cell border colour</td></tr><tr><td>:border-width</td><td>a non-negative number</td><td>1</td><td>cell border width in pixels</td></tr><tr><td>:layout</td><td>one of :squarify :slice-dice</td><td>:squarify</td><td>rectangle layout: :squarify (near-square cells) or :slice-dice (slices turning by depth)</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:gap</td><td>a non-negative number</td><td>3</td><td>gap inside every group around its header and children, in pixels</td></tr><tr><td>:stroke-color</td><td>a clojure2d color or :none</td><td>:white</td><td>cell outline colour</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>cell outline width in pixels</td></tr><tr><td>:layout</td><td>one of :squarify :slice-dice</td><td>:squarify</td><td>rectangle layout: :squarify (near-square cells) or :slice-dice (slices turning by depth)</td></tr></tbody></table>
 ```
 
 :::
@@ -110,8 +110,8 @@ direction at each depth:
 ```clojure
 (plot/render-image (plot/arrange [{:data budget
                                    :mapping {:hierarchy [:dept :team] :value :cost}
-                                   :charts [(chart/treemap {:padding 8 :border-color :black :border-width 2})]
-                                   :labels {:title ":padding 8, black borders"}}
+                                   :charts [(chart/treemap {:gap 8 :stroke-color :black :stroke-width 2})]
+                                   :labels {:title ":gap 8, black borders"}}
                                   {:data budget
                                    :mapping {:hierarchy [:dept :team] :value :cost}
                                    :charts [(chart/treemap {:layout :slice-dice})]
@@ -173,7 +173,7 @@ or each by its name) and whether the root is drawn:
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:border-color</td><td>a clojure2d color or :none</td><td>:white</td><td>cell border colour</td></tr><tr><td>:border-width</td><td>a non-negative number</td><td>1</td><td>cell border width in pixels</td></tr><tr><td>:order</td><td>one of :value :data</td><td>:value</td><td>order of siblings: :value (descending) or :data (first appearance)</td></tr><tr><td>:color-by</td><td>one of :top :name</td><td>:top</td><td>node colours: :top - each top-level node's palette colour, lighter by depth; :name - every node by its name through the color scale</td></tr><tr><td>:root</td><td>true or false or nil</td><td>false</td><td>draw the root too, every level one up</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:stroke-color</td><td>a clojure2d color or :none</td><td>:white</td><td>cell outline colour</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>cell outline width in pixels</td></tr><tr><td>:order</td><td>one of :value :data</td><td>:value</td><td>order of siblings: :value (descending) or :data (first appearance)</td></tr><tr><td>:color-by</td><td>one of :top :name</td><td>:top</td><td>node colours: :top - each top-level node's palette colour, lighter by depth; :name - every node by its name through the color scale</td></tr><tr><td>:root</td><td>true or false or nil</td><td>false</td><td>draw the root too, every level one up</td></tr></tbody></table>
 ```
 
 :::
@@ -189,7 +189,7 @@ or each by its name) and whether the root is drawn:
                                    :labels {:title ":order :data, :root true"}}
                                   {:data budget
                                    :mapping {:hierarchy [:dept :team] :value :cost}
-                                   :charts [(chart/partition {:color-by :name :border-width 2})]
+                                   :charts [(chart/partition {:color-by :name :stroke-width 2})]
                                    :coord {:kind :polar}
                                    :labels {:title ":color-by :name"}
                                    :legend false}]
@@ -215,8 +215,8 @@ The borders in an icicle: the default thin white lines, and thick dark ones:
                                    :labels {:title ":order :value (default)"}}
                                   {:data budget
                                    :mapping {:hierarchy [:dept :team] :value :cost}
-                                   :charts [(chart/partition {:border-color [40 40 40] :border-width 3})]
-                                   :labels {:title ":border-color, :border-width 3"}}]
+                                   :charts [(chart/partition {:stroke-color [40 40 40] :stroke-width 3})]
+                                   :labels {:title ":stroke-color, :stroke-width 3"}}]
                                  {:columns 2})
                    {:width 1000 :height 360})
 ```
@@ -266,7 +266,7 @@ drawing (the layout unchanged - here the group circles, depth 1):
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:padding</td><td>a non-negative number</td><td>3</td><td>gap between siblings and between a child and its parent's edge, in pixels</td></tr><tr><td>:border-color</td><td>a clojure2d color or :none</td><td>:white</td><td>circle border colour</td></tr><tr><td>:border-width</td><td>a non-negative number</td><td>1</td><td>circle border width in pixels</td></tr><tr><td>:order</td><td>one of :value :data</td><td>:value</td><td>packing order of siblings: :value (descending, largest near the centre) or :data</td></tr><tr><td>:root</td><td>true or false or nil</td><td>false</td><td>draw the root circle too</td></tr><tr><td>:hidden-levels</td><td>set of integer (at least 0) or nil</td><td>#{}</td><td>depths (root 0, top level 1) not drawn, the layout unchanged</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:gap</td><td>a non-negative number</td><td>3</td><td>gap between siblings and between a child and its parent's edge, in pixels</td></tr><tr><td>:stroke-color</td><td>a clojure2d color or :none</td><td>:white</td><td>circle outline colour</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>circle outline width in pixels</td></tr><tr><td>:order</td><td>one of :value :data</td><td>:value</td><td>packing order of siblings: :value (descending, largest near the centre) or :data</td></tr><tr><td>:root</td><td>true or false or nil</td><td>false</td><td>draw the root circle too</td></tr><tr><td>:hidden-levels</td><td>set of integer (at least 0) or nil</td><td>#{}</td><td>depths (root 0, top level 1) not drawn, the layout unchanged</td></tr></tbody></table>
 ```
 
 :::
@@ -277,8 +277,8 @@ drawing (the layout unchanged - here the group circles, depth 1):
 ```clojure
 (plot/render-image (plot/arrange [{:data budget
                                    :mapping {:hierarchy [:dept :team] :value :cost}
-                                   :charts [(chart/pack {:padding 10 :root true :border-color :black})]
-                                   :labels {:title ":padding 10, :root true"}}
+                                   :charts [(chart/pack {:gap 10 :root true :stroke-color :black})]
+                                   :labels {:title ":gap 10, :root true"}}
                                   {:data budget
                                    :mapping {:hierarchy [:dept :team] :value :cost}
                                    :charts [(chart/pack {:hidden-levels #{1}})]
@@ -310,8 +310,8 @@ data order; and wider borders:
                                    :labels {:title ":order :data"}}
                                   {:data budget
                                    :mapping {:hierarchy [:dept :team] :value :cost}
-                                   :charts [(chart/pack {:border-color [40 40 40] :border-width 3})]
-                                   :labels {:title ":border-width 3"}}]
+                                   :charts [(chart/pack {:stroke-color [40 40 40] :stroke-width 3})]
+                                   :labels {:title ":stroke-width 3"}}]
                                  {:columns 3})
                    {:width 1000 :height 360})
 ```
@@ -376,7 +376,7 @@ so the cell count follows the values (here one cell per 2 units, 5 columns wide)
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:gap</td><td>a finite number, >= 0, < 1</td><td>0.1</td><td>space between cells, a fraction of a cell</td></tr><tr><td>:shape</td><td>one of :square :circle</td><td>:square</td><td>cell shape: :square or :circle</td></tr><tr><td>:border-color</td><td>a clojure2d color or :none</td><td>:none</td><td>cell border colour</td></tr><tr><td>:border-width</td><td>a non-negative number</td><td>1</td><td>cell border width in pixels</td></tr><tr><td>:rows</td><td>integer (1..10000)</td><td>10</td><td>grid rows (ignored with :unit)</td></tr><tr><td>:columns</td><td>integer (1..10000)</td><td>10</td><td>grid columns</td></tr><tr><td>:unit</td><td>a positive finite number</td><td>none - the categories share the :rows x :columns grid</td><td>the value of one cell: a category gets value / unit cells, the grid :columns wide</td></tr><tr><td>:fill-order</td><td>one of :rows :columns</td><td>:rows</td><td>fill from the bottom-left cell: :rows (row by row, upwards) or :columns (column by column)</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:gap</td><td>a finite number, >= 0, < 1</td><td>0.1</td><td>space between cells, a fraction of a cell</td></tr><tr><td>:cell-shape</td><td>one of :square :circle</td><td>:square</td><td>cell shape: :square or :circle</td></tr><tr><td>:stroke-color</td><td>a clojure2d color or :none</td><td>:none</td><td>cell outline colour</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>cell outline width in pixels</td></tr><tr><td>:rows</td><td>integer (1..10000)</td><td>10</td><td>grid rows (ignored with :unit)</td></tr><tr><td>:columns</td><td>integer (1..10000)</td><td>10</td><td>grid columns</td></tr><tr><td>:unit</td><td>a positive finite number</td><td>none - the categories share the :rows x :columns grid</td><td>the value of one cell: a category gets value / unit cells, the grid :columns wide</td></tr><tr><td>:fill-order</td><td>one of :rows :columns</td><td>:rows</td><td>fill from the bottom-left cell: :rows (row by row, upwards) or :columns (column by column)</td></tr></tbody></table>
 ```
 
 :::
@@ -387,12 +387,12 @@ so the cell count follows the values (here one cell per 2 units, 5 columns wide)
 ```clojure
 (plot/render-image (plot/arrange [{:data energy-mix
                                    :mapping {:color :source :value :share}
-                                   :charts [(chart/waffle {:shape :circle :gap 0.2 :rows 5 :columns 20})]
+                                   :charts [(chart/waffle {:cell-shape :circle :gap 0.2 :rows 5 :columns 20})]
                                    :labels {:title ":circle, 5 × 20"}
                                    :legend false}
                                   {:data energy-mix
                                    :mapping {:color :source :value :share}
-                                   :charts [(chart/waffle {:fill-order :columns :border-color :white :border-width 2
+                                   :charts [(chart/waffle {:fill-order :columns :stroke-color :white :stroke-width 2
                                                            :gap 0})]
                                    :labels {:title ":fill-order :columns"}
                                    :legend false}
@@ -466,7 +466,7 @@ labels - a function of `{:sets :size :share}` writes a region's text:
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:alpha</td><td>a number in [0 1]</td><td>0.4</td><td>fill opacity</td></tr><tr><td>:border-color</td><td>:darker or a clojure2d color or :none</td><td>:darker</td><td>circle outline colour: a colour, :none or :darker (the darkened set colour)</td></tr><tr><td>:border-width</td><td>a non-negative number</td><td>1</td><td>circle outline width in pixels</td></tr><tr><td>:sets</td><td>vector of any value (at least 1)</td><td>every set, in first-appearance order</td><td>the sets shown (2 or 3), in order</td></tr><tr><td>:proportional</td><td>true or false or nil</td><td>true</td><td>2 sets: circle and overlap areas proportional to the counts (false - equal circles)</td></tr><tr><td>:set-labels</td><td>true or false or nil</td><td>true</td><td>write the set names outside their circles</td></tr><tr><td>:region-labels</td><td>true or false or a function or nil</td><td>true</td><td>region labels: true - the item count, false - none, or a function of {:sets :size :share} returning the text</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:alpha</td><td>a number in [0 1]</td><td>0.4</td><td>fill opacity</td></tr><tr><td>:stroke-color</td><td>:darker or a clojure2d color or :none</td><td>:darker</td><td>circle outline colour: a colour, :none or :darker (the darkened set colour)</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>circle outline width in pixels</td></tr><tr><td>:sets</td><td>vector of any value (at least 1)</td><td>every set, in first-appearance order</td><td>the sets shown (2 or 3), in order</td></tr><tr><td>:proportional</td><td>true or false or nil</td><td>true</td><td>2 sets: circle and overlap areas proportional to the counts (false - equal circles)</td></tr><tr><td>:set-labels</td><td>true or false or nil</td><td>true</td><td>write the set names outside their circles</td></tr><tr><td>:region-labels</td><td>true or false or a function or nil</td><td>true</td><td>region labels: true - the item count, false - none, or a function of {:sets :size :share} returning the text</td></tr></tbody></table>
 ```
 
 :::
@@ -482,7 +482,7 @@ labels - a function of `{:sets :size :share}` writes a region's text:
                                   {:data memberships
                                    :mapping {:set :club :item :member}
                                    :charts [(chart/venn {:sets ["chess" "running"] :proportional false :alpha 0.6
-                                                         :border-color :none})]
+                                                         :stroke-color :none})]
                                    :labels {:title ":proportional false"}}
                                   {:data memberships
                                    :mapping {:set :club :item :member}
@@ -510,8 +510,8 @@ Without set names, and with thick outlines in the darkened set colours:
                                    :labels {:title ":set-labels false"}}
                                   {:data memberships
                                    :mapping {:set :club :item :member}
-                                   :charts [(chart/venn {:border-width 4})]
-                                   :labels {:title ":border-width 4"}}]
+                                   :charts [(chart/venn {:stroke-width 4})]
+                                   :labels {:title ":stroke-width 4"}}]
                                  {:columns 2})
                    {:width 900 :height 380})
 ```

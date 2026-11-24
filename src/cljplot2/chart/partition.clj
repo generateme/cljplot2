@@ -19,7 +19,7 @@
   `[:palette :na]`; `:color-by :name` (default `:top` - the above) colors every node by its name through the color
   scale - a legend of the names, equal names alike at every depth (sequence sunbursts), the root and unnamed leaves
   in `[:palette :na]`; it can't be combined with a mapped `:color` (`ex-info {:key :color-by}`). Style (theme
-  `[:chart :partition]`): `:border-color`, `:border-width` (the cells' outlines),
+  `[:chart :partition]`): `:stroke-color`, `:stroke-width` (the cells' outlines),
   `:pattern`, `:pattern-color`.
 
   Labels: `:group-labels` / `:leaf-labels` (default true - the node's name; `false` - none; a function of the node
@@ -28,7 +28,7 @@
   (the text in black or white by the cell's fill), centred in the cell and drawn only when they fit: horizontal in cartesian plots (within the cell), along the
   radius in polar ones (the text's width within the ring, its height within the arc at the middle radius).
 
-  Functions: [[schemas]] - the chart's schemas; [[cells]] - the laid out cells of a tree; [[computed-aesthetics]] - the computed colour of `:color-by :name`; [[compute]] - per panel the cells; [[draw]] - one panel's cells and labels; [[legend]] - the key glyph."
+  Functions: [[schemas]] - the chart's schemas; [[cells]] - the laid out cells of a tree; [[computed-aesthetics]] - the computed colour of `:color-by :name`; [[compute]] - per panel the cells; [[draw]] - one panel's cells and labels; the key glyph is [[cljplot2.chart.legend/cell-legend]]."
   (:require [fastmath.core :as m]
             [cljplot2.content.label :as label]
             [cljplot2.data.hierarchy :as hierarchy]
@@ -47,8 +47,8 @@
 
 (def ^:private style-entries
   "Map entries of the partition style (theme `[:chart :partition]`; also options)."
-  (into [(schema/optional :border-color {:description "cell border colour"} schema/color)
-         (schema/optional :border-width {:description "cell border width in pixels"} schema/non-neg)]
+  (into [(schema/optional :stroke-color {:description "cell outline colour"} schema/color)
+         (schema/optional :stroke-width {:description "cell outline width in pixels"} schema/non-neg)]
         draw/pattern-style-entries))
 
 (def schemas
@@ -168,7 +168,7 @@
     {:data (update-vals panel-cells (fn [cs] {:cells cs :top-count top-count :style st :colored? (some? (:color mapping))
                                               :named? named?}))
      :extents (merge-with merge aesthetic-extents (update-vals panel-cells (constantly position-extents)))
-     :padding {:x [0 0] :y [0 0]}
+     :padding data/zero-padding
      :na na
      :dropped dropped
      :scale-defaults {:x {:axis false} :y {:axis false}}}))
@@ -230,13 +230,13 @@
         fill-of (hierarchy/fill-fn panel scales (:theme env))
         pattern-fill (draw/pattern-fill-cache)
         corners (mapv (fn [{:keys [x0 x1 y0 y1]}] [(range-point x0 y0) (range-point x1 y1)]) panel-cells)
-        stroke (:border-color style)
-        sw (double (:border-width style))]
+        stroke (:stroke-color style)
+        sw (double (:stroke-width style))]
     (doseq [[cell [a b]] (map vector panel-cells corners)
             :let [fill (fill-of cell)]]
       (draw/range-bar! canvas geometry a b fill stroke sw (pattern-fill style fill)))
     (doseq [[{:keys [label leaf?] :as cell} [a b]] (map vector panel-cells corners)
-            :when (and label (every? #(m/valid-double? (double %)) (concat a b)))
+            :when (and label (data/finite-point? a) (data/finite-point? b))
             :let [role (if leaf? :partition-leaf :partition-group)]
             ;; a line is at least the font size tall: cells without that room aren't measured
             :when (m/>= (line-room geometry a b) (double (get-in env [:theme :text role :size])))
@@ -247,21 +247,3 @@
       (label/draw-at! canvas (assoc content :rotation rotation :color (draw/text-color (:theme env) role (fill-of cell)))
                       [:center :middle] x y env))))
 
-(defn legend
-  "Draws the key glyph: a filled square inset in the key box, with the chart's pattern.
-
-  Parameters:
-
-  - `chart` (map): the chart value (its style options).
-  - `attributes` (map): the key's attributes - `:color`.
-  - `canvas`: the legend canvas.
-  - `box` (map): the key box.
-  - `env` (map): the legend environment (`:theme`).
-
-  Returns `nil`.
-
-  See also [[cljplot2.graphics.draw/bar-key!]]."
-  [chart attributes canvas box env]
-  (let [st (theme/resolved-style (:theme env) chart)]
-    (draw/bar-key! canvas box (assoc (select-keys st [:pattern :pattern-color]) :color (:color attributes) :stroke-width 0)
-                   false)))

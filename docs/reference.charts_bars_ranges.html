@@ -1932,9 +1932,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </tr>
 <tr class="odd">
 <td>:value-format</td>
-<td>string</td>
+<td>a number format string or a function</td>
 <td>whole numbers as integers, else the fewest digits telling the labels apart</td>
-<td>format string of the value labels' number</td>
+<td>text of the value labels: a format string or a function of the number</td>
 </tr>
 </tbody>
 </table>
@@ -2717,7 +2717,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td>[first last] colours shading the measures from the first (the current value) to the last</td>
 </tr>
 <tr class="odd">
-<td>:measure-width</td>
+<td>:measure-fraction</td>
 <td>a number in [0 1]</td>
 <td>0.35</td>
 <td>measure bar width, a fraction of the item slot</td>
@@ -2753,14 +2753,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb23"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> kpis</span>
 <span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:y</span> <span class="at">:kpi</span> <span class="at">:ranges</span> <span class="at">:ranges</span> <span class="at">:measures</span> <span class="at">:measures</span> <span class="at">:markers</span> <span class="at">:markers</span>}</span>
-<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/bullet {<span class="at">:measure-width</span> <span class="fl">0.2</span> <span class="at">:marker-width</span> <span class="dv">0</span> <span class="at">:padding</span> {<span class="at">:x</span> [<span class="dv">0</span> <span class="fl">0.2</span>]}})]</span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/bullet {<span class="at">:measure-fraction</span> <span class="fl">0.2</span> <span class="at">:marker-width</span> <span class="dv">0</span> <span class="at">:padding</span> {<span class="at">:x</span> [<span class="dv">0</span> <span class="fl">0.2</span>]}})]</span>
 <span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:scales</span> {<span class="at">:y</span> {<span class="at">:reverse</span> <span class="va">true</span>}}</span>
 <span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"thin, no markers, :padding {:x [0 0.2]}"</span>}}</span>
 <span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> kpis</span>
 <span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:y</span> <span class="at">:kpi</span> <span class="at">:ranges</span> <span class="at">:ranges</span> <span class="at">:measures</span> <span class="at">:measures</span> <span class="at">:markers</span> <span class="at">:markers</span>}</span>
 <span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/bullet {<span class="at">:range-colors</span> [[<span class="dv">255</span> <span class="dv">230</span> <span class="dv">200</span>] [<span class="dv">255</span> <span class="dv">250</span> <span class="dv">240</span>]]</span>
 <span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a>                                                           <span class="at">:measure-colors</span> [[<span class="dv">180</span> <span class="dv">60</span> <span class="dv">30</span>] [<span class="dv">230</span> <span class="dv">150</span> <span class="dv">120</span>]]</span>
-<span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a>                                                           <span class="at">:measure-width</span> <span class="fl">0.6</span> <span class="at">:marker-color</span> [<span class="dv">30</span> <span class="dv">30</span> <span class="dv">160</span>]</span>
+<span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a>                                                           <span class="at">:measure-fraction</span> <span class="fl">0.6</span> <span class="at">:marker-color</span> [<span class="dv">30</span> <span class="dv">30</span> <span class="dv">160</span>]</span>
 <span id="cb23-11"><a href="#cb23-11" aria-hidden="true" tabindex="-1"></a>                                                           <span class="at">:marker-width</span> <span class="dv">4</span> <span class="at">:marker-length</span> <span class="fl">0.9</span>})]</span>
 <span id="cb23-12"><a href="#cb23-12" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:scales</span> {<span class="at">:y</span> {<span class="at">:reverse</span> <span class="va">true</span>}}</span>
 <span id="cb23-13"><a href="#cb23-13" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"custom colours and sizes"</span>}}]</span>

@@ -954,10 +954,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </thead>
 <tbody>
 <tr class="odd">
-<td>:partial?</td>
-<td>one of :both :acf :pacf false true or nil</td>
+<td>:correlograms</td>
+<td>one of :both :acf :pacf or nil</td>
 <td>:both</td>
-<td>the correlograms drawn: :both (ACF above PACF), :acf or false (ACF), :pacf or true (PACF)</td>
+<td>the correlograms drawn: :both (ACF above PACF), :acf or :pacf</td>
 </tr>
 <tr class="even">
 <td>:band</td>
@@ -999,21 +999,19 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="clay-image">
 <p><img src="reference.builders_series_files/image0.png" class="img-fluid"></p>
 </div>
-<p>One correlogram - the ACF (<code>:acf</code> or <code>false</code>) or the PACF (<code>:pacf</code> or <code>true</code>) - and the band as a block per lag (<code>:stepped</code>); the default <code>:both</code> draws ACF above PACF, the band <code>:smooth</code>:</p>
+<p>One correlogram - the ACF (<code>:acf</code>) or the PACF (<code>:pacf</code>) - and the band as a block per lag (<code>:stepped</code>); the default <code>:both</code> draws ACF above PACF, the band <code>:smooth</code>:</p>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [(plot/acf ar1 {<span class="at">:partial</span>? <span class="at">:acf</span> <span class="at">:band</span> <span class="at">:stepped</span> <span class="at">:title</span> <span class="st">":partial? :acf, :band :stepped"</span>})</span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>                                  (plot/acf ar1 {<span class="at">:partial</span>? <span class="at">:pacf</span> <span class="at">:band</span> <span class="at">:smooth</span> <span class="at">:title</span> <span class="st">":partial? :pacf"</span>})</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>                                  (plot/acf ar1 {<span class="at">:partial</span>? <span class="va">false</span> <span class="at">:title</span> <span class="st">":partial? false (ACF)"</span>})</span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>                                  (plot/acf ar1 {<span class="at">:partial</span>? <span class="va">true</span> <span class="at">:title</span> <span class="st">":partial? true (PACF)"</span>})]</span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">2</span>})</span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">600</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [(plot/acf ar1 {<span class="at">:correlograms</span> <span class="at">:acf</span> <span class="at">:band</span> <span class="at">:stepped</span> <span class="at">:title</span> <span class="st">":correlograms :acf, :band :stepped"</span>})</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>                                  (plot/acf ar1 {<span class="at">:correlograms</span> <span class="at">:pacf</span> <span class="at">:band</span> <span class="at">:smooth</span> <span class="at">:title</span> <span class="st">":correlograms :pacf"</span>})]</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">2</span>})</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">300</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="clay-image">
 <p><img src="reference.builders_series_files/image1.png" class="img-fluid"></p>
 </div>
 <p>The colours of the stems, the band and the significant lags:</p>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/acf ar1 {<span class="at">:partial</span>? <span class="at">:both</span> <span class="at">:lags</span> <span class="dv">30</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/acf ar1 {<span class="at">:correlograms</span> <span class="at">:both</span> <span class="at">:lags</span> <span class="dv">30</span></span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>                                  <span class="at">:colors</span> {<span class="at">:stem</span> [<span class="dv">90</span> <span class="dv">90</span> <span class="dv">90</span>] <span class="at">:band</span> [<span class="dv">230</span> <span class="dv">150</span> <span class="dv">40</span>] <span class="at">:significant</span> [<span class="dv">40</span> <span class="dv">150</span> <span class="dv">60</span>]}</span>
 <span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>                                  <span class="at">:title</span> <span class="st">":colors"</span>})</span>
 <span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">700</span> <span class="at">:height</span> <span class="dv">500</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -1070,13 +1068,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <p>Larger triangle points through the theme:</p>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/acf ar1 {<span class="at">:partial</span>? <span class="at">:acf</span> <span class="at">:theme</span> {<span class="at">:chart</span> {<span class="at">:acf-point</span> {<span class="at">:size</span> <span class="dv">8</span> <span class="at">:shape</span> <span class="ch">\A</span>}}}})</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/acf ar1 {<span class="at">:correlograms</span> <span class="at">:acf</span> <span class="at">:theme</span> {<span class="at">:chart</span> {<span class="at">:acf-point</span> {<span class="at">:size</span> <span class="dv">8</span> <span class="at">:shape</span> <span class="ch">\A</span>}}}})</span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">700</span> <span class="at">:height</span> <span class="dv">360</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="clay-image">
 <p><img src="reference.builders_series_files/image3.png" class="img-fluid"></p>
 </div>
-<p>Shared options: <a href="reference.shared_options.html#autocorrelation-rows">Autocorrelation rows</a> (<code>:lags</code> <code>:alpha</code>); <a href="reference.shared_options.html#builder-options">Builder options</a> (<code>:title</code> <code>:scales</code> <code>:theme</code>).</p>
+<p>Shared options: <a href="reference.shared_options.html#autocorrelation-rows">Autocorrelation rows</a> (<code>:lags</code> <code>:level</code>); <a href="reference.shared_options.html#builder-options">Builder options</a> (<code>:title</code> <code>:scales</code> <code>:theme</code>).</p>
 </section>
 <section id="horizon" class="level2" data-number="24.2">
 <h2 data-number="24.2" class="anchored" data-anchor-id="horizon"><span class="header-section-number">24.2</span> horizon</h2>

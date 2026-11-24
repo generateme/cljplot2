@@ -90,21 +90,19 @@
         panels (update-vals split-panels #(filterv drawn? %))
         data (update-vals panels (fn [gs] {:polygons (mapv polygon gs) :style st}))
         color-stats (when continuous
-                      (group/continuous-color-stats continuous (update-vals data #(map :color-value (:polygons %))) plot-scales))
-        invalid (fn [f] (count (remove #(data/valid-value? (f %)) rows)))]
-    {:data data
-     :extents (merge-with merge (group/aesthetic-extents panels plot-scales) (:extents color-stats)
-                          (into {} (keep (fn [[panel {:keys [polygons]}]]
-                                           (when (seq polygons)
-                                             [panel {:x (data/extent :x (mapcat :x polygons))
-                                                     :y (data/extent :y (mapcat :y polygons))}])))
-                                data))
-     :padding (merge data/default-padding (:padding options))
-     :padding-explicit (data/explicit-padding {} options)
-     :na (cond-> (group/na-dims panels) (:na? color-stats) (conj :color))
-     :dropped (cond-> (assoc dropped :x (invalid x-of) :y (invalid y-of)
-                             :group (count (remove drawn? (mapcat val split-panels))))
-                continuous (assoc :color (:dropped color-stats)))}))
+                      (group/continuous-color-stats continuous (update-vals data #(map :color-value (:polygons %))) plot-scales))]
+    (into (data/padding-stats data/default-padding {} options)
+          {:data data
+           :extents (merge-with merge (group/aesthetic-extents panels plot-scales) (:extents color-stats)
+                                (into {} (keep (fn [[panel {:keys [polygons]}]]
+                                                 (when (seq polygons)
+                                                   [panel {:x (data/extent :x (mapcat :x polygons))
+                                                           :y (data/extent :y (mapcat :y polygons))}])))
+                                      data))
+           :na (cond-> (group/na-dims panels) (:na? color-stats) (conj :color))
+           :dropped (cond-> (assoc dropped :x (data/invalid-count x-of rows) :y (data/invalid-count y-of rows)
+                                   :group (count (remove drawn? (mapcat val split-panels))))
+                      continuous (assoc :color (:dropped color-stats)))})))
 
 (defn- fill-color
   "Gives the fill of a polygon.
@@ -124,11 +122,11 @@
 
   - `st` (map): the polygon's style - `:stroke-color` (`:color` - the group colour; default `:none`), `:stroke-width` (default 1).
 
-  Returns `{:color :width}`; `nil` for no outline (`:none`)."
+  Returns `{:color :line-width}`; `nil` for no outline (`:none`)."
   [st]
   (let [color (if (= :color (:stroke-color st)) (:color st) (:stroke-color st :none))]
     (when-not (theme/none? color)
-      {:color color :width (:stroke-width st 1)})))
+      {:color color :line-width (:stroke-width st 1)})))
 
 (defn- value-style
   "Colours a polygon's style by its continuous colour value.
@@ -187,5 +185,5 @@
   - `box` (map): the key's box.
   - `env` (map): `:theme`."
   [chart attributes canvas box env]
-  (let [st (merge (theme/resolved-style (:theme env) chart) (select-keys attributes [:color]))]
-    (polyline/key-glyph! canvas box (or (outline st) {:color :none :width 0}) (fill-color st))))
+  (let [st (theme/key-style env chart attributes [:color])]
+    (polyline/key-glyph! canvas box (or (outline st) {:color :none :line-width 0}) (fill-color st))))

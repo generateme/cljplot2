@@ -1,6 +1,6 @@
 (ns cljplot2.demo.pack
   "Part of a whole cycle 2 demo: circle packing of the portfolio (`portfolio.csv`, R data.tree) - one level (weights by
-  currency), three levels, wider gaps (`:padding 12`), leaves coloured by currency (legend), the top level hidden."
+  currency), three levels, wider gaps (`:gap 12`), leaves coloured by currency (legend), the top level hidden."
   (:require [cljplot2.chart :as chart]
             [cljplot2.demo.step10 :refer [portfolio mapping]]))
 
@@ -12,7 +12,7 @@
   {:data portfolio :mapping mapping :charts [(chart/pack)] :labels {:title "Portfolio packing"}})
 
 (def padded
-  {:data portfolio :mapping mapping :charts [(chart/pack {:padding 12})] :labels {:title ":padding 12 (pixel gaps)"}})
+  {:data portfolio :mapping mapping :charts [(chart/pack {:gap 12})] :labels {:title ":gap 12 (pixel gaps)"}})
 
 (def by-currency
   {:data portfolio :mapping (assoc mapping :color :Ccy) :charts [(chart/pack)] :labels {:title "Leaves by currency"}})

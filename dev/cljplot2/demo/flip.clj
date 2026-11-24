@@ -1,15 +1,12 @@
 (ns cljplot2.demo.flip
   "Flip demo (`:flip true`): the `:x` scale drawn vertically, `:y` horizontally - bands scatter (Fig 2.6), histogram,
   grouped density, facets, line area, ECDF, iso aspect and theme by scale key; rotated bands tick labels."
-  (:require [clojure.data.json :as json]
-            [clojure.java.io :as io]
-            [cljplot2.chart :as chart]))
+  (:require [cljplot2.chart :as chart]
+            [cljplot2.demo.data :as data]))
 
-(defn- read-json [file] (json/read-str (slurp (io/resource file)) :key-fn keyword))
-
-(def barley (read-json "barley.json"))
-(def chem97 (read-json "chem97.json"))
-(def faithful (read-json "faithful.json"))
+(def barley (data/json-rows "barley.json"))
+(def chem97 (data/chem97-rows))
+(def faithful (data/json-rows "faithful.json"))
 
 (def fig-2-6
   {:data barley
@@ -46,14 +43,14 @@
   {:data (for [x (range 40)] {:x x :y (* 10 (Math/sin (/ x 6.0)))})
    :mapping {:x :x :y :y}
    :flip true
-   :charts [(chart/line {:fill [69 117 180 90] :width 1.5})]
+   :charts [(chart/line {:fill [69 117 180 90] :line-width 1.5})]
    :labels {:title "Area to y = 0, flipped" :x "x" :y "y"}})
 
 (def ecdf
   {:data faithful
    :mapping {:x :eruptions :color #(if (> (:waiting %) 70) "long wait" "short wait")}
    :flip true
-   :charts [(chart/ecdf {:width 1.5})]
+   :charts [(chart/ecdf {:line-width 1.5})]
    :labels {:title "ECDF, flipped" :x "eruptions"}})
 
 (def iso

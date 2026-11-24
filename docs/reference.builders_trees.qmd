@@ -132,13 +132,13 @@ A small hierarchy as rows of levels:
 
 ## dendrogram
 
-A dendrogram of a clustering (an `hclust` result, its observations named by `:labels`) or of a tree (levels or
+A dendrogram of a clustering (an `hclust` result, its observations named by `:leaf-names`) or of a tree (levels or
 parents) - branches at their merge heights, leaves along one axis.
 
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:labels</td><td>sequential of any value or nil</td><td>the observations' indices</td><td>names of an hclust result's observations, in order (one per observation)</td></tr><tr><td>:horizontal</td><td>true or false or nil</td><td>false</td><td>leaves on the left, heights growing right (not circular)</td></tr><tr><td>:labels?</td><td>true or false</td><td>true</td><td>leaf names along the leaf axis (circular - outward around the circle)</td></tr><tr><td>:group-labels?</td><td>true or false or nil</td><td>false</td><td>names of the named groups at their nodes (level and parent trees)</td></tr><tr><td>:line-style</td><td>map of keyword to any value or nil</td><td>theme [:chart :dendrogram-branch]</td><td>line options of the branches, merged over the default</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:leaf-names</td><td>sequential of any value or nil</td><td>the observations' indices</td><td>names of an hclust result's observations, in order (one per observation)</td></tr><tr><td>:horizontal</td><td>true or false or nil</td><td>false</td><td>leaves on the left, heights growing right (not circular)</td></tr><tr><td>:labels</td><td>true or false</td><td>true</td><td>leaf names along the leaf axis (circular - outward around the circle)</td></tr><tr><td>:group-labels</td><td>true or false or nil</td><td>false</td><td>names of the named groups at their nodes (level and parent trees)</td></tr><tr><td>:line-style</td><td>map of keyword to any value or nil</td><td>theme [:chart :dendrogram-branch]</td><td>line options of the branches, merged over the default</td></tr></tbody></table>
 ```
 
 :::
@@ -147,7 +147,7 @@ parents) - branches at their merge heights, leaves along one axis.
 
 ::: {.sourceClojure}
 ```clojure
-(plot/render-image (plot/dendrogram car-clustering {:labels car-names :k 3 :title "complete linkage, 3 clusters"})
+(plot/render-image (plot/dendrogram car-clustering {:leaf-names car-names :k 3 :title "complete linkage, 3 clusters"})
                    {:width 900 :height 420})
 ```
 :::
@@ -164,11 +164,11 @@ hierarchy with its group names at their nodes (right):
 
 ::: {.sourceClojure}
 ```clojure
-(plot/render-image (plot/arrange [(plot/dendrogram car-clustering {:labels car-names :horizontal true :labels? false
-                                                                   :line-style {:color [200 60 40] :width 2}
-                                                                   :title ":horizontal, :labels? false, :line-style"})
-                                  (plot/dendrogram office-tree {:horizontal false :group-labels? true
-                                                                :title "a hierarchy, :group-labels? true"})]
+(plot/render-image (plot/arrange [(plot/dendrogram car-clustering {:leaf-names car-names :horizontal true :labels false
+                                                                   :line-style {:color [200 60 40] :line-width 2}
+                                                                   :title ":horizontal, :labels false, :line-style"})
+                                  (plot/dendrogram office-tree {:horizontal false :group-labels true
+                                                                :title "a hierarchy, :group-labels true"})]
                                  {:columns 2})
                    {:width 1000 :height 400})
 ```
@@ -186,7 +186,7 @@ shown; the clustered heatmap's trees too), the group names in the text role `:de
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:color</td><td>a clojure2d color or :none</td><td>[70.0 70.0 70.0 255.0]</td><td>line colour (a mapped :color wins)</td></tr><tr><td>:width</td><td>a non-negative number</td><td>1</td><td>line width in pixels</td></tr><tr><td>:dash</td><td>:none, a dash style (:dashed :dot-dash :dot-dot-dash :dotted :long-dash :loose-dot :solid :two-dash) or a sequence of positive numbers or nil</td><td>:none</td><td>dash style of the line (a mapped :dash wins)</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:color</td><td>a clojure2d color or :none</td><td>[70.0 70.0 70.0 255.0]</td><td>line colour (a mapped :color wins)</td></tr><tr><td>:line-width</td><td>a non-negative number</td><td>1</td><td>line width in pixels</td></tr><tr><td>:dash</td><td>:none, a dash style (:dashed :dot-dash :dot-dot-dash :dotted :long-dash :loose-dot :solid :two-dash) or a sequence of positive numbers or nil</td><td>:none</td><td>dash style of the line (a mapped :dash wins)</td></tr></tbody></table>
 ```
 
 :::
@@ -197,8 +197,8 @@ Thin blue branches through the theme:
 
 ::: {.sourceClojure}
 ```clojure
-(plot/render-image (plot/dendrogram car-clustering {:labels car-names
-                                                    :theme {:chart {:dendrogram-branch {:color [40 90 160] :width 0.6}}}})
+(plot/render-image (plot/dendrogram car-clustering {:leaf-names car-names
+                                                    :theme {:chart {:dendrogram-branch {:color [40 90 160] :line-width 0.6}}}})
                    {:width 700 :height 380})
 ```
 :::
@@ -220,7 +220,7 @@ cluster (leaves aligned), cartesian or circular (the Node-link tree layout group
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:labels?</td><td>true or false</td><td>true</td><td>node names (cartesian - leaves right of their node, groups left; circular - leaf names outward)</td></tr><tr><td>:nodes?</td><td>true or false</td><td>true</td><td>a point per node</td></tr><tr><td>:mapping</td><td>map of keyword to any value or nil</td><td></td><td>node aesthetics (:color, :size, :shape): accessors of the nodes (their row's columns, :depth, :leaf?, :name)</td></tr><tr><td>:node-style</td><td>map of keyword to any value or nil</td><td>theme [:chart :tree-node]</td><td>scatter options of the nodes, merged over the default</td></tr><tr><td>:link-style</td><td>map of keyword to any value or nil</td><td>theme [:chart :tree-link]</td><td>line options of the links, merged over the default</td></tr><tr><td>:labels</td><td>sequential of any value or nil</td><td>the observations' indices</td><td>names of an hclust result's observations, in order (one per observation)</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:labels</td><td>true or false</td><td>true</td><td>node names (cartesian - leaves right of their node, groups left; circular - leaf names outward)</td></tr><tr><td>:node-points</td><td>true or false</td><td>true</td><td>a point per node</td></tr><tr><td>:mapping</td><td>map of keyword to any value or nil</td><td></td><td>node aesthetics (:color, :size, :shape): accessors of the nodes (their row's columns, :depth, :leaf?, :name)</td></tr><tr><td>:node-style</td><td>map of keyword to any value or nil</td><td>theme [:chart :tree-node]</td><td>scatter options of the nodes, merged over the default</td></tr><tr><td>:link-style</td><td>map of keyword to any value or nil</td><td>theme [:chart :tree-link]</td><td>line options of the links, merged over the default</td></tr><tr><td>:leaf-names</td><td>sequential of any value or nil</td><td>the observations' indices</td><td>names of an hclust result's observations, in order (one per observation)</td></tr></tbody></table>
 ```
 
 :::
@@ -250,9 +250,9 @@ circular, neither names nor points - only the links (middle); a clustering's tre
                                                           :link-style {:dash :dashed :color [90 90 90]}
                                                           :title ":mapping, :node-style, :link-style"
                                                           :scales {:color {:legend false}}})
-                                  (plot/tree office-tree {:labels? false :nodes? false :circular true
+                                  (plot/tree office-tree {:labels false :node-points false :circular true
                                                           :title ":circular true, no names or points"})
-                                  (plot/tree car-clustering {:labels car-names :labels? true :nodes? true
+                                  (plot/tree car-clustering {:leaf-names car-names :labels true :node-points true
                                                              :title "a clustering, :labels"})]
                                  {:columns 3})
                    {:width 1000 :height 420})
@@ -296,7 +296,7 @@ Small dark nodes through the theme:
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:color</td><td>a clojure2d color or :none</td><td>[176.0 176.0 176.0 255.0]</td><td>line colour (a mapped :color wins)</td></tr><tr><td>:width</td><td>a non-negative number</td><td>0.9</td><td>line width in pixels</td></tr><tr><td>:dash</td><td>:none, a dash style (:dashed :dot-dash :dot-dot-dash :dotted :long-dash :loose-dot :solid :two-dash) or a sequence of positive numbers or nil</td><td>:none</td><td>dash style of the line (a mapped :dash wins)</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:color</td><td>a clojure2d color or :none</td><td>[176.0 176.0 176.0 255.0]</td><td>line colour (a mapped :color wins)</td></tr><tr><td>:line-width</td><td>a non-negative number</td><td>0.9</td><td>line width in pixels</td></tr><tr><td>:dash</td><td>:none, a dash style (:dashed :dot-dash :dot-dot-dash :dotted :long-dash :loose-dot :solid :two-dash) or a sequence of positive numbers or nil</td><td>:none</td><td>dash style of the line (a mapped :dash wins)</td></tr></tbody></table>
 ```
 
 :::
@@ -307,7 +307,7 @@ Darker, thicker links and bold names through the theme:
 
 ::: {.sourceClojure}
 ```clojure
-(plot/render-image (plot/tree office-tree {:theme {:chart {:tree-link {:color [90 90 90] :width 2}}
+(plot/render-image (plot/tree office-tree {:theme {:chart {:tree-link {:color [90 90 90] :line-width 2}}
                                                    :text {:tree-label {:font-style :bold}}}})
                    {:width 600 :height 360})
 ```
@@ -330,7 +330,7 @@ the tiles; the data are long rows (`:row`, `:col`, `:value` accessors).
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:row (required)</td><td>a keyword, a function or a categorical marker of one</td><td></td><td>accessor of a row's tile row</td></tr><tr><td>:col (required)</td><td>a keyword, a function or a categorical marker of one</td><td></td><td>accessor of a row's tile column</td></tr><tr><td>:value (required)</td><td>a keyword, a function or a categorical marker of one</td><td></td><td>accessor of a row's tile value, a finite number</td></tr><tr><td>:method</td><td>one of :single :complete :average :weighted :centroid :median :ward :ward-d :diana</td><td>:complete</td><td>fastmath hclust linkage of the rows and columns</td></tr><tr><td>:distance</td><td>one of :euclidean :chebyshev :manhattan :canberra :earth-movers or a function</td><td>:euclidean</td><td>fastmath hclust distance: a keyword or a function of two double arrays</td></tr><tr><td>:row-tree?</td><td>true or false</td><td>true</td><td>the rows' dendrogram right of the tiles (false - order only)</td></tr><tr><td>:col-tree?</td><td>true or false</td><td>true</td><td>the columns' dendrogram above the tiles (false - order only)</td></tr><tr><td>:tree-size</td><td>[a number in (0 1), a number in (0 1)]</td><td>[0.2 0.2]</td><td>[w h] - the dendrograms' share of the width (rows) and the height (columns), fractions in (0, 1)</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:row (required)</td><td>a keyword, a function or a categorical marker of one</td><td></td><td>accessor of a row's tile row</td></tr><tr><td>:col (required)</td><td>a keyword, a function or a categorical marker of one</td><td></td><td>accessor of a row's tile column</td></tr><tr><td>:value (required)</td><td>a keyword, a function or a categorical marker of one</td><td></td><td>accessor of a row's tile value, a finite number</td></tr><tr><td>:method</td><td>one of :single :complete :average :weighted :centroid :median :ward :ward-d :diana</td><td>:complete</td><td>fastmath hclust linkage of the rows and columns</td></tr><tr><td>:distance</td><td>one of :euclidean :chebyshev :manhattan :canberra :earth-movers or a function</td><td>:euclidean</td><td>fastmath hclust distance: a keyword or a function of two double arrays</td></tr><tr><td>:row-tree</td><td>true or false</td><td>true</td><td>the rows' dendrogram right of the tiles (false - order only)</td></tr><tr><td>:col-tree</td><td>true or false</td><td>true</td><td>the columns' dendrogram above the tiles (false - order only)</td></tr><tr><td>:tree-size</td><td>[a number in (0 1), a number in (0 1)]</td><td>[0.2 0.2]</td><td>[w h] - the dendrograms' share of the width (rows) and the height (columns), fractions in (0, 1)</td></tr></tbody></table>
 ```
 
 :::
@@ -403,11 +403,11 @@ default euclidean distance, no trees - only the order (right):
 ::: {.sourceClojure}
 ```clojure
 (plot/render-image (plot/arrange [(plot/clustered-heatmap car-scores {:row :car :col :variable :value :z
-                                                                      :col-tree? false :tree-size [0.35 0.2]
-                                                                      :title ":col-tree? false, :tree-size [0.35 0.2]"
+                                                                      :col-tree false :tree-size [0.35 0.2]
+                                                                      :title ":col-tree false, :tree-size [0.35 0.2]"
                                                                       :scales {:color {:legend false}}})
                                   (plot/clustered-heatmap car-scores {:row :car :col :variable :value :z :method :ward
-                                                                      :row-tree? false :col-tree? false
+                                                                      :row-tree false :col-tree false
                                                                       :title ":method :ward, no trees"})]
                                  {:columns 2 :widths [1 1.15]})
                    {:width 1000 :height 450})
@@ -432,7 +432,7 @@ leaves around a circle. Edges name their leaves by key - a `tree/from-parents` n
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:alpha</td><td>a number in [0 1]</td><td>0.4</td><td>opacity of the edges (leaf points and legend keys stay opaque)</td></tr><tr><td>:color-by-group?</td><td>true or false</td><td>true</td><td>edges and leaves coloured by the top-level group of their (source) leaf, with a legend</td></tr><tr><td>:edge-color</td><td>a clojure2d color or :none</td><td>[70.0 110.0 180.0 255.0]</td><td>colour of the edges when not coloured by group</td></tr><tr><td>:labels?</td><td>true or false</td><td>true</td><td>leaf names outward around the circle</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:alpha</td><td>a number in [0 1]</td><td>0.4</td><td>opacity of the edges (leaf points and legend keys stay opaque)</td></tr><tr><td>:color-by</td><td>one of :group :none or nil</td><td>:group</td><td>edge and leaf colours: :group - the top-level group of their (source) leaf, with a legend; :none - one :edge-color, no legend</td></tr><tr><td>:edge-color</td><td>a clojure2d color or :none</td><td>[70.0 110.0 180.0 255.0]</td><td>colour of the edges when not coloured by group</td></tr><tr><td>:labels</td><td>true or false</td><td>true</td><td>leaf names outward around the circle</td></tr></tbody></table>
 ```
 
 :::
@@ -473,11 +473,11 @@ names (right):
 
 ::: {.sourceClojure}
 ```clojure
-(plot/render-image (plot/arrange [(plot/bundle calls office-tree {:color-by-group? false :edge-color [120 60 160]
-                                                                  :alpha 0.8 :labels? false
-                                                                  :title ":color-by-group? false, :alpha 0.8"})
-                                  (plot/bundle calls office-tree {:color-by-group? true :alpha 0.4 :labels? true
-                                                                  :title ":color-by-group? true"})]
+(plot/render-image (plot/arrange [(plot/bundle calls office-tree {:color-by :none :edge-color [120 60 160]
+                                                                  :alpha 0.8 :labels false
+                                                                  :title ":color-by :none, :alpha 0.8"})
+                                  (plot/bundle calls office-tree {:color-by :group :alpha 0.4 :labels true
+                                                                  :title ":color-by :group"})]
                                  {:columns 2 :widths [1 1.3]})
                    {:width 1000 :height 480})
 ```
@@ -495,7 +495,7 @@ leaves in `[:chart :bundle-leaf]` (scatter):
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:color</td><td>a clojure2d color or :none</td><td>[69.0 117.0 180.0 255.0]</td><td>line colour (a mapped :color wins)</td></tr><tr><td>:width</td><td>a non-negative number</td><td>1</td><td>line width in pixels</td></tr><tr><td>:dash</td><td>:none, a dash style (:dashed :dot-dash :dot-dot-dash :dotted :long-dash :loose-dot :solid :two-dash) or a sequence of positive numbers or nil</td><td>:none</td><td>dash style of the line (a mapped :dash wins)</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:color</td><td>a clojure2d color or :none</td><td>[69.0 117.0 180.0 255.0]</td><td>line colour (a mapped :color wins)</td></tr><tr><td>:line-width</td><td>a non-negative number</td><td>1</td><td>line width in pixels</td></tr><tr><td>:dash</td><td>:none, a dash style (:dashed :dot-dash :dot-dot-dash :dotted :long-dash :loose-dot :solid :two-dash) or a sequence of positive numbers or nil</td><td>:none</td><td>dash style of the line (a mapped :dash wins)</td></tr></tbody></table>
 ```
 
 :::
@@ -506,7 +506,7 @@ Thicker edges through the theme:
 
 ::: {.sourceClojure}
 ```clojure
-(plot/render-image (plot/bundle calls office-tree {:theme {:chart {:bundle-edge {:width 2.5}}}})
+(plot/render-image (plot/bundle calls office-tree {:theme {:chart {:bundle-edge {:line-width 2.5}}}})
                    {:width 500 :height 500})
 ```
 :::
@@ -553,7 +553,7 @@ coloured by its name wherever it occurs, the end of a sequence a step of its own
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:inner</td><td>a finite number, >= 0, < 1</td><td>0.3</td><td>radius of the centre hole, a fraction of the outer one</td></tr><tr><td>:labels?</td><td>true or false</td><td>false</td><td>step names in the cells that fit</td></tr><tr><td>:keep-end?</td><td>true or false</td><td>true</td><td>the end marker a step of its own, coloured and in the legend (false - sequences that end are their group's grey remainder)</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:inner-radius</td><td>a finite number, >= 0, < 1</td><td>0.3</td><td>radius of the centre hole, a fraction of the outer one</td></tr><tr><td>:labels</td><td>true or false</td><td>false</td><td>step names in the cells that fit</td></tr><tr><td>:keep-end</td><td>true or false</td><td>true</td><td>the end marker a step of its own, coloured and in the legend (false - sequences that end are their group's grey remainder)</td></tr></tbody></table>
 ```
 
 :::
@@ -593,7 +593,7 @@ A smaller hole - more room for the rings - and the step names in the cells where
 
 ::: {.sourceClojure}
 ```clojure
-(plot/render-image (plot/sequences visits {:value :n :inner 0.1 :labels? true :title ":inner 0.1, :labels? true"})
+(plot/render-image (plot/sequences visits {:value :n :inner-radius 0.1 :labels true :title ":inner-radius 0.1, :labels true"})
                    {:width 700 :height 600})
 ```
 :::
@@ -609,7 +609,7 @@ Ending sequences left as their group's grey remainder, the end not a step of its
 
 ::: {.sourceClojure}
 ```clojure
-(plot/render-image (plot/sequences visits {:value :n :keep-end? false :title ":keep-end? false"})
+(plot/render-image (plot/sequences visits {:value :n :keep-end false :title ":keep-end false"})
                    {:width 550 :height 450})
 ```
 :::
@@ -625,7 +625,7 @@ The cells draw in the theme style `[:chart :sequences-cell]` (a partition style 
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th><th>Group</th></tr></thead><tbody><tr><td>:border-color</td><td>a clojure2d color or :none</td><td>:white</td><td>cell border colour</td><td></td></tr><tr><td>:border-width</td><td>a non-negative number</td><td>0.3</td><td>cell border width in pixels</td><td></td></tr><tr><td>:pattern</td><td>a pattern name (:back-hatch :cross :dense-dots :diagonal-cross :dots :hatch :horizontal :solid :vertical) or a pattern map</td><td>:solid</td><td>pattern drawn over the fill (a mapped :pattern wins)</td><td>Fill patterns</td></tr><tr><td>:pattern-color</td><td>:darker or a clojure2d color or :none</td><td>:darker</td><td>pattern ink: a colour, :none or :darker (the darkened fill)</td><td>Fill patterns</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th><th>Group</th></tr></thead><tbody><tr><td>:stroke-color</td><td>a clojure2d color or :none</td><td>:white</td><td>cell outline colour</td><td></td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>0.3</td><td>cell outline width in pixels</td><td></td></tr><tr><td>:pattern</td><td>a pattern name (:back-hatch :cross :dense-dots :diagonal-cross :dots :hatch :horizontal :solid :vertical) or a pattern map</td><td>:solid</td><td>pattern drawn over the fill (a mapped :pattern wins)</td><td>Fill patterns</td></tr><tr><td>:pattern-color</td><td>:darker or a clojure2d color or :none</td><td>:darker</td><td>pattern ink: a colour, :none or :darker (the darkened fill)</td><td>Fill patterns</td></tr></tbody></table>
 ```
 
 :::
@@ -636,7 +636,7 @@ Thick white cell borders through the theme:
 
 ::: {.sourceClojure}
 ```clojure
-(plot/render-image (plot/sequences visits {:value :n :theme {:chart {:sequences-cell {:border-width 2}}}})
+(plot/render-image (plot/sequences visits {:value :n :theme {:chart {:sequences-cell {:stroke-width 2}}}})
                    {:width 500 :height 450})
 ```
 :::

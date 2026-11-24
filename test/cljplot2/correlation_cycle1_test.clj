@@ -2,6 +2,7 @@
   "Correlation cycle 1: grid cells - the normalized grid, cell drawing, tile, bin2d, legend titles."
   (:require [clojure.test :refer [deftest testing is are]]
             [fastmath.core :as m]
+            [cljplot2.chart.common :as common]
             [cljplot2.test-util :refer [error]]
             [cljplot2.chart :as chart]
             [cljplot2.chart.tile :as tile]
@@ -77,7 +78,7 @@
 
 (deftest shape-factor-test
   (testing "1.2 :shape > :iso > estimated panel shape > 1"
-    (is (== 2.5 (cells/shape-factor {:shape 2.5} 10 1 {:aspect :iso :size [600 400]})))
+    (is (== 2.5 (cells/shape-factor {:aspect 2.5} 10 1 {:aspect :iso :size [600 400]})))
     (is (== 0.1 (cells/shape-factor {} 10 1 {:aspect :iso :size [600 400]})))
     (is (m/delta-eq (/ 2.0 3.0) (cells/shape-factor {} 10 1 {:panel-size (delay [600 400])})))
     (is (== 1.0 (cells/shape-factor {} 10 1 {})))))
@@ -159,14 +160,14 @@
                          :charts [(chart/bin2d {:bins 12})]}
                         {:width 600 :height 600})]
       (is (< (spread (hex-pixel-sides b)) 0.01))))
-  (testing "1.5 a given :shape matching the panel - regular within 1 %"
+  (testing "1.5 a given :aspect matching the panel - regular within 1 %"
     (let [p {:data (map (fn [[x y]] {:x x :y y}) cloud) :mapping {:x :x :y :y} :legend false}
-          build (fn [shape] (plot/build (assoc p :charts [(chart/bin2d (cond-> {:bins 8} shape (assoc :shape shape)))])
+          build (fn [shape] (plot/build (assoc p :charts [(chart/bin2d (cond-> {:bins 8} shape (assoc :aspect shape)))])
                                         {:width 600 :height 400}))
           panel-shape (fn [b] (let [{:keys [w h]} (grid/item-box (:layout b) :panel)] (/ (double h) (double w))))
           ;; the shape changes the extents, so the tick labels and the panel: settle it in a few builds
           b (nth (iterate (comp build panel-shape) (build nil)) 3)]
-      (is (< (m/abs (- 1.0 (/ (panel-shape b) (double (get-in b [:charts 0 :options :shape]))))) 0.005) "shape matches the panel")
+      (is (< (m/abs (- 1.0 (/ (panel-shape b) (double (get-in b [:charts 0 :options :aspect]))))) 0.005) "shape matches the panel")
       (is (< (spread (hex-pixel-sides b)) 0.01))))
   (testing "1.5 default 600 x 600 with a legend - within 10 %"
     (let [b (plot/build {:data (map (fn [[x y]] {:x x :y y}) cloud) :mapping {:x :x :y :y} :charts [(chart/bin2d {:bins 8})]}
@@ -206,7 +207,7 @@
     (is (m/delta-eq 0.5 (first (cells/lattice-reach :pointy-hex true false))) "numeric x: centred on the value")))
 
 (deftest resolution-test
-  (are [vs r] (== r (tile/resolution vs))
+  (are [vs r] (== r (cells/resolution vs))
     [] 1.0
     [3] 1.0
     [3 3 3] 1.0
@@ -450,7 +451,7 @@
   (testing "R6 contrast against the painted color: a translucent dark fill reads light"
     (let [p {:data [{:x "a" :y "p" :c "dark"}] :mapping {:x :x :y :y :color :c} :legend false
              :theme {:palette {:color [[0 0 60]]} :text {:tile-value {:size 30}}}
-             :charts [(chart/tile {:alpha 0.15 :value-label (constantly "WWW")})]}
+             :charts [(chart/tile {:alpha-factor 0.15 :value-label (constantly "WWW")})]}
           [_ img {:keys [x y w h]}] (render p {:width 200 :height 150})
           pixels (for [px (range (+ (long x) 10) (+ (long x) (long w) -10)) py (range (+ (long y) 10) (+ (long y) (long h) -10))]
                    (rgb img px py))]

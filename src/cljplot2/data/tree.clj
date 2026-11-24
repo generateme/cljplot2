@@ -5,10 +5,10 @@
 
   Functions:
 
-  - sources: [[from-hclust]] (fastmath hierarchical clustering), [[from-levels]] (level columns, as [[cljplot2.data.hierarchy]]), [[from-parents]] (rows with an id and a parent id, as d3 `stratify`); [[leaves]], [[leaf?]].
+  - sources: [[from-hclust]] (fastmath hierarchical clustering), [[from-levels]] (level columns, as [[cljplot2.data.hierarchy]]), [[from-parents]] (rows with an id and a parent id, as d3 `stratify`); [[leaves]], `leaf?`.
   - dendrogram layout: [[layout]] - leaves at x = 0, 1, ... in order, a group at the mean x of its children, y = height, one elbow path per branch; `:circular` turns x into an angle and height into a radius ([[arc-points]] draws the arcs).
-  - node-link layout: [[node-link-layout]] (d3 `tree` / `cluster`) with [[tidy-breadths]] (Reingold-Tilford in Buchheim's linear-time version).
-  - edge bundling: [[bundle-paths]] - edges between leaves routed along the tree (Holten's hierarchical edge bundling), smoothed by [[basis-spline]]; [[leaf-key]] names a leaf for edges.
+  - node-link layout: [[node-link-layout]] (d3 `tree` / `cluster`) with `tidy-breadths` (Reingold-Tilford in Buchheim's linear-time version).
+  - edge bundling: [[bundle-paths]] - edges between leaves routed along the tree (Holten's hierarchical edge bundling), smoothed by `basis-spline`; [[leaf-key]] names a leaf for edges.
   - option schemas: [[from-levels-options]], [[from-parents-options]], [[layout-options]], [[node-link-layout-options]], [[bundle-paths-options]] and their shared entries."
   (:require [fastmath.core :as m]
             [fastmath.vector :as v]
@@ -20,7 +20,7 @@
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
-(defn leaf?
+(defn- leaf?
   "Tests whether a tree node is a leaf.
 
   Parameters:
@@ -42,7 +42,7 @@
 
   Returns a vector of the leaves under `node` in order; a leaf gives itself.
 
-  See also [[leaf?]]."
+  See also `leaf?`."
   {:cljplot2/api true}
   [node]
   (if (leaf? node) [node] (vec (mapcat leaves (:children node)))))
@@ -57,20 +57,20 @@
   Parameters:
 
   - `result` (map): a fastmath `hclust` result; its `:tree` holds R's `:merge`, `:height`, `:order` and the observation count `:n`.
-  - `labels` (vector, optional): the observations' names, one per observation; `nil` (default) - their indices as text.
+  - `leaf-names` (vector, optional): the observations' names, one per observation; `nil` (default) - their indices as text.
 
   Returns the root node: groups `{:height h :children [a b]}`, leaves `{:name n :index i :height 0.0}`; a single observation - its leaf.
 
-  Throws `ex-info {:key :labels}` when `labels` doesn't have one name per observation.
+  Throws `ex-info {:key :leaf-names}` when `leaf-names` doesn't have one name per observation.
 
   See also [[from-levels]], [[from-parents]], [[layout]]."
   {:cljplot2/api true}
   ([result] (from-hclust result nil))
-  ([result labels]
+  ([result leaf-names]
    (let [{:keys [height order ^long n] merges :merge} (:tree result)
-         names (or labels (mapv str (range n)))]
+         names (or leaf-names (mapv str (range n)))]
      (when-not (m/== n (count names))
-       (schema/fail! "One label per observation is needed." {:key :labels :value [(count names) n]}))
+       (schema/fail! "One leaf name per observation is needed." {:key :leaf-names :value [(count names) n]}))
      (let [rank (zipmap order (range))
            leaf (fn [i] {:name (nth names i) :index i :height 0.0})
            first-rank (fn [node] (rank (:index (first (leaves node)))))
@@ -124,7 +124,7 @@
   Parameters:
 
   - `rows` (sequence of maps): the data rows.
-  - `options` (map): `:hierarchy` - level accessors, outer level first (none - a root without children).
+  - `options` (map, optional): `:hierarchy` - level accessors, outer level first (none - a root without children).
 
   Returns the root group `{:name nil :height h :children [..]}`; rows without a level are left out; no rows - a root without children.
 
@@ -132,14 +132,15 @@
 
   See also [[from-parents]], [[from-hclust]], [[layout]]."
   {:cljplot2/api true :cljplot2/options from-levels-options}
-  [rows {:keys [hierarchy] :as options}]
-  (schema/check-options! from-levels-options options)
-  (let [accessors (hierarchy/level-accessors hierarchy)
-        entries (keep (fn [row] (let [p (hierarchy/path-of accessors row)] (when (seq p) {:path p :value 1.0}))) rows)]
-    (if (empty? entries)
-      {:name nil :height 0.0 :children []}
-      (let [root (hierarchy/root entries)]
-        (with-heights root 0 (depth-of root))))))
+  ([rows] (from-levels rows {}))
+  ([rows {:keys [hierarchy] :as options}]
+   (schema/check-options! from-levels-options options)
+   (let [accessors (hierarchy/level-accessors hierarchy)
+         entries (keep (fn [row] (let [p (hierarchy/path-of accessors row)] (when (seq p) {:path p :value 1.0}))) rows)]
+     (if (empty? entries)
+       {:name nil :height 0.0 :children []}
+       (let [root (hierarchy/root entries)]
+         (with-heights root 0 (depth-of root)))))))
 
 (def from-parents-options
   "Options schema of [[from-parents]]."
@@ -156,7 +157,7 @@
   Parameters:
 
   - `rows` (sequence of maps): one row per node; the root has no parent id.
-  - `options` (map):
+  - `options` (map, optional):
     - `:id` - accessor of a row's node id (default `:id`).
     - `:parent` - accessor of a row's parent id (default `:parent`).
     - `:name` - accessor of a node's name (default the id accessor).
@@ -167,30 +168,31 @@
 
   See also [[from-levels]], [[from-hclust]], [[leaf-key]]."
   {:cljplot2/api true :cljplot2/options from-parents-options}
-  [rows {:keys [id parent] name-accessor :name :or {id :id parent :parent} :as options}]
-  (schema/check-options! from-parents-options options)
-  (let [id-of (data/row-accessor :id id)
-        parent-of (data/row-accessor :parent parent)
-        name-of (if name-accessor (data/row-accessor :name name-accessor) id-of)
-        ids (map id-of rows)
-        known (set ids)
-        _ (when-not (= (count known) (count rows))
-            (schema/fail! "Node ids should be unique." {:key :parent}))
-        roots (filter #(nil? (parent-of %)) rows)
-        _ (when-not (= 1 (count roots))
-            (schema/fail! "A tree needs exactly one root (a row without a parent)." {:key :parent :value (count roots)}))
-        _ (when-let [p (some #(let [p (parent-of %)] (when (and (some? p) (not (known p))) p)) rows)]
-            (schema/fail! "A parent id isn't a node id." {:key :parent :value p}))
-        children-of (group-by parent-of rows)
-        build (fn build [row seen]
-                (let [k (id-of row)]
-                  (when (seen k) (schema/fail! "The parents form a cycle." {:key :parent :value k}))
-                  (let [kids (mapv #(build % (conj seen k)) (get children-of k))]
-                    (cond-> (assoc row :id k :name (name-of row)) (seq kids) (assoc :children kids)))))
-        root (build (first roots) #{})]
-    (when-not (= (count rows) (count (tree-seq :children :children root)))
-      (schema/fail! "The parents form a cycle (some rows don't reach the root)." {:key :parent}))
-    (with-heights root 0 (depth-of root))))
+  ([rows] (from-parents rows {}))
+  ([rows {:keys [id parent] name-accessor :name :or {id :id parent :parent} :as options}]
+   (schema/check-options! from-parents-options options)
+   (let [id-of (data/row-accessor :id id)
+         parent-of (data/row-accessor :parent parent)
+         name-of (if name-accessor (data/row-accessor :name name-accessor) id-of)
+         ids (map id-of rows)
+         known (set ids)
+         _ (when-not (= (count known) (count rows))
+             (schema/fail! "Node ids should be unique." {:key :parent}))
+         roots (filter #(nil? (parent-of %)) rows)
+         _ (when-not (= 1 (count roots))
+             (schema/fail! "A tree needs exactly one root (a row without a parent)." {:key :parent :value (count roots)}))
+         _ (when-let [p (some #(let [p (parent-of %)] (when (and (some? p) (not (known p))) p)) rows)]
+             (schema/fail! "A parent id isn't a node id." {:key :parent :value p}))
+         children-of (group-by parent-of rows)
+         build (fn build [row seen]
+                 (let [k (id-of row)]
+                   (when (seen k) (schema/fail! "The parents form a cycle." {:key :parent :value k}))
+                   (let [kids (mapv #(build % (conj seen k)) (get children-of k))]
+                     (cond-> (assoc row :id k :name (name-of row)) (seq kids) (assoc :children kids)))))
+         root (build (first roots) #{})]
+     (when-not (= (count rows) (count (tree-seq :children :children root)))
+       (schema/fail! "The parents form a cycle (some rows don't reach the root)." {:key :parent}))
+     (with-heights root 0 (depth-of root)))))
 
 ;; layout
 
@@ -266,13 +268,13 @@
     (mapv (fn [^double a] [(m/* r (m/sin a)) (m/* r (m/cos a))])
           (m/slice-range a0 a1 (m/long-inc steps)))))
 
-(def circular-entry
+(def ^:private circular-entry
   "Option entry `:circular` of the tree layouts."
   (schema/nilable :circular {:description "radial: breadth as the angle over :span degrees, height (or depth) as the radius; points in [-1, 1]"
                              :default false}
                   schema/bool))
 
-(def span-entry
+(def ^:private span-entry
   "Option entry `:span` of the circular tree layouts."
   (schema/optional :span {:description "degrees a circular layout covers, clockwise from the top" :default 360.0} schema/finite-pos))
 
@@ -298,7 +300,7 @@
   Parameters:
 
   - `root` (map): the tree's root (see [[from-hclust]], [[from-levels]], [[from-parents]]).
-  - `options` (map):
+  - `options` (map, optional):
     - `:k` - cluster count: cutting the `k - 1` highest groups leaves `k` subtrees, clusters 1..k in leaf order; a branch inside a cluster takes its number, branches above the cut `nil` (absent - all `nil`).
     - `:circular` - `true`: x as the angle over `:span` degrees (leaves one step apart, the last one step before the first on a full circle), height as the radius from 1 (leaves) to 0 (the root's height); elbows' cross pieces become arcs; points in [-1, 1] (default false).
     - `:span` - degrees a circular layout covers, clockwise from the top (default 360).
@@ -309,40 +311,41 @@
 
   See also [[node-link-layout]], [[bundle-paths]], [[arc-points]]."
   {:cljplot2/api true :cljplot2/options layout-options}
-  [root {:keys [k circular ^double span] :or {span 360.0} :as options}]
-  (schema/check-options! layout-options options)
-  (let [clusters (when k (vec (map-indexed (fn [i sub] [sub (m/long-inc i)]) (cut-nodes root (long k)))))
-        cut-of (fn [node] (some (fn [[sub c]] (when (identical? sub node) c)) clusters))
-        [placed-nodes ^long leaf-count] (placed root [nil 0 nil] [[] 0] cut-of)
-        top (double (:y (first placed-nodes)))
-        leaf-steps (if (and circular (m/< span 360.0)) (m/long-dec leaf-count) leaf-count)
-        step (m// (m/radians span) (double (m/max 1 leaf-steps)))
-        angle (fn ^double [^double x] (m/* x step))
-        radius (fn ^double [^double y] (if (m/pos? top) (m/- 1.0 (m// y top)) 1.0))
-        nodes (if circular
-                (mapv (fn [{:keys [x y] :as node}]
-                        (let [a (double (angle x))
-                              r (double (radius y))]
-                          (assoc node :x (m/* r (m/sin a)) :y (m/* r (m/cos a)) :angle (m/degrees a) :radius r :leaf-x x :height y)))
-                      placed-nodes)
-                placed-nodes)
-        path (fn [{:keys [parent] :as node}]
-               (let [p (nodes parent)
-                     same? (and (some? (:cluster node)) (= (:cluster node) (:cluster p)))]
-                 {:cluster (when same? (:cluster node))
-                  :points (if circular
-                            (let [a0 (double (angle (:leaf-x node)))
-                                  a1 (double (angle (:leaf-x p)))
-                                  r0 (double (:radius node))
-                                  r1 (double (:radius p))]
-                              (into [[(m/* r0 (m/sin a0)) (m/* r0 (m/cos a0))]] (arc-points r1 a0 a1)))
-                            [[(:x node) (:y node)] [(:x node) (:y p)] [(:x p) (:y p)]])}))]
-    {:nodes nodes
-     :paths (vec (for [[i node] (map-indexed vector nodes)
-                       :when (some? (:parent node))
-                       :let [{:keys [cluster points]} (path node)]
-                       [x y] points]
-                   {:id i :x x :y y :cluster cluster}))}))
+  ([root] (layout root {}))
+  ([root {:keys [k circular ^double span] :or {span 360.0} :as options}]
+   (schema/check-options! layout-options options)
+   (let [clusters (when k (vec (map-indexed (fn [i sub] [sub (m/long-inc i)]) (cut-nodes root (long k)))))
+         cut-of (fn [node] (some (fn [[sub c]] (when (identical? sub node) c)) clusters))
+         [placed-nodes ^long leaf-count] (placed root [nil 0 nil] [[] 0] cut-of)
+         top (double (:y (first placed-nodes)))
+         leaf-steps (if (and circular (m/< span 360.0)) (m/long-dec leaf-count) leaf-count)
+         step (m// (m/radians span) (double (m/max 1 leaf-steps)))
+         angle (fn ^double [^double x] (m/* x step))
+         radius (fn ^double [^double y] (if (m/pos? top) (m/- 1.0 (m// y top)) 1.0))
+         nodes (if circular
+                 (mapv (fn [{:keys [x y] :as node}]
+                         (let [a (double (angle x))
+                               r (double (radius y))]
+                           (assoc node :x (m/* r (m/sin a)) :y (m/* r (m/cos a)) :angle (m/degrees a) :radius r :leaf-x x :height y)))
+                       placed-nodes)
+                 placed-nodes)
+         path (fn [{:keys [parent] :as node}]
+                (let [p (nodes parent)
+                      same? (and (some? (:cluster node)) (= (:cluster node) (:cluster p)))]
+                  {:cluster (when same? (:cluster node))
+                   :points (if circular
+                             (let [a0 (double (angle (:leaf-x node)))
+                                   a1 (double (angle (:leaf-x p)))
+                                   r0 (double (:radius node))
+                                   r1 (double (:radius p))]
+                               (into [[(m/* r0 (m/sin a0)) (m/* r0 (m/cos a0))]] (arc-points r1 a0 a1)))
+                             [[(:x node) (:y node)] [(:x node) (:y p)] [(:x p) (:y p)]])}))]
+     {:nodes nodes
+      :paths (vec (for [[i node] (map-indexed vector nodes)
+                        :when (some? (:parent node))
+                        :let [{:keys [cluster points]} (path node)]
+                        [x y] points]
+                    {:id i :x x :y y :cluster cluster}))})))
 
 ;; node-link layout (d3 tree / cluster)
 
@@ -358,7 +361,7 @@
   (reduce (fn [acc [i {:keys [parent]}]] (if (some? parent) (update acc parent conj i) acc))
           (vec (repeat (count nodes) [])) (map-indexed vector nodes)))
 
-(defn tidy-breadths
+(defn- tidy-breadths
   "Computes the breadth positions of a tidy tree layout (d3 `tree`).
 
   Reingold and Tilford's tree drawing in Buchheim, Jünger and Leipert's linear-time version: every node above its children's middle, subtrees as close as the separation allows (1 between siblings, 2 between cousins), the nodes of one depth in order and never overlapping.
@@ -521,8 +524,8 @@
   Parameters:
 
   - `root` (map): the tree's root (see [[from-levels]], [[from-parents]], [[from-hclust]]).
-  - `options` (map):
-    - `:layout` - `:tidy` (default; [[tidy-breadths]], every node at its depth) or `:cluster` (leaves one step apart in order and all at the deepest depth, a group above its children's middle - as [[layout]]).
+  - `options` (map, optional):
+    - `:layout` - `:tidy` (default; `tidy-breadths`, every node at its depth) or `:cluster` (leaves one step apart in order and all at the deepest depth, a group above its children's middle - as [[layout]]).
     - `:links` - `:diagonal` (default; curves leaving and entering along the depth axis) or `:line`.
     - `:circular` - `true`: breadth as the angle over `:span` degrees (on a full circle the breadth range plus one step, so the ends don't meet), depth as the radius from 0 (the root) to 1 (the deepest node); diagonal links are curves in (angle, radius) - d3 `linkRadial`; points in [-1, 1]. Default false: depth along x from 0 (the root), breadth along y (the first node of a depth on top: y = -breadth).
     - `:span` - degrees a circular layout covers, clockwise from the top (default 360).
@@ -531,35 +534,36 @@
 
   Throws `ex-info {:key k}` for an invalid option `k` (checked first, see [[node-link-layout-options]]).
 
-  See also [[layout]], [[tidy-breadths]]."
+  See also [[layout]], `tidy-breadths`."
   {:cljplot2/api true :cljplot2/options node-link-layout-options}
-  [root {:keys [links circular ^double span] layout-kind :layout :or {layout-kind :tidy links :diagonal span 360.0} :as options}]
-  (schema/check-options! node-link-layout-options options)
-  (let [[placed-nodes] (placed root [nil 0 nil] [[] 0] (constantly nil))
-        breadths (if (= :cluster layout-kind) (mapv :x placed-nodes) (tidy-breadths placed-nodes))
-        max-depth (m/max 1.0 (v/mx (map :depth placed-nodes)))
-        depth-pos-of (fn ^double [node] (if (and (= :cluster layout-kind) (:leaf? node)) max-depth (double (:depth node))))
-        lo (v/mn breadths)
-        hi (v/mx breadths)
-        breadth-nodes (map (fn [node ^double b] (assoc node :breadth (m/- b lo) :depth-pos (depth-pos-of node))) placed-nodes breadths)
-        span-b (m/- hi lo)
-        step (m// (m/radians span) (if (m/>= span 360.0) (m/inc span-b) (m/max span-b 1.0)))
-        polar (fn [[^double d ^double b]] (let [a (m/* b step)
-                                                r (m// d max-depth)]
-                                            [(m/* r (m/sin a)) (m/* r (m/cos a))]))
-        place (fn [[^double d ^double b :as point]] (if circular (polar point) [d (m/- b)]))
-        nodes (mapv (fn [{:keys [^double breadth ^double depth-pos] :as node}]
-                      (let [[x y] (place [depth-pos breadth])]
-                        (cond-> (assoc node :x x :y y)
-                          circular (assoc :angle (m/degrees (m/* breadth step)) :radius (m// depth-pos max-depth)))))
-                    breadth-nodes)]
-    {:nodes nodes
-     :links (vec (for [[i {:keys [parent] :as node}] (map-indexed vector nodes)
-                       :when (some? parent)
-                       :let [p (nodes parent)]
-                       pt (curve-points links [(:depth-pos p) (:breadth p)] [(:depth-pos node) (:breadth node)])
-                       :let [[x y] (place pt)]]
-                   {:id i :x x :y y}))}))
+  ([root] (node-link-layout root {}))
+  ([root {:keys [links circular ^double span] layout-kind :layout :or {layout-kind :tidy links :diagonal span 360.0} :as options}]
+   (schema/check-options! node-link-layout-options options)
+   (let [[placed-nodes] (placed root [nil 0 nil] [[] 0] (constantly nil))
+         breadths (if (= :cluster layout-kind) (mapv :x placed-nodes) (tidy-breadths placed-nodes))
+         max-depth (m/max 1.0 (v/mx (map :depth placed-nodes)))
+         depth-pos-of (fn ^double [node] (if (and (= :cluster layout-kind) (:leaf? node)) max-depth (double (:depth node))))
+         lo (v/mn breadths)
+         hi (v/mx breadths)
+         breadth-nodes (map (fn [node ^double b] (assoc node :breadth (m/- b lo) :depth-pos (depth-pos-of node))) placed-nodes breadths)
+         span-b (m/- hi lo)
+         step (m// (m/radians span) (if (m/>= span 360.0) (m/inc span-b) (m/max span-b 1.0)))
+         polar (fn [[^double d ^double b]] (let [a (m/* b step)
+                                                 r (m// d max-depth)]
+                                             [(m/* r (m/sin a)) (m/* r (m/cos a))]))
+         place (fn [[^double d ^double b :as point]] (if circular (polar point) [d (m/- b)]))
+         nodes (mapv (fn [{:keys [^double breadth ^double depth-pos] :as node}]
+                       (let [[x y] (place [depth-pos breadth])]
+                         (cond-> (assoc node :x x :y y)
+                           circular (assoc :angle (m/degrees (m/* breadth step)) :radius (m// depth-pos max-depth)))))
+                     breadth-nodes)]
+     {:nodes nodes
+      :links (vec (for [[i {:keys [parent] :as node}] (map-indexed vector nodes)
+                        :when (some? parent)
+                        :let [p (nodes parent)]
+                        pt (curve-points links [(:depth-pos p) (:breadth p)] [(:depth-pos node) (:breadth node)])
+                        :let [[x y] (place pt)]]
+                    {:id i :x x :y y}))})))
 
 ;; edge bundling
 
@@ -613,7 +617,7 @@
                           [(m/+ (m/* beta x) (m/* pull lx)) (m/+ (m/* beta y) (m/* pull ly))]))
                       points))))
 
-(defn basis-spline
+(defn- basis-spline
   "Samples the uniform cubic B-spline of control points, as d3 `curveBasis`.
 
   The end points are repeated, so the curve starts and ends at them.
@@ -674,13 +678,13 @@
 (defn bundle-paths
   "Routes edges between leaves along a laid out tree (Holten's hierarchical edge bundling).
 
-  Each edge becomes a B-spline ([[basis-spline]]) through the positions of the tree path between its leaves, straightened towards the straight line by `:beta`.
+  Each edge becomes a B-spline (`basis-spline`) through the positions of the tree path between its leaves, straightened towards the straight line by `:beta`.
 
   Parameters:
 
   - `edges` (sequence of maps): edge rows naming their end leaves by [[leaf-key]] (the `:id` of a [[from-parents]] node, else the leaf's `:name`; with repeated names the first leaf is used).
   - `laid` (map): the tree's layout (see [[layout]], usually `:circular`).
-  - `options` (map):
+  - `options` (map, optional):
     - `:from` - accessor of an edge's source leaf key (default `:from`).
     - `:to` - accessor of an edge's target leaf key (default `:to`).
     - `:beta` - bundling strength in [0 1]: 1 - along the tree path, 0 - a straight line (default 0.85).
@@ -689,19 +693,20 @@
 
   Throws `ex-info {:key k}` for an invalid option `k` (checked first, see [[bundle-paths-options]])."
   {:cljplot2/api true :cljplot2/options bundle-paths-options}
-  [edges laid {:keys [from to ^double beta] :or {from :from to :to beta 0.85} :as options}]
-  (schema/check-options! bundle-paths-options options)
-  (let [nodes (:nodes laid)
-        leaf-index (reduce (fn [acc [i node]] (cond-> acc (and (:leaf? node) (not (contains? acc (leaf-key node))))
-                                                (assoc (leaf-key node) i)))
-                           {} (map-indexed vector nodes))
-        from-of (data/row-accessor :from from)
-        to-of (data/row-accessor :to to)
-        routed (keep-indexed (fn [i e]
-                               (let [a (leaf-index (from-of e)) b (leaf-index (to-of e))]
-                                 (when (and a b (not= a b)) [i e (tree-route nodes a b)])))
-                             edges)]
-    {:paths (vec (for [[i e route] routed
-                       [x y] (basis-spline (straightened (mapv (fn [j] [(:x (nodes j)) (:y (nodes j))]) route) beta) 8)]
-                   (assoc e :id i :x x :y y)))
-     :dropped (m/- (count edges) (count routed))}))
+  ([edges laid] (bundle-paths edges laid {}))
+  ([edges laid {:keys [from to ^double beta] :or {from :from to :to beta 0.85} :as options}]
+   (schema/check-options! bundle-paths-options options)
+   (let [nodes (:nodes laid)
+         leaf-index (reduce (fn [acc [i node]] (cond-> acc (and (:leaf? node) (not (contains? acc (leaf-key node))))
+                                                 (assoc (leaf-key node) i)))
+                            {} (map-indexed vector nodes))
+         from-of (data/row-accessor :from from)
+         to-of (data/row-accessor :to to)
+         routed (keep-indexed (fn [i e]
+                                (let [a (leaf-index (from-of e)) b (leaf-index (to-of e))]
+                                  (when (and a b (not= a b)) [i e (tree-route nodes a b)])))
+                              edges)]
+     {:paths (vec (for [[i e route] routed
+                        [x y] (basis-spline (straightened (mapv (fn [j] [(:x (nodes j)) (:y (nodes j))]) route) beta) 8)]
+                    (assoc e :id i :x x :y y)))
+      :dropped (m/- (count edges) (count routed))})))

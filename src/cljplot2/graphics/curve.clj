@@ -3,7 +3,7 @@
   turned into the points that are drawn, plus what lines and areas share around them (bridges over gaps, the area
   baseline, the drawn point - clamped and rounded, see [[drawn-point]]).
 
-  A run is a vector of `[x y]` pixel points. Curve options (`opts`):
+  A run is a vector of `[x y]` pixel points. Curve options (`curve-options`):
 
   * `:interpolator` - a fastmath 1D interpolation method ([[cljplot2.schema/interpolation-methods]]) or `(fn [xs ys & params] f)`
     returning a function of x; `:interpolator-params` - a vector passed after `xs ys` (as wadogo `:interpolated`).
@@ -18,15 +18,19 @@
   A run with fewer points than the method needs (fastmath `:too-few-points`) is drawn straight; one point draws
   nothing.
 
-  Functions: options [[options]], [[sample-step-schema]]; sampling [[sample-grid]], [[sample-columns]]; drawn points [[curve-points]] ([[functional-points]], [[parametric-points]], [[bezier-points]]), [[curved?]], [[drawn-point]]; around lines [[bridges]], [[area-baseline]], [[draw-runs!]]."
+  Functions: options [[options]], [[sample-step-schema]]; lines across the panel [[draw-ablines!]]; sampling [[sample-grid]], [[sample-columns]]; drawn points [[curve-points]] ([[functional-points]], [[bezier-points]]), [[curved?]], [[drawn-point]]; around lines [[bridges]], [[area-baseline]], [[draw-runs!]]; bands (ribbon, smooth) [[band-runs]], [[draw-bands!]].
+
+  Default: [[default-sample-step]]."
   (:require [clojure2d.core :as c2d]
             [clojure2d.core.shape :as sh]
             [fastmath.core :as m]
             [cljplot2.data.interpolation :as fit]
+            [cljplot2.data.rows :as data]
             [cljplot2.graphics.draw :as draw]
             [cljplot2.graphics.polyline :as polyline]
             [cljplot2.scale.position :as scale]
-            [cljplot2.schema :as schema]))
+            [cljplot2.schema :as schema])
+  (:import [fastmath.vector Vec2]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -121,7 +125,7 @@
           direction (strictly-monotone (map #(nth % a) run))
           _ (when-not direction
               (schema/fail! (str "Interpolation needs strictly monotone positions along " (name along)
-                                 " in every run (no repeated x; with :sort false, x in order).")
+                                 " in every run (no repeated x; with :order :data, x in order).")
                             {:key :interpolator :value (mapv #(nth % a) run)}))
           ;; reversed: rseq of the run vector, indexed by peek below
           ordered (if (= direction :decreasing) (vec (rseq run)) run)
@@ -144,7 +148,7 @@
   [run]
   (mapv first (partition-by identity run)))
 
-(defn parametric-points
+(defn- parametric-points
   "Gives the points of a run interpolated as x(t), y(t) over the cumulative chord length t.
 
   Consecutive repeated points are removed first.
@@ -190,7 +194,7 @@
   Parameters:
 
   - `run` (vector of `[x y]`): the run's pixel points.
-  - `opts` (map): `:interpolator`, `:interpolator-params`, `:curve`, `:sample-step` (default [[default-sample-step]]), `:along` (default `:x`).
+  - `curve-options` (map): `:interpolator`, `:interpolator-params`, `:curve`, `:sample-step` (default [[default-sample-step]]), `:along` (default `:x`).
 
   Returns the points; the run as is without `:interpolator` and `:curve`. `:curve :bezier` with `:interpolator` throws `ex-info {:key :curve}`."
   [run {:keys [interpolator interpolator-params curve sample-step along] :or {along :x}}]
@@ -246,7 +250,7 @@
 
   - `positions` (vector of numbers): strictly monotone pixel positions shared by the columns.
   - `columns` (vector of vectors): one vector of values per column, one value per position.
-  - `opts` (map): `:interpolator`, `:interpolator-params`, `:sample-step` (see [[sample-grid]]).
+  - `curve-options` (map): `:interpolator`, `:interpolator-params`, `:sample-step` (see [[sample-grid]]).
   - `keep-sign?`: truthy - a sample between two knots of one sign keeps it (heights of stacked bands never cross 0 where the data doesn't).
 
   Returns `[grid sampled-columns]`: the [[sample-grid]] from the first position to the last and each column fitted and evaluated on it; a column too short for the method is fitted linearly (all columns share the grid); fewer than 2 positions - `[positions columns]` as given. Not strictly monotone positions throw `ex-info {:key :interpolator}`."
@@ -273,11 +277,11 @@
 
   Parameters:
 
-  - `opts` (map): the curve options.
+  - `curve-options` (map): the curve options.
 
   Returns truthy for an `:interpolator` or a `:curve`, else `nil`."
-  [opts]
-  (or (:interpolator opts) (:curve opts)))
+  [curve-options]
+  (or (:interpolator curve-options) (:curve curve-options)))
 
 ;; gaps
 
@@ -296,7 +300,7 @@
 
 ;; pixels
 
-(def ^{:const true :tag 'double} pixel-limit
+(def ^{:private true :const true :tag 'double} pixel-limit
   "Largest pixel coordinate magnitude drawn: farther points are clamped to it (Java2D draws float coordinates, values
   as 1e300 overflow); the direction of a clamped segment inside the panel changes by under limit / panel size."
   1.0e6)
@@ -371,3 +375,92 @@
     (polyline/stroke-runs! canvas point-runs style)
     (when (= :bridge gaps)
       (polyline/stroke-runs! canvas (bridges point-runs) (polyline/bridge-style style (:bridge style))))))
+
+(defn- pixel
+  "Gives the pixel of a band bound.
+
+  Parameters:
+
+  - `projection` (function): data `x`, `y` -> pixel `Vec2`.
+  - `x`: the x value.
+  - `v`: the bound's value; `nil` - a break.
+
+  Returns the projected `Vec2`; a `Vec2` of `##NaN` for `nil`."
+  ^Vec2 [projection x v]
+  (if (nil? v) (Vec2. ##NaN ##NaN) (projection x v)))
+
+(defn- smoothed
+  "Samples both bounds of a paired run under an interpolator.
+
+  Parameters:
+
+  - `[upper lower]`: the run's pixel points of both bounds.
+  - `curve-options` (map): the curve options (see [[cljplot2.graphics.curve/sample-columns]]); `:along` - `:x` (pixel x, default) or `:y`, the pixel axis of x.
+
+  Returns `[upper lower]`, both sampled on one grid along `:along`."
+  [[upper lower] {:keys [along] :as curve-options}]
+  (let [[a b] (if (= :y along) [1 0] [0 1])
+        [grid [us ls]] (sample-columns (mapv #(nth % a) upper) [(mapv #(nth % b) upper) (mapv #(nth % b) lower)]
+                                             curve-options false)
+        point (fn [t v] (drawn-point (if (= :y along) [v t] [t v])))]
+    [(mapv point grid us) (mapv point grid ls)]))
+
+(defn band-runs
+  "Gives the paired pixel runs of a band.
+
+  Parameters:
+
+  - `xs` (vector): the x values.
+  - `his`, `los` (vectors): the upper and lower bounds; `nil` - a break.
+  - `projection` (function): data `x`, `y` -> pixel `Vec2`.
+  - `curve-options` (map): curve options - `:interpolator` (with `:interpolator-params`, `:sample-step`) samples the bounds of every run, `:along` - the pixel axis of x (see [[smoothed]]).
+
+  Returns a vector of `[upper lower]` runs of pixel points: a pair with a non-finite coordinate ends a run, runs of fewer than 2 pairs are left out; `[]` for none.
+
+  Throws `ex-info {:key :interpolator}` for a repeated x in a run under an interpolator."
+  [xs his los projection curve-options]
+  (let [upper (mapv #(pixel projection %1 %2) xs his)
+        lower (mapv #(pixel projection %1 %2) xs los)
+        paired? (fn [i] (and (data/finite-point? (upper i)) (data/finite-point? (lower i))))
+        point (fn [^Vec2 p] (drawn-point [(.x p) (.y p)]))
+        pairs (into [] (comp (partition-by paired?)
+                             (filter #(and (paired? (first %)) (m/> (count %) 1)))
+                             (map (fn [run] [(mapv #(point (upper %)) run) (mapv #(point (lower %)) run)])))
+                    (range (count xs)))]
+    (if (:interpolator curve-options) (mapv #(smoothed % curve-options) pairs) pairs)))
+
+(defn draw-bands!
+  "Draws bands: every band filled first, then the edges of every band.
+
+  Parameters:
+
+  - `canvas`: the clojure2d canvas.
+  - `bands` (sequence): `{:runs [[upper lower] ..] :fill color :edge line-style :pattern-fill pf}` - `:edge` `nil` for no edge, `:pattern-fill` (see [[cljplot2.graphics.draw/pattern-fill]]) `nil` for none.
+  - `fill-context` (map): `:scales` - the finalized scales; `:gradient` (function or `nil`) - a fill gradient of `t`, winning over `:fill`; `:axis` - the scale the gradient runs along, `:x` (default) or `:y`.
+
+  Fills each run with its pattern, then strokes both bounds of every band with an edge."
+  [canvas bands {:keys [gradient axis scales] :or {axis :x}}]
+  (doseq [{:keys [runs fill pattern-fill]} bands
+          [upper lower] runs]
+    (polyline/fill-area! canvas upper lower fill gradient axis scales pattern-fill))
+  (doseq [{:keys [runs edge]} bands :when edge]
+    (polyline/stroke-runs! canvas (mapcat identity runs) edge)))
+
+(defn draw-ablines!
+  "Draws lines `y = intercept + slope * x` between the ends of the x scale's domain, in the canvas' current style.
+
+  Parameters:
+
+  - `canvas`: the clojure2d canvas.
+  - `scales` (map): the finalized scales; linear x and y (the caller checks).
+  - `ablines` (sequence): `[[slope intercept] ..]`.
+
+  Lines with a non-finite end are skipped."
+  [canvas scales ablines]
+  (let [projection (scale/projection scales)
+        [^double x0 ^double x1] (:domain (:x scales))]
+    (doseq [[^double b ^double a] ablines
+            :let [^Vec2 p (projection x0 (m/+ a (m/* b x0)))
+                  ^Vec2 q (projection x1 (m/+ a (m/* b x1)))]
+            :when (and (data/finite-point? p) (data/finite-point? q))]
+      (c2d/line canvas p q))))

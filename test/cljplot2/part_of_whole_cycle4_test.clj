@@ -7,6 +7,7 @@
             [cljplot2.test-util :refer [error]]
             [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
+            [cljplot2.chart.strip :as strip-chart]
             [cljplot2.data.strip :as strip]
             [cljplot2.layout.grid :as grid])
   (:import [java.awt.image BufferedImage]))
@@ -26,7 +27,7 @@
   "End-label placements bar draws for plot `p`."
   [p]
   (let [seen (atom [])]
-    (with-redefs [strip/draw-label-placements! (fn [_ ps _] (swap! seen into ps))]
+    (with-redefs [strip-chart/draw-label-placements! (fn [_ ps _] (swap! seen into ps))]
       (plot/render-image p size))
     @seen))
 
@@ -160,7 +161,7 @@
   (testing "Y2 end labels of every strip chart skip collisions"
     (let [rows (for [i (range 30) v [1 2 3]] {:c (format "%02d" i) :v v})
           seen (atom [])]
-      (with-redefs [strip/draw-label-placements! (fn [_ ps _] (swap! seen into ps))]
+      (with-redefs [strip-chart/draw-label-placements! (fn [_ ps _] (swap! seen into ps))]
         (plot/render-image {:data rows :mapping {:x :v :y :c} :charts [(chart/box {:n-label true})]} {:width 300 :height 120}))
       (is (< 0 (count @seen) 30))
       (is (every? :box @seen))))

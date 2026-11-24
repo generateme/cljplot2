@@ -297,7 +297,7 @@
 
 (plot/render-image {:data dashes
                     :mapping {:x :x :y :i :dash :dash :group :i}
-                    :charts [(chart/line {:width 2 :color :black})
+                    :charts [(chart/line {:line-width 2 :color :black})
                              (chart/text {:data (filter #(zero? (long (:x %))) dashes)
                                           :mapping {:x :x :y :i :label :name} :anchor [:right :middle] :offset [-8 0]})]
                     :scales {:dash {:kind :identity :legend false}
@@ -308,7 +308,7 @@
 
 (plot/render-image {:data groups
                     :mapping {:x :x :y :y :dash :g}
-                    :charts [(chart/line {:width 2})]
+                    :charts [(chart/line {:line-width 2})]
                     :scales {:dash {:range [:solid :dotted [8 3 2 3]]}}}
                    {:width 500 :height 280})
 

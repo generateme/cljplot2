@@ -41,11 +41,11 @@
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
-(def filled-shapes
+(def ^:private filled-shapes
   "Built-in shapes filled with the fill colour (and outlined)."
   #{\O \S \A \V \{ \}})
 
-(def line-shapes
+(def ^:private line-shapes
   "Built-in shapes stroked with the line colour."
   #{\o \s \^ \v \< \> \- \| \\ \/ \+ \x})
 
@@ -53,7 +53,7 @@
   "Every built-in shape character."
   (into filled-shapes line-shapes))
 
-(def shape-kinds
+(def ^:private shape-kinds
   "Keys of a shape map, one per map: SVG path data, a text, an SVG source, an image."
   #{:path :text :svg :image})
 
@@ -269,6 +269,17 @@
   "Triangle shape character -> the direction it points."
   {\A :up \V :down \{ :left \} :right \^ :up \v :down \< :left \> :right})
 
+(defn- none?
+  "Tests whether a colour is the draw-nothing value `:none` (as `cljplot2.theme/none?`, which this namespace can't require).
+
+  Parameters:
+
+  - `color`: a colour or `:none`.
+
+  Returns true for `:none`, else false."
+  [color]
+  (= :none color))
+
 (defn- outline!
   "Draws a built-in shape's outline (or stroke) with the canvas stroke and colour.
 
@@ -354,10 +365,10 @@
     (:image shape) (draw-image! canvas (:image shape) center size)
     :else (when-let [unit (unit-outline shape)]
             (let [outline (sh/transform-shape unit [[:translate (.x center) (.y center)] [:scale size]])]
-              (when-not (= :none color)
+              (when-not (none? color)
                 (c2d/set-color canvas color)
                 (c2d/shape canvas outline false))
-              (when (and (:path shape) (not= :none stroke-color) (m/pos? stroke-width))
+              (when (and (:path shape) (not (none? stroke-color)) (m/pos? stroke-width))
                 (c2d/set-color canvas stroke-color)
                 (c2d/shape canvas outline true))))))
 
@@ -412,12 +423,12 @@
   (if (map? shape)
     (draw-map! canvas shape center style)
     (let [centre-size (v/vec3 (.x center) (.y center) (m/* 0.5 size))
-          ink? (not= :none color)]
+          ink? (not (none? color))]
       (if (filled-shapes shape)
         (do (when ink?
               (c2d/set-color canvas color)
               (fill! canvas shape centre-size))
-            (when (and (not= :none stroke-color) (m/pos? (double stroke-width)))
+            (when (and (not (none? stroke-color)) (m/pos? (double stroke-width)))
               (c2d/set-color canvas stroke-color)
               (outline! canvas shape centre-size)))
         (when ink?

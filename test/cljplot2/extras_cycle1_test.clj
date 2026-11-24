@@ -46,7 +46,7 @@
       (is (near? (r/icdf (r/distribution :normal) (/ 0.5 60)) (first x))))
     (is (= :x-distribution (:key (error #(built {:data sample :charts [(chart/qq {:x-distribution [:normal] :mapping {:x :a :y :b}})]})))))
     (is (= :y-distribution (:key (error #(built {:data sample :mapping {:x :a} :charts [(chart/pp {:y-distribution [:normal] :mapping {:y :b}})]})))))
-    (is (= {:key :mapping :value :x} (select-keys (error #(built {:data sample :mapping {:y :a} :charts [(chart/qq)]})) [:key :value])))
+    (is (= {:key :mapping :in [:mapping :x]} (select-keys (error #(built {:data sample :mapping {:y :a} :charts [(chart/qq)]})) [:key :in])))
     (testing "- a scatter and a Q-Q of the same plot mapping"
       (is (= 2 (count (:stats (built {:data sample :mapping {:x :a :y :b} :charts [(chart/scatter) (chart/qq {:y-distribution [:normal]})]}))))))))
 
@@ -79,8 +79,8 @@
     (is (= [1.0] (probability/interpolated [1] 1))))
   (testing "1.2.3 two distributions: :points positions (default 100)"
     (is (= 100 (count (:x (first (groups-of {:charts [(chart/qq {:x-distribution [:normal] :y-distribution [:normal]})]}))))))
-    (is (= 7 (count (:x (first (groups-of {:charts [(chart/qq {:x-distribution [:normal] :y-distribution [:normal] :points 7})]}))))))
-    (is (seq (error-ins #(built {:charts [(chart/qq {:x-distribution [:normal] :y-distribution [:normal] :points 1})]}))))))
+    (is (= 7 (count (:x (first (groups-of {:charts [(chart/qq {:x-distribution [:normal] :y-distribution [:normal] :n 7})]}))))))
+    (is (seq (error-ins #(built {:charts [(chart/qq {:x-distribution [:normal] :y-distribution [:normal] :n 1})]}))))))
 
 (deftest qq-line-test
   (testing "1.2.4 the line through the quartile pairs (R type 7)"
@@ -155,7 +155,7 @@
       (is (near? 1.0 (peek y)))))
   (testing "1.3.2 two distributions need :domain; :points values over it"
     (is (= :domain (:key (error #(built {:charts [(chart/pp {:x-distribution [:normal] :y-distribution [:normal]})]})))))
-    (is (= 11 (count (:x (first (groups-of {:charts [(chart/pp {:x-distribution [:normal] :y-distribution [:normal {:mu 1}] :domain [-3 3] :points 11})]}))))))
+    (is (= 11 (count (:x (first (groups-of {:charts [(chart/pp {:x-distribution [:normal] :y-distribution [:normal {:mu 1}] :domain [-3 3] :n 11})]}))))))
     (is (seq (error-ins #(built {:charts [(chart/pp {:x-distribution [:normal] :y-distribution [:normal] :domain [3 -3]})]})))))
   (testing "1.3.3 / 1.3.4 identity line by default, :line false; extents [0 1]"
     (let [s (stats-of {:data sample :mapping {:x :a :y :b} :charts [(chart/pp)]} 0)]
@@ -180,8 +180,8 @@
     (is (= {} (:aesthetics (first (groups-of {:charts [(chart/qq {:x-distribution (r/distribution :normal) :y-distribution [:normal] :label "x"})]}))))))
   (testing "R3 :label validated"
     (is (seq (error-ins #(built {:charts [(chart/qq {:x-distribution [:normal] :y-distribution [:normal] :label 1})]})))))
-  (testing "R5 :points, :domain, :label with a data side throw"
-    (is (= :points (:key (error #(built {:data sample :mapping {:y :a} :charts [(chart/qq {:x-distribution [:normal] :points 10})]})))))
+  (testing "R5 :n, :domain, :label with a data side throw"
+    (is (= :n (:key (error #(built {:data sample :mapping {:y :a} :charts [(chart/qq {:x-distribution [:normal] :n 10})]})))))
     (is (= :label (:key (error #(built {:data sample :mapping {:x :a :y :b} :charts [(chart/qq {:label "l"})]})))))
     (is (= :domain (:key (error #(built {:data sample :mapping {:y :a} :charts [(chart/pp {:x-distribution [:normal] :domain [0 1]})]})))))))
 
@@ -207,7 +207,7 @@
       (is (= {:lag 0 :value 1.0 :significant? false} (select-keys (first rows) [:lag :value :significant?])))
       (is (<= (count (filter :significant? rows)) 2) "white noise")))
   (testing "2.1 PACF rows: lags 1.., the constant band"
-    (let [rows (series/acf-rows noise {:lags 20 :partial? true :alpha 0.01})
+    (let [rows (series/acf-rows noise {:lags 20 :partial true :level 0.99})
           {:keys [ci pacf]} (stats/pacf-ci noise 20 0.01)]
       (is (= (range 1 21) (map :lag rows)))
       (is (= (mapv double (rest pacf)) (mapv :value rows)))
@@ -247,22 +247,21 @@
       (is (= [:ribbon :rule :segment :scatter :scatter] (mapv :kind (:charts p))))
       (is (= ["ACF" "PACF"] (get-in (built p) [:split :facets :levels :facet-row])))))
   (testing "2.3 one kind: no facets, the y title"
-    (let [p (plot/acf noise {:partial? :acf})]
+    (let [p (plot/acf noise {:correlograms :acf})]
       (is (nil? (get-in p [:mapping :facet-row])))
       (is (= "ACF" (get-in p [:labels :y]))))
-    (is (= "PACF" (get-in (plot/acf noise {:partial? :pacf}) [:labels :y])))
-    (is (= "ACF" (get-in (plot/acf noise {:partial? false}) [:labels :y])) "false - ACF")
-    (is (= "PACF" (get-in (plot/acf noise {:partial? true}) [:labels :y])) "true - PACF, as acf-rows"))
-  (testing "R4 invalid :partial?, :band, :colors throw; nil options - the defaults"
-    (is (= :partial? (:key (error #(plot/acf noise {:partial? :acf2})))))
+    (is (= "PACF" (get-in (plot/acf noise {:correlograms :pacf}) [:labels :y])))
+    (is (= "ACF" (get-in (plot/acf noise {:correlograms :acf}) [:labels :y]))))
+  (testing "R4 invalid :correlograms, :band, :colors throw; nil options - the defaults"
+    (is (= :correlograms (:key (error #(plot/acf noise {:correlograms :acf2})))))
     (is (= :band (:key (error #(plot/acf noise {:band :blocky})))))
     (is (= :stems (:key (error #(plot/acf noise {:colors {:stems :red}})))))
     (is (= :stem (:key (error #(plot/acf noise {:colors {:stem :not-a-colour}})))))
     (is (= :colors (:key (error #(plot/acf noise {:colors [:red]})))))
-    (is (= (plot/acf noise) (plot/acf noise {:partial? nil :band nil :colors nil}))))
+    (is (= (plot/acf noise) (plot/acf noise {:correlograms nil :band nil :colors nil}))))
   (testing "U1 the band: a ribbon through the lags (default), a block per lag with :band :stepped"
-    (let [smooth (first (:charts (plot/acf noise {:partial? :acf :lags 5})))
-          stepped (first (:charts (plot/acf noise {:partial? :acf :lags 5 :band :stepped})))]
+    (let [smooth (first (:charts (plot/acf noise {:correlograms :acf :lags 5})))
+          stepped (first (:charts (plot/acf noise {:correlograms :acf :lags 5 :band :stepped})))]
       (is (= {:x :lag :ymin :lo :ymax :hi} (get-in smooth [:options :mapping])))
       (is (= 6 (count (get-in smooth [:options :data]))))
       (is (= :lag (get-in stepped [:options :mapping :group])))
@@ -278,7 +277,7 @@
       (is (= "t" (get-in p [:labels :title])))
       (is (instance? BufferedImage (plot/render-image p {:width 500 :height 400})))))
   (testing "2.3 no significant lag: an empty highlight renders"
-    (is (instance? BufferedImage (plot/render-image (plot/acf [1 2 1 2 1 3 2 1] {:partial? :acf :lags 2}) {:width 300 :height 200})))))
+    (is (instance? BufferedImage (plot/render-image (plot/acf [1 2 1 2 1 3 2 1] {:correlograms :acf :lags 2}) {:width 300 :height 200})))))
 
 ;; 3 vector fields
 
@@ -315,7 +314,7 @@
           (is (near? 0.0 (- (* dx vy) (* dy vx))) "parallel")
           (is (pos? (+ (* dx vx) (* dy vy))) "same direction"))))
     (testing "3.2 :shifted moves every second row half a cell; :scale"
-      (let [rows (vf/arrows (constantly [1.0 0.0]) {:domain domain :n 2 :grid :shifted :scale 2})]
+      (let [rows (vf/arrows (constantly [1.0 0.0]) {:domain domain :n 2 :grid :shifted :length-scale 2})]
         (is (= [[1.0 0.5] [3.0 0.5] [2.0 1.5] [4.0 1.5]] (mapv (juxt :x :y) rows)))
         (is (near? (* 2.0 1.0 (- 1.0 (m/exp -1.0))) (- (double (:xend (first rows))) 1.0)) "cell = min(2, 1)")))
     (testing "3.2 zero and non-finite vectors left out"
@@ -327,7 +326,7 @@
       (is (= :x (:key (error #(vf/arrows identity {:domain {:x [1 1] :y [0 1]}})))))
       (is (= :n (:key (error #(vf/arrows identity {:domain domain :n 0})))))
       (is (= :grid (:key (error #(vf/arrows identity {:domain domain :grid :hex})))))
-      (is (= :scale (:key (error #(vf/arrows identity {:domain domain :scale 0})))))
+      (is (= :length-scale (:key (error #(vf/arrows identity {:domain domain :length-scale 0})))))
       (is (= 1 (count (vf/arrows (constantly [1 0]) {:domain domain :n 1})))))))
 
 (deftest traces-test

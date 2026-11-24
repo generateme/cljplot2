@@ -7019,7 +7019,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
 <span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a> (plot/arrange [{<span class="at">:data</span> iris</span>
 <span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>                 <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:sepal-length</span> <span class="at">:color</span> <span class="at">:species</span>}</span>
-<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>                 <span class="at">:charts</span> [(chart/density {<span class="at">:width</span> <span class="dv">2</span>})]</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>                 <span class="at">:charts</span> [(chart/density {<span class="at">:line-width</span> <span class="dv">2</span>})]</span>
 <span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>                 <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"lines"</span> <span class="at">:x</span> <span class="st">"sepal length [cm]"</span>}}</span>
 <span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>                {<span class="at">:data</span> iris</span>
 <span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>                 <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:sepal-length</span> <span class="at">:color</span> <span class="at">:species</span>}</span>
@@ -7630,7 +7630,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb51"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb51-1"><a href="#cb51-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
 <span id="cb51-2"><a href="#cb51-2" aria-hidden="true" tabindex="-1"></a> {<span class="at">:data</span> iris</span>
 <span id="cb51-3"><a href="#cb51-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:petal-length</span> <span class="at">:color</span> <span class="at">:species</span>}</span>
-<span id="cb51-4"><a href="#cb51-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">:charts</span> [(chart/ecdf {<span class="at">:width</span> <span class="dv">2</span>})]</span>
+<span id="cb51-4"><a href="#cb51-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">:charts</span> [(chart/ecdf {<span class="at">:line-width</span> <span class="dv">2</span>})]</span>
 <span id="cb51-5"><a href="#cb51-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"ECDF of petal length by species"</span> <span class="at">:x</span> <span class="st">"petal length [cm]"</span>}}</span>
 <span id="cb51-6"><a href="#cb51-6" aria-hidden="true" tabindex="-1"></a> {<span class="at">:width</span> <span class="dv">800</span> <span class="at">:height</span> <span class="dv">450</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>

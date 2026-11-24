@@ -108,19 +108,19 @@
 
 ;; The ranks under `:place`, ties taking the lowest rank (2022: pears and plums share 2):
 
-(nu/data-table (levels/rank-rows sales :year :amount {:key :place :ties :min}))
+(nu/data-table (levels/rank-rows sales :year :amount {:as :place :ties :min}))
 
 ;; A bump chart of the ranks (left), and ranks counted from the lowest amount with average ties (right):
 
 (plot/render-image (plot/arrange [{:data (levels/rank-rows sales :year :amount)
                                    :mapping {:x :year :y :rank :color :product}
-                                   :charts [(chart/line {:width 3}) (chart/scatter {:size 12})]
+                                   :charts [(chart/line {:line-width 3}) (chart/scatter {:size 12})]
                                    :scales {:y {:domain [3.3 0.7] :ticks [1 2 3]}}
                                    :labels {:title "ranks, highest first" :y "rank"}
                                    :legend false}
                                   {:data (levels/rank-rows sales :year :amount {:descending false :ties :average})
                                    :mapping {:x :year :y :rank :color :product}
-                                   :charts [(chart/line {:width 3}) (chart/scatter {:size 12})]
+                                   :charts [(chart/line {:line-width 3}) (chart/scatter {:size 12})]
                                    :scales {:y {:domain [3.3 0.7] :ticks [1 1.5 2 2.5 3]}}
                                    :labels {:title ":descending false, :ties :average" :y "rank"}}]
                                  {:columns 2 :widths [1 1.25]})
@@ -136,7 +136,7 @@
 ;; Equal-count intervals of the cars' weight - 3 of them, neighbours sharing a quarter of their points - as a facet
 ;; of mpg against horsepower; the series name is printed in every strip:
 
-(plot/render-image {:data (shingle/shingle mtcars :wt {:as :weight :count 3 :overlap 0.25 :label true})
+(plot/render-image {:data (shingle/shingle mtcars :wt {:as :weight :n 3 :overlap 0.25 :label true})
                     :mapping {:x :hp :y :mpg :facet-col :weight}
                     :charts [(chart/scatter)]}
                    {:width 900 :height 300})

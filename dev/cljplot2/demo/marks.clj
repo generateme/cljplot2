@@ -16,7 +16,7 @@
 (def area-sizes
   (plot/arrange [(bubbles "size linear in hp" false) (bubbles "area linear in hp (:area true)" true)] {:columns 2}))
 
-(def ^:private label-box {:size 9 :background [255 255 255 190] :padding 2})
+(def ^:private label-box {:size 9 :background [255 255 255 190] :inset 2})
 
 (defn- car-labels
   [keep? anchor dx]

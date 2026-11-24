@@ -83,8 +83,8 @@
     (is (= [:charts 0 :options :light] (:in (error #(plot/build {:charts [(chart/text {:text "a" :x 1 :y 1 :light [1 0 0]})]})))))))
 
 (deftest graph-directed-test
-  (testing "boundary: :directed? missing, nil or false - false; true - true (the documented default holds for nil)"
-    (is (= [false false false true] (map #(:directed? (graph/graph [] %)) [{} {:directed? nil} {:directed? false} {:directed? true}])))))
+  (testing "boundary: :directed missing, nil or false - false; true - true (the documented default holds for nil)"
+    (is (= [false false false true] (map #(:directed (graph/graph [] %)) [{} {:directed nil} {:directed false} {:directed true}])))))
 
 (defn- old-rotation
   "The view rotation before the matrix: the hand-written formula."

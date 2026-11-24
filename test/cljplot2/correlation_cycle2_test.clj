@@ -200,10 +200,10 @@
     (is (empty? (:data (stats {:data [] :mapping {:x :x :y :y} :charts [(chart/field)]}))))))
 
 (deftest field-options-test
-  (testing "F9 :n [nx ny], :binned?, :kernel, :interpolation through the chart"
+  (testing "F9 :n [nx ny], :binned, :kernel, :interpolation through the chart"
     (let [grid (fn [opts] (get-in (stats {:data cloud :mapping {:x :x :y :y} :charts [(chart/field opts)]}) [:data :panel :grid]))
           g (grid {:n [7 4]})
-          exact (grid {:n 9}) binned (grid {:n 9 :binned? true})]
+          exact (grid {:n 9}) binned (grid {:n 9 :binned true})]
       (is (= [7 4] [(:nx g) (:ny g)]))
       (is (< (m/abs (- 1.0 (/ (reduce + (:values binned)) (reduce + (:values exact))))) 0.01))
       (is (not= (vec (:values exact)) (vec (:values (grid {:n 9 :kernel :epanechnikov}))))))
@@ -265,25 +265,25 @@
       (is (= 6 (count cs)))
       (is (= {:kind :categorical :values ["a" "b"]} (select-keys (get-in s [:extents :panel :color]) [:kind :values])))))
   (testing "4.2 filled regions drawn lowest first; lines otherwise"
-    (let [d (get-in (stats {:data cloud :mapping {:x :x :y :y} :charts [(chart/contour {:fill true :levels 3})]}) [:data :panel])]
+    (let [d (get-in (stats {:data cloud :mapping {:x :x :y :y} :charts [(chart/contour {:filled true :levels 3})]}) [:data :panel])]
       (is (:fill? d))
       (is (every? :rings (:contours d)))))
   (testing "F3 filled bands colored by their middle; the color extent spans the values"
-    (let [s (stats {:charts [(chart/contour {:f (fn [[x _]] x) :domain {:x [0 1] :y [0 1]} :fill true :levels [0.2 0.6]})]})
+    (let [s (stats {:charts [(chart/contour {:f (fn [[x _]] x) :domain {:x [0 1] :y [0 1]} :filled true :levels [0.2 0.6]})]})
           cs (get-in s [:data :panel :contours])]
       (is (= [[0.2 0.4] [0.6 0.8]] (map (juxt :level :color-value) cs)))
       (is (= [0.0 1.0] ((juxt :min :max) (get-in s [:extents :panel :color]))))))
-  (testing "F4 grouped filled contours translucent by default; :alpha wins"
+  (testing "F4 grouped filled contours translucent by default; :alpha-factor wins"
     (let [alpha (fn [opts] (get-in (stats {:data grouped-cloud :mapping {:x :x :y :y :color :g} :charts [(chart/contour opts)]})
-                                   [:data :panel :style :alpha]))]
-      (is (== 0.5 (alpha {:fill true})))
-      (is (== 0.8 (alpha {:fill true :alpha 0.8})))
+                                   [:data :panel :style :alpha-factor]))]
+      (is (== 0.5 (alpha {:filled true})))
+      (is (== 0.8 (alpha {:filled true :alpha-factor 0.8})))
       (is (== 1.0 (alpha {}))))))
 
 (deftest contour-draw-test
   (testing "4.4 a fixed color line crosses the cone where expected"
     (let [cone-f (fn [[x y]] (- 1.0 (m/hypot (double x) (double y))))
-          [built img {:keys [x y]}] (render {:charts [(chart/contour {:f cone-f :domain {:x [-1 1] :y [-1 1]} :levels [0.5] :color [255 0 0] :width 3})]
+          [built img {:keys [x y]}] (render {:charts [(chart/contour {:f cone-f :domain {:x [-1 1] :y [-1 1]} :levels [0.5] :color [255 0 0] :line-width 3})]
                                              :legend false}
                                             {:width 300 :height 300})
           proj (scale/projection (select-keys (:finalized-scales built) [:x :y]))
@@ -293,7 +293,7 @@
       (is (= [250 250 250] (rgb img (+ (long x) (long (.x off))) (+ (long y) (long (.y off))))))))
   (testing "4.2 filled: the disk filled, the hole of an annulus open"
     (let [annulus (fn [[x y]] (- 1.0 (m/abs (- (m/hypot (double x) (double y)) 0.5))))
-          [built img {:keys [x y]}] (render {:charts [(chart/contour {:f annulus :domain {:x [-1 1] :y [-1 1]} :levels [0.8] :fill true :n 81})]
+          [built img {:keys [x y]}] (render {:charts [(chart/contour {:f annulus :domain {:x [-1 1] :y [-1 1]} :levels [0.8] :filled true :n 81})]
                                              :scales {:color {:range [[0 0 200] [0 0 200]]}} :legend false}
                                             {:width 300 :height 300})
           proj (scale/projection (select-keys (:finalized-scales built) [:x :y]))
@@ -306,12 +306,12 @@
                                                      :scales {:x {:kind :log}} :charts [(chart/contour)]}
                                                     {:width 300 :height 300})))
     (is (instance? BufferedImage (plot/render-image {:data grouped-cloud
-                                                     :mapping {:x :x :y :y :color :g} :charts [(chart/contour {:fill true})]}
+                                                     :mapping {:x :x :y :y :color :g} :charts [(chart/contour {:filled true})]}
                                                     {:width 300 :height 300})))))
 
 (deftest theme-test
   (testing "theme entries validated"
-    (is (some? (error #(plot/build {:charts [(chart/field {:f (fn [[x y]] (+ x y)) :domain {:x [0 1] :y [0 1]}})] :theme {:chart {:field {:alpha 2}}}}
+    (is (some? (error #(plot/build {:charts [(chart/field {:f (fn [[x y]] (+ x y)) :domain {:x [0 1] :y [0 1]}})] :theme {:chart {:field {:alpha-factor 2}}}}
                                    {:width 200 :height 200}))))
     (is (some? (error #(plot/build {:charts [(chart/contour {:f (fn [[x y]] (+ x y)) :domain {:x [0 1] :y [0 1]}})] :theme {:chart {:contour {:bogus 1}}}}
                                    {:width 200 :height 200}))))

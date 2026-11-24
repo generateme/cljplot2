@@ -21,7 +21,7 @@
 
 (defn- layout
   ([edges] (layout edges {}))
-  ([edges opts] (graph/sankey-layout (graph/graph edges {:directed? true}) opts)))
+  ([edges opts] (graph/sankey-layout (graph/graph edges {:directed true}) opts)))
 
 (defn- by-id [nodes] (into {} (map (juxt :id identity)) nodes))
 
@@ -57,7 +57,7 @@
             b (first (filter #(= "b" (:id %)) nodes))
             in (first (filter #(= "b" (:to %)) links))]
         (is (close? (* 3.0 (double (:width in))) (- (double (:y1 b)) (double (:y0 b)))))))
-    (testing "1.1 columns: nodes inside [0, 1], at least :pad apart"
+    (testing "1.1 columns: nodes inside [0, 1], at least :gap apart"
       (doseq [[_ column] (group-by :layer nodes)
               [upper lower] (partition 2 1 (sort-by :y1 > column))]
         (is (>= (- (double (:y0 upper)) (double (:y1 lower))) (- 0.02 1e-9))))
@@ -86,7 +86,7 @@
                                    {:align :center}))))
           "a source joins one column before its target"))
     (testing "1.1 :layer fixes the columns; backward or non-integer layers throw"
-      (let [g (graph/graph chain {:directed? true :nodes [{:id "a" :c 0} {:id "b" :c 1} {:id "c" :c 3} {:id "e" :c 3}]})]
+      (let [g (graph/graph chain {:directed true :nodes [{:id "a" :c 0} {:id "b" :c 1} {:id "c" :c 3} {:id "e" :c 3}]})]
         (is (= {"a" 0 "b" 1 "c" 3 "e" 3} (into {} (map (juxt :id :layer)) (:nodes (graph/sankey-layout g {:layer :c}))))))
       (is (= :layer (:key (error #(graph/sankey-layout (graph/graph chain {:nodes [{:id "a" :c 1} {:id "b" :c 0} {:id "c" :c 2} {:id "e" :c 2}]})
                                                        {:layer :c})))))
@@ -100,10 +100,10 @@
                               (> (double (:y0 (nodes "y"))) (double (:y0 (nodes "x")))))))]
       (is (crossing? {:iterations 0}))
       (is (not (crossing? {})))))
-  (testing "1.1 :iterations 0 and :node-sort :input keep the input order, top to bottom"
+  (testing "1.1 :iterations 0 and :order :input keep the input order, top to bottom"
     (let [edges [{:from "a" :to "z" :value 1} {:from "b" :to "z" :value 5} {:from "c" :to "z" :value 1}]]
-      (is (= ["a" "b" "c" "z"] (mapv :id (:nodes (layout edges {:iterations 0 :node-sort :input})))))
-      (is (= ["a" "b" "c" "z"] (mapv :id (:nodes (layout edges {:node-sort :input}))))))))
+      (is (= ["a" "b" "c" "z"] (mapv :id (:nodes (layout edges {:iterations 0 :order :input})))))
+      (is (= ["a" "b" "c" "z"] (mapv :id (:nodes (layout edges {:order :input}))))))))
 
 (deftest sankey-boundary-test
   (testing "1.2 a cycle throws"
@@ -114,24 +114,24 @@
                                                                     {:nodes [{:id "q"}]})
                                                        {})]
       (is (= #{"a" "b"} (set (map :id nodes))))
-      (is (= {:edges 2 :nodes 2} dropped) "c and q"))
-    (is (= {:edges 1 :nodes 0} (:dropped (layout [{:from "a" :to nil :value 1} {:from "a" :to "b" :value 1}])))
+      (is (= 2 dropped) "the loop and the zero flow"))
+    (is (= 1 (:dropped (layout [{:from "a" :to nil :value 1} {:from "a" :to "b" :value 1}])))
         "the graph's own drop - an edge with a nil end"))
   (testing "1.2 no flows - an empty layout; one link - two nodes edge to edge"
     (is (= [] (:nodes (layout []))))
     (let [[a b] (:nodes (layout [{:from "a" :to "b" :value 2}]))]
       (is (= [0.0 0.0 1.0 1.0] (mapv #(m/approx (double %) 9) [(:x0 a) (:y0 a) (:x1 b) (:y1 b)])))))
-  (testing "1.2 bad options and a :pad leaving no room throw with their keys"
+  (testing "1.2 bad options and a :gap leaving no room throw with their keys"
     (are [opts k] (= k (:key (error #(layout flows opts))))
       {:align :top} :align
       {:node-width 0} :node-width
       {:node-width 1} :node-width
-      {:pad -0.1} :pad
-      {:pad 1.0} :pad
+      {:gap -0.1} :gap
+      {:gap 1.0} :gap
       {:iterations -1} :iterations
       {:iterations 1.5} :iterations
-      {:node-sort :value} :node-sort)
-    (is (some? (layout flows {:pad 0.99})) "just enough room: 2 nodes in the fullest column")))
+      {:order :value} :order)
+    (is (some? (layout flows {:gap 0.99})) "just enough room: 2 nodes in the fullest column")))
 
 ;; 2. sankey plot
 
@@ -141,7 +141,7 @@
                                    (set (map (juxt :from :to #(get % :cljplot2.graphs/color)) (get-in bands [:options :data])))))]
       (is (contains? (band-colors {}) ["b" "y" "b"]))
       (is (contains? (band-colors {:link-color :target}) ["b" "y" "y"]))
-      (is (= (c/to-color [150 150 150]) (c/to-color (:color (drawn-style (first (:charts (plot/sankey flows {:link-color :none}))))))))
+      (is (= (c/to-color [150 150 150]) (c/to-color (:color (drawn-style (first (:charts (plot/sankey flows {:link-color :theme}))))))))
       (is (= :link-color (:key (error #(plot/sankey flows {:link-color :from})))))))
   (testing "2.1 labels beside the nodes, inside the frame; legend only for a mapped colour"
     (let [p (plot/sankey flows {})
@@ -154,7 +154,7 @@
                           [:scales :color :legend])))
       (is (= :sankey-label (get-in left [:options :role])) "labels in the sankey role")
       (is (= (c/to-color [255 255 255 170]) (c/to-color (get-in cljplot2.theme/default-theme [:text :sankey-label :background]))) "on translucent boxes")
-      (is (= 2 (count (:charts (plot/sankey flows {:labels? false})))))
+      (is (= 2 (count (:charts (plot/sankey flows {:labels false})))))
       (is (instance? BufferedImage (plot/render-image p {:width 400 :height 300}))))))
 
 ;; 3. alluvial
@@ -165,40 +165,40 @@
 
 (deftest alluvial-graph-test
   (testing "3.1 a node per axis level in natural order, edges per consecutive pair and fill level"
-    (let [g (graph/alluvial-graph people {:axes [:class :sex :age] :value :n})
-          layout (graph/sankey-layout g {:layer :layer :node-sort :input :iterations 0})]
+    (let [g (graph/alluvial-graph people {:variables [:class :sex :age] :value :n})
+          layout (graph/sankey-layout g {:layer :layer :order :input :iterations 0})]
       (is (= [[0 "1st"] [0 "2nd"] [1 "F"] [1 "M"] [2 "adult"] [2 "child"]] (mapv :id (:nodes g))))
       (is (every? #(= 20.0 %) (vals (reduce (fn [acc {:keys [layer value]}] (update acc layer (fnil + 0.0) value)) {} (:nodes layout))))
           "every column sums to the total")
-      (is (= ["1st" "1st" "1st" "1st" "2nd" "2nd" "2nd" "2nd"] (mapv :fill (:edges g))) "edges grouped by fill level")
+      (is (= ["1st" "1st" "1st" "1st" "2nd" "2nd" "2nd" "2nd"] (mapv :strand-color (:edges g))) "edges grouped by fill level")
       (is (= 8 (count (:edges g))))
       (is (= ["1st" "2nd" "F" "M" "adult" "child"] (mapv :name (:nodes layout))) "strata in level order, top to bottom")))
   (testing "3.1 default value - a row each; levels that don't compare - first appearance"
-    (let [g (graph/alluvial-graph [{:a 2 :b "x"} {:a "q" :b "y"} {:a 2 :b "y"}] {:axes [:a :b]})]
+    (let [g (graph/alluvial-graph [{:a 2 :b "x"} {:a "q" :b "y"} {:a 2 :b "y"}] {:variables [:a :b]})]
       (is (= [[0 2] [0 "q"] [1 "x"] [1 "y"]] (mapv :id (:nodes g))))
       (is (= 3.0 (reduce + (map :value (:edges g)))))))
   (testing "3.1 values: nil counts 1, a string or a negative number throws"
-    (is (= 2.0 (reduce + (map :value (:edges (graph/alluvial-graph [{:a 1 :b 2 :n nil} {:a 1 :b 2 :n 1}] {:axes [:a :b] :value :n}))))))
-    (are [v] (= :value (:key (error #(graph/alluvial-graph [{:a 1 :b 2 :n v}] {:axes [:a :b] :value :n}))))
+    (is (= 2.0 (reduce + (map :value (:edges (graph/alluvial-graph [{:a 1 :b 2 :n nil} {:a 1 :b 2 :n 1}] {:variables [:a :b] :value :n}))))))
+    (are [v] (= :value (:key (error #(graph/alluvial-graph [{:a 1 :b 2 :n v}] {:variables [:a :b] :value :n}))))
       "x" -1 ##NaN))
   (testing "3.1 fewer than 2 axes or a missing value throw"
-    (is (= :axes (:key (error #(graph/alluvial-graph people {:axes [:class]})))))
-    (is (= :axes (:key (error #(graph/alluvial-graph people {:axes nil})))))
-    (is (= :axes (:key (error #(graph/alluvial-graph (conj people {:class "3rd"}) {:axes [:class :sex]})))))))
+    (is (= :variables (:key (error #(graph/alluvial-graph people {:variables [:class]})))))
+    (is (= :variables (:key (error #(graph/alluvial-graph people {:variables nil})))))
+    (is (= :variables (:key (error #(graph/alluvial-graph (conj people {:class "3rd"}) {:variables [:class :sex]})))))))
 
 (deftest alluvial-plot-test
   (testing "3.2 strands by fill, grey strata, axis names as ticks"
-    (let [p (plot/alluvial people {:axes [:class :sex :age] :value :n :fill :sex})
+    (let [p (plot/alluvial people {:variables [:class :sex :age] :value :n :strand-color :sex})
           [bands strata labels] (:charts p)]
-      (is (= :fill (get-in bands [:options :mapping :color])))
-      (is (= #{"F" "M"} (set (map :fill (get-in bands [:options :data])))))
+      (is (= :strand-color (get-in bands [:options :mapping :color])))
+      (is (= #{"F" "M"} (set (map :strand-color (get-in bands [:options :data])))))
       (is (= (c/to-color [150 150 150]) (c/to-color (:color (drawn-style strata)))))
       (is (= :text (:kind labels)))
       (is (= "sex" (get-in p [:scales :color :title])))
       (is (= ["class" "sex" "age"] (mapv (get-in p [:scales :x :formatter]) (get-in p [:scales :x :ticks]))))
       (is (instance? BufferedImage (plot/render-image p {:width 500 :height 300})))))
-  (testing "3.2 :axis-names"
-    (let [p (plot/alluvial people {:axes [:class :sex] :axis-names ["Class" "Sex"]})]
+  (testing "3.2 :variable-names"
+    (let [p (plot/alluvial people {:variables [:class :sex] :variable-names ["Class" "Sex"]})]
       (is (= ["Class" "Sex"] (mapv (get-in p [:scales :x :formatter]) (get-in p [:scales :x :ticks])))))))
 
 ;; 4. flow sunburst
@@ -227,10 +227,10 @@
     (is (= :color-by (:key (error #(plot/build (assoc-in (icicle {:color-by :name}) [:mapping :color] :l1))))))))
 
 (deftest sequence-levels-test
-  (testing "4.2 steps split, the end marker removed, identical sequences summed, padded with nil"
+  (testing "4.2 steps split, the end marker removed (`:keep-end false`), identical sequences summed, padded with nil"
     (let [{:keys [rows hierarchy dropped]} (hierarchy/sequence-levels [{:sequence "a-b-end"} {:sequence "a-b-end"} {:sequence "a-end"}
                                                                        {:sequence "a-b-c"} {:sequence ""} {:sequence nil}]
-                                                                      {})]
+                                                                      {:keep-end false})]
       (is (= [:step-1 :step-2 :step-3] hierarchy))
       (is (= [{:step-1 "a" :step-2 "b" :step-3 nil :value 2.0} {:step-1 "a" :step-2 nil :step-3 nil :value 1.0}
               {:step-1 "a" :step-2 "b" :step-3 "c" :value 1.0}]
@@ -238,13 +238,14 @@
       (is (= 2 dropped) "an empty string and nil")))
   (testing "4.2 sequences of steps, separators, values"
     (is (= [{:step-1 :x :step-2 :y :value 5.0}]
-           (:rows (hierarchy/sequence-levels [{:s [:x :y :stop] :n 5}] {:sequence :s :value :n :end :stop}))))
+           (:rows (hierarchy/sequence-levels [{:s [:x :y :stop] :n 5}] {:sequence :s :value :n :end :stop :keep-end false}))))
     (is (= [{:step-1 "a" :step-2 "b" :value 1.0}]
            (:rows (hierarchy/sequence-levels [{:sequence "a.b"}] {:separator "."}))) "a literal separator, not a regex"))
   (testing "4.2 only end markers - dropped"
-    (is (= 1 (:dropped (hierarchy/sequence-levels [{:sequence "end"}] {})))))
-  (testing "4.2 :keep-end? - the end marker a step of its own (only at the end)"
-    (is (= [{:step-1 "a" :step-2 "end" :value 1.0}] (:rows (hierarchy/sequence-levels [{:sequence "a-end"}] {:keep-end? true}))))
+    (is (= 1 (:dropped (hierarchy/sequence-levels [{:sequence "end"}] {:keep-end false}))))
+    (is (= 0 (:dropped (hierarchy/sequence-levels [{:sequence "end"}] {}))) "kept by default"))
+  (testing "4.2 :keep-end - the end marker a step of its own (only at the end)"
+    (is (= [{:step-1 "a" :step-2 "end" :value 1.0}] (:rows (hierarchy/sequence-levels [{:sequence "a-end"}] {:keep-end true}))))
     (is (= [{:step-1 "end" :step-2 "a" :value 1.0}] (:rows (hierarchy/sequence-levels [{:sequence "end-a"}] {})))
         "an end marker inside a sequence is an ordinary step"))
   (testing "4.2 values: nil counts 1, a string or a negative number throws"
@@ -254,14 +255,14 @@
 
 (deftest sequences-plot-test
   (testing "4.3 partition by name under polar with a hole"
-    (let [p (plot/sequences [{:sequence "home-search-end"} {:sequence "home-end"}] {:inner 0.4})]
+    (let [p (plot/sequences [{:sequence "home-search-end"} {:sequence "home-end"}] {:inner-radius 0.4})]
       (is (= :name (get-in (first (:charts p)) [:options :color-by])))
       (is (= {:kind :polar :inner 0.4} (:coord p)))
       (is (instance? BufferedImage (plot/render-image p {:width 300 :height 300})))))
-  (testing "4.3 the end marker kept by default, with a legend entry; :keep-end? false drops it"
+  (testing "4.3 the end marker kept by default, with a legend entry; :keep-end false drops it"
     (let [rows [{:sequence "home-search-end"} {:sequence "home-end"}]
           names (fn [p] (set (keep identity (mapcat vals (map #(dissoc % :value) (:data p))))))]
       (is (contains? (names (plot/sequences rows {})) "end"))
-      (is (not (contains? (names (plot/sequences rows {:keep-end? false})) "end")))
+      (is (not (contains? (names (plot/sequences rows {:keep-end false})) "end")))
       (is (= ["end" "home" "search"]
              (mapv :label (:entries (first (legend/legends (pipeline/build (plot/sequences rows {}) {:width 300 :height 300}))))))))))

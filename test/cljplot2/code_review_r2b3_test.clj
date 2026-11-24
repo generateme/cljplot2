@@ -8,6 +8,7 @@
             [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
             [cljplot2.data.rows :as rows]
+            [cljplot2.chart.strip :as strip-chart]
             [cljplot2.data.strip :as strip]
             [cljplot2.graphics.draw :as draw]
             [cljplot2.graphics.measure :as measure]
@@ -69,7 +70,7 @@
     (let [px (glyph-pixels #(draw/circle-key! % {:x 0 :y 0 :w 0 :h 40} :black nil))]
       (is (= 0xffffff (px 20 20)))))
   (testing "spike: a vertical line over its span only"
-    (let [px (glyph-pixels #(draw/spike-key! % {:x 0 :y 0 :w 40 :h 40} {:color :black :width 2.0 :span [0.25 0.75]}))]
+    (let [px (glyph-pixels #(draw/spike-key! % {:x 0 :y 0 :w 40 :h 40} {:color :black :line-width 2.0 :span [0.25 0.75]}))]
       (is (zero? (px 20 20)))
       (is (= 0xffffff (px 20 5)))
       (is (= 0xffffff (px 20 35)))
@@ -103,7 +104,7 @@
     (testing "the first dimension without a valid value throws with its key and the row count"
       (let [e (try (rows/check-mapped! rows [[:b :b] [:c :c] [:d :d]]) (catch clojure.lang.ExceptionInfo e e))]
         (is (re-find #"No valid values for a mapped dimension" (ex-message e)))
-        (is (= {:key :mapping :value :c :rows 2} (select-keys (ex-data e) [:key :value :rows]))))
+        (is (= {:key :mapping :in [:mapping :c] :rows 2} (select-keys (ex-data e) [:key :in :rows]))))
       (is (thrown? clojure.lang.ExceptionInfo (rows/check-mapped! [{:a nil}] [[:a :a]]))))
     (testing "a custom predicate of the dimension and the value"
       (is (nil? (rows/check-mapped! rows acc (fn [k x] (if (= k :b) (string? x) (number? x))))))
@@ -111,7 +112,7 @@
     (testing "charts report it the same way"
       (let [e (try (plot/build {:data [{:x 1 :y ##NaN} {:x 2 :y nil}] :mapping {:x :x :y :y} :charts [(chart/line)]})
                    (catch clojure.lang.ExceptionInfo e e))]
-        (is (= {:key :mapping :value :y :rows 2} (select-keys (ex-data e) [:key :value :rows])))))))
+        (is (= {:key :mapping :in [:mapping :y] :rows 2} (select-keys (ex-data e) [:key :in :rows])))))))
 
 (def ^:private strip-kinds [:bar :beeswarm :box :bullet :dotplot :extent :rug :stripplot :violin])
 
@@ -120,12 +121,12 @@
     (doseq [[k ch] (map vector strip-kinds [(chart/bar) (chart/beeswarm) (chart/box) (chart/bullet) (chart/dotplot)
                                             (chart/extent) (chart/rug) (chart/stripplot) (chart/violin)])]
       (is (= k (:kind ch)))
-      (is (= strip/compute (:compute ch)))
-      (is (= strip/draw (:draw ch)))
-      (is (contains? (methods strip/in-frame-compute) k))
-      (is (contains? (methods strip/in-frame-draw) k))))
+      (is (= strip-chart/compute (:compute ch)))
+      (is (= strip-chart/draw (:draw ch)))
+      (is (contains? (methods strip-chart/in-frame-compute) k))
+      (is (contains? (methods strip-chart/in-frame-draw) k))))
   (testing "a kind without methods is an error"
-    (is (thrown? IllegalArgumentException (strip/in-frame-compute {:kind :nope} {} {}))))
+    (is (thrown? IllegalArgumentException (strip-chart/in-frame-compute {:kind :nope} {} {}))))
   (testing "both orientations render"
     (let [data (for [l ["a" "b"] i (range 5)] {:l l :v (double i)})]
       (doseq [mapping [{:x :l :y :v} {:x :v :y :l}]

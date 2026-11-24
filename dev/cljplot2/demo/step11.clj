@@ -1,18 +1,17 @@
 (ns cljplot2.demo.step11
   "Step 11 demo: LMDVR Fig 5.6 (quakes: shingles, iso aspect, colour bar, draw order)."
-  (:require [clojure.data.json :as json]
-            [clojure.java.io :as io]
-            [cljplot2.chart :as chart]
+  (:require [cljplot2.chart :as chart]
+            [cljplot2.demo.data :as data]
             [cljplot2.data.shingle :as shingle]))
 
-(def quakes (json/read-str (slurp (io/resource "quakes.json")) :key-fn keyword))
+(def quakes (data/json-rows "quakes.json"))
 
 (def fig-5-6
-  {:data (shingle/shingle quakes :mag {:count 4 :as :magnitude :label "Magnitude"})
+  {:data (shingle/shingle quakes :mag {:n 4 :as :magnitude :label "Magnitude"})
    :mapping {:x :long :y :lat :facet :magnitude :color :depth :order :depth}
    :scales {:color {:range [[230 230 230] [60 60 60]]}}
    :aspect :iso
-   :charts [(chart/scatter {:size 8 :shape \O :stroke-color :black :order-direction :descending})]
+   :charts [(chart/scatter {:size 8 :shape \O :stroke-color :black :descending true})]
    :labels {:x "Longitude" :y "Latitude"}})
 
 (def fig-5-6-free (dissoc fig-5-6 :aspect))

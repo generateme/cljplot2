@@ -5,14 +5,14 @@
   the mapping), the mapped `:xend` / `:yend`, or - both absent - the start coordinate: `(chart/segment {:yend 0})`
   with `:x :y` mapped draws stems from 0 (lollipops with a scatter; horizontal ones in a flipped plot).
 
-  Options (style defaults from theme `[:chart :segment]`): `:color`, `:width`, `:dash`, `:xend`, `:yend`,
+  Options (style defaults from theme `[:chart :segment]`): `:color`, `:line-width`, `:dash`, `:xend`, `:yend`,
   `:padding {:x [lo hi] :y [lo hi]}` (default 5% each side; none on the side where a literal `:xend` / `:yend` is the
   end of the axis extent - a request that wins over other charts' default padding, so lollipop stems start at the
   axis; voided when another chart's data goes beyond the baseline, see [[cljplot2.data.rows/explicit-padding]]). A row with an invalid coordinate it needs is dropped
   (counted per key). Groups (see [[cljplot2.data.group]]) come from ordinal aesthetics (`:color`, `:dash`) and
   `:group`; a linear or binned `:color` colours each segment by its row's value (rows outside the colour scale's
   explicit domain dropped, NA rows in the theme NA colour). A mapped `:size` is the line width: per row through a
-  linear size scale (NA rows in the style `:width`; the legend shows lines of those widths), per group when ordinal.
+  linear size scale (NA rows in the style `:line-width`; the legend shows lines of those widths), per group when ordinal.
 
   Arrows (see [[cljplot2.graphics.arrow]]): `:arrow {:end :start :size :shape}`; `:start-gap` / `:end-gap` (pixels)
   shorten the ends, a mapped `:end-gap` (a number of pixels per row; `nil` - the option) wins over the option - e.g.
@@ -147,7 +147,7 @@
                       (group/continuous-color-stats continuous (update-vals data #(mapcat :colors (:segments %))) plot-scales))
         size-stats (when sized
                      (group/continuous-stats :size sized (update-vals data #(mapcat :sizes (:segments %))) plot-scales))
-        invalid (fn [f] (count (remove #(data/valid-value? (f %)) rows)))
+        invalid #(data/invalid-count % rows)
         position-extents (into {} (keep (fn [[panel {:keys [segments]}]]
                                           (let [xs (concat (mapcat :x segments) (mapcat :xend segments))]
                                             (when (seq xs)
@@ -156,20 +156,20 @@
                                data)
         requests (into {} (keep (fn [[k end]] (some->> (baseline-request end (map k (vals position-extents))) (vector k))))
                        {:x (:xend options) :y (:yend options)})]
-    {:data data
-     :extents (merge-with merge (group/aesthetic-extents panels plot-scales) (:extents color-stats) (:extents size-stats)
-                          position-extents)
-     :padding (merge (into {} (map (fn [k] [k (mapv (fn [request default] (if (nil? request) default request))
-                                                     (get requests k [nil nil]) data/axis-padding)]))
-                           [:x :y])
-                     (:padding options))
-     :padding-explicit (data/explicit-padding requests options)
-     :na (cond-> (group/na-dims panels) (:na? color-stats) (conj :color) (:na? size-stats) (conj :size))
-     :dropped (cond-> (assoc dropped :x (invalid x-of) :y (invalid y-of))
-                xend-mapped? (assoc :xend (invalid xend-of))
-                yend-mapped? (assoc :yend (invalid yend-of))
-                continuous (assoc :color (:dropped color-stats))
-                sized (assoc :size (:dropped size-stats)))}))
+    (into (data/padding-stats (into {} (map (fn [k] [k (mapv (fn [request default] (if (nil? request) default request))
+                                                              (get requests k [nil nil]) data/axis-padding)]))
+                                    [:x :y])
+                              requests
+                              options)
+          {:data data
+           :extents (merge-with merge (group/aesthetic-extents panels plot-scales) (:extents color-stats) (:extents size-stats)
+                                position-extents)
+           :na (cond-> (group/na-dims panels) (:na? color-stats) (conj :color) (:na? size-stats) (conj :size))
+           :dropped (cond-> (assoc dropped :x (invalid x-of) :y (invalid y-of))
+                      xend-mapped? (assoc :xend (invalid xend-of))
+                      yend-mapped? (assoc :yend (invalid yend-of))
+                      continuous (assoc :color (:dropped color-stats))
+                      sized (assoc :size (:dropped size-stats)))})))
 
 (defn- segment-colors
   "Gives the colour of every segment of a group.
@@ -197,15 +197,15 @@
 
   - `sizes` (sequence or `nil`): the rows' linear size values; `nil` - the group style's width for all.
   - `n` (long): the segment count.
-  - `st` (map): the group style - `:width` (also for NA).
+  - `st` (map): the group style - `:line-width` (also for NA).
   - `scales` (map): the finalized scales - `:size`.
 
   Returns a sequence of `n` widths; `nil` (the segment skipped) for a value outside the size scale's domain."
   [sizes n st scales]
   (if sizes
-    (let [width-of (if-let [sc (:size scales)] (aesthetic/attribute-fn :size sc (:width st)) (constantly (:width st)))]
+    (let [width-of (if-let [sc (:size scales)] (aesthetic/attribute-fn :size sc (:line-width st)) (constantly (:line-width st)))]
       (map width-of sizes))
-    (repeat n (:width st))))
+    (repeat n (:line-width st))))
 
 (defn- gap
   "Gives the end gap of a segment.
@@ -217,7 +217,7 @@
 
   Returns the gap in pixels."
   ^double [row-gap option]
-  (if (and (number? row-gap) (m/valid-double? (double row-gap)) (m/not-neg? (double row-gap)))
+  (if (and (schema/finite? row-gap) (m/not-neg? (double row-gap)))
     (double row-gap)
     (double (or option 0.0))))
 
@@ -233,7 +233,7 @@
   [canvas paths st [colors widths end-gaps options]]
   (doseq [[path color width row-gap] (map vector paths colors widths (or end-gaps (repeat nil)))
           :when (and (some? color) (some? width))]
-    (arrow/draw-run! canvas path (assoc st :color color :width width)
+    (arrow/draw-run! canvas path (assoc st :color color :line-width width)
                      [(:arrow options) (:start-gap options) (gap row-gap (:end-gap options))])))
 
 (defn draw
@@ -254,13 +254,12 @@
                 (scale/range-projection scales)
                 (let [projection (scale/projection scales)] (fn [vx vy] (let [^Vec2 p (projection vx vy)] [(.x p) (.y p)]))))
         theme (:theme env)
-        placed? (fn [[[^double x0 ^double y0] [^double x1 ^double y1]]]
-                  (and (m/valid-double? x0) (m/valid-double? y0) (m/valid-double? x1) (m/valid-double? y1)))
+        placed? (fn [[a b]] (and (data/finite-point? a) (data/finite-point? b)))
         ;; polar: range ends to pixels - a chord, or an arc with :arcs
         drawn (if geometry #(coord/line-path geometry % (:arcs geometry)) identity)]
     (doseq [{:keys [x y xend yend colors sizes end-gaps aesthetics]} segments
             :let [group-st (group/style style aesthetics scales theme)
-                  st (when group-st (cond-> group-st (:size group-st) (-> (assoc :width (:size group-st)) (dissoc :size))))]
+                  st (when group-st (cond-> group-st (:size group-st) (-> (assoc :line-width (:size group-st)) (dissoc :size))))]
             :when st
             :when (or (not (or sizes end-gaps (:arrow options) (:start-gap options) (:end-gap options)))
                       (let [n (count x)
@@ -289,6 +288,6 @@
   - `box` (map): the key's box.
   - `env` (map): `:theme`."
   [chart attributes canvas box env]
-  (polyline/key-glyph! canvas box (cond-> (merge (theme/resolved-style (:theme env) chart) (select-keys attributes [:color :dash]))
-                                    (:size attributes) (assoc :width (:size attributes)))
+  (polyline/key-glyph! canvas box (cond-> (theme/key-style env chart attributes [:color :dash])
+                                    (:size attributes) (assoc :line-width (:size attributes)))
                        :none))

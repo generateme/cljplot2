@@ -46,7 +46,7 @@
       (into (builder-entries-of [:title :theme]))))
 
 (defn arrange
-  "A plot map arranging plots in a grid of cells filled row by row: `{:arrange {:plots plots ...}}`.
+  "Builds a plot map arranging plots in a grid of cells filled row by row: `{:arrange {:plots plots ...}}`.
 
   Parameters:
 
@@ -72,7 +72,7 @@
 
 ;; scatter-plot matrix
 
-(def ^{:const true :tag 'long} max-pairs-variables
+(def ^{:private true :const true :tag 'long} max-pairs-variables
   "Most variables [[pairs]] takes (each cell is a sub-plot)."
   20)
 
@@ -103,22 +103,22 @@
   (into {} (map (fn [k]
                   (let [acc (data/row-accessor k k)
                         vs (keep acc rows)
-                        finite (filter (fn [v] (and (number? v) (m/valid-double? v))) vs)]
+                        finite (filter schema/finite? vs)]
                     (when (or (empty? finite) (some (fn [v] (not (number? v))) vs))
                       (schema/fail! (str "Pairs variable " k " needs numeric values.") {:key :variables :value k}))
                     [k (variable-domain finite)])))
         variables))
 
 (defn- slot-charts
-  "The charts of a pairs slot.
+  "Gives the charts of a pairs slot.
 
   Parameters:
 
-  - `slot` (chart, sequence of charts or `nil`): a `:lower`, `:upper` or `:diagonal` value.
+  - `slot` (chart, sequence of charts or `:none`): a given `:lower`, `:upper` or `:diagonal` value (not `nil` - the caller resolves the default).
 
-  Returns a vector of charts, empty for `nil`."
+  Returns a vector of charts, empty for `:none`."
   [slot]
-  (cond (nil? slot) [] (map? slot) [slot] :else (vec slot)))
+  (cond (= :none slot) [] (map? slot) [slot] :else (vec slot)))
 
 (defn- single-chart?
   "Tests whether a pairs slot holds a single chart value (a map), not a sequence of charts.
@@ -132,9 +132,10 @@
   (map? v))
 
 (def ^:private slot-schema
-  "Schema of a pairs slot: a chart, a sequence of charts or `nil` (none)."
-  [:maybe [:multi {:dispatch single-chart? :cljplot2/type-doc "a chart or a vector of charts"}
-           [true pipeline/chart-schema] [false [:sequential pipeline/chart-schema]]]])
+  "Schema of a pairs slot: a chart, a sequence of charts, `:none` (empty cells) or `nil` (the default charts)."
+  [:maybe [:multi {:dispatch #(cond (= :none %) :none (single-chart? %) :chart :else :charts)
+                   :cljplot2/type-doc ":none, a chart or a vector of charts"}
+           [:none [:= :none]] [:chart pipeline/chart-schema] [:charts [:sequential pipeline/chart-schema]]]])
 
 (def pairs-options
   "Schema of the `options` of [[pairs]] (the variables' count and values are checked against the data)."
@@ -143,20 +144,20 @@
         [:sequential {:min 2 :max max-pairs-variables} keyword?]]
        (schema/nilable :mapping {:description "extra mapping of every cell (grouping aesthetics such as :color, :group)"}
                        data/mapping-schema)
-       (schema/optional :lower {:description "charts below the diagonal; nil - empty cells"
+       (schema/nilable :lower {:description "charts below the diagonal; :none - empty cells"
                                 :cljplot2/default-doc "(chart/scatter)"}
                         slot-schema)
-       (schema/optional :upper {:description "charts above the diagonal; nil - empty cells"
+       (schema/nilable :upper {:description "charts above the diagonal; :none - empty cells"
                                 :cljplot2/default-doc "(chart/correlation {:glyph :number})"}
                         slot-schema)
-       (schema/optional :diagonal {:description "charts of the diagonal cells (in their own magnitude scale); :names - the variable's name (text role :pairs-name); nil - empty cells"
+       (schema/nilable :diagonal {:description "charts of the diagonal cells (in their own magnitude scale); :names - the variable's name (text role :pairs-name); :none - empty cells"
                                    :cljplot2/default-doc "(chart/density)"}
-                        [:maybe [:multi {:dispatch #(cond (= :names %) :names (map? %) :chart :else :charts)
-                                         :cljplot2/type-doc ":names, a chart or a vector of charts"}
-                                 [:names [:= :names]]
+                        [:maybe [:multi {:dispatch #(cond (#{:names :none} %) :keyword (map? %) :chart :else :charts)
+                                         :cljplot2/type-doc ":names, :none, a chart or a vector of charts"}
+                                 [:keyword [:enum :names :none]]
                                  [:chart pipeline/chart-schema]
                                  [:charts [:sequential pipeline/chart-schema]]]])
-       (schema/nilable :labels {:description "display names of the variables, {variable text}"
+       (schema/nilable :variable-names {:description "display names of the variables, {variable text}"
                                 :cljplot2/default-doc "the variable's name"}
                        [:map-of keyword? string?])
        (schema/nilable :scales {:description "the colour scale of every cell that colours (one colour bar), {:color spec}; its :domain wins over the matrix's computed one"}
@@ -166,17 +167,17 @@
       (into (builder-entries-of [:title]))))
 
 (defn pairs
-  "A scatter-plot matrix of numeric variables as an [[arrange]] plot map: cell (row i, column j) plots variable j on x against variable i on y.
+  "Builds a scatter-plot matrix of numeric variables as an [[arrange]] plot map: cell (row i, column j) plots variable j on x against variable i on y.
 
   Parameters:
 
-  - `data` (rows or columns): the data.
+  - `rows` (rows or columns): the data.
   - `options` (map):
-    - `:variables` - 2 to [[max-pairs-variables]] numeric columns (keywords), in matrix order (required);
+    - `:variables` - 2 to 20 numeric columns (keywords), in matrix order (required);
     - `:mapping` - extra mapping of every cell (grouping aesthetics such as `:color`, `:group`);
-    - `:lower` / `:upper` - charts below / above the diagonal: a chart, a vector of charts, `nil` (an empty cell); defaults `(chart/scatter)` and `(chart/correlation {:glyph :number})`;
-    - `:diagonal` - charts of the diagonal cells (x - the variable, y their own magnitude scale with its axis hidden), default `(chart/density)`; `:names` - the variable's name in the middle of the cell (text role `:pairs-name`);
-    - `:labels` - `{variable text}`, display names (default the variable's name);
+    - `:lower` / `:upper` - charts below / above the diagonal: a chart, a vector of charts or `:none` (empty cells); `nil` or absent - the defaults `(chart/scatter)` and `(chart/correlation {:glyph :number})`;
+    - `:diagonal` - charts of the diagonal cells (x - the variable, y their own magnitude scale with its axis hidden), default `(chart/density)`; `:names` - the variable's name in the middle of the cell (text role `:pairs-name`); `:none` - empty cells;
+    - `:variable-names` - `{variable text}`, display names (default the variable's name);
     - `:scales` - `{:color spec}`, the colour scale of every cell that colours (a mapped or computed colour), so the matrix has one colour bar; its `:domain` wins over a computed one;
     - `:theme` - every cell's and the matrix's theme (cells have no plot margin and are `[:facet :gap]` apart, as facet panels; a `[:plot :margin]` / `[:multiplot :gap]` in `:theme` wins);
     - `:title` - a title above the matrix.
@@ -205,31 +206,31 @@
   has one colour bar (else an error keyed `:upper`). A matrix as a heatmap (one tile per pair) is `chart/tile` over
   [[cljplot2.data.pairwise/matrix-rows]] (or `fastmath.stats/correlation-matrix` rows) instead."
   {:cljplot2/options pairs-options}
-  [data {:keys [mapping labels theme title] matrix-scales :scales variable-keys :variables lower-slot :lower upper-slot :upper diagonal-slot :diagonal
-         :or {lower-slot ::default upper-slot ::default diagonal-slot ::default} :as options}]
+  [rows {:keys [mapping variable-names theme title] matrix-scales :scales variable-keys :variables lower-slot :lower upper-slot :upper diagonal-slot :diagonal
+         :as options}]
   (let [_ (schema/check-options! pairs-options options)
         variables (vec variable-keys)
         n (count variables)
         n- (m/dec n)
         n+ (m/inc n)
-        rows (data/rows data)
-        domains (variable-domains rows variables)
-        name-of (fn [k] (get labels k (name k)))
+        row-maps (data/rows rows)
+        domains (variable-domains row-maps variables)
+        name-of (fn [k] (get variable-names k (name k)))
         pair-mapping (assoc mapping :x (variables 1) :y (variables 0))
         ;; pairwise charts share the matrix's colour domain (their values have no fixed range) and one text size
-        settings (pairwise/matrix-settings {:lower (if (= ::default lower-slot) [(chart/scatter)] (slot-charts lower-slot))
-                                            :upper (if (= ::default upper-slot) [(chart/correlation {:glyph :number})] (slot-charts upper-slot))}
-                                           rows variables pair-mapping)
+        settings (pairwise/matrix-settings {:lower (if (nil? lower-slot) [(chart/scatter)] (slot-charts lower-slot))
+                                            :upper (if (nil? upper-slot) [(chart/correlation {:glyph :number})] (slot-charts upper-slot))}
+                                           row-maps variables pair-mapping)
         lower (get-in settings [:slots :lower])
         upper (get-in settings [:slots :upper])
         color-scale (merge (when-let [d (:domain settings)] {:domain d}) (:color matrix-scales))
         colors? (fn [charts cell-mapping] (or (some? (:color cell-mapping))
                                               (some #(contains? (aesthetic/computed-aesthetics % cell-mapping) :color) charts)))
-        diagonal (if (= ::default diagonal-slot) [(chart/density)] diagonal-slot)
+        diagonal (if (nil? diagonal-slot) [(chart/density)] diagonal-slot)
         mapped? (seq (aesthetic/mapped-dims mapping))
         ;; aesthetics with continuous values (e.g. a numeric :color) color marks without grouping: left out on the
         ;; diagonal, whose 1d charts group by their aesthetics
-        continuous (set (filter (fn [k] (let [vs (keep (data/row-accessor k (mapping k)) rows)]
+        continuous (set (filter (fn [k] (let [vs (keep (data/row-accessor k (mapping k)) row-maps)]
                                          (and (seq vs) (every? number? vs) (not (accessor/categorical? (mapping k))))))
                                 (aesthetic/mapped-dims mapping)))
         diagonal-mapping (apply dissoc mapping continuous)
@@ -252,7 +253,7 @@
                                   diag? (slot-charts diagonal)
                                   (m/> i j) lower
                                   :else upper)]
-                 (cond-> {:data rows
+                 (cond-> {:data row-maps
                           :mapping (if diag? (assoc diagonal-mapping :x vx) (assoc mapping :x vx :y vy))
                           :charts charts
                           ;; exact domains (already padded): no chart padding on top
@@ -271,7 +272,7 @@
                    (assoc-in [:scales :color] color-scale)
                    true (assoc :theme cell-theme))))
         legend-cell (fn [^long i] (cond-> {:legend-only true :theme cell-theme}
-                                   (m/zero? i) (assoc :data rows :mapping pair-mapping :charts legend-charts)
+                                   (m/zero? i) (assoc :data row-maps :mapping pair-mapping :charts legend-charts)
                                    (and (m/zero? i) (seq color-scale) (colors? legend-charts pair-mapping)) (assoc :scales {:color color-scale})))
         plots (vec (for [^long i (range n)
                          ^long j (range (if legend? n+ n))]

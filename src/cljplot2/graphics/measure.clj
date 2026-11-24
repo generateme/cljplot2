@@ -4,9 +4,11 @@
   Text metrics depend on the rendering hint (fractional metrics), not on canvas size,
   so content is measured on a 1x1 scratch canvas created with the target canvas's hint.
 
-  Functions: measuring [[natural-size]], [[validate-content]], [[content-kind]], [[scratch-canvas]],
-  [[call-with-scratch-canvas]]; label thinning [[spans-overlap?]], [[kept-label-indices]], [[label-boxes-overlap?]],
-  [[kept-box-indices]]; geometry [[boxes-overlap?]], [[max-size]]."
+  Functions: measuring [[natural-size]], [[label-size]], [[validate-content]], [[content-kind]], [[scratch-canvas]],
+  [[call-with-scratch-canvas]]; label thinning [[spans-overlap?]], [[kept-label-indices]],
+  [[kept-box-indices]]; geometry [[boxes-overlap?]], [[max-size]].
+
+  Options: [[rendering-hints]]."
   (:require [cljplot2.schema :as schema]
             [clojure2d.core :as c2d]
             [fastmath.core :as m]
@@ -97,7 +99,7 @@
   (and (m/< ax (m/+ bx bw)) (m/< bx (m/+ ax aw))
        (m/< ay (m/+ by bh)) (m/< by (m/+ ay ah))))
 
-(defn label-boxes-overlap?
+(defn- label-boxes-overlap?
   "Tests whether two label boxes overlap by more than 1 px both across and along (natural sizes are rounded up).
 
   Parameters:
@@ -174,3 +176,16 @@
 (defmethod natural-size :default
   [content _]
   (schema/fail! "Unknown content kind." {:key :kind :value (:kind content)}))
+
+(defn label-size
+  "Gives the natural size of a text in a text role.
+
+  Parameters:
+
+  - `role` (keyword): the text role (see [[cljplot2.theme/text-roles]]).
+  - `text`: the label text.
+  - `env` (map): `:canvas` - a scratch canvas in graphics context, `:theme`.
+
+  Returns the `Vec2` width and height in pixels of the label `{:kind :label :role role :text text}` (see [[natural-size]])."
+  ^Vec2 [role text env]
+  (natural-size {:kind :label :role role :text text} env))

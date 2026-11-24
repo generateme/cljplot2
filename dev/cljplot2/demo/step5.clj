@@ -1,10 +1,9 @@
 (ns cljplot2.demo.step5
   "Step 5 demo: scatter of `faithful` (eruptions vs waiting) (plain and debug)."
-  (:require [clojure.data.json :as json]
-            [clojure.java.io :as io]
-            [cljplot2.chart :as chart]))
+  (:require [cljplot2.chart :as chart]
+            [cljplot2.demo.data :as data]))
 
-(def faithful (json/read-str (slurp (io/resource "faithful.json")) :key-fn keyword))
+(def faithful (data/json-rows "faithful.json"))
 
 (def plot
   {:data faithful

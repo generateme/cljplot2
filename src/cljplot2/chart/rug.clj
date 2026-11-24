@@ -5,13 +5,14 @@
   Options (style defaults from theme `[:chart :rug]`): `:color`, `:line-width` (pixels; `:width` is the strip option); `:padding {:x [lo hi]}`
   (default `[0.05 0.05]`), plus the strip options and `:data` / `:mapping`.
 
-  Functions: [[legend]] - its key glyph (the chart computes and draws through [[cljplot2.data.strip/compute]] and [[cljplot2.data.strip/draw]]); [[schemas]] - its style, options and mapping."
+  Functions: [[legend]] - its key glyph (the chart computes and draws through [[cljplot2.chart.strip/compute]] and [[cljplot2.chart.strip/draw]]); [[schemas]] - its style, options and mapping."
   (:require [clojure2d.core :as c2d]
             [fastmath.core :as m]
             [fastmath.vector :as v]
             [cljplot2.data.group :as group]
             [cljplot2.graphics.draw :as draw]
             [cljplot2.data.rows :as data]
+            [cljplot2.chart.strip :as strip-chart]
             [cljplot2.data.strip :as strip]
             [cljplot2.schema :as schema]
             [cljplot2.theme :as theme])
@@ -63,7 +64,7 @@
                           (strip/extents place items (fn [{:keys [values]}] [(v/mn values) (v/mx values)])))
      :padding (strip/padding place options)
      :padding-explicit (strip/explicit-padding place options)
-     :padding-px (strip/n-label-room options items env)
+     :padding-px (strip-chart/n-label-room options items env)
      :na (group/na-dims panels)
      :dropped dropped}))
 
@@ -81,9 +82,9 @@
 
   Draws a line across its slot at each value of every item whose group style has a positive `:line-width` (a group outside its scale's domain is skipped, as are values the scale can't place), then the n labels.
 
-  See also [[cljplot2.data.strip/placement]], [[cljplot2.data.strip/draw-n-labels!]]."
+  See also [[cljplot2.chart.strip/placement]], [[cljplot2.chart.strip/draw-n-labels!]]."
   [_chart {:keys [items style place options]} canvas box scales env]
-  (let [{:keys [point] :as pl} (strip/placement box scales options place)]
+  (let [{:keys [point] :as pl} (strip-chart/placement box scales options place)]
     (doseq [{:keys [level slot values aesthetics]} items
             :let [st (group/style style aesthetics scales (:theme env))]
             :when (and st (m/pos? (double (:line-width st))))]
@@ -95,11 +96,11 @@
                     ^Vec2 b (point v level hi)]
               :when (and (data/finite-point? a) (data/finite-point? b))]
         (c2d/line canvas a b)))
-    (strip/draw-n-labels! canvas pl items (fn [{:keys [values]}] (v/mx values)) options scales env)))
+    (strip-chart/draw-n-labels! canvas pl items (fn [{:keys [values]}] (v/mx values)) options scales env)))
 
-(defmethod strip/in-frame-compute :rug [chart chart-split env] (compute-in-strip-frame chart chart-split env))
+(defmethod strip-chart/in-frame-compute :rug [chart chart-split env] (compute-in-strip-frame chart chart-split env))
 
-(defmethod strip/in-frame-draw :rug [chart computed canvas box scales env]
+(defmethod strip-chart/in-frame-draw :rug [chart computed canvas box scales env]
   (draw-in-strip-frame chart computed canvas box scales env))
 
 (defn legend
@@ -115,5 +116,5 @@
 
   The line spans the middle 60% of the box height, at least 1 pixel wide."
   [chart attributes canvas box env]
-  (let [st (merge (theme/resolved-style (:theme env) chart) (select-keys attributes [:color]))]
-    (draw/spike-key! canvas box {:color (:color st) :width (m/max 1.0 (double (:line-width st))) :span [0.2 0.8]})))
+  (let [st (theme/key-style env chart attributes [:color])]
+    (draw/spike-key! canvas box {:color (:color st) :line-width (m/max 1.0 (double (:line-width st))) :span [0.2 0.8]})))

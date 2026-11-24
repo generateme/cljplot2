@@ -16,10 +16,10 @@
 
   Options (style defaults from theme `[:chart :dotplot]`): `:color`, `:stroke-color`, `:stroke-width`, `:shape` (as
   scatter, see [[cljplot2.graphics.shape]]), `:size` (the drawn dot size; default the diameter above); `:method`,
-  `:binwidth`, `:origin` (`:histogram` only - `ex-info {:key :origin}` otherwise), `:at`, `:stack-dir`, `:padding {:x
+  `:binwidth`, `:origin` (`:histogram` only - a validation error otherwise), `:at`, `:stack-dir`, `:padding {:x
   [lo hi]}` (default `[0.05 0.05]`), plus the strip options and `:data` / `:mapping`.
 
-  Functions: [[legend]] - the chart contract's key glyph (the chart computes and draws through [[cljplot2.data.strip/compute]] and [[cljplot2.data.strip/draw]]); [[schemas]] - its style, options and mapping."
+  Functions: [[legend]] - the chart contract's key glyph (the chart computes and draws through [[cljplot2.chart.strip/compute]] and [[cljplot2.chart.strip/draw]]); [[schemas]] - its style, options and mapping."
   (:require [clojure2d.core :as c2d]
             [fastmath.core :as m]
             [fastmath.vector :as v]
@@ -27,6 +27,7 @@
             [cljplot2.graphics.draw :as draw]
             [cljplot2.data.group :as group]
             [cljplot2.data.rows :as data]
+            [cljplot2.chart.strip :as strip-chart]
             [cljplot2.data.strip :as strip]
             [cljplot2.graphics.shape :as shape]
             [cljplot2.schema :as schema]
@@ -48,7 +49,8 @@
 (def schemas
   "Schemas of the dot plot: `:style` (theme `[:chart :dotplot]`), `:options`, `:mapping` (merged)."
   {:style (into [:map {:closed true}] style-entries)
-   :options (-> [:map {:closed true}]
+   :options (schema/with-rules
+             (-> [:map {:closed true}]
                 (into style-entries)
                 (into data/common-options)
                 (into theme/theme-style-entries)
@@ -71,6 +73,7 @@
                       (schema/optional :padding {:description "padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span"
                                                  :cljplot2/default-doc "[0.05 0.05] along the value axis; with :place :bottom also :bottom-share below the data"}
                                        data/position-padding)))
+             [#(when (and (some? (:origin %)) (not= :histogram (:method %))) "the :origin of fixed bins needs :method :histogram") [:origin]])
    :mapping (strip/values-mapping
               [(schema/nilable :x {:description "values (data units) on the value axis, or levels for vertical dot plots"} schema/accessor)
                (schema/nilable :y {:description "levels on the categorical axis (absent - one dot plot), or values for vertical dot plots"}
@@ -93,7 +96,7 @@
   Returns the bins (see [[cljplot2.data.dots/fixed-bins]], [[cljplot2.data.dots/dot-density-bins]])."
   [values options ^double binwidth ^double origin]
   (if (= :histogram (:method options))
-    (dots/fixed-bins values binwidth (double (get options :origin origin)))
+    (dots/fixed-bins values binwidth (double (data/option options :origin origin)))
     (dots/dot-density-bins values binwidth)))
 
 (defn- stack-dots
@@ -165,16 +168,12 @@
   - `chart-split` (map): the chart's rows split per panel.
   - `env` (map): the compute environment - `:theme`, `:plot-scales` ...
 
-  Returns `{:data :extents :padding :padding-explicit :padding-px :na :dropped}`: per panel `{:slots [..] :items [..] :style st :place p :options o :binwidth w :max-count n :mirror? b}` (see [[slot-stacks]]; `:max-count` - the tallest stack over all panels, at least 1); x extents - the dots' positions widened by half a bin.
-
-  Throws `ex-info {:key :origin}` for `:origin` without `:method :histogram`."
+  Returns `{:data :extents :padding :padding-explicit :padding-px :na :dropped}`: per panel `{:slots [..] :items [..] :style st :place p :options o :binwidth w :max-count n :mirror? b}` (see [[slot-stacks]]; `:max-count` - the tallest stack over all panels, at least 1); x extents - the dots' positions widened by half a bin."
   [{:keys [options] :as chart} chart-split {:keys [theme] :as env}]
-  (when (and (some? (:origin options)) (not= :histogram (:method options)))
-    (schema/fail! "Dot plot :origin anchors fixed bins: it needs :method :histogram." {:key :origin :value (:origin options)}))
   (let [split-options (cond-> options (nil? (:position options)) (assoc :position :overlay))
         {:keys [place position items panels dropped]} (strip/split chart-split split-options :center env)
         all-values (mapcat :values (mapcat val items))
-        binwidth (if (seq all-values) (double (get options :binwidth (dots/default-binwidth all-values))) 1.0)
+        binwidth (if (seq all-values) (double (data/option options :binwidth (dots/default-binwidth all-values))) 1.0)
         origin (if (seq all-values) (v/mn all-values) 0.0)
         slots (update-vals items #(slot-stacks % options binwidth origin))
         half (m/* 0.5 binwidth)
@@ -191,7 +190,7 @@
                                          (fn [{:keys [xs]}] [(m/- (v/mn xs) half) (m/+ (v/mx xs) half)])))
      :padding (strip/padding place options)
      :padding-explicit (strip/explicit-padding place options)
-     :padding-px (strip/n-label-room options labelled env)
+     :padding-px (strip-chart/n-label-room options labelled env)
      :na (group/na-dims panels)
      :dropped dropped}))
 
@@ -249,9 +248,9 @@
 
   See also [[cross-of]]."
   [_chart {:keys [slots items style place options binwidth max-count mirror?]} canvas box scales env]
-  (let [{:keys [point span value-pixel] :as pl} (strip/placement box scales options place)
+  (let [{:keys [point span value-pixel] :as pl} (strip-chart/placement box scales options place)
         x0 (some (fn [{:keys [stacks]}] (some #(:x (first (:dots %))) stacks)) slots)
-        stack-dir (get options :stack-dir :up)]
+        stack-dir (data/option options :stack-dir :up)]
     (when x0
       (let [d (dot-diameter value-pixel span slots {:x0 x0 :binwidth binwidth :max-count max-count})
             stacking {:stack-dir stack-dir :mirror? mirror?}]
@@ -265,11 +264,11 @@
                       ^Vec2 p (point x level (cross-of slot stacking [rank n] (m// d s)))]
                 :when (and st (data/finite-point? p))]
           (shape/draw! canvas (:shape st) p (update st :size #(if (some? %) % d))))))
-    (strip/draw-n-labels! canvas pl items :label-x options scales env)))
+    (strip-chart/draw-n-labels! canvas pl items :label-x options scales env)))
 
-(defmethod strip/in-frame-compute :dotplot [chart chart-split env] (compute-in-strip-frame chart chart-split env))
+(defmethod strip-chart/in-frame-compute :dotplot [chart chart-split env] (compute-in-strip-frame chart chart-split env))
 
-(defmethod strip/in-frame-draw :dotplot [chart computed canvas box scales env]
+(defmethod strip-chart/in-frame-draw :dotplot [chart computed canvas box scales env]
   (draw-in-strip-frame chart computed canvas box scales env))
 
 (defn legend
@@ -287,6 +286,6 @@
 
   See also [[cljplot2.graphics.shape/draw-key!]]."
   [chart attributes canvas {:keys [^double w ^double h] :as box} env]
-  (let [st (update (merge (theme/resolved-style (:theme env) chart) attributes)
+  (let [st (update (theme/key-style env chart attributes nil)
                    :size #(if (some? %) % (m/* draw/key-glyph-share (m/min w h))))]
     (shape/styled-key! canvas box st true)))

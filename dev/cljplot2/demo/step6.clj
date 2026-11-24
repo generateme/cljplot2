@@ -1,11 +1,10 @@
 (ns cljplot2.demo.step6
   "Step 6 demo: facets.
   Fig 1.1 layout (Chem97, faceted by `score`, 3x2) and grid facets with an NA row."
-  (:require [clojure.data.json :as json]
-            [clojure.java.io :as io]
-            [cljplot2.chart :as chart]))
+  (:require [cljplot2.chart :as chart]
+            [cljplot2.demo.data :as data]))
 
-(def chem97 (json/read-str (slurp (io/resource "chem97.json")) :key-fn keyword))
+(def chem97 (data/chem97-rows))
 
 (def fig-1-1
   {:data chem97

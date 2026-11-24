@@ -68,14 +68,14 @@
                  :dataset :migration})
 
 (plot/render-image
- (plot/arrange [(plot/chord migration {:directed? true :min-value 0.1 :title "directed flows"})
+ (plot/arrange [(plot/chord migration {:directed true :min-value 0.1 :title "directed flows"})
                 (plot/chord migration {:min-value 0.1 :title "exchange between regions"})]
                {:columns 2})
  {:width 1000 :height 520})
 
 ;; ### Colours, gaps, order and weak links
 
-;; `:min-value` drops the weak flows that clutter the middle, `:pad` widens the gaps, `:order :cluster` puts regions
+;; `:min-value` drops the weak flows that clutter the middle, `:gap-angle` widens the gaps, `:order :cluster` puts regions
 ;; with similar partners side by side, and the palette is a plot scale like any other.
 
 (nu/source-note {:source "R Graph Gallery - Advanced chord diagram with circlize; data-to-viz - Chord diagram"
@@ -84,7 +84,7 @@
                  :dataset :migration})
 
 (plot/render-image
- (plot/chord migration {:directed? true :min-value 0.5 :pad 4 :order :cluster
+ (plot/chord migration {:directed true :min-value 0.5 :gap-angle 4 :order :cluster
                         :scales {:color {:range :category10}}
                         :title "Flows of at least 0.5 million, clustered order"})
  {:width 700 :height 700})
@@ -173,7 +173,7 @@
         r (stats/correlation-matrix (mapv (fn [k] (mapv k mtcars)) mtcars-variables))
         strong (mapv (fn [row] (mapv #(if (> (Math/abs (double %)) 0.7) % 0) row)) r)]
     (mapv #(assoc % :r (:value %) :value (Math/abs (double (:value %))))
-          (graph/adjacency->edges strong names {:directed? false}))))
+          (graph/adjacency->edges strong names {:whole-matrix false}))))
 
 (nu/data-table correlation-edges)
 
@@ -194,7 +194,7 @@
                  :dataset :migration})
 
 (plot/render-image
- (plot/network migration {:directed? true :layout :circle :labels true
+ (plot/network migration {:directed true :layout :circle :labels true
                           :edge-mapping {:size :value}
                           :scales {:size {:range [0.5 6] :title "migrants, M"}}
                           :title "Migration between world regions"})
@@ -239,7 +239,7 @@
 (nu/data-table (nu/dataset :titanic))
 
 (plot/render-image
- (plot/alluvial (nu/dataset :titanic) {:axes [:class :sex :age :survived] :value :n :fill :class
+ (plot/alluvial (nu/dataset :titanic) {:variables [:class :sex :age :survived] :value :n :strand-color :class
                                        :theme {:palette {:color :set1}}
                                        :title "Titanic: 2201 people by class, sex, age and survival"})
  {:width 900 :height 600})
@@ -262,7 +262,7 @@
 
 (plot/render-image
  {:data month-ranks :mapping {:x :year :y :rank :color :month}
-  :charts [(chart/line {:width 2})
+  :charts [(chart/line {:line-width 2})
            (chart/scatter {:size 7})
            (chart/text {:data (filter #(= 1949 (:year %)) month-ranks) :mapping {:x :year :y :rank :label :month}
                         :anchor [:right :middle] :offset [-8 0]})
@@ -330,7 +330,7 @@
 
 (plot/render-image
  (plot/arrange (vec (for [beta [0.0 0.5 1.0]]
-                      (plot/bundle flare-imports flare-tree {:from :source :to :target :beta beta :labels? false
+                      (plot/bundle flare-imports flare-tree {:from :source :to :target :beta beta :labels false
                                                              :scales {:color {:legend false}}
                                                              :title (str ":beta " beta)})))
                {:columns 3})
@@ -354,7 +354,7 @@
 
 (plot/render-image
  (plot/dendrogram (tree/from-levels (nu/dataset :world-population) {:hierarchy [:region :subregion]})
-                  {:horizontal true :group-labels? true :title "World regions and subregions"})
+                  {:horizontal true :group-labels true :title "World regions and subregions"})
  {:width 650 :height 650})
 
 ;; ### From clustering, coloured clusters, circular
@@ -374,12 +374,12 @@
 (def cars (mapv :model mtcars))
 
 (plot/render-image
- (plot/dendrogram car-clustering {:labels cars :k 3 :theme {:palette {:color :set1}}
+ (plot/dendrogram car-clustering {:leaf-names cars :k 3 :theme {:palette {:color :set1}}
                                   :title "mtcars: complete-linkage clustering, 3 clusters"})
  {:width 1000 :height 500})
 
 (plot/render-image
- (plot/dendrogram car-clustering {:labels cars :k 3 :circular true :theme {:palette {:color :set1}}
+ (plot/dendrogram car-clustering {:leaf-names cars :k 3 :circular true :theme {:palette {:color :set1}}
                                   :title "The same clustering, circular"})
  {:width 700 :height 700})
 
@@ -452,7 +452,7 @@
     :charts [(chart/scatter {:size 4})] :coord {:kind :polar :inner 0.2} :scales {:x {:domain months}}
     :labels {:title "points" :x nil :y nil}}
    {:data air-passengers :mapping {:x :month :y :passengers :group :year}
-    :charts [(chart/line {:sort false :color [70 130 180 150]})] :coord {:kind :polar :inner 0.2} :scales {:x {:domain months}}
+    :charts [(chart/line {:order :data :color [70 130 180 150]})] :coord {:kind :polar :inner 0.2} :scales {:x {:domain months}}
     :labels {:title "a line per year" :x nil :y nil}}
    {:data air-passengers :mapping {:x :month :y :passengers}
     :charts [(chart/bar {:stat :sum})] :coord {:kind :polar :inner 0.2} :scales {:x {:domain months}}
@@ -462,7 +462,7 @@
 
 (plot/render-image
  {:data periods :mapping {:x :month :y :passengers :group :year :facet :period}
-  :charts [(chart/line {:sort false})]
+  :charts [(chart/line {:order :data})]
   :coord {:kind :polar :inner 0.2}
   :scales {:x {:domain months}}
   :labels {:title "One circular plot per period" :x nil :y nil}}

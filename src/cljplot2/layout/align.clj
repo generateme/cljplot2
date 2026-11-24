@@ -3,14 +3,16 @@
   area's top and bottom edges; sub-plots in one column (equal box `x` and `w`) share its left and right edges.
   The panel area of a sub-plot is the bounding box of its main `:panel` items (plot margin panels left out, so plots
   with and without margins align on their main panels); sub-plots without panels (e.g. nested
-  multiplots) and iso sub-plots (they centre their panels themselves) take no part. Used by the pipeline's `:subplots` stage for `:arrange` (on unless `:align false`)."
+  multiplots) and iso sub-plots (they centre their panels themselves) take no part. Used by the pipeline's `:subplots` stage for `:arrange` (on unless `:align false`).
+
+  Functions: [[align-panels]], [[panel-insets]]."
   (:require [fastmath.core :as m]
             [cljplot2.layout.grid :as grid]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
-(def ^{:const true :tag 'long} max-alignment-rounds
+(def ^{:private true :const true :tag 'long} max-alignment-rounds
   "Upper bound on rebuilds while aligning (a changed panel size may change tick labels and axis sizes)."
   4)
 

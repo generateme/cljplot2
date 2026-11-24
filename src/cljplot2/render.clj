@@ -128,7 +128,7 @@
   (p/filter-colors (draw/cvd-filter-fn deficiency) pixels))
 
 (defn cvd-image
-  "An image as seen with a colour vision deficiency.
+  "Gives an image as seen with a colour vision deficiency.
 
   Parameters:
 

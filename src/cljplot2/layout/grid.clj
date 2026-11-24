@@ -23,7 +23,9 @@
   Without flexible tracks along an axis the unused space stays after the last track.
 
   Workflow: [[prepare]] (validate, resolve spans) -> [[measure-items]] -> [[solve]].
-  Coordinates are integer pixels, `y` grows downward; track edges (not lengths) are rounded."
+  Coordinates are integer pixels, `y` grows downward; track edges (not lengths) are rounded.
+
+  Functions: [[grid?]], [[content-items]], [[item-box]], [[find-item-box]], [[find-content-box]]."
   (:require [cljplot2.schema :as schema]
             [fastmath.core :as m]
             [fastmath.vector :as v]

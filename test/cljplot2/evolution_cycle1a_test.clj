@@ -51,7 +51,7 @@
     (is (nil? (polyline/dash-pattern :none)))
     (is (nil? (polyline/dash-pattern nil)))
     (is (= [2.0 1.0] (polyline/dash-pattern [2 1])))
-    (is (same-image? (line-plot {:dash :dashed :width 2}) (line-plot {:dash [5 3] :width 2})))
+    (is (same-image? (line-plot {:dash :dashed :line-width 2}) (line-plot {:dash [5 3] :line-width 2})))
     (is (same-image? (line-plot {:dash :solid}) (line-plot {:dash :none}))))
   (testing "1.1 an unknown name throws {:key :dash} with the closest name"
     (let [e (error #(build (line-plot {:dash :dashd})))]
@@ -61,7 +61,7 @@
     (is (= :dash (:key (error #(build (line-plot {:dash []}))))))
     (is (= :dash (:key (error #(build (line-plot {:dash [1 0]})))))))
   (testing "1.2 theme grid lines take names"
-    (let [grid-theme (fn [dash] {:panel {:grid {:x {:color :black :width 1 :dash dash} :y :none}}})]
+    (let [grid-theme (fn [dash] {:panel {:grid {:x {:color :black :line-width 1 :dash dash} :y :none}}})]
       (is (same-image? (line-plot {} {:theme (grid-theme :dotted)}) (line-plot {} {:theme (grid-theme [1 2])}))))))
 
 (def ^:private grouped (for [s ["a" "b" "c"] i (range 4)] {:x i :y (+ i ({"a" 0 "b" 3 "c" 6} s)) :s s}))
@@ -103,13 +103,13 @@
       (is (= 1 (count ls)))
       (is (every? #(and (:color (:attributes %)) (:dash (:attributes %))) (:entries (first ls))))))
   (testing "1.4 line, density and ecdf draw a mapped dash"
-    (doseq [[ch mapping] [[(chart/line {:width 3}) {:x :x :y :y}]
-                          [(chart/density {:width 3}) {:x :y}]
-                          [(chart/ecdf {:width 3}) {:x :y}]]
+    (doseq [[ch mapping] [[(chart/line {:line-width 3}) {:x :x :y :y}]
+                          [(chart/density {:line-width 3}) {:x :y}]
+                          [(chart/ecdf {:line-width 3}) {:x :y}]]
             :let [p {:data grouped :theme white :mapping mapping :charts [ch]}]]
       (is (not (same-image? p (assoc-in p [:mapping :dash] :s))) (str (:kind ch) " changes with :dash mapped"))))
   (testing "1.4 a data rule draws a mapped dash through its own mapping"
-    (let [p (fn [mapping] {:data grouped :theme white :charts [(chart/rule {:mapping mapping :width 3})]})]
+    (let [p (fn [mapping] {:data grouped :theme white :charts [(chart/rule {:mapping mapping :line-width 3})]})]
       (is (not (same-image? (p {:y :y}) (p {:y :y :dash :s}))))))
   (testing "1.5 a chart without lines ignores a mapped dash, as :shape on line"
     (is (some? (plot/render-image {:data grouped :mapping {:x :x :y :y :dash :s} :charts [(chart/scatter)]} size)))
@@ -152,10 +152,10 @@
     (testing "2.3 repeated or unordered positions throw {:key :interpolator}"
       (is (= :interpolator (:key (error #(curve/functional-points fit [[0.0 1.0] [0.0 2.0] [1.0 3.0]] :x 1.0)))))
       (is (= :interpolator (:key (error #(curve/functional-points fit [[0.0 1.0] [2.0 2.0] [1.0 3.0]] :x 1.0))))))
-    (testing "2.3 in a chart: repeated x, :sort false out of order; the group is named"
+    (testing "2.3 in a chart: repeated x, :order :data out of order; the group is named"
       (is (= :interpolator (:key (error #(plot/render-image (line-plot {:interpolator :pchip} {:data (conj pts {:x 2 :y 7})}) size)))))
       (let [e (error #(plot/render-image {:data (map (fn [r] (assoc r :g "a")) [{:x 1 :y 1} {:x 3 :y 2} {:x 2 :y 3} {:x 4 :y 1}]) :mapping {:x :x :y :y :color :g}
-                                          :charts [(chart/line {:interpolator :pchip :sort false})]} size))]
+                                          :charts [(chart/line {:interpolator :pchip :order :data})]} size))]
         (is (= :interpolator (:key e)))
         (is (= {:color "a"} (:group e)))))
     (testing "2.4 methods, functions with params; unknown and 2D methods are rejected"
@@ -188,13 +188,13 @@
       (is (= [[0.0 0.0] [5.0 5.0]] (curve/curve-points [[0.0 0.0] [5.0 5.0]] {:curve :bezier})) "two points: a line")
       (is (= :curve (:key (error #(curve/curve-points square {:curve :bezier :interpolator :cubic}))))))
     (testing "2.6 / 2.7 in a chart (connected scatter)"
-      (is (some? (plot/render-image (line-plot {:curve :bezier :sort false}) size)))
-      (is (some? (plot/render-image (line-plot {:curve :parametric :sort false}) size))))))
+      (is (some? (plot/render-image (line-plot {:curve :bezier :order :data}) size)))
+      (is (some? (plot/render-image (line-plot {:curve :parametric :order :data}) size))))))
 
 (deftest gaps-test
   (let [data [{:x 0 :y 0} {:x 1 :y 1} {:x 2 :y nil} {:x 3 :y 1} {:x 4 :y 0}]
         p (fn [opts] {:data data :mapping {:x :x :y :y} :theme white
-                      :charts [(chart/line (merge {:color [0 0 255] :width 3} opts))]})
+                      :charts [(chart/line (merge {:color [0 0 255] :line-width 3} opts))]})
         mid (fn [q] (let [{:keys [x y w h]} (panel-box q)
                           img (plot/render-image q size)]
                       ;; the gap's middle: x = 2, y = 1 of an x span 0..4 and y span 0..1 padded by 5%
@@ -204,17 +204,17 @@
       (let [[r g b] (mid (p {:gaps :bridge}))]
         (is (< 170 r 185) "~30 % blue over white")
         (is (= 255 b)))
-      (let [[r _ _] (mid (p {:gaps :bridge :bridge {:alpha 1.0}}))]
+      (let [[r _ _] (mid (p {:gaps :bridge :bridge {:alpha-factor 1.0}}))]
         (is (< r 10) "alpha 1: full color")))
     (testing "2.8 bridges between consecutive runs"
       (is (= [[[1 1] [3 3]] [[4 4] [6 6]]] (curve/bridges [[[0 0] [1 1]] [[3 3] [4 4]] [] [[6 6]]])))
       (is (= [] (curve/bridges [[[0 0] [1 1]]]))))
     (testing "2.8 bridge style: alpha multiplied, width and dash over the line's"
-      (let [st (polyline/bridge-style {:color [0 0 255 200] :width 2 :dash :none} {:alpha 0.5 :dash :dotted})]
+      (let [st (polyline/bridge-style {:color [0 0 255 200] :line-width 2 :dash :none} {:alpha-factor 0.5 :dash :dotted})]
         (is (= 100.0 (c/alpha (:color st))))
         (is (= :dotted (:dash st)))
-        (is (= 2 (:width st))))
-      (is (= :none (:color (polyline/bridge-style {:color :none :width 1} {:alpha 0.3})))))
+        (is (= 2 (:line-width st))))
+      (is (= :none (:color (polyline/bridge-style {:color :none :line-width 1} {:alpha 0.3})))))
     (testing "2.8 :gaps is validated"
       (is (= :gaps (:key (error #(build (p {:gaps :join})))))))))
 
@@ -342,7 +342,7 @@
 
 (deftest function-values-test
   (testing "4.7 nil and non-finite results break the curve"
-    (let [p (fn-plot {:f (fn [x] (when-not (< 1.0 x 2.0) 1.0)) :domain [0 3] :color [0 0 255] :width 3} {:scales {:y {:domain [0 2]}}})
+    (let [p (fn-plot {:f (fn [x] (when-not (< 1.0 x 2.0) 1.0)) :domain [0 3] :color [0 0 255] :line-width 3} {:scales {:y {:domain [0 2]}}})
           {:keys [x y w h]} (panel-box p)
           img (plot/render-image p size)
           row (+ y (* 0.5 h))]
@@ -396,8 +396,8 @@
 
 (deftest function-style-test
   (testing "4.11 theme [:chart :function] and options"
-    (is (= [:charts 0 :options :bridge :alpha] (:in (error #(build (fn-plot {:f m/sin :domain [0 1] :bridge {:alpha 2}}))))))
-    (is (some? (build (fn-plot {:f m/sin :domain [0 1]} {:theme {:chart {:function {:color :red :width 2}}}})))))
+    (is (= [:charts 0 :options :bridge :alpha-factor] (:in (error #(build (fn-plot {:f m/sin :domain [0 1] :bridge {:alpha-factor 2}}))))))
+    (is (some? (build (fn-plot {:f m/sin :domain [0 1]} {:theme {:chart {:function {:color :red :line-width 2}}}})))))
   (testing "4.12 legend glyph with dash"
     (let [b (build (fn-plot {:f [m/sin m/cos] :domain [0 3] :mapping {:dash :function}}))]
       (is (= [:solid :dashed] (mapv #(get-in % [:attributes :dash]) (:entries (first (legends b))))))
@@ -405,12 +405,12 @@
 
 (deftest function-orientation-test
   (testing "4.13 flipped: x runs vertically"
-    (let [p (fn-plot {:f (fn [x] x) :domain [0 1] :color [0 0 255] :width 3} {:flip true})
+    (let [p (fn-plot {:f (fn [x] x) :domain [0 1] :color [0 0 255] :line-width 3} {:flip true})
           b (build p)]
       (is (= :vertical (scale/direction :x (get-in b [:scales :x] {:direction :vertical}))))
       (is (some? (plot/render-image p size)))))
   (testing "4.13 log x: samples even in pixels - log on a log scale is straight"
-    (let [p (fn-plot {:f m/log :domain [1 1000] :color [0 0 255] :width 3 :y-extent :min-max} {:scales {:x {:kind :log}}})
+    (let [p (fn-plot {:f m/log :domain [1 1000] :color [0 0 255] :line-width 3 :y-extent :min-max} {:scales {:x {:kind :log}}})
           {:keys [x y w h]} (panel-box p)
           img (plot/render-image p size)
           ;; the straight line from (1, 0) to (1000, ln 1000) passes the panel centre region
@@ -467,7 +467,7 @@
 
 (deftest gradient-dash-test
   (let [data (for [i (range 8)] {:x i :y (m/sin i)})
-        p (fn [opts] {:data data :mapping {:x :x :y :y :color :y} :theme white :charts [(chart/line (merge {:width 2} opts))]})]
+        p (fn [opts] {:data data :mapping {:x :x :y :y :color :y} :theme white :charts [(chart/line (merge {:line-width 2} opts))]})]
     (testing "F1 a dash shows on an interpolated gradient line"
       (is (not (same-image? (p {:interpolator :pchip}) (p {:interpolator :pchip :dash :dashed})))))
     (testing "F1 the dash runs on across segments of an uncurved gradient line"

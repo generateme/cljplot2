@@ -37,7 +37,7 @@
 
   Returns true unless a fixed `:color`, the `:number` glyph (the default) or a mapped aesthetic colours the cell (the plot's colour then belongs to the mapping, also a continuous colour of the other charts); else `false`."
   [options mapping]
-  (not (or (:color options) (= :number (get options :glyph :number)) (grouped? mapping))))
+  (not (or (:color options) (= :number (data/option options :glyph :number)) (grouped? mapping))))
 
 (defn grouping
   "Gives the panel groups of a cell chart.

@@ -25,8 +25,8 @@
   a legend that doesn't fit below the previous one starts a new stack column to the right. [[legend-boxes]] gives
   where each legend is drawn.
 
-  Functions: [[legends]], [[legend-charts]], [[provisional-legends]], [[legend-boxes]]; schemas [[legend-schema]],
-  [[colorbar-schema]], [[legends-schema]]; methods of [[cljplot2.graphics.measure/validate-content]],
+  Functions: [[legends]], [[legend-charts]], [[provisional-legends]], [[legend-boxes]]; schemas,
+ ; methods of [[cljplot2.graphics.measure/validate-content]],
   [[cljplot2.graphics.measure/natural-size]] and [[cljplot2.graphics.draw/draw-content]] for `:legend`, `:colorbar`
   and `:legends`."
   (:require [clojure2d.core :as c2d]
@@ -332,14 +332,14 @@
 
 ;; content
 
-(def legend-schema
+(def ^:private legend-schema
   "Schema of `{:kind :legend}` content: `:title`, `:entries` `[{:label :attributes}]`, `:charts` `[{:chart index :dims [dim]}]`."
   [:map
    (schema/nilable :title string?)
    [:entries [:vector [:map [:label string?] [:attributes :map]]]]
    [:charts [:vector [:map [:chart nat-int?] [:dims vector?]]]]])
 
-(def colorbar-schema
+(def ^:private colorbar-schema
   "Schema of `{:kind :colorbar}` content: `:title`, a linear or binned `:scale`, `:ticks` and one label per tick in `:labels`."
   (schema/with-rules
    [:map
@@ -349,7 +349,7 @@
     [:labels vector?]]
    [#(when-not (m/== (count (:ticks %)) (count (:labels %))) "should have one label per tick") [:labels]]))
 
-(def legends-schema
+(def ^:private legends-schema
   "Schema of `{:kind :legends}` content: `:legends`, a vector of [[legend-schema]] and [[colorbar-schema]] contents."
   [:map [:legends [:vector [:multi {:dispatch #(if (= :colorbar (:kind %)) :colorbar :legend)}
                             [:colorbar colorbar-schema]
@@ -795,7 +795,7 @@
         len (m/round bar-len)
         tick-y (fn ^double [t] (m/+ bar-top (if (m/== lo hi) (m/* 0.5 bar-len) (m/* (m/- 1.0 (double (position-of t))) bar-len))))
         label-color (draw/text-color (:theme env) :legend-label (legend-backdrop (:theme env)))
-        inset (m/* 2.0 (double (get-in env [:theme :text :legend-label :padding])))
+        inset (m/* 2.0 (double (get-in env [:theme :text :legend-label :inset])))
         kept (if (sequential? (:ticks scale))
                (set (range (count ticks)))
                (set (measure/kept-label-indices (mapv tick-y ticks) (mapv #(m/- (.y ^Vec2 %) inset) sizes))))]

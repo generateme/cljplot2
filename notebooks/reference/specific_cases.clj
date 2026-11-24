@@ -162,7 +162,7 @@
                                (chart/ribbon {:data {:x fit-xs :ymin (:lo narrow) :ymax (:hi narrow)} :mapping {:x :x :ymin :ymin :ymax :ymax}
                                               :alpha 0.35})
                                (chart/scatter {:data faithful :mapping {:x :eruptions :y :waiting} :size 4})
-                               (chart/line {:data {:x fit-xs :y (:fit quadratic)} :mapping {:x :x :y :y} :width 2})]
+                               (chart/line {:data {:x fit-xs :y (:fit quadratic)} :mapping {:x :x :y :y} :line-width 2})]
                       :labels {:x "eruptions [min]" :y "waiting [min]"}})
                    {:width 600 :height 350})
 
@@ -299,7 +299,7 @@
                      {:data faithful
                       :mapping {:x :waiting}
                       :charts [(chart/histogram {:y :density :bins 25})
-                               (chart/function {:f #(r/pdf normal %) :domain [40 100] :color [200 50 50] :width 2})]
+                               (chart/function {:f #(r/pdf normal %) :domain [40 100] :color [200 50 50] :line-width 2})]
                       :labels {:x "waiting [min]" :title "a normal curve fails a bimodal sample"}})
                    {:width 600 :height 320})
 

@@ -207,7 +207,7 @@ have no colour of their own - their fill is a theme key of `[:chart :tile]`, not
 :::
 
 
-Shared options: [Cell style](reference.shared_options.html#cell-style) (`:cell` `:cell-scale` `:stroke-color` `:stroke-width` `:alpha`); [Data and mapping](reference.shared_options.html#data-and-mapping) (`:data` `:mapping`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`).
+Shared options: [Cell style](reference.shared_options.html#cell-style) (`:cell` `:cell-scale` `:stroke-color` `:stroke-width` `:alpha-factor`); [Data and mapping](reference.shared_options.html#data-and-mapping) (`:data` `:mapping`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`).
 
 
 ## bin2d
@@ -246,7 +246,7 @@ ratio and what the colour measures:
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:bins</td><td>one of :scott-correlated :scott :freedman-diaconis :cross-validation :shimazaki-shinomoto or a positive integer</td><td>:scott-correlated</td><td>cells across the x range (a positive integer), or a fastmath estimate-grid-size method giving a cell area (:binwidth wins)</td></tr><tr><td>:binwidth</td><td>a positive finite number</td><td></td><td>cell size in x data units (log10 units on a :log axis); wins over :bins</td></tr><tr><td>:shape</td><td>a positive finite number</td><td>the panel's height / width (y span / x span with :aspect :iso), estimated from the plot size and facet layout</td><td>height / width ratio of the normalized binning space (cells are regular in pixels when it matches the panel)</td></tr><tr><td>:measure</td><td>one of :count :percent :pmf :density</td><td>:count</td><td>the cell colour: :count, :percent (of the panel's points), :pmf (share of the panel's points) or :density (count / (n * cell area in data units))</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:bins</td><td>one of :scott-correlated :scott :freedman-diaconis :cross-validation :shimazaki-shinomoto or a positive integer</td><td>:scott-correlated</td><td>cells across the x range (a positive integer), or a fastmath estimate-grid-size method giving a cell area (:binwidth wins)</td></tr><tr><td>:binwidth</td><td>a positive finite number</td><td></td><td>cell size in x data units (log10 units on a :log axis); wins over :bins</td></tr><tr><td>:aspect</td><td>a positive finite number</td><td>the panel's height / width (y span / x span with :aspect :iso), estimated from the plot size and facet layout</td><td>height / width ratio of the normalized binning space (cells are regular in pixels when it matches the panel)</td></tr><tr><td>:measure</td><td>one of :count :percent :pmf :density</td><td>:count</td><td>the cell colour: :count, :percent (of the panel's points), :pmf (share of the panel's points) or :density (count / (n * cell area in data units))</td></tr></tbody></table>
 ```
 
 :::
@@ -262,8 +262,8 @@ ratio and what the colour measures:
                                    :legend false}
                                   {:data faithful
                                    :mapping {:x :eruptions :y :waiting}
-                                   :charts [(chart/bin2d {:binwidth 0.25 :shape 0.5})]
-                                   :labels {:title ":binwidth 0.25 :shape 0.5"}
+                                   :charts [(chart/bin2d {:binwidth 0.25 :aspect 0.5})]
+                                   :labels {:title ":binwidth 0.25 :aspect 0.5"}
                                    :legend false}
                                   {:data faithful
                                    :mapping {:x :eruptions :y :waiting}
@@ -341,7 +341,7 @@ area (the legend shows the scale):
 :::
 
 
-Shared options: [Cell style](reference.shared_options.html#cell-style) (`:cell` `:cell-scale` `:stroke-color` `:stroke-width` `:alpha`); [Data and mapping](reference.shared_options.html#data-and-mapping) (`:data` `:mapping`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`).
+Shared options: [Cell style](reference.shared_options.html#cell-style) (`:cell` `:cell-scale` `:stroke-color` `:stroke-width` `:alpha-factor`); [Data and mapping](reference.shared_options.html#data-and-mapping) (`:data` `:mapping`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`).
 
 
 ## field
@@ -386,7 +386,7 @@ Its options: the raster's opacity, or a colour per pixel computed by a function 
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:alpha</td><td>a number in [0 1]</td><td>1.0</td><td>opacity multiplying the colours' alpha</td></tr><tr><td>:pixel-color</td><td>a function</td><td></td><td>a function of a point [x y] returning each pixel's colour (nil - transparent): a raster over :domain, no grid, colour scale or legend; not with :f</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:alpha-factor</td><td>a number in [0 1]</td><td>1.0</td><td>factor multiplying the colours' alpha</td></tr><tr><td>:pixel-color</td><td>a function</td><td></td><td>a function of a point [x y] returning each pixel's colour (nil - transparent): a raster over :domain, no grid, colour scale or legend; not with :f</td></tr></tbody></table>
 ```
 
 :::
@@ -397,8 +397,8 @@ Its options: the raster's opacity, or a colour per pixel computed by a function 
 ```clojure
 (plot/render-image (plot/arrange [{:data faithful
                                    :mapping {:x :eruptions :y :waiting}
-                                   :charts [(chart/field {:alpha 0.5}) (chart/scatter {:size 3 :color :black})]
-                                   :labels {:title ":alpha 0.5, points over it"}
+                                   :charts [(chart/field {:alpha-factor 0.5}) (chart/scatter {:size 3 :color :black})]
+                                   :labels {:title ":alpha-factor 0.5, points over it"}
                                    :legend false}
                                   {:charts [(chart/field {:domain {:x [-2 2] :y [-2 2]}
                                                           :pixel-color (fn [[x y]]
@@ -500,8 +500,8 @@ the domain reaches past the points (`:cut`, in bandwidths):
                                    :legend false}
                                   {:data faithful
                                    :mapping {:x :eruptions :y :waiting}
-                                   :charts [(chart/field {:binned? true})]
-                                   :labels {:title ":binned? true"}
+                                   :charts [(chart/field {:binned true})]
+                                   :labels {:title ":binned true"}
                                    :legend false}
                                   {:data faithful
                                    :mapping {:x :eruptions :y :waiting}
@@ -519,7 +519,7 @@ the domain reaches past the points (`:cut`, in bandwidths):
 :::
 
 
-Shared options: [Fields](reference.shared_options.html#fields) (`:f` `:domain` `:kernel` `:bandwidth` `:binned?` `:cut` `:interpolation` `:n`); [Data and mapping](reference.shared_options.html#data-and-mapping) (`:data` `:mapping`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`).
+Shared options: [Fields](reference.shared_options.html#fields) (`:f` `:domain` `:kernel` `:bandwidth` `:binned` `:cut` `:interpolation` `:n`); [Data and mapping](reference.shared_options.html#data-and-mapping) (`:data` `:mapping`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`).
 
 
 ## contour
@@ -565,7 +565,7 @@ colour and the opacity:
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:color</td><td>a clojure2d color or :none</td><td>[69.0 117.0 180.0 255.0]; the theme's, for grouped lines without a mapped colour; ungrouped lines are coloured by level, lines grouped by :color take their group's colour</td><td>one colour for every line instead of colouring by level (contour's own :color, not the line style's)</td></tr><tr><td>:alpha</td><td>a number in [0 1]</td><td>1.0; the theme's; grouped filled contours take half of it</td><td>opacity multiplying the colours' alpha</td></tr><tr><td>:levels</td><td>integer (1..1000) or vector of a finite number (at least 1)</td><td>10</td><td>contour levels: a count evenly spread over the range of every sampled value (the ends left out), or a vector of level values</td></tr><tr><td>:fill</td><td>true or false</td><td>false</td><td>fill the region at or above each level, each band coloured by its middle value, instead of drawing lines</td></tr><tr><td>:labels</td><td>true or false or a function or nil</td><td>false</td><td>line contours only: label each line with its level - true (the number) or a function of {:level v} returning the text (nil - no label)</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:color</td><td>a clojure2d color or :none</td><td>[69.0 117.0 180.0 255.0]; the theme's, for grouped lines without a mapped colour; ungrouped lines are coloured by level, lines grouped by :color take their group's colour</td><td>one colour for every line instead of colouring by level (contour's own :color, not the line style's)</td></tr><tr><td>:alpha-factor</td><td>a number in [0 1]</td><td>1.0; the theme's; grouped filled contours take half of it</td><td>factor multiplying the colours' alpha</td></tr><tr><td>:levels</td><td>integer (1..1000) or vector of a finite number (at least 1)</td><td>10</td><td>contour levels: a count evenly spread over the range of every sampled value (the ends left out), or a vector of level values</td></tr><tr><td>:filled</td><td>true or false</td><td>false</td><td>fill the region at or above each level, each band coloured by its middle value, instead of drawing lines</td></tr><tr><td>:labels</td><td>true or false or a function or nil</td><td>false</td><td>line contours only: label each line with its level - true (the number) or a function of {:level v} returning the text (nil - no label)</td></tr></tbody></table>
 ```
 
 :::
@@ -581,8 +581,8 @@ colour and the opacity:
                                    :labels {:title ":levels vector, :labels true"}}
                                   {:data volcano
                                    :mapping {:x :column :y :row :value :height}
-                                   :charts [(chart/contour {:fill true :levels 8 :alpha 0.8})]
-                                   :labels {:title ":fill true :levels 8"}}]
+                                   :charts [(chart/contour {:filled true :levels 8 :alpha-factor 0.8})]
+                                   :labels {:title ":filled true :levels 8"}}]
                                  {:columns 2 :widths [1 1.25]})
                    {:width 1000 :height 380})
 ```
@@ -632,7 +632,7 @@ values and a density with its own bandwidth:
 :::
 
 
-Shared options: [Line style](reference.shared_options.html#line-style) (`:width` `:dash`); [Fields](reference.shared_options.html#fields) (`:f` `:domain` `:kernel` `:bandwidth` `:binned?` `:cut` `:interpolation` `:n`); [Data and mapping](reference.shared_options.html#data-and-mapping) (`:data` `:mapping`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`).
+Shared options: [Line style](reference.shared_options.html#line-style) (`:line-width` `:dash`); [Fields](reference.shared_options.html#fields) (`:f` `:domain` `:kernel` `:bandwidth` `:binned` `:cut` `:interpolation` `:n`); [Data and mapping](reference.shared_options.html#data-and-mapping) (`:data` `:mapping`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`).
 
 
 ## correlation
@@ -794,7 +794,7 @@ statistic), and the number format:
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:color</td><td>a clojure2d color or :none</td><td>[69.0 117.0 180.0 255.0]; ungrouped shades: the value on the colour scale; grouped shades: the theme's; :number: the :pairwise text role's colour, group lines mapped</td><td>one fixed colour: the shade's (text over it by contrast), the :number text's</td></tr><tr><td>:method</td><td>one of :ameasure :canberra :chebyshev :cliffs-delta :cohens-d :cosine :covariance :euclidean :glass-delta :hedges-g :kendall :mae :manhattan :mape :me :means-ratio :mse :pearson :r2 :rmse :spearman or a function</td><td>:pearson</td><td>the statistic: a key of pairwise/statistics or a function of two samples (f xs ys)</td></tr><tr><td>:label</td><td>string or nil</td><td>the statistic's label, value for a function</td><td>the statistic's label (text, colour bar title)</td></tr><tr><td>:glyph</td><td>one of :number :shade :shade-number</td><td>:number</td><td>how the value is drawn: :number (text, a line per group), :shade (the panel in the value's colour) or :shade-number (both)</td></tr><tr><td>:format</td><td>a function or nil</td><td>at most 2 decimals, whole numbers without them</td><td>the text of a value, a function of the number (a throw or nil - NA)</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:color</td><td>a clojure2d color or :none</td><td>[69.0 117.0 180.0 255.0]; ungrouped shades: the value on the colour scale; grouped shades: the theme's; :number: the :pairwise text role's colour, group lines mapped</td><td>one fixed colour: the shade's (text over it by contrast), the :number text's</td></tr><tr><td>:method</td><td>one of :ameasure :canberra :chebyshev :cliffs-delta :cohens-d :cosine :covariance :euclidean :glass-delta :hedges-g :kendall :mae :manhattan :mape :me :means-ratio :mse :pearson :r2 :rmse :spearman or a function</td><td>:pearson</td><td>the statistic: a key of pairwise/statistics or a function of two samples (f xs ys)</td></tr><tr><td>:label</td><td>string or nil</td><td>the statistic's label, value for a function</td><td>the statistic's label (text, colour bar title)</td></tr><tr><td>:glyph</td><td>one of :number :shade :shade-number</td><td>:number</td><td>how the value is drawn: :number (text, a line per group), :shade (the panel in the value's colour) or :shade-number (both)</td></tr><tr><td>:value-format</td><td>a number format string or a function or nil</td><td>at most 2 decimals, whole numbers without them</td><td>the text of a value: a format string or a function of the number (a throw or nil - NA)</td></tr></tbody></table>
 ```
 
 :::
@@ -817,8 +817,8 @@ text over a shade is black or white by the fill):
                                    :charts [(chart/pairwise {:method :me :glyph :shade-number})] :labels {:title "signed :me"}}
                                   {:data iris :mapping {:x :sepal-length :y :petal-length}
                                    :charts [(chart/pairwise {:method (fn [xs ys] (- (apply max xs) (apply max ys)))
-                                                             :label "max diff" :format #(format "%+.1f cm" %)})]
-                                   :labels {:title "function, :format"}}
+                                                             :label "max diff" :value-format #(format "%+.1f cm" %)})]
+                                   :labels {:title "function, :value-format"}}
                                   {:data iris :mapping {:x :sepal-length :y :petal-length}
                                    :charts [(chart/pairwise {:method :rmse :glyph :shade-number :color [120 160 90]})]
                                    :labels {:title ":color"}}]

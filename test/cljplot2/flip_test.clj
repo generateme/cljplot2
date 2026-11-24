@@ -141,10 +141,10 @@
 
 (def ^:private charts
   {:scatter {:mapping {:x :x :y :y} :charts [(chart/scatter {:color :red :size 6})]}
-   :line {:mapping {:x :x :y :y} :charts [(chart/line {:color :red :width 3})]}
+   :line {:mapping {:x :x :y :y} :charts [(chart/line {:color :red :line-width 3})]}
    :histogram {:mapping {:x :x} :charts [(chart/histogram {:color :red :bins 3})]}
-   :density {:mapping {:x :x} :charts [(chart/density {:color :red :width 3})]}
-   :ecdf {:mapping {:x :x} :charts [(chart/ecdf {:color :red :width 3})]}})
+   :density {:mapping {:x :x} :charts [(chart/density {:color :red :line-width 3})]}
+   :ecdf {:mapping {:x :x} :charts [(chart/ecdf {:color :red :line-width 3})]}})
 
 (deftest charts-flip-test
   (doseq [[kind p] charts

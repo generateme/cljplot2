@@ -26,7 +26,7 @@
       (is (= [:columns :rows :widths :heights :align :equal-panels :title :theme] ks))
       (is (every? #(= :arrange (:fragment %)) (take 6 (describe/options #'multiplot/arrange))))))
   (testing "pairs"
-    (is (= [:variables :mapping :lower :upper :diagonal :labels :scales :color :theme :title]
+    (is (= [:variables :mapping :lower :upper :diagonal :variable-names :scales :color :theme :title]
            (map :key (describe/options #'multiplot/pairs))))))
 
 (deftest defaults-test
@@ -65,9 +65,9 @@
 (deftest pairs-boundaries-test
   (testing "options accepted"
     (is (map? (multiplot/pairs rows {:variables [:a :b] :mapping {:color :g} :lower [(chart/scatter) (chart/smooth)]
-                                     :upper nil :diagonal :names :labels {:a "A"} :theme {:facet {:gap 2}} :title "t"})))
+                                     :upper :none :diagonal :names :variable-names {:a "A"} :theme {:facet {:gap 2}} :title "t"})))
     (is (map? (multiplot/pairs rows {:variables [:a :b] :lower (chart/scatter) :upper (list (chart/scatter))
-                                     :diagonal nil :mapping nil :labels nil}))))
+                                     :diagonal nil :mapping nil :variable-names nil}))))
   (testing "wrong types and unknown keys fail at the option, before the data is read (`:key` - the innermost key)"
     (are [opts k] (= k (first (:in (error #(multiplot/pairs nil opts)))))
       {:variables :a} :variables
@@ -75,12 +75,12 @@
       {:variables [:a :b] :lower 1} :lower
       {:variables [:a :b] :upper [{:kind :scatter}]} :upper
       {:variables [:a :b] :diagonal :name} :diagonal
-      {:variables [:a :b] :labels {:a 1}} :labels
+      {:variables [:a :b] :variable-names {:a 1}} :variable-names
       {:variables [:a :b] :mapping {:x 1}} :mapping
       {:variables [:a :b] :columns 2} :columns
       {:variables [:a :b] :scales {:size {}}} :scales)
     (is (= :compute (:key (error #(multiplot/pairs nil {:variables [:a :b] :upper [{:kind :scatter}]})))) "a chart without :compute")
-    (is (= :a (:key (error #(multiplot/pairs nil {:variables [:a :b] :labels {:a 1}}))))))
+    (is (= :a (:key (error #(multiplot/pairs nil {:variables [:a :b] :variable-names {:a 1}}))))))
   (testing "nil and {} options pass validation, then fail on the missing variables"
     (is (= :variables (:key (error #(multiplot/pairs rows nil)))))
     (is (= :variables (:key (error #(multiplot/pairs rows {}))))))

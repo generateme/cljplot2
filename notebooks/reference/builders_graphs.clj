@@ -65,7 +65,7 @@
 ;; from the weights and labels from a node column (`:labels :age`, right) - an aesthetic maps either nodes or edges,
 ;; not both:
 
-(plot/render-image (plot/arrange [(plot/network friends {:directed? true :rng (r/rng :mersenne 1)
+(plot/render-image (plot/arrange [(plot/network friends {:directed true :rng (r/rng :mersenne 1)
                                                          :node-style {:size 16 :color [230 120 40] :shape \S}
                                                          :edge-style {:color [60 60 60] :arrow {:size 9}}
                                                          :labels false
@@ -94,7 +94,7 @@
 ;; Dashed blue edges and larger labels through the theme:
 
 (plot/render-image (plot/network friends {:rng (r/rng :mersenne 1) :labels true
-                                          :theme {:chart {:network-edge {:color [40 90 200] :dash :dashed :width 2}}
+                                          :theme {:chart {:network-edge {:color [40 90 200] :dash :dashed :line-width 2}}
                                                   :text {:network-label {:size 11}}}})
                    {:width 500 :height 360})
 
@@ -109,9 +109,9 @@
 
 ;; Migration between world regions (flows under 0.1 dropped), opaque ribbons and no labels (right):
 
-(plot/render-image (plot/arrange [(plot/chord migration {:directed? true :min-value 0.1 :title "directed, :alpha 0.6"})
-                                  (plot/chord migration {:min-value 0.1 :alpha 1.0 :labels? false
-                                                         :title ":alpha 1.0, :labels? false"})]
+(plot/render-image (plot/arrange [(plot/chord migration {:directed true :min-value 0.1 :title "directed, :alpha 0.6"})
+                                  (plot/chord migration {:min-value 0.1 :alpha 1.0 :labels false
+                                                         :title ":alpha 1.0, :labels false"})]
                                  {:columns 2})
                    {:width 1000 :height 500})
 
@@ -133,11 +133,11 @@
 
 (plot/render-image (plot/arrange [(plot/arc friends {:nodes people :edge-mapping {:color :value} :alpha 0.9
                                                      :node-style {:size 12 :color [40 40 40]}
-                                                     :edge-style {:width 2}
+                                                     :edge-style {:line-width 2}
                                                      :labels :team
                                                      :title "arc colours, :labels :team"})
-                                  (plot/arc friends {:nodes people :mapping {:size :age} :labels? false
-                                                     :title ":labels? false, node size by age"})]
+                                  (plot/arc friends {:nodes people :mapping {:size :age} :labels false
+                                                     :title ":labels false, node size by age"})]
                                  {:columns 2})
                    {:width 900 :height 320})
 
@@ -151,12 +151,12 @@
 (plot/render-image (plot/arc friends {:theme {:chart {:arc-node {:shape \o :color [200 60 40] :size 10}}}})
                    {:width 500 :height 300})
 
-(nu/options-table (describe/style-rows :arc-edge [:color :width :dash]))
+(nu/options-table (describe/style-rows :arc-edge [:color :line-width :dash]))
 
 ;; Thick dark arcs through the theme:
 
 (plot/render-image (plot/arc friends {:edge-mapping {} :alpha 0.8
-                                      :theme {:chart {:arc-edge {:color [40 40 40] :width 3}}}})
+                                      :theme {:chart {:arc-edge {:color [40 40 40] :line-width 3}}}})
                    {:width 500 :height 300})
 
 (nu/shared-groups (describe/options #'plot/arc))
@@ -186,20 +186,20 @@
 (nu/data-table visits)
 
 (plot/render-image (plot/arrange [(plot/sankey visits {:link-color :target :alpha 0.8 :title ":link-color :target"})
-                                  (plot/sankey visits {:link-color :none :title ":link-color :none"})
-                                  (plot/sankey visits {:nodes stages :mapping {:color :kind} :labels? false
+                                  (plot/sankey visits {:link-color :theme :title ":link-color :theme"})
+                                  (plot/sankey visits {:nodes stages :mapping {:color :kind} :labels false
                                                        :title ":mapping {:color :kind}, no labels"})]
                                  {:columns 3 :widths [1 1 1.3]})
                    {:width 1000 :height 330})
 
 ;; The flow bands draw in the theme style `[:chart :sankey-link]` (a polygon style; its colour shows with
-;; `:link-color :none`), the node names in the text role `:sankey-label`:
+;; `:link-color :theme`), the node names in the text role `:sankey-label`:
 
 (nu/options-table (describe/style-rows :sankey-link))
 
 ;; Grey bands outlined in white, larger names:
 
-(plot/render-image (plot/sankey visits {:link-color :none
+(plot/render-image (plot/sankey visits {:link-color :theme
                                         :theme {:chart {:sankey-link {:color [120 140 170] :stroke-color :white
                                                                       :stroke-width 1}}
                                                 :text {:sankey-label {:size 11}}}})
@@ -216,14 +216,14 @@
 
 ;; Titanic passengers by class, sex, age and survival, coloured by class:
 
-(plot/render-image (plot/alluvial titanic {:axes [:class :sex :age :survived] :value :n :fill :class})
+(plot/render-image (plot/alluvial titanic {:variables [:class :sex :age :survived] :value :n :strand-color :class})
                    {:width 900 :height 500})
 
 ;; Opaque strands, wide strata with large gaps and names of your own under the columns:
 
-(plot/render-image (plot/alluvial titanic {:axes [:class :survived] :value :n :fill :survived
-                                           :alpha 0.9 :node-width 0.25 :pad 0.1
-                                           :axis-names ["passenger class" "survived?"]})
+(plot/render-image (plot/alluvial titanic {:variables [:class :survived] :value :n :strand-color :survived
+                                           :alpha 0.9 :node-width 0.25 :gap 0.1
+                                           :variable-names ["passenger class" "survived?"]})
                    {:width 600 :height 400})
 
 ;; The strata draw in the theme style `[:chart :alluvial-stratum]` (a polygon style), their names in the text role
@@ -233,7 +233,7 @@
 
 ;; Dark strata with light names:
 
-(plot/render-image (plot/alluvial titanic {:axes [:class :survived] :value :n :fill :survived
+(plot/render-image (plot/alluvial titanic {:variables [:class :survived] :value :n :strand-color :survived
                                            :theme {:chart {:alluvial-stratum {:color [50 50 50]}}
                                                    :text {:alluvial-label {:color :white :background :none}}}})
                    {:width 600 :height 400})

@@ -7,9 +7,7 @@
             [cljplot2.core :as plot]
             [cljplot2.demo.data :as data]))
 
-(def ^:private chem97
-  (mapv (fn [row] {:score (parse-long (:score row)) :gender (:gender row) :gcsescore (parse-double (:gcsescore row))})
-        (data/csv-rows "chem97.csv")))
+(def ^:private chem97 (data/chem97-rows))
 
 (def fig-6-14
   "Fig 6.14: Chem97 counts of A-level score by rounded GCSE score per gender - colour and cell size by the square root

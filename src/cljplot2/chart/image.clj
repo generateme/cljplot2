@@ -19,6 +19,7 @@
             [clojure2d.protocols :as pr]
             [fastmath.core :as m]
             [cljplot2.data.facet :as facet]
+            [cljplot2.data.rows :as data]
             [cljplot2.scale.position :as scale]
             [cljplot2.schema :as schema]))
 
@@ -62,7 +63,7 @@
                         {})
              :na #{}
              :dropped {}}
-      domain (assoc :padding {:x [0.0 0.0] :y [0.0 0.0]}
+      domain (assoc :padding data/zero-padding
                     :scale-defaults {:x {:nice false} :y {:nice false}}))))
 
 (defn- image-of

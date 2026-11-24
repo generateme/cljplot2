@@ -22,19 +22,19 @@
    :significant (c/color 215 48 39)})
 
 (def ^:private kinds-of
-  "The ACF kinds (`acf-rows` `:partial?` values) drawn for each builder `:partial?` value."
-  {false [false] :acf [false] true [true] :pacf [true] :both [false true]})
+  "The ACF kinds (`acf-rows` `:partial` values) drawn for each builder `:correlograms` value."
+  {:acf [false] :pacf [true] :both [false true]})
 
 (def ^:private kind-names
-  "Display name of an ACF kind (`:partial?` value): panel strip and y axis title."
+  "Display name of an ACF kind (`:partial` value): panel strip and y axis title."
   {false "ACF" true "PACF"})
 
 (def acf-options
-  "Options schema of [[acf]]: its own entries, `:lags` / `:alpha` forwarded to [[cljplot2.data.series/acf-rows]] and the builder entries."
+  "Options schema of [[acf]]: its own entries, `:lags` / `:level` forwarded to [[cljplot2.data.series/acf-rows]] and the builder entries."
   (schema/options-map
-   [(schema/nilable :partial? {:description "the correlograms drawn: :both (ACF above PACF), :acf or false (ACF), :pacf or true (PACF)"
-                               :default :both}
-                    [:enum :both :acf :pacf false true])
+   [(schema/nilable :correlograms {:description "the correlograms drawn: :both (ACF above PACF), :acf or :pacf"
+                                   :default :both}
+                    [:enum :both :acf :pacf])
     (schema/nilable :band {:description "significance band: :smooth (a ribbon through the lags) or :stepped (a block per lag)"
                            :default :smooth}
                     [:enum :smooth :stepped])
@@ -47,7 +47,7 @@
                      (schema/optional :significant {:description "colour of the points of lags outside the band"
                                                     :default (:significant default-colors)}
                                       schema/color)])]
-   series/acf-rows-entries
+   (remove #(= :partial (first %)) series/acf-rows-entries)
    multiplot/builder-entries))
 
 (defn- stepped-band
@@ -80,7 +80,7 @@
     (chart/ribbon {:data rows :mapping {:x :lag :ymin :lo :ymax :hi} :color color})))
 
 (defn acf
-  "Correlogram of a series as a plot map: ACF and PACF by lag (see [[cljplot2.data.series/acf-rows]]).
+  "Builds a correlogram of a series as a plot map: ACF and PACF by lag (see [[cljplot2.data.series/acf-rows]]).
 
   Stems from 0 (`chart/segment`) with points (`chart/scatter` in the theme style `[:chart :acf-point]`), the lags beyond the significance band highlighted, the band (Bartlett's per lag for ACF, constant for PACF) and a rule at 0.
 
@@ -88,8 +88,8 @@
 
   - `values` (sequence of numbers): the series.
   - `options` (map, optional; `nil` values - the defaults):
-    - `:lags`, `:alpha` - the lags and significance level, see [[cljplot2.data.series/acf-rows]];
-    - `:partial?` - `:both` (default; ACF above PACF, facet rows by `:kind`, each row its own y scale unless `:scales {:y {:domain ..}}` sets one), `:acf` or `false` (ACF), `:pacf` or `true` (PACF);
+    - `:lags`, `:level` - the lags and the band's confidence level, see [[cljplot2.data.series/acf-rows]];
+    - `:correlograms` - `:both` (default; ACF above PACF, facet rows by `:kind`, each row its own y scale unless `:scales {:y {:domain ..}}` sets one), `:acf` (ACF) or `:pacf` (PACF);
     - `:band` - `:smooth` (default, a ribbon through the lags, as the R `ci.type ma` line) or `:stepped` (a block per lag);
     - `:colors` - `{:stem :band :significant}` colours (defaults blue, blue, red);
     - `:scales`, `:title`, `:theme` - the builder entries.
@@ -101,11 +101,11 @@
   ([values] (acf values {}))
   ([values {:keys [scales title] user-theme :theme :as options}]
    (schema/check-options! acf-options options)
-   (let [{:keys [partial? band colors] :as settings} (merge {:partial? :both :band :smooth :colors {}} (into {} (remove (comp nil? val)) options))
+   (let [{:keys [correlograms band colors] :as settings} (merge {:correlograms :both :band :smooth :colors {}} (into {} (remove (comp nil? val)) options))
          {:keys [stem significant] band-color :band} (merge default-colors colors)
-         kinds (kinds-of partial?)
+         kinds (kinds-of correlograms)
          rows (vec (mapcat (fn [p?] (map #(assoc % :kind (kind-names p?))
-                                         (series/acf-rows values (assoc (select-keys settings [:lags :alpha]) :partial? p?))))
+                                         (series/acf-rows values (assoc (select-keys settings [:lags :level]) :partial p?))))
                            kinds))
          both? (m/== 2 (count kinds))]
      (cond-> {:data rows
@@ -174,7 +174,7 @@
    multiplot/builder-entries))
 
 (defn horizon
-  "Horizon chart of rows as a plot map (see [[cljplot2.data.series/horizon-rows]]).
+  "Builds a horizon chart of rows as a plot map (see [[cljplot2.data.series/horizon-rows]]).
 
   Values `:y` over `:x` are folded into bands of one height, negatives mirrored upward in a second hue; every band is an area (`chart/line {:fill :color}`) from 0 across the whole x range (no x padding, `:x {:nice false}`), the darker bands over the lighter ones; the y scale is `[0 band-height]` without an axis. With `:series` there is a panel per series in one column, in first-appearance order (the series in the strip, one band height for all, a `nil` series - the NA panel, last).
 
@@ -184,7 +184,7 @@
   - `options` (map, optional):
     - `:x` (default `:x`), `:y`, `:series` - row keys;
     - `:bands` (default 2), `:band-height`, `:interpolator`, `:steps-per-gap` - see [[cljplot2.data.series/horizon-rows]] (a curve through the values, e.g. `:monotone`);
-    - `:colors` - `{:positive [..] :negative [..]}`, at least `:bands` colours each, lightest first (default blues / reds, see [[horizon-colors]]);
+    - `:colors` - `{:positive [..] :negative [..]}`, at least `:bands` colours each, lightest first (default blues / reds, see `horizon-colors`);
     - `:alpha` - the bands' fill alpha (default 1, opaque; translucent bands show the ones beneath);
     - `:scales`, `:title`, `:theme` - the builder entries.
 
@@ -201,7 +201,7 @@
          palette (horizon-colors (or colors {}) n)]
      (cond-> {:data band-rows
               :mapping (cond-> {:x :x :y :y :color :band} series (assoc :facet :series))
-              :charts [(chart/line {:fill :color :alpha alpha :width 0 :padding {:x [0.0 0.0] :y [0.0 0.0]}})]
+              :charts [(chart/line {:fill :color :alpha alpha :line-width 0 :padding {:x [0.0 0.0] :y [0.0 0.0]}})]
               :scales (theme/deep-merge (cond-> {:x {:nice false}
                                                  :y {:domain [0.0 h] :nice false :axis false}
                                                  :color {:kind :ordinal :domain (series/horizon-bands n) :range palette

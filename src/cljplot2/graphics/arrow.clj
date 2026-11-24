@@ -10,7 +10,7 @@
   the run along its length first - an arrow pointing at a node of that radius; a run no longer than its gaps isn't
   drawn.
 
-  Functions: [[schema]], [[trimmed]], [[draw-run!]]."
+  Functions: [[schema]], [[draw-run!]]."
   (:require [clojure2d.core :as c2d]
             [fastmath.core :as m]
             [cljplot2.graphics.polyline :as polyline]
@@ -78,7 +78,7 @@
         (into [p] (subvec run (m/long-inc i)))
         nil))))
 
-(defn trimmed
+(defn- trimmed
   "Gives a run shortened at both ends along its length.
 
   Parameters:

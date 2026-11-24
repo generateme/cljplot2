@@ -47,7 +47,7 @@
     (is (= :mapping (:key (error #(plot/build (bullet-plot [revenue revenue] {})))))))
   (testing "nothing mapped; bad style options"
     (is (some? (error #(plot/build {:data [revenue] :charts [(chart/bullet)]}))))
-    (is (some? (error #(plot/build (bullet-plot [revenue] {:measure-width 1.5})))))
+    (is (some? (error #(plot/build (bullet-plot [revenue] {:measure-fraction 1.5})))))
     (is (some? (error #(plot/build (bullet-plot [revenue] {:range-colors [:red]})))))))
 
 (deftest bullet-render-test

@@ -16,12 +16,12 @@
 (deftest chart-rows-test
   (let [rows (describe/options (chart/bullet))]
     (testing "style rows take theme defaults"
-      (is (= 0.35 (:default (row rows :measure-width))))
-      (is (= "a number in [0 1]" (:type (row rows :measure-width)))))
+      (is (= 0.35 (:default (row rows :measure-fraction))))
+      (is (= "a number in [0 1]" (:type (row rows :measure-fraction)))))
     (testing "fragment rows carry their fragment"
       (is (= :common (:fragment (row rows :data))))
       (is (= :strip (:fragment (row rows :place))))
-      (is (nil? (:fragment (row rows :measure-width)))))
+      (is (nil? (:fragment (row rows :measure-fraction)))))
     (testing "every row has the documented keys"
       (is (every? #(= #{:key :path :type :required? :default :default-doc :description :fragment :section} (set (keys %))) rows)))))
 
@@ -175,7 +175,7 @@
         (is (re-find #"^a text style" (:type (by-path [:text :title]))))))
     (testing "the style keys aren't repeated per role: one shared table, the :text-style group"
       (is (not-any? #(= 3 (count (:path %))) (filter #(= :text (first (:path %))) rows)))
-      (is (= [:font :size :font-style :color :padding :align :background] (map :key (describe/fragment-rows :text-style)))))
+      (is (= [:font :size :font-style :color :inset :align :background] (map :key (describe/fragment-rows :text-style)))))
     (testing "role rows go through the common row code: merged, not required"
       (is (not-any? :required? (filter #(= :text (first (:path %))) rows))))
     (testing "a section's rows: the rows under it, in order; together every row"

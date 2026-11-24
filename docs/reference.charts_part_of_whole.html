@@ -639,22 +639,22 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </thead>
 <tbody>
 <tr class="odd">
-<td>:padding</td>
+<td>:gap</td>
 <td>a non-negative number</td>
 <td>3</td>
 <td>gap inside every group around its header and children, in pixels</td>
 </tr>
 <tr class="even">
-<td>:border-color</td>
+<td>:stroke-color</td>
 <td>a clojure2d color or :none</td>
 <td>:white</td>
-<td>cell border colour</td>
+<td>cell outline colour</td>
 </tr>
 <tr class="odd">
-<td>:border-width</td>
+<td>:stroke-width</td>
 <td>a non-negative number</td>
 <td>1</td>
-<td>cell border width in pixels</td>
+<td>cell outline width in pixels</td>
 </tr>
 <tr class="even">
 <td>:layout</td>
@@ -669,8 +669,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> budget</span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:hierarchy</span> [<span class="at">:dept</span> <span class="at">:team</span>] <span class="at">:value</span> <span class="at">:cost</span>}</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/treemap {<span class="at">:padding</span> <span class="dv">8</span> <span class="at">:border-color</span> <span class="at">:black</span> <span class="at">:border-width</span> <span class="dv">2</span>})]</span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":padding 8, black borders"</span>}}</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/treemap {<span class="at">:gap</span> <span class="dv">8</span> <span class="at">:stroke-color</span> <span class="at">:black</span> <span class="at">:stroke-width</span> <span class="dv">2</span>})]</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":gap 8, black borders"</span>}}</span>
 <span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> budget</span>
 <span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:hierarchy</span> [<span class="at">:dept</span> <span class="at">:team</span>] <span class="at">:value</span> <span class="at">:cost</span>}</span>
 <span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/treemap {<span class="at">:layout</span> <span class="at">:slice-dice</span>})]</span>
@@ -750,16 +750,16 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </thead>
 <tbody>
 <tr class="odd">
-<td>:border-color</td>
+<td>:stroke-color</td>
 <td>a clojure2d color or :none</td>
 <td>:white</td>
-<td>cell border colour</td>
+<td>cell outline colour</td>
 </tr>
 <tr class="even">
-<td>:border-width</td>
+<td>:stroke-width</td>
 <td>a non-negative number</td>
 <td>1</td>
-<td>cell border width in pixels</td>
+<td>cell outline width in pixels</td>
 </tr>
 <tr class="odd">
 <td>:order</td>
@@ -791,7 +791,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":order :data, :root true"</span>}}</span>
 <span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> budget</span>
 <span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:hierarchy</span> [<span class="at">:dept</span> <span class="at">:team</span>] <span class="at">:value</span> <span class="at">:cost</span>}</span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/partition {<span class="at">:color-by</span> <span class="at">:name</span> <span class="at">:border-width</span> <span class="dv">2</span>})]</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/partition {<span class="at">:color-by</span> <span class="at">:name</span> <span class="at">:stroke-width</span> <span class="dv">2</span>})]</span>
 <span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:coord</span> {<span class="at">:kind</span> <span class="at">:polar</span>}</span>
 <span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":color-by :name"</span>}</span>
 <span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:legend</span> <span class="va">false</span>}]</span>
@@ -809,8 +809,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":order :value (default)"</span>}}</span>
 <span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> budget</span>
 <span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:hierarchy</span> [<span class="at">:dept</span> <span class="at">:team</span>] <span class="at">:value</span> <span class="at">:cost</span>}</span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/partition {<span class="at">:border-color</span> [<span class="dv">40</span> <span class="dv">40</span> <span class="dv">40</span>] <span class="at">:border-width</span> <span class="dv">3</span>})]</span>
-<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":border-color, :border-width 3"</span>}}]</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/partition {<span class="at">:stroke-color</span> [<span class="dv">40</span> <span class="dv">40</span> <span class="dv">40</span>] <span class="at">:stroke-width</span> <span class="dv">3</span>})]</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":stroke-color, :stroke-width 3"</span>}}]</span>
 <span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">2</span>})</span>
 <span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">360</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
@@ -879,22 +879,22 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </thead>
 <tbody>
 <tr class="odd">
-<td>:padding</td>
+<td>:gap</td>
 <td>a non-negative number</td>
 <td>3</td>
 <td>gap between siblings and between a child and its parent's edge, in pixels</td>
 </tr>
 <tr class="even">
-<td>:border-color</td>
+<td>:stroke-color</td>
 <td>a clojure2d color or :none</td>
 <td>:white</td>
-<td>circle border colour</td>
+<td>circle outline colour</td>
 </tr>
 <tr class="odd">
-<td>:border-width</td>
+<td>:stroke-width</td>
 <td>a non-negative number</td>
 <td>1</td>
-<td>circle border width in pixels</td>
+<td>circle outline width in pixels</td>
 </tr>
 <tr class="even">
 <td>:order</td>
@@ -921,8 +921,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> budget</span>
 <span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:hierarchy</span> [<span class="at">:dept</span> <span class="at">:team</span>] <span class="at">:value</span> <span class="at">:cost</span>}</span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/pack {<span class="at">:padding</span> <span class="dv">10</span> <span class="at">:root</span> <span class="va">true</span> <span class="at">:border-color</span> <span class="at">:black</span>})]</span>
-<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":padding 10, :root true"</span>}}</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/pack {<span class="at">:gap</span> <span class="dv">10</span> <span class="at">:root</span> <span class="va">true</span> <span class="at">:stroke-color</span> <span class="at">:black</span>})]</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":gap 10, :root true"</span>}}</span>
 <span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> budget</span>
 <span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:hierarchy</span> [<span class="at">:dept</span> <span class="at">:team</span>] <span class="at">:value</span> <span class="at">:cost</span>}</span>
 <span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/pack {<span class="at">:hidden-levels</span> #{<span class="dv">1</span>}})]</span>
@@ -945,8 +945,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":order :data"</span>}}</span>
 <span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> budget</span>
 <span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:hierarchy</span> [<span class="at">:dept</span> <span class="at">:team</span>] <span class="at">:value</span> <span class="at">:cost</span>}</span>
-<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/pack {<span class="at">:border-color</span> [<span class="dv">40</span> <span class="dv">40</span> <span class="dv">40</span>] <span class="at">:border-width</span> <span class="dv">3</span>})]</span>
-<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":border-width 3"</span>}}]</span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/pack {<span class="at">:stroke-color</span> [<span class="dv">40</span> <span class="dv">40</span> <span class="dv">40</span>] <span class="at">:stroke-width</span> <span class="dv">3</span>})]</span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":stroke-width 3"</span>}}]</span>
 <span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">3</span>})</span>
 <span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">360</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
@@ -1059,22 +1059,22 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td>space between cells, a fraction of a cell</td>
 </tr>
 <tr class="even">
-<td>:shape</td>
+<td>:cell-shape</td>
 <td>one of :square :circle</td>
 <td>:square</td>
 <td>cell shape: :square or :circle</td>
 </tr>
 <tr class="odd">
-<td>:border-color</td>
+<td>:stroke-color</td>
 <td>a clojure2d color or :none</td>
 <td>:none</td>
-<td>cell border colour</td>
+<td>cell outline colour</td>
 </tr>
 <tr class="even">
-<td>:border-width</td>
+<td>:stroke-width</td>
 <td>a non-negative number</td>
 <td>1</td>
-<td>cell border width in pixels</td>
+<td>cell outline width in pixels</td>
 </tr>
 <tr class="odd">
 <td>:rows</td>
@@ -1107,12 +1107,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> energy-mix</span>
 <span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:color</span> <span class="at">:source</span> <span class="at">:value</span> <span class="at">:share</span>}</span>
-<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/waffle {<span class="at">:shape</span> <span class="at">:circle</span> <span class="at">:gap</span> <span class="fl">0.2</span> <span class="at">:rows</span> <span class="dv">5</span> <span class="at">:columns</span> <span class="dv">20</span>})]</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/waffle {<span class="at">:cell-shape</span> <span class="at">:circle</span> <span class="at">:gap</span> <span class="fl">0.2</span> <span class="at">:rows</span> <span class="dv">5</span> <span class="at">:columns</span> <span class="dv">20</span>})]</span>
 <span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":circle, 5 × 20"</span>}</span>
 <span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:legend</span> <span class="va">false</span>}</span>
 <span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> energy-mix</span>
 <span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:color</span> <span class="at">:source</span> <span class="at">:value</span> <span class="at">:share</span>}</span>
-<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/waffle {<span class="at">:fill-order</span> <span class="at">:columns</span> <span class="at">:border-color</span> <span class="at">:white</span> <span class="at">:border-width</span> <span class="dv">2</span></span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/waffle {<span class="at">:fill-order</span> <span class="at">:columns</span> <span class="at">:stroke-color</span> <span class="at">:white</span> <span class="at">:stroke-width</span> <span class="dv">2</span></span>
 <span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>                                                           <span class="at">:gap</span> <span class="dv">0</span>})]</span>
 <span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":fill-order :columns"</span>}</span>
 <span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:legend</span> <span class="va">false</span>}</span>
@@ -1311,13 +1311,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td>fill opacity</td>
 </tr>
 <tr class="even">
-<td>:border-color</td>
+<td>:stroke-color</td>
 <td>:darker or a clojure2d color or :none</td>
 <td>:darker</td>
 <td>circle outline colour: a colour, :none or :darker (the darkened set colour)</td>
 </tr>
 <tr class="odd">
-<td>:border-width</td>
+<td>:stroke-width</td>
 <td>a non-negative number</td>
 <td>1</td>
 <td>circle outline width in pixels</td>
@@ -1358,7 +1358,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> memberships</span>
 <span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:set</span> <span class="at">:club</span> <span class="at">:item</span> <span class="at">:member</span>}</span>
 <span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/venn {<span class="at">:sets</span> [<span class="st">"chess"</span> <span class="st">"running"</span>] <span class="at">:proportional</span> <span class="va">false</span> <span class="at">:alpha</span> <span class="fl">0.6</span></span>
-<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>                                                         <span class="at">:border-color</span> <span class="at">:none</span>})]</span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>                                                         <span class="at">:stroke-color</span> <span class="at">:none</span>})]</span>
 <span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":proportional false"</span>}}</span>
 <span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> memberships</span>
 <span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:set</span> <span class="at">:club</span> <span class="at">:item</span> <span class="at">:member</span>}</span>
@@ -1378,8 +1378,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":set-labels false"</span>}}</span>
 <span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> memberships</span>
 <span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:set</span> <span class="at">:club</span> <span class="at">:item</span> <span class="at">:member</span>}</span>
-<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/venn {<span class="at">:border-width</span> <span class="dv">4</span>})]</span>
-<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":border-width 4"</span>}}]</span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/venn {<span class="at">:stroke-width</span> <span class="dv">4</span>})]</span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":stroke-width 4"</span>}}]</span>
 <span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">2</span>})</span>
 <span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">900</span> <span class="at">:height</span> <span class="dv">380</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>

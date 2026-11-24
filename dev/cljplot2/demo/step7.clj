@@ -2,15 +2,12 @@
   "Step 7 demo: groups and legends.
   Fig 2.6 (barley: variety by yield, faceted by site, colour by year), merged colour + shape legend (Chem97),
   numeric size and continuous colour (faithful), legend overlay with NA, legend wrapping and bands label thinning."
-  (:require [clojure.data.json :as json]
-            [clojure.java.io :as io]
-            [cljplot2.chart :as chart]))
+  (:require [cljplot2.chart :as chart]
+            [cljplot2.demo.data :as data]))
 
-(defn- read-json [file] (json/read-str (slurp (io/resource file)) :key-fn keyword))
-
-(def barley (read-json "barley.json"))
-(def chem97 (read-json "chem97.json"))
-(def faithful (read-json "faithful.json"))
+(def barley (data/json-rows "barley.json"))
+(def chem97 (data/chem97-rows))
+(def faithful (data/json-rows "faithful.json"))
 
 (def fig-2-6
   {:data barley

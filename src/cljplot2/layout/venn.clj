@@ -7,7 +7,9 @@
   * 3 sets ([[three-sets]]): the classic layout - unit circles around a common centre (upper left, upper right,
     bottom), not proportional.
 
-  Regions are keyed by the set of circle indices they lie in (`#{0}`, `#{0 1}`, ...)."
+  Regions are keyed by the set of circle indices they lie in (`#{0}`, `#{0 1}`, ...).
+
+  Functions: layouts [[two-sets]], [[three-sets]]; geometry [[lens-area]], [[region-points]]."
   (:require [fastmath.core :as m]
             [fastmath.solver :as solver]))
 

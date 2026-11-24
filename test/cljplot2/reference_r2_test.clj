@@ -126,13 +126,13 @@
 (deftest required-options-test
   (testing "required options are required in the schemas: missing, and alone keyed by them"
     (is (= :row (:key (error-data #(plot/clustered-heatmap nil {:col :c :value :v})))))
-    (is (= :axes (:key (error-data #(plot/alluvial nil {})))))
+    (is (= :variables (:key (error-data #(plot/alluvial nil {})))))
     (is (= :variables (:key (error-data #(plot/pairs nil {}))))))
   (testing "boundary: pairs takes 2 to 20 variables, alluvial at least 2 axes"
     (is (= :variables (:key (error-data #(plot/pairs nil {:variables [:a]})))))
     (is (= :variables (:key (error-data #(plot/pairs nil {:variables (vec (map (comp keyword str) (range 21)))})))))
     (is (nil? (:key (error-data #(plot/pairs [{:a 1 :b 2} {:a 2 :b 1}] {:variables [:a :b]})))))
-    (is (= :axes (:key (error-data #(plot/alluvial nil {:axes [:a]})))))))
+    (is (= :variables (:key (error-data #(plot/alluvial nil {:variables [:a]})))))))
 
 (deftest shared-types-test
   (testing "open-fraction: (0 1), ends excluded"
@@ -153,8 +153,8 @@
     (testing "boundary: no groups, empty groups - an empty closed map"
       (is (= [:map {:closed true}] (schema/options-map)))
       (is (= [:map {:closed true}] (schema/options-map [] []))))
-    (testing "acf: its own :partial? wins over acf-rows', no duplicate key"
-      (let [rows (filter #(= [:partial?] (:path %)) (describe/options #'plot/acf))]
+    (testing "acf: its own :correlograms wins over acf-rows', no duplicate key"
+      (let [rows (filter #(= [:correlograms] (:path %)) (describe/options #'plot/acf))]
         (is (= 1 (count rows)))
         (is (nil? (:fragment (first rows))))))))
 
@@ -170,9 +170,9 @@
 (def ^:private intended-overrides
   "Builder -> keys whose own entry shadows a forwarded group's (schema/options-map: own entries win), each on purpose:
   pairs' `:theme` styles the cells and the matrix (not only the built plot), its `:scales` is the cells' colour scale only
-  (a matrix has no plot scales); sequences' `:keep-end?` defaults to true
-  (a sunburst keeps the end marker); acf's `:partial?` adds `:both`, translated before acf-rows."
-  '{pairs #{:theme :scales} sequences #{:keep-end?} acf #{:partial?}})
+  (a matrix has no plot scales); sequences' `:keep-end` defaults to true
+  (a sunburst keeps the end marker)."
+  '{pairs #{:theme :scales} sequences #{:keep-end}})
 
 (defn- shadowed-keys
   "Own (untagged) top-level option keys of builder `v` that a group it also takes defines."

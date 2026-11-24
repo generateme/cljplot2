@@ -25,7 +25,7 @@
   (vec (for [row (data/csv-rows "titanic.csv") :let [n (parse-long (:n row))] :when (pos? n)] (assoc row :n n))))
 
 (def titanic-alluvial
-  (plot/alluvial titanic {:axes [:class :sex :age :survived] :value :n :fill :class
+  (plot/alluvial titanic {:variables [:class :sex :age :survived] :value :n :strand-color :class
                           :theme {:palette {:color :set1}}
                           :title "Titanic: 2201 people by class, sex, age and survival"}))
 

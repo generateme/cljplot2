@@ -71,8 +71,8 @@
       (is (= [1.0 2.0 3.0] (mapv - (:y a) (:y0 a))))
       (is (= [0.0 1.0 0.0] (mapv - (:y b) (:y0 b))))))
   (testing "2.2 errors: repeated x in a group, categorical x"
-    (is (= :x (:key (error #(build (stack-plot {:position :stack} {:data (conj two {:x 1 :y 5 :g "a"})}))))))
-    (is (= :x (:key (error #(build (stack-plot {:position :stack} {:data [{:x "p" :y 1 :g "a"} {:x "q" :y 2 :g "a"}]})))))))
+    (is (= [:mapping :x] (:in (error #(build (stack-plot {:position :stack} {:data (conj two {:x 1 :y 5 :g "a"})}))))))
+    (is (= [:mapping :x] (:in (error #(build (stack-plot {:position :stack} {:data [{:x "p" :y 1 :g "a"} {:x "q" :y 2 :g "a"}]})))))))
   (testing "2.2 one group, one point"
     (is (= [[1.0 2.0]] (let [[a] (lines-of (build (stack-plot {:position :stack} {:data [{:x 1 :y 1 :g "a"} {:x 2 :y 2 :g "a"}]})))]
                          [(:y a)]))))
@@ -200,9 +200,9 @@
 ;; review fixes
 
 (deftest review-fixes-test
-  (testing "H2 :sort false doesn't matter for stacking"
+  (testing "H2 :order :data doesn't matter for stacking"
     (let [data [{:x 3 :y 3 :g "a"} {:x 1 :y 1 :g "a"} {:x 2 :y 1 :g "b"}]
-          [a] (lines-of (build (stack-plot {:position :stack :sort false} {:data data})))]
+          [a] (lines-of (build (stack-plot {:position :stack :order :data} {:data data})))]
       (is (= [1 2 3] (:x a)))
       (is (= [1.0 2.0 3.0] (:heights a)))))
   (testing "H3 LocalTime x"

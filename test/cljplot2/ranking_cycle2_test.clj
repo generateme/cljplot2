@@ -233,7 +233,7 @@
   (testing "T5 treemap: leaves patterned, group boxes not"
     (let [data (for [g ["p" "q"] l ["a" "b"]] {:g g :l l :v 1})
           render (fn [p] (plot/render-image {:data data :mapping {:value :v :hierarchy [:g :l]} :legend false :theme white
-                                             :charts [(chart/treemap {:pattern p :pattern-color red :padding 12})]}
+                                             :charts [(chart/treemap {:pattern p :pattern-color red :gap 12})]}
                                             size))]
       (is (pos? (red-count (render :hatch))))
       (is (zero? (red-count (render :solid))))

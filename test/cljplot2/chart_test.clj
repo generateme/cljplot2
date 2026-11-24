@@ -69,7 +69,7 @@
     (is (= 3 (count (get-in st [:data :panel :x]))))
     (is (= {:x 3 :y 2} (:dropped st))))
   (testing "mixed kinds in one dimension"
-    (is (= :extents (:key (error #(build (scatter-plot {:data (conj rows {:a "x" :b 1})}))))))))
+    (is (= :mapping (:key (error #(build (scatter-plot {:data (conj rows {:a "x" :b 1})}))))))))
 
 (deftest empty-data-test
   (testing "no rows: no extents, no scales, no error"
@@ -77,9 +77,9 @@
       (is (= {} (:extents built) (:scale-specs built)))
       (is (some? (plot/render (scatter-plot {:data []}) {:width 100 :height 100})))))
   (testing "a mapped dimension without any valid value raises (usually a misspelt mapping)"
-    (is (= {:key :mapping :value :x :rows 1} (error #(build (scatter-plot {:data [{:a nil :b 1}]})))))
-    (is (= {:key :mapping :value :x :rows 3} (error #(build (scatter-plot {:mapping {:x :aa :y :b}})))))
-    (is (= {:key :mapping :value :y :rows 3} (error #(build (scatter-plot {:mapping {:x :a :y :bb}}))))))
+    (is (= {:key :mapping :in [:mapping :x] :rows 1} (error #(build (scatter-plot {:data [{:a nil :b 1}]})))))
+    (is (= {:key :mapping :in [:mapping :x] :rows 3} (error #(build (scatter-plot {:mapping {:x :aa :y :b}})))))
+    (is (= {:key :mapping :in [:mapping :y] :rows 3} (error #(build (scatter-plot {:mapping {:x :a :y :bb}}))))))
   (testing "explicit domain without data"
     (is (= [0.0 10.0] (mapv double (:domain (get-in (build (scatter-plot {:data [] :scales {:x {:domain [0 10]}}}))
                                                     [:finalized-scales :x]))))))
@@ -124,7 +124,7 @@
                                [:extents :x :padding]))
         "no request on x: the largest default"))
   (testing "different kinds across charts"
-    (is (= :extents (:key (error #(build {:mapping {:x :a :y :b}
+    (is (= :mapping (:key (error #(build {:mapping {:x :a :y :b}
                                                :charts [(chart/scatter {:data [{:a 1 :b 1}]})
                                                         (chart/scatter {:data [{:a "x" :b 1}]})]})))))))
 
@@ -323,12 +323,12 @@
                       (pixel (plot/render p {:width 600 :height 400}) (canvas-pos built :x 1) (canvas-pos built :y 1))))]
     (is (= [0 255 0] (top-color {} {})) "no :order: data order, last row on top")
     (is (= [255 0 0] (top-color {:order :o} {})) "ascending: highest order on top")
-    (is (= [0 0 255] (top-color {:order :o} {:order-direction :descending})) "descending: lowest order on top")
+    (is (= [0 0 255] (top-color {:order :o} {:descending true})) "descending: lowest order on top")
     (testing "nil order values drawn first, then ascending; stable for ties"
       (let [rows [{:x 1 :y 1 :o 2} {:x 2 :y 1 :o nil} {:x 3 :y 1 :o 1} {:x 4 :y 1 :o 1}]
             drawn-x (fn [opts] (get-in (build {:data rows :mapping {:x :x :y :y :order :o} :charts [(chart/scatter opts)]})
                                        [:stats 0 :data :panel :x]))]
         (is (= [2 3 4 1] (drawn-x {})) "nil first, ties (x 3, 4) in data order")
-        (is (= [2 1 3 4] (drawn-x {:order-direction :descending})) "nil still first"))
-      (is (= :order-direction (:key (error #(build {:data data :mapping {:x :x :y :y :order :o} :charts [(chart/scatter {:order-direction :up})]})))))
+        (is (= [2 1 3 4] (drawn-x {:descending true})) "nil still first"))
+      (is (= :descending (:key (error #(build {:data data :mapping {:x :x :y :y :order :o} :charts [(chart/scatter {:descending :up})]})))))
       (is (= :order (:key (error #(build {:data [{:x 1 :y 1 :o 1} {:x 2 :y 2 :o "a"}] :mapping {:x :x :y :y :order :o} :charts [(chart/scatter)]}))))))))

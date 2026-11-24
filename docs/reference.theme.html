@@ -1380,20 +1380,20 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </tr>
 <tr class="even">
 <td>:panel :grid :x</td>
-<td>:none or a line {:color :width :dash}</td>
-<td>{:color [180.0 180.0 180.0 255.0], :width 0.5, :dash [4.0]}</td>
+<td>:none or a line {:color :line-width :dash}</td>
+<td>{:color [180.0 180.0 180.0 255.0], :line-width 0.5, :dash [4.0]}</td>
 <td>grid lines of the x scale</td>
 </tr>
 <tr class="odd">
 <td>:panel :grid :y</td>
-<td>:none or a line {:color :width :dash}</td>
-<td>{:color [180.0 180.0 180.0 255.0], :width 0.5, :dash [4.0]}</td>
+<td>:none or a line {:color :line-width :dash}</td>
+<td>{:color [180.0 180.0 180.0 255.0], :line-width 0.5, :dash [4.0]}</td>
 <td>grid lines of the y scale</td>
 </tr>
 <tr class="even">
 <td>:panel :grid :bands</td>
-<td>:none or a line {:color :width :dash}</td>
-<td>{:color [180.0 180.0 180.0 255.0], :width 1, :dash [1.0 2.0]}</td>
+<td>:none or a line {:color :line-width :dash}</td>
+<td>{:color [180.0 180.0 180.0 255.0], :line-width 1, :dash [1.0 2.0]}</td>
 <td>grid lines of a bands scale, instead of :x / :y</td>
 </tr>
 <tr class="odd">
@@ -1404,7 +1404,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </tr>
 <tr class="even">
 <td>:panel :grid :minor</td>
-<td>:none or a line {:color :width :dash}</td>
+<td>:none or a line {:color :line-width :dash}</td>
 <td>:none</td>
 <td>grid lines at minor ticks</td>
 </tr>
@@ -1415,9 +1415,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (<span class="kw">assoc</span> iris-plot</span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>                          <span class="at">:scales</span> {<span class="at">:x</span> {<span class="at">:minor-ticks</span> <span class="dv">4</span>}}</span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>                          <span class="at">:theme</span> {<span class="at">:panel</span> {<span class="at">:grid</span> {<span class="at">:x</span> {<span class="at">:color</span> [<span class="dv">150</span> <span class="dv">150</span> <span class="dv">200</span>] <span class="at">:width</span> <span class="dv">1</span> <span class="at">:dash</span> <span class="at">:none</span>}</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>                          <span class="at">:theme</span> {<span class="at">:panel</span> {<span class="at">:grid</span> {<span class="at">:x</span> {<span class="at">:color</span> [<span class="dv">150</span> <span class="dv">150</span> <span class="dv">200</span>] <span class="at">:line-width</span> <span class="dv">1</span> <span class="at">:dash</span> <span class="at">:none</span>}</span>
 <span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>                                                 <span class="at">:y</span> <span class="at">:none</span></span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>                                                 <span class="at">:minor</span> {<span class="at">:color</span> [<span class="dv">200</span> <span class="dv">200</span> <span class="dv">220</span>] <span class="at">:width</span> <span class="fl">0.5</span> <span class="at">:dash</span> <span class="at">:none</span>}}}})</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>                                                 <span class="at">:minor</span> {<span class="at">:color</span> [<span class="dv">200</span> <span class="dv">200</span> <span class="dv">220</span>] <span class="at">:line-width</span> <span class="fl">0.5</span> <span class="at">:dash</span> <span class="at">:none</span>}}}})</span>
 <span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">500</span> <span class="at">:height</span> <span class="dv">300</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="clay-image">
@@ -2006,26 +2006,26 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tbody>
 <tr class="odd">
 <td>:text :axis-title</td>
-<td>a text style (:font :size :font-style :color :padding :align :background)</td>
-<td>{:font "DejaVu Sans Mono", :size 12, :font-style :plain, :color :black, :padding 4, :align [:center :middle]}</td>
+<td>a text style (:font :size :font-style :color :inset :align :background)</td>
+<td>{:font "DejaVu Sans Mono", :size 12, :font-style :plain, :color :black, :inset 4, :align [:center :middle]}</td>
 <td>axis titles</td>
 </tr>
 <tr class="even">
 <td>:text :strip</td>
-<td>a text style (:font :size :font-style :color :padding :align :background)</td>
-<td>{:font "DejaVu Sans Mono", :size 11, :font-style :plain, :color :black, :padding 2, :align [:center :middle]}</td>
+<td>a text style (:font :size :font-style :color :inset :align :background)</td>
+<td>{:font "DejaVu Sans Mono", :size 11, :font-style :plain, :color :black, :inset 2, :align [:center :middle]}</td>
 <td>facet strip texts</td>
 </tr>
 <tr class="odd">
 <td>:text :tick-label</td>
-<td>a text style (:font :size :font-style :color :padding :align :background)</td>
-<td>{:font "DejaVu Sans Mono", :size 10, :font-style :plain, :color :black, :padding 2, :align [:center :middle]}</td>
+<td>a text style (:font :size :font-style :color :inset :align :background)</td>
+<td>{:font "DejaVu Sans Mono", :size 10, :font-style :plain, :color :black, :inset 2, :align [:center :middle]}</td>
 <td>tick labels</td>
 </tr>
 <tr class="even">
 <td>:text :title</td>
-<td>a text style (:font :size :font-style :color :padding :align :background)</td>
-<td>{:font "DejaVu Sans Mono", :size 14, :font-style :bold, :color :black, :padding 4, :align [:center :middle]}</td>
+<td>a text style (:font :size :font-style :color :inset :align :background)</td>
+<td>{:font "DejaVu Sans Mono", :size 14, :font-style :bold, :color :black, :inset 4, :align [:center :middle]}</td>
 <td>plot and multiplot titles</td>
 </tr>
 </tbody>
@@ -2058,14 +2058,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tbody>
 <tr class="odd">
 <td>:text :legend-label</td>
-<td>a text style (:font :size :font-style :color :padding :align :background)</td>
-<td>{:font "DejaVu Sans Mono", :size 10, :font-style :plain, :color :black, :padding 2, :align [:left :middle]}</td>
+<td>a text style (:font :size :font-style :color :inset :align :background)</td>
+<td>{:font "DejaVu Sans Mono", :size 10, :font-style :plain, :color :black, :inset 2, :align [:left :middle]}</td>
 <td>legend entry labels and colour bar ticks</td>
 </tr>
 <tr class="even">
 <td>:text :legend-title</td>
-<td>a text style (:font :size :font-style :color :padding :align :background)</td>
-<td>{:font "DejaVu Sans Mono", :size 11, :font-style :bold, :color :black, :padding 2, :align [:left :middle]}</td>
+<td>a text style (:font :size :font-style :color :inset :align :background)</td>
+<td>{:font "DejaVu Sans Mono", :size 11, :font-style :bold, :color :black, :inset 2, :align [:left :middle]}</td>
 <td>legend titles</td>
 </tr>
 </tbody>
@@ -2095,38 +2095,38 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tbody>
 <tr class="odd">
 <td>:text :pack-group</td>
-<td>a text style (:font :size :font-style :color :padding :align :background)</td>
-<td>{:font "DejaVu Sans Mono", :size 10, :font-style :bold, :color :contrast, :padding 2, :align [:center :middle]}</td>
+<td>a text style (:font :size :font-style :color :inset :align :background)</td>
+<td>{:font "DejaVu Sans Mono", :size 10, :font-style :bold, :color :contrast, :inset 2, :align [:center :middle]}</td>
 <td>circle packing group labels</td>
 </tr>
 <tr class="even">
 <td>:text :pack-leaf</td>
-<td>a text style (:font :size :font-style :color :padding :align :background)</td>
-<td>{:font "DejaVu Sans Mono", :size 9, :font-style :plain, :color :contrast, :padding 2, :align [:center :middle]}</td>
+<td>a text style (:font :size :font-style :color :inset :align :background)</td>
+<td>{:font "DejaVu Sans Mono", :size 9, :font-style :plain, :color :contrast, :inset 2, :align [:center :middle]}</td>
 <td>circle packing leaf labels</td>
 </tr>
 <tr class="odd">
 <td>:text :partition-group</td>
-<td>a text style (:font :size :font-style :color :padding :align :background)</td>
-<td>{:font "DejaVu Sans Mono", :size 10, :font-style :bold, :color :contrast, :padding 2, :align [:center :middle]}</td>
+<td>a text style (:font :size :font-style :color :inset :align :background)</td>
+<td>{:font "DejaVu Sans Mono", :size 10, :font-style :bold, :color :contrast, :inset 2, :align [:center :middle]}</td>
 <td>partition (icicle, sunburst) group labels</td>
 </tr>
 <tr class="even">
 <td>:text :partition-leaf</td>
-<td>a text style (:font :size :font-style :color :padding :align :background)</td>
-<td>{:font "DejaVu Sans Mono", :size 9, :font-style :plain, :color :contrast, :padding 2, :align [:center :middle]}</td>
+<td>a text style (:font :size :font-style :color :inset :align :background)</td>
+<td>{:font "DejaVu Sans Mono", :size 9, :font-style :plain, :color :contrast, :inset 2, :align [:center :middle]}</td>
 <td>partition leaf labels</td>
 </tr>
 <tr class="odd">
 <td>:text :treemap-group</td>
-<td>a text style (:font :size :font-style :color :padding :align :background)</td>
-<td>{:font "DejaVu Sans Mono", :size 10, :font-style :bold, :color :contrast, :padding 2, :align [:left :middle]}</td>
+<td>a text style (:font :size :font-style :color :inset :align :background)</td>
+<td>{:font "DejaVu Sans Mono", :size 10, :font-style :bold, :color :contrast, :inset 2, :align [:left :middle]}</td>
 <td>treemap group headers</td>
 </tr>
 <tr class="even">
 <td>:text :treemap-leaf</td>
-<td>a text style (:font :size :font-style :color :padding :align :background)</td>
-<td>{:font "DejaVu Sans Mono", :size 9, :font-style :plain, :color :contrast, :padding 2, :align [:center :middle]}</td>
+<td>a text style (:font :size :font-style :color :inset :align :background)</td>
+<td>{:font "DejaVu Sans Mono", :size 9, :font-style :plain, :color :contrast, :inset 2, :align [:center :middle]}</td>
 <td>treemap leaf labels</td>
 </tr>
 </tbody>
@@ -2198,50 +2198,50 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tbody>
 <tr class="odd">
 <td>:text :annotation</td>
-<td>a text style (:font :size :font-style :color :padding :align :background)</td>
-<td>{:font "DejaVu Sans Mono", :size 10, :font-style :plain, :color :black, :padding 2, :align [:center :middle]}</td>
+<td>a text style (:font :size :font-style :color :inset :align :background)</td>
+<td>{:font "DejaVu Sans Mono", :size 10, :font-style :plain, :color :black, :inset 2, :align [:center :middle]}</td>
 <td>text charts and strip n labels</td>
 </tr>
 <tr class="even">
 <td>:text :bar-value</td>
-<td>a text style (:font :size :font-style :color :padding :align :background)</td>
-<td>{:font "DejaVu Sans Mono", :size 10, :font-style :plain, :color :contrast, :padding 2, :align [:center :middle]}</td>
+<td>a text style (:font :size :font-style :color :inset :align :background)</td>
+<td>{:font "DejaVu Sans Mono", :size 10, :font-style :plain, :color :contrast, :inset 2, :align [:center :middle]}</td>
 <td>bar value and count labels</td>
 </tr>
 <tr class="odd">
 <td>:text :contour-label</td>
-<td>a text style (:font :size :font-style :color :padding :align :background)</td>
-<td>{:font "DejaVu Sans Mono", :size 9, :font-style :plain, :color :black, :padding 1, :align [:center :middle], :background [255.0 255.0 255.0 180.0]}</td>
+<td>a text style (:font :size :font-style :color :inset :align :background)</td>
+<td>{:font "DejaVu Sans Mono", :size 9, :font-style :plain, :color :black, :inset 1, :align [:center :middle], :background [255.0 255.0 255.0 180.0]}</td>
 <td>contour level labels</td>
 </tr>
 <tr class="even">
 <td>:text :correlation</td>
-<td>a text style (:font :size :font-style :color :padding :align :background)</td>
-<td>{:font "DejaVu Sans Mono", :size 12, :font-style :plain, :color :black, :padding 1, :align [:center :middle]}</td>
+<td>a text style (:font :size :font-style :color :inset :align :background)</td>
+<td>{:font "DejaVu Sans Mono", :size 12, :font-style :plain, :color :contrast, :inset 1, :align [:center :middle]}</td>
 <td>correlation numbers</td>
 </tr>
 <tr class="odd">
 <td>:text :pairwise</td>
-<td>a text style (:font :size :font-style :color :padding :align :background)</td>
-<td>{:font "DejaVu Sans Mono", :size 12, :font-style :plain, :color :contrast, :padding 1, :align [:center :middle]}</td>
+<td>a text style (:font :size :font-style :color :inset :align :background)</td>
+<td>{:font "DejaVu Sans Mono", :size 12, :font-style :plain, :color :contrast, :inset 1, :align [:center :middle]}</td>
 <td>pairwise statistic numbers</td>
 </tr>
 <tr class="even">
 <td>:text :tile-value</td>
-<td>a text style (:font :size :font-style :color :padding :align :background)</td>
-<td>{:font "DejaVu Sans Mono", :size 9, :font-style :plain, :color :contrast, :padding 1, :align [:center :middle]}</td>
+<td>a text style (:font :size :font-style :color :inset :align :background)</td>
+<td>{:font "DejaVu Sans Mono", :size 9, :font-style :plain, :color :contrast, :inset 1, :align [:center :middle]}</td>
 <td>tile value labels</td>
 </tr>
 <tr class="odd">
 <td>:text :venn-count</td>
-<td>a text style (:font :size :font-style :color :padding :align :background)</td>
-<td>{:font "DejaVu Sans Mono", :size 10, :font-style :plain, :color :contrast, :padding 2, :align [:center :middle]}</td>
+<td>a text style (:font :size :font-style :color :inset :align :background)</td>
+<td>{:font "DejaVu Sans Mono", :size 10, :font-style :plain, :color :contrast, :inset 2, :align [:center :middle]}</td>
 <td>Venn diagram region counts</td>
 </tr>
 <tr class="even">
 <td>:text :venn-set</td>
-<td>a text style (:font :size :font-style :color :padding :align :background)</td>
-<td>{:font "DejaVu Sans Mono", :size 11, :font-style :bold, :color :black, :padding 2, :align [:center :middle]}</td>
+<td>a text style (:font :size :font-style :color :inset :align :background)</td>
+<td>{:font "DejaVu Sans Mono", :size 11, :font-style :bold, :color :black, :inset 2, :align [:center :middle]}</td>
 <td>Venn diagram set names</td>
 </tr>
 </tbody>
@@ -2278,38 +2278,44 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tbody>
 <tr class="odd">
 <td>:text :alluvial-label</td>
-<td>a text style (:font :size :font-style :color :padding :align :background)</td>
-<td>{:font "DejaVu Sans Mono", :size 9, :font-style :plain, :color :black, :padding 1, :align [:center :middle], :background [255.0 255.0 255.0 190.0]}</td>
+<td>a text style (:font :size :font-style :color :inset :align :background)</td>
+<td>{:font "DejaVu Sans Mono", :size 9, :font-style :plain, :color :black, :inset 1, :align [:center :middle], :background [255.0 255.0 255.0 190.0]}</td>
 <td>alluvial stratum labels</td>
 </tr>
 <tr class="even">
 <td>:text :dendrogram-group-label</td>
-<td>a text style (:font :size :font-style :color :padding :align :background)</td>
-<td>{:font "DejaVu Sans Mono", :size 8, :font-style :plain, :color :black, :padding 1, :align [:center :middle], :background [255.0 255.0 255.0 170.0]}</td>
+<td>a text style (:font :size :font-style :color :inset :align :background)</td>
+<td>{:font "DejaVu Sans Mono", :size 8, :font-style :plain, :color :black, :inset 1, :align [:center :middle], :background [255.0 255.0 255.0 170.0]}</td>
 <td>dendrogram group (inner node) labels</td>
 </tr>
 <tr class="odd">
 <td>:text :network-label</td>
-<td>a text style (:font :size :font-style :color :padding :align :background)</td>
-<td>{:font "DejaVu Sans Mono", :size 8, :font-style :plain, :color :black, :padding 1, :align [:center :middle], :background [255.0 255.0 255.0 170.0]}</td>
+<td>a text style (:font :size :font-style :color :inset :align :background)</td>
+<td>{:font "DejaVu Sans Mono", :size 8, :font-style :plain, :color :black, :inset 1, :align [:center :middle], :background [255.0 255.0 255.0 170.0]}</td>
 <td>network node labels</td>
 </tr>
 <tr class="even">
 <td>:text :pairs-name</td>
-<td>a text style (:font :size :font-style :color :padding :align :background)</td>
-<td>{:font "DejaVu Sans Mono", :size 13, :font-style :bold, :color :black, :padding 2, :align [:center :middle]}</td>
+<td>a text style (:font :size :font-style :color :inset :align :background)</td>
+<td>{:font "DejaVu Sans Mono", :size 13, :font-style :bold, :color :black, :inset 2, :align [:center :middle]}</td>
 <td>variable names on the diagonal of a scatter-plot matrix</td>
 </tr>
 <tr class="odd">
-<td>:text :sankey-label</td>
-<td>a text style (:font :size :font-style :color :padding :align :background)</td>
-<td>{:font "DejaVu Sans Mono", :size 9, :font-style :plain, :color :black, :padding 1, :align [:center :middle], :background [255.0 255.0 255.0 170.0]}</td>
-<td>sankey node labels</td>
+<td>:text :radial-label</td>
+<td>a text style (:font :size :font-style :color :inset :align :background)</td>
+<td>{:font "DejaVu Sans Mono", :size 9, :font-style :plain, :color :black, :inset 2, :align [:center :middle]}</td>
+<td>leaf names around circular builders (dendrogram, tree, bundle, chord); the size shrinks for many leaves, never above the role's</td>
 </tr>
 <tr class="even">
+<td>:text :sankey-label</td>
+<td>a text style (:font :size :font-style :color :inset :align :background)</td>
+<td>{:font "DejaVu Sans Mono", :size 9, :font-style :plain, :color :black, :inset 1, :align [:center :middle], :background [255.0 255.0 255.0 170.0]}</td>
+<td>sankey node labels</td>
+</tr>
+<tr class="odd">
 <td>:text :tree-label</td>
-<td>a text style (:font :size :font-style :color :padding :align :background)</td>
-<td>{:font "DejaVu Sans Mono", :size 9, :font-style :plain, :color :black, :padding 2, :align [:center :middle]}</td>
+<td>a text style (:font :size :font-style :color :inset :align :background)</td>
+<td>{:font "DejaVu Sans Mono", :size 9, :font-style :plain, :color :black, :inset 2, :align [:center :middle]}</td>
 <td>node-link tree node labels</td>
 </tr>
 </tbody>
@@ -2366,10 +2372,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td>text colour; :contrast - black or white by what is behind (a chart's fill under its labels, else the plot background)</td>
 </tr>
 <tr class="odd">
-<td>:padding</td>
+<td>:inset</td>
 <td>a non-negative number</td>
 <td></td>
-<td>space around the text in pixels</td>
+<td>space between the text and its box edge on every side, in pixels</td>
 </tr>
 <tr class="even">
 <td>:align</td>
@@ -2390,7 +2396,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb24"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (<span class="kw">assoc</span> iris-plot</span>
 <span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>                          <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"Iris"</span>}</span>
-<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>                          <span class="at">:theme</span> {<span class="at">:text</span> {<span class="at">:title</span> {<span class="at">:font</span> <span class="st">"Serif"</span> <span class="at">:size</span> <span class="dv">16</span> <span class="at">:padding</span> <span class="dv">10</span> <span class="at">:background</span> [<span class="dv">230</span> <span class="dv">230</span> <span class="dv">245</span>]}}})</span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>                          <span class="at">:theme</span> {<span class="at">:text</span> {<span class="at">:title</span> {<span class="at">:font</span> <span class="st">"Serif"</span> <span class="at">:size</span> <span class="dv">16</span> <span class="at">:inset</span> <span class="dv">10</span> <span class="at">:background</span> [<span class="dv">230</span> <span class="dv">230</span> <span class="dv">245</span>]}}})</span>
 <span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">500</span> <span class="at">:height</span> <span class="dv">300</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="clay-image">

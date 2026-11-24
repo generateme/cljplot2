@@ -2,15 +2,12 @@
   "Step 8 demo: statistical charts.
   Fig 1.1 (histogram), Fig 1.2 (density), Fig 1.3 (density grouped by score), densities by score and gender, grouped histograms (overlay, dodge, mirror),
   line and ECDF."
-  (:require [clojure.data.json :as json]
-            [clojure.java.io :as io]
-            [fastmath.random :as r]
-            [cljplot2.chart :as chart]))
+  (:require [fastmath.random :as r]
+            [cljplot2.chart :as chart]
+            [cljplot2.demo.data :as data]))
 
-(defn- read-json [file] (json/read-str (slurp (io/resource file)) :key-fn keyword))
-
-(def chem97 (read-json "chem97.json"))
-(def faithful (read-json "faithful.json"))
+(def chem97 (data/chem97-rows))
+(def faithful (data/json-rows "faithful.json"))
 
 (def fig-1-1
   {:data chem97
@@ -55,26 +52,26 @@
   {:data (for [[slope g] (map vector [0.5 1.0 1.5] ["a" "b" "c"]) x (shuffle (range 20))]
            {:x x :y (+ (* slope x) (mod (* x 7) 5)) :g g})
    :mapping {:x :x :y :y :color :g}
-   :charts [(chart/line {:width 2}) (chart/scatter {:size 5})]
+   :charts [(chart/line {:line-width 2}) (chart/scatter {:size 5})]
    :labels {:title "Lines (sorted by x) with points" :x "x" :y "y"}})
 
 (def ecdf
   {:data faithful
    :mapping {:x :eruptions :color #(if (> (:waiting %) 70) "long wait" "short wait")}
-   :charts [(chart/ecdf {:width 1.5})]
+   :charts [(chart/ecdf {:line-width 1.5})]
    :labels {:title "ECDF of eruptions by waiting" :x "eruptions"}})
 
 (def group-vs-color
   {:data (for [id (range 6) x (range 15)]
            {:x x :y (+ (* x (if (even? id) 1.0 -0.5)) (* 3 id) (mod (* x (inc id)) 4)) :id id :kind (if (even? id) "rising" "falling")})
    :mapping {:x :x :y :y :group :id :color :kind}
-   :charts [(chart/line {:width 1.5})]
+   :charts [(chart/line {:line-width 1.5})]
    :labels {:title ":group splits series, :color styles them" :x "x" :y "y"}})
 
 (def area
   {:data (for [x (range 40)] {:x x :y (* 10 (Math/sin (/ x 6.0)))})
    :mapping {:x :x :y :y}
-   :charts [(chart/line {:fill [69 117 180 90] :width 1.5})]
+   :charts [(chart/line {:fill [69 117 180 90] :line-width 1.5})]
    :labels {:title "Area: line with :fill (down to y = 0)" :x "x" :y "y"}})
 
 (def images

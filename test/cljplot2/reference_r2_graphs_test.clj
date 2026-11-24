@@ -47,9 +47,9 @@
 (deftest builder-defaults-test
   (are [v args options] (tu/builder-defaults-hold? v args options size)
     #'graphs/network [flows] {:rng (rng)}
-    #'graphs/network [flows] {:rng (rng) :directed? true :labels true :edge-style {:width 2}}
-    #'graphs/dendrogram [hc] {:labels names}
-    #'graphs/dendrogram [hc] {:labels names :k 2 :circular true}
+    #'graphs/network [flows] {:rng (rng) :directed true :labels true :edge-style {:line-width 2}}
+    #'graphs/dendrogram [hc] {:leaf-names names}
+    #'graphs/dendrogram [hc] {:leaf-names names :k 2 :circular true}
     #'graphs/tree [package-tree] {}
     #'graphs/tree [package-tree] {:circular true :node-style {:size 5}}
     #'graphs/clustered-heatmap [cells] {:row :r :col :c :value :v}
@@ -58,7 +58,7 @@
     #'graphs/arc [flows] {}
     #'graphs/sankey [flows] {}
     #'graphs/sankey [flows] {:mapping {:color :id}}
-    #'graphs/alluvial [people] {:axes [:class :sex :age] :value :n}
+    #'graphs/alluvial [people] {:variables [:class :sex :age] :value :n}
     #'graphs/sequences [visits] {}))
 
 ;; API functions: defaults hold
@@ -79,7 +79,7 @@
       #'graph/chord-layout [g] {}
       #'graph/arc-layout [g] {}
       #'graph/sankey-layout [g] {}
-      #'graph/alluvial-graph [people] {:axes [:class :sex]}
+      #'graph/alluvial-graph [people] {:variables [:class :sex]}
       #'tree/from-levels [people] {:hierarchy [:class :sex]}
       #'tree/from-parents [parent-rows] {}
       #'tree/layout [package-tree] {}
@@ -113,27 +113,27 @@
       #'graphs/network {:layout :tree} :layout
       #'graphs/network {:labels 3} :labels
       #'graphs/dendrogram {:k 0} :k
-      #'graphs/dendrogram {:labels? nil} :labels?
+      #'graphs/dendrogram {:labels nil} :labels
       #'graphs/tree {:layout :radial} :layout
       #'graphs/tree {:links :curve} :links
       #'graphs/clustered-heatmap {:tree-size [0 0.2]} :tree-size
       #'graphs/clustered-heatmap {:method :ward-x} :method
       #'graphs/bundle {:beta 2} :beta
       #'graphs/bundle {:alpha "x"} :alpha
-      #'graphs/chord {:inner 1} :inner
-      #'graphs/arc {:labels false} :labels
+      #'graphs/chord {:inner-radius 1} :inner-radius
+      #'graphs/arc {:labels 3} :labels
       #'graphs/sankey {:link-color :from} :link-color
-      #'graphs/sankey {:directed? true} :directed?
+      #'graphs/sankey {:directed true} :directed
       #'graphs/sankey {:mapping {:size :value}} :size
       #'graphs/alluvial {:node-width 1} :node-width
-      #'graphs/sequences {:inner 1} :inner
-      #'graph/graph {:directed? "yes"} :directed?
-      #'graph/adjacency->edges {:directed? nil} :directed?
+      #'graphs/sequences {:inner-radius 1} :inner-radius
+      #'graph/graph {:directed "yes"} :directed
+      #'graph/adjacency->edges {:directed nil} :directed
       #'graph/layout {:gravity -1} :gravity
       #'graph/chord-layout {:min-value ##NaN} :min-value
       #'graph/arc-layout {:order :degree} :order
       #'graph/sankey-layout {:iterations 1.5} :iterations
-      #'graph/alluvial-graph {:axes [:a]} :axes
+      #'graph/alluvial-graph {:variables [:a]} :variables
       #'tree/from-levels {:hierarchy :a} :hierarchy
       #'tree/from-parents {:id nil} :id
       #'tree/layout {:span 0} :span
@@ -153,9 +153,9 @@
     (is (= :edges (:key (error #(graph/graph [[1 2]] {})))))
     (is (= :parent (:key (error #(tree/from-parents [{:id 1} {:id 2}] {})))))
     (is (= :k (:key (error #(tree/layout package-tree {:k 9})))))
-    (is (= :pad (:key (error #(graph/chord-layout (graph/graph flows) {:pad 120})))))
-    (is (= :pad (:key (error #(graph/sankey-layout (graph/graph flows {:directed? true}) {:pad 1.0})))))
-    (is (= :axes (:key (error #(graphs/alluvial people {})))))
+    (is (= :gap-angle (:key (error #(graph/chord-layout (graph/graph flows) {:gap-angle 120})))))
+    (is (= :gap (:key (error #(graph/sankey-layout (graph/graph flows {:directed true}) {:gap 1.0})))))
+    (is (= :variables (:key (error #(graphs/alluvial people {})))))
     (is (= :row (:key (error #(graphs/clustered-heatmap cells {:col :c :value :v})))))
     (is (= :rows (:key (error #(graphs/clustered-heatmap (filterv (fn [c] (= "r1" (:r c))) cells) {:row :r :col :c :value :v})))))
     (is (= :edge-mapping (:key (error #(graphs/arc flows {:mapping {:size :degree} :edge-mapping {:size :value}})))))))
@@ -168,6 +168,6 @@
         (is (= (count rows) (count (distinct (map :path rows)))) (str v)))))
   (testing "sankey: own rows, then graph/sankey-layout's"
     (is (some #(= :graph/sankey-layout (:fragment %)) (describe/options #'graphs/sankey)))
-    (is (not-any? #(= [:directed?] (:path %)) (describe/options #'graphs/sankey))))
-  (testing "sequences: the builder's :keep-end? (default true) wins over sequence-levels' (default false)"
-    (is (= [true] (keep #(when (= [:keep-end?] (:path %)) (:default %)) (describe/options #'graphs/sequences))))))
+    (is (not-any? #(= [:directed] (:path %)) (describe/options #'graphs/sankey))))
+  (testing "sequences: the builder's :keep-end defaults to true, as sequence-levels'"
+    (is (= [true] (keep #(when (= [:keep-end] (:path %)) (:default %)) (describe/options #'graphs/sequences))))))

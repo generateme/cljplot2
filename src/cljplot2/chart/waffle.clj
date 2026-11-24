@@ -16,13 +16,15 @@
   column, then right).
 
   Drawing (style defaults from theme `[:chart :waffle]`): square cells as large as the panel allows, the grid centred;
-  `:gap` - the space between cells, a fraction of a cell; `:shape` `:square` or `:circle`; `:border-color`,
-  `:border-width`, `:pattern`, `:pattern-color`. The legend key takes the cell shape.
+  `:gap` - the space between cells, a fraction of a cell; `:cell-shape` `:square` or `:circle`; `:stroke-color`,
+  `:stroke-width`, `:pattern`, `:pattern-color`. The legend key takes the cell shape.
 
   Functions: [[compute]], [[draw]], [[legend]] - the chart contract; [[largest-remainder]] - whole counts in proportion to weights; [[cell-position]] - a cell's place in the grid."
   (:require [clojure2d.core :as c2d]
             [fastmath.core :as m]
             [fastmath.vector :as v]
+            [cljplot2.chart.legend :as chart-legend]
+            [cljplot2.chart.common :as common]
             [cljplot2.data.group :as group]
             [cljplot2.data.rows :as data]
             [cljplot2.graphics.draw :as draw]
@@ -35,12 +37,12 @@
 (def ^:private style-entries
   "Map entries of the waffle style (theme `[:chart :waffle]`, also options)."
   (into [(schema/optional :gap {:description "space between cells, a fraction of a cell"} [:and schema/finite [:>= 0] [:< 1]])
-         (schema/optional :shape {:description "cell shape: :square or :circle"} [:enum :square :circle])
-         (schema/optional :border-color {:description "cell border colour"} schema/color)
-         (schema/optional :border-width {:description "cell border width in pixels"} schema/non-neg)]
+         (schema/optional :cell-shape {:description "cell shape: :square or :circle"} [:enum :square :circle])
+         (schema/optional :stroke-color {:description "cell outline colour"} schema/color)
+         (schema/optional :stroke-width {:description "cell outline width in pixels"} schema/non-neg)]
         draw/pattern-style-entries))
 
-(def ^{:const true :tag 'long} max-cells
+(def ^{:private true :const true :tag 'long} max-cells
   "Most cells a waffle panel draws; more (a small `:unit`, a large grid) throw - cells would shrink below a pixel."
   10000)
 (def schemas
@@ -119,7 +121,7 @@
 
   Returns a truthy value for a non-negative finite number."
   [v]
-  (and (number? v) (m/valid-double? (double v)) (m/>= (double v) 0.0)))
+  (and (schema/finite? v) (m/>= (double v) 0.0)))
 
 (defn compute
   "Computes the waffle's cells per panel.
@@ -132,12 +134,13 @@
 
   Returns per panel `{:categories [{:aesthetics a :cells n} ..] :columns c :rows r :fill-order o :style st}`; aesthetic extents, `:na`, `:dropped` (`:value` - rows with an invalid weight).
 
-  Throws as [[cell-counts]]."
+  Throws as [[cell-counts]]; `ex-info {:key :mapping}` when rows exist but none has a finite mapped `:value`."
   [{:keys [options] :as chart} {:keys [groups mapping]} {:keys [theme plot-scales] :as env}]
   (let [value-of (when (some? (:value mapping)) (data/row-accessor :value (:value mapping)))
+        _ (when value-of (data/check-mapped! (mapcat val groups) [[:value value-of]] (fn [_ v] (schema/finite? v))))
         kept (if value-of (update-vals groups #(filterv (comp value-ok? value-of) %)) groups)
         {:keys [panels dropped]} (group/split kept mapping env)
-        opts (merge {:rows 10 :columns 10 :fill-order :rows} (select-keys options [:rows :columns :unit :fill-order]))
+        opts (data/options-with-defaults {:rows 10 :columns 10 :unit nil :fill-order :rows} options)
         st (theme/resolved-style theme chart)
         weight (fn [group-rows] (if value-of (v/sum (map value-of group-rows)) (double (count group-rows))))]
     {:data (update-vals panels (fn [gs]
@@ -174,24 +177,21 @@
   - `canvas`: the clojure2d canvas.
   - `[x0 y0 x1 y1]` (longs): the square's whole-pixel corners.
   - `fill`: the cell colour.
-  - `st` (map): the cell style - `:shape`, `:border-color`, `:border-width`.
+  - `st` (map): the cell style - `:cell-shape`, `:stroke-color`, `:stroke-width`.
   - `pattern-fill`: the cell's pattern fill (see [[cljplot2.graphics.draw/pattern-fill]]).
 
   Nothing is drawn for an empty square; the border only for a positive width and a colour."
   [canvas [^long x0 ^long y0 ^long x1 ^long y1] fill st pattern-fill]
   (let [w (m/long-sub x1 x0)
         h (m/long-sub y1 y0)
-        circle? (= :circle (:shape st))
+        circle? (= :circle (:cell-shape st))
         shape! (if circle?
                  (fn [c stroke?] (c2d/ellipse c (m/+ x0 (m/* 0.5 w)) (m/+ y0 (m/* 0.5 h)) w h stroke?))
                  (fn [c stroke?] (c2d/rect c x0 y0 w h stroke?)))
-        sw (double (:border-width st))]
+        sw (double (:stroke-width st))]
     (when (and (m/pos? w) (m/pos? h))
       (draw/fill-patterned! canvas fill pattern-fill #(shape! % false))
-      (when (and (m/pos? sw) (not (theme/none? (:border-color st))))
-        (c2d/set-stroke-custom canvas {:size sw})
-        (c2d/set-color canvas (:border-color st))
-        (shape! canvas true)))))
+      (draw/outline! canvas (:stroke-color st) sw #(shape! % true)))))
 
 (defn draw
   "Draws one panel's grid: the categories in order, cell by cell from the bottom-left.
@@ -224,7 +224,7 @@
              (:color st) st (pattern-fill st (:color st))))))
 
 (defn legend
-  "Draws the key glyph: a filled square or circle (the cell `:shape`) inset in the key box, with the chart's `:pattern`.
+  "Draws the key glyph: a filled square or circle (`:cell-shape`) inset in the key box, with the chart's `:pattern`.
 
   Parameters:
 
@@ -235,7 +235,6 @@
   - `env` (map): the drawing environment (`:theme`)."
   [chart attributes canvas box env]
   (let [st (theme/resolved-style (:theme env) chart)]
-    (if (= :circle (:shape st))
+    (if (= :circle (:cell-shape st))
       (draw/circle-key! canvas box (:color attributes) (draw/pattern-fill st (:color attributes)))
-      (draw/bar-key! canvas box (assoc (select-keys st [:pattern :pattern-color]) :color (:color attributes) :stroke-width 0)
-                     false))))
+      (chart-legend/cell-legend chart attributes canvas box env))))

@@ -5,13 +5,15 @@
             [clojure2d.core :as c2d]
             [fastmath.core :as m]
             [fastmath.vector :as v]
+            [cljplot2.data.strip :as strip]
+            [cljplot2.chart.common :as common]
             [cljplot2.chart :as chart]
             [cljplot2.chart.box :as box]
             [cljplot2.chart.contour :as contour]
             [cljplot2.chart.tile :as tile]
             [cljplot2.content.label :as label]
             [cljplot2.core :as plot]
-            [cljplot2.data.cells :as cells]
+            [cljplot2.graphics.cells :as cell-draw]
             [cljplot2.graphics.polyline :as polyline]
             [cljplot2.graphics.shape :as shape]
             [cljplot2.layout.grid :as grid]
@@ -77,8 +79,8 @@
       (is (zero? (key-pixels 0.0)))))
   (testing "1.3 seamless (non-antialiased) rendering only without :size"
     (let [p {:data cells-data :mapping {:x :x :y :y :color :c} :charts [(chart/tile)]}]
-      (is (= 1 (count (calls #'cells/call-with-cell-rendering #(image p)))))
-      (is (= 0 (count (calls #'cells/call-with-cell-rendering #(image (assoc-in p [:mapping :size] :s))))))))
+      (is (= 1 (count (calls #'cell-draw/call-with-cell-rendering #(image p)))))
+      (is (= 0 (count (calls #'cell-draw/call-with-cell-rendering #(image (assoc-in p [:mapping :size] :s))))))))
   (testing "1.4 value labels stay at the cell centres when cells shrink"
     (let [p {:data cells-data :mapping {:x :x :y :y :color :c} :charts [(chart/tile {:value-label true})]
              :legend false}
@@ -99,7 +101,7 @@
     (is (= ["r²=2"] (label-texts (circle-plot {:labels #(when (= 2.0 (:level %)) (str "r²=" (m/round (:level %))))}))))
     (is (empty? (label-texts (circle-plot {})))))
   (testing "2.1 labels need line contours"
-    (is (= :labels (:key (error #(built (circle-plot {:labels true :fill true})))))))
+    (is (= :labels (:key (error #(built (circle-plot {:labels true :filled true})))))))
   (testing "2.1 value text: numbers to 2 decimals"
     (is (= ["1.5" "1" "0.33" "a" nil] (mapv label/value-text [1.5 1.0 (/ 1.0 3) :a nil]))))
   (testing "2.2 the label point is halfway along the line: on a circle, at its radius"
@@ -133,7 +135,7 @@
   (testing "3.1 no box: no rectangles; two lines per item, none inside the inter-quartile range"
     (let [p {:data box-rows :mapping {:x :lvl :y :v} :charts [(chart/box {:variant :tufte})]}
           b (plot/build p {:width 300 :height 240})
-          {:keys [q1 q3]} (box/box-stats (map :v box-rows))
+          {:keys [q1 q3]} (strip/box-stats (map :v box-rows))
           forward (scale/forward-fn (get-in b [:finalized-scales :y]))
           [lo hi] (sort [(forward q1) (forward q3)])
           lines (filter (fn [args] (and (= 3 (count args)) (instance? fastmath.vector.Vec2 (nth args 1))))

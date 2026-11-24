@@ -133,7 +133,7 @@
 
 ;; ### Basic, groups and subgroups
 
-;; One level (regions) and three (regions → subregions → countries); `:padding` frames the groups, a theme palette
+;; One level (regions) and three (regions → subregions → countries); `:gap` frames the groups, a theme palette
 ;; recolours the regions.
 
 (nu/source-note {:source "R Graph Gallery - Treemap; data-to-viz - Treemap"
@@ -146,8 +146,8 @@
     :labels {:title "regions"}}
    {:data world :mapping {:value :population :hierarchy [:region :subregion :country]}
     :theme {:palette {:color :set2}}
-    :charts [(chart/treemap {:padding 4 :border-color [60 60 60]})]
-    :labels {:title "regions, subregions, countries (:set2, :padding 4)"}}]
+    :charts [(chart/treemap {:gap 4 :stroke-color [60 60 60]})]
+    :labels {:title "regions, subregions, countries (:set2, :gap 4)"}}]
   {:columns 2 :widths [1 2]})
  {:width 1000 :height 520})
 
@@ -258,7 +258,7 @@
 ;; ### One level
 
 ;; Europe's countries: a circle each (the palette's colours repeat - they only tell neighbours apart); leaves coloured
-;; by their subregion; wider gaps (`:padding`, pixels).
+;; by their subregion; wider gaps (`:gap`, pixels).
 
 (nu/source-note {:source "R Graph Gallery - Circular packing; data-to-viz - Circular packing"
                  :url ["https://r-graph-gallery.com/circle-packing.html" "https://www.data-to-viz.com/graph/circularpacking.html"]
@@ -269,7 +269,7 @@
   [{:data europe :mapping {:value :population :hierarchy [:country]} :legend false
     :charts [(chart/pack)] :labels {:title "basic"}}
    {:data europe :mapping {:value :population :hierarchy [:country] :color :subregion}
-    :charts [(chart/pack {:padding 6 :leaf-labels false})] :labels {:title "by subregion, :padding 6"}}]
+    :charts [(chart/pack {:gap 6 :leaf-labels false})] :labels {:title "by subregion, :gap 6"}}]
   {:columns 2})
  {:width 1000 :height 480})
 
@@ -334,7 +334,7 @@
  (plot/arrange
   [{:data world :mapping {:color :region :value :population} :charts [(chart/waffle)] :labels {:title "regions"}}
    {:data world :mapping {:color :region :value :population} :theme {:palette {:color :dark2}}
-    :charts [(chart/waffle {:shape :circle :gap 0.15})] :labels {:title "circles, :dark2"}}]
+    :charts [(chart/waffle {:cell-shape :circle :gap 0.15})] :labels {:title "circles, :dark2"}}]
   {:columns 2})
  {:width 1000 :height 400})
 

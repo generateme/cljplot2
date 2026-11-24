@@ -11,7 +11,7 @@
   with facets: `{:mapping {:facet :title} :facets {:columns 1 :scales {:x :free}}}`.
 
   Drawn from 0 to each value: the ranges across the whole item slot, largest first, shaded from the first colour of
-  `:range-colors` (the smallest range) to the second (the largest); the measures `:measure-width` of the slot
+  `:range-colors` (the smallest range) to the second (the largest); the measures `:measure-fraction` of the slot
   (fraction), largest first so every one stays visible, coloured from the first colour of `:measure-colors` (the
   first measure - the current value) to the second (the last); the markers as lines of `:marker-width` pixels across
   `:marker-length` of the slot in `:marker-color`. One value of a kind takes the first colour. Groups (`:group`) are
@@ -19,7 +19,7 @@
   error (set it to `nil` when the plot maps it for other charts); no legend key, no n labels (`:n-label`).
 
   Options (style defaults from theme `[:chart :bullet]`): `:range-colors`, `:measure-colors` (two colours each),
-  `:measure-width`, `:marker-color`, `:marker-width`, `:marker-length`; `:padding {:x [lo hi]}` (default 0.05 on a
+  `:measure-fraction`, `:marker-color`, `:marker-width`, `:marker-length`; `:padding {:x [lo hi]}` (default 0.05 on a
   side holding values, 0 on the side of 0 - the bars start at the axis; one padding for the chart, from the values
   of all panels: with free facet scales a panel of positive values beside one of negative values gets 0.05 on both
   sides too), plus the strip options (without `:n-label`,
@@ -29,12 +29,13 @@
 
   Equivalents: Vega-Lite `facet_bullet`, d3 bullet charts.
 
-  Functions: the chart computes and draws through [[cljplot2.data.strip/compute]] and [[cljplot2.data.strip/draw]]; [[bullet-values]] - an item's values; [[shade]] - the colour of a ranked value."
+  Functions: the chart computes and draws through [[cljplot2.chart.strip/compute]] and [[cljplot2.chart.strip/draw]]; [[bullet-values]] - an item's values."
   (:require [clojure2d.color :as c]
             [clojure2d.core :as c2d]
             [fastmath.core :as m]
             [fastmath.vector :as v]
             [cljplot2.data.rows :as data]
+            [cljplot2.chart.strip :as strip-chart]
             [cljplot2.data.strip :as strip]
             [cljplot2.scale.aesthetic :as aesthetic]
             [cljplot2.schema :as schema]
@@ -54,7 +55,7 @@
                     [:tuple schema/color schema/color])
    (schema/optional :measure-colors {:description "[first last] colours shading the measures from the first (the current value) to the last"}
                     [:tuple schema/color schema/color])
-   (schema/optional :measure-width {:description "measure bar width, a fraction of the item slot"} schema/fraction)
+   (schema/optional :measure-fraction {:description "measure bar width, a fraction of the item slot"} schema/fraction)
    (schema/optional :marker-color {:description "marker line colour"} schema/color)
    (schema/optional :marker-width {:description "marker line width in pixels (0 - no markers)"} schema/non-neg)
    (schema/optional :marker-length {:description "marker line length, a fraction of the item slot"} schema/fraction)])
@@ -114,7 +115,7 @@
 
   Throws `ex-info {:key :mapping}` for two or more rows of one level and group, or a value that isn't a finite number or a sequential collection of them.
 
-  See also [[cljplot2.data.strip/compute]]."
+  See also [[cljplot2.chart.strip/compute]]."
   [{:keys [rows level aesthetics]} mapping]
   (when (m/not== 1 (count rows))
     (schema/fail! "Bullet takes one row per level and group." {:key :mapping :level level :group aesthetics
@@ -191,7 +192,7 @@
      :padding-explicit (strip/explicit-padding place options)
      :dropped dropped}))
 
-(defn shade
+(defn- shade
   "Gives the colour of a ranked value of a bullet kind (ranges or measures).
 
   Parameters:
@@ -259,15 +260,15 @@
   - `scales` (map): the finalized position scales (strip frame).
   - `_env` (map): the drawing environment.
 
-  Ranges are drawn across the item slot, measures `:measure-width` of it, markers as lines `:marker-length` of it (none for a zero `:marker-width`)."
+  Ranges are drawn across the item slot, measures `:measure-fraction` of it, markers as lines `:marker-length` of it (none for a zero `:marker-width`)."
   [_chart {:keys [items style place options]} canvas box scales _env]
-  (let [{:keys [point]} (strip/placement box scales options place)]
+  (let [{:keys [point]} (strip-chart/placement box scales options place)]
     (doseq [{:keys [level slot ranges measures markers]} items
             :let [c0 (strip/in-slot slot 0.0)
                   half (strip/slot-half slot)]]
       (draw-bars! canvas point level ranges (:range-colors style) (fn [is] (sort-by #(nth ranges %) is)) c0 half)
       (draw-bars! canvas point level measures (:measure-colors style) identity c0
-                  (m/* half (double (:measure-width style))))
+                  (m/* half (double (:measure-fraction style))))
       (when (m/pos? (double (:marker-width style)))
         (c2d/set-color canvas (:marker-color style))
         (c2d/set-stroke-custom canvas {:size (:marker-width style) :cap :butt})
@@ -278,7 +279,7 @@
                   :when (and (data/finite-point? a) (m/valid-double? (.y b)))]
             (c2d/line canvas a b)))))))
 
-(defmethod strip/in-frame-compute :bullet [chart chart-split env] (compute-in-strip-frame chart chart-split env))
+(defmethod strip-chart/in-frame-compute :bullet [chart chart-split env] (compute-in-strip-frame chart chart-split env))
 
-(defmethod strip/in-frame-draw :bullet [chart computed canvas box scales env]
+(defmethod strip-chart/in-frame-draw :bullet [chart computed canvas box scales env]
   (draw-in-strip-frame chart computed canvas box scales env))

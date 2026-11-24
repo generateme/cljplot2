@@ -2382,7 +2382,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </thead>
 <tbody>
 <tr class="odd">
-<td>:key</td>
+<td>:as</td>
 <td>the key of the rank column</td>
 <td>:rank</td>
 <td>the key of the rank column added to every row</td>
@@ -2576,13 +2576,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> (levels/rank-rows sales <span class="at">:year</span> <span class="at">:amount</span>)</span>
 <span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:year</span> <span class="at">:y</span> <span class="at">:rank</span> <span class="at">:color</span> <span class="at">:product</span>}</span>
-<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/line {<span class="at">:width</span> <span class="dv">3</span>}) (chart/scatter {<span class="at">:size</span> <span class="dv">12</span>})]</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/line {<span class="at">:line-width</span> <span class="dv">3</span>}) (chart/scatter {<span class="at">:size</span> <span class="dv">12</span>})]</span>
 <span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:scales</span> {<span class="at">:y</span> {<span class="at">:domain</span> [<span class="fl">3.3</span> <span class="fl">0.7</span>] <span class="at">:ticks</span> [<span class="dv">1</span> <span class="dv">2</span> <span class="dv">3</span>]}}</span>
 <span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"ranks, highest first"</span> <span class="at">:y</span> <span class="st">"rank"</span>}</span>
 <span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:legend</span> <span class="va">false</span>}</span>
 <span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> (levels/rank-rows sales <span class="at">:year</span> <span class="at">:amount</span> {<span class="at">:descending</span> <span class="va">false</span> <span class="at">:ties</span> <span class="at">:average</span>})</span>
 <span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:year</span> <span class="at">:y</span> <span class="at">:rank</span> <span class="at">:color</span> <span class="at">:product</span>}</span>
-<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/line {<span class="at">:width</span> <span class="dv">3</span>}) (chart/scatter {<span class="at">:size</span> <span class="dv">12</span>})]</span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/line {<span class="at">:line-width</span> <span class="dv">3</span>}) (chart/scatter {<span class="at">:size</span> <span class="dv">12</span>})]</span>
 <span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:scales</span> {<span class="at">:y</span> {<span class="at">:domain</span> [<span class="fl">3.3</span> <span class="fl">0.7</span>] <span class="at">:ticks</span> [<span class="dv">1</span> <span class="fl">1.5</span> <span class="dv">2</span> <span class="fl">2.5</span> <span class="dv">3</span>]}}</span>
 <span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":descending false, :ties :average"</span> <span class="at">:y</span> <span class="st">"rank"</span>}}]</span>
 <span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">2</span> <span class="at">:widths</span> [<span class="dv">1</span> <span class="fl">1.25</span>]})</span>
@@ -2616,11 +2616,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="even">
 <td>:intervals</td>
 <td>sequential of [a finite number, a finite number] (at least 1)</td>
-<td>equal-count intervals from :count and :overlap</td>
+<td>equal-count intervals from :n and :overlap</td>
 <td>the intervals [[lo hi] ...], closed, lo &lt;= hi</td>
 </tr>
 <tr class="odd">
-<td>:count</td>
+<td>:n</td>
 <td>a positive integer</td>
 <td>6</td>
 <td>the number of equal-count intervals (fewer when the data can't support them; ignored with :intervals)</td>
@@ -2643,7 +2643,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <p>Equal-count intervals of the cars’ weight - 3 of them, neighbours sharing a quarter of their points - as a facet of mpg against horsepower; the series name is printed in every strip:</p>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> (shingle/shingle mtcars <span class="at">:wt</span> {<span class="at">:as</span> <span class="at">:weight</span> <span class="at">:count</span> <span class="dv">3</span> <span class="at">:overlap</span> <span class="fl">0.25</span> <span class="at">:label</span> <span class="va">true</span>})</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> (shingle/shingle mtcars <span class="at">:wt</span> {<span class="at">:as</span> <span class="at">:weight</span> <span class="at">:n</span> <span class="dv">3</span> <span class="at">:overlap</span> <span class="fl">0.25</span> <span class="at">:label</span> <span class="va">true</span>})</span>
 <span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:hp</span> <span class="at">:y</span> <span class="at">:mpg</span> <span class="at">:facet-col</span> <span class="at">:weight</span>}</span>
 <span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:charts</span> [(chart/scatter)]}</span>
 <span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">900</span> <span class="at">:height</span> <span class="dv">300</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>

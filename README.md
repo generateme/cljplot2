@@ -19,7 +19,7 @@ A plotting library for Clojure: plots are plain maps of data, mappings and chart
 There's no release yet. Use a git coordinate in `deps.edn`:
 
 ```clojure
-io.github.generateme/cljplot2 {:git/sha "2ae278d772277fc9341e287793d41c83af697698"}
+io.github.generateme/cljplot2 {:git/sha "bf28bce1a4ccd0a2f2d653d5e0076c7d801670db"}
 ```
 
 cljplot2 depends on SNAPSHOT versions: fastmath `3.0.0-alpha10-SNAPSHOT` is on Clojars; clojure2d
@@ -29,8 +29,7 @@ cljplot2 depends on SNAPSHOT versions: fastmath `3.0.0-alpha10-SNAPSHOT` is on C
 
 ```clojure
 (require '[cljplot2.core :as plot]
-         '[cljplot2.chart :as chart]
-         '[clojure2d.core :as c2d])
+         '[cljplot2.chart :as chart])
 
 (def data
   (for [series ["sin" "cos"]
@@ -42,7 +41,7 @@ cljplot2 depends on SNAPSHOT versions: fastmath `3.0.0-alpha10-SNAPSHOT` is on C
      :charts [(chart/line) (chart/scatter)]
      :labels {:title "Hello, cljplot2"}}
     (plot/render-image {:width 600 :height 350})
-    (c2d/save "example.png"))
+    (plot/save "example.png"))
 ```
 
 <p align="center">
@@ -51,7 +50,13 @@ cljplot2 depends on SNAPSHOT versions: fastmath `3.0.0-alpha10-SNAPSHOT` is on C
 
 ## Documentation
 
-The book: <https://generateme.github.io/cljplot2/> - use cases after the
+The book: <https://generateme.github.io/cljplot2/>.
+
+[Reference](https://generateme.github.io/cljplot2/reference.intro.html): concepts (data and mapping, aesthetics and
+legends, scales and coordinates, facets, theme, errors), every chart, builder and data function with its option
+tables and examples.
+
+Use cases after the
 [R Graph Gallery](https://r-graph-gallery.com/) and [data-to-viz](https://www.data-to-viz.com/):
 
 - [Distribution](https://generateme.github.io/cljplot2/use_cases.distribution.html)
@@ -62,9 +67,13 @@ The book: <https://generateme.github.io/cljplot2/> - use cases after the
 - [Correlation](https://generateme.github.io/cljplot2/use_cases.correlation.html)
 - [Flow](https://generateme.github.io/cljplot2/use_cases.flow.html)
 
-Galleries (in progress): cljplot extras - the examples of the original
-[cljplot](https://github.com/generateme/cljplot) (Q-Q / P-P, ACF, vector fields, complex functions, ...); lattice
-and Vega galleries are planned.
+Galleries:
+
+- [cljplot extras](https://generateme.github.io/cljplot2/galleries.cljplot_extras.html) - the examples of the
+  original [cljplot](https://github.com/generateme/cljplot) (Q-Q / P-P, ACF, vector fields, complex functions, ...)
+- [Lattice](https://generateme.github.io/cljplot2/galleries.lattice.html) - the figures of Deepayan Sarkar's
+  *Lattice: Multivariate Data Visualization with R*
+- [Vega](https://generateme.github.io/cljplot2/galleries.vega.html) - the examples of the Vega-Lite and Vega galleries
 
 Every public function has a docstring; namespaces: `cljplot2.core` (build, render, builders), `cljplot2.chart`
 (charts), `cljplot2.data.*` (row and layout functions).
@@ -87,5 +96,8 @@ by the author.
 
 Distributed under the [Eclipse Public License 2.0](LICENSE).
 
-The bundled font, DejaVu Sans Mono (`resources/fonts/`), keeps its own licence: Bitstream Vera Fonts licence, DejaVu
-changes in the public domain - see [LICENSE-DejaVu.txt](resources/fonts/LICENSE-DejaVu.txt).
+The bundled fonts (`resources/fonts/`) keep their own licences:
+
+- DejaVu Sans Mono - Bitstream Vera Fonts licence, DejaVu changes in the public domain, see
+  [LICENSE-DejaVu.txt](resources/fonts/LICENSE-DejaVu.txt);
+- Noto Emoji - SIL Open Font License 1.1, see [LICENSE-NotoEmoji.txt](resources/fonts/LICENSE-NotoEmoji.txt).

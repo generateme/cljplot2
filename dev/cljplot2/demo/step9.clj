@@ -2,13 +2,12 @@
   "Step 9 demo: multiplots.
   LMDVR Fig 1.4 (Fig 1.1 histogram over the Fig 1.3 grouped density), a 2x2 arrangement with weights and a title,
   a nested multiplot, and the same mixed plots without and with panel alignment."
-  (:require [clojure.data.json :as json]
-            [clojure.java.io :as io]
-            [cljplot2.chart :as chart]
+  (:require [cljplot2.chart :as chart]
+            [cljplot2.demo.data :as data]
             [cljplot2.core :as plot]))
 
-(def chem97 (json/read-str (slurp (io/resource "chem97.json")) :key-fn keyword))
-(def faithful (json/read-str (slurp (io/resource "faithful.json")) :key-fn keyword))
+(def chem97 (data/chem97-rows))
+(def faithful (data/json-rows "faithful.json"))
 
 (def histogram-by-score
   {:data chem97

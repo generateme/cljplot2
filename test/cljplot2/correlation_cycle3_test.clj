@@ -127,7 +127,7 @@
 (deftest axis-grid-test
   (testing "2.1 grid lines kept, no axis or tick labels"
     (let [p {:data cloud :mapping {:x :a :y :b} :scales {:x {:axis :grid}} :charts [(chart/scatter)] :legend false
-             :theme {:panel {:grid {:x {:color [255 0 0] :width 1}}}}}
+             :theme {:panel {:grid {:x {:color [255 0 0] :line-width 1}}}}}
           b (plot/build p {:width 300 :height 300})
           img (plot/render-image p {:width 300 :height 300})
           {:keys [x y h]} (grid/item-box (:layout b) :panel)
@@ -203,8 +203,8 @@
       (is (every? :legend-only [(get-in arrange [:plots 2]) (get-in arrange [:plots 5])]))
       (is (seq (:charts (get-in arrange [:plots 2]))) "the first legend cell carries the charts")))
   (testing "3.2 slots: nil - empty, vectors, :names"
-    (let [{:keys [arrange]} (plot/pairs cloud {:variables [:a :b] :upper nil :lower [(chart/scatter) (chart/smooth)] :diagonal :names
-                                               :labels {:a "Alpha"}})]
+    (let [{:keys [arrange]} (plot/pairs cloud {:variables [:a :b] :upper :none :lower [(chart/scatter) (chart/smooth)] :diagonal :names
+                                               :variable-names {:a "Alpha"}})]
       (is (empty? (:charts (get-in arrange [:plots 1]))))
       (is (= [:scatter :smooth] (map :kind (:charts (get-in arrange [:plots 2])))))
       (is (= "Alpha" (get-in arrange [:plots 0 :charts 0 :options :text])))))
@@ -287,8 +287,8 @@
         (is (= [false true false true false true false true false] (mapv #(boolean (:alternate-panel %)) cells)))
         (is (= [false true nil true false nil] (mapv #(when-not (:legend-only %) (boolean (:alternate-panel %))) grouped))
             "the legend column unshaded")
-        (is (some? (plot/render-image (plot/pairs cloud {:variables [:a :b] :diagonal nil}) {:width 300 :height 300}))
-            "an empty diagonal (nil) builds")
+        (is (some? (plot/render-image (plot/pairs cloud {:variables [:a :b] :diagonal :none}) {:width 300 :height 300}))
+            "an empty diagonal (:none) builds")
         (is (= [127 127 127] (center (assoc (nth cells 1) :charts [] :theme theme))) "a shaded cell draws the shade")))
     (testing "U1 pairs gaps as facets: cells without plot margin, [:facet :gap] apart; the given theme wins"
       (let [m (plot/pairs cloud {:variables [:a :b]})

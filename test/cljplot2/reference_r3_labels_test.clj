@@ -10,7 +10,7 @@
             [cljplot2.graphics.measure :as measure]
             [fastmath.vector]
             [cljplot2.theme]
-            [cljplot2.graphics.space3d]
+            [cljplot2.content.space3d]
             [cljplot2.content.panel]
             [cljplot2.test-util :refer [error-data]])
   (:import [java.awt.image BufferedImage]))
@@ -74,7 +74,7 @@
     (is (= :keep (get-in (plot/arc [{:from "a" :to "b"}] {}) [:scales :x :overlapping-labels])))
     (is (= :keep (get-in (plot/dendrogram (tree/from-parents [{:id 1} {:id 2 :parent 1} {:id 3 :parent 1}] {}) {})
                          [:scales :x :overlapping-labels])))
-    (is (= :keep (get-in (plot/alluvial [{:a "p" :b "q"} {:a "r" :b "q"}] {:axes [:a :b]}) [:scales :x :overlapping-labels]))))
+    (is (= :keep (get-in (plot/alluvial [{:a "p" :b "q"} {:a "r" :b "q"}] {:variables [:a :b]}) [:scales :x :overlapping-labels]))))
   (testing "boundary: a builder's :scales override it; other values rejected"
     (is (= :drop (get-in (plot/arc [{:from "a" :to "b"}] {:scales {:x {:overlapping-labels :drop}}})
                          [:scales :x :overlapping-labels])))
@@ -125,7 +125,7 @@
       (is (< (count drawn) n)))))
 
 (deftest frame-label-collisions-test
-  (let [draw-axis! #'cljplot2.graphics.space3d/draw-axis!
+  (let [draw-axis! #'cljplot2.content.space3d/draw-axis!
         boxes (fn [length]
                 (measure/call-with-scratch-canvas
                  :high

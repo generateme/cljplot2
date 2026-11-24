@@ -45,8 +45,8 @@
     (is (= ["0" "1" "2"] (arc-labels {})))
     (is (= ["Alice" "Bob" ""] (arc-labels {:labels :name})))
     (is (= ["ALICE" "BOB" ""] (arc-labels {:labels #(some-> (:name %) clojure.string/upper-case)}))))
-  (testing ":labels? false - no axis; the theme turns the labels"
-    (is (false? (get-in (plot/arc links {:from :source :to :target :nodes nodes :id :index :labels? false}) [:scales :x :axis])))
+  (testing ":labels false - no axis; the theme turns the labels"
+    (is (false? (get-in (plot/arc links {:from :source :to :target :nodes nodes :id :index :labels false}) [:scales :x :axis])))
     (is (= -90 (get-in (plot/arc links {:from :source :to :target :nodes nodes :id :index
                                        :theme {:axis {:x {:label-rotation -90}}}})
                        [:theme :axis :x :label-rotation])))))
@@ -113,14 +113,14 @@
 (deftest tree-builder-test
   (testing "renders: tidy / cluster, diagonal / line, cartesian / radial, a single node"
     (doseq [opts [{} {:layout :cluster} {:links :line} {:circular true} {:circular true :layout :cluster}
-                  {:labels? false :nodes? false} {:mapping {:color #(str (:depth %))}}]]
+                  {:labels false :node-points false} {:mapping {:color #(str (:depth %))}}]]
       (is (some? (plot/render-image (plot/tree small opts) {:width 400 :height 300})) opts))
     (is (some? (plot/render-image (plot/tree (parents->tree [{:id 1 :name "root"}])) {:width 200 :height 150}))))
   (testing "labels: leaves right of their node, groups left; unnamed nodes none"
     (let [texts (filter #(= :text (:kind %)) (:charts (plot/tree small {})))]
       (is (= [[:left :middle] [:right :middle]] (mapv #(get-in % [:options :anchor]) texts))))
     (is (empty? (filter #(= :text (:kind %))
-                        (:charts (plot/tree (tree/from-levels [{:a "x" :b "y"}] {:hierarchy [:a :b]}) {:labels? false}))))))
+                        (:charts (plot/tree (tree/from-levels [{:a "x" :b "y"}] {:hierarchy [:a :b]}) {:labels false}))))))
   (testing "bad :layout / :links"
     (is (= :layout (:key (error #(plot/tree small {:layout :radial})))))
     (is (= :links (:key (error #(plot/tree small {:links :curve})))))))
@@ -168,7 +168,7 @@
   (let [p (plot/tree small {})]
     (testing "mid-grey links; cartesian labels keep anchored room"
       (is (= (c/to-color [176 176 176]) (c/to-color (:color (drawn-style (get-in p [:charts 0]))))))
-      (is (= 0.9 (:width (drawn-style (get-in p [:charts 0])))))
+      (is (= 0.9 (:line-width (drawn-style (get-in p [:charts 0])))))
       (is (= [120 0 0] (get-in (plot/tree small {:link-style {:color [120 0 0]}}) [:charts 0 :options :color]))
           ":link-style wins")
       (is (every? #(= :anchor (get-in % [:options :reserve-room])) (filter #(= :text (:kind %)) (:charts p)))))

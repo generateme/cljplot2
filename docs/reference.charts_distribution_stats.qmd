@@ -516,7 +516,7 @@ zero line and with no padding:
 :::
 
 
-Shared options: [Line style](reference.shared_options.html#line-style) (`:color` `:width` `:dash`); [Fill patterns](reference.shared_options.html#fill-patterns) (`:pattern` `:pattern-color`); [Data and mapping](reference.shared_options.html#data-and-mapping) (`:data` `:mapping`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`); [Ridgelines](reference.shared_options.html#ridgelines) (`:overlap`).
+Shared options: [Line style](reference.shared_options.html#line-style) (`:color` `:line-width` `:dash`); [Fill patterns](reference.shared_options.html#fill-patterns) (`:pattern` `:pattern-color`); [Data and mapping](reference.shared_options.html#data-and-mapping) (`:data` `:mapping`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`); [Ridgelines](reference.shared_options.html#ridgelines) (`:overlap`).
 
 
 ## ecdf
@@ -577,7 +577,7 @@ Its only own option is the padding - here none on y, so the steps start and end 
 :::
 
 
-Shared options: [Line style](reference.shared_options.html#line-style) (`:color` `:width` `:dash`); [Data and mapping](reference.shared_options.html#data-and-mapping) (`:data` `:mapping`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`).
+Shared options: [Line style](reference.shared_options.html#line-style) (`:color` `:line-width` `:dash`); [Data and mapping](reference.shared_options.html#data-and-mapping) (`:data` `:mapping`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`).
 
 
 ## qq
@@ -663,14 +663,14 @@ The point style and the reference line's width:
 
 ### Distributions
 
-Either side may be a distribution instead of data; with both sides distributions the chart draws `:points`
+Either side may be a distribution instead of data; with both sides distributions the chart draws `:n`
 quantile pairs labelled by `:label`. The reference line through the quartiles may be turned off, and the padding
 set (none on the right):
 
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:x-distribution</td><td>a fastmath distribution, [:name] or [:name params] or vector, [keyword, optional map] or nil</td><td></td><td>the :x side as a distribution instead of data: a fastmath distribution, [:name] or [:name params] (wins over the plot's mapping of :x)</td></tr><tr><td>:y-distribution</td><td>a fastmath distribution, [:name] or [:name params] or vector, [keyword, optional map] or nil</td><td></td><td>the :y side as a distribution instead of data: a fastmath distribution, [:name] or [:name params] (wins over the plot's mapping of :y)</td></tr><tr><td>:line</td><td>one of false :quartiles</td><td>:quartiles</td><td>reference line, one per group: :quartiles (through the first and third quartile pairs, R qqline) or false (none)</td></tr><tr><td>:points</td><td>integer (at least 2)</td><td>100; an error with a data side</td><td>both sides distributions only: the number of points (Q-Q plotting positions, P-P values over :domain)</td></tr><tr><td>:label</td><td>string or keyword or nil</td><td>"<y name> vs <x name>"; an error with a data side</td><td>both sides distributions only: the label of the chart's one row {:label l}, styled by the chart's own mapping of :label (e.g. {:color :label})</td></tr><tr><td>:padding</td><td>map of one of :x :y to [lo hi], non-negative numbers</td><td>{:x [0.05 0.05] :y [0.05 0.05]}</td><td>padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:x-distribution</td><td>a fastmath distribution, [:name] or [:name params] or vector, [keyword, optional map] or nil</td><td></td><td>the :x side as a distribution instead of data: a fastmath distribution, [:name] or [:name params] (wins over the plot's mapping of :x)</td></tr><tr><td>:y-distribution</td><td>a fastmath distribution, [:name] or [:name params] or vector, [keyword, optional map] or nil</td><td></td><td>the :y side as a distribution instead of data: a fastmath distribution, [:name] or [:name params] (wins over the plot's mapping of :y)</td></tr><tr><td>:line</td><td>one of false :quartiles</td><td>:quartiles</td><td>reference line, one per group: :quartiles (through the first and third quartile pairs, R qqline) or false (none)</td></tr><tr><td>:n</td><td>integer (at least 2)</td><td>100; an error with a data side</td><td>both sides distributions only: the number of points (Q-Q plotting positions, P-P values over :domain)</td></tr><tr><td>:label</td><td>string or keyword or nil</td><td>"<y name> vs <x name>"; an error with a data side</td><td>both sides distributions only: the label of the chart's one row {:label l}, styled by the chart's own mapping of :label (e.g. {:color :label})</td></tr><tr><td>:padding</td><td>map of one of :x :y to [lo hi], non-negative numbers</td><td>{:x [0.05 0.05] :y [0.05 0.05]}</td><td>padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span</td></tr></tbody></table>
 ```
 
 :::
@@ -682,7 +682,7 @@ set (none on the right):
 (plot/render-image (plot/arrange [{:charts [(chart/qq {:x-distribution [:normal] :y-distribution [:t {:degrees-of-freedom 3}]
                                                        :label "t(3)" :mapping {:color :label}})
                                             (chart/qq {:x-distribution [:normal] :y-distribution [:t {:degrees-of-freedom 30}]
-                                                       :label "t(30)" :mapping {:color :label} :line false :points 30})]
+                                                       :label "t(30)" :mapping {:color :label} :line false :n 30})]
                                    :labels {:title "both sides distributions"}}
                                   {:data faithful
                                    :mapping {:y :eruptions}
@@ -769,13 +769,13 @@ The point style and the reference line's width:
 
 ### Distributions
 
-Either side may be a distribution; with both sides distributions the chart evaluates both CDFs at `:points`
+Either side may be a distribution; with both sides distributions the chart evaluates both CDFs at `:n`
 values over `:domain` (required then); the right panel has no line and wide padding:
 
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:x-distribution</td><td>a fastmath distribution, [:name] or [:name params] or vector, [keyword, optional map] or nil</td><td></td><td>the :x side as a distribution instead of data: a fastmath distribution, [:name] or [:name params] (wins over the plot's mapping of :x)</td></tr><tr><td>:y-distribution</td><td>a fastmath distribution, [:name] or [:name params] or vector, [keyword, optional map] or nil</td><td></td><td>the :y side as a distribution instead of data: a fastmath distribution, [:name] or [:name params] (wins over the plot's mapping of :y)</td></tr><tr><td>:line</td><td>one of false :identity</td><td>:identity</td><td>reference line, one per group: :identity (y = x) or false (none)</td></tr><tr><td>:points</td><td>integer (at least 2)</td><td>100; an error with a data side</td><td>both sides distributions only: the number of points (Q-Q plotting positions, P-P values over :domain)</td></tr><tr><td>:label</td><td>string or keyword or nil</td><td>"<y name> vs <x name>"; an error with a data side</td><td>both sides distributions only: the label of the chart's one row {:label l}, styled by the chart's own mapping of :label (e.g. {:color :label})</td></tr><tr><td>:padding</td><td>map of one of :x :y to [lo hi], non-negative numbers</td><td>{:x [0.05 0.05] :y [0.05 0.05]}</td><td>padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span</td></tr><tr><td>:domain</td><td>[a finite number, a finite number]</td><td></td><td>both sides distributions only (then required): [lo hi] of the values the CDFs are evaluated at</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:x-distribution</td><td>a fastmath distribution, [:name] or [:name params] or vector, [keyword, optional map] or nil</td><td></td><td>the :x side as a distribution instead of data: a fastmath distribution, [:name] or [:name params] (wins over the plot's mapping of :x)</td></tr><tr><td>:y-distribution</td><td>a fastmath distribution, [:name] or [:name params] or vector, [keyword, optional map] or nil</td><td></td><td>the :y side as a distribution instead of data: a fastmath distribution, [:name] or [:name params] (wins over the plot's mapping of :y)</td></tr><tr><td>:line</td><td>one of false :identity</td><td>:identity</td><td>reference line, one per group: :identity (y = x) or false (none)</td></tr><tr><td>:n</td><td>integer (at least 2)</td><td>100; an error with a data side</td><td>both sides distributions only: the number of points (Q-Q plotting positions, P-P values over :domain)</td></tr><tr><td>:label</td><td>string or keyword or nil</td><td>"<y name> vs <x name>"; an error with a data side</td><td>both sides distributions only: the label of the chart's one row {:label l}, styled by the chart's own mapping of :label (e.g. {:color :label})</td></tr><tr><td>:padding</td><td>map of one of :x :y to [lo hi], non-negative numbers</td><td>{:x [0.05 0.05] :y [0.05 0.05]}</td><td>padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span</td></tr><tr><td>:domain</td><td>[a finite number, a finite number]</td><td></td><td>both sides distributions only (then required): [lo hi] of the values the CDFs are evaluated at</td></tr></tbody></table>
 ```
 
 :::
@@ -785,9 +785,9 @@ values over `:domain` (required then); the right panel has no line and wide padd
 ::: {.sourceClojure}
 ```clojure
 (plot/render-image (plot/arrange [{:charts [(chart/pp {:x-distribution [:normal] :y-distribution [:t {:degrees-of-freedom 2}]
-                                                       :domain [-5 5] :points 40 :label "t(2)" :mapping {:color :label}})
+                                                       :domain [-5 5] :n 40 :label "t(2)" :mapping {:color :label}})
                                             (chart/pp {:x-distribution [:normal] :y-distribution [:logistic]
-                                                       :domain [-5 5] :points 40 :label "logistic" :mapping {:color :label}})]
+                                                       :domain [-5 5] :n 40 :label "logistic" :mapping {:color :label}})]
                                    :labels {:title "both sides distributions, :domain [-5 5]" :y "probabilities"}}
                                   {:data faithful
                                    :mapping {:y :waiting}

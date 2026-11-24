@@ -7,7 +7,7 @@
   * `:points` - mapped `:x`, `:y`: the 2D kernel density estimate of the points (`fastmath.kernel/kernel-density-2d`,
     a product kernel, a bandwidth per axis); options `:kernel` (default `:gaussian`), `:bandwidth` (a number, a
     fastmath selector, `:scott`, or a pair `[hx hy]` of them; default `:nrd` per axis - `MASS::kde2d`, as ggplot2),
-    `:binned?`; the domain is the points' range widened by `:cut` (default 3) bandwidths on each axis
+    `:binned`; the domain is the points' range widened by `:cut` (default 3) bandwidths on each axis
   * `:gridded` - mapped `:x`, `:y`, `:value` on a full regular lattice (every x with every y, once):
     `fastmath.interpolation` `:interpolation` - `:bilinear` (default), `:bicubic`, `:cubic-2d`; the domain is the
     lattice
@@ -22,11 +22,10 @@
   even on screen; the density value is then per log10 unit of that axis.
 
   Points: every function of a 2D point here (`:f`, `:pixel-color`, [[domain-color]]'s result, the 3D surfaces' `:f`
-  / `:fu`, vector fields) receives one argument, a `fastmath.vector.Vec2` - sequential and indexed, so `(fn [[x y]]
-  ..)`, `nth`, `seq` and fastmath vector functions all work; point-valued results may be any sequential value or array
+  / `:fu`, vector fields) receives one argument, a `fastmath.vector.Vec2` - sequential and indexed, so destructuring it as `[x y]`, `nth`, `seq` and fastmath vector functions all work; point-valued results may be any sequential value or array
   (see [[cljplot2.data.rows/as-coordinates]]).
 
-  Functions: options - [[options]], [[bandwidth-schema]], [[n-schema]], [[grid-size]]; sources - [[source-kind]], [[source-field]], [[density]], [[lattice]], [[lattice-values]], [[function-domain]]; grids - [[sample]], [[union-domain]], [[to-data]], [[value-range]], [[grid-value]], [[axis-transforms]], [[dropped-positions]]; complex domain colouring - [[domain-color]], [[wrap]]."
+  Functions: options - [[source-options]], [[n-schema]], [[grid-size]]; titles - [[value-title]]; sources - [[source-kind]], [[source-field]], [[density]], [[lattice]], [[lattice-values]], [[function-domain]]; grids - [[sample]], [[union-domain]], [[to-data]], [[value-range]], [[grid-value]], [[axis-transforms]], [[check-mapped!]], [[dropped-positions]], [[panels-without-field]]; complex domain colouring - [[domain-color]]."
   (:require [clojure2d.color :as c]
             [fastmath.complex :as cx]
             [fastmath.core :as m]
@@ -42,7 +41,7 @@
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
-(def bandwidth-schema
+(def ^:private bandwidth-schema
   "Schema of `:bandwidth`: a positive number, a selector keyword, or a pair of them."
   (let [one [:or schema/finite-pos [:enum :nrd :nrd0 :nrd-adjust :sj :sj-dpi :rlcv :lcv :lscv :scott]]]
     [:or one [:tuple one one]]))
@@ -51,7 +50,7 @@
   "Schema of `:n`, a grid size: an integer for both axes or a pair `[nx ny]`, each in [2 2000]."
   [:or [:int {:min 2 :max 2000}] [:tuple [:int {:min 2 :max 2000}] [:int {:min 2 :max 2000}]]])
 
-(def options
+(def source-options
   "Map entries of the field options shared by the field and contour charts."
   (schema/in-fragment
    :field
@@ -68,7 +67,7 @@
     (schema/optional :bandwidth {:cljplot2/section :density :description "bandwidth of the density estimate: a number, a fastmath selector or :scott, or a pair [hx hy] of them"
                                  :cljplot2/default-doc ":nrd per axis (MASS::kde2d, as ggplot2)"}
                      bandwidth-schema)
-    (schema/optional :binned? {:cljplot2/section :density :description "estimate the density from binned points (faster for many points)"
+    (schema/optional :binned {:cljplot2/section :density :description "estimate the density from binned points (faster for many points)"
                                :default false}
                      :boolean)
     (schema/optional :cut {:cljplot2/section :density :description "how many bandwidths the density domain extends past the points on each side"
@@ -111,7 +110,7 @@
 
 (def ^:private estimate-error-keys
   "fastmath `:property` of a density error -> the chart option to blame."
-  {:kernel :kernel :binned? :binned? :bandwidth :bandwidth :bandwidth-options :bandwidth})
+  {:kernel :kernel :binned? :binned :bandwidth :bandwidth :bandwidth-options :bandwidth})
 
 (defn density
   "Gives the 2D kernel density estimate of points, estimated in the coordinates of the axis transforms.
@@ -119,18 +118,18 @@
   Parameters:
 
   - `xs`, `ys` (sequences of finite numbers): the points' coordinates, equal counts.
-  - `options` (map): `:kernel` (default `:gaussian`), `:bandwidth` (default `:nrd` per axis), `:binned?` (default false), `:cut` - bandwidths the domain extends past the points (default 3); see the namespace doc.
+  - `options` (map): `:kernel` (default `:gaussian`), `:bandwidth` (default `:nrd` per axis), `:binned` (default false), `:cut` - bandwidths the domain extends past the points (default 3); see the namespace doc.
   - `[tx ty]`: the axis stat transforms (see [[cljplot2.scale.position/stat-transform]]); points a transform can't place are left out.
 
   Returns `{:f f :domain [[x0 x1] [y0 y1]]}`: `f` - the density, a function of a point `[x y]` in data units (per log10 unit on a log axis); the domain - the points' transformed range widened by `:cut` bandwidths, in data units. `nil` for one placed point without numeric bandwidths: a selector needs at least 2 points.
 
-  Throws `ex-info {:key :x}` when no point can be placed, and `ex-info` keyed by the option fastmath blames (`:kernel`, `:binned?`, else `:bandwidth`) when it can't estimate.
+  Throws `ex-info {:key :x}` when no point can be placed, and `ex-info` keyed by the option fastmath blames (`:kernel`, `:binned`, else `:bandwidth`) when it can't estimate.
 
   See also [[source-field]]."
-  [xs ys {:keys [kernel bandwidth binned? cut]} [tx ty]]
+  [xs ys {:keys [kernel bandwidth binned cut]} [tx ty]]
   (let [fx (:forward tx)
         fy (:forward ty)
-        pts (filterv (fn [[^double u ^double v]] (and (m/valid-double? u) (m/valid-double? v)))
+        pts (filterv data/finite-point?
                      (map (fn [^double x ^double y] [(fx x) (fy y)]) xs ys))
         _ (when (empty? pts)
             (schema/fail! "No points the axis scales can place (e.g. only non-positive values on a log axis)." {:key :x}))]
@@ -139,7 +138,7 @@
             vs (mapv second pts)
             {:keys [kde h]} (try (k/kernel-density-2d (or kernel :gaussian) us vs
                                                       {:bandwidth (or bandwidth :nrd)
-                                                       :binned? binned?} true)
+                                                       :binned? binned} true)
                                  (catch clojure.lang.ExceptionInfo e
                                    (schema/fail! (str "Density estimation failed: " (ex-message e))
                                                  {:key (get estimate-error-keys (:property (ex-data e)) :bandwidth) :cause (ex-data e)})))
@@ -381,6 +380,22 @@
           bad (fn [k] (let [acc (data/row-accessor k (mapping k))] (count (remove (comp schema/finite? acc) rows))))]
       {:x (bad :x) :y (bad :y)})))
 
+(defn check-mapped!
+  "Checks that a field chart's rows have a finite value of every mapped dimension it reads.
+
+  Parameters:
+
+  - `kind` (keyword): the source kind (see [[source-kind]]).
+  - `mapping` (map): the merged mapping - `:x`, `:y` and, for a gridded source, `:value`.
+  - `groups` (map): the split rows, panel -> rows.
+
+  Returns `nil`; a function source reads no rows and passes, as do empty rows. Throws `ex-info {:key :mapping :in [:mapping dimension] :rows n}` for the first dimension without a finite value (see [[cljplot2.data.rows/check-mapped!]])."
+  [kind mapping groups]
+  (when-not (= kind :function)
+    (data/check-mapped! (mapcat val groups)
+                        (map (fn [k] [k (data/row-accessor k (mapping k))]) (cond-> [:x :y] (= kind :gridded) (conj :value)))
+                        (fn [_ v] (schema/finite? v)))))
+
 (defn panels-without-field
   "Counts the panels with rows that got no field (e.g. one point under a bandwidth selector, see [[density]]).
 
@@ -410,7 +425,7 @@
   Parameters:
 
   - `kind` (keyword): the source kind of [[source-kind]].
-  - `field-options` (map): the chart's field options (see [[options]]).
+  - `field-options` (map): the chart's field options (see [[source-options]]).
   - `mapping` (map): the merged mapping.
   - `rows` (sequence): the rows.
   - `plot-scales` (map): the plot's scale specs.
@@ -436,7 +451,7 @@
   "Wraps of a magnitude into `[0 1]` for [[domain-color]]."
   #{:log2 :log10 :sin :exp :sigmoid :frac})
 
-(defn wrap
+(defn- wrap
   "Wraps a magnitude into `[0 1]` (old cljplot's complex plot).
 
   Parameters:
@@ -476,7 +491,7 @@
         b (m/* 255.0 bright)]
     (from-space (c/color (m/norm angle m/-PI m/PI 0.0 255.0) (m/- 255.0 (m// (m/- 255.0 b) 4.0)) b))))
 
-(def domain-color-options
+(def ^:private domain-color-options
   "Options of [[domain-color]]."
   [:map {:closed true}
    (schema/optional :wrap {:description "how the magnitude of f is wrapped into [0 1] for the brightness (see cljplot2.data.field/wrap)"
@@ -492,15 +507,31 @@
   Parameters:
 
   - `f` (function): a complex function `Vec2` -> `Vec2` of `fastmath.complex`, e.g. `cx/log`.
-  - `opts` (map): `:wrap` - how the magnitude is wrapped for the brightness (default `:log2`, see [[wrap]]); `:colorspace` - one of [[hue-colorspaces]] (default `:HSI` - old cljplot's example).
+  - `options` (map): `:wrap` - how the magnitude is wrapped for the brightness (default `:log2`, see [[wrap]]); `:colorspace` - one of [[hue-colorspaces]] (default `:HSI` - old cljplot's example).
 
   Returns a function of a point `[x y]` giving the colour of `f(x + iy)`: hue - its argument, brightness - its wrapped magnitude. Zeros and poles get a colour.
 
   Throws `ex-info` for bad options ([[domain-color-options]])."
   {:cljplot2/api true :cljplot2/options domain-color-options}
   ([f] (domain-color f {}))
-  ([f {wrap-method :wrap colorspace :colorspace :or {wrap-method :log2 colorspace :HSI} :as opts}]
-   (schema/check-options! domain-color-options opts)
+  ([f {wrap-method :wrap colorspace :colorspace :or {wrap-method :log2 colorspace :HSI} :as options}]
+   (schema/check-options! domain-color-options options)
    (let [from-space (second (c/colorspaces* colorspace))]
      (fn [[x y]] (complex-color from-space wrap-method (f (cx/complex x y)))))))
 
+(defn value-title
+  "Gives the legend title of a field's computed value.
+
+  Parameters:
+
+  - `options` (map): the chart's options (they pick the source, see [[cljplot2.data.field/source-kind]]).
+  - `mapping` (map): the merged mapping.
+
+  Returns `Density` for points, the `:value` accessor's name for gridded data (`nil` for a function accessor), `nil` for a function field.
+
+  See also [[cljplot2.chart.field/computed-aesthetics]]."
+  [options mapping]
+  (case (source-kind options mapping)
+    :points "Density"
+    :gridded (let [acc (:value mapping)] (when (keyword? acc) (name acc)))
+    :function nil))

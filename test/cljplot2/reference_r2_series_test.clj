@@ -22,7 +22,7 @@
   (testing "acf: every constant default is the real one"
     (is (tu/builder-defaults-hold? #'sp/acf [values] {} render-options))
     (is (tu/builder-defaults-hold? #'sp/acf [values] {:colors {:stem :black}} render-options) "partial nested colours")
-    (is (tu/builder-defaults-hold? #'sp/acf [values] {:partial? :pacf :lags 8} render-options)))
+    (is (tu/builder-defaults-hold? #'sp/acf [values] {:correlograms :pacf :lags 8} render-options)))
   (testing "horizon: every constant default is the real one"
     (is (tu/builder-defaults-hold? #'sp/horizon [wave] {} render-options))
     (is (tu/builder-defaults-hold? #'sp/horizon [wave] {:series :s :colors {:positive [:pink :red :darkred]}} render-options)
@@ -47,13 +47,13 @@
   (testing "a wrong type fails keyed by the option, before the data is read"
     (is (= :band (:key (tu/error #(sp/acf nil {:band :blocky})))))
     (is (= :lags (:key (tu/error #(sp/acf nil {:lags 1.5})))))
-    (is (= :alpha (:key (tu/error #(sp/acf nil {:alpha 1.0})))))
+    (is (= :level (:key (tu/error #(sp/acf nil {:level 0})))))
     (is (= :stem (:key (tu/error #(sp/acf nil {:colors {:stem :not-a-colour}})))))
     (is (= :bands (:key (tu/error #(sp/horizon nil {:bands 0})))))
     (is (= :alpha (:key (tu/error #(sp/horizon nil {:alpha 2.0})))))
     (is (= :positive (:key (tu/error #(sp/horizon nil {:colors {:positive :red}})))))
-    (is (= :partial? (:key (tu/error #(series/acf-rows nil {:partial? :yes})))))
-    (is (= :alpha (:key (tu/error #(series/acf-rows nil {:alpha 0})))))
+    (is (= :partial (:key (tu/error #(series/acf-rows nil {:partial :yes})))))
+    (is (= :level (:key (tu/error #(series/acf-rows nil {:level 1})))))
     (is (= :band-height (:key (tu/error #(series/horizon-rows nil {:band-height ##Inf})))))
     (is (= :interpolator (:key (tu/error #(series/horizon-rows nil {:interpolator :nope})))))
     (is (= :steps-per-gap (:key (tu/error #(series/horizon-rows nil {:steps-per-gap 0}))))))
@@ -78,6 +78,6 @@
   (testing "the user-facing functions are marked"
     (is (every? #(:cljplot2/api (meta %)) [#'series/lag-rows #'series/acf-rows #'series/horizon-rows #'series/horizon-bands])))
   (testing "forwarded rows keep their group"
-    (is (= #{:lags :alpha} (set (keep #(when (= :series/acf-rows (:fragment %)) (:key %)) (describe/options #'sp/acf)))))
+    (is (= #{:lags :level} (set (keep #(when (= :series/acf-rows (:fragment %)) (:key %)) (describe/options #'sp/acf)))))
     (is (= (set (map :key (describe/options #'series/horizon-rows)))
            (set (keep #(when (= :series/horizon-rows (:fragment %)) (:key %)) (describe/options #'sp/horizon)))))))

@@ -72,7 +72,7 @@
                                       :scales {:x {:axis :ticks}}})))))
   (testing "R3 leaf axes of dendrograms and arc diagrams without grid lines"
     (is (= :no-grid (get-in (plot/arc [{:from "a" :to "b"}] {}) [:scales :x :axis])))
-    (is (= false (get-in (plot/arc [{:from "a" :to "b"}] {:labels? false}) [:scales :x :axis])))))
+    (is (= false (get-in (plot/arc [{:from "a" :to "b"}] {:labels false}) [:scales :x :axis])))))
 
 (defn- boxes
   "Bounding boxes `[x0 x1 y0 y1]` of the laid-out nodes of each id group in `groups`."

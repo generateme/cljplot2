@@ -43,7 +43,7 @@
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
-(def glyphs
+(def ^:private glyphs
   "The glyphs r is drawn as (option `:glyph`)."
   [:number :shade :square :circle :ellipse :pie])
 
@@ -56,7 +56,7 @@
    (schema/optional :stroke-color {:description "outline colour: a colour, :none or :darker (the darkened fill)"} draw/stroke-color)
    (schema/optional :stroke-width {:description "outline width in pixels"} schema/non-neg)])
 
-(def ^{:const true :tag 'double} default-glyph-size
+(def ^{:private true :const true :tag 'double} default-glyph-size
   "Glyph side as a fraction of the panel's shorter side, unless `:glyph-size` says otherwise."
   0.9)
 
@@ -112,12 +112,15 @@
 
   Returns per panel `{:r r :groups [{:aesthetics a :value r} ..] :glyph g :glyph-size s :method m :by-r? b :style st :text-color c}`; no x / y extents, color extent [-1 1] when colored by r, the groups' aesthetic extents when grouped; `:na`, `:dropped` (`:x`, `:y`).
 
+  Throws `ex-info {:key :mapping}` when rows exist but none has a finite `:x` (or `:y`).
+
   See also [[cljplot2.data.pairwise/statistic-value]] (r is its `:pearson`, `:spearman` or `:kendall`)."
   [{:keys [options] :as chart} {:keys [groups mapping]} {:keys [theme plot-scales] :as env}]
-  (let [method (get options :method :pearson)
-        glyph (get options :glyph :number)
+  (let [method (data/option options :method :pearson)
+        glyph (data/option options :glyph :number)
         x-of (data/row-accessor :x (:x mapping))
         y-of (data/row-accessor :y (:y mapping))
+        _ (data/check-mapped! (mapcat val groups) [[:x x-of] [:y y-of]] (fn [_ v] (schema/finite? v)))
         {:keys [grouped split]} (cell/grouping groups mapping env)
         by-r? (cell/colored-by-value? options mapping)
         st (theme/resolved-style theme chart)
@@ -128,7 +131,7 @@
                                              (mapv (fn [{:keys [aesthetics] group-rows :rows}] {:aesthetics aesthetics :value (rows-r group-rows)})
                                                    (get-in split [:panels panel])))
                                    :glyph glyph
-                                   :glyph-size (get options :glyph-size default-glyph-size)
+                                   :glyph-size (data/option options :glyph-size default-glyph-size)
                                    :method method
                                    :by-r? by-r?
                                    :style st
@@ -145,7 +148,13 @@
 ;; drawing
 
 (defn- number-text
-  "Gives the text of a coefficient: 2 decimals, `NA` for `##NaN`."
+  "Gives the text of a coefficient.
+
+  Parameters:
+
+  - `v` (double): the coefficient.
+
+  Returns the coefficient with 2 decimals; `NA` for `##NaN`."
   [^double v]
   (if (m/nan? v) "NA" (format "%.2f" v)))
 
@@ -161,11 +170,7 @@
 
   Nothing for a `:none` stroke or a zero width."
   [canvas shape-fn fill {:keys [stroke-color stroke-width]}]
-  (let [stroke (draw/outline-color stroke-color fill)]
-    (when (and (not (theme/none? stroke)) (m/pos? (double stroke-width)))
-      (c2d/set-stroke-custom canvas {:size stroke-width})
-      (c2d/set-color canvas stroke)
-      (shape-fn true))))
+  (draw/outline! canvas (draw/outline-color stroke-color fill) stroke-width (fn [_] (shape-fn true))))
 
 (def ^{:private true :const true :tag 'long} ellipse-segments
   "Segments of an ellipse glyph's outline."

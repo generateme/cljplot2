@@ -146,7 +146,7 @@
                    {:width 450 :height 280})
 
 ;; `:order`: overlapping points listed largest first - in data order the small ones are drawn last, on top (left);
-;; ordered by size (ascending, the default `:order-direction`) the large ones come last and cover them (right):
+;; ordered by size (ascending, `:descending false`, the default) the large ones come last and cover them (right):
 
 (def overlapping (for [i (range 24)] {:x (* 0.2 i) :y (* 0.2 i) :s (- 3 (mod i 4))}))
 

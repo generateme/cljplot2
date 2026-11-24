@@ -1,7 +1,7 @@
 (ns cljplot2.data.shingle
   "Shingles: overlapping intervals of a numeric column, as a data transformation (lattice `equal.count`).
 
-  [[shingle]] repeats every row once per interval containing its value and stores that [[Interval]] in a new column;
+  [[shingle]] repeats every row once per interval containing its value and stores that `Interval` in a new column;
   faceting by that column gives one panel per interval (a row may appear in several panels). Interval values sort by
   lower then upper bound and print as `[lo, hi]` (bins of [[cljplot2.data.levels/bin]], `:closed :left`, as
   `[lo, hi)`); a facet strip of Interval levels shows a shaded bar of the interval
@@ -9,9 +9,11 @@
 
   Equal-count intervals come from `fastmath.core/co-intervals` (R `co.intervals`).
 
-  Functions: [[shingle]] - the repeated rows; [[equal-count]] - equal-count intervals; [[interval]], [[interval?]], [[contains-value?]] - intervals; [[rounded-str]] - a bound's text; [[check-accessor!]] - the accessor and `:label` check shared with [[cljplot2.data.levels/bin]]."
+  Functions: [[shingle]] - the repeated rows; [[equal-count]] - equal-count intervals; [[interval]], [[interval?]], [[contains-value?]] - intervals; [[rounded-str]] - a bound's text; [[check-accessor!]] - the accessor and `:label` check shared with [[cljplot2.data.levels/bin]].
+
+  Option schemas: [[shingle-options]], [[equal-count-options]]."
   (:require [fastmath.core :as m]
-            [cljplot2.data.rows :as rows]
+            [cljplot2.data.rows :as data]
             [cljplot2.schema :as schema])
   (:import [cljplot2.data.rows OrderedLevel]))
 
@@ -77,7 +79,7 @@
   (schema/with-rules [:tuple schema/finite schema/finite]
     [(fn [[^double lo ^double hi]] (when (m/> lo hi) "should be [lo hi] with lo <= hi"))]))
 
-(def interval-args
+(def ^:private interval-args
   "Arguments of [[interval]]: `{:bounds [lo hi] :label label}`."
   [:map [:bounds bounds] [:label [:maybe string?]]])
 
@@ -89,7 +91,7 @@
   - `lo`, `hi` (finite numbers): the bounds, `lo <= hi`.
   - `label` (string, optional): the data series name, printed before the range (`mag: [4, 5]`).
 
-  Returns an [[Interval]].
+  Returns an `Interval`.
 
   Throws `ex-info` (see [[cljplot2.schema]]) for bad arguments."
   ([lo hi] (interval lo hi nil))
@@ -98,7 +100,7 @@
    (->Interval lo hi label nil nil)))
 
 (defn interval?
-  "Tests whether a value is an [[Interval]].
+  "Tests whether a value is an `Interval`.
 
   Parameters:
 
@@ -113,7 +115,7 @@
 
   Parameters:
 
-  - `iv` ([[Interval]]): the interval, bounds included.
+  - `iv` (`Interval`): the interval, bounds included.
   - `v` (number).
 
   Returns `true` when `lo <= v <= hi`."
@@ -126,20 +128,20 @@
   (schema/named-type ::overlap #(and (number? %) (m/<= 0.0 (double %)) (m/< (double %) 1.0)) "should be a number in [0 1)"))
 
 (def equal-count-options
-  "Options of [[equal-count]]: `:count` (positive integer, default 6), `:overlap` (in `[0 1)`, default 0.5)."
+  "Options of [[equal-count]]: `:n` (positive integer, default 6), `:overlap` (in `[0 1)`, default 0.5)."
   [:map {:closed true}
-   (schema/optional :count schema/pos-int)
+   (schema/optional :n schema/pos-int)
    (schema/optional :overlap overlap)])
 
 (def shingle-options
-  "Options of [[shingle]]: `:as` (required), `:intervals` or `:count` / `:overlap`, `:label`."
+  "Options of [[shingle]]: `:as` (required), `:intervals` or `:n` / `:overlap`, `:label`."
   [:map {:closed true}
    [:as {:description "the key of the interval column added to every repeated row (required)"}
     [:fn {:error/message "should be the key of the interval column"} some?]]
    (schema/optional :intervals {:description "the intervals [[lo hi] ...], closed, lo <= hi"
-                                :cljplot2/default-doc "equal-count intervals from :count and :overlap"}
+                                :cljplot2/default-doc "equal-count intervals from :n and :overlap"}
                     [:sequential {:min 1} bounds])
-   (schema/optional :count {:description "the number of equal-count intervals (fewer when the data can't support them; ignored with :intervals)"
+   (schema/optional :n {:description "the number of equal-count intervals (fewer when the data can't support them; ignored with :intervals)"
                             :default 6}
                     schema/pos-int)
    (schema/optional :overlap {:description "the fraction of points shared by neighbouring equal-count intervals (ignored with :intervals)"
@@ -154,15 +156,15 @@
 
   Parameters:
 
-  - `value-accessor`: the accessor (see [[cljplot2.schema/accessor]]).
+  - `value`: the accessor (see [[cljplot2.schema/accessor]]).
   - `label`: the `:label` option; `true` needs a keyword accessor (its name is the label).
 
   Returns `nil`.
 
   Throws `ex-info {:key :accessor}` for a bad accessor, `{:key :label}` for `:label true` with a function accessor."
-  [value-accessor label]
-  (schema/explain! [[schema/accessor value-accessor [:accessor]]])
-  (when (and (true? label) (not (keyword? value-accessor)))
+  [value label]
+  (schema/explain! [[schema/accessor value [:accessor]]])
+  (when (and (true? label) (not (keyword? value)))
     (schema/fail! "label true needs a keyword accessor (its name is the label)" {:key :label :in [:label] :value label})))
 
 (defn- non-numeric-value!
@@ -185,13 +187,13 @@
   Parameters:
 
   - `values` (sequence of numbers): `nil` and NaN ignored.
-  - `opts` (map, see [[equal-count-options]]): `:count` - the number of intervals (default 6); `:overlap` - the fraction of points shared by neighbouring intervals, in `[0 1)` (default 0.5).
+  - `options` (map, see [[equal-count-options]]): `:n` - the number of intervals (default 6); `:overlap` - the fraction of points shared by neighbouring intervals, in `[0 1)` (default 0.5).
 
-  Returns a vector of [[Interval]]s; fewer when the data can't support `:count` distinct ones, none for no values.
+  Returns a vector of `Interval`s; fewer when the data can't support `:n` distinct ones, none for no values.
 
   Throws `ex-info` for bad options (see [[cljplot2.schema]]), `{:key :shingle}` for non-numeric values."
-  [values {n :count overlap-share :overlap :or {n 6 overlap-share 0.5} :as opts}]
-  (schema/explain! [[equal-count-options opts [:options]]])
+  [values {:keys [n] overlap-share :overlap :or {n 6 overlap-share 0.5} :as options}]
+  (schema/explain! [[equal-count-options options [:options]]])
   (non-numeric-value! values)
   (let [xs (filterv finite-number? values)]
     (if (empty? xs)
@@ -203,28 +205,28 @@
 
   Parameters:
 
-  - `data`: rows or columns (see [[cljplot2.data.rows/rows]]).
-  - `value-accessor` (keyword or function): the numeric value of a row.
-  - `opts` (map, see [[shingle-options]]):
+  - `rows`: rows or columns (see [[cljplot2.data.rows/rows]]).
+  - `value` (keyword or function): the numeric value of a row.
+  - `options` (map, see [[shingle-options]]):
     - `:as` - the key the interval is stored under (required).
-    - `:intervals` - `[[lo hi] ...]`, closed; default equal-count ones from `:count` / `:overlap` (see [[equal-count]]).
+    - `:intervals` - `[[lo hi] ...]`, closed; default equal-count ones from `:n` / `:overlap` (see [[equal-count]]).
     - `:label` - the data series name printed in every interval (and so in facet strips): a string, or `true` for the accessor's name (keyword accessors only); default none.
 
-  Returns a vector of rows, each with its [[Interval]] under `:as`; rows with a `nil`, NaN or uncovered value are left out, the result's metadata holds `{:dropped n}`.
+  Returns a vector of rows, each with its `Interval` under `:as`; rows with a `nil`, NaN or uncovered value are left out, the result's metadata holds `{:dropped n}`.
 
   Throws `ex-info` for bad options (see [[cljplot2.schema]]), a bad accessor (see [[check-accessor!]]) or non-numeric values (`{:key :shingle}`)."
   {:cljplot2/api true :cljplot2/options shingle-options}
-  [data value-accessor {:keys [intervals as label] :as opts}]
-  (schema/check-options! shingle-options opts)
-  (check-accessor! value-accessor label)
-  (let [rs (rows/rows data)
-        acc (rows/row-accessor :shingle value-accessor)
+  [rows value {:keys [intervals as label] :as options}]
+  (schema/check-options! shingle-options options)
+  (check-accessor! value label)
+  (let [rs (data/rows rows)
+        acc (data/row-accessor :shingle value)
         _ (non-numeric-value! (map acc rs))
-        series (cond (string? label) label (true? label) (name value-accessor))
+        series (cond (string? label) label (true? label) (name value))
         ivs (mapv #(assoc % :label series)
                   (if (some? intervals)
                     (map (fn [[lo hi]] (->Interval lo hi nil nil nil)) intervals)
-                    (equal-count (map acc rs) (select-keys opts [:count :overlap]))))
+                    (equal-count (map acc rs) (select-keys options [:n :overlap]))))
         out (into [] (mapcat (fn [row]
                                (let [v (acc row)]
                                  (when (finite-number? v)

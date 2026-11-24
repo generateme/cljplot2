@@ -1573,7 +1573,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td>:order</td>
 <td>a keyword, a function or a categorical marker of one or nil</td>
 <td></td>
-<td>draw order: points drawn by its values (see :order-direction), else in data order</td>
+<td>draw order: points drawn by its values (ascending, :descending reverses it), else in data order</td>
 </tr>
 </tbody>
 </table>
@@ -1640,10 +1640,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td>padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span</td>
 </tr>
 <tr class="odd">
-<td>:order-direction</td>
-<td>one of :ascending :descending</td>
-<td>:ascending</td>
-<td>draw order of the values of a mapped :order (later points on top)</td>
+<td>:descending</td>
+<td>true or false or nil</td>
+<td>false</td>
+<td>draw the values of a mapped :order in descending order (later points on top)</td>
 </tr>
 <tr class="even">
 <td>:jitter</td>
@@ -1683,13 +1683,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> mtcars</span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:wt</span> <span class="at">:y</span> <span class="at">:mpg</span> <span class="at">:color</span> <span class="at">:hp</span> <span class="at">:order</span> <span class="at">:hp</span>}</span>
 <span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/scatter {<span class="at">:size</span> <span class="dv">26</span> <span class="at">:stroke-color</span> <span class="at">:white</span>})]</span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":order :hp, :order-direction :ascending"</span>}</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":order :hp, ascending (default)"</span>}</span>
 <span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:legend</span> <span class="va">false</span>}</span>
 <span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> mtcars</span>
 <span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:wt</span> <span class="at">:y</span> <span class="at">:mpg</span> <span class="at">:color</span> <span class="at">:hp</span> <span class="at">:order</span> <span class="at">:hp</span>}</span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/scatter {<span class="at">:size</span> <span class="dv">26</span> <span class="at">:stroke-color</span> <span class="at">:white</span> <span class="at">:order-direction</span> <span class="at">:descending</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/scatter {<span class="at">:size</span> <span class="dv">26</span> <span class="at">:stroke-color</span> <span class="at">:white</span> <span class="at">:descending</span> <span class="va">true</span></span>
 <span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>                                                           <span class="at">:padding</span> {<span class="at">:x</span> [<span class="dv">0</span> <span class="dv">0</span>] <span class="at">:y</span> [<span class="fl">0.05</span> <span class="fl">0.05</span>]}})]</span>
-<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":order-direction :descending, :padding x 0"</span>}}]</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":descending true, :padding x 0"</span>}}]</span>
 <span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">2</span> <span class="at">:widths</span> [<span class="dv">1</span> <span class="fl">1.2</span>]})</span>
 <span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">360</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
@@ -1809,7 +1809,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td>axis the :fill-gradient runs along, over that scale's range (needs :fill-gradient)</td>
 </tr>
 <tr class="odd">
-<td>:stroke-alpha</td>
+<td>:stroke-alpha-factor</td>
 <td>a number in [0 1]</td>
 <td></td>
 <td>multiplies the stroke colour's opacity of unstacked lines (the legend key stays opaque)</td>
@@ -2059,15 +2059,15 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="clay-image">
 <p><img src="reference.charts_points_paths_files/image4.png" class="img-fluid"></p>
 </div>
-<p>The gradient along x instead, and <code>:stroke-alpha</code> fading the strokes of overlapping lines:</p>
+<p>The gradient along x instead, and <code>:stroke-alpha-factor</code> fading the strokes of overlapping lines:</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> wave <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:t</span> <span class="at">:y</span> <span class="at">:v</span>}</span>
 <span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/line {<span class="at">:fill-gradient</span> <span class="at">:mpl/viridis</span> <span class="at">:fill-gradient-axis</span> <span class="at">:x</span>})]</span>
 <span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":fill-gradient-axis :x"</span>}}</span>
 <span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> stocks</span>
 <span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> #(java.<span class="kw">time</span>.LocalDate/parse (<span class="at">:date</span> <span class="va">%</span>)) <span class="at">:y</span> <span class="at">:price</span> <span class="at">:color</span> <span class="at">:symbol</span>}</span>
-<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/line {<span class="at">:width</span> <span class="dv">3</span> <span class="at">:stroke-alpha</span> <span class="fl">0.4</span>})]</span>
-<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":stroke-alpha 0.4"</span>}}]</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/line {<span class="at">:line-width</span> <span class="dv">3</span> <span class="at">:stroke-alpha-factor</span> <span class="fl">0.4</span>})]</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":stroke-alpha-factor 0.4"</span>}}]</span>
 <span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">2</span> <span class="at">:widths</span> [<span class="dv">1</span> <span class="fl">1.4</span>]})</span>
 <span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">300</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
@@ -2093,20 +2093,20 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="odd">
 <td>:bridge</td>
 <td>map</td>
-<td>{:alpha 0.3}</td>
-<td>style of the segments bridging gaps with :gaps :bridge: :alpha (a fraction of the line alpha), optional :width and :dash</td>
+<td>{:alpha-factor 0.3}</td>
+<td>style of the segments bridging gaps with :gaps :bridge: :alpha-factor (a fraction of the line alpha), optional :line-width and :dash</td>
 </tr>
 <tr class="even">
-<td>:bridge :alpha (required)</td>
+<td>:bridge :alpha-factor (required)</td>
 <td>a number in [0 1]</td>
 <td>0.3 in the theme's :bridge (a given :bridge replaces it whole)</td>
 <td>bridge opacity, a fraction of the line's alpha</td>
 </tr>
 <tr class="odd">
-<td>:bridge :width</td>
+<td>:bridge :line-width</td>
 <td>a non-negative number</td>
 <td>the line's width</td>
-<td>bridge width in pixels</td>
+<td>bridge line width in pixels</td>
 </tr>
 <tr class="even">
 <td>:bridge :dash</td>
@@ -2115,10 +2115,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td>dash style of the bridge</td>
 </tr>
 <tr class="odd">
-<td>:sort</td>
-<td>true or false or nil</td>
-<td>true</td>
-<td>order the points by numeric or temporal x (false - data order)</td>
+<td>:order</td>
+<td>one of :x :data or nil</td>
+<td>:x</td>
+<td>point order: :x (numeric or temporal x, ties in data order) or :data</td>
 </tr>
 <tr class="even">
 <td>:gaps</td>
@@ -2403,15 +2403,15 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> spiral <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:y</span>}</span>
 <span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/line)]</span>
-<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":sort true (default)"</span>}}</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":order :x (default)"</span>}}</span>
 <span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> spiral <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:y</span>}</span>
-<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/line {<span class="at">:sort</span> <span class="va">false</span>})]</span>
-<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":sort false"</span>}}</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/line {<span class="at">:order</span> <span class="at">:data</span>})]</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":order :data"</span>}}</span>
 <span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> spiral <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:v</span>}</span>
-<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/line {<span class="at">:sort</span> <span class="va">false</span> <span class="at">:gaps</span> <span class="at">:break</span> <span class="at">:padding</span> {<span class="at">:x</span> [<span class="dv">0</span> <span class="dv">0</span>] <span class="at">:y</span> [<span class="dv">0</span> <span class="dv">0</span>]}})]</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/line {<span class="at">:order</span> <span class="at">:data</span> <span class="at">:gaps</span> <span class="at">:break</span> <span class="at">:padding</span> {<span class="at">:x</span> [<span class="dv">0</span> <span class="dv">0</span>] <span class="at">:y</span> [<span class="dv">0</span> <span class="dv">0</span>]}})]</span>
 <span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":gaps :break, no padding"</span>}}</span>
 <span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> spiral <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:v</span>}</span>
-<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/line {<span class="at">:sort</span> <span class="va">false</span> <span class="at">:gaps</span> <span class="at">:bridge</span> <span class="at">:bridge</span> {<span class="at">:alpha</span> <span class="fl">0.5</span> <span class="at">:dash</span> <span class="at">:dotted</span>}})]</span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/line {<span class="at">:order</span> <span class="at">:data</span> <span class="at">:gaps</span> <span class="at">:bridge</span> <span class="at">:bridge</span> {<span class="at">:alpha-factor</span> <span class="fl">0.5</span> <span class="at">:dash</span> <span class="at">:dotted</span>}})]</span>
 <span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":gaps :bridge"</span>}}]</span>
 <span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">2</span>})</span>
 <span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">900</span> <span class="at">:height</span> <span class="dv">600</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -2945,7 +2945,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="clay-image">
 <p><img src="reference.charts_points_paths_files/image8.png" class="img-fluid"></p>
 </div>
-<p>Shared options: <a href="reference.shared_options.html#line-style">Line style</a> (<code>:color</code> <code>:width</code> <code>:dash</code>); <a href="reference.shared_options.html#fill-patterns">Fill patterns</a> (<code>:pattern</code> <code>:pattern-color</code>); <a href="reference.shared_options.html#data-and-mapping">Data and mapping</a> (<code>:data</code> <code>:mapping</code>); <a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> (<code>:theme-style</code>); <a href="reference.shared_options.html#curves">Curves</a> (<code>:interpolator</code> <code>:interpolator-params</code> <code>:curve</code> <code>:sample-step</code>).</p>
+<p>Shared options: <a href="reference.shared_options.html#line-style">Line style</a> (<code>:color</code> <code>:line-width</code> <code>:dash</code>); <a href="reference.shared_options.html#fill-patterns">Fill patterns</a> (<code>:pattern</code> <code>:pattern-color</code>); <a href="reference.shared_options.html#data-and-mapping">Data and mapping</a> (<code>:data</code> <code>:mapping</code>); <a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> (<code>:theme-style</code>); <a href="reference.shared_options.html#curves">Curves</a> (<code>:interpolator</code> <code>:interpolator-params</code> <code>:curve</code> <code>:sample-step</code>).</p>
 </section>
 </section>
 <section id="segment" class="level2" data-number="13.3">
@@ -3065,7 +3065,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> moves</span>
 <span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:y</span> <span class="at">:xend</span> <span class="at">:x2</span> <span class="at">:yend</span> <span class="at">:y2</span> <span class="at">:color</span> <span class="at">:from</span>}</span>
-<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:charts</span> [(chart/segment {<span class="at">:width</span> <span class="dv">2</span>})]}</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:charts</span> [(chart/segment {<span class="at">:line-width</span> <span class="dv">2</span>})]}</span>
 <span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">500</span> <span class="at">:height</span> <span class="dv">320</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="clay-image">
@@ -3187,7 +3187,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="clay-image">
 <p><img src="reference.charts_points_paths_files/image11.png" class="img-fluid"></p>
 </div>
-<p>Shared options: <a href="reference.shared_options.html#line-style">Line style</a> (<code>:color</code> <code>:width</code> <code>:dash</code>); <a href="reference.shared_options.html#data-and-mapping">Data and mapping</a> (<code>:data</code> <code>:mapping</code>); <a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> (<code>:theme-style</code>).</p>
+<p>Shared options: <a href="reference.shared_options.html#line-style">Line style</a> (<code>:color</code> <code>:line-width</code> <code>:dash</code>); <a href="reference.shared_options.html#data-and-mapping">Data and mapping</a> (<code>:data</code> <code>:mapping</code>); <a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> (<code>:theme-style</code>).</p>
 </section>
 <section id="polygon" class="level2" data-number="13.4">
 <h2 data-number="13.4" class="anchored" data-anchor-id="polygon"><span class="header-section-number">13.4</span> polygon</h2>

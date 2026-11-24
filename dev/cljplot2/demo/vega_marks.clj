@@ -102,7 +102,7 @@
              {:x (m/sin (* 3.0 t)) :y (m/sin (* 2.0 t))
               :speed (m/hypot (* 3.0 (m/cos (* 3.0 t))) (* 2.0 (m/cos (* 2.0 t))))})
      :mapping {:x :x :y :y :size :speed}
-     :charts [(chart/line {:trail true :sort false :color [40 90 160]})]
+     :charts [(chart/line {:trail true :order :data :color [40 90 160]})]
      :scales {:size {:range [1 14]}}
      :aspect :iso
      :labels {:title "Trail: width by speed" :x "x" :y "y"}}))
@@ -117,7 +117,7 @@
                           [k (if (> (double (by-year 1932)) (double (by-year 1931))) "increase" "decrease")]))]
     {:data (map #(assoc % :change (change [(:site %) (:variety %)])) (sort-by :year barley))
      :mapping {:x :yield :y :variety :size :year :color :change :group :variety :facet :site}
-     :charts [(chart/line {:trail true :sort false})]
+     :charts [(chart/line {:trail true :order :data})]
      :scales {:size {:range [1 10] :ticks [1931 1932] :title "year"}}
      :facets {:columns 3}
      :labels {:title "Comet chart: barley yield 1931 to 1932" :x "yield" :y nil}}))

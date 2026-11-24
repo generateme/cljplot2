@@ -10,25 +10,18 @@
   Binned cells (bin2d): points binned on a grid laid over a normalized space, see [[bin-points]]: x maps to
   `u = (x - x0) / (x1 - x0)` in `[0 1]`, y to `v = s (y - y0) / (y1 - y0)`, `s` the [[shape-factor]] - the expected
   panel height / width - so cells of one size in `u` / `v` are regular in pixels when the panel's pixels per unit
-  match: exactly with plot `:aspect :iso` or a given `:shape` matching the panel, approximately otherwise (the panel
+  match: exactly with plot `:aspect :iso` or a given chart `:aspect` matching the panel, approximately otherwise (the panel
   size is estimated before the layout - from the plot size less titles, axes, legends and facet strips). The points
   come in the axes' screen-linear coordinates (bin2d takes a log axis to log10, see
   [[cljplot2.scale.position/stat-transform]]); cell corners go back the same way and are projected corner by corner.
 
-  Drawing: [[draw-cell!]] - a cell polygon through a projection, shrunk by `:cell-scale` toward its centre; draw a
-  chart's cells inside [[call-with-cell-rendering]] (abutting cells without seams).
+  Cell styles and drawing live in [[cljplot2.graphics.cells]].
 
-  Functions: options - [[cell-schema]], [[style-entries]], [[style-keys]]; lattice cells - [[lattice-offsets]], [[lattice-extent]], [[lattice-reach]]; binned cells - [[shape-factor]], [[size-methods]], [[bin-points]]; drawing - [[shrunk]], [[call-with-cell-rendering]], [[draw-cell!]]."
-  (:require [clojure2d.core :as c2d]
-            [fastmath.core :as m]
+  Functions: options - [[cell-schema]]; positions - [[resolution]]; lattice cells - [[lattice-offsets]], [[lattice-extent]], [[lattice-reach]]; binned cells - [[shape-factor]], [[size-methods]], [[bin-points]]."
+  (:require [fastmath.core :as m]
             [fastmath.vector :as v]
             [fastmath.grid :as grid]
-            [fastmath.stats :as stats]
-            [cljplot2.data.rows :as data]
-            [cljplot2.graphics.draw :as draw]
-            [cljplot2.schema :as schema]
-            [cljplot2.theme :as theme])
-  (:import [fastmath.vector Vec2]))
+            [fastmath.stats :as stats]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -36,21 +29,6 @@
 (def cell-schema
   "Schema of a cell type."
   (into [:enum] grid/cell-names))
-
-(def style-entries
-  "Style map entries of a cell chart: `:cell` (type), `:cell-scale` (polygon shrink factor, `(0 1]`), `:stroke-color`
-  (a color, `:none` or `:darker`), `:stroke-width`, `:alpha` (fill alpha multiplier, a fraction; theme default 1.0 - colors as they are)."
-  (schema/in-fragment
-   :cell
-   [(schema/optional :cell {:description "cell shape of the grid (a fastmath grid cell type)"} cell-schema)
-    (schema/optional :cell-scale {:description "cell polygon size relative to its grid cell, in (0 1]"} [:and schema/finite [:> 0] [:<= 1]])
-    (schema/optional :stroke-color {:description "cell outline: a colour, :none or :darker (the darkened fill)"} draw/stroke-color)
-    (schema/optional :stroke-width {:description "cell outline width in pixels"} schema/non-neg)
-    (schema/optional :alpha {:description "fill opacity multiplier"} schema/fraction)]))
-
-(def style-keys
-  "Option keys of [[style-entries]], merged over a cell chart's theme style."
-  [:cell :cell-scale :stroke-color :stroke-width :alpha])
 
 ;; lattice cells
 
@@ -167,14 +145,14 @@
 
   Parameters:
 
-  - `options` (map): the chart's options, `:shape` read.
+  - `options` (map): the chart's options, `:aspect` (the binning space's height / width) read.
   - `x-span`, `y-span` (doubles): the data spans, positive.
   - `env` (map): `:aspect` - the plot's aspect; `:panel-size` - a delay of the expected panel `[w h]` (see [[cljplot2.layout.plot-grid/estimated-panel-size]]).
 
-  Returns `:shape` when given; with `:aspect :iso` - `y-span / x-span` (equal pixels per data unit); else the expected panel height over width; 1.0 without a panel size."
-  ^double [{:keys [shape]} ^double x-span ^double y-span {:keys [aspect panel-size]}]
+  Returns the chart's `:aspect` when given; with the plot's `:aspect :iso` - `y-span / x-span` (equal pixels per data unit); else the expected panel height over width; 1.0 without a panel size."
+  ^double [{chart-aspect :aspect} ^double x-span ^double y-span {:keys [aspect panel-size]}]
   (cond
-    shape (double shape)
+    chart-aspect (double chart-aspect)
     (= :iso aspect) (m// y-span x-span)
     panel-size (let [[^double w ^double h] (force panel-size)] (m// h w))
     :else 1.0))
@@ -247,7 +225,7 @@
   Parameters:
 
   - `panel-points` (map): panel -> its points `[[x y] ...]`, finite numbers.
-  - `options` (map): `:cell` - the cell type; `:bins`, `:binwidth` - the cell size (see [[size-methods]]); `:shape` - the shape factor.
+  - `options` (map): `:cell` - the cell type; `:bins`, `:binwidth` - the cell size (see [[size-methods]]); `:aspect` - the shape factor.
   - `env` (map): the compute environment for [[shape-factor]].
 
   Returns `{:panels {panel [{:corners [[x y] ...] :count n} ...]} :area a :extent {:x [lo hi] :y [lo hi]}}`: the occupied cells only, corners in the points' units; `a` - a cell's area in those units; `:extent` - the cells' bounding box widened to the shape factor's proportions (the plot extents keeping cells regular). Without points `{:panels {} :area 0.0}`."
@@ -276,67 +254,16 @@
 
 ;; drawing
 
-(defn shrunk
-  "Gives the cell corners shrunk toward their mean.
+(defn resolution
+  "Gives the smallest positive gap between distinct numbers.
 
   Parameters:
 
-  - `corners` (sequence of `[x y]`): the corners, not empty.
-  - `k` (double): the scale factor, 1 - unchanged.
+  - `vs` (sequence of numbers): the values.
 
-  Returns the corners scaled by `k` about their mean (`corners` itself for `k` 1)."
-  [corners ^double k]
-  (if (m/one? k)
-    corners
-    (let [n (count corners)
-          cx (m// (v/sum (map first corners)) n)
-          cy (m// (v/sum (map second corners)) n)]
-      (mapv (fn [[^double x ^double y]] [(m/+ cx (m/* k (m/- x cx))) (m/+ cy (m/* k (m/- y cy)))]) corners))))
-
-(defn call-with-cell-rendering
-  "Calls a drawing function with rendering suited to a chart's cells.
-
-  Abutting cells are filled without antialiasing, so neighbours share their edges - no seams of the panel between them; spaced cells keep smooth edges.
-
-  Parameters:
-
-  - `canvas`: the clojure2d canvas.
-  - `style` (map): the chart's style, `:cell-scale` read (default 1; at least 1 - abutting).
-  - `f` (function): of the canvas to draw on.
-
-  Returns the result of `f`.
-
-  See also [[draw-cell!]]."
-  [canvas {:keys [cell-scale]} f]
-  (if (m/>= (double (or cell-scale 1.0)) 1.0)
-    ;; antialiasing off: cells side by side share their edges exactly (no seams of the background between them)
-    (c2d/with-isolated-canvas [unaliased canvas]
-      (c2d/set-rendering-hint unaliased :antialiasing :off)
-      (f unaliased))
-    (f canvas)))
-
-(defn draw-cell!
-  "Draws one cell polygon through a projection.
-
-  Parameters:
-
-  - `canvas`: the clojure2d canvas.
-  - `to-pixel` (function): of a corner `[a b]` (any 2d units) giving its pixel `Vec2`.
-  - `corners` (sequence of `[a b]`): the cell's corners, shrunk by `:cell-scale` (see [[shrunk]]).
-  - `fill`: the fill colour.
-  - `style` (map): `:cell-scale` (default 1), `:alpha` - fill alpha multiplier (none when `nil`), `:stroke-color` - a colour, `:none` or `:darker` (see [[cljplot2.graphics.draw/outline-color]]), `:stroke-width` - outline width in pixels (0 - none).
-
-  Returns `nil`. A corner the projection can't place (`##NaN`) skips the cell.
-
-  See also [[call-with-cell-rendering]]."
-  [canvas to-pixel corners fill {:keys [cell-scale stroke-color stroke-width alpha]}]
-  (let [points (mapv (fn [p] (to-pixel p)) (shrunk corners (or cell-scale 1.0)))]
-    (when (every? data/finite-point? points)
-      (let [cell-fill (if alpha (draw/faded fill alpha) fill)
-            stroke (draw/outline-color stroke-color cell-fill)]
-        (c2d/set-color canvas cell-fill)
-        (c2d/path canvas points true false)
-        (when (and (not (theme/none? stroke)) (m/pos? (double stroke-width)))
-          (c2d/set-stroke-custom canvas {:size stroke-width})
-          (c2d/set-color canvas stroke)
-          (c2d/path canvas points true true))))))
+  Returns the smallest gap between consecutive distinct values; 1.0 for fewer than two distinct values."
+  ^double [vs]
+  (let [ds (sort (distinct (map double vs)))]
+    (if (m/< (count ds) 2)
+      1.0
+      (v/mn (map (fn [^double a ^double b] (m/- b a)) ds (rest ds))))))

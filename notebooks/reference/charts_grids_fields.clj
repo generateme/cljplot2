@@ -103,8 +103,8 @@
                                    :legend false}
                                   {:data faithful
                                    :mapping {:x :eruptions :y :waiting}
-                                   :charts [(chart/bin2d {:binwidth 0.25 :shape 0.5})]
-                                   :labels {:title ":binwidth 0.25 :shape 0.5"}
+                                   :charts [(chart/bin2d {:binwidth 0.25 :aspect 0.5})]
+                                   :labels {:title ":binwidth 0.25 :aspect 0.5"}
                                    :legend false}
                                   {:data faithful
                                    :mapping {:x :eruptions :y :waiting}
@@ -179,8 +179,8 @@
 
 (plot/render-image (plot/arrange [{:data faithful
                                    :mapping {:x :eruptions :y :waiting}
-                                   :charts [(chart/field {:alpha 0.5}) (chart/scatter {:size 3 :color :black})]
-                                   :labels {:title ":alpha 0.5, points over it"}
+                                   :charts [(chart/field {:alpha-factor 0.5}) (chart/scatter {:size 3 :color :black})]
+                                   :labels {:title ":alpha-factor 0.5, points over it"}
                                    :legend false}
                                   {:charts [(chart/field {:domain {:x [-2 2] :y [-2 2]}
                                                           :pixel-color (fn [[x y]]
@@ -238,8 +238,8 @@
                                    :legend false}
                                   {:data faithful
                                    :mapping {:x :eruptions :y :waiting}
-                                   :charts [(chart/field {:binned? true})]
-                                   :labels {:title ":binned? true"}
+                                   :charts [(chart/field {:binned true})]
+                                   :labels {:title ":binned true"}
                                    :legend false}
                                   {:data faithful
                                    :mapping {:x :eruptions :y :waiting}
@@ -282,8 +282,8 @@
                                    :labels {:title ":levels vector, :labels true"}}
                                   {:data volcano
                                    :mapping {:x :column :y :row :value :height}
-                                   :charts [(chart/contour {:fill true :levels 8 :alpha 0.8})]
-                                   :labels {:title ":fill true :levels 8"}}]
+                                   :charts [(chart/contour {:filled true :levels 8 :alpha-factor 0.8})]
+                                   :labels {:title ":filled true :levels 8"}}]
                                  {:columns 2 :widths [1 1.25]})
                    {:width 1000 :height 380})
 
@@ -410,8 +410,8 @@
                                    :charts [(chart/pairwise {:method :me :glyph :shade-number})] :labels {:title "signed :me"}}
                                   {:data iris :mapping {:x :sepal-length :y :petal-length}
                                    :charts [(chart/pairwise {:method (fn [xs ys] (- (apply max xs) (apply max ys)))
-                                                             :label "max diff" :format #(format "%+.1f cm" %)})]
-                                   :labels {:title "function, :format"}}
+                                                             :label "max diff" :value-format #(format "%+.1f cm" %)})]
+                                   :labels {:title "function, :value-format"}}
                                   {:data iris :mapping {:x :sepal-length :y :petal-length}
                                    :charts [(chart/pairwise {:method :rmse :glyph :shade-number :color [120 160 90]})]
                                    :labels {:title ":color"}}]

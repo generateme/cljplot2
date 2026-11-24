@@ -71,7 +71,7 @@
   (plot/arrange (vec (for [arcs [false true]]
                        {:data months :mapping {:x :month :y :value} :coord {:kind :polar :arcs arcs}
                         :scales {:x {:domain [0 12] :ticks (vec (range 12))}}
-                        :charts [(chart/line {:width 2}) (chart/scatter {:size 7})]
+                        :charts [(chart/line {:line-width 2}) (chart/scatter {:size 7})]
                         :labels {:title (if arcs "Line with :arcs true" "Line with chords (default)") :x nil :y nil}}))
                 {:columns 2}))
 

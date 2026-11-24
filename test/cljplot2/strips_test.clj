@@ -4,6 +4,8 @@
             [fastmath.random :as r]
             [fastmath.stats :as stats]
             [wadogo.scale :as s]
+            [cljplot2.chart.strip :as strip-chart]
+            [cljplot2.chart.common :as common]
             [cljplot2.test-util :refer [error error-ins]]
             [cljplot2.chart :as chart]
             [cljplot2.chart.box :as box]
@@ -34,7 +36,7 @@
 
 (defn- placement-of [b chart-options place]
   (let [{:keys [w h]} (panel-box b)]
-    (strip/placement {:w w :h h} (:finalized-scales b) chart-options place)))
+    (strip-chart/placement {:w w :h h} (:finalized-scales b) chart-options place)))
 
 (deftest placement-test
   (testing "band: centre at the level, cross toward higher :y, span = width x bandwidth"
@@ -110,7 +112,7 @@
 
 (deftest box-test
   (let [sample [1 2 3 4 5 6 7 8 9 40 -30]
-        st (box/box-stats sample)
+        st (strip/box-stats sample)
         [q1 m q3] (stats/percentiles sample [25.0 50.0 75.0])]
     (is (= [q1 m q3] [(:q1 st) (:median st) (:q3 st)]))
     (is (= (vec (take 2 (stats/adjacent-values sample q1 q3 m))) [(:lav st) (:uav st)]))
@@ -122,9 +124,9 @@
       (is (== 200 (max-x {})))
       (is (< (double (max-x {:outliers false})) 200))))
   (testing "varwidth factors are sqrt(n / max n)"
-    (let [f (box/width-factors [{:n 4} {:n 16}] true)]
+    (let [f (strip/varwidth-factors [{:n 4} {:n 16}] true)]
       (is (= [0.5 1.0] [(f {:n 4}) (f {:n 16})]))
-      (is (= 1.0 ((box/width-factors [{:n 4} {:n 16}] false) {:n 4}))))))
+      (is (= 1.0 ((strip/varwidth-factors [{:n 4} {:n 16}] false) {:n 4}))))))
 
 (defn- area [{:keys [xs widths]}]
   (reduce + (map (fn [[x0 x1] [w0 w1]] (* 0.5 (- (double x1) (double x0)) (+ (double w0) (double w1))))
@@ -238,8 +240,8 @@
   (testing "F5: band placement needs a bands :y scale, {:at v} a numeric one"
     (let [b (built {:data rows :mapping {:x :v} :charts [(chart/histogram)]})
           {:keys [w h]} (panel-box b)]
-      (is (= :place (:key (error #(strip/placement {:w w :h h} (:finalized-scales b) {} :band))))))
-    (is (= :extents (:key (error #(built {:data rows :mapping {:x :v :y :lvl} :charts [(chart/box) (chart/rug {:mapping {:y nil} :place {:at 1}})]}))))
+      (is (= :place (:key (error #(strip-chart/placement {:w w :h h} (:finalized-scales b) {} :band))))))
+    (is (= :mapping (:key (error #(built {:data rows :mapping {:x :v :y :lvl} :charts [(chart/box) (chart/rug {:mapping {:y nil} :place {:at 1}})]}))))
         "levels and {:at v} mixed: the extents stage rejects it first")
     (is (= :place (:key (error #(plot/render-image {:data rows :mapping {:x :v} :scales {:y {:domain ["a" "b"]}}
                                                     :charts [(chart/rug {:place {:at 1}})]} options))))

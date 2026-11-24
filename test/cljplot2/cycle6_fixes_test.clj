@@ -33,7 +33,7 @@
     (doseq [flip [false true]
             :let [b (built {:data rows :mapping {:x :v :y :lvl :color :g} :flip flip :charts [(chart/box)]})
                   {:keys [w h]} (grid/find-content-box (:grid b) (:layout b) #(= :panel (:kind %)))
-                  pl (cljplot2.data.strip/placement {:w w :h h} (:finalized-scales b) {} :band)
+                  pl (cljplot2.chart.strip/placement {:w w :h h} (:finalized-scales b) {} :band)
                   at (fn [g] (let [^fastmath.vector.Vec2 v ((:point pl) 10 "a" (cljplot2.data.strip/in-slot (slot-of b g) 0.0))]
                                (if flip (.x v) (.y v))))]]
       (is (< (double (at "p")) (double (at "q"))) (str "flip " flip))))
@@ -87,7 +87,7 @@
 (deftest zero-line-test
   (testing "mirror density: the zero line is drawn over the curves' tails"
     (is (< 0.99 (zero-row-black-share {:data rows :mapping {:x :v :color :g} :theme plain
-                                        :charts [(chart/density {:position :mirror :width 3})]}))))
+                                        :charts [(chart/density {:position :mirror :line-width 3})]}))))
   (testing "mirror histogram: a clean zero line on top"
     (is (< 0.99 (zero-row-black-share {:data rows :mapping {:x :v :color :g} :theme plain
                                         :charts [(chart/histogram {:position :mirror :bins 40})]})))

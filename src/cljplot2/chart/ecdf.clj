@@ -2,11 +2,11 @@
   "ECDF: the empirical cumulative distribution of `:x` per panel and group, drawn as a step line from 0 to 1.
 
   Uses fastmath's `:real-discrete-distribution` `cdf`; the value at the largest data value is exactly 1.0.
-  Options (style defaults from theme `[:chart :ecdf]`): `:color`, `:width`, `:dash`,
+  Options (style defaults from theme `[:chart :ecdf]`): `:color`, `:line-width`, `:dash`,
   `:padding {:x [lo hi] :y [lo hi]}` (default 5% each side).
   Groups (see [[cljplot2.data.group]]) come from ordinal aesthetics (`:color` colors the line) and `:group`.
 
-  Functions: [[steps]] - the step-line vertices of a sample; [[compute]], [[draw]], [[legend]] - the chart contract; [[schemas]] - its style, options and mapping."
+  Functions: [[steps]] - the step-line vertices of a sample; [[compute]], [[draw]] - the chart contract (key glyph [[cljplot2.chart.legend/line-legend]]); [[schemas]] - its style, options and mapping."
   (:require [fastmath.core :as m]
             [fastmath.random :as r]
             [cljplot2.data.rows :as data]
@@ -75,8 +75,8 @@
         {:keys [panels dropped]} (group/split groups mapping env)
         x-of (data/row-accessor :x (:x mapping))
         ;; per group: valid x values and the count of invalid ones
-        xs (update-vals panels (fn [gs] (mapv #(data/finite-numbers (map x-of (:rows %))) gs)))
-        row-count (long (reduce m/long-add (map count (mapcat #(map :rows %) (vals panels)))))
+        xs (group/finite-values panels x-of)
+        row-count (group/row-count panels)
         x-dropped (long (reduce m/long-add (map :dropped (mapcat identity (vals xs)))))
         data (into {} (map (fn [[panel gs]]
                              [panel {:steps (vec (keep (fn [[g {:keys [values]}]]
@@ -86,19 +86,19 @@
                                      :style st}]))
                    panels)]
     (when (and (m/pos? row-count) (m/== row-count x-dropped))
-      (schema/fail! data/no-valid-values {:key :mapping :value :x :rows row-count}))
-    {:data data
-     :extents (merge-with merge (group/aesthetic-extents panels (:plot-scales env))
-                          (into {} (keep (fn [[panel {panel-steps :steps}]]
-                                           (when (seq panel-steps)
-                                             [panel {:x (data/extent :x (mapcat :x panel-steps))
-                                                     :y {:kind :numeric :min 0.0 :max 1.0}}])))
-                                data))
-     :padding (merge data/default-padding (:padding options))
-     :padding-explicit (data/explicit-padding {} options)
-     :na (group/na-dims panels)
-     :dropped (assoc dropped :x x-dropped)
-     :axis-titles {:y "Empirical CDF"}}))
+      (data/fail-mapping! data/no-valid-values :x {:rows row-count}))
+    (merge
+     (data/padding-stats data/default-padding {} options)
+     {:data data
+      :extents (merge-with merge (group/aesthetic-extents panels (:plot-scales env))
+                           (into {} (keep (fn [[panel {panel-steps :steps}]]
+                                            (when (seq panel-steps)
+                                              [panel {:x (data/extent :x (mapcat :x panel-steps))
+                                                      :y {:kind :numeric :min 0.0 :max 1.0}}])))
+                                 data))
+      :na (group/na-dims panels)
+      :dropped (assoc dropped :x x-dropped)
+      :axis-titles {:y "Empirical CDF"}})))
 
 (defn draw
   "Draws the step lines of one panel.
@@ -122,17 +122,3 @@
         (let [points (mapv projection x y)]
           (polyline/draw! canvas (mapv #(.x ^Vec2 %) points) (mapv #(.y ^Vec2 %) points) st))))))
 
-(defn legend
-  "Draws the ECDF's key glyph: a horizontal line through the middle of a legend key.
-
-  Parameters:
-
-  - `chart` (map): the chart value.
-  - `attributes` (map): the key's mapped style attributes - `:color` and `:dash` are used.
-  - `canvas`: the clojure2d canvas.
-  - `box` (map): the key box in pixels.
-  - `env` (map): the legend environment - `:theme`.
-
-  See also [[cljplot2.graphics.polyline/key-glyph!]]."
-  [chart attributes canvas box env]
-  (polyline/key-glyph! canvas box (merge (theme/resolved-style (:theme env) chart) (select-keys attributes [:color :dash])) :none))

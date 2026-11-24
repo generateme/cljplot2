@@ -10,8 +10,9 @@
             [cljplot2.chart.cloud :as cloud]
             [cljplot2.content.label :as label]
             [cljplot2.core :as plot]
+            [cljplot2.data.rows :as rows]
             [cljplot2.data.space3d :as space]
-            [cljplot2.graphics.space3d :as space-draw]
+            [cljplot2.content.space3d :as space-draw]
             [cljplot2.test-util :refer [error]]
             [cljplot2.theme]
             [cljplot2.data.shingle])
@@ -44,7 +45,7 @@
       (is (= [-0.5 -1.0 -0.5] (vec (n [0 0 690]))))
       (is (= [0.5 1.0 0.5] (vec (n [10 1 40]))))))
   (testing "1.1 a single value widens"
-    (is (= [4.5 5.5] (space/widen [5 5])))))
+    (is (= [4.5 5.5] (rows/widened-range [5 5])))))
 
 (deftest fit-test
   (testing "1.2 the projected box fits in the panel less the margin, at the scale of its largest turned projection"
@@ -77,7 +78,7 @@
 
 (deftest depth-and-shading-test
   (testing "1.3 the nearer of two overlapping squares wins, whatever the list order"
-    (let [sq (fn [x0 color depth] {:kind :polygon :depth depth :fill color :stroke :none
+    (let [sq (fn [x0 color depth] {:kind :polygon :depth depth :fill color :stroke-color :none
                                    :points [(v/vec2 x0 10) (v/vec2 (+ x0 30) 10) (v/vec2 (+ x0 30) 40) (v/vec2 x0 40)]})
           render (fn [prims] (let [cv (c2d/canvas 60 50)] (c2d/with-canvas [c cv] (space-draw/draw-primitives! c prims)) (c2d/get-image cv)))
           red-near [(sq 5 [255 0 0] 1.0) (sq 20 [0 0 255] 2.0)]]

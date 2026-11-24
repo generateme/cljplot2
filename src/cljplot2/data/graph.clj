@@ -4,7 +4,7 @@
   Node positions, arcs, ribbons and bands are plain rows drawn by ordinary charts (see [[cljplot2.graphs/network]],
   [[cljplot2.graphs/chord]], [[cljplot2.graphs/arc]], [[cljplot2.graphs/sankey]], [[cljplot2.graphs/alluvial]]).
 
-  A graph is `{:nodes [node ..] :edges [edge ..] :loops [edge ..] :directed? b :dropped n}`:
+  A graph is `{:nodes [node ..] :edges [edge ..] :loops [edge ..] :directed b :dropped n}`:
 
   * nodes - the `:nodes` rows (each with an `:id`), then the ids seen only in edges, in first-appearance order; every
     node is its row (or `{}`) with `:id`, `:degree`, `:in`, `:out` (undirected graphs: `:in` = `:out` = `:degree`)
@@ -42,7 +42,7 @@
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
-(def layouts
+(def ^:private layouts
   "Node placements of [[layout]]: `:force` (Fruchterman-Reingold), `:circle`, `:random`."
   #{:force :circle :random})
 
@@ -60,7 +60,7 @@
     (schema/nilable :nodes {:description "node rows (each with an id), placed first in their order; ids seen only in edges follow"}
                     [:sequential map?])
     (schema/optional :id {:description "accessor of a node row's id" :default :id} schema/accessor)
-    (schema/nilable :directed? {:description "a directed graph: degrees split into :in and :out" :default false}
+    (schema/nilable :directed {:description "a directed graph: degrees split into :in and :out" :default false}
                     schema/bool)]))
 
 (def graph-options
@@ -108,16 +108,16 @@
     - `:value` - accessor of an edge's weight, a finite number >= 0, `nil` read as 1 (default `:value`).
     - `:nodes` - node rows, placed first in their order; ids seen only in edges follow in first-appearance order.
     - `:id` - accessor of a node row's id (default `:id`).
-    - `:directed?` - degrees split into `:in` and `:out` (default `false`; `nil` - the default).
+    - `:directed` - degrees split into `:in` and `:out` (default `false`; `nil` - the default).
 
-  Returns `{:nodes :edges :loops :directed? :dropped}` (`:directed?` - `true` or `false`): self-loops go to `:loops`, edges with a `nil` end are counted in `:dropped`.
+  Returns `{:nodes :edges :loops :directed :dropped}` (`:directed` - `true` or `false`): self-loops go to `:loops`, edges with a `nil` end are counted in `:dropped`.
 
   Throws `ex-info {:key k}` for an invalid option `k` (checked first, see [[graph-options]]), `{:key :edges}` for edges that aren't rows, `{:key :value}` for an invalid weight, `{:key :nodes}` for a repeated or `nil` node id.
 
   See also [[layout]], [[adjacency->edges]]."
   {:cljplot2/api true :cljplot2/options graph-options}
   ([edges] (graph edges {}))
-  ([edges {:keys [from to value nodes id directed?] :or {from :from to :to value :value id :id} :as options}]
+  ([edges {:keys [from to value nodes id] directed? :directed :or {from :from to :to value :value id :id} :as options}]
    (schema/check-options! graph-options options)
    (let [from-of (data/row-accessor :from from)
          to-of (data/row-accessor :to to)
@@ -138,13 +138,13 @@
                    ids)
       :edges (vec links)
       :loops (vec loops)
-      :directed? (true? directed?)
+      :directed (true? directed?)
       :dropped (m/- (count all) (count kept))})))
 
 (def adjacency->edges-options
   "Options schema of [[adjacency->edges]]."
   [:map {:closed true}
-   (schema/optional :directed? {:description "read the whole matrix (false - only the upper triangle and the diagonal)"
+   (schema/optional :whole-matrix {:description "read the whole matrix (false - only the upper triangle and the diagonal)"
                                 :default true}
                     schema/bool)])
 
@@ -155,14 +155,14 @@
 
   - `matrix` (sequence of sequences of numbers): row `i`, column `j` - the weight from node `i` to node `j`.
   - `names` (vector): the row / column names in order.
-  - `options` (map, optional): `:directed?` - read the whole matrix; `false` - only the upper triangle and the diagonal (default `true`).
+  - `options` (map, optional): `:whole-matrix` - read the whole matrix; `false` - only the upper triangle and the diagonal (default `true`).
 
   Returns a vector of `{:from :to :value}`, row by row; a zero, `nil` or non-finite cell is no edge.
 
   Throws `ex-info {:key k}` for an invalid option `k` (checked first, see [[adjacency->edges-options]]), `{:key :matrix}` when the matrix isn't `n x n` for `n` names."
   {:cljplot2/api true :cljplot2/options adjacency->edges-options}
   ([matrix names] (adjacency->edges matrix names {}))
-  ([matrix names {:keys [directed?] :or {directed? true} :as options}]
+  ([matrix names {:keys [whole-matrix] :or {whole-matrix true} :as options}]
    (schema/check-options! adjacency->edges-options options)
    (let [n (count names)
          rows (vec matrix)]
@@ -170,9 +170,9 @@
        (schema/fail! "Adjacency matrix should be n x n for n names." {:key :matrix :value [(count rows) n]}))
      (vec (for [^long i (range n)
                 ^long j (range n)
-                :when (or directed? (m/<= i j))
+                :when (or whole-matrix (m/<= i j))
                 :let [v (nth (rows i) j)]
-                :when (and (number? v) (m/valid-double? (double v)) (not (m/zero? (double v))))]
+                :when (and (schema/finite? v) (not (m/zero? (double v))))]
             {:from (names i) :to (names j) :value v})))))
 
 ;; layouts - positions in double arrays, node index order
@@ -463,7 +463,7 @@
 (defn layout
   "Places the nodes of a graph in the unit square.
 
-  A force layout places every connected component on its own and packs them in rows, largest first (see [[packed-force-positions]]); it is scaled into the unit square keeping its proportions.
+  A force layout places every connected component on its own and packs them in rows, largest first (see `packed-force-positions`); it is scaled into the unit square keeping its proportions.
 
   Parameters:
 
@@ -507,11 +507,11 @@
 
   Parameters:
 
-  - `g` (map): a graph of [[graph]] - `:edges`, `:directed?`.
+  - `g` (map): a graph of [[graph]] - `:edges`, `:directed`.
   - `ids` (vector): node ids, the matrix's row and column order.
 
   Returns `n x n` vectors of doubles: row - the source, column - the target, each the summed `:value` of the edges between them; an undirected graph's edge counts both ways. Loops aren't edges."
-  [{:keys [edges directed?]} ids]
+  [{:keys [edges] directed? :directed} ids]
   (let [n (count ids)
         index (zipmap ids (range))
         add (fn [w i j value] (update-in w [i j] m/+ value))]
@@ -570,7 +570,7 @@
   Parameters:
 
   - `g` (map): a graph of [[graph]].
-  - `order`: `nil` - the input order; a sequence of ids - those first (a repeated id once), the rest after them in input order; `:cluster` - nodes linked to the same others side by side (see [[cluster-order]]).
+  - `order`: `nil` - the input order; a sequence of ids - those first (a repeated id once), the rest after them in input order; `:cluster` - nodes linked to the same others side by side (see `cluster-order`).
 
   Returns a vector of every node id.
 
@@ -676,7 +676,7 @@
         (into target)
         (into (through-centre (peek target) (first source))))))
 
-(def order-entry
+(def ^:private order-entry
   "Option entry `:order` of the ordered layouts (see [[node-order]])."
   (schema/nilable :order {:description "node order: a sequence of ids (those first, the rest after them in input order) or :cluster (nodes linked to the same others side by side)"
                           :cljplot2/default-doc "the nodes' input order"}
@@ -688,9 +688,9 @@
   (schema/in-fragment
    :graph/chord-layout
    [order-entry
-    (schema/optional :pad {:description "gap after every ring sector in degrees (must leave room for the sectors)" :default 2.0}
+    (schema/optional :gap-angle {:description "gap after every ring sector in degrees (must leave room for the sectors)" :default 2.0}
                      schema/finite-non-neg)
-    (schema/optional :inner {:description "inner radius of the ring, where the ribbons end (the outer one is 1)" :default 0.92}
+    (schema/optional :inner-radius {:description "inner radius of the ring, where the ribbons end (the outer one is 1)" :default 0.92}
                      schema/open-fraction)
     (schema/nilable :min-value {:description "flows of a pair (summed) below it are left out and counted in :dropped (nil - none)"}
                     schema/finite-non-neg)]))
@@ -702,34 +702,34 @@
 (defn chord-layout
   "Lays out a chord diagram of a graph as data in the unit circle.
 
-  A ring sector per node, its angle proportional to the node's flow (undirected: its edges' weights; directed: out plus in), clockwise from the top in node order; a ribbon per linked pair (undirected) or edge (directed) joins its ends' arcs through the centre - d3 `chord` / `chordDirected` (see [[chord-angles]]); an undirected ribbon's `:from` is its end earlier in the ring.
+  A ring sector per node, its angle proportional to the node's flow (undirected: its edges' weights; directed: out plus in), clockwise from the top in node order; a ribbon per linked pair (undirected) or edge (directed) joins its ends' arcs through the centre - d3 `chord` / `chordDirected` (see `chord-angles`); an undirected ribbon's `:from` is its end earlier in the ring.
 
   Parameters:
 
   - `g` (map): a graph of [[graph]].
   - `options` (map, optional):
     - `:order` - the node order (see [[node-order]]; default the input order).
-    - `:pad` - gap after every sector in degrees (default 2).
-    - `:inner` - the ring's inner radius, where the ribbons end (default 0.92; the outer one is 1).
+    - `:gap-angle` - gap after every sector in degrees (default 2).
+    - `:inner-radius` - the ring's inner radius, where the ribbons end (default 0.92; the outer one is 1).
     - `:min-value` - a summed weight below it is left out: of an ordered pair (directed; repeated edges summed) or of a pair both ways (undirected); its edges are counted in `:dropped` (default `nil` - none).
 
   Returns `{:groups [{:id :start :end :value}] :arcs [{:group :x :y}] :ribbons [{:ribbon :from :to :value :x :y}] :dropped n}` - angles in degrees; a ribbon's `:value` is its source end's weight; arc and ribbon rows are polygon points in order.
 
-  Throws `ex-info {:key k}` for an invalid option `k` (checked first, see [[chord-layout-options]]), `{:key :pad}` for a `:pad` leaving no room for the sectors, `{:key :order}` for a bad order.
+  Throws `ex-info {:key k}` for an invalid option `k` (checked first, see [[chord-layout-options]]), `{:key :gap-angle}` for a `:gap-angle` leaving no room for the sectors, `{:key :order}` for a bad order.
 
   See also [[layout]], [[arc-layout]]."
   {:cljplot2/api true :cljplot2/options chord-layout-options}
   ([g] (chord-layout g {}))
-  ([{:keys [edges directed?] :as g} {:keys [order ^double pad ^double inner min-value] :or {pad 2.0 inner 0.92} :as options}]
+  ([{:keys [edges] directed? :directed :as g} {:keys [order ^double gap-angle min-value] ^double inner :inner-radius :or {gap-angle 2.0 inner 0.92} :as options}]
    (schema/check-options! chord-layout-options options)
-   (when-not (m/< (m/* pad (count (:nodes g))) 360.0)
-     (schema/fail! "Chord :pad leaves no room for the arcs." {:key :pad :value pad}))
+   (when-not (m/< (m/* gap-angle (count (:nodes g))) 360.0)
+     (schema/fail! "Chord :gap-angle leaves no room for the arcs." {:key :gap-angle :value gap-angle}))
    (let [ids (mapv :id (:nodes g))
          index (zipmap ids (range))
          summed (weight-matrix g ids)
          weak? (fn [i j] (and min-value (m/< (weight-at summed i j) (double min-value))))
          w (mapv (fn [i] (mapv (fn [j] (if (weak? i j) 0.0 (weight-at summed i j))) (range (count ids)))) (range (count ids)))
-         [groups ends] (chord-angles w (mapv index (node-order g order)) directed? (m/radians pad))]
+         [groups ends] (chord-angles w (mapv index (node-order g order)) directed? (m/radians gap-angle))]
      {:groups (vec (for [i (range (count ids))
                          :let [[^double a0 ^double a1 value] (groups i)]]
                      {:id (ids i) :start (m/degrees a0) :end (m/degrees a1) :value value}))
@@ -787,7 +787,7 @@
 
 ;; sankey (d3-sankey port; vertical positions computed top-down as d3, returned y-up)
 
-(def sankey-aligns
+(def ^:private sankey-aligns
   "Column alignments of [[sankey-layout]]: `:justify`, `:left`, `:right`, `:center`."
   #{:justify :left :right :center})
 
@@ -804,14 +804,15 @@
                     schema/accessor)
     (schema/optional :node-width {:description "node width, a fraction of the unit square's width" :default 0.03}
                      schema/open-fraction)
-    (schema/optional :pad {:description "least gap between the nodes of a column, a fraction of the unit square's height"
+    (schema/optional :gap {:description "least gap between the nodes of a column, a fraction of the unit square's height"
                            :default 0.02}
                      schema/finite-non-neg)
     (schema/optional :iterations {:description "relaxation sweeps moving the nodes towards their links' ends (0 - spread in the start order)"
                                   :default 6}
                      [:int {:min 0}])
-    (schema/nilable :node-sort {:description "nil - relaxation reorders a column, :input - the input order kept"}
-                    [:enum :input])]))
+    (schema/nilable :order {:description "node order in a column: :relaxed - relaxation reorders it, :input - the input order kept"
+                            :default :relaxed}
+                    [:enum :relaxed :input])]))
 
 (def sankey-layout-options
   "Options schema of [[sankey-layout]]."
@@ -1041,36 +1042,35 @@
 (defn sankey-layout
   "Lays out a sankey diagram of a graph as data in the unit square (a d3-sankey port).
 
-  Edges are directed flows whatever `:directed?`. Nodes stand in columns (left to right) as rectangles `:node-width` wide, their heights proportional to their value (the larger of the flows in and out, one scale for all), at least `:pad` apart in a column; every edge is a band from its source's right side to its target's left side, as thick as its value on that scale, stacked at both nodes in the order of the nodes at their other ends.
+  Edges are directed flows whatever `:directed`. Nodes stand in columns (left to right) as rectangles `:node-width` wide, their heights proportional to their value (the larger of the flows in and out, one scale for all), at least `:gap` apart in a column; every edge is a band from its source's right side to its target's left side, as thick as its value on that scale, stacked at both nodes in the order of the nodes at their other ends.
 
   Parameters:
 
   - `g` (map): a graph of [[graph]].
-  - `opts` (map, optional):
+  - `options` (map, optional):
     - `:align` - the column of a node: `:justify` (default; the longest path from a source, sinks in the last column), `:left` (sinks where their path ends), `:right` (by the longest path to a sink), `:center`.
     - `:layer` - accessor of the node rows giving the column (integers >= 0, every edge to a later one; wins over `:align`).
     - `:node-width` - node width, a fraction of the square's width (default 0.03).
-    - `:pad` - least gap between the nodes of a column, a fraction of the square's height (default 0.02).
+    - `:gap` - least gap between the nodes of a column, a fraction of the square's height (default 0.02).
     - `:iterations` - relaxation sweeps moving nodes towards their links' ends (default 6; 0 - spread in the start order).
-    - `:node-sort` - `nil` (relaxation reorders a column, default) or `:input` (the input order kept).
+    - `:order` - `:relaxed` (relaxation reorders a column, default) or `:input` (the input order kept).
 
-  Returns `{:nodes [node + :layer :x0 :x1 :y0 :y1 :value] :links [edge + :link :sy :ty :width] :rects [{:rect :node :x :y}] :bands [edge + :link :x :y] :dropped {:edges n :nodes n}}`:
+  Returns `{:nodes [node + :layer :x0 :x1 :y0 :y1 :value] :links [edge + :link :sy :ty :width] :rects [{:rect :node :x :y}] :bands [edge + :link :x :y] :dropped n}`:
   - nodes in column order, top to bottom; `:rect` - the node's index there, `:link` - the edge's index (group keys of the polygons, whatever the ids);
   - `:sy` / `:ty` - the band's top at the source / target (y up); rect and band rows are polygon points;
-  - edges of zero value and self-loops are left out, as are nodes without flow, and counted (`:edges` also counts the graph's `:dropped` - edges with a `nil` end); no flow at all - empty rows.
+  - edges of zero value and self-loops are left out and counted in `:dropped` (with the graph's `:dropped` - edges with a `nil` end), nodes without flow are left out; no flow at all - empty rows.
 
-  Throws `ex-info {:key k}` for an invalid option `k` (checked first, see [[sankey-layout-options]]), `{:key :edges}` for a cycle, `{:key :layer}` for a bad `:layer`, `{:key :pad}` for a `:pad` leaving no room in the fullest column.
+  Throws `ex-info {:key k}` for an invalid option `k` (checked first, see [[sankey-layout-options]]), `{:key :edges}` for a cycle, `{:key :layer}` for a bad `:layer`, `{:key :gap}` for a `:gap` leaving no room in the fullest column.
 
   See also [[alluvial-graph]]."
   {:cljplot2/api true :cljplot2/options sankey-layout-options}
   ([g] (sankey-layout g {}))
-  ([{:keys [nodes edges loops] :as g} opts]
-   (schema/check-options! sankey-layout-options opts)
-   (let [{:keys [align layer ^double node-width ^double pad ^long iterations node-sort]}
-         (merge {:align :justify :node-width 0.03 :pad 0.02 :iterations 6} opts)
+  ([{:keys [nodes edges loops] :as g} options]
+   (schema/check-options! sankey-layout-options options)
+   (let [{:keys [align layer ^double node-width ^long iterations] ^double pad :gap column-order :order}
+         (merge {:align :justify :node-width 0.03 :gap 0.02 :iterations 6 :order :relaxed} options)
          flows (filterv #(m/pos? (double (:value %))) edges)
          used (set (mapcat (juxt :from :to) flows))
-         all-count (count nodes)
          flow-nodes (filterv #(used (:id %)) nodes)
          n (count flow-nodes)
          index (zipmap (map :id flow-nodes) (range))
@@ -1079,7 +1079,7 @@
          ^objects outs (by-end :s)
          ^objects ins (by-end :t)
          ;; the graph's own drops (edges with a nil end), self-loops, zero flows
-         dropped {:edges (m/+ (long (or (:dropped g) 0)) (count loops) (m/- (count edges) (count flows))) :nodes (m/- all-count n)}]
+         dropped (m/+ (long (or (:dropped g) 0)) (count loops) (m/- (count edges) (count flows)))]
      (if (m/zero? n)
        {:nodes [] :links [] :rects [] :bands [] :dropped dropped}
        (let [values (mapv (fn [^long i] (m/max (v/sum (map #(:value (links %)) (aget outs i)))
@@ -1090,7 +1090,7 @@
              column-cells (object-array (map (fn [c] (filterv #(= c (layers %)) (range n))) (range column-count)))
              fullest (long (v/mx (map count column-cells)))
              _ (when (m/>= (m/* (m/long-dec fullest) pad) 1.0)
-                 (schema/fail! "Sankey :pad leaves no room for the nodes of the fullest column." {:key :pad :value pad}))
+                 (schema/fail! "Sankey :gap leaves no room for the nodes of the fullest column." {:key :gap :value pad}))
              ky (v/mn (map (fn [column] (m// (m/- 1.0 (m/* (m/long-dec (count column)) pad)) (v/sum (map values column))))
                            column-cells))
              y0s (double-array n)
@@ -1109,7 +1109,7 @@
                (shift! y0s y1s i (m/* spread (m/long-inc k))))))
          (reorder-links! (range n) link-state links y0s)
          (let [state {:links links :layers layers :y0s y0s :y1s y1s :pad pad :link-state link-state :widths widths}
-               fixed? (= :input node-sort)]
+               fixed? (= :input column-order)]
            (dotimes [i iterations]
              (let [alpha (m/pow 0.99 (double i))
                    beta (m/max (m/- 1.0 alpha) (m// (double (m/long-inc i)) iterations))]
@@ -1169,12 +1169,12 @@
   forwards them)."
   (schema/in-fragment
    :graph/alluvial-graph
-   [[:axes {:description "accessors of the axes, in column order (at least 2)"} [:sequential {:min 2} schema/accessor]]
+   [[:variables {:description "accessors of the categorical variables (one column each), in order (at least 2)"} [:sequential {:min 2} schema/accessor]]
     (schema/nilable :value {:description "accessor of a row's weight, a finite number >= 0 (nil - 1)"
                             :cljplot2/default-doc "1 per row"}
                     schema/accessor)
-    (schema/nilable :fill {:description "accessor of the level the strands are grouped (and coloured) by"
-                           :cljplot2/default-doc "the first axis"}
+    (schema/nilable :strand-color {:description "accessor of the level the strands are grouped (and coloured) by"
+                               :cljplot2/default-doc "the first column"}
                     schema/accessor)]))
 
 (def alluvial-graph-options
@@ -1182,40 +1182,40 @@
   (into [:map {:closed true}] alluvial-graph-entries))
 
 (defn alluvial-graph
-  "Builds the directed graph of an alluvial diagram, for [[sankey-layout]] with `{:layer :layer :node-sort :input}`.
+  "Builds the directed graph of an alluvial diagram, for [[sankey-layout]] with `{:layer :layer :order :input}`.
 
-  A node per level of every axis - `{:id [axis-index level] :name level :layer axis-index}`, levels in natural order (first appearance when they don't compare) - and an edge per pair of levels of consecutive axes and `:fill` level, ordered by fill level, so strands of one level lie together at every node.
+  A node per level of every column - `{:id [column-index level] :name level :layer column-index}`, levels in natural order (first appearance when they don't compare) - and an edge per pair of levels of consecutive variables and `:strand-color` level, ordered by that level, so strands of one level lie together at every node.
 
   Parameters:
 
   - `rows` (sequence of maps): the data rows.
   - `options` (map):
-    - `:axes` - accessors of the axes in column order (at least 2, required).
+    - `:variables` - accessors of the variables in order (at least 2, required).
     - `:value` - accessor of a row's weight, a finite number >= 0, `nil` read as 1 (see [[cljplot2.data.rows/weight]]; default 1 per row).
-    - `:fill` - accessor of the level the strands are grouped and coloured by (default the first axis).
+    - `:strand-color` - accessor of the level the strands are grouped and coloured by (default the first column).
 
-  Returns a graph of [[graph]] (directed); every edge `{:from :to :value :fill}` with the summed weight.
+  Returns a graph of [[graph]] (directed); every edge `{:from :to :value :strand-color}` with the summed weight.
 
-  Throws `ex-info {:key k}` for an invalid option `k` (checked first, see [[alluvial-graph-options]]; fewer than 2 axes), `{:key :axes}` for a row without a value of an axis, `{:key :value}` for an invalid weight."
+  Throws `ex-info {:key k}` for an invalid option `k` (checked first, see [[alluvial-graph-options]]; fewer than 2 variables), `{:key :variables}` for a row without a value of a column, `{:key :value}` for an invalid weight."
   {:cljplot2/api true :cljplot2/options alluvial-graph-options}
-  [rows {:keys [axes value fill] :as options}]
+  [rows {:keys [variables value strand-color] :as options}]
   (schema/check-options! alluvial-graph-options options)
-  (let [axis-of (mapv #(data/row-accessor :axes %) axes)
+  (let [axis-of (mapv #(data/row-accessor :variables %) variables)
         value-of (if value (data/row-accessor :value value) (constantly 1.0))
-        fill-of (data/row-accessor :fill (or fill (first axes)))
+        color-of (data/row-accessor :strand-color (or strand-color (first variables)))
         levels-of (fn [row] (let [ls (mapv #(% row) axis-of)]
                               (when (some nil? ls)
-                                (schema/fail! "Every row needs a value of every alluvial axis." {:key :axes :value row}))
+                                (schema/fail! "Every row needs a value of every alluvial column." {:key :variables :value row}))
                               ls))
-        keyed (mapv (fn [row] [(levels-of row) (fill-of row) (data/weight (value-of row))]) rows)
-        fill-rank (zipmap (level-order (map second keyed)) (range))
-        nodes (vec (for [i (range (count axes)) level (level-order (map #(nth (first %) i) keyed))]
+        keyed (mapv (fn [row] [(levels-of row) (color-of row) (data/weight (value-of row))]) rows)
+        color-rank (zipmap (level-order (map second keyed)) (range))
+        nodes (vec (for [i (range (count variables)) level (level-order (map #(nth (first %) i) keyed))]
                      {:id [i level] :name level :layer i}))
         sums (reduce (fn [acc [ls f weight]]
                        (reduce (fn [summed ^long i] (update summed [i (ls i) (ls (m/long-inc i)) f] (fnil m/+ 0.0) weight))
-                               acc (range (m/long-dec (count axes)))))
+                               acc (range (m/long-dec (count variables)))))
                      {} keyed)
         edges (->> sums
-                   (sort-by (fn [[[i _ _ f] _]] [(fill-rank f) i]))
-                   (mapv (fn [[[^long i a b f] total]] {:from [i a] :to [(m/long-inc i) b] :value total :fill f})))]
-    (graph edges {:nodes nodes :directed? true})))
+                   (sort-by (fn [[[i _ _ f] _]] [(color-rank f) i]))
+                   (mapv (fn [[[^long i a b f] total]] {:from [i a] :to [(m/long-inc i) b] :value total :strand-color f})))]
+    (graph edges {:nodes nodes :directed true})))

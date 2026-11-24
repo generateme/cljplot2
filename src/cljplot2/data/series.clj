@@ -10,6 +10,7 @@
             [fastmath.stats :as stats]
             [fastmath.vector :as v]
             [cljplot2.data.interpolation :as fit]
+            [cljplot2.data.rows :as data]
             [cljplot2.schema :as schema]))
 
 (set! *warn-on-reflection* true)
@@ -27,8 +28,8 @@
   Throws `ex-info {:key :values}` for a non-finite value or fewer than 2 values."
   [values]
   (let [vs (vec values)]
-    (when-not (every? #(and (number? %) (m/valid-double? (double %))) vs)
-      (schema/fail! "A series needs finite numbers." {:key :values :value (first (remove #(and (number? %) (m/valid-double? (double %))) vs))}))
+    (when-not (every? schema/finite? vs)
+      (schema/fail! "A series needs finite numbers." {:key :values :value (first (remove schema/finite? vs))}))
     (when (m/< (count vs) 2)
       (schema/fail! "A series needs at least 2 values." {:key :values :value (count vs)}))
     (mapv double vs)))
@@ -68,15 +69,15 @@
 
 (def acf-rows-entries
   "Option entries of [[acf-rows]] (a shared group, `:series/acf-rows`; [[cljplot2.series-plots/acf]] forwards
-  `:lags` and `:alpha`)."
+  `:lags` and `:level`)."
   (schema/in-fragment
    :series/acf-rows
    [(schema/nilable :lags {:description "the largest lag, from 1 to n - 1 for n values"
                            :cljplot2/default-doc "floor(10 log10 n), at most n - 1 (R acf)"}
                     schema/pos-int)
-    (schema/nilable :alpha {:description "significance level of the band (0.05 - a 95% band)" :default 0.05}
+    (schema/nilable :level {:description "confidence level of the band (0.95 - a 95% band)" :default 0.95}
                     schema/open-fraction)
-    (schema/nilable :partial? {:description "the partial autocorrelation (lags from 1, a constant band) instead of the autocorrelation"
+    (schema/nilable :partial {:description "the partial autocorrelation (lags from 1, a constant band) instead of the autocorrelation"
                                :default false}
                     schema/bool)]))
 
@@ -90,30 +91,31 @@
   Parameters:
 
   - `values` (sequence of numbers): the series (see the namespace doc).
-  - `options` (map, see [[acf-rows-options]]):
+  - `options` (map, optional, see [[acf-rows-options]]):
     - `:lags` - the largest lag, from 1 to n - 1 (default [[default-lags]]).
-    - `:alpha` - the significance level (default 0.05).
-    - `:partial?` - the partial autocorrelation instead (default `false`).
+    - `:level` - the confidence level of the band (default 0.95).
+    - `:partial` - the partial autocorrelation instead (default `false`).
 
-  Returns a vector of rows `{:lag :value :lo :hi :significant?}`: lags 0 to `:lags`, the band `[:lo :hi]` - Bartlett's per lag (fastmath `acf-ci` `:cis`), `:significant?` - the value outside the band (lag 0, always 1, isn't). With `:partial? true`: lags 1 to `:lags`, the constant band `±ci` (`pacf-ci`).
+  Returns a vector of rows `{:lag :value :lo :hi :significant?}`: lags 0 to `:lags`, the band `[:lo :hi]` - Bartlett's per lag (fastmath `acf-ci` `:cis`), `:significant?` - the value outside the band (lag 0, always 1, isn't). With `:partial true`: lags 1 to `:lags`, the constant band `±ci` (`pacf-ci`).
 
   Throws `ex-info {:key :values}` for a non-finite value, fewer than 2 values or a constant series, `{:key :lags}` for lags outside 1 to n - 1; `{:key k}` for an invalid option `k` (checked first)."
   {:cljplot2/api true :cljplot2/options acf-rows-options}
-  [values {:keys [partial?] lags-option :lags alpha-option :alpha :as options}]
-  (schema/check-options! acf-rows-options options)
-  (let [alpha (if (nil? alpha-option) 0.05 alpha-option)
-        vs (finite-series! values)
-        lags (lags! lags-option (count vs))
-        row (fn [^long lag ^double value ^double band]
-              {:lag lag :value value :lo (m/- band) :hi band :significant? (and (m/pos? lag) (m/> (m/abs value) band))})
-        rows (if partial?
-               (let [{:keys [ci pacf]} (stats/pacf-ci vs lags alpha)]
-                 (mapv #(row %1 %2 ci) (range 1 (m/long-inc lags)) (rest pacf)))
-               (let [{:keys [acf cis]} (stats/acf-ci vs lags alpha)]
-                 (mapv row (range (m/long-inc lags)) acf cis)))]
-    (when-not (every? #(m/valid-double? (double (:value %))) rows)
-      (schema/fail! "A constant series has no autocorrelation." {:key :values}))
-    rows))
+  ([values] (acf-rows values {}))
+  ([values {partial? :partial lags-option :lags :as options}]
+   (schema/check-options! acf-rows-options options)
+   (let [alpha (m/- 1.0 (double (data/option options :level 0.95)))
+         vs (finite-series! values)
+         lags (lags! lags-option (count vs))
+         row (fn [^long lag ^double value ^double band]
+               {:lag lag :value value :lo (m/- band) :hi band :significant? (and (m/pos? lag) (m/> (m/abs value) band))})
+         rows (if partial?
+                (let [{:keys [ci pacf]} (stats/pacf-ci vs lags alpha)]
+                  (mapv #(row %1 %2 ci) (range 1 (m/long-inc lags)) (rest pacf)))
+                (let [{:keys [acf cis]} (stats/acf-ci vs lags alpha)]
+                  (mapv row (range (m/long-inc lags)) acf cis)))]
+     (when-not (every? #(m/valid-double? (double (:value %))) rows)
+       (schema/fail! "A constant series has no autocorrelation." {:key :values}))
+     rows)))
 
 (defn lag-rows
   "Pairs every value of a series with the value a lag later (lag plots).
@@ -284,7 +286,7 @@
   Parameters:
 
   - `rows` (sequence of maps): the data.
-  - `options` (map, see [[horizon-rows-options]]):
+  - `options` (map, optional, see [[horizon-rows-options]]):
     - `:x`, `:y` - row keys of the x values (numbers) and y values (finite numbers or `nil`), default `:x` / `:y`.
     - `:series` - row key of the series, one horizon per value in first-appearance order; default one series `nil`.
     - `:bands` - the count of bands per sign (default 2).
@@ -298,31 +300,32 @@
 
   See also [[horizon-bands]]."
   {:cljplot2/api true :cljplot2/options horizon-rows-options}
-  [rows {:keys [x y series ^long bands band-height interpolator steps-per-gap] :or {x :x y :y bands 2 steps-per-gap 10} :as options}]
-  (schema/check-options! horizon-rows-options options)
-  (when-let [bad (first (remove #(number? (get % x)) rows))]
-    (schema/fail! "Horizon x values should be numbers." {:key :x :value (get bad x)}))
-  (when-let [bad (first (remove #(let [v (get % y)] (or (nil? v) (and (number? v) (m/valid-double? (double v))))) rows))]
-    (schema/fail! "Horizon y values should be finite numbers (nil breaks the bands)." {:key :y :value (get bad y)}))
-  (let [groups (if series
-                 (let [order (distinct (map #(get % series) rows))
-                       by (group-by #(get % series) rows)]
-                   (map (fn [s] [s (by s)]) order))
-                 [[nil rows]])
-        top (v/mx (into [0.0] (keep #(when-let [value (get % y)] (m/abs (double value)))) rows))
-        h (double (or band-height (if (m/pos? top) (m// top (double bands)) 1.0)))
-        levels (band-levels bands h)
-        labels (horizon-bands bands)]
-    {:band-height h
-     :rows (vec (for [[s rs] groups
-                      :let [sorted (mapv (fn [r] [(double (get r x)) (some-> (get r y) double)])
-                                         (sort-by #(double (get % x)) rs))
-                            points (with-crossings (if interpolator
-                                                     (interpolated-points sorted (fit/fit-fn interpolator nil)
-                                                                          (long steps-per-gap))
-                                                     sorted)
-                                                   levels)]
-                      band labels
-                      [px py] points]
-                  (cond-> {:x px :y (band-height-of band h py) :band band}
-                    series (assoc :series s))))}))
+  ([rows] (horizon-rows rows {}))
+  ([rows {:keys [x y series ^long bands band-height interpolator steps-per-gap] :or {x :x y :y bands 2 steps-per-gap 10} :as options}]
+   (schema/check-options! horizon-rows-options options)
+   (when-let [bad (first (remove #(number? (get % x)) rows))]
+     (schema/fail! "Horizon x values should be numbers." {:key :x :value (get bad x)}))
+   (when-let [bad (first (remove #(let [v (get % y)] (or (nil? v) (schema/finite? v))) rows))]
+     (schema/fail! "Horizon y values should be finite numbers (nil breaks the bands)." {:key :y :value (get bad y)}))
+   (let [groups (if series
+                  (let [order (distinct (map #(get % series) rows))
+                        by (group-by #(get % series) rows)]
+                    (map (fn [s] [s (by s)]) order))
+                  [[nil rows]])
+         top (v/mx (into [0.0] (keep #(when-let [value (get % y)] (m/abs (double value)))) rows))
+         h (double (or band-height (if (m/pos? top) (m// top (double bands)) 1.0)))
+         levels (band-levels bands h)
+         labels (horizon-bands bands)]
+     {:band-height h
+      :rows (vec (for [[s rs] groups
+                       :let [sorted (mapv (fn [r] [(double (get r x)) (some-> (get r y) double)])
+                                          (sort-by #(double (get % x)) rs))
+                             points (with-crossings (if interpolator
+                                                      (interpolated-points sorted (fit/fit-fn interpolator nil)
+                                                                           (long steps-per-gap))
+                                                      sorted)
+                                                    levels)]
+                       band labels
+                       [px py] points]
+                   (cond-> {:x px :y (band-height-of band h py) :band band}
+                     series (assoc :series s))))})))

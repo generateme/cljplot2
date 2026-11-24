@@ -14,7 +14,7 @@
   ([[face-orientation]], [[visible-edges]]).
 
   [[projector]] fits the projected box (plus a margin for axes) in a panel and gives pixel positions with depths;
-  primitives are drawn far to near by depth (painter's algorithm, see [[cljplot2.graphics.space3d]]). Faces are
+  primitives are drawn far to near by depth (painter's algorithm, see [[cljplot2.content.space3d]]). Faces are
   shaded by Lambert lighting ([[shader]], options [[shading-options]]); [[visible-edges]] - box edges not hidden behind it, [[axis-edges]] - the box
   edge each axis is drawn on.
 
@@ -22,12 +22,13 @@
   defaults applied) and [[frame-overrides]] (the frame options a chart sets explicitly) - live here too, as do the
   shading options [[shading-options]] of the shaded charts.
 
-  Functions: frame - [[frame-options]], [[frame-settings]], [[frame-overrides]], [[box-aspect]], [[axis-index]]; domains - [[data-domain]], [[nice-domain]], [[widen]], [[reverse-domains]], [[in-domain?]]; projection - [[normalizer]], [[view-matrix]], [[rotation]], [[perspective]], [[box-distance]], [[distance-problem]], [[check-distance!]], [[turning-extent]], [[turning-fit]], [[projector]]; box geometry - [[corners]], [[corner-point]], [[faces]], [[edges]], [[face-orientation]], [[far-side]], [[visible-edges]], [[hidden-edges]], [[axis-edges]]; shading - [[shading-options]], [[shader]]."
+  Functions: frame - [[frame-options]], [[frame-settings]], [[frame-overrides]], [[box-aspect]], [[axis-index]]; domains - [[data-domain]], [[nice-domain]], [[reverse-domains]], [[in-domain?]]; projection - [[normalizer]], [[view-matrix]], [[rotation]], [[perspective]], [[box-distance]], [[distance-problem]], [[check-distance!]], [[turning-extent]], [[turning-fit]], [[projector]]; box geometry - [[corners]], [[corner-point]], [[faces]], [[edges]], [[face-orientation]], [[far-side]], [[visible-edges]], [[hidden-edges]], [[axis-edges]]; shading - [[shading-options]], [[shader]]."
   (:require [clojure2d.color :as c]
             [fastmath.core :as m]
             [fastmath.matrix :as mat]
             [fastmath.vector :as v]
             [cljplot2.data.accessor :as accessor]
+            [cljplot2.data.rows :as rows]
             [cljplot2.scale.position :as scale]
             [cljplot2.schema :as schema])
   (:import [fastmath.vector Vec2 Vec3 Vec4]))
@@ -39,7 +40,7 @@
   "The view of a 3D chart without `:view` keys: azimuth 40 and elevation 30 degrees, orthographic."
   {:azimuth 40.0 :elevation 30.0})
 
-(def view-schema
+(def ^:private view-schema
   "`:view {:azimuth deg :elevation deg :distance δ}` (elevation in [-90 90]; δ >= 0, see the namespace doc)."
   [:map {:closed true}
    (schema/optional :azimuth {:description "rotation around the vertical axis, degrees" :default 40.0} schema/finite)
@@ -49,11 +50,11 @@
                                :default 0.0}
                     schema/finite-non-neg)])
 
-(def aspect-schema
+(def ^:private aspect-schema
   "`:aspect [ax ay az]` - positive box proportions."
   [:tuple schema/pos schema/pos schema/pos])
 
-(def domains-schema
+(def ^:private domains-schema
   "`:domain {:x [a b] :y [a b] :z [a b]}` - explicit data domains (each optional; `a > b` reverses the axis, e.g. depth
   growing downward)."
   (into [:map {:closed true}]
@@ -86,7 +87,7 @@
   "The 3D axes in point order."
   [:x :y :z])
 
-(defn box-aspect
+(defn- box-aspect
   "Gives the box proportions as a vector.
 
   Parameters:
@@ -120,7 +121,7 @@
 (defn frame-overrides
   "Gives the frame settings a 3D chart sets explicitly.
 
-  A later chart's overrides are merged over the first chart's frame of a scene, see [[cljplot2.graphics.space3d/scene-frame]].
+  A later chart's overrides are merged over the first chart's frame of a scene, see [[cljplot2.content.space3d/scene-frame]].
 
   Parameters:
 
@@ -148,22 +149,11 @@
 
 ;; normalization and rotation
 
-(defn widen
-  "Gives the domain of values made usable for normalization.
-
-  Parameters:
-
-  - `[lo hi]` (doubles): the values' range, `lo` <= `hi`.
-
-  Returns `[lo hi]` when `lo` < `hi`; a single value `v` widens to `[v - 0.5, v + 0.5]` (`[v v]` can't be normalized)."
-  [[^double lo ^double hi]]
-  (if (m/< lo hi) [lo hi] [(m/- lo 0.5) (m/+ hi 0.5)]))
-
-(def ^{:const true :tag 'long} nice-ticks
+(def ^{:private true :const true :tag 'long} nice-ticks
   "Tick count a data-derived domain is made nice for (see [[data-domain]])."
   5)
 
-(defn nice-domain
+(defn- nice-domain
   "Gives the domain extended to nice tick values.
 
   Parameters:
@@ -184,10 +174,10 @@
   - `vs` (sequence of numbers): the axis's values.
   - `reach` (double): data units the domain extends past the values on both sides (e.g. half a bar).
 
-  Returns `[lo hi]`: the values' range (a single value widened, see [[widen]]) widened by `reach` and made nice ([[nice-domain]]); `[0.0 1.0]` without values."
+  Returns `[lo hi]`: the values' range (a single value widened, see [[cljplot2.data.rows/widened-range]]) widened by `reach` and made nice ([[nice-domain]]); `[0.0 1.0]` without values."
   [vs ^double reach]
   (if (seq vs)
-    (let [[^double lo ^double hi] (widen [(reduce m/min vs) (reduce m/max vs)])]
+    (let [[^double lo ^double hi] (rows/widened-range [(v/mn vs) (v/mx vs)])]
       (nice-domain [(m/- lo reach) (m/+ hi reach)]))
     [0.0 1.0]))
 
@@ -323,10 +313,18 @@
       (format ":distance %s puts the eye within the sphere around the box of :aspect %s - it should be below %.4f"
               (:distance view) sides (m// (v/mx sides) (half-diagonal sides))))))
 
+(def distance-rule
+  "Rule (see [[cljplot2.schema/with-rules]]) of the 3D charts' options: a `:view` `:distance` putting the eye within
+  the sphere around the box of `:aspect` is an error at `[:view :distance]` ([[distance-problem]]).
+
+  It checks one chart's own `:view` and `:aspect` at build validation; the frame several 3D charts merge into one scene
+  can combine one chart's distance with another's aspect, and is checked when the scene is drawn by [[check-distance!]]."
+  [#(distance-problem (:view %) (:aspect %)) [:view :distance]])
+
 (defn check-distance!
   "Checks the perspective distance of a merged 3D frame.
 
-  A chart's own options are checked by its schema; this checks the frame merged from several charts.
+  A chart's own options are checked by its schema ([[distance-rule]]); the frame merged from several charts may pair one chart's `:distance` with another's `:aspect`, so it is checked again here, when the scene is drawn.
 
   Parameters:
 
@@ -335,12 +333,12 @@
 
   Returns `nil`.
 
-  Throws `ex-info {:key :distance}` for an eye within the sphere around the box (see [[distance-problem]])."
+  Throws `ex-info {:key :view :in [:view :distance]}` (the option holding the distance) for an eye within the sphere around the box (see [[distance-problem]])."
   [view aspect]
   (when-let [problem (distance-problem view aspect)]
-    (schema/fail! (str "The 3D box: " problem ".") {:key :distance :in [:view :distance] :value (:distance view)})))
+    (schema/fail! (str "The 3D box: " problem ".") {:key :view :in [:view :distance] :value (:distance view)})))
 
-(defn perspective
+(defn- perspective
   "Gives the function projecting view coordinates onto the screen plane.
 
   Parameters:
@@ -351,7 +349,7 @@
   Returns a function of view coordinates `Vec3 (u v d)` giving the screen position `Vec2` in box units: `(u, v)` scaled by `1 / (1 + δ d)` (δ - [[box-distance]]), `(u, v)` as they are for δ = 0. Points must be in front of the eye (`1 + δ d > 0`, see [[distance-problem]])."
   [view aspect]
   (let [delta (box-distance view aspect)]
-    (if (zero? delta)
+    (if (m/zero? delta)
       (fn [^Vec3 q] (v/vec2 (.x q) (.y q)))
       (fn [^Vec3 q] (let [s (m// (m/inc (m/* delta (.z q))))]
                      (v/vec2 (m/* s (.x q)) (m/* s (.y q))))))))
@@ -389,7 +387,7 @@
                                           (assoc (others 0) a)
                                           (assoc (others 1) b))) cycle-of))})))
 
-(def edges
+(def ^:private edges
   "The twelve box edges: `{:axis k :from corner :to corner}` (along axis `k`)."
   (vec (for [[i k] (map-indexed vector axes)
              a [0 1] b [0 1]
@@ -603,8 +601,7 @@
   1.0e-3)
 (def ^{:const true :private true :tag 'double} turning-pad+ (m/inc turning-pad))
 
-
-(defn turning-fit
+(defn- turning-fit
   "Gives the extent and centre of a box turned about its vertical axis at a view's elevation and distance.
 
   A panel fitting the extent, centred at the centre, holds the box in every azimuth. Orthographic (δ = 0): [[turning-extent]], centred on the view's own corners (the box centre). Perspective: the corners projected every half degree of azimuth - the largest `|u|` both ways, the `v` range (near corners below grow more than far ones above shrink) - widened by [[turning-pad]] for the azimuths between the samples.
@@ -616,7 +613,7 @@
 
   Returns `{:width :height :u-mid :v-mid}` in box units."
   [aspect view]
-  (if (zero? (view-distance view))
+  (if (m/zero? (view-distance view))
     (let [[tw th] (turning-extent aspect (get view :elevation (:elevation default-view)))
           [^double u0 ^double u1 ^double v0 ^double v1] (corner-bounds aspect view)]
       {:width tw :height th
@@ -656,7 +653,7 @@
 
   Returns `{:point :corner :centre :scale}`: `:point` - a function of a data point `[x y z]` giving `[pixel depth]` (`pixel` a `Vec2`, y down; `depth` - the view depth, larger - farther); `:corner` - a function of a corner (fractional bits - a point on the box surface) giving its pixel; `:centre` - the box centre's pixel; `:scale` - pixels per box unit, 0 for a panel too small for the margins.
 
-  Throws `ex-info {:key :distance}` for an eye within the sphere around the box ([[check-distance!]])."
+  Throws `ex-info {:key :view :in [:view :distance]}` (the option holding the distance) for an eye within the sphere around the box ([[check-distance!]])."
   [{:keys [domains aspect view]} {:keys [^double w ^double h margin]}]
   (let [sides (box-aspect aspect)
         _ (check-distance! view sides)
@@ -687,7 +684,7 @@
   "Share of a shaded face's colour independent of the light, by default."
   0.4)
 
-(def light-schema
+(def ^:private light-schema
   "Schema of the `:light` direction `[x y z]` (view coordinates): finite, not all zero."
   (schema/with-rules [:tuple schema/finite schema/finite schema/finite]
     [(fn [l] (when (every? zero? l) "the light direction should not be a zero vector"))]))
@@ -704,7 +701,13 @@
                      light-schema)]))
 
 (defn- light-direction
-  "Gives the unit direction toward the light from `light` (`[x y z]`, view coordinates).
+  "Gives the unit direction toward the light.
+
+  Parameters:
+
+  - `light` (`[x y z]`): the direction toward the light in view coordinates.
+
+  Returns the normalized `Vec3`.
 
   Throws `ex-info {:key :light}` for a zero vector."
   ^Vec3 [[^double x ^double y ^double z :as light]]

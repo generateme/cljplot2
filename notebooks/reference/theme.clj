@@ -50,9 +50,9 @@
 
 (plot/render-image (assoc iris-plot
                           :scales {:x {:minor-ticks 4}}
-                          :theme {:panel {:grid {:x {:color [150 150 200] :width 1 :dash :none}
+                          :theme {:panel {:grid {:x {:color [150 150 200] :line-width 1 :dash :none}
                                                  :y :none
-                                                 :minor {:color [200 200 220] :width 0.5 :dash :none}}}})
+                                                 :minor {:color [200 200 220] :line-width 0.5 :dash :none}}}})
                    {:width 500 :height 300})
 
 ;; ## Axes
@@ -228,7 +228,7 @@
 
 (plot/render-image (assoc iris-plot
                           :labels {:title "Iris"}
-                          :theme {:text {:title {:font "Serif" :size 16 :padding 10 :background [230 230 245]}}})
+                          :theme {:text {:title {:font "Serif" :size 16 :inset 10 :background [230 230 245]}}})
                    {:width 500 :height 300})
 
 ;; ## Chart

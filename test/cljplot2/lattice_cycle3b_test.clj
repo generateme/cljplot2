@@ -14,7 +14,7 @@
             [cljplot2.data.rows]
             [cljplot2.data.vector-field]
             [cljplot2.data.space3d :as space]
-            [cljplot2.graphics.space3d :as space-draw]
+            [cljplot2.content.space3d :as space-draw]
             [cljplot2.theme]
             [cljplot2.test-util :refer [error error-ins]])
   (:import [java.awt.image BufferedImage]))
@@ -80,10 +80,10 @@
       (doseq [s [:surface :wireframe :both]]
         (is (= {:polygon 9} (frequencies (map :kind (prims {:style s})))) (str s))))
     (testing "5.2 surface: outlined in its fill; both: by :stroke-color; wireframe: background fill, colored outline"
-      (is (every? #(= (:fill %) (:stroke %)) (prims {})))
-      (is (every? #(= [1 2 3] (:stroke %)) (prims {:style :both :stroke-color [1 2 3]})))
+      (is (every? #(= (:fill %) (:stroke-color %)) (prims {})))
+      (is (every? #(= [1 2 3] (:stroke-color %)) (prims {:style :both :stroke-color [1 2 3]})))
       (let [ps (prims {:style :wireframe :color [9 9 9]})]
-        (is (every? #(= [9 9 9] (:stroke %)) ps))
+        (is (every? #(= [9 9 9] (:stroke-color %)) ps))
         (is (every? #(= (c/to-color 0xececf3) (c/to-color (:fill %))) ps) "the plot background")))
     (testing "5.2 shading on by default; :shade false - the color itself"
       (is (every? #(= [9 9 9] (:fill %)) (prims {:color [9 9 9] :shade false})))
@@ -364,6 +364,6 @@
     (is (= :f (:key (error #(cljplot2.data.vector-field/mapped-points (fn [_] [1 2 3]) [[1 2]])))) "3 values - no pair"))
   (testing "W1 a translucent :surface fill has no seam outline; an opaque one keeps it"
     (let [prims (fn [color] (let [ch (chart/surface (merge plane {:n 3 :color color :shade false}))] (primitives ch (panel {:charts [ch]}))))]
-      (is (every? #(= :none (:stroke %)) (prims [10 20 30 254])))
-      (is (every? #(= (:fill %) (:stroke %)) (prims [10 20 30 255])))
-      (is (every? #(= (:fill %) (:stroke %)) (prims [10 20 30]))))))
+      (is (every? #(= :none (:stroke-color %)) (prims [10 20 30 254])))
+      (is (every? #(= (:fill %) (:stroke-color %)) (prims [10 20 30 255])))
+      (is (every? #(= (:fill %) (:stroke-color %)) (prims [10 20 30]))))))

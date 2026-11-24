@@ -187,7 +187,7 @@
 
 (deftest chord-layout-test
   (testing "4.1 directed - group angles proportional to out + in, pads between"
-    (let [{:keys [groups dropped]} (graph/chord-layout (graph/graph flows {:directed? true}) {:pad 2})
+    (let [{:keys [groups dropped]} (graph/chord-layout (graph/graph flows {:directed true}) {:gap-angle 2})
           sums {"a" 6.0 "b" 8.0 "c" 6.0}
           room (- 360.0 (* 3 2.0))]
       (is (zero? dropped))
@@ -196,7 +196,7 @@
       (is (< (m/abs (- 2.0 (- (double (:start (second groups))) (double (:end (first groups)))))) 1e-9) "the pad")
       (is (== 0.0 (:start (first groups))) "from the top")))
   (testing "4.1 undirected - group angles proportional to the pairs' summed weights"
-    (let [{:keys [groups]} (graph/chord-layout (graph/graph flows) {:pad 0})
+    (let [{:keys [groups]} (graph/chord-layout (graph/graph flows) {:gap-angle 0})
           ;; a-b 4, a-c 2, b-c 4
           sums {"a" 6.0 "b" 8.0 "c" 6.0}]
       (doseq [{:keys [id] :as gr} groups]
@@ -217,23 +217,23 @@
         (is (< (m/abs (- 3.0 (/ (width (zipmap [:start :end] (get-in undirected [[0 1] :source]))) k))) 1e-9) "w(a, b) at a")
         (is (< (m/abs (- 1.0 (/ (width (zipmap [:start :end] (get-in undirected [[0 1] :target]))) k))) 1e-9) "w(b, a) at b"))))
   (testing "4.1 a node without flow - a zero-width group, no ribbons, no sector rows"
-    (let [{:keys [groups ribbons arcs]} (graph/chord-layout (graph/graph flows {:nodes [{:id "q"}] :directed? true}) {})
+    (let [{:keys [groups ribbons arcs]} (graph/chord-layout (graph/graph flows {:nodes [{:id "q"}] :directed true}) {})
           q (first (filter #(= "q" (:id %)) groups))]
       (is (zero? (width q)))
       (is (zero? (:value q)))
       (is (not-any? #(#{"q"} (:from %)) ribbons))
       (is (not-any? #(= "q" (:group %)) arcs))))
   (testing "4.1 :min-value drops and counts weak edges; :order sets the ring order"
-    (let [{:keys [groups ribbons dropped]} (graph/chord-layout (graph/graph flows {:directed? true}) {:min-value 2 :order ["c"]})]
+    (let [{:keys [groups ribbons dropped]} (graph/chord-layout (graph/graph flows {:directed true}) {:min-value 2 :order ["c"]})]
       (is (= 1 dropped))
       (is (= ["c" "a" "b"] (mapv :id (sort-by :start groups))))
       (is (= #{["a" "b"] ["a" "c"] ["c" "b"]} (set (map (juxt :from :to) ribbons))))))
   (testing "4.1 :min-value on summed weights: a pair's exchange (undirected), repeated directed edges"
     (let [weak [{:from "a" :to "b" :value 0.06} {:from "b" :to "a" :value 0.06} {:from "a" :to "c" :value 0.05}]
           undirected (graph/chord-layout (graph/graph weak) {:min-value 0.1})
-          directed (graph/chord-layout (graph/graph weak {:directed? true}) {:min-value 0.1})
+          directed (graph/chord-layout (graph/graph weak {:directed true}) {:min-value 0.1})
           repeated (graph/chord-layout (graph/graph [{:from "a" :to "b" :value 0.06} {:from "a" :to "b" :value 0.06}]
-                                                    {:directed? true})
+                                                    {:directed true})
                                        {:min-value 0.1})]
       (is (= #{["a" "b"]} (set (map (juxt :from :to) (:ribbons undirected)))) "0.06 + 0.06 kept, a-c dropped")
       (is (= 1 (:dropped undirected)))
@@ -246,18 +246,18 @@
     (let [{:keys [ribbons]} (graph/chord-layout (graph/graph flows) {:order ["c"]})]
       (is (= #{["c" "a"] ["c" "b"] ["a" "b"]} (set (map (juxt :from :to) ribbons))))))
   (testing "4.1 ribbons and sectors inside the unit circle; ribbons end at :inner"
-    (let [{:keys [arcs ribbons]} (graph/chord-layout (graph/graph flows {:directed? true}) {:inner 0.8})
+    (let [{:keys [arcs ribbons]} (graph/chord-layout (graph/graph flows {:directed true}) {:inner-radius 0.8})
           r (fn [{:keys [x y]}] (m/hypot (double x) (double y)))]
       (is (every? #(<= (- 0.8 1e-9) (r %) (+ 1.0 1e-9)) arcs))
       (is (every? #(<= (r %) (+ 0.8 1e-9)) ribbons))))
-  (testing "4.1 no edges - equal spacing, zero widths; bad :pad / :inner throw"
+  (testing "4.1 no edges - equal spacing, zero widths; bad :gap-angle / :inner throw"
     (let [{:keys [groups ribbons]} (graph/chord-layout (graph/graph [] {:nodes [{:id "a"} {:id "b"}]}) {})]
       (is (= [0.0 0.0] (mapv width groups)))
       (is (empty? ribbons)))
     (are [opts k] (= k (:key (error #(graph/chord-layout (graph/graph flows) opts))))
-      {:pad -1} :pad
-      {:pad 120} :pad
-      {:pad ##NaN} :pad
+      {:gap-angle -1} :gap-angle
+      {:gap-angle 120} :gap-angle
+      {:gap-angle ##NaN} :gap-angle
       {:inner 1} :inner
       {:inner 0} :inner
       {:min-value "x"} :min-value
@@ -266,7 +266,7 @@
 
 (deftest chord-plot-test
   (testing "4.2 sectors coloured by node, ribbons by source at alpha, labels outside the ring"
-    (let [p (plot/chord flows {:directed? true :title "t"})
+    (let [p (plot/chord flows {:directed true :title "t"})
           [ribbons sectors & labels] (:charts p)]
       (is (= [:polygon :polygon] (mapv :kind [ribbons sectors])))
       (is (= :from (get-in ribbons [:options :mapping :color])))
@@ -279,8 +279,8 @@
     (let [sc (get-in (plot/chord flows {:scales {:color {:range :category10}}}) [:scales :color])]
       (is (= {:domain ["a" "b" "c"] :legend false :range :category10} sc)))
     (is (= true (get-in (plot/chord flows {:scales {:color {:legend true}}}) [:scales :color :legend])) "a legend on request"))
-  (testing "4.2 :labels? false; nodes without flow unlabelled"
-    (is (= 2 (count (:charts (plot/chord flows {:labels? false})))))
+  (testing "4.2 :labels false; nodes without flow unlabelled"
+    (is (= 2 (count (:charts (plot/chord flows {:labels false})))))
     (is (not-any? #(= "q" (:label %)) (mapcat #(get-in % [:options :data]) (drop 2 (:charts (plot/chord flows {:nodes [{:id "q"}]}))))))))
 
 ;; 5. arc
@@ -322,7 +322,7 @@
     (is (= [0 1 2] (get-in (plot/arc flows {:scales {:x {:title "t"}}}) [:scales :x :ticks])))
     (is (= false (get-in (plot/network flows {:scales {:x {:title "t"}}}) [:scales :x :axis])))
     (let [rows (for [r ["r1" "r2" "r3"] c ["c1" "c2"]] {:r r :c c :v (rand)})
-          tiles (first (get-in (plot/clustered-heatmap rows {:row :r :col :c :value :v :col-tree? false :row-tree? false
+          tiles (first (get-in (plot/clustered-heatmap rows {:row :r :col :c :value :v :col-tree false :row-tree false
                                                              :scales {:x {:title "t"}}}) [:arrange :plots]))]
       (is (= 2 (count (get-in tiles [:scales :x :domain]))) "the leaf order kept")))
   (testing "5.2 no edges - a plot all the same"

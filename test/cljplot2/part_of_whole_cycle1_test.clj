@@ -113,7 +113,7 @@
     (testing "2.3 extents, padding, hidden axes"
       (is (= [0.0 1.0] (get-in built [:finalized-scales :x :domain])))
       (is (= [0.0 2.0] (get-in built [:finalized-scales :y :domain])))
-      (is (= {:x [0 0] :y [0 0]} (:padding s)))
+      (is (= {:x [0.0 0.0] :y [0.0 0.0]} (:padding s)))
       (is (= {:x {:axis false} :y {:axis false}} (:scale-defaults s)))
       (is (not-any? #(#{:axis :axis-overhang} (get-in % [:content :kind])) (get-in built [:grid :items])))))
   (testing "2.3 plot scales override the suggestions"
@@ -125,9 +125,9 @@
           d (get-in built [:stats 0 :data])]
       (is (every? #(m/delta-eq 1.0 (reduce max (map :x1 (:cells %)))) (vals d)))
       (is (= [0.0 2.0] (get-in built [:finalized-scales :y :domain])))))
-  (testing "empty data / nothing valid: no cells, renders"
+  (testing "empty data: no cells, renders; nothing valid: an error"
     (is (= {} (get-in (build (pt {:data []})) [:stats 0 :data])))
-    (is (= {:value 1} (get-in (build (pt {:data [{:a "A" :v ##NaN}]})) [:stats 0 :dropped])))
+    (is (= {:key :mapping :in [:mapping :value] :rows 1} (error #(build (pt {:data [{:a "A" :v ##NaN}]})))) "no finite :value - an error")
     (is (some? (plot/render (pt {:data []}) size)))
     (is (some? (plot/render (pt {:data [] :coord {:kind :polar}}) size)))))
 
@@ -140,15 +140,15 @@
       {:root 1} :root
       {:leaf-labels 1} :leaf-labels
       {:group-labels "x"} :group-labels
-      {:border-width -1} :border-width
+      {:stroke-width -1} :stroke-width
       {:pattern :nope} :pattern))
   (testing "2.6 the theme entry is checked"
-    (is (some? (error #(build (pt {:theme {:chart {:partition {:border-width "1"}}}})))))))
+    (is (some? (error #(build (pt {:theme {:chart {:partition {:stroke-width "1"}}}})))))))
 
 ;; drawing
 
 (def ^:private plain {:plot {:background :white} :palette {:color [[255 0 0] [0 0 255]] :na [128 128 128]}
-                      :chart {:partition {:border-color :none}}})
+                      :chart {:partition {:stroke-color :none}}})
 
 (defn- rgb [^BufferedImage img x y]
   (let [v (.getRGB img (int x) (int y))]
@@ -241,7 +241,7 @@
 
 ;; 3. label functions
 
-(defn- tm [opts] {:data one :mapping mapping :theme (-> plain (merge light-fills) (assoc-in [:chart :treemap] {:padding 0 :border-color :none})) :charts [(chart/treemap (merge {:group-labels false} opts))]})
+(defn- tm [opts] {:data one :mapping mapping :theme (-> plain (merge light-fills) (assoc-in [:chart :treemap] {:gap 0 :stroke-color :none})) :charts [(chart/treemap (merge {:group-labels false} opts))]})
 
 (deftest treemap-label-functions-test
   (testing "3.1 the function gets the node info"
@@ -287,7 +287,7 @@
       (is (pos? (count-in-panel dark? (render (pt {:data [{:a "Group" :v 1}] :theme light})))))
       (is (pos? (count-in-panel light? (render (pt {:data [{:a "Group" :v 1}] :theme dark :coord {:kind :polar}})))))
       (is (pos? (count-in-panel light? (render (assoc (tm {:group-labels false}) :data [{:a "G" :b "Leaf" :v 1}]
-                                                      :theme (merge plain dark {:chart {:treemap {:padding 0 :border-color :none}}}))))))))
+                                                      :theme (merge plain dark {:chart {:treemap {:gap 0 :stroke-color :none}}}))))))))
   (testing "U2 depth shade: L* a quarter of the way to 90 per level; never past it; light colors kept"
     (let [l (fn [col] (.x ^fastmath.vector.Vec4 (c/to-LAB col)))
           blue [0 0 255]

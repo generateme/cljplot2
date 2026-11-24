@@ -21,7 +21,7 @@
                   :exec-fn cognitect.test-runner.api/test}
            :check {:extra-paths ["dev"]
                    :main-opts ["-m" "cljplot2.check"]}
-           ;; every step demo in one JVM: `clojure -M:demo [stepN | stepN/<file-name>]...`, see `cljplot2.demo`
+           ;; every demo in one JVM: `clojure -M:demo [demo | demo/<file-name>]...`, see `cljplot2.demo`
            :demo {:extra-paths ["dev" "dev/resources"]
                   :extra-deps {org.clojure/data.json {:mvn/version "2.5.1"}
                                org.clojure/data.csv {:mvn/version "1.1.0"}}

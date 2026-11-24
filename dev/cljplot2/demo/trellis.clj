@@ -64,7 +64,7 @@
 
 (def fig-8-2
   "Fig 8.2: a long series cut into overlapping time slices (a shingle), every slice the same time span, no strips."
-  {:data (shingle/shingle walk :t {:count 6 :overlap 0.1 :as :slice})
+  {:data (shingle/shingle walk :t {:n 6 :overlap 0.1 :as :slice})
    :mapping {:x :t :y :v :facet :slice}
    :charts [(chart/line)]
    :facets {:columns 1 :strips false :scales {:x :sliced :y :free}}
@@ -91,7 +91,7 @@
    :mapping {:x :distance :y :accel}
    :charts [(chart/scatter)]
    :scales {:x {:kind :log :minor-ticks 1} :y {:kind :log :minor-ticks 1}}
-   :theme {:panel {:grid {:minor {:color [180 180 180] :width 0.5 :dash [1.0 2.0]}}}}
+   :theme {:panel {:grid {:minor {:color [180 180 180] :line-width 0.5 :dash [1.0 2.0]}}}}
    :labels {:x "Distance from epicenter (km)" :y "Maximum horizontal acceleration (g)"}})
 
 (def images

@@ -39,7 +39,7 @@
 (plot/render-image {:data faithful
                     :mapping {:x :eruptions :y :waiting}
                     :charts [(chart/scatter)
-                             (chart/rule {:data thresholds :mapping {:y :at :color :kind} :width 2})]
+                             (chart/rule {:data thresholds :mapping {:y :at :color :kind} :line-width 2})]
                     :labels {:x "eruptions [min]" :y "waiting [min]"}}
                    {:width 600 :height 360})
 
@@ -52,11 +52,11 @@
                                    :labels {:title ":x [2 3 4]"}}
                                   {:data faithful :mapping {:x :eruptions :y :waiting}
                                    :charts [(chart/scatter)
-                                            (chart/rule {:slope [10.7 12] :intercept [33.5 25] :width 2
+                                            (chart/rule {:slope [10.7 12] :intercept [33.5 25] :line-width 2
                                                          :color [200 80 40]})]
                                    :labels {:title ":slope, :intercept (two lines)"}}
                                   {:data faithful :mapping {:x :eruptions :y :waiting}
-                                   :charts [(chart/scatter) (chart/rule {:y [55 80] :width 2 :color [40 140 60]})]
+                                   :charts [(chart/scatter) (chart/rule {:y [55 80] :line-width 2 :color [40 140 60]})]
                                    :labels {:title ":y [55 80]"}}]
                                  {:columns 3})
                    {:width 1000 :height 330})
@@ -100,10 +100,10 @@
                                             (chart/scatter)]
                                    :labels {:title ":y intervals, :fill per interval, :stroke-width 2"}}
                                   {:data levels-data :mapping {:x :k :y :v}
-                                   :charts [(chart/rect {:x ["b" "c"] :band-width 0.6 :fill [255 200 0 110]})
+                                   :charts [(chart/rect {:x ["b" "c"] :width 0.6 :fill [255 200 0 110]})
                                             (chart/bar)]
                                    :scales {:x {:domain ["a" "b" "c" "d"]}}
-                                   :labels {:title ":x [\"b\" \"c\"] :band-width 0.6"}}]
+                                   :labels {:title ":x [\"b\" \"c\"] :width 0.6"}}]
                                  {:columns 2})
                    {:width 900 :height 330})
 
@@ -195,7 +195,7 @@
                                           :role :network-label})
                              (chart/text {:x [:panel 0.5] :y [:panel 0.95] :text "European cities" :role :callout})]
                     :theme {:text {:callout {:font "DejaVu Sans Mono" :size 13 :font-style :bold :color [178 34 34]
-                                             :padding 2}}}
+                                             :inset 2}}}
                     :labels {:x "longitude" :y "latitude"}}
                    {:width 550 :height 340})
 
@@ -273,7 +273,7 @@
 (plot/render-image (plot/arrange [{:charts [(chart/function {:f #(Math/sqrt (- 1 (* % %))) :domain [-2 2]})]
                                    :labels {:title ":gaps :break (default)"}}
                                   {:charts [(chart/function {:f #(when-not (< 1 % 2) (Math/sin %)) :domain [0 6]
-                                                             :gaps :bridge :bridge {:alpha 0.6 :dash :dotted}})]
+                                                             :gaps :bridge :bridge {:alpha-factor 0.6 :dash :dotted}})]
                                    :labels {:title ":gaps :bridge"}}]
                                  {:columns 2})
                    {:width 800 :height 300})

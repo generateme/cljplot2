@@ -9,10 +9,12 @@
 
   Functions:
 
-  - schemas and options: [[mapping-keys]], [[mapping-schema]], [[data-schema]], [[common-options]], [[position-padding]], [[axis-padding]], [[default-padding]], [[explicit-padding]], [[option]], [[options-with-defaults]]
+  - schemas and options: [[mapping-schema]], [[data-schema]], [[common-options]], [[position-padding]], [[axis-padding]], [[default-padding]], [[explicit-padding]], [[option]], [[options-with-defaults]]
   - rows and accessors: [[rows]], [[row-accessor]], [[as-coordinates]], [[weight]]
   - time: [[temporal?]], [[period-start]], [[x-key]], [[key->x]], [[->local-date-time]], [[local-date-time->like]]
-  - values and extents: [[valid-value?]], [[ordered-level?]] ([[OrderedLevel]]), [[finite-numbers]], [[finite-point?]], [[extent]], [[value-extent]] (with the distinct values, at most [[max-levels]]), [[sorted-levels]], [[merge-extents]]"
+  - values and extents: [[valid-value?]], [[ordered-level?]] (the marker interface `OrderedLevel`), [[finite-numbers]], [[finite-point?]], [[extent]], [[value-extent]] (with the distinct values, at most [[max-levels]]), [[sorted-levels]], [[merge-extents]]
+
+  Checks and helpers: [[check-mapped!]] (with the message [[no-valid-values]]), [[fail-mapping!]], [[sortable?]], [[invalid-count]], [[widened-range]], [[padding-stats]], [[zero-padding]]."
   (:require [fastmath.core :as m]
             [fastmath.vector :as v]
             [cljplot2.data.accessor :as accessor]
@@ -23,7 +25,7 @@
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
-(def mapping-keys
+(def ^:private mapping-keys
   "Mapping keys of the built-in dimensions, each mapped to an accessor: `:z` - the third coordinate of 3D charts, `:set` / `:item` - set membership (Venn). `:hierarchy` (a vector of accessors) is mapped too, but isn't listed."
   [:x :y :z :ymin :ymax :xend :yend :open :high :low :close :color :shape :size :dash :pattern :group :facet :facet-col :facet-row :order :value :set :item])
 
@@ -91,6 +93,10 @@
   "Default chart padding `{:x [lo hi] :y [lo hi]}`: [[axis-padding]] on both position axes (see [[position-padding]])."
   {:x axis-padding :y axis-padding})
 
+(def zero-padding
+  "Chart padding `{:x [lo hi] :y [lo hi]}` of none on both position axes: charts filling their extent exactly (cells, rasters, partitions)."
+  {:x [0.0 0.0] :y [0.0 0.0]})
+
 (def position-padding
   "Schema of the chart option `:padding`: `{:x [lo hi] :y [lo hi]}`, fractions of the data span."
   [:map-of [:enum :x :y] schema/padding])
@@ -108,6 +114,20 @@
   Returns the merged map, or `nil` when there are no requests."
   [requests options]
   (not-empty (merge requests (:padding options))))
+
+(defn padding-stats
+  "Gives a chart's padding stats: `:padding` and `:padding-explicit`.
+
+  Parameters:
+
+  - `defaults` (map): the chart's default padding `{dim [lo hi]}` (e.g. [[default-padding]]).
+  - `requests` (map or `nil`): the chart's own padding requests, as [[explicit-padding]] takes them.
+  - `options` (map): the chart's options - `:padding`.
+
+  Returns `{:padding p :padding-explicit e}`: `p` - the `:padding` option merged over `defaults`, `e` - [[explicit-padding]] of `requests` and `options`."
+  [defaults requests options]
+  {:padding (merge defaults (:padding options))
+   :padding-explicit (explicit-padding requests options)})
 
 (defn rows
   "Normalizes plot `data` to a vector of rows.
@@ -175,6 +195,21 @@
     (instance? YearMonth v) (.atDay ^YearMonth v 1)
     :else v))
 
+(defn fail-mapping!
+  "Throws the error of a mapped dimension: `ex-info {:key :mapping :in [:mapping k] ...}`.
+
+  Every mapping problem a chart or data function finds in its rows (no valid value, mixed kinds, a missing or unpaired position, an accessor of the wrong kind) has this shape, so `:in` names the dimension to fix.
+
+  Parameters:
+
+  - `message` (string): the error message.
+  - `k` (keyword): the mapping dimension.
+  - `details` (map): more error data - `:value` (the dimension's mapping entry or the offending value), `:rows` (the row count) ...; `{}` for none.
+
+  Never returns."
+  [message k details]
+  (schema/fail! message (merge {:key :mapping :in [:mapping k]} details)))
+
 (defn row-accessor
   "Gives the function of a row reading a mapped dimension.
 
@@ -187,13 +222,13 @@
 
   Returns the keyword or function (a marker unwrapped).
 
-  Throws `ex-info {:key :mapping :value k}` for any other accessor."
+  Throws `ex-info {:key :mapping :in [:mapping k] :value acc}` (see [[fail-mapping!]]) for any other accessor."
   [k acc]
   (cond
     (keyword? acc) acc
     (fn? acc) acc
     (accessor/categorical? acc) (row-accessor k (accessor/unwrap acc))
-    :else (schema/fail! "Mapping accessor must be a keyword or a function." {:key :mapping :value k})))
+    :else (fail-mapping! "Mapping accessor must be a keyword or a function." k {:value acc})))
 
 (defn temporal?
   "Tests whether a value is a `java.time` value (a `java.time.temporal.Temporal`).
@@ -307,9 +342,15 @@
 ;; intervals: valid plot values, sorted ascending wherever they are levels.
 
 (defn ordered-level?
-  "Tests whether `v` is a categorical level with a natural order - an instance of the marker [[OrderedLevel]] (shingle / bin intervals).
+  "Tests whether a value is a categorical level with a natural order.
 
-  Such levels are valid values, sorted instead of kept in first-appearance order."
+  Such levels (shingle / bin intervals, instances of the marker interface `OrderedLevel`) are valid values, sorted instead of kept in first-appearance order.
+
+  Parameters:
+
+  - `v`: any value.
+
+  Returns true for an `OrderedLevel`, else false."
   [v]
   (instance? OrderedLevel v))
 
@@ -337,9 +378,32 @@
   Returns true for a finite number, a string, a keyword, a `java.time` value or a level with a natural order ([[ordered-level?]], e.g. an interval); false for NaN, infinite numbers, `nil` and other values."
   [v]
   (cond
-    (number? v) (m/valid-double? (double v))
+    (number? v) (schema/finite? v)
     (or (string? v) (keyword? v) (temporal? v)) true
     :else (ordered-level? v)))
+
+(defn invalid-count
+  "Counts the rows whose value of an accessor isn't valid.
+
+  Parameters:
+
+  - `value-of` (function): row -> value.
+  - `data-rows` (sequence): the rows.
+
+  Returns the number of rows whose value fails [[valid-value?]] (`nil`, `NaN`, infinite numbers, unordered values)."
+  ^long [value-of data-rows]
+  (count (remove #(valid-value? (value-of %)) data-rows)))
+
+(defn widened-range
+  "Gives a numeric range with a positive width.
+
+  Parameters:
+
+  - `[lo hi]` (numbers): the range ends, `lo` at most `hi`.
+
+  Returns `[lo hi]` when `lo` is below `hi`; a single value widened to `[lo - 0.5, hi + 0.5]`."
+  [[^double lo ^double hi]]
+  (if (m/< lo hi) [lo hi] [(m/- lo 0.5) (m/+ hi 0.5)]))
 
 (def no-valid-values
   "Error message of a mapped dimension without one valid value (see [[check-mapped!]])."
@@ -354,13 +418,13 @@
   - `accessors` (sequence): `[dimension accessor]` pairs, an accessor a function of a row.
   - `valid?` (function, optional): of a dimension and a value, default [[valid-value?]] of the value; aesthetic dimensions usually pass [[cljplot2.scale.aesthetic/valid-value?]] with their scale.
 
-  Returns `nil`. Empty `chart-rows` pass. Throws `ex-info {:key :mapping :value dimension :rows n}` ([[no-valid-values]]) for the first dimension without a valid value."
+  Returns `nil`. Empty `chart-rows` pass. Throws `ex-info {:key :mapping :in [:mapping dimension] :rows n}` ([[no-valid-values]], see [[fail-mapping!]]) for the first dimension without a valid value."
   ([chart-rows accessors] (check-mapped! chart-rows accessors (fn [_ v] (valid-value? v))))
   ([chart-rows accessors valid?]
    (when (seq chart-rows)
      (doseq [[k f] accessors]
        (when (not-any? #(valid? k (f %)) chart-rows)
-         (schema/fail! no-valid-values {:key :mapping :value k :rows (count chart-rows)}))))))
+         (fail-mapping! no-valid-values k {:rows (count chart-rows)}))))))
 
 (defn finite-point?
   "Tests whether a point can be drawn: both coordinates are finite numbers.
@@ -376,7 +440,7 @@
   (if (instance? Vec2 p)
     (and (m/valid-double? (.x ^Vec2 p)) (m/valid-double? (.y ^Vec2 p)))
     (let [[x y] p]
-      (and (number? x) (number? y) (m/valid-double? (double x)) (m/valid-double? (double y))))))
+      (and (schema/finite? x) (schema/finite? y)))))
 
 (defn finite-numbers
   "Picks the finite numbers of a collection of values.
@@ -387,11 +451,17 @@
 
   Returns `{:values [..] :dropped n}`: the finite numbers as doubles, in order, and the count of the other values."
   [vs]
-  (let [ok (into [] (comp (filter #(and (number? %) (m/valid-double? (double %)))) (map double)) vs)]
+  (let [ok (into [] (comp (filter schema/finite?) (map double)) vs)]
     {:values ok :dropped (m/- (count vs) (count ok))}))
 
 (defn- value-kind
-  "Gives the kind of extent a valid value `v` belongs to: `:numeric`, `:temporal` or `:categorical`."
+  "Gives the kind of extent a valid value belongs to.
+
+  Parameters:
+
+  - `v`: a valid value (see [[valid-value?]]).
+
+  Returns `:numeric` for a number, `:temporal` for a `java.time` value, else `:categorical`."
   [v]
   (cond (number? v) :numeric (temporal? v) :temporal :else :categorical))
 
@@ -445,7 +515,7 @@
 
   Returns `{:kind :numeric :min :max}` (doubles), `{:kind :temporal :min :max}` or `{:kind :categorical :values [..]}` - distinct, in first-appearance order, sorted when they have a natural order (intervals, see [[categorical-levels]]); `nil` for no values.
 
-  Throws `ex-info {:key :extents :in [:mapping k]}` for values of mixed kinds.
+  Throws `ex-info {:key :mapping :in [:mapping k]}` for values of mixed kinds.
 
   See also [[value-extent]], [[merge-extents]]."
   [k vs]
@@ -453,7 +523,7 @@
     (let [kinds (set (map value-kind vs))]
       (when (m/> (count kinds) 1)
         (schema/fail! "Mapped values must be all numbers, all strings/keywords/intervals or all java.time values."
-                 {:key :extents :in [:mapping k] :kinds kinds}))
+                 {:key :mapping :in [:mapping k] :kinds kinds}))
       (case (first kinds)
         :numeric {:kind :numeric :min (v/mn vs) :max (v/mx vs)}
         :temporal {:kind :temporal
@@ -490,7 +560,7 @@
 
   Returns the extent with `:values` - the distinct values in first-appearance order - when numeric / temporal data has at most [[max-levels]] of them; `nil` for no values.
 
-  Throws `ex-info {:key :extents}` for values of mixed kinds."
+  Throws `ex-info {:key :mapping}` for values of mixed kinds."
   [k vs]
   (when-let [e (extent k vs)]
     (capped-values e vs)))
@@ -523,13 +593,13 @@
 
   Returns the merged extent: numeric / temporal - the smallest `:min` and the largest `:max`; categorical - the distinct levels (sorted when ordered levels). `:values` are kept (merged, distinct) when every extent has them (numeric / temporal: at most [[max-levels]]); `:sample`s (all values, for data-driven bins) are concatenated; `:ordered?` (levels in a given order, not to be sorted) stays when every extent has it. `nil` without extents.
 
-  Throws `ex-info {:key :extents :in [:mapping k]}` for extents of mixed kinds."
+  Throws `ex-info {:key :mapping :in [:mapping k]}` for extents of mixed kinds."
   [k extents]
   (let [es (remove nil? extents)]
     (when (seq es)
       (let [kinds (set (map :kind es))]
         (when (m/> (count kinds) 1)
-          (schema/fail! "Charts map different kinds of values to one scale." {:key :extents :in [:mapping k] :kinds kinds}))
+          (schema/fail! "Charts map different kinds of values to one scale." {:key :mapping :in [:mapping k] :kinds kinds}))
         (cond-> (case (first kinds)
           :categorical {:kind :categorical :values (categorical-levels (mapcat :values es))}
           :numeric {:kind :numeric :min (v/mn (map :min es)) :max (v/mx (map :max es))}
@@ -553,5 +623,5 @@
   ^double [v]
   (cond
     (nil? v) 1.0
-    (and (number? v) (m/valid-double? (double v)) (m/not-neg? (double v))) v
+    (and (schema/finite? v) (m/not-neg? (double v))) v
     :else (schema/fail! "A :value (weight) should be a finite number >= 0." {:key :value :value v})))

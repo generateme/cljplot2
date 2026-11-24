@@ -108,7 +108,7 @@
       kernels (:kde k/kernel-list)]
   (plot/render-image
    {:charts [(chart/function {:f (mapv (fn [kernel] [(name kernel) (k/kernel-density kernel data)]) kernels)
-                              :domain [1.0 6.0] :width 1.5 :mapping {:color :function}})]
+                              :domain [1.0 6.0] :line-width 1.5 :mapping {:color :function}})]
     :scales {:color {:title "kernel"}}
     :labels {:title "Kernel densities of one sample"}}
    {:width 800 :height 550}))
@@ -132,8 +132,8 @@
    {:data band :mapping {:x :x}
     :charts [(chart/ribbon {:mapping {:ymin :lo95 :ymax :hi95} :color [130 170 230]})
              (chart/ribbon {:mapping {:ymin :lo50 :ymax :hi50} :color [70 120 200]})
-             (chart/function {:f truth :color [215 48 39] :width 1.5})
-             (chart/line {:mapping {:y :mu} :color :black :width 2})
+             (chart/function {:f truth :color [215 48 39] :line-width 1.5})
+             (chart/line {:mapping {:y :mu} :color :black :line-width 2})
              (chart/scatter {:data (map (fn [x y] {:x x :y y}) xs ys) :mapping {:y :y} :size 9 :color :black})]
     :labels {:title "Gaussian process: mean, 50 % and 95 % bands, the true function (red)" :y nil}}
    {:width 800 :height 500}))
@@ -150,7 +150,7 @@
   (plot/render-image
    {:data rows :mapping {:x :x :y :y}
     :charts [(chart/ribbon {:mapping {:ymin :lo :ymax :hi} :color [130 170 230] :interpolator :cubic})
-             (chart/line {:color :black :width 2 :interpolator :cubic})
+             (chart/line {:color :black :line-width 2 :interpolator :cubic})
              (chart/scatter {:data (map (fn [x y] {:x x :y y}) xs ys) :size 9 :color :black})]
     :labels {:title "Gaussian process: a posterior sample with its 95 % band"}}
    {:width 800 :height 500}))
@@ -201,9 +201,9 @@
                                    xtest (gp/predict-all gp (map vector xtest) true))]
                     {:data band :mapping {:x :x}
                      :charts [(chart/ribbon {:mapping {:ymin :lo :ymax :hi} :color [130 170 230]})
-                              (chart/function {:f target :width 2 :color :black})
+                              (chart/function {:f target :line-width 2 :color :black})
                               (chart/line {:mapping {:y :mu} :color [30 60 160] :dash [8 3]})
-                              (chart/rule {:x (first util-best) :dash [6 4] :width 1.5})
+                              (chart/rule {:x (first util-best) :dash [6 4] :line-width 1.5})
                               (chart/scatter {:data (map (fn [[x] y] {:x x :y y}) xs ys) :mapping {:y :y} :size 8
                                               :color [0 140 140]})]
                      :scales {:y {:domain [-1.0 2.5]}}
@@ -310,7 +310,7 @@
 (nu/source-note {:source "cljplot - contour2d" :url examples-url})
 
 (plot/render-image
- {:charts [(chart/contour {:f fn2d :domain fn2d-domain :n 300 :fill true :levels 12})]
+ {:charts [(chart/contour {:f fn2d :domain fn2d-domain :n 300 :filled true :levels 12})]
   :aspect :iso
   :labels {:title "Filled contours of the same function"}}
  {:width 650 :height 600})
@@ -369,10 +369,10 @@
       heading (f/heading hyperbolic)
       domain {:x [-3 3] :y [-3 3]}]
   (plot/render-image
-   {:data (vf/arrows hyperbolic {:domain domain :n 24 :grid :shifted :scale 1.5})
+   {:data (vf/arrows hyperbolic {:domain domain :n 24 :grid :shifted :length-scale 1.5})
     :mapping {:x :x :y :y :xend :xend :yend :yend}
     :charts [(chart/field {:f (fn [[x y]] (m/sin (heading (v/vec2 x y)))) :domain domain :n 300})
-             (chart/segment {:color [90 160 235] :width 1.5 :arrow {:end true :size 5}})]
+             (chart/segment {:color [90 160 235] :line-width 1.5 :arrow {:end true :size 5}})]
     :scales {:color {:range [:black :white] :title "sin heading"}
              :x {:domain [-3 3] :expand [0 0]} :y {:domain [-3 3] :expand [0 0]}}
     :aspect :iso
@@ -407,7 +407,7 @@
   (plot/render-image
    {:data (repeatedly 600000 (fn [] {:x (r/grandom g) :y (r/grandom g)}))
     :mapping {:x :x :y :y}
-    :charts [(chart/field {:binned? true :n 300})]
+    :charts [(chart/field {:binned true :n 300})]
     :scales {:color {:range [[10 10 40] [60 40 140] [220 90 120] [255 230 160]] :title "density"}}
     :aspect :iso
     :labels {:title "600 000 points"}}
@@ -463,7 +463,7 @@
 (let [faithful (nu/dataset :faithful)
       panel (fn [bandwidth levels title]
               {:data faithful :mapping {:x :waiting :y :eruptions}
-               :charts [(chart/contour {:bandwidth bandwidth :levels levels :fill true})
+               :charts [(chart/contour {:bandwidth bandwidth :levels levels :filled true})
                         (chart/contour {:bandwidth bandwidth :levels levels :color [0 0 0 60]})
                         (chart/scatter {:size 4 :color [20 60 120 200]})]
                :legend false
@@ -484,9 +484,9 @@
 (plot/render-image
  {:charts [(chart/rule {:y 0 :color :black})
            (chart/rule {:y [1 -1]})
-           (chart/rule {:x m/HALF_PI :dash [10 10] :width 5})
-           (chart/rule {:x (* 0.75 m/TWO_PI) :dash [10 10] :width 5 :color [128 0 0 100]})
-           (chart/rule {:slope (/ 1.0 (* 0.75 m/TWO_PI)) :intercept -1 :dash [1 2 5 2] :width 3})
+           (chart/rule {:x m/HALF_PI :dash [10 10] :line-width 5})
+           (chart/rule {:x (* 0.75 m/TWO_PI) :dash [10 10] :line-width 5 :color [128 0 0 100]})
+           (chart/rule {:slope (/ 1.0 (* 0.75 m/TWO_PI)) :intercept -1 :dash [1 2 5 2] :line-width 3})
            (chart/function {:f m/sin :domain [0 m/TWO_PI]})]
   :labels {:title "Rules and a sine"}}
  {:width 900 :height 320})
@@ -494,7 +494,7 @@
 ;; ### Wrapped random walk
 
 ;; A drifting 2D walk on a torus: leaving the square on one side, it comes back on the other. A row with a `NaN` y
-;; breaks the line at every wrap; `:sort false` keeps the walk's order.
+;; breaks the line at every wrap; `:order :data` keeps the walk's order.
 
 (nu/source-note {:source "cljplot - wrapped random walk" :url examples-url})
 
@@ -514,7 +514,7 @@
                    (partition 2 1 wrapped))]
   (plot/render-image
    {:data rows :mapping {:x :x :y :y}
-    :charts [(chart/line {:sort false :color [0 50 255 150]})]
+    :charts [(chart/line {:order :data :color [0 50 255 150]})]
     :scales {:x {:domain [-200 200]} :y {:domain [-200 200]}}
     :aspect :iso
     :labels {:title "A random walk on a torus"}}
@@ -597,7 +597,7 @@
  (plot/arrange (for [kernel kernels
                      :let [f (k/kernel kernel)]]
                  {:charts [(chart/function {:f {"full" (fn [x] (f [0.0] [x])) "half" (fn [x] (* 0.5 (double (f [0.0] [x]))))}
-                                            :domain [-3 3] :width 2 :mapping {:color :function}})]
+                                            :domain [-3 3] :line-width 2 :mapping {:color :function}})]
                   :scales {:color {:range [[69 117 180] [215 50 40]]}}
                   :legend false
                   :labels {:title (name kernel)}})
@@ -782,7 +782,7 @@
       rows (vec (repeatedly 20 (fn [] {:x (r/drandom g 6 17) :y (r/drandom g 0 8) :s (r/drandom g)})))]
   (plot/render-image
    {:data rows :mapping {:x :x :y :y}
-    :charts [(chart/line {:sort false :curve :parametric :color [69 117 180]})
+    :charts [(chart/line {:order :data :curve :parametric :color [69 117 180]})
              (chart/scatter {:mapping {:size :s} :color [150 30 30]})]
     :scales {:size {:range [4 22] :legend false}}
     :labels {:title "Connected scatter"}}
@@ -831,7 +831,7 @@
       rows (map-indexed (fn [i y] {:x i :y y}) (reductions + 10.0 (repeatedly 99 #(r/grandom g 0 1.5))))]
   (plot/render-image
    {:data rows :mapping {:x :x :y :y}
-    :charts [(chart/line {:interpolator :cubic :color [200 40 120] :width 1.5})
+    :charts [(chart/line {:interpolator :cubic :color [200 40 120] :line-width 1.5})
              (chart/line {:color [69 117 180 150]})
              (chart/scatter {:size 4})]
     :labels {:title "A line, its points and a spline"}}

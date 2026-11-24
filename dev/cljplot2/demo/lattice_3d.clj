@@ -17,7 +17,7 @@
 
 (def fig-6-1
   "Fig 6.1: earthquake locations and depths (depth growing downward), a panel per magnitude interval."
-  {:data (shingle/shingle quakes :mag {:count 4 :overlap 0.1 :as :magnitude :label "Magnitude"})
+  {:data (shingle/shingle quakes :mag {:n 4 :overlap 0.1 :as :magnitude :label "Magnitude"})
    :mapping {:x :long :y :lat :z :depth :facet :magnitude}
    :charts [(chart/cloud {:domain {:z [690 40]} :view {:azimuth 105 :elevation 20} :size 3
                           :axis-titles {:x "Longitude" :y "Latitude" :z "Depth"}})]
@@ -59,9 +59,7 @@
                           :axis-titles {:x "Longitude" :y "Latitude" :z "Depth"}})]
    :labels {:title "Magnitude band (color) and stations (size)"}})
 
-(def ^:private chem97
-  (mapv (fn [row] {:score (parse-long (:score row)) :gender (:gender row) :gcsescore (parse-double (:gcsescore row))})
-        (data/csv-rows "chem97.csv")))
+(def ^:private chem97 (data/chem97-rows))
 
 (def ^:private chem97-table
   "Chem97 counts by A-level score, GCSE score decile (intervals, see [[cljplot2.data.levels/bin]]) and gender - every

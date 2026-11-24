@@ -216,7 +216,7 @@
 (plot/render-image
  (plot/arrange [{:data iris
                  :mapping {:x :sepal-length :color :species}
-                 :charts [(chart/density {:width 2})]
+                 :charts [(chart/density {:line-width 2})]
                  :labels {:title "lines" :x "sepal length [cm]"}}
                 {:data iris
                  :mapping {:x :sepal-length :color :species}
@@ -801,6 +801,6 @@
 (plot/render-image
  {:data iris
   :mapping {:x :petal-length :color :species}
-  :charts [(chart/ecdf {:width 2})]
+  :charts [(chart/ecdf {:line-width 2})]
   :labels {:title "ECDF of petal length by species" :x "petal length [cm]"}}
  {:width 800 :height 450})

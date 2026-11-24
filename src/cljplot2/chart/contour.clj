@@ -8,21 +8,21 @@
 
   * `:levels` - an integer: that many levels evenly spread over the range of every sampled value (the ends left
     out; default 10), or a vector of level values
-  * `:fill` - `true`: fill the region at or above each level (lowest first, so the bands stack; holes stay open)
+  * `:filled` - `true`: fill the region at or above each level (lowest first, so the bands stack; holes stay open)
     instead of drawing lines; each band colored by its middle value (between its level and the next, the top band up
-    to the largest value); grouped filled contours are translucent by default (alpha × 0.5), the groups overlap
+    to the largest value); grouped filled contours are translucent by default (alpha factor × 0.5), the groups overlap
   * colors: by default each level its color through the plot's color scale over the field's value range (a computed
     color, legend titled like [[cljplot2.chart.field]]; the lowest level isn't the gradient's end); option `:color` -
     one color for every line; a grouping mapping (`:color` with
     categorical values, `:group`, other ordinal aesthetics) - a field per group (points / gridded data of the group)
     with its lines in the group's style, levels shared by the groups
-  * `:width`, `:dash`, `:alpha` (multiplies the colors' alpha, a fraction)
+  * `:line-width`, `:dash`, `:alpha-factor` (multiplies the colours' alpha, a fraction)
   * `:labels` (line contours only; default none) - `true`: each line labelled with its level (a number to at most 2
     decimals, see [[cljplot2.content.label/value-text]]), or a function of `{:level v}` returning the text (`nil` - no
     label, e.g. every second level): horizontal text centred halfway along the line (by its pixel length), text role
     `:contour-label` (a translucent background over the line, which isn't cut); a line shorter than twice its label
     gets none, a label leaving the panel or overlapping one already drawn is skipped, lines not drawn (no color) none (lowest levels first); labels are drawn after all
-    lines. With `:fill true` - `ex-info {:key :labels}`.
+    lines. With `:filled true` - `ex-info {:key :labels}`.
 
   On a `:log` axis the field is sampled (a density estimated) in log10 coordinates, see [[cljplot2.data.field]].
 
@@ -30,7 +30,7 @@
   (:require [clojure2d.core :as c2d]
             [fastmath.core :as m]
             [fastmath.vector :as v]
-            [cljplot2.chart.field :as field-chart]
+            [cljplot2.chart.common :as common]
             [cljplot2.content.label :as label]
             [cljplot2.data.contour :as contour]
             [cljplot2.data.field :as field]
@@ -48,14 +48,14 @@
 (set! *unchecked-math* :warn-on-boxed)
 
 (def ^:private style-entries
-  "Style entries of the contour chart (theme `[:chart :contour]`): its own `:color`, the line style without its colour, `:alpha`."
+  "Style entries of the contour chart (theme `[:chart :contour]`): its own `:color`, the line style without its colour, `:alpha-factor`."
   (-> [(schema/optional :color {:description (str "one colour for every line instead of colouring by level (contour's own :color, "
                                                   "not the line style's)")
                                 :cljplot2/default-doc (str "the theme's, for grouped lines without a mapped colour; ungrouped lines "
                                                            "are coloured by level, lines grouped by :color take their group's colour")}
                         schema/color)]
       (into (remove #(= :color (first %))) polyline/style-entries)
-      (conj (schema/optional :alpha {:description "opacity multiplying the colours' alpha"
+      (conj (schema/optional :alpha-factor {:description "factor multiplying the colours' alpha"
                                      :cljplot2/default-doc "the theme's; grouped filled contours take half of it"}
                              schema/fraction))))
 
@@ -65,19 +65,19 @@
    :options (schema/with-rules
              (-> [:map {:closed true}]
                  (into style-entries)
-                 (into field/options)
+                 (into field/source-options)
                  (into data/common-options)
                  (into theme/theme-style-entries)
                  (conj (schema/optional :levels {:description "contour levels: a count evenly spread over the range of every sampled value (the ends left out), or a vector of level values"
                                                  :default 10}
                                         [:or [:int {:min 1 :max 1000}] [:vector {:min 1} schema/finite]])
-                       (schema/optional :fill {:description "fill the region at or above each level, each band coloured by its middle value, instead of drawing lines"
+                       (schema/optional :filled {:description "fill the region at or above each level, each band coloured by its middle value, instead of drawing lines"
                                                :default false}
                                         :boolean)
                        (schema/nilable :labels {:description "line contours only: label each line with its level - true (the number) or a function of {:level v} returning the text (nil - no label)"
                                                 :default false}
                                        [:or :boolean schema/function])))
-             [#(when (and (:labels %) (:fill %)) "labels need line contours, not :fill true") [:labels]])
+             [#(when (and (:labels %) (:filled %)) "labels need line contours, not :filled true") [:labels]])
    :mapping [:maybe [:map
                      (schema/nilable :x {:description "x of the points (density) or of the gridded data"} schema/accessor)
                      (schema/nilable :y {:description "y of the points (density) or of the gridded data"} schema/accessor)
@@ -89,7 +89,7 @@
                      (schema/nilable :group {:description "groups without a visual aesthetic, each its own field"} schema/accessor)]]})
 
 (def ^{:private true :const true :tag 'double} grouped-fill-alpha
-  "Alpha factor of grouped filled contours without an `:alpha` option: the groups' regions overlap."
+  "Alpha factor of grouped filled contours without an `:alpha-factor` option: the groups' regions overlap."
   0.5)
 
 (defn- grouped?
@@ -111,11 +111,11 @@
   - `options` (map): the chart's options.
   - `mapping` (map): the merged mapping.
 
-  Returns `{:color title}` - lines (or bands) coloured by level, titled as the field's value (see [[cljplot2.chart.field/value-title]]); `{}` with a fixed `:color` option or a grouping mapping (the groups colour the lines)."
+  Returns `{:color title}` - lines (or bands) coloured by level, titled as the field's value (see [[cljplot2.data.field/value-title]]); `{}` with a fixed `:color` option or a grouping mapping (the groups colour the lines)."
   [options mapping]
   (if (or (:color options) (grouped? mapping))
     {}
-    {:color (field-chart/value-title options mapping)}))
+    {:color (field/value-title options mapping)}))
 
 (defn- group-fields
   "Gives the fields of a contour chart: one per panel, or per group in a panel when grouped.
@@ -145,14 +145,17 @@
 
   Parameters:
 
-  - `chart` (map): the chart value - `:options` (`:levels`, `:fill`, `:labels`, the source and the style).
+  - `chart` (map): the chart value - `:options` (`:levels`, `:filled`, `:labels`, the source and the style).
   - `split` (map): `:groups` (`{panel rows}`), `:mapping` (merged).
   - `env` (map): `:theme`, `:plot-scales` and grouping settings.
 
   Returns per panel `{:contours [{:level l :color-value v :aesthetics a :lines [{:points :closed?} ..]} ..] :style st :fill? b :by-level? b :labels l}` (filled: `:rings [[..] ..]` instead of `:lines`); extents x / y - the sampled domain, color - the value range with the levels (by level: the lowest line or band isn't the gradient's end), or the groups' values; no padding, `:na`, `:dropped` (rows without finite x / y; `:field` - panels, or groups when grouped, with rows but no field).
 
+  Throws `ex-info {:key :mapping}` when rows exist but none has a finite `:x`, `:y` (or gridded `:value`), see [[cljplot2.data.field/check-mapped!]].
+
   See also [[cljplot2.data.contour/isolines]], [[cljplot2.data.contour/level-rings]]."
   [{:keys [options] :as chart} {:keys [groups mapping]} {:keys [theme plot-scales] :as env}]
+  (field/check-mapped! (field/source-kind options mapping) mapping groups)
   (let [items (group-fields options mapping groups env)
         ;; read by the domain, the sampling, the extents and the NA check
         fields (filterv #(some? (nth % 2)) items)
@@ -161,8 +164,8 @@
         transforms (field/axis-transforms plot-scales)
         sampled (mapv (fn [[panel aesthetics {:keys [f]}]] [panel aesthetics (field/sample f domain size transforms)]) fields)
         [lo hi :as value-range] (field/value-range (map #(nth % 2) sampled))
-        levels (contour/levels value-range (get options :levels 10))
-        fill? (true? (:fill options))
+        levels (contour/levels value-range (data/option options :levels 10))
+        fill? (true? (:filled options))
         by-level? (not (or (:color options) (grouped? mapping)))
         ;; a filled band's color - the middle of its level and the next (the top band: up to the largest value)
         color-values (if (and fill? (seq levels))
@@ -179,7 +182,7 @@
                                       :lines (mapv #(update % :points (partial in-data grid)) (contour/isolines grid level))}))))
                        {} sampled)
         st (cond-> (theme/resolved-style theme chart)
-             (and fill? (grouped? mapping) (nil? (:alpha options))) (update :alpha (fn [alpha] (m/* grouped-fill-alpha (double (or alpha 1.0))))))
+             (and fill? (grouped? mapping) (nil? (:alpha-factor options))) (update :alpha-factor (fn [factor] (m/* grouped-fill-alpha (double (or factor 1.0))))))
         [[x0 x1] [y0 y1]] domain
         group-extents (when (grouped? mapping)
                         (group/aesthetic-extents (update-vals (group-by first fields)
@@ -196,7 +199,7 @@
                                                       :max (m/max (double hi) (double (peek levels)))})
                                        group-extents (merge (get group-extents panel)))]))
                     (keys panels))
-     :padding {:x [0.0 0.0] :y [0.0 0.0]}
+     :padding data/zero-padding
      :na (if (some (fn [[_ a]] (some nil? (vals a))) fields) (set (for [[_ a] fields [k v] a :when (nil? v)] k)) #{})
      :dropped (assoc (field/dropped-positions (field/source-kind options mapping) mapping groups)
                      :field (count (remove #(some? (nth % 2)) items)))}))
@@ -315,7 +318,7 @@
   [_chart {:keys [contours style fill? by-level? labels]} canvas box scales env]
   (let [projection (scale/projection scales)
         to-pixels (fn [points] (mapv (fn [[x y]] (let [^fastmath.vector.Vec2 p (projection x y)] [(.x p) (.y p)])) points))
-        alpha (:alpha style)
+        alpha-factor (:alpha-factor style)
         ;; contours with a drawn color, lowest level first: only their lines get labels
         visible (keep (fn [contour]
                         (let [st (level-style contour style scales env by-level?)]
@@ -323,12 +326,12 @@
                       (sort-by :level contours))]
     (doseq [[contour st] visible]
       (if fill?
-        (do (c2d/set-color canvas (cond-> (:color st) alpha (draw/faded alpha)))
+        (do (c2d/set-color canvas (cond-> (:color st) alpha-factor (draw/faded alpha-factor)))
             (c2d/shape canvas (polyline/rings-path (map to-pixels (:rings contour))) false))
         (polyline/stroke-runs! canvas
                                (map (fn [{:keys [points closed?]}] (to-pixels (if closed? (conj points (first points)) points)))
                                     (:lines contour))
-                               (assoc st :color (cond-> (:color st) alpha (draw/faded alpha))))))
+                               (assoc st :color (cond-> (:color st) alpha-factor (draw/faded alpha-factor))))))
     (when (and labels (not fill?))
       (draw-labels! canvas (map first visible) to-pixels labels (assoc env :panel box)))))
 
@@ -345,7 +348,7 @@
 
   Draws a line in the key's colour and the chart's line style; for filled contours a filled square."
   [{:keys [options] :as chart} attributes canvas box env]
-  (let [st (merge (theme/resolved-style (:theme env) chart) (select-keys attributes [:color :dash]))]
-    (if (:fill options)
+  (let [st (theme/key-style env chart attributes [:color :dash])]
+    (if (:filled options)
       (draw/bar-key! canvas box {:color (:color st) :stroke-width 0} false)
       (polyline/key-glyph! canvas box st :none))))

@@ -111,11 +111,11 @@
 (deftest set-style-test
   (c2d/with-canvas [c (c2d/canvas 5 5)]
     (testing "styles that draw nothing - nil, :none, no colour, :none colour, no or non-positive width"
-      (doseq [st [nil :none {} {:width 1} {:color :none :width 1} {:color :red} {:color :red :width 0} {:color :red :width -1}]]
+      (doseq [st [nil :none {} {:line-width 1} {:color :none :line-width 1} {:color :red} {:color :red :line-width 0} {:color :red :line-width -1}]]
         (is (nil? (polyline/set-style! c st)) (pr-str st))))
     (testing "a drawing style"
-      (is (true? (polyline/set-style! c {:color :red :width 2})))
-      (is (true? (polyline/set-style! c {:color :red :width 1 :dash :dashed}))))))
+      (is (true? (polyline/set-style! c {:color :red :line-width 2})))
+      (is (true? (polyline/set-style! c {:color :red :line-width 1 :dash :dashed}))))))
 
 (deftest name-text-test
   (is (= "a" (label/name-text :a)))

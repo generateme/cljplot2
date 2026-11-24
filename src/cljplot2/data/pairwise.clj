@@ -188,7 +188,7 @@
    (schema/nilable :label {:description "the statistic's label in the rows"
                            :cljplot2/default-doc "the statistic's label, value for a function"}
                    string?)
-   (schema/optional :diagonal? {:description "rows of a variable with itself (square matrix)" :default false} schema/bool)
+   (schema/optional :self-pairs {:description "rows of a variable with itself (square matrix)" :default false} schema/bool)
    (schema/optional :triangle {:description "the cells of a square matrix: :full, :lower (y after x in variable order) or :upper; :lower and :upper need a symmetric statistic"
                                :default :full}
                     [:enum :full :lower :upper])])
@@ -200,16 +200,16 @@
 
   - `options` (map): the checked options of [[matrix-rows]].
 
-  Returns a sequence of `[x y]`: a square matrix keeps the cells of `:triangle` (lower - y after x in variable order) and the diagonal with `:diagonal?`; a rectangular one every pair."
-  [{:keys [variables x-variables y-variables diagonal? triangle]}]
+  Returns a sequence of `[x y]`: a square matrix keeps the cells of `:triangle` (lower - y after x in variable order) and the diagonal with `:self-pairs`; a rectangular one every pair."
+  [{:keys [variables x-variables y-variables triangle] self-pairs :self-pairs}]
   (if variables
     (let [indexed (map-indexed vector variables)]
       (for [[^long i y] indexed
             [^long j x] indexed
             :when (case (or triangle :full)
-                    :full (or diagonal? (m/not== i j))
-                    :lower (or (m/> i j) (and diagonal? (m/== i j)))
-                    :upper (or (m/< i j) (and diagonal? (m/== i j))))]
+                    :full (or self-pairs (m/not== i j))
+                    :lower (or (m/> i j) (and self-pairs (m/== i j)))
+                    :upper (or (m/< i j) (and self-pairs (m/== i j))))]
         [x y]))
     (for [y y-variables x x-variables] [x y])))
 
@@ -238,7 +238,7 @@
     - `:variables` - a square matrix of these distinct variables (at least 2), or `:x-variables` with `:y-variables` - a rectangular one (every pair, a variable in both lists too);
     - `:method` - the statistic, a key of [[statistics]] or a function of two samples (default `:pearson`);
     - `:label` - the statistic's label (default its `:label`, `value` for a function);
-    - `:diagonal?` - include a variable with itself in a square matrix (default `false`);
+    - `:self-pairs` - include a variable with itself in a square matrix (default `false`);
     - `:triangle` - `:full` (default), `:lower` or `:upper` cells of a square matrix.
 
   Returns a vector of rows `{:x x :y y :value v :n n :statistic label}` in row order (y outer, x inner, in variable order): `v` - the statistic of the x sample against the y sample `(f xs ys)` (see [[cell-values]]), `nil` when it can't be computed (a tile paints it in the NA colour); `n` - the sample size. For a matrix like `pairs` with `chart/tile`, give the axes the variable order (x domain the variables, y domain the variables reversed - the first variable on top): tile orders categories by first appearance with y growing upward.
@@ -249,7 +249,7 @@
   {:cljplot2/api true :cljplot2/options matrix-rows-options}
   [rows {:keys [variables x-variables y-variables label triangle] :as options}]
   (schema/check-options! matrix-rows-options options)
-  (let [method (get options :method :pearson)
+  (let [method (data/option options :method :pearson)
         symmetric? (= :symmetric (statistic-symmetry method))
         statistic (statistic-label method label)]
     (when-not (or variables (and x-variables y-variables))

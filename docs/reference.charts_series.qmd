@@ -359,7 +359,7 @@ The default band of a fitted method, given explicitly (`:band :confidence`), and
 :::
 
 
-Shared options: [Line style](reference.shared_options.html#line-style) (`:color` `:width` `:dash`); [Fill patterns](reference.shared_options.html#fill-patterns) (`:pattern` `:pattern-color`); [Data and mapping](reference.shared_options.html#data-and-mapping) (`:data` `:mapping`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`).
+Shared options: [Line style](reference.shared_options.html#line-style) (`:color` `:line-width` `:dash`); [Fill patterns](reference.shared_options.html#fill-patterns) (`:pattern` `:pattern-color`); [Data and mapping](reference.shared_options.html#data-and-mapping) (`:data` `:mapping`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`).
 
 
 ## candlestick
@@ -398,7 +398,7 @@ Its options: the up and down colours and patterns, body and wick widths, and the
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:up-color</td><td>a clojure2d color or :none</td><td>[26.0 152.0 80.0 255.0]</td><td>colour of a candle closing at or above its open</td></tr><tr><td>:down-color</td><td>a clojure2d color or :none</td><td>[215.0 48.0 39.0 255.0]</td><td>colour of a candle closing below its open</td></tr><tr><td>:body-width</td><td>a number in [0 1]</td><td>0.7</td><td>body width, a fraction of the smallest pixel gap between distinct x (of a band's width on a bands scale)</td></tr><tr><td>:wick-width</td><td>a non-negative number</td><td>1</td><td>wick (and OHLC bar) width in pixels</td></tr><tr><td>:stroke-color</td><td>a clojure2d color or :none</td><td>:none</td><td>body outline colour: a colour or :none</td></tr><tr><td>:up-pattern</td><td>a pattern name (:back-hatch :cross :dense-dots :diagonal-cross :dots :hatch :horizontal :solid :vertical) or a pattern map</td><td>:solid</td><td>pattern drawn over the bodies of up candles</td></tr><tr><td>:down-pattern</td><td>a pattern name (:back-hatch :cross :dense-dots :diagonal-cross :dots :hatch :horizontal :solid :vertical) or a pattern map</td><td>:solid</td><td>pattern drawn over the bodies of down candles</td></tr><tr><td>:pattern-color</td><td>:darker or a clojure2d color or :none</td><td>:darker</td><td>pattern ink: a colour, :none or :darker (the darkened body colour)</td></tr><tr><td>:style</td><td>one of :candle :ohlc</td><td>:candle</td><td>:candle (wick and body) or :ohlc (a low-high bar with open and close ticks)</td></tr><tr><td>:padding</td><td>map of one of :x :y to [lo hi], non-negative numbers</td><td>0.05 on every side (the x extent also reaches half the smallest x gap beyond the data)</td><td>padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:up-color</td><td>a clojure2d color or :none</td><td>[26.0 152.0 80.0 255.0]</td><td>colour of a candle closing at or above its open</td></tr><tr><td>:down-color</td><td>a clojure2d color or :none</td><td>[215.0 48.0 39.0 255.0]</td><td>colour of a candle closing below its open</td></tr><tr><td>:width</td><td>a number in [0 1]</td><td>0.7</td><td>body width, a fraction of the smallest pixel gap between distinct x (of a band's width on a bands scale)</td></tr><tr><td>:line-width</td><td>a non-negative number</td><td>1</td><td>wick (and OHLC bar) line width in pixels</td></tr><tr><td>:stroke-color</td><td>a clojure2d color or :none</td><td>:none</td><td>body outline colour: a colour or :none</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>body outline width in pixels</td></tr><tr><td>:up-pattern</td><td>a pattern name (:back-hatch :cross :dense-dots :diagonal-cross :dots :hatch :horizontal :solid :vertical) or a pattern map</td><td>:solid</td><td>pattern drawn over the bodies of up candles</td></tr><tr><td>:down-pattern</td><td>a pattern name (:back-hatch :cross :dense-dots :diagonal-cross :dots :hatch :horizontal :solid :vertical) or a pattern map</td><td>:solid</td><td>pattern drawn over the bodies of down candles</td></tr><tr><td>:pattern-color</td><td>:darker or a clojure2d color or :none</td><td>:darker</td><td>pattern ink: a colour, :none or :darker (the darkened body colour)</td></tr><tr><td>:style</td><td>one of :candle :ohlc</td><td>:candle</td><td>:candle (wick and body) or :ohlc (a low-high bar with open and close ticks)</td></tr><tr><td>:padding</td><td>map of one of :x :y to [lo hi], non-negative numbers</td><td>0.05 on every side (the x extent also reaches half the smallest x gap beyond the data)</td><td>padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span</td></tr></tbody></table>
 ```
 
 :::
@@ -409,13 +409,13 @@ Its options: the up and down colours and patterns, body and wick widths, and the
 ```clojure
 (plot/render-image (plot/arrange [{:data ohlc :mapping {:x :date :open :open :high :high :low :low :close :close}
                                    :charts [(chart/candlestick {:up-color [33 102 172] :down-color [240 140 30]
-                                                                :body-width 0.4 :stroke-color :black})]
-                                   :labels {:title "colours, :body-width 0.4"}}
+                                                                :width 0.4 :stroke-color :black :stroke-width 1.5})]
+                                   :labels {:title "colours, :width 0.4, outlined"}}
                                   {:data ohlc :mapping {:x :date :open :open :high :high :low :low :close :close}
                                    :charts [(chart/candlestick {:down-pattern :hatch :pattern-color :black})]
                                    :labels {:title ":down-pattern :hatch"}}
                                   {:data ohlc :mapping {:x :date :open :open :high :high :low :low :close :close}
-                                   :charts [(chart/candlestick {:style :ohlc :wick-width 2})]
+                                   :charts [(chart/candlestick {:style :ohlc :line-width 2})]
                                    :labels {:title ":style :ohlc"}}]
                                  {:columns 3})
                    {:width 1000 :height 320})

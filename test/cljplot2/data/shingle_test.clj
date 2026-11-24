@@ -10,8 +10,8 @@
   (:import [java.awt.image BufferedImage]))
 
 (def ^:private quake-mags
-  "`mag` column of dev/resources/quakes.json (R datasets::quakes)."
-  (mapv parse-double (map second (re-seq #"\"mag\":([0-9.]+)" (slurp "dev/resources/quakes.json")))))
+  "`mag` column of notebooks/data/quakes.json (R datasets::quakes)."
+  (mapv parse-double (map second (re-seq #"\"mag\":([0-9.]+)" (slurp "notebooks/data/quakes.json")))))
 
 (defn- bounds [ivs] (mapv (juxt :lo :hi) ivs))
 (defn- close? [a b] (every? true? (map (fn [[a1 a2] [b1 b2]] (and (< (Math/abs (- a1 b1)) 1e-9) (< (Math/abs (- a2 b2)) 1e-9))) a b)))
@@ -19,25 +19,25 @@
 (deftest equal-count-test
   (testing "matches R co.intervals / equal.count (references from Rscript)"
     (is (= 1000 (count quake-mags)))
-    (is (close? [[3.95 4.55] [4.25 4.75] [4.45 4.95] [4.65 6.45]] (bounds (shingle/equal-count quake-mags {:count 4}))))
+    (is (close? [[3.95 4.55] [4.25 4.75] [4.45 4.95] [4.65 6.45]] (bounds (shingle/equal-count quake-mags {:n 4}))))
     (is (close? [[3.95 4.35] [4.15 4.45] [4.35 4.65] [4.45 4.85] [4.65 5.05] [4.85 6.45]]
-                (bounds (shingle/equal-count quake-mags {:count 6 :overlap 0.25}))))
+                (bounds (shingle/equal-count quake-mags {:n 6 :overlap 0.25}))))
     (are [vs opts expected] (close? expected (bounds (shingle/equal-count vs opts)))
-      [1 2 3 4 5] {:count 2} [[0.5 3.5] [2.5 5.5]]
-      [5 5 5] {:count 3} [[5.0 5.0]]
-      [1 2 2 3 10] {:count 1 :overlap 0} [[0.5 10.5]]))
+      [1 2 3 4 5] {:n 2} [[0.5 3.5] [2.5 5.5]]
+      [5 5 5] {:n 3} [[5.0 5.0]]
+      [1 2 2 3 10] {:n 1 :overlap 0} [[0.5 10.5]]))
   (testing "no values: no intervals; nil / NaN ignored"
-    (is (= [] (shingle/equal-count [] {:count 3})))
-    (is (= [] (shingle/equal-count [nil ##NaN] {:count 3})))
-    (is (close? [[0.5 3.5] [2.5 5.5]] (bounds (shingle/equal-count [1 nil 2 ##NaN 3 4 5] {:count 2})))))
+    (is (= [] (shingle/equal-count [] {:n 3})))
+    (is (= [] (shingle/equal-count [nil ##NaN] {:n 3})))
+    (is (close? [[0.5 3.5] [2.5 5.5]] (bounds (shingle/equal-count [1 nil 2 ##NaN 3 4 5] {:n 2})))))
   (testing "errors"
     (are [vs opts] (= :options (first (:in (error #(shingle/equal-count vs opts)))))
-      [1 2] {:count 0}
-      [1 2] {:count 1.5}
+      [1 2] {:n 0}
+      [1 2] {:n 1.5}
       [1 2] {:overlap 1}
       [1 2] {:overlap -0.1}
       [1 2] {:as :b})
-    (is (= {:key :shingle :value "x"} (error #(shingle/equal-count [1 "x"] {:count 1}))) "non-numeric value")))
+    (is (= {:key :shingle :value "x"} (error #(shingle/equal-count [1 "x"] {:n 1}))) "non-numeric value")))
 
 (deftest interval-test
   (let [a (shingle/interval 1 2) b (shingle/interval 1 3) c (shingle/interval 0.5 9)]
@@ -60,12 +60,12 @@
       (is (= [[1 "[0, 3]"] [3 "[0, 3]"] [3 "[3, 6]"] [5 "[3, 6]"]] (map (juxt :v (comp str :band)) out)))
       (is (= {:dropped 3} (meta out)) "nil, NaN and the uncovered 50"))
     (testing "equal-count intervals; row count = sum of memberships"
-      (let [out (shingle/shingle (map #(hash-map :mag %) quake-mags) :mag {:count 4 :as :m})
-            ivs (shingle/equal-count quake-mags {:count 4})]
+      (let [out (shingle/shingle (map #(hash-map :mag %) quake-mags) :mag {:n 4 :as :m})
+            ivs (shingle/equal-count quake-mags {:n 4})]
         (is (= (reduce + (for [iv ivs v quake-mags :when (shingle/contains-value? iv v)] 1)) (count out)))
         (is (= {:dropped 0} (meta out)))))
     (testing "empty data; columnar data; function accessor"
-      (is (= [] (shingle/shingle [] :v {:count 2 :as :b})))
+      (is (= [] (shingle/shingle [] :v {:n 2 :as :b})))
       (is (= 2 (count (shingle/shingle {:v [1 2]} #(:v %) {:intervals [[0 5]] :as :b})))))
     (testing "errors"
       (are [opts in] (= in (:in (error #(shingle/shingle data :v opts))))
@@ -73,7 +73,7 @@
         {:intervals [] :as :b} [:intervals]
         {:intervals [[3 0]] :as :b} [:intervals 0]
         {:intervals [[0 1 2]] :as :b} [:intervals 0]
-        {:count 0 :as :b} [:count]
+        {:n 0 :as :b} [:n]
         {:as :b :lable "x"} [:lable])
       (is (= [:accessor] (:in (error #(shingle/shingle data "v" {:as :b})))))
       (is (= :shingle (:key (error #(shingle/shingle [{:v "x"}] :v {:intervals [[0 1]] :as :b}))))))))
@@ -113,7 +113,7 @@
       (is (= "mag: [3, 6]" (str (:m (first (shingle/shingle data :mag {:intervals [[3 6]] :as :m :label true}))))))
       (is (= "Magnitude: [3, 6]" (str (:m (first (shingle/shingle data :mag {:intervals [[3 6]] :as :m :label "Magnitude"})))))))
     (testing "labelled intervals: same order, still contain values, equal within one shingle"
-      (let [out (shingle/shingle (map #(hash-map :mag %) quake-mags) :mag {:count 4 :as :m :label true})
+      (let [out (shingle/shingle (map #(hash-map :mag %) quake-mags) :mag {:n 4 :as :m :label true})
             ivs (distinct (map :m out))]
         (is (= 4 (count ivs)))
         (is (= (sort-by :lo ivs) (sort ivs)))

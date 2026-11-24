@@ -117,8 +117,8 @@
     (are [opts k] (= k (:key (error #(build (tm {:charts [(chart/treemap opts)]})))))
       {:layout :pie} :layout
       {:group-labels 1} :group-labels
-      {:padding -1} :padding
-      {:border-width "1"} :border-width)))
+      {:gap -1} :gap
+      {:stroke-width "1"} :stroke-width)))
 
 (deftest no-axes-test
   (let [built (build (tm {}))]
@@ -128,7 +128,7 @@
 ;; drawing
 
 (def ^:private plain {:plot {:background :white} :palette {:color [[255 0 0] [0 0 255] [0 255 0]]}
-                      :chart {:treemap {:padding 0 :border-color :none}}})
+                      :chart {:treemap {:gap 0 :stroke-color :none}}})
 
 (deftest colors-test
   (testing "top-level groups get palette colors; leaves share them"

@@ -17,7 +17,7 @@
 (def ^:private regions-theme {:palette {:color :category10}})
 
 (def migration-directed
-  (plot/chord flows {:directed? true :min-value 0.1 :theme regions-theme
+  (plot/chord flows {:directed true :min-value 0.1 :theme regions-theme
                      :title "Migration between world regions (flows < 0.1 M left out)"}))
 
 (def migration-undirected

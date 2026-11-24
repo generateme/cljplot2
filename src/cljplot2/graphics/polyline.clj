@@ -2,19 +2,20 @@
   "Polylines in pixel coordinates: stroked runs of points, broken where a coordinate is NaN, and areas between them
   and a baseline.
 
-  Line style: `{:color c :width w :dash d}` - `:color` a clojure2d color or `:none`, `:width` pixels (0 draws
+  Line style: `{:color c :line-width w :dash d}` - `:color` a clojure2d color or `:none`, `:line-width` pixels (0 draws
   nothing), `:dash` `:none` / absent, a name of [[cljplot2.schema/dash-styles]] or a sequence of positive dash
   lengths (resolved by [[dash-pattern]] - every stroke with a dash goes through it).
 
   Functions: runs [[finite-runs]], [[runs]], lengths [[segment-lengths]], [[cumulative-lengths]], [[path-length]]; strokes [[set-style!]], [[stroke-runs!]], [[draw!]],
   [[draw-segments!]], [[bridge-style]], [[key-glyph!]]; shapes [[trail-shape]], [[rings-path]]; areas
   [[fill-polygons!]], [[fill-under!]], [[fill-runs-to-baseline!]], [[fill-closed-runs!]], [[fill-between!]],
-  [[fill-area!]], [[area-color]], gradients [[gradient-fn]], [[fill-gradient-paint!]]."
+  [[fill-area!]], [[area-color]], gradients [[gradient-fn]], [[fill-gradient-paint!]].
+
+  Schemas: [[style-entries]], [[bridge-schema]], [[fill-gradient-schema]]."
   (:require [clojure2d.color :as c]
             [clojure2d.core :as c2d]
             [clojure2d.core.shape :as sh]
             [fastmath.core :as m]
-            [fastmath.vector :as v]
             [cljplot2.graphics.draw :as draw]
             [cljplot2.scale.position :as scale]
             [cljplot2.schema :as schema]
@@ -30,7 +31,7 @@
   (schema/in-fragment
    :line-style
    [(schema/optional :color {:description "line colour (a mapped :color wins)"} schema/color)
-    (schema/optional :width {:description "line width in pixels"} schema/non-neg)
+    (schema/optional :line-width {:description "line width in pixels"} schema/non-neg)
     (schema/nilable :dash {:description "dash style of the line (a mapped :dash wins)"} schema/dash)]))
 
 (defn finite-runs
@@ -80,15 +81,15 @@
   Parameters:
 
   - `canvas`: the canvas in graphics context.
-  - `style`: a line style map - `:color`, `:width`, `:dash` (see the namespace doc); `:none` or `nil` - no line (e.g. a theme grid line turned off).
+  - `style`: a line style map - `:color`, `:line-width`, `:dash` (see the namespace doc); `:none` or `nil` - no line (e.g. a theme grid line turned off).
 
   Returns true when the style draws; `nil` (nothing set) for `:none` or `nil`, a `nil` or `:none` colour, a missing or non-positive width."
   [canvas style]
-  (let [{:keys [color width dash]} (when (map? style) style)]
-    (when (and (some? color) (not (theme/none? color)) (number? width) (m/pos? (double width)))
+  (let [{:keys [color line-width dash]} (when (map? style) style)]
+    (when (and (some? color) (not (theme/none? color)) (number? line-width) (m/pos? (double line-width)))
       (let [pattern (dash-pattern dash)]
         (c2d/set-color canvas color)
-        (c2d/set-stroke-custom canvas (cond-> {:size width :cap :butt :join :round}
+        (c2d/set-stroke-custom canvas (cond-> {:size line-width :cap :butt :join :round}
                                         pattern (assoc :dash pattern)))
         true))))
 
@@ -126,21 +127,21 @@
   Parameters:
 
   - `style` (map): the line's style.
-  - `bridge` (map): `:alpha` (a fraction multiplying the line colour's alpha), optional `:width`, `:dash` (over the line's).
+  - `bridge` (map): `:alpha-factor` (a fraction multiplying the line colour's alpha), optional `:line-width`, `:dash` (over the line's).
 
   Returns the bridge's line style; a `:none` colour stays."
-  [style {:keys [^double alpha] :as bridge}]
+  [style {:keys [^double alpha-factor] :as bridge}]
   (let [color (:color style)]
-    (cond-> (merge style (select-keys bridge [:width :dash]))
-      (not (theme/none? color)) (assoc :color (draw/faded color alpha)))))
+    (cond-> (merge style (select-keys bridge [:line-width :dash]))
+      (not (theme/none? color)) (assoc :color (draw/faded color alpha-factor)))))
 
 (def bridge-schema
-  "Theme `:bridge` of a line style: `:alpha` (fraction of the line alpha), optional `:width`, `:dash`."
+  "Theme `:bridge` of a line style: `:alpha-factor` (fraction of the line alpha), optional `:line-width`, `:dash`."
   [:map {:closed true}
-   [:alpha {:description "bridge opacity, a fraction of the line's alpha"
+   [:alpha-factor {:description "bridge opacity, a fraction of the line's alpha"
             :cljplot2/default-doc "0.3 in the theme's :bridge (a given :bridge replaces it whole)"}
     schema/fraction]
-   (schema/optional :width {:description "bridge width in pixels" :cljplot2/default-doc "the line's width"} schema/non-neg)
+   (schema/optional :line-width {:description "bridge line width in pixels" :cljplot2/default-doc "the line's width"} schema/non-neg)
    (schema/nilable :dash {:description "dash style of the bridge" :cljplot2/default-doc "the line's dash"} schema/dash)])
 
 (defn segment-lengths
@@ -191,13 +192,13 @@
   - `canvas`: the canvas in graphics context.
   - `xs`, `ys` (indexed sequences of numbers): pixel coordinates; segment `i` runs from point `i` to `i + 1`.
   - `segment-colors` (fn of `i`): the colour of segment `i`; `nil` or `:none` skips it.
-  - `style` (map): `:width` (0 draws nothing), `:dash`.
+  - `style` (map): `:line-width` (0 draws nothing), `:dash`.
 
   Returns `nil`."
-  [canvas xs ys segment-colors {:keys [width dash]}]
-  (when (m/pos? (double width))
+  [canvas xs ys segment-colors {:keys [line-width dash]}]
+  (when (m/pos? (double line-width))
     (let [pattern (dash-pattern dash)
-          stroke (cond-> {:size width :cap :round :join :round} pattern (assoc :dash pattern))]
+          stroke (cond-> {:size line-width :cap :round :join :round} pattern (assoc :dash pattern))]
       (doseq [run (finite-runs xs ys)]
         (reduce (fn [^double phase segments]
                   (let [color (segment-colors (ffirst segments))

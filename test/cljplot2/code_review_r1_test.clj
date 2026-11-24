@@ -88,7 +88,7 @@
     (is (= (get-in theme/default-theme [:chart :scatter]) (theme/chart-style theme/default-theme :scatter {})))
     (is (= (merge (get-in theme/default-theme [:chart :segment]) (get-in theme/default-theme [:chart :network-edge]))
            (theme/chart-style theme/default-theme :segment {:theme-style :network-edge})))
-    (is (= 1 (:width (theme/chart-style theme/default-theme :segment {:theme-style :network-edge}))) "the kind's width kept"))
+    (is (= 1 (:line-width (theme/chart-style theme/default-theme :segment {:theme-style :network-edge}))) "the kind's width kept"))
   (testing "boundary: an unknown name - the kind's style; no kind style - the named one alone; nil theme"
     (is (= (get-in theme/default-theme [:chart :line]) (theme/chart-style theme/default-theme :line {:theme-style :nope})))
     (is (= {:size 3} (theme/chart-style {:chart {:n {:size 3}}} :mine {:theme-style :n})))
@@ -103,7 +103,7 @@
     (let [edges [{:from "a" :to "b" :value 1} {:from "b" :to "c" :value 2} {:from "a" :to "c" :value 3}]
           levels (tree/from-levels [{:g "x" :l "p"} {:g "x" :l "q"} {:g "y" :l "r"}] {:hierarchy [:g :l]})
           plots [(plot/network edges {:labels true}) (plot/arc edges {}) (plot/sankey edges {})
-                 (plot/alluvial [{:a "x" :b "u" :n 1} {:a "y" :b "v" :n 2}] {:axes [:a :b] :value :n})
+                 (plot/alluvial [{:a "x" :b "u" :n 1} {:a "y" :b "v" :n 2}] {:variables [:a :b] :value :n})
                  (plot/dendrogram (cl/hclust [[0.0] [1.0] [5.0]] {:method :complete}) {}) (plot/tree levels {})
                  (plot/bundle [{:from "p" :to "r"}] levels {}) (plot/sequences [{:sequence "a-b-end" :n 1}] {:value :n})
                  (plot/acf (map #(Math/sin (* 0.3 (double %))) (range 50)))]]
@@ -169,22 +169,22 @@
   (testing "a text chart draws in its :role; default :annotation"
     (is (map? (plot/build (assoc xy :charts [(chart/text {:role :network-label :text "a" :x 1 :y 1})]))))
     (is (map? (plot/build (assoc xy :charts [(chart/text {:role :mine :text "a" :x 1 :y 1})]
-                                 :theme {:text {:mine {:font "DejaVu Sans Mono" :size 9 :font-style :plain :color :black :padding 1}}})))))
+                                 :theme {:text {:mine {:font "DejaVu Sans Mono" :size 9 :font-style :plain :color :black :inset 1}}})))))
   (testing "boundary: a role the theme hasn't - an error at the option"
     (is (= [:charts 0 :options :role] (:in (error #(plot/build (assoc xy :charts [(chart/text {:role :nope :text "a" :x 1 :y 1})]))))))))
 
 (deftest style-rows-test
   (testing "a named style's rows: its kind's style keys, defaults merged"
     (let [rows (describe/style-rows :network-edge)]
-      (is (= [:color :width :dash] (map :key rows)))
+      (is (= [:color :line-width :dash] (map :key rows)))
       (is (= [(c/gray 120 200) 1 :none] (map :default rows)))))
   (testing "boundary: a line style (sectioned in the line chart's own table) - one table, no sections"
     (is (every? nil? (map :section (describe/style-rows :tree-link))))
     (is (<= (count (describe/style-rows :tree-link)) 12)))
   (testing "only the given style keys, in the kind's order"
-    (is (= [:color :width :dash] (map :key (describe/style-rows :tree-link [:dash :color :width]))))
-    (is (= [:width] (map :key (describe/style-rows :tree-link [:width]))))
-    (is (= [[:bridge] [:bridge :alpha] [:bridge :width] [:bridge :dash]] (map :path (describe/style-rows :tree-link [:bridge])))
+    (is (= [:color :line-width :dash] (map :key (describe/style-rows :tree-link [:dash :color :line-width]))))
+    (is (= [:line-width] (map :key (describe/style-rows :tree-link [:line-width]))))
+    (is (= [[:bridge] [:bridge :alpha-factor] [:bridge :line-width] [:bridge :dash]] (map :path (describe/style-rows :tree-link [:bridge])))
         "a map key with its nested rows"))
   (testing "boundary: no keys, a key the kind hasn't - an error keyed :style-keys; nil - every key"
     (is (= :style-keys (:key (error-data #(describe/style-rows :tree-link [])))))

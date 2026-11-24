@@ -103,9 +103,9 @@
                     :charts [(chart/rect {:mapping {:y0 :y0 :y1 :y1 :shape :s}})]})]
       (is (= 2 (count (get-in b [:stats 0 :data facet/single-panel :rects]))))
       (is (some? (plot/render-image {:data [{:y0 0 :y1 1 :s "a"}] :charts [(chart/rect {:mapping {:y0 :y0 :y1 :y1 :shape :s}})]} size)))))
-  (testing "invalid ends still counted under :position"
-    (is (= 1 (get-in (build {:data [{:y0 0 :y1 1} {:y0 "x" :y1 ##NaN}] :charts [(chart/rect {:mapping {:y0 :y0 :y1 :y1}})]})
-                     [:stats 0 :dropped :position])))))
+  (testing "invalid ends counted per mapped end"
+    (is (= {:y0 0 :y1 1} (get-in (build {:data [{:y0 0 :y1 1} {:y0 "x" :y1 ##NaN}] :charts [(chart/rect {:mapping {:y0 :y0 :y1 :y1}})]})
+                                 [:stats 0 :dropped])))))
 
 ;; 2. line gradient
 
@@ -115,7 +115,7 @@
   ([data] (line-plot data {:color red-blue} {}))
   ([data scales options]
    {:data data :mapping {:x :x :y :y :color :t} :scales scales :theme white
-    :charts [(chart/line (merge {:width 6} options))]}))
+    :charts [(chart/line (merge {:line-width 6} options))]}))
 
 (deftest line-gradient-test
   (testing "2.1 a linear color doesn't group: one line with point colors"
@@ -137,15 +137,15 @@
   (testing "2.3 round caps: the outer corner of a right angle is covered"
     (let [canvas (c2d/canvas 40 40)]
       (c2d/with-canvas-> canvas (c2d/set-background :white))
-      (c2d/with-canvas [c canvas] (polyline/draw-segments! c [5 20 20] [20 20 5] [:red :red] {:width 10}))
+      (c2d/with-canvas [c canvas] (polyline/draw-segments! c [5 20 20] [20 20 5] [:red :red] {:line-width 10}))
       (is (near (rgb (c2d/get-image canvas) 23 23) [255 0 0])))
     (let [canvas (c2d/canvas 40 40)]
       (c2d/with-canvas-> canvas (c2d/set-background :white))
-      (c2d/with-canvas [c canvas] (polyline/draw-segments! c [5 20 35] [20 ##NaN 20] [:red :red] {:width 4}))
+      (c2d/with-canvas [c canvas] (polyline/draw-segments! c [5 20 35] [20 ##NaN 20] [:red :red] {:line-width 4}))
       (is (near (rgb (c2d/get-image canvas) 20 20) [255 255 255]) "a NaN point breaks the line")
-      (c2d/with-canvas [c canvas] (polyline/draw-segments! c [5 35] [30 30] [nil] {:width 4}))
+      (c2d/with-canvas [c canvas] (polyline/draw-segments! c [5 35] [30 30] [nil] {:line-width 4}))
       (is (near (rgb (c2d/get-image canvas) 20 30) [255 255 255]) "a nil color skips the segment")
-      (c2d/with-canvas [c canvas] (polyline/draw-segments! c [5 35] [10 10] [:red] {:width 0}))
+      (c2d/with-canvas [c canvas] (polyline/draw-segments! c [5 35] [10 10] [:red] {:line-width 0}))
       (is (near (rgb (c2d/get-image canvas) 20 10) [255 255 255]) "zero width draws nothing")))
   (testing "2.4 an NA end gives the NA color; :groups {:na false} joins the neighbours"
     (let [data [{:x 0 :y 0 :t 0} {:x 5 :y 0 :t nil} {:x 10 :y 0 :t 10}]
@@ -227,6 +227,6 @@
   (testing "F4a rows with an unplaceable end are skipped before grouping: their colors count nowhere"
     (let [b (build {:data [{:y0 0 :y1 1 :v 0} {:y0 1 :y1 2 :v 10} {:y0 "x" :y1 ##NaN :v nil}]
                     :charts [(chart/rect {:mapping {:y0 :y0 :y1 :y1 :color :v}})]})]
-      (is (= 1 (get-in b [:stats 0 :dropped :position])))
+      (is (= [0 1] (mapv #(get-in b [:stats 0 :dropped %]) [:y0 :y1])) "a string end is a level, NaN is invalid")
       (is (not (contains? (get-in b [:stats 0 :na]) :color)))
       (is (= 0 (get-in b [:stats 0 :dropped :color]))))))

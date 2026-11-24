@@ -1,6 +1,7 @@
 (ns cljplot2.evolution-cycle3b-test
   "Evolution cycle 3b: groundwork (x keys, `fill-area!`, `:ymin` / `:ymax`), ribbon chart, smooth chart."
   (:require [clojure.test :refer [deftest testing is are]]
+            [cljplot2.graphics.curve :as curve]
             [cljplot2.test-util :refer [error]]
             [cljplot2.chart :as chart]
             [cljplot2.chart.ribbon :as ribbon]
@@ -99,28 +100,28 @@
 (deftest band-runs-test
   (let [xs [0 1 2 3 4]]
     (testing "2.2 a nil bound breaks the band; one-pair runs left out"
-      (is (= 2 (count (ribbon/band-runs xs [0 0 nil 0 0] [1 1 1 1 1] identity-projection {}))))
-      (is (= 1 (count (ribbon/band-runs xs [0 nil 0 0 0] [1 1 1 1 1] identity-projection {}))) "one point left of the gap")
-      (is (= [] (ribbon/band-runs [0] [0] [1] identity-projection {})))
-      (is (= [] (ribbon/band-runs [] [] [] identity-projection {}))))
+      (is (= 2 (count (curve/band-runs xs [1 1 1 1 1] [0 0 nil 0 0] identity-projection {}))))
+      (is (= 1 (count (curve/band-runs xs [1 1 1 1 1] [0 nil 0 0 0] identity-projection {}))) "one point left of the gap")
+      (is (= [] (curve/band-runs [0] [1] [0] identity-projection {})))
+      (is (= [] (curve/band-runs [] [] [] identity-projection {}))))
     (testing "NaN bounds (smooth bands) break the band too"
-      (is (= 2 (count (ribbon/band-runs xs [0 0 ##NaN 0 0] [1 1 1 1 1] identity-projection {})))))
+      (is (= 2 (count (curve/band-runs xs [1 1 1 1 1] [0 0 ##NaN 0 0] identity-projection {})))))
     (testing "2.3 ymin above ymax: the same runs swapped"
-      (let [[[u l]] (ribbon/band-runs xs [1 1 1 1 1] [0 0 0 0 0] identity-projection {})
-            [[u2 l2]] (ribbon/band-runs xs [0 0 0 0 0] [1 1 1 1 1] identity-projection {})]
+      (let [[[u l]] (curve/band-runs xs [0 0 0 0 0] [1 1 1 1 1] identity-projection {})
+            [[u2 l2]] (curve/band-runs xs [1 1 1 1 1] [0 0 0 0 0] identity-projection {})]
         (is (= [u l] [l2 u2]))))
     (testing "2.5 :interpolator samples both bounds through the data"
-      (let [[[u l]] (ribbon/band-runs xs [0 1 0 1 0] [5 6 5 6 5] identity-projection {:interpolator :cubic :along :x})]
+      (let [[[u l]] (curve/band-runs xs [5 6 5 6 5] [0 1 0 1 0] identity-projection {:interpolator :cubic :along :x})]
         (is (= 5 (count u)) "every pixel of a 4 px span")
         (is (close? 1e-9 [5 6 5 6 5] (map second u)))
         (is (close? 1e-9 [0 1 0 1 0] (map second l)))))
     (testing "2.8 flipped: sampled along pixel y"
-      (let [[[u]] (ribbon/band-runs xs [0 0 0 0 0] [1 2 1 2 1] (fn [x y] (Vec2. (double y) (double x)))
+      (let [[[u]] (curve/band-runs xs [1 2 1 2 1] [0 0 0 0 0] (fn [x y] (Vec2. (double y) (double x)))
                                     {:interpolator :cubic :along :y :sample-step 0.5})]
         (is (= 9 (count u)))
         (is (close? 1e-9 [1 2 1 2 1] (map first (take-nth 2 u))))))
     (testing "repeated x with an interpolator"
-      (is (= :interpolator (:key (error #(ribbon/band-runs [0 0 1] [0 0 0] [1 1 1] identity-projection
+      (is (= :interpolator (:key (error #(curve/band-runs [0 0 1] [0 0 0] [1 1 1] identity-projection
                                                            {:interpolator :cubic :along :x}))))))))
 
 (defn- red-pixels
@@ -158,7 +159,7 @@
   (testing "3.1.1 rows with invalid x or y left out (counted); categorical x throws"
     (let [s (stats (smooth-plot (into line-data [{:x nil :y 1} {:x 3 :y nil} {:x 4 :y ##NaN}]) {:method :lm}))]
       (is (= {:x 1 :y 2 :group 0} (select-keys (:dropped s) [:x :y :group]))))
-    (is (= :x (:key (error #(build (smooth-plot [{:x "a" :y 1} {:x "b" :y 2}] {:method :lm})))))))
+    (is (= [:mapping [:mapping :x]] ((juxt :key :in) (error #(build (smooth-plot [{:x "a" :y 1} {:x "b" :y 2}] {:method :lm})))))))
   (testing "notebook review: lm needs degree + 1 distinct x and degree + 2 rows (Anscombe IV)"
     (let [curves (fn [data opts] (let [s (stats (smooth-plot data (merge {:method :lm} opts)))]
                                    [(count (get-in s [:data facet/single-panel :curves])) (get-in s [:dropped :group])]))
@@ -323,7 +324,7 @@
       {:level [0.5 0.95]} {}
       {:method :lm} {:flip true}
       {:band :none} {}
-      {:fill [200 0 0 60] :dash :dashed :width 2} {})))
+      {:fill [200 0 0 60] :dash :dashed :line-width 2} {})))
 
 ;; review fixes
 

@@ -26,7 +26,7 @@
             [cljplot2.data.facet :as facet]
             [cljplot2.graphics.measure :as measure]
             [cljplot2.graphics.polyline :as polyline]
-            [cljplot2.graphics.space3d :as space3d]
+            [cljplot2.content.space3d :as space3d]
             [cljplot2.scale.coord :as coord]
             [cljplot2.scale.position :as scale]
             [cljplot2.theme :as theme])
@@ -62,7 +62,7 @@
   Each chart draws on its own copy of the graphics, clipped to the panel, with the default stroke (1 px, solid,
   square caps, miter joins) - no chart inherits the grid's or another chart's stroke (a dashed grid made stripplot
   ticks dashed). 3D charts (`:coords #{:three-d}`) of the panel share one scene: one box frame and one depth order of
-  all their primitives (see [[cljplot2.graphics.space3d/draw-scene!]]).
+  all their primitives (see [[cljplot2.content.space3d/draw-scene!]]).
 
   Parameters:
 

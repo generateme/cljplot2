@@ -1,14 +1,11 @@
 (ns cljplot2.demo.step10
   "Step 10 demo: rectangular treemaps of `portfolio.csv` (R data.tree).
   Squarified (default top-level colours), slice-and-dice, and coloured by currency (legend)."
-  (:require [clojure.data.csv :as csv]
-            [clojure.java.io :as io]
-            [cljplot2.chart :as chart]))
+  (:require [cljplot2.chart :as chart]
+            [cljplot2.demo.data :as data]))
 
 (def portfolio
-  (let [[header & rows] (csv/read-csv (slurp (io/resource "portfolio.csv")))
-        ks (map keyword header)]
-    (mapv (fn [r] (update (zipmap ks r) :Weight #(when (seq %) (parse-double %)))) rows)))
+  (mapv (fn [r] (update r :Weight #(when (seq %) (parse-double %)))) (data/resource-csv-rows "portfolio.csv")))
 
 (def mapping {:value :Weight :hierarchy [:AssetCategory :AssetClass :SubAssetClass]})
 

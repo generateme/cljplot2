@@ -7,7 +7,8 @@
   `miserables-links.csv` - vega-datasets (D. E. Knuth, The Stanford GraphBase, 1993; licence not specified);
   `migration.csv` - data-to-viz `13_AdjacencyDirectedWeighted_long.csv` (Yan Holtz, MIT), migration flows between
   regions (from, to, value)."
-  (:require [fastmath.random :as r]
+  (:require [clojure.string :as str]
+            [fastmath.random :as r]
             [fastmath.stats :as stats]
             [cljplot2.core :as plot]
             [cljplot2.data.graph :as graph]
@@ -36,12 +37,12 @@
 (def ^:private flows
   (let [rows (data/csv-rows "migration.csv")]
     ;; the file spells some names with dots ("South.Asia") - one spelling
-    (vec (for [{from :from to :to v :value} rows :let [v (parse-double v) name #(clojure.string/replace % "." " ")]
-               :when (and (pos? v) (not= (name from) (name to)))]
-           {:from (name from) :to (name to) :value v}))))
+    (vec (for [{from :from to :to v :value} rows :let [value (parse-double v) spaced #(str/replace % "." " ")]
+               :when (and (pos? value) (not= (spaced from) (spaced to)))]
+           {:from (spaced from) :to (spaced to) :value value}))))
 
 (def migration
-  (plot/network flows {:directed? true :layout :circle :labels true
+  (plot/network flows {:directed true :layout :circle :labels true
                        :edge-mapping {:size :value}
                        :scales {:size {:range [0.5 6] :title "migrants, M"}}
                        :title "Migration between world regions"}))
@@ -54,7 +55,7 @@
         r (stats/correlation-matrix (mapv (fn [k] (mapv k mtcars)) mtcars-variables))
         strong (mapv (fn [row] (mapv #(if (> (Math/abs (double %)) 0.7) % 0) row)) r)]
     (plot/network (mapv #(assoc % :r (:value %) :value (Math/abs (double (:value %))))
-                        (graph/adjacency->edges strong names {:directed? false}))
+                        (graph/adjacency->edges strong names {:whole-matrix false}))
                   {:nodes (mapv (fn [n] {:id n}) names) :rng (r/rng :mersenne 5) :labels true
                    :edge-mapping {:color #(if (pos? (double (:r %))) "positive" "negative")}
                    :scales {:color {:range {"positive" [33 102 172] "negative" [178 24 43]} :title "r"}}

@@ -28,7 +28,7 @@
     keyword or function of a row - by the item's sum of its finite values (non-negative)
   * `:value-label` - `true` writes each bar's length, signed as its value (negative bars negative - `(fn [l]
     (Math/abs (:value l)))`-style functions drop the sign; a mirror's second group shows its positive value)
-    (`:value-format` - a format string of the number, default: whole
+    (`:value-format` - a format string or a function of the number, default: whole
     numbers as integers, otherwise the fewest digits telling the labels apart), or a function of `{:value length :n
     count :share s :level l :group {dim value}}` (`:share` - of the absolute lengths of its level's bars; `:group` -
     the bar's aesthetic values) returning the text (`nil` / `\"\"` - none), e.g. pie labels
@@ -58,18 +58,19 @@
   Axis title suggested for the value axis: the count measure (`Count` ...), `Proportion` for `:normalize`,
   `<stat> of <x>` for `:sum`, `:mean`, `:median` of a keyword `:x` when some bar has more than one value.
 
-  Functions: [[legend]] - the chart contract's key glyph (the chart computes and draws through [[cljplot2.data.strip/compute]] and [[cljplot2.data.strip/draw]])."
+  Functions: [[legend]] - the chart contract's key glyph (the chart computes and draws through [[cljplot2.chart.strip/compute]] and [[cljplot2.chart.strip/draw]])."
   (:require [clojure.string :as str]
             [fastmath.core :as m]
             [fastmath.vector :as v]
             [fastmath.stats :as stats]
-            [cljplot2.chart.box :as box]
+            [cljplot2.chart.common :as common]
             [cljplot2.content.label :as label]
             [cljplot2.data.group :as group]
             [cljplot2.data.levels :as levels]
             [cljplot2.data.measure :as measure]
             [cljplot2.data.position :as position]
             [cljplot2.data.rows :as data]
+            [cljplot2.chart.strip :as strip-chart]
             [cljplot2.data.strip :as strip]
             [cljplot2.graphics.draw :as draw]
             [cljplot2.scale.coord :as coord]
@@ -138,9 +139,9 @@
                       (schema/nilable :label-leader {:cljplot2/section :labels :description "draw a line from the bar's outer edge to its :outer label"
                                                      :default false}
                                       schema/bool)
-                      (schema/optional :value-format {:cljplot2/section :labels :description "format string of the value labels' number"
+                      (schema/optional :value-format {:cljplot2/section :labels :description "text of the value labels: a format string or a function of the number"
                                                       :cljplot2/default-doc "whole numbers as integers, else the fewest digits telling the labels apart"}
-                                       :string)
+                                       schema/number-format)
                       (schema/optional :padding {:cljplot2/section :bars :description "padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span (strip frame: :x the values)"
                                                  :cljplot2/default-doc "values 0.05, 0 at the baseline side the bars grow from"}
                                        data/position-padding)
@@ -161,21 +162,16 @@
 
   Parameters:
 
-  - `options` (map): the chart options (`:stat`, `:value-format`).
+  - `options` (map): the chart options (`:stat`).
   - `mapping` (map): the merged mapping (strip frame).
 
   Returns `nil`.
 
-  Throws `ex-info {:key :mapping}` for a value stat without the values mapped (`:x` in the strip frame), `{:key :value-format}` for a `:value-format` that can't format a number."
+  Throws `ex-info {:key :mapping}` for a value stat without the values mapped (`:x` in the strip frame)."
   [options mapping]
-  (when (and (nil? (:x mapping)) (not (count-stats (get options :stat :sum))))
-    (schema/fail! "Bar :stat needs the values mapped - on the axis other than the levels (only :count, :percent and :pmf count rows without them)."
-                  {:key :mapping :value :values}))
-  (when-let [fmt (:value-format options)]
-    (try (format fmt 1.5)
-         (catch Exception e
-           (schema/fail! "Bar :value-format should format a number (e.g. \"%.1f\")."
-                         {:key :value-format :value fmt :cause (ex-message e)})))))
+  (when (and (nil? (:x mapping)) (not (count-stats (data/option options :stat :sum))))
+    (data/fail-mapping! "Bar :stat needs the values mapped - on the axis other than the levels (only :count, :percent and :pmf count rows without them)."
+                  :x {})))
 
 (defn- item-lengths
   "Adds the bar length to every item.
@@ -198,7 +194,7 @@
                    (let [f (get value-stats stat stat)]
                      (mapv (fn [{:keys [values] :as it}]
                              (let [length (f values)]
-                               (when-not (and (number? length) (m/valid-double? (double length)))
+                               (when-not (schema/finite? length)
                                  (schema/fail! "Bar :stat should return a finite number." {:key :stat :value length}))
                                (assoc it :length (double length))))
                            its))))))
@@ -250,12 +246,12 @@
   - `varwidth`: `true`, a keyword or function of a row, `nil` / `false`.
   - `items` (sequence of maps): every item (with `:rows` for a keyword or function).
 
-  Returns item -> width factor: `true` - [[cljplot2.chart.box/width-factors]]; a keyword / function - the item's sum of the finite weights of its `:rows` relative to the largest (0 when every sum is 0); otherwise 1.
+  Returns item -> width factor: `true` - [[cljplot2.data.strip/varwidth-factors]]; a keyword / function - the item's sum of the finite weights of its `:rows` relative to the largest (0 when every sum is 0); otherwise 1.
 
   Throws `ex-info {:key :varwidth}` for a negative sum."
   [varwidth items]
   (cond
-    (true? varwidth) (box/width-factors items true)
+    (true? varwidth) (strip/varwidth-factors items true)
     (or (keyword? varwidth) (fn? varwidth))
     (let [acc (data/row-accessor :varwidth varwidth)
           weight (fn [{:keys [rows]}] (v/sum (:values (data/finite-numbers (map acc rows)))))
@@ -289,7 +285,7 @@
   [options bars]
   (let [signed-length (fn [{:keys [^double y0 ^double y1 length]}] (m/* (m/signum (double length)) (m/abs (m/- y1 y0))))]
     (if-let [fmt (:value-format options)]
-      (fn [bar] (format fmt (signed-length bar)))
+      (let [text-of (schema/text-formatter fmt)] (fn [bar] (text-of (signed-length bar))))
       (let [ls (distinct (map signed-length bars))]
         (if (seq ls) (let [texts (zipmap ls (levels/break-labels ls))] (comp texts signed-length)) (constantly ""))))))
 
@@ -323,7 +319,7 @@
       (when (and (some? t) (not= "" t)) (str t)))))
 
 (defn- end-label
-  "Gives the end label of a bar (see [[cljplot2.data.strip/draw-end-labels!]]).
+  "Gives the end label of a bar (see [[cljplot2.chart.strip/draw-end-labels!]]).
 
   Parameters:
 
@@ -339,7 +335,7 @@
   (let [value (value-label-text (data/option options :value-label false) value-text level-total bar)
         texts (cond-> []
                 value (conj value)
-                (data/option options :n-label false) (conj (format (get options :n-format "n=%d") n)))]
+                (data/option options :n-label false) (conj ((schema/text-formatter (data/option options :n-format "n=%d")) n)))]
     (when (seq texts)
       (let [[at side] (if (= :end label-position) (end-of bar) [(m/* 0.5 (m/+ y0 y1)) 0.0])]
         (cond-> {:level level :slot slot :at at :side side :text (str/join separator texts) :span [y0 y1] :role :bar-value}
@@ -355,7 +351,7 @@
 
   Returns a space for `:horizontal`, a line break for `:vertical`."
   [options flip?]
-  (case (get options :label-stack (if flip? :vertical :horizontal))
+  (case (data/option options :label-stack (if flip? :vertical :horizontal))
     :horizontal " "
     :vertical "\n"))
 
@@ -408,7 +404,7 @@
   Throws as [[check-options!]], [[item-lengths]], [[weight-factors]]; `ex-info {:key :label-position}` for `:outer` outside a polar plot."
   [{:keys [options] :as chart} {:keys [mapping] :as chart-split} {:keys [theme] :as env}]
   (check-options! options mapping)
-  (let [stat (get options :stat :sum)
+  (let [stat (data/option options :stat :sum)
         position-option (get options :position)
         varwidth (:varwidth options)
         split-options (cond-> (dissoc options :position)
@@ -424,7 +420,7 @@
         all-bars (mapcat val sized-items)
         value-text (value-texts options (remove (fn [{:keys [^double y0 ^double y1]}] (m/== y0 y1)) all-bars))
         separator (label-separator options (:flip? env))
-        label-position (get options :label-position (if (contains? #{:stack :normalize} position) :center :end))
+        label-position (data/option options :label-position (if (contains? #{:stack :normalize} position) :center :end))
         _ (when (and (= :outer label-position) (not (coord/polar? (:coord env))))
             (schema/fail! "Bar :label-position :outer places labels outside a polar plot's circle: use :end or :center in cartesian plots."
                           {:key :label-position :value :outer}))
@@ -447,8 +443,8 @@
      :padding-explicit (data/explicit-padding (cond-> (or (strip/explicit-padding place {}) {})
                                                 request (assoc :x request))
                                               options)
-     :padding-px (strip/end-label-room labels env)
-     :outer-room (strip/outer-label-room labels env)
+     :padding-px (strip-chart/end-label-room labels env)
+     :outer-room (strip-chart/outer-label-room labels env)
      ;; outer labels replace the angle axis (it would sit under them)
      :scale-defaults (when (= :outer label-position) {(if (:flip? env) :y :x) {:axis false}})
      :na (group/na-dims panels)
@@ -530,7 +526,7 @@
 
   Zero-length bars, bars under half a pixel and bars of groups outside an aesthetic domain are skipped, with their labels; labels of larger bars win collisions."
   [_chart {:keys [bars style place options translucent? zero-line?]} canvas box scales env]
-  (let [{:keys [range-point geometry] :as pl} (strip/placement box scales options place)
+  (let [{:keys [range-point geometry] :as pl} (strip-chart/placement box scales options place)
         stroke-width (double (:stroke-width style))
         pattern-fill (draw/pattern-fill-cache)
         rounding (draw/corner-rounding options)
@@ -539,7 +535,7 @@
             :when (m/not== y0 y1)
             :let [c0 (strip/in-slot slot 0.0)
                   hw (m/* (strip/slot-half slot) width-factor)
-                  fill (if translucent? (draw/with-alpha (:color st) (:alpha style)) (:color st))]]
+                  fill (draw/translucent-fill (:color st) (:alpha style) translucent?)]]
       (let [[base end] (if rounding (draw/value-ends y0 y1) [y0 y1])]
         (draw/range-bar! canvas geometry (range-point base level (m/- c0 hw)) (range-point end level (m/+ c0 hw))
                          fill (draw/outline-color (:stroke-color st) (:color st)) stroke-width (pattern-fill st fill)
@@ -556,12 +552,12 @@
                        styled)
           ;; largest bars first: their labels win collisions
           ordered (sort-by (fn [{{:keys [^double y0 ^double y1]} :bar}] (m/- (m/abs (m/- y1 y0)))) labels)
-          placements (fitting-placements canvas pl (strip/end-label-placements pl ordered scales) env)]
-      (strip/draw-label-placements! canvas (strip/without-collisions canvas placements env) env))))
+          placements (fitting-placements canvas pl (strip-chart/end-label-placements pl ordered scales) env)]
+      (strip-chart/draw-label-placements! canvas (strip-chart/without-collisions canvas placements env) env))))
 
-(defmethod strip/in-frame-compute :bar [chart chart-split env] (compute-in-strip-frame chart chart-split env))
+(defmethod strip-chart/in-frame-compute :bar [chart chart-split env] (compute-in-strip-frame chart chart-split env))
 
-(defmethod strip/in-frame-draw :bar [chart computed canvas box scales env]
+(defmethod strip-chart/in-frame-draw :bar [chart computed canvas box scales env]
   (draw-in-strip-frame chart computed canvas box scales env))
 
 (defn legend
@@ -575,8 +571,8 @@
   - `box` (map): the key box.
   - `env` (map): the drawing environment (`:theme`, `:chart-stats`).
 
-  The square is translucent with a mapped `:color` when the bars are (overlay groups sharing a level, see [[cljplot2.data.strip/compute]]) and rounded as the bars."
+  The square is translucent with a mapped `:color` when the bars are (overlay groups sharing a level, see [[cljplot2.chart.strip/compute]]) and rounded as the bars."
   [{:keys [options] :as chart} attributes canvas box env]
-  (draw/bar-key! canvas box (merge (theme/resolved-style (:theme env) chart) (select-keys attributes [:color :pattern]))
+  (draw/bar-key! canvas box (theme/key-style env chart attributes [:color :pattern])
                  (and (contains? attributes :color) (some :translucent? (vals (get-in env [:chart-stats :data]))))
                  (draw/corner-rounding options)))

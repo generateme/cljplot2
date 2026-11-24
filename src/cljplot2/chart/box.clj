@@ -28,14 +28,15 @@
   `:color`; `:varwidth` and the fill patterns (`:pattern`, `:pattern-color`) have no effect (nothing has a width
   or a fill).
 
-  Functions: [[box-stats]] and [[identity-stats]] - an item's statistics, [[width-factors]] - `:varwidth` box widths; [[legend]] - the chart contract's key glyph (the chart computes and draws through [[cljplot2.data.strip/compute]] and [[cljplot2.data.strip/draw]]); [[schemas]] - its style, options and mapping."
+  Functions: [[cljplot2.data.strip/box-stats]] - an item's statistics, [[cljplot2.data.strip/varwidth-factors]] - `:varwidth` box widths; [[legend]] - the chart contract's key glyph (the chart computes and draws through [[cljplot2.chart.strip/compute]] and [[cljplot2.chart.strip/draw]]); [[schemas]] - its style, options and mapping."
   (:require [clojure2d.color :as c]
             [clojure2d.core :as c2d]
             [fastmath.core :as m]
-            [fastmath.stats :as stats]
             [fastmath.vector :as v]
+            [cljplot2.chart.common :as common]
             [cljplot2.data.group :as group]
             [cljplot2.data.rows :as data]
+            [cljplot2.chart.strip :as strip-chart]
             [cljplot2.data.strip :as strip]
             [cljplot2.graphics.draw :as draw]
             [cljplot2.graphics.shape :as shape]
@@ -52,7 +53,7 @@
                           schema/solid-color)
          (schema/optional :stroke-color {:description "outline colour: a colour, :none or :darker (the darkened fill); also the whiskers and outlier outlines"}
                           draw/stroke-color)
-         (schema/optional :stroke-width {:description "outline and whisker width in pixels"} schema/non-neg)
+         (schema/optional :stroke-width {:description "outline and whisker width in pixels (0 - no box outline)"} schema/non-neg)
          (schema/optional :shape {:description "outlier point shape, also the Tufte median point (a mapped :shape wins)"} schema/shape)
          (schema/optional :size {:description "outlier point size in pixels, also the Tufte median point; the mean marker is half of it (a mapped :size wins)"}
                           schema/non-neg)]
@@ -109,24 +110,6 @@
                   "should map :x or :y (the values), or the statistics (:q1 ... with :stat :identity)")
                nil])})
 
-(defn box-stats
-  "Gives the Tukey box statistics of values.
-
-  Parameters:
-
-  - `values` (sequence of numbers): finite values, not empty.
-
-  Returns `{:q1 :median :q3 :lav :uav :outliers [..] :mean :n}`: quartiles and median (fastmath `percentiles`, legacy estimation), the adjacent values `:lav` / `:uav` - the most extreme values within 1.5 IQR of the box (fastmath `adjacent-values`), the values beyond them, the mean and the count.
-
-  See also [[identity-stats]]."
-  [values]
-  (let [[q1 median q3] (stats/percentiles values [25.0 50.0 75.0])
-        [lav uav] (stats/adjacent-values values q1 q3 median)]
-    {:q1 q1 :median median :q3 q3 :lav lav :uav uav
-     :outliers (vec (stats/outliers values q1 q3))
-     :mean (stats/mean values)
-     :n (count values)}))
-
 (def ^:private identity-keys
   "Mapping keys of the statistics a `:stat :identity` row carries, in their required order."
   [:lower :q1 :median :q3 :upper])
@@ -144,13 +127,13 @@
   Throws `ex-info {:key :mapping}` for an unmapped statistic of [[identity-keys]], `{:key option}` for `:mean` without `:mean` mapped or `:varwidth` / `:n-label` without `:n` mapped."
   [mapping options]
   (when-let [missing (seq (remove #(some? (get mapping %)) identity-keys))]
-    (schema/fail! (str "Box :stat :identity needs the statistics mapped: " (pr-str (vec missing)) ".")
-                  {:key :mapping :value (vec missing)}))
+    (data/fail-mapping! (str "Box :stat :identity needs the statistics mapped: " (pr-str (vec missing)) ".")
+                  (first missing) {:missing (vec missing)}))
   (doseq [[option k] [[:mean :mean] [:varwidth :n] [:n-label :n]]
           :when (and (get options option) (nil? (get mapping k)))]
     (schema/fail! (str "Box " option " with :stat :identity needs " k " mapped.") {:key option :value k})))
 
-(defn identity-stats
+(defn- identity-stats
   "Gives the box statistics of a pre-aggregated item (`:stat :identity`), read from its row.
 
   Parameters:
@@ -158,7 +141,7 @@
   - `item` (map): a strip item - `:rows` (exactly one), `:level`, `:aesthetics` (for errors).
   - `mapping` (map): the chart's mapping - accessors of `:lower :q1 :median :q3 :upper` (finite, ordered), optional `:outliers` (a collection of finite numbers; absent - none), `:mean` (finite), `:n` (a positive integer).
 
-  Returns the statistics as [[box-stats]] gives them; `:n` 1 when not mapped.
+  Returns the statistics as [[cljplot2.data.strip/box-stats]] gives them; `:n` 1 when not mapped.
 
   Throws `ex-info {:key :mapping}` for two or more rows of one level and group, a missing, non-finite or unordered statistic, bad outliers, a non-finite mean or a bad `:n`."
   [{:keys [rows level aesthetics]} mapping]
@@ -182,19 +165,6 @@
       (schema/fail! "Box :n should be a positive integer." {:key :mapping :level level :value n}))
     {:q1 q1 :median median :q3 q3 :lav lower :uav upper :outliers (vec outliers) :mean mean :n (or n 1)}))
 
-(defn width-factors
-  "Gives the box width factor of each item.
-
-  Parameters:
-
-  - `items` (sequence of maps): every item of the chart, each with its count `:n`.
-  - `varwidth?`: proportional widths wanted (`:varwidth`).
-
-  Returns a function of an item giving its width factor: `sqrt(n / largest n)` with `varwidth?` (the largest n at least 1), else 1."
-  [items varwidth?]
-  (let [nmax (double (reduce m/max 1.0 (map :n items)))]
-    (fn ^double [item] (if varwidth? (m/sqrt (m// (double (:n item)) nmax)) 1.0))))
-
 (defn- compute-in-strip-frame
   "Computes the box chart's stats in the strip frame (levels on `:y`).
 
@@ -204,7 +174,7 @@
   - `chart-split` (map): the chart's rows split per panel, with the merged `:mapping`.
   - `env` (map): the compute environment - `:theme`, `:plot-scales` ...
 
-  Returns `{:data :extents :padding :padding-explicit :padding-px :na :dropped}`: per panel `{:items [item ...] :style st :place p :options o}`, each item with [[box-stats]] (`:stat :identity` - [[identity-stats]], its row dropped) and `:width-factor` (see [[width-factors]]); x extents - the whisker ends and, with `:outliers`, the outliers.
+  Returns `{:data :extents :padding :padding-explicit :padding-px :na :dropped}`: per panel `{:items [item ...] :style st :place p :options o}`, each item with [[cljplot2.data.strip/box-stats]] (`:stat :identity` - [[identity-stats]], its row dropped) and `:width-factor` (see [[cljplot2.data.strip/varwidth-factors]]); x extents - the whisker ends and, with `:outliers`, the outliers.
 
   Throws as [[identity-stats]] and `check-identity-mapping!` for a bad `:stat :identity` mapping."
   [{:keys [options] :as chart} {:keys [mapping] :as chart-split} {:keys [theme] :as env}]
@@ -212,9 +182,9 @@
         _ (when identity? (check-identity-mapping! mapping options))
         split-options (cond-> options identity? (assoc ::strip/count-rows true ::strip/rows true))
         {:keys [place items panels dropped]} (strip/split chart-split split-options :center env)
-        stats-of (if identity? #(identity-stats % mapping) #(box-stats (:values %)))
+        stats-of (if identity? #(identity-stats % mapping) #(strip/box-stats (:values %)))
         stat-items (update-vals items (fn [its] (mapv #(dissoc (merge % (stats-of %)) :rows) its)))
-        factor (width-factors (mapcat val stat-items) (:varwidth options))
+        factor (strip/varwidth-factors (mapcat val stat-items) (:varwidth options))
         sized-items (update-vals stat-items (fn [its] (mapv #(assoc % :width-factor (factor %)) its)))
         outliers? (data/option options :outliers true)
         x-range (fn [{:keys [lav uav outliers]}]
@@ -225,7 +195,7 @@
      :extents (merge-with merge (group/aesthetic-extents panels (:plot-scales env)) (strip/extents place sized-items x-range))
      :padding (strip/padding place options)
      :padding-explicit (strip/explicit-padding place options)
-     :padding-px (strip/n-label-room options sized-items env)
+     :padding-px (strip-chart/n-label-room options sized-items env)
      :na (group/na-dims panels)
      :dropped dropped}))
 
@@ -280,9 +250,9 @@
 
   An item whose group is outside its scale's domain, or whose box corners the scales can't place, is skipped; the n labels sit past the upper whisker (or the largest outlier drawn).
 
-  See also [[draw-tufte!]], [[cljplot2.data.strip/placement]]."
+  See also [[draw-tufte!]], [[cljplot2.chart.strip/placement]]."
   [_chart {:keys [items style place options]} canvas box scales env]
-  (let [{:keys [point] :as pl} (strip/placement box scales options place)
+  (let [{:keys [point] :as pl} (strip-chart/placement box scales options place)
         outliers? (data/option options :outliers true)
         pattern-fill (draw/pattern-fill-cache)]
     (doseq [{:keys [level slot q1 median q3 lav uav outliers mean ^double width-factor aesthetics]} items
@@ -316,7 +286,8 @@
                   w (m/abs (m/- (.x b) (.x a)))
                   h (m/abs (m/- (.y b) (.y a)))]
               (draw/fill-patterned! canvas fill (pattern-fill st fill) #(c2d/rect % x y w h))
-              (when-not (theme/none? stroke)
+              ;; the stroke set above (butt caps) is kept for the median line: no `draw/outline!`
+              (when (draw/visible-stroke? stroke sw)
                 (c2d/set-color canvas stroke)
                 (c2d/rect canvas x y w h true)))
             (c2d/set-color canvas (draw/contrast-color fill))
@@ -328,13 +299,13 @@
               (shape/draw! canvas \O (p mean c0) {:size (mean-marker-size st)
                                                    :color (draw/contrast-color fill) :stroke-color stroke
                                                    :stroke-width sw}))))))
-    (strip/draw-n-labels! canvas pl items
+    (strip-chart/draw-n-labels! canvas pl items
                           (fn [{:keys [uav outliers]}] (if (and outliers? (seq outliers)) (reduce m/max uav outliers) uav))
                           options scales env)))
 
-(defmethod strip/in-frame-compute :box [chart chart-split env] (compute-in-strip-frame chart chart-split env))
+(defmethod strip-chart/in-frame-compute :box [chart chart-split env] (compute-in-strip-frame chart chart-split env))
 
-(defmethod strip/in-frame-draw :box [chart computed canvas box scales env]
+(defmethod strip-chart/in-frame-draw :box [chart computed canvas box scales env]
   (draw-in-strip-frame chart computed canvas box scales env))
 
 (defn- tufte-key!
@@ -374,9 +345,7 @@
     (c2d/set-stroke-custom canvas {:size (:stroke-width st)})
     (draw/fill-patterned! canvas (:color st) (draw/pattern-fill st (:color st)) #(c2d/rect % bx by bw bh))
     (let [stroke (draw/outline-color (:stroke-color st) (:color st))]
-      (when-not (theme/none? stroke)
-        (c2d/set-color canvas stroke)
-        (c2d/rect canvas bx by bw bh true)))
+      (draw/outline! canvas stroke (:stroke-width st) #(c2d/rect % bx by bw bh true)))
     (c2d/set-color canvas (draw/contrast-color (:color st)))
     (c2d/line canvas (m/+ bx (m/* 0.5 bw)) by (m/+ bx (m/* 0.5 bw)) (m/+ by bh))))
 
@@ -391,7 +360,7 @@
   - `box` (map): the key box in pixels.
   - `env` (map): the legend environment - `:theme`."
   [{:keys [options] :as chart} attributes canvas box env]
-  (let [st (merge (theme/resolved-style (:theme env) chart) (select-keys attributes [:color :pattern]))]
+  (let [st (theme/key-style env chart attributes [:color :pattern])]
     (if (= :tufte (:variant options))
       (tufte-key! canvas st box)
       (classic-key! canvas st box))))

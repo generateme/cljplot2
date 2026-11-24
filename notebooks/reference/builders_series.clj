@@ -26,19 +26,17 @@
 
 (plot/render-image (plot/acf ar1) {:width 700 :height 500})
 
-;; One correlogram - the ACF (`:acf` or `false`) or the PACF (`:pacf` or `true`) - and the band as a block per lag
+;; One correlogram - the ACF (`:acf`) or the PACF (`:pacf`) - and the band as a block per lag
 ;; (`:stepped`); the default `:both` draws ACF above PACF, the band `:smooth`:
 
-(plot/render-image (plot/arrange [(plot/acf ar1 {:partial? :acf :band :stepped :title ":partial? :acf, :band :stepped"})
-                                  (plot/acf ar1 {:partial? :pacf :band :smooth :title ":partial? :pacf"})
-                                  (plot/acf ar1 {:partial? false :title ":partial? false (ACF)"})
-                                  (plot/acf ar1 {:partial? true :title ":partial? true (PACF)"})]
+(plot/render-image (plot/arrange [(plot/acf ar1 {:correlograms :acf :band :stepped :title ":correlograms :acf, :band :stepped"})
+                                  (plot/acf ar1 {:correlograms :pacf :band :smooth :title ":correlograms :pacf"})]
                                  {:columns 2})
-                   {:width 1000 :height 600})
+                   {:width 1000 :height 300})
 
 ;; The colours of the stems, the band and the significant lags:
 
-(plot/render-image (plot/acf ar1 {:partial? :both :lags 30
+(plot/render-image (plot/acf ar1 {:correlograms :both :lags 30
                                   :colors {:stem [90 90 90] :band [230 150 40] :significant [40 150 60]}
                                   :title ":colors"})
                    {:width 700 :height 500})
@@ -50,7 +48,7 @@
 
 ;; Larger triangle points through the theme:
 
-(plot/render-image (plot/acf ar1 {:partial? :acf :theme {:chart {:acf-point {:size 8 :shape \A}}}})
+(plot/render-image (plot/acf ar1 {:correlograms :acf :theme {:chart {:acf-point {:size 8 :shape \A}}}})
                    {:width 700 :height 360})
 
 (nu/shared-groups (describe/options #'plot/acf))

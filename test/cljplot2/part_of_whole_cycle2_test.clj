@@ -173,7 +173,7 @@
       {:root "x"} :root
       {:hidden-levels #{-1}} :hidden-levels
       {:hidden-levels [1]} :hidden-levels
-      {:padding -1} :padding
+      {:gap -1} :gap
       {:leaf-labels 1} :leaf-labels
       {:pattern :nope} :pattern)
     (is (some? (error #(build (pk {:theme {:chart {:pack {:padding "1"}}}}))))))
@@ -190,7 +190,7 @@
     (is (some? (plot/render (pk {}) {:width 20 :height 20})))))
 
 (def ^:private plain {:plot {:background :white} :palette {:color [[255 230 150] [200 230 255] [190 255 190]] :na [128 128 128]}
-                      :chart {:pack {:padding 0 :border-color :none}}})
+                      :chart {:pack {:gap 0 :stroke-color :none}}})
 
 (defn- rgb [^BufferedImage img x y]
   (let [v (.getRGB img (int x) (int y))]
@@ -204,7 +204,7 @@
         img (plot/render-image p size)
         {:keys [x y w h]} (grid/item-box (:layout built) :panel)
         {:keys [tree style]} (get-in built [:stats 0 :data :panel])]
-    [built img (when tree (pack/pack tree {:x (double x) :y (double y) :w (double w) :h (double h)} (:padding style)))]))
+    [built img (when tree (pack/pack tree {:x (double x) :y (double y) :w (double w) :h (double h)} (:gap style)))]))
 
 (defn- named [packed n] (some #(when (= n (:name %)) %) (nodes packed)))
 (defn- at [[_ img] {:keys [x y]}] (rgb img (m/round (double x)) (m/round (double y))))

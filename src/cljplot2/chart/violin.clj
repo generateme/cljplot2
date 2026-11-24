@@ -6,7 +6,7 @@
 
   Options (style defaults from theme `[:chart :violin]`): `:color` (fill), `:stroke-color` (outline: a color, `:none`
   or `:darker` - the darkened fill, default), `:stroke-width`,
-  `:inner-color` (inner marks; `:none` - black or white, whichever reads better on the fill);
+  `:inner-color` (inner marks: a colour, `:contrast` - black or white, whichever reads better on the fill, or `:none` - not drawn);
   `:kernel`, `:bandwidth`, `:cut` (default 0: the violin spans the data range), `:n` (evaluation points, default 100);
   `:scale` - widths: `:width` (default; every violin as wide as its slot), `:area` (equal areas: densities on one
   scale), `:count` (areas proportional to the counts); `:varwidth` (width factor `sqrt(n / max n)`, default false);
@@ -15,15 +15,17 @@
   `:padding {:x [lo hi]}` (default `[0.05 0.05]`). Items with fewer than 2 distinct values have no violin and are
   counted in `:dropped {:group n}`.
 
-  Functions: [[legend]] - the chart contract's key glyph (the chart computes and draws through [[cljplot2.data.strip/compute]] and [[cljplot2.data.strip/draw]]); [[schemas]] - its style, options and mapping."
+  Functions: [[legend]] - the chart contract's key glyph (the chart computes and draws through [[cljplot2.chart.strip/compute]] and [[cljplot2.chart.strip/draw]]); [[schemas]] - its style, options and mapping."
   (:require [clojure2d.core :as c2d]
             [fastmath.core :as m]
-            [cljplot2.chart.box :as box]
+            [cljplot2.chart.common :as common]
             [cljplot2.data.group :as group]
             [cljplot2.data.kde :as kde]
             [cljplot2.data.rows :as data]
+            [cljplot2.chart.strip :as strip-chart]
             [cljplot2.data.strip :as strip]
             [cljplot2.graphics.draw :as draw]
+            [cljplot2.graphics.polyline :as polyline]
             [cljplot2.schema :as schema]
             [cljplot2.theme :as theme])
   (:import [fastmath.vector Vec2]))
@@ -35,14 +37,22 @@
   "Map entries of the violin style (theme `[:chart :violin]`), also its options."
   (into [(schema/optional :color {:description "violin fill colour (a mapped :color wins)"} schema/solid-color)
          (schema/optional :stroke-color {:description "outline colour: a colour, :none or :darker (the darkened fill)"} draw/stroke-color)
-         (schema/optional :stroke-width {:description "outline width in pixels"} schema/non-neg)
-         (schema/optional :inner-color {:description "colour of the inner marks (:none - black or white, whichever reads better on the fill)"}
-                          schema/color)]
+         (schema/optional :stroke-width {:description "outline width in pixels (0 - no outline)"} schema/non-neg)
+         (schema/optional :inner-color {:description "colour of the inner marks: a colour, :contrast (black or white, whichever reads better on the fill) or :none (not drawn)"}
+                          [:or [:enum :contrast] schema/color])]
         draw/pattern-style-entries))
+
+(def ^:private inner-style-entries
+  "Map entries of the violin style for the inner marks (theme `[:chart :violin]` only, not options)."
+  [(schema/optional :inner-box-width {:description "width in pixels of the inner box (quartile bar) of :inner :box"} schema/pos)
+   (schema/optional :inner-median-size {:description "diameter in pixels of the median dot of :inner :box"} schema/pos)
+   (schema/optional :inner-quartile-dash {:description "dash style of the quartile lines of :inner :quartiles"} schema/dash)
+   (schema/optional :inner-rug-width {:description "line width in pixels of the ticks of :inner :rug"} schema/pos)
+   (schema/optional :inner-point-size {:description "diameter in pixels of the points of :inner :points"} schema/pos)])
 
 (def schemas
   "Schemas of the violin chart: `:style` (theme `[:chart :violin]`), `:options`, `:mapping` (merged)."
-  {:style (into [:map {:closed true}] style-entries)
+  {:style (-> [:map {:closed true}] (into style-entries) (into inner-style-entries))
    :options (-> [:map {:closed true}]
                 (into style-entries)
                 (into data/common-options)
@@ -105,18 +115,18 @@
   - `chart-split` (map): the chart's rows split per panel.
   - `env` (map): the compute environment - `:theme`, `:plot-scales` ...
 
-  Returns `{:data :extents :padding :padding-explicit :padding-px :na :dropped}`: per panel `{:items [..] :style st :place p :options o :mirror? b}`; an item has `:xs`, `:widths` (densities scaled to `[0 1]` by `:scale` and `:varwidth`) and the [[cljplot2.chart.box/box-stats]] of its values; x extents - the density ranges; `:dropped` `:group` - items with fewer than 2 distinct values (no violin)."
+  Returns `{:data :extents :padding :padding-explicit :padding-px :na :dropped}`: per panel `{:items [..] :style st :place p :options o :mirror? b}`; an item has `:xs`, `:widths` (densities scaled to `[0 1]` by `:scale` and `:varwidth`) and the [[cljplot2.data.strip/box-stats]] of its values; x extents - the density ranges; `:dropped` `:group` - items with fewer than 2 distinct values (no violin)."
   [{:keys [options] :as chart} chart-split {:keys [theme] :as env}]
   (let [{:keys [place position items panels dropped]} (strip/split chart-split options :center env)
         violin? #(m/>= (count (distinct (:values %))) 2)
         no-violin (count (remove violin? (mapcat val items)))
-        profiled (update-vals items (fn [its] (mapv #(merge % (box/box-stats (:values %)) (profile (:values %) options))
+        profiled (update-vals items (fn [its] (mapv #(merge % (strip/box-stats (:values %)) (profile (:values %) options))
                                                    (filter violin? its))))
         all (mapcat val profiled)
-        scale-by (get options :scale :width)
+        scale-by (data/option options :scale :width)
         global-max (double (reduce m/max 0.0 (mapcat :ds all)))
         count-max (double (reduce m/max 0.0 (map #(m/* (double (:n %)) (double (reduce m/max 0.0 (:ds %)))) all)))
-        factor (box/width-factors all (:varwidth options))
+        factor (strip/varwidth-factors all (:varwidth options))
         widths (fn [{:keys [ds n] :as item}]
                  (let [own-max (double (reduce m/max 0.0 ds))
                        k (m/* (double (factor item))
@@ -133,7 +143,7 @@
                           (strip/extents place sized (fn [{:keys [xs]}] [(first xs) (peek xs)])))
      :padding (strip/padding place options)
      :padding-explicit (strip/explicit-padding place options)
-     :padding-px (strip/n-label-room options sized env)
+     :padding-px (strip-chart/n-label-room options sized env)
      :na (group/na-dims panels)
      :dropped (assoc dropped :group no-violin)}))
 
@@ -174,10 +184,10 @@
 
   A violin whose outline the scales can't place entirely is skipped, as is a group outside its scale's domain; the n labels sit past the upper end of the density.
 
-  See also [[width-at]], [[cljplot2.data.strip/placement]]."
+  See also [[width-at]], [[cljplot2.chart.strip/placement]]."
   [_chart {:keys [items style place options mirror?]} canvas box scales env]
-  (let [{:keys [point] :as pl} (strip/placement box scales options place)
-        inner (get options :inner :box)
+  (let [{:keys [point] :as pl} (strip-chart/placement box scales options place)
+        inner (data/option options :inner :box)
         pattern-fill (draw/pattern-fill-cache)]
     (doseq [{:keys [level slot xs widths q1 median q3 lav uav values aesthetics]} items
             :let [st (group/style style aesthetics scales (:theme env))]
@@ -192,7 +202,7 @@
             polygon (into upper (rseq lower))
             fill (:color st)
             stroke (draw/outline-color (:stroke-color st) fill)
-            inner-color (if (theme/none? (:inner-color st)) (draw/contrast-color fill) (:inner-color st))
+            inner-color (draw/resolved-text-color (:inner-color st) fill)
             sw (double (:stroke-width st))
             p (fn [v cross] (point v level cross))
             across (fn [v] (let [w (m/* extent (width-at xs widths (double v)))]
@@ -200,39 +210,37 @@
         (when (every? data/finite-point? polygon)
           (let [pixels (mapv (fn [^Vec2 q] [(.x q) (.y q)]) polygon)]
             (draw/fill-patterned! canvas fill (pattern-fill st fill) #(c2d/path % pixels true false))
-            (when-not (theme/none? stroke)
-              (c2d/set-stroke-custom canvas {:size sw :join :round})
-              (c2d/set-color canvas stroke)
-              (c2d/path canvas pixels true true)))
-          (c2d/set-color canvas inner-color)
-          (case inner
+            (draw/outline! canvas stroke sw :round #(c2d/path % pixels true true)))
+          (when-not (theme/none? inner-color) (c2d/set-color canvas inner-color))
+          (case (if (theme/none? inner-color) :none inner)
             :box (do (c2d/set-stroke-custom canvas {:size (m/max 1.0 sw) :cap :butt})
                      (c2d/line canvas (p lav base) (p uav base))
-                     (c2d/set-stroke-custom canvas {:size 5.0 :cap :butt})
+                     (c2d/set-stroke-custom canvas {:size (:inner-box-width st) :cap :butt})
                      (c2d/line canvas (p q1 base) (p q3 base))
                      (c2d/set-color canvas fill)
-                     (let [^Vec2 median-pixel (p median base)] (c2d/ellipse canvas (.x median-pixel) (.y median-pixel) 4 4)))
-            :quartiles (do (c2d/set-stroke-custom canvas {:size (m/max 1.0 sw) :cap :butt :dash [4.0 3.0]})
+                     (let [^Vec2 median-pixel (p median base)] (c2d/ellipse canvas (.x median-pixel) (.y median-pixel) (:inner-median-size st) (:inner-median-size st))))
+            :quartiles (do (c2d/set-stroke-custom canvas {:size (m/max 1.0 sw) :cap :butt :dash (polyline/dash-pattern (:inner-quartile-dash st))})
                            (doseq [q [q1 q3]] (apply c2d/line canvas (across q)))
                            (c2d/set-stroke-custom canvas {:size (m/max 1.0 sw) :cap :butt})
                            (apply c2d/line canvas (across median)))
             :rug (let [t (m/* 0.15 extent)]
-                   (c2d/set-stroke-custom canvas {:size 1.0 :cap :butt})
+                   (c2d/set-stroke-custom canvas {:size (:inner-rug-width st) :cap :butt})
                    (doseq [v values]
                      (if mirror?
                        (c2d/line canvas (p v base) (p v (m/+ base t)))
                        (c2d/line canvas (p v (m/- base t)) (p v (m/+ base t))))))
-            :points (doseq [v values :let [^Vec2 q (p v base)]] (c2d/ellipse canvas (.x q) (.y q) 3 3))
+            :points (let [d (:inner-point-size st)]
+                      (doseq [v values :let [^Vec2 q (p v base)]] (c2d/ellipse canvas (.x q) (.y q) d d)))
             :none nil))))
-    (strip/draw-n-labels! canvas pl items (fn [{:keys [xs]}] (peek xs)) options scales env)))
+    (strip-chart/draw-n-labels! canvas pl items (fn [{:keys [xs]}] (peek xs)) options scales env)))
 
 (def ^{:const true :private true :tag 'long} glyph-points
   "Segments along each side of the legend's violin silhouette."
   24)
 
-(defmethod strip/in-frame-compute :violin [chart chart-split env] (compute-in-strip-frame chart chart-split env))
+(defmethod strip-chart/in-frame-compute :violin [chart chart-split env] (compute-in-strip-frame chart chart-split env))
 
-(defmethod strip/in-frame-draw :violin [chart computed canvas box scales env]
+(defmethod strip-chart/in-frame-draw :violin [chart computed canvas box scales env]
   (draw-in-strip-frame chart computed canvas box scales env))
 
 (defn legend
@@ -248,7 +256,7 @@
   - `box` (map): the key box `{:x :y :w :h}` in pixels.
   - `env` (map): the legend environment - `:theme`."
   [chart attributes canvas {:keys [^double x ^double y ^double w ^double h]} env]
-  (let [st (merge (theme/resolved-style (:theme env) chart) (select-keys attributes [:color :pattern]))
+  (let [st (theme/key-style env chart attributes [:color :pattern])
         cx (m/+ x (m/* 0.5 w))
         cy (m/+ y (m/* 0.5 h))
         half-length (m/* 0.42 w)
@@ -258,7 +266,4 @@
         outline (into (side 1.0) (rseq (side -1.0)))
         stroke (draw/outline-color (:stroke-color st) (:color st))]
     (draw/fill-patterned! canvas (:color st) (draw/pattern-fill st (:color st)) #(c2d/path % outline true false))
-    (when-not (theme/none? stroke)
-      (c2d/set-stroke-custom canvas {:size (:stroke-width st) :join :round})
-      (c2d/set-color canvas stroke)
-      (c2d/path canvas outline true true))))
+    (draw/outline! canvas stroke (:stroke-width st) :round #(c2d/path % outline true true))))

@@ -11,7 +11,7 @@
    :labels {:title "Portfolio weights (one cell = 1%)"}})
 
 (def counts
-  {:data mtcars :mapping {:color (levels/categorical #(long (:cyl %)))} :charts [(chart/waffle {:unit 1 :columns 8 :shape :circle})]
+  {:data mtcars :mapping {:color (levels/categorical #(long (:cyl %)))} :charts [(chart/waffle {:unit 1 :columns 8 :cell-shape :circle})]
    :labels {:title "mtcars by cylinders (one cell = one car)"}})
 
 (def by-type

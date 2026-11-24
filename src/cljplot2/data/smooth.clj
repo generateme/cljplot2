@@ -51,9 +51,9 @@
 
   - `params` (map or `nil`): the user's `:method-params`.
 
-  Returns `params` merged over [[loess-defaults]]."
+  Returns `params` merged over [[loess-defaults]], `:degree` as a long (fastmath takes 1 or 2 only as integers; the chart's schema accepts any number equal to them)."
   [params]
-  (merge loess-defaults params))
+  (update (merge loess-defaults params) :degree long))
 
 (defn default-band
   "Gives the band of a smooth method without a `:band` option.
@@ -156,7 +156,7 @@
   [xs ys params]
   (gp/gaussian-process xs ys params))
 
-(defn fit-fn
+(defn- fit-fn
   "Makes the fitting function of a smooth method.
 
   Parameters:

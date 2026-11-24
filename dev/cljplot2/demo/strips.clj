@@ -1,17 +1,14 @@
 (ns cljplot2.demo.strips
   "1d strips demo (cycle 3): box, violin (inner marks, split), stripplot, rug, extent; groups dodged, flipped vertical
   strips, overlays (3a); beeswarm, histogram and density ridgelines, `:bottom` placement (3b)."
-  (:require [clojure.data.json :as json]
-            [clojure.java.io :as io]
-            [fastmath.random :as r]
+  (:require [fastmath.random :as r]
             [cljplot2.chart :as chart]
+            [cljplot2.demo.data :as data]
             [cljplot2.core :as plot]))
 
-(defn- read-json [file] (json/read-str (slurp (io/resource file)) :key-fn keyword))
-
-(def barley (read-json "barley.json"))
-(def faithful (read-json "faithful.json"))
-(def chem97 (let [rng (r/rng :mersenne 3)] (vec (filter (fn [_] (< (r/drandom rng) 0.05)) (read-json "chem97.json")))))
+(def barley (data/json-rows "barley.json"))
+(def faithful (data/json-rows "faithful.json"))
+(def chem97 (let [rng (r/rng :mersenne 3)] (vec (filter (fn [_] (< (r/drandom rng) 0.05)) (data/chem97-rows)))))
 
 (def box-barley
   {:data barley

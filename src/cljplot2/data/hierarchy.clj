@@ -9,7 +9,7 @@
 
   - trees: [[level-accessors]], [[path-of]], [[root]], [[panel-trees]] (a chart's trees per panel), [[ordered-children]], [[ordered-tree]].
   - fills: [[top-color-fn]], [[depth-shade]], [[fill-fn]].
-  - labels: [[node-info]], [[label-text]]; schemas [[label-option]], [[label-entries]], [[mapping-schema]].
+  - labels: [[node-info]], [[label-text]]; schemas `label-option`, [[label-entries]], [[mapping-schema]].
   - sequences: [[sequence-levels]] - sequences (e.g. page visits) as level rows for a flow sunburst; options [[sequence-levels-options]]."
   (:require [clojure.string :as str]
             [clojure2d.color :as c]
@@ -32,13 +32,13 @@
    (schema/nilable :color {:description "leaf colour (rows with the same path but different colours stay separate leaves)"}
                    schema/accessor)])
 
-(def label-option
+(def ^:private label-option
   "Schema of `:group-labels` / `:leaf-labels`: a boolean or a function of the node info (see [[node-info]]) returning
   the label text."
   [:or schema/bool schema/function])
 
 (def label-entries
-  "Option entries `:group-labels` / `:leaf-labels` of the hierarchy charts (see [[label-option]])."
+  "Option entries `:group-labels` / `:leaf-labels` of the hierarchy charts (see `label-option`)."
   (schema/in-fragment
    :hierarchy-labels
    [(schema/nilable :group-labels {:description (str "group labels: true - the node's name, false - none, or a function of the node info "
@@ -137,13 +137,15 @@
 
   Returns `{:trees {panel root} :top-count n :extents {panel {:color e}} :na #{..} :dropped {:value n :color n}}` - panels without kept rows left out; top-level children carry `:top-index` (first-appearance order over all panels, so default colours agree across panels, `:top-count` of them); `:na` - `#{:color}` when a leaf has a `nil` colour; `:dropped` - rows without a valid value, and (with a mapped colour) rows whose colour isn't kept.
 
+  Throws `ex-info {:key :mapping}` when rows exist but none has a finite mapped `:value`.
+
   See also [[root]], [[fill-fn]]."
   [groups mapping {:keys [na-level? plot-scales] :or {na-level? true}}]
   (let [value-of (data/row-accessor :value (:value mapping))
         accessors (level-accessors (:hierarchy mapping))
         color-of (when (some? (:color mapping)) (data/row-accessor :color (:color mapping)))
         color-spec (get plot-scales :color {})
-        value-ok? #(let [value (value-of %)] (and (number? value) (m/valid-double? (double value)) (m/pos? (double value))))
+        value-ok? #(let [value (value-of %)] (and (schema/finite? value) (m/pos? (double value))))
         color-ok? (fn [row] (or (nil? color-of)
                                 (let [cv (color-of row)]
                                   (if (nil? cv)
@@ -151,6 +153,7 @@
                                     (aesthetic/kept-value? :color color-spec cv)))))
         kept? #(and (value-ok? %) (color-ok? %))
         all-rows (mapcat val groups)
+        _ (when (some? (:value mapping)) (data/check-mapped! all-rows [[:value value-of]] (fn [_ v] (schema/finite? v))))
         trees (into {} (keep (fn [[panel rows]]
                                (when-let [kept (seq (filter kept? rows))]
                                  [panel (root (map (fn [r] {:path (path-of accessors r) :value (double (value-of r))
@@ -348,10 +351,10 @@
                             :cljplot2/default-doc "1 per row"}
                     schema/accessor)
     (schema/optional :separator {:description "literal text splitting a string sequence into steps" :default "-"} :string)
-    (schema/optional :end {:description "the end marker (nil - none): a final step equal to it is removed unless :keep-end?" :default "end"}
+    (schema/optional :end {:description "the end marker (nil - none): a final step equal to it is removed unless :keep-end" :default "end"}
                       any?)
-    (schema/nilable :keep-end? {:description "keep a final end marker as a step of its own (false - a sequence ending before others continue is its group's unnamed leaf)"
-                                :default false}
+    (schema/nilable :keep-end {:description "keep a final end marker as a step of its own (false - a sequence ending before others continue is its group's unnamed leaf)"
+                               :default true}
                     schema/bool)]))
 
 (def sequence-levels-options
@@ -364,27 +367,29 @@
   Parameters:
 
   - `rows` (sequence of maps): one sequence per row.
-  - `options` (map):
+  - `options` (map, optional):
     - `:sequence` - accessor of a row's sequence: a string split at `:separator`, or a sequence of steps; empty steps left out (default `:sequence`).
     - `:value` - accessor of a row's weight, a finite number >= 0 (see [[cljplot2.data.rows/weight]]); identical sequences summed (default 1 per row).
     - `:separator` - literal text splitting a string sequence (default `-`).
-    - `:end` - the end marker: a final step equal to it is removed, so a sequence ending before others continue becomes its group's unnamed leaf (default `end`; `nil` - none).
-    - `:keep-end?` - keep a final end marker as a step of its own (default false).
+    - `:end` - the end marker, the text of a final step that ends a sequence (default `end`; `nil` - no end marker); see `:keep-end` for what becomes of it.
+    - `:keep-end` - a final end marker stays a step of its own (default true); `false` - it is removed, so a sequence ending before others continue becomes its group's unnamed leaf.
 
   Returns `{:rows [{:step-1 s1 .. :step-k sk :value v} ..] :hierarchy [:step-1 .. :step-k] :dropped n}` - `k` the longest sequence, shorter ones padded with `nil`, rows in first-appearance order; `:dropped` - rows without steps.
 
   Throws `ex-info {:key :value}` for an invalid weight; `{:key k}` for an invalid option `k` (checked first, see [[sequence-levels-options]])."
   {:cljplot2/api true :cljplot2/options sequence-levels-options}
-  [rows {:keys [value separator end keep-end?] sequence-accessor :sequence :or {sequence-accessor :sequence separator "-" end "end"} :as options}]
-  (schema/check-options! sequence-levels-options options)
-  (let [sequence-of (data/row-accessor :sequence sequence-accessor)
-        value-of (if value (data/row-accessor :value value) (constantly nil))
-        keyed (mapv (fn [row] [(sequence-steps (sequence-of row) separator [end keep-end?]) (data/weight (value-of row))]) rows)
-        kept (filter (comp seq first) keyed)
-        sums (reduce (fn [acc [steps weight]] (update acc steps (fnil m/+ 0.0) (double weight))) {} kept)
-        order (distinct (map first kept))
-        depth (long (reduce m/max 0 (map count order)))
-        ks (mapv #(keyword (str "step-" %)) (range 1 (m/long-inc depth)))]
-    {:rows (mapv (fn [steps] (assoc (zipmap ks (concat steps (repeat nil))) :value (sums steps))) order)
-     :hierarchy ks
-     :dropped (m/- (count keyed) (count kept))}))
+  ([rows] (sequence-levels rows {}))
+  ([rows {:keys [value separator end] sequence-accessor :sequence :or {sequence-accessor :sequence separator "-" end "end"} :as options}]
+   (schema/check-options! sequence-levels-options options)
+   (let [keep-end? (data/option options :keep-end true)
+         sequence-of (data/row-accessor :sequence sequence-accessor)
+         value-of (if value (data/row-accessor :value value) (constantly nil))
+         keyed (mapv (fn [row] [(sequence-steps (sequence-of row) separator [end keep-end?]) (data/weight (value-of row))]) rows)
+         kept (filter (comp seq first) keyed)
+         sums (reduce (fn [acc [steps weight]] (update acc steps (fnil m/+ 0.0) (double weight))) {} kept)
+         order (distinct (map first kept))
+         depth (long (reduce m/max 0 (map count order)))
+         ks (mapv #(keyword (str "step-" %)) (range 1 (m/long-inc depth)))]
+     {:rows (mapv (fn [steps] (assoc (zipmap ks (concat steps (repeat nil))) :value (sums steps))) order)
+      :hierarchy ks
+      :dropped (m/- (count keyed) (count kept))})))

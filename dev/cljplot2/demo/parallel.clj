@@ -1,21 +1,17 @@
 (ns cljplot2.demo.parallel
   "Ranking cycle 4 demo: parallel coordinates (iris by species, a highlighted species, scalings side by side, a
   vertical layout, smooth connections) and radar charts (mtcars rows with fills and limits, groups, smooth, variables
-  as rings). Data: `iris.csv` and `mtcars.csv` bundled with fastmath."
-  (:require [clojure.data.csv :as csv]
-            [clojure.java.io :as io]
+  as rings). Data: `iris.csv` and `mtcars.csv` of `notebooks/data`."
+  (:require [clojure.set :as set]
             [cljplot2.chart :as chart]
-            [cljplot2.core :as plot]))
+            [cljplot2.core :as plot]
+            [cljplot2.demo.data :as data]))
 
-(defn- read-csv
-  "Rows of a CSV classpath resource: maps of keyword columns, numeric cells as doubles."
-  [resource]
-  (let [[header & rows] (csv/read-csv (slurp (io/resource resource)))
-        ks (map #(if (= "" %) :name (keyword %)) header)]
-    (mapv (fn [row] (zipmap ks (map #(or (parse-double %) %) row))) rows)))
-
-(def iris (read-csv "iris.csv"))
-(def mtcars (read-csv "mtcars.csv"))
+;; the demo's column names (axis titles) predate the book's copies of the datasets
+(def iris (mapv #(set/rename-keys % {:sepal-length :sepal_length :sepal-width :sepal_width
+                                     :petal-length :petal_length :petal-width :petal_width})
+                (data/typed-csv-rows "iris.csv")))
+(def mtcars (mapv #(set/rename-keys % {:model :name}) (data/typed-csv-rows "mtcars.csv")))
 
 (def iris-variables [:sepal_length :sepal_width :petal_length :petal_width])
 
@@ -34,7 +30,7 @@
 (def scalings
   (plot/arrange (vec (for [scaling [:std :robust :uniminmax :globalminmax]]
                        {:data iris :mapping {:color :species}
-                        :charts [(chart/parallel {:variables iris-variables :scaling scaling :width 0.5})]
+                        :charts [(chart/parallel {:variables iris-variables :scaling scaling :line-width 0.5})]
                         :legend false
                         :labels {:title (str ":scaling " scaling) :x nil}}))
                 {:columns 2}))
@@ -50,10 +46,10 @@
 
 (def radars
   (plot/arrange [{:data cars :mapping {:color :name} :coord {:kind :polar}
-                  :charts [(chart/parallel {:variables car-variables :fill :color :width 2})]
+                  :charts [(chart/parallel {:variables car-variables :fill :color :line-width 2})]
                   :labels {:title "Radar - four cars, data ranges" :x nil}}
                  {:data cars :mapping {:color :name} :coord {:kind :polar}
-                  :charts [(chart/parallel {:variables car-variables :fill :color :width 2
+                  :charts [(chart/parallel {:variables car-variables :fill :color :line-width 2
                                             :limits {:mpg [10 35] :hp [50 350] :wt [1 6] :qsec [14 23]
                                                      :drat [2.5 5] :disp [50 500]}})]
                   :labels {:title "Fixed :limits" :x nil}}]
@@ -80,10 +76,10 @@
 
 (def radar-variants
   (plot/arrange [{:data cars :mapping {:color :name} :coord {:kind :polar} :legend false
-                  :charts [(chart/parallel {:variables car-variables :fill :color :curve :smooth :width 2})]
+                  :charts [(chart/parallel {:variables car-variables :fill :color :curve :smooth :line-width 2})]
                   :labels {:title "Smooth radar" :x nil}}
                  {:data cars :mapping {:color :name} :coord {:kind :polar :inner 0.3} :flip true :legend false
-                  :charts [(chart/parallel {:variables [:mpg :hp :wt] :width 2})]
+                  :charts [(chart/parallel {:variables [:mpg :hp :wt] :line-width 2})]
                   :labels {:title "Variables as rings (:flip)" :x nil}}]
                 {:columns 2}))
 

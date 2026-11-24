@@ -107,10 +107,10 @@
       (let [v (fn [x y] (:value (first (filter #(= [x y] [(:x %) (:y %)]) rs))))]
         (is (m/delta-eq (double (v :a :b)) (- (double (v :b :a)))) "an asymmetric statistic in both orders"))))
   (testing "the diagonal and triangles"
-    (is (= 9 (count (pw/matrix-rows rows {:variables [:a :b :c] :diagonal? true}))))
+    (is (= 9 (count (pw/matrix-rows rows {:variables [:a :b :c] :self-pairs true}))))
     (is (= [[:a :b] [:a :c] [:b :c]] (map (juxt :x :y) (pw/matrix-rows rows {:variables [:a :b :c] :triangle :lower}))))
     (is (= [[:b :a] [:c :a] [:c :b]] (map (juxt :x :y) (pw/matrix-rows rows {:variables [:a :b :c] :triangle :upper}))))
-    (is (= [[:a :a] [:a :b] [:b :b]] (map (juxt :x :y) (pw/matrix-rows rows {:variables [:a :b] :triangle :lower :diagonal? true})))))
+    (is (= [[:a :a] [:a :b] [:b :b]] (map (juxt :x :y) (pw/matrix-rows rows {:variables [:a :b] :triangle :lower :self-pairs true})))))
   (testing "a symmetric statistic once per pair: mirrored values equal"
     (let [calls (atom 0)
           rs (pw/matrix-rows rows {:variables [:a :b :c] :method :mse})]
@@ -210,11 +210,11 @@
     (doseq [g [:number :shade :shade-number]]
       (is (some? (plot/render (cell-plot {:glyph g :method :rmse}) size)) (str g)))
     (is (= "diff" (:label (panel-stats (cell-plot {:method (fn [xs ys] (- (reduce + xs) (reduce + ys))) :label "diff"})))))
-    (is (= "v=" (subs (str ((:format (panel-stats (cell-plot {:format #(str "v=" %)}))) 1.0)) 0 2))))
-  (testing ":format that throws or gives nil shows NA; a non-string is printed"
-    (is (= "ME: NA" (:text (first (first-lines (cell-plot {:method :me :format (fn [_] (throw (Exception. "boom")))}))))))
-    (is (= "ME: NA" (:text (first (first-lines (cell-plot {:method :me :format (constantly nil)}))))))
-    (is (= "ME: 7" (:text (first (first-lines (cell-plot {:method :me :format (constantly 7)})))))))
+    (is (= "v=" (subs (str ((:format (panel-stats (cell-plot {:value-format #(str "v=" %)}))) 1.0)) 0 2))))
+  (testing ":value-format that throws or gives nil shows NA; a non-string is printed"
+    (is (= "ME: NA" (:text (first (first-lines (cell-plot {:method :me :value-format (fn [_] (throw (Exception. "boom")))}))))))
+    (is (= "ME: NA" (:text (first (first-lines (cell-plot {:method :me :value-format (constantly nil)}))))))
+    (is (= "ME: 7" (:text (first (first-lines (cell-plot {:method :me :value-format (constantly 7)})))))))
   (testing "invalid options rejected"
     (is (= :domain (:key (error-data #(plot/build (cell-plot {:domain [0 1]}))))) ":domain is gone - the colour scale's")
     (is (some? (error-data #(plot/build (cell-plot {:method :nope})))))
@@ -264,7 +264,7 @@
 
 (deftest pairs-shared-domain-test
   (testing "every colouring cell and the legend cell share the matrix's domain"
-    (let [p (plot/pairs rows {:variables [:a :b :c :d] :lower (chart/pairwise {:method :mse :glyph :shade}) :upper nil})
+    (let [p (plot/pairs rows {:variables [:a :b :c :d] :lower (chart/pairwise {:method :mse :glyph :shade}) :upper :none})
           values (keep :value (pw/matrix-rows rows {:variables [:a :b :c :d] :method :mse :triangle :lower}))]
       (is (= #{[(reduce min values) (reduce max values)]} (cell-color-domains p)))
       (is (= 7 (count (filter #(= [(reduce min values) (reduce max values)] (get-in % [:scales :color :domain])) (tree-seq coll? seq p))))
@@ -280,7 +280,7 @@
         (plot/pairs rows {:variables [:a :b :c] :lower (chart/pairwise {:method :mae :glyph :shade}) :upper (chart/pairwise {:method :mae})})
         (is (= 3 @calls) "symmetric: 3 unordered pairs for both slots")
         (reset! calls 0)
-        (is (empty? (cell-color-domains (plot/pairs rows {:variables [:a :b :c] :lower (chart/pairwise {:method :mae}) :upper nil}))))
+        (is (empty? (cell-color-domains (plot/pairs rows {:variables [:a :b :c] :lower (chart/pairwise {:method :mae}) :upper :none}))))
         (is (= 3 @calls) ":number - values for the text size only"))))
   (testing ":scales {:color ..} reaches every colouring cell; its :domain wins"
     (let [p (plot/pairs rows {:variables [:a :b] :lower (chart/pairwise {:method :mse :glyph :shade}) :scales {:color {:domain [0 10] :title "t"}}})]
@@ -307,7 +307,7 @@
       (is (= 2 (count values)))
       (is (m/delta-eq (double (first values)) (- (double (second values))))))
     (let [data [{:a 10.0 :c 0.0} {:a 12.0 :c 1.0} {:a 14.0 :c -1.0}]
-          built (plot/build (plot/pairs data {:variables [:a :c] :lower nil :upper (chart/pairwise {:method :me})}))
+          built (plot/build (plot/pairs data {:variables [:a :c] :lower :none :upper (chart/pairwise {:method :me})}))
           [v] (keep (fn [x] (when (and (map? x) (= "ME" (:label x))) (:value x))) (tree-seq coll? seq built))]
       (is (m/delta-eq -12.0 (double v)) "upper cell (row a, column c): mean of c - a"))))
 

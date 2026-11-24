@@ -211,7 +211,7 @@
     {:axis {:y {:label-gap "2"}}} :label-gap
     {:axis {:x {:tick-spacing 0}}} :tick-spacing
     {:axis {:x :none}} :x
-    {:panel {:grid {:x {:width -1}}}} :width
+    {:panel {:grid {:x {:line-width -1}}}} :line-width
     {:panel {:grid {:y {:dash [0]}}}} :dash
     {:panel {:grid {:y {:dash []}}}} :dash
     {:panel {:grid {:y {:dash nil}}}} nil
@@ -256,8 +256,8 @@
 
 (deftest grid-lines-test
   (let [scales {:x {:domain [0 10] :ticks [0 5 10]} :y {:domain [0 10] :ticks [0 5 10]}}
-        grid-theme {:plot {:background :white} :panel {:grid {:x {:color :red :width 1 :dash :none}
-                                                              :y {:color :blue :width 1 :dash :none}}}}
+        grid-theme {:plot {:background :white} :panel {:grid {:x {:color :red :line-width 1 :dash :none}
+                                                              :y {:color :blue :line-width 1 :dash :none}}}}
         built (plot/build {:scales scales :theme grid-theme} {:width 600 :height 400})
         {:keys [x y w h]} (grid/item-box (:layout built) :panel)
         px (long (+ x (scale/forward (get-in built [:finalized-scales :x]) 5)))
@@ -313,7 +313,7 @@
     (is (= ["0" "5" "10"] (:tick-labels fx))))
   (testing "no grid line outside the panel"
     (let [scales {:x {:domain [0 10] :ticks [0 20] :nice false}}
-          th {:plot {:background :white} :panel {:grid {:x {:color :red :width 1 :dash :none}}}}
+          th {:plot {:background :white} :panel {:grid {:x {:color :red :line-width 1 :dash :none}}}}
           built (plot/build {:scales scales :theme th} {:width 600 :height 400})
           {:keys [x y w h]} (grid/item-box (:layout built) :panel)
           c (plot/render {:scales scales :theme th} {:width 600 :height 400})

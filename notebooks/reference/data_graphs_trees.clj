@@ -38,11 +38,11 @@
 
 ;; The flights as a directed graph with the airports as nodes - Krakow has no flights (degree 0):
 
-(nu/data-table (:nodes (graph/graph flights {:from :src :to :dst :value :n :nodes airports :id :code :directed? true})))
+(nu/data-table (:nodes (graph/graph flights {:from :src :to :dst :value :n :nodes airports :id :code :directed true})))
 
 ;; Its edges, weights as numbers (an edge without a weight counts 1):
 
-(nu/data-table (:edges (graph/graph flights {:from :src :to :dst :value :n :directed? false})))
+(nu/data-table (:edges (graph/graph flights {:from :src :to :dst :value :n :directed false})))
 
 ;; ## graph/layout
 
@@ -94,7 +94,7 @@
 
 (nu/data-table (graph/adjacency->edges shared-projects ["design" "backend" "data" "ops"]))
 
-(nu/data-table (graph/adjacency->edges shared-projects ["design" "backend" "data" "ops"] {:directed? false}))
+(nu/data-table (graph/adjacency->edges shared-projects ["design" "backend" "data" "ops"] {:whole-matrix false}))
 
 ;; ## graph/arc-layout
 
@@ -117,7 +117,7 @@
                                         [":order :cluster"
                                          (graph/arc-layout (graph/graph flights {:from :src :to :dst :value :n}) {:order :cluster})]]]
                                    {:charts [(chart/line {:data (:arcs laid) :mapping {:x :x :y :y :group :edge :size :value}
-                                                          :sort false})
+                                                          :order :data})
                                              (chart/scatter {:data (:nodes laid) :mapping {:x :x :y :y} :size 10})]
                                     :scales {:x {:ticks (vec (range 5))
                                                  :formatter (let [ids (mapv :id (:nodes laid))] #(get ids (long %) ""))}
@@ -143,11 +143,11 @@
 
 (plot/render-image (plot/arrange (for [[title {:keys [ribbons arcs]}]
                                        [["defaults" (graph/chord-layout (graph/graph flights {:from :src :to :dst :value :n}))]
-                                        [":pad 12, :inner 0.75"
+                                        [":gap-angle 12, :inner-radius 0.75"
                                          (graph/chord-layout (graph/graph flights {:from :src :to :dst :value :n})
-                                                             {:pad 12 :inner 0.75})]
+                                                             {:gap-angle 12 :inner-radius 0.75})]
                                         [":order :cluster :min-value 4"
-                                         (graph/chord-layout (graph/graph flights {:from :src :to :dst :value :n :directed? true})
+                                         (graph/chord-layout (graph/graph flights {:from :src :to :dst :value :n :directed true})
                                                              {:order :cluster :min-value 4})]]]
                                    {:charts [(chart/polygon {:data ribbons :alpha 0.6 :mapping {:x :x :y :y :group :ribbon :color :from}})
                                              (chart/polygon {:data arcs :mapping {:x :x :y :y :color :group}})]
@@ -170,7 +170,7 @@
 (nu/data-table (:nodes (graph/sankey-layout (graph/graph [{:from "WAW" :to "BER" :value 12} {:from "WAW" :to "PRG" :value 5}
                                                          {:from "BER" :to "PRG" :value 8} {:from "PRG" :to "VIE" :value 6}
                                                          {:from "BER" :to "VIE" :value 3} {:from "BUD" :to "VIE" :value 7}]
-                                                        {:directed? true}))))
+                                                        {:directed true}))))
 
 ;; Bands (polygons grouped by `:link`) under the node rectangles (grouped by `:rect`), for each column alignment -
 ;; Krakow, a dead end after Warsaw, sits in the last column (`:justify`, `:right`) or right after Warsaw (`:left`,
@@ -205,7 +205,7 @@
                    {:width 1000 :height 280})
 
 ;; Columns given by a node column (`:layer :stage`, winning over `:align`), wide nodes (`:node-width 0.08`) far apart
-;; (`:pad 0.1`), no relaxation, nodes in input order (left), against the defaults - columns from `:align`, six
+;; (`:gap 0.1`), no relaxation, nodes in input order (left), against the defaults - columns from `:align`, six
 ;; relaxation sweeps moving the nodes towards their links' ends (right):
 
 (def stages [{:id "visit" :stage 0} {:id "search" :stage 1} {:id "browse" :stage 1} {:id "cart" :stage 2} {:id "buy" :stage 3}])
@@ -213,12 +213,12 @@
 (nu/data-table stages)
 
 (plot/render-image (plot/arrange (for [[title {:keys [rects bands]}]
-                                       [[":layer, :iterations 0, :node-sort :input"
+                                       [[":layer, :iterations 0, :order :input"
                                          (graph/sankey-layout (graph/graph [{:from "visit" :to "search" :value 6} {:from "visit" :to "browse" :value 9}
                                                                             {:from "search" :to "cart" :value 4} {:from "browse" :to "cart" :value 3}
                                                                             {:from "cart" :to "buy" :value 5} {:from "browse" :to "buy" :value 1}]
                                                                            {:nodes stages})
-                                                              {:layer :stage :node-width 0.08 :pad 0.1 :iterations 0 :node-sort :input})]
+                                                              {:layer :stage :node-width 0.08 :gap 0.1 :iterations 0 :order :input})]
                                         ["defaults"
                                          (graph/sankey-layout (graph/graph [{:from "visit" :to "search" :value 6} {:from "visit" :to "browse" :value 9}
                                                                             {:from "search" :to "cart" :value 4} {:from "browse" :to "cart" :value 3}
@@ -248,19 +248,19 @@
 
 ;; The edges, weighted by `:n` and grouped by the survival level:
 
-(nu/data-table (:edges (graph/alluvial-graph passengers {:axes [:class :sex :survived] :value :n :fill :survived})))
+(nu/data-table (:edges (graph/alluvial-graph passengers {:variables [:class :sex :survived] :value :n :strand-color :survived})))
 
-;; Laid out by `sankey-layout` with the axes as columns and the input order kept, strands coloured by their fill
-;; level - by survival (left) and by class, the default first axis (right):
+;; Laid out by `sankey-layout` with the axes as columns and the input order kept, strands coloured by their
+;; `:strand-color` level - by survival (left) and by class, the default first column (right):
 
 (plot/render-image (plot/arrange (for [[title {:keys [rects bands]}]
-                                       [[":fill :survived"
-                                         (graph/sankey-layout (graph/alluvial-graph passengers {:axes [:class :sex :survived] :value :n :fill :survived})
-                                                              {:layer :layer :node-sort :input :iterations 0})]
-                                        ["default :fill (the first axis)"
-                                         (graph/sankey-layout (graph/alluvial-graph passengers {:axes [:class :sex :survived] :value :n})
-                                                              {:layer :layer :node-sort :input :iterations 0})]]]
-                                   {:charts [(chart/polygon {:data bands :alpha 0.6 :mapping {:x :x :y :y :group :link :color :fill}})
+                                       [[":strand-color :survived"
+                                         (graph/sankey-layout (graph/alluvial-graph passengers {:variables [:class :sex :survived] :value :n :strand-color :survived})
+                                                              {:layer :layer :order :input :iterations 0})]
+                                        ["default :strand-color (the first column)"
+                                         (graph/sankey-layout (graph/alluvial-graph passengers {:variables [:class :sex :survived] :value :n})
+                                                              {:layer :layer :order :input :iterations 0})]]]
+                                   {:charts [(chart/polygon {:data bands :alpha 0.6 :mapping {:x :x :y :y :group :link :color :strand-color}})
                                              (chart/polygon {:data rects :color [90 90 90] :stroke-color :white
                                                              :mapping {:x :x :y :y :group :rect}})]
                                     :scales {:x {:axis false} :y {:axis false}}
@@ -354,7 +354,7 @@
                                         [":span 180"
                                          (tree/layout (tree/from-hclust (cl/hclust car-features) (mapv :model mtcars))
                                                       {:circular true :span 180 :k 3}) true]]]
-                                   (cond-> {:charts [(chart/line {:data paths :sort false
+                                   (cond-> {:charts [(chart/line {:data paths :order :data
                                                                   :mapping (cond-> {:x :x :y :y :group :id}
                                                                              (some :cluster paths) (assoc :color #(some-> (:cluster %) str)))})]
                                             :scales {:x {:axis false} :y {:axis false}}
@@ -391,7 +391,7 @@
                                         [":span 180"
                                          (tree/node-link-layout (tree/from-levels offices {:hierarchy [:region :country :city]})
                                                                 {:circular true :span 180}) true]]]
-                                   (cond-> {:charts [(chart/line {:data links :sort false :color [150 150 150] :mapping {:x :x :y :y :group :id}})
+                                   (cond-> {:charts [(chart/line {:data links :order :data :color [150 150 150] :mapping {:x :x :y :y :group :id}})
                                                      (chart/scatter {:data nodes :size 8 :mapping {:x :x :y :y} :padding {:x [0.1 0.25] :y [0.1 0.1]}})
                                                      (chart/text {:data (filter :leaf? nodes) :size 7 :anchor [:left :middle] :offset [5 0]
                                                                   :mapping {:x :x :y :y :label #(str (:name %))}})]
@@ -432,7 +432,7 @@
                                    {:charts [(chart/line {:data (:paths (tree/bundle-paths imports
                                                                                            (tree/layout (tree/from-parents modules {}) {:circular true})
                                                                                            {:from :module :to :uses :beta beta}))
-                                                          :sort false :mapping {:x :x :y :y :group :id :color :module}})
+                                                          :order :data :mapping {:x :x :y :y :group :id :color :module}})
                                              (chart/text {:data (filter :leaf? (:nodes (tree/layout (tree/from-parents modules {}) {:circular true})))
                                                           :size 8 :mapping {:x :x :y :y :label :id}})]
                                     :aspect :iso
@@ -455,15 +455,15 @@
 
 (nu/data-table visits)
 
-;; The step rows - the end marker dropped (left), kept as a step (right):
+;; The step rows - the end marker dropped with `:keep-end false` (left), kept as a step by default (right):
+
+(nu/data-table (:rows (hierarchy/sequence-levels visits {:sequence :path :value :n :separator ">" :end "end" :keep-end false})))
 
 (nu/data-table (:rows (hierarchy/sequence-levels visits {:sequence :path :value :n :separator ">" :end "end"})))
 
-(nu/data-table (:rows (hierarchy/sequence-levels visits {:sequence :path :value :n :separator ">" :end "end" :keep-end? true})))
-
 ;; The rows as a sunburst - `chart/partition` under polar, the steps as its hierarchy:
 
-(plot/render-image (let [{:keys [rows hierarchy]} (hierarchy/sequence-levels visits {:sequence :path :value :n :separator ">"})]
+(plot/render-image (let [{:keys [rows hierarchy]} (hierarchy/sequence-levels visits {:sequence :path :value :n :separator ">" :keep-end false})]
                      {:data rows
                       :mapping {:hierarchy hierarchy :value :value}
                       :charts [(chart/partition {:color-by :name})]

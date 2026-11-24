@@ -27,7 +27,7 @@
             [cljplot2.chart]
             [cljplot2.content.label :as label]
             [cljplot2.data.annotation :as annotation]
-            [cljplot2.data.cells :as cells]
+            [cljplot2.graphics.cells :as cell-draw]
             [cljplot2.data.facet :as facet]
             [cljplot2.data.field :as field]
             [cljplot2.data.hierarchy :as hierarchy]
@@ -70,12 +70,12 @@
    :ridge {:title "Ridgelines" :doc "overlapping rows of histograms and densities over a categorical axis"
            :entries strip/ridge-options}
    :annotation {:title "Annotation options" :doc "the extents of annotation charts" :entries annotation/options}
-   :cell {:title "Cell style" :doc "the cell shape and outline of grid-cell charts" :entries cells/style-entries}
+   :cell {:title "Cell style" :doc "the cell shape and outline of grid-cell charts" :entries cell-draw/style-entries}
    :corner-radius {:title "Rounded corners" :doc "rounded bar corners"
                    :entries [draw/corner-radius-option draw/corner-radius-end-option]}
    :curve {:title "Curves" :doc "interpolation and sampling of the line between data points" :entries curve/options}
    :field {:title "Fields" :doc "the scalar field of a raster or contour chart: a function or a kernel density estimate"
-           :entries field/options}
+           :entries field/source-options}
    :hierarchy-labels {:title "Hierarchy labels" :doc "group and leaf labels of the hierarchy charts (treemap, partition, pack)"
                       :entries hierarchy/label-entries}
    :frame-3d {:title "3D frame" :doc "view, proportions, frame and domains of a 3D chart" :entries space/frame-options}
@@ -109,7 +109,7 @@
                          :entries series/horizon-rows-entries}
    :arrange {:title "Multiplot layout" :doc "sub-plots in a grid: shape, weights, panel alignment"
              :entries plot-grid/arrange-entries}
-   :text-style {:title "Text style" :doc "font, size, colour, padding, alignment and background of a text"
+   :text-style {:title "Text style" :doc "font, size, colour, inset, alignment and background of a text"
                 :entries theme/text-style-overrides}
    :theme-style {:title "Named theme styles" :doc "a theme [:chart name] style merged over the chart kind's style (builders name theirs)"
                  :entries theme/theme-style-entries}})
@@ -129,12 +129,24 @@
    :nil "nil"})
 
 (defn- message-text
-  "Returns an error message as type text: `message` without its leading `should be `."
+  "Gives an error message as type text.
+
+  Parameters:
+
+  - `message` (string): a malli error message.
+
+  Returns `message` without its leading `should be `."
   [message]
   (str/replace-first message #"^should be " ""))
 
 (defn- bounds-text
-  "Returns the bounds text of a collection or number schema's properties: ` (min..max)`, ` (at least min)`, ` (at most max)`, or an empty string without `:min` / `:max`."
+  "Gives the bounds text of a collection or number schema.
+
+  Parameters:
+
+  - `properties` (map): the schema's properties - `:min`, `:max`.
+
+  Returns ` (min..max)`, ` (at least min)`, ` (at most max)`, or an empty string without `:min` / `:max`."
   [{lo :min hi :max}]
   (cond
     (and lo hi) (str " (" lo ".." hi ")")
@@ -196,7 +208,13 @@
 ;; rows
 
 (defn- entries-map
-  "Returns the `:map` schema holding the entries of `schema`, found under `:maybe` and the first child of `:and` (as [[cljplot2.schema/with-rules]] builds); `nil` when there is none."
+  "Gives the `:map` schema holding the entries of a schema.
+
+  Parameters:
+
+  - `schema`: a malli schema.
+
+  Returns the map found directly, under `:maybe` or as the first child of `:and` (as [[cljplot2.schema/with-rules]] builds); `nil` when there is none."
   [schema]
   (let [s (malli/schema schema)]
     (case (malli/type s)
@@ -205,9 +223,15 @@
       nil)))
 
 (defn- nested-map
-  "Returns the closed `:map` of an entry's schema `s` (also under `:maybe`), whose entries get rows of their own - flattened under the entry's row - or `nil`.
+  "Gives the closed `:map` of an entry's schema, whose entries get rows of their own - flattened under the entry's row.
 
-  Every such entry is a [[container?]]; not the reverse: a map under validation rules (`:and`, e.g. a scale spec) or a map of entries isn't flattened (it has a table of its own)."
+  Every such entry is a [[container?]]; not the reverse: a map under validation rules (`:and`, e.g. a scale spec) or a map of entries isn't flattened (it has a table of its own).
+
+  Parameters:
+
+  - `s`: the entry's schema.
+
+  Returns the closed map (also under `:maybe`), or `nil`."
   [s]
   (let [compiled (malli/schema s)]
     (case (malli/type compiled)
@@ -292,7 +316,13 @@
   (if-let [m (some-> schema entries-map)] (map-rows m [] false nil) []))
 
 (defn- chart-rows
-  "Returns the option rows of a chart value: its options schema's rows, the top-level style entries with their default from the default theme `[:chart kind]`."
+  "Gives the option rows of a chart value.
+
+  Parameters:
+
+  - `chart` (map): a chart value - `:kind`, `:schema` (`:options`, `:style`).
+
+  Returns its options schema's rows, the top-level style entries with their `:default` from the default theme `[:chart kind]`."
   [{:keys [kind] :as chart}]
   (let [style-keys (set (map :key (schema-rows (get-in chart [:schema :style]))))
         style (get-in theme/default-theme [:chart kind])]
@@ -455,7 +485,7 @@
 
   - `rows` (sequence): option rows.
 
-  Returns `[[fragment [key ...]] ...]` - each group with the keys of its entries `rows` holds (a chart may take only some of a group's entries), groups in the order of their first row; empty without groups."
+  Returns a sequence of `[fragment keys]` pairs (`keys` - a vector) - each group with the keys of its entries `rows` holds (a chart may take only some of a group's entries), groups in the order of their first row; empty without groups."
   [rows]
   (let [tagged (filter :fragment rows)]
     (mapv (fn [fragment] [fragment (into [] (comp (filter #(= fragment (:fragment %))) (map :key)) tagged)])
@@ -476,7 +506,13 @@
     :else (schema-rows x)))
 
 (defn mapping
-  "Returns the rows of the mapping keys a chart value reads (its `:mapping` schema's entries); empty without one."
+  "Gives the rows of the mapping keys a chart value reads.
+
+  Parameters:
+
+  - `chart` (map): a chart value.
+
+  Returns the rows of its `:mapping` schema's entries (see the namespace doc for a row); empty without one."
   [chart]
   (schema-rows (get-in chart [:schema :mapping])))
 

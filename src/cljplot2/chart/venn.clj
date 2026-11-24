@@ -12,8 +12,8 @@
   two equal circles); 3 sets - the classic layout of equal circles (not proportional: `:proportional` doesn't apply).
 
   Drawing (style defaults from theme `[:chart :venn]`): each set the next `[:palette :color]` color, filled with
-  `:alpha` (overlaps mix), outlined with `:border-color` (a color, `:none` or `:darker` - the darkened set color) and
-  `:border-width`; no legend - `:set-labels` (default true) writes the set names outside their circles, theme `:label-gap` pixels away (text role
+  `:alpha` (overlaps mix), outlined with `:stroke-color` (a color, `:none` or `:darker` - the darkened set color) and
+  `:stroke-width`; no legend - `:set-labels` (default true) writes the set names outside their circles, theme `:label-gap` pixels away (text role
   `:venn-set`; left out when their room would leave the diagram less than half the panel). `:region-labels`
   (default true - the count; `false` - none; a function of `{:sets [s ..] :size n :share f}` - `:share` of the
   panel's distinct items - returning the text) labels every region of the layout (text role `:venn-count`), in black
@@ -42,8 +42,8 @@
 (def ^:private style-entries
   "Map entries of the venn style (theme `[:chart :venn]`; also options)."
   [(schema/optional :alpha {:description "fill opacity"} schema/fraction)
-   (schema/optional :border-color {:description "circle outline colour: a colour, :none or :darker (the darkened set colour)"} draw/stroke-color)
-   (schema/optional :border-width {:description "circle outline width in pixels"} schema/non-neg)])
+   (schema/optional :stroke-color {:description "circle outline colour: a colour, :none or :darker (the darkened set colour)"} draw/stroke-color)
+   (schema/optional :stroke-width {:description "circle outline width in pixels"} schema/non-neg)])
 
 (def schemas
   "Schemas of the Venn diagram: `:style` (theme `[:chart :venn]`), `:options`, `:mapping` (merged)."
@@ -84,9 +84,10 @@
 
   Returns `{:data {panel {:sets [s ..] :sizes [n ..] :regions {#{i ..} n} :total n :style st :options o}} :dropped {:set n}}`: regions keyed by set indices (see [[cljplot2.layout.venn]]); a panel without members is left out; `:dropped` - rows with a `nil` set or item.
 
-  Throws `ex-info {:key :sets}` for 1 or more than 3 sets."
+  Throws `ex-info {:key :sets}` for 1 or more than 3 sets, `{:key :mapping}` when rows exist but every `:set` or every `:item` is `nil` (see [[cljplot2.data.rows/check-mapped!]])."
   [{:keys [options] :as chart} {:keys [groups mapping]} {:keys [theme]}]
   (let [set-of (data/row-accessor :set (:set mapping))
+        _ (data/check-mapped! (mapcat val groups) [[:set set-of] [:item (data/row-accessor :item (:item mapping))]] (fn [_ v] (some? v)))
         order (sets/set-order (mapcat val groups) set-of (:sets options))
         n (count order)]
     (when (and (m/pos? n) (not (m/<= 2 n 3)))
@@ -201,18 +202,15 @@
         names? (and (:set-labels options) (m/< (m/* 4.0 mx) w) (m/< (m/* 4.0 my) h))
         to-pixel (if names? (fit circles w h mx my) (fit circles w h 0.0 0.0))
         scale (double (:scale (meta to-pixel)))
-        sw (double (:border-width style))]
+        sw (double (:stroke-width style))]
     (doseq [[i {:keys [x y ^double r]}] (map-indexed vector circles)
             :let [[px py] (to-pixel [x y])
                   d (m/* 2.0 scale r)]
             :when (m/pos? d)]
       (c2d/set-color canvas (fills i))
       (c2d/ellipse canvas px py d d)
-      (let [stroke (draw/outline-color (:border-color style) (palette i))]
-        (when (and (m/pos? sw) (not (theme/none? stroke)))
-          (c2d/set-stroke-custom canvas {:size sw})
-          (c2d/set-color canvas stroke)
-          (c2d/ellipse canvas px py d d true))))
+      (let [stroke (draw/outline-color (:stroke-color style) (palette i))]
+        (draw/outline! canvas stroke sw #(c2d/ellipse % px py d d true))))
     (when names?
       (doseq [[i {:keys [x y ^double r]}] (map-indexed vector circles)
               :when (m/pos? r)

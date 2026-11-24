@@ -57,7 +57,7 @@
                     :mapping {:x :sepal-length :y :sepal-width :color :species}
                     :charts [(chart/scatter)]
                     :labels {:title {:text "Iris sepals" :size 18 :align [:left :middle] :color [40 40 120]
-                                     :background [230 230 245] :padding 6}
+                                     :background [230 230 245] :inset 6}
                              :y {:text "sepal width [cm]" :font-style :italic}}}
                    {:width 600 :height 350})
 

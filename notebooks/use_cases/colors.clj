@@ -350,7 +350,7 @@
                        ["4 bins" {:kind :binned :bins 4 :range :RColorBrewer/RdBu :reverse true}]]]
     {:data lincoln-days :mapping {:x :day :y :mean-temp :color :mean-temp}
      :scales {:color (assoc scale :title "°F")}
-     :charts [(chart/line {:width 2})]
+     :charts [(chart/line {:line-width 2})]
      :labels {:title title :x "day of 2016" :y "mean temperature [°F]"}})
   {:columns 1})
  {:width 900 :height 650})

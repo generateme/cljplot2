@@ -24,7 +24,7 @@
 (defn- density [data position extra]
   {:data data
    :mapping {:x :v :color :g}
-   :charts [(chart/density (merge {:position position :width 1.5} extra))]
+   :charts [(chart/density (merge {:position position :line-width 1.5} extra))]
    :labels {:title (str "Density :position " position) :x "v"}})
 
 (def images

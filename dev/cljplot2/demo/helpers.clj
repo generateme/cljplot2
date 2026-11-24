@@ -1,16 +1,13 @@
 (ns cljplot2.demo.helpers
   "Helpers and options demo (cycle 5): `order-levels` (B4), `bin` (B9), `:stroke-color` (H3)."
-  (:require [clojure.data.json :as json]
-            [clojure.java.io :as io]
-            [fastmath.stats :as stats]
+  (:require [fastmath.stats :as stats]
             [cljplot2.chart :as chart]
+            [cljplot2.demo.data :as data]
             [cljplot2.core :as plot]
             [cljplot2.data.levels :as levels]))
 
-(defn- read-json [file] (json/read-str (slurp (io/resource file)) :key-fn keyword))
-
-(def barley (read-json "barley.json"))
-(def faithful (read-json "faithful.json"))
+(def barley (data/json-rows "barley.json"))
+(def faithful (data/json-rows "faithful.json"))
 
 (def ordered
   (plot/arrange [{:data barley :mapping {:x :yield :y :variety}

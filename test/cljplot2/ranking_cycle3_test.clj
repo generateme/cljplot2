@@ -143,7 +143,7 @@
       (is (not (near? red (pixel-at img b (coord/to-pixel g (+ theta-a Math/PI) r-mid)))))))
   (testing "2.6 a rule on the radius is a circle"
     (let [p {:data sales :mapping {:x :c :y :v} :coord polar :theme plain
-             :charts [(chart/scatter {:size 0.1}) (chart/rule {:y 25 :color red :width 2})]}
+             :charts [(chart/scatter {:size 0.1}) (chart/rule {:y 25 :color red :line-width 2})]}
           b (build p) img (plot/render-image p size)
           g (geometry b)
           r (double ((cljplot2.scale.position/forward-fn (get-in b [:finalized-scales :y])) 25))]
@@ -189,7 +189,7 @@
       (is (not-any? #(#{:axis :axis-overhang} (get-in % [:content :kind])) (get-in b [:grid :items])))))
   (testing "3.2 circles at radial ticks"
     (let [p {:data sales :mapping {:x :c :y :v} :coord polar
-             :theme {:plot {:background :white} :panel {:fill :white :grid {:x :none :y {:color red :width 2 :dash :none} :bands-fill :none}}}
+             :theme {:plot {:background :white} :panel {:fill :white :grid {:x :none :y {:color red :line-width 2 :dash :none} :bands-fill :none}}}
              :charts [(chart/scatter {:size 0.1})]}
           b (build p) img (plot/render-image p size)
           g (geometry b)
@@ -223,7 +223,7 @@
   (testing "U3 a colour gradient line with :arcs follows the circle"
     (let [p {:data [{:c "a" :v 20 :k 0} {:c "c" :v 20 :k 1}] :mapping {:x :c :y :v :color :k} :coord {:kind :polar :arcs true}
              :scales {:x {:domain ["a" "b" "c" "d"]} :y {:domain [0 40]} :color {:range [[255 0 0] [255 0 0]]}} :theme plain :legend false
-             :charts [(chart/line {:width 3})]}
+             :charts [(chart/line {:line-width 3})]}
           b (build p) img (plot/render-image p size)
           g (geometry b)
           fx (cljplot2.scale.position/forward-fn (get-in b [:finalized-scales :x]))
@@ -252,8 +252,8 @@
     (let [b (build {:data sales :mapping {:x :c :y :v} :coord {:kind :polar :inner 0.2} :charts [(chart/scatter)]})
           g (geometry b)
           scales (assoc (:finalized-scales b) :y nil)
-          centre (cljplot2.data.strip/placement {:w 0 :h 0} scales {:width 1.0} :center)
-          edge (cljplot2.data.strip/placement {:w 0 :h 0} scales {} :edge)
+          centre (cljplot2.chart.strip/placement {:w 0 :h 0} scales {:width 1.0} :center)
+          edge (cljplot2.chart.strip/placement {:w 0 :h 0} scales {} :edge)
           [_ v] ((:range-point centre) "a" nil 0.0)
           [_ e] ((:range-point edge) "a" nil 0.0)]
       (is (< (Math/abs (- (double v) (* 0.5 (+ (double (:inner-radius g)) (double (:radius g)))))) 1e-9))
@@ -261,7 +261,7 @@
   (testing "U9 a constant-radius segment with :arcs stays on its circle"
     (let [p {:data [{:c "a" :v 20 :ce "c"}] :mapping {:x :c :y :v} :coord {:kind :polar :arcs true} :theme plain
              :scales {:x {:domain ["a" "b" "c" "d"]} :y {:domain [0 40]}}
-             :charts [(chart/segment {:mapping {:xend :ce} :yend 20 :color red :width 3})]}
+             :charts [(chart/segment {:mapping {:xend :ce} :yend 20 :color red :line-width 3})]}
           b (build p) img (plot/render-image p size)
           g (geometry b)
           fx (cljplot2.scale.position/forward-fn (get-in b [:finalized-scales :x]))

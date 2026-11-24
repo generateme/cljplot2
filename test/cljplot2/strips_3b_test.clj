@@ -3,6 +3,7 @@
   (:require [clojure.test :refer [deftest testing is]]
             [fastmath.core :as m]
             [fastmath.random :as r]
+            [cljplot2.chart.strip :as strip-chart]
             [cljplot2.test-util :refer [error]]
             [cljplot2.chart :as chart]
             [cljplot2.chart.beeswarm :as beeswarm]
@@ -25,7 +26,7 @@
 
 (defn- placement-of [b chart-options place]
   (let [{:keys [w h]} (panel-box b)]
-    (strip/placement {:w w :h h} (:finalized-scales b) chart-options place)))
+    (strip-chart/placement {:w w :h h} (:finalized-scales b) chart-options place)))
 
 (deftest swarm-offsets-test
   (let [rng (r/rng :mersenne 7)

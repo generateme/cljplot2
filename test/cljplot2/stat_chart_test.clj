@@ -40,7 +40,7 @@
       (is (= {"p" 2 "q" 2} (update-vals (data-of built) (comp count :curves))))
       (is (= [{:color "a"} {:color "b"}] (map :aesthetics (:curves (get (data-of built) "p")))))))
   (testing "numeric aesthetic on a linear scale can't group; ordinal can"
-    (is (= {:key :mapping :value :color} (error #(build {:data rows :mapping {:x :v :color :n} :charts [(chart/density)]}))))
+    (is (= {:key :mapping :in [:mapping :color]} (error #(build {:data rows :mapping {:x :v :color :n} :charts [(chart/density)]}))))
     (is (= 3 (count (:curves (panel (build {:data rows :mapping {:x :v :color :n} :scales {:color {:kind :ordinal}}
                                            :charts [(chart/density)]}))))))
     (is (= 3 (count (:curves (panel (build {:data rows :mapping {:x :v :color :n} :scales {:color {:domain [0 1 2]}}
@@ -68,7 +68,7 @@
       (is (nil? (group/style {:color :red} {:color "b"} (:finalized-scales built) (:theme built))))
       (is (some? (group/style {:color :red} {:color "a"} (:finalized-scales built) (:theme built))))))
   (testing "all-NA aesthetic: misspelt mapping"
-    (is (= {:key :mapping :value :color :rows 40} (error #(build {:data rows :mapping {:x :v :color :nope} :charts [(chart/density)]}))))))
+    (is (= {:key :mapping :in [:mapping :color] :rows 40} (error #(build {:data rows :mapping {:x :v :color :nope} :charts [(chart/density)]}))))))
 
 ;; 2.x histogram
 
@@ -143,7 +143,7 @@
       (let [built (build {:data [{:x 1} {:x ##NaN} {:x ##Inf} {:x 3} {:x 50}] :mapping {:x :x} :charts [(chart/histogram {:bins [0 10]})]})]
         (is (= 3 (get-in built [:stats 0 :dropped :x])) "NaN, Inf and outside explicit breaks")
         (is (= 100.0 (reduce + (map :y1 (:bars (panel built)))))))
-      (is (= {:key :mapping :value :x :rows 2} (error #(build {:data [{:x "a"} {:x "b"}] :mapping {:x :x} :charts [(chart/histogram)]}))))
+      (is (= {:key :mapping :in [:mapping :x] :rows 2} (error #(build {:data [{:x "a"} {:x "b"}] :mapping {:x :x} :charts [(chart/histogram)]}))))
       (are [opts k] (= k (:key (error #(build {:data rows :mapping {:x :v} :charts [(chart/histogram opts)]}))))
         {:y :freq} :y
         {:position :spiral} :position
@@ -178,7 +178,7 @@
     (are [opts k] (= k (:key (error #(build {:data rows :mapping {:x :v} :charts [(chart/density opts)]}))))
       {:n 1} :n
       {:cut -1} :cut
-      {:width -1} :width
+      {:line-width -1} :line-width
       {:dash [0]} :dash
       {:fill nil} :fill))
   (testing "groups with < 2 distinct values: no curve, counted"
@@ -202,9 +202,9 @@
 (deftest line-test
   (let [data [{:x 3 :y 30} {:x 1 :y 10} {:x 2 :y 20}]
         line-of (fn [opts d] (first (:lines (panel (build {:data d :mapping {:x :x :y :y} :charts [(chart/line opts)]})))))]
-    (testing "sorted by x; :sort false keeps data order"
+    (testing "sorted by x; :order :data keeps data order"
       (is (= [1 2 3] (:x (line-of {} data))))
-      (is (= [3 1 2] (:x (line-of {:sort false} data)))))
+      (is (= [3 1 2] (:x (line-of {:order :data} data)))))
     (testing "ties keep data order"
       (is (= [10 11 20] (:y (line-of {} [{:x 2 :y 20} {:x 1 :y 10} {:x 1 :y 11}])))))
     (testing "invalid y breaks the line; invalid x dropped"
@@ -216,7 +216,7 @@
     (testing "padding 5%"
       (is (= [0.05 0.05] (get-in (build {:data data :mapping {:x :x :y :y} :charts [(chart/line)]}) [:stats 0 :padding :x]))))
     (testing "validation"
-      (is (= :sort (:key (error #(build {:data data :mapping {:x :x :y :y} :charts [(chart/line {:sort 1})]})))))
+      (is (= :order (:key (error #(build {:data data :mapping {:x :x :y :y} :charts [(chart/line {:order 1})]})))))
       (is (= {:key :y :in [:charts 0 :options :mapping :y] :value nil}
              (error #(build {:data data :mapping {:x :x} :charts [(chart/line)]}))))
       (is (= {:key :y :in [:charts 0 :options :mapping :y] :value nil}
@@ -270,9 +270,9 @@
     (let [overlay (render-key (chart/histogram {:stroke-width 0 :alpha 0.6}))]
       (is (not (contains? overlay [255 0 0])) "overlay key translucent like the bars")
       (is (contains? overlay [255 102 102]) "red at alpha 0.6 over white"))
-    (is (contains? (render-key (chart/density {:width 3})) [255 0 0]) "density: line key")
-    (is (contains? (render-key (chart/line {:width 3})) [255 0 0]))
-    (is (contains? (render-key (chart/ecdf {:width 3})) [255 0 0]))))
+    (is (contains? (render-key (chart/density {:line-width 3})) [255 0 0]) "density: line key")
+    (is (contains? (render-key (chart/line {:line-width 3})) [255 0 0]))
+    (is (contains? (render-key (chart/ecdf {:line-width 3})) [255 0 0]))))
 
 ;; 7.x theme
 
@@ -280,7 +280,7 @@
   (are [t k] (= k (:key (error #(build {:data rows :mapping {:x :v} :theme t
                                               :charts [(chart/histogram) (chart/density) (chart/ecdf)]}))))
     {:chart {:histogram {:alpha 2}}} :alpha
-    {:chart {:density {:width -1}}} :width
+    {:chart {:density {:line-width -1}}} :line-width
     {:chart {:ecdf {:dash [-1]}}} :dash))
 
 ;; mirror labels and symmetric halves
@@ -366,7 +366,7 @@
 (deftest no-valid-x-after-split-test
   (let [data [{:x "bad" :g nil} {:x "worse" :g "a"} {:x "nope" :g "a"}]]
     (doseq [c [(chart/density) (chart/ecdf) (chart/histogram)]]
-      (is (= {:key :mapping :value :x :rows 2}
+      (is (= {:key :mapping :in [:mapping :x] :rows 2}
              (error #(build {:data data :mapping {:x :x :color :g} :groups {:na false} :charts [c]})))
           (str (:kind c))))))
 

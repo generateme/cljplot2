@@ -11,11 +11,11 @@
     group's finite values, each column on its own (rows with a non-finite value of a data side are dropped from that
     side and counted); a group with an empty side draws nothing. Two data sides are two columns of the same rows.
   * Both sides distributions: no data - the chart is drawn in every panel and inherits only the plot's facet keys
-    (as annotations); Q-Q at `:points` plotting positions, P-P at `:points` values over the required `:domain [lo
-    hi]` (`ex-info {:key :domain}` without it); `:points` default 100. `:label` (default \"<y name> vs <x name>\")
+    (as annotations); Q-Q at `:n` plotting positions, P-P at `:n` values over the required `:domain [lo
+    hi]` (`ex-info {:key :domain}` without it); `:n` default 100. `:label` (default \"<y name> vs <x name>\")
     is the chart's one row `{:label label}`: the chart's own `:mapping {:color :label}` (`:shape`, `:size`) styles it
     and gives a legend key, e.g. several distribution pairs in one plot.
-    `:points`, `:domain` and `:label` with a data side throw `ex-info` keyed by the option.
+    `:n`, `:domain` and `:label` with a data side throw `ex-info` keyed by the option.
 
   P-P evaluates at the sorted distinct pooled values of the data sides; its extents are `[0 1]` on both axes.
 
@@ -30,11 +30,11 @@
   (`:size`, `:color`, `:stroke-color`, `:stroke-width`, `:shape`), `:line-width`, `:padding`, plus `:data` /
   `:mapping`.
 
-  Functions: [[distributions-only?]] - whether both sides are distributions; [[qq-compute]], [[pp-compute]], [[draw]], [[legend]] - the chart contract of both kinds; [[qq-schemas]], [[pp-schemas]] - their style, options and mapping."
+  Functions: [[distributions-only?]] - whether both sides are distributions; [[qq-compute]], [[pp-compute]], [[draw]] - the chart contract of both kinds (key glyph [[cljplot2.chart.legend/stroked-point-legend]]); [[qq-schemas]], [[pp-schemas]] - their style, options and mapping."
   (:require [clojure2d.core :as c2d]
             [fastmath.core :as m]
-            [cljplot2.chart.rule :as rule]
-            [cljplot2.chart.scatter :as scatter]
+            [cljplot2.graphics.curve :as curve]
+            [cljplot2.chart.common :as common]
             [cljplot2.data.facet :as facet]
             [cljplot2.data.group :as group]
             [cljplot2.data.probability :as probability]
@@ -50,13 +50,13 @@
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
-(def ^{:const true :private true :tag 'long} default-points
-  "Points of a plot of two distributions when `:points` isn't given."
+(def ^{:const true :private true :tag 'long} default-n
+  "Points of a plot of two distributions when `:n` isn't given."
   100)
 
 (def ^:private style-entries
   "Map entries of a probability plot's style (theme `[:chart :qq]` / `[:chart :pp]`): the scatter point style and the reference line width; also its options."
-  (conj scatter/style-entries (schema/optional :line-width {:description "reference line width in pixels"} schema/non-neg)))
+  (conj common/point-style-entries (schema/optional :line-width {:description "reference line width in pixels"} schema/non-neg)))
 
 (defn- distribution-entry
   "Gives the map entry of a distribution side option.
@@ -90,7 +90,7 @@
       (conj (distribution-entry :x-distribution ":x")
             (distribution-entry :y-distribution ":y")
             (schema/optional :line (assoc line-props :cljplot2/section :distributions) (into [:enum false] line-values))
-            (schema/optional :points {:cljplot2/section :distributions :description "both sides distributions only: the number of points (Q-Q plotting positions, P-P values over :domain)"
+            (schema/optional :n {:cljplot2/section :distributions :description "both sides distributions only: the number of points (Q-Q plotting positions, P-P values over :domain)"
                                       :cljplot2/default-doc "100; an error with a data side"}
                              [:int {:min 2}])
             (schema/nilable :label {:cljplot2/section :distributions :description "both sides distributions only: the label of the chart's one row {:label l}, styled by the chart's own mapping of :label (e.g. {:color :label})"
@@ -168,8 +168,7 @@
                                     {:key dk :value spec})
                       (some? spec) [k {:distribution (probability/distribution spec) :name (probability/distribution-name spec)}]
                       (some? acc) [k {:accessor (data/row-accessor k acc) :key acc}]
-                      :else (schema/fail! (str "Probability plot side " k " needs a mapping or " dk ".")
-                                          {:key :mapping :value k})))))
+                      :else (data/fail-mapping! (str "Probability plot side " k " needs a mapping or " dk ".") k {})))))
         [:x :y]))
 
 (defn- distributions-only!
@@ -181,10 +180,10 @@
 
   Returns `nil`.
 
-  Throws `ex-info {:key k}` for `:points`, `:domain` or `:label` given while a side is data."
+  Throws `ex-info {:key k}` for `:n`, `:domain` or `:label` given while a side is data."
   [options]
   (when-not (distributions-only? options)
-    (doseq [k [:points :domain :label] :when (some? (get options k))]
+    (doseq [k [:n :domain :label] :when (some? (get options k))]
       (schema/fail! (str "Probability plot " k " applies only when both sides are distributions.") {:key k :value (get options k)}))))
 
 (defn- axis-title
@@ -208,7 +207,7 @@
   Parameters:
 
   - `kind` (keyword): `:qq` or `:pp`.
-  - `options` (map): the chart's options - `:line` (Q-Q default `:quartiles`, P-P `:identity`), `:points` (default 100).
+  - `options` (map): the chart's options - `:line` (Q-Q default `:quartiles`, P-P `:identity`), `:n` (default 100).
   - `group-sides` (map): `:x`, `:y` - data sides with `:values`, or distributions.
   - `at` (sequence of doubles): the P-P evaluation values (`nil` for Q-Q).
 
@@ -216,9 +215,9 @@
 
   See also [[cljplot2.data.probability/quantile-pairs]], [[cljplot2.data.probability/probability-pairs]]."
   [kind options {:keys [x y]} at]
-  (let [line (get options :line (if (= kind :qq) :quartiles :identity))]
+  (let [line (data/option options :line (if (= kind :qq) :quartiles :identity))]
     (assoc (if (= kind :qq)
-             (probability/quantile-pairs x y (get options :points default-points))
+             (probability/quantile-pairs x y (data/option options :n default-n))
              (probability/probability-pairs x y at))
            :line (case line
                    :quartiles (probability/quartile-line x y)
@@ -259,7 +258,7 @@
   Parameters:
 
   - `kind` (keyword): `:qq` or `:pp`.
-  - `options` (map): the chart's options - `:points`, `:domain` (P-P, required), `:label`.
+  - `options` (map): the chart's options - `:n`, `:domain` (P-P, required), `:label`.
   - `chart-sides` (map): the two distribution sides.
   - `st` (map): the chart's style.
   - `mapping` (map): the merged mapping - its aesthetics style the one row.
@@ -271,7 +270,7 @@
   [kind options chart-sides st mapping env]
   (let [at (when (= kind :pp)
              (if-let [d (:domain options)]
-               (probability/grid d (get options :points default-points))
+               (probability/grid d (data/option options :n default-n))
                (schema/fail! "P-P plot of two distributions needs :domain [lo hi]." {:key :domain :value nil})))
         g (pairs kind options chart-sides at)
         rows [{:label (or (:label options) (default-label chart-sides))}]
@@ -318,7 +317,7 @@
         data-dims (filterv #(:accessor (chart-sides %)) [:x :y])
         panel-sides (update-vals panels (fn [gs] (mapv #(group-sides chart-sides (:rows %)) gs)))
         all-sides (mapcat val panel-sides)
-        row-count (long (reduce m/long-add 0 (map count (mapcat #(map :rows %) (vals panels)))))
+        row-count (group/row-count panels)
         side-dropped (into {} (map (fn [k] [k (reduce m/long-add 0 (map #(:dropped (% k)) all-sides))])) data-dims)
         data (into {} (map (fn [[panel gs]]
                              [panel {:groups (vec (keep (fn [[g ss]]
@@ -330,7 +329,7 @@
                    panels)]
     (doseq [k data-dims]
       (when (and (m/pos? row-count) (m/== row-count (long (side-dropped k))))
-        (schema/fail! data/no-valid-values {:key :mapping :value k :rows row-count})))
+        (data/fail-mapping! data/no-valid-values k {:rows row-count})))
     {:data data
      :extents (merge-with merge (group/aesthetic-extents panels plot-scales)
                           (into {} (keep (fn [[panel {panel-groups :groups}]]
@@ -361,9 +360,7 @@
                 (distribution-stats kind options ss st (:mapping chart-split) env)
                 (data-stats kind options ss st chart-split env))
         titles (into {} (keep (fn [k] (some->> (axis-title kind (ss k)) (vector k)))) [:x :y])]
-    (cond-> (assoc stats
-                   :padding (merge data/default-padding (:padding options))
-                   :padding-explicit (data/explicit-padding {} options))
+    (cond-> (merge stats (data/padding-stats data/default-padding {} options))
       (seq titles) (assoc :axis-titles titles))))
 
 (defn qq-compute
@@ -429,10 +426,10 @@
     (doseq [{:keys [x y line aesthetics]} groups
             :let [st (group/style style aesthetics scales (:theme env))]
             :when st]
-      (when (and line (polyline/set-style! canvas {:color (:color st) :width (:line-width st) :dash :none}))
+      (when (and line (polyline/set-style! canvas {:color (:color st) :line-width (:line-width st) :dash :none}))
         (linear! :x (:x scales))
         (linear! :y (:y scales))
-        (rule/draw-ablines! canvas scales [line]))
+        (curve/draw-ablines! canvas scales [line]))
       (c2d/set-stroke-custom canvas {:size (:stroke-width st)})
       (dorun (map (fn [vx vy]
                     (let [^Vec2 p (projection vx vy)]
@@ -440,18 +437,3 @@
                         (shape/draw! canvas (:shape st) p st))))
                   x y)))))
 
-(defn legend
-  "Draws a probability plot's key glyph: its point shape fitted and centred in a legend key.
-
-  Parameters:
-
-  - `chart` (map): the chart value.
-  - `attributes` (map): the key's mapped style attributes, over the chart's style.
-  - `canvas`: the clojure2d canvas.
-  - `box` (map): the key box in pixels.
-  - `env` (map): the legend environment - `:theme`.
-
-  See also [[cljplot2.graphics.shape/draw-key!]]."
-  [chart attributes canvas box env]
-  (let [st (merge (theme/resolved-style (:theme env) chart) attributes)]
-    (shape/styled-key! canvas box st true)))

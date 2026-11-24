@@ -12,9 +12,11 @@
   Functions:
 
   - mapping: [[facet-keys]], [[facet-dims]], [[mapping-problem]]
-  - levels and rows: [[valid-facet-value?]], [[levels]], [[ordered-levels]], [[label]], [[group-rows]]
+  - levels and rows: [[levels]], [[ordered-levels]], [[label]], [[group-rows]]
   - options: [[scale-spec-schema]], [[facet-options]], [[scale-relation]], [[panel-scales?]], [[strips?]]
-  - wrap layout: [[most-squared-shape]], [[wrap-shape]], [[wrap-positions]]"
+  - wrap layout: [[most-squared-shape]], [[wrap-shape]], [[wrap-positions]]
+
+  Panels: [[single-panel]] - the panel key without facets."
   (:require [fastmath.core :as m]
             [cljplot2.data.levels :as levels]
             [cljplot2.data.rows :as data]
@@ -61,10 +63,14 @@
     (when (and (some #{:facet} ks) (m/> (count ks) 1))
       "mapping can't combine :facet with :facet-col / :facet-row")))
 
-(defn valid-facet-value?
-  "Tests whether `v` can be a facet level: anything except NaN or infinite numbers.
+(defn- valid-facet-value?
+  "Tests whether a value can be a facet level.
 
-  `nil` is valid - the NA level."
+  Parameters:
+
+  - `v`: any value.
+
+  Returns true for anything except NaN and infinite numbers; `nil` is valid - the NA level."
   [v]
   (or (not (number? v)) (data/valid-value? v)))
 
@@ -93,7 +99,7 @@
   text of a level, `:order-by` - a function of a level's rows (every chart's rows of that level) to a number: levels
   in ascending order of it (see [[cljplot2.data.levels/order-by-rows]]; not with `:domain`), `:descending` - `true`
   reverses that order (needs `:order-by`)."
-  (schema/with-rules
+  (apply schema/with-rules
    [:map {:closed true :cljplot2/type-doc "a facet scale spec"}
     (schema/nilable :domain {:description "the facet levels in panel order (values outside are dropped)"
                              :cljplot2/default-doc "the data's levels, sorted (NA last)"}
@@ -108,10 +114,9 @@
     ;; facets are always categorical; accepted for symmetry with the other scales
     (schema/optional :type {:description "facets are always categorical (accepted for symmetry with other scales)"}
                      [:= :categorical])]
-   [#(when (and (:order-by %) (:domain %)) "give either :order-by or :domain, not both") [:order-by]]
-   [#(when (and (:descending %) (nil? (:order-by %))) ":descending needs :order-by") [:descending]]))
+   levels/order-by-rules))
 
-(def scale-relations
+(def ^:private scale-relations
   "Values of plot `:facets {:scales {k relation}}`: `:same` - one domain for every panel, `:free` - each panel's own
   data domain, `:sliced` - each panel's own centre with the span of the widest panel."
   #{:same :free :sliced})
@@ -158,14 +163,24 @@
   (or (get-in facets [:scales k]) :same))
 
 (defn panel-scales?
-  "Tests whether the plot's `:facets` options `facets` ask for panel-local position scales: a `:free` / `:sliced` relation, or panel `:widths` / `:heights`.
+  "Tests whether the plot's facet options ask for panel-local position scales.
 
-  Returns a truthy value or `nil`."
+  Parameters:
+
+  - `facets` (map): the plot's `:facets` options - `:scales` relations, `:widths`, `:heights`.
+
+  Returns a truthy value for a `:free` / `:sliced` relation on `:x` or `:y`, or panel `:widths` / `:heights`; else `nil`."
   [facets]
   (or (some #(not= :same (scale-relation facets %)) [:x :y]) (:widths facets) (:heights facets)))
 
 (defn strips?
-  "Tests whether a faceted plot with the `:facets` options `facets` draws strips (`:strips`, default true)."
+  "Tests whether a faceted plot draws strips.
+
+  Parameters:
+
+  - `facets` (map): the plot's `:facets` options - `:strips` (default true).
+
+  Returns false only for `:strips false`."
   [facets]
   (not (false? (:strips facets))))
 

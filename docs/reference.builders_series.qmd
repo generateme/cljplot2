@@ -71,7 +71,7 @@ significance band around zero, the lags outside it marked.
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:partial?</td><td>one of :both :acf :pacf false true or nil</td><td>:both</td><td>the correlograms drawn: :both (ACF above PACF), :acf or false (ACF), :pacf or true (PACF)</td></tr><tr><td>:band</td><td>one of :smooth :stepped or nil</td><td>:smooth</td><td>significance band: :smooth (a ribbon through the lags) or :stepped (a block per lag)</td></tr><tr><td>:colors</td><td>map</td><td></td><td>colours of the stems and points, the band and the significant lags' points</td></tr><tr><td>:colors :stem</td><td>a clojure2d color or :none</td><td>[69.0 117.0 180.0 255.0]</td><td>colour of the stems and points</td></tr><tr><td>:colors :band</td><td>a clojure2d color or :none</td><td>[69.0 117.0 180.0 255.0]</td><td>colour of the significance band</td></tr><tr><td>:colors :significant</td><td>a clojure2d color or :none</td><td>[215.0 48.0 39.0 255.0]</td><td>colour of the points of lags outside the band</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:correlograms</td><td>one of :both :acf :pacf or nil</td><td>:both</td><td>the correlograms drawn: :both (ACF above PACF), :acf or :pacf</td></tr><tr><td>:band</td><td>one of :smooth :stepped or nil</td><td>:smooth</td><td>significance band: :smooth (a ribbon through the lags) or :stepped (a block per lag)</td></tr><tr><td>:colors</td><td>map</td><td></td><td>colours of the stems and points, the band and the significant lags' points</td></tr><tr><td>:colors :stem</td><td>a clojure2d color or :none</td><td>[69.0 117.0 180.0 255.0]</td><td>colour of the stems and points</td></tr><tr><td>:colors :band</td><td>a clojure2d color or :none</td><td>[69.0 117.0 180.0 255.0]</td><td>colour of the significance band</td></tr><tr><td>:colors :significant</td><td>a clojure2d color or :none</td><td>[215.0 48.0 39.0 255.0]</td><td>colour of the points of lags outside the band</td></tr></tbody></table>
 ```
 
 :::
@@ -90,18 +90,16 @@ significance band around zero, the lags outside it marked.
 :::
 
 
-One correlogram - the ACF (`:acf` or `false`) or the PACF (`:pacf` or `true`) - and the band as a block per lag
+One correlogram - the ACF (`:acf`) or the PACF (`:pacf`) - and the band as a block per lag
 (`:stepped`); the default `:both` draws ACF above PACF, the band `:smooth`:
 
 
 ::: {.sourceClojure}
 ```clojure
-(plot/render-image (plot/arrange [(plot/acf ar1 {:partial? :acf :band :stepped :title ":partial? :acf, :band :stepped"})
-                                  (plot/acf ar1 {:partial? :pacf :band :smooth :title ":partial? :pacf"})
-                                  (plot/acf ar1 {:partial? false :title ":partial? false (ACF)"})
-                                  (plot/acf ar1 {:partial? true :title ":partial? true (PACF)"})]
+(plot/render-image (plot/arrange [(plot/acf ar1 {:correlograms :acf :band :stepped :title ":correlograms :acf, :band :stepped"})
+                                  (plot/acf ar1 {:correlograms :pacf :band :smooth :title ":correlograms :pacf"})]
                                  {:columns 2})
-                   {:width 1000 :height 600})
+                   {:width 1000 :height 300})
 ```
 :::
 
@@ -116,7 +114,7 @@ The colours of the stems, the band and the significant lags:
 
 ::: {.sourceClojure}
 ```clojure
-(plot/render-image (plot/acf ar1 {:partial? :both :lags 30
+(plot/render-image (plot/acf ar1 {:correlograms :both :lags 30
                                   :colors {:stem [90 90 90] :band [230 150 40] :significant [40 150 60]}
                                   :title ":colors"})
                    {:width 700 :height 500})
@@ -146,7 +144,7 @@ Larger triangle points through the theme:
 
 ::: {.sourceClojure}
 ```clojure
-(plot/render-image (plot/acf ar1 {:partial? :acf :theme {:chart {:acf-point {:size 8 :shape \A}}}})
+(plot/render-image (plot/acf ar1 {:correlograms :acf :theme {:chart {:acf-point {:size 8 :shape \A}}}})
                    {:width 700 :height 360})
 ```
 :::
@@ -157,7 +155,7 @@ Larger triangle points through the theme:
 :::
 
 
-Shared options: [Autocorrelation rows](reference.shared_options.html#autocorrelation-rows) (`:lags` `:alpha`); [Builder options](reference.shared_options.html#builder-options) (`:title` `:scales` `:theme`).
+Shared options: [Autocorrelation rows](reference.shared_options.html#autocorrelation-rows) (`:lags` `:level`); [Builder options](reference.shared_options.html#builder-options) (`:title` `:scales` `:theme`).
 
 
 ## horizon

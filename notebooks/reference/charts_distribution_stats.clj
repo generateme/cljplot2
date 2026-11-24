@@ -333,7 +333,7 @@
 
 ;; ### Distributions
 
-;; Either side may be a distribution instead of data; with both sides distributions the chart draws `:points`
+;; Either side may be a distribution instead of data; with both sides distributions the chart draws `:n`
 ;; quantile pairs labelled by `:label`. The reference line through the quartiles may be turned off, and the padding
 ;; set (none on the right):
 
@@ -342,7 +342,7 @@
 (plot/render-image (plot/arrange [{:charts [(chart/qq {:x-distribution [:normal] :y-distribution [:t {:degrees-of-freedom 3}]
                                                        :label "t(3)" :mapping {:color :label}})
                                             (chart/qq {:x-distribution [:normal] :y-distribution [:t {:degrees-of-freedom 30}]
-                                                       :label "t(30)" :mapping {:color :label} :line false :points 30})]
+                                                       :label "t(30)" :mapping {:color :label} :line false :n 30})]
                                    :labels {:title "both sides distributions"}}
                                   {:data faithful
                                    :mapping {:y :eruptions}
@@ -382,15 +382,15 @@
 
 ;; ### Distributions
 
-;; Either side may be a distribution; with both sides distributions the chart evaluates both CDFs at `:points`
+;; Either side may be a distribution; with both sides distributions the chart evaluates both CDFs at `:n`
 ;; values over `:domain` (required then); the right panel has no line and wide padding:
 
 (nu/options-table (describe/own-rows (describe/options (chart/pp))) :distributions)
 
 (plot/render-image (plot/arrange [{:charts [(chart/pp {:x-distribution [:normal] :y-distribution [:t {:degrees-of-freedom 2}]
-                                                       :domain [-5 5] :points 40 :label "t(2)" :mapping {:color :label}})
+                                                       :domain [-5 5] :n 40 :label "t(2)" :mapping {:color :label}})
                                             (chart/pp {:x-distribution [:normal] :y-distribution [:logistic]
-                                                       :domain [-5 5] :points 40 :label "logistic" :mapping {:color :label}})]
+                                                       :domain [-5 5] :n 40 :label "logistic" :mapping {:color :label}})]
                                    :labels {:title "both sides distributions, :domain [-5 5]" :y "probabilities"}}
                                   {:data faithful
                                    :mapping {:y :waiting}

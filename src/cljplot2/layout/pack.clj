@@ -10,8 +10,9 @@
     circles (correct in any input order; a random order only speeds it up).
   * [[pack]] - a tree of `{:value :children}` nodes: leaf radii from the square root of the value (area proportional
     to value), each group the enclosing circle of its packed children, the root scaled to fit the box; gaps of
-    `padding` pixels."
-  (:require [fastmath.core :as m])
+    `gap` pixels."
+  (:require [fastmath.core :as m]
+            [cljplot2.schema :as schema])
   (:import [fastmath.java Array]))
 
 ;; Circles of the sibling packing live in primitive arrays (centres `xs` `ys`, radii `rs`) and the front chain in
@@ -286,7 +287,7 @@
   - `basis` (vector): 0 to 3 circles `{:x :y :r}`.
   - `p` (map): the circle the basis's enclosing circle misses.
 
-  Returns a vector of 1 to 3 circles, `p` last; throws `ex-info` when no basis fits (degenerate circles)."
+  Returns a vector of 1 to 3 circles, `p` last; throws `ex-info {:key :value}` when no basis fits (degenerate circles)."
   [basis p]
   (or (when (encloses-weak-all? p basis) [p])
       (some (fn [b] (when (and (encloses-not? p b) (encloses-weak-all? (enclosing-2 b p) basis)) [b p])) basis)
@@ -297,7 +298,7 @@
                               (encloses-not? (enclosing-2 bj p) bi)
                               (encloses-weak-all? (enclosing-3 bi bj p) basis))]
                [bi bj p]))
-      (throw (ex-info "No enclosing basis (degenerate circles)." {:basis basis :circle p}))))
+      (schema/fail! "No enclosing basis (degenerate circles)." {:key :value :basis basis :circle p})))
 
 (defn enclose
   "Gives the smallest circle containing circles.
@@ -306,7 +307,7 @@
 
   - `circles` (sequence): `{:x :y :r}`, at least one, non-negative radii.
 
-  Returns `{:x :y :r}`; a single circle as given. Throws `ex-info` for degenerate circles no basis fits (see [[extend-basis]])."
+  Returns `{:x :y :r}`; a single circle as given. Throws `ex-info {:key :value}` for degenerate circles no basis fits (see [[extend-basis]])."
   [circles]
   (let [cs (vec circles)
         n (count cs)]
@@ -427,18 +428,18 @@
 (defn pack
   "Gives a tree packed into a pixel box: every node gets absolute pixel `:x :y :r`.
 
-  The root circle fits the box's shorter side, centred. Half of `padding` is added to every child's radius before packing and to every group's enclosing radius; its size in layout units is searched for the scale it gives (within 0.01 px).
+  The root circle fits the box's shorter side, centred. Half of `gap` is added to every child's radius before packing and to every group's enclosing radius; its size in layout units is searched for the scale it gives (within 0.01 px).
 
   Parameters:
 
   - `tree` (map): `{:value v :children [..]}` nodes - positive values, groups with at least one child, children in packing order (the first ones near the centre).
   - `box` (map): `{:x :y :w :h}` pixels.
-  - `padding` (number): pixels, as d3's - the gap between siblings and between a child and its parent's edge.
+  - `gap` (number): pixels, as d3's padding - the gap between siblings and between a child and its parent's edge.
 
-  Returns the tree with `:x :y :r` on every node. A box too small for such gaps gets the widest gaps it holds (the leaves shrink towards points); a zero-size box or no padding - no gap search."
-  [tree {^double x :x ^double y :y ^double w :w ^double h :h} padding]
+  Returns the tree with `:x :y :r` on every node. A box too small for such gaps gets the widest gaps it holds (the leaves shrink towards points); a zero-size box or no gap - no gap search."
+  [tree {^double x :x ^double y :y ^double w :w ^double h :h} gap-px]
   (let [side (m/min w h)
-        gap (double padding)
+        gap (double gap-px)
         cx (m/+ x (m/* 0.5 w))
         cy (m/+ y (m/* 0.5 h))
         {:keys [laid scale]} (if (and (m/pos? side) (m/pos? gap))

@@ -16,7 +16,7 @@
   [[cljplot2.data.strip]]);
   `:padding {:x [lo hi]}` (default `[0.05 0.05]`), plus the strip options and `:data` / `:mapping`.
 
-  Functions: [[legend]] - the chart contract's key glyph (the chart computes and draws through [[cljplot2.data.strip/compute]] and [[cljplot2.data.strip/draw]]); [[interval]] - an interval of values by a method; [[bootstrap-interval]] - a bootstrap interval; [[extent-methods]], [[bootstrap-intervals]] - the methods."
+  Functions: [[legend]] - the chart contract's key glyph (the chart computes and draws through [[cljplot2.chart.strip/compute]] and [[cljplot2.chart.strip/draw]]); [[interval]] - an interval of values by a method; [[extent-methods]], [[bootstrap-intervals]] - the methods."
   (:require [clojure2d.core :as c2d]
             [fastmath.core :as m]
             [fastmath.stats :as stats]
@@ -24,6 +24,7 @@
             [cljplot2.data.group :as group]
             [cljplot2.data.rng :as rng]
             [cljplot2.data.rows :as data]
+            [cljplot2.chart.strip :as strip-chart]
             [cljplot2.data.strip :as strip]
             [cljplot2.graphics.shape :as shape]
             [cljplot2.schema :as schema]
@@ -106,7 +107,7 @@
                (schema/nilable :size {:description "centre mark size per group"} schema/accessor)
                (schema/nilable :group {:description "groups without a visual aesthetic (dodged as other groups)"} schema/accessor)])})
 
-(defn bootstrap-interval
+(defn- bootstrap-interval
   "Gives a bootstrap interval of a statistic of values.
 
   Parameters:
@@ -180,7 +181,7 @@
   [{:keys [options] :as chart} chart-split {:keys [theme] :as env}]
   (let [{:keys [place panels dropped mirror?] split-items :items} (strip/split chart-split (cond-> options (:mirror options) (assoc ::strip/mirror (:mirror options)))
                                                                                :center env)
-        method (get options :method :min-max)
+        method (data/option options :method :min-max)
         rng (rng/for-build (:rng options))
         side (fn [it iv] (if (:mirrored? it) (mirrored iv) iv))
         items (update-vals split-items (fn [its] (mapv #(merge % (side % (interval (:values %) method {:method-args (:method-args options) :rng rng
@@ -193,7 +194,7 @@
                                                         (m/max hi (double (or center hi)))])))
      :padding (strip/padding place options)
      :padding-explicit (strip/explicit-padding place options)
-     :padding-px (strip/n-label-room options items env)
+     :padding-px (strip-chart/n-label-room options items env)
      :na (group/na-dims panels)
      :dropped dropped
      :tick-format (when mirror? {:x :absolute})}))
@@ -212,9 +213,9 @@
 
   An item whose low end can't be placed, or whose aesthetics are outside their scales, isn't drawn; n labels go past the far end (the near one of a mirrored item)."
   [_chart {:keys [items style place options]} canvas box scales env]
-  (let [{:keys [point] :as pl} (strip/placement box scales options place)
-        center? (not= :none (get options :center :method))]
-    (strip/draw-n-labels! canvas pl items (fn [{:keys [^double lo ^double hi center mirrored?]}]
+  (let [{:keys [point] :as pl} (strip-chart/placement box scales options place)
+        center? (not= :none (data/option options :center :method))]
+    (strip-chart/draw-n-labels! canvas pl items (fn [{:keys [^double lo ^double hi center mirrored?]}]
                                             (if mirrored?
                                               (m/min lo (double (or center lo)))
                                               (m/max hi (double (or center hi)))))
@@ -234,9 +235,9 @@
       (when (and center? center)
         (shape/draw! canvas (:shape st) (p center c0) (assoc st :stroke-color :none))))))
 
-(defmethod strip/in-frame-compute :extent [chart chart-split env] (compute-in-strip-frame chart chart-split env))
+(defmethod strip-chart/in-frame-compute :extent [chart chart-split env] (compute-in-strip-frame chart chart-split env))
 
-(defmethod strip/in-frame-draw :extent [chart computed canvas box scales env]
+(defmethod strip-chart/in-frame-draw :extent [chart computed canvas box scales env]
   (draw-in-strip-frame chart computed canvas box scales env))
 
 (defn legend
@@ -250,7 +251,7 @@
   - `box` (map): the key box `:x`, `:y`, `:w`, `:h`.
   - `env` (map): the drawing environment (`:theme`)."
   [chart attributes canvas {:keys [^double x ^double y ^double w ^double h]} env]
-  (let [st (merge (theme/resolved-style (:theme env) chart) (select-keys attributes [:color]))
+  (let [st (theme/key-style env chart attributes [:color])
         x0 (m/+ x (m/* 0.15 w))
         x1 (m/+ x (m/* 0.85 w))
         cy (m/+ y (m/* 0.5 h))

@@ -42,14 +42,14 @@
       (is (= :x (:kind (first (:nodes g)))) "node row columns kept")
       (is (every? #(== 1.0 (double (:value %))) (:edges g)) "default weight 1")))
   (testing "1.1 directed in / out; undirected in = out = degree"
-    (let [d (graph/graph [{:from "a" :to "b"} {:from "a" :to "c"}] {:directed? true})
+    (let [d (graph/graph [{:from "a" :to "b"} {:from "a" :to "c"}] {:directed true})
           u (graph/graph [{:from "a" :to "b"} {:from "a" :to "c"}])]
       (is (= [[2 0 2] [1 1 0] [1 1 0]] (mapv (juxt :degree :in :out) (:nodes d))))
       (is (= [[2 2 2] [1 1 1] [1 1 1]] (mapv (juxt :degree :in :out) (:nodes u))))))
   (testing "1.1 accessors, empty edges"
     (is (= ["x" "y"] (mapv :id (:nodes (graph/graph [{:s "x" :t "y" :w 2}] {:from :s :to :t :value :w})))))
     (is (= 2.0 (:value (first (:edges (graph/graph [{:s "x" :t "y" :w 2}] {:from :s :to :t :value :w}))))))
-    (is (= {:nodes [] :edges [] :loops [] :directed? false :dropped 0} (graph/graph []))))
+    (is (= {:nodes [] :edges [] :loops [] :directed false :dropped 0} (graph/graph []))))
   (testing "1.2 self-loops counted in degree, kept apart; nil ends dropped; duplicates kept"
     (let [g (graph/graph [{:from "a" :to "a"} {:from "a" :to "b"} {:from "a" :to "b"} {:from nil :to "b"} {:from "b"}])]
       (is (= 1 (count (:loops g))))
@@ -68,7 +68,7 @@
       (is (= #{["a" "b" 1] ["a" "c" 2] ["b" "a" 3] ["c" "b" 4] ["c" "c" 5]}
              (set (map (juxt :from :to :value) (graph/adjacency->edges m ["a" "b" "c"])))))
       (is (= #{["a" "b" 1] ["a" "c" 2] ["c" "c" 5]}
-             (set (map (juxt :from :to :value) (graph/adjacency->edges m ["a" "b" "c"] {:directed? false}))))))
+             (set (map (juxt :from :to :value) (graph/adjacency->edges m ["a" "b" "c"] {:whole-matrix false}))))))
     (is (= :matrix (:key (error #(graph/adjacency->edges [[0 1] [1 0]] ["a" "b" "c"])))))
     (is (= :matrix (:key (error #(graph/adjacency->edges [[0 1] [1]] ["a" "b"])))))
     (is (= [] (graph/adjacency->edges [] [])))))
@@ -132,7 +132,7 @@
 (defn- segment-image [opts]
   (image {:data [{:x 0 :y 0 :xe 1 :ye 0}] :mapping {:x :x :y :y :xend :xe :yend :ye}
           :scales {:x {:domain [0 1] :expand [0 0]} :y {:domain [-1 1]}}
-          :charts [(chart/segment (merge {:color red :width 2} opts))]}
+          :charts [(chart/segment (merge {:color red :line-width 2} opts))]}
          {:width 200 :height 100}))
 
 (deftest arrow-test
@@ -164,7 +164,7 @@
   (testing "3.1 line arrows; a filled or stacked line rejects them"
     (let [line (fn [opts] (image {:data [{:x 0 :y 0} {:x 1 :y 0}] :mapping {:x :x :y :y}
                                    :scales {:x {:domain [0 1] :expand [0 0]} :y {:domain [-1 1]}}
-                                   :charts [(chart/line (merge {:color red :width 2} opts))]}
+                                   :charts [(chart/line (merge {:color red :line-width 2} opts))]}
                                   {:width 200 :height 100}))]
       (let [pts (painted (line {:arrow {:size 10}}) red) mx (long (apply max (map first pts)))]
         (is (>= (span (filter #(> (long (first %)) (- mx 12)) pts) second) 4)))
@@ -184,7 +184,7 @@
       (is (<= (span thin second) 2))
       (is (>= (span thick second) 7))))
   (testing "3.2 NA width - the style width; the legend draws lines of the widths"
-    (let [ch (chart/segment {:color red :width 3})
+    (let [ch (chart/segment {:color red :line-width 3})
           key-width (fn [attributes] (let [canvas (c2d/canvas 40 40)]
                                        (c2d/with-canvas-> canvas (c2d/set-background :white))
                                        (c2d/with-canvas [c canvas] ((:legend ch) ch attributes c {:x 0 :y 0 :w 40 :h 40} {:theme theme/default-theme}))
@@ -224,7 +224,7 @@
       (is (= 3 (count (:charts p))) "edges, nodes, labels")
       (is (= 2 (count (:charts (plot/network star {:rng (r/rng :mersenne 1)})))) "no labels")))
   (testing "4.2 directed: arrows, end gaps of the target's radius (default and mapped sizes)"
-    (let [gaps (fn [opts] (let [p (plot/network star (merge {:directed? true :rng (r/rng :mersenne 1)} opts))]
+    (let [gaps (fn [opts] (let [p (plot/network star (merge {:directed true :rng (r/rng :mersenne 1)} opts))]
                             (zipmap (map :to (get-in (first (:charts p)) [:options :data]))
                                     (map :cljplot2.graphs/gap (get-in (first (:charts p)) [:options :data])))))
           default (gaps {})
@@ -232,8 +232,8 @@
       (is (= 1 (count (set (vals default)))) "one radius")
       (is (== 7.0 (double (default "a"))) "builder node size 12: radius 6 + 1")
       (is (> (double (sized "b")) (double (sized "a"))) "b has two in-edges - larger")
-      (is (some? (get-in (plot/network star {:directed? true}) [:charts 0 :options :arrow])))
-      (is (instance? BufferedImage (plot/render-image (plot/network star {:directed? true :mapping {:size :in}}) {:width 300 :height 300})))))
+      (is (some? (get-in (plot/network star {:directed true}) [:charts 0 :options :arrow])))
+      (is (instance? BufferedImage (plot/render-image (plot/network star {:directed true :mapping {:size :in}}) {:width 300 :height 300})))))
   (testing "4.3 size by degree"
     (let [p (plot/network star {:rng (r/rng :mersenne 1) :mapping {:size :degree}})]
       (is (= {:x :x :y :y :size :degree} (get-in p [:charts 1 :options :mapping])))
@@ -258,11 +258,11 @@
     (is (= [9.0 0] (get-in (plot/network star {:labels true}) [:charts 2 :options :offset])))
     (is (= [15.0 0] (get-in (plot/network star {:labels true :mapping {:size :degree}}) [:charts 2 :options :offset])) "range top 24"))
   (testing "R3 arrowhead: at least 7, 3 x the widest edge; :edge-style :arrow wins"
-    (let [arrow (fn [opts] (get-in (plot/network star (merge {:directed? true} opts)) [:charts 0 :options :arrow]))]
+    (let [arrow (fn [opts] (get-in (plot/network star (merge {:directed true} opts)) [:charts 0 :options :arrow]))]
       (is (= {:size 7.0} (arrow {})) "1 px edges")
       (is (= {:size 30.0} (arrow {:edge-mapping {:size :value}})) "palette size range top 10")
       (is (= {:size 12.0} (arrow {:edge-mapping {:size :value} :scales {:size {:range [1 4]}}})))
-      (is (= {:size 9.0} (arrow {:edge-style {:width 3}})))
+      (is (= {:size 9.0} (arrow {:edge-style {:line-width 3}})))
       (is (= {:size 5 :shape :open} (arrow {:edge-style {:arrow {:size 5 :shape :open}}})))))
   (testing "4.4 validation"
     (is (= :layout (:key (error #(plot/network star {:layout :tree})))))

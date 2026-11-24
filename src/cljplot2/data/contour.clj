@@ -184,7 +184,7 @@
           {:points (mapv #(apply crossing level (edge-ends grid %)) edges) :closed? closed?})
         (chains (segments grid level))))
 
-(defn padded
+(defn- padded
   "Gives the sampled field with a border of `-Inf` values one step outside it, so every contour closes.
 
   Parameters:

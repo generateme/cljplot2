@@ -295,7 +295,7 @@ Nested rectangles, areas proportional to the value: the world's population by re
 
 ### Basic, groups and subgroups
 
-One level (regions) and three (regions → subregions → countries); `:padding` frames the groups, a theme palette
+One level (regions) and three (regions → subregions → countries); `:gap` frames the groups, a theme palette
 recolours the regions.
 
 Source: R Graph Gallery - Treemap; data-to-viz - Treemap ([1](https://r-graph-gallery.com/treemap.html), [2](https://www.data-to-viz.com/graph/treemap.html)). Data: World population by region, subregion and country, data-to-viz example dataset `11_SevCatOneNumNestedOneObsPerGroup` (Yan Holtz; Wikipedia); licence: MIT (data_to_viz repository).
@@ -309,8 +309,8 @@ Source: R Graph Gallery - Treemap; data-to-viz - Treemap ([1](https://r-graph-ga
     :labels {:title "regions"}}
    {:data world :mapping {:value :population :hierarchy [:region :subregion :country]}
     :theme {:palette {:color :set2}}
-    :charts [(chart/treemap {:padding 4 :border-color [60 60 60]})]
-    :labels {:title "regions, subregions, countries (:set2, :padding 4)"}}]
+    :charts [(chart/treemap {:gap 4 :stroke-color [60 60 60]})]
+    :labels {:title "regions, subregions, countries (:set2, :gap 4)"}}]
   {:columns 2 :widths [1 2]})
  {:width 1000 :height 520})
 ```
@@ -483,7 +483,7 @@ proportional to its value (packing leaves gaps), compare circles within a group.
 ### One level
 
 Europe's countries: a circle each (the palette's colours repeat - they only tell neighbours apart); leaves coloured
-by their subregion; wider gaps (`:padding`, pixels).
+by their subregion; wider gaps (`:gap`, pixels).
 
 Source: R Graph Gallery - Circular packing; data-to-viz - Circular packing ([1](https://r-graph-gallery.com/circle-packing.html), [2](https://www.data-to-viz.com/graph/circularpacking.html)). Data: World population by region, subregion and country, data-to-viz example dataset `11_SevCatOneNumNestedOneObsPerGroup` (Yan Holtz; Wikipedia); licence: MIT (data_to_viz repository).
 
@@ -495,7 +495,7 @@ Source: R Graph Gallery - Circular packing; data-to-viz - Circular packing ([1](
   [{:data europe :mapping {:value :population :hierarchy [:country]} :legend false
     :charts [(chart/pack)] :labels {:title "basic"}}
    {:data europe :mapping {:value :population :hierarchy [:country] :color :subregion}
-    :charts [(chart/pack {:padding 6 :leaf-labels false})] :labels {:title "by subregion, :padding 6"}}]
+    :charts [(chart/pack {:gap 6 :leaf-labels false})] :labels {:title "by subregion, :gap 6"}}]
   {:columns 2})
  {:width 1000 :height 480})
 ```
@@ -600,7 +600,7 @@ Source: [R Graph Gallery - Waffle chart](https://r-graph-gallery.com/waffle.html
  (plot/arrange
   [{:data world :mapping {:color :region :value :population} :charts [(chart/waffle)] :labels {:title "regions"}}
    {:data world :mapping {:color :region :value :population} :theme {:palette {:color :dark2}}
-    :charts [(chart/waffle {:shape :circle :gap 0.15})] :labels {:title "circles, :dark2"}}]
+    :charts [(chart/waffle {:cell-shape :circle :gap 0.15})] :labels {:title "circles, :dark2"}}]
   {:columns 2})
  {:width 1000 :height 400})
 ```

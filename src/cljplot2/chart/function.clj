@@ -25,7 +25,7 @@
     [[cljplot2.chart.line]]); consecutive samples beyond opposite panel edges (asymptotes) cut the curve, never
     bridged.
   * `:fill` - `:f`: the area to y = 0 (clamped into the panel); `:parametric`: the polygon the curve closes.
-  * `:color`, `:width`, `:dash`, `:bridge` - style, defaults from theme `[:chart :function]`; `:padding` as line.
+  * `:color`, `:line-width`, `:dash`, `:bridge` - style, defaults from theme `[:chart :function]`; `:padding` as line.
 
   Exceptions thrown by a function propagate.
 
@@ -64,7 +64,13 @@
 ;; schema
 
 (defn- labelled-pair?
-  "Tests whether `p` is a `[label function]` pair."
+  "Tests whether a value is a `[label function]` pair.
+
+  Parameters:
+
+  - `p`: any value.
+
+  Returns a truthy value for a two-element vector whose second element is a function."
   [p]
   (and (vector? p) (m/== 2 (count p)) (fn? (second p))))
 
@@ -76,7 +82,13 @@
                      "should be a function, a non-empty vector of functions or of [label function] pairs, or a non-empty map label -> function"))
 
 (defn- span-value?
-  "Tests whether `v` can end a sampled span: a finite number or a `java.time` value."
+  "Tests whether a value can end a sampled span.
+
+  Parameters:
+
+  - `v`: any value.
+
+  Returns a truthy value for a finite number or a `java.time` value."
   [v]
   (or (schema/finite? v) (data/temporal? v)))
 
@@ -103,39 +115,63 @@
   (conj polyline/style-entries
         (schema/optional :fill {:cljplot2/section :curve :description "fill colour (or :none) of the area to y = 0 (:f) or of the polygon the curve closes (:parametric)"}
                          schema/color)
-        (schema/optional :bridge {:cljplot2/section :gaps :description "style of the segments bridging gaps with :gaps :bridge: :alpha (a fraction of the line alpha), optional :width and :dash"}
+        (schema/optional :bridge {:cljplot2/section :gaps :description "style of the segments bridging gaps with :gaps :bridge: :alpha-factor (a fraction of the line alpha), optional :line-width and :dash"}
                          polyline/bridge-schema)))
+
+(defn- function-option-problem
+  "Gives the problem of the function options, if any.
+
+  Parameters:
+
+  - `options` (map): `:f`, `:parametric`, `:t`, `:domain`, `:sample-step`.
+
+  Returns `[message key]` for no function or both forms (`:f`), a parametric chart without `:t` or `:t` on `:f` (`:t`), a pixel step on a parametric chart (`:sample-step`), `:domain` on a parametric chart (`:domain`); `nil` for valid options."
+  [{:keys [f parametric t domain sample-step]}]
+  (cond
+    (and (nil? f) (nil? parametric)) ["a function chart needs :f or :parametric" :f]
+    (and f parametric) ["a function chart takes :f or :parametric, not both" :f]
+    (and parametric (nil? t)) ["a :parametric function chart needs :t [lo hi]" :t]
+    (and parametric (some? sample-step) (not (map? sample-step))) ["a :parametric function chart samples by count: :sample-step {:count n}" :sample-step]
+    (and parametric domain) [":domain is for :f; a :parametric chart takes :t" :domain]
+    (and f t) [":t is for :parametric; an :f chart takes :domain" :t]))
+
+(def ^:private option-rules
+  "Rules (see [[cljplot2.schema/with-rules]]) of the options: [[function-option-problem]], each at its key."
+  (for [k [:f :t :sample-step :domain]]
+    [#(let [[message problem-key] (function-option-problem %)] (when (= k problem-key) message)) [k]]))
 
 (def schemas
   "Schemas of the function chart: `:style` (theme `[:chart :function]`), `:options`, `:mapping` (the chart's own)."
   {:style (into [:map {:closed true}] style-entries)
-   :options (-> [:map {:closed true}]
-                (into style-entries)
-                (into theme/theme-style-entries)
-                (conj (schema/optional :data (schema/forbidden "isn't used: a function chart samples its functions"))
-                      (schema/optional :mapping {:cljplot2/section :curve :description "the chart's own mapping of the function labels (e.g. {:color :function}); only facet keys come from the plot"}
-                                       data/mapping-schema)
-                      (schema/optional :f {:cljplot2/section :curve :description "y = f(x): a function, a vector of functions or of [label function] pairs, or a map label -> function (this or :parametric)"}
-                                       functions-schema)
-                      (schema/optional :parametric {:cljplot2/section :curve :description "[x y] = f(t): functions given as for :f (this or :f)"} functions-schema)
-                      (schema/optional :domain {:cljplot2/section :curve :description "x span [lo hi] the :f functions are sampled over: numbers or java.time values"
-                                                :cljplot2/default-doc "the plot's explicit x domain, else the x scale's domain at drawing"}
-                                       span-schema)
-                      (schema/optional :t {:cljplot2/section :curve :description "t span [lo hi] of :parametric (required there): numbers or java.time values"} span-schema)
-                      (schema/optional :sample-step {:cljplot2/section :curve :description "distance between samples: pixels along x or {:count n} (:parametric - only {:count n})"
-                                                     :cljplot2/default-doc "1 pixel for :f, {:count 500} for :parametric"}
-                                       curve/sample-step-schema)
-                      (schema/optional :y-limits {:cljplot2/section :extent :description "[lo hi] - samples outside don't count for the y extent (the curve is only clipped)"}
-                                       schema/finite-interval)
-                      (schema/optional :y-extent {:cljplot2/section :extent :description "y extent of the samples without :y-limits or an explicit y domain: :quantiles (1% and 99%), {:quantiles [p q]}, :min-max or :none"
-                                                  :default :quantiles}
-                                       y-extent-schema)
-                      (schema/optional :gaps {:cljplot2/section :gaps :description "nil or non-finite results break the curve: :break (empty space) or :bridge (a straight segment in the :bridge style)"
-                                              :default :break}
-                                       [:enum :break :bridge])
-                      (schema/optional :padding {:cljplot2/section :extent :description "padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span"
-                                                 :cljplot2/default-doc "0.05 on every side"}
-                                       data/position-padding)))
+   :options (apply schema/with-rules
+             (-> [:map {:closed true}]
+                 (into style-entries)
+                 (into theme/theme-style-entries)
+                 (conj (schema/optional :data (schema/forbidden "isn't used: a function chart samples its functions"))
+                       (schema/optional :mapping {:cljplot2/section :curve :description "the chart's own mapping of the function labels (e.g. {:color :function}); only facet keys come from the plot"}
+                                        data/mapping-schema)
+                       (schema/optional :f {:cljplot2/section :curve :description "y = f(x): a function, a vector of functions or of [label function] pairs, or a map label -> function (this or :parametric)"}
+                                        functions-schema)
+                       (schema/optional :parametric {:cljplot2/section :curve :description "[x y] = f(t): functions given as for :f (this or :f)"} functions-schema)
+                       (schema/optional :domain {:cljplot2/section :curve :description "x span [lo hi] the :f functions are sampled over: numbers or java.time values"
+                                                 :cljplot2/default-doc "the plot's explicit x domain, else the x scale's domain at drawing"}
+                                        span-schema)
+                       (schema/optional :t {:cljplot2/section :curve :description "t span [lo hi] of :parametric (required there): numbers or java.time values"} span-schema)
+                       (schema/optional :sample-step {:cljplot2/section :curve :description "distance between samples: pixels along x or {:count n} (:parametric - only {:count n})"
+                                                      :cljplot2/default-doc "1 pixel for :f, {:count 500} for :parametric"}
+                                        curve/sample-step-schema)
+                       (schema/optional :y-limits {:cljplot2/section :extent :description "[lo hi] - samples outside don't count for the y extent (the curve is only clipped)"}
+                                        schema/finite-interval)
+                       (schema/optional :y-extent {:cljplot2/section :extent :description "y extent of the samples without :y-limits or an explicit y domain: :quantiles (1% and 99%), {:quantiles [p q]}, :min-max or :none"
+                                                   :default :quantiles}
+                                        y-extent-schema)
+                       (schema/optional :gaps {:cljplot2/section :gaps :description "nil or non-finite results break the curve: :break (empty space) or :bridge (a straight segment in the :bridge style)"
+                                               :default :break}
+                                        [:enum :break :bridge])
+                       (schema/optional :padding {:cljplot2/section :extent :description "padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span"
+                                                  :cljplot2/default-doc "0.05 on every side"}
+                                        data/position-padding)))
+             option-rules)
    :mapping [:map
              (schema/nilable :color {:description "line colour per function label (e.g. :function)"} schema/accessor)
              (schema/nilable :dash {:description "dash style per function label"} schema/accessor)
@@ -191,25 +227,15 @@
                                                                 dim-extents))
                                           es dims)))))
 
-(defn- checked-input!
-  "Checks the function options of a function chart.
+(defn- functions-of
+  "Gives the functions of a function chart (its options valid, see [[option-rules]]).
 
   Parameters:
 
-  - `options` (map): `:f`, `:parametric`, `:t`, `:domain`, `:sample-step`.
+  - `options` (map): `:f`, `:parametric`.
 
-  Returns `[parametric? labelled-functions]` (see [[labelled]]).
-
-  Throws `ex-info {:key :f}` for no function or both forms, `{:key :t}` for a parametric chart without `:t` or `:t` on `:f`, `{:key :sample-step}` for a pixel step on a parametric chart, `{:key :domain}` for `:domain` on a parametric chart."
-  [{:keys [f parametric t domain sample-step]}]
-  (cond
-    (and (nil? f) (nil? parametric)) (schema/fail! "A function chart needs :f or :parametric." {:key :f :value nil})
-    (and f parametric) (schema/fail! "A function chart takes :f or :parametric, not both." {:key :f :value f})
-    (and parametric (nil? t)) (schema/fail! "A :parametric function chart needs :t [lo hi]." {:key :t :value nil})
-    (and parametric (some? sample-step) (not (map? sample-step)))
-    (schema/fail! "A :parametric function chart samples by count: :sample-step {:count n}." {:key :sample-step :value sample-step})
-    (and parametric domain) (schema/fail! ":domain is for :f; a :parametric chart takes :t." {:key :domain :value domain})
-    (and f t) (schema/fail! ":t is for :parametric; an :f chart takes :domain." {:key :t :value t}))
+  Returns `[parametric? labelled-functions]` (see [[labelled]])."
+  [{:keys [f parametric]}]
   [(some? parametric) (labelled (or f parametric))])
 
 ;; sampling
@@ -237,12 +263,25 @@
      (map #(s/inverse ws %) (m/slice-range n)))))
 
 (defn- sample-count
-  "Gives the sample count of `:sample-step`: its `{:count n}`, else `default`."
+  "Gives the sample count of a `:sample-step` option.
+
+  Parameters:
+
+  - `sample-step`: the option - `{:count n}`, a number (a step) or `nil`.
+  - `default` (long): the count without `{:count n}`.
+
+  Returns `n` of `{:count n}`, else `default`."
   ^long [sample-step default]
   (long (if (map? sample-step) (:count sample-step) default)))
 
 (defn- plottable
-  "Gives `v` when it can be plotted (a finite number or a `java.time` value), else `nil`."
+  "Gives a value when it can be plotted.
+
+  Parameters:
+
+  - `v`: any value.
+
+  Returns `v` for a finite number or a `java.time` value; else `nil`."
   [v]
   (when (or (schema/finite? v) (data/temporal? v)) v))
 
@@ -335,21 +374,20 @@
 
   Returns `{:data :extents :padding :padding-explicit :na :dropped}`: one panel (`facet/all-panels`) `{:functions [{:f :aesthetics}] :style st :parametric? :domain :t :sample-step :gaps}` - the functions grouped by the chart's own mapping, `st` the resolved style; position extents from samples (see [[sampled-extents]]), aesthetic extents of the labels in their given order.
 
-  Throws the errors of [[checked-input!]]; exceptions of a function propagate."
+  Exceptions of a function propagate (option conflicts fail the options schema, see [[option-rules]])."
   [{:keys [options] :as chart} {:keys [mapping]} {:keys [theme plot-scales] :as env}]
-  (let [[parametric? fs] (checked-input! options)
+  (let [[parametric? fs] (functions-of options)
         rows (mapv (fn [[label f]] {:function label ::f f}) fs)
         {:keys [panels dropped]} (group/split {facet/all-panels rows} (select-keys mapping (conj aesthetic/dims :group)) env)
         functions (vec (for [g (get panels facet/all-panels) row (:rows g)] {:f (::f row) :aesthetics (:aesthetics g)}))
         extents (sampled-extents parametric? fs options plot-scales)]
-    {:data {facet/all-panels (merge {:functions functions :style (theme/resolved-style theme chart) :parametric? parametric?}
-                                    (select-keys options [:domain :t :sample-step :gaps]))}
-     :extents (merge-with merge (label-ordered-extents (group/aesthetic-extents panels plot-scales) mapping (map first fs))
-                          (if (seq extents) {facet/all-panels extents} {}))
-     :padding (merge data/default-padding (:padding options))
-     :padding-explicit (data/explicit-padding {} options)
-     :na (group/na-dims panels)
-     :dropped dropped}))
+    (into (data/padding-stats data/default-padding {} options)
+          {:data {facet/all-panels (merge {:functions functions :style (theme/resolved-style theme chart) :parametric? parametric?}
+                                          (select-keys options [:domain :t :sample-step :gaps]))}
+           :extents (merge-with merge (label-ordered-extents (group/aesthetic-extents panels plot-scales) mapping (map first fs))
+                                (if (seq extents) {facet/all-panels extents} {}))
+           :na (group/na-dims panels)
+           :dropped dropped})))
 
 ;; drawing
 
@@ -528,5 +566,5 @@
   - `box` (map): the key's box.
   - `env` (map): `:theme`."
   [chart attributes canvas box env]
-  (let [st (merge (theme/resolved-style (:theme env) chart) (select-keys attributes [:color :dash]))]
-    (polyline/key-glyph! canvas box st (:fill st :none))))
+  (let [st (theme/key-style env chart attributes [:color :dash])]
+    (polyline/key-glyph! canvas box st (data/option st :fill :none))))

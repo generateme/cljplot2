@@ -25,18 +25,18 @@
 (def ^:private clustering (cl/hclust standardized {:method :complete}))
 
 (def mtcars-dendrogram
-  (plot/dendrogram clustering {:labels cars :k 3 :theme {:palette {:color :set1}}
+  (plot/dendrogram clustering {:leaf-names cars :k 3 :theme {:palette {:color :set1}}
                                 :title "mtcars: complete-linkage clustering, 3 clusters"}))
 
 (def mtcars-circular
-  (plot/dendrogram clustering {:labels cars :k 3 :circular true :theme {:palette {:color :set1}}
+  (plot/dendrogram clustering {:leaf-names cars :k 3 :circular true :theme {:palette {:color :set1}}
                               :title "The same clustering, circular"}))
 
 (def ^:private world (data/csv-rows "world-population.csv"))
 
 (def world-hierarchy
   (plot/dendrogram (tree/from-levels world {:hierarchy [:region :subregion]})
-                   {:horizontal true :group-labels? true :title "World regions and subregions"}))
+                   {:horizontal true :group-labels true :title "World regions and subregions"}))
 
 (def mtcars-heatmap
   (plot/clustered-heatmap (vec (for [[car row] (map vector cars standardized) [k v] (map vector variables row)]

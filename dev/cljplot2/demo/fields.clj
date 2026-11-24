@@ -11,12 +11,12 @@
 
 (def faithful-density
   {:data faithful :mapping {:x :eruptions :y :waiting}
-   :charts [(chart/field) (chart/contour {:color :white :width 0.8})]
+   :charts [(chart/field) (chart/contour {:color :white :line-width 0.8})]
    :labels {:title "Old Faithful: 2D density and its contours" :x "eruption (min)" :y "waiting (min)"}})
 
 (def faithful-filled
   {:data faithful :mapping {:x :eruptions :y :waiting}
-   :charts [(chart/contour {:fill true :levels 8}) (chart/scatter {:size 3 :color [0 0 0 160]})]
+   :charts [(chart/contour {:filled true :levels 8}) (chart/scatter {:size 3 :color [0 0 0 160]})]
    :labels {:title "Filled density contours under the points" :x "eruption (min)" :y "waiting (min)"}})
 
 (def iris-contours

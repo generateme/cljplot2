@@ -1,12 +1,12 @@
-(ns cljplot2.graphics.space3d
+(ns cljplot2.content.space3d
   "Drawing of 3D charts' primitives and frame (see [[cljplot2.data.space3d]] for the projection).
 
   Primitives - maps with a `:depth` (view depth, larger - farther), drawn far to near by [[draw-primitives!]]:
 
   * `{:kind :point :at Vec2 :style st}` - a shape (`st` - `:shape :size :color :stroke-color :stroke-width`)
-  * `{:kind :line :from Vec2 :to Vec2 :color c :width w}`
-  * `{:kind :polygon :points [Vec2 ..] :fill c :stroke c :stroke-width w}` (`:stroke :none` - no outline)
-  * `{:kind :path :points [Vec2 ..] :closed? b :color c :width w}` - a polyline
+  * `{:kind :line :from Vec2 :to Vec2 :color c :line-width w}`
+  * `{:kind :polygon :points [Vec2 ..] :fill c :stroke-color c :stroke-width w}` (`:stroke-color :none` - no outline)
+  * `{:kind :path :points [Vec2 ..] :closed? b :color c :line-width w}` - a polyline
   * `{:kind :region :rings [[Vec2 ..] ..] :fill c}` - an even-odd filled region (holes open)
 
   [[frame-margin]], [[frame-margins]] - the pixels the frame needs around the box. The frame is drawn in two parts around the data:
@@ -16,7 +16,7 @@
   edge ([[cljplot2.data.space3d/axis-edges]]), styled by theme `[:axis :x]` (lines, tick length, label gap; tick
   spacing of `[:axis :x]` / `[:axis :y]` for z) and the `:tick-label` / `:axis-title` text roles.
 
-  Functions: [[draw-primitives!]], [[draw-scene!]], [[draw-chart]], [[scene-frame]], frame [[frame-margin]],
+  Functions: [[draw-primitives!]], [[draw-scene!]], [[draw-3d-chart]], [[scene-frame]], frame [[frame-margin]],
   [[frame-margins]], [[draw-frame-back!]], [[draw-frame-front!]], axes [[axis-ticks]], [[edge-ticks]],
   [[edge-point]], [[edge-angle]], [[title-distance]]."
   (:require [clojure2d.core :as c2d]
@@ -24,11 +24,11 @@
             [fastmath.vector :as v]
             [cljplot2.content.label :as label]
             [cljplot2.data.space3d :as space]
+            [cljplot2.graphics.draw :as draw]
             [cljplot2.graphics.measure :as measure]
             [cljplot2.graphics.polyline :as polyline]
             [cljplot2.graphics.shape :as shape]
-            [cljplot2.scale.position :as scale]
-            [cljplot2.theme :as theme])
+            [cljplot2.scale.position :as scale])
   (:import [fastmath.vector Vec2]))
 
 (set! *warn-on-reflection* true)
@@ -48,10 +48,10 @@
     :point (let [st (:style p)]
              (c2d/set-stroke-custom canvas {:size (or (:stroke-width st) 1.0)})
              (shape/draw! canvas (:shape st) (:at p) st))
-    :line (do (c2d/set-stroke-custom canvas {:size (:width p) :cap :round})
+    :line (do (c2d/set-stroke-custom canvas {:size (:line-width p) :cap :round})
               (c2d/set-color canvas (:color p))
               (c2d/line canvas (:from p) (:to p)))
-    :path (do (c2d/set-stroke-custom canvas {:size (:width p) :cap :round :join :round})
+    :path (do (c2d/set-stroke-custom canvas {:size (:line-width p) :cap :round :join :round})
               (c2d/set-color canvas (:color p))
               (c2d/path canvas (:points p) (:closed? p) true))
     :region (do (c2d/set-color canvas (:fill p))
@@ -59,10 +59,7 @@
     :polygon (let [pts (:points p)]
                (c2d/set-color canvas (:fill p))
                (c2d/path canvas pts true false)
-               (when (and (not (theme/none? (:stroke p))) (m/pos? (double (or (:stroke-width p) 0.0))))
-                 (c2d/set-stroke-custom canvas {:size (:stroke-width p)})
-                 (c2d/set-color canvas (:stroke p))
-                 (c2d/path canvas pts true true)))))
+               (draw/outline! canvas (:stroke-color p) (or (:stroke-width p) 0.0) #(c2d/path % pts true true)))))
 
 (defn draw-primitives!
   "Draws primitives far to near.
@@ -92,17 +89,6 @@
   [k domain n]
   (let [f (scale/finalize (scale/scale-spec k {:domain domain :nice false}) [0.0 1.0] (long (m/max 2 (long n))))]
     {:ticks (:ticks f) :labels (:tick-labels f)}))
-
-(defn- text-size
-  "Gives the natural size of a label text in a text role (a `Vec2`).
-
-  Parameters:
-
-  - `role` (keyword): the text role.
-  - `text` (string): the text.
-  - `env` (map): `:canvas`, `:theme`."
-  ^Vec2 [role text env]
-  (measure/natural-size {:kind :label :role role :text text} env))
 
 (defn- tick-count
   "Gives the ticks asked for an axis along an edge: the edge over the theme's tick spacing of the 2D axis drawn the same way (z - vertical - as y, x and y as x).
@@ -167,7 +153,7 @@
   Returns a sequence of `Vec2` sizes."
   [{:keys [domains levels]} [w h] env]
   (let [longest (m/min (double w) (double h))]
-    (map #(text-size :tick-label % env)
+    (map #(measure/label-size :tick-label % env)
          (mapcat #(if-let [ls (get levels %)]
                     (map label/name-text ls)
                     (:labels (edge-ticks % (domains %) nil (tick-count env % longest))))
@@ -197,11 +183,11 @@
     (let [{:keys [tick-length label-gap]} (get-in env [:theme :axis :x])
           widest (double (reduce m/max 0.0 (map (fn [^Vec2 s] (m/max (.x s) (.y s))) (tick-label-sizes frame [w h] env))))
           title (double (reduce m/max 0.0 (keep (fn [k] (when-some [t (get titles k)]
-                                                           (.y (text-size :axis-title (str t) env))))
+                                                           (.y (measure/label-size :axis-title (str t) env))))
                                                  space/axes)))]
       (m/+ (double tick-length) (m/* 2.0 (double label-gap)) widest title frame-padding))))
 
-(defn frame-margins
+(defn- frame-margins
   "Gives the pixels to keep on each side of the box for the axes of a frame: [[frame-margin]] left, right and below; above only half the tallest tick label and a label gap (the z axis's top tick label - x / y ticks and the titles go on edges low on screen or beside the box, see [[cljplot2.data.space3d/axis-edges]]).
 
   The same for every azimuth, so a turned box keeps its place (see [[cljplot2.data.space3d/projector]]).
@@ -331,20 +317,14 @@
         labelled (atom [])
         at (fn [t] (edge-point corner edge (m// (m/- (double t) lo) (m/- hi lo))))
         widest (atom 0.0)]
-    (when (and (not (theme/none? line-color)) (m/pos? (double line-width)))
-      (c2d/set-color canvas line-color)
-      (c2d/set-stroke-custom canvas {:size line-width})
-      (c2d/line canvas a b))
+    (draw/outline! canvas line-color line-width #(c2d/line % a b))
     (doseq [[t text] (map vector ticks labels)
             :let [^Vec2 p (at t)
                   ^Vec2 q (v/add p (v/mult o tick-length))]]
-      (when (and (not (theme/none? tick-color)) (m/pos? (double tick-width)))
-        (c2d/set-color canvas tick-color)
-        (c2d/set-stroke-custom canvas {:size tick-width})
-        (c2d/line canvas p q))
+      (draw/outline! canvas tick-color tick-width #(c2d/line % p q))
       ;; a thinned categorical axis has ticks without labels
       (when (some? text)
-        (let [^Vec2 size (text-size :tick-label text env)
+        (let [^Vec2 size (measure/label-size :tick-label text env)
               e (extent-along size o)
               ^Vec2 c (v/add q (v/mult o (m/+ label-gap e)))
               box (label-box c size)]
@@ -357,7 +337,7 @@
       ;; the title runs along its edge, turned to read left to right (or bottom to top)
       (let [content {:kind :label :role :axis-title :text (str title) :rotation (edge-angle along)}
             ^Vec2 c (v/add (v/mult (v/add a b) 0.5)
-                           (v/mult o (title-distance tick-length label-gap @widest (text-size :axis-title (str title) env))))]
+                           (v/mult o (title-distance tick-length label-gap @widest (measure/label-size :axis-title (str title) env))))]
         (label/draw-at! canvas content [:center :middle] (.x c) (.y c) env)))
     @labelled))
 
@@ -373,7 +353,7 @@
   Returns truthy when the edges draw, `nil` for a `:none` colour or width 0."
   [canvas dash env]
   (let [{:keys [line-color line-width]} (get-in env [:theme :axis :x])]
-    (when (and (not (theme/none? line-color)) (m/pos? (double line-width)))
+    (when (draw/visible-stroke? line-color line-width)
       (c2d/set-color canvas line-color)
       (c2d/set-stroke-custom canvas (cond-> {:size line-width :cap :butt} dash (assoc :dash dash)))
       true)))
@@ -442,7 +422,7 @@
         (doseq [{:keys [from to]} (space/hidden-edges view aspect)]
           (c2d/line canvas (corner from) (corner to)))))))
 
-(def ^{:const true :tag 'double} min-axis-length
+(def ^{:private true :const true :tag 'double} min-axis-length
   "Pixels an axis edge needs to carry ticks; shorter (end-on) edges get no axis."
   4.0)
 
@@ -488,22 +468,6 @@
                                        layers))
       (draw-frame-front! canvas proj frame canvas-env))))
 
-(defn draw-chart
-  "Draws a 3D chart alone in one panel's box - the draw function of the 3D charts' contract (see [[cljplot2.chart]]); a plot's panel draws all its 3D charts in one scene instead (see [[draw-scene!]]).
-
-  Parameters:
-
-  - `chart` (map): the chart value.
-  - `computed` (map): the panel's computed data.
-  - `canvas`: the canvas in graphics context.
-  - `box` (map): `:w`, `:h` - the panel size.
-  - `scales` (map): the panel's scales.
-  - `env` (map): the drawing environment.
-
-  Returns `nil`."
-  [chart computed canvas {:keys [w h]} scales env]
-  (draw-scene! canvas [[chart computed]] [w h] scales env))
-
 (defn draw-frame-front!
   "Draws the box frame in front of the data: the visible box edges, then the axes x, y, z in turn - a tick label overlapping an earlier axis's label left out.
 
@@ -528,3 +492,19 @@
                   (into taken (draw-axis! canvas k edge proj frame taken canvas-env))
                   taken))
               [] (space/axis-edges view aspect corner)))))
+
+(defn draw-3d-chart
+  "Draws a 3D chart alone in one panel's box - the draw function of the 3D charts' contract (see [[cljplot2.chart]]); a plot's panel draws all its 3D charts in one scene instead (see [[draw-scene!]]).
+
+  Parameters:
+
+  - `chart` (map): the chart value.
+  - `computed` (map): the panel's computed data.
+  - `canvas`: the canvas in graphics context.
+  - `box` (map): `:w`, `:h` - the panel size.
+  - `scales` (map): the panel's scales.
+  - `env` (map): the drawing environment.
+
+  Returns `nil`."
+  [chart computed canvas {:keys [w h]} scales env]
+  (draw-scene! canvas [[chart computed]] [w h] scales env))

@@ -2360,7 +2360,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="clay-image">
 <p><img src="reference.charts_series_files/image7.png" class="img-fluid"></p>
 </div>
-<p>Shared options: <a href="reference.shared_options.html#line-style">Line style</a> (<code>:color</code> <code>:width</code> <code>:dash</code>); <a href="reference.shared_options.html#fill-patterns">Fill patterns</a> (<code>:pattern</code> <code>:pattern-color</code>); <a href="reference.shared_options.html#data-and-mapping">Data and mapping</a> (<code>:data</code> <code>:mapping</code>); <a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> (<code>:theme-style</code>).</p>
+<p>Shared options: <a href="reference.shared_options.html#line-style">Line style</a> (<code>:color</code> <code>:line-width</code> <code>:dash</code>); <a href="reference.shared_options.html#fill-patterns">Fill patterns</a> (<code>:pattern</code> <code>:pattern-color</code>); <a href="reference.shared_options.html#data-and-mapping">Data and mapping</a> (<code>:data</code> <code>:mapping</code>); <a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> (<code>:theme-style</code>).</p>
 </section>
 </section>
 <section id="candlestick" class="level2" data-number="14.3">
@@ -2448,16 +2448,16 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td>colour of a candle closing below its open</td>
 </tr>
 <tr class="odd">
-<td>:body-width</td>
+<td>:width</td>
 <td>a number in [0 1]</td>
 <td>0.7</td>
 <td>body width, a fraction of the smallest pixel gap between distinct x (of a band's width on a bands scale)</td>
 </tr>
 <tr class="even">
-<td>:wick-width</td>
+<td>:line-width</td>
 <td>a non-negative number</td>
 <td>1</td>
-<td>wick (and OHLC bar) width in pixels</td>
+<td>wick (and OHLC bar) line width in pixels</td>
 </tr>
 <tr class="odd">
 <td>:stroke-color</td>
@@ -2466,30 +2466,36 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td>body outline colour: a colour or :none</td>
 </tr>
 <tr class="even">
+<td>:stroke-width</td>
+<td>a non-negative number</td>
+<td>1</td>
+<td>body outline width in pixels</td>
+</tr>
+<tr class="odd">
 <td>:up-pattern</td>
 <td>a pattern name (:back-hatch :cross :dense-dots :diagonal-cross :dots :hatch :horizontal :solid :vertical) or a pattern map</td>
 <td>:solid</td>
 <td>pattern drawn over the bodies of up candles</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td>:down-pattern</td>
 <td>a pattern name (:back-hatch :cross :dense-dots :diagonal-cross :dots :hatch :horizontal :solid :vertical) or a pattern map</td>
 <td>:solid</td>
 <td>pattern drawn over the bodies of down candles</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td>:pattern-color</td>
 <td>:darker or a clojure2d color or :none</td>
 <td>:darker</td>
 <td>pattern ink: a colour, :none or :darker (the darkened body colour)</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td>:style</td>
 <td>one of :candle :ohlc</td>
 <td>:candle</td>
 <td>:candle (wick and body) or :ohlc (a low-high bar with open and close ticks)</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td>:padding</td>
 <td>map of one of :x :y to [lo hi], non-negative numbers</td>
 <td>0.05 on every side (the x extent also reaches half the smallest x gap beyond the data)</td>
@@ -2502,13 +2508,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> ohlc <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:date</span> <span class="at">:open</span> <span class="at">:open</span> <span class="at">:high</span> <span class="at">:high</span> <span class="at">:low</span> <span class="at">:low</span> <span class="at">:close</span> <span class="at">:close</span>}</span>
 <span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/candlestick {<span class="at">:up-color</span> [<span class="dv">33</span> <span class="dv">102</span> <span class="dv">172</span>] <span class="at">:down-color</span> [<span class="dv">240</span> <span class="dv">140</span> <span class="dv">30</span>]</span>
-<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>                                                                <span class="at">:body-width</span> <span class="fl">0.4</span> <span class="at">:stroke-color</span> <span class="at">:black</span>})]</span>
-<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"colours, :body-width 0.4"</span>}}</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>                                                                <span class="at">:width</span> <span class="fl">0.4</span> <span class="at">:stroke-color</span> <span class="at">:black</span> <span class="at">:stroke-width</span> <span class="fl">1.5</span>})]</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"colours, :width 0.4, outlined"</span>}}</span>
 <span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> ohlc <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:date</span> <span class="at">:open</span> <span class="at">:open</span> <span class="at">:high</span> <span class="at">:high</span> <span class="at">:low</span> <span class="at">:low</span> <span class="at">:close</span> <span class="at">:close</span>}</span>
 <span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/candlestick {<span class="at">:down-pattern</span> <span class="at">:hatch</span> <span class="at">:pattern-color</span> <span class="at">:black</span>})]</span>
 <span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":down-pattern :hatch"</span>}}</span>
 <span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> ohlc <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:date</span> <span class="at">:open</span> <span class="at">:open</span> <span class="at">:high</span> <span class="at">:high</span> <span class="at">:low</span> <span class="at">:low</span> <span class="at">:close</span> <span class="at">:close</span>}</span>
-<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/candlestick {<span class="at">:style</span> <span class="at">:ohlc</span> <span class="at">:wick-width</span> <span class="dv">2</span>})]</span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/candlestick {<span class="at">:style</span> <span class="at">:ohlc</span> <span class="at">:line-width</span> <span class="dv">2</span>})]</span>
 <span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":style :ohlc"</span>}}]</span>
 <span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">3</span>})</span>
 <span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">320</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>

@@ -734,7 +734,7 @@ Source: [Vega-Lite - Gantt Chart (Ranged Bar Marks)](https://vega.github.io/vega
 ```clojure
 (plot/render-image
  {:data [{:task "A" :start 1 :end 3} {:task "B" :start 3 :end 8} {:task "C" :start 8 :end 10}]
-  :charts [(chart/rect {:mapping {:x0 :start :x1 :end :y0 :task :y1 :task} :fill [76 120 168] :band-width 0.8})]
+  :charts [(chart/rect {:mapping {:x0 :start :x1 :end :y0 :task :y1 :task} :fill [76 120 168] :width 0.8})]
   :scales {:y {:domain ["A" "B" "C"] :reverse true}}
   :labels {:x "start" :y "task"}}
  {:width 500 :height 200})
@@ -868,7 +868,7 @@ Source: [Vega-Lite - Diverging Stacked Bar Chart (with Neutral Parts)](https://v
 ```clojure
 (plot/render-image
  {:data survey
-  :charts [(chart/rect {:mapping {:x0 :x0 :x1 :x1 :y0 :question :y1 :question :color :answer} :band-width 0.8})]
+  :charts [(chart/rect {:mapping {:x0 :x0 :x1 :x1 :y0 :question :y1 :question :color :answer} :width 0.8})]
   :scales {:color {:domain survey-answers :range [[195 13 36] [243 165 131] [204 204 204] [148 198 218] [23 112 171]]
                    :title "Response"}
            :y {:domain (vec (distinct (map :question survey))) :reverse true}}
@@ -1753,7 +1753,7 @@ Source: [Vega-Lite - Bubble Plot (Gapminder)](https://vega.github.io/vega-lite/e
  {:data (nu/dataset :gapminder-health-income) :mapping {:x :income :y :health :size :population}
   :charts [(chart/scatter {:color [0 0 0 160]})]
   :scales {:x {:kind :log :minor-ticks 9} :size {:range [2 40] :area true :title "population"}}
-  :theme {:panel {:grid {:minor {:color [180 180 180] :width 0.5 :dash :none}}}}
+  :theme {:panel {:grid {:minor {:color [180 180 180] :line-width 0.5 :dash :none}}}}
   :labels {:x "income" :y "health"}}
  {:width 700 :height 450})
 ```
@@ -2076,8 +2076,8 @@ Source: [Vega-Lite - Multi Series Line Chart with Halo Stroke](https://vega.gith
    {:data stocks :mapping {:x :date :y :price :color :symbol}
     :charts (vec (for [symbol symbols
                        :let [rows (filterv #(= symbol (:symbol %)) stocks)]
-                       chart [(chart/line {:data rows :mapping {:color nil} :color :white :width 5})
-                              (chart/line {:data rows :width 2})]]
+                       chart [(chart/line {:data rows :mapping {:color nil} :color :white :line-width 5})
+                              (chart/line {:data rows :line-width 2})]]
                    chart))
     :scales {:color {:domain symbols}}
     :labels {:x "date" :y "price"}}
@@ -2206,7 +2206,7 @@ Source: Vega-Lite - Connected Scatterplot (Lines with Custom Paths) ([1](https:/
 ```clojure
 (plot/render-image
  {:data (sort-by :year (nu/dataset :driving)) :mapping {:x :miles :y :gas}
-  :charts [(chart/line {:sort false}) (chart/scatter {:shape \o :size 7 :color [76 120 168]})]
+  :charts [(chart/line {:order :data}) (chart/scatter {:shape \o :size 7 :color [76 120 168]})]
   :labels {:x "miles" :y "gas"}}
  {:width 600 :height 400})
 ```
@@ -2288,7 +2288,7 @@ Source: [Vega-Lite - A comet chart showing changes between two states](https://v
   (plot/render-image
    {:data (map #(assoc % :change (change [(:site %) (:variety %)])) (sort-by :year barley))
     :mapping {:x :year :y :variety :size :yield :color :change :group :variety :facet :site}
-    :charts [(chart/line {:trail true :sort false})]
+    :charts [(chart/line {:trail true :order :data})]
     :scales {:size {:range [0 12] :ticks [20 60] :title "Barley Yield (bushels/acre)"}
              :x {:domain [1930.6 1932.4] :nice false :ticks [1931 1932] :formatter #(str (m/round (double %)))}
              :color {:domain ["decrease" "increase"] :range [[202 0 32] [5 113 176]] :title "Yield Delta"}
@@ -2390,7 +2390,7 @@ Source: [Vega-Lite - Line Charts Showing Ranks Over Time](https://vega.github.io
                {:team team :matchday (str day) :rank (inc rank)})]
   (plot/render-image
    {:data ranked :mapping {:x :matchday :y :rank :color :team}
-    :charts [(chart/line {:width 2})]
+    :charts [(chart/line {:line-width 2})]
     :scales {:y {:domain [4.3 0.7] :ticks [1 2 3 4] :nice false}
              :x {:domain ["1" "2" "3"]}
              :color {:domain ["Germany" "Mexico" "South Korea" "Sweden"]
@@ -2606,7 +2606,7 @@ Source: Vega-Lite - Stacked Area Chart ([1](https://vega.github.io/vega-lite/exa
 ```clojure
 (plot/render-image
  {:data unemployment :mapping {:x :date :y :count :color :series}
-  :charts [(chart/line {:fill :color :position :stack :width 0})]
+  :charts [(chart/line {:fill :color :position :stack :line-width 0})]
   :scales {:color industry-colors}
   :labels {:x "date (year-month)" :y "Sum of count"}}
  {:width 800 :height 400})
@@ -2635,7 +2635,7 @@ Source: [Vega-Lite - Horizontal Stacked Area Chart](https://vega.github.io/vega-
           {:depth depth :proportion proportion :type kind})
   :mapping {:x :depth :y :proportion :color :type}
   :flip true
-  :charts [(chart/line {:fill :color :position :stack :width 0 :alpha 1.0})]
+  :charts [(chart/line {:fill :color :position :stack :line-width 0 :alpha 1.0})]
   :scales {:x {:reverse true :nice false} :color {:range [[166 118 29] [230 200 122]] :title "Soil type"}}
   :labels {:x "Depth (m)" :y "Proportion (%)"}}
  {:width 500 :height 400})
@@ -2660,7 +2660,7 @@ Source: [Vega-Lite - Normalized Stacked Area Chart](https://vega.github.io/vega-
 ```clojure
 (plot/render-image
  {:data unemployment :mapping {:x :date :y :count :color :series}
-  :charts [(chart/line {:fill :color :position :normalize :width 0})]
+  :charts [(chart/line {:fill :color :position :normalize :line-width 0})]
   :scales {:color industry-colors :y {:axis false}}
   :labels {:x "date (year-month)" :y nil}}
  {:width 800 :height 400})
@@ -2685,7 +2685,7 @@ Source: [Vega-Lite - Streamgraph](https://vega.github.io/vega-lite/examples/stac
 ```clojure
 (plot/render-image
  {:data unemployment :mapping {:x :date :y :count :color :series}
-  :charts [(chart/line {:fill :color :position :silhouette :width 0})]
+  :charts [(chart/line {:fill :color :position :silhouette :line-width 0})]
   :scales {:color industry-colors :y {:axis false}}
   :labels {:x "date (year-month)" :y nil}}
  {:width 800 :height 400})
@@ -2928,7 +2928,7 @@ Source: [Vega-Lite - Mosaic Chart with Labels](https://vega.github.io/vega-lite/
  {:data (for [[[origin cylinders] rows] (group-by (juxt :origin :cylinders) cars)]
           {:origin origin :cylinders (str cylinders) :n (count rows)})
   :mapping {:value :n :hierarchy [:origin :cylinders]}
-  :charts [(chart/treemap {:layout :slice-dice :padding 2})]}
+  :charts [(chart/treemap {:layout :slice-dice :gap 2})]}
  {:width 600 :height 450})
 ```
 :::
@@ -2962,7 +2962,7 @@ Source: Vega-Lite - Wind Vector Map ([1](https://vega.github.io/vega-lite/exampl
           {:x longitude :y latitude :xend (+ (double longitude) (* len (m/sin heading)))
            :yend (+ (double latitude) (* len (m/cos heading))) :dir dir})
   :mapping {:x :x :y :y :xend :xend :yend :yend :color :dir}
-  :charts [(chart/segment {:width 1.2 :arrow {:end true :size 2.5} :padding {:x [0.0 0.0] :y [0.0 0.0]}})]
+  :charts [(chart/segment {:line-width 1.2 :arrow {:end true :size 2.5} :padding {:x [0.0 0.0] :y [0.0 0.0]}})]
   :scales {:x {:nice false} :y {:nice false}
            :color {:domain [0 360] :range (mapv (c/gradient :pals/kovesi.cyclic_mrybm_35_75_c68) (m/slice-range 0 1 13))
                    :legend false}}
@@ -3315,9 +3315,9 @@ Source: [Vega-Lite - Waterfall Chart of Monthly Profit and Loss](https://vega.gi
 ```clojure
 (plot/render-image
  {:data waterfall
-  :charts [(chart/rect {:mapping {:x0 :label :x1 :label :y0 :previous :y1 :sum :color :kind} :band-width 0.8})
+  :charts [(chart/rect {:mapping {:x0 :label :x1 :label :y0 :previous :y1 :sum :color :kind} :width 0.8})
            (chart/segment {:data (butlast waterfall) :mapping {:x :label :y :sum :xend :next :yend :sum}
-                           :color [64 64 64] :width 2})
+                           :color [64 64 64] :line-width 2})
            (chart/text {:data (filter #(>= (long (:amount %)) 0) waterfall) :mapping {:x :label :y :sum :label :sum}
                         :anchor [:center :bottom] :offset [0 4]})
            (chart/text {:data (filter #(neg? (long (:amount %))) waterfall) :mapping {:x :label :y :sum :label :sum}
@@ -3560,7 +3560,7 @@ Source: [Vega-Lite - Layering Rolling Averages over Raw Values](https://vega.git
    {:data days :mapping {:x :date :y :temp-max}
     :charts [(chart/scatter {:shape \o :size 5 :color [76 120 168 80]})
              (chart/line {:data (->> (map #(assoc %1 :rolling %2) days rolling) (drop 15) (drop-last 15))
-                          :mapping {:y :rolling} :color :red :width 3})]
+                          :mapping {:y :rolling} :color :red :line-width 3})]
     :labels {:x "Date" :y "Max Temperature and Rolling Mean"}}
    {:width 800 :height 350}))
 ```
@@ -3624,7 +3624,7 @@ Source: [Vega-Lite - Line Chart to Show Benchmarking Results](https://vega.githu
               [i ms] (map-indexed vector times)]
           {:system system :trial (inc i) :fps (/ 1000.0 (double ms))})
   :mapping {:x :trial :y :fps :color :system}
-  :charts [(chart/line {:width 1})]
+  :charts [(chart/line {:line-width 1})]
   :scales {:y {:kind :log} :x {:nice false} :color {:title "System"}}
   :theme {:panel {:grid {:x :none :y :none}}}
   :labels {:x "Trial" :y "Frames Per Second (fps)"}}
@@ -3682,7 +3682,7 @@ Source: Vega-Lite - Linear Regression ([1](https://vega.github.io/vega-lite/exam
   (plot/render-image
    {:data rated :mapping {:x :rotten-tomatoes-rating :y :imdb-rating}
     :charts [(chart/scatter {:size 5 :color [76 120 168]})
-             (chart/smooth {:method :lm :band :none :color [178 34 34] :width 2})
+             (chart/smooth {:method :lm :band :none :color [178 34 34] :line-width 2})
              (chart/text {:x 100 :y 1.5 :text (format "R²: %.2f" r2) :anchor [:right :bottom] :color [178 34 34]})]
     :labels {:x "Rotten Tomatoes Rating" :y "IMDB Rating"}}
    {:width 600 :height 450}))
@@ -3709,7 +3709,7 @@ Source: Vega-Lite - Loess Regression ([1](https://vega.github.io/vega-lite/examp
  {:data (filter #(and (number? (:imdb-rating %)) (number? (:rotten-tomatoes-rating %))) movies)
   :mapping {:x :rotten-tomatoes-rating :y :imdb-rating}
   :charts [(chart/scatter {:size 5 :color [76 120 168]})
-           (chart/smooth {:band :none :method-params {:bandwidth 0.3} :color [178 34 34] :width 2})]
+           (chart/smooth {:band :none :method-params {:bandwidth 0.3} :color [178 34 34] :line-width 2})]
   :labels {:x "Rotten Tomatoes Rating" :y "IMDB Rating"}}
  {:width 600 :height 450})
 ```
@@ -3972,7 +3972,7 @@ Source: [Vega-Lite - Simple Bar Chart with Labels and Emojis](https://vega.githu
                  [["🍊" 21] ["🍇" 13] ["🍏" 8] ["🍌" 5] ["🍐" 3] ["🍋" 2] ["🍎" 1] ["🍉" 1]])]
   (plot/render-image
    {:data fruit
-    :charts [(chart/rect {:mapping {:x0 (constantly 0) :x1 :count :y0 :name :y1 :name :color :count} :band-width 0.9})
+    :charts [(chart/rect {:mapping {:x0 (constantly 0) :x1 :count :y0 :name :y1 :name :color :count} :width 0.9})
              (chart/text {:mapping {:x :count :y :name :label :count} :data (filter #(> (long (:count %)) 10) fruit)
                           :anchor [:right :middle] :offset [-4 0] :color :white})
              (chart/text {:mapping {:x :count :y :name :label :count} :data (remove #(> (long (:count %)) 10) fruit)
@@ -4007,7 +4007,7 @@ Source: [Vega-Lite - Bar Chart Highlighting Values beyond a Threshold](https://v
    {:data days :mapping {:x :day :y :value}
     :charts [(chart/bar {:stroke-color :none :alpha 1.0})
              (chart/rect {:data (filter #(>= (double (:value %)) 300.0) days)
-                          :mapping {:x0 :day :x1 :day :y0 (constantly 300) :y1 :value} :fill [228 87 85] :band-width 0.9})
+                          :mapping {:x0 :day :x1 :day :y0 (constantly 300) :y1 :value} :fill [228 87 85] :width 0.9})
              (chart/rule {:y 300 :color :black})
              (chart/text {:x [:panel 1.0] :y 300 :text "hazardous" :anchor [:right :bottom] :offset [-2 2]})]
     :scales {:x {:domain (mapv :day days)}}
@@ -4035,7 +4035,7 @@ Source: [Vega-Lite - Mean overlay over precipitation chart](https://vega.github.
 (plot/render-image
  {:data seattle-months :mapping {:x :month :y :precipitation}
   :charts [(chart/bar {:stat :mean})
-           (chart/rule {:y (stats/mean (map :precipitation seattle)) :color :red :width 3})]
+           (chart/rule {:y (stats/mean (map :precipitation seattle)) :color :red :line-width 3})]
   :scales {:x {:domain month-names}}
   :labels {:x "date (month)" :y "Mean of precipitation"}}
  {:width 600 :height 350})
@@ -4061,7 +4061,7 @@ Source: [Vega-Lite - Histogram with a Global Mean Overlay](https://vega.github.i
 (plot/render-image
  {:data imdb :mapping {:x :imdb-rating}
   :charts [(chart/histogram {:bins (vec (range 1 11)) :y :count})
-           (chart/rule {:x (stats/mean (map :imdb-rating imdb)) :color :red :width 5})]
+           (chart/rule {:x (stats/mean (map :imdb-rating imdb)) :color :red :line-width 5})]
   :labels {:x "IMDB Rating (binned)" :y "Count of Records"}}
  {:width 500 :height 350})
 ```
@@ -4254,7 +4254,7 @@ Source: [Vega-Lite - Ranged Dot Plot](https://vega.github.io/vega-lite/examples/
       rows (filter #(and (countries (:country %)) (#{1955 2000} (:year %))) (nu/dataset :countries-vega))]
   (plot/render-image
    {:data (map #(update % :year str) rows) :mapping {:x :life-expect :y :country}
-    :charts [(chart/line {:mapping {:group :country} :color [219 100 111] :sort false})
+    :charts [(chart/line {:mapping {:group :country} :color [219 100 111] :order :data})
              (chart/scatter {:mapping {:color :year} :size 9})]
     :scales {:y {:domain (vec (sort countries)) :reverse true}
              :color {:domain ["1955" "2000"] :range [[230 149 156] [145 26 36]] :title "Year"}}
@@ -4393,14 +4393,14 @@ Source: Vega-Lite - Wheat and Wages Example ([1](https://vega.github.io/vega-lit
       names (fn [low? y anchor dy]
               (chart/text {:data (filter #(= low? (:low? %)) monarchs) :mapping {:x :mid :y (constantly y) :label :name}
                            :size 9 :font-style :italic :anchor [:center anchor] :offset [0 dy] :background [255 255 255 170]
-                           :padding 1}))]
+                           :inset 1}))]
   (plot/render-image
    {:data wheat :mapping {:x :year :y :wages}
     :charts [(chart/rect {:mapping {:x0 :year :x1 #(+ 5 (long (:year %))) :y0 (constantly 0) :y1 :wheat}
                           :fill [170 170 170] :stroke-color [153 153 153] :stroke-width 1})
-             (chart/rule {:x [1600 1650 1700 1750 1800] :color [0 0 0 128] :width 0.6})
-             (chart/line {:fill [164 206 219 180] :color :black :alpha 0.7 :width 1})
-             (chart/line {:color [238 129 130] :width 1.5})
+             (chart/rule {:x [1600 1650 1700 1750 1800] :color [0 0 0 128] :line-width 0.6})
+             (chart/line {:fill [164 206 219 180] :color :black :alpha 0.7 :line-width 1})
+             (chart/line {:color [238 129 130] :line-width 1.5})
              (chart/rect {:data monarchs :mapping {:x0 :start :x1 :end :y0 :y0 :y1 :y1 :color :fill} :stroke-color :black})
              (names false 97 :bottom 2) (names true 93 :top -2)]
     :scales {:color {:domain ["crown" "commonwealth"] :range [:black :white] :legend false}
@@ -4630,7 +4630,7 @@ Source: [Vega-Lite - Trellis Area Plot Showing Annual Temperatures in Seattle](h
              {:date (.toLocalDate t) :hour (hour-label (.getHour t)) :temperature temperature})]
   (plot/render-image
    {:data rows :mapping {:x :date :y :temperature :facet-row :hour}
-    :charts [(chart/line {:fill [76 120 168 160] :color [76 120 168] :width 0.5})
+    :charts [(chart/line {:fill [76 120 168 160] :color [76 120 168] :line-width 0.5})
              (chart/text {:data (for [[hour rs] (group-by :hour rows)
                                       :let [ts (map :temperature rs)]]
                                   {:hour hour :date (reduce #(if (neg? (compare %1 %2)) %1 %2) (map :date rs))
@@ -4978,7 +4978,7 @@ Source: Vega-Lite - Interactive Legend ([1](https://vega.github.io/vega-lite/exa
                   industries (cycle (c/palette :category20b)))]
   (plot/render-image
    {:data unemployment :mapping {:x :date :y :count :color :series}
-    :charts [(chart/line {:fill :color :position :silhouette :width 0 :alpha 1.0})]
+    :charts [(chart/line {:fill :color :position :silhouette :line-width 0 :alpha 1.0})]
     :scales {:color {:domain industries :range (vec colors) :title "series"} :y {:axis false}}
     :labels {:x "date (year-month)" :y nil}}
    {:width 800 :height 400}))
@@ -5048,7 +5048,7 @@ Source: [Vega - Job voyager](https://vega.github.io/vega/examples/job-voyager/).
 ```clojure
 (plot/render-image
  {:data (nu/dataset :jobs) :mapping {:x :year :y :perc :color :sex :group :job}
-  :charts [(chart/line {:fill :color :position :stack :alpha 0.6 :color :white :width 0.2})]
+  :charts [(chart/line {:fill :color :position :stack :alpha 0.6 :color :white :line-width 0.2})]
   :scales {:color {:domain ["men" "women"] :range [[51 51 255] [255 51 51]] :title nil}
            :x {:formatter #(str (m/round (double %)))} :y {:formatter #(str (m/round (* 100.0 (double %))) "%")}}
   :labels {:x "year" :y "share of the labour force"}}
@@ -5177,7 +5177,7 @@ Source: [Vega - Contour plot](https://vega.github.io/vega/examples/contour-plot/
 (plot/render-image
  {:data (filter #(and (:horsepower %) (:miles-per-gallon %)) cars)
   :mapping {:x :horsepower :y :miles-per-gallon :color :origin}
-  :charts [(chart/scatter {:size 4}) (chart/contour {:levels 3 :width 1.5})]
+  :charts [(chart/scatter {:size 4}) (chart/contour {:levels 3 :line-width 1.5})]
   :scales {:color {:range (c/palette :category10)}}
   :labels {:x "Horsepower" :y "Miles_per_Gallon"}}
  {:width 600 :height 450})
@@ -5318,7 +5318,7 @@ Source: [Vega - Volcano contours](https://vega.github.io/vega/examples/volcano-c
 ```clojure
 (plot/render-image
  {:data (nu/dataset :volcano-vega) :mapping {:x :col :y :row :value :value}
-  :charts [(chart/contour {:fill true :levels (vec (range 90 200 10))})]
+  :charts [(chart/contour {:filled true :levels (vec (range 90 200 10))})]
   :scales {:y {:reverse true :axis false} :x {:axis false} :color {:range :viridis/viridis :title "height (m)"}}
   :aspect :iso
   :labels {:x nil :y nil}}
@@ -5444,7 +5444,7 @@ Source: [Vega - Treemap](https://vega.github.io/vega/examples/treemap/). Data: F
 ```clojure
 (plot/render-image
  {:data flare-leaves :mapping {:value :size :hierarchy flare-levels}
-  :charts [(chart/treemap {:padding 1})]}
+  :charts [(chart/treemap {:gap 1})]}
  {:width 1000 :height 700})
 ```
 :::
@@ -5467,7 +5467,7 @@ Source: [Vega - Circle packing](https://vega.github.io/vega/examples/circle-pack
 ```clojure
 (plot/render-image
  {:data flare-leaves :mapping {:value :size :hierarchy flare-levels}
-  :charts [(chart/pack {:padding 2})]}
+  :charts [(chart/pack {:gap 2})]}
  {:width 800 :height 800})
 ```
 :::
@@ -5819,7 +5819,7 @@ Source: [Vega - Packed bubble chart](https://vega.github.io/vega/examples/packed
  {:data (map (fn [k v] {:category (str k) :amount v}) "ABCDEFGHIJKLMNOP"
              [0.28 0.55 0.43 0.91 0.81 0.53 0.19 0.87 0.28 0.55 0.43 0.91 0.81 0.53 0.19 0.87])
   :mapping {:value :amount :hierarchy [:category] :color :category}
-  :charts [(chart/pack {:padding 3})]
+  :charts [(chart/pack {:gap 3})]
   :legend false}
  {:width 500 :height 500})
 ```
@@ -5854,9 +5854,9 @@ Source: [Vega - Budget forecasts](https://vega.github.io/vega/examples/budget-fo
   (plot/render-image
    {:data budgets :mapping {:x :forecast-year :y :value :group :budget-year}
     :charts [(chart/rule {:y 0 :color :black})
-             (chart/line {:color [170 170 170] :width 1})
+             (chart/line {:color [170 170 170] :line-width 1})
              (chart/line {:data (filter #(= (:forecast-year %) (dec (long (:budget-year %)))) budgets) :mapping {:group nil}
-                          :color :black :width 3})]
+                          :color :black :line-width 3})]
     :scales {:x {:formatter #(str (m/round (double %)))}}
     :labels {:x nil :y "Surplus / deficit (% of GDP)"}}
    {:width 800 :height 400}))
@@ -5925,7 +5925,7 @@ Source: [Vega - Flight passengers](https://vega.github.io/vega/examples/flight-p
               ["2020-01-01" 3764192 3560276] ["2020-02-01" 3620083 3192656] ["2020-03-01" 1824676 4111729]
               ["2020-04-01" 259153 4033516]])
   :mapping {:x :date :y :change}
-  :charts [(chart/rule {:y 0 :color [120 120 120]}) (chart/line {:color [70 130 180] :width 3})
+  :charts [(chart/rule {:y 0 :color [120 120 120]}) (chart/line {:color [70 130 180] :line-width 3})
            (chart/scatter {:color [70 130 180] :size 8})]
   :scales {:y {:formatter #(format "%+.0f%%" (* 100.0 (double %)))}
            :x {:formatter #(.format (DateTimeFormatter/ofPattern "MMM yyyy" Locale/ENGLISH) ^TemporalAccessor %)}}
@@ -5968,8 +5968,8 @@ Source: [Vega - Timelines](https://vega.github.io/vega/examples/timelines/).
     :charts [(chart/rule {:x (mapv second events) :color [136 136 136]})
              (chart/text {:x (mapv second events) :y [[:panel 1.0] [:panel 0.93] [:panel 1.0] [:panel 0.93]]
                           :text (mapv first events) :anchor [:left :top] :offset [3 -2] :size 10})
-             (chart/rect {:mapping {:x0 :born :x1 :died :y0 :label :y1 :label} :fill [85 85 119] :band-width 0.08})
-             (chart/rect {:mapping {:x0 :enter :x1 :leave :y0 :label :y1 :label} :fill [238 68 68] :band-width 0.25})
+             (chart/rect {:mapping {:x0 :born :x1 :died :y0 :label :y1 :label} :fill [85 85 119] :width 0.08})
+             (chart/rect {:mapping {:x0 :enter :x1 :leave :y0 :label :y1 :label} :fill [238 68 68] :width 0.25})
              (chart/text {:mapping {:x :born :y :label :label :label} :anchor [:left :bottom] :offset [0 6] :size 10})]
     :scales {:y {:domain (into [" "] names) :reverse true :axis false}}
     :labels {:x nil :y nil}}

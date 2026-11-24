@@ -126,7 +126,7 @@
   (testing "theme validation at build time"
     (are [t k] (= k (:key (error #(plot/build {:theme t}))))
       {:text {:title {:size 0}}} :size
-      {:text {:strip {:padding -2}}} :padding
+      {:text {:strip {:inset -2}}} :inset
       {:text {:legend-label {:align :left}}} :align
       {:text {:tick-label {:font "Liberaton Mono"}}} :font
       {:text {:extra 12}} :extra

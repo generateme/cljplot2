@@ -24,9 +24,8 @@
   over `:rotation` and `:radial`. `:anchor-frame` - `:box` (default: `:anchor` is a point of the rotated label's
   bounding box) or `:text` (a point of the unrotated text, the text turned about it - `[:left :middle]` starts every
   label at its position whatever its angle, as radial labels around a circle).
-  `:font`, `:size`, `:font-style`, `:color`, `:padding` (pixels around the text - unlike other charts' position
-  `:padding {:x [lo hi]}`), `:background` (a color, alpha allowed, filling the text plus padding - a label box, ggplot
-  `geom_label`; the legend key keeps the background with the theme's padding) - over the text role `[:text role]`
+  `:font`, `:size`, `:font-style`, `:color`, `:inset` (pixels between the text and its box edge), `:background` (a color, alpha allowed, filling the
+  text plus its inset - a label box, ggplot `geom_label`; the legend key keeps the background with the role's inset) - over the text role `[:text role]`
   of `:role` (default `:annotation`; the text chart's theme style; a theme `[:chart :text]` entry is rejected); `:extent`, `:data` /
   `:mapping`. Text stays upright when the plot is flipped; only the anchor position enters the extents.
   `:reserve-room true` keeps pixel room past the data on every side (`:padding-px` of x and y) for the labels at any
@@ -61,7 +60,7 @@
 
   Returns the rotation; `:radial` (polar only) counts as 0."
   [options]
-  (let [r (get options :rotation 0)] (if (number? r) r 0)))
+  (let [r (data/option options :rotation 0)] (if (number? r) r 0)))
 
 (defn- panel-position?
   "Tests whether a position is a panel position `[:panel f]`.
@@ -91,7 +90,7 @@
 
 (def ^:private style-keys
   "Text style keys the chart takes as options, over its text role."
-  [:font :size :font-style :color :padding :background])
+  [:font :size :font-style :color :inset :background])
 
 (defn- text-role
   "Gives the theme text role of the chart's labels.
@@ -102,7 +101,7 @@
 
   Returns `:role`, else `:annotation`."
   [options]
-  (get options :role :annotation))
+  (data/option options :role :annotation))
 
 (def schemas
   "Schemas of the text chart: `:options`, `:mapping` (merged); the style is the text role `[:text role]` of `:role` (default `:annotation`)."
@@ -244,7 +243,7 @@
              diagonal (v/mx (map (fn [t] (let [^Vec2 size (measure/natural-size (assoc spec :text (str t)) {:canvas c :theme theme})]
                                            (m/hypot (.x size) (.y size))))
                                  texts))
-             [dx dy] (:offset options [0 0])
+             [dx dy] (data/option options :offset [0 0])
              r (m/+ diagonal (m/max (m/abs (double dx)) (m/abs (double dy))))]
          {:x [r r] :y [r r]})))))
 
@@ -267,8 +266,8 @@
              sizes (map (fn [t] (measure/natural-size (assoc spec :text (str t)) {:canvas c :theme theme})) texts)
              w (v/mx (map (fn [^Vec2 size] (.x size)) sizes))
              h (v/mx (map (fn [^Vec2 size] (.y size)) sizes))
-             [ha va] (:anchor options [:center :middle])
-             [dx dy] (:offset options [0 0])
+             [ha va] (data/option options :anchor [:center :middle])
+             [dx dy] (data/option options :offset [0 0])
              x0 (m/- (double dx) (case ha :left 0.0 :center (m/* 0.5 w) :right w))
              y0 (m/- (double dy) (case va :bottom 0.0 :middle (m/* 0.5 h) :top h))
              horizontal [(m/max 0.0 (m/- x0)) (m/max 0.0 (m/+ x0 w))]
@@ -336,7 +335,8 @@
                                        (fn [gs]
                                          (let [groups (mapv (fn [g] {:labels (labels-of (:rows g)) :aesthetics (:aesthetics g)}) gs)
                                                ls (mapcat :labels groups)]
-                                           [{:groups groups :options placed-options} {:x (map :x ls) :y (map :y ls)}])))]
+                                           [{:groups groups :options placed-options} {:x (map :x ls) :y (map :y ls)}]))
+                                       {:x #(not (annotation/position? (x-of %))) :y #(not (annotation/position? (y-of %)))})]
       (-> (cond-> stats
             select (assoc :padding-px (label-room (distinct (map :text (mapcat :labels (mapcat :groups (vals (:data stats))))))
                                                   placed-options env)))
@@ -370,7 +370,7 @@
   [_chart {:keys [groups options]} canvas _box scales env]
   (let [geometry (scale/coord-geometry scales)
         radial? (and geometry (= :radial (:rotation options)))
-        [^double dx ^double dy] (get options :offset [0 0])
+        [^double dx ^double dy] (data/option options :offset [0 0])
         [hk vk] (if (scale/flipped? scales) [:y :x] [:x :y])
         h-pixel (annotation/axis-pixel-fn (get scales hk))
         v-pixel (annotation/axis-pixel-fn (get scales vk))
@@ -380,9 +380,9 @@
                   (let [^Vec2 p (coord/to-pixel geometry h v)]
                     [(m/+ (.x p) dx) (m/- (.y p) dy)
                      (if radial? (coord/radial-rotation h) (numeric-rotation options))
-                     (get options :anchor (if radial? (coord/outward-anchor h) [:center :middle]))]))
+                     (data/option options :anchor (if radial? (coord/outward-anchor h) [:center :middle]))]))
                 (let [rotation (numeric-rotation options)
-                      anchor (get options :anchor [:center :middle])]
+                      anchor (data/option options :anchor [:center :middle])]
                   (fn [^double h ^double v] [(m/+ h dx) (m/- v dy) rotation anchor])))]
     (doseq [{:keys [labels aesthetics]} groups
             :let [st (group/style (base-style options (:theme env)) aesthetics scales (:theme env))]
@@ -390,13 +390,13 @@
             {:keys [x y text angle]} labels
             :let [pos {:x x :y y}
                   [^double px ^double py placed-rotation anchor] (place (double (h-pixel (pos hk))) (double (v-pixel (pos vk))))
-                  rotation (if (and (number? angle) (m/valid-double? (double angle))) angle placed-rotation)]
+                  rotation (if (schema/finite? angle) angle placed-rotation)]
             :when (and (m/valid-double? px) (m/valid-double? py))]
       ((if (= :text (:anchor-frame options)) label/draw-at-frame! label/draw-at!)
        canvas (merge {:kind :label :role (text-role options) :text (str text) :rotation rotation} st) anchor px py env))))
 
 (defn legend
-  "Draws the key glyph: the letter `a` in the text style (the role's padding, so it fits the key), centred in the key box.
+  "Draws the key glyph: the letter `a` in the text style (the role's inset, so it fits the key), centred in the key box.
 
   Parameters:
 
@@ -406,6 +406,6 @@
   - `box` (map): the key box `:x`, `:y`, `:w`, `:h`.
   - `env` (map): the drawing environment (`:theme`)."
   [{:keys [options]} attributes canvas {:keys [^double x ^double y ^double w ^double h]} env]
-  (let [st (merge (dissoc (base-style options (:theme env)) :padding) (select-keys attributes [:color]))]
+  (let [st (merge (dissoc (base-style options (:theme env)) :inset) (select-keys attributes [:color]))]
     (label/draw-at! canvas (merge {:kind :label :role (text-role options) :text "a"} st) [:center :middle]
                     (m/+ x (m/* 0.5 w)) (m/+ y (m/* 0.5 h)) env)))

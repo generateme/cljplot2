@@ -70,7 +70,7 @@
                     :charts [(chart/scatter)]
                     :scales {:x {:kind :log :formatter :power :minor-ticks 9}
                              :y {:ticks [40 50 60 70 80] :formatter #(str % " y")}}
-                    :theme {:panel {:grid {:minor {:color [200 200 215] :width 0.5 :dash :none}}}}}
+                    :theme {:panel {:grid {:minor {:color [200 200 215] :line-width 0.5 :dash :none}}}}}
                    {:width 600 :height 350})
 
 ;; ## Order and direction

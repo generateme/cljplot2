@@ -10,9 +10,10 @@ functions (no DSL, no grammar of graphics). Pure JVM - it renders `BufferedImage
 The book (Clay + Quarto) is published from `docs/` at https://generateme.github.io/cljplot2/.
 
 Design history, specs and the roadmap live in the user's Obsidian vault: `~/notes/Topics/cljplot2/`
-(`01 Build Steps/Architecture Design.md`; `03 Use Case Notebooks/` - a folder per section or gallery, the roadmap with
-section status and backlog in `00 Frame and Roadmap/Roadmap - Use Case Notebooks.md`; `04 Reference/` - the reference
-part of the book). Read them when a decision's rationale is unclear.
+(`01 Build Steps/Architecture Design.md`; `02 Malli Validation/` - option schemas and validation; `03 Use Case
+Notebooks/` - a folder per section or gallery, the roadmap with section status and backlog in `00 Frame and
+Roadmap/Roadmap - Use Case Notebooks.md`; `04 Reference/` - the reference part of the book; `05 Code Review/` - code
+review rounds, their specs and implementation notes). Read them when a decision's rationale is unclear.
 
 ## Commands
 
@@ -38,9 +39,9 @@ images should stay byte-identical unless the change is meant to alter them.
 **Pipeline** (`cljplot2.pipeline`): a plot map passes through pure stages, each adding one key -
 `:split` (facet split per chart) → `:stats` (chart compute) → `:extents` → `:scale-specs` → `:grid` → `:layout` →
 `:finalized-scales` → `:subplots`; `cljplot2.render` draws the result. `build` first validates everything with malli
-(`pipeline/validate!`) in rounds - render options, plot and merged theme; then (when those hold) every chart's
-`:schema`; then the cross-key rules - each round throwing one `ex-info {:key :in :value :errors}` listing its errors;
-charts don't validate their own input.
+(`pipeline/validate!`) in two rounds: first the render options, the plot, the merged theme and - when the plot's keys
+hold - the theme's chart styles and every chart's `:schema`; then, when all of those hold, the rules across plot keys.
+Each round throws one `ex-info {:key :in :value :errors}` listing its errors.
 
 **Chart contract** (`cljplot2.chart` ns doc): a chart value is a plain map `{:kind :options :compute :draw :legend
 :schema}` with top-level functions, so built plots print and compare as data.
@@ -48,13 +49,16 @@ charts don't validate their own input.
   optional `:axis-titles`, `:scale-defaults`, `:padding-px` …); `draw` renders one panel's computed data.
 - Draw through `cljplot2.scale.position/projection` (or the coord helpers) - never assume `:x` is horizontal
   (`:flip`, polar `:coord`).
-- Optional keys: `:computed-aesthetics` (e.g. a computed colour), `:coords` (`#{:cartesian :polar}`),
-  `:inherit-mapping :facets` (annotation charts inherit only facet keys; data under `facet/all-panels` is drawn in
+- Optional keys: `:computed-aesthetics` (e.g. a computed colour), `:coords` (`#{:cartesian :polar}`; `#{:three-d}`
+  for 3D charts, which also have `:primitives` - their primitives of one panel, drawn by the panel in one scene, see
+  `cljplot2.content.space3d`), `:inherit-mapping :facets` (annotation charts inherit only facet keys; data under `facet/all-panels` is drawn in
   every panel).
-- Every built-in kind has a theme entry `[:chart kind]` checked against `chart/builtin-styles`. A chart draws with
+- Every built-in kind except `:text` has a theme entry `[:chart kind]` checked against `chart/builtin-styles`; text
+  charts take their style from text roles (`[:text :annotation]` ...), and `[:chart :text]` is rejected by the theme
+  schema. A chart draws with
   `(theme/resolved-style theme chart)` - its style keys are the entries of its `:schema` `:style` (extras a chart
   takes outside it are merged explicitly); a style key that isn't an option (theme only, e.g. cloud
-  `:projection-alpha`) is shown on the chart page with `describe/style-rows kind keys`. The theme style is
+  `:projection-alpha-factor`) is shown on the chart page with `describe/style-rows kind keys`. The theme style is
   `(theme/chart-style theme kind options)`: `[:chart kind]` with the named style of its `:theme-style` option
   (shared group `:theme-style`, every kind with a theme style) merged over it, its own style options over both.
   Named styles are partial `[:chart name]` entries; builders draw with registered ones (`theme/named-styles` - name
@@ -84,12 +88,77 @@ phase 1; legends are derived from them and each chart draws its key glyph via `:
 **Layout** is a track grid (`layout/grid`, `layout/plot-grid`) with a measure → solve → re-tick loop; a grid cell may
 hold a whole plot (`:arrange`, `plot/pairs`, `:margins`).
 
-**Source layout**: `chart/` (chart kinds), `data/` (rows, groups, facets, and row/layout functions such as
-`data.graph`, `data.tree`, `data.series`, `data.vector-field`), `scale/`, `layout/`, `content/` (panel, axis, legend,
-strip, label), `graphics/` (fonts, polylines, shapes, measuring), `cache.clj` (bounded caches). Builders (`graphs.clj`, `series_plots.clj`,
-`multiplot.clj`) turn layout rows into ordinary plot maps; their `:scales` option is deep-merged (`theme/deep-merge`)
-into the builder's. `cljplot2.core` is the public API (`build`, `render`, `render-image`, `cvd-image`, `save`, `find-palette`,
-`find-gradient`, `palette`, `gradient` - the last five calls to clojure2d - and the builders).
+**Source layout**: `chart/` (chart kinds; `chart.common` - schema pieces several charts share, `chart.legend` - shared key glyphs, `chart.strip` - the strip
+chart contract, placement and end labels, `chart.statistic-cell` - correlation / pairwise cells), `data/` (rows, groups, facets,
+levels, the strip frame, and row/layout functions such as `data.graph`, `data.tree`, `data.series`,
+`data.vector-field`, `data.pairwise`), `scale/` (position and aesthetic scales, coords), `graphics/` (fonts, shapes,
+polylines, curves, patterns, cells, measuring), `content/` (panel, axis, legend, strip, label, subplot, the 3D frame),
+`layout/` (grid, plot grid, alignment, pack, treemap, venn), `cache.clj` (bounded caches), `error.clj`, `schema.clj`,
+`theme.clj`, `pipeline.clj`, `render.clj`, `describe.clj` (option rows for the book). Builders (`graphs.clj`,
+`series_plots.clj`, `multiplot.clj`) turn layout rows into ordinary plot maps; their `:scales` option is deep-merged
+(`theme/deep-merge`) into the builder's. `cljplot2.core` is the public API (`build`, `render`, `render-image`,
+`cvd-image`, `save`, `find-palette`, `find-gradient`, `palette`, `gradient` - the last five calls to clojure2d - and the
+builders).
+
+**Layers** (`layering-test` reads every `ns` form): a namespace requires only its own layer or lower ones, bottom up -
+leaves (`error`, `cache`, `data.accessor`, `graphics.font`, `graphics.shape`: they require no other layer; `schema`
+needs fonts and shapes as option types, `scale.aesthetic` the shape test) → `schema` → `data`, `scale` → `theme` →
+`graphics` → `content` → `layout` → `chart` (`cljplot2.chart` and `chart.*`) → `pipeline`, `render` → builders
+(`multiplot`, `graphs`, `series-plots`) → `core`, `describe`. `data/` and `scale/` never draw: they require neither
+`clojure2d.core` nor a `graphics` namespace other than the leaves (tested). A chart namespace never requires another
+chart namespace except `chart.common` (schema pieces two charts share), `chart.legend` (shared key glyphs),
+`chart.strip` (the strip chart contract) and `chart.statistic-cell`; anything general goes lower (statistics to
+`data`, geometry to `graphics`, drawing of a frame to `content`).
+
+**Glossary** (option names; `vocabulary-test` checks every `describe` row of charts, builders, API functions and
+the theme: banned names, and one type family per name across all owners). One name per concept, one meaning per name:
+- `:line-width` - a line mark's stroke in pixels (line, density, ecdf, function, smooth, segment, rule, contour,
+  parallel, candlestick wicks, `[:bridge ...]`, theme grid and axis lines); a named sub-part keeps `<part>-width`
+  (`:zero-line-width`, `:marker-width`, `:tick-width`) - always pixels; a sub-part's fraction is `<part>-fraction`
+  (bullet `:measure-fraction`).
+- `:stroke-color` / `:stroke-width` - the outline of a filled mark (width 0 - no outline); layout boxes (theme
+  `:panel`, `:legend`, `:strip`) keep `:border-color` / `:border-width`.
+- `:width` - a band fraction across the level axis (strips, rect, candlestick bodies); never pixels in a chart.
+- `:alpha` - an absolute opacity; a factor multiplying the colours' own alpha is `:alpha-factor` (bin2d, contour,
+  field, tile, `[:bridge ...]`); a confidence is `:level` (smooth, acf: 0.95).
+- `:fill` - a colour (`:color` = the mark's colour at `:alpha`, `:none`); flags and accessors get other names
+  (contour `:filled`, alluvial `:strand-color`).
+- `:padding` - span fractions `{dim [lo hi]}` only; pixels between marks are `:gap` (pack, treemap, theme), inside a
+  label box `:inset` (text roles, the text chart).
+- `:gap` - a gap: a fraction (sankey, alluvial, waffle) or pixels (pack, treemap, theme, line / segment `:start-gap`
+  `:end-gap`); chord's gap in degrees is `:gap-angle`.
+- `:n` - a count of samples, points or intervals (pp/qq, density, smooth, violin, shingle) or grid points per axis
+  of a sampled field (contour, field, surface, arrows); `:bins` - binning (histogram, bin2d, cloud). Option values
+  keep their own keys (`:sample-step {:count n}`).
+- `:order` (an enum or ids) + `:descending` (a boolean) - ordering; never `:sort`, `:order-direction`, `:node-sort`.
+- `:value-format`, `:n-format` - a chart's format string (checked at build: `schema/number-format`,
+  `schema/count-format`) or function of the value; scales take `:formatter`.
+- `:inner-radius` - a radius fraction (chord, sequences; violin `:inner` names its inner marks); `:variables` - the
+  accessors of wide rows' variables (parallel, alluvial, pairs), their display names `:variable-names`; `:columns` -
+  a count of grid columns (arrange, facets, waffle); `:axes` - a 3D or parallel flag; `:cell-shape` - a waffle cell's
+  shape (`:shape` is a point shape); `:length-scale` - the arrows' length factor (`:scale` is violin's width mode).
+- `:as` - the output key of a data function; booleans never end in `?`; one flag one key; label toggles are named
+  after what they label (`:labels`, `:group-labels`, `:n-label`, `:value-label`).
+- `:none` always means draw nothing (also an empty `pairs` slot); automatic black-or-white contrast is `:contrast`;
+  `nil` means the default. The one exception: `sequence-levels :end nil` - no end marker.
+
+**Contracts**:
+- `:dropped` (chart compute): one key per mapped dimension, each row counted once, plus only `:group`, `:field`,
+  `:duplicate`, `:value`, `:set`, `:variables` (the `cljplot2.chart` ns doc); data functions outside charts report a
+  plain count.
+- Checks: option shapes and conflicts between options are schemas - closed maps, `schema/with-rules` for relations
+  between keys - so `build` reports them before any stage runs; compute checks only what depends on the data, the
+  theme or the plot (`fail!` there). Every data chart calls `rows/check-mapped!` (all-invalid mapped data throws
+  `{:key :mapping}`); ecdf, density, histogram and probability check by counting rows; annotation charts (rule,
+  text, rect) draw what they can. Dropped rows are counted in `:dropped`.
+- Errors about the mapping have one shape: `{:key :mapping :in [:mapping k] :value v}` (strip charts name the user's
+  dimension, not the strip frame's); other error keys name an option, never a pipeline stage.
+- Options: `nil` means the default (read with `data/option` / `data/options-with-defaults`; `:or` only for keys their
+  schema doesn't let be `nil`). Builders and API functions whose options have no required key take the options map
+  optionally; the parameter is `options`, rows are `rows`.
+- Kept on purpose: scatter, cloud and tile keep rows in data order (no `group/split`: it reorders by group, changing
+  overplotting); the colour bar widens a single value to `[v, v + 1]` (its ticks), other ranges by
+  `rows/widened-range`.
 
 ## Notebooks, demos, data
 
@@ -207,6 +276,28 @@ into the builder's. `cljplot2.core` is the public API (`build`, `render`, `rende
 - Style defaults (colours, sizes, label boxes) belong to the theme, never private vars or inline literals in
   builders or charts. Exceptions: defaults already exposed as options (`:edge-color`, acf / horizon `:colors`, the
   alphas), scale defaults (`node-size-range`, `arc-width-range`), layout geometry and the debug palette.
+
+### General rules (from the design notes)
+
+- Theme values: `nil` - inherit / the computed default, `:none` - nothing drawn, `:contrast` - black or white by the
+  fill, `:stretch` - the space left (colour bar length). Option and theme maps are closed; open are only value maps
+  users extend (shape maps, pattern maps, dash arrays).
+- Orientation comes from the mapping: strip charts put their levels on the categorical mapping axis (`:level-axis`
+  wins); `:flip` and polar coords are drawing concerns only - charts compute in their own `:x` / `:y` frame.
+- Polar shapes that follow the circle are built in range space and turned into pixels by `cljplot2.scale.coord`.
+- 3D charts (`:coords #{:three-d}`) draw only with other 3D charts; several of them need explicit `:domain`s; their
+  primitives are drawn far to near in one scene per panel.
+- Point functions (projections, placements) take and give `Vec2`.
+- Randomness: a chart's `:rng` option goes through `rng/for-build`, and random values are drawn in compute, so every
+  render of one build draws the same image.
+- A `nil` facet value is a real level (the NA panel, last; `:facets {:na-panel false}` drops it).
+- `case` matches boxed values by `=`: a double never matches a long literal - coerce first; compare numbers across
+  types with `m/==`, not `=` or set membership (`(contains? #{1} 1.0)` is false).
+- Padding: a chart's `:padding` are fractions of the span, `:padding-explicit` its requests (see
+  `data/padding-stats`); an extent with `:companion? true` counts only beside another chart's extents.
+- Datasets: every file in `notebooks/data/` has an entry in `datasets.edn` (source, licence, via); scripts that make
+  data are the only scripts kept in the repo; every book example drawn from an outside source credits it with
+  `nu/source-note` (`:url`).
 
 ## Related repositories
 

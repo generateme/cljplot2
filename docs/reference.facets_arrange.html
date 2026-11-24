@@ -1381,27 +1381,27 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </tr>
 <tr class="odd">
 <td>:lower</td>
-<td>a chart or a vector of charts or nil</td>
+<td>:none, a chart or a vector of charts or nil or nil</td>
 <td>(chart/scatter)</td>
-<td>charts below the diagonal; nil - empty cells</td>
+<td>charts below the diagonal; :none - empty cells</td>
 <td></td>
 </tr>
 <tr class="even">
 <td>:upper</td>
-<td>a chart or a vector of charts or nil</td>
+<td>:none, a chart or a vector of charts or nil or nil</td>
 <td>(chart/correlation {:glyph :number})</td>
-<td>charts above the diagonal; nil - empty cells</td>
+<td>charts above the diagonal; :none - empty cells</td>
 <td></td>
 </tr>
 <tr class="odd">
 <td>:diagonal</td>
-<td>:names, a chart or a vector of charts or nil</td>
+<td>:names, :none, a chart or a vector of charts or nil or nil</td>
 <td>(chart/density)</td>
-<td>charts of the diagonal cells (in their own magnitude scale); :names - the variable's name (text role :pairs-name); nil - empty cells</td>
+<td>charts of the diagonal cells (in their own magnitude scale); :names - the variable's name (text role :pairs-name); :none - empty cells</td>
 <td></td>
 </tr>
 <tr class="even">
-<td>:labels</td>
+<td>:variable-names</td>
 <td>map of keyword to string or nil</td>
 <td>the variable's name</td>
 <td>display names of the variables, {variable text}</td>

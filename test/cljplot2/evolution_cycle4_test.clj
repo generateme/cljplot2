@@ -145,7 +145,7 @@
       (let [s (stats {:data rows :mapping {:x :x :y :y :color :y} :charts [(chart/segment {:yend 0})]} 0)]
         (is (= [0 1 2 3 4 5] (get-in s [:data facet/single-panel :segments 0 :colors]))))
       (is (instance? BufferedImage (plot/render-image {:data rows :mapping {:x :x :y :y :color :y}
-                                                       :charts [(chart/segment {:yend 0 :width 4})]} size)))))
+                                                       :charts [(chart/segment {:yend 0 :line-width 4})]} size)))))
   (testing "3.7 flipped and temporal stems render; no valid values"
     (is (instance? BufferedImage (plot/render-image {:data stems :flip true :mapping {:x :x :y :y} :charts [(chart/segment {:yend 0})]} size)))
     (is (instance? BufferedImage (plot/render-image {:data series :mapping {:x :d :y :v} :charts [(chart/segment {:yend 0})]} size)))
@@ -177,7 +177,7 @@
       (is (pos? (pixels-of img [26 152 80])))
       (is (pos? (pixels-of img [215 48 39])))))
   (testing "4.3 body width: a fraction of the x step"
-    (let [count-up (fn [w] (pixels-of (plot/render-image (candle-plot {:body-width w}) size) [26 152 80]))]
+    (let [count-up (fn [w] (pixels-of (plot/render-image (candle-plot {:width w}) size) [26 152 80]))]
       (is (< (* 1.5 (double (count-up 0.3))) (double (count-up 0.9))))))
   (testing "4.3 a single candle: 10 px; bands x"
     (is (instance? BufferedImage (plot/render-image (candle-plot {} {:data [(assoc (first ohlc) :d 1)]}) size)))
@@ -192,7 +192,7 @@
       (is (< (* 3 (pixels-of bars [26 152 80])) (pixels-of candle [26 152 80])) "no filled bodies"))
     (is (pos? (pixels-of (plot/render-image (candle-plot {:stroke-color [0 0 0]}) size) [0 0 0])))
     (is (= :style (:key (error #(build (candle-plot {:style :bars}))))))
-    (is (= :body-width (:key (error #(build (candle-plot {:body-width 1.5}))))))))
+    (is (= :width (:key (error #(build (candle-plot {:width 1.5}))))))))
 
 ;; 5. rank helper
 
@@ -203,7 +203,7 @@
       (is (= [3 1 2 4] (map :rank (levels/rank-rows rows :x :v {:ties :first}))))
       (is (= [3.0 1.5 1.5 4.0] (map :rank (levels/rank-rows rows :x :v {:ties :average}))))
       (is (= [2 3 3 1] (map :rank (levels/rank-rows rows :x :v {:descending false}))))
-      (is (= [3 1 1 4] (map :place (levels/rank-rows rows :x :v {:key :place}))))
+      (is (= [3 1 1 4] (map :place (levels/rank-rows rows :x :v {:as :place}))))
       (is (= :ties (:key (error #(levels/rank-rows rows :x :v {:ties :nope})))))))
   (testing "5.1 ranks within each x; 5.3 invalid values unranked; columns"
     (is (= [1 2 2 1 nil nil] (map :rank (levels/rank-rows [{:x 1 :v 3} {:x 1 :v 1} {:x 2 :v 1} {:x 2 :v 4} {:x 2 :v nil} {:x 3 :v ##NaN}] :x :v))))
@@ -229,7 +229,7 @@
     (let [rows [{:x 0 :y 5} {:x 1 :y 3} {:x 2 :y 3} {:x 3 :y 3} {:x 4 :y 1}]
           img (fn [opts] (plot/render-image {:data rows :mapping {:x :x :y :y} :theme white
                                              :scales {:x {:domain [0 4]} :y {:domain [0 6]}}
-                                             :charts [(chart/line (merge {:width 3 :color [0 0 255]} opts))]} size))
+                                             :charts [(chart/line (merge {:line-width 3 :color [0 0 255]} opts))]} size))
           curved (img {:interpolator :monotone})
           straight (img {})
           panel-x (fn [v] (+ 29 (* v 90)))
@@ -280,7 +280,7 @@
     (let [rows (mapv (fn [i] {:x i :y (inc i) :v (double i)}) (range 6))
           img (plot/render-image {:data rows :mapping {:x :x :y :y :color :v} :theme white
                                   :scales {:color {:kind :linear :range [[255 0 0] [0 0 255]]}}
-                                  :charts [(chart/segment {:yend 0 :width 4})]} size)]
+                                  :charts [(chart/segment {:yend 0 :line-width 4})]} size)]
       (is (pos? (pixels-of img [255 0 0])) "lowest value red")
       (is (pos? (pixels-of img [0 0 255])) "highest value blue"))))
 

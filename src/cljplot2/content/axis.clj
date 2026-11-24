@@ -33,8 +33,8 @@
   labels (the next panel keeps its own): those of the next panel's own scale with `:next-panel k` (panel-local scales;
   `k` may be `nil`, the NA facet level - see [[crossing-labels]]), else its identical axis.
 
-  Functions: [[label-spans]], [[label-step]], [[crossing-labels]], [[drawn-label-indices]]; schemas [[axis-schema]],
-  [[overhang-schema]]; methods of [[cljplot2.graphics.measure/validate-content]],
+  Functions: [[label-spans]], [[label-step]], [[crossing-labels]], [[drawn-label-indices]]; schemas,
+ ; methods of [[cljplot2.graphics.measure/validate-content]],
   [[cljplot2.graphics.measure/natural-size]] and [[cljplot2.graphics.draw/draw-content]] for `:axis` and
   `:axis-overhang`."
   (:require [clojure2d.core :as c2d]
@@ -51,7 +51,7 @@
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
-(def axis-schema
+(def ^:private axis-schema
   "Schema of `{:kind :axis}` content: `:scale` `:x` or `:y`; optional `:next-panel-gap` - pixels to the next panel's
   axis (facet columns or rows): labels overlapping that axis's labels aren't drawn; optional `:margin` (`:top`,
   `:right`), `:panel`, `:next-panel` (see the namespace doc)."
@@ -73,7 +73,7 @@
   (some-> (if margin (get-in env [:margins margin :scales k]) (get (scale/panel-scales-of env content) k))
           scale/display-scale))
 
-(def overhang-schema
+(def ^:private overhang-schema
   "Schema of `{:kind :axis-overhang}` content: `:scale` `:x` or `:y`, `:end` `:start` or `:end`; optional `:margin`
   and `:panel` as the axis's."
   [:map [:scale [:enum :x :y]] [:end [:enum :start :end]] (schema/optional :margin [:enum :top :right])
@@ -184,16 +184,16 @@
                   (if (m/pos? sine) (m/min along (m// frame-h sine)) along)))
               (:tick-labels finalized) sizes)))))
 
-(defn- label-padding
-  "Gives the padding of tick labels.
+(defn- label-inset
+  "Gives the inset of tick labels (their text role's `:inset`).
 
   Parameters:
 
   - `env` (map): `:theme`, the tick label text role read.
 
-  Returns the padding in pixels on every side."
+  Returns the inset in pixels on every side."
   [env]
-  (:padding (theme/text-style (:theme env) (tick-label nil))))
+  (:inset (theme/text-style (:theme env) (tick-label nil))))
 
 (defn- label-intervals
   "Gives the intervals of an axis's tick labels along the axis.
@@ -203,21 +203,21 @@
   - `k` (keyword): the scale key.
   - `finalized` (map): the finalized scale.
   - `sizes` (sequence of `Vec2`): the labels' natural sizes.
-  - `padding` (number): the labels' padding (pixels on every side).
+  - `inset` (number): the labels' inset (pixels on every side).
   - `offsets` (sequence of doubles): the labels' offsets from their ticks (see [[label-offsets]]); `nil` - none.
   - `spans` (sequence of doubles): the labels' lengths along the axis (see [[label-spans]]); `nil` - the sizes along
     the axis.
 
   Returns `[centres extents]`, vectors (indexed): a centre is the tick position moved by its offset, an extent the
-  label's text block length (span or size, without the padding on both sides)."
-  [k finalized sizes padding offsets spans]
+  label's text block length (span or size, without the inset on both sides)."
+  [k finalized sizes inset offsets spans]
   (let [forward (scale/forward-fn finalized)
-        inset (m/* 2.0 (double padding))
+        inset2 (m/* 2.0 (double inset))
         horizontal? (scale/horizontal? k finalized)]
     [(mapv (fn [tick off] (m/+ (double (forward tick)) (double off))) (:ticks finalized) (or offsets (repeat 0.0)))
      (if spans
-       (mapv #(m/- (double %) inset) spans)
-       (mapv (fn [^Vec2 size] (m/- (if horizontal? (.x size) (.y size)) inset)) sizes))]))
+       (mapv #(m/- (double %) inset2) spans)
+       (mapv (fn [^Vec2 size] (m/- (if horizontal? (.x size) (.y size)) inset2)) sizes))]))
 
 (defn label-step
   "Gives the step between the drawn tick labels of a bands axis.
@@ -229,19 +229,19 @@
   - `k` (keyword): the scale key.
   - `finalized` (map): the finalized scale.
   - `sizes` (sequence of `Vec2`): the labels' natural sizes.
-  - `padding` (number): the labels' padding.
+  - `inset` (number): the labels' inset.
   - `offsets`, `spans`: as [[label-intervals]] (default `nil`).
 
   Returns 1 unless `finalized` is a bands scale with at least 2 labels; then the smallest `s` such that labels
   `0, s, 2s, ...` don't overlap along the axis - at most the label count (only the first label drawn).
 
   See also [[drawn-label-indices]]."
-  ([k finalized sizes padding] (label-step k finalized sizes padding nil nil))
-  ([k finalized sizes padding offsets spans]
+  ([k finalized sizes inset] (label-step k finalized sizes inset nil nil))
+  ([k finalized sizes inset offsets spans]
    (let [n (count sizes)]
      (if (or (not= :bands (:kind finalized)) (m/< n 2))
        1
-       (let [[centres extents] (label-intervals k finalized sizes padding offsets spans)
+       (let [[centres extents] (label-intervals k finalized sizes inset offsets spans)
              fits? (fn [^long step]
                      (every? (fn [^long i] (let [j (m/long-add i step)]
                                              (not (measure/spans-overlap? (centres i) (extents i) (centres j) (extents j)))))
@@ -276,19 +276,19 @@
 
   - `k` (keyword): the scale key.
   - `finalized` (map): the finalized scale.
-  - `sizes`, `padding`, `offsets`, `spans`: as [[label-intervals]].
+  - `sizes`, `inset`, `offsets`, `spans`: as [[label-intervals]].
 
   Returns a vector of indices: all with `:overlapping-labels :keep` (axes naming data items); a bands scale every
   [[label-step]]-th label from the first; other scales the labels kept by
   [[cljplot2.graphics.measure/kept-label-indices]] (the first, then each not overlapping the last drawn one). Empty
   for no labels."
-  [k finalized sizes padding offsets spans]
+  [k finalized sizes inset offsets spans]
   (cond
     (= :keep (:overlapping-labels finalized)) (vec (range (count sizes)))
     (= :bands (:kind finalized))
-    (let [step (long (label-step k finalized sizes padding offsets spans))]
+    (let [step (long (label-step k finalized sizes inset offsets spans))]
       (filterv #(m/zero? (m/long-mod (long %) step)) (range (count sizes))))
-    :else (let [[centres extents] (label-intervals k finalized sizes padding offsets spans)]
+    :else (let [[centres extents] (label-intervals k finalized sizes inset offsets spans)]
             (measure/kept-label-indices centres extents))))
 
 (defn- drawn-labels
@@ -305,9 +305,9 @@
   (let [sizes (label-sizes k finalized env)
         offsets (label-offsets k finalized env)
         spans (label-spans k finalized env sizes)
-        padding (label-padding env)]
-    [(label-intervals k finalized sizes padding offsets spans)
-     (drawn-label-indices k finalized sizes padding offsets spans)]))
+        inset (label-inset env)]
+    [(label-intervals k finalized sizes inset offsets spans)
+     (drawn-label-indices k finalized sizes inset offsets spans)]))
 
 (defn- tick-room
   "Gives the pixels an axis's ticks take across it.
@@ -330,7 +330,7 @@
         room (when finalized (tick-room finalized style))
         all-sizes (when finalized (label-sizes k finalized env))
         drawn (when finalized
-                (set (drawn-label-indices k finalized all-sizes (label-padding env) (label-offsets k finalized env)
+                (set (drawn-label-indices k finalized all-sizes (label-inset env) (label-offsets k finalized env)
                                           (label-spans k finalized env all-sizes))))
         sizes (keep-indexed (fn [i size] (when (contains? drawn i) size)) all-sizes)
         ^Vec2 largest (measure/max-size sizes)
@@ -377,22 +377,10 @@
   - `color`: the line colour.
   - `width` (number): the stroke width in pixels.
 
-  Returns the canvas. See also [[draws?]]."
+  Returns the canvas. See also [[cljplot2.graphics.draw/visible-stroke?]]."
   [c color width]
   (c2d/set-color c color)
   (c2d/set-stroke-custom c {:size width :cap :butt}))
-
-(defn- draws?
-  "Tests whether an axis line or its ticks draw.
-
-  Parameters:
-
-  - `color`: the line colour.
-  - `width` (number): the stroke width in pixels.
-
-  Returns true for a colour other than `:none` and a positive width, else false."
-  [color width]
-  (and (not (theme/none? color)) (m/pos? (double width))))
 
 (defmethod draw/draw-content :axis
   [{k :scale :as content} c {:keys [^double x ^double y ^double w ^double h]} env]
@@ -414,11 +402,11 @@
           sizes (label-sizes k finalized measure-env)
           offsets (label-offsets k finalized measure-env)
           spans (label-spans k finalized measure-env sizes)
-          drawn (drawn-label-indices k finalized sizes (label-padding measure-env) offsets spans)
+          drawn (drawn-label-indices k finalized sizes (label-inset measure-env) offsets spans)
           drawn-set (set drawn)
           next-gap (:next-panel-gap content)
           skipped (if next-gap
-                    (let [own (label-intervals k finalized sizes (label-padding measure-env) offsets spans)
+                    (let [own (label-intervals k finalized sizes (label-inset measure-env) offsets spans)
                           next-finalized (when (contains? content :next-panel)
                                            (some-> (get (scale/panel-scales-of measure-env {:panel (:next-panel content)}) k)
                                                    scale/display-scale))
@@ -427,12 +415,12 @@
                     #{})
           draw-label! (fn [text box] (c2d/with-isolated-canvas [isolated c]
                                        (draw/draw-content (tick-label text rotation) isolated box measure-env)))]
-      (when (draws? line-color line-width)
+      (when (draw/visible-stroke? line-color line-width)
         (set-line-style! c line-color line-width)
         (if horizontal?
           (c2d/line c x line-y right line-y)
           (c2d/line c line-x y line-x (m/+ y h))))
-      (when (draws? tick-color tick-width)
+      (when (draw/visible-stroke? tick-color tick-width)
         (set-line-style! c tick-color tick-width)
         (doseq [^double position positions
                 :let [p (draw/pixel-center position)]]

@@ -26,6 +26,7 @@
 
   Facet mapping keys (`:facet`, `:facet-col`, `:facet-row`) split rows into panels, see [[cljplot2.data.facet]]. Aesthetic mapping keys (`:color`, `:shape`, `:size`, `:dash`, `:pattern`) style marks, see [[cljplot2.scale.aesthetic]]; `:group` splits rows into groups for charts drawing one mark per group, see [[cljplot2.data.group]]."
   (:require [fastmath.core :as m]
+            [fastmath.vector :as v]
             [cljplot2.chart :as chart]
             [cljplot2.schema :as schema]
             [cljplot2.scale.aesthetic :as aesthetic]
@@ -180,7 +181,7 @@
            (map? m) (update m :charts #(if (chart/chart-value? %) [%] (vec %)))
            :else {:charts (vec m)})))
 
-(defn plot-margins
+(defn- plot-margins
   "The plot's margins in their normal form.
 
   Parameters:
@@ -293,7 +294,7 @@
   Returns `plot` with `:stats` (one computed map per chart, see [[cljplot2.chart]]) and `:margin-stats`."
   [{:keys [charts split theme groups scales flip facets options aspect] :as plot}]
   (let [facet-dims (get-in split [:facets :dims])
-        env {:theme theme :na-level? (get groups :na true) :plot-scales scales :flip? (boolean flip)
+        env {:theme theme :na-level? (get groups :na true) :plot-scales scales :flip? (true? flip)
              :hint (:hint options) :coord (:coord plot) :aspect aspect
              ;; measured on demand only (text measuring): charts needing the panel's shape before the layout
              :panel-size (delay (plot-grid/estimated-panel-size plot (legend/provisional-legends plot (:charts split))
@@ -315,7 +316,7 @@
   [stats]
   (into {} (keep (fn [k]
                    (let [extent (data/merge-extents k (mapcat #(keep (fn [e] (get e k)) (vals (:extents %))) stats))
-                         na? (boolean (some #(contains? (:na %) k) stats))]
+                         na? (true? (some #(contains? (:na %) k) stats))]
                      (when (or extent na?) [k {:extent extent :na? na?}]))))
         aesthetic/dims))
 
@@ -538,22 +539,19 @@
 
   Throws `ex-info` with `{:key :facets}` for categorical, date or time data (only numeric data can be sliced)."
   [plot k user-spec shared shared-extent group-keysets]
-  (when (= :bands (:kind shared))
-    (schema/fail! (str "A :sliced " k " scale needs numeric data, not categorical levels.")
-                  {:key :facets :in [:facets :scales k] :value :sliced}))
   (let [stats (:stats plot)
         log? (= :log (:kind shared))
         to (if log? m/log10 double)
         from (if log? m/exp10 double)
         extents (map #(:extent (position-extent (group-stats stats %) k)) group-keysets)
-        _ (when (some #(and % (not= :numeric (:kind %))) extents)
-            (schema/fail! (str "A :sliced " k " scale needs numeric data (not dates or times).")
+        _ (when (or (= :bands (:kind shared)) (some #(and % (not= :numeric (:kind %))) extents))
+            (schema/fail! (str "A :sliced " k " scale needs numeric data (not categorical levels, dates or times).")
                           {:key :facets :in [:facets :scales k] :value :sliced}))
         width (fn [e] (if e (m/- (double (to (:max e))) (double (to (:min e)))) 0.0))
         ;; every panel a single value: the span of all panels' data (0 when that is one value too - then widened)
         slice-span (let [widest (double (reduce m/max 0.0 (map width extents)))]
                      (if (m/pos? widest) widest (double (width (:extent shared-extent)))))
-        spec (cond-> user-spec (not (contains? user-spec :nice)) (assoc :nice false))]
+        spec (cond-> user-spec (nil? (:nice user-spec)) (assoc :nice false))]
     (map (fn [extent]
            (if (nil? extent)
              shared
@@ -740,7 +738,7 @@
 
 (declare cartesian-scales polar-scales panel-scales)
 
-(defn finalize-scales
+(defn- finalize-scales
   "Scales of the plot's phase-1 specs finalized for its reference panel.
 
   The reference panel is the first main `:panel` content of the grid (depth-first) in `layout`: the horizontal scale (`:x`, or `:y` with `:flip true`) gets range `[0 w]`, the vertical one `[h 0]`, each with `:direction` (`:horizontal` / `:vertical`) and a tick hint from the panel size along it and theme `[:axis k :tick-spacing]` (by scale key). All panels share these scales (they differ by at most a pixel in size). A polar plot (`:coord`) gets range-space scales instead (see [[polar-scales]]). Aesthetic scales are passed through unchanged.
@@ -764,7 +762,7 @@
       (cartesian-scales plot specs horizontal panel))))
 
 (defn panel-scales
-  "Per main panel, the finalized scales with position scales fitted to that panel's own box.
+  "Gives, per main panel, the finalized scales with position scales fitted to that panel's own box.
 
   Only for plots whose `:facets` ask for panel-local scales (see [[cljplot2.data.facet/panel-scales?]]): each panel's position scales come from its `:panel-scale-specs` (free / sliced facet scales), else the shared specs.
 
@@ -832,11 +830,7 @@
          (fn [c]
            (m/+ (->> labels
                      (map (fn [[tick t]]
-                            (let [^fastmath.vector.Vec2 size (measure/natural-size {:kind :label
-                                                                                    :role :tick-label
-                                                                                    :text t}
-                                                                                   {:canvas c
-                                                                                    :theme (:theme plot)})
+                            (let [^fastmath.vector.Vec2 size (measure/label-size :tick-label t {:canvas c :theme (:theme plot)})
                                   a (double (forward tick))]
                               (if (m/valid-double? a)
                                 (m/+ (m/* (m/abs (m/sin a)) (.x size))
@@ -884,7 +878,7 @@
         theta-spec (when-let [spec (get specs horizontal)]
                      (cond-> spec
                        (not (contains? spec :expand)) (dissoc :padding)
-                       (not (contains? user :nice)) (assoc :nice false)))
+                       (nil? (:nice user)) (assoc :nice false)))
         theta-at (fn [^double r]
                    (when theta-spec
                      (scale/finalize (cond-> theta-spec
@@ -933,7 +927,7 @@
           (assoc layout :rounds round)
           (recur (m/inc round) remeasured))))))
 
-(def ^{:const true :tag 'long} max-iso-rounds
+(def ^{:private true :const true :tag 'long} max-iso-rounds
   "Upper bound on refits of iso panel sizes (nice domains and measured tracks may change with the panel size), see [[iso-layout]]."
   6)
 
@@ -1125,7 +1119,7 @@
         fixed-column? (fn [j] (let [w (get widths j)] (or (= :measured w) (vector? w))))
         column-size (fn [j] (long (or (some #(get-in by-cell [[% j] :box :w]) (range r)) 0)))
         row-size (fn [i] (long (or (some #(get-in by-cell [[i %] :box :h]) (range c)) 0)))
-        room (fn [cells-of sides] (let [ins (keep :insets cells-of)] (when (seq ins) (reduce m/max (map #(reduce m/+ (map % sides)) ins)))))
+        room (fn [cells-of sides] (let [ins (keep :insets cells-of)] (when (seq ins) (v/mx (map #(v/sum (map % sides)) ins)))))
         column-insets (mapv (fn [j] (when-not (fixed-column? j) (or (room (keep #(by-cell [% j]) (range r)) [:left :right]) 0))) (range c))
         row-insets (mapv (fn [i] (or (room (keep #(by-cell [i %]) (range c)) [:top :bottom]) 0)) (range r))]
     (-> (apply dissoc plot (concat stage-order (mapcat val stage-extra-keys)))
@@ -1164,10 +1158,10 @@
 
   Returns the tracks with each panel track grown or shrunk by its smallest panel's difference to the smallest panel over all tracks (other tracks kept); `nil` when the panels are already equal."
   [tracks sizes]
-  (let [target (double (reduce m/min (mapcat val sizes)))]
+  (let [target (v/mn (mapcat val sizes))]
     (when-not (every? (fn [^double s] (m/== target s)) (mapcat val sizes))
       (vec (map-indexed (fn [t [kind ^long px]]
-                          (if-let [panel (some->> (get sizes t) (reduce m/min))]
+                          (if-let [panel (some->> (get sizes t) seq v/mn)]
                             [kind (m/+ px (m/- (long target) (long panel)))]
                             [kind px]))
                         tracks)))))
@@ -1274,7 +1268,7 @@
    (schema/nilable :schema {:description "malli schemas of the chart's :options, :style and :mapping, checked by build"}
                    chart-schemas)])
 
-(def scales-schema
+(def ^:private scales-schema
   "Schema of plot `:scales`: position (`:x`, `:y`), facet and aesthetic scale specs."
   (-> [:map {:closed true}]
       (into (map #(schema/optional % {:description (str "the " (name %) " position scale")} scale/scale-spec-schema)) [:x :y])
@@ -1406,7 +1400,7 @@
 (defn- three-d-contract-errors
   "Errors of 3D charts without a `:primitives` function.
 
-  The panel draws every 3D chart's primitives in one scene (see [[cljplot2.graphics.space3d/draw-scene!]]).
+  The panel draws every 3D chart's primitives in one scene (see [[cljplot2.content.space3d/draw-scene!]]).
 
   Parameters:
 
@@ -1541,7 +1535,15 @@
     (or (nil? base) (map? base))))
 
 (defn- merged-named-style
-  "The named style `n` of `chart-theme` (the merged theme's `:chart` map) merged over the style of chart `kind`; a named entry that isn't a map as it is (its own error)."
+  "Gives a named chart style merged over the style of its kind.
+
+  Parameters:
+
+  - `chart-theme` (map): the merged theme's `:chart` map.
+  - `kind` (keyword): the chart kind the named style belongs to.
+  - `n` (keyword): the named style.
+
+  Returns the named entry merged over `[:chart kind]`; a named entry that isn't a map as it is (its own validation error)."
   [chart-theme kind n]
   (let [named (get chart-theme n)]
     (if (map? named) (merge (get chart-theme kind) named) named)))
@@ -1747,7 +1749,7 @@
             (distinct (concat (filter scale-dim? (keys scales)) marked)))))
 
 (defn build
-  "Run a plot through the pipeline stages and return the plot map with each stage's key added.
+  "Runs a plot through the pipeline stages and returns the plot map with each stage's key added.
 
   Stage keys (and the keys stages derive, e.g. margins') already present in `plot` - from an earlier `build` - are dropped first. Before any stage runs, the plot, its merged theme and options and its charts' schemas are validated (see [[validate!]]).
 
@@ -1769,4 +1771,4 @@
      (reduce (fn [staged stage] ((stage-fns stage) staged))
              (assoc unbuilt :options render-options :theme theme
                     :scales (resolve-scale-types (:scales unbuilt) (merged-mappings unbuilt) (some three-d? (:charts unbuilt))))
-             (take (m/inc (.indexOf ^java.util.List stage-order (get options :until (peek stage-order)))) stage-order)))))
+             (take (m/inc (.indexOf ^java.util.List stage-order (data/option options :until (peek stage-order)))) stage-order)))))

@@ -8,7 +8,7 @@
 
 (def iris-pairs
   (plot/pairs iris {:variables [:sepal_length :sepal_width :petal_length :petal_width] :mapping {:color :species}
-                    :labels {:sepal_length "sepal length" :sepal_width "sepal width" :petal_length "petal length" :petal_width "petal width"}
+                    :variable-names {:sepal_length "sepal length" :sepal_width "sepal width" :petal_length "petal length" :petal_width "petal width"}
                     :title "Iris: scatter, densities and correlations by species"}))
 
 (def mtcars-correlogram

@@ -8,7 +8,7 @@
             [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
             [cljplot2.data.space3d :as space]
-            [cljplot2.graphics.space3d :as space-draw]
+            [cljplot2.content.space3d :as space-draw]
             [cljplot2.test-util :refer [error-data error-ins]])
   (:import [fastmath.vector Vec2]))
 
@@ -46,7 +46,7 @@
       (is (nil? (space/distance-problem {:distance 1.1} [6 6 6])) "a larger cube: the same limit (proportions only)")
       (is (nil? (space/distance-problem {:distance 1.3} [1 1 0.2])) "a flat box takes more: 1/0.714")
       (is (some? (space/distance-problem {:distance 1.41} [1 1 0.2])))
-      (is (= :distance (:key (error-data #(space/check-distance! {:distance 1.2} [1 1 1])))))
+      (is (= :view (:key (error-data #(space/check-distance! {:distance 1.2} [1 1 1])))))
       (is (nil? (space/check-distance! {:distance 0.2} [1 1 1])))))
   (testing "1.2 / F6 a chart's own view and aspect: a schema error at the chart's [:view :distance] (cloud and surface)"
     (is (contains? (error-ins #(plot/build {:data cube :mapping {:x :x :y :y :z :z}
@@ -61,7 +61,7 @@
                               :charts [(chart/cloud {:domain domain :view {:distance 1.3} :aspect [1 1 0.2]})
                                        (chart/cloud {:domain domain :aspect aspect})]})]
       (is (some? (plot/render-image (scene [1 1 0.2]) {:width 300 :height 300})) "each chart alone is fine")
-      (is (= :distance (:key (error-data #(plot/render-image (scene [1 1 1]) {:width 300 :height 300}))))))))
+      (is (= :view (:key (error-data #(plot/render-image (scene [1 1 1]) {:width 300 :height 300}))))))))
 
 (deftest box-units-test
   (testing "F1 :distance is measured in a box of longest side 1 (lattice's): proportions alone set the picture"

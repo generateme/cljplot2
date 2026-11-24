@@ -1,15 +1,12 @@
 (ns cljplot2.demo.annotation
   "Annotation demo (cycle 4): rule, rect, text charts (literal and data mode), strip n labels."
-  (:require [clojure.data.json :as json]
-            [clojure.java.io :as io]
-            [fastmath.stats :as stats]
+  (:require [fastmath.stats :as stats]
             [cljplot2.chart :as chart]
+            [cljplot2.demo.data :as data]
             [cljplot2.core :as plot]))
 
-(defn- read-json [file] (json/read-str (slurp (io/resource file)) :key-fn keyword))
-
-(def barley (read-json "barley.json"))
-(def faithful (read-json "faithful.json"))
+(def barley (data/json-rows "barley.json"))
+(def faithful (data/json-rows "faithful.json"))
 
 (def eruptions (map :eruptions faithful))
 
@@ -68,7 +65,7 @@
     {:data faithful
      :mapping {:x :waiting :y :eruptions}
      :charts [(chart/scatter)
-              (chart/rule {:slope slope :intercept intercept :color :red :width 2})
+              (chart/rule {:slope slope :intercept intercept :color :red :line-width 2})
               (chart/rule {:y 3 :dash [2.0 2.0]})
               (chart/text {:x [:panel 0.03] :y [:panel 0.97] :anchor [:left :top]
                            :text (format "y = %.3f + %.4f x" intercept slope)})]

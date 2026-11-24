@@ -6,8 +6,8 @@
   vertical strips, `{:x value :y level}` horizontal ones; option `:level-axis` (`:x` / `:y`) decides when both or
   neither axis is categorical (and always wins). Charts compute and draw in the **strip frame** - levels on `:y`,
   values on `:x`, as described below - through [[compute-oriented]] / [[draw-oriented]], which transpose input,
-  stats and scales for levels on `:x`. A strip chart value takes [[compute]] and [[draw]], which call its kind's
-  strip-frame methods [[in-frame-compute]] and [[in-frame-draw]] (multimethods on the chart's `:kind`: a new strip kind adds a method of each - a kind without one throws `No method in multimethod`). `:flip true` exchanges the drawn axes on top of that.
+  stats and scales for levels on `:x`. The chart contract and the labels of strip charts live in
+  [[cljplot2.chart.strip]]. `:flip true` exchanges the drawn axes on top of that.
 
   Contract: a strip chart computes, per panel, **items** - one per `:y` level and group -
   `{:level l :key k :aesthetics a :values [..] :slot [lo hi]}` plus its own statistics, all in data units along the
@@ -50,30 +50,22 @@
   Every strip chart throws `ex-info {:key :mapping}` when its rows have no finite `:x` value (except a chart counting
   rows, see [[split]]).
 
-  n labels (every strip chart): `:n-label true` draws each item's count, formatted by `:n-format` (default
-  `n=%d`), just past its largest drawn value (see [[draw-n-labels!]]); the chart asks for value-axis room for
-  them (`:padding-px`, see [[n-label-room]]).
-
   Functions:
 
   - options: [[options]], [[mirror-option]], [[ridge-options]], [[default-ridge-overlap]], [[values-mapping]]
-  - items and stats: [[split]], [[y-extent]], [[padding]], [[explicit-padding]], [[extents]]
-  - geometry: [[placement]], [[in-slot]], [[slot-half]], [[slot-side]]
-  - end labels: [[end-label-room]], [[end-label-placements]], [[without-collisions]], [[draw-label-placements!]], [[draw-end-labels!]], [[outer-label-room]], [[n-label-room]], [[draw-n-labels!]]
+  - items and stats: [[split]], [[padding]], [[explicit-padding]], [[extents]]
+  - geometry: [[in-slot]], [[slot-half]], [[slot-side]]
   - ridgelines: [[ridges?]], [[ridge-split]], [[ridge-scale-defaults]], [[ridge-point]], [[ridge-order]]
-  - orientation: [[level-axis]], [[compute-oriented]], [[draw-oriented]]
-  - chart contract: [[compute]], [[draw]], [[in-frame-compute]], [[in-frame-draw]]"
-  (:require [clojure2d.core :as c2d]
-            [fastmath.core :as m]
+  - orientation: [[level-axis]], [[swap-xy]], [[compute-oriented]] (drawing in the strip frame - [[cljplot2.chart.strip/placement]], [[cljplot2.chart.strip/draw-oriented]])
+  - item statistics: [[box-stats]], [[varwidth-factors]]"
+  (:require [fastmath.core :as m]
+            [fastmath.stats :as stats]
             [fastmath.vector :as v]
-            [cljplot2.content.label :as label]
             [cljplot2.data.group :as group]
             [cljplot2.data.position :as position]
             [cljplot2.data.rows :as data]
             [cljplot2.data.shingle :as shingle]
             [cljplot2.scale.aesthetic :as aesthetic]
-            [cljplot2.graphics.draw :as draw]
-            [cljplot2.graphics.measure :as measure]
             [cljplot2.scale.coord :as coord]
             [cljplot2.scale.position :as scale]
             [cljplot2.schema :as schema])
@@ -117,9 +109,9 @@
     (schema/nilable :n-label {:cljplot2/section :n-label :description "draw each item's row count just past its largest value"
                               :default false}
                     schema/bool)
-    (schema/optional :n-format {:cljplot2/section :n-label :description "format string of the n labels"
+    (schema/optional :n-format {:cljplot2/section :n-label :description "text of the n labels: a format string or a function of the count"
                                 :default "n=%d"}
-                     :string)
+                     schema/count-format)
     (schema/optional :level-axis {:cljplot2/section :placement :description "the mapping axis holding the levels (decides when both or neither of :x and :y are categorical)"
                                   :cljplot2/default-doc "the categorical axis of the mapping; with neither, :x when only :y is mapped, else :y"}
                      [:enum :x :y])]))
@@ -157,7 +149,7 @@
   Throws `ex-info {:key :place}` for `:band` without a `:y` mapping or another placement with one, `ex-info {:key :bottom-share}` for `:bottom-share` without `:place :bottom`."
   [chart-options mapping default-place]
   (let [y? (some? (:y mapping))
-        place (get chart-options :place (if y? :band default-place))]
+        place (data/option chart-options :place (if y? :band default-place))]
     (cond
       (and (some? (:bottom-share chart-options)) (not= :bottom place))
       (schema/fail! "Strip :bottom-share needs :place :bottom." {:key :bottom-share :value (:bottom-share chart-options)})
@@ -167,7 +159,13 @@
       :else place)))
 
 (defn- categorical-level?
-  "Tests whether `v` is a categorical level by itself: a string, keyword or interval (shingle / bin)."
+  "Tests whether a value is a categorical level by itself.
+
+  Parameters:
+
+  - `v`: any value.
+
+  Returns a truthy value for a string, a keyword or an interval (shingle / bin)."
   [v]
   (or (string? v) (keyword? v) (shingle/interval? v)))
 
@@ -236,7 +234,14 @@
       i)))
 
 (defn- without-index
-  "Gives the group key `group-key` (a vector) without its value at index `i`."
+  "Gives a group key without one of its values.
+
+  Parameters:
+
+  - `group-key` (vector): the group key.
+  - `i` (long): the index of the value to drop.
+
+  Returns the vector without its value at `i`."
   [group-key ^long i]
   (into (subvec group-key 0 i) (subvec group-key (m/long-inc i))))
 
@@ -301,19 +306,14 @@
 
   Returns `{:place :position :items :group-keys :slot-keys :shared-levels? :mirror? :dims :panels :dropped}`: `:items` - `{panel [item ...]}`, an item `{:level :key :aesthetics :values :n :slot}` (`:level` `nil` without bands, `:values` - the finite `:x` numbers, `:n` - their count); `:dims` - the grouping dimensions (the order of a group key's values); `:slot-keys` - the keys slots are given to (group keys without the mirror dimension); `:shared-levels?` - some level holds two or more of them (the default `:position` is then `:dodge`, else `:overlay`); `:panels` - the split groups; `:dropped` - `{dim n}`.
 
-  Throws `ex-info {:key :mapping}` when values aren't mapped, or there are rows but no finite `:x` value (or, placed in bands, no valid `:y` value); `ex-info {:key :n-format}` for an `:n-format` that can't format a count; `ex-info {:key :mirror}` for a mirror dimension that isn't a grouping dimension, hasn't exactly two levels or comes with `:position :mirror`; `ex-info {:key :place}` for a placement that doesn't fit the mapping or levels."
+  Throws `ex-info {:key :mapping}` when values aren't mapped, or there are rows but no finite `:x` value (or, placed in bands, no valid `:y` value); `ex-info {:key :mirror}` for a mirror dimension that isn't a grouping dimension, hasn't exactly two levels or comes with `:position :mirror`; `ex-info {:key :place}` for a placement that doesn't fit the mapping or levels."
   [{:keys [groups mapping]} chart-options default-place env]
-  (let [_ (when-let [fmt (:n-format chart-options)]
-            (try (format fmt 1)
-                 (catch Exception e
-                   (schema/fail! "Strip :n-format should format a count (e.g. \"n=%d\")."
-                                 {:key :n-format :value fmt :cause (ex-message e)}))))
-        place (place-of chart-options mapping default-place)
+  (let [place (place-of chart-options mapping default-place)
         {:keys [panels dims dropped]} (group/split groups (dissoc mapping :y) env)
         count-rows? (::count-rows chart-options)
         _ (when (and (not count-rows?) (nil? (:x mapping)))
-            (schema/fail! "Strip values aren't mapped: map them on the axis other than the levels (see :level-axis)."
-                          {:key :mapping :value :values}))
+            (data/fail-mapping! "Strip values aren't mapped: map them on the axis other than the levels (see :level-axis)."
+                                :x {}))
         x-of (when-not count-rows? (data/row-accessor :x (:x mapping)))
         y-of (when (= :band place) (data/row-accessor :y (:y mapping)))
         all-rows (mapcat :rows (mapcat val panels))
@@ -321,7 +321,7 @@
         _ (when y-of (data/check-mapped! all-rows [[:y y-of]]))
         _ (when y-of (check-levels! y-levels (:plot-scales env)))
         level-rank (zipmap (distinct y-levels) (range))
-        group-keys (group/ordered-keys (mapcat #(map :key %) (vals panels)) dims (:plot-scales env))
+        group-keys (group/panel-group-keys panels dims (:plot-scales env))
         mi (mirror-index chart-options dims)
         slot-key (if mi #(without-index % mi) identity)
         slot-keys (vec (distinct (map slot-key group-keys)))
@@ -339,14 +339,14 @@
                                       mi (assoc :mirrored? (= mirrored (nth (:key g) mi)))
                                       (::rows chart-options) (assoc :rows rows))))))
         shared? (shared-levels? grouped-items slot-key)
-        position (get chart-options :position (if shared? :dodge :overlay))
+        position (data/option chart-options :position (if shared? :dodge :overlay))
         ;; reading order: the first group on top of horizontal strips (the high cross end), on the left of vertical
         ;; (flipped) ones (the low end); ridgelines grow the first group toward the next level (the high end)
         first-high? (or (::ridge chart-options) (not (:flip? env)))
-        slot-of (if (seq slot-keys) (slots position slot-keys (double (get chart-options :dodge-gap 0.1)) first-high?) {})
+        slot-of (if (seq slot-keys) (slots position slot-keys (double (data/option chart-options :dodge-gap 0.1)) first-high?) {})
         items (update-vals grouped-items (fn [its] (mapv #(assoc % :slot (slot-of (slot-key (:key %)))) its)))
         x-dropped (if x-of
-                    (long (count (remove #(let [v (x-of %)] (and (number? v) (m/valid-double? (double v)))) all-rows)))
+                    (long (count (remove #(schema/finite? (x-of %)) all-rows)))
                     0)]
     (when x-of (data/check-mapped! all-rows [[:x x-of]] (fn [_ v] (schema/finite? v))))
     {:place place
@@ -361,7 +361,7 @@
      :dropped (cond-> (assoc dropped :x x-dropped)
                 y-of (assoc :y (count (remove (comp data/valid-value? y-of) all-rows))))}))
 
-(defn y-extent
+(defn- y-extent
   "Gives the `:y` extent of a panel's items.
 
   Parameters:
@@ -391,7 +391,7 @@
   Returns `{:x [0.05 0.05]}`, for `:bottom` also `{:y [bottom-share 0]}`, with the `:padding` option merged over it."
   [place chart-options]
   (merge {:x [0.05 0.05]}
-         (when (= :bottom place) {:y [(double (get chart-options :bottom-share 0.15)) 0.0]})
+         (when (= :bottom place) {:y [(double (data/option chart-options :bottom-share 0.15)) 0.0]})
          (:padding chart-options)))
 
 (defn explicit-padding
@@ -404,7 +404,7 @@
 
   Returns the requests: for `:bottom` the room below the data, `{:y [bottom-share nil]}`, with the `:padding` option over it; `nil` without any."
   [place chart-options]
-  (data/explicit-padding (when (= :bottom place) {:y [(double (get chart-options :bottom-share 0.15)) nil]}) chart-options))
+  (data/explicit-padding (when (= :bottom place) {:y [(double (data/option chart-options :bottom-share 0.15)) nil]}) chart-options))
 
 (defn extents
   "Gives the position extents of a strip chart per panel.
@@ -439,365 +439,15 @@
   (m/+ lo (m/* (m/+ cross 0.5) (m/- hi lo))))
 
 (defn slot-half
-  "Gives half the length of a slot `[lo hi]` in cross units."
+  "Gives half the length of a slot in cross units.
+
+  Parameters:
+
+  - `[lo hi]` (doubles): the slot.
+
+  Returns `(hi - lo) / 2`."
   ^double [[^double lo ^double hi]]
   (m/* 0.5 (m/- hi lo)))
-
-(defn placement
-  "Gives the pixel geometry of a strip chart's placement in a panel (see the namespace doc).
-
-  Flip-aware: the cross axis is the `:y` direction (horizontal when flipped). In a polar plot range lengths and `:step` are in range units (radians across angles).
-
-  Parameters:
-
-  - `box` (map): the panel's `:w`, `:h` in pixels.
-  - `scales` (map): finalized position scales.
-  - `options` (map): chart options - `:width` (fraction of the band or panel, default 0.8), `:thickness` (pixels, default 8 for `:edge`, 20 otherwise).
-  - `place`: the chart's placement; `:bottom` without a `:y` scale is placed as `:center`.
-
-  Returns a map:
-
-  - `:point` - `(fn [value level cross] -> Vec2)`: `value` along the `:x` scale, the cross coordinate (placement range `[-0.5 0.5]`, positive toward higher `:y`) across it
-  - `:range-point` - `(fn [value level cross] -> [h v])`: the point in range space (pixels in cartesian plots, angle and radius in polar ones, see [[cljplot2.scale.coord]])
-  - `:span` - `(fn [level] -> px)`: the length of the whole cross range
-  - `:value-pixel` - `(fn [value] -> px)` along the value axis
-  - `:centre` - `(fn [level] -> px)` of the cross range's centre
-  - `:sign` - the range direction of increasing `:y`
-  - `:step` - the band step (`:band`, else `nil`)
-  - `:geometry` - the polar geometry or `nil`
-
-  A level or value the scales can't place gives `##NaN` coordinates.
-
-  Throws `ex-info {:key :place}` for `:band` without a `:bands` `:y` scale, `{:at v}` and `:bottom` on a `:bands` one."
-  [{:keys [w h]} scales {:keys [^double width thickness] :or {width 0.8}} place]
-  (let [_ (when (and (= :bottom place) (= :bands (:kind (:y scales))))
-            (schema/fail! "Strip :place :bottom needs a numeric :y scale, not bands." {:key :place :value place}))
-        placed-as (if (and (= :bottom place) (nil? (:y scales))) :center place)
-        fx (scale/forward-fn (:x scales))
-        y-scale (:y scales)
-        fy (when y-scale (scale/forward-fn y-scale))
-        cross-horizontal? (scale/flipped? scales)
-        polar (scale/coord-geometry scales)
-        ;; polar: the cross range is the y scale's range, else the angular / radial extent of the panel's circle
-        [^double e0 ^double e1] (when polar
-                                  (or (:range y-scale)
-                                      (if cross-horizontal? (:theta polar) [(:inner-radius polar) (:radius polar)])))
-        length (double (cond polar (m/abs (m/- e1 e0)) cross-horizontal? w :else h))
-        ;; range direction of increasing :y
-        sign (double (cond
-                       y-scale (let [[^double a ^double b] (:range y-scale)] (if (m/< b a) -1.0 1.0))
-                       polar (if (m/< e1 e0) -1.0 1.0)
-                       :else (if cross-horizontal? 1.0 -1.0)))
-        ;; range position of the cross range's low-value end and of its middle
-        low (double (cond polar e0 (m/pos? sign) 0.0 :else length))
-        middle (if polar (m/* 0.5 (m/+ e0 e1)) (m/* 0.5 length))
-        thickness-px (double (or thickness (if (= :edge placed-as) 8.0 20.0)))
-        ;; pixels; across angles at the outer radius
-        cross-thickness (if (and polar cross-horizontal?) (m// thickness-px (double (:radius polar))) thickness-px)
-        geometry (when (= :band placed-as)
-                   (or (scale/band-geometry y-scale)
-                       (schema/fail! "Strip :place :band needs a :bands :y scale." {:key :place :value (:kind y-scale)})))
-        bandwidth (some-> geometry :bandwidth double)
-        _ (when (and (map? placed-as) (= :bands (:kind y-scale)))
-            (schema/fail! "Strip :place {:at v} needs a numeric :y scale, not bands." {:key :place :value placed-as}))
-        centre-and-span (cond
-                          (= :band placed-as) (fn [level] [(if fy (fy level) ##NaN) (m/* width (double bandwidth))])
-                          (map? placed-as) (let [c (if fy (fy (:at placed-as)) ##NaN)] (constantly [c cross-thickness]))
-                          (= :center placed-as) (constantly [middle (m/* width length)])
-                          (= :edge placed-as) (constantly [(m/+ low (m/* sign 0.5 cross-thickness)) cross-thickness])
-                          (= :bottom placed-as) (let [zero (double (fy 0.0))]
-                                                  (constantly [(m/* 0.5 (m/+ low zero)) (m/* width (m/abs (m/- zero low)))])))
-        range-point (fn [value level ^double cross]
-                      (let [[^double c ^double span] (centre-and-span level)
-                            across (m/+ c (m/* sign cross span))
-                            along (double (fx value))]
-                        (if cross-horizontal? [across along] [along across])))]
-    {:point (if polar
-              (fn ^Vec2 [value level ^double cross]
-                (let [[^double horizontal ^double vertical] (range-point value level cross)]
-                  (coord/to-pixel polar horizontal vertical)))
-              (fn ^Vec2 [value level ^double cross]
-                (let [[^double horizontal ^double vertical] (range-point value level cross)]
-                  (Vec2. horizontal vertical))))
-     :range-point range-point
-     :geometry polar
-     :span (fn ^double [level] (double (second (centre-and-span level))))
-     :value-pixel (fn ^double [value] (double (fx value)))
-     :centre (fn ^double [level] (double (first (centre-and-span level))))
-     :sign sign
-     :step (some-> geometry :step double)}))
-
-(def ^{:const true :private true :tag 'double} n-label-gap
-  "Pixels between an item's largest drawn value and its n label."
-  3.0)
-
-(defn- n-label-side
-  "Gives the direction of an item's n label along the value axis: `-1.0` for a `:mirrored?` item, else `1.0`."
-  ^double [item]
-  (if (:mirrored? item) -1.0 1.0))
-
-(defn- n-label-text
-  "Gives the n label text of an item: its count `:n` formatted by the option `:n-format` of `chart-options` (default `n=%d`)."
-  [chart-options item]
-  (format (get chart-options :n-format "n=%d") (:n item)))
-
-(defn- label-content
-  "Gives the label content of an end label: `{:kind :label :role :text}` - its `:text` in its `:role` (default `:annotation`), with its `:color` when given."
-  [{:keys [text color role]}]
-  (cond-> {:kind :label :role (or role :annotation) :text text} color (assoc :color color)))
-
-(defn end-label-room
-  "Gives the `:padding-px` end labels need past the data.
-
-  Parameters:
-
-  - `labels` (sequence): end labels `{:text t :side s :role r}` (see [[draw-end-labels!]]).
-  - `env` (map): `:theme`, `:hint` (measuring), `:flip?` (sizes along the value axis are label heights when flipped).
-
-  Returns `{:x [lo hi]}`: per side of the value axis the largest label's size along it, measured in its role, plus the gap; 0 on a side without labels. `nil` without labels."
-  [labels {:keys [theme flip? hint]}]
-  (when (seq labels)
-    (measure/call-with-scratch-canvas
-     hint
-     (fn [c]
-       (let [room (fn [^double side]
-                    (let [contents (distinct (keep #(when (m/== side (double (:side %))) (label-content (dissoc % :color)))
-                                                   labels))]
-                      (if (seq contents)
-                        (m/+ (v/mx (map (fn [content] (let [^Vec2 size (measure/natural-size content
-                                                                                            {:canvas c :theme theme})]
-                                                       (if flip? (.y size) (.x size))))
-                                        contents))
-                             n-label-gap)
-                        0.0)))]
-         {:x [(room -1.0) (room 1.0)]})))))
-
-(def ^{:const true :tag 'double} outer-label-gap
-  "Pixels between a polar plot's outer radius and an `:outer?` end label."
-  6.0)
-
-(def ^{:const true :tag 'double} leader-label-gap
-  "Pixels between a polar plot's outer radius and an `:outer?` end label with a leader line (`:leader?`)."
-  16.0)
-
-(defn- outer-gap
-  "Gives the pixels between a polar plot's outer radius and an `:outer?` end label: [[leader-label-gap]] with `:leader?`, else [[outer-label-gap]]."
-  ^double [{:keys [leader?]}]
-  (if leader? leader-label-gap outer-label-gap))
-
-(declare polar-end-label-placements cartesian-end-label-placements)
-
-(defn end-label-placements
-  "Gives where [[draw-end-labels!]] draws end labels.
-
-  Parameters:
-
-  - `pl` (map): the chart's [[placement]].
-  - `labels` (sequence): end labels (see [[draw-end-labels!]]).
-  - `scales` (map): finalized position scales.
-
-  Returns a vector of `{:label l :content c :anchor [h v] :x px :y py :leader [[x0 y0] [x1 y1]]}`: `:content` - the label content, `:leader` (an `:outer?` label with `:leader?`) - a line from its segment's outer edge. Labels without a placeable position are left out."
-  [{:keys [geometry] :as pl} labels scales]
-  (if geometry
-    (polar-end-label-placements pl labels scales)
-    (cartesian-end-label-placements pl labels scales)))
-
-(defn- cartesian-end-label-placements
-  "Gives the [[end-label-placements]] of a cartesian plot: each label [[n-label-gap]] pixels past its value along the value axis, anchored away from it (centred for side 0).
-
-  Parameters:
-
-  - `pl` (map): the chart's [[placement]] - `:point`.
-  - `labels` (sequence): end labels (see [[draw-end-labels!]]).
-  - `scales` (map): finalized position scales.
-
-  Returns a vector of placements; labels at a non-finite pixel left out."
-  [{:keys [point]} labels scales]
-  (let [x-scale (:x scales)
-        [^double r0 ^double r1] (:range x-scale)
-        ;; pixel direction of increasing values
-        up (if (m/< r1 r0) -1.0 1.0)
-        horizontal? (scale/horizontal? :x x-scale)]
-    (vec (for [{:keys [level slot at ^double side] :as l} labels
-               :let [dir (m/* up side)
-                     anchor (cond
-                              (m/zero? dir) [:center :middle]
-                              horizontal? (if (m/pos? dir) [:left :middle] [:right :middle])
-                              :else (if (m/pos? dir) [:center :top] [:center :bottom]))
-                     ^Vec2 p (point at level (in-slot slot 0.0))
-                     x (if horizontal? (m/+ (.x p) (m/* dir n-label-gap)) (.x p))
-                     y (if horizontal? (.y p) (m/+ (.y p) (m/* dir n-label-gap)))]
-               :when (data/finite-point? [x y])]
-           {:label l :content (label-content l) :anchor anchor :x x :y y}))))
-
-(defn- outer-placement
-  "Gives the placement of an `:outer?` end label in a polar plot.
-
-  Parameters:
-
-  - `pl` (map): the chart's [[placement]] - `:range-point`, `:geometry`.
-  - `label` (map): the end label - `:level`, `:slot`, `:at` (the value of its segment's middle), `:span` (its segment's values), `:leader?`.
-
-  Returns the placement past the outer radius (by [[outer-gap]]) at the angle of the segment's middle, anchored away from the centre, with a `:leader` from the segment's farthest corner for `:leader?`; `nil` at a non-finite pixel."
-  [{:keys [range-point geometry]} {:keys [level slot at span leader?] :as l}]
-  (let [[^double h] (range-point at level (in-slot slot 0.0))
-        r (m/+ (double (:radius geometry)) (outer-gap l))
-        ^Vec2 p (coord/to-pixel geometry h r)
-        edge (when leader?
-               (v/mx (for [value span cross [-0.5 0.5]] (double (second (range-point value level (in-slot slot cross)))))))]
-    (when (data/finite-point? p)
-      (cond-> {:label l :content (label-content l) :anchor (coord/outward-anchor h) :x (.x p) :y (.y p)}
-        (and edge (m/valid-double? (double edge)))
-        (assoc :leader (let [^Vec2 a (coord/to-pixel geometry h (double edge))
-                             ^Vec2 b (coord/to-pixel geometry h (m/- r 1.0))]
-                         [[(.x a) (.y a)] [(.x b) (.y b)]]))))))
-
-(defn- polar-end-label-placements
-  "Gives the [[end-label-placements]] of a polar plot: past the value along the radius (anchored away from the centre) or along the angle (centred), by [[n-label-gap]] pixels; `:outer?` labels past the outer radius (see [[outer-placement]]).
-
-  Parameters:
-
-  - `pl` (map): the chart's [[placement]] - `:range-point`, `:geometry`.
-  - `labels` (sequence): end labels (see [[draw-end-labels!]]).
-  - `scales` (map): finalized position scales.
-
-  Returns a vector of placements; labels at a non-finite pixel left out."
-  [{:keys [range-point geometry] :as pl} labels scales]
-  (let [x-scale (:x scales)
-        radial? (not (scale/horizontal? :x x-scale))
-        [^double r0 ^double r1] (:range x-scale)
-        up (if (m/< r1 r0) -1.0 1.0)
-        ;; the gap in range units: pixels along the radius, radians at the outer radius along the angle
-        pad (if radial? n-label-gap (m// n-label-gap (double (:radius geometry))))]
-    (vec (keep (fn [{:keys [level slot at ^double side outer?] :as l}]
-                 (if outer?
-                   (outer-placement pl l)
-                   (let [dir (m/* up side)
-                         [^double h ^double v] (range-point at level (in-slot slot 0.0))
-                         shift (m/* dir pad)
-                         ^Vec2 p (if radial?
-                                   (coord/to-pixel geometry h (m/+ v shift))
-                                   (coord/to-pixel geometry (m/+ h shift) v))
-                         anchor (if (and radial? (not (m/zero? dir))) (coord/outward-anchor h) [:center :middle])]
-                     (when (data/finite-point? p)
-                       {:label l :content (label-content l) :anchor anchor :x (.x p) :y (.y p)}))))
-               labels))))
-
-(defn without-collisions
-  "Drops end-label placements overlapping one kept before them - earlier placements win.
-
-  Parameters:
-
-  - `canvas`: the canvas measuring the labels.
-  - `placements` (sequence): end-label placements (see [[end-label-placements]]).
-  - `env` (map): the drawing environment (`:theme`).
-
-  Returns a vector of the kept placements, each with its pixel `:box` (see [[cljplot2.content.label/box-at]])."
-  [canvas placements env]
-  (reduce (fn [kept {:keys [content anchor x y] :as p}]
-            (let [box (label/box-at canvas content anchor x y env)]
-              (if (some #(measure/boxes-overlap? box (:box %)) kept)
-                kept
-                (conj kept (assoc p :box box)))))
-          []
-          placements))
-
-(defn draw-label-placements!
-  "Draws end-label placements: leader lines first, then the labels.
-
-  Parameters:
-
-  - `canvas`: the canvas.
-  - `placements` (sequence): end-label placements (see [[end-label-placements]]).
-  - `env` (map): the drawing environment (`:theme`).
-
-  Leader lines are 1 pixel wide, in the label's colour, else its role's over the plot background. Returns `nil`."
-  [canvas placements env]
-  (doseq [{:keys [leader content]} placements
-          :when leader
-          :let [[[^double x0 ^double y0] [^double x1 ^double y1]] leader]]
-    (c2d/set-color canvas (or (:color content)
-                              (draw/text-color (:theme env) (:role content) (draw/plot-backdrop (:theme env)))))
-    (c2d/set-stroke-custom canvas {:size 1.0})
-    (c2d/line canvas x0 y0 x1 y1))
-  (doseq [{:keys [content anchor x y]} placements]
-    (label/draw-at! canvas content anchor x y env)))
-
-(defn draw-end-labels!
-  "Draws end labels, each just past a value along the value axis, centred on its slot.
-
-  Polar plots: past the value along the radius (anchored away from the centre) or along the angle (centred), see [[cljplot2.scale.coord]]. [[end-label-room]] (and [[outer-label-room]]) keep room for them past the data.
-
-  Parameters:
-
-  - `canvas`: the canvas.
-  - `pl` (map): the chart's [[placement]].
-  - `labels` (sequence): `{:level l :slot s :at v :side d :text t}` - past value `v` toward increasing values (`d` 1) or decreasing ones (`d` -1), or centred on `v` (`d` 0, e.g. inside a stacked bar; no room needed); optional `:role` (text role, default `:annotation`), `:color` (overrides the role's); `:outer?` - past the outer radius of a polar plot at its segment's middle angle, anchored outward, with `:span [v0 v1]` (its segment's values) and `:leader?` (a leader line).
-  - `scales` (map): finalized position scales.
-  - `env` (map): the drawing environment (`:theme`).
-
-  A label overlapping one drawn before it (in `labels` order) is left out. Returns `nil`."
-  [canvas pl labels scales env]
-  (draw-label-placements! canvas (without-collisions canvas (end-label-placements pl labels scales) env) env))
-
-(defn outer-label-room
-  "Gives the room `:outer?` end labels need around a polar plot's circle.
-
-  Parameters:
-
-  - `labels` (sequence): end labels (see [[draw-end-labels!]]); only `:outer?` ones count.
-  - `env` (map): `:theme`, `:hint` (measuring).
-
-  Returns `[horizontal vertical]` pixels: the widest and the tallest label, measured in its role, plus the gap ([[leader-label-gap]] when some label has a leader, else [[outer-label-gap]]); `nil` without `:outer?` labels."
-  [labels {:keys [theme hint]}]
-  (let [outer (filter :outer? labels)]
-    (when-let [contents (seq (distinct (map #(label-content (dissoc % :color)) outer)))]
-      (measure/call-with-scratch-canvas
-       hint
-       (fn [c]
-         (let [^Vec2 widest (measure/max-size (map #(measure/natural-size % {:canvas c :theme theme}) contents))
-               gap (v/mx (map outer-gap outer))]
-           [(m/+ gap (.x widest)) (m/+ gap (.y widest))]))))))
-
-(defn n-label-room
-  "Gives the `:padding-px` a strip chart's n labels need.
-
-  Parameters:
-
-  - `chart-options` (map): chart options - `:n-label` (default false), `:n-format`.
-  - `items` (map): `{panel [item ...]}` (see [[split]]).
-  - `env` (map): `:theme`, `:hint`, `:flip?` (see [[end-label-room]]).
-
-  Returns room past the largest values for the count labels, past the smallest for `:mirrored?` items; `nil` without n labels or items."
-  [chart-options items env]
-  (when (data/option chart-options :n-label false)
-    (end-label-room (map (fn [item] {:text (n-label-text chart-options item) :side (n-label-side item)}) (mapcat val items))
-                    env)))
-
-(defn draw-n-labels!
-  "Draws each item's count just past its largest drawn value, when the chart has n labels.
-
-  [[n-label-room]] keeps room for them past the data.
-
-  Parameters:
-
-  - `canvas`: the canvas.
-  - `pl` (map): the chart's [[placement]].
-  - `items` (sequence): one panel's items.
-  - `top-value` (function): item -> its largest drawn value (the smallest for a `:mirrored?` item, which is labelled toward decreasing values).
-  - `chart-options` (map): chart options - `:n-label` (default false), `:n-format` (default `n=%d`).
-  - `scales` (map): finalized position scales.
-  - `env` (map): the drawing environment.
-
-  Returns `nil`. See also [[draw-end-labels!]]."
-  [canvas pl items top-value chart-options scales env]
-  (when (data/option chart-options :n-label false)
-    (draw-end-labels! canvas pl
-                      (map (fn [{:keys [level slot] :as item}]
-                             {:level level :slot slot :at (top-value item) :side (n-label-side item)
-                              :text (n-label-text chart-options item)})
-                           items)
-                      scales env)))
 
 (defn ridges?
   "Tests whether a histogram or density draws ridgelines.
@@ -829,14 +479,18 @@
 
   Throws `ex-info {:key :position}` for other positions."
   [chart-split chart-options env]
-  (let [position (get chart-options :position :overlay)]
+  (let [position (data/option chart-options :position :overlay)]
     (when-not (#{:overlay :mirror} position)
       (schema/fail! "Ridgelines (a categorical or bands :y) take :position :overlay or :mirror."
                     {:key :position :value position}))
     (split chart-split {:position position ::ridge true} :band env)))
 
 (defn slot-side
-  "Gives the side of the cross centre a slot `[lo hi]` lies on - the direction one-sided marks (ridges, mirrored swarms) grow in.
+  "Gives the side of the cross centre a slot lies on - the direction one-sided marks (ridges, mirrored swarms) grow in.
+
+  Parameters:
+
+  - `[lo hi]` (doubles): the slot in cross units.
 
   Returns `1.0` toward higher `:y` (also for a slot around the centre), `-1.0` away (the second group of a mirror)."
   ^double [[^double lo ^double hi]]
@@ -932,7 +586,7 @@
   [k mapping rows]
   (when-let [acc (get mapping k)]
     (let [value-of (data/row-accessor k acc)]
-      (some #(let [v (value-of %)] (and (number? v) (m/valid-double? (double v)))) rows))))
+      (some #(schema/finite? (value-of %)) rows))))
 
 (defn level-axis
   "Gives the mapping axis holding a strip chart's levels.
@@ -966,8 +620,14 @@
           (and (some? (:y mapping)) (nil? (:x mapping))) :x
           :else :y))))
 
-(defn- swap-xy
-  "Exchanges the entries of `:x` and `:y` of a map `m` (an absent one stays absent); `nil` for `nil`."
+(defn swap-xy
+  "Exchanges the `:x` and `:y` entries of a map.
+
+  Parameters:
+
+  - `m` (map or `nil`): a map keyed by dimension.
+
+  Returns `m` with the values of `:x` and `:y` exchanged (an absent one stays absent); `nil` for `nil`."
   [m]
   (when m
     (cond-> (dissoc m :x :y)
@@ -991,6 +651,20 @@
     (contains? stats :extents) (update :extents update-vals swap-xy)
     (contains? stats :na) (update :na #(set (map (fn [d] (get {:x :y :y :x} d d)) %)))))
 
+(defn- user-frame-error
+  "Gives an error of a strip chart computed with its levels on `:x` (the strip frame transposed) in the user's dimensions.
+
+  Parameters:
+
+  - `e` (`ExceptionInfo`): the error thrown by the transposed computation.
+
+  Returns `e` itself unless it is a mapping error (`:key :mapping`); then a new `ex-info` with the same message and cause, `:x` and `:y` exchanged in its `:in`."
+  [e]
+  (let [{error-key :key path :in :as error-data} (ex-data e)]
+    (if (and (= :mapping error-key) (vector? path))
+      (ex-info (ex-message e) (assoc error-data :in (mapv #(get {:x :y :y :x} % %) path)) e)
+      e)))
+
 (defn compute-oriented
   "Computes a strip chart in the strip frame, with its levels on the mapping axis of [[level-axis]].
 
@@ -1003,104 +677,52 @@
   - `chart-split` (map): `{:groups {panel rows} :mapping m}`.
   - `env` (map): the compute environment (`:plot-scales`, `:flip?`, ...).
 
-  Returns the stats with `:level-axis`, every panel's data with `::level-axis` (for [[draw-oriented]])."
+  Returns the stats with `:level-axis`, every panel's data with `::level-axis` (for [[draw-oriented]]).
+
+  Throws `ex-info {:key :mapping :in [:mapping k]}` for a mapped `:x` or `:y` without a valid value (before the level axis is chosen, see [[cljplot2.data.rows/check-mapped!]]); a mapping error of the transposed computation names the user's dimension (see [[user-frame-error]])."
   [frame-compute chart {:keys [groups mapping] :as chart-split} env]
-  (let [axis (level-axis (:options chart) mapping (mapcat val groups) (:plot-scales env))
+  (let [all-rows (mapcat val groups)
+        _ (data/check-mapped! all-rows (for [k [:x :y] :let [acc (get mapping k)] :when (some? acc)] [k (data/row-accessor k acc)]))
+        axis (level-axis (:options chart) mapping all-rows (:plot-scales env))
         stats (if (= :y axis)
                 (frame-compute chart chart-split env)
-                (transposed-stats
-                 (frame-compute (cond-> chart (get-in chart [:options :padding]) (update-in [:options :padding] swap-xy))
-                                (assoc chart-split :mapping (swap-xy mapping))
-                                (-> env (update :flip? not) (update :plot-scales swap-xy)))))]
+                (try
+                  (transposed-stats
+                   (frame-compute (cond-> chart (get-in chart [:options :padding]) (update-in [:options :padding] swap-xy))
+                                  (assoc chart-split :mapping (swap-xy mapping))
+                                  (-> env (update :flip? not) (update :plot-scales swap-xy))))
+                  (catch clojure.lang.ExceptionInfo e (throw (user-frame-error e)))))]
     (-> stats
         (update :data update-vals #(assoc % ::level-axis axis))
         (assoc :level-axis axis))))
 
-(defn placeable?
-  "Tests whether a strip panel's values can be placed: its value scale `:x` (strip frame) exists.
+(defn box-stats
+  "Gives the Tukey box statistics of values.
 
   Parameters:
 
-  - `scales` (map): finalized position scales in the strip frame.
+  - `values` (sequence of numbers): finite values, not empty.
 
-  Returns a truthy value when there is an `:x` scale; `nil` when no chart gave the plot an x extent (no data, or no item with a drawable value) - nothing to draw.
+  Returns `{:q1 :median :q3 :lav :uav :outliers [..] :mean :n}`: quartiles and median (fastmath `percentiles`, legacy estimation), the adjacent values `:lav` / `:uav` - the most extreme values within 1.5 IQR of the box (fastmath `adjacent-values`), the values beyond them, the mean and the count.
 
-  See also [[placement]], [[draw-oriented]]."
-  [scales]
-  (some? (:x scales)))
+  The box chart's `:stat :identity` takes such statistics from the rows instead."
+  [values]
+  (let [[q1 median q3] (stats/percentiles values [25.0 50.0 75.0])
+        [lav uav] (stats/adjacent-values values q1 q3 median)]
+    {:q1 q1 :median median :q3 q3 :lav lav :uav uav
+     :outliers (vec (stats/outliers values q1 q3))
+     :mean (stats/mean values)
+     :n (count values)}))
 
-(defn draw-oriented
-  "Draws one panel of a strip chart whose draw works in the strip frame.
-
-  The position scales are exchanged when the levels are on `:x` (see [[compute-oriented]]); placement and projections take their directions from the scales.
-
-  Parameters:
-
-  - `frame-draw` (function): the chart's draw in the strip frame, of `chart`, `computed`, `canvas`, `box`, `scales`, `env`.
-  - `chart` (map): the chart value.
-  - `computed` (map): the panel's computed data (with `::level-axis`).
-  - `canvas`, `box`, `scales`, `env`: as the chart contract's draw.
-
-  Returns what `frame-draw` returns; `nil` without drawing when nothing can be placed (see [[placeable?]])."
-  [frame-draw chart computed canvas box scales env]
-  (let [frame-scales (if (= :x (::level-axis computed)) (swap-xy scales) scales)]
-    (when (placeable? frame-scales)
-      (frame-draw chart computed canvas box frame-scales env))))
-
-(defmulti in-frame-compute
-  "Computes a strip chart's stats in the strip frame (levels on `:y`, values on `:x`); a method per strip chart kind.
+(defn varwidth-factors
+  "Gives the box width factor of each item.
 
   Parameters:
 
-  - `chart` (map): the chart value, dispatched on its `:kind`.
-  - `chart-split` (map): `{:groups {panel rows} :mapping m}` in the strip frame.
-  - `env` (map): the compute environment in the strip frame.
+  - `items` (sequence of maps): every item of the chart, each with its count `:n`.
+  - `varwidth?`: proportional widths wanted (`:varwidth`).
 
-  Returns the chart's stats (see the chart contract in [[cljplot2.chart]]).
-
-  Throws `No method in multimethod` for a kind without a method.
-
-  See also [[compute]]."
-  (fn [chart _chart-split _env] (:kind chart)))
-
-(defmulti in-frame-draw
-  "Draws one panel of a strip chart in the strip frame; a method per strip chart kind.
-
-  Parameters:
-
-  - `chart` (map): the chart value, dispatched on its `:kind`.
-  - `computed` (map): the panel's computed data.
-  - `canvas`, `box`: as the chart contract's draw.
-  - `scales` (map): the panel's position scales in the strip frame.
-  - `env` (map): the drawing environment.
-
-  Drawn for its effect on the canvas (the result is unspecified); throws `No method in multimethod` for a kind without a method.
-
-  See also [[draw]]."
-  (fn [chart _computed _canvas _box _scales _env] (:kind chart)))
-
-(defn compute
-  "Computes a strip chart's stats with its levels on the categorical axis: the chart contract's compute of every strip chart.
-
-  Parameters:
-
-  - `chart` (map): the chart value; its kind has an [[in-frame-compute]] method.
-  - `chart-split` (map): `{:groups {panel rows} :mapping m}`.
-  - `env` (map): the compute environment.
-
-  Returns the stats of [[in-frame-compute]] turned to the mapping axis of the levels (see [[compute-oriented]])."
-  [chart chart-split env]
-  (compute-oriented in-frame-compute chart chart-split env))
-
-(defn draw
-  "Draws one panel of a strip chart: the chart contract's draw of every strip chart.
-
-  Parameters:
-
-  - `chart` (map): the chart value; its kind has an [[in-frame-draw]] method.
-  - `computed` (map): the panel's computed data (from [[compute]]).
-  - `canvas`, `box`, `scales`, `env`: as the chart contract's draw.
-
-  Draws [[in-frame-draw]] in the strip frame (see [[draw-oriented]]); `nil` when nothing can be placed."
-  [chart computed canvas box scales env]
-  (draw-oriented in-frame-draw chart computed canvas box scales env))
+  Returns a function of an item giving its width factor: `sqrt(n / largest n)` with `varwidth?` (the largest n at least 1), else 1."
+  [items varwidth?]
+  (let [nmax (double (reduce m/max 1.0 (map :n items)))]
+    (fn ^double [item] (if varwidth? (m/sqrt (m// (double (:n item)) nmax)) 1.0))))

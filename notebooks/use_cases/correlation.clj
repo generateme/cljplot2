@@ -112,7 +112,7 @@
                  :url "https://r-graph-gallery.com/275-add-text-labels-with-ggplot2.html"
                  :dataset :mtcars})
 
-(let [label-box {:size 9 :background [255 255 255 200] :padding 2 :mapping {:x :wt :y :mpg :label :model}}]
+(let [label-box {:size 9 :background [255 255 255 200] :inset 2 :mapping {:x :wt :y :mpg :label :model}}]
   (plot/render-image
    {:data mtcars :mapping {:x :wt :y :mpg}
     :charts [(chart/scatter {:size 8 :color [200 60 40]})
@@ -509,11 +509,11 @@
                     {:year year :uempmed (stats/mean (map :uempmed rows)) :psavert (stats/mean (map :psavert rows))}))]
   (plot/render-image
    {:data yearly :mapping {:x :uempmed :y :psavert}
-    :charts [(chart/line {:sort false :curve :bezier :color [33 102 172]})
+    :charts [(chart/line {:order :data :curve :bezier :color [33 102 172]})
              (chart/scatter {:size 6 :color [33 102 172]})
              (chart/text {:data (filterv #(zero? (mod (long (:year %)) 4)) yearly)
                           :mapping {:x :uempmed :y :psavert :label :year}
-                          :background [255 255 255 210] :padding 2 :anchor [:left :bottom] :offset [5 5]})]
+                          :background [255 255 255 210] :inset 2 :anchor [:left :bottom] :offset [5 5]})]
     :labels {:title "Unemployment duration vs savings rate, 1990-2014" :x "median unemployment, weeks" :y "savings rate, %"}}
    {:width 800 :height 550}))
 
@@ -541,7 +541,7 @@
 ;; ### 2D kernel density and contours
 
 ;; `chart/field` estimates the density (Gaussian kernel, a bandwidth per axis) and draws it as a raster;
-;; `chart/contour` draws its level lines, or with `:fill true` the bands between them.
+;; `chart/contour` draws its level lines, or with `:filled true` the bands between them.
 
 (nu/source-note {:source "R Graph Gallery - 2D density plot with ggplot2"
                  :url "https://r-graph-gallery.com/2d-density-plot-with-ggplot2.html"
@@ -550,10 +550,10 @@
 (plot/render-image
  (plot/arrange
   [{:data faithful :mapping {:x :eruptions :y :waiting}
-    :charts [(chart/field) (chart/contour {:color :white :width 0.8})] :legend false
+    :charts [(chart/field) (chart/contour {:color :white :line-width 0.8})] :legend false
     :labels {:title "density raster and contour lines" :x "eruption, min" :y "waiting, min"}}
    {:data faithful :mapping {:x :eruptions :y :waiting}
-    :charts [(chart/contour {:fill true :levels 8})]
+    :charts [(chart/contour {:filled true :levels 8})]
     :labels {:title "filled contour bands" :x "eruption, min" :y nil}}]
   {:columns 2})
  {:width 1000 :height 450})
@@ -568,7 +568,7 @@
 
 (plot/render-image
  {:data faithful :mapping {:x :eruptions :y :waiting}
-  :charts [(chart/field {:alpha 0.8}) (chart/scatter {:size 3 :color [255 255 255 200]})]
+  :charts [(chart/field {:alpha-factor 0.8}) (chart/scatter {:size 3 :color [255 255 255 200]})]
   :labels {:title "Old Faithful eruptions over their density" :x "eruption, min" :y "waiting, min"}}
  {:width 700 :height 500})
 
@@ -702,7 +702,7 @@
              (chart/scatter {:size 7 :color [200 60 40]})
              (chart/text {:data (vec (for [[set rows] (group-by :set anscombe)] {:set set :x 4 :y 13 :label (r-label rows)}))
                           :mapping {:x :x :y :y :label :label} :anchor [:left :top]
-                          :background [255 255 255 210] :padding 3})]
+                          :background [255 255 255 210] :inset 3})]
     :labels {:title "Anscombe's quartet: one r, four relations"}}
    {:width 1000 :height 330}))
 

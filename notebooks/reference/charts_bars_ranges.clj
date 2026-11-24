@@ -338,14 +338,14 @@
 
 (plot/render-image (plot/arrange [{:data kpis
                                    :mapping {:y :kpi :ranges :ranges :measures :measures :markers :markers}
-                                   :charts [(chart/bullet {:measure-width 0.2 :marker-width 0 :padding {:x [0 0.2]}})]
+                                   :charts [(chart/bullet {:measure-fraction 0.2 :marker-width 0 :padding {:x [0 0.2]}})]
                                    :scales {:y {:reverse true}}
                                    :labels {:title "thin, no markers, :padding {:x [0 0.2]}"}}
                                   {:data kpis
                                    :mapping {:y :kpi :ranges :ranges :measures :measures :markers :markers}
                                    :charts [(chart/bullet {:range-colors [[255 230 200] [255 250 240]]
                                                            :measure-colors [[180 60 30] [230 150 120]]
-                                                           :measure-width 0.6 :marker-color [30 30 160]
+                                                           :measure-fraction 0.6 :marker-color [30 30 160]
                                                            :marker-width 4 :marker-length 0.9})]
                                    :scales {:y {:reverse true}}
                                    :labels {:title "custom colours and sizes"}}]

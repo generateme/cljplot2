@@ -16,12 +16,13 @@
   `:shape` (as scatter, see [[cljplot2.graphics.shape]]); `:fit`, `:pack`, `:padding {:x [lo hi]}` (default
   `[0.05 0.05]`), plus the strip options and `:data` / `:mapping`.
 
-  Functions: [[swarm-offsets]], [[around-offsets]] and [[fit-offsets]] - the packing; [[legend]] - the chart contract's key glyph (the chart computes and draws through [[cljplot2.data.strip/compute]] and [[cljplot2.data.strip/draw]]); [[schemas]] - its style, options and mapping."
+  Functions: [[swarm-offsets]], [[around-offsets]] and [[fit-offsets]] - the packing; the key glyph is [[cljplot2.chart.legend/point-legend]] (the chart computes and draws through [[cljplot2.chart.strip/compute]] and [[cljplot2.chart.strip/draw]]); [[schemas]] - its style, options and mapping."
   (:require [fastmath.core :as m]
             [fastmath.vector :as v]
             [cljplot2.data.group :as group]
             [cljplot2.data.position :as position]
             [cljplot2.data.rows :as data]
+            [cljplot2.chart.strip :as strip-chart]
             [cljplot2.data.strip :as strip]
             [cljplot2.graphics.shape :as shape]
             [cljplot2.schema :as schema]
@@ -126,7 +127,7 @@
               o (nearest-free (sort-by first intervals) one-sided?)]
           (recur (next ps) (conj placed [p o]) (conj! offsets o)))))))
 
-(def ^{:const true :tag 'long} max-spiral-steps
+(def ^{:private true :const true :tag 'long} max-spiral-steps
   "Most spiral spots [[around-offsets]] tests for one circle."
   100000)
 
@@ -215,7 +216,7 @@
                           (strip/extents place items (fn [{:keys [values]}] [(v/mn values) (v/mx values)])))
      :padding (strip/padding place options)
      :padding-explicit (strip/explicit-padding place options)
-     :padding-px (strip/n-label-room options items env)
+     :padding-px (strip-chart/n-label-room options items env)
      :na (group/na-dims panels)
      :dropped dropped}))
 
@@ -251,7 +252,7 @@
 
   Packs each item's values by [[swarm-offsets]] (`:pack :around` - [[around-offsets]]) at the point size, fitted into its slot with `:fit` ([[fit-offsets]]); skips a group outside its scale's domain, a level without span and points the scales can't place; then the n labels."
   [_chart {:keys [items style place options one-sided?]} canvas box scales env]
-  (let [{:keys [point span value-pixel] :as pl} (strip/placement box scales options place)
+  (let [{:keys [point span value-pixel] :as pl} (strip-chart/placement box scales options place)
         fit? (data/option options :fit true)
         around? (= :around (:pack options))]
     (doseq [{:keys [level slot values aesthetics]} items
@@ -277,24 +278,10 @@
                                 (v/add at (v/mult (value-direction point v level cross) along)))]
                 :when (data/finite-point? p)]
           (shape/draw! canvas (:shape st) p st))))
-    (strip/draw-n-labels! canvas pl items (fn [{:keys [values]}] (v/mx values)) options scales env)))
+    (strip-chart/draw-n-labels! canvas pl items (fn [{:keys [values]}] (v/mx values)) options scales env)))
 
-(defmethod strip/in-frame-compute :beeswarm [chart chart-split env] (compute-in-strip-frame chart chart-split env))
+(defmethod strip-chart/in-frame-compute :beeswarm [chart chart-split env] (compute-in-strip-frame chart chart-split env))
 
-(defmethod strip/in-frame-draw :beeswarm [chart computed canvas box scales env]
+(defmethod strip-chart/in-frame-draw :beeswarm [chart computed canvas box scales env]
   (draw-in-strip-frame chart computed canvas box scales env))
 
-(defn legend
-  "Draws the beeswarm's key glyph: its point shape fitted and centred in a legend key.
-
-  Parameters:
-
-  - `chart` (map): the chart value.
-  - `attributes` (map): the key's mapped style attributes, over the chart's style.
-  - `canvas`: the clojure2d canvas.
-  - `box` (map): the key box in pixels.
-  - `env` (map): the legend environment - `:theme`.
-
-  See also [[cljplot2.graphics.shape/draw-key!]]."
-  [chart attributes canvas box env]
-  (shape/styled-key! canvas box (merge (theme/resolved-style (:theme env) chart) attributes) false))

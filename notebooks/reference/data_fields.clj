@@ -102,7 +102,7 @@
                                 [x y] (cond-> points closed? (conj (first points)))]
                             {:level level :line (str level "/" i) :x x :y y})
                     :mapping {:x :x :y :y :color #(str (:level %)) :group :line}
-                    :charts [(chart/line {:sort false :width 2})]
+                    :charts [(chart/line {:order :data :line-width 2})]
                     :scales {:color {:title "level" :domain ["-1.0" "-0.5" "0.0" "0.5" "1.0"]}}
                     :aspect :iso}
                    {:width 600 :height 480})
@@ -125,14 +125,14 @@
                                    :aspect :iso
                                    :labels {:title "rotation, :n 12"}}
                                   {:data (vf/arrows (fn [[x y]] (v/vec2 (- y) x)) {:domain {:x [-2 2] :y [-2 2]} :n 12 :grid :shifted
-                                                                                   :scale 1.6})
+                                                                                   :length-scale 1.6})
                                    :mapping {:x :x :y :y :xend :xend :yend :yend}
                                    :charts [(chart/segment {:arrow {:end true :size 5}})]
                                    :aspect :iso
-                                   :labels {:title ":grid :shifted, :scale 1.6"}}
+                                   :labels {:title ":grid :shifted, :length-scale 1.6"}}
                                   {:data (vf/arrows (f/field :hyperbolic) {:domain {:x [-3 3] :y [-3 3]} :n [16 12]})
                                    :mapping {:x :x :y :y :xend :xend :yend :yend :color :magnitude}
-                                   :charts [(chart/segment {:width 1.5 :arrow {:end true :size 5}})]
+                                   :charts [(chart/segment {:line-width 1.5 :arrow {:end true :size 5}})]
                                    :scales {:color {:title "|f|" :range [[160 200 235] [8 48 107]]}}
                                    :aspect :iso
                                    :labels {:title "hyperbolic, :n [16 12]"}}]
@@ -159,13 +159,13 @@
 (plot/render-image (plot/arrange [{:data (vf/traces (fn [[x y]] (v/vec2 (- y (* 0.3 x)) (- (- x) (* 0.3 y)))) seeds
                                                     {:steps 20 :step 0.05})
                                    :mapping {:x :x :y :y :group :id}
-                                   :charts [(chart/line {:sort false :arrow {:end true :size 5}})]
+                                   :charts [(chart/line {:order :data :arrow {:end true :size 5}})]
                                    :aspect :iso
                                    :labels {:title ":steps 20, :step 0.05"}}
                                   {:data (vf/traces (fn [[x y]] (v/vec2 (- y (* 0.3 x)) (- (- x) (* 0.3 y)))) seeds
                                                     {:steps 400 :step 0.05})
                                    :mapping {:x :x :y :y :group :id :color :i}
-                                   :charts [(chart/line {:sort false})]
+                                   :charts [(chart/line {:order :data})]
                                    :scales {:color {:title "step" :range [[160 200 235] [8 48 107]]}}
                                    :aspect :iso
                                    :labels {:title ":steps 400"}}
@@ -174,7 +174,7 @@
                                                       (repeatedly 300 #(vector (r/drandom g -4 4) (r/drandom g -4 4)))
                                                       {:steps 60 :step 0.05}))
                                    :mapping {:x :x :y :y :group :id}
-                                   :charts [(chart/line {:sort false :color [20 70 140 70]})]
+                                   :charts [(chart/line {:order :data :color [20 70 140 70]})]
                                    :scales {:x {:domain [-4 4] :nice false} :y {:domain [-4 4] :nice false}}
                                    :aspect :iso
                                    :labels {:title "[sin y, sin x], 300 seeds"}}]

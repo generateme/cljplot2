@@ -106,7 +106,7 @@
         (is (= 2 (get-in built [:stats 0 :dropped :size])))
         (is (= [10 20 30 40] (:size (panel-data built))))))
     (testing "all values NA -> misspelt mapping error"
-      (is (= {:key :mapping :value :color :rows 4} (error #(build (plot-of {:color :yaer}))))))
+      (is (= {:key :mapping :in [:mapping :color] :rows 4} (error #(build (plot-of {:color :yaer}))))))
     (testing "empty data: no error, no scale, no legend"
       (let [built (build (plot-of {:color :g} {:data []}))]
         (is (nil? (spec built :color)))
@@ -387,7 +387,7 @@
       {:palette {:shape [\?]}} :shape
       {:palette {:size [3 1]}} :size
       {:palette {:na :not-a-color}} :na
-      {:panel {:grid {:bands {:width -1}}}} :width)))
+      {:panel {:grid {:bands {:line-width -1}}}} :line-width)))
 
 ;; 4.x style
 
@@ -406,8 +406,8 @@
         data (for [v varieties i (range 2)] {:yield (+ 20 i (count v)) :variety v})
         p {:data data :mapping {:x :yield :y :variety} :charts [(chart/scatter)]
            :theme (-> plain
-                      (assoc-in [:panel :grid :y] {:color [0 0 255] :width 1 :dash :none})
-                      (assoc-in [:panel :grid :bands] {:color [255 0 0] :width 1 :dash :none}))}
+                      (assoc-in [:panel :grid :y] {:color [0 0 255] :line-width 1 :dash :none})
+                      (assoc-in [:panel :grid :bands] {:color [255 0 0] :line-width 1 :dash :none}))}
         built (build p)
         c (plot/render p {:width 600 :height 400})
         {:keys [x y w h]} (grid/item-box (:layout built) :panel)]

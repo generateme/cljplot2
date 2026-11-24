@@ -2,7 +2,9 @@
   "Plot content `{:kind :plot :plot p}`: a whole plot in a grid cell (multiplot). Natural size 0x0 - it takes what
   its tracks give. The pipeline's `:subplots` stage builds `p` at the item's box size (see
   [[cljplot2.pipeline]]); [[cljplot2.render]] draws the built plot translated to the box and clipped to it.
-  `p` is built with its own theme (no inheritance from the outer plot) and the outer rendering hint."
+  `p` is built with its own theme (no inheritance from the outer plot) and the outer rendering hint.
+
+  Functions: [[plot-content?]] - whether grid content is a nested plot."
   (:require [cljplot2.schema :as schema]
             [fastmath.vector :as v]
             [cljplot2.graphics.measure :as measure]))
@@ -21,7 +23,7 @@
   [content]
   (= :plot (:kind content)))
 
-(def content-schema
+(def ^:private content-schema
   "`{:kind :plot}` content: `:plot`, a plot map (validated when the sub-plot is built)."
   [:map [:plot :map]])
 
