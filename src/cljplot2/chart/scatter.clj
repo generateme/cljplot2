@@ -176,7 +176,6 @@
         accessors (mapv #(data/row-accessor % (mapping %)) dims)
         values (update-vals ordered-groups (fn [rows] (mapv (fn [row] (mapv #(% row) accessors)) rows)))
         all-values (apply concat (vals values))
-        row-count (count all-values)
         dropped (into {} (map-indexed (fn [i k] [k (count (remove #(kept? k na-level? plot-scales (% i)) all-values))]) dims))
         keep-row? (fn [vs] (every? identity (map-indexed (fn [i k] (kept? k na-level? plot-scales (vs i))) dims)))
         kept-points (update-vals values (fn [vs] (let [kept (filterv keep-row? vs)]
@@ -184,9 +183,8 @@
                                                          (map-indexed (fn [i k] [k (mapv #(% i) kept)]))
                                                          dims))))
         points (jitter-points kept-points options plot-scales)]
-    (doseq [[i k] (map-indexed vector dims)]
-      (when (and (m/pos? row-count) (not-any? #(aesthetic/valid-value? k (get plot-scales k) (% i)) all-values))
-        (schema/fail! data/no-valid-values {:key :mapping :value k :rows row-count})))
+    (data/check-mapped! all-values (map-indexed (fn [i k] [k #(% i)]) dims)
+                        (fn [k v] (aesthetic/valid-value? k (get plot-scales k) v)))
     {:data points
      :extents (update-vals points (fn [p] (into {:x (data/extent :x (:x p)) :y (data/extent :y (:y p))}
                                                 (map (fn [k] [k (aesthetic/value-extent k (get plot-scales k) (remove nil? (p k)))]))
@@ -234,7 +232,7 @@
       (c2d/set-stroke-custom canvas {:size stroke-width})
       (dorun (map-indexed (fn [^long i vx]
                             (let [^Vec2 p (projection vx (nth y i))]
-                              (when-not (or (m/nan? (.x p)) (m/nan? (.y p)))
+                              (when (data/finite-point? p)
                                 (when-let [st (point-style i)]
                                   (shape/draw! canvas (:shape st) p st)))))
                           x)))))

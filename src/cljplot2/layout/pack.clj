@@ -65,7 +65,14 @@
           (Array/aset ys c ay)))))
 
 (defn- overlap?
-  "Tests whether circles `ci` and `cj` (indices into `xs` `ys` `rs`) overlap - more than touch (see [[tangency-tolerance]]); zero radii never overlap."
+  "Tests whether two placed circles overlap, more than touching (see [[tangency-tolerance]]).
+
+  Parameters:
+
+  - `xs`, `ys`, `rs` (double arrays): the centres and radii of the circles being placed.
+  - `ci`, `cj` (longs): the indices of the two circles.
+
+  Returns true when they overlap, else false; a pair with zero total radius never overlaps."
   [^doubles xs ^doubles ys ^doubles rs ci cj]
   (let [i (long ci) j (long cj)
         dr (m/* (m/+ (Array/aget rs i) (Array/aget rs j)) (m/- 1.0 tangency-tolerance))
@@ -73,7 +80,17 @@
     (and (m/pos? dr) (m/> (m/* dr dr) (m/+ (m/* dx dx) (m/* dy dy))))))
 
 (defn- score
-  "Gives the squared distance from the origin of the weighted midpoint of chain circle `ci` and its successor (`nxt`)."
+  "Gives the squared distance from the origin of the weighted midpoint of a front-chain circle and its successor.
+
+  The front chain places the next circle beside the pair closest to the origin.
+
+  Parameters:
+
+  - `xs`, `ys`, `rs` (double arrays): the centres and radii of the circles being placed.
+  - `nxt` (long array): the chain's successor index of each circle.
+  - `ci` (long): the index of the chain circle.
+
+  Returns the squared distance as a double."
   [^doubles xs ^doubles ys ^doubles rs ^longs nxt ci]
   (let [a (long ci) b (Array/aget nxt a)
         ar (Array/aget rs a) br (Array/aget rs b)
@@ -167,25 +184,50 @@
 ;; enclosing circle
 
 (defn- encloses-not?
-  "Tests whether circle `a` fails to contain circle `b` (`{:x :y :r}` each), exactly (no slack)."
+  "Tests whether a circle fails to contain another, exactly (no slack).
+
+  Parameters:
+
+  - `a`, `b` (maps): circles `{:x :y :r}`.
+
+  Returns true when `a` doesn't contain `b` (a smaller `a` never does), else false. See also [[encloses-weak?]]."
   [{^double ax :x ^double ay :y ^double ar :r} {^double bx :x ^double by :y ^double br :r}]
   (let [dr (m/- ar br) dx (m/- bx ax) dy (m/- by ay)]
     (or (m/neg? dr) (m/< (m/* dr dr) (m/+ (m/* dx dx) (m/* dy dy))))))
 
 (defn- encloses-weak?
-  "Tests whether circle `a` contains circle `b` (`{:x :y :r}` each), up to rounding (see [[weak-tolerance]])."
+  "Tests whether a circle contains another, up to rounding (see [[weak-tolerance]]).
+
+  Parameters:
+
+  - `a`, `b` (maps): circles `{:x :y :r}`.
+
+  Returns true when `a` contains `b` with the tolerance, else false. See also [[encloses-not?]]."
   [{^double ax :x ^double ay :y ^double ar :r} {^double bx :x ^double by :y ^double br :r}]
   (let [dr (m/+ (m/- ar br) (m/* (m/max ar br 1.0) weak-tolerance))
         dx (m/- bx ax) dy (m/- by ay)]
     (and (m/pos? dr) (m/> (m/* dr dr) (m/+ (m/* dx dx) (m/* dy dy))))))
 
 (defn- encloses-weak-all?
-  "Tests whether circle `a` contains every circle of `bs` up to rounding (see [[encloses-weak?]]); true for no circles."
+  "Tests whether a circle contains every circle of a collection, up to rounding (see [[encloses-weak?]]).
+
+  Parameters:
+
+  - `a` (map): a circle `{:x :y :r}`.
+  - `bs` (sequence): circles `{:x :y :r}`.
+
+  Returns true when `a` contains them all; true for no circles."
   [a bs]
   (every? #(encloses-weak? a %) bs))
 
 (defn- enclosing-2
-  "Gives the smallest circle `{:x :y :r}` containing circles `a` and `b` (`{:x :y :r}` each); one of them when they share a centre."
+  "Gives the smallest circle containing two circles.
+
+  Parameters:
+
+  - `a`, `b` (maps): circles `{:x :y :r}`.
+
+  Returns the circle `{:x :y :r}`; with a shared centre the larger of the two."
   [{^double x1 :x ^double y1 :y ^double r1 :r :as a} {^double x2 :x ^double y2 :y ^double r2 :r}]
   (let [x21 (m/- x2 x1) y21 (m/- y2 y1) r21 (m/- r2 r1)
         l (m/sqrt (m/+ (m/* x21 x21) (m/* y21 y21)))]
@@ -196,7 +238,13 @@
        :r (m/* 0.5 (m/+ l r1 r2))})))
 
 (defn- enclosing-3
-  "Gives the circle `{:x :y :r}` touching circles `a`, `b` and `c` (`{:x :y :r}` each) from outside, containing them (Apollonius)."
+  "Gives the circle touching three circles from outside and containing them (Apollonius).
+
+  Parameters:
+
+  - `a`, `b`, `c` (maps): circles `{:x :y :r}`.
+
+  Returns the circle `{:x :y :r}`; for nearly collinear centres the linear solution (see [[collinear-tolerance]])."
   [{^double x1 :x ^double y1 :y ^double r1 :r} {^double x2 :x ^double y2 :y ^double r2 :r} {^double x3 :x ^double y3 :y ^double r3 :r}]
   (let [a2 (m/- x1 x2) a3 (m/- x1 x3) b2 (m/- y1 y2) b3 (m/- y1 y3)
         c2 (m/- r2 r1) c3 (m/- r3 r1)
@@ -217,7 +265,13 @@
     {:x (m/+ x1 xa (m/* xb r)) :y (m/+ y1 ya (m/* yb r)) :r r}))
 
 (defn- enclosing-of-basis
-  "Gives the smallest circle containing the circles of a basis (a vector of 1 to 3 circles `{:x :y :r}`): the circle itself, [[enclosing-2]] or [[enclosing-3]]."
+  "Gives the smallest circle containing the circles of a basis.
+
+  Parameters:
+
+  - `basis` (vector): 1 to 3 circles `{:x :y :r}`.
+
+  Returns the single circle itself, [[enclosing-2]] of two or [[enclosing-3]] of three; another count throws (a basis never has one)."
   [basis]
   (case (count basis)
     1 (first basis)

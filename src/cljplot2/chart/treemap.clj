@@ -126,8 +126,8 @@
 
   Returns `nil`; the canvas graphics state is kept (isolated graphics)."
   [c role text fill box env]
-  (c2d/with-isolated-canvas [ic c]
-    (draw/draw-content {:kind :label :role role :text text :color (draw/text-color (:theme env) role fill)} ic box env)))
+  (c2d/with-isolated-canvas [isolated c]
+    (draw/draw-content {:kind :label :role role :text text :color (draw/text-color (:theme env) role fill)} isolated box env)))
 
 (defn- fill-box!
   "Fills a box and draws its inner border.
@@ -142,9 +142,7 @@
 
   Returns `nil`."
   [c color {:keys [x y w h] :as box} {:keys [border-color border-width] :as st} pattern-fill]
-  (c2d/set-color c color)
-  (c2d/rect c (long x) (long y) (long w) (long h))
-  (draw/fill-with-pattern! c (pattern-fill st color) #(c2d/rect % (long x) (long y) (long w) (long h)))
+  (draw/fill-patterned! c color (pattern-fill st color) #(c2d/rect % (long x) (long y) (long w) (long h)))
   (draw/inner-border! c box border-color border-width))
 
 (defn- children-rects

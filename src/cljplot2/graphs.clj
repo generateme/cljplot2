@@ -12,6 +12,7 @@
             [fastmath.core :as m]
             [fastmath.ml.clustering :as cl]
             [cljplot2.chart :as chart]
+            [cljplot2.content.label :as label]
             [cljplot2.data.graph :as graph]
             [cljplot2.data.hierarchy :as hierarchy]
             [cljplot2.data.tree :as tree]
@@ -178,14 +179,14 @@
 
   See also [[arc]], [[chord]], [[cljplot2.data.graph/layout]]."
   {:cljplot2/options network-options}
-  [edges {:keys [mapping edge-mapping labels scales title directed? node-style edge-style] user-theme :theme :as options}]
+  [edges {:keys [mapping edge-mapping labels title directed? node-style edge-style] user-scales :scales user-theme :theme :as options}]
   (schema/check-options! network-options options)
   (check-mappings! mapping edge-mapping)
   (let [{:keys [nodes] :as laid} (graph/layout (graph/graph edges (select-keys options graph-keys))
                                                (select-keys options (keys-of graph/layout-entries)))
         merged-theme (theme/deep-merge theme/default-theme user-theme)
         node-st (effective-style merged-theme :scatter :network-node node-style)
-        scales (cond-> scales (:size mapping) (update :size #(merge node-size-range %)))
+        scales (cond-> user-scales (:size mapping) (update :size #(merge node-size-range %)))
         radius (node-radius-fn nodes mapping (:size scales) [merged-theme (:size node-st)])
         radius-of (zipmap (map :id nodes) (map radius nodes))
         max-radius (double (reduce m/max 0.0 (vals radius-of)))
@@ -279,12 +280,12 @@
   [nodes]
   (let [leaves (filterv :leaf? nodes)
         size (m/constrain (m// 1400.0 (m/max 1 (count leaves))) 5.0 9.0)
-        row (fn [{:keys [name ^double angle ^double radius] :or {radius 1.0}}]
+        row (fn [{leaf-name :name :keys [^double angle ^double radius] :or {radius 1.0}}]
               (let [a (m/radians angle)
                     r (m/+ radius 0.03)]
                 {:x (m/* r (m/sin a))
                  :y (m/* r (m/cos a))
-                 :label (str name)
+                 :label (str leaf-name)
                  :angle (if (m/<= angle 180.0) (m/- angle 90.0) (m/- angle 270.0))}))
         [right left] ((juxt filter remove) #(m/<= (double (:angle %)) 180.0) leaves)]
     (cond-> []
@@ -624,7 +625,7 @@
   Parameters:
 
   - `edges` (sequence of maps): edge rows between leaves, each leaf named by its `:id` in a `from-parents` tree, else by its name.
-  - `tree` (map): a tree of [[cljplot2.data.tree]].
+  - `leaf-tree` (map): a tree of [[cljplot2.data.tree]].
   - `options` (map), validated first against [[bundle-options]]:
     - `:from`, `:to` - accessors of the edge ends (default `:from`, `:to`); `:beta` - the bundling strength, straighter towards 0, default 0.85 (see [[cljplot2.data.tree/bundle-paths]]);
     - `:color-by-group?` - edges and leaves coloured by group, with a legend, default `true`;
@@ -639,23 +640,23 @@
 
   Equivalents: ggraph `geom_conn_bundle` (`tension`), d3 `curveBundle.beta`; Holten (2006)."
   {:cljplot2/options bundle-options}
-  [edges tree {:keys [from to ^double beta ^double alpha edge-color scales title] user-theme :theme
+  [edges leaf-tree {:keys [from to ^double beta ^double alpha edge-color scales title] user-theme :theme
                :or {beta 0.85 alpha 0.4 edge-color bundle-edge-color} :as options}]
   (schema/check-options! bundle-options options)
   (let [labels? (get options :labels? true)
         by-group? (get options :color-by-group? true)
-        laid (tree/layout tree {:circular true})
+        laid (tree/layout leaf-tree {:circular true})
         nodes (:nodes laid)
         top-group (fn [i] (let [chain (vec (take-while some? (iterate #(:parent (nodes %)) i)))]
                            (:name (nodes (nth chain (m/long-max 0 (m/long-sub (count chain) 2)))))))
         leaf-group (into {} (keep-indexed (fn [i n] (when (:leaf? n) [(tree/leaf-key n) (str (top-group i))])) nodes))
-        {:keys [paths]} (tree/bundle-paths edges laid (cond-> {:beta beta} from (assoc :from from) to (assoc :to to)))
-        _ (when (and (seq edges) (empty? paths))
+        {bundled :paths} (tree/bundle-paths edges laid (cond-> {:beta beta} from (assoc :from from) to (assoc :to to)))
+        _ (when (and (seq edges) (empty? bundled))
             (schema/fail! (str "No bundle edge joins two different leaves of the tree: edge ends should name leaves - "
                                "the :id of a from-parents node, else the leaf name.")
                           {:key :edges :value (count edges)}))
         from-of (data/row-accessor :from (or from :from))
-        paths (mapv #(assoc % ::group (leaf-group (from-of %))) paths)
+        paths (mapv #(assoc % ::group (leaf-group (from-of %))) bundled)
         leaves (mapv #(assoc % ::group (leaf-group (tree/leaf-key %))) (filter :leaf? nodes))]
     (cond-> {:charts (cond-> [(chart/line (cond-> {:theme-style :bundle-edge :data paths :sort false :stroke-alpha alpha
                                                    :mapping (cond-> {:x :x :y :y :group :id} by-group? (assoc :color ::group))}
@@ -781,7 +782,7 @@
 
   See also [[network]], [[chord]]."
   {:cljplot2/options arc-options}
-  [edges {:keys [order mapping edge-mapping alpha scales title node-style edge-style labels] user-theme :theme
+  [edges {:keys [order mapping alpha scales title node-style edge-style labels] user-edge-mapping :edge-mapping user-theme :theme
           :or {alpha 0.5 labels true} :as options}]
   (schema/check-options! arc-options options)
   (let [labels? (get options :labels? true)
@@ -789,12 +790,12 @@
         g (graph/graph edges (select-keys options graph-keys))
         weighted? (m/< 1 (count (distinct (map :value (:edges g)))))
         edge-mapping (if (contains? options :edge-mapping)
-                       edge-mapping
+                       user-edge-mapping
                        (when (and weighted? (not (contains? mapping :size))) {:size :value}))
         _ (check-mappings! mapping edge-mapping)
         {:keys [nodes arcs]} (graph/arc-layout g {:order order})
-        top (double (reduce m/max 0.0 (map :y arcs)))
-        top (if (m/pos? top) top 1.0)]
+        highest (double (reduce m/max 0.0 (map :y arcs)))
+        top (if (m/pos? highest) highest 1.0)]
     (cond-> {:charts [(chart/line (merge {:theme-style :arc-edge}
                                          edge-style
                                          {:data arcs :sort false :stroke-alpha alpha
@@ -889,11 +890,11 @@
   [edges {:keys [mapping link-color alpha scales title] user-theme :theme :or {link-color :source alpha 0.5} :as options}]
   (schema/check-options! sankey-options options)
   (let [labels? (get options :labels? true)
-        {:keys [nodes rects bands]} (graph/sankey-layout (graph/graph edges (assoc (select-keys options graph-keys) :directed? true))
+        {:keys [nodes rects] laid-bands :bands} (graph/sankey-layout (graph/graph edges (assoc (select-keys options graph-keys) :directed? true))
                                                          (select-keys options (keys-of graph/sankey-layout-entries)))
         color-of (data/row-accessor :color (or (:color mapping) :id))
         node-color (into {} (map (juxt :id color-of)) nodes)
-        bands (cond->> bands
+        bands (cond->> laid-bands
                 (not= :none link-color) (mapv #(assoc % ::color (node-color (if (= :source link-color) (:from %) (:to %))))))]
     (cond-> {:charts (cond-> [(chart/polygon (cond-> {:theme-style :sankey-link :data bands :alpha alpha
                                                       :mapping {:x :x :y :y :group :link}}
@@ -907,17 +908,6 @@
                                        scales)
              :labels {:title title :x nil :y nil}}
       user-theme (assoc :theme user-theme))))
-
-(defn- axis-label
-  "Name of an alluvial axis accessor.
-
-  Parameters:
-
-  - `axis` (keyword, function or any value): the accessor.
-
-  Returns a keyword's name, else the accessor as a string."
-  [axis]
-  (if (keyword? axis) (name axis) (str axis)))
 
 (def alluvial-options
   "Options schema of [[alluvial]]: its own entries, those of [[cljplot2.data.graph/alluvial-graph]] (forwarded) and the builder's."
@@ -964,7 +954,7 @@
         {:keys [nodes rects bands]} (graph/sankey-layout g {:layer :layer :node-sort :input :iterations 0
                                                             :node-width node-width :pad pad})
         columns (count axes)
-        names (vec (or axis-names (map axis-label axes)))
+        names (vec (or axis-names (map label/name-text axes)))
         centres (mapv (fn [^double v] (m/+ (m/* (m// (m/- 1.0 node-width) (m/dec columns)) v) (m/* 0.5 node-width)))
                       (range columns))
         nearest (fn [^double v] (apply min-key #(m/abs (m/- (double (centres %)) v)) (range columns)))]
@@ -979,7 +969,7 @@
              :scales (theme/deep-merge {:x (assoc (dissoc unit-axis :axis) :ticks centres :formatter #(get names (nearest %) "")
                                                   :overlapping-labels :keep)
                                         :y unit-axis
-                                        :color {:title (axis-label (or fill (first axes)))}}
+                                        :color {:title (label/name-text (or fill (first axes)))}}
                                        scales)
              :labels {:title title :x nil :y nil}}
       user-theme (assoc :theme user-theme))))
@@ -1022,9 +1012,9 @@
   [rows {:keys [inner scales title] user-theme :theme :or {inner 0.3} :as options}]
   (schema/check-options! sequences-options options)
   (let [labels? (get options :labels? false)
-        {:keys [rows hierarchy]} (hierarchy/sequence-levels rows (merge {:keep-end? true}
+        {level-rows :rows :keys [hierarchy]} (hierarchy/sequence-levels rows (merge {:keep-end? true}
                                                                         (select-keys options (keys-of hierarchy/sequence-levels-entries))))]
-    (cond-> {:data rows
+    (cond-> {:data level-rows
              :mapping {:value :value :hierarchy hierarchy}
              ;; theme style :sequences-cell - thin borders: deep rings have many narrow cells
              :charts [(chart/partition {:theme-style :sequences-cell :color-by :name :order :value

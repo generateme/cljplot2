@@ -144,9 +144,7 @@
   [canvas {:keys [^double x ^double y ^double r]} fill stroke stroke-width pattern-fill]
   ;; more than 4 arguments: `stroke-width` unhinted
   (let [d (m/* 2.0 r)]
-    (c2d/set-color canvas fill)
-    (c2d/ellipse canvas x y d d)
-    (draw/fill-with-pattern! canvas pattern-fill #(c2d/ellipse % x y d d))
+    (draw/fill-patterned! canvas fill pattern-fill #(c2d/ellipse % x y d d))
     (when (and (m/pos? (double stroke-width)) (not (theme/none? stroke)))
       (c2d/set-stroke-custom canvas {:size stroke-width})
       (c2d/set-color canvas stroke)

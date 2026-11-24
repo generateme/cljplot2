@@ -187,13 +187,15 @@ into the builder's. `cljplot2.core` is the public API (`build`, `render`, `rende
   vector).
 - Caches of costly values asked for again: a `defonce` `cljplot2.cache/lru-cache` with a hinted `:const` threshold,
   read only through `cache/lookup-or-compute` (least recently used evicted, computed once per key); not Java
-  collections, not an unbounded `memoize`.
+  collections, not an unbounded global `memoize` (a `memoize` local to one draw call, e.g. `draw/pattern-fill-cache`,
+  is fine). A hit is a `swap!` (~0.5 µs): fine per plot or per drawn mark, not in a tight loop that draws nothing.
 - General drawing comes from clojure2d, never direct Java2D: `c2d/add-clip` intersects the clip (`c2d/clip`
   replaces it), `c2d/with-isolated-canvas` draws with every state change discarded afterwards (`push-matrix` restores
   only the transform), `c2d/set-rendering-hint` sets one hint, `sh/transform-shape`, `c2d/shape->points`
   (flattening), `c2d/path-def->shape`, `sh/svg-path`, `sh/text-outline`, `sh/rounded-rect`. A general drawing
-  function clojure2d lacks is added there (the user commits clojure2d, then `lein install`); an interop call kept in
-  cljplot2 has a comment with its reason.
+  function clojure2d lacks is added there (the user commits clojure2d, then `lein install`); a drawing interop call
+  kept in cljplot2 has a comment with its reason (Java value queries - `.getBounds2D`, image sizes, `Font.` /
+  `.deriveFont` - need none).
 - Style defaults (colours, sizes, label boxes) belong to the theme, never private vars or inline literals in
   builders or charts. Exceptions: defaults already exposed as options (`:edge-color`, acf / horizon `:colors`, the
   alphas), scale defaults (`node-size-range`, `arc-width-range`), layout geometry and the debug palette.

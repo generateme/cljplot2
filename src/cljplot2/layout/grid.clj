@@ -57,7 +57,13 @@
   (vec (take reported-duplicates (keep (fn [[x n]] (when (m/> (long n) 1) x)) (frequencies xs)))))
 
 (defn grid?
-  "Tests whether `content` is a nested grid (`:kind :grid`)."
+  "Tests whether a content is a nested grid.
+
+  Parameters:
+
+  - `content` (map): a grid item's content.
+
+  Returns true for `:kind :grid`, else false."
   [content]
   (= :grid (:kind content)))
 
@@ -182,7 +188,14 @@
 ;; sizes
 
 (defn- natural-length
-  "Gives the length of a natural size along a grid axis: its x for `:columns`, its y for `:rows`."
+  "Gives the length of a natural size along a grid axis.
+
+  Parameters:
+
+  - `size` (`Vec2`): a natural size in pixels.
+  - `axis` (keyword): `:columns` (the size's x) or `:rows` (its y).
+
+  Returns the length as a double."
   ^double [^Vec2 size axis]
   (if (= axis :columns) (.x size) (.y size)))
 
@@ -224,7 +237,13 @@
                     tracks)))
 
 (defn- flexible-weight
-  "Gives the weight of a track in the remaining space: a flexible track's weight (default 1), 0 for others."
+  "Gives the weight of a track in the remaining space.
+
+  Parameters:
+
+  - `track` (map): a track with `:size` `[kind weight]`.
+
+  Returns a flexible track's weight (default 1), 0 for any other kind."
   ^double [{[kind weight] :size}]
   (if (= kind :flexible) (double (or weight 1.0)) 0.0))
 
@@ -250,7 +269,14 @@
       :else (m/ceil (m/- (m// base (m/- 1.0 fractions)) overflow-tolerance)))))
 
 (defn- natural-grid-size
-  "Gives the smallest size (`Vec2`) of a nested grid, see [[natural-grid-length]]."
+  "Gives the smallest size of a nested grid.
+
+  Parameters:
+
+  - `grid` (map): the prepared nested grid.
+  - `measurements` (sequence): its items' measurements.
+
+  Returns a `Vec2` of its smallest width and height, see [[natural-grid-length]]."
   [grid measurements]
   (v/vec2 (natural-grid-length grid :columns measurements)
           (natural-grid-length grid :rows measurements)))
@@ -380,12 +406,26 @@
                     items measurements)})))
 
 (defn item-box
-  "Gives the box of the top-level item with `id` in `layout` (see [[solve]]); `nil` when none."
+  "Gives the box of a top-level item of a layout.
+
+  Parameters:
+
+  - `layout` (map): a solved layout (see [[solve]]).
+  - `id`: the item's `:id`.
+
+  Returns the item's `{:x :y :w :h}`; `nil` when no top-level item has `id` (nested layouts aren't searched, see [[find-item-box]])."
   [layout id]
   (some (fn [item] (when (= id (:id item)) (:box item))) (:items layout)))
 
 (defn find-item-box
-  "Gives the box of the first item with `id` in `layout` or its nested layouts (depth-first, in item order); `nil` when none."
+  "Gives the box of the first item with an id in a layout or its nested layouts.
+
+  Parameters:
+
+  - `layout` (map): a solved layout (see [[solve]]).
+  - `id`: the item's `:id`.
+
+  Returns the `{:x :y :w :h}` of the first match, depth-first in item order; `nil` when none. See also [[item-box]]."
   [layout id]
   (some (fn [item]
           (if (= id (:id item))
@@ -412,7 +452,15 @@
                (:items grid) (:items layout))))
 
 (defn find-content-box
-  "Gives the box of the first item (depth-first, in item order) of a grid whose content satisfies `pred`, from its solved `layout` (items in the same order); `nil` when none."
+  "Gives the box of the first grid item whose content satisfies a predicate.
+
+  Parameters:
+
+  - `grid` (map): the grid whose items' contents are tested (nested grids searched depth-first, in item order).
+  - `layout` (map): the grid's solved layout (see [[solve]]), its items in the grid's order.
+  - `pred` (fn of a content): the test.
+
+  Returns the matching item's `{:x :y :w :h}`; `nil` when none."
   [grid layout pred]
   (some (fn [[item item-layout]]
           (let [content (:content item)]

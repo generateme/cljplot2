@@ -480,8 +480,7 @@
 
   Returns a vector of segment colours: the colour value interpolated at the middle of the segment's [[color-chunk]] (chunks by length along the curve)."
   [points anchors values a scale theme]
-  (let [lengths (vec (reductions m/+ 0.0 (map (fn [[^double x0 ^double y0] [^double x1 ^double y1]] (m/hypot (m/- x1 x0) (m/- y1 y0)))
-                                              points (rest points))))
+  (let [lengths (polyline/cumulative-lengths points)
         segment-count (m/long-dec (count points))
         chunk-of (mapv #(long (m/quot (double (lengths %)) color-chunk)) (range segment-count))
         chunks (partition-by chunk-of (range segment-count))

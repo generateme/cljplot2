@@ -64,14 +64,14 @@
   - `box` (map): `{:x :y :w :h}` in whole pixels.
   - `debug?` (boolean): debug boxes inside the sub-plot too, see [[draw-built!]]."
   [canvas built {:keys [^long x ^long y ^long w ^long h]} debug?]
-  (c2d/with-isolated-canvas [c canvas]
-    (c2d/translate c x y)
-    (c2d/add-clip c 0 0 w h)
+  (c2d/with-isolated-canvas [clipped canvas]
+    (c2d/translate clipped x y)
+    (c2d/add-clip clipped 0 0 w h)
     (let [background (get-in built [:theme :plot :background])]
       (when-not (theme/none? background)
-        (c2d/set-color c background)
-        (c2d/rect c 0 0 w h)))
-    (draw-built! c built debug?)))
+        (c2d/set-color clipped background)
+        (c2d/rect clipped 0 0 w h)))
+    (draw-built! clipped built debug?)))
 
 (defn- draw-contents!
   "Draws the content of every item of a grid at its box, recursing into nested grids.
@@ -91,7 +91,7 @@
       (grid/grid? content) (draw-contents! canvas content (:layout item-layout) env)
       (subplot/plot-content? content) (when-let [built (get-in env [:subplots (:id item)])]
                                         (draw-subplot! canvas built box (:debug? env)))
-      :else (c2d/with-isolated-canvas [c canvas] (draw/draw-content content c box env)))))
+      :else (c2d/with-isolated-canvas [isolated canvas] (draw/draw-content content isolated box env)))))
 
 (defn- draw-built!
   "Draws a built plot's items onto a canvas at the origin.

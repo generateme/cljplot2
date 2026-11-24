@@ -117,11 +117,10 @@
   (let [dims (group-dims mapping)
         accessors (mapv #(data/row-accessor % (mapping %)) dims)
         all-rows (apply concat (vals groups))
-        row-count (count all-rows)
         columns (mapv (fn [acc] (mapv acc all-rows)) accessors)]
+    (data/check-mapped! all-rows (filter (comp aesthetic/dim? first) (map vector dims accessors))
+                        (fn [k v] (aesthetic/valid-value? k (get plot-scales k) v)))
     (doseq [[k vs] (map vector dims columns)]
-      (when (and (m/pos? row-count) (aesthetic/dim? k) (not-any? #(aesthetic/valid-value? k (get plot-scales k) %) vs))
-        (schema/fail! data/no-valid-values {:key :mapping :value k :rows row-count}))
       (check-groupable! k (filter data/valid-value? vs) plot-scales))
     (let [key-of (fn [row] (mapv #(% row) accessors))
           kept? (fn [group-key] (every? identity (map #(kept-value? %1 na-level? plot-scales %2) dims group-key)))

@@ -35,7 +35,6 @@
             [fastmath.stats :as stats]
             [fastmath.vector :as v]
             [cljplot2.data.group :as group]
-            [cljplot2.graphics.measure :as measure]
             [cljplot2.data.rows :as data]
             [cljplot2.data.strip :as strip]
             [cljplot2.graphics.draw :as draw]
@@ -255,7 +254,7 @@
   [canvas p {:keys [q1 median q3 lav uav outliers mean]} c0 st outliers? mean?]
   (let [fill (:color st)
         stroke (draw/outline-color (:stroke-color st) fill)]
-    (c2d/set-stroke-custom canvas {:size (double (:stroke-width st)) :cap :butt})
+    (c2d/set-stroke-custom canvas {:size (:stroke-width st) :cap :butt})
     (c2d/set-color canvas fill)
     (c2d/line canvas (p lav c0) (p q1 c0))
     (c2d/line canvas (p q3 c0) (p uav c0))
@@ -296,7 +295,7 @@
             ^Vec2 a (p q1 (m/- c0 hw))
             ^Vec2 b (p q3 (m/+ c0 hw))]
         (cond
-          (not (and (measure/finite-point? a) (measure/finite-point? b))) nil
+          (not (and (data/finite-point? a) (data/finite-point? b))) nil
           (= :tufte (:variant options)) (draw-tufte! canvas p {:q1 q1 :median median :q3 q3 :lav lav :uav uav
                                                                :outliers outliers :mean mean}
                                                      c0 st outliers? (:mean options))
@@ -316,9 +315,7 @@
                   y (m/min (.y a) (.y b))
                   w (m/abs (m/- (.x b) (.x a)))
                   h (m/abs (m/- (.y b) (.y a)))]
-              (c2d/set-color canvas fill)
-              (c2d/rect canvas x y w h)
-              (draw/fill-with-pattern! canvas (pattern-fill st fill) #(c2d/rect % x y w h))
+              (draw/fill-patterned! canvas fill (pattern-fill st fill) #(c2d/rect % x y w h))
               (when-not (theme/none? stroke)
                 (c2d/set-color canvas stroke)
                 (c2d/rect canvas x y w h true)))
@@ -353,7 +350,7 @@
         cy (m/+ y (m/* 0.5 h))
         reach (m/* 0.4 w)
         gap (m/* 0.15 w)]
-    (c2d/set-stroke-custom canvas {:size (double (:stroke-width st)) :cap :butt})
+    (c2d/set-stroke-custom canvas {:size (:stroke-width st) :cap :butt})
     (c2d/set-color canvas (:color st))
     (c2d/line canvas (m/- cx reach) cy (m/- cx gap) cy)
     (c2d/line canvas (m/+ cx gap) cy (m/+ cx reach) cy)
@@ -374,10 +371,8 @@
         bh (m/* 0.5 h)
         bx (m/+ x (m/* 0.5 (m/- w bw)))
         by (m/+ y (m/* 0.5 (m/- h bh)))]
-    (c2d/set-stroke-custom canvas {:size (double (:stroke-width st))})
-    (c2d/set-color canvas (:color st))
-    (c2d/rect canvas bx by bw bh)
-    (draw/fill-with-pattern! canvas (draw/pattern-fill st (:color st)) #(c2d/rect % bx by bw bh))
+    (c2d/set-stroke-custom canvas {:size (:stroke-width st)})
+    (draw/fill-patterned! canvas (:color st) (draw/pattern-fill st (:color st)) #(c2d/rect % bx by bw bh))
     (let [stroke (draw/outline-color (:stroke-color st) (:color st))]
       (when-not (theme/none? stroke)
         (c2d/set-color canvas stroke)

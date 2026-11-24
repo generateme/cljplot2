@@ -18,7 +18,6 @@
   (:require [fastmath.core :as m]
             [cljplot2.data.group :as group]
             [cljplot2.graphics.draw :as draw]
-            [cljplot2.graphics.measure :as measure]
             [cljplot2.data.rows :as data]
             [cljplot2.graphics.curve :as curve]
             [cljplot2.graphics.polyline :as polyline]
@@ -169,7 +168,7 @@
             :when st
             :let [points (into [] (keep (fn [[vx vy]]
                                           (let [^Vec2 q (projection vx vy)]
-                                            (when (measure/finite-point? q)
+                                            (when (data/finite-point? q)
                                               (curve/drawn-point [(.x q) (.y q)])))))
                                (map vector x y))]
             :when (m/>= (count points) min-points)]

@@ -114,8 +114,13 @@
   (cache/lru-cache outline-cache-limit))
 
 (defn- outline-of
-  "Gives the unit shape (see [[unit-shape]]) of a `:path` shape map or a `:text` one with its `:font`; `nil` when it
-  draws nothing. Cached in [[outlines]]."
+  "Gives the unit outline of a path or text shape map, cached in [[outlines]].
+
+  Parameters:
+
+  - `shape` (map): `{:path svg-path-data}` or `{:text string :font font}` (the font resolved, see [[unit-outline]]).
+
+  Returns the unit shape (see [[unit-shape]]); `nil` when it draws nothing (an empty or unparsable path, a blank text)."
   [shape]
   (cache/lookup-or-compute outlines shape
                            (fn [{:keys [path text font]}]
@@ -153,7 +158,13 @@
                          (re-find #"^[a-zA-Z][a-zA-Z0-9+.-]*://" source) source))))
 
 (defn- image?
-  "Tests whether a value is a `BufferedImage` or a clojure2d image."
+  "Tests whether a value is an image.
+
+  Parameters:
+
+  - `v`: any value.
+
+  Returns true for a `BufferedImage` or a clojure2d image (`ImageProto`), else false."
   [v]
   (or (instance? BufferedImage v) (satisfies? pr/ImageProto v)))
 
@@ -307,7 +318,7 @@
 
   Parameters:
 
-  - `canvas`: the canvas in graphics context (its transform is restored afterwards).
+  - `canvas`: the canvas in graphics context (left unchanged: the image is drawn on an isolated copy, also when drawing throws).
   - `img`: a `BufferedImage` or clojure2d image.
   - `center` (`Vec2`): the centre in pixels.
   - `side` (double): the longer side in pixels.
@@ -318,12 +329,12 @@
         w (.getWidth image)
         h (.getHeight image)
         k (m// side (m/max w h))]
-    (-> canvas
-        (c2d/push-matrix)
-        (c2d/translate (m/- (.x center) (m/* 0.5 k w)) (m/- (.y center) (m/* 0.5 k h)))
-        (c2d/scale k k)
-        (c2d/image image 0 0 w h)
-        (c2d/pop-matrix))))
+    (c2d/with-isolated-canvas [isolated canvas]
+      (-> isolated
+          (c2d/translate (m/- (.x center) (m/* 0.5 k w)) (m/- (.y center) (m/* 0.5 k h)))
+          (c2d/scale k k)
+          (c2d/image image 0 0 w h)))
+    canvas))
 
 (defn- draw-map!
   "Draws a shape map fitted into its size square.
@@ -376,10 +387,12 @@
   - `canvas`: the clojure2d canvas.
   - `box` (map): the key box `{:x :y :w :h}` (pixels).
   - `st` (map): the chart's style with the key's attributes merged - `:shape`, `:size`, `:color`, `:stroke-color`, `:stroke-width`.
-  - `stroke?`: truthy - the canvas stroke is set to `:stroke-width` first (line shapes and outlines drawn at the chart's width); else the caller's stroke stays."
+  - `stroke?`: truthy - the canvas stroke is set to `:stroke-width` first (line shapes and outlines drawn at the chart's width); else the caller's stroke stays.
+
+  Drawn for its effect on the canvas; the result is unspecified."
   [canvas box st stroke?]
   (when stroke?
-    (c2d/set-stroke-custom canvas {:size (double (:stroke-width st))}))
+    (c2d/set-stroke-custom canvas {:size (:stroke-width st)}))
   (draw-key! canvas (:shape st) box st))
 
 (defn draw!

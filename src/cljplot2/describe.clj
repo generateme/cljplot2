@@ -135,11 +135,11 @@
 
 (defn- bounds-text
   "Returns the bounds text of a collection or number schema's properties: ` (min..max)`, ` (at least min)`, ` (at most max)`, or an empty string without `:min` / `:max`."
-  [{:keys [min max]}]
+  [{lo :min hi :max}]
   (cond
-    (and min max) (str " (" min ".." max ")")
-    min (str " (at least " min ")")
-    max (str " (at most " max ")")
+    (and lo hi) (str " (" lo ".." hi ")")
+    lo (str " (at least " lo ")")
+    hi (str " (at most " hi ")")
     :else ""))
 
 (declare type-text)
@@ -209,25 +209,38 @@
 
   Every such entry is a [[container?]]; not the reverse: a map under validation rules (`:and`, e.g. a scale spec) or a map of entries isn't flattened (it has a table of its own)."
   [s]
-  (let [s (malli/schema s)]
-    (case (malli/type s)
-      :map (when (:closed (malli/properties s)) s)
-      :maybe (nested-map (first (malli/children s)))
+  (let [compiled (malli/schema s)]
+    (case (malli/type compiled)
+      :map (when (:closed (malli/properties compiled)) compiled)
+      :maybe (nested-map (first (malli/children compiled)))
       nil)))
 
 (defn- container?
-  "Does entry schema `s` hold entries of its own - a map or a map of entries (also under `:maybe` / `:and`)?
+  "Tests whether an entry schema holds entries of its own - a map or a map of entries (also under `:maybe` / `:and`).
 
-  Its row takes no default value (see [[with-defaults]]); its entries' rows do, when [[nested-map]] flattens them."
+  Its row takes no default value (see [[with-defaults]]); its entries' rows do, when [[nested-map]] flattens them.
+
+  Parameters:
+
+  - `s`: the entry's malli schema (a form or a schema).
+
+  Returns true for a `:map` or `:map-of` (also under `:maybe` / `:and`), else false."
   [s]
-  (let [s (malli/schema s)]
-    (case (malli/type s)
+  (let [compiled (malli/schema s)]
+    (case (malli/type compiled)
       (:map :map-of) true
-      (:maybe :and) (container? (first (malli/children s)))
+      (:maybe :and) (container? (first (malli/children compiled)))
       false)))
 
 (defn- flattened?
-  "Are the entries of an entry (properties `props`, schema `s`) flattened under its row - a [[nested-map]] whose entries aren't documented by a shared group (`:cljplot2/entries-fragment`)?"
+  "Tests whether the entries of an entry are flattened under its row: a [[nested-map]] whose entries aren't documented by a shared group (`:cljplot2/entries-fragment`).
+
+  Parameters:
+
+  - `props` (map): the entry's properties.
+  - `s`: the entry's malli schema.
+
+  Returns true when its entries get rows after its own, else false."
   [props s]
   (and (some? (nested-map s)) (not (:cljplot2/entries-fragment props))))
 
@@ -259,12 +272,12 @@
 
   Forbidden and `:cljplot2/internal` entries have no row."
   [m path merged? section]
-  (let [merged? (or merged? (true? (:cljplot2/merged (malli/properties m))))]
+  (let [map-merged? (or merged? (true? (:cljplot2/merged (malli/properties m))))]
     (into [] (mapcat (fn [[k props s]]
                        (when-not (or (schema/forbidden? s) (:cljplot2/internal props))
                          (let [p (conj path k)
-                               row (entry-row [p k props s] merged? section)]
-                           (cons row (when (flattened? props s) (map-rows (nested-map s) p merged? (:section row))))))))
+                               row (entry-row [p k props s] map-merged? section)]
+                           (cons row (when (flattened? props s) (map-rows (nested-map s) p map-merged? (:section row))))))))
           (malli/children m))))
 
 (defn schema-rows
@@ -278,22 +291,17 @@
   [schema]
   (if-let [m (some-> schema entries-map)] (map-rows m [] false nil) []))
 
-(defn- chart-value?
-  "Is `x` a chart value (a map with `:compute`)?"
-  [x]
-  (and (map? x) (contains? x :compute)))
-
 (defn- chart-rows
   "Returns the option rows of a chart value: its options schema's rows, the top-level style entries with their default from the default theme `[:chart kind]`."
   [{:keys [kind] :as chart}]
   (let [style-keys (set (map :key (schema-rows (get-in chart [:schema :style]))))
         style (get-in theme/default-theme [:chart kind])]
-    (mapv (fn [{:keys [key path] :as row}]
+    (mapv (fn [{option-key :key path :path :as row}]
             (cond-> row
               (and (m/one? (count path))
-                   (contains? style-keys key)
-                   (contains? style key))
-              (assoc :default (get style key))))
+                   (contains? style-keys option-key)
+                   (contains? style option-key))
+              (assoc :default (get style option-key))))
           (schema-rows (get-in chart [:schema :options])))))
 
 (defn- with-defaults
@@ -384,9 +392,13 @@
   (schema-rows (into [:map] (get-in fragments [fragment :entries]))))
 
 (defn container-row?
-  "Is `row` the row of a map holding options of its own (a heading of its entries' rows, no default), not an option?
+  "Tests whether a row is the row of a map holding options of its own (a heading of its entries' rows, no default), not an option.
 
-  A row map built by hand (without the row metadata) isn't."
+  Parameters:
+
+  - `row` (map): an option row (see the namespace doc).
+
+  Returns truthy for a container row, `nil` otherwise - also for a row map built by hand (without the row metadata). See also [[top-level-rows]]."
   [row]
   (::container? (meta row)))
 
@@ -413,7 +425,14 @@
     (filterv #(and (m/< n (count (:path %))) (= path (subvec (:path %) 0 n))) rows)))
 
 (defn- under-path?
-  "Is `path` the key path `root` or nested under it?"
+  "Tests whether a key path is a root path or nested under it.
+
+  Parameters:
+
+  - `root` (vector): the root key path.
+  - `path` (vector): the key path tested.
+
+  Returns true when `path` starts with `root` (also when equal), else false."
   [root path]
   (and (m/<= (count root) (count path)) (= root (subvec path 0 (count root)))))
 
@@ -452,7 +471,7 @@
   See also [[own-rows]], [[fragment-keys]]."
   [x]
   (cond
-    (chart-value? x) (chart-rows x)
+    (cljplot2.chart/chart-value? x) (chart-rows x)
     (var? x) (schema-rows (:cljplot2/options (meta x)))
     :else (schema-rows x)))
 
@@ -467,7 +486,7 @@
   (into (sorted-map)
         (for [v (vals (ns-publics 'cljplot2.chart))
               :let [c (try (@v) (catch Exception _ nil))]
-              :when (chart-value? c)]
+              :when (cljplot2.chart/chart-value? c)]
           [(:kind c) v])))
 
 (def attribute-values

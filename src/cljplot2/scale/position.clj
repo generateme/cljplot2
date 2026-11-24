@@ -59,11 +59,6 @@
   "Magnitude below which a whole-number tick is labelled without decimals."
   1.0e15)
 
-(defn- temporal?
-  "Tests whether `v` is a `java.time` value (a `Temporal`)."
-  [v]
-  (instance? java.time.temporal.Temporal v))
-
 (defn- domain-kind
   "Gives the scale kind of an explicit domain.
 
@@ -77,7 +72,7 @@
     (every? number? domain) :linear
     (every? #(or (string? %) (keyword? %)) domain) :bands
     (every? rows/ordered-level? domain) :bands
-    (every? temporal? domain) :datetime))
+    (every? rows/temporal? domain) :datetime))
 
 (defn- domain-problem
   "Explains why the explicit domain of a position scale spec is invalid.
@@ -93,7 +88,7 @@
       (case kind
         nil "domain values should be all numbers, all strings / keywords, all intervals or all java.time values"
         :bands (when-not (apply distinct? domain) "bands domain values should be distinct")
-        :datetime (when-not (and (every? temporal? domain) (not= (first domain) (last domain)))
+        :datetime (when-not (and (every? rows/temporal? domain) (not= (first domain) (last domain)))
                     "datetime domain should be two different java.time values")
         :interpolated (when-not (and (m/>= (count domain) 2) (every? schema/finite? domain)
                                      (apply < (map double domain)))
@@ -214,7 +209,7 @@
   [k kind domain ticks]
   (let [valid? (case kind
                  :bands (set domain)
-                 :datetime temporal?
+                 :datetime rows/temporal?
                  schema/finite?)]
     (when-let [bad (first (remove valid? ticks))]
       (schema/fail! (if (= kind :bands) "Bands :ticks must be domain values." "Scale :ticks contain an invalid value.")

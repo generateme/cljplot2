@@ -6,7 +6,7 @@
   nothing), `:dash` `:none` / absent, a name of [[cljplot2.schema/dash-styles]] or a sequence of positive dash
   lengths (resolved by [[dash-pattern]] - every stroke with a dash goes through it).
 
-  Functions: runs [[finite-runs]], [[runs]], [[path-length]]; strokes [[set-style!]], [[stroke-runs!]], [[draw!]],
+  Functions: runs [[finite-runs]], [[runs]], lengths [[segment-lengths]], [[cumulative-lengths]], [[path-length]]; strokes [[set-style!]], [[stroke-runs!]], [[draw!]],
   [[draw-segments!]], [[bridge-style]], [[key-glyph!]]; shapes [[trail-shape]], [[rings-path]]; areas
   [[fill-polygons!]], [[fill-under!]], [[fill-runs-to-baseline!]], [[fill-closed-runs!]], [[fill-between!]],
   [[fill-area!]], [[area-color]], gradients [[gradient-fn]], [[fill-gradient-paint!]]."
@@ -80,16 +80,17 @@
   Parameters:
 
   - `canvas`: the canvas in graphics context.
-  - `style` (map): `:color`, `:width`, `:dash` (see the namespace doc).
+  - `style`: a line style map - `:color`, `:width`, `:dash` (see the namespace doc); `:none` or `nil` - no line (e.g. a theme grid line turned off).
 
-  Returns true when the style draws; `nil` for a `:none` colour or width 0 (nothing set)."
-  [canvas {:keys [color width dash]}]
-  (when (and (not (theme/none? color)) (m/pos? (double width)))
-    (let [pattern (dash-pattern dash)]
-      (c2d/set-color canvas color)
-      (c2d/set-stroke-custom canvas (cond-> {:size (double width) :cap :butt :join :round}
-                                      pattern (assoc :dash pattern)))
-      true)))
+  Returns true when the style draws; `nil` (nothing set) for `:none` or `nil`, a `nil` or `:none` colour, a missing or non-positive width."
+  [canvas style]
+  (let [{:keys [color width dash]} (when (map? style) style)]
+    (when (and (some? color) (not (theme/none? color)) (number? width) (m/pos? (double width)))
+      (let [pattern (dash-pattern dash)]
+        (c2d/set-color canvas color)
+        (c2d/set-stroke-custom canvas (cond-> {:size width :cap :butt :join :round}
+                                        pattern (assoc :dash pattern)))
+        true))))
 
 (defn stroke-runs!
   "Strokes runs of pixel points with a line style.
@@ -142,6 +143,33 @@
    (schema/optional :width {:description "bridge width in pixels" :cljplot2/default-doc "the line's width"} schema/non-neg)
    (schema/nilable :dash {:description "dash style of the bridge" :cljplot2/default-doc "the line's dash"} schema/dash)])
 
+(defn segment-lengths
+  "Gives the lengths of a polyline's segments.
+
+  Parameters:
+
+  - `points` (sequence of `[x y]`): the polyline.
+
+  Returns a lazy sequence of doubles, one per segment (point `i` to `i + 1`); empty for fewer than 2 points.
+
+  See also [[cumulative-lengths]], [[path-length]]."
+  [points]
+  (map (fn [[^double x0 ^double y0] [^double x1 ^double y1]] (m/hypot (m/- x1 x0) (m/- y1 y0)))
+       points (rest points)))
+
+(defn cumulative-lengths
+  "Gives the distances along a polyline from its first point.
+
+  Parameters:
+
+  - `points` (sequence of `[x y]`): the polyline.
+
+  Returns a vector of doubles starting at 0.0, one per point (empty input - `[0.0]`).
+
+  See also [[segment-lengths]], [[path-length]]."
+  [points]
+  (vec (reductions m/+ 0.0 (segment-lengths points))))
+
 (defn path-length
   "Gives the length of a polyline in pixels.
 
@@ -149,11 +177,9 @@
 
   - `points` (sequence of `[x y]`): the polyline.
 
-  Returns the summed segment lengths; 0.0 for fewer than 2 points."
+  Returns the summed segment lengths (see [[segment-lengths]]); 0.0 for fewer than 2 points."
   ^double [points]
-  (reduce m/+ 0.0 (map (fn [[^double x0 ^double y0] [^double x1 ^double y1]]
-                         (m/hypot (m/- x1 x0) (m/- y1 y0)))
-                       points (rest points))))
+  (reduce m/+ 0.0 (segment-lengths points)))
 
 (defn draw-segments!
   "Strokes the segments between consecutive finite points, each in its own colour.
@@ -171,7 +197,7 @@
   [canvas xs ys segment-colors {:keys [width dash]}]
   (when (m/pos? (double width))
     (let [pattern (dash-pattern dash)
-          stroke (cond-> {:size (double width) :cap :round :join :round} pattern (assoc :dash pattern))]
+          stroke (cond-> {:size width :cap :round :join :round} pattern (assoc :dash pattern))]
       (doseq [run (finite-runs xs ys)]
         (reduce (fn [^double phase segments]
                   (let [color (segment-colors (ffirst segments))
@@ -278,9 +304,7 @@
      (if (theme/none? area)
        (draw! canvas [x (m/+ x w)] [cy cy] style)
        (let [side (m/* draw/key-glyph-share (m/min w h))]
-         (c2d/set-color canvas area)
-         (c2d/crect canvas cx cy side side)
-         (draw/fill-with-pattern! canvas pattern-fill #(c2d/crect % cx cy side side))
+         (draw/fill-patterned! canvas area pattern-fill #(c2d/crect % cx cy side side))
          (when (set-style! canvas style)
            (c2d/crect canvas cx cy side side true)))))))
 
@@ -311,9 +335,7 @@
     ;; filled twice (colour, pattern)
     (let [polygon-vec (vec polygons)
           fill! (fn [c] (doseq [polygon polygon-vec] (c2d/path c polygon true false)))]
-      (c2d/set-color canvas color)
-      (fill! canvas)
-      (draw/fill-with-pattern! canvas pattern-fill fill!))))
+      (draw/fill-patterned! canvas color pattern-fill fill!))))
 
 (defn fill-under!
   "Fills the area between each finite run of a curve and its base points.

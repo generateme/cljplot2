@@ -228,7 +228,7 @@
   [canvas shape-fn fill {:keys [stroke-color stroke-width]}]
   (let [stroke (draw/outline-color stroke-color fill)]
     (when (and (not (theme/none? stroke)) (m/pos? (double stroke-width)))
-      (c2d/set-stroke-custom canvas {:size (double stroke-width)})
+      (c2d/set-stroke-custom canvas {:size stroke-width})
       (c2d/set-color canvas stroke)
       (shape-fn true))))
 

@@ -22,7 +22,6 @@
   bands; [[legend]] - the key glyph."
   (:require [fastmath.core :as m]
             [cljplot2.data.rows :as data]
-            [cljplot2.graphics.measure :as measure]
             [cljplot2.data.group :as group]
             [cljplot2.graphics.curve :as curve]
             [cljplot2.graphics.draw :as draw]
@@ -84,7 +83,7 @@
   - `g` (map): the group - `:rows`, `:aesthetics`.
   - `x-of`, `lo-of`, `hi-of` (functions): accessors of x, `:ymin`, `:ymax`.
 
-  Returns `{:x [..] :ymin [..] :ymax [..] :aesthetics}` of the rows with a valid x, ordered by x when sortable (see [[sortable?]]); a bound is `nil` where its value is invalid (the band breaks there)."
+  Returns `{:x [..] :ymin [..] :ymax [..] :aesthetics}` of the rows with a valid x, ordered by x when sortable (see [[cljplot2.data.rows/sortable?]]); a bound is `nil` where its value is invalid (the band breaks there)."
   [g x-of lo-of hi-of]
   (let [valid (fn [v] (when (data/valid-value? v) v))
         points (->> (:rows g)
@@ -172,7 +171,7 @@
   [xs los his projection opts]
   (let [upper (mapv #(pixel projection %1 %2) xs his)
         lower (mapv #(pixel projection %1 %2) xs los)
-        paired? (fn [i] (and (measure/finite-point? (upper i)) (measure/finite-point? (lower i))))
+        paired? (fn [i] (and (data/finite-point? (upper i)) (data/finite-point? (lower i))))
         point (fn [^Vec2 p] (curve/drawn-point [(.x p) (.y p)]))
         pairs (into [] (comp (partition-by paired?)
                              (filter #(and (paired? (first %)) (m/> (count %) 1)))

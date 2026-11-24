@@ -461,13 +461,13 @@
 
 ;; explaining
 
-(def ^{:private true :const true :tag 'long} max-cached-explainers
+(def ^{:private true :const true :tag 'long} explainer-cache-limit
   "The most explainers [[explainers]] keeps."
   256)
 
-(defonce ^{:private true :doc "Malli explainers by schema value, the least recently used evicted beyond [[max-cached-explainers]] (schemas made per call can't fill memory)."}
+(defonce ^{:private true :doc "Malli explainers by schema value, the least recently used evicted beyond [[explainer-cache-limit]] (schemas made per call can't fill memory)."}
   explainers
-  (cache/lru-cache max-cached-explainers))
+  (cache/lru-cache explainer-cache-limit))
 
 (defn- explainer
   "Gives the malli explainer of a schema, cached by schema value (see [[explainers]]).

@@ -275,9 +275,7 @@
   The fill and its pattern are drawn unless the fill is `:none`; the outline for a positive width and a colour."
   [canvas [left top rw rh] fill st [stroke ^double sw] pattern-fill]
   (when-not (theme/none? fill)
-    (c2d/set-color canvas fill)
-    (c2d/rect canvas left top rw rh)
-    (draw/fill-with-pattern! canvas (pattern-fill st fill) #(c2d/rect % left top rw rh)))
+    (draw/fill-patterned! canvas fill (pattern-fill st fill) #(c2d/rect % left top rw rh)))
   (when (and (not (theme/none? stroke)) (m/pos? sw))
     (c2d/set-stroke-custom canvas {:size sw :join :miter})
     (c2d/set-color canvas stroke)

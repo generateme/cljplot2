@@ -32,7 +32,13 @@
   [:center :middle])
 
 (defn none?
-  "Is `color` the draw-nothing value `:none`?"
+  "Tests whether a colour is the draw-nothing value `:none`.
+
+  Parameters:
+
+  - `color`: a colour or `:none`.
+
+  Returns true for `:none`, else false."
   [color]
   (= :none color))
 

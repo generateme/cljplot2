@@ -5,7 +5,7 @@
   Functions: content [[draw-content]], [[inner-border!]], [[zero-line!]], [[pixel-center]]; colours
   [[contrast-color]], [[plot-backdrop]], [[resolved-text-color]], [[text-color]], [[painted-color]],
   [[outline-color]], [[with-alpha]], [[faded]]; patterns [[pattern-ink]], [[pattern-fill]], [[pattern-fill-cache]],
-  [[fill-with-pattern!]]; bars [[rect-of]], [[visible-bar?]], [[corner-rounding]], [[value-axis]], [[value-ends]],
+  [[fill-with-pattern!]], [[fill-patterned!]]; bars [[rect-of]], [[visible-bar?]], [[corner-rounding]], [[value-axis]], [[value-ends]],
   [[bar-rounding]], [[whole-pixel]], [[shape-bar!]], [[bar!]], [[rounded-sector-path]], [[range-bar!]]; legend keys
   [[key-rounding]], [[key-glyph-share]], [[bar-key!]], [[circle-key!]], [[spike-key!]]; [[cvd-filter-fn]]."
   (:require [clojure2d.color :as c]
@@ -13,6 +13,7 @@
             [clojure2d.core.shape :as sh]
             [clojure2d.pixels :as p]
             [fastmath.core :as m]
+            [cljplot2.data.rows :as data]
             [cljplot2.graphics.measure :as measure]
             [cljplot2.graphics.pattern :as pattern]
             [cljplot2.scale.coord :as coord]
@@ -179,6 +180,24 @@
       (c2d/pattern-mode patterned tile 0 0 period period)
       (draw-fn patterned)
       nil)))
+
+(defn fill-patterned!
+  "Fills shapes in a colour, then draws a pattern over them.
+
+  Parameters:
+
+  - `canvas`: the canvas in graphics context; its colour is `color` afterwards.
+  - `color`: the fill colour (any clojure2d representation).
+  - `fill-pattern`: see [[pattern-fill]]; `nil` - the fill alone.
+  - `draw-fn` (fn of a canvas): fills the shapes on the canvas it gets, called twice (the fill, then the pattern); it must not set a colour.
+
+  Returns `nil`.
+
+  See also [[fill-with-pattern!]] (a pattern over a fill drawn otherwise, e.g. a gradient)."
+  [canvas color fill-pattern draw-fn]
+  (c2d/set-color canvas color)
+  (draw-fn canvas)
+  (fill-with-pattern! canvas fill-pattern draw-fn))
 
 (defn pixel-center
   "Gives the centre of the pixel containing a coordinate: thin lines drawn there cover whole pixels (no antialiasing smear).
@@ -400,9 +419,7 @@
   Returns `nil`."
   [canvas ^Shape shape fill stroke stroke-width fill-pattern]
   (let [width (double stroke-width)]
-    (c2d/set-color canvas fill)
-    (c2d/shape canvas shape false)
-    (fill-with-pattern! canvas fill-pattern #(c2d/shape % shape false))
+    (fill-patterned! canvas fill fill-pattern #(c2d/shape % shape false))
     (when (and (m/pos? width) (not (theme/none? stroke)))
       (c2d/set-stroke-custom canvas {:size width :join :miter})
       (c2d/set-color canvas stroke)
@@ -432,9 +449,7 @@
        (if rounding
          (shape-bar! canvas (sh/rounded-rect x y w h (pixel-rect-radii a b rounding))
                      fill stroke width fill-pattern)
-         (do (c2d/set-color canvas fill)
-             (c2d/rect canvas x y w h)
-             (fill-with-pattern! canvas fill-pattern #(c2d/rect % x y w h))
+         (do (fill-patterned! canvas fill fill-pattern #(c2d/rect % x y w h))
              (when (and (m/pos? width) (not (theme/none? stroke)))
                (c2d/set-stroke-custom canvas {:size width :join :miter})
                (c2d/set-color canvas stroke)
@@ -560,12 +575,10 @@
                      (rounded-sector-path geometry a b rounding)
                      (coord/rect-path geometry h0 v0 h1 v1))
            width (double stroke-width)]
-       (when (every? (fn [[^double x ^double y]] (and (m/valid-double? x) (m/valid-double? y))) polygon)
+       (when (every? data/finite-point? polygon)
          (if rounding
            (shape-bar! canvas (sh/path polygon true) fill stroke width fill-pattern)
-           (do (c2d/set-color canvas fill)
-               (c2d/path canvas polygon true false)
-               (fill-with-pattern! canvas fill-pattern #(c2d/path % polygon true false))
+           (do (fill-patterned! canvas fill fill-pattern #(c2d/path % polygon true false))
                (when (and (m/pos? width) (not (theme/none? stroke)))
                  (c2d/set-stroke-custom canvas {:size width :join :miter})
                  (c2d/set-color canvas stroke)
@@ -608,14 +621,14 @@
 
   The circle's diameter is [[key-glyph-share]] of the box's shorter side.
 
+  Returns `nil`.
+
   See also [[bar-key!]] (a square glyph)."
   [canvas {:keys [^double x ^double y ^double w ^double h]} fill fill-pattern]
   (let [d (m/* key-glyph-share (m/min w h))
         cx (m/+ x (m/* 0.5 w))
         cy (m/+ y (m/* 0.5 h))]
-    (c2d/set-color canvas fill)
-    (c2d/ellipse canvas cx cy d d)
-    (fill-with-pattern! canvas fill-pattern #(c2d/ellipse % cx cy d d))))
+    (fill-patterned! canvas fill fill-pattern #(c2d/ellipse % cx cy d d))))
 
 (defn spike-key!
   "Draws a vertical line key glyph through the middle of a legend key box.
@@ -626,12 +639,14 @@
   - `box` (map): the key box `{:x :y :w :h}` (pixels).
   - `line` (map): `:color`, `:width` (pixels, butt caps) and `:span` - `[from to]`, the line's ends as fractions of the box height from its top.
 
+  Returns the canvas.
+
   See also [[circle-key!]], [[bar-key!]]."
   [canvas {:keys [^double x ^double y ^double w ^double h]} {:keys [color width span]}]
   (let [[^double from ^double to] span
         cx (m/+ x (m/* 0.5 w))]
     (c2d/set-color canvas color)
-    (c2d/set-stroke-custom canvas {:size (double width) :cap :butt})
+    (c2d/set-stroke-custom canvas {:size width :cap :butt})
     (c2d/line canvas cx (m/+ y (m/* from h)) cx (m/+ y (m/* to h)))))
 
 (defn with-alpha
@@ -653,14 +668,14 @@
 
   Parameters:
 
-  - `color`: a colour (any clojure2d representation).
+  - `color`: a colour (any clojure2d representation), `:none` or `nil`.
   - `k` (number): the factor of the colour's alpha, e.g. 0.5 halves its opacity.
 
-  Returns `color` with alpha `k` times its own (not clamped: a factor in `[0, 1]` keeps it in range).
+  Returns `color` with alpha `k` times its own (not clamped: a factor in `[0, 1]` keeps it in range, see `clojure2d.color/scale-alpha`); `:none` and `nil` unchanged.
 
   See also [[with-alpha]] (alpha set to a fraction)."
   [color ^double k]
-  (c/set-alpha color (m/* k (c/alpha color))))
+  (if (or (nil? color) (theme/none? color)) color (c/scale-alpha color k)))
 
 (defn bar-key!
   "Draws the legend key glyph of a bar chart (histogram, bar): a filled square inset in a key box with its pattern, outlined.
@@ -686,9 +701,7 @@
        (let [half (m/* 0.5 side)]
          (bar! canvas (Vec2. (m/- cx half) (m/+ cy half)) (Vec2. (m/+ cx half) (m/- cy half)) fill stroke stroke-width
                (pattern-fill st fill) (key-rounding rounding side)))
-       (do (c2d/set-color canvas fill)
-           (c2d/crect canvas cx cy side side)
-           (fill-with-pattern! canvas (pattern-fill st fill) #(c2d/crect % cx cy side side))
+       (do (fill-patterned! canvas fill (pattern-fill st fill) #(c2d/crect % cx cy side side))
            (when (and (m/pos? stroke-width) (not (theme/none? stroke)))
              (c2d/set-stroke-custom canvas {:size stroke-width})
              (c2d/set-color canvas stroke)

@@ -18,7 +18,7 @@
 
   Functions: [[draw-primitives!]], [[draw-scene!]], [[draw-chart]], [[scene-frame]], frame [[frame-margin]],
   [[frame-margins]], [[draw-frame-back!]], [[draw-frame-front!]], axes [[axis-ticks]], [[edge-ticks]],
-  [[level-text]], [[edge-point]], [[edge-angle]], [[title-distance]]."
+  [[edge-point]], [[edge-angle]], [[title-distance]]."
   (:require [clojure2d.core :as c2d]
             [fastmath.core :as m]
             [fastmath.vector :as v]
@@ -46,12 +46,12 @@
   [canvas {:keys [kind] :as p}]
   (case kind
     :point (let [st (:style p)]
-             (c2d/set-stroke-custom canvas {:size (double (or (:stroke-width st) 1.0))})
+             (c2d/set-stroke-custom canvas {:size (or (:stroke-width st) 1.0)})
              (shape/draw! canvas (:shape st) (:at p) st))
-    :line (do (c2d/set-stroke-custom canvas {:size (double (:width p)) :cap :round})
+    :line (do (c2d/set-stroke-custom canvas {:size (:width p) :cap :round})
               (c2d/set-color canvas (:color p))
               (c2d/line canvas (:from p) (:to p)))
-    :path (do (c2d/set-stroke-custom canvas {:size (double (:width p)) :cap :round :join :round})
+    :path (do (c2d/set-stroke-custom canvas {:size (:width p) :cap :round :join :round})
               (c2d/set-color canvas (:color p))
               (c2d/path canvas (:points p) (:closed? p) true))
     :region (do (c2d/set-color canvas (:fill p))
@@ -60,7 +60,7 @@
                (c2d/set-color canvas (:fill p))
                (c2d/path canvas pts true false)
                (when (and (not (theme/none? (:stroke p))) (m/pos? (double (or (:stroke-width p) 0.0))))
-                 (c2d/set-stroke-custom canvas {:size (double (:stroke-width p))})
+                 (c2d/set-stroke-custom canvas {:size (:stroke-width p)})
                  (c2d/set-color canvas (:stroke p))
                  (c2d/path canvas pts true true)))))
 
@@ -118,17 +118,6 @@
   (let [spacing (double (get-in env [:theme :axis (if (= k :z) :y :x) :tick-spacing]))]
     (long (m/max 3.0 (m/floor (m// length spacing))))))
 
-(defn level-text
-  "Gives the tick label of a categorical level.
-
-  Parameters:
-
-  - `v`: the level.
-
-  Returns a keyword's name, else `(str v)`."
-  [v]
-  (if (keyword? v) (name v) (str v)))
-
 (def ^{:private true :const true :tag 'double} end-tolerance
   "Distance from a domain end, as a fraction of the span, within which a tick counts as on the end."
   1.0e-9)
@@ -157,12 +146,12 @@
   - `levels` (sequence or `nil`): the levels of a categorical axis (level i at i + 1).
   - `n` (number): about how many ticks.
 
-  Returns `{:ticks [..] :labels [..]}`: with `levels` a tick per level, labelled by [[level-text]] - every level when they're at most `n`, else every `ceil(levels / n)`-th from the first (the others `nil`); else the most ticks, at most `n`, that include both domain ends (a nice domain, see [[cljplot2.data.space3d/nice-domain]]), or `n` ticks when no count does."
+  Returns `{:ticks [..] :labels [..]}`: with `levels` a tick per level, labelled by [[cljplot2.content.label/name-text]] - every level when they're at most `n`, else every `ceil(levels / n)`-th from the first (the others `nil`); else the most ticks, at most `n`, that include both domain ends (a nice domain, see [[cljplot2.data.space3d/nice-domain]]), or `n` ticks when no count does."
   [k domain levels n]
   (if levels
     (let [every-nth (long (m/ceil (m// (double (count levels)) (double (m/max 1 (long n))))))]
       {:ticks (mapv double (range 1 (m/long-inc (count levels))))
-       :labels (vec (map-indexed (fn [^long i l] (when (m/zero? (m/long-mod i every-nth)) (level-text l))) levels))})
+       :labels (vec (map-indexed (fn [^long i l] (when (m/zero? (m/long-mod i every-nth)) (label/name-text l))) levels))})
     (or (first (filter #(ends-ticked? % domain) (map #(axis-ticks k domain %) (range (long n) 1 -1))))
         (axis-ticks k domain n))))
 
@@ -180,7 +169,7 @@
   (let [longest (m/min (double w) (double h))]
     (map #(text-size :tick-label % env)
          (mapcat #(if-let [ls (get levels %)]
-                    (map level-text ls)
+                    (map label/name-text ls)
                     (:labels (edge-ticks % (domains %) nil (tick-count env % longest))))
                  space/axes))))
 
@@ -229,7 +218,7 @@
     (if-not axes?
       {:top full :right full :bottom full :left full}
       (let [label-gap (double (get-in env [:theme :axis :x :label-gap]))
-            tallest (double (reduce m/max 0.0 (map (fn [^Vec2 s] (.y s)) (tick-label-sizes frame [w h] env))))]
+            tallest (.y (measure/max-size (tick-label-sizes frame [w h] env)))]
         {:top (m/+ (m/* 0.5 tallest) label-gap frame-padding) :right full :bottom full :left full}))))
 
 (def ^{:private true :const true :tag 'double} min-outward-length
@@ -292,7 +281,14 @@
   (m/+ (double tick-length) (m/* 2.0 (double gap)) (double widest) (m/* 0.5 (.y size))))
 
 (defn- label-box
-  "Gives the pixel box `{:x :y :w :h}` of a label of `size` (`Vec2`) centred at `c` (`Vec2`)."
+  "Gives the pixel box of a label centred at a point.
+
+  Parameters:
+
+  - `c` (`Vec2`): the label's centre in pixels.
+  - `size` (`Vec2`): its natural size.
+
+  Returns `{:x :y :w :h}` (see [[cljplot2.graphics.measure/boxes-overlap?]])."
   [^Vec2 c ^Vec2 size]
   {:x (m/- (.x c) (m/* 0.5 (.x size))) :y (m/- (.y c) (m/* 0.5 (.y size))) :w (.x size) :h (.y size)})
 
@@ -337,14 +333,14 @@
         widest (atom 0.0)]
     (when (and (not (theme/none? line-color)) (m/pos? (double line-width)))
       (c2d/set-color canvas line-color)
-      (c2d/set-stroke-custom canvas {:size (double line-width)})
+      (c2d/set-stroke-custom canvas {:size line-width})
       (c2d/line canvas a b))
     (doseq [[t text] (map vector ticks labels)
             :let [^Vec2 p (at t)
                   ^Vec2 q (v/add p (v/mult o tick-length))]]
-      (when-not (theme/none? tick-color)
+      (when (and (not (theme/none? tick-color)) (m/pos? (double tick-width)))
         (c2d/set-color canvas tick-color)
-        (c2d/set-stroke-custom canvas {:size (double tick-width)})
+        (c2d/set-stroke-custom canvas {:size tick-width})
         (c2d/line canvas p q))
       ;; a thinned categorical axis has ticks without labels
       (when (some? text)
@@ -365,18 +361,6 @@
         (label/draw-at! canvas content [:center :middle] (.x c) (.y c) env)))
     @labelled))
 
-(defn- set-grid-line!
-  "Sets the canvas stroke and color of a grid line style.
-
-  Parameters:
-
-  - `canvas`: the canvas in graphics context.
-  - `line`: a theme `[:panel :grid k]` value - `{:color :width :dash}`, `:none` or `nil`.
-
-  Returns truthy when the line draws, `nil` for `:none`, `nil`, a `:none` colour or width 0 (see [[cljplot2.graphics.polyline/set-style!]])."
-  [canvas line]
-  (when (map? line) (polyline/set-style! canvas line)))
-
 (defn- box-edge-stroke!
   "Sets the canvas stroke and color of the box edges: theme `[:axis :x]` `:line-color` and `:line-width`, dashed by `dash` (pixels, `nil` - solid).
 
@@ -391,7 +375,7 @@
   (let [{:keys [line-color line-width]} (get-in env [:theme :axis :x])]
     (when (and (not (theme/none? line-color)) (m/pos? (double line-width)))
       (c2d/set-color canvas line-color)
-      (c2d/set-stroke-custom canvas (cond-> {:size (double line-width) :cap :butt} dash (assoc :dash dash)))
+      (c2d/set-stroke-custom canvas (cond-> {:size line-width :cap :butt} dash (assoc :dash dash)))
       true)))
 
 (defn- face-grid-lines
@@ -435,7 +419,7 @@
   (let [faces (cons [:z 0] (keep (fn [axis] (some->> (space/far-side view aspect axis) (vector axis))) [:x :y]))]
     (doseq [[axis side] faces
             [k [from to]] (face-grid-lines proj axis side frame env)
-            :when (set-grid-line! canvas (get-in env [:theme :panel :grid (if (= k :z) :y :x)]))]
+            :when (polyline/set-style! canvas (get-in env [:theme :panel :grid (if (= k :z) :y :x)]))]
       (c2d/line canvas from to))))
 
 (defn draw-frame-back!

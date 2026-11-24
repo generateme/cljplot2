@@ -127,7 +127,7 @@
                     half (m/* 0.5 (double (:step (scale/band-geometry finalized))))
                     horizontal? (scale/horizontal? k finalized)]
               [i level] (map-indexed vector (:domain finalized))
-              :when (odd? (long i))
+              :when (m/odd? (long i))
               :let [[lo len] (band-span (forward level) half)]]
         (c2d/set-color c fill)
         (if horizontal?
@@ -143,16 +143,13 @@
   - `finalized` (map): the finalized scale, `nil` - none.
   - `env` (map): `:theme`.
 
-  Returns theme `[:panel :grid k]` (a bands scale: `[:panel :grid :bands]`, unless `k`'s line is `:none`); `nil` when
-  it draws nothing - no scale, theme `:none` line or colour, the scale's `:axis false`, zero width."
+  Returns theme `[:panel :grid k]` (a bands scale: `[:panel :grid :bands]`, unless `k`'s line is `:none`), which may draw nothing (see [[cljplot2.graphics.polyline/set-style!]]); `nil` without a scale or for the scale's `:axis false`."
   [k finalized env]
-  (let [axis-line (get-in env [:theme :panel :grid k])
-        {:keys [color width] :as line} (if (and (= :bands (:kind finalized)) (not (theme/none? axis-line)))
-                                         (get-in env [:theme :panel :grid :bands])
-                                         axis-line)]
-    (when (and finalized (scale/grid-drawn? finalized)
-               (not (theme/none? line)) (not (theme/none? color)) (m/pos? (double width)))
-      line)))
+  (let [axis-line (get-in env [:theme :panel :grid k])]
+    (when (and finalized (scale/grid-drawn? finalized))
+      (if (and (= :bands (:kind finalized)) (not (theme/none? axis-line)))
+        (get-in env [:theme :panel :grid :bands])
+        axis-line))))
 
 (defn- draw-tick-lines!
   "Strokes a line across a cartesian panel at each tick, in the canvas's current stroke and colour.
@@ -192,7 +189,7 @@
   (doseq [k [:x :y]
           :let [finalized (some-> (get-in env [:scales k]) scale/display-scale)
                 line (grid-line-style k finalized env)]
-          :when (and line (polyline/set-style! c line))]
+          :when (polyline/set-style! c line)]
     (draw-tick-lines! c finalized (:ticks finalized) [k w h])))
 
 (defn- draw-minor-grid-lines!
@@ -210,11 +207,10 @@
   Returns `nil`."
   [c ^long w ^long h env]
   (let [line (get-in env [:theme :panel :grid :minor])]
-    (when-not (or (nil? line) (theme/none? line))
-      (doseq [k [:x :y]
-              :let [finalized (some-> (get-in env [:scales k]) scale/display-scale)]
-              :when (and (seq (:minor-ticks finalized)) (scale/grid-drawn? finalized) (polyline/set-style! c line))]
-        (draw-tick-lines! c finalized (:minor-ticks finalized) [k w h])))))
+    (doseq [k [:x :y]
+            :let [finalized (some-> (get-in env [:scales k]) scale/display-scale)]
+            :when (and (seq (:minor-ticks finalized)) (scale/grid-drawn? finalized) (polyline/set-style! c line))]
+      (draw-tick-lines! c finalized (:minor-ticks finalized) [k w h]))))
 
 (defn- angular-key
   "Gives the key of the angular (horizontal) scale among finalized scales.
@@ -253,7 +249,7 @@
                     half (m/* 0.5 (double (:step (scale/band-geometry finalized))))
                     angular? (= k akey)]
               [i level] (map-indexed vector (:domain finalized))
-              :when (odd? (long i))
+              :when (m/odd? (long i))
               :let [centre (double (forward level))
                     polygon (if angular?
                               (coord/rect-path geometry (m/- centre half) rin (m/+ centre half) radius)
@@ -279,7 +275,7 @@
     (doseq [k [:x :y]
             :let [finalized (get-in env [:scales k])
                   line (grid-line-style k finalized env)]
-            :when (and line (polyline/set-style! c line))]
+            :when (polyline/set-style! c line)]
       (let [forward (scale/forward-fn finalized)]
         (doseq [tick (:ticks finalized)
                 :let [p (double (forward tick))]
@@ -394,18 +390,18 @@
       (c2d/set-color canvas alternate-fill)
       (c2d/rect canvas x y w h))
     ;; panel-local coordinates: scales map to [0 w] x [h 0]
-    (c2d/with-isolated-canvas [local canvas]
-      (c2d/translate local x y)
+    (c2d/with-isolated-canvas [translated canvas]
+      (c2d/translate translated x y)
       (if-let [geometry (scale/coord-geometry (:scales env))]
-        (do (draw-polar-band-fills! local geometry env)
-            (draw-polar-grid-lines! local geometry env)
-            (draw-charts! local panel-key w h env)
-            (draw-polar-labels! local geometry env))
-        (do (call-clipped-to-panel local w h (fn [clipped]
+        (do (draw-polar-band-fills! translated geometry env)
+            (draw-polar-grid-lines! translated geometry env)
+            (draw-charts! translated panel-key w h env)
+            (draw-polar-labels! translated geometry env))
+        (do (call-clipped-to-panel translated w h (fn [clipped]
                                                (draw-band-fills! clipped w h env)
                                                (draw-minor-grid-lines! clipped w h env)
                                                (draw-grid-lines! clipped w h env)))
-            (draw-charts! local panel-key w h env))))
+            (draw-charts! translated panel-key w h env))))
     (draw/inner-border! canvas {:x x :y y :w w :h h} border-color border-width)))
 
 (defmethod draw/draw-content :panel

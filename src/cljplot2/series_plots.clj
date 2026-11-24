@@ -101,11 +101,11 @@
   ([values] (acf values {}))
   ([values {:keys [scales title] user-theme :theme :as options}]
    (schema/check-options! acf-options options)
-   (let [{:keys [partial? band colors] :as options} (merge {:partial? :both :band :smooth :colors {}} (into {} (remove (comp nil? val)) options))
+   (let [{:keys [partial? band colors] :as settings} (merge {:partial? :both :band :smooth :colors {}} (into {} (remove (comp nil? val)) options))
          {:keys [stem significant] band-color :band} (merge default-colors colors)
          kinds (kinds-of partial?)
          rows (vec (mapcat (fn [p?] (map #(assoc % :kind (kind-names p?))
-                                         (series/acf-rows values (assoc (select-keys options [:lags :alpha]) :partial? p?))))
+                                         (series/acf-rows values (assoc (select-keys settings [:lags :alpha]) :partial? p?))))
                            kinds))
          both? (m/== 2 (count kinds))]
      (cond-> {:data rows

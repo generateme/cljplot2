@@ -12,12 +12,13 @@
   - schemas and options: [[mapping-keys]], [[mapping-schema]], [[data-schema]], [[common-options]], [[position-padding]], [[axis-padding]], [[default-padding]], [[explicit-padding]], [[option]], [[options-with-defaults]]
   - rows and accessors: [[rows]], [[row-accessor]], [[as-coordinates]], [[weight]]
   - time: [[temporal?]], [[period-start]], [[x-key]], [[key->x]], [[->local-date-time]], [[local-date-time->like]]
-  - values and extents: [[valid-value?]], [[ordered-level?]] ([[OrderedLevel]]), [[finite-numbers]], [[extent]], [[value-extent]] (with the distinct values, at most [[max-levels]]), [[sorted-levels]], [[merge-extents]]"
+  - values and extents: [[valid-value?]], [[ordered-level?]] ([[OrderedLevel]]), [[finite-numbers]], [[finite-point?]], [[extent]], [[value-extent]] (with the distinct values, at most [[max-levels]]), [[sorted-levels]], [[merge-extents]]"
   (:require [fastmath.core :as m]
             [fastmath.vector :as v]
             [cljplot2.data.accessor :as accessor]
             [cljplot2.schema :as schema])
-  (:import [java.time Instant LocalDate LocalDateTime LocalTime OffsetDateTime Year YearMonth ZonedDateTime ZoneOffset]))
+  (:import [fastmath.vector Vec2]
+           [java.time Instant LocalDate LocalDateTime LocalTime OffsetDateTime Year YearMonth ZonedDateTime ZoneOffset]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -195,9 +196,15 @@
     :else (schema/fail! "Mapping accessor must be a keyword or a function." {:key :mapping :value k})))
 
 (defn temporal?
-  "Tests whether `v` is a `java.time` value (a `java.time.temporal.Temporal`).
+  "Tests whether a value is a `java.time` value (a `java.time.temporal.Temporal`).
 
-  Note: `Year` and `YearMonth` are temporal; see [[period-start]]."
+  `Year` and `YearMonth` are temporal; see [[period-start]].
+
+  Parameters:
+
+  - `v`: any value.
+
+  Returns true for a temporal value, else false."
   [v]
   (instance? java.time.temporal.Temporal v))
 
@@ -319,9 +326,15 @@
         (and (some? r) (.isArray (class r))) (vec (seq r))))
 
 (defn valid-value?
-  "Tests whether `v` can be plotted: a finite number, a string, a keyword, a `java.time` value or a level with a natural order ([[ordered-level?]], e.g. an interval).
+  "Tests whether a value can be plotted.
 
-  NaN, infinite numbers, `nil` and other values are not."
+  Scale-free: see [[cljplot2.scale.aesthetic/valid-value?]] for what an aesthetic scale can map (e.g. any colour, `nil` with an NA level).
+
+  Parameters:
+
+  - `v`: any value.
+
+  Returns true for a finite number, a string, a keyword, a `java.time` value or a level with a natural order ([[ordered-level?]], e.g. an interval); false for NaN, infinite numbers, `nil` and other values."
   [v]
   (cond
     (number? v) (m/valid-double? (double v))
@@ -339,7 +352,7 @@
 
   - `chart-rows` (sequence): the chart's rows (all panels and groups).
   - `accessors` (sequence): `[dimension accessor]` pairs, an accessor a function of a row.
-  - `valid?` (function, optional): of a dimension and a value, default [[valid-value?]] of the value.
+  - `valid?` (function, optional): of a dimension and a value, default [[valid-value?]] of the value; aesthetic dimensions usually pass [[cljplot2.scale.aesthetic/valid-value?]] with their scale.
 
   Returns `nil`. Empty `chart-rows` pass. Throws `ex-info {:key :mapping :value dimension :rows n}` ([[no-valid-values]]) for the first dimension without a valid value."
   ([chart-rows accessors] (check-mapped! chart-rows accessors (fn [_ v] (valid-value? v))))
@@ -348,6 +361,22 @@
      (doseq [[k f] accessors]
        (when (not-any? #(valid? k (f %)) chart-rows)
          (schema/fail! no-valid-values {:key :mapping :value k :rows (count chart-rows)}))))))
+
+(defn finite-point?
+  "Tests whether a point can be drawn: both coordinates are finite numbers.
+
+  Parameters:
+
+  - `p`: a `Vec2` or an `[x y]` vector (e.g. a projected pixel point).
+
+  Returns a truthy value for finite coordinates; false for a `NaN` or infinite coordinate, a non-number or `nil` (as `p` or a coordinate).
+
+  See also [[valid-value?]] (one data value)."
+  [p]
+  (if (instance? Vec2 p)
+    (and (m/valid-double? (.x ^Vec2 p)) (m/valid-double? (.y ^Vec2 p)))
+    (let [[x y] p]
+      (and (number? x) (number? y) (m/valid-double? (double x)) (m/valid-double? (double y))))))
 
 (defn finite-numbers
   "Picks the finite numbers of a collection of values.

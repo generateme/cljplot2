@@ -223,13 +223,11 @@
                 (let [lo (m/min o cl)
                       span (m/abs (m/- o cl))
                       [rx ry rw rh] (if flipped? [lo (m/- a half) span (m/* 2.0 half)] [(m/- a half) lo (m/* 2.0 half) span])]
-                  (c2d/set-color canvas color)
-                  (c2d/rect canvas rx ry rw rh)
-                  (draw/fill-with-pattern! canvas
-                                           (pattern-fill {:pattern (if up? (:up-pattern style) (:down-pattern style))
-                                                          :pattern-color (:pattern-color style)}
-                                                         color)
-                                           #(c2d/rect % rx ry rw rh))
+                  (draw/fill-patterned! canvas color
+                                        (pattern-fill {:pattern (if up? (:up-pattern style) (:down-pattern style))
+                                                       :pattern-color (:pattern-color style)}
+                                                      color)
+                                        #(c2d/rect % rx ry rw rh))
                   (when-not (theme/none? (:stroke-color style))
                     (c2d/set-stroke canvas 1.0)
                     (c2d/set-color canvas (:stroke-color style))

@@ -62,7 +62,7 @@
   #{:x :y})
 
 (defn- without-facet-values?
-  "Does a chart input with its own data have no value for every facet key of its mapping?
+  "Tests whether a chart input with its own data has no value for every facet key of its mapping.
 
   Such a chart (e.g. an annotation's summary rows) is drawn in every panel, as one without facet keys.
 
@@ -165,16 +165,6 @@
   "Thickness of a plot margin in pixels when its spec gives none."
   80)
 
-(defn- chart-value?
-  "Is `v` a chart value (a map with a `:compute` function key)?
-
-  Parameters:
-
-  - `v` (any): a margin entry, a chart or anything else.
-
-  Returns `true` for a chart value, else `false`."
-  [v] (and (map? v) (contains? v :compute)))
-
 (defn- margin-spec
   "A plot margin in its normal form.
 
@@ -186,8 +176,8 @@
   [m]
   (merge {:size default-margin-size :axis false}
          (cond
-           (chart-value? m) {:charts [m]}
-           (map? m) (update m :charts #(if (chart-value? %) [%] (vec %)))
+           (chart/chart-value? m) {:charts [m]}
+           (map? m) (update m :charts #(if (chart/chart-value? %) [%] (vec %)))
            :else {:charts (vec m)})))
 
 (defn plot-margins
@@ -253,9 +243,9 @@
                                     charts)]
                  [side (assoc spec
                               :mappings mappings
-                              :stats (mapv (fn [{:keys [options] :as chart} chart-mapping]
+                              :stats (mapv (fn [{:keys [options] :as chart} side-mapping]
                                              (let [rows (if (some? (:data options)) (data/rows (:data options)) @plot-rows)]
-                                               ((:compute chart) chart {:mapping chart-mapping :groups {facet/single-panel rows}}
+                                               ((:compute chart) chart {:mapping side-mapping :groups {facet/single-panel rows}}
                                                 side-env)))
                                            charts mappings))])))))
 
@@ -341,7 +331,7 @@
   [(m/max a c) (m/max b d)])
 
 (defn- reaches-end?
-  "Does a chart's extent reach one end of the merged extent?
+  "Tests whether a chart's extent reaches one end of the merged extent.
 
   Parameters:
 
@@ -429,9 +419,9 @@
   Returns a scale spec, see [[cljplot2.scale.position/data-scale-spec]]; with `:tick-format` and `:padding-px` (only when some side is positive) added."
   [stats k spec {:keys [extent padding padding-px]}]
   (let [defaults (some #(get-in % [:scale-defaults k]) stats)
-        spec (if (some #(contains? spec %) (keys defaults)) spec (merge defaults spec))
+        suggested-spec (if (some #(contains? spec %) (keys defaults)) spec (merge defaults spec))
         tick-format (some #(get-in % [:tick-format k]) stats)]
-    (cond-> (scale/data-scale-spec k spec extent padding)
+    (cond-> (scale/data-scale-spec k suggested-spec extent padding)
       tick-format (assoc :tick-format tick-format)
       (some pos? padding-px) (assoc :padding-px padding-px))))
 
@@ -448,15 +438,15 @@
 
   Returns `{value [row ...]}`."
   [plot k group-keys]
-  (reduce (fn [acc {:keys [mapping groups]}]
-            (if-let [accessor (get mapping k)]
-              (let [value-of (data/row-accessor k accessor)]
-                (reduce (fn [acc [g rows]]
+  (reduce (fn [by-value {:keys [mapping groups]}]
+            (if-let [value-accessor (get mapping k)]
+              (let [value-of (data/row-accessor k value-accessor)]
+                (reduce (fn [chart-acc [g rows]]
                           (if (or (nil? group-keys) (contains? group-keys g) (= facet/all-panels g))
-                            (reduce (fn [acc row] (update acc (value-of row) (fnil conj []) row)) acc rows)
-                            acc))
-                        acc groups))
-              acc))
+                            (reduce (fn [group-acc row] (update group-acc (value-of row) (fnil conj []) row)) chart-acc rows)
+                            chart-acc))
+                        by-value groups))
+              by-value))
           {} (get-in plot [:split :charts])))
 
 (defn- ordered-domain
@@ -561,14 +551,14 @@
                           {:key :facets :in [:facets :scales k] :value :sliced}))
         width (fn [e] (if e (m/- (double (to (:max e))) (double (to (:min e)))) 0.0))
         ;; every panel a single value: the span of all panels' data (0 when that is one value too - then widened)
-        span (let [widest (double (reduce m/max 0.0 (map width extents)))]
-               (if (m/pos? widest) widest (double (width (:extent shared-extent)))))
+        slice-span (let [widest (double (reduce m/max 0.0 (map width extents)))]
+                     (if (m/pos? widest) widest (double (width (:extent shared-extent)))))
         spec (cond-> user-spec (not (contains? user-spec :nice)) (assoc :nice false))]
     (map (fn [extent]
            (if (nil? extent)
              shared
              (let [mid (m/* 0.5 (m/+ (double (to (:min extent))) (double (to (:max extent)))))
-                   half (m/* 0.5 span)]
+                   half (m/* 0.5 slice-span)]
                (ordered-position-spec plot k user-spec
                                       (position-spec stats k spec (assoc shared-extent :extent {:kind :numeric
                                                                                                 :min (from (m/- mid half))
@@ -601,7 +591,7 @@
                           group-specs (if (= :free relation)
                                         (map #(free-spec plot k user-spec shared %) keysets)
                                         (sliced-specs plot k user-spec shared (get extents k) keysets))]
-                      (reduce (fn [acc [ks spec]] (reduce #(assoc-in %1 [%2 k] spec) acc ks))
+                      (reduce (fn [specs-acc [ks spec]] (reduce #(assoc-in %1 [%2 k] spec) specs-acc ks))
                               acc (map vector keysets group-specs))))))
               {} position-scales))))
 
@@ -624,9 +614,9 @@
     (assoc plot
            ;; a margin's magnitude scale: built as a position spec from the margin charts' stats
            :margin-stats (update-vals (:margin-stats plot)
-                                      (fn [{:keys [stats] :as m}]
-                                        (if-let [e (position-extent stats :y)]
-                                          (assoc m :spec (position-spec stats :y {} e))
+                                      (fn [{side-stats :stats :as m}]
+                                        (if-let [e (position-extent side-stats :y)]
+                                          (assoc m :spec (position-spec side-stats :y {} e))
                                           m)))
            :scale-specs
            (into {} (keep (fn [k]
@@ -738,7 +728,7 @@
                                                                                            specs [:x :y]))))))))
 
 (defn- panel-content?
-  "Is `content` a main panel - `:panel` content that isn't a plot margin's?
+  "Tests whether grid item content is a main panel - `:panel` content that isn't a plot margin's.
 
   Parameters:
 
@@ -1023,11 +1013,11 @@
       (let [spacers' (iso-spacers (:grid current) (:layout current) (:scales current)
                                   (if best (:spacers current) [0 0]))
             g' (plot-grid/iso-grid base-grid (spacers' 0) (spacers' 1))
-            next (assoc (candidate g' (solve-layout (assoc plot :grid g') canvas)) :spacers spacers')
-            best (if (or (nil? best) (m/< (double (:mismatch next)) (double (:mismatch best)))) next best)]
+            attempt (assoc (candidate g' (solve-layout (assoc plot :grid g') canvas)) :spacers spacers')
+            kept (if (or (nil? best) (m/< (double (:mismatch attempt)) (double (:mismatch best)))) attempt best)]
         (if (or (contains? seen spacers') (m/>= round max-iso-rounds))
-          (assoc plot :grid (:grid best) :layout (:layout best))
-          (recur (m/inc round) (conj seen spacers') next best))))))
+          (assoc plot :grid (:grid kept) :layout (:layout kept))
+          (recur (m/inc round) (conj seen spacers') attempt kept))))))
 
 (defn- layout-stage
   "Pipeline stage `:layout`: the solved layout of the plot's grid.
@@ -1195,14 +1185,14 @@
   Returns the last built plot - with equal panels, or after the last round."
   [built rebuild]
   (let [columns (arrange-columns (:arrange built))]
-    (loop [built built
+    (loop [current built
            round (long 1)]
-      (let [{:keys [columns rows]} (arranged-panel-sizes built columns)
-            widths (when columns (corrected-tracks (get-in built [:arrange :widths]) columns))
-            heights (when rows (corrected-tracks (get-in built [:arrange :heights]) rows))]
+      (let [{panel-columns :columns panel-rows :rows} (arranged-panel-sizes current columns)
+            widths (when panel-columns (corrected-tracks (get-in current [:arrange :widths]) panel-columns))
+            heights (when panel-rows (corrected-tracks (get-in current [:arrange :heights]) panel-rows))]
         (if (or (m/> round max-equal-panel-rounds) (and (nil? widths) (nil? heights)))
-          built
-          (recur (rebuild (cond-> (apply dissoc built (concat stage-order (mapcat val stage-extra-keys)))
+          current
+          (recur (rebuild (cond-> (apply dissoc current (concat stage-order (mapcat val stage-extra-keys)))
                             widths (assoc-in [:arrange :widths] widths)
                             heights (assoc-in [:arrange :heights] heights)))
                  (m/inc round)))))))
@@ -1297,13 +1287,13 @@
   "Schema of a plot margin as a map `{:charts c :size px :axis bool}` (the other forms of a margin are its charts alone)."
   [:map {:closed true}
    [:charts {:description "a chart or a vector of charts"}
-    [:multi {:dispatch chart-value?} [true chart-schema] [false [:vector {:min 1} chart-schema]]]]
+    [:multi {:dispatch chart/chart-value?} [true chart-schema] [false [:vector {:min 1} chart-schema]]]]
    (schema/optional :size {:description "margin thickness in pixels" :default 80} schema/pos)
    (schema/optional :axis {:description "draw the magnitude axis of histogram and density margins" :default false} schema/bool)])
 
 (def ^:private margin-schema
   "Schema of one plot margin: a chart, a vector of charts or a [[margin-spec-schema]] map."
-  [:multi {:dispatch #(cond (chart-value? %) :chart (map? %) :spec :else :charts)
+  [:multi {:dispatch #(cond (chart/chart-value? %) :chart (map? %) :spec :else :charts)
            :cljplot2/type-doc "a chart, a vector of charts or {:charts c :size px :axis bool}"}
    [:chart chart-schema]
    [:charts [:vector {:min 1} chart-schema]]
@@ -1403,7 +1393,7 @@
       (when problem [(error [:facets] facets problem)]))))
 
 (defn- three-d?
-  "Is `c` a 3D chart (`:three-d` among its `:coords`)?
+  "Tests whether a chart is a 3D chart (`:three-d` among its `:coords`).
 
   Parameters:
 
@@ -1482,7 +1472,7 @@
        (error [:charts i :options :mapping k] (get m k)
               (str "chart " j " computes " k " itself; another chart can't map it (set it to nil in this chart's :mapping)")))
      (let [margin-mappings (when (empty? (schema/errors margins-schema (:margins plot) [:margins]))
-                             (for [[_ {:keys [charts]}] (plot-margins plot) c charts] (get-in c [:options :mapping])))]
+                             (for [[_ {margin-charts :charts}] (plot-margins plot) c margin-charts] (get-in c [:options :mapping])))]
        (for [k (keys scales)
              :when (and (aesthetic/dim? k) (not-any? #(some? (get % k)) (concat mappings margin-mappings))
                         (not-any? (fn [[chart m]] (contains? (aesthetic/computed-aesthetics chart m) k))
@@ -1520,8 +1510,8 @@
           [(error [:margins] (:margins plot) "margins can't be combined with facets (yet)")])
         (when (or custom-grid arrange)
           [(error [:margins] (:margins plot) "margins belong on the plots inside :arrange / :custom-grid")])
-        (for [[side {:keys [axis charts]}] (plot-margins plot)
-              :when (and axis (not-any? (comp magnitude-chart-kinds :kind) charts))]
+        (for [[side {:keys [axis] margin-charts :charts}] (plot-margins plot)
+              :when (and axis (not-any? (comp magnitude-chart-kinds :kind) margin-charts))]
           (error [:margins side :axis] axis "a margin axis needs a histogram or density chart (strips have no magnitude)")))))))
 
 (defn- named-style-names
@@ -1536,7 +1526,16 @@
   (into [:enum] (sort (remove #(contains? chart/builtin-styles %) (keys chart-theme)))))
 
 (defn- kind-style-map?
-  "Is the theme style of chart `kind` in `chart-theme` (the merged theme's `:chart` map) a map or absent? A kind style that isn't a map is the kind's own error: no named style is checked over it."
+  "Tests whether the theme style of a chart kind is a map or absent.
+
+  A kind style that isn't a map is the kind's own error: no named style is checked over it (see [[named-style-checks]]).
+
+  Parameters:
+
+  - `chart-theme` (map): the merged theme's `:chart` map.
+  - `kind` (keyword): the chart kind.
+
+  Returns true for a map or no entry, else false."
   [chart-theme kind]
   (let [base (get chart-theme kind)]
     (or (nil? base) (map? base))))
@@ -1575,9 +1574,9 @@
 
   Returns a vector of errors, empty when every style holds."
   [chart-theme]
-  (let [[checked errs] @last-chart-theme-errors]
+  (let [[checked cached-errs] @last-chart-theme-errors]
     (if (and (some? checked) (= checked chart-theme))
-      errs
+      cached-errs
       (let [errs (vec (mapcat (fn [[sch v in]] (schema/errors sch v in)) (chart-theme-checks chart-theme)))]
         (reset! last-chart-theme-errors [chart-theme errs])
         errs))))
@@ -1655,12 +1654,12 @@
                     (conj [style (get chart-theme kind) [:theme :chart kind]]))))
               (range) charts (merged-mappings plot))
       ;; margin charts: their options (mappings are built from the plot's at compute)
-      (for [[side {:keys [charts]}] (when (empty? (schema/errors margins-schema (:margins plot) [:margins]))
-                                      (plot-margins plot))
-            [i c] (map-indexed vector charts)
-            :let [options-schema (get-in c [:schema :options])]
-            :when options-schema]
-        [options-schema (:options c) [:margins side :charts i :options]])))))
+      (for [[side {margin-charts :charts}] (when (empty? (schema/errors margins-schema (:margins plot) [:margins]))
+                                             (plot-margins plot))
+            [i c] (map-indexed vector margin-charts)
+            :let [chart-options-schema (get-in c [:schema :options])]
+            :when chart-options-schema]
+        [chart-options-schema (:options c) [:margins side :charts i :options]])))))
 
 (defn- validate!
   "Validate a plot, its merged theme and render options before any stage runs.
@@ -1696,25 +1695,25 @@
   Parameters:
 
   - `k` (keyword): the scale's dimension.
-  - `type` (keyword): `:categorical` or `:numeric`.
+  - `scale-type` (keyword): `:categorical` or `:numeric`.
   - `spec` (map): the plot's scale spec.
 
   Returns `spec` without `:type`, with `:kind` added when it has none and the type implies one.
 
   Throws `ex-info` with `{:key :type}` when an explicit `:kind` contradicts the type (an aesthetic `:binned` kind is numeric; `:identity` takes no `:type`)."
-  [k type spec]
+  [k scale-type spec]
   (let [wanted (cond
-                 (position-scales k) (case type :categorical :bands :numeric nil)
-                 (aesthetic/dim? k) (case type :categorical :ordinal :numeric :linear)
+                 (position-scales k) (case scale-type :categorical :bands :numeric nil)
+                 (aesthetic/dim? k) (case scale-type :categorical :ordinal :numeric :linear)
                  :else nil)
-        allowed (if (and (aesthetic/dim? k) (= :numeric type)) #{:linear :binned} #{wanted})
+        allowed (if (and (aesthetic/dim? k) (= :numeric scale-type)) #{:linear :binned} #{wanted})
         given (:kind spec)
         contradiction? (cond
                          (and given wanted) (not (contains? allowed given))
-                         (and given (position-scales k) (= :numeric type)) (= :bands given)
+                         (and given (position-scales k) (= :numeric scale-type)) (= :bands given)
                          :else false)]
     (when contradiction?
-      (schema/fail! (str "Scale :type " type " contradicts :kind " given ".") {:key :type :in [:scales k :type] :value type}))
+      (schema/fail! (str "Scale :type " scale-type " contradicts :kind " given ".") {:key :type :in [:scales k :type] :value scale-type}))
     (cond-> (dissoc spec :type)
       (and wanted (nil? given)) (assoc :kind wanted))))
 
@@ -1727,13 +1726,13 @@
 
   - `scales` (map): the plot `:scales`.
   - `mappings` (sequence of maps): the charts' merged mappings.
-  - `three-d?` (boolean): the plot has 3D charts.
+  - `three-d-plot?` (boolean): the plot has 3D charts.
 
   Returns the scales with declared and marked types resolved (see [[type-kind]]); a marked dimension without a spec gets one.
 
   Throws `ex-info` with `{:key :type}` for a marker on a dimension declared `:type :numeric`."
-  [scales mappings three-d?]
-  (let [scale-dim? #(or (and (position-scales %) (not three-d?)) (aesthetic/dim? %) (contains? facet/facet-keys %))
+  [scales mappings three-d-plot?]
+  (let [scale-dim? #(or (and (position-scales %) (not three-d-plot?)) (aesthetic/dim? %) (contains? facet/facet-keys %))
         marked (set (for [m mappings [k acc] m :when (and (scale-dim? k) (accessor/categorical? acc))] k))]
     (reduce (fn [acc k]
               (let [spec (get scales k {})
@@ -1741,8 +1740,8 @@
                 (when (and (marked k) (= :numeric declared))
                   (schema/fail! "A categorical mapping marker contradicts the scale's :type :numeric."
                                 {:key :type :in [:scales k :type] :value declared}))
-                (if-let [type (if (marked k) :categorical declared)]
-                  (assoc acc k (type-kind k type spec))
+                (if-let [resolved-type (if (marked k) :categorical declared)]
+                  (assoc acc k (type-kind k resolved-type spec))
                   acc)))
             scales
             (distinct (concat (filter scale-dim? (keys scales)) marked)))))
@@ -1762,12 +1761,12 @@
   Throws one `ex-info` listing every validation error (see [[cljplot2.schema]]), and stage errors as `ex-info` with `{:key ..}`."
   ([plot] (build plot {}))
   ([plot options]
-   (let [plot (if (map? plot) (apply dissoc plot (concat stage-order (mapcat val stage-extra-keys))) plot)
-         plot-options (when (map? plot) (:options plot))
+   (let [unbuilt (if (map? plot) (apply dissoc plot (concat stage-order (mapcat val stage-extra-keys))) plot)
+         plot-options (when (map? unbuilt) (:options unbuilt))
          render-options (merge default-options (when (map? plot-options) plot-options) (dissoc options :until))
-         theme (theme/plot-theme (when (map? plot) (:theme plot)))]
-     (validate! plot theme (cond-> render-options (contains? options :until) (assoc :until (:until options))))
-     (reduce (fn [plot stage] ((stage-fns stage) plot))
-             (assoc plot :options render-options :theme theme
-                    :scales (resolve-scale-types (:scales plot) (merged-mappings plot) (some three-d? (:charts plot))))
+         theme (theme/plot-theme (when (map? unbuilt) (:theme unbuilt)))]
+     (validate! unbuilt theme (cond-> render-options (contains? options :until) (assoc :until (:until options))))
+     (reduce (fn [staged stage] ((stage-fns stage) staged))
+             (assoc unbuilt :options render-options :theme theme
+                    :scales (resolve-scale-types (:scales unbuilt) (merged-mappings unbuilt) (some three-d? (:charts unbuilt))))
              (take (m/inc (.indexOf ^java.util.List stage-order (get options :until (peek stage-order)))) stage-order)))))

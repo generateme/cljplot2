@@ -33,7 +33,6 @@
             [fastmath.core :as m]
             [fastmath.vector :as v]
             [cljplot2.data.rows :as data]
-            [cljplot2.graphics.measure :as measure]
             [cljplot2.data.group :as group]
             [cljplot2.data.kde :as kde]
             [cljplot2.data.position :as position]
@@ -281,7 +280,7 @@
                   b (upper (m/long-inc i))
                   c (lower (m/long-inc i))
                   d (lower i)]
-            :when (and (measure/finite-point? a) (measure/finite-point? b) (measure/finite-point? c) (measure/finite-point? d))]
+            :when (and (data/finite-point? a) (data/finite-point? b) (data/finite-point? c) (data/finite-point? d))]
       (let [t (if (m/pos? span) (m// (m/- (m/* 0.5 (m/+ (double (ps i)) (double (ps (m/long-inc i))))) p0) span) 0.5)
             quad [a b c d]]
         (c2d/set-color canvas (gradient (m/constrain t 0.0 1.0)))

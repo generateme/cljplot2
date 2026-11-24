@@ -227,8 +227,7 @@
                           (let [cell-reach (m/* (double (reach k)) (double (:resolution (axes k))))]
                             {:kind :numeric :min (m/- (v/mn vs) cell-reach) :max (m/+ (v/mx vs) cell-reach)})
                           (if (every? number? vs) {:kind :categorical :values (vec (distinct vs))} (data/extent k vs)))))]
-    (when (and (seq all) (not-any? #(aesthetic/valid-value? :color (get plot-scales :color) (nth % 2)) all))
-      (schema/fail! data/no-valid-values {:key :mapping :value :color :rows (count all)}))
+    (data/check-mapped! all [[:color #(nth % 2)]] (fn [k v] (aesthetic/valid-value? k (get plot-scales k) v)))
     {:data (update-vals cells-of (fn [cs] {:cells cs :axes axes :style st :value-label (:value-label options) :sized? sized?}))
      :extents (update-vals cells-of (fn [cs] (into {} (filter val)
                                                    {:x (axis-extent :x (map first cs))
@@ -333,7 +332,7 @@
                       ^fastmath.vector.Vec2 centre (to-pixel (let [n (double (count offsets))]
                                                                [(m// (v/sum (map first offsets)) n)
                                                                 (m// (v/sum (map second offsets)) n)]))]
-                :when (and text (not (m/nan? (.x centre))) (not (m/nan? (.y centre))))]
+                :when (and text (data/finite-point? centre))]
           (label/draw-at! canvas {:kind :label :role :tile-value :text text
                                   :color (draw/text-color (:theme env) :tile-value
                                                           (or (draw/painted-color canvas (.x centre) (.y centre)) fill))}

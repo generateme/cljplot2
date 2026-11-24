@@ -19,7 +19,7 @@
 
   Context in every facet panel: a chart whose mapping sets the facet keys to `nil` (`{:facet nil}`, see [[cljplot2.data.facet/facet-dims]]) is drawn in every panel - e.g. all lines greyed behind the faceted ones: `(line {:mapping {:facet nil :color nil :group :g} :color [200 200 200]})` listed before `(line)`.
 
-  Functions: a constructor per built-in kind, each taking an optional options map - [[scatter]], [[line]], [[segment]], [[bar]], [[histogram]], [[density]], [[ecdf]], [[qq]], [[pp]], [[ribbon]], [[smooth]], [[candlestick]], [[parallel]], [[polygon]], [[treemap]], [[partition]], [[pack]], [[waffle]], [[venn]], [[tile]], [[bin2d]], [[field]], [[contour]], [[correlation]], [[cloud]], [[surface]], [[box]], [[bullet]], [[violin]], [[stripplot]], [[beeswarm]], [[dotplot]], [[rug]], [[extent]], [[rule]], [[rect]], [[function]], [[text]], [[image]]; [[builtin-styles]] - the style schema of every built-in kind."
+  Functions: a constructor per built-in kind, each taking an optional options map - [[scatter]], [[line]], [[segment]], [[bar]], [[histogram]], [[density]], [[ecdf]], [[qq]], [[pp]], [[ribbon]], [[smooth]], [[candlestick]], [[parallel]], [[polygon]], [[treemap]], [[partition]], [[pack]], [[waffle]], [[venn]], [[tile]], [[bin2d]], [[field]], [[contour]], [[correlation]], [[cloud]], [[surface]], [[box]], [[bullet]], [[violin]], [[stripplot]], [[beeswarm]], [[dotplot]], [[rug]], [[extent]], [[rule]], [[rect]], [[function]], [[text]], [[image]]; [[builtin-styles]] - the style schema of every built-in kind; [[chart-value?]] - tests for a chart value."
   (:refer-clojure :exclude [partition])
   (:require [cljplot2.chart.bar :as bar]
             [cljplot2.chart.beeswarm :as beeswarm]
@@ -65,6 +65,17 @@
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
+
+(defn chart-value?
+  "Tests whether a value is a chart value: a map with a `:compute` function key (see the namespace doc).
+
+  Parameters:
+
+  - `v`: any value (a margin entry, a chart, a plot ...).
+
+  Returns `true` for a chart value, else `false`."
+  [v]
+  (and (map? v) (contains? v :compute)))
 
 (defn- chart-value
   "A chart value - the plain map of the chart contract (see the namespace doc).
@@ -429,9 +440,9 @@
 
   Returns an annotation chart value (every panel, facet keys only, see [[annotation-value]]) when both sides are distributions, else a plain one (see [[chart-value]])."
   [kind compute schema options]
-  (let [options (if (nil? options) {} options)]
-    ((if (probability/distributions-only? options) annotation-value chart-value)
-     kind compute probability/draw probability/legend schema options)))
+  (let [given (if (nil? options) {} options)]
+    ((if (probability/distributions-only? given) annotation-value chart-value)
+     kind compute probability/draw probability/legend schema given)))
 
 (defn qq
   "Q-Q plot: quantiles of `:x` / `:x-distribution` against `:y` / `:y-distribution`.

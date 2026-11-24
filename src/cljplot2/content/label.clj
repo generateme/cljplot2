@@ -19,7 +19,7 @@
   Content is validated against [[label-options]] by [[cljplot2.graphics.measure/validate-content]] (called from
   `grid/prepare`).
 
-  Functions: [[quarter-turn]], [[text-frame]], [[value-text]], [[box-at]], [[draw-at!]], [[draw-at-frame!]]; schema
+  Functions: [[quarter-turn]], [[text-frame]], [[name-text]], [[value-text]], [[box-at]], [[draw-at!]], [[draw-at-frame!]]; schema
   [[label-options]]; methods of [[cljplot2.graphics.measure/validate-content]],
   [[cljplot2.graphics.measure/natural-size]] and [[cljplot2.graphics.draw/draw-content]] for `:label`."
   (:require [clojure.string :as str]
@@ -218,6 +218,19 @@
                     (m/+ block-x (align-offset (:h-align spec) block-width line-width))
                     (m/+ block-y (m/* idx line-height) ascent)))))))
 
+(defn name-text
+  "Gives the text of a name: a level, an accessor, a set name.
+
+  Parameters:
+
+  - `v`: any value.
+
+  Returns a keyword's name, else `(str v)` (`nil` gives an empty string).
+
+  See also [[value-text]] (numbers rounded)."
+  [v]
+  (if (keyword? v) (name v) (str v)))
+
 (defn value-text
   "Gives the text of a data value in a label (tile values, contour levels).
 
@@ -232,8 +245,7 @@
     (nil? value) nil
     (number? value) (let [r (m/approx (double value) 2)]
                       (if (m/== r (m/round r)) (str (m/round r)) (str r)))
-    (keyword? value) (name value)
-    :else (str value)))
+    :else (name-text value)))
 
 (def ^:private anchor-fraction
   "Fraction of a box's width (`:left :center :right`) or height (`:top :middle :bottom`) an anchor sits at."

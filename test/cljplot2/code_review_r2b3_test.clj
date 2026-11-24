@@ -17,18 +17,18 @@
 
 (deftest finite-point-test
   (testing "Vec2 and [x y] with finite coordinates"
-    (is (measure/finite-point? (v/vec2 1.0 -2.0)))
-    (is (measure/finite-point? [0 0.5]))
-    (is (measure/finite-point? (v/vec2 0.0 0.0))))
+    (is (rows/finite-point? (v/vec2 1.0 -2.0)))
+    (is (rows/finite-point? [0 0.5]))
+    (is (rows/finite-point? (v/vec2 0.0 0.0))))
   (testing "boundary: NaN, infinite, non-number, nil, short vector"
-    (is (not (measure/finite-point? (v/vec2 ##NaN 1.0))))
-    (is (not (measure/finite-point? (v/vec2 1.0 ##Inf))))
-    (is (not (measure/finite-point? [##-Inf 0])))
-    (is (not (measure/finite-point? [1 nil])))
-    (is (not (measure/finite-point? ["a" 1])))
-    (is (not (measure/finite-point? [1])))
-    (is (not (measure/finite-point? [])))
-    (is (not (measure/finite-point? nil)))))
+    (is (not (rows/finite-point? (v/vec2 ##NaN 1.0))))
+    (is (not (rows/finite-point? (v/vec2 1.0 ##Inf))))
+    (is (not (rows/finite-point? [##-Inf 0])))
+    (is (not (rows/finite-point? [1 nil])))
+    (is (not (rows/finite-point? ["a" 1])))
+    (is (not (rows/finite-point? [1])))
+    (is (not (rows/finite-point? [])))
+    (is (not (rows/finite-point? nil)))))
 
 (defn- alpha [col] (c/alpha col))
 

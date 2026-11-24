@@ -35,7 +35,6 @@
             [fastmath.core :as m]
             [fastmath.vector :as v]
             [cljplot2.data.rows :as data]
-            [cljplot2.graphics.measure :as measure]
             [cljplot2.data.strip :as strip]
             [cljplot2.scale.aesthetic :as aesthetic]
             [cljplot2.schema :as schema]
@@ -220,7 +219,7 @@
   [canvas p v level c0 c1]
   (let [^Vec2 a (p 0.0 level c0)
         ^Vec2 b (p v level c1)]
-    (when (and (measure/finite-point? a) (measure/finite-point? b))
+    (when (and (data/finite-point? a) (data/finite-point? b))
       (c2d/rect canvas (m/min (.x a) (.x b)) (m/min (.y a) (.y b))
                 (m/abs (m/- (.x b) (.x a))) (m/abs (m/- (.y b) (.y a)))))))
 
@@ -271,12 +270,12 @@
                   (m/* half (double (:measure-width style))))
       (when (m/pos? (double (:marker-width style)))
         (c2d/set-color canvas (:marker-color style))
-        (c2d/set-stroke-custom canvas {:size (double (:marker-width style)) :cap :butt})
+        (c2d/set-stroke-custom canvas {:size (:marker-width style) :cap :butt})
         (let [reach (m/* half (double (:marker-length style)))]
           (doseq [v markers
                   :let [^Vec2 a (point v level (m/- c0 reach))
                         ^Vec2 b (point v level (m/+ c0 reach))]
-                  :when (and (measure/finite-point? a) (m/valid-double? (.y b)))]
+                  :when (and (data/finite-point? a) (m/valid-double? (.y b)))]
             (c2d/line canvas a b)))))))
 
 (defmethod strip/in-frame-compute :bullet [chart chart-split env] (compute-in-strip-frame chart chart-split env))

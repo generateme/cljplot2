@@ -4,7 +4,7 @@
 
   A cache keeps at most its threshold of entries and evicts the least recently used one when full. A value is
   computed once per key, also when threads miss the same key together; a computation that throws caches nothing.
-  Caches are internal: their thresholds aren't options.
+  Caches are internal: their thresholds aren't options. A hit updates the entry's recency (an atom `swap!`, about 0.5 µs against a few ns for a plain map): fine per plot or per drawn mark (a shape outline costs more to draw), not in a tight loop that draws nothing.
 
   Functions: [[lru-cache]] makes a cache, [[lookup-or-compute]] reads through it, [[entry-count]] and [[clear!]]
   serve tests."
@@ -39,12 +39,22 @@
   (cw/lookup-or-miss cache k compute))
 
 (defn entry-count
-  "Gives the number of entries `cache` holds (see [[lru-cache]])."
+  "Gives the number of entries a cache holds.
+
+  Parameters:
+
+  - `cache`: a cache of [[lru-cache]].
+
+  Returns the count as a long, at most the cache's threshold."
   ^long [cache]
   (cw/size cache))
 
 (defn clear!
-  "Empties `cache` (see [[lru-cache]]), keeping its threshold; for tests.
+  "Empties a cache, keeping its threshold; for tests.
+
+  Parameters:
+
+  - `cache`: a cache of [[lru-cache]].
 
   Returns `nil`."
   [cache]

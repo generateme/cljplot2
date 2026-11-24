@@ -11,7 +11,13 @@
 (set! *unchecked-math* :warn-on-boxed)
 
 (defn plot-content?
-  "Is `content` plot content?"
+  "Tests whether a grid item content is a nested plot.
+
+  Parameters:
+
+  - `content` (map): a grid item's content.
+
+  Returns true for `:kind :plot`, else false."
   [content]
   (= :plot (:kind content)))
 

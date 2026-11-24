@@ -592,7 +592,7 @@
   - `spec` (map or `nil`): the plot's scale spec.
   - `v`: the value.
 
-  Returns, with an identity scale, whether `v` is a [[valid-attribute?]]; otherwise [[cljplot2.data.rows/valid-value?]]."
+  Returns, with an identity scale, whether `v` is a [[valid-attribute?]] (e.g. any colour); otherwise [[cljplot2.data.rows/valid-value?]] (a plottable data value, no scale involved)."
   [k spec v]
   (if (identity-scale? spec) (valid-attribute? k v) (data/valid-value? v)))
 

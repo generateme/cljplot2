@@ -24,6 +24,7 @@
             [fastmath.vector :as v]
             [fastmath.grid :as grid]
             [fastmath.stats :as stats]
+            [cljplot2.data.rows :as data]
             [cljplot2.graphics.draw :as draw]
             [cljplot2.schema :as schema]
             [cljplot2.theme :as theme])
@@ -309,9 +310,9 @@
   [canvas {:keys [cell-scale]} f]
   (if (m/>= (double (or cell-scale 1.0)) 1.0)
     ;; antialiasing off: cells side by side share their edges exactly (no seams of the background between them)
-    (c2d/with-isolated-canvas [c canvas]
-      (c2d/set-rendering-hint c :antialiasing :off)
-      (f c))
+    (c2d/with-isolated-canvas [unaliased canvas]
+      (c2d/set-rendering-hint unaliased :antialiasing :off)
+      (f unaliased))
     (f canvas)))
 
 (defn draw-cell!
@@ -330,12 +331,12 @@
   See also [[call-with-cell-rendering]]."
   [canvas to-pixel corners fill {:keys [cell-scale stroke-color stroke-width alpha]}]
   (let [points (mapv (fn [p] (to-pixel p)) (shrunk corners (or cell-scale 1.0)))]
-    (when-not (some (fn [^Vec2 p] (or (m/nan? (.x p)) (m/nan? (.y p)))) points)
+    (when (every? data/finite-point? points)
       (let [cell-fill (if alpha (draw/faded fill alpha) fill)
             stroke (draw/outline-color stroke-color cell-fill)]
         (c2d/set-color canvas cell-fill)
         (c2d/path canvas points true false)
         (when (and (not (theme/none? stroke)) (m/pos? (double stroke-width)))
-          (c2d/set-stroke-custom canvas {:size (double stroke-width)})
+          (c2d/set-stroke-custom canvas {:size stroke-width})
           (c2d/set-color canvas stroke)
           (c2d/path canvas points true true))))))

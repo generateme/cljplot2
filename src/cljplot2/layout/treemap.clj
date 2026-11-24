@@ -104,7 +104,7 @@
   See also [[squarify]]."
   [values {^double x :x ^double y :y ^double w :w ^double h :h} depth]
   (let [total (v/sum values)
-        along-x? (even? (long depth))]
+        along-x? (m/even? (long depth))]
     (first (reduce (fn [[rects ^double offset] value]
                      (let [share (if (m/pos? total) (m// (double value) total) 0.0)]
                        (if along-x?

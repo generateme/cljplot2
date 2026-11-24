@@ -127,18 +127,18 @@
   - `groups` (map): `{panel rows}`.
   - `env` (map): the compute environment (`:plot-scales`, grouping settings).
 
-  Returns a sequence of `[panel aesthetics field]` (`aesthetics` - `{}` ungrouped); panels or groups without a field left out. A function field isn't grouped."
+  Returns a sequence of `[panel aesthetics field]` (`aesthetics` - `{}` ungrouped) for every panel or group with rows; `field` is `nil` when none can be made (e.g. one point under a bandwidth selector, see [[cljplot2.data.field/density]]). A function field isn't grouped (every panel gets it)."
   [options mapping groups env]
   (let [kind (field/source-kind options mapping)
         plot-scales (:plot-scales env)]
     (if (and (grouped? mapping) (not= kind :function))
       (let [{:keys [panels]} (group/split groups mapping env)]
         (for [[panel gs] panels {:keys [aesthetics rows]} gs
-              :let [f (field/source-field kind options mapping rows plot-scales)] :when f]
-          [panel aesthetics f]))
+              :when (seq rows)]
+          [panel aesthetics (field/source-field kind options mapping rows plot-scales)]))
       (for [[panel rows] groups
-            :let [f (field/source-field kind options mapping rows plot-scales)] :when f]
-        [panel {} f]))))
+            :when (or (= kind :function) (seq rows))]
+        [panel {} (field/source-field kind options mapping rows plot-scales)]))))
 
 (defn compute
   "Computes the contour chart's stats: the lines (or filled regions) of every level, per panel.
@@ -149,11 +149,13 @@
   - `split` (map): `:groups` (`{panel rows}`), `:mapping` (merged).
   - `env` (map): `:theme`, `:plot-scales` and grouping settings.
 
-  Returns per panel `{:contours [{:level l :color-value v :aesthetics a :lines [{:points :closed?} ..]} ..] :style st :fill? b :by-level? b :labels l}` (filled: `:rings [[..] ..]` instead of `:lines`); extents x / y - the sampled domain, color - the value range with the levels (by level: the lowest line or band isn't the gradient's end), or the groups' values; no padding, `:na`, `:dropped` (rows without finite x / y; `:field` - panels with rows but no field, see [[cljplot2.data.field/panels-without-field]]).
+  Returns per panel `{:contours [{:level l :color-value v :aesthetics a :lines [{:points :closed?} ..]} ..] :style st :fill? b :by-level? b :labels l}` (filled: `:rings [[..] ..]` instead of `:lines`); extents x / y - the sampled domain, color - the value range with the levels (by level: the lowest line or band isn't the gradient's end), or the groups' values; no padding, `:na`, `:dropped` (rows without finite x / y; `:field` - panels, or groups when grouped, with rows but no field).
 
   See also [[cljplot2.data.contour/isolines]], [[cljplot2.data.contour/level-rings]]."
   [{:keys [options] :as chart} {:keys [groups mapping]} {:keys [theme plot-scales] :as env}]
-  (let [fields (group-fields options mapping groups env)
+  (let [items (group-fields options mapping groups env)
+        ;; read by the domain, the sampling, the extents and the NA check
+        fields (filterv #(some? (nth % 2)) items)
         domain (field/union-domain (map (comp :domain #(nth % 2)) fields))
         size (field/grid-size (:n options))
         transforms (field/axis-transforms plot-scales)
@@ -197,7 +199,7 @@
      :padding {:x [0.0 0.0] :y [0.0 0.0]}
      :na (if (some (fn [[_ a]] (some nil? (vals a))) fields) (set (for [[_ a] fields [k v] a :when (nil? v)] k)) #{})
      :dropped (assoc (field/dropped-positions (field/source-kind options mapping) mapping groups)
-                     :field (field/panels-without-field groups (set (map first fields))))}))
+                     :field (count (remove #(some? (nth % 2)) items)))}))
 
 (defn- level-style
   "Gives the line or fill style of one contour.
@@ -226,9 +228,8 @@
 
   Returns `[point length]`: the point halfway along the polyline (by length) and its total length; `nil` for fewer than two points or a non-finite one."
   [points]
-  (when (and (m/>= (count points) 2) (every? (fn [[^double x ^double y]] (and (m/valid-double? x) (m/valid-double? y))) points))
-    (let [segments (mapv (fn [[^double x0 ^double y0] [^double x1 ^double y1]] (m/hypot (m/- x1 x0) (m/- y1 y0)))
-                         points (rest points))
+  (when (and (m/>= (count points) 2) (every? data/finite-point? points))
+    (let [segments (vec (polyline/segment-lengths points))
           last-segment (m/long-dec (count segments))
           total (v/sum segments)
           half (m/* 0.5 total)]

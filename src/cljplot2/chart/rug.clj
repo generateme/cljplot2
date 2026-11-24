@@ -88,12 +88,12 @@
             :let [st (group/style style aesthetics scales (:theme env))]
             :when (and st (m/pos? (double (:line-width st))))]
       (c2d/set-color canvas (:color st))
-      (c2d/set-stroke-custom canvas {:size (double (:line-width st)) :cap :butt})
+      (c2d/set-stroke-custom canvas {:size (:line-width st) :cap :butt})
       (doseq [v values
               :let [[^double lo ^double hi] slot
                     ^Vec2 a (point v level lo)
                     ^Vec2 b (point v level hi)]
-              :when (and (m/valid-double? (.x a)) (m/valid-double? (.y a)) (m/valid-double? (.y b)))]
+              :when (and (data/finite-point? a) (data/finite-point? b))]
         (c2d/line canvas a b)))
     (strip/draw-n-labels! canvas pl items (fn [{:keys [values]}] (v/mx values)) options scales env)))
 

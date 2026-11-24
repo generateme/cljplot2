@@ -6,7 +6,7 @@
 
   Functions: measuring [[natural-size]], [[validate-content]], [[content-kind]], [[scratch-canvas]],
   [[call-with-scratch-canvas]]; label thinning [[spans-overlap?]], [[kept-label-indices]], [[label-boxes-overlap?]],
-  [[kept-box-indices]]; geometry [[boxes-overlap?]], [[finite-point?]], [[max-size]]."
+  [[kept-box-indices]]; geometry [[boxes-overlap?]], [[max-size]]."
   (:require [cljplot2.schema :as schema]
             [clojure2d.core :as c2d]
             [fastmath.core :as m]
@@ -72,20 +72,6 @@
         (recur (m/long-inc i) last-kept kept)
         (recur (m/long-inc i) i (conj kept i))))))
 
-(defn finite-point?
-  "Tests whether a pixel point can be drawn: both coordinates are finite numbers.
-
-  Parameters:
-
-  - `p`: a `Vec2` or an `[x y]` vector.
-
-  Returns a truthy value for finite coordinates; false for a `NaN` or infinite coordinate, a non-number or `nil` (as `p` or a coordinate)."
-  [p]
-  (if (instance? Vec2 p)
-    (and (m/valid-double? (.x ^Vec2 p)) (m/valid-double? (.y ^Vec2 p)))
-    (let [[x y] p]
-      (and (number? x) (number? y) (m/valid-double? (double x)) (m/valid-double? (double y))))))
-
 (defn max-size
   "Gives the largest width and the largest height of a collection of sizes, each taken separately.
 
@@ -95,7 +81,7 @@
 
   Returns a `Vec2` `[max-w max-h]`; `[0 0]` for no sizes."
   ^Vec2 [sizes]
-  (reduce (fn [^Vec2 acc ^Vec2 s] (Vec2. (m/max (.x acc) (.x s)) (m/max (.y acc) (.y s)))) (Vec2. 0.0 0.0) sizes))
+  (reduce v/emx (Vec2. 0.0 0.0) sizes))
 
 (defn boxes-overlap?
   "Tests whether two pixel boxes overlap; touching edges don't.

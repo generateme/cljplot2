@@ -66,14 +66,24 @@
       {:dim k :spec spec :entries (vec entries) :accessors (set (keep #(get % k) mappings))})))
 
 (defn- merge-key
-  "Gives the key legend candidates merge by: `[accessor labels]` when every chart maps the dimension with one accessor
-  (candidates with equal keys share a legend), else `[::own dim]` (a legend of its own)."
+  "Gives the key legend candidates merge by: candidates with equal keys share a legend.
+
+  Parameters:
+
+  - `candidate` (map): a legend candidate - `:dim`, `:entries` (`:label` read), `:accessors` (the charts' accessors of the dimension).
+
+  Returns `[accessor labels]` when every chart maps the dimension with one accessor, else `[::own dim]` (a legend of its own)."
   [{:keys [dim entries accessors]}]
   (if (m/one? (count accessors)) [(first accessors) (mapv :label entries)] [::own dim]))
 
 (defn- members-title
-  "Gives the title of a legend of merged candidates: the first member scale's `:title` when one is given (`nil` -
-  none), else the name of the single keyword accessor of the first member; `nil` otherwise."
+  "Gives the title of a legend of merged candidates.
+
+  Parameters:
+
+  - `members` (sequence): the merged candidates, `:spec` and `:accessors` read.
+
+  Returns the first member scale's `:title` when one is given (a given `nil` - no title); else the name of the first member's single keyword accessor; `nil` otherwise."
   [members]
   (if-let [titled (first (filter #(contains? (:spec %) :title) members))]
     (get-in titled [:spec :title])
@@ -350,30 +360,59 @@
 (defmethod measure/validate-content :legends [content] (schema/explain! [[legends-schema content [:content]]]))
 
 (defn- title-label
-  "Gives the `:legend-title` label content of `text`."
+  "Gives the label content of a legend title.
+
+  Parameters:
+
+  - `text`: the title text.
+
+  Returns `{:kind :label :role :legend-title :text text}`."
   [text]
   {:kind :label :role :legend-title :text text})
 
 (defn- entry-label
-  "Gives the `:legend-label` label content of `text` (entry labels and colour bar ticks)."
+  "Gives the label content of a legend entry label or a colour bar tick label.
+
+  Parameters:
+
+  - `text`: the label text.
+
+  Returns `{:kind :label :role :legend-label :text text}`."
   [text]
   {:kind :label :role :legend-label :text text})
 
 (defn- legend-backdrop
-  "Gives what legend texts are drawn over: theme `[:legend :fill]`, else the plot background (for `:contrast` role
-  colours)."
+  "Gives what legend texts are drawn over, for `:contrast` role colours.
+
+  Parameters:
+
+  - `theme` (map): the merged theme.
+
+  Returns theme `[:legend :fill]`; the plot backdrop (see [[cljplot2.graphics.draw/plot-backdrop]]) when the fill is `:none`."
   [theme]
   (let [fill (get-in theme [:legend :fill])]
     (if (theme/none? fill) (draw/plot-backdrop theme) fill)))
 
 (defn- legend-text
-  "Gives the label `content` of a legend text with its role's colour resolved over the legend backdrop (see
-  [[legend-backdrop]])."
+  "Gives a legend text's label content with its role's colour resolved.
+
+  Parameters:
+
+  - `content` (map): a label content, `:role` read.
+  - `theme` (map): the merged theme.
+
+  Returns `content` with `:color` - the role's colour over the legend backdrop (see [[legend-backdrop]])."
   [content theme]
   (assoc content :color (draw/text-color theme (:role content) (legend-backdrop theme))))
 
 (defn- glyph-extent
-  "Gives the key box side an entry's `attributes` need: the mapped `:size` (0.0 when not mapped)."
+  "Gives the key box side an entry needs for its glyph.
+
+  Parameters:
+
+  - `attributes` (map): the entry's attributes, `:size` read.
+
+  Returns the mapped `:size` in pixels; 0 when no size is mapped."
   ^double [attributes]
   (let [size (:size attributes)] (if (number? size) (double size) 0.0)))
 
@@ -390,7 +429,7 @@
   [rows ^double max-h]
   (reduce (fn [cols {:keys [^double h] :as row}]
             (let [col (peek cols)
-                  col-h (double (reduce m/+ 0.0 (map :h col)))]
+                  col-h (v/sum (map :h col))]
               (if (or (nil? col) (and (seq col) (m/> (m/+ col-h h) max-h)))
                 (conj cols [row])
                 (conj (pop cols) (conj col row)))))
@@ -418,8 +457,8 @@
                               {:entry i :key-w key-w :label-w (.x label-size) :h (m/max key-w (.y label-size))}))
                           entries)
         [placed ^double width] (reduce (fn [[acc ^double x] col]
-                                         (let [key-w (double (reduce m/max 0.0 (map :key-w col)))
-                                               label-w (double (reduce m/max 0.0 (map :label-w col)))
+                                         (let [key-w (v/mx (map :key-w col))
+                                               label-w (v/mx (map :label-w col))
                                                ys (reductions m/+ 0.0 (map :h col))]
                                            [(conj acc {:x x :key-w key-w
                                                        :rows (mapv (fn [r y] {:entry (:entry r) :y y :h (:h r)}) col ys)})
@@ -483,22 +522,40 @@
       (if (m/valid-double? stretched) stretched minimum))))
 
 (defn- stretching?
-  "Tests whether `content` is a colour bar stretching over the height left (theme `[:legend :bar-length]` not a
-  number)."
+  "Tests whether a legend content is a colour bar stretching over the height left.
+
+  Parameters:
+
+  - `content` (map): a legend or colour bar content.
+  - `env` (map): `:theme`, `[:legend :bar-length]` read.
+
+  Returns true for a colour bar whose theme bar length isn't a number (`:stretch`), else false."
   [content env]
   (and (= :colorbar (:kind content)) (not (number? (get-in env [:theme :legend :bar-length])))))
 
 (defn- content-geometry
-  "Gives the geometry of a legend or colour bar `content` with `room` pixels of height available (see
-  [[legend-geometry]], [[colorbar-geometry]])."
+  "Gives the geometry of a legend or colour bar.
+
+  Parameters:
+
+  - `content` (map): a legend or colour bar content.
+  - `env` (map): `:theme`, `:canvas` (for measuring).
+  - `room` (double): the height available in pixels.
+
+  Returns the layout of [[legend-geometry]] or [[colorbar-geometry]] (a colour bar's length fitted to `room`, see [[colorbar-length]])."
   [content env ^double room]
   (if (= :colorbar (:kind content))
     (colorbar-geometry content env (colorbar-length content env room))
     (legend-geometry content env room)))
 
 (defn- available-height
-  "Gives the height a legend may take: its item box (`env` `:box`) from the previous layout round, `##Inf` before the
-  first one."
+  "Gives the height a legend may take.
+
+  Parameters:
+
+  - `env` (map): `:box` - the legends' item box from the previous layout round, absent before the first one.
+
+  Returns the box height; `##Inf` before the first round."
   ^double [env]
   (if-let [box (:box env)] (double (:h box)) ##Inf))
 
@@ -587,20 +644,36 @@
         x1 (m/long-inc (long (m/ceil (m/+ x w)))) y1 (m/long-inc (long (m/ceil (m/+ y h))))]
     (doseq [{i :chart dims :dims} chart-keys
             :let [chart (get-in env [:legend-charts i])]]
-      (c2d/with-isolated-canvas [glyph-canvas c]
-        (c2d/add-clip glyph-canvas x0 y0 (m/long-sub x1 x0) (m/long-sub y1 y0))
-        ((:legend chart) chart (select-keys attributes dims) glyph-canvas box (assoc env :chart-stats (get-in env [:legend-stats i])))))))
+      (c2d/with-isolated-canvas [clipped c]
+        (c2d/add-clip clipped x0 y0 (m/long-sub x1 x0) (m/long-sub y1 y0))
+        ((:legend chart) chart (select-keys attributes dims) clipped box (assoc env :chart-stats (get-in env [:legend-stats i])))))))
 
 (defn- draw-label!
-  "Draws a legend text `label-content` (see [[legend-text]]) in `box` on an isolated copy of canvas `c`; returns `nil`."
+  "Draws a legend text on an isolated copy of the canvas.
+
+  Parameters:
+
+  - `c`: the canvas in graphics context.
+  - `label-content` (map): a label content (its colour resolved by [[legend-text]]).
+  - `box` (map): `{:x :y :w :h}` in pixels.
+  - `env` (map): `:theme` and drawing settings.
+
+  Returns `nil`."
   [c label-content box env]
   (c2d/with-isolated-canvas [isolated c]
     (draw/draw-content (legend-text label-content (:theme env)) isolated box env))
   nil)
 
 (defn- draw-legend-box!
-  "Fills the legend box `{:x :y :w :h}` (rounded to whole pixels) with theme `[:legend :fill]` and draws its border
-  inside (`:border-color`, `:border-width`); `:none` draws nothing. Returns `nil`."
+  "Fills the legend box and draws its border inside.
+
+  Parameters:
+
+  - `c`: the canvas in graphics context.
+  - `box` (map): `{:x :y :w :h}`, rounded to whole pixels.
+  - `env` (map): `:theme`, `[:legend]` `:fill`, `:border-color`, `:border-width` read; a `:none` fill or border draws nothing.
+
+  Returns `nil`."
   [c {:keys [x y w h]} env]
   (let [{:keys [fill border-color border-width]} (get-in env [:theme :legend])
         rounded {:x (m/round (double x)) :y (m/round (double y)) :w (m/round (double w)) :h (m/round (double h))}]
@@ -747,7 +820,17 @@
                              env))))))
 
 (defn- draw-content-at!
-  "Draws a legend or colour bar `content` with its `geometry` at top-left corner `origin` (`Vec2`); returns `nil`."
+  "Draws a legend or colour bar at a corner.
+
+  Parameters:
+
+  - `content` (map): a legend or colour bar content.
+  - `geometry` (map): its layout (see [[content-geometry]]).
+  - `c`: the canvas in graphics context.
+  - `origin` (`Vec2`): the top-left corner in pixels.
+  - `env` (map): `:theme` and drawing settings.
+
+  Returns `nil`."
   [content geometry c origin env]
   (if (= :colorbar (:kind content))
     (draw-colorbar! content geometry c origin env)

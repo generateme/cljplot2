@@ -114,13 +114,13 @@
   Parameters:
 
   - `edges` (rows): edges between leaves.
-  - `tree` (map): a tree of [[cljplot2.data.tree]].
+  - `leaf-tree` (map): a tree of [[cljplot2.data.tree]].
   - `options` (map): bundling strength, colours, labels.
 
   See [[cljplot2.graphs/bundle]]."
   {:cljplot2/options graphs/bundle-options}
-  [edges tree options]
-  (graphs/bundle edges tree options))
+  [edges leaf-tree options]
+  (graphs/bundle edges leaf-tree options))
 
 (defn chord
   "A chord diagram of edge rows as a plot map: ring sectors per node, ribbons per flow.

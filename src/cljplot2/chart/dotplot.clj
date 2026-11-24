@@ -25,7 +25,6 @@
             [fastmath.vector :as v]
             [cljplot2.data.dots :as dots]
             [cljplot2.graphics.draw :as draw]
-            [cljplot2.graphics.measure :as measure]
             [cljplot2.data.group :as group]
             [cljplot2.data.rows :as data]
             [cljplot2.data.strip :as strip]
@@ -256,7 +255,7 @@
     (when x0
       (let [d (dot-diameter value-pixel span slots {:x0 x0 :binwidth binwidth :max-count max-count})
             stacking {:stack-dir stack-dir :mirror? mirror?}]
-        (c2d/set-stroke-custom canvas {:size (double (:stroke-width style))})
+        (c2d/set-stroke-custom canvas {:size (:stroke-width style)})
         (doseq [{:keys [level slot stacks]} slots
                 :let [s (double (span level))]
                 :when (m/pos? s)
@@ -264,7 +263,7 @@
                 {:keys [x rank aesthetics]} dots
                 :let [st (group/style style aesthetics scales (:theme env))
                       ^Vec2 p (point x level (cross-of slot stacking [rank n] (m// d s)))]
-                :when (and st (measure/finite-point? p))]
+                :when (and st (data/finite-point? p))]
           (shape/draw! canvas (:shape st) p (update st :size #(if (some? %) % d))))))
     (strip/draw-n-labels! canvas pl items :label-x options scales env)))
 

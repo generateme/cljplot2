@@ -92,7 +92,13 @@
       (every? (fn [[a b]] (m/> (double a) (double b))) pairs) :decreasing)))
 
 (defn- axis-index
-  "Gives the index of a pixel axis in an `[x y]` point: 1 for `:y`, else 0."
+  "Gives the index of a pixel axis in an `[x y]` point.
+
+  Parameters:
+
+  - `along` (keyword): the axis, `:x` or `:y`.
+
+  Returns 1 for `:y`, else 0."
   ^long [along]
   (if (= :y along) 1 0))
 
@@ -128,21 +134,15 @@
           (mapv (fn [^double t] (if (m/zero? a) [t (double (f t))] [(double (f t)) t])) ts))))))
 
 (defn- distinct-consecutive
-  "Gives a run without consecutive repeated points (a vector)."
-  [run]
-  (mapv first (partition-by identity run)))
-
-(defn- chord-lengths
-  "Gives the cumulative distances along a run from its first point.
+  "Gives a run without consecutive repeated points.
 
   Parameters:
 
-  - `run` (sequence of `[x y]`): the points.
+  - `run` (sequence): `[x y]` points.
 
-  Returns a vector of doubles starting at 0.0, one per point."
+  Returns a vector of the points, each run of equal neighbours kept once (repeats apart stay); empty for an empty run."
   [run]
-  (vec (reductions m/+ 0.0 (map (fn [[^double x0 ^double y0] [^double x1 ^double y1]] (m/hypot (m/- x1 x0) (m/- y1 y0)))
-                               run (rest run)))))
+  (mapv first (partition-by identity run)))
 
 (defn parametric-points
   "Gives the points of a run interpolated as x(t), y(t) over the cumulative chord length t.
@@ -160,7 +160,7 @@
   (let [distinct-run (distinct-consecutive run)]
     (if (m/< (count distinct-run) 2)
       distinct-run
-      (let [ts (chord-lengths distinct-run)
+      (let [ts (polyline/cumulative-lengths distinct-run)
             fx (fit/fitted fit-of ts (mapv #(double (first %)) distinct-run))
             fy (fit/fitted fit-of ts (mapv #(double (second %)) distinct-run))]
         (if (or (nil? fx) (nil? fy))
@@ -312,7 +312,13 @@
   (m/- pixel-limit))
 
 (defn- drawn-coordinate
-  "Gives a pixel coordinate as drawn: clamped to ±[[pixel-limit]] and rounded to 1 / [[pixel-resolution]]."
+  "Gives a pixel coordinate as drawn.
+
+  Parameters:
+
+  - `v` (double): a pixel coordinate.
+
+  Returns `v` clamped to plus or minus [[pixel-limit]] and rounded to 1 / [[pixel-resolution]] pixel; `NaN` stays `NaN`."
   ^double [^double v]
   (m// (m/rint (m/* (m/constrain v -pixel-limit pixel-limit) pixel-resolution)) pixel-resolution))
 

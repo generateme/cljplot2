@@ -19,7 +19,6 @@
   (:require [clojure2d.core :as c2d]
             [fastmath.core :as m]
             [cljplot2.chart.box :as box]
-            [cljplot2.graphics.measure :as measure]
             [cljplot2.data.group :as group]
             [cljplot2.data.kde :as kde]
             [cljplot2.data.rows :as data]
@@ -198,11 +197,9 @@
             p (fn [v cross] (point v level cross))
             across (fn [v] (let [w (m/* extent (width-at xs widths (double v)))]
                              (if mirror? [(p v base) (p v (m/+ base w))] [(p v (m/- base w)) (p v (m/+ base w))])))]
-        (when (every? measure/finite-point? polygon)
+        (when (every? data/finite-point? polygon)
           (let [pixels (mapv (fn [^Vec2 q] [(.x q) (.y q)]) polygon)]
-            (c2d/set-color canvas fill)
-            (c2d/path canvas pixels true false)
-            (draw/fill-with-pattern! canvas (pattern-fill st fill) #(c2d/path % pixels true false))
+            (draw/fill-patterned! canvas fill (pattern-fill st fill) #(c2d/path % pixels true false))
             (when-not (theme/none? stroke)
               (c2d/set-stroke-custom canvas {:size sw :join :round})
               (c2d/set-color canvas stroke)
@@ -260,10 +257,8 @@
         side (fn [^double sign] (mapv (fn [^double t] [(m/+ cx (m/* t half-length)) (m/+ cy (m/* sign half-width (m/- 1.0 (m/* t t))))]) ts))
         outline (into (side 1.0) (rseq (side -1.0)))
         stroke (draw/outline-color (:stroke-color st) (:color st))]
-    (c2d/set-color canvas (:color st))
-    (c2d/path canvas outline true false)
-    (draw/fill-with-pattern! canvas (draw/pattern-fill st (:color st)) #(c2d/path % outline true false))
+    (draw/fill-patterned! canvas (:color st) (draw/pattern-fill st (:color st)) #(c2d/path % outline true false))
     (when-not (theme/none? stroke)
-      (c2d/set-stroke-custom canvas {:size (double (:stroke-width st)) :join :round})
+      (c2d/set-stroke-custom canvas {:size (:stroke-width st) :join :round})
       (c2d/set-color canvas stroke)
       (c2d/path canvas outline true true))))

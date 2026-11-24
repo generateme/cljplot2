@@ -119,14 +119,20 @@
   [slot]
   (cond (nil? slot) [] (map? slot) [slot] :else (vec slot)))
 
-(defn- chart-value?
-  "Is `v` a single chart value (a map), not a sequence of charts?"
+(defn- single-chart?
+  "Tests whether a pairs slot holds a single chart value (a map), not a sequence of charts.
+
+  Parameters:
+
+  - `v`: the slot value.
+
+  Returns `true` for a map, else `false`."
   [v]
   (map? v))
 
 (def ^:private slot-schema
   "Schema of a pairs slot: a chart, a sequence of charts or `nil` (none)."
-  [:maybe [:multi {:dispatch chart-value? :cljplot2/type-doc "a chart or a vector of charts"}
+  [:maybe [:multi {:dispatch single-chart? :cljplot2/type-doc "a chart or a vector of charts"}
            [true pipeline/chart-schema] [false [:sequential pipeline/chart-schema]]]])
 
 (def pairs-options
@@ -189,19 +195,19 @@
   (`:shade`, `:pie`, `:ellipse`, ...) with `:diagonal :names`. A correlation matrix as a heatmap (one tile per pair)
   is `chart/tile` over `fastmath.stats/correlation-matrix` rows instead."
   {:cljplot2/options pairs-options}
-  [data {:keys [variables mapping lower upper diagonal labels theme title]
-         :or {lower ::default upper ::default diagonal ::default} :as options}]
+  [data {:keys [mapping labels theme title] variable-keys :variables lower-slot :lower upper-slot :upper diagonal-slot :diagonal
+         :or {lower-slot ::default upper-slot ::default diagonal-slot ::default} :as options}]
   (let [_ (schema/check-options! pairs-options options)
-        variables (vec variables)
+        variables (vec variable-keys)
         n (count variables)
         n- (m/dec n)
         n+ (m/inc n)
         rows (data/rows data)
         domains (variable-domains rows variables)
         name-of (fn [k] (get labels k (name k)))
-        lower (if (= ::default lower) [(chart/scatter)] (slot-charts lower))
-        upper (if (= ::default upper) [(chart/correlation {:glyph :number})] (slot-charts upper))
-        diagonal (if (= ::default diagonal) [(chart/density)] diagonal)
+        lower (if (= ::default lower-slot) [(chart/scatter)] (slot-charts lower-slot))
+        upper (if (= ::default upper-slot) [(chart/correlation {:glyph :number})] (slot-charts upper-slot))
+        diagonal (if (= ::default diagonal-slot) [(chart/density)] diagonal-slot)
         mapped? (seq (aesthetic/mapped-dims mapping))
         ;; aesthetics with continuous values (e.g. a numeric :color) color marks without grouping: left out on the
         ;; diagonal, whose 1d charts group by their aesthetics

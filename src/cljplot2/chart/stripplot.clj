@@ -17,7 +17,6 @@
             [fastmath.random :as r]
             [fastmath.vector :as v]
             [cljplot2.data.group :as group]
-            [cljplot2.graphics.measure :as measure]
             [cljplot2.data.rng :as rng]
             [cljplot2.data.rows :as data]
             [cljplot2.data.strip :as strip]
@@ -134,7 +133,7 @@
             :when st
             [v off] (map vector values offsets)
             :let [^Vec2 p (point v level (strip/in-slot slot (double off)))]
-            :when (measure/finite-point? p)]
+            :when (data/finite-point? p)]
       (shape/draw! canvas (:shape st) p st))
     (strip/draw-n-labels! canvas pl items (fn [{:keys [values]}] (v/mx values)) options scales env)))
 

@@ -95,7 +95,13 @@
   (mapv (fn [[^double dx ^double dy]] {:x (m/* three-set-offset dx) :y (m/* three-set-offset dy) :r 1.0}) three-set-directions))
 
 (defn- contains-circle?
-  "Tests whether circle `a` holds circle `b` (`{:x :y :r}` each), touching from inside included."
+  "Tests whether a circle holds another, touching from inside included (up to [[containment-tolerance]]).
+
+  Parameters:
+
+  - `a`, `b` (maps): circles `{:x :y :r}`.
+
+  Returns true when `a` holds `b`, else false."
   [{^double ax :x ^double ay :y ^double ar :r} {^double bx :x ^double by :y ^double br :r}]
   (m/<= (m/+ (m/hypot (m/- bx ax) (m/- by ay)) br) (m/* ar (m/+ 1.0 containment-tolerance))))
 

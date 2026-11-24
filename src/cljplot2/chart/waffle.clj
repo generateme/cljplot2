@@ -187,9 +187,7 @@
                  (fn [c stroke?] (c2d/rect c x0 y0 w h stroke?)))
         sw (double (:border-width st))]
     (when (and (m/pos? w) (m/pos? h))
-      (c2d/set-color canvas fill)
-      (shape! canvas false)
-      (draw/fill-with-pattern! canvas pattern-fill #(shape! % false))
+      (draw/fill-patterned! canvas fill pattern-fill #(shape! % false))
       (when (and (m/pos? sw) (not (theme/none? (:border-color st))))
         (c2d/set-stroke-custom canvas {:size sw})
         (c2d/set-color canvas (:border-color st))

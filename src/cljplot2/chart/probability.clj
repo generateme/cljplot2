@@ -433,10 +433,10 @@
         (linear! :x (:x scales))
         (linear! :y (:y scales))
         (rule/draw-ablines! canvas scales [line]))
-      (c2d/set-stroke-custom canvas {:size (double (:stroke-width st))})
+      (c2d/set-stroke-custom canvas {:size (:stroke-width st)})
       (dorun (map (fn [vx vy]
                     (let [^Vec2 p (projection vx vy)]
-                      (when-not (or (m/nan? (.x p)) (m/nan? (.y p)))
+                      (when (data/finite-point? p)
                         (shape/draw! canvas (:shape st) p st))))
                   x y)))))
 

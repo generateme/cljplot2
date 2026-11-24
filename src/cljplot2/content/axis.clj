@@ -95,14 +95,27 @@
   ([text rotation] {:kind :label :role :tick-label :text text :rotation rotation}))
 
 (defn- label-rotation
-  "Gives the tick label rotation of the axis of scale `k`: theme `[:axis k :label-rotation]` (clockwise degrees),
-  default 0."
+  "Gives the tick label rotation of an axis.
+
+  Parameters:
+
+  - `k` (keyword): the axis's scale.
+  - `env` (map): `:theme`, `[:axis k :label-rotation]` read.
+
+  Returns the rotation in clockwise degrees; 0 when the theme gives none."
   [k env]
   (get-in env [:theme :axis k :label-rotation] 0))
 
 (defn- label-sizes
-  "Gives the natural sizes (`Vec2`) of the rotated tick labels of `finalized`, the axis of scale `k` (`env` - for
-  measuring); a vector, one per label (indexed and read several times)."
+  "Gives the natural sizes of the rotated tick labels of an axis.
+
+  Parameters:
+
+  - `k` (keyword): the axis's scale.
+  - `finalized` (map): the finalized axis scale, `:tick-labels` read.
+  - `env` (map): `:theme`, `:canvas` (for measuring).
+
+  Returns a vector of `Vec2`s, one per label (indexed and read several times)."
   [k finalized env]
   (let [rotation (label-rotation k env)]
     (mapv #(measure/natural-size (tick-label % rotation) env) (:tick-labels finalized))))
@@ -130,8 +143,15 @@
         (fn [text] (m/* factor (double (first (label/text-frame (tick-label text) (:canvas env) (:theme env))))))))))
 
 (defn- label-offsets
-  "Gives per tick label of the axis of scale `k` the offset of its box centre from the tick along the axis (see
-  [[label-offset-fn]]); a vector (read several times)."
+  "Gives the offset of each tick label's box centre from its tick, along the axis (see [[label-offset-fn]]).
+
+  Parameters:
+
+  - `k` (keyword): the axis's scale.
+  - `finalized` (map): the finalized axis scale, `:tick-labels` read.
+  - `env` (map): `:theme`, `:canvas` (for measuring).
+
+  Returns a vector of offsets in pixels, one per label (read several times)."
   [k finalized env]
   (mapv (label-offset-fn k finalized env) (:tick-labels finalized)))
 
@@ -165,7 +185,13 @@
               (:tick-labels finalized) sizes)))))
 
 (defn- label-padding
-  "Gives the padding of tick labels in the `env` theme (pixels on every side)."
+  "Gives the padding of tick labels.
+
+  Parameters:
+
+  - `env` (map): `:theme`, the tick label text role read.
+
+  Returns the padding in pixels on every side."
   [env]
   (:padding (theme/text-style (:theme env) (tick-label nil))))
 
@@ -266,8 +292,15 @@
             (measure/kept-label-indices centres extents))))
 
 (defn- drawn-labels
-  "Gives `[[centres extents] drawn]` of the tick labels of the axis of scale `k` with `finalized`: their intervals
-  along the axis (panel-local, see [[label-intervals]]) and the indices it draws ([[drawn-label-indices]])."
+  "Gives the intervals of an axis's tick labels and the labels it draws.
+
+  Parameters:
+
+  - `k` (keyword): the axis's scale.
+  - `finalized` (map): the finalized axis scale, `:tick-labels` read.
+  - `env` (map): `:theme`, `:canvas` (for measuring).
+
+  Returns `[[centres extents] drawn]`: the labels' intervals along the axis (panel-local, see [[label-intervals]]) and the indices of the drawn labels (see [[drawn-label-indices]])."
   [k finalized env]
   (let [sizes (label-sizes k finalized env)
         offsets (label-offsets k finalized env)
@@ -277,8 +310,14 @@
      (drawn-label-indices k finalized sizes padding offsets spans)]))
 
 (defn- tick-room
-  "Gives the pixels the ticks of `finalized` take across the axis (theme axis style `style`): the tick length, or the
-  minor tick length when the scale has minor ticks and they are longer."
+  "Gives the pixels an axis's ticks take across it.
+
+  Parameters:
+
+  - `finalized` (map): the finalized axis scale, `:minor-ticks` read.
+  - `style` (map): the theme axis style, `:tick-length` and `:minor-tick-length` read.
+
+  Returns the tick length, or the minor tick length when the scale has minor ticks and they are longer."
   ^double [finalized {:keys [tick-length minor-tick-length]}]
   (if (seq (:minor-ticks finalized))
     (m/max (double tick-length) (double minor-tick-length))
@@ -330,13 +369,28 @@
         (if horizontal? (v/vec2 overhang 0.0) (v/vec2 0.0 overhang))))))
 
 (defn- set-line-style!
-  "Sets the canvas colour and a solid butt-capped stroke of `width` pixels for an axis line or ticks."
+  "Sets the canvas colour and stroke of an axis line or its ticks: solid, butt caps.
+
+  Parameters:
+
+  - `c`: the canvas in graphics context.
+  - `color`: the line colour.
+  - `width` (number): the stroke width in pixels.
+
+  Returns the canvas. See also [[draws?]]."
   [c color width]
   (c2d/set-color c color)
-  (c2d/set-stroke-custom c {:size (double width) :cap :butt}))
+  (c2d/set-stroke-custom c {:size width :cap :butt}))
 
 (defn- draws?
-  "Tests whether an axis line or ticks of `color` and `width` draw: not a `:none` colour, a positive width."
+  "Tests whether an axis line or its ticks draw.
+
+  Parameters:
+
+  - `color`: the line colour.
+  - `width` (number): the stroke width in pixels.
+
+  Returns true for a colour other than `:none` and a positive width, else false."
   [color width]
   (and (not (theme/none? color)) (m/pos? (double width))))
 

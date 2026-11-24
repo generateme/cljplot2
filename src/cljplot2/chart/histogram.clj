@@ -39,7 +39,6 @@
             [fastmath.core :as m]
             [fastmath.stats :as stats]
             [cljplot2.data.rows :as data]
-            [cljplot2.graphics.measure :as graphics-measure]
             [cljplot2.data.group :as group]
             [cljplot2.data.levels :as levels]
             [cljplot2.data.measure :as measure]
@@ -311,7 +310,7 @@
               :when (m/pos? h)
               :let [a (point x0 level side 0.0)
                     b (point x1 level side (m// h top))]
-              :when (and (graphics-measure/finite-point? a) (graphics-measure/finite-point? b))]
+              :when (and (data/finite-point? a) (data/finite-point? b))]
         (draw/bar! canvas a b fill (draw/outline-color (:stroke-color st) fill) stroke-width (pattern-fill st fill)
                    (draw/bar-rounding rounding a (point x0 level side (m// h top))))))))
 
@@ -351,9 +350,7 @@
                 (draw/bar! canvas (draw/whole-pixel a) (draw/whole-pixel (projection x1 end)) drawn-fill stroke stroke-width
                            (pattern-fill st drawn-fill) (draw/bar-rounding rounding a (projection x0 end))))
               (when (draw/visible-bar? (double w) (double h))
-                (c2d/set-color canvas drawn-fill)
-                (c2d/rect canvas left top w h)
-                (draw/fill-with-pattern! canvas (pattern-fill st drawn-fill) #(c2d/rect % left top w h))
+                (draw/fill-patterned! canvas drawn-fill (pattern-fill st drawn-fill) #(c2d/rect % left top w h))
                 (when (and (m/pos? stroke-width) (not (theme/none? stroke)))
                   (c2d/set-color canvas stroke)
                   (c2d/rect canvas left top w h true))))))

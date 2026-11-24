@@ -50,18 +50,16 @@
   Returns `[point index]` - `index` of the segment holding it; `nil` past the end (or for fewer than 2 points)."
   [run ^double d]
   (loop [i (long 0)
-         acc 0.0]
-    (when (m/< i (m/long-dec (count run)))
-      (let [[^double x0 ^double y0] (run i)
-            [^double x1 ^double y1] (run (m/long-inc i))
-            dx (m/- x1 x0)
-            dy (m/- y1 y0)
-            l (m/hypot dx dy)]
-        (if (and (m/pos? l) (m/<= d (m/+ acc l)))
-          (let [t (m// (m/- d acc) l)]
-            [[(m/+ x0 (m/* t dx))
-              (m/+ y0 (m/* t dy))] i])
-          (recur (m/long-inc i) (m/+ acc l)))))))
+         acc 0.0
+         lengths (polyline/segment-lengths run)]
+    (when-let [[^double l & more] (seq lengths)]
+      (if (and (m/pos? l) (m/<= d (m/+ acc l)))
+        (let [[^double x0 ^double y0] (run i)
+              [^double x1 ^double y1] (run (m/long-inc i))
+              t (m// (m/- d acc) l)]
+          [[(m/+ x0 (m/* t (m/- x1 x0)))
+            (m/+ y0 (m/* t (m/- y1 y0)))] i])
+        (recur (m/long-inc i) (m/+ acc l) more)))))
 
 (defn- trim-start
   "Gives a run without its first pixels along its length.

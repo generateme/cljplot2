@@ -162,7 +162,7 @@
     (doseq [[^double b ^double a] ablines
             :let [^Vec2 p (projection x0 (m/+ a (m/* b x0)))
                   ^Vec2 q (projection x1 (m/+ a (m/* b x1)))]
-            :when (and (m/valid-double? (.x p)) (m/valid-double? (.y p)) (m/valid-double? (.x q)) (m/valid-double? (.y q)))]
+            :when (and (data/finite-point? p) (data/finite-point? q))]
       (c2d/line canvas p q))))
 
 (defn draw
@@ -202,7 +202,7 @@
                           (c2d/line canvas 0.0 centred w centred))))))]
     (doseq [{:keys [xs ys ablines aesthetics]} rules
             :let [st (group/style style aesthetics scales (:theme env))]
-            :when (and st (polyline/set-style! canvas st))]
+            :when (polyline/set-style! canvas st)]
       (doseq [x xs] (across! x-horizontal? (x-pixel x)))
       (doseq [y ys] (across! y-horizontal? (y-pixel y)))
       (when (seq ablines)

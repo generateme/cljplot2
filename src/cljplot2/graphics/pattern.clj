@@ -71,10 +71,21 @@
     (doseq [[x0 y0 x1 y1] segments]
       (c2d/line canvas x0 y0 x1 y1))))
 
+(def ^:private tile-hints
+  "Rendering hints of a tile canvas (see `clojure2d.core/set-rendering-hint`): the Java2D defaults - interpolation nearest-neighbor, Java's default - with antialiasing on and pure stroke control."
+  {:antialiasing :on
+   :interpolation :nearest-neighbor
+   :alpha-interpolation :default
+   :color-rendering :default
+   :rendering :default
+   :fractional-metrics :default
+   :text-antialiasing :default
+   :stroke-control :pure})
+
 (defn tile
   "Gives the tile image of a pattern: one period square, transparent background, antialiased marks.
 
-  The tile canvas uses the Java2D default rendering hints except antialiasing on and pure stroke control, so marks land on the same pixels at every scale.
+  The tile canvas uses [[tile-hints]]: the Java2D default rendering hints (interpolation nearest-neighbor, Java's default) except antialiasing on and pure stroke control, so marks land on the same pixels at every scale.
 
   Parameters:
 
@@ -87,14 +98,7 @@
         canvas (c2d/canvas p p :low)]
     (c2d/with-canvas [c canvas]
       (-> c
-          (c2d/set-rendering-hint :antialiasing :on)
-          (c2d/set-rendering-hint :interpolation :nearest-neighbor)
-          (c2d/set-rendering-hint :alpha-interpolation :default)
-          (c2d/set-rendering-hint :color-rendering :default)
-          (c2d/set-rendering-hint :rendering :default)
-          (c2d/set-rendering-hint :fractional-metrics :default)
-          (c2d/set-rendering-hint :text-antialiasing :default)
-          (c2d/set-rendering-hint :stroke-control :pure)
+          (c2d/set-rendering-hint tile-hints)
           (c2d/set-color ink))
       (if (= :dots kind)
         (let [d (double size)]

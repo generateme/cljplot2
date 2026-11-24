@@ -7,7 +7,7 @@
   neither axis is categorical (and always wins). Charts compute and draw in the **strip frame** - levels on `:y`,
   values on `:x`, as described below - through [[compute-oriented]] / [[draw-oriented]], which transpose input,
   stats and scales for levels on `:x`. A strip chart value takes [[compute]] and [[draw]], which call its kind's
-  strip-frame methods [[in-frame-compute]] and [[in-frame-draw]]. `:flip true` exchanges the drawn axes on top of that.
+  strip-frame methods [[in-frame-compute]] and [[in-frame-draw]] (multimethods on the chart's `:kind`: a new strip kind adds a method of each - a kind without one throws `No method in multimethod`). `:flip true` exchanges the drawn axes on top of that.
 
   Contract: a strip chart computes, per panel, **items** - one per `:y` level and group -
   `{:level l :key k :aesthetics a :values [..] :slot [lo hi]}` plus its own statistics, all in data units along the
@@ -318,9 +318,7 @@
         y-of (when (= :band place) (data/row-accessor :y (:y mapping)))
         all-rows (mapcat :rows (mapcat val panels))
         y-levels (when y-of (filter data/valid-value? (map y-of all-rows)))
-        _ (when (and y-of (seq all-rows) (empty? y-levels))
-            (schema/fail! data/no-valid-values
-                          {:key :mapping :value :y :rows (count all-rows)}))
+        _ (when y-of (data/check-mapped! all-rows [[:y y-of]]))
         _ (when y-of (check-levels! y-levels (:plot-scales env)))
         level-rank (zipmap (distinct y-levels) (range))
         group-keys (group/ordered-keys (mapcat #(map :key %) (vals panels)) dims (:plot-scales env))
@@ -350,9 +348,7 @@
         x-dropped (if x-of
                     (long (count (remove #(let [v (x-of %)] (and (number? v) (m/valid-double? (double v)))) all-rows)))
                     0)]
-    (when (and x-of (seq all-rows) (m/== x-dropped (count all-rows)))
-      (schema/fail! data/no-valid-values
-                    {:key :mapping :value :x :rows (count all-rows)}))
+    (when x-of (data/check-mapped! all-rows [[:x x-of]] (fn [_ v] (schema/finite? v))))
     {:place place
      :position position
      :items items
@@ -631,7 +627,7 @@
                      ^Vec2 p (point at level (in-slot slot 0.0))
                      x (if horizontal? (m/+ (.x p) (m/* dir n-label-gap)) (.x p))
                      y (if horizontal? (.y p) (m/+ (.y p) (m/* dir n-label-gap)))]
-               :when (and (m/valid-double? x) (m/valid-double? y))]
+               :when (data/finite-point? [x y])]
            {:label l :content (label-content l) :anchor anchor :x x :y y}))))
 
 (defn- outer-placement
@@ -649,7 +645,7 @@
         ^Vec2 p (coord/to-pixel geometry h r)
         edge (when leader?
                (v/mx (for [value span cross [-0.5 0.5]] (double (second (range-point value level (in-slot slot cross)))))))]
-    (when (and (m/valid-double? (.x p)) (m/valid-double? (.y p)))
+    (when (data/finite-point? p)
       (cond-> {:label l :content (label-content l) :anchor (coord/outward-anchor h) :x (.x p) :y (.y p)}
         (and edge (m/valid-double? (double edge)))
         (assoc :leader (let [^Vec2 a (coord/to-pixel geometry h (double edge))
@@ -683,7 +679,7 @@
                                    (coord/to-pixel geometry h (m/+ v shift))
                                    (coord/to-pixel geometry (m/+ h shift) v))
                          anchor (if (and radial? (not (m/zero? dir))) (coord/outward-anchor h) [:center :middle])]
-                     (when (and (m/valid-double? (.x p)) (m/valid-double? (.y p)))
+                     (when (data/finite-point? p)
                        {:label l :content (label-content l) :anchor anchor :x (.x p) :y (.y p)}))))
                labels))))
 
@@ -759,10 +755,9 @@
       (measure/call-with-scratch-canvas
        hint
        (fn [c]
-         (let [sizes (map #(measure/natural-size % {:canvas c :theme theme}) contents)
+         (let [^Vec2 widest (measure/max-size (map #(measure/natural-size % {:canvas c :theme theme}) contents))
                gap (v/mx (map outer-gap outer))]
-           [(m/+ gap (v/mx (map (fn [^Vec2 s] (.x s)) sizes)))
-            (m/+ gap (v/mx (map (fn [^Vec2 s] (.y s)) sizes)))]))))))
+           [(m/+ gap (.x widest)) (m/+ gap (.y widest))]))))))
 
 (defn n-label-room
   "Gives the `:padding-px` a strip chart's n labels need.
@@ -1063,6 +1058,8 @@
 
   Returns the chart's stats (see the chart contract in [[cljplot2.chart]]).
 
+  Throws `No method in multimethod` for a kind without a method.
+
   See also [[compute]]."
   (fn [chart _chart-split _env] (:kind chart)))
 
@@ -1076,6 +1073,8 @@
   - `canvas`, `box`: as the chart contract's draw.
   - `scales` (map): the panel's position scales in the strip frame.
   - `env` (map): the drawing environment.
+
+  Drawn for its effect on the canvas (the result is unspecified); throws `No method in multimethod` for a kind without a method.
 
   See also [[draw]]."
   (fn [chart _computed _canvas _box _scales _env] (:kind chart)))

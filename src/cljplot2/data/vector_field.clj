@@ -13,7 +13,6 @@
   (:require [fastmath.core :as m]
             [fastmath.vector :as v]
             [cljplot2.data.rows :as data]
-            [cljplot2.graphics.measure :as measure]
             [cljplot2.schema :as schema])
   (:import [fastmath.vector Vec2]))
 
@@ -137,7 +136,7 @@
   (let [dx (m// (m/- x1 x0) nx)
         dy (m// (m/- y1 y0) ny)]
     {:points (vec (for [^long j (range ny) ^long i (range nx)]
-                    [(m/+ x0 (m/* dx (m/+ 0.5 i)) (if (and shifted? (odd? j)) (m/* 0.5 dx) 0.0))
+                    [(m/+ x0 (m/* dx (m/+ 0.5 i)) (if (and shifted? (m/odd? (long j))) (m/* 0.5 dx) 0.0))
                      (m/+ y0 (m/* dy (m/+ 0.5 j)))]))
      :cell (m/min dx dy)}))
 
@@ -214,6 +213,6 @@
   (vec (mapcat (fn [id [x y]]
                  (let [path (->> (iterate #(when % (trace-step f % step)) (v/vec2 x y))
                                  (take (m/long-inc steps))
-                                 (take-while measure/finite-point?))]
+                                 (take-while data/finite-point?))]
                    (map-indexed (fn [i ^Vec2 p] {:id id :i i :x (.x p) :y (.y p)}) path)))
                (range) seeds)))

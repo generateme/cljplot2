@@ -275,7 +275,7 @@
                       ^Vec2 p (if (m/zero? along)
                                 at
                                 (v/add at (v/mult (value-direction point v level cross) along)))]
-                :when (and (m/valid-double? (.x p)) (m/valid-double? (.y p)))]
+                :when (data/finite-point? p)]
           (shape/draw! canvas (:shape st) p st))))
     (strip/draw-n-labels! canvas pl items (fn [{:keys [values]}] (v/mx values)) options scales env)))
 

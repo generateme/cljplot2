@@ -22,7 +22,6 @@
             [fastmath.stats :as stats]
             [fastmath.stats.bootstrap :as boot]
             [cljplot2.data.group :as group]
-            [cljplot2.graphics.measure :as measure]
             [cljplot2.data.rng :as rng]
             [cljplot2.data.rows :as data]
             [cljplot2.data.strip :as strip]
@@ -226,9 +225,9 @@
                   cap (m/* 0.5 (strip/slot-half slot))
                   p (fn [v cross] (point v level cross))
                   ^Vec2 a (p lo c0)]
-            :when (and st (measure/finite-point? a))]
+            :when (and st (data/finite-point? a))]
       (c2d/set-color canvas (:color st))
-      (c2d/set-stroke-custom canvas {:size (double (:line-width st)) :cap :butt})
+      (c2d/set-stroke-custom canvas {:size (:line-width st) :cap :butt})
       (c2d/line canvas a (p hi c0))
       (c2d/line canvas (p lo (m/- c0 cap)) (p lo (m/+ c0 cap)))
       (c2d/line canvas (p hi (m/- c0 cap)) (p hi (m/+ c0 cap)))
